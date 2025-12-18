@@ -1,0 +1,11 @@
+#!/bin/bash
+# Maven wrapper script that suppresses known harmless warnings
+# 
+# Usage: ./mvnw-quiet compile -DskipTests
+#
+# This script filters out the sun.misc.Unsafe deprecation warnings
+# that come from Maven's internal Guice 5.1.0 dependency.
+# These warnings are harmless and will be fixed when Maven upgrades Guice.
+# See: https://issues.apache.org/jira/browse/MNG-7758
+
+mvn "$@" 2>&1 | grep -v -E "(sun\.misc\.Unsafe|HiddenClassDefiner|terminally deprecated|will be removed in a future release|Please consider reporting)"

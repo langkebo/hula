@@ -1,0 +1,14 @@
+spring:
+  mail:
+    # 生产环境请使用企业邮箱或开通应用专用密码的账号
+    host: "<smtp_host>"
+    port: 465
+    username: "<email_account>"
+    password: "<auth_code_or_app_password>"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            # 生产环境必须启用SSL，并在网关统一走HTTPS
+            enable: true

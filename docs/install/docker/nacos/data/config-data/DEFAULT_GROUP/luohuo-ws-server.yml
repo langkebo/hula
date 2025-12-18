@@ -1,0 +1,15 @@
+server:
+  port: 19778
+
+luohuo:
+  thread:
+    core-size: 1          # 核心线程数
+    max-size: 4           # 最大线程数
+    queue-capacity: 1000  # 队列容量
+    keep-alive: 60        # 线程空闲超时时间
+springdoc:
+  group-configs:
+    - group: 'ws'
+      displayName: 'ws'
+      paths-to-match: '/**'
+      packages-to-scan: com.luohuo.flex.controller

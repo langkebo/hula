@@ -1,0 +1,319 @@
+groups:
+  - name: e2ee_performance_alerts
+    interval: 30s
+    rules:
+      # 加密延迟告警
+      - alert: E2EEHighEncryptionLatency
+        expr: |
+          1000 * (
+            rate(e2ee_encryption_time_seconds_sum[5m]) /
+            rate(e2ee_encryption_time_seconds_count[5m])
+          ) > 200
+        for: 5m
+        labels:
+          severity: warning
+          component: e2ee
+          category: performance
+        annotations:
+          summary: "E2EE加密延迟过高"
+          description: "平均加密延迟超过200ms，当前值: {{ $value | humanize }}ms"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+          runbook: "https://docs.hula.com/runbooks/e2ee-high-latency"
+
+      - alert: E2EECriticalEncryptionLatency
+        expr: |
+          1000 * (
+            rate(e2ee_encryption_time_seconds_sum[5m]) /
+            rate(e2ee_encryption_time_seconds_count[5m])
+          ) > 500
+        for: 2m
+        labels:
+          severity: critical
+          component: e2ee
+          category: performance
+        annotations:
+          summary: "E2EE加密延迟严重过高"
+          description: "平均加密延迟超过500ms，当前值: {{ $value | humanize }}ms，需要立即处理"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+          runbook: "https://docs.hula.com/runbooks/e2ee-critical-latency"
+
+      # 解密延迟告警
+      - alert: E2EEHighDecryptionLatency
+        expr: |
+          1000 * (
+            rate(e2ee_decryption_time_seconds_sum[5m]) /
+            rate(e2ee_decryption_time_seconds_count[5m])
+          ) > 200
+        for: 5m
+        labels:
+          severity: warning
+          component: e2ee
+          category: performance
+        annotations:
+          summary: "E2EE解密延迟过高"
+          description: "平均解密延迟超过200ms，当前值: {{ $value | humanize }}ms"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+
+  - name: e2ee_cache_alerts
+    interval: 30s
+    rules:
+      # 缓存命中率告警
+      - alert: E2EELowCacheHitRate
+        expr: |
+          100 * (
+            rate(e2ee_cache_hit_total[5m]) /
+            (rate(e2ee_cache_hit_total[5m]) + rate(e2ee_cache_miss_total[5m]))
+          ) < 80
+        for: 10m
+        labels:
+          severity: warning
+          component: e2ee
+          category: cache
+        annotations:
+          summary: "E2EE缓存命中率过低"
+          description: "缓存命中率低于80%，当前值: {{ $value | humanizeDuration }}%，可能影响性能"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+          runbook: "https://docs.hula.com/runbooks/e2ee-low-cache-hit"
+
+      - alert: E2EECriticalCacheHitRate
+        expr: |
+          100 * (
+            rate(e2ee_cache_hit_total[5m]) /
+            (rate(e2ee_cache_hit_total[5m]) + rate(e2ee_cache_miss_total[5m]))
+          ) < 50
+        for: 5m
+        labels:
+          severity: critical
+          component: e2ee
+          category: cache
+        annotations:
+          summary: "E2EE缓存命中率严重过低"
+          description: "缓存命中率低于50%，当前值: {{ $value | humanizeDuration }}%，严重影响性能"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+          runbook: "https://docs.hula.com/runbooks/e2ee-critical-cache"
+
+  - name: e2ee_error_alerts
+    interval: 30s
+    rules:
+      # 错误率告警
+      - alert: E2EEHighErrorRate
+        expr: rate(e2ee_errors_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: e2ee
+          category: error
+        annotations:
+          summary: "E2EE错误率过高"
+          description: "错误率超过5%，当前值: {{ $value | humanizePercentage }}，需要立即检查"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+          runbook: "https://docs.hula.com/runbooks/e2ee-high-error-rate"
+
+      # 加密错误告警
+      - alert: E2EEEncryptionErrors
+        expr: rate(e2ee_errors_total{error_type="encryption_failed"}[5m]) > 0.01
+        for: 3m
+        labels:
+          severity: warning
+          component: e2ee
+          category: error
+        annotations:
+          summary: "E2EE加密操作频繁失败"
+          description: "加密失败率: {{ $value | humanizePercentage }}，请检查密钥状态"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+
+      # 解密错误告警
+      - alert: E2EEDecryptionErrors
+        expr: rate(e2ee_errors_total{error_type="decryption_failed"}[5m]) > 0.01
+        for: 3m
+        labels:
+          severity: warning
+          component: e2ee
+          category: error
+        annotations:
+          summary: "E2EE解密操作频繁失败"
+          description: "解密失败率: {{ $value | humanizePercentage }}，请检查密钥匹配"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+
+      # 签名验证错误告警
+      - alert: E2EESignatureVerificationErrors
+        expr: rate(e2ee_errors_total{error_type="signature_verification_failed"}[5m]) > 0.005
+        for: 5m
+        labels:
+          severity: critical
+          component: e2ee
+          category: security
+        annotations:
+          summary: "E2EE消息签名验证频繁失败"
+          description: "签名验证失败率: {{ $value | humanizePercentage }}，可能存在安全风险"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+          runbook: "https://docs.hula.com/runbooks/e2ee-signature-failures"
+
+  - name: e2ee_availability_alerts
+    interval: 15s
+    rules:
+      # 服务可用性告警
+      - alert: E2EEServiceDown
+        expr: up{job="hula-e2ee"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: e2ee
+          category: availability
+        annotations:
+          summary: "E2EE服务不可用"
+          description: "E2EE服务已停止响应超过1分钟"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+          runbook: "https://docs.hula.com/runbooks/e2ee-service-down"
+
+      # 数据库连接告警
+      - alert: E2EEDatabaseConnectionFailure
+        expr: rate(e2ee_errors_total{error_type="database_error"}[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: critical
+          component: e2ee
+          category: availability
+        annotations:
+          summary: "E2EE数据库连接异常"
+          description: "数据库连接失败率: {{ $value | humanizePercentage }}"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+
+      # Redis连接告警
+      - alert: E2EERedisConnectionFailure
+        expr: rate(e2ee_errors_total{error_type="cache_error"}[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          component: e2ee
+          category: availability
+        annotations:
+          summary: "E2EE Redis连接异常"
+          description: "Redis连接失败率: {{ $value | humanizePercentage }}"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+
+  - name: e2ee_throughput_alerts
+    interval: 30s
+    rules:
+      # 吞吐量异常低告警
+      - alert: E2EELowThroughput
+        expr: rate(e2ee_messages_encrypted_total[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: e2ee
+          category: throughput
+        annotations:
+          summary: "E2EE加密消息吞吐量异常低"
+          description: "每秒加密消息数低于0.1条，当前值: {{ $value | humanize }}"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+
+      # 吞吐量异常高告警（可能的攻击）
+      - alert: E2EEAbnormallyHighThroughput
+        expr: rate(e2ee_messages_encrypted_total[1m]) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          component: e2ee
+          category: security
+        annotations:
+          summary: "E2EE加密消息吞吐量异常高"
+          description: "每秒加密消息数超过1000条，当前值: {{ $value | humanize }}，请检查是否存在异常流量"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+          runbook: "https://docs.hula.com/runbooks/e2ee-abnormal-traffic"
+
+  - name: e2ee_cleanup_alerts
+    interval: 60s
+    rules:
+      # 清理任务失败告警
+      - alert: E2EECleanupTaskFailure
+        expr: increase(e2ee_cleanup_failures_total[1h]) > 3
+        for: 5m
+        labels:
+          severity: warning
+          component: e2ee
+          category: maintenance
+        annotations:
+          summary: "E2EE清理任务频繁失败"
+          description: "过去1小时内清理任务失败{{ $value }}次"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+
+  - name: e2ee_security_alerts
+    interval: 30s
+    rules:
+      # 重放攻击检测告警
+      - alert: E2EEReplayAttackDetected
+        expr: rate(e2ee_errors_total{error_type="replay_attack_detected"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: e2ee
+          category: security
+        annotations:
+          summary: "检测到E2EE重放攻击"
+          description: "检测到重放攻击尝试，发生率: {{ $value | humanize }}"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+          runbook: "https://docs.hula.com/runbooks/e2ee-replay-attack"
+
+      # 密钥验证失败告警
+      - alert: E2EEKeyValidationFailures
+        expr: rate(e2ee_errors_total{error_type="invalid_key"}[5m]) > 0.01
+        for: 3m
+        labels:
+          severity: warning
+          component: e2ee
+          category: security
+        annotations:
+          summary: "E2EE密钥验证频繁失败"
+          description: "密钥验证失败率: {{ $value | humanizePercentage }}"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+
+      # 密钥过期告警
+      - alert: E2EEExpiredKeysAccumulating
+        expr: increase(e2ee_cleanup_keys_total[24h]) > 1000
+        for: 1h
+        labels:
+          severity: info
+          component: e2ee
+          category: maintenance
+        annotations:
+          summary: "E2EE过期密钥数量增加"
+          description: "过去24小时清理了{{ $value }}个过期密钥，请关注密钥轮换情况"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+
+  - name: e2ee_capacity_alerts
+    interval: 60s
+    rules:
+      # 活跃用户数异常增长告警
+      - alert: E2EEActiveUsersSpike
+        expr: |
+          (
+            e2ee_active_users -
+            e2ee_active_users offset 1h
+          ) / e2ee_active_users offset 1h > 0.5
+        for: 5m
+        labels:
+          severity: info
+          component: e2ee
+          category: capacity
+        annotations:
+          summary: "E2EE活跃用户数激增"
+          description: "活跃用户数较1小时前增长超过50%，当前: {{ $value }}"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"
+
+      # 活跃会话数异常增长告警
+      - alert: E2EEActiveSessionsSpike
+        expr: |
+          (
+            e2ee_active_sessions -
+            e2ee_active_sessions offset 1h
+          ) / e2ee_active_sessions offset 1h > 0.5
+        for: 5m
+        labels:
+          severity: info
+          component: e2ee
+          category: capacity
+        annotations:
+          summary: "E2EE活跃会话数激增"
+          description: "活跃会话数较1小时前增长超过50%，当前: {{ $value }}"
+          dashboard: "http://grafana:3000/d/hula-e2ee-dashboard"

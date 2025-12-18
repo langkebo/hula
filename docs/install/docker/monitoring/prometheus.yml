@@ -1,0 +1,81 @@
+# HuLa-Server Prometheus 配置
+# 用于监控应用服务和基础设施
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+rule_files:
+  - "alert_rules.yml"
+
+scrape_configs:
+  # Prometheus 自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # HuLa Gateway 服务
+  - job_name: 'hula-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:18760']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'gateway'
+
+  # HuLa OAuth 服务
+  - job_name: 'hula-oauth'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:18761']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'oauth'
+
+  # HuLa IM 服务
+  - job_name: 'hula-im'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:18762']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'im'
+
+  # HuLa WebSocket 服务
+  - job_name: 'hula-ws'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:9501']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'ws'
+
+  # MySQL 监控 (需要 mysqld_exporter)
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysqld-exporter:9104']
+
+  # Redis 监控 (需要 redis_exporter)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Docker 容器监控 (需要 cadvisor)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # 节点监控 (需要 node_exporter)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']

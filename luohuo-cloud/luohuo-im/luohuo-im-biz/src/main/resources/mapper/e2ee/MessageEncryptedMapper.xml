@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.luohuo.flex.im.core.e2ee.mapper.MessageEncryptedMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.luohuo.flex.im.domain.entity.MessageEncrypted">
+        <id column="id" property="id"/>
+        <result column="msg_id" property="msgId"/>
+        <result column="conversation_id" property="conversationId"/>
+        <result column="sender_id" property="senderId"/>
+        <result column="recipient_id" property="recipientId"/>
+        <result column="room_id" property="roomId"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="key_id" property="keyId"/>
+        <result column="algorithm" property="algorithm"/>
+        <result column="ciphertext" property="ciphertext" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+        <result column="iv" property="iv" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+        <result column="tag" property="tag" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+        <result column="content_hash" property="contentHash" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+        <result column="signature" property="signature" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+        <result column="content_type" property="contentType"/>
+        <result column="encrypted_extra" property="encryptedExtra"/>
+        <result column="message_size" property="messageSize"/>
+        <result column="is_signed" property="isSigned"/>
+        <result column="verification_status" property="verificationStatus"/>
+        <result column="signature_verified_at" property="signatureVerifiedAt"/>
+        <result column="encryption_time_ms" property="encryptionTimeMs"/>
+        <result column="decryption_time_ms" property="decryptionTimeMs"/>
+        <result column="create_time" property="createTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="is_del" property="isDel"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, msg_id, conversation_id, sender_id, recipient_id, room_id, tenant_id, key_id, algorithm,
+        ciphertext, iv, tag, content_hash, signature, content_type, encrypted_extra, message_size,
+        is_signed, verification_status, signature_verified_at, encryption_time_ms, decryption_time_ms,
+        create_time, create_by, update_time, update_by, is_del
+    </sql>
+
+    <!-- 复杂查询：获取会话的加密消息统计 -->
+    <select id="getConversationStats" resultMap="BaseResultMap">
+        SELECT
+            conversation_id,
+            COUNT(*) as total_messages,
+            COUNT(CASE WHEN is_signed = 1 THEN 1 END) as signed_messages,
+            AVG(message_size) as avg_message_size,
+            MAX(created_at) as last_message_time
+        FROM im_message_encrypted
+        WHERE conversation_id = #{conversationId} AND tenant_id = #{tenantId} AND is_del = 0
+        GROUP BY conversation_id
+    </select>
+
+</mapper>

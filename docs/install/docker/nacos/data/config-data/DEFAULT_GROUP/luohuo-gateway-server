@@ -1,0 +1,87 @@
+luohuo: 
+  echo:
+    enabled: false
+    aop-enabled: false
+  system:
+    enumPackage: ''    
+  log:
+    enabled: false
+  webmvc:
+    undertow: false
+    header: false
+  
+         
+spring:
+  autoconfigure:
+    exclude: io.seata.integration.http.HttpAutoConfiguration,org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+  cloud:
+    gateway:
+      x-forwarded:
+        prefixEnabled: false
+      discovery:
+        locator:
+          enabled: true
+          lowerCaseServiceId: true
+      routes:
+        # 新建服务配置复制到中间
+        - id: oauth
+          uri: lb://luohuo-oauth-server
+          predicates:
+            - Path=/oauth/**
+          filters:
+            - StripPrefix=1
+        - id: im
+          uri: lb://luohuo-im-server
+          predicates:
+            - Path=/im/**
+          filters:
+            - StripPrefix=1
+        - id: base
+          uri: lb://luohuo-base-server
+          predicates:
+            - Path=/base/**
+          filters:
+            - StripPrefix=1
+        - id: system
+          uri: lb://luohuo-system-server
+          predicates:
+            - Path=/system/**
+          filters:
+            - StripPrefix=1
+        - id: ai
+          uri: lb://luohuo-ai-server
+          predicates:
+            - Path=/ai/**
+          filters:
+            - StripPrefix=1
+        - id: presence
+          uri: lb://luohuo-presence-server
+          predicates:
+            - Path=/presence/**
+          filters:
+            - StripPrefix=1
+        # websocket
+        - id: ws
+          uri: lb:ws://luohuo-ws-server
+          predicates:
+            - Path=/ws/**
+          filters:
+            - StripPrefix=1
+        - id: generator
+          uri: lb://luohuo-generator-server
+          predicates:
+            - Path=/generator/**
+          filters:
+            - StripPrefix=1            
+        - id: activiti
+          uri: lb://luohuo-activiti-server
+          predicates:
+            - Path=/activiti/**
+          filters:
+            - StripPrefix=1
+
+
+server:
+  port: 18760
+  servlet:
+    context-path: /api

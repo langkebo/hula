@@ -1,0 +1,336 @@
+version: "3.8"
+
+# HuLa-Server 生产环境 Docker Compose 配置
+# 使用方法: 
+#   1. 先运行 bash init-passwords.sh 生成密码
+#   2. docker compose -f docker-compose.prod.yml up -d
+
+services:
+  # ==================== MySQL ====================
+  mysql:
+    container_name: mysql
+    image: mysql:8.0.30
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=nacos
+      - MYSQL_USER=nacos
+      - MYSQL_PASSWORD=${MYSQL_NACOS_PASSWORD}
+      - LANG=C.UTF-8
+      - MYSQL_ROOT_HOST=%
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/ssl:/var/lib/mysql-ssl
+      - ./mysql/conf:/etc/mysql/conf.d
+    ports:
+      - "13306:3306"
+    command: >
+      --ssl-ca=/var/lib/mysql-ssl/ca.pem
+      --ssl-cert=/var/lib/mysql-ssl/server-cert.pem
+      --ssl-key=/var/lib/mysql-ssl/server-key.pem
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_connections=500
+      --innodb_buffer_pool_size=2G
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    networks:
+      - hula-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # ==================== Redis ====================
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - '16379:6379'
+    volumes:
+      - ./redis/data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/logs:/logs
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - hula-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ==================== Nacos ====================
+  nacos:
+    container_name: nacos
+    image: ${NACOS_IMAGE:-nacos/nacos-server}:${NACOS_VERSION:-v3.0.2}
+    restart: always
+    environment:
+      - PREFER_HOST_MODE=mysql
+      - MODE=standalone
+      - SPRING_DATASOURCE_PLATFORM=mysql
+      - MYSQL_SERVICE_HOST=mysql
+      - MYSQL_SERVICE_DB_NAME=nacos
+      - MYSQL_SERVICE_PORT=3306
+      - MYSQL_SERVICE_USER=nacos
+      - MYSQL_SERVICE_PASSWORD=${MYSQL_NACOS_PASSWORD}
+      - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - NACOS_AUTH_IDENTITY_KEY=serverIdentity
+      - NACOS_AUTH_IDENTITY_VALUE=${NACOS_AUTH_IDENTITY_VALUE}
+      - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN}
+      - NACOS_AUTH_ENABLE=false
+    volumes:
+      - ./nacos/logs:/home/nacos/logs
+      - ./nacos/data:/home/nacos/data
+    ports:
+      - "8848:8848"
+      - "18848:8080"
+      - "9848:9848"
+      - "9849:9849"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/index.html"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    networks:
+      - hula-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # ==================== RocketMQ NameServer ====================
+  rocketmq-namesrv:
+    container_name: rocketmq-namesrv
+    image: apache/rocketmq:5.3.2
+    restart: always
+    ports:
+      - "9876:9876"
+    command: sh mqnamesrv
+    volumes:
+      - ./rocketmq/namesrv/logs:/home/rocketmq/logs
+      - ./rocketmq/namesrv/store:/home/rocketmq/store
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/9876 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - hula-network
+
+  # ==================== RocketMQ Broker ====================
+  rocketmq-broker:
+    container_name: rocketmq-broker
+    image: apache/rocketmq:5.3.2
+    restart: always
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    environment:
+      - NAMESRV_ADDR=rocketmq-namesrv:9876
+    volumes:
+      - ./rocketmq/broker/logs:/home/rocketmq/logs
+      - ./rocketmq/broker/store:/home/rocketmq/store
+      - ./rocketmq/timerwheel:/home/rocketmq/timerwheel
+      - ./rocketmq/broker/conf/broker.conf:/home/rocketmq/rocketmq-5.3.2/conf/broker.conf
+      - ./rocketmq/broker/conf/plain_acl.yml:/home/rocketmq/rocketmq-5.3.2/conf/plain_acl.yml
+    depends_on:
+      rocketmq-namesrv:
+        condition: service_healthy
+    command: sh mqbroker -c /home/rocketmq/rocketmq-5.3.2/conf/broker.conf
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/10911 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    networks:
+      - hula-network
+
+  # ==================== RocketMQ Proxy ====================
+  rocketmq-proxy:
+    container_name: rocketmq-proxy
+    image: apache/rocketmq:5.3.2
+    restart: on-failure
+    ports:
+      - "8082:8080"
+      - "8081:8081"
+    environment:
+      - NAMESRV_ADDR=rocketmq-namesrv:9876
+    depends_on:
+      rocketmq-broker:
+        condition: service_healthy
+    command: sh mqproxy
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - hula-network
+
+  # ==================== MinIO ====================
+  minio:
+    container_name: minio
+    image: minio/minio:latest
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-admin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./minio/data:/data
+      - ./minio/config:/root/.minio
+    command: server --console-address ":9001" /data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+    networks:
+      - hula-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ==================== MinIO Client (初始化) ====================
+  minio-mc:
+    container_name: minio-mc
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD} &&
+       mc mb -p local/dev || true &&
+       mc anonymous set download local/dev &&
+       mc alias ls"
+    networks:
+      - hula-network
+
+  # ==================== Jenkins (可选) ====================
+  jenkins:
+    container_name: jenkins
+    image: jenkins/jenkins:lts-jdk21
+    restart: always
+    user: root
+    ports:
+      - "20000:8080"
+      - "50000:50000"
+    volumes:
+      - /home/jenkins/work:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    networks:
+      - hula-network
+    profiles:
+      - ci  # 使用 --profile ci 启动
+
+  # ==================== SRS (WebRTC) ====================
+  srs:
+    container_name: srs
+    image: ${SRS_IMAGE:-ossrs/srs:5}
+    restart: always
+    ports:
+      - "1935:1935/tcp"
+      - "1985:1985/tcp"
+      - "7088:7088/tcp"
+      - "8000:8000/udp"
+      - "1989:1989/tcp"
+      - "8443:8443/tcp"
+      - "61100-61200:61100-61200/udp"
+    environment:
+      - CANDIDATE=${SRS_CANDIDATE:-127.0.0.1}
+      - SRS_LISTEN=8000
+      - SRS_HTTP_SERVER_PORT=7088
+      - SRS_HTTP_API_PORT=1985
+    volumes:
+      - ./srs:/usr/local/srs/conf
+    command: ["./objs/srs", "-c", "conf/srs_conf_7088.conf"]
+    networks:
+      - hula-network
+
+networks:
+  hula-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

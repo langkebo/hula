@@ -1,0 +1,16 @@
+thirdparty:
+  tencent:
+    # 强烈建议使用子账户与最小权限策略
+    secretId: "<secret_id>"
+    secretKey: "<secret_key>"
+    mapKey: "<map_key>"
+  youdao:
+    appKey: "<app_key>"
+    appSecret: "<app_secret>"
+  wechat:
+    appId: "<app_id>"
+    appSecret: "<app_secret>"
+    token: "<token>"
+    aesKey: "<aes_key>"
+    # 生产环境需为HTTPS，并在微信平台正确配置可访问的域名
+    callback: "<https://your.domain/wx/callback>"

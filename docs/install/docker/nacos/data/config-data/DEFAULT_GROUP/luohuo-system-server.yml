@@ -1,0 +1,10 @@
+server:
+  port: 19877
+
+      
+springdoc:
+  group-configs:
+    - group: 'system'
+      displayName: 'system'
+      paths-to-match: '/**'
+      packages-to-scan: com.luohuo.flex.system.controller

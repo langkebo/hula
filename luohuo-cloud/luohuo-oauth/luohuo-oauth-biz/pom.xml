@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>luohuo-oauth</artifactId>
+        <groupId>com.luohuo.flex</groupId>
+        <version>3.0.6</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>luohuo-oauth-biz</artifactId>
+    <name>${project.artifactId}</name>
+    <description>认证服务-业务模块</description>
+    <dependencies>
+        <dependency>
+            <groupId>com.luohuo.flex</groupId>
+            <artifactId>luohuo-base-biz</artifactId>
+            <version>${luohuo-project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.luohuo.flex</groupId>
+            <artifactId>luohuo-oauth-entity</artifactId>
+            <version>${luohuo-project.version}</version>
+        </dependency>
+        <!-- jwt 只有认证服务需要使用 -->
+        <dependency>
+            <groupId>com.luohuo.basic</groupId>
+            <artifactId>luohuo-webmvc</artifactId>
+        </dependency>
+        <!-- log 只有认证服务biz模块引用，其他服务都在controller模块 -->
+        <dependency>
+            <groupId>com.luohuo.basic</groupId>
+            <artifactId>luohuo-log-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.luohuo.basic</groupId>
+            <artifactId>luohuo-captcha-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.luohuo.flex</groupId>
+            <artifactId>luohuo-im-cloud-impl</artifactId>
+            <version>${luohuo-project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.luohuo.flex</groupId>
+            <artifactId>luohuo-model</artifactId>
+            <version>${luohuo-project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.luohuo.flex</groupId>
+            <artifactId>luohuo-common</artifactId>
+            <version>${luohuo-project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.luohuo.basic</groupId>
+            <artifactId>luohuo-transaction-starter</artifactId>
+            <version>${luohuo-project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.luohuo.basic</groupId>
+            <artifactId>luohuo-tenant</artifactId>
+        </dependency>
+        <!-- ===== P0修复: Spring Security for Argon2 password hashing (2025-12-13) ===== -->
+        <!-- Argon2是2015年密码哈希比赛的获胜者，比BCrypt/SCrypt更安全 -->
+        <!-- 防护GPU/ASIC暴力破解，内存困难函数，抗侧信道攻击 -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+            <version>6.4.2</version>
+        </dependency>
+        <!-- Bouncy Castle提供Argon2实现 (Spring Security依赖此库) -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.79</version>
+        </dependency>
+    </dependencies>
+</project>

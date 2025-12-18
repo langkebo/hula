@@ -1,0 +1,37 @@
+# Elasticsearch配置
+# 注意: 如果未部署Elasticsearch，请将enabled设为false
+hula:
+  search:
+    elasticsearch:
+      # 是否启用Elasticsearch (未部署时设为false)
+      enabled: ${ELASTICSEARCH_ENABLED:false}
+      host: ${ELASTICSEARCH_HOST:localhost}
+      port: ${ELASTICSEARCH_PORT:9200}
+      scheme: ${ELASTICSEARCH_SCHEME:http}
+      username: ${ELASTICSEARCH_USERNAME:}
+      password: ${ELASTICSEARCH_PASSWORD:}
+
+# 禁用Elasticsearch健康检查 (未部署时必须禁用)
+management:
+  health:
+    elasticsearch:
+      enabled: false
+    # 搜索配置
+    message:
+      index:
+        # 按月分索引
+        time-based: true
+        # 保留月数
+        retain-months: 12
+      # 搜索配置
+      search:
+        # 默认每页大小
+        default-size: 20
+        # 最大每页大小
+        max-size: 100
+        # 高亮标签
+        highlight:
+          pre-tag: <em>
+          post-tag: </em>
+
+# 其他配置保持不变...

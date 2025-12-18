@@ -1,0 +1,54 @@
+# 生产环境配置
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+
+  redis:
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT}
+    password: ${REDIS_PASSWORD}
+    database: ${REDIS_DATABASE:1}
+    cluster:
+      nodes: ${REDIS_CLUSTER_NODES:}
+      max-redirects: 3
+
+# 生产环境日志级别
+logging:
+  level:
+    com.luohuo.flex.im: INFO
+    com.luohuo.flex.im.core.e2ee: INFO
+    org.springframework.cache: WARN
+    com.baomidou.mybatisplus: WARN
+  file:
+    name: /var/log/hula/hula-im.log
+
+# 生产环境E2EE配置
+e2ee:
+  enabled: ${E2EE_ENABLED:true}
+  require-signature: true  # 生产环境强制要求签名
+  cleanup:
+    enabled: true  # 生产环境启用自动清理
+    schedule: "0 0 2 * * ?"  # 每天凌晨2点
+    keep-days: 90  # 保留90天的数据
+
+# 生产环境监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,e2ee
+  endpoint:
+    health:
+      show-details: never  # 生产环境不显示详细信息
+  metrics:
+    export:
+      prometheus:
+        enabled: true

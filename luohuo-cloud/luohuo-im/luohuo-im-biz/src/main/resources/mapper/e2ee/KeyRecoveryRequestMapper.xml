@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.luohuo.flex.im.core.e2ee.mapper.KeyRecoveryRequestMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.luohuo.flex.im.domain.entity.KeyRecoveryRequest">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="user_id" property="userId"/>
+        <result column="recovery_type" property="recoveryType"/>
+        <result column="status" property="status"/>
+        <result column="key_id" property="keyId"/>
+        <result column="backup_verification" property="backupVerification"/>
+        <result column="recovery_token" property="recoveryToken"/>
+        <result column="token_expires_at" property="tokenExpiresAt"/>
+        <result column="verification_attempts" property="verificationAttempts"/>
+        <result column="max_attempts" property="maxAttempts"/>
+        <result column="security_question" property="securityQuestion"/>
+        <result column="security_answer_hash" property="securityAnswerHash"/>
+        <result column="backup_email" property="backupEmail"/>
+        <result column="backup_phone" property="backupPhone"/>
+        <result column="identity_verification" property="identityVerification"/>
+        <result column="reviewer_id" property="reviewerId"/>
+        <result column="review_comment" property="reviewComment"/>
+        <result column="reviewed_at" property="reviewedAt"/>
+        <result column="completed_at" property="completedAt"/>
+        <result column="recovered_key_data" property="recoveredKeyData"/>
+        <result column="ip_address" property="ipAddress"/>
+        <result column="user_agent" property="userAgent"/>
+        <result column="failure_reason" property="failureReason"/>
+        <result column="create_time" property="createTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="is_del" property="isDel"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, tenant_id, user_id, recovery_type, status, key_id, backup_verification,
+        recovery_token, token_expires_at, verification_attempts, max_attempts,
+        security_question, security_answer_hash, backup_email, backup_phone,
+        identity_verification, reviewer_id, review_comment, reviewed_at,
+        completed_at, recovered_key_data, ip_address, user_agent, failure_reason,
+        create_time, create_by, update_time, update_by, is_del
+    </sql>
+
+    <!-- 根据用户ID和密钥ID查询有效的恢复请求 -->
+    <select id="selectByUserIdAndKeyId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM im_key_recovery_request
+        WHERE user_id = #{userId} AND key_id = #{keyId}
+        AND status NOT IN ('COMPLETED', 'CANCELLED', 'EXPIRED', 'FAILED')
+        AND is_del = 0
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 根据恢复令牌查询请求 -->
+    <select id="selectByRecoveryToken" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM im_key_recovery_request
+        WHERE recovery_token = #{token}
+        AND is_del = 0
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 更新恢复请求状态 -->
+    <update id="updateStatus">
+        UPDATE im_key_recovery_request
+        SET status = #{status},
+            reviewer_id = #{reviewerId},
+            review_comment = #{reviewComment},
+            reviewed_at = NOW(),
+            update_time = NOW()
+        WHERE id = #{id}
+        AND is_del = 0
+    </update>
+
+    <!-- 增加验证次数 -->
+    <update id="incrementVerificationAttempts">
+        UPDATE im_key_recovery_request
+        SET verification_attempts = verification_attempts + 1,
+            update_time = NOW()
+        WHERE id = #{id}
+        AND is_del = 0
+    </update>
+
+    <!-- 查询用户的恢复请求历史 -->
+    <select id="selectUserRecoveryHistory" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM im_key_recovery_request
+        WHERE user_id = #{userId}
+        <if test="keyId != null and keyId != ''">
+            AND key_id = #{keyId}
+        </if>
+        AND is_del = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 查询待审核的恢复请求 -->
+    <select id="selectPendingRequests" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM im_key_recovery_request
+        WHERE tenant_id = #{tenantId}
+        AND status IN ('PENDING', 'PENDING_VERIFICATION')
+        <if test="recoveryType != null">
+            AND recovery_type = #{recoveryType}
+        </if>
+        AND is_del = 0
+        ORDER BY create_time ASC
+    </select>
+
+    <!-- 查询过期的恢复请求 -->
+    <select id="selectExpiredRequests" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM im_key_recovery_request
+        WHERE status NOT IN ('COMPLETED', 'CANCELLED', 'EXPIRED', 'FAILED')
+        AND (
+            token_expires_at &lt; #{now}
+            OR (recovery_type = 'EMERGENCY_RECOVERY' AND create_time &lt; DATE_SUB(#{now}, INTERVAL 24 HOUR))
+        )
+        AND is_del = 0
+    </select>
+
+    <!-- 批量更新过期状态 -->
+    <update id="batchUpdateExpiredStatus">
+        UPDATE im_key_recovery_request
+        SET status = #{status},
+            failure_reason = '请求已过期',
+            update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND is_del = 0
+    </update>
+
+    <!-- 查询统计信息 -->
+    <select id="selectRecoveryRequests" resultType="com.luohuo.flex.im.core.e2ee.mapper.KeyRecoveryRequestMapper$RecoveryStats">
+        SELECT
+            recovery_type AS recoveryType,
+            COUNT(*) AS totalCount,
+            SUM(CASE WHEN status = 'PENDING' OR status = 'PENDING_VERIFICATION' THEN 1 ELSE 0 END) AS pendingCount,
+            SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) AS approvedCount,
+            SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) AS rejectedCount,
+            SUM(CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END) AS completedCount,
+            AVG(TIMESTAMPDIFF(HOUR, create_time, COALESCE(completed_at, reviewed_at, NOW()))) AS avgCompletionHours
+        FROM im_key_recovery_request
+        WHERE tenant_id = #{tenantId}
+        <if test="startDate != null">
+            AND create_time >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND create_time &lt;= #{endDate}
+        </if>
+        AND is_del = 0
+        GROUP BY recovery_type
+    </select>
+
+    <!-- 查询用户最近的恢复请求 -->
+    <select id="selectLatestByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM im_key_recovery_request
+        WHERE user_id = #{userId}
+        AND is_del = 0
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 检查是否有正在进行的恢复请求 -->
+    <select id="countActiveRequestsByUserId" resultType="int">
+        SELECT COUNT(*)
+        FROM im_key_recovery_request
+        WHERE user_id = #{userId}
+        AND status NOT IN ('COMPLETED', 'CANCELLED', 'EXPIRED', 'FAILED')
+        AND is_del = 0
+    </select>
+
+    <!-- 查询指定时间范围内的请求 -->
+    <select id="selectByDateRange" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM im_key_recovery_request
+        WHERE create_time >= #{startDate}
+        AND create_time &lt;= #{endDate}
+        AND is_del = 0
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

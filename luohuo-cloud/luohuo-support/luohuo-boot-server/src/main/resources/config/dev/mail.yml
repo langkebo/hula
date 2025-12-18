@@ -1,0 +1,18 @@
+spring:
+  mail:
+    # SMTP服务器域名（示例：smtp.qq.com / smtp.163.com / smtp.gmail.com）
+    host: "<smtp_host>"
+    # SMTP端口（SSL一般为465，TLS常用587；QQ/163推荐465）
+    port: 465
+    # 发件人账号（完整邮箱地址）
+    username: "<email_account>"
+    # 授权码/应用专用密码（非邮箱登录密码）
+    password: "<auth_code_or_app_password>"
+    properties:
+      mail:
+        smtp:
+          # 启用SMTP认证
+          auth: true
+          ssl:
+            # 启用SSL（QQ/163/Gmail建议开启）
+            enable: true

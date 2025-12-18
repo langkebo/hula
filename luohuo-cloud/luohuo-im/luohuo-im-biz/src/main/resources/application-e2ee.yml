@@ -1,0 +1,117 @@
+# E2EE端到端加密配置
+e2ee:
+  # 是否启用E2EE功能
+  enabled: true
+  
+  # 加密配置
+  encryption:
+    # 默认加密算法
+    default-algorithm: AES-GCM
+    # AES密钥长度（256位）
+    aes-key-size: 256
+    # RSA密钥长度（2048位）
+    rsa-key-size: 2048
+    # 是否要求消息签名
+    require-signature: false
+    # 签名算法
+    signature-algorithm: RSA-PSS
+    # IV长度（12字节）
+    iv-length: 12
+    # 认证标签长度（16字节）
+    tag-length: 16
+  
+  # 密钥管理配置
+  key-management:
+    # 密钥有效期（365天）
+    key-validity-days: 365
+    # 密钥自动轮换周期（90天）
+    key-rotation-days: 90
+    # 是否启用自动密钥轮换
+    auto-rotation: false
+    # 会话密钥包有效期（24小时）
+    session-key-validity-hours: 24
+    # 每个用户最多保存的公钥数量
+    max-public-keys-per-user: 5
+    # 密钥备份保留天数（2年）
+    backup-retention-days: 730
+  
+  # 缓存配置
+  cache:
+    # 是否启用缓存
+    enabled: true
+    # 公钥缓存过期时间（30天）
+    public-key-ttl: 30d
+    # 会话密钥缓存过期时间（24小时）
+    session-key-ttl: 24h
+    # 本地缓存最大条目数
+    local-cache-max-size: 1000
+    # 是否启用预热
+    warmup-enabled: true
+    # 预热热点用户数量
+    warmup-hot-user-count: 100
+  
+  # 性能配置
+  performance:
+    # 批量查询最大数量
+    batch-query-max-size: 100
+    # 异步处理阈值（消息数）
+    async-process-threshold: 10
+    # 数据库查询超时（5秒）
+    db-query-timeout: 5000
+    # Redis操作超时（3秒）
+    redis-timeout: 3000
+    # 是否启用性能监控
+    metrics-enabled: true
+  
+  # 安全策略配置
+  security:
+    # 是否要求强制签名验证
+    require-signature: false
+    # 是否验证消息哈希
+    verify-content-hash: true
+    # 是否检测重放攻击
+    replay-detection-enabled: true
+    # 重放检测窗口期（5分钟）
+    replay-window-minutes: 5
+    # 密钥恢复最大尝试次数
+    max-recovery-attempts: 3
+    # 密钥恢复令牌有效期（24小时）
+    recovery-token-validity-hours: 24
+    # 是否要求多因素认证进行密钥恢复
+    require-mfa-for-recovery: false
+  
+  # 审计配置
+  audit:
+    # 是否启用审计日志
+    enabled: true
+    # 审计日志保留天数（90天）
+    retention-days: 90
+    # 是否记录详细审计信息
+    detailed-logging: true
+    # 是否异步写入审计日志
+    async-write: true
+    # 需要审计的操作类型
+    audit-actions:
+      - KEY_UPLOAD
+      - KEY_ROTATION
+      - KEY_REVOKE
+      - MESSAGE_ENCRYPT
+      - MESSAGE_DECRYPT
+      - RECOVERY_REQUEST
+      - RECOVERY_APPROVE
+      - RECOVERY_COMPLETE
+
+# 启用Micrometer性能监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      # Prometheus导出配置
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      service: e2ee

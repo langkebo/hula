@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.luohuo.flex.im.core.e2ee.mapper.SessionKeyPackageMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.luohuo.flex.im.domain.entity.SessionKeyPackage">
+        <id column="id" property="id"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="key_id" property="keyId"/>
+        <result column="sender_id" property="senderId"/>
+        <result column="recipient_id" property="recipientId"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="wrapped_key" property="wrappedKey" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+        <result column="algorithm" property="algorithm"/>
+        <result column="status" property="status"/>
+        <result column="expires_at" property="expiresAt"/>
+        <result column="used_at" property="usedAt"/>
+        <result column="rotation_count" property="rotationCount"/>
+        <result column="forward_secret" property="forwardSecret"/>
+        <result column="ephemeral_public_key" property="ephemeralPublicKey"/>
+        <result column="kdf_algorithm" property="kdfAlgorithm"/>
+        <result column="kdf_info" property="kdfInfo"/>
+        <result column="create_time" property="createTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="is_del" property="isDel"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, session_id, key_id, sender_id, recipient_id, tenant_id, wrapped_key, algorithm, status,
+        expires_at, used_at, rotation_count, forward_secret, ephemeral_public_key, kdf_algorithm, kdf_info,
+        create_time, create_by, update_time, update_by, is_del
+    </sql>
+
+    <!-- 复杂查询：获取会话的密钥包统计 -->
+    <select id="getSessionKeyStats" resultType="java.util.Map">
+        SELECT
+            session_id,
+            COUNT(*) as total_packages,
+            COUNT(CASE WHEN status = 1 THEN 1 END) as active_packages,
+            COUNT(CASE WHEN forward_secret = 1 THEN 1 END) as forward_secure_packages,
+            MAX(rotation_count) as max_rotation_count,
+            MAX(created_at) as last_package_time
+        FROM im_session_key_packages
+        WHERE session_id = #{sessionId} AND is_del = 0
+        GROUP BY session_id
+    </select>
+
+    <!-- 批量查询会话密钥包 -->
+    <select id="batchSelectBySessionIds" resultMap="BaseResultMap">
+        SELECT
+            <include refid="Base_Column_List"/>
+        FROM im_session_key_packages
+        WHERE session_id IN
+        <foreach collection="sessionIds" item="sessionId" open="(" separator="," close=")">
+            #{sessionId}
+        </foreach>
+        AND status = 1 AND is_del = 0
+        ORDER BY session_id, created_at DESC
+    </select>
+
+</mapper>

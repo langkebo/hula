@@ -1,0 +1,142 @@
+version: "3.8"
+
+# HuLa-Server 应用服务 Docker Compose 配置
+# 使用方法: docker compose -f docker-compose.services.yml up -d
+# 注意: 需要先启动基础设施 (docs/install/docker/docker-compose.yml)
+
+services:
+  # ==================== Gateway ====================
+  gateway:
+    container_name: hula-gateway
+    build:
+      context: ./luohuo-gateway/luohuo-gateway-server
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "18760:18760"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_IP=host.docker.internal
+      - NACOS_PORT=8848
+      - NACOS_NAMESPACE=
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:18760/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - hula-app-network
+
+  # ==================== OAuth ====================
+  oauth:
+    container_name: hula-oauth
+    build:
+      context: ./luohuo-oauth/luohuo-oauth-server
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "18761:18761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_IP=host.docker.internal
+      - NACOS_PORT=8848
+      - NACOS_NAMESPACE=
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:18761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - hula-app-network
+
+  # ==================== Base ====================
+  base:
+    container_name: hula-base
+    build:
+      context: ./luohuo-base/luohuo-base-server
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "18763:18763"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_IP=host.docker.internal
+      - NACOS_PORT=8848
+      - NACOS_NAMESPACE=
+    depends_on:
+      oauth:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:18763/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - hula-app-network
+
+  # ==================== IM ====================
+  im:
+    container_name: hula-im
+    build:
+      context: ./luohuo-im/luohuo-im-server
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "18762:18762"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_IP=host.docker.internal
+      - NACOS_PORT=8848
+      - NACOS_NAMESPACE=
+    depends_on:
+      base:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:18762/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - hula-app-network
+
+  # ==================== WebSocket ====================
+  ws:
+    container_name: hula-ws
+    build:
+      context: ./luohuo-ws/luohuo-ws-server
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "9501:9501"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_IP=host.docker.internal
+      - NACOS_PORT=8848
+      - NACOS_NAMESPACE=
+    depends_on:
+      im:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9501/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - hula-app-network
+
+networks:
+  hula-app-network:
+    driver: bridge

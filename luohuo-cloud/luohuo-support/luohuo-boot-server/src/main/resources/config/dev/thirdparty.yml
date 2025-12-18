@@ -1,0 +1,19 @@
+thirdparty:
+  tencent:
+    # 腾讯云访问凭证（测试环境可使用子账户）
+    secretId: "<secret_id>"
+    secretKey: "<secret_key>"
+    # 腾讯地图LBS接口Key
+    mapKey: "<map_key>"
+  youdao:
+    # 有道翻译AppKey/AppSecret（按需）
+    appKey: "<app_key>"
+    appSecret: "<app_secret>"
+  wechat:
+    # 微信服务号信息（扫码/回调按需启用）
+    appId: "<app_id>"
+    appSecret: "<app_secret>"
+    token: "<token>"
+    aesKey: "<aes_key>"
+    # 回调地址需公网可达；LAN模式可暂留占位
+    callback: "<https://your.domain/wx/callback>"

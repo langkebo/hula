@@ -1,0 +1,9 @@
+server:
+  port: 18773
+
+springdoc:
+  group-configs:
+    - group: 'oauth_auth'
+      displayName: 'oauth'
+      paths-to-match: '/**'
+      packages-to-scan: com.luohuo.flex.oauth

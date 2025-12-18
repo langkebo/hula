@@ -1,0 +1,137 @@
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # 启用 GZIP 压缩
+  server:
+    compression:
+      enabled: true
+      # 压缩的 MIME 类型
+      mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+      # 压缩阈值（字节）
+      min-response-size: 1024
+      # 默认不压缩的响应类型
+      excluded-user-agents: "gozilla, trident, java"
+
+  # 启用响应压缩过滤器
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  # 数据源配置
+  # datasource:
+  #   driver-class-name: com.mysql.cj.jdbc.Driver
+  #   url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/hula_im?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false}
+  #   username: ${SPRING_DATASOURCE_USERNAME:root}
+  #   password: ${SPRING_DATASOURCE_PASSWORD:password}
+  #   hikari:
+  #     maximum-pool-size: 20
+  #     minimum-idle: 5
+  #     connection-timeout: 30000
+  #     idle-timeout: 600000
+  #     max-lifetime: 1800000
+  #     leak-detection-threshold: 60000
+
+  # Redis配置
+  # redis:
+  #   host: ${REDIS_HOST:localhost}
+  #   port: ${REDIS_PORT:6379}
+  #   password: ${REDIS_PASSWORD:}
+  #   database: 0
+  #   timeout: 3000
+  #   lettuce:
+  #     pool:
+  #       max-active: 20
+  #       max-idle: 10
+  #       min-idle: 5
+  #       max-wait: 3000
+
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000  # 1小时
+      key-prefix: 'hula:im:'
+      use-key-prefix: true
+      cache-null-values: false
+
+# MyBatis-Plus配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.luohuo.flex.im.domain.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: true
+    multiple-result-sets-enabled: true
+    use-column-label: true
+    use-generated-keys: true
+    auto-mapping-behavior: partial
+    auto-mapping-unknown-column-behavior: warning
+    default-executor-type: simple
+    default-statement-timeout: 25
+    default-fetch-size: 100
+    safe-row-bounds-enabled: false
+    local-cache-scope: session
+    jdbc-type-for-null: other
+    lazy-load-trigger-methods: equals,clone,hashCode,toString
+  global-config:
+    db-config:
+      id-type: assign_id
+      field-strategy: not_empty
+      logic-delete-field: isDel
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      table-prefix: im_
+
+# 日志配置
+logging:
+  level:
+    com.luohuo.flex.im: ${LOG_LEVEL:INFO}
+    com.luohuo.flex.im.core.e2ee: ${E2EE_LOG_LEVEL:INFO}
+    org.springframework.cache: ${CACHE_LOG_LEVEL:WARN}
+    com.baomidou.mybatisplus: ${MYBATIS_LOG_LEVEL:WARN}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE:logs/hula-im.log}
+    max-size: 100MB
+    max-history: 30
+
+# 监控端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# 自定义配置
+hula:
+  im:
+    # WebSocket配置
+    websocket:
+      path: /ws
+      allowed-origins: "*"
+      heartbeat-interval: 30000  # 心跳间隔30秒
+      heartbeat-timeout: 90000   # 心跳超时90秒
+
+    # 消息配置
+    message:
+      max-size: 10485760  # 最大消息10MB
+      batch-size: 100     # 批量处理大小
+      retry-times: 3      # 重试次数
+
+    # 文件上传配置
+    upload:
+      path: ${UPLOAD_PATH:/data/uploads}
+      max-size: 52428800  # 最大文件50MB
+      allowed-types: jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,rar

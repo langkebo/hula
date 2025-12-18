@@ -1,0 +1,74 @@
+# =================================================================
+# Nacos 配置 - Gateway 通用配置
+# =================================================================
+#
+# 配置说明:
+# - Data ID: common-gateway.yml
+# - Group: DEFAULT_GROUP
+# - 配置格式: YAML
+#
+# 部署步骤:
+# 1. 登录Nacos控制台 (http://localhost:8848/nacos)
+# 2. 进入 配置管理 -> 配置列表
+# 3. 创建新配置或合并到现有 common.yml
+# 4. 发布配置
+# =================================================================
+
+# ===== Gateway 鉴权白名单配置 =====
+# 以下URL不需要认证即可访问
+luohuo:
+  security:
+    # 免登录的 URL 列表
+    permit-all-urls:
+      # Actuator 健康检查端点
+      - /actuator/**
+      - /actuator/health
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/prometheus
+      # Swagger/OpenAPI 文档
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /v3/api-docs/**
+      - /webjars/**
+      # 登录相关
+      - /oauth/login
+      - /oauth/register
+      - /oauth/captcha
+      - /oauth/sms/code
+      # 回调接口
+      - /ai/image/midjourney/notify
+      - /ai/video/giteeai/notify
+      # 静态资源
+      - /favicon.ico
+      - /error
+
+# ===== Spring Boot Actuator 配置 =====
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  health:
+    # 禁用未部署的组件健康检查
+    elasticsearch:
+      enabled: false
+    # 其他可选禁用项
+    # redis:
+    #   enabled: true
+    # db:
+    #   enabled: true
+
+# ===== 日志配置 =====
+logging:
+  level:
+    # Gateway 路由日志
+    org.springframework.cloud.gateway: INFO
+    # 安全相关日志
+    com.luohuo.flex.gateway.filter: DEBUG

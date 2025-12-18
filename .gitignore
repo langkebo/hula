@@ -1,0 +1,49 @@
+# Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Node
+node_modules/
+dist/
+
+# Local Env
+.env
+docs/install/docker/.env
+docs/install/docker/env/*.env
+
+# Docker Data & Logs (Ignore these!)
+docs/install/docker/mysql/data/
+docs/install/docker/mysql/logs/
+docs/install/docker/redis/data/
+docs/install/docker/redis/logs/
+docs/install/docker/nacos/logs/
+docs/install/docker/rocketmq/namesrv/logs/
+docs/install/docker/rocketmq/namesrv/store/
+docs/install/docker/rocketmq/broker/logs/
+docs/install/docker/rocketmq/broker/store/
+docs/install/docker/rocketmq/timerwheel/
+docs/install/docker/minio/data/
+docs/install/docker/minio/config/
+
+# Temp files
+temp_nacos_config/
+hula-deploy.tar.gz

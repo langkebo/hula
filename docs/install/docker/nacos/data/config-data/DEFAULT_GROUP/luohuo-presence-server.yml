@@ -1,0 +1,9 @@
+server:
+  port: 11778
+            
+springdoc:
+  group-configs:
+    - group: 'presence'
+      displayName: 'presence'
+      paths-to-match: '/**'
+      packages-to-scan: com.luohuo.flex.controller

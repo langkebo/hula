@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.luohuo.flex.im.core.e2ee.mapper.KeyBackupMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.luohuo.flex.im.domain.entity.KeyBackup">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="user_id" property="userId"/>
+        <result column="key_id" property="keyId"/>
+        <result column="backup_type" property="backupType"/>
+        <result column="backup_data" property="backupData"/>
+        <result column="encryption_algorithm" property="encryptionAlgorithm"/>
+        <result column="access_code" property="accessCode"/>
+        <result column="access_code_expires_at" property="accessCodeExpiresAt"/>
+        <result column="recovery_threshold" property="recoveryThreshold"/>
+        <result column="total_shares" property="totalShares"/>
+        <result column="backup_location" property="backupLocation"/>
+        <result column="backup_version" property="backupVersion"/>
+        <result column="status" property="status"/>
+        <result column="last_accessed_at" property="lastAccessedAt"/>
+        <result column="access_count" property="accessCount"/>
+        <result column="create_time" property="createTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="is_del" property="isDel"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, tenant_id, user_id, key_id, backup_type, backup_data, encryption_algorithm,
+        access_code, access_code_expires_at, recovery_threshold, total_shares,
+        backup_location, backup_version, status, last_accessed_at, access_count,
+        create_time, create_by, update_time, update_by, is_del
+    </sql>
+
+    <!-- 根据用户ID和密钥ID查询备份 -->
+    <select id="selectByUserIdAndKeyId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM im_key_backup
+        WHERE user_id = #{userId} AND key_id = #{keyId}
+        AND status = 'ACTIVE'
+        AND is_del = 0
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 查询用户的所有密钥备份 -->
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM im_key_backup
+        WHERE user_id = #{userId}
+        AND is_del = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 验证访问代码 -->
+    <select id="validateAccessCode" resultType="int">
+        SELECT COUNT(*)
+        FROM im_key_backup
+        WHERE user_id = #{userId}
+        AND key_id = #{keyId}
+        AND access_code = #{accessCodeHash}
+        AND (access_code_expires_at IS NULL OR access_code_expires_at > NOW())
+        AND status = 'ACTIVE'
+        AND is_del = 0
+    </select>
+
+    <!-- 更新最后访问时间 -->
+    <update id="updateLastAccessed">
+        UPDATE im_key_backup
+        SET last_accessed_at = NOW(),
+            access_count = access_count + 1,
+            update_time = NOW()
+        WHERE user_id = #{userId}
+        AND key_id = #{keyId}
+        AND is_del = 0
+    </update>
+
+    <!-- 更新备份状态 -->
+    <update id="updateStatus">
+        UPDATE im_key_backup
+        SET status = #{status},
+            update_time = NOW()
+        WHERE user_id = #{userId}
+        AND key_id = #{keyId}
+        AND is_del = 0
+    </update>
+
+</mapper>

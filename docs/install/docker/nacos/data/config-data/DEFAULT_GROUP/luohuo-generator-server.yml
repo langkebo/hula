@@ -1,0 +1,4 @@
+spring:
+  datasource:
+    dynamic:
+      seata: false

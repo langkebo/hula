@@ -1,0 +1,94 @@
+# Implementation Plan
+
+- [x] 1. 修复 VO 类字段缺失问题
+  - [x] 1.1 修复 BaseEmployeePageQuery 添加缺失字段
+    - 添加 mobile, email, username, idCard, userIdList 字段
+    - 确保 @Data 注解正确配置
+    - _Requirements: 2.1, 2.2_
+  - [x] 1.2 修复 BaseEmployeeResultVO 添加缺失字段
+    - 添加 orgIdList 字段
+    - _Requirements: 2.1, 2.2_
+  - [x] 1.3 修复 DefUserSaveVO 添加缺失字段
+    - 添加 username, nickName 字段
+    - _Requirements: 2.1, 2.2_
+  - [x] 1.4 修复 DefTenantResultVO 添加缺失字段
+    - 添加 employeeId 字段
+    - _Requirements: 2.1, 2.2_
+  - [x] 1.5 修复 DefDictItemResultVO 添加缺失字段
+    - 添加 parentKey 字段
+    - _Requirements: 2.1, 2.2_
+
+- [x] 2. 修复实体类问题
+  - [x] 2.1 修复 BaseEmployee 实体类
+    - 添加 activeStatus, state 字段
+    - 确保 @Data, @NoArgsConstructor 注解正确
+    - _Requirements: 1.1, 1.2, 1.3, 1.4_
+  - [x] 2.2 修复 DefApplication 实体类
+    - 添加 name, isGeneral 字段
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 2.3 修复 DefResource 实体类
+    - 添加 state, sortValue, applicationId, treePath 字段
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 2.4 修复 DefResourceApi 实体类
+    - 添加 resourceId 字段
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 2.5 修复 DefTenantApplicationRel 实体类
+    - 添加 tenantId, applicationId, expirationTime 字段
+    - 确保有无参构造器
+    - _Requirements: 1.1, 1.2, 1.3, 1.4_
+  - [x] 2.6 修复 BaseRoleResourceRel 实体类
+    - 添加 roleId, applicationId 字段
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 2.7 修复 DefClient 实体类
+    - 添加 clientId, clientSecret 字段
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 2.8 修复 DefDict 实体类
+    - 添加 parentKey, key, name, state, sortValue 字段
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 2.9 修复 DefMsgTemplate 实体类
+    - 添加 code 字段
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 2.10 修复 DefParameter 实体类
+    - 添加 name, key, state, value 字段
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 2.11 修复 DefTenant 实体类
+    - 添加 name, status 字段
+    - _Requirements: 1.1, 1.2, 1.3_
+
+- [x] 3. 修复日志 API 使用错误
+  - [x] 3.1 修复 BaseRoleManagerImpl 日志调用
+    - 将 log.debug(msg, count) 改为 log.debug(String.format(msg, count))
+    - _Requirements: 3.1, 3.2_
+
+- [x] 4. 修复 DefResourceBiz 依赖注入问题
+  - [x] 4.1 修复 defResourceService 未初始化问题
+    - 添加 @RequiredArgsConstructor 或手动注入
+    - _Requirements: 1.4_
+
+- [x] 5. Checkpoint - 验证编译
+  - Ensure all tests pass, ask the user if questions arise.
+  - ✅ luohuo-util: 编译成功
+  - ✅ luohuo-cloud: 编译成功 (79 模块)
+  - ✅ CompilationVerificationTest: 4 tests passed
+  - ✅ LombokGetterSetterTest: 12 tests passed
+  - ✅ NoArgsConstructorTest: 13 tests passed
+  - ✅ PropertyCopyTest: 7 tests passed
+  - ✅ 总计: 36 tests passed, 0 failures
+
+- [x] 6. 编写属性测试验证修复
+  - [x] 6.1 编写 Lombok getter/setter 测试
+    - **Property 1: Lombok 注解生成 getter/setter**
+    - **Validates: Requirements 1.1, 1.2**
+    - Created: LombokGetterSetterTest.java in luohuo-base-biz/src/test/java/com/luohuo/flex/base/property/
+  - [x] 6.2 编写无参构造器测试
+    - **Property 2: 无参构造器可用性**
+    - **Validates: Requirements 1.4, 4.1, 4.2**
+    - Created: NoArgsConstructorTest.java in luohuo-base-biz/src/test/java/com/luohuo/flex/base/property/
+  - [x] 6.3 编写属性复制测试
+    - **Property 3: 属性复制兼容性**
+    - **Validates: Requirements 2.3, 4.3**
+    - Created: PropertyCopyTest.java in luohuo-base-biz/src/test/java/com/luohuo/flex/base/property/
+
+- [x] 7. Final Checkpoint - 确保所有测试通过
+  - Ensure all tests pass, ask the user if questions arise.
+  - CompilationVerificationTest passed: 4 tests, 0 failures, 0 errors

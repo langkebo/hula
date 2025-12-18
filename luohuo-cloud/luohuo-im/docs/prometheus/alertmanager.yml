@@ -1,0 +1,236 @@
+global:
+  # 告警解决后的等待时间
+  resolve_timeout: 5m
+
+  # SMTP邮件配置
+  smtp_smarthost: 'smtp.example.com:587'
+  smtp_from: 'alert@hula.com'
+  smtp_auth_username: 'alert@hula.com'
+  smtp_auth_password: 'your_smtp_password'
+  smtp_require_tls: true
+
+  # 钉钉机器人Webhook（可选）
+  # 在路由配置中使用webhook_configs引用
+
+# 告警路由规则
+route:
+  # 默认接收者
+  receiver: 'default-receiver'
+
+  # 分组标签
+  group_by: ['alertname', 'severity', 'component']
+
+  # 等待时间（同一组第一个告警触发后等待的时间）
+  group_wait: 10s
+
+  # 间隔时间（同一组后续告警的发送间隔）
+  group_interval: 10s
+
+  # 重复间隔（已发送的告警再次发送的间隔）
+  repeat_interval: 12h
+
+  # 子路由
+  routes:
+    # 严重告警 - 立即通知
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      group_interval: 5s
+      repeat_interval: 4h
+      continue: true
+
+    # 警告告警 - 延迟通知
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      group_interval: 30s
+      repeat_interval: 12h
+      continue: true
+
+    # 安全告警 - 立即通知安全团队
+    - match:
+        category: security
+      receiver: 'security-alerts'
+      group_wait: 5s
+      group_interval: 5s
+      repeat_interval: 2h
+      continue: true
+
+    # 性能告警
+    - match:
+        category: performance
+      receiver: 'performance-alerts'
+      group_wait: 1m
+      group_interval: 1m
+      repeat_interval: 6h
+
+    # 可用性告警
+    - match:
+        category: availability
+      receiver: 'availability-alerts'
+      group_wait: 5s
+      group_interval: 5s
+      repeat_interval: 4h
+
+# 抑制规则
+inhibit_rules:
+  # 如果服务不可用，则抑制其他告警
+  - source_match:
+      alertname: 'E2EEServiceDown'
+    target_match_re:
+      alertname: '.*'
+    equal: ['component']
+
+  # 如果有严重告警，则抑制同类警告告警
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'component']
+
+  # 如果数据库连接失败，则抑制缓存相关告警
+  - source_match:
+      alertname: 'E2EEDatabaseConnectionFailure'
+    target_match_re:
+      alertname: 'E2EE.*Cache.*'
+    equal: ['component']
+
+# 接收者配置
+receivers:
+  # 默认接收者 - 邮件通知运维团队
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'ops@hula.com'
+        headers:
+          Subject: '[HuLa E2EE] {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>告警详情</h2>
+          <p><strong>告警名称:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>严重程度:</strong> {{ .GroupLabels.severity }}</p>
+          <p><strong>组件:</strong> {{ .GroupLabels.component }}</p>
+          <p><strong>告警时间:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
+          <h3>告警详情:</h3>
+          <ul>
+          {{ range .Alerts }}
+            <li>
+              <strong>{{ .Labels.alertname }}</strong><br>
+              {{ .Annotations.description }}<br>
+              <a href="{{ .Annotations.dashboard }}">查看仪表盘</a>
+              {{ if .Annotations.runbook }}
+              | <a href="{{ .Annotations.runbook }}">运维手册</a>
+              {{ end }}
+            </li>
+          {{ end }}
+          </ul>
+
+  # 严重告警 - 邮件 + 短信 + 钉钉
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'ops@hula.com,oncall@hula.com'
+        headers:
+          Subject: '[CRITICAL] HuLa E2EE - {{ .GroupLabels.alertname }}'
+        html: |
+          <h1 style="color: red;">严重告警</h1>
+          <h2>告警详情</h2>
+          <p><strong>告警名称:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>组件:</strong> {{ .GroupLabels.component }}</p>
+          <p><strong>告警时间:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
+          <h3>影响说明:</h3>
+          <ul>
+          {{ range .Alerts }}
+            <li><strong>{{ .Labels.alertname }}</strong>: {{ .Annotations.description }}</li>
+          {{ end }}
+          </ul>
+          <p><strong>处理建议:</strong> 请立即检查系统状态，参考运维手册进行处理</p>
+
+    # 钉钉机器人通知
+    webhook_configs:
+      - url: 'https://oapi.dingtalk.com/robot/send?access_token=YOUR_DINGTALK_TOKEN'
+        send_resolved: true
+
+  # 警告告警 - 仅邮件
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'ops@hula.com'
+        headers:
+          Subject: '[WARNING] HuLa E2EE - {{ .GroupLabels.alertname }}'
+        html: |
+          <h2 style="color: orange;">警告告警</h2>
+          <p><strong>告警名称:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>组件:</strong> {{ .GroupLabels.component }}</p>
+          <p><strong>告警时间:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
+          <h3>详情:</h3>
+          <ul>
+          {{ range .Alerts }}
+            <li>{{ .Annotations.description }}</li>
+          {{ end }}
+          </ul>
+
+  # 安全告警 - 邮件 + 通知安全团队
+  - name: 'security-alerts'
+    email_configs:
+      - to: 'security@hula.com,ops@hula.com'
+        headers:
+          Subject: '[SECURITY] HuLa E2EE Security Alert - {{ .GroupLabels.alertname }}'
+        html: |
+          <h1 style="color: red;">安全告警</h1>
+          <p><strong>告警名称:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>告警时间:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
+          <h3>安全事件:</h3>
+          <ul>
+          {{ range .Alerts }}
+            <li>
+              <strong>{{ .Labels.alertname }}</strong><br>
+              {{ .Annotations.description }}<br>
+              {{ if .Annotations.runbook }}
+              <a href="{{ .Annotations.runbook }}">安全处理手册</a>
+              {{ end }}
+            </li>
+          {{ end }}
+          </ul>
+          <p style="color: red;"><strong>重要提示:</strong> 请立即检查系统安全状态，必要时启动安全应急响应流程</p>
+
+  # 性能告警
+  - name: 'performance-alerts'
+    email_configs:
+      - to: 'ops@hula.com,dev@hula.com'
+        headers:
+          Subject: '[PERFORMANCE] HuLa E2EE - {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>性能告警</h2>
+          <p><strong>告警名称:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>告警时间:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
+          <h3>性能问题:</h3>
+          <ul>
+          {{ range .Alerts }}
+            <li>{{ .Annotations.description }}</li>
+          {{ end }}
+          </ul>
+          <p><strong>建议:</strong> 检查系统资源使用情况，参考性能调优手册</p>
+
+  # 可用性告警
+  - name: 'availability-alerts'
+    email_configs:
+      - to: 'ops@hula.com,oncall@hula.com'
+        headers:
+          Subject: '[AVAILABILITY] HuLa E2EE - {{ .GroupLabels.alertname }}'
+        html: |
+          <h1 style="color: red;">可用性告警</h1>
+          <p><strong>告警名称:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>告警时间:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
+          <h3>服务状态:</h3>
+          <ul>
+          {{ range .Alerts }}
+            <li>
+              <strong>{{ .Labels.alertname }}</strong><br>
+              {{ .Annotations.description }}
+            </li>
+          {{ end }}
+          </ul>
+          <p style="color: red;"><strong>紧急提示:</strong> 服务可用性受到影响，请立即处理</p>
+
+    webhook_configs:
+      - url: 'https://oapi.dingtalk.com/robot/send?access_token=YOUR_DINGTALK_TOKEN'
+        send_resolved: true

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- 排除自动生成的代码 -->
+    <Match>
+        <Class name="~.*\..*\$.*" />
+        <Bug pattern="SE_BAD_FIELD,SE_BAD_FIELD_INNER_CLASS" />
+    </Match>
+
+    <!-- 排除测试代码 -->
+    <Match>
+        <Class name="~.*Test.*" />
+    </Match>
+
+    <!-- 排除 DTO 和 VO 类的序列化警告 -->
+    <Match>
+        <Class name="~.*DTO.*" />
+        <Or>
+            <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED" />
+            <Bug pattern="SE_BAD_FIELD" />
+        </Or>
+    </Match>
+
+    <Match>
+        <Class name="~.*VO.*" />
+        <Or>
+            <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED" />
+            <Bug pattern="SE_BAD_FIELD" />
+        </Or>
+    </Match>
+
+    <!-- 排除配置类 -->
+    <Match>
+        <Class name="~.*Config.*" />
+        <Bug pattern="SE_BAD_FIELD" />
+    </Match>
+
+    <!-- 排除实体类的序列化 ID 警告 -->
+    <Match>
+        <Bug pattern="SE_NO_SUITABLE_CONSTRUCTOR" />
+        <Class name="~.*Entity.*" />
+    </Match>
+
+    <!-- 排除 Spring 相关的警告 -->
+    <Match>
+        <Class name="~.*\..*Controller.*" />
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD" />
+    </Match>
+
+    <!-- 排除 FastDFS 客户端代码 -->
+    <Match>
+        <Package name="~com\.github\.tobato\.fastdfs.*" />
+    </Match>
+</FindBugsFilter>

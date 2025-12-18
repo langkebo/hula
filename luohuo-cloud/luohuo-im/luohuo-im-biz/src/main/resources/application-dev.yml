@@ -1,0 +1,28 @@
+# 开发环境配置
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/hula_im_dev?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+
+  redis:
+    host: localhost
+    port: 6379
+    password:
+    database: 0
+
+# 开发环境日志级别
+logging:
+  level:
+    com.luohuo.flex.im: DEBUG
+    com.luohuo.flex.im.core.e2ee: DEBUG
+    org.springframework.cache: INFO
+    com.baomidou.mybatisplus: DEBUG
+    com.luohuo.flex.ws: DEBUG
+
+# 开发环境E2EE配置
+e2ee:
+  enabled: true
+  require-signature: false  # 开发环境不强制要求签名
+  cleanup:
+    enabled: false  # 开发环境不启用自动清理

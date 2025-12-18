@@ -1,0 +1,46 @@
+# 推送配置
+im:
+  push:
+    # APNs配置
+    apns:
+      enabled: false
+      production: false
+      cert-path: ""
+      cert-password: ""
+      team-id: ""
+      key-id: ""
+      bundle-id: ""
+
+    # FCM配置
+    fcm:
+      enabled: false
+      key-path: ""
+      database-url: ""
+      project-id: ""
+
+    # 华为推送配置
+    huawei:
+      enabled: false
+      app-id: ""
+      app-secret: ""
+      callback-url: ""
+
+    # 小米推送配置
+    xiaomi:
+      enabled: false
+      app-secret: ""
+      package-name: ""
+
+    # OPPO推送配置
+    oppo:
+      enabled: false
+      app-key: ""
+      app-secret: ""
+      master-secret: ""
+
+    # vivo推送配置
+    vivo:
+      enabled: false
+      app-id: ""
+      app-key: ""
+      app-secret: ""
