@@ -19,6 +19,8 @@ SERVICE_HOST=${SERVICE_HOST:-host.docker.internal}
 MYSQL_ROOT_PASSWORD=""
 REDIS_PASSWORD=""
 ROCKETMQ_BROKER_IP=""
+ROCKETMQ_ACCESS_KEY=""
+ROCKETMQ_SECRET_KEY=""
 
 DOCKER="docker"
 DOCKER_COMPOSE="docker compose"
@@ -80,6 +82,20 @@ load_runtime_config() {
 
     if [ -z "$ROCKETMQ_BROKER_IP" ]; then
         ROCKETMQ_BROKER_IP=$(load_value_from_env_file "ROCKETMQ_BROKER_IP" ".env")
+    fi
+
+    if [ -z "$ROCKETMQ_ACCESS_KEY" ]; then
+        ROCKETMQ_ACCESS_KEY=$(load_value_from_env_file "ROCKETMQ_ACCESS_KEY" ".env")
+    fi
+
+    if [ -z "$ROCKETMQ_SECRET_KEY" ]; then
+        ROCKETMQ_SECRET_KEY=$(load_value_from_env_file "ROCKETMQ_SECRET_KEY" ".env")
+    fi
+
+    if [ -z "$ROCKETMQ_ACCESS_KEY" ] || [ -z "$ROCKETMQ_SECRET_KEY" ]; then
+        ROCKETMQ_ACCESS_KEY="${ROCKETMQ_ACCESS_KEY:-earthearth}"
+        ROCKETMQ_SECRET_KEY="${ROCKETMQ_SECRET_KEY:-mq000000}"
+        echo -e "${YELLOW}警告: 未配置 RocketMQ ACL 密钥，使用默认值（生产环境请运行 init-passwords.sh 生成强密钥）${NC}"
     fi
 }
 
@@ -345,7 +361,7 @@ luohuo:
     type: REDIS
     serializer-type: JACK_SON
   redis:
-    ip: 127.0.0.1
+    ip: ${SERVICE_HOST}
     port: 16379
     password: '${REDIS_PASSWORD}'
     database: 1
@@ -420,8 +436,8 @@ luohuo:
     enabled: true
     ip: ${SERVICE_HOST}
     port: 9876
-    access-key: 'earthearth'
-    secret-key: 'mq000000'
+    access-key: '${ROCKETMQ_ACCESS_KEY}'
+    secret-key: '${ROCKETMQ_SECRET_KEY}'
 rocketmq:
   ip: \${luohuo.rocketmq.ip}
   port: \${luohuo.rocketmq.port}

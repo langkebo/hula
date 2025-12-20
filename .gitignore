@@ -28,7 +28,11 @@ dist/
 # Local Env
 .env
 docs/install/docker/.env
+docs/install/docker/.env.local
+docs/install/docker/.env.*
+!docs/install/docker/.env.example
 docs/install/docker/env/*.env
+docs/install/nacos/nacos_config_export_*.zip
 
 # Docker Data & Logs (Ignore these!)
 docs/install/docker/mysql/data/
@@ -37,10 +41,12 @@ docs/install/docker/redis/data/
 docs/install/docker/redis/logs/
 docs/install/docker/nacos/logs/
 docs/install/docker/nacos/data/
+docs/install/docker/nacos/standalone-logs/
 docs/install/docker/rocketmq/namesrv/logs/
 docs/install/docker/rocketmq/namesrv/store/
 docs/install/docker/rocketmq/broker/logs/
 docs/install/docker/rocketmq/broker/store/
+docs/install/docker/rocketmq/broker/conf/plain_acl.yml
 docs/install/docker/rocketmq/timerwheel/
 docs/install/docker/minio/data/
 docs/install/docker/minio/config/

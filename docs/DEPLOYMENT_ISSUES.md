@@ -19,8 +19,11 @@
 - `bootstrap.yml` 中的 `@nacos.ip@` 占位符在构建时被替换为 `127.0.0.1` (dev profile)，导致应用尝试连接本地 Nacos。
 **解决方案**:
 - 修改 `deploy.sh`，支持使用 `SERVICE_HOST` 环境变量（默认为 `host.docker.internal`）生成 Nacos 配置。
-- 修改 `docker-compose.services.yml`，为所有服务添加 `NACOS_IP=host.docker.internal` 和 `NACOS_PORT=8848` 环境变量，覆盖 `bootstrap.yml` 的默认值。
+- 修改 `luohuo-cloud/docker-compose.services.yml`，为所有服务注入 `NACOS_IP` / `NACOS_PORT` / `NACOS_NAMESPACE` / `SERVICE_HOST` 环境变量，覆盖 `bootstrap.yml` 的默认值（并提供默认值与可覆盖能力）。
 - 确保所有服务容器配置了 `extra_hosts: - "host.docker.internal:host-gateway"`。
+- 若宿主 Docker 版本过低不支持 `host-gateway`（通常需要 Docker 20.10+），改用宿主网关 IP（常见为 `172.17.0.1`）：
+  - 启动前设置 `NACOS_IP=172.17.0.1`、`SERVICE_HOST=172.17.0.1`
+  - 或者将应用服务与基础设施加入同一个 Docker 网络并通过服务名访问（长期方案）
 
 ## 3. 缺失 Dockerfile
 **问题描述**: `luohuo-base` 和 `luohuo-ws` 模块缺少 `Dockerfile`，导致 `docker-compose build` 失败。
@@ -36,10 +39,43 @@
 ## 5. Nacos 命名空间问题
 **问题描述**: 应用默认尝试连接到 `bootstrap.yml` 中硬编码的 UUID 命名空间，而新部署的 Nacos 只有 `public` 命名空间。
 **解决方案**:
-- 在 `docker-compose.services.yml` 中设置 `NACOS_NAMESPACE=` (空字符串)，强制应用使用 public 命名空间。
+- 在 `luohuo-cloud/docker-compose.services.yml` 中设置 `NACOS_NAMESPACE=` (空字符串) 或直接不设置该变量，强制应用使用 `public` 命名空间。
 
 ## 6. 服务启动慢
 **问题描述**: `hula-oauth` 等服务启动较慢，可能导致健康检查超时或依赖服务连接失败。
 **解决方案**:
-- 调整 `docker-compose` 的 `healthcheck` 参数（增加 `start_period` 和 `retries`）。
+- 调整 `docker-compose` 的 `healthcheck` 参数（增加 `start_period` 和 `retries`），并使用 `CMD-SHELL` 避免把 `||` 当成参数传递导致健康检查误判。
 - 确保所有依赖服务（MySQL, Redis, RocketMQ, Nacos）均已就绪且网络可达。
+
+---
+
+## 7. 快速验证清单（部署后 3 分钟内完成）
+
+1. **基础设施健康检查**
+   ```bash
+   cd docs/install/docker
+   docker compose ps
+   curl -sf http://localhost:8848/nacos/v1/console/health/readiness
+   ```
+
+2. **应用服务健康检查**
+   ```bash
+   curl -sf http://localhost:18760/actuator/health
+   curl -sf http://localhost:18761/actuator/health
+   curl -sf http://localhost:18763/actuator/health
+   curl -sf http://localhost:18762/actuator/health
+   curl -sf http://localhost:9501/actuator/health
+   ```
+
+3. **网络连通性排错（容器内验证）**
+   ```bash
+   docker exec -it hula-gateway sh -lc "wget -qO- http://host.docker.internal:8848/nacos/ | head"
+   ```
+
+4. **关键日志定位**
+   ```bash
+   docker logs --tail=200 nacos
+   docker logs --tail=200 mysql
+   docker logs --tail=200 rocketmq-broker
+   docker logs --tail=200 hula-gateway
+   ```

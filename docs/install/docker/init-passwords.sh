@@ -54,6 +54,11 @@ generate_password() {
     openssl rand -base64 32 | tr -d '/+=' | head -c 32
 }
 
+# 生成 accessKey（更短，便于配置）
+generate_access_key() {
+    openssl rand -hex 8
+}
+
 # 生成各项密码
 MYSQL_ROOT_PWD=$(generate_password)
 MYSQL_NACOS_PWD=$(generate_password)
@@ -62,6 +67,10 @@ MINIO_PWD=$(generate_password)
 NACOS_TOKEN=$(openssl rand -base64 32)
 NACOS_IDENTITY=$(generate_password)
 PII_KEY=$(openssl rand -base64 32)
+ROCKETMQ_ACCESS_KEY=$(generate_access_key)
+ROCKETMQ_SECRET_KEY=$(generate_password)
+ROCKETMQ_ADMIN_ACCESS_KEY=$(generate_access_key)
+ROCKETMQ_ADMIN_SECRET_KEY=$(generate_password)
 
 # 获取服务器IP
 if [ -n "$SERVER_IP_OVERRIDE" ]; then
@@ -105,6 +114,10 @@ SRS_CANDIDATE=${SERVER_IP}
 
 # ==================== RocketMQ ====================
 ROCKETMQ_BROKER_IP=${SERVER_IP}
+ROCKETMQ_ACCESS_KEY=${ROCKETMQ_ACCESS_KEY}
+ROCKETMQ_SECRET_KEY=${ROCKETMQ_SECRET_KEY}
+ROCKETMQ_ADMIN_ACCESS_KEY=${ROCKETMQ_ADMIN_ACCESS_KEY}
+ROCKETMQ_ADMIN_SECRET_KEY=${ROCKETMQ_ADMIN_SECRET_KEY}
 EOF
 
 # 更新 mysql.env
@@ -188,6 +201,26 @@ rename-command CONFIG ""
 # 性能优化
 tcp-backlog 511
 databases 16
+EOF
+
+# 更新 RocketMQ ACL 配置
+cat > rocketmq/broker/conf/plain_acl.yml << EOF
+globalWhiteRemoteAddresses:
+
+accounts:
+  - accessKey: ${ROCKETMQ_ADMIN_ACCESS_KEY}
+    secretKey: ${ROCKETMQ_ADMIN_SECRET_KEY}
+    whiteRemoteAddress:
+    admin: true
+    defaultTopicPerm: PUB|SUB
+    defaultGroupPerm: PUB|SUB
+
+  - accessKey: ${ROCKETMQ_ACCESS_KEY}
+    secretKey: ${ROCKETMQ_SECRET_KEY}
+    whiteRemoteAddress:
+    admin: true
+    defaultTopicPerm: PUB|SUB
+    defaultGroupPerm: PUB|SUB
 EOF
 
 # 设置文件权限

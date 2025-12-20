@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACM)"
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+pattern='(password[[:space:]]*[:=]|secret[[:space:]]*[:=]|access[-_]?key[[:space:]]*[:=]|secret[-_]?key[[:space:]]*[:=]|NACOS_AUTH_TOKEN|SONAR_TOKEN|AKIA[0-9A-Z]{16})'
+
+matches="$(printf '%s\n' "$staged_files" | while IFS= read -r f; do
+  if [ -f "$f" ]; then
+    grep -nEI "$pattern" "$f" 2>/dev/null || true
+  fi
+done)"
+
+if [ -n "$matches" ]; then
+  printf '%s\n' "pre-commit blocked: possible secrets detected in staged changes"
+  printf '%s\n' "$matches"
+  exit 1
+fi
+
+exit 0
