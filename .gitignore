@@ -36,6 +36,7 @@ docs/install/docker/mysql/logs/
 docs/install/docker/redis/data/
 docs/install/docker/redis/logs/
 docs/install/docker/nacos/logs/
+docs/install/docker/nacos/data/
 docs/install/docker/rocketmq/namesrv/logs/
 docs/install/docker/rocketmq/namesrv/store/
 docs/install/docker/rocketmq/broker/logs/
