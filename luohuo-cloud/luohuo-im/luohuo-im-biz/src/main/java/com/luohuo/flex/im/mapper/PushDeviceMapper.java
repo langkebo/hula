@@ -82,4 +82,23 @@ public interface PushDeviceMapper {
      * @return 影响行数
      */
     int insertOrUpdate(PushDevice device);
+
+    /**
+     * 批量查询多个用户的活跃设备（解决N+1查询问题）
+     *
+     * @param userIds 用户ID列表
+     * @return 设备列表
+     */
+    @Select("""
+            <script>
+            SELECT * FROM im_push_device
+            WHERE user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+            AND active = 1
+            AND last_active_time > DATE_SUB(NOW(), INTERVAL 30 DAY)
+            </script>
+            """)
+    List<PushDevice> selectActiveDevicesByUserIds(@Param("userIds") List<Long> userIds);
 }

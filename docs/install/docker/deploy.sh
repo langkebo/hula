@@ -353,7 +353,6 @@ import_nacos_config() {
     unzip -p "$ZIP_FILE" DEFAULT_GROUP/luohuo-base-server.yml > "${TMP_DIR}/luohuo-base-server.yml" 2>/dev/null || true
     unzip -p "$ZIP_FILE" DEFAULT_GROUP/luohuo-im-server.yml > "${TMP_DIR}/luohuo-im-server.yml" 2>/dev/null || true
     unzip -p "$ZIP_FILE" DEFAULT_GROUP/luohuo-ws-server.yml > "${TMP_DIR}/luohuo-ws-server.yml" 2>/dev/null || true
-    unzip -p "$ZIP_FILE" DEFAULT_GROUP/luohuo-ai-server.yml > "${TMP_DIR}/luohuo-ai-server.yml" 2>/dev/null || true
 
     cat > "${TMP_DIR}/redis.yml" <<EOF
 luohuo:
@@ -457,7 +456,6 @@ EOF
     publish_config "luohuo-base-server.yml" "${TMP_DIR}/luohuo-base-server.yml" "yaml" || true
     publish_config "luohuo-im-server.yml" "${TMP_DIR}/luohuo-im-server.yml" "yaml" || true
     publish_config "luohuo-ws-server.yml" "${TMP_DIR}/luohuo-ws-server.yml" "yaml" || true
-    publish_config "luohuo-ai-server.yml" "${TMP_DIR}/luohuo-ai-server.yml" "yaml" || true
 
     echo "Nacos 配置临时目录: ${TMP_DIR}"
     # rm -rf "$TMP_DIR"

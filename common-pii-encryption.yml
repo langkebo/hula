@@ -1,0 +1,15 @@
+# PII字段加密配置
+# 生成时间: 2025年12月20日 星期六 15时37分27秒 CST
+pii:
+  encryption:
+    # 加密密钥 (请妥善保管!)
+    key: "5bMqLBvtW3sHOYAFkTf5kP+n6blsEXxxkulztpN5Edg="
+
+    # 启用PII加密
+    enabled: true
+
+    # 加密算法配置
+    algorithm: "AES/GCM/NoPadding"
+    iv-length: 12        # GCM推荐96位IV
+    tag-length: 128      # GCM认证标签128位
+    key-length: 256      # AES-256

@@ -1305,7 +1305,7 @@ sudo systemctl restart redis
 
 - [E2EE API使用指南](./E2EE_API_GUIDE.md)
 - [E2EE开发完成报告](./E2EE_README.md)
-- [私密聊天后端开发方案](./私密聊天后端开发方案.md)
+- [私密聊天后端开发方案](../../../docs/私密聊天后端开发方案.md)
 
 ---
 

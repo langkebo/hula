@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.luohuo.flex</groupId>
     <artifactId>luohuo-cloud</artifactId>
-    <version>3.0.6</version>
+    <version>3.0.7</version>
     <packaging>pom</packaging>
     <url>https://github.com/langkebo/hula</url>
     <name>${project.artifactId}</name>
@@ -22,7 +22,6 @@
         <module>luohuo-gateway</module>
         <module>luohuo-support</module>
         <module>luohuo-generator</module>
-        <module>luohuo-ai</module>
         <module>luohuo-system</module>
     </modules>
 

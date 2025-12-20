@@ -72,7 +72,10 @@ public class SearchHistoryServiceImpl extends ServiceImpl<SearchHistoryMapper, S
                     .reverseRange(cacheKey, 0, limit - 1);
 
             if (cachedKeywords != null && !cachedKeywords.isEmpty()) {
-                // TODO: 从缓存重建SearchHistory对象列表
+                // 从缓存直接返回关键词列表
+                return cachedKeywords.stream()
+                        .map(obj -> String.valueOf(obj))
+                        .toList();
             }
 
             // 从数据库查询

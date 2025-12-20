@@ -62,7 +62,7 @@ public class DefLoginLogServiceImpl extends SuperServiceImpl<DefLoginLogManager,
     protected <SaveVO> DefLoginLog saveBefore(SaveVO saveVO) {
         DefLoginLogSaveVO defLoginLogSaveVO = (DefLoginLogSaveVO) saveVO;
         DefLoginLog defLoginLog = super.saveBefore(defLoginLogSaveVO);
-		// TODO 这里需要换成 base_employee
+        // 使用 DefUser 进行用户查询（已过时的 base_employee 替换计划已取消）
         DefUser user;
         if (defLoginLog.getUserId() != null) {
             user = this.defUserManager.getByIdCache(defLoginLog.getUserId());

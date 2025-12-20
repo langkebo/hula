@@ -399,10 +399,9 @@ curl -X POST "http://localhost:18760/admin/migration/stop"
 
 ## 📚 相关文档
 
-- [PII加密设置指南](./PII_ENCRYPTION_SETUP_GUIDE.md)
-- [PII加密技术文档](../P0_OPTIMIZATION_REPORT.md)
-- [Nacos配置模板](./install/nacos/common-pii-encryption.yml)
-- [性能测试报告](#) (迁移完成后生成)
+- [PII加密设置指南](../../docs/PII_ENCRYPTION_SETUP_GUIDE.md)
+- [综合部署指南](../../docs/COMPREHENSIVE_DEPLOYMENT_GUIDE.md)
+- [Nacos配置模板](./nacos/common-pii-encryption.yml)
 
 ---
 

@@ -1,5 +1,6 @@
 package com.luohuo.flex.im.controller.system.domain;
 
+import lombok.extern.slf4j.Slf4j;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.CentralProcessor.TickType;
@@ -27,6 +28,7 @@ import java.util.Properties;
  *
  * @author 乾乾
  */
+@Slf4j
 public class Server {
 
     private static final int OSHI_WAIT_SECOND = 1000;
@@ -65,6 +67,7 @@ public class Server {
         try {
             return InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
+            log.warn("Failed to get host IP address, using default 127.0.0.1: {}", e.getMessage());
         }
         return "127.0.0.1";
     }
@@ -78,6 +81,7 @@ public class Server {
         try {
             return InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
+            log.warn("Failed to get host name, using default '未知': {}", e.getMessage());
         }
         return "未知";
     }

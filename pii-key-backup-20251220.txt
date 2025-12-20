@@ -1,0 +1,25 @@
+=========================================
+Hula-IM PII加密密钥备份
+=========================================
+
+生成时间: 2025年12月20日 星期六 15时37分27秒 CST
+密钥: 5bMqLBvtW3sHOYAFkTf5kP+n6blsEXxxkulztpN5Edg=
+
+重要提醒:
+1. 请将此文件保存在安全的位置
+2. 不要通过电子邮件等方式传输
+3. 建议使用密码管理器存储
+4. 定期更换密钥（建议90-180天）
+
+配置方法:
+1. 方法一 - 环境变量:
+   export PII_ENCRYPTION_KEY="5bMqLBvtW3sHOYAFkTf5kP+n6blsEXxxkulztpN5Edg="
+
+2. 方法二 - Nacos配置:
+   在Nacos控制台添加配置 common-pii-encryption.yml
+   内容请参考生成的 common-pii-encryption.yml 文件
+
+3. 方法三 - Docker:
+   docker run -e PII_ENCRYPTION_KEY="5bMqLBvtW3sHOYAFkTf5kP+n6blsEXxxkulztpN5Edg=" your-app
+
+=========================================

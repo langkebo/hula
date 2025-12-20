@@ -27,9 +27,6 @@ import java.util.Comparator;
 
 import com.luohuo.flex.im.api.BaseLoginLogApi;
 import com.luohuo.flex.im.domain.vo.resp.admin.LoginRankResp;
-// AI服务导入暂时注释，因为luohuo-im模块无法直接访问luohuo-ai模块
-// import com.luohuo.flex.ai.service.chat.AiChatMessageService;
-// import com.luohuo.flex.ai.service.model.AiModelUsageService;
 
 /**
  * 后台管理统计服务实现
@@ -47,13 +44,6 @@ public class AdminStatsServiceImpl implements AdminStatsService {
 	private UserCache userCache;
 	@Resource
 	private BlackDao blackDao;
-
-	// AI服务暂时注释，因为跨模块依赖问题
-	// @Autowired(required = false)
-	// private AiChatMessageService aiChatMessageService;
-
-	// @Autowired(required = false)
-	// private AiModelUsageService aiModelUsageService;
 
 	@Override
     public AdminStatsResp getHomeStats() {
@@ -94,7 +84,7 @@ public class AdminStatsServiceImpl implements AdminStatsService {
 				.total(blackCount)
 				.build();
 
-		// 5. AI 统计（假数据，需要对接 AI 服务）
+		// 5. AI 统计（已移除AI模块）
         AdminStatsResp.AiStats aiStats = AdminStatsResp.AiStats.builder()
                 .todayCalls(0)
                 .weekCalls(0)
@@ -105,12 +95,8 @@ public class AdminStatsServiceImpl implements AdminStatsService {
         LocalDateTime monthStart = LocalDateTime.now().minusDays(30).with(LocalTime.MIN);
         Long month3plus = baseLoginLogApi.countUsersWithMinLogins(monthStart, todayEnd, 3).getData();
 
-        // 6. 获取AI服务统计
+        // 7. AI统计已移除
         int aiCallToday = 0;
-
-        // TODO: AI服务统计暂时禁用，因为跨模块依赖问题
-        // 需要通过API或其他方式获取AI统计数据
-        log.info("AI服务统计暂时禁用（跨模块依赖问题）");
 
 		// 7. 构建响应
         return AdminStatsResp.builder()

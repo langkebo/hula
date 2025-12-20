@@ -498,9 +498,8 @@ public void cleanupSelfDestructMessages() {
 
 ## 参考资料
 
-- [消息自毁功能实现文档](../MESSAGE_SELF_DESTRUCT_IMPLEMENTATION.md)
-- [消息自毁功能完成总结](../SELF_DESTRUCT_FINAL_SUMMARY.md)
-- [E2EE 最佳实践](../guides/e2ee-best-practices.md)
+- [私密聊天后端开发方案](../私密聊天后端开发方案.md)
+- [E2EE 部署指南](../deployment/SELF_DESTRUCT_DEPLOYMENT_GUIDE.md)
 - [数据库迁移脚本](../../luohuo-cloud/luohuo-im/sql/e2ee_self_destruct_migration.sql)
 
 ---

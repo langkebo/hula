@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.seata.spring.annotation.GlobalTransactional;
 import com.luohuo.basic.base.request.PageParams;
 import com.luohuo.basic.exception.BizException;
 import com.luohuo.basic.utils.CollHelper;
@@ -159,12 +160,12 @@ public class BaseEmployeeBiz {
 	}
 
 	/**
-	 * TODO 这几个接口后续改为消息状态表实现事务
 	 * 将用户绑定某个租户的员工
+	 * 使用分布式事务确保跨库数据一致性
 	 *
 	 * @param param param
 	 */
-//	@GlobalTransactional
+	@GlobalTransactional(rollbackFor = Exception.class, timeoutMills = 30000, name = "bindUser-tx")
 	public Boolean bindUser(DefTenantAdminVO param) {
 		List<BaseEmployee> baseEmployeeList = findEmployeeList(param);
 		return baseEmployeeService.saveBatchBaseEmployeeAndRole(baseEmployeeList);
@@ -182,8 +183,9 @@ public class BaseEmployeeBiz {
 
 	/**
 	 * 从租户将用户解绑
+	 * 使用分布式事务确保跨库数据一致性
 	 */
-//	@GlobalTransactional
+	@GlobalTransactional(rollbackFor = Exception.class, timeoutMills = 30000, name = "unBindUser-tx")
 	public Boolean unBindUser(DefTenantAdminVO param) {
 		Long tenantId = param.getTenantId();
 		ArgumentAssert.notNull(tenantId, "请选择租户");
@@ -196,8 +198,9 @@ public class BaseEmployeeBiz {
 
 	/**
 	 * 邀请某个用户进入租户
+	 * 使用分布式事务确保跨库数据一致性
 	 */
-//	@GlobalTransactional
+	@GlobalTransactional(rollbackFor = Exception.class, timeoutMills = 30000, name = "invitationUser-tx")
 	public Boolean invitationUser(DefTenantAdminVO param) {
 		param.setTenantId(ContextUtil.getTenantId());
 		List<BaseEmployee> baseEmployeeList = findEmployeeList(param);
@@ -206,8 +209,9 @@ public class BaseEmployeeBiz {
 
 	/**
 	 * 从租户将用户移除
+	 * 使用分布式事务确保跨库数据一致性
 	 */
-//	@GlobalTransactional
+	@GlobalTransactional(rollbackFor = Exception.class, timeoutMills = 30000, name = "unInvitationUser-tx")
 	public Boolean unInvitationUser(DefTenantAdminVO param) {
 		Long tenantId = ContextUtil.getTenantId();
 		List<Long> employeeIdList = findEmployeeIdList(param, tenantId);

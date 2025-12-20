@@ -48,13 +48,15 @@ bash deploy.sh
 3. 启动 MySQL、Redis、Nacos、RocketMQ 等基础设施
 4. 启动所有应用服务
 
+📖 **详细部署文档**: [综合部署指南](docs/COMPREHENSIVE_DEPLOYMENT_GUIDE.md) - 包含故障排查、生产环境配置等详细内容
+
 ## 项目介绍
 
 HuLa-Server 是一款基于 SpringCloud、SpringBoot3、Netty、MyBatis-Plus 和 RocketMQ 构建的高性能即时通讯系统服务端。它采用了微服务架构设计，提供高性能的实时通信能力，支持单聊、群聊、消息推送等核心功能。系统具有高可扩展性和可靠性，适用于各类即时通讯场景。
 
 ## 核心优势
 
-- **模块化与高内聚**: 服务按功能拆分为独立模块（网关、认证、IM、AI、ws、base、system、presence等），通过<modules>清晰隔离，降低耦合度，提升开发与维护效率。
+- **模块化与高内聚**: 服务按功能拆分为独立模块（网关、认证、IM、ws、base、system、presence等），通过<modules>清晰隔离，降低耦合度，提升开发与维护效率。
 
 - **弹性扩展能力**: webflux异步架构，基于Spring Cloud 2024 & Spring Boot 3.x构建，支持动态扩缩容。如luohuo-gateway可通过增加节点应对高并发流量。
 
@@ -70,11 +72,6 @@ HuLa-Server 是一款基于 SpringCloud、SpringBoot3、Netty、MyBatis-Plus 和
 
 - **RocketMQ**: 高性能消息中间件，各项服务之间解耦的关键，im场景下实现事务消息保障、顺序消费
 
-### AI能力
-- **Spring AI**: 统一的AI接口抽象层，支持多平台切换
-- **Gitee AI**: 魔力方舟AI平台，支持对话、图片、音频、视频生成
-- **硅基流动**: 国产AI平台，提供多模态AI能力
-- **OpenAI/DeepSeek/Kimi**: 主流AI大模型集成
 
 ## 全链路分布式能力
 
@@ -84,79 +81,6 @@ HuLa-Server 是一款基于 SpringCloud、SpringBoot3、Netty、MyBatis-Plus 和
 
 - **数据层**：MyBatis-Plus + Dynamic Datasource支持多租户分库分表。
 
-## 🤖 AI与IM深度集成
-
-### 🎨 多模态AI能力
-
-**luohuo-ai** 模块提供强大的多模态AI能力，支持文生图、文生音、文生视频等功能，深度集成多个国内外主流AI平台
-
-#### 📊 支持的AI平台
-
-**🇨🇳 国内平台**
-- **Gitee AI (魔力方舟)** - 支持对话、图片生成、音频生成、视频生成
-- **硅基流动 (SiliconFlow)** - 支持对话、图片生成、音频生成、视频生成
-- **Kimi (月之暗面)** - 支持对话
-- **DeepSeek** - 支持对话
-- **通义千问 (阿里)** - 支持对话、图片生成
-- **文心一言 (百度)** - 支持对话、图片生成
-- **智谱 AI** - 支持对话、图片生成
-- **讯飞星火** - 支持对话
-- **豆包 (字节)** - 支持对话
-- **混元 (腾讯)** - 支持对话
-- **MiniMax (稀宇科技)** - 支持对话
-- **百川智能** - 支持对话
-
-**🌍 国外平台**
-- **OpenAI** - 支持对话、图片生成
-- **OpenRouter** - 支持对话
-- **Ollama** - 支持对话
-- **Stable Diffusion** - 支持图片生成
-- **Midjourney** - 支持图片生成
-- **Suno AI** - 支持音乐生成
-
-#### 🎯 核心功能
-
-**💬 智能对话**
-- 多平台对话模型统一接口
-- 支持流式响应和普通响应
-- 工具调用能力 (Function Calling)
-- 对话历史管理
-- 上下文记忆
-
-**🎨 文生图 (Text-to-Image)**
-- 支持多种图片生成模型
-- 自定义图片尺寸、风格
-- 异步任务处理
-- 图片存储管理
-
-**🎵 文生音 (Text-to-Speech)**
-- 多音色选择
-- 语速调节
-- 多种音频格式输出 (MP3、WAV等)
-- 异步音频生成
-- 音频文件存储
-
-**🎬 文生视频 (Text-to-Video)**
-- 文本描述生成视频
-- 异步任务提交
-- 视频生成状态轮询
-- 视频存储管理
-- 支持 OpenRouter、Kimi、GiteeAI、硅基流动等平台
-
-**🎼 AI音乐生成**
-- Suno AI 音乐创作
-- 描述模式和歌词模式
-- 自定义音乐风格
-- 音乐任务管理
-
-#### 🔧 技术特性
-
-- **统一抽象接口**: 通过 `ChatModel`、`ImageModel`、`AudioModel`、`VideoModel` 等接口统一不同平台的调用方式
-- **工厂模式**: `AiModelFactory` 动态创建和管理不同平台的模型实例
-- **异步处理**: 图片、音频、视频生成采用异步任务处理，提升用户体验
-- **状态管理**: 完善的任务状态追踪机制
-- **资源管理**: 统一的文件存储和管理
-- **工作流支持**: 集成 TinyFlow 工作流引擎，支持复杂AI业务场景
 
 ## 🏗️系统架构
 
@@ -210,15 +134,6 @@ HuLa-Server 是一款基于 SpringCloud、SpringBoot3、Netty、MyBatis-Plus 和
 - **数据统计：** 用户活跃度、消息量统计
 - **系统监控：** 服务健康状态监控
 - **内容审计：** 消息内容安全审计过滤
-
-### 🤖 luohuo-ai - AI服务
-🎨 多模态AI | 🧠 智能对话 | 🎬 内容生成
-- **智能对话：** 集成20+主流AI平台，支持流式对话、工具调用
-- **文生图：** 支持 Midjourney、Stable Diffusion、通义万相等多平台图片生成
-- **文生音：** TTS语音合成，支持多音色、多语速、多格式
-- **文生视频：** 文本描述生成视频，支持 Kimi、Gitee AI、硅基流动、OpenRouter等平台
-- **模型管理：** 统一的模型配置、额度管理、使用统计 [部分Ai模型]
-- **工作流引擎：** TinyFlow 工作流支持，编排复杂AI业务场景
 
 ## 📊 消息执行流程步骤详解
 

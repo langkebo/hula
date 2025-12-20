@@ -29,8 +29,6 @@ import java.util.Objects;
 public class MessageSendListener {
     @Resource
     private MessageDao messageDao;
-//    @Resource
-//    private IChatAIService openAIService;
     @Resource
     private RoomCache roomCache;
     @Resource
@@ -46,9 +44,7 @@ public class MessageSendListener {
     public void handlerMsg(@NotNull MessageSendEvent event) {
         Message message = messageDao.getById(event.getChatMsgSendDto().getMsgId());
         Room room = roomCache.get(message.getRoomId());
-        if (isHotRoom(room)) {
-//            openAIService.chat(message);
-        }
+        // Hot room handling - reserved for future extensions
     }
 
     public boolean isHotRoom(Room room) {
