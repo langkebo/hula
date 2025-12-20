@@ -19,7 +19,7 @@
 
     <name>${project.artifactId}</name>
     <description>luohuo项目业务父pom</description>
-    <url>https://gitee.com/HuLaSpark/HuLa-Server</url>
+    <url>https://github.com/langkebo/hula</url>
     <properties>
         <luohuo-util.version>3.0.6</luohuo-util.version>
         <luohuo-project.version>3.0.6</luohuo-project.version>

@@ -19,7 +19,7 @@
 
 <p align="center">
   gitee：<a href="https://gitee.com/HulaSpark/HuLa-Server/stargazers"><img src="https://gitee.com/HulaSpark/HuLa-Server/badge/star.svg?theme=gvp" alt="star"></a>
-  github：<a href="https://github.com/HulaSpark/HuLa-Server/stargazers"><img src="https://img.shields.io/github/stars/HulaSpark/HuLa-Server" alt="star"></a>
+  github：<a href="https://github.com/langkebo/hula/stargazers"><img src="https://img.shields.io/github/stars/langkebo/hula" alt="star"></a>
   gitcode：<a href="https://gitcode.com/HuLaSpark/HuLa-Server"><img src="https://gitcode.com/HuLaSpark/HuLa-Server/star/badge.svg" alt="star"></a>
 </p>
 <p align="center">
@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  🖥️ Client：<a href="https://github.com/HulaSpark/HuLa">github HuLa</a> | <a href="https://gitee.com/HulaSpark/HuLa">gitee HuLa</a>
+  🖥️ Client：<a href="https://github.com/langkebo/hula">github HuLa</a> | <a href="https://gitee.com/HulaSpark/HuLa">gitee HuLa</a>
 </p>
 
 <p align="center">English | <a href="README.md">中文</a></p>
@@ -96,7 +96,7 @@ Under continuous development...
 
 ## Thanks to all contributors!
 
-<a href="https://github.com/HuLaSpark/HuLa-Server/graphs/contributors">
+<a href="https://github.com/langkebo/hula/graphs/contributors">
   <img src="https://opencollective.com/HuLaSpark/contributors.svg?width=890" />
 </a>
 

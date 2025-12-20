@@ -61,11 +61,11 @@ luohuo:
     requestBodyEnabled: false
   swagger:
     license: Powered By zuihou
-    licenseUrl: https://github.com/qianqian
-    termsOfServiceUrl: https://github.com/qianqian
+    licenseUrl: https://github.com/langkebo/hula
+    termsOfServiceUrl: https://github.com/langkebo/hula
     version: @project.version@
     contact: # 联系人信息
-      url: https://github.com/qianqian
+      url: https://github.com/langkebo/hula
       name: qianqian
       email: xxxxx@qq.com
     global-operation-parameters: # 全局参数
@@ -232,4 +232,4 @@ knife4j:
     enableDynamicParameter: true
     enableFooter: false
     enableFooterCustom: true
-    footerCustomContent: Apache License 2.0 | Copyright  2025 [luohuo-cloud](https://github.com/qianqian)
+    footerCustomContent: Apache License 2.0 | Copyright  2025 [hula](https://github.com/langkebo/hula)

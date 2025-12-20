@@ -7,7 +7,7 @@
     <artifactId>luohuo-cloud</artifactId>
     <version>3.0.6</version>
     <packaging>pom</packaging>
-    <url>https://gitee.com/HuLaSpark/HuLa-Server</url>
+    <url>https://github.com/langkebo/hula</url>
     <name>${project.artifactId}</name>
     <description>luohuo-cloud</description>
 

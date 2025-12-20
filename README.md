@@ -19,7 +19,7 @@
 
 <p align="center">
   gitee：<a href="https://gitee.com/HulaSpark/HuLa-Server/stargazers"><img src="https://gitee.com/HulaSpark/HuLa-Server/badge/star.svg?theme=gvp" alt="star"></a>
-  github：<a href="https://github.com/HulaSpark/HuLa-Server/stargazers"><img src="https://img.shields.io/github/stars/HulaSpark/HuLa-Server" alt="star"></a>
+  github：<a href="https://github.com/langkebo/hula/stargazers"><img src="https://img.shields.io/github/stars/langkebo/hula" alt="star"></a>
   gitcode：<a href="https://gitcode.com/HuLaSpark/HuLa-Server"><img src="https://gitcode.com/HuLaSpark/HuLa-Server/star/badge.svg" alt="star"></a>
 </p>
 <p align="center">
@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  🖥️ 客户端：<a href="https://github.com/HuLaSpark/HuLa-Server">github HuLa-Server</a> | <a href="https://gitee.com/HulaSpark/HuLa-Server">gitee HuLa-Server</a>
+  🖥️ 客户端：<a href="https://github.com/langkebo/hula">github HuLa-Server</a> | <a href="https://gitee.com/HulaSpark/HuLa-Server">gitee HuLa-Server</a>
 </p>
 
 <p align="center"><a href="README.en.md">English</a> | 中文</p>
@@ -373,7 +373,7 @@ HuLa-Server 是一款基于 SpringCloud、SpringBoot3、Netty、MyBatis-Plus 和
 
 > 📝 **温馨提示**
 > 该名单为手动更新，如果您已赞助但未在列表中，请联系我们：
-> 🐛 [GitHub Issue](https://github.com/HuLaSpark/HuLa-Server/issues) | 📧 邮箱: `2439646234@qq.com` | 💬 微信: `cy2439646234`
+> 🐛 [GitHub Issue](https://github.com/langkebo/hula/issues) | 📧 邮箱: `2439646234@qq.com` | 💬 微信: `cy2439646234`
 
   <br>
 </div>
@@ -386,8 +386,8 @@ HuLa-Server 是一款基于 SpringCloud、SpringBoot3、Netty、MyBatis-Plus 和
   <h3>⚖️ 许可证信息</h3>
 
   <p>
-    <a href="https://app.fossa.com/projects/git%2Bgithub.com%2FHuLaSpark%2FHuLa?ref=badge_large">
-      <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FHuLaSpark%2FHuLa.svg?type=large" alt="FOSSA Status" style="max-width: 100%; border-radius: 8px;">
+    <a href="https://app.fossa.com/projects/git%2Bgithub.com%2Flangkebo%2Fhula?ref=badge_large">
+      <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Flangkebo%2Fhula.svg?type=large" alt="FOSSA Status" style="max-width: 100%; border-radius: 8px;">
     </a>
   </p>
 

@@ -95,10 +95,10 @@ luohuo:
   # swagger 文档通用配置， 主要配置了全局参数、版本号信息、联系人信息  详情看: SwaggerProperties
   swagger:
     license: Powered By luohuo
-    licenseUrl: https://github.com/luohuo
-    termsOfServiceUrl: https://github.com/luohuo
+    licenseUrl: https://github.com/langkebo/hula
+    termsOfServiceUrl: https://github.com/langkebo/hula
     contact:  # 联系人信息
-      url: https://github.com/luohuo
+      url: https://github.com/langkebo/hula
       name: luohuo
       email: 1046762075@qq.com
     global-operation-parameters:  # 全局参数
@@ -188,7 +188,7 @@ knife4j:
     #    是否显示Footer
     enableFooter: false
     enableFooterCustom: true
-    footerCustomContent: Apache License 2.0 | Copyright  2025 [luohuo-cloud](https://github.com/qianqian)
+    footerCustomContent: Apache License 2.0 | Copyright  2025 [hula](https://github.com/langkebo/hula)
 
 springdoc:
   # 默认是false，需要设置为true
