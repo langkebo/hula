@@ -105,6 +105,8 @@ services:
       - NACOS_AUTH_IDENTITY_VALUE=${NACOS_AUTH_IDENTITY_VALUE}
       - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN}
       - NACOS_AUTH_ENABLE=${NACOS_AUTH_ENABLE:-true}
+      # Nacos 3.x 兼容性配置 - 启用 v1 API
+      - NACOS_CORE_COMPATIBILITY_SERVER_ENABLED=true
     volumes:
       - ./nacos/logs:/home/nacos/logs
       - ./nacos/data:/home/nacos/data
@@ -117,7 +119,8 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/v1/console/health/readiness"]
+      # Nacos 3.x 使用 /nacos/ 作为健康检查端点（v1 API 已废弃返回 410）
+      test: ["CMD", "curl", "-sf", "http://localhost:8848/nacos/"]
       interval: 30s
       timeout: 10s
       retries: 5

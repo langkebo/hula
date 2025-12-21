@@ -218,6 +218,12 @@ rocketmq:
   access-key: \${luohuo.rocketmq.access-key}
   secret-key: \${luohuo.rocketmq.secret-key}
   name-server: \${luohuo.rocketmq.ip}:\${luohuo.rocketmq.port}
+  # RocketMQTemplate 必需配置 - 解决 OAuth 启动失败问题
+  producer:
+    group: hula-producer-group
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 2
+    retry-times-when-send-async-failed: 2
 EOF
 )
 

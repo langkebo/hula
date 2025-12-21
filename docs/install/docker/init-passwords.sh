@@ -169,6 +169,10 @@ NACOS_AUTH_TOKEN=${NACOS_TOKEN}
 NACOS_AUTH_ENABLE=true
 EOF
 
+# 创建 Redis 日志目录（解决权限问题）
+mkdir -p redis/logs
+chmod 777 redis/logs
+
 # 更新 redis.conf
 cat > redis/redis.conf << EOF
 # HuLa-Server Redis 配置文件

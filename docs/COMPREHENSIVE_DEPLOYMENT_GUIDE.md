@@ -428,7 +428,147 @@ turnserver -a -o -f -r hulaspark.com
 
 ## 5. 部署失败排查指南
 
-### 5.1 网络连接问题
+### 5.1 Redis 启动失败（权限问题）
+
+**症状**: Redis 容器启动失败，日志显示 `Permission denied` 无法写入 `/logs/redis.log`
+
+**解决方案**:
+
+```bash
+# 创建 Redis 日志目录并设置权限
+mkdir -p redis/logs
+chmod 777 redis/logs
+
+# 或重新运行初始化脚本（已自动创建）
+bash init-passwords.sh --force
+```
+
+### 5.2 Nacos 健康检查失败（HTTP 410）
+
+**症状**: Nacos 容器健康检查失败，返回 HTTP 410
+
+**原因**: Nacos 3.x 已废弃 v1 API，`/nacos/v1/console/health/readiness` 返回 410
+
+**解决方案**:
+
+```yaml
+# docker-compose.prod.yml 中已修复
+# 1. 使用新的健康检查端点
+healthcheck:
+  test: ["CMD", "curl", "-sf", "http://localhost:8848/nacos/"]
+
+# 2. 启用 v1 API 兼容模式（可选）
+environment:
+  - NACOS_CORE_COMPATIBILITY_SERVER_ENABLED=true
+```
+
+### 5.3 Nacos 配置发布 403
+
+**症状**: 使用 `generate-nacos-config.sh` 发布配置时返回 403
+
+**原因**: Nacos 启用了认证，但脚本未正确获取 Token
+
+**解决方案**:
+
+```bash
+# 1. 检查 Nacos 认证配置
+cat .env | grep NACOS_AUTH
+
+# 2. 手动获取 Token 测试
+curl -X POST "http://localhost:8848/nacos/v1/auth/users/login" \
+  -d "username=nacos&password=nacos"
+
+# 3. 如果认证失败，检查 Nacos 是否使用了自定义密码
+# 登录 Nacos 控制台修改密码或禁用认证
+```
+
+### 5.4 Nacos 数据库连接失败
+
+**症状**: Nacos 启动失败，日志显示数据库连接错误
+
+**原因**: 旧的 `mysql/data` 目录使用旧密码，新 `.env` 有新密码
+
+**解决方案**:
+
+```bash
+# 方案1: 清理旧数据重新初始化（推荐）
+docker compose down
+sudo rm -rf mysql/data
+bash init-passwords.sh --ip 服务器IP
+docker compose up -d
+
+# 方案2: 使用旧密码
+# 查看旧密码
+docker exec mysql printenv MYSQL_ROOT_PASSWORD
+# 更新 .env 文件使用旧密码
+```
+
+### 5.5 Nacos 配置中 host.docker.internal 无法解析
+
+**症状**: 从宿主机访问 Nacos 配置时，`host.docker.internal` 无法解析
+
+**原因**: `host.docker.internal` 只在 Docker 容器内有效
+
+**解决方案**:
+
+```bash
+# 方案1: 使用实际服务器 IP（推荐）
+# 在 generate-nacos-config.sh 中设置
+SERVICE_HOST=10.168.3.50  # 替换为实际 IP
+
+# 方案2: 在宿主机 /etc/hosts 添加映射
+echo "127.0.0.1 host.docker.internal" | sudo tee -a /etc/hosts
+```
+
+### 5.6 Gateway 启动失败（WebMvc/Seata 冲突）
+
+**症状**: Gateway 启动报错 `NoClassDefFoundError: WebMvcConfigurer`
+
+**原因**: Seata 依赖引入了 `spring-webmvc`，与 Gateway 的 WebFlux 冲突
+
+**解决方案**:
+
+已在 `luohuo-gateway-server/pom.xml` 中排除 Seata 依赖：
+
+```xml
+<exclusions>
+    <exclusion>
+        <groupId>io.seata</groupId>
+        <artifactId>seata-spring-boot-starter</artifactId>
+    </exclusion>
+    <exclusion>
+        <groupId>com.alibaba.cloud</groupId>
+        <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
+    </exclusion>
+</exclusions>
+```
+
+### 5.7 OAuth 启动失败（RocketMQTemplate 缺失）
+
+**症状**: OAuth 服务启动报错 `No qualifying bean of type 'RocketMQTemplate'`
+
+**原因**: Nacos 配置中缺少 `rocketmq.producer.group` 配置
+
+**解决方案**:
+
+在 Nacos 的 `rocketmq.yml` 中添加：
+
+```yaml
+rocketmq:
+  producer:
+    group: hula-producer-group
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 2
+    retry-times-when-send-async-failed: 2
+```
+
+或重新运行配置生成脚本（已修复）：
+
+```bash
+bash generate-nacos-config.sh
+```
+
+### 5.8 网络连接问题
 
 **症状**: 应用服务无法连接 Nacos/MySQL/Redis/RocketMQ
 
@@ -449,7 +589,7 @@ extra_hosts:
 sudo ufw allow from 172.17.0.0/16  # 允许 Docker 网络
 ```
 
-### 5.2 RocketMQ 启动失败
+### 5.9 RocketMQ 启动失败
 
 **症状**: Broker 启动后立即退出，日志显示 `NullPointerException`
 
@@ -473,7 +613,7 @@ sed -i '' "s/^brokerIP1=.*/brokerIP1=$(ipconfig getifaddr en0)/" rocketmq/broker
 docker compose restart rocketmq-namesrv rocketmq-broker
 ```
 
-### 5.3 Nacos 配置问题
+### 5.10 Nacos 配置问题
 
 **症状**: 应用启动报错 `Failed to configure a DataSource`
 
@@ -492,7 +632,7 @@ environment:
 curl "http://localhost:8848/nacos/v1/cs/configs?dataId=mysql.yml&group=DEFAULT_GROUP"
 ```
 
-### 5.4 数据库连接问题
+### 5.11 数据库连接问题
 
 **症状**: `Access denied` 或 `Connection refused`
 
@@ -511,7 +651,7 @@ docker exec mysql printenv MYSQL_ROOT_PASSWORD
 # 更新 .env 文件
 ```
 
-### 5.5 健康检查失败
+### 5.12 健康检查失败
 
 **症状**: Gateway 健康检查返回 406 或 DOWN
 
@@ -530,7 +670,7 @@ management:
       enabled: false
 ```
 
-### 5.6 编译问题
+### 5.13 编译问题
 
 **症状**: 编译失败或警告
 
@@ -623,34 +763,58 @@ bash restore.sh 20251221_020000
 
 ## 7. 常见问题 FAQ
 
-### Q1: RocketMQ 启动失败，日志显示 NullPointerException
+### Q1: Redis 启动失败，日志显示 Permission denied
+**A**: 创建 Redis 日志目录并设置权限：
+```bash
+mkdir -p redis/logs
+chmod 777 redis/logs
+```
+
+### Q2: Nacos 健康检查返回 HTTP 410
+**A**: Nacos 3.x 已废弃 v1 API。已更新 `docker-compose.prod.yml` 使用新的健康检查端点 `/nacos/`。
+
+### Q3: Gateway 启动报错 NoClassDefFoundError: WebMvcConfigurer
+**A**: Seata 依赖与 Gateway WebFlux 冲突。已在 `luohuo-gateway-server/pom.xml` 中排除 Seata 依赖。
+
+### Q4: OAuth 启动报错 No qualifying bean of type 'RocketMQTemplate'
+**A**: Nacos 配置缺少 `rocketmq.producer.group`。重新运行 `bash generate-nacos-config.sh` 或手动在 `rocketmq.yml` 中添加：
+```yaml
+rocketmq:
+  producer:
+    group: hula-producer-group
+```
+
+### Q5: RocketMQ 启动失败，日志显示 NullPointerException
 **A**: 创建 `timerwheel` 目录并设置权限：
 ```bash
 sudo mkdir -p rocketmq/timerwheel
 sudo chmod -R 777 rocketmq/
 ```
 
-### Q2: 编译时出现 PiiEncryptor 过时警告
+### Q6: Nacos 配置中 host.docker.internal 无法解析
+**A**: `host.docker.internal` 只在 Docker 容器内有效。在 `generate-nacos-config.sh` 中设置 `SERVICE_HOST=实际服务器IP`，或在 `/etc/hosts` 添加映射。
+
+### Q7: 编译时出现 PiiEncryptor 过时警告
 **A**: 这是预期行为。为解决 Bean 冲突，旧的 `PiiEncryptor` 类已标记为 `@Deprecated`，实际使用的是 `luohuo-crypto-sdk` 中的新版本。
 
-### Q3: 构建时出现 "PII解密失败: Tag mismatch" 日志
+### Q8: 构建时出现 "PII解密失败: Tag mismatch" 日志
 **A**: 这是测试用例的预期输出，用于验证加密器能正确检测篡改的密文。已将日志级别从 ERROR 改为 WARN。
 
-### Q4: macOS 上 sed 命令报错
+### Q9: macOS 上 sed 命令报错
 **A**: macOS 的 sed 语法与 Linux 不同，使用 `sed -i ''` 替代 `sed -i`。部署脚本已自动处理此兼容性问题。
 
-### Q5: 服务无法连接数据库
+### Q10: 服务无法连接数据库
 **A**: 检查 Nacos 中 `mysql.yml` 的数据库地址配置，Docker 部署使用 `host.docker.internal`。
 
-### Q6: Gateway 健康检查返回 406
+### Q11: Gateway 健康检查返回 406
 **A**: 在 Nacos 的 `common-gateway.yml` 中将 `/actuator/**` 添加到鉴权白名单。
 
-### Q7: 应用启动慢（超过60秒）
+### Q12: 应用启动慢（超过60秒）
 **A**: 
 1. 检查 `/etc/hosts` 是否配置了主机名解析
 2. 安装 `haveged` 提供熵源：`sudo apt install haveged`
 
-### Q8: 部分功能不可用（推送、搜索、邮件）
+### Q13: 部分功能不可用（推送、搜索、邮件）
 **A**: 这些功能的实现文件因第三方库 API 变更已临时禁用，详见：
 - `luohuo-cloud/luohuo-im/luohuo-im-biz/disabled-src/README.md`
 - `luohuo-cloud/luohuo-support/luohuo-monitor/disabled-src/README.md`
