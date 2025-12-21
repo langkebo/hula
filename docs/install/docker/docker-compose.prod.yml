@@ -104,7 +104,7 @@ services:
       - NACOS_AUTH_IDENTITY_KEY=serverIdentity
       - NACOS_AUTH_IDENTITY_VALUE=${NACOS_AUTH_IDENTITY_VALUE}
       - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN}
-      - NACOS_AUTH_ENABLE=false
+      - NACOS_AUTH_ENABLE=${NACOS_AUTH_ENABLE:-true}
     volumes:
       - ./nacos/logs:/home/nacos/logs
       - ./nacos/data:/home/nacos/data
@@ -117,7 +117,7 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/index.html"]
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/v1/console/health/readiness"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -284,7 +284,7 @@ services:
       - "20000:8080"
       - "50000:50000"
     volumes:
-      - /home/jenkins/work:/var/jenkins_home
+      - ${JENKINS_HOME:-./jenkins/data}:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker
     healthcheck:

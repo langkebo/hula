@@ -10,7 +10,11 @@ import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.auth.AuthScope;
 import org.apache.http.HttpHost;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,24 +80,22 @@ public class ElasticsearchConfig {
                 hostPort.length > 1 ? Integer.parseInt(hostPort[1]) : 9200, "http");
         }
 
+        int connectTimeoutMs = (int) java.time.Duration.parse("PT" + connectionTimeout.toUpperCase()).toMillis();
+        int socketTimeoutMs = (int) java.time.Duration.parse("PT" + socketTimeout.toUpperCase()).toMillis();
+
         // 创建RestClient
         RestClientBuilder builder = RestClient.builder(httpHosts)
                 .setRequestConfigCallback(requestConfigBuilder ->
                     requestConfigBuilder
-                        .setConnectTimeout(java.time.Duration.parse("PT" + connectionTimeout.toUpperCase()))
-                        .setSocketTimeout(java.time.Duration.parse("PT" + socketTimeout.toUpperCase())));
+                        .setConnectTimeout(connectTimeoutMs)
+                        .setSocketTimeout(socketTimeoutMs));
 
         // 添加认证信息
         if (username != null && !username.isEmpty()) {
+            CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
             builder.setHttpClientConfigCallback(httpClientBuilder ->
-                httpClientBuilder.setDefaultHeaders(
-                    new org.apache.http.Header[]{
-                        new org.apache.http.impl.client.BasicAuthenticator(
-                            org.apache.http.HttpHost.create("basic", username, password)
-                        ).getAuthScheme()
-                    }
-                )
-            );
+                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
         }
 
         RestClient restClient = builder.build();

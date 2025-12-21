@@ -2,13 +2,8 @@ package com.luohuo.flex.im.search.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.GeoDistanceQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.core.search.Suggestion;
 import co.elastic.clients.elasticsearch.core.search.SuggestFuzziness;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.luohuo.flex.im.search.config.ElasticsearchConfig;
@@ -17,7 +12,8 @@ import com.luohuo.flex.im.search.dto.SearchRequest;
 import com.luohuo.flex.im.search.dto.SearchResponse;
 import com.luohuo.flex.im.search.service.MessageSearchService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -35,10 +31,10 @@ import java.util.stream.Collectors;
  *
  * @author HuLa
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MessageSearchServiceImpl implements MessageSearchService {
+    private static final Logger log = LoggerFactory.getLogger(MessageSearchServiceImpl.class);
 
     private final ElasticsearchClient elasticsearchClient;
     private final ElasticsearchConfig elasticsearchConfig;
@@ -62,7 +58,7 @@ public class MessageSearchServiceImpl implements MessageSearchService {
 
         try {
             // 构建搜索请求
-            SearchRequest.Builder searchBuilder = new SearchRequest.Builder()
+            co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchBuilder = new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
                     .index(elasticsearchConfig.getMessageIndex())
                     .from(request.getOffset())
                     .size(request.getSize());
@@ -96,7 +92,7 @@ public class MessageSearchServiceImpl implements MessageSearchService {
             buildAggregations(searchBuilder);
 
             // 执行搜索
-            SearchResponse<MessageDocument> response = elasticsearchClient
+            co.elastic.clients.elasticsearch.core.SearchResponse<MessageDocument> response = elasticsearchClient
                     .search(searchBuilder.build(), MessageDocument.class);
 
             // 处理结果
@@ -175,7 +171,7 @@ public class MessageSearchServiceImpl implements MessageSearchService {
             }
 
             // 从Elasticsearch获取建议
-            SearchRequest.Builder suggestBuilder = new SearchRequest.Builder()
+            co.elastic.clients.elasticsearch.core.SearchRequest.Builder suggestBuilder = new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
                     .index(elasticsearchConfig.getMessageIndex())
                     .suggest(s -> s
                             .suggesters("message_suggest", ss -> ss
@@ -189,7 +185,7 @@ public class MessageSearchServiceImpl implements MessageSearchService {
                             )
                     );
 
-            SearchResponse<Void> response = elasticsearchClient.search(suggestBuilder.build(), Void.class);
+            co.elastic.clients.elasticsearch.core.SearchResponse<Void> response = elasticsearchClient.search(suggestBuilder.build(), Void.class);
 
             List<String> suggestions = response.suggest().get("message_suggest").stream()
                     .flatMap(s -> s.completion().options().stream())
@@ -305,7 +301,7 @@ public class MessageSearchServiceImpl implements MessageSearchService {
      * 构建消息查询
      */
     private Query buildMessageQuery(SearchRequest request) {
-        BoolQuery.Builder boolQuery = Query.of(q -> q.bool(b -> {
+        return Query.of(q -> q.bool(b -> {
             // 关键词搜索
             if (StringUtils.hasText(request.getKeyword())) {
                 b.must(Query.of(q2 -> q2.multiMatch(mm -> mm
@@ -353,7 +349,8 @@ public class MessageSearchServiceImpl implements MessageSearchService {
 
             // 时间范围过滤
             if (request.hasTimeRange()) {
-                RangeQuery.Builder rangeQuery = RangeQuery.of(r -> {
+                b.must(Query.of(q2 -> q2.range(r -> {
+                    r.field("createdAt");
                     if (request.getStartTime() != null) {
                         String startTime = LocalDateTime.ofInstant(
                                 request.getStartTime().toInstant(),
@@ -368,9 +365,8 @@ public class MessageSearchServiceImpl implements MessageSearchService {
                         ).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                         r.lte(l -> l.stringValue(endTime));
                     }
-                    return r.field("createdAt");
-                });
-                b.must(Query.of(q2 -> q2.range(rangeQuery.build())));
+                    return r;
+                })));
             }
 
             // 附件过滤
@@ -391,7 +387,7 @@ public class MessageSearchServiceImpl implements MessageSearchService {
                                 .lat(geo.getLat())
                                 .lon(geo.getLon())
                         ))
-                        .distance(d -> d.value(geo.getRadius().toString() + geo.getUnit()))
+                        .distance(geo.getRadius().toString() + geo.getUnit())
                 )));
             }
 
@@ -403,14 +399,12 @@ public class MessageSearchServiceImpl implements MessageSearchService {
 
             return b;
         }));
-
-        return Query.of(q -> q.bool(boolQuery.build()));
     }
 
     /**
      * 构建排序
      */
-    private void buildSort(SearchRequest.Builder searchBuilder, SearchRequest request) {
+    private void buildSort(co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchBuilder, SearchRequest request) {
         if ("weight".equals(request.getSortBy())) {
             // 自定义权重排序
             searchBuilder.sort(s -> s
@@ -436,7 +430,7 @@ public class MessageSearchServiceImpl implements MessageSearchService {
     /**
      * 构建聚合
      */
-    private void buildAggregations(SearchRequest.Builder searchBuilder) {
+    private void buildAggregations(co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchBuilder) {
         searchBuilder.aggregations("message_types", a -> a
                 .terms(t -> t
                         .field("type")
@@ -472,7 +466,7 @@ public class MessageSearchServiceImpl implements MessageSearchService {
     /**
      * 处理聚合结果
      */
-    private SearchResponse.Aggregations processAggregations(SearchResponse<MessageDocument> response) {
+    private SearchResponse.Aggregations processAggregations(co.elastic.clients.elasticsearch.core.SearchResponse<MessageDocument> response) {
         SearchResponse.Aggregations aggregations = new SearchResponse.Aggregations();
 
         // TODO: 处理聚合结果

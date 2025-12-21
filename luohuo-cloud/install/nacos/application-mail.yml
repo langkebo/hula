@@ -2,10 +2,10 @@
 spring:
   mail:
     # QQ邮箱 SMTP服务器配置
-    host: smtp.qq.com
-    port: 587
-    username: 656042408@qq.com
-    password: ydpzvwmnqcpkbeie  # QQ邮箱授权码
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}  # 邮箱授权码，通过环境变量配置
     protocol: smtp
     default-encoding: UTF-8
 
@@ -25,7 +25,7 @@ spring:
         debug: false
 
     # 发件人邮箱
-    from: 656042408@qq.com
+    from: ${MAIL_FROM:}
 
 # 邮件服务配置
 hula:

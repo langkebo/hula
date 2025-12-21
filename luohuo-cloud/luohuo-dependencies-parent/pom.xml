@@ -6,13 +6,13 @@
     <parent>
         <groupId>com.luohuo.basic</groupId>
         <artifactId>luohuo-parent</artifactId>
-        <version>3.0.6</version>
-        <relativePath/>
+        <version>3.0.7</version>
+        <relativePath>../../luohuo-util/luohuo-parent/pom.xml</relativePath>
     </parent>
 
     <groupId>com.luohuo.flex</groupId>
     <artifactId>luohuo-dependencies-parent</artifactId>
-    <version>3.0.6</version>
+    <version>3.0.7</version>
 
     <packaging>pom</packaging>
     <modelVersion>4.0.0</modelVersion>
@@ -21,15 +21,15 @@
     <description>luohuo项目业务父pom</description>
     <url>https://github.com/langkebo/hula</url>
     <properties>
-        <luohuo-util.version>3.0.6</luohuo-util.version>
-        <luohuo-project.version>3.0.6</luohuo-project.version>
+        <luohuo-util.version>3.0.7</luohuo-util.version>
+        <luohuo-project.version>3.0.7</luohuo-project.version>
         <docker.image.prefix>hula</docker.image.prefix>
         <transmittable-thread-local.version>2.14.5</transmittable-thread-local.version>
         <spring-boot.version>3.4.4</spring-boot.version>
         <skipTests>false</skipTests>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.4.1</maven-jar-plugin.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.42</lombok.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <weixin-java.version>4.5.0</weixin-java.version>
@@ -264,6 +264,12 @@
             <id>prod</id>
             <properties>
                 <profile.active>prod</profile.active>
+            </properties>
+        </profile>
+        <profile>
+            <id>docker</id>
+            <properties>
+                <profile.active>docker</profile.active>
             </properties>
         </profile>
     </profiles>

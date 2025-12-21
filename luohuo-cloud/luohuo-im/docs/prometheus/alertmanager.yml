@@ -2,11 +2,11 @@ global:
   # 告警解决后的等待时间
   resolve_timeout: 5m
 
-  # SMTP邮件配置
-  smtp_smarthost: 'smtp.example.com:587'
-  smtp_from: 'alert@hula.com'
-  smtp_auth_username: 'alert@hula.com'
-  smtp_auth_password: 'your_smtp_password'
+  # SMTP邮件配置 - 通过环境变量配置
+  smtp_smarthost: '${SMTP_HOST:smtp.example.com}:${SMTP_PORT:587}'
+  smtp_from: '${SMTP_FROM:alert@hula.com}'
+  smtp_auth_username: '${SMTP_USERNAME:alert@hula.com}'
+  smtp_auth_password: '${SMTP_PASSWORD:}'
   smtp_require_tls: true
 
   # 钉钉机器人Webhook（可选）

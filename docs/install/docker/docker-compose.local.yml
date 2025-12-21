@@ -24,7 +24,6 @@ services:
     ports:
       - "13306:3306"
     command: >
-      --require_secure_transport=ON
       --ssl-ca=/var/lib/mysql-ssl/ca.pem
       --ssl-cert=/var/lib/mysql-ssl/server-cert.pem
       --ssl-key=/var/lib/mysql-ssl/server-key.pem

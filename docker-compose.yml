@@ -22,7 +22,7 @@ services:
     networks:
       - hula-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
       timeout: 20s
       retries: 10
 
@@ -40,7 +40,7 @@ services:
     networks:
       - hula-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-}", "ping"]
       timeout: 10s
       retries: 5
 

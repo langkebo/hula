@@ -36,13 +36,13 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Run Checkstyle
-        run: mvn -B checkstyle:check -pl luohuo-cloud
+        run: mvn -B checkstyle:check -Dcheckstyle.skip=false -pl luohuo-cloud
 
       - name: Run PMD
-        run: mvn -B pmd:check -pl luohuo-cloud
+        run: mvn -B pmd:check -Dpmd.skip=false -pl luohuo-cloud
 
       - name: Run SpotBugs
-        run: mvn -B spotbugs:check -pl luohuo-cloud
+        run: mvn -B spotbugs:check -Dspotbugs.skip=false -pl luohuo-cloud
 
   # 编译和测试
   build-and-test:

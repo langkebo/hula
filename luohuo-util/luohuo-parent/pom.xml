@@ -9,7 +9,7 @@
     </parent>
     <groupId>com.luohuo.basic</groupId>
     <artifactId>luohuo-parent</artifactId>
-    <version>3.0.6</version>
+    <version>3.0.7</version>
     <packaging>pom</packaging>
 
     <modelVersion>4.0.0</modelVersion>
@@ -18,6 +18,11 @@
     <url>https://github.com/langkebo/hula</url>
 
     <properties>
+        <!-- Java 版本配置 - 统一使用 Java 21 -->
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        
         <!--
          1. spring-cloud-alibaba 2023.0.1.2 和 seata 2.2.0 不兼容
          2. spring-cloud-alibaba 2023.0.3.2 的日志存在问题，配置方式变动很大
@@ -33,8 +38,6 @@
         <sentinel.version>1.8.6</sentinel.version>
         <spring-boot-admin.version>3.4.5</spring-boot-admin.version>
         <dockerfile-maven-plugin.version>1.4.12</dockerfile-maven-plugin.version>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- 消息队列 -->
         <rocketmq-spring.version>2.3.0</rocketmq-spring.version>
@@ -49,7 +52,7 @@
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <dm.version>8.1.3.140</dm.version>
         <hutool.version>5.8.37</hutool.version>
-        <lombok.version>1.18.40</lombok.version>
+        <lombok.version>1.18.34</lombok.version>
         <sa-token.version>1.42.0</sa-token.version>
         <magic-api.version>2.1.1</magic-api.version>
         <oshi.version>6.6.4</oshi.version>
@@ -722,11 +725,14 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.11.0</version>
+                    <version>${maven-compiler-plugin.version}</version>
                     <configuration>
                         <source>${maven.compiler.source}</source>
                         <target>${maven.compiler.target}</target>
                         <encoding>${project.build.sourceEncoding}</encoding>
+                        <compilerArgs>
+                            <arg>-parameters</arg>
+                        </compilerArgs>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>

@@ -76,7 +76,20 @@ ROCKETMQ_ADMIN_SECRET_KEY=$(generate_password)
 if [ -n "$SERVER_IP_OVERRIDE" ]; then
     SERVER_IP="$SERVER_IP_OVERRIDE"
 else
-    SERVER_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "YOUR_SERVER_IP")
+    # 尝试多种方式获取 IP
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        SERVER_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "")
+    else
+        # Linux
+        SERVER_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "")
+    fi
+    
+    # 如果仍然为空，使用占位符
+    if [ -z "$SERVER_IP" ]; then
+        SERVER_IP="YOUR_SERVER_IP"
+        echo -e "${YELLOW}警告: 无法自动检测服务器 IP，请手动修改 .env 文件中的 IP 配置${NC}"
+    fi
 fi
 
 echo -e "${YELLOW}生成密码中...${NC}"
@@ -105,6 +118,7 @@ MINIO_ROOT_PASSWORD=${MINIO_PWD}
 NACOS_AUTH_TOKEN=${NACOS_TOKEN}
 NACOS_AUTH_IDENTITY_KEY=serverIdentity
 NACOS_AUTH_IDENTITY_VALUE=${NACOS_IDENTITY}
+NACOS_AUTH_ENABLE=true
 
 # ==================== PII 加密 ====================
 PII_ENCRYPTION_KEY=${PII_KEY}
@@ -152,6 +166,7 @@ MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=
 NACOS_AUTH_IDENTITY_KEY=serverIdentity
 NACOS_AUTH_IDENTITY_VALUE=${NACOS_IDENTITY}
 NACOS_AUTH_TOKEN=${NACOS_TOKEN}
+NACOS_AUTH_ENABLE=true
 EOF
 
 # 更新 redis.conf
@@ -222,6 +237,30 @@ accounts:
     defaultTopicPerm: PUB|SUB
     defaultGroupPerm: PUB|SUB
 EOF
+
+# 更新 RocketMQ Broker IP
+if [ -f "rocketmq/broker/conf/broker.conf" ]; then
+    if grep -qE "^brokerIP1=" rocketmq/broker/conf/broker.conf; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s/^brokerIP1=.*/brokerIP1=${SERVER_IP}/" rocketmq/broker/conf/broker.conf
+        else
+            sed -i "s/^brokerIP1=.*/brokerIP1=${SERVER_IP}/" rocketmq/broker/conf/broker.conf
+        fi
+    else
+        echo "brokerIP1=${SERVER_IP}" >> rocketmq/broker/conf/broker.conf
+    fi
+    echo -e "${GREEN}✓ 已更新 broker.conf 中的 brokerIP1=${SERVER_IP}${NC}"
+fi
+
+# 更新 SRS WebRTC candidate
+if [ -f "srs/srs_conf_7088.conf" ]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/candidate.*/candidate       ${SERVER_IP};/" srs/srs_conf_7088.conf
+    else
+        sed -i "s/candidate.*/candidate       ${SERVER_IP};/" srs/srs_conf_7088.conf
+    fi
+    echo -e "${GREEN}✓ 已更新 srs_conf_7088.conf 中的 candidate=${SERVER_IP}${NC}"
+fi
 
 # 设置文件权限
 chmod 600 .env

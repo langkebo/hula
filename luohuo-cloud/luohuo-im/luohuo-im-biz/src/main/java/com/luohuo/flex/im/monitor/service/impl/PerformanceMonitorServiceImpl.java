@@ -62,7 +62,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
                 redisTemplate.opsForList().rightPush(key, metrics);
                 // 只保留最近1000条记录
                 redisTemplate.opsForList().trim(key, -1000, -1);
-                redisTemplate.expire(key, TimeUnit.DAYS.toMillis(7));
+                redisTemplate.expire(key, 7, TimeUnit.DAYS);
             }
 
             // 记录到内存缓存
@@ -101,7 +101,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
 
                 redisTemplate.opsForList().rightPush(key, metrics);
                 redisTemplate.opsForList().trim(key, -1000, -1);
-                redisTemplate.expire(key, TimeUnit.DAYS.toMillis(7));
+                redisTemplate.expire(key, 7, TimeUnit.DAYS);
             }
 
             // 记录到内存缓存
@@ -142,7 +142,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
 
                 redisTemplate.opsForList().rightPush(key, metrics);
                 redisTemplate.opsForList().trim(key, -1000, -1);
-                redisTemplate.expire(key, TimeUnit.DAYS.toMillis(7));
+                redisTemplate.expire(key, 7, TimeUnit.DAYS);
             }
 
             // 记录到内存缓存
@@ -177,7 +177,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
 
                 redisTemplate.opsForList().rightPush(key, metrics);
                 redisTemplate.opsForList().trim(key, -1000, -1);
-                redisTemplate.expire(key, TimeUnit.DAYS.toMillis(7));
+                redisTemplate.expire(key, 7, TimeUnit.DAYS);
             }
 
             // 记录到内存缓存
@@ -331,7 +331,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
 
         if (!allSearchTimes.isEmpty()) {
             metrics.put("count", allSearchTimes.size());
-            metrics.put("avgTook", allSearchTimes.stream().mapToLong(Long::longValue).average());
+            metrics.put("avgTook", allSearchTimes.stream().mapToLong(Long::longValue).average().orElse(0.0));
             metrics.put("minTook", Collections.min(allSearchTimes));
             metrics.put("maxTook", Collections.max(allSearchTimes));
             metrics.put("p95Took", calculatePercentile(allSearchTimes, 0.95));
@@ -352,7 +352,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
 
         if (!allApiTimes.isEmpty()) {
             metrics.put("count", allApiTimes.size());
-            metrics.put("avgTook", allApiTimes.stream().mapToLong(Long::longValue).average());
+            metrics.put("avgTook", allApiTimes.stream().mapToLong(Long::longValue).average().orElse(0.0));
             metrics.put("minTook", Collections.min(allApiTimes));
             metrics.put("maxTook", Collections.max(allApiTimes));
             metrics.put("p95Took", calculatePercentile(allApiTimes, 0.95));
@@ -373,7 +373,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
 
         if (!allDbTimes.isEmpty()) {
             metrics.put("count", allDbTimes.size());
-            metrics.put("avgTook", allDbTimes.stream().mapToLong(Long::longValue).average());
+            metrics.put("avgTook", allDbTimes.stream().mapToLong(Long::longValue).average().orElse(0.0));
             metrics.put("minTook", Collections.min(allDbTimes));
             metrics.put("maxTook", Collections.max(allDbTimes));
             metrics.put("p95Took", calculatePercentile(allDbTimes, 0.95));
@@ -461,7 +461,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
     private String checkSearchPerformance() {
         List<Long> searchTimes = searchMetricsCache.get("search");
         if (searchTimes != null && !searchTimes.isEmpty()) {
-            double avgTook = searchTimes.stream().mapToLong(Long::longValue).average();
+            double avgTook = searchTimes.stream().mapToLong(Long::longValue).average().orElse(0.0);
             if (avgTook > SEARCH_SLOW_THRESHOLD) {
                 return "warning";
             }
@@ -475,7 +475,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
                 .collect(Collectors.toList());
 
         if (!apiTimes.isEmpty()) {
-            double avgTook = apiTimes.stream().mapToLong(Long::longValue).average();
+            double avgTook = apiTimes.stream().mapToLong(Long::longValue).average().orElse(0.0);
             if (avgTook > API_SLOW_THRESHOLD) {
                 return "warning";
             }
@@ -489,7 +489,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
                 .collect(Collectors.toList());
 
         if (!dbTimes.isEmpty()) {
-            double avgTook = dbTimes.stream().mapToLong(Long::longValue).average();
+            double avgTook = dbTimes.stream().mapToLong(Long::longValue).average().orElse(0.0);
             if (avgTook > DB_SLOW_THRESHOLD) {
                 return "warning";
             }
@@ -529,7 +529,7 @@ public class PerformanceMonitorServiceImpl implements PerformanceMonitorService 
             redisTemplate.opsForList().rightPush(key, alert);
             // 只保留最近100个警报
             redisTemplate.opsForList().trim(key, -100, -1);
-            redisTemplate.expire(key, TimeUnit.DAYS.toMillis(7));
+            redisTemplate.expire(key, 7, TimeUnit.DAYS);
         }
 
         log.warn("Performance Alert [{}][{}]: {}", level, type, message);

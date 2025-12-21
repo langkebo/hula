@@ -8,7 +8,8 @@ import com.luohuo.flex.im.domain.entity.UserPublicKey;
 import com.luohuo.flex.im.domain.enums.KeyPackageStatus;
 import com.luohuo.flex.im.metrics.E2EEMetrics;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,10 +30,10 @@ import java.util.ArrayList;
  * @author HuLa Team
  * @since 2025-12-13
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SessionKeyRotationService {
+    private static final Logger log = LoggerFactory.getLogger(SessionKeyRotationService.class);
 
     private final SessionKeyPackageMapper sessionKeyPackageMapper;
     private final UserPublicKeyMapper userPublicKeyMapper;

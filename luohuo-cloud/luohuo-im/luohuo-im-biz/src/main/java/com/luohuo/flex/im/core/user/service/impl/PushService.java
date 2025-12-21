@@ -15,7 +15,8 @@ import com.luohuo.flex.router.NacosRouterService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -33,9 +34,9 @@ import java.util.stream.Collectors;
  * 消息推送升级版 [结合消息路由]
  * @author 乾乾
  */
-@Slf4j
 @Service
 public class PushService {
+    private static final Logger log = LoggerFactory.getLogger(PushService.class);
     @Resource
     private MQProducer mqProducer;
 	@Resource

@@ -152,7 +152,8 @@ public class PiiEncryptor {
             return new String(plaintext, StandardCharsets.UTF_8);
 
         } catch (Exception e) {
-            log.error("PII解密失败: {}", e.getMessage());
+            // 使用 WARN 级别，因为解密失败可能是预期的业务场景（如密钥轮换、数据迁移）
+            log.warn("PII解密失败: {}", e.getMessage());
             throw new Exception("数据解密失败: " + e.getMessage(), e);
         }
     }

@@ -47,6 +47,11 @@ services:
       - ./redis/logs:/logs
     #配置文件启动
     command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   # rocketmq
   rocketmq-namesrv:
     image: apache/rocketmq:5.3.2

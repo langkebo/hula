@@ -5,7 +5,7 @@
     <parent>
         <artifactId>luohuo-base</artifactId>
         <groupId>com.luohuo.flex</groupId>
-        <version>3.0.6</version>
+        <version>3.0.7</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -83,6 +83,12 @@
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-extension</artifactId>
+        </dependency>
+
+        <!-- Seata 分布式事务 -->
+        <dependency>
+            <groupId>io.seata</groupId>
+            <artifactId>seata-spring-boot-starter</artifactId>
         </dependency>
 
         <dependency>

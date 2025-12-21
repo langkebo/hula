@@ -6,12 +6,12 @@
     <parent>
         <groupId>com.luohuo.basic</groupId>
         <artifactId>luohuo-parent</artifactId>
-        <version>3.0.6</version>
+        <version>3.0.7</version>
         <relativePath>luohuo-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>luohuo-util</artifactId>
-    <version>3.0.6</version>
+    <version>3.0.7</version>
 
     <packaging>pom</packaging>
     <modelVersion>4.0.0</modelVersion>
@@ -203,13 +203,20 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
                     <compilerArgs>
                         <arg>-parameters</arg>
                     </compilerArgs>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <!-- 资源插件 -->

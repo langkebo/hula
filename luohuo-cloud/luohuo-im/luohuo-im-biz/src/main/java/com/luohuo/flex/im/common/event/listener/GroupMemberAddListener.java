@@ -14,7 +14,8 @@ import com.luohuo.flex.im.core.user.service.impl.PushService;
 import com.luohuo.flex.model.entity.ws.ChatMember;
 import com.luohuo.flex.model.entity.WsBaseResp;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -30,10 +31,10 @@ import static com.luohuo.flex.im.common.config.ThreadPoolConfig.LUOHUO_EXECUTOR;
  *
  * @author nyh
  */
-@Slf4j
 @Component
 @AllArgsConstructor
 public class GroupMemberAddListener {
+    private static final Logger log = LoggerFactory.getLogger(GroupMemberAddListener.class);
 
     private UserCache userCache;
 	private GroupMemberDao groupMemberDao;

@@ -118,6 +118,11 @@ check_docker() {
 # 设置目录权限
 setup_permissions() {
     echo -e "${YELLOW}[2/8] 设置目录权限...${NC}"
+    
+    # 创建必要的目录
+    mkdir -p env mysql/data mysql/conf mysql/ssl redis/data redis/logs nacos/logs nacos/data minio/data minio/config 2>/dev/null || true
+    mkdir -p rocketmq/namesrv/logs rocketmq/namesrv/store rocketmq/broker/logs rocketmq/broker/store rocketmq/timerwheel 2>/dev/null || true
+    
     chmod -R 777 rocketmq/ 2>/dev/null || true
     chmod -R 755 mysql/ 2>/dev/null || true
     chmod -R 755 redis/ 2>/dev/null || true
@@ -130,6 +135,39 @@ setup_permissions() {
 check_config() {
     echo -e "${YELLOW}[3/8] 检查配置文件...${NC}"
     
+    # 如果 .env 文件不存在，自动运行 init-passwords.sh
+    if [ ! -f ".env" ]; then
+        echo -e "${YELLOW}未找到 .env 文件，自动初始化配置...${NC}"
+        
+        # 自动检测服务器 IP
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            SERVER_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "")
+        else
+            # Linux
+            SERVER_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "")
+        fi
+        
+        if [ -z "$SERVER_IP" ]; then
+            # 尝试获取公网 IP
+            SERVER_IP=$(curl -s --connect-timeout 5 ifconfig.me 2>/dev/null || \
+                        curl -s --connect-timeout 5 icanhazip.com 2>/dev/null || \
+                        echo "")
+        fi
+        
+        if [ -z "$SERVER_IP" ]; then
+            echo -e "${RED}错误: 无法自动检测服务器 IP${NC}"
+            echo -e "${YELLOW}请手动运行: bash init-passwords.sh --ip <YOUR_SERVER_IP>${NC}"
+            exit 1
+        fi
+        
+        echo -e "${YELLOW}检测到服务器 IP: ${SERVER_IP}${NC}"
+        bash init-passwords.sh --ip "$SERVER_IP" --force --quiet
+        
+        # 重新加载配置
+        load_runtime_config
+    fi
+    
     # 检查broker.conf
     if [ ! -f "rocketmq/broker/conf/broker.conf" ]; then
         echo -e "${RED}错误: rocketmq/broker/conf/broker.conf 不存在${NC}"
@@ -141,15 +179,35 @@ check_config() {
     if [ -z "$BROKER_IP" ] || [ "$BROKER_IP" == "YOUR_SERVER_IP" ]; then
         if [ -n "$ROCKETMQ_BROKER_IP" ] && [ "$ROCKETMQ_BROKER_IP" != "YOUR_SERVER_IP" ]; then
             if grep -qE "^brokerIP1=" rocketmq/broker/conf/broker.conf; then
-                sed -i "s/^brokerIP1=.*/brokerIP1=${ROCKETMQ_BROKER_IP}/" rocketmq/broker/conf/broker.conf
+                # 兼容 macOS 和 Linux 的 sed
+                if [[ "$OSTYPE" == "darwin"* ]]; then
+                    sed -i '' "s/^brokerIP1=.*/brokerIP1=${ROCKETMQ_BROKER_IP}/" rocketmq/broker/conf/broker.conf
+                else
+                    sed -i "s/^brokerIP1=.*/brokerIP1=${ROCKETMQ_BROKER_IP}/" rocketmq/broker/conf/broker.conf
+                fi
             else
                 echo "brokerIP1=${ROCKETMQ_BROKER_IP}" >> rocketmq/broker/conf/broker.conf
             fi
             echo -e "${GREEN}✓ 已自动设置 brokerIP1=${ROCKETMQ_BROKER_IP}${NC}"
         else
-            echo -e "${RED}错误: 请在 broker.conf 中配置 brokerIP1${NC}"
-            echo -e "${YELLOW}提示: 将 brokerIP1 设置为服务器的实际IP地址${NC}"
-            exit 1
+            # 最后尝试自动检测 IP
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                AUTO_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "")
+            else
+                AUTO_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "")
+            fi
+            if [ -n "$AUTO_IP" ]; then
+                if [[ "$OSTYPE" == "darwin"* ]]; then
+                    sed -i '' "s/^brokerIP1=.*/brokerIP1=${AUTO_IP}/" rocketmq/broker/conf/broker.conf
+                else
+                    sed -i "s/^brokerIP1=.*/brokerIP1=${AUTO_IP}/" rocketmq/broker/conf/broker.conf
+                fi
+                echo -e "${GREEN}✓ 已自动设置 brokerIP1=${AUTO_IP}${NC}"
+            else
+                echo -e "${RED}错误: 请在 broker.conf 中配置 brokerIP1${NC}"
+                echo -e "${YELLOW}提示: 运行 bash init-passwords.sh --ip <YOUR_SERVER_IP> 或手动修改${NC}"
+                exit 1
+            fi
         fi
     fi
     
@@ -305,8 +363,16 @@ import_nacos_config() {
 
     ZIP_FILE=$(ls -t ../nacos/nacos_config_export_*.zip 2>/dev/null | head -n 1 || true)
     if [ -z "$ZIP_FILE" ]; then
-        echo -e "${YELLOW}警告: 未找到 ../nacos/nacos_config_export_*.zip，跳过Nacos配置导入${NC}"
-        return 0
+        echo -e "${YELLOW}警告: 未找到 ../nacos/nacos_config_export_*.zip${NC}"
+        echo -e "${YELLOW}尝试使用 generate-nacos-config.sh 生成基础配置...${NC}"
+        if [ -f "generate-nacos-config.sh" ]; then
+            bash generate-nacos-config.sh
+            echo -e "${GREEN}✓ 基础配置已生成${NC}"
+            return 0
+        else
+            echo -e "${YELLOW}提示: 请手动在 Nacos 控制台配置或运行 generate-nacos-config.sh${NC}"
+            return 0
+        fi
     fi
 
     # 尝试获取 Nacos 容器 IP

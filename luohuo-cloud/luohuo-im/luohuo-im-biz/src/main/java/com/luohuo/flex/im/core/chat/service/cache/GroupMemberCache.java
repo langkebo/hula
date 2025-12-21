@@ -7,7 +7,8 @@ import com.luohuo.flex.im.core.chat.dao.RoomGroupDao;
 import com.luohuo.flex.im.domain.entity.GroupMember;
 import com.luohuo.flex.im.domain.entity.RoomGroup;
 import jakarta.annotation.Resource;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -34,9 +35,9 @@ import java.util.stream.Collectors;
  *
  * @author nyh
  */
-@Slf4j
 @Component
 public class GroupMemberCache {
+    private static final Logger log = LoggerFactory.getLogger(GroupMemberCache.class);
 
     @Resource
     private RoomGroupDao roomGroupDao;

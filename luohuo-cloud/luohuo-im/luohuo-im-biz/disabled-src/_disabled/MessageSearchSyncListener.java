@@ -6,7 +6,7 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import co.elastic.clients.elasticsearch.indices.ExistsRequest;
 import com.luohuo.flex.im.domain.entity.Message;
-import com.luohuo.flex.im.service.MessageService;
+import com.luohuo.flex.im.core.chat.service.MessageService;
 import com.luohuo.flex.im.search.document.MessageDocument;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
