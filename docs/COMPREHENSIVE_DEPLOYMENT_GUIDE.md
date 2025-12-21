@@ -12,10 +12,12 @@
 
 1. [快速开始（5分钟）](#1-快速开始5分钟)
 2. [详细部署步骤](#2-详细部署步骤)
-3. [部署失败排查指南](#3-部署失败排查指南)
-4. [生产环境配置](#4-生产环境配置)
-5. [常见问题 FAQ](#5-常见问题-faq)
-6. [附录](#6-附录)
+3. [Nacos 配置管理](#3-nacos-配置管理)
+4. [Turn 服务部署（音视频通话）](#4-turn-服务部署音视频通话)
+5. [部署失败排查指南](#5-部署失败排查指南)
+6. [生产环境配置](#6-生产环境配置)
+7. [常见问题 FAQ](#7-常见问题-faq)
+8. [附录](#8-附录)
 
 ---
 
@@ -95,6 +97,16 @@ curl -sf http://localhost:18761/actuator/health && echo "OAuth OK"
 curl -sf http://localhost:18762/actuator/health && echo "IM OK"
 curl -sf http://localhost:9501/actuator/health && echo "WS OK"
 ```
+
+### 1.5 部署效果预览
+
+部署成功后，Docker 容器运行状态如下：
+
+![环境部署效果](install/image/环境部署效果.png)
+
+登录界面：
+
+![登录界面](install/image/login.png)
 
 ---
 
@@ -256,32 +268,9 @@ docker exec -i mysql mysql -uroot -p$MYSQL_PWD < ../sql/luohuo_dev.sql
 docker exec -i mysql mysql -uroot -p$MYSQL_PWD < ../sql/luohuo_im_01.sql
 ```
 
-### 2.4 Nacos 配置
+### 2.4 应用服务部署
 
-#### 2.4.1 访问 Nacos 控制台
-
-- **地址**: `http://服务器IP:8848/nacos`
-- **账号**: nacos
-- **密码**: 查看 `.env` 文件中的 `NACOS_AUTH_PASSWORD`
-
-#### 2.4.2 配置文件说明
-
-配置文件模板位于 `luohuo-cloud/install/nacos/` 目录：
-
-| 配置文件 | 说明 |
-|---------|------|
-| `mysql.yml` | 数据库连接配置 |
-| `redis.yml` | Redis 连接配置 |
-| `common-gateway.yml` | Gateway 白名单配置 |
-| `hula-im-server.yml` | IM 服务配置 |
-| `common-pii-encryption.yml` | PII 加密配置 |
-| `application-mail.yml` | 邮件服务配置 |
-
-**重要**: 敏感配置已改为环境变量引用，确保 `.env` 文件配置正确。
-
-### 2.5 应用服务部署
-
-#### 2.5.1 编译项目
+#### 2.4.1 编译项目
 
 ```bash
 cd ~/projects/hula
@@ -295,7 +284,7 @@ cd ../luohuo-cloud
 mvn clean package -DskipTests
 ```
 
-#### 2.5.2 启动服务
+#### 2.4.2 启动服务
 
 ```bash
 # Docker 方式启动
@@ -309,7 +298,7 @@ bash all-start.sh
 
 **服务启动顺序**: Gateway → OAuth → Base → System → IM → WS
 
-#### 2.5.3 验证服务
+#### 2.4.3 验证服务
 
 ```bash
 # 检查健康状态
@@ -324,9 +313,122 @@ curl "http://localhost:8848/nacos/v1/ns/service/list"
 
 ---
 
-## 3. 部署失败排查指南
+## 3. Nacos 配置管理
 
-### 3.1 网络连接问题
+### 3.1 访问 Nacos 控制台
+
+- **地址**: `http://服务器IP:8848/nacos`
+- **账号**: nacos
+- **密码**: 查看 `.env` 文件中的 `NACOS_AUTH_PASSWORD`
+
+### 3.2 导入配置
+
+1. 登录 Nacos 控制台
+2. 进入 **配置管理** → **配置列表**
+3. 点击 **导入配置**
+4. 选择配置包: `luohuo-cloud/install/nacos/nacos_config_export_20251126080946.zip`
+
+![Nacos配置导入](install/image/img_4.png)
+
+### 3.3 配置文件说明
+
+| 配置文件 | 说明 |
+|---------|------|
+| `mysql.yml` | 数据库连接配置 |
+| `redis.yml` | Redis 连接配置 |
+| `common-gateway.yml` | Gateway 白名单配置 |
+| `hula-im-server.yml` | IM 服务配置 |
+| `common-pii-encryption.yml` | PII 加密配置 |
+| `application-mail.yml` | 邮件服务配置 |
+
+### 3.4 修改关键配置
+
+#### 3.4.1 数据库配置 (mysql.yml)
+
+确保数据库地址正确：
+- Docker 部署使用 `host.docker.internal:13306`
+- 本地部署使用 `127.0.0.1:13306`
+
+![数据库配置](install/image/img_5.png)
+
+#### 3.4.2 Redis 配置 (redis.yml)
+
+确保 Redis 密码与 `.env` 文件一致。
+
+#### 3.4.3 RocketMQ 配置 (rocketmq.yml)
+
+确保 NameServer 地址正确：`host.docker.internal:9876`
+
+---
+
+## 4. Turn 服务部署（音视频通话）
+
+WebRTC 音视频通话需要 Turn 服务器进行 NAT 穿透。
+
+### 4.1 安装依赖
+
+```bash
+# 安装 OpenSSL
+yum -y install openssl-devel
+
+# 生成 SSL 证书
+openssl req -x509 -newkey rsa:2048 -keyout /etc/turn_server_pkey.pem -out /etc/turn_server_cert.pem -days 99999 -nodes
+
+# 开放端口
+# 3478/udp、3478/tcp
+```
+
+### 4.2 安装 libevent
+
+```bash
+tar -zxvf libevent-2.1.12-stable.tar.gz
+cd libevent-2.1.12-stable/
+./configure
+make
+make install
+```
+
+### 4.3 安装 coturn
+
+```bash
+tar -zxvf coturn-4.5.1.1.tar.gz
+cd coturn-4.5.1.1
+./configure
+make
+make install
+```
+
+### 4.4 配置 Turn 服务
+
+```bash
+# 生成用户
+turnadmin -a -u chr -p 11111 -r hulaspark.com
+
+# 创建配置文件
+vi /usr/local/etc/turnserver.conf
+```
+
+### 4.5 启动服务
+
+```bash
+turnserver -a -o -f -r hulaspark.com
+```
+
+### 4.6 测试 Turn 服务
+
+测试地址：https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/
+
+- **host**: 本地直连测试，用在局域网
+- **srflx**: 公网直连（打洞测试）
+- **relay**: 中继测试
+
+![Turn服务测试](install/image/img_13.png)
+
+---
+
+## 5. 部署失败排查指南
+
+### 5.1 网络连接问题
 
 **症状**: 应用服务无法连接 Nacos/MySQL/Redis/RocketMQ
 
@@ -347,7 +449,7 @@ extra_hosts:
 sudo ufw allow from 172.17.0.0/16  # 允许 Docker 网络
 ```
 
-### 3.2 RocketMQ 启动失败
+### 5.2 RocketMQ 启动失败
 
 **症状**: Broker 启动后立即退出，日志显示 `NullPointerException`
 
@@ -371,7 +473,7 @@ sed -i '' "s/^brokerIP1=.*/brokerIP1=$(ipconfig getifaddr en0)/" rocketmq/broker
 docker compose restart rocketmq-namesrv rocketmq-broker
 ```
 
-### 3.3 Nacos 配置问题
+### 5.3 Nacos 配置问题
 
 **症状**: 应用启动报错 `Failed to configure a DataSource`
 
@@ -390,7 +492,7 @@ environment:
 curl "http://localhost:8848/nacos/v1/cs/configs?dataId=mysql.yml&group=DEFAULT_GROUP"
 ```
 
-### 3.4 数据库连接问题
+### 5.4 数据库连接问题
 
 **症状**: `Access denied` 或 `Connection refused`
 
@@ -409,7 +511,7 @@ docker exec mysql printenv MYSQL_ROOT_PASSWORD
 # 更新 .env 文件
 ```
 
-### 3.5 健康检查失败
+### 5.5 健康检查失败
 
 **症状**: Gateway 健康检查返回 406 或 DOWN
 
@@ -428,7 +530,7 @@ management:
       enabled: false
 ```
 
-### 3.6 编译问题
+### 5.6 编译问题
 
 **症状**: 编译失败或警告
 
@@ -440,11 +542,11 @@ management:
 
 ---
 
-## 4. 生产环境配置
+## 6. 生产环境配置
 
-### 4.1 安全加固
+### 6.1 安全加固
 
-#### 4.1.1 敏感配置管理
+#### 6.1.1 敏感配置管理
 
 所有敏感配置已改为环境变量引用：
 
@@ -457,7 +559,7 @@ management:
 | 邮箱授权码 | `MAIL_PASSWORD` | 邮件服务 |
 | SMTP 密码 | `SMTP_PASSWORD` | 告警邮件 |
 
-#### 4.1.2 网络安全
+#### 6.1.2 网络安全
 
 ```bash
 # 配置防火墙（UFW）
@@ -470,15 +572,28 @@ sudo ufw enable
 # MySQL(13306), Redis(16379), Nacos(8848) 等仅内网访问
 ```
 
-### 4.2 性能优化
+### 6.2 性能优化
 
-#### 4.2.1 JVM 参数优化
+#### 6.2.1 JVM 参数优化
 
 ```bash
 export JAVA_OPTS="-Xms512M -Xmx1024M -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
 ```
 
-### 4.3 监控告警
+### 6.3 Jenkins CI/CD（可选）
+
+如果需要持续集成，可以部署 Jenkins：
+
+```bash
+cd docs/install/docker
+docker compose -f docker-compose.jenkins.yml up -d
+```
+
+首次登录需要获取初始密码：
+
+![Jenkins密码](install/image/jenkins密码.png)
+
+### 6.4 监控告警
 
 ```bash
 cd docs/install/docker/monitoring
@@ -490,7 +605,7 @@ docker compose -f docker-compose.monitoring.yml up -d
 | Prometheus | http://IP:9090 | 指标收集 |
 | Grafana | http://IP:3000 | 可视化仪表盘 |
 
-### 4.4 备份恢复
+### 6.5 备份恢复
 
 ```bash
 # 手动备份
@@ -506,7 +621,7 @@ bash restore.sh 20251221_020000
 
 ---
 
-## 5. 常见问题 FAQ
+## 7. 常见问题 FAQ
 
 ### Q1: RocketMQ 启动失败，日志显示 NullPointerException
 **A**: 创建 `timerwheel` 目录并设置权限：
@@ -542,9 +657,9 @@ sudo chmod -R 777 rocketmq/
 
 ---
 
-## 6. 附录
+## 8. 附录
 
-### 6.1 端口清单
+### 8.1 端口清单
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
@@ -558,8 +673,12 @@ sudo chmod -R 777 rocketmq/
 | OAuth | 18761 | 认证服务 |
 | IM | 18762 | IM 服务 |
 | WebSocket | 9501 | WebSocket |
+| Turn | 3478 | 音视频中继 |
+| Jenkins | 20000 | CI/CD（可选）|
+| Prometheus | 9090 | 监控（可选）|
+| Grafana | 3000 | 仪表盘（可选）|
 
-### 6.2 重要文件位置
+### 8.2 重要文件位置
 
 | 文件 | 路径 | 说明 |
 |------|------|------|
@@ -570,8 +689,45 @@ sudo chmod -R 777 rocketmq/
 | Nacos 配置模板 | `luohuo-cloud/install/nacos/` | 应用配置模板 |
 | 部署脚本 | `docs/install/docker/deploy.sh` | 一键部署脚本 |
 | 健康检查 | `docs/install/docker/health-check.sh` | 服务健康检查 |
+| Turn 配置 | `docs/install/docker/turn/` | Turn 服务配置 |
 
-### 6.3 项目优化记录 (2025-12-21)
+### 8.3 架构图
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         客户端 (Web/App)                         │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Gateway (18760)                             │
+│                    API 网关 / 负载均衡                            │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        ▼                       ▼                       ▼
+┌───────────────┐       ┌───────────────┐       ┌───────────────┐
+│  OAuth (18761)│       │   IM (18762)  │       │   WS (9501)   │
+│   认证服务     │       │   IM 服务     │       │  WebSocket    │
+└───────────────┘       └───────────────┘       └───────────────┘
+        │                       │                       │
+        └───────────────────────┼───────────────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        ▼                       ▼                       ▼
+┌───────────────┐       ┌───────────────┐       ┌───────────────┐
+│ MySQL (13306) │       │ Redis (16379) │       │ RocketMQ      │
+│   数据库       │       │    缓存       │       │  消息队列     │
+└───────────────┘       └───────────────┘       └───────────────┘
+                                │
+                                ▼
+                    ┌───────────────────┐
+                    │   Nacos (8848)    │
+                    │  配置中心/注册中心  │
+                    └───────────────────┘
+```
+
+### 8.4 项目优化记录 (2025-12-21)
 
 #### 安全修复
 1. **PiiEncryptor Bean 冲突** - 旧类改为继承新版本，标记 `@Deprecated`
@@ -590,7 +746,7 @@ sudo chmod -R 777 rocketmq/
 - 邮件服务
 - 监控健康检查
 
-### 6.4 部署检查清单
+### 8.5 部署检查清单
 
 #### 部署前
 - [ ] 服务器满足最低配置要求
