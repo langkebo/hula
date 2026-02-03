@@ -316,7 +316,14 @@ const getMobileRoutes = (): Array<RouteRecordRaw> => [
   {
     path: '/mobile/myQRCode',
     name: 'mobileMyQRCode',
-    component: MyQRCode
+    component: FriendsLayout,
+    children: [
+      {
+        path: '',
+        name: 'mobileMyQRCodePage',
+        component: MyQRCode
+      }
+    ]
   },
   {
     path: '/mobile/rtcCall',
