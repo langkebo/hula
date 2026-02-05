@@ -1,7 +1,6 @@
 <template>
-  <AutoFixHeightPage :show-footer="false" class="dark:bg-red">
+  <AutoFixHeightPage :show-footer="false">
     <template #header>
-      <div class="h-100px"></div>
       <HeaderBar
         :isOfficial="false"
         :hidden-right="true"
@@ -11,10 +10,10 @@
     </template>
 
     <template #container>
-      <div class="flex flex-col overflow-auto h-full relative">
+      <div class="flex flex-col overflow-auto h-full">
         <img
           src="@/assets/mobile/chat-home/background.webp"
-          class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
+          class="absolute fixed top-0 left-0 w-100vw h-100vh z-0 dark:opacity-20" />
 
         <!-- 页面全部内容 -->
         <div class="flex flex-col flex-1 items-center p-15px z-2 my-15">

@@ -1,19 +1,16 @@
 <template>
   <AutoFixHeightPage :show-footer="false">
     <template #header>
-      <HeaderBar
-        :isOfficial="false"
-        class="bg-white"
-        style="border-bottom: 1px solid; border-color: #dfdfdf"
-        :hidden-right="true"
-        :room-name="t('mobile_edit_bio.title')" />
+      <HeaderBar :isOfficial="false" border :hidden-right="true" :room-name="t('mobile_edit_bio.title')" />
     </template>
 
     <template #container>
-      <div
-        class="bg-[url('@/assets/mobile/chat-home/background.webp')] bg-cover bg-center flex flex-col overflow-auto h-full">
+      <div class="flex flex-col overflow-auto h-full relative">
+        <img
+          src="@/assets/mobile/chat-home/background.webp"
+          class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
         <div class="flex flex-col flex-1 gap-20px py-15px px-20px">
-          <n-form class="bg-white rounded-15px p-10px shadow" label-placement="left" label-width="100px">
+          <n-form class="rounded-15px p-10px shadow" label-placement="left" label-width="100px">
             <n-form-item>
               <n-input
                 v-model:value="localBio"
@@ -27,21 +24,9 @@
           </n-form>
 
           <div class="flex justify-center">
-            <div
-              class="w-20%"
-              style="
-                background: linear-gradient(145deg, #7eb7ac, #6fb0a4, #5fa89c);
-                border-radius: 30px;
-                padding: 10px 30px;
-                color: white;
-                font-weight: 500;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-                text-align: center;
-                display: inline-block;
-              "
-              @click="handleSave">
+            <n-button @click="handleSave" block type="primary" strong secondary>
               {{ t('mobile_edit_bio.save_btn') }}
-            </div>
+            </n-button>
           </div>
         </div>
       </div>

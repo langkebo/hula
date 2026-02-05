@@ -134,7 +134,8 @@ const commonTheme: GlobalThemeOverrides = {
   Input: {
     borderRadius: '10px',
     borderHover: '0',
-    border: '0',
+    // TODO: 不清楚为什么去掉边框
+    // border: '0',
     borderDisabled: '0',
     borderFocus: '0',
     boxShadowFocus: '0'

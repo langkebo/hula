@@ -7,15 +7,21 @@
           <div class="flex flex-col flex-1 p-20px gap-20px">
             <div class="flex items-center">
               <div class="py-15px flex gap-10px w-full items-center justify-end">
-                <div class="bg-#E7EFE6 flex flex-wrap ps-2 items-center rounded-full gap-1 h-24px px-2">
+                <div class="bg-#E7EFE6 dark:bg-gray/20 flex flex-wrap ps-2 items-center rounded-full gap-1 h-24px px-2">
                   <span class="w-12px h-12px rounded-15px bg-#079669"></span>
-                  <span class="text-bold-style" style="font-size: 12px; color: #373838">
+                  <n-text style="font-size: 12px">
                     {{ t('mobile_my.online') }}
-                  </span>
+                  </n-text>
                 </div>
-                <svg @click="toSettings" class="iconpark-icon h-32px w-32px block"><use href="#wode-shezhi"></use></svg>
-                <svg @click="toScanQRCode" class="iconpark-icon h-32px w-32px block"><use href="#saoma"></use></svg>
-                <svg @click="handleBack" class="w-32px h-32px iconpark-icon"><use href="#right"></use></svg>
+                <svg @click="toSettings" class="dark:color-gray-200/90 iconpark-icon h-32px w-32px block">
+                  <use href="#wode-shezhi"></use>
+                </svg>
+                <svg @click="toScanQRCode" class="dark:color-gray-200/90 iconpark-icon h-32px w-32px block">
+                  <use href="#saoma"></use>
+                </svg>
+                <svg @click="handleBack" class="dark:color-gray-200/90 w-32px h-32px iconpark-icon">
+                  <use href="#right"></use>
+                </svg>
               </div>
             </div>
             <n-card size="small" class="rounded-lg" content-class="flex gap-20px items-center">

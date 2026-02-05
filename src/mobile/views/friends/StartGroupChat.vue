@@ -13,9 +13,9 @@
         <div class="flex-1 py-5px shrink-0">
           <n-input
             v-model:value="keyword"
-            class="rounded-10px w-full bg-gray-100 relative text-14px"
             placeholder="搜索联系人~"
             clearable
+            round
             spellCheck="false"
             autoComplete="off"
             autoCorrect="off"
@@ -26,7 +26,7 @@
           </n-input>
         </div>
         <div class="flex justify-end items-center">
-          <n-button class="py-5px" @click="doSearch">搜索</n-button>
+          <n-button strong secondary round @click="doSearch">搜索</n-button>
         </div>
       </div>
 
@@ -45,7 +45,9 @@
                 class="w-full flex items-center px-5px"
                 :class="[
                   'cursor-pointer select-none transition-colors duration-150',
-                  selectedList.includes(item.uid) ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'
+                  selectedList.includes(item.uid)
+                    ? 'bg-[#f5f5f5] dark:bg-[#404040] border-blue-300'
+                    : 'hover:bg-[#f5f5f5] dark:hover:bg-[#404040] border-gray-200'
                 ]">
                 <template #default>
                   <!-- ✅ 强制一行展示 -->
@@ -65,11 +67,11 @@
                       <div class="text-12px text-gray-500 flex items-center gap-4px truncate">
                         <template v-if="getUserState(item.uid)">
                           <img class="size-12px rounded-50%" :src="getUserState(item.uid)?.url" alt="" />
-                          {{ getUserState(item.uid)?.title }}
+                          <n-text>{{ getUserState(item.uid)?.title }}</n-text>
                         </template>
                         <template v-else>
                           <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
-                          {{ item.activeStatus === OnlineEnum.ONLINE ? '在线' : '离线' }}
+                          <n-text>{{ item.activeStatus === OnlineEnum.ONLINE ? '在线' : '离线' }}</n-text>
                         </template>
                       </div>
                     </div>

@@ -1,66 +1,50 @@
 <template>
   <AutoFixHeightPage :show-footer="false">
     <template #header>
-      <HeaderBar
-        :isOfficial="false"
-        class="bg-white"
-        style="border-bottom: 1px solid; border-color: #dfdfdf"
-        :hidden-right="true"
-        :room-name="t('mobile_edit_brithday.title')" />
+      <HeaderBar :isOfficial="false" border :hidden-right="true" :room-name="t('mobile_edit_brithday.title')" />
     </template>
 
     <template #container>
-      <div
-        class="bg-[url('@/assets/mobile/chat-home/background.webp')] bg-cover bg-center flex flex-col overflow-auto h-full">
+      <div class="flex flex-col overflow-auto h-full relative">
+        <img
+          src="@/assets/mobile/chat-home/background.webp"
+          class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
+
         <div class="flex flex-col flex-1 gap-20px py-15px px-20px">
-          <div class="flex justify-center w-full bg-white rounded-10px shadow">
-            <n-date-picker panel type="date" />
-          </div>
+          <n-date-picker panel type="date" block class="m-auto rounded-16px" />
 
-          <div class="flex bg-white rounded-10px w-full h-auto shadow">
-            <div class="px-15px flex flex-col w-full">
-              <!-- 群号 -->
-              <div
-                style="border-bottom: 1px solid; border-color: #ebebeb"
-                class="flex justify-between py-12px items-center">
-                <div class="text-14px">{{ t('mobile_edit_brithday.options.display_birthday_tag') }}</div>
-                <n-switch />
+          <n-list class="px-15px flex flex-col w-full box-border rounded-16px">
+            <n-list-item>
+              <div class="flex w-full justify-between items-center">
+                <n-text class="text-14px shrink-0">{{ t('mobile_edit_brithday.options.display_birthday_tag') }}</n-text>
+                <n-switch class="shrink-0" />
               </div>
-            </div>
-          </div>
+            </n-list-item>
+          </n-list>
 
-          <div class="flex bg-white rounded-10px w-full h-auto shadow">
-            <div class="px-15px flex flex-col w-full">
-              <div
-                style="border-bottom: 1px solid; border-color: #ebebeb"
-                class="flex justify-between py-12px items-center">
-                <div class="text-14px">{{ t('mobile_edit_brithday.options.displsy_age') }}</div>
-                <n-switch />
+          <n-list class="px-15px flex flex-col w-full box-border rounded-10px">
+            <n-list-item>
+              <div class="flex w-full justify-between items-center">
+                <n-text class="text-14px shrink-0">{{ t('mobile_edit_brithday.options.displsy_age') }}</n-text>
+                <n-switch class="shrink-0" />
               </div>
-              <div
-                style="border-bottom: 1px solid; border-color: #ebebeb"
-                class="flex justify-between py-12px items-center">
-                <div class="text-14px">{{ t('mobile_edit_brithday.options.display_constellation') }}</div>
-                <n-switch />
+            </n-list-item>
+
+            <n-divider class="m-0! p-0!" />
+            <n-list-item>
+              <div class="flex w-full justify-between items-center">
+                <n-text class="text-14px shrink-0">
+                  {{ t('mobile_edit_brithday.options.display_constellation') }}
+                </n-text>
+                <n-switch class="shrink-0" />
               </div>
-            </div>
-          </div>
+            </n-list-item>
+          </n-list>
 
           <div class="flex justify-center mt-20px">
-            <div
-              class="w-20%"
-              style="
-                background: linear-gradient(145deg, #7eb7ac, #6fb0a4, #5fa89c);
-                border-radius: 30px;
-                padding: 10px 30px;
-                color: white;
-                font-weight: 500;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-                text-align: center;
-                display: inline-block;
-              ">
+            <n-button strong secondary round type="primary" block>
               {{ t('mobile_edit_brithday.save_btn') }}
-            </div>
+            </n-button>
           </div>
         </div>
       </div>
