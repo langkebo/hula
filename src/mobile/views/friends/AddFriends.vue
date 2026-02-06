@@ -1,13 +1,15 @@
 <template>
-  <div class="flex flex-1 flex-col relative bg-cover bg-center">
-    <HeaderBar
-      :isOfficial="false"
-      :hidden-right="true"
-      :enable-default-background="false"
-      :enable-shadow="false"
-      room-name="添加好友/群" />
+  <AutoFixHeightPage :show-footer="false">
+    <template #header>
+      <HeaderBar
+        :isOfficial="false"
+        :hidden-right="true"
+        :enable-default-background="false"
+        :enable-shadow="false"
+        room-name="添加好友/群" />
+    </template>
 
-    <div class="flex flex-col gap-1 overflow-auto h-full">
+    <template #container>
       <!-- 主要内容 -->
       <n-flex vertical :size="14">
         <!-- 搜索框 -->
@@ -132,8 +134,8 @@
           </n-tab-pane>
         </n-tabs>
       </n-flex>
-    </div>
-  </div>
+    </template>
+  </AutoFixHeightPage>
 </template>
 
 <script setup lang="ts">

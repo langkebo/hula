@@ -1,5 +1,5 @@
 <template>
-  <MobileLayout :topSafeAreaClass="computedTopAreaClass">
+  <MobileLayout>
     <div class="h-full flex flex-col">
       <!-- 页面全部内容 -->
       <div class="flex flex-col flex-1">
@@ -139,27 +139,5 @@ useMitt.on(MittEnum.QR_SCAN_EVENT, async (data: ScanData) => {
   }
 })
 
-const computedTopAreaClass = computed(() => {
-  return route.name !== 'mobileSimpleBio' ? 'bg-white' : ''
-})
-
 const route = useRoute()
 </script>
-
-<style lang="scss" scoped>
-// .page-view {
-//   // 进入时的动画
-//   animation: fade-slide-in 0.3s ease;
-// }
-
-// @keyframes fade-slide-in {
-//   from {
-//     transform: translateX(20px);
-//     opacity: 0;
-//   }
-//   to {
-//     transform: translateX(0);
-//     opacity: 1;
-//   }
-// }
-</style>

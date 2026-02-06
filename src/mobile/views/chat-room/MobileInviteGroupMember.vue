@@ -1,33 +1,32 @@
 <template>
-  <MobileLayout>
-    <div class="flex w-full flex-col h-full">
+  <AutoFixHeightPage :show-footer="false">
+    <template #header>
       <HeaderBar
         :isOfficial="false"
         :hidden-right="true"
         :enable-default-background="false"
         :enable-shadow="false"
         room-name="邀请群友" />
+    </template>
 
+    <template #container>
       <!-- 顶部搜索框 -->
       <div class="px-16px mt-10px flex gap-3">
-        <div class="flex-1 py-5px shrink-0">
-          <n-input
-            v-model:value="keyword"
-            class="rounded-10px w-full relative text-14px"
-            placeholder="搜索联系人~"
-            clearable
-            spellCheck="false"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off">
-            <template #prefix>
-              <svg class="w-12px h-12px"><use href="#search"></use></svg>
-            </template>
-          </n-input>
-        </div>
-        <div class="flex justify-end items-center">
-          <n-button class="py-5px" @click="doSearch">搜索</n-button>
-        </div>
+        <n-input
+          round
+          v-model:value="keyword"
+          class="rounded-10px relative text-14px flex-1 shrink-0"
+          placeholder="搜索联系人~"
+          clearable
+          spellCheck="false"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off">
+          <template #prefix>
+            <svg class="w-12px h-12px"><use href="#search"></use></svg>
+          </template>
+        </n-input>
+        <n-button strong secondary round class="py-5px" @click="doSearch">搜索</n-button>
       </div>
 
       <!-- 好友列表 -->
@@ -74,16 +73,25 @@
           </n-checkbox-group>
         </n-scrollbar>
       </div>
+    </template>
 
+    <template #footer>
       <!-- 底部操作栏 -->
-      <div class="px-16px py-10px bg-white border-t border-gray-200 flex justify-between items-center">
-        <span class="text-14px">已选择 {{ selectedList.length }} 人</span>
-        <n-button type="primary" :disabled="selectedList.length === 0" :loading="isLoading" @click="handleInvite">
+      <div class="px-16px py-10px border-t border-gray-200 flex justify-between items-center">
+        <n-text class="text-14px">已选择 {{ selectedList.length }} 人</n-text>
+        <n-button
+          strong
+          secondary
+          round
+          type="primary"
+          :disabled="selectedList.length === 0"
+          :loading="isLoading"
+          @click="handleInvite">
           邀请
         </n-button>
       </div>
-    </div>
-  </MobileLayout>
+    </template>
+  </AutoFixHeightPage>
 </template>
 
 <script setup lang="ts">
