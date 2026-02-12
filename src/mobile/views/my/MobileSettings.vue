@@ -5,8 +5,10 @@
     </template>
 
     <template #container>
-      <img src="@/assets/mobile/chat-home/background.webp" class="w-100% absolute top-0 -z-1" alt="hula" />
-      <div class="flex flex-col z-1">
+      <div class="flex flex-col overflow-auto h-full">
+        <img
+          src="@/assets/mobile/chat-home/background.webp"
+          class="absolute fixed top-0 left-0 w-100vw h-100vh z-0 dark:opacity-20" />
         <div class="flex flex-col p-20px gap-20px">
           <!-- 设置项 -->
           <div

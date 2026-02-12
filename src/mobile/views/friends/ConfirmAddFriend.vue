@@ -1,6 +1,9 @@
 <template>
-  <div class="flex flex-1 flex-col">
-    <img src="@/assets/mobile/chat-home/background.webp" class="w-100% absolute top-0 -z-1" alt="hula" />
+  <div class="flex flex-col overflow-auto h-full relative">
+    <img
+      src="@/assets/mobile/chat-home/background.webp"
+      class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
+
     <AutoFixHeightPage :show-footer="false">
       <template #header>
         <HeaderBar
