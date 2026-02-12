@@ -63,6 +63,7 @@ const formattedMsgCount = computed(() => {
 })
 
 const handleBack = async () => {
+  console.log(router)
   router.back()
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <AutoFixHeightPage :show-footer="false" class="z-1">
+  <AutoFixHeightPage :show-footer="false">
     <template #header>
       <HeaderBar
         :isOfficial="false"
@@ -9,10 +9,7 @@
         :room-name="t('mobile_edit_profile.title')" />
     </template>
     <template #container>
-      <div class="flex flex-col overflow-auto h-full relative">
-        <img
-          src="@/assets/mobile/chat-home/background.webp"
-          class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
+      <div class="flex flex-col overflow-auto h-full">
         <div class="p-20px">
           <!-- 头像 -->
           <div class="flex justify-center mb-50px">

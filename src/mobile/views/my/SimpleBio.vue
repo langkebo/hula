@@ -1,9 +1,5 @@
 <template>
   <div class="flex flex-col overflow-auto h-full">
-    <img
-      src="@/assets/mobile/chat-home/background.webp"
-      class="absolute fixed top-0 left-0 w-100vw h-100vh z-0 dark:opacity-20" />
-
     <AutoFixHeightPage :show-footer="false" class="z-1">
       <template #container>
         <div class="z-2 flex flex-col gap-1 overflow-auto h-full">

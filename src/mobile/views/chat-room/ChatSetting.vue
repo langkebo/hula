@@ -9,10 +9,7 @@
     </template>
 
     <template #container>
-      <div class="flex flex-col overflow-auto h-full relative">
-        <img
-          src="@/assets/mobile/chat-home/background.webp"
-          class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
+      <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col gap-15px py-15px px-20px flex-1 min-h-0 z-1">
           <n-card size="small" embedded class="rounded-10px p-0" content-class="p-0!">
             <div class="flex py-10px rounded-10px w-full items-center gap-10px" @click="clickInfo">

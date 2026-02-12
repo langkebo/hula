@@ -1,14 +1,11 @@
 <template>
   <AutoFixHeightPage :show-footer="false">
     <template #header>
-      <HeaderBar :isOfficial="false" class="bg-white" border :hidden-right="true" room-name="公告详情" />
+      <HeaderBar :isOfficial="false" border :hidden-right="true" room-name="公告详情" />
     </template>
 
     <template #container>
       <div class="flex flex-col overflow-auto h-full relative">
-        <img
-          src="@/assets/mobile/chat-home/background.webp"
-          class="absolute t-0 l-0 w-full h-full z-0 dark:opacity-20" />
         <div class="flex flex-col flex-1 gap-15px py-15px px-20px">
           <div v-if="loading" class="flex justify-center items-center h-200px">
             <n-spin size="large" />

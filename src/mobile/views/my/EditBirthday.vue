@@ -5,11 +5,7 @@
     </template>
 
     <template #container>
-      <div class="flex flex-col overflow-auto h-full relative">
-        <img
-          src="@/assets/mobile/chat-home/background.webp"
-          class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
-
+      <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col flex-1 gap-20px py-15px px-20px">
           <n-date-picker panel type="date" block class="m-auto rounded-16px" />
 
