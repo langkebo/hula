@@ -3,27 +3,51 @@
 mod desktops;
 use crate::common::files_meta::get_files_meta;
 use crate::common::init::CustomInit;
+#[cfg(desktop)]
+use common_cmd::audio;
+#[cfg(desktop)]
+use common_cmd::default_window_icon;
 #[cfg(target_os = "windows")]
 use common_cmd::get_windows_scale_info;
-#[cfg(desktop)]
-use common_cmd::{audio, default_window_icon, screenshot, set_height};
 #[cfg(target_os = "macos")]
-use common_cmd::{
-    hide_title_bar_buttons, set_macos_traffic_lights_spacing, set_window_level_above_menubar,
-    set_window_movable, show_title_bar_buttons,
-};
+use common_cmd::hide_title_bar_buttons;
+#[cfg(desktop)]
+use common_cmd::screenshot;
+#[cfg(desktop)]
+use common_cmd::set_height;
+#[cfg(target_os = "macos")]
+use common_cmd::set_macos_traffic_lights_spacing;
+#[cfg(target_os = "macos")]
+use common_cmd::set_window_level_above_menubar;
+#[cfg(target_os = "macos")]
+use common_cmd::set_window_movable;
+#[cfg(target_os = "macos")]
+use common_cmd::show_title_bar_buttons;
 #[cfg(target_os = "macos")]
 use desktops::app_event;
 #[cfg(desktop)]
-use desktops::window_payload::{get_window_payload, push_window_payload};
+use desktops::common_cmd;
 #[cfg(desktop)]
-use desktops::{common_cmd, directory_scanner, init, tray, video_thumbnail::get_video_thumbnail};
+use desktops::directory_scanner;
 #[cfg(desktop)]
-use directory_scanner::{cancel_directory_scan, get_directory_usage_info_with_progress};
+use desktops::init;
+#[cfg(desktop)]
+use desktops::tray;
+#[cfg(desktop)]
+use desktops::video_thumbnail::get_video_thumbnail;
+#[cfg(desktop)]
+use desktops::window_payload::get_window_payload;
+#[cfg(desktop)]
+use desktops::window_payload::push_window_payload;
+#[cfg(desktop)]
+use directory_scanner::cancel_directory_scan;
+#[cfg(desktop)]
+use directory_scanner::get_directory_usage_info_with_progress;
 #[cfg(desktop)]
 use init::DesktopCustomInit;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 use tauri_plugin_fs::FsExt;
 pub mod command;
 pub mod common;
@@ -40,22 +64,31 @@ pub mod websocket;
 mod webview_helper;
 
 use crate::command::app_state_command::is_app_state_ready;
-use crate::command::request_command::{im_request_command, login_command};
-use crate::command::room_member_command::{
-    cursor_page_room_members, get_room_members, page_room, update_my_room_info,
-};
-use crate::command::setting_command::{get_settings, update_settings};
+use crate::command::request_command::im_request_command;
+use crate::command::request_command::login_command;
+use crate::command::room_member_command::cursor_page_room_members;
+use crate::command::room_member_command::get_room_members;
+use crate::command::room_member_command::page_room;
+use crate::command::room_member_command::update_my_room_info;
+use crate::command::setting_command::get_settings;
+use crate::command::setting_command::update_settings;
 use crate::command::user_command::remove_tokens;
-use crate::configuration::{Settings, get_configuration};
+use crate::configuration::Settings;
+use crate::configuration::get_configuration;
 use crate::error::CommonError;
 use sea_orm::DatabaseConnection;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 // 移动端依赖
 #[cfg(mobile)]
 mod mobiles;
 #[cfg(target_os = "ios")]
-use mobiles::ios::badge::{request_ios_badge_authorization, set_ios_badge};
+use mobiles::ios::badge::request_ios_badge_authorization;
+#[cfg(target_os = "ios")]
+use mobiles::ios::badge::set_ios_badge;
+#[cfg(target_os = "ios")]
+use mobiles::ios::trigger_haptic_feedback;
 #[cfg(mobile)]
 use mobiles::splash;
 
@@ -76,23 +109,30 @@ pub struct AppData {
 pub(crate) static APP_STATE_READY: AtomicBool = AtomicBool::new(false);
 
 use crate::command::chat_history_command::query_chat_history;
-use crate::command::contact_command::{hide_contact_command, list_contacts_command};
+use crate::command::contact_command::hide_contact_command;
+use crate::command::contact_command::list_contacts_command;
 use crate::command::database_command::switch_user_database;
-use crate::command::file_manager_command::{
-    debug_message_stats, get_navigation_items, query_files,
-};
-use crate::command::message_command::{
-    delete_message, delete_room_messages, page_msg, save_msg, send_msg, sync_messages,
-    update_message_recall_status,
-};
+use crate::command::file_manager_command::debug_message_stats;
+use crate::command::file_manager_command::get_navigation_items;
+use crate::command::file_manager_command::query_files;
+use crate::command::message_command::delete_message;
+use crate::command::message_command::delete_room_messages;
+use crate::command::message_command::page_msg;
+use crate::command::message_command::save_msg;
+use crate::command::message_command::send_msg;
+use crate::command::message_command::sync_messages;
+use crate::command::message_command::update_message_recall_status;
 use crate::command::message_mark_command::save_message_mark;
 use crate::command::oauth_command::OauthServerState;
 use crate::command::oauth_command::start_oauth_server;
 
+use tauri::AppHandle;
+use tauri::Emitter;
 #[cfg(desktop)]
 use tauri::Listener;
-use tauri::{AppHandle, Emitter, Manager};
-use tokio::sync::{Mutex, RwLock};
+use tauri::Manager;
+use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 pub fn run() {
     #[cfg(desktop)]
@@ -152,7 +192,8 @@ async fn initialize_app_data(
     ),
     CommonError,
 > {
-    use migration::{Migrator, MigratorTrait};
+    use migration::Migrator;
+    use migration::MigratorTrait;
     use tracing::info;
 
     // 加载配置
@@ -387,22 +428,30 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
 {
     use crate::command::ai_command::ai_message_cancel_stream;
     use crate::command::ai_command::ai_message_send_stream;
-    use crate::command::markdown_command::{get_readme_html, parse_markdown};
+    use crate::command::markdown_command::get_readme_html;
+    use crate::command::markdown_command::parse_markdown;
     #[cfg(mobile)]
     use crate::command::set_complete;
-    use crate::command::upload_command::{qiniu_upload_resumable, upload_file_put};
-    use crate::command::user_command::{
-        get_user_tokens, save_user_info, update_token, update_user_last_opt_time,
-    };
+    use crate::command::upload_command::qiniu_upload_resumable;
+    use crate::command::upload_command::upload_file_put;
+    use crate::command::user_command::get_user_tokens;
+    use crate::command::user_command::save_user_info;
+    use crate::command::user_command::update_token;
+    use crate::command::user_command::update_user_last_opt_time;
     #[cfg(target_os = "ios")]
     use crate::mobiles::keyboard::set_webview_keyboard_adjustment;
     #[cfg(mobile)]
     use crate::mobiles::splash::hide_splash_screen;
-    use crate::websocket::commands::{
-        ws_disconnect, ws_force_reconnect, ws_get_app_background_state, ws_get_health,
-        ws_get_state, ws_init_connection, ws_is_connected, ws_send_message,
-        ws_set_app_background_state, ws_update_config,
-    };
+    use crate::websocket::commands::ws_disconnect;
+    use crate::websocket::commands::ws_force_reconnect;
+    use crate::websocket::commands::ws_get_app_background_state;
+    use crate::websocket::commands::ws_get_health;
+    use crate::websocket::commands::ws_get_state;
+    use crate::websocket::commands::ws_init_connection;
+    use crate::websocket::commands::ws_is_connected;
+    use crate::websocket::commands::ws_send_message;
+    use crate::websocket::commands::ws_set_app_background_state;
+    use crate::websocket::commands::ws_update_config;
 
     tauri::generate_handler![
         // 桌面端特定命令
@@ -494,6 +543,8 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         hide_splash_screen,
         #[cfg(target_os = "ios")]
         set_ios_badge,
+        #[cfg(target_os = "ios")]
+        trigger_haptic_feedback,
         #[cfg(target_os = "ios")]
         request_ios_badge_authorization,
         #[cfg(target_os = "ios")]

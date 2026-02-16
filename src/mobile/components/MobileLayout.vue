@@ -1,27 +1,29 @@
 <template>
-  <div
-    class="h-full flex flex-col box-border"
-    :class="{
-      'bg-cover bg-center bg-no-repeat': props.backgroundImage
-    }"
-    :style="mergedStyle">
-    <!-- 顶部安全区域 -->
-    <div :class="[{ 'safe-area-top': safeAreaTop }, props.topSafeAreaClass]" />
+  <van-config-provider :theme="settingStore.themes.content === ThemeEnum.DARK ? 'dark' : 'light'" class="h-full">
+    <div
+      class="h-full flex flex-col box-border"
+      :class="{
+        'bg-cover bg-center bg-no-repeat': props.backgroundImage
+      }"
+      :style="mergedStyle">
+      <!-- 顶部安全区域 -->
+      <div :class="[{ 'safe-area-top': safeAreaTop }, props.topSafeAreaClass]" />
 
-    <!-- 内容区域 -->
-    <div class="flex-1 min-h-0">
-      <slot></slot>
+      <!-- 内容区域 -->
+      <div class="flex-1 min-h-0">
+        <slot></slot>
+      </div>
+
+      <!-- 底部安全区域 -->
+      <div :class="[{ 'safe-area-bottom': safeAreaBottom }, props.bottomSafeAreaClass]" />
     </div>
-
-    <!-- 底部安全区域 -->
-    <div :class="[{ 'safe-area-bottom': safeAreaBottom }, props.bottomSafeAreaClass]" />
-  </div>
+  </van-config-provider>
 </template>
 
 <script setup lang="ts">
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { MsgEnum, NotificationTypeEnum, TauriCommand } from '@/enums'
+import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import type { MessageType } from '@/services/types'
 import { WsResponseMessageType } from '@/services/wsType'
