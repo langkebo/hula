@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import rustWebSocketClient from '@/services/webSocketRust'
 import { TauriCommand } from '../enums'
 import { useLogin } from '../hooks/useLogin'
 import { useWindow } from '../hooks/useWindow'
@@ -102,8 +101,8 @@ export const loginCommand = async (
     }
   }).then(async (res: any) => {
     // 数据库切换已在后端 login_command 中完成
-    // 开启 ws 连接
-    await rustWebSocketClient.initConnect()
+    // TODO: Matrix SDK 登录后初始化连接
+    // await matrixClientService.startClient()
     await loginProcess(res.token, res.refreshToken, res.client)
   })
 }

@@ -188,10 +188,6 @@ export enum StoresEnum {
   SCANNER = 'scanner',
   /** 引导状态 */
   GUIDE = 'guide',
-  /** 动态/朋友圈 */
-  FEED = 'feed',
-  /** 朋友圈通知 */
-  FEED_NOTIFICATION = 'feedNotification',
   /** Bot 视图状态 */
   BOT = 'bot',
   /** 文件管理 */
@@ -199,52 +195,72 @@ export enum StoresEnum {
   /** 缩略图缓存 */
   THUMBNAIL_CACHE = 'thumbnailCache',
   /** 初始化同步状态 */
-  INITIAL_SYNC = 'initialSync'
+  INITIAL_SYNC = 'initialSync',
+  /** Matrix 客户端 */
+  MATRIX = 'matrix',
+  /** 房间 */
+  ROOM = 'room',
+  /** 用户菜单 */
+  USER_MENU = 'userMenu',
+  /** 设置对话框 */
+  SETTINGS_DIALOG = 'settingsDialog',
+  /** 全局搜索 */
+  SPOTLIGHT = 'spotlight',
+  /** 线程 */
+  THREAD = 'thread',
+  /** 空间 */
+  SPACE = 'space',
+  /** 通话 */
+  CALL = 'call',
+  /** Widget */
+  WIDGET = 'widget'
 }
 
 /**
  * 消息类型
- * todo: 后续需要补充
+ * Matrix 消息类型映射
  */
 export enum MsgEnum {
   /** 未知 0*/
   UNKNOWN,
-  /** 文本 1*/
+  /** 文本 1 - m.text */
   TEXT,
-  /** 撤回 2*/
+  /** 撤回 2 - m.room.redaction */
   RECALL,
-  /** 图片 3*/
+  /** 图片 3 - m.image */
   IMAGE,
-  /** 文件 4*/
+  /** 文件 4 - m.file */
   FILE,
-  /** 语音 5*/
+  /** 语音 5 - m.audio */
   VOICE,
-  /** 视频 6*/
+  /** 视频 6 - m.video */
   VIDEO,
-  /** 表情包 7*/
+  /** 表情包 7 - 自定义表情 */
   EMOJI,
-  /** 系统消息 8*/
+  /** 系统消息 8 - m.room.member 等 */
   SYSTEM,
-  /** 聊天记录 9*/
+  /** 聊天记录 9 - 合并消息 */
   MERGE,
-  /** 公告 10*/
-  NOTICE,
-  /** 机器人 11*/
-  BOT,
-  /** 视频通话 12*/
-  VIDEO_CALL,
-  /** 语音通话 13*/
+  /** 位置 10 - m.location */
+  LOCATION,
+  /** 音频通话 11 */
   AUDIO_CALL,
-  /** 混合 14*/
+  /** 视频通话 12 */
+  VIDEO_CALL,
+  /** 公告 13 */
+  NOTICE,
+  /** Bot 消息 14 */
+  BOT,
+  /** 混合 15 */
   MIXED,
-  /** 艾特 15*/
+  /** 艾特 16 */
   AIT,
-  /** 回复 16*/
+  /** 回复 17 */
   REPLY,
-  /** AI 17*/
+  /** AI 18 */
   AI,
-  /** 位置 18*/
-  LOCATION
+  /** 音频 19 */
+  AUDIO
 }
 
 /**

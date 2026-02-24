@@ -38,8 +38,12 @@ import { useMobileStore } from '@/stores/mobile'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import rustWebSocketClient from '@/services/webSocketRust'
-import { CallResponseStatus, WsRequestMsgType, WsResponseMessageType } from '@/services/wsType'
+
+// TODO: Matrix VoIP 集成
+const sendMatrixVoipSignal = async (type: string, data: any) => {
+  console.warn('[RtcCallFloatCell] VoIP 功能需要 Matrix SDK 集成:', type, data)
+  throw new Error('VoIP 功能暂未实现')
+}
 
 type CallPayload = {
   callerUid?: string
@@ -150,13 +154,10 @@ const handleReject = async () => {
   if (!call) return
 
   try {
-    await rustWebSocketClient.sendMessage({
-      type: WsRequestMsgType.VIDEO_CALL_RESPONSE,
-      data: {
-        callerUid: call.callerUid,
-        roomId: call.roomId,
-        accepted: CallResponseStatus.REJECTED
-      }
+    await sendMatrixVoipSignal('VIDEO_CALL_RESPONSE', {
+      callerUid: call.callerUid,
+      roomId: call.roomId,
+      accepted: 'rejected'
     })
   } catch (error) {
     console.error('发送拒绝响应失败:', error)
@@ -187,12 +188,12 @@ const handleAccept = async () => {
 }
 
 useMitt.on(MittEnum.MOBILE_RTC_CALL_REQUEST, handleCallRequest)
-useMitt.on(WsResponseMessageType.CANCEL, handleCallEnd)
-useMitt.on(WsResponseMessageType.DROPPED, handleCallEnd)
-useMitt.on(WsResponseMessageType.TIMEOUT, handleCallEnd)
-useMitt.on(WsResponseMessageType.CallRejected, handleCallEnd)
-useMitt.on(WsResponseMessageType.CallAccepted, handleCallEnd)
-useMitt.on(WsResponseMessageType.RoomClosed, handleCallEnd)
+useMitt.on('CANCEL', handleCallEnd)
+useMitt.on('DROPPED', handleCallEnd)
+useMitt.on('TIMEOUT', handleCallEnd)
+useMitt.on('CallRejected', handleCallEnd)
+useMitt.on('CallAccepted', handleCallEnd)
+useMitt.on('RoomClosed', handleCallEnd)
 </script>
 
 <style scoped lang="scss">
@@ -212,10 +213,20 @@ useMitt.on(WsResponseMessageType.RoomClosed, handleCallEnd)
 }
 
 .rtc-action-button {
-  @apply size-44px flex-center rounded-full transition-transform duration-150 ease-out active:scale-95;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: transform 0.15s ease-out;
+  
+  &:active {
+    transform: scale(0.95);
+  }
 
   svg {
-    @apply pointer-events-none;
+    pointer-events: none;
   }
 
   &.reject {

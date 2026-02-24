@@ -12,7 +12,7 @@
           class="welcome size-80px rounded-50% border-(2px solid #fff) dark:border-(2px solid #606060)"
           :color="themes.content === ThemeEnum.DARK ? '#282828' : '#fff'"
           :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-          :src="AvatarUtils.getAvatarUrl(info.avatar)" />
+          :src="AvatarUtils.getAvatarUrl(loginInfo.avatar)" />
       </n-flex>
 
       <!-- 登录菜单 -->
@@ -20,7 +20,7 @@
         <n-input
           :class="{ 'pl-16px': loginHistories.length > 0 }"
           size="large"
-          v-model:value="info.account"
+          v-model:value="loginInfo.account"
           type="text"
           :placeholder="accountPH"
           @focus="accountPH = ''"
@@ -71,7 +71,7 @@
           minlength="6"
           size="large"
           show-password-on="click"
-          v-model:value="info.password"
+          v-model:value="loginInfo.password"
           type="password"
           spellCheck="false"
           autoComplete="off"
@@ -201,7 +201,7 @@
             </div>
             <div
               v-if="!isCompatibility()"
-              @click="router.push('/network')"
+              @click="showServerConfig = true"
               :class="{ network: isMac() }"
               class="text-14px cursor-pointer hover:bg-#90909030 hover:rounded-6px p-8px">
               {{ t('login.option.items.network_setting') }}
@@ -210,6 +210,20 @@
         </n-popover>
       </div>
     </div>
+
+    <n-modal v-model:show="showServerConfig" preset="card" title="服务器配置" :style="{ width: '400px' }">
+      <n-flex vertical :size="12">
+        <n-form-item label="Homeserver URL">
+          <n-input v-model:value="homeserverUrl" placeholder="https://matrix.org" clearable />
+        </n-form-item>
+        <n-form-item label="Identity Server URL">
+          <n-input v-model:value="identityServerUrl" placeholder="https://vector.im" clearable />
+        </n-form-item>
+        <n-alert type="info" :bordered="false">
+          修改服务器配置后需要重新登录
+        </n-alert>
+      </n-flex>
+    </n-modal>
   </n-config-provider>
 </template>
 <script setup lang="ts">
@@ -220,11 +234,9 @@ import { darkTheme, lightTheme } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { useCheckUpdate } from '@/hooks/useCheckUpdate'
 import { type DriverStepConfig, useDriver } from '@/hooks/useDriver'
-import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
 import type { UserInfoType } from '@/services/types.ts'
-import { WsResponseMessageType } from '@/services/wsType'
 import { useGlobalStore } from '@/stores/global'
 import { useGuideStore } from '@/stores/guide'
 import { useLoginHistoriesStore } from '@/stores/loginHistory.ts'
@@ -248,23 +260,23 @@ const globalStore = useGlobalStore()
 const guideStore = useGuideStore()
 const { isTrayMenuShow } = storeToRefs(globalStore)
 const { isGuideCompleted } = storeToRefs(guideStore)
-/** 网络连接是否正常 */
 const { isOnline } = useNetwork()
 const loginHistoriesStore = useLoginHistoriesStore()
 const { loginHistories } = loginHistoriesStore
 const { login } = storeToRefs(settingStore)
-/** 协议 */
 const protocol = ref(true)
 const arrowStatus = ref(false)
 const moreShow = ref(false)
+const showServerConfig = ref(false)
+const homeserverUrl = ref('')
+const identityServerUrl = ref('')
 const { createWebviewWindow, createModalWindow, getWindowPayload } = useWindow()
 const { checkUpdate, CHECK_UPDATE_LOGIN_TIME } = useCheckUpdate()
-const { normalLogin, giteeLogin, githubLogin, gitcodeLogin, loading, loginText, loginDisabled, info, uiState } =
-  useLogin()
+const { normalLogin, loading, loginText, loginDisabled, info: loginInfo, uiState } = useLogin()
 const loginContext: ThirdPartyLoginContext = {
-  giteeLogin,
-  githubLogin,
-  gitcodeLogin,
+  giteeLogin: () => {},
+  githubLogin: () => {},
+  gitcodeLogin: () => {},
   loading,
   loginDisabled
 }
@@ -377,11 +389,9 @@ watch([driverSteps, driverConfig], ([steps, config]) => {
   reinitialize(steps, config)
 })
 
-// 输入框占位符
 const accountPH = ref(t('login.input.account.placeholder'))
 const passwordPH = ref(t('login.input.pass.placeholder'))
 
-// 底部操作栏多语言超过6个字符时显示省略号
 const MAX_BOTTOM_TEXT_LEN = 6
 const qrCodeText = computed(() => t('login.button.qr_code'))
 const moreText = computed(() => t('login.option.more'))
@@ -400,18 +410,14 @@ const cancelLoginTitle = computed(() =>
   cancelLoginLabel.value !== cancelLoginText.value ? cancelLoginText.value : undefined
 )
 
-/** 是否直接跳转 */
 const isJumpDirectly = ref(false)
 
-// 导入Web Worker
 const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url))
 
-// 添加错误处理
 timerWorker.onerror = (error) => {
   console.error('[Worker Error]', error)
 }
 
-// 监听 Worker 消息
 timerWorker.onmessage = (e) => {
   const { type } = e.data
   if (type === 'timeout') {
@@ -424,7 +430,7 @@ watchEffect(() => {
     loginDisabled.value = !isOnline.value || !userStore.userInfo?.account
     return
   }
-  loginDisabled.value = !(info.value.account && info.value.password && protocol.value && isOnline.value)
+  loginDisabled.value = !(loginInfo.value.account && loginInfo.value.password && protocol.value && isOnline.value)
 })
 
 watch(
@@ -450,23 +456,21 @@ watch(isOnline, (v) => {
   loginText.value = v ? t('login.button.login.default') : t('login.button.login.network_error')
 })
 
-// 监听账号输入
 watch(
-  () => info.value.account,
+  () => loginInfo.value.account,
   (newAccount) => {
     if (!newAccount) {
-      info.value.avatar = '/logoD.png'
+      loginInfo.value.avatar = '/logoD.png'
       return
     }
 
-    // 在登录历史中查找匹配的账号
     const matchedAccount = loginHistories.find(
       (history) => history.account === newAccount || history.email === newAccount
     )
     if (matchedAccount) {
-      info.value.avatar = matchedAccount.avatar
+      loginInfo.value.avatar = matchedAccount.avatar
     } else {
-      info.value.avatar = '/logoD.png'
+      loginInfo.value.avatar = '/logoD.png'
     }
   }
 )
@@ -506,35 +510,27 @@ const handlePendingRemoteLoginPayload = async () => {
   }
 }
 
-/** 删除账号列表内容 */
 const delAccount = (item: UserInfoType) => {
-  // 获取删除前账户列表的长度
   const lengthBeforeDelete = loginHistories.length
   loginHistoriesStore.removeLoginHistory(item)
-  // 判断是否删除了最后一个条目，并据此更新arrowStatus
   if (lengthBeforeDelete === 1 && loginHistories.length === 0) {
     arrowStatus.value = false
   }
-  info.value.account = ''
-  info.value.password = ''
-  info.value.avatar = '/logoD.png'
+  loginInfo.value.account = ''
+  loginInfo.value.password = ''
+  loginInfo.value.avatar = '/logoD.png'
 }
 
-/**
- * 给账号赋值
- * @param item 账户信息
- * */
 const giveAccount = (item: UserInfoType) => {
   const { account, password, avatar, name, uid } = item
-  info.value.account = account || ''
-  info.value.password = password || ''
-  info.value.avatar = avatar
-  info.value.name = name
-  info.value.uid = uid
+  loginInfo.value.account = account || ''
+  loginInfo.value.password = password || ''
+  loginInfo.value.avatar = avatar
+  loginInfo.value.name = name
+  loginInfo.value.uid = uid
   arrowStatus.value = false
 }
 
-/** 移除已登录账号 */
 const removeStoredAccount = () => {
   const storedUserInfo = userStore.userInfo
   if (storedUserInfo) {
@@ -552,12 +548,10 @@ const removeStoredAccount = () => {
   cancelAutoLoginAndShowManual()
 }
 
-/** 打开服务协议窗口 */
 const openServiceAgreement = async () => {
   await createModalWindow('服务协议', 'modal-serviceAgreement', 600, 600, 'login')
 }
 
-/** 打开隐私保护协议窗口 */
 const openPrivacyAgreement = async () => {
   await createModalWindow('隐私保护指引', 'modal-privacyAgreement', 600, 600, 'login')
 }
@@ -579,14 +573,11 @@ const enterKey = (e: KeyboardEvent) => {
 }
 
 onBeforeMount(async () => {
-  // 登录页初始化时清空当前会话，避免重启后默认选中旧会话
   globalStore.updateCurrentSessionRoomId('')
   await handlePendingRemoteLoginPayload()
-  // 始终初始化托盘菜单状态为false
   isTrayMenuShow.value = false
 
   if (!login.value.autoLogin) {
-    // 非自动登录模式，直接显示手动登录界面
     uiState.value = 'manual'
     localStorage.removeItem('TOKEN')
     localStorage.removeItem('REFRESH_TOKEN')
@@ -596,27 +587,18 @@ onBeforeMount(async () => {
 })
 
 onMounted(async () => {
-  // 检查引导状态，只有未完成时才启动引导
   if (!isGuideCompleted.value) {
     startTour()
   }
 
-  // 只有在需要登录的情况下才显示登录窗口
   if (!isJumpDirectly.value) {
     await getCurrentWebviewWindow().show()
   }
 
-  useMitt.on(WsResponseMessageType.NO_INTERNET, () => {
-    loginDisabled.value = true
-    loginText.value = t('login.status.service_disconnected')
-  })
-
-  // 自动登录时显示自动登录界面并触发登录
   if (login.value.autoLogin) {
     uiState.value = 'auto'
     startAutoLoginCountdown()
   } else {
-    // 手动登录模式，自动填充第一个历史账号
     uiState.value = 'manual'
     loginHistories.length > 0 && giveAccount(loginHistories[0])
   }
@@ -643,7 +625,6 @@ onUnmounted(() => {
     window.removeEventListener('keydown', handleAutoLoginActivity, true)
   }
   clearAutoLoginTimer()
-  // 清除Web Worker计时器
   timerWorker.postMessage({
     type: 'clearTimer',
     msgId: 'checkUpdate'

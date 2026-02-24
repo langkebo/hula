@@ -80,6 +80,7 @@
     "@actions/github": "^7.0.0",
     "@breezystack/lamejs": "^1.2.7",
     "@fingerprintjs/fingerprintjs": "^5.0.1",
+    "@matrix-org/olm": "^3.2.15",
     "@tauri-apps/api": "2.9.1",
     "@tauri-apps/plugin-autostart": "2.5.1",
     "@tauri-apps/plugin-barcode-scanner": "2.4.2",
@@ -102,6 +103,8 @@
     "@vue-office/pdf": "^2.0.10",
     "@vue-office/pptx": "^1.0.1",
     "@vueuse/components": "^14.0.0",
+    "matrix-js-sdk": "^37.0.0",
+    "matrix-widget-api": "^1.16.1",
     "colorthief": "^2.6.0",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.19",
@@ -134,7 +137,8 @@
     "vue-demi": "0.14.10",
     "vue-i18n": "^11.1.12",
     "vue-router": "^4.6.4",
-    "vue-virtual-scroller": "2.0.0-beta.8"
+    "vue-virtual-scroller": "2.0.0-beta.8",
+    "uuid": "^11.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.4",
@@ -148,6 +152,7 @@
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^25.0.0",
     "@types/three": "^0.182.0",
+    "@types/uuid": "^10.0.0",
     "@unocss/preset-wind3": "^66.5.10",
     "@unocss/reset": "^66.5.10",
     "@unocss/transformer-directives": "^66.5.10",

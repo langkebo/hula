@@ -23,9 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { useFeedStore } from '@/stores/feed'
 import { useGlobalStore } from '@/stores/global'
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
 type NavItem = {
@@ -37,23 +35,16 @@ type NavItem = {
 
 const { t } = useI18n()
 const route = useRoute()
-const feedStore = useFeedStore()
-const { unreadCount: feedUnreadCount } = storeToRefs(feedStore)
 const globalStore = useGlobalStore()
 
 const getUnReadCount = (label: string) => {
-  if (label === '消息') {
+  if (label === t('mobile_tabbar.items.messages')) {
     return globalStore.unReadMark.newMsgUnreadCount
   }
   if (label === t('mobile_tabbar.items.contacts')) {
     return globalStore.unReadMark.newFriendUnreadCount + globalStore.unReadMark.newGroupUnreadCount
   }
-  if (label === '社区') {
-    return feedUnreadCount.value
-  }
   return 0
-
-  // 其他未读计数暂时关闭
 }
 
 const navItems: NavItem[] = [
@@ -68,12 +59,6 @@ const navItems: NavItem[] = [
     path: '/mobile/friends',
     icon: 'avatar',
     actionIcon: 'avatar-action'
-  },
-  {
-    label: t('mobile_tabbar.items.community'),
-    path: '/mobile/community',
-    icon: 'fire',
-    actionIcon: 'fire-action'
   },
   {
     label: t('mobile_tabbar.items.me'),

@@ -32,7 +32,7 @@ export class AvatarUtils {
    * @param avatar - 头像字符串或URL
    * @returns 头像字符串或URL
    */
-  public static getAvatarUrl(avatar: string): string {
+  public static getAvatarUrl(avatar: string | null | undefined): string {
     const DEFAULT = '/logoD.png'
 
     if (!avatar) return DEFAULT

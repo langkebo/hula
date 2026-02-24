@@ -4,7 +4,6 @@ import { defineStore } from 'pinia'
 import { MittEnum, StoresEnum } from '@/enums'
 import type { FriendItem, RequestFriendItem, SessionItem } from '@/services/types'
 import { useChatStore } from '@/stores/chat'
-import { useFeedStore } from '@/stores/feed'
 import { clearQueue, readCountQueue } from '@/utils/ReadCountQueue.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
@@ -13,7 +12,6 @@ export const useGlobalStore = defineStore(
   StoresEnum.GLOBAL,
   () => {
     const chatStore = useChatStore()
-    const feedStore = useFeedStore()
 
     // 未读消息标记：好友请求未读数和新消息未读数
     const unReadMark = reactive<{
@@ -104,8 +102,8 @@ export const useGlobalStore = defineStore(
     // 更新全局未读消息计数
     const updateGlobalUnreadCount = () => {
       info('[global]更新全局未读消息计数')
-      // 使用统一的计数管理器，避免重复逻辑（包含朋友圈未读数）
-      unreadCountManager.calculateTotal(chatStore.sessionList, unReadMark, feedStore.unreadCount)
+      // 使用统一的计数管理器，避免重复逻辑
+      unreadCountManager.calculateTotal(chatStore.sessionList, unReadMark)
     }
 
     // 兜底同步 Dock/角标，防止未读数与徽章不同步
@@ -113,12 +111,11 @@ export const useGlobalStore = defineStore(
       () => ({
         msg: unReadMark.newMsgUnreadCount,
         friend: unReadMark.newFriendUnreadCount,
-        group: unReadMark.newGroupUnreadCount,
-        feed: feedStore.unreadCount // 添加朋友圈未读数监听
+        group: unReadMark.newGroupUnreadCount
       }),
       () => {
         if (!unreadReady.value) return
-        unreadCountManager.refreshBadge(unReadMark, feedStore.unreadCount)
+        unreadCountManager.refreshBadge(unReadMark)
       }
     )
 

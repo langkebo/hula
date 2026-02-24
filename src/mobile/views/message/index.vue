@@ -100,7 +100,7 @@
       v-model="loading"
       @refresh="onRefresh">
       <div class="flex flex-col h-full">
-        <div class="flex-1 overflow-y-auto overflow-x-hidden min-h-0" @scroll="onScroll" ref="scrollContainer">
+        <div class="flex-1 overflow-y-auto overflow-x-hidden min-h-0" @scroll="onScroll">
           <van-swipe-cell
             @open="handleSwipeOpen"
             @close="handleSwipeClose"
@@ -213,7 +213,6 @@ import { RoomTypeEnum, NotificationTypeEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg'
 import { IsAllUserEnum, type SessionItem } from '@/services/types.ts'
-import rustWebSocketClient from '@/services/webSocketRust'
 import { useChatStore } from '@/stores/chat.ts'
 import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
@@ -237,8 +236,7 @@ const contactStore = useContactStore()
 
 // 加载更多ui事件处理（开始）
 
-const isEnablePullRefresh = ref(true) // 是否启用下拉刷新，现在设置为滚动到顶才启用
-const scrollContainer = ref(null) // 消息滚动容器
+const isEnablePullRefresh = ref(true)
 
 let scrollTop = 0 // 记住当前滑动到哪了
 
@@ -444,7 +442,8 @@ const onRefresh = () => {
 
 onMounted(async () => {
   await contactStore.getContactList(true)
-  await rustWebSocketClient.setupBusinessMessageListeners()
+  // TODO: Matrix SDK 消息监听器设置
+  // await matrixClientService.setupEventListeners()
 })
 
 /**

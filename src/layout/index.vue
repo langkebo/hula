@@ -40,7 +40,6 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { useCheckUpdate } from '@/hooks/useCheckUpdate'
 import { useLogin } from '@/hooks/useLogin'
 import { useMitt } from '@/hooks/useMitt.ts'
-import rustWebSocketClient from '@/services/webSocketRust'
 import { useContactStore } from '@/stores/contacts.ts'
 import { useGlobalStore } from '@/stores/global.ts'
 import { isMobile, isWindows } from '@/utils/PlatformConstants'
@@ -127,25 +126,15 @@ const markInitialSyncCompleted = () => {
   requiresInitialSync.value = false
 }
 
-const runInitWithMode = (block: boolean) => {
-  // 共同的初始化流程
-  const p = init({ isInitialSync: block }).then(() => {
+const runInitWithMode = (_block: boolean) => {
+  const p = init().then(() => {
     markInitialSyncCompleted()
   })
 
-  if (block) {
-    // 首次完整同步：阻塞并抛出错误
-    return p.catch((error) => {
-      console.error('[layout] 首次同步数据失败:', error)
-      throw error
-    })
-  } else {
-    // 增量同步：后台执行，错误只打日志
-    p.catch((error) => {
-      console.error('[layout] 增量数据同步失败:', error)
-    })
-    return p
-  }
+  return p.catch((error) => {
+    console.error('[layout] 初始化失败:', error)
+    throw error
+  })
 }
 
 // 确保初始化流程只触发一次
@@ -513,8 +502,8 @@ onMounted(async () => {
   // 监听home窗口被聚焦的事件，当窗口被聚焦时自动关闭状态栏通知
   const homeWindow = await WebviewWindow.getByLabel('home')
   if (homeWindow) {
-    // 设置业务消息监听器
-    await rustWebSocketClient.setupBusinessMessageListeners()
+    // TODO: Matrix SDK 消息监听器设置
+    // await matrixClientService.setupEventListeners()
 
     // 监听窗口聚焦事件，聚焦时停止tray闪烁
     if (isWindows()) {

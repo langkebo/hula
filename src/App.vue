@@ -39,8 +39,6 @@ import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import { useAnnouncementStore } from '@/stores/announcement'
-import { useFeedStore } from '@/stores/feed'
-import { useFeedNotificationStore } from '@/stores/feedNotification'
 import type { MarkItemType, RevokedMsgType, UserItem } from '@/services/types.ts'
 import * as ImRequestUtils from '@/utils/ImRequestUtils'
 import { listen } from '@tauri-apps/api/event'
@@ -58,8 +56,6 @@ const isHomeDesktopWindow = computed(() => isDesktop() && appWindow.label === 'h
 const userStore = useUserStore()
 const contactStore = useContactStore()
 const announcementStore = useAnnouncementStore()
-const feedStore = useFeedStore()
-const feedNotificationStore = useFeedNotificationStore()
 const userUid = computed(() => userStore.userInfo!.uid)
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
@@ -147,7 +143,7 @@ useMitt.on(
     globalStore.unReadMark.newFriendUnreadCount = data.unReadCount4Friend || 0
     globalStore.unReadMark.newGroupUnreadCount = data.unReadCount4Group || 0
 
-    unreadCountManager.refreshBadge(globalStore.unReadMark, feedStore.unreadCount)
+    unreadCountManager.refreshBadge(globalStore.unReadMark)
 
     // 刷新好友申请列表
     await contactStore.getApplyPage('friend', true)
@@ -193,7 +189,17 @@ const handleMemberRemove = async (userList: UserItem[], roomId: string) => {
 // 处理其他成员加入群聊
 const handleOtherMemberAdd = async (user: UserItem, roomId: string) => {
   info('群成员加入群聊，添加群成员数据')
-  groupStore.addUserItem(user, roomId)
+  const matrixMember: any = {
+    ...user,
+    userId: user.uid,
+    displayName: user.name,
+    avatarUrl: user.avatar,
+    membership: 'join' as const,
+    powerLevel: 0,
+    isModerator: false,
+    isCreator: false
+  }
+  groupStore.addUserItem(matrixMember, roomId)
 }
 
 // 检查是否为当前用户
@@ -262,7 +268,7 @@ useMitt.on(WsResponseMessageType.REQUEST_APPROVAL_FRIEND, async () => {
   // 刷新好友列表以获取最新状态
   await contactStore.getContactList(true)
   await contactStore.getApplyUnReadCount()
-  unreadCountManager.refreshBadge(globalStore.unReadMark, feedStore.unreadCount)
+  unreadCountManager.refreshBadge(globalStore.unReadMark)
 })
 
 useMitt.on(WsResponseMessageType.ROOM_INFO_CHANGE, async (data: { roomId: string; name: string; avatar: string }) => {
@@ -374,99 +380,6 @@ useMitt.on(WsResponseMessageType.USER_STATE_CHANGE, async (data: { uid: string; 
   groupStore.updateUserItem(data.uid, {
     userStateId: data.userStateId
   })
-})
-
-useMitt.on(WsResponseMessageType.FEED_SEND_MSG, (data: { uid: string }) => {
-  if (data.uid !== userStore.userInfo!.uid) {
-    feedStore.increaseUnreadCount()
-    // 同步更新角标（包含朋友圈未读数）
-    unreadCountManager.refreshBadge(globalStore.unReadMark, feedStore.unreadCount)
-  } else {
-    console.log('[App.vue] 是自己发布的，不增加未读数')
-  }
-})
-
-// 朋友圈通知监听（全局）- 处理点赞和评论通知
-useMitt.on(WsResponseMessageType.FEED_NOTIFY, async (data: any) => {
-  try {
-    console.log('收到朋友圈通知:', JSON.stringify(data, null, 2))
-    console.log('通知类型判断 - isUnlike:', data.isUnlike, 'hasComment:', !!data.comment)
-
-    // 获取朋友圈内容用于通知显示
-    const feed = feedStore.feedList.find((f) => f.id === data.feedId)
-    const feedContent = feed?.content || data.feedContent || '朋友圈'
-
-    if (data.isUnlike) {
-      // 取消点赞时减少未读数
-      feedStore.decreaseUnreadCount(1)
-      const likeListResult = await feedStore.getLikeList(data.feedId)
-      if (likeListResult) {
-        const feed = feedStore.feedList.find((f) => f.id === data.feedId)
-        if (feed) {
-          feed.likeList = likeListResult
-          feed.likeCount = likeListResult.length
-        }
-      }
-    }
-    // 如果是点赞通知
-    else if (!data.comment) {
-      console.log('处理点赞通知')
-      feedStore.increaseUnreadCount(1)
-      const likeListResult = await feedStore.getLikeList(data.feedId)
-      if (likeListResult) {
-        const feed = feedStore.feedList.find((f) => f.id === data.feedId)
-        if (feed) {
-          feed.likeList = likeListResult
-          feed.likeCount = likeListResult.length
-        }
-      }
-      // 添加点赞通知到本地存储
-      const likeNotification = {
-        id: `${data.feedId}_${data.operatorUid}_like_${Date.now()}`,
-        type: 'like' as const,
-        feedId: String(data.feedId),
-        feedContent: feedContent,
-        operatorUid: String(data.operatorUid),
-        operatorName: data.operatorName || '未知用户',
-        operatorAvatar: data.operatorAvatar || '',
-        createTime: Date.now(),
-        isRead: false
-      }
-      feedNotificationStore.addNotification(likeNotification)
-    } else {
-      feedStore.increaseUnreadCount(1)
-      try {
-        const commentListResult = await feedStore.getCommentList(data.feedId)
-        if (Array.isArray(commentListResult)) {
-          const feed = feedStore.feedList.find((f) => f.id === data.feedId)
-          if (feed) {
-            feed.commentList = commentListResult
-            feed.commentCount = commentListResult.length
-          }
-        }
-      } catch (error) {
-        console.error('获取评论列表失败:', error)
-      }
-      // 添加评论通知到本地存储
-      const commentNotification = {
-        id: `${data.feedId}_${data.operatorUid}_comment_${Date.now()}`,
-        type: 'comment' as const,
-        feedId: String(data.feedId),
-        feedContent: feedContent,
-        operatorUid: String(data.operatorUid),
-        operatorName: data.operatorName || '未知用户',
-        operatorAvatar: data.operatorAvatar || '',
-        commentContent: data.comment?.content || '',
-        createTime: Date.now(),
-        isRead: false
-      }
-      feedNotificationStore.addNotification(commentNotification)
-    }
-    // 朋友圈未读数变化后，同步更新程序坞图标（包含朋友圈未读数）
-    unreadCountManager.refreshBadge(globalStore.unReadMark, feedStore.unreadCount)
-  } catch (error) {
-    console.error('处理朋友圈通知失败:', error)
-  }
 })
 
 useMitt.on(WsResponseMessageType.GROUP_SET_ADMIN_SUCCESS, (event) => {
@@ -594,7 +507,7 @@ const handleWebsocketEvent = async (event: any) => {
         chatStore.markSessionRead(currentRoomId)
       }
     }
-    unreadCountManager.refreshBadge(globalStore.unReadMark, feedStore.unreadCount)
+    unreadCountManager.refreshBadge(globalStore.unReadMark)
   } finally {
     // 同步完成，隐藏加载状态
     chatStore.syncLoading = false
@@ -751,17 +664,15 @@ watch(
 /** 监听会话变化 */
 useMitt.on(MittEnum.MSG_INIT, async () => {
   watchEffect(async () => {
-    // 在同步阶段明确提取需要监听的属性
     const sessionRoomId = globalStore.currentSessionRoomId
     const sessionType = globalStore.currentSession?.type
-    const currentSession = globalStore.currentSession
 
     if (!sessionRoomId || sessionType !== RoomTypeEnum.GROUP) {
       return
     }
 
     try {
-      const result = await groupStore.switchSession(currentSession)
+      const result = await groupStore.switchSession({ roomId: sessionRoomId })
       if (result?.success) {
         await announcementStore.loadGroupAnnouncements()
       }

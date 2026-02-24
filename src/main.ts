@@ -21,8 +21,6 @@ if (isIOS()) {
   })
 }
 
-import('@/services/webSocketAdapter')
-
 if (process.env.NODE_ENV === 'development') {
   import('@/utils/Console.ts').then((module) => {
     /**! 控制台打印项目版本信息(不需要可手动关闭)*/
