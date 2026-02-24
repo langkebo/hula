@@ -1,0 +1,158 @@
+<template>
+  <div class="user-menu-mobile" @click="handleTouchClick">
+    <slot name="avatar">
+      <van-image
+        round
+        width="34px"
+        height="34px"
+        :src="userAvatar"
+        :error-icon="defaultAvatar"
+      />
+    </slot>
+    <div v-if="showOnlineStatus" class="online-indicator" :class="onlineClass" />
+
+    <van-popup
+      v-model:show="isOpen"
+      position="bottom"
+      round
+      :style="{ height: 'auto', maxHeight: '70vh' }"
+    >
+      <UserMenuHeader @theme-toggle="handleThemeToggle" />
+
+      <div class="menu-divider" />
+
+      <div class="menu-items">
+        <template v-for="item in menuItems" :key="item.id">
+          <div v-if="item.divider" class="menu-divider" />
+          <van-cell
+            v-else
+            :title="item.label"
+            :class="{
+              'menu-item-danger': item.danger,
+              'menu-item-disabled': item.disabled
+            }"
+            @click="handleItemClick(item.id)"
+          >
+            <template #icon>
+              <Icon :icon="getIconName(item.icon)" class="menu-icon" />
+            </template>
+          </van-cell>
+        </template>
+      </div>
+
+      <div class="menu-safe-area" />
+    </van-popup>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { Icon } from '@iconify/vue'
+import { useUserMenu } from './useUserMenu'
+import { useUserStore } from '@/stores/user'
+import { useSettingStore } from '@/stores/setting'
+import defaultAvatarImg from '@/assets/img/win.png'
+
+defineOptions({
+  name: 'UserMenuMobile'
+})
+
+const userStore = useUserStore()
+const settingStore = useSettingStore()
+
+const {
+  isOpen,
+  menuItems,
+  handleMenuItemClick
+} = useUserMenu()
+
+const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
+const defaultAvatar = computed(() => defaultAvatarImg)
+
+const showOnlineStatus = computed(() => settingStore.themes.pattern !== 'os')
+
+const onlineClass = computed(() => {
+  return 'online'
+})
+
+const iconMap: Record<string, string> = {
+  home: 'mdi:home',
+  qrcode: 'mdi:qrcode',
+  bell: 'mdi:bell',
+  shield: 'mdi:shield',
+  settings: 'mdi:cog',
+  chat: 'mdi:chat',
+  logout: 'mdi:logout'
+}
+
+function getIconName(iconName: string): string {
+  return iconMap[iconName] || 'mdi:cog'
+}
+
+function handleItemClick(id: string) {
+  handleMenuItemClick(id)
+}
+
+function handleThemeToggle() {
+  console.log('Theme toggle')
+}
+
+function handleTouchClick() {
+  const userMenuStore = useUserMenu()
+  userMenuStore.openMenu({ x: 0, y: 0 }, 'touch')
+}
+</script>
+
+<style scoped>
+.user-menu-mobile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--van-background, #fff);
+}
+
+.online-indicator.online {
+  background-color: #52c41a;
+}
+
+.online-indicator.offline {
+  background-color: #8c8c8c;
+}
+
+.menu-divider {
+  height: 1px;
+  background-color: var(--van-border-color, #ebedf0);
+  margin: 8px 0;
+}
+
+.menu-items {
+  padding: 0 8px;
+}
+
+.menu-icon {
+  margin-right: 12px;
+  font-size: 18px;
+}
+
+.menu-item-danger :deep(.van-cell__title) {
+  color: #d5304f;
+}
+
+.menu-item-disabled {
+  opacity: 0.5;
+}
+
+.menu-safe-area {
+  height: env(safe-area-inset-bottom, 20px);
+}
+</style>

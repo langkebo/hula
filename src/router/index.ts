@@ -27,11 +27,9 @@ import MediaViewer from '#/views/chat-room/MediaViewer.vue'
 import NoticeDetail from '#/views/chat-room/notice/NoticeDetail.vue'
 import NoticeEdit from '#/views/chat-room/notice/NoticeEdit.vue'
 import NoticeList from '#/views/chat-room/notice/NoticeList.vue'
-import MobileCommunity from '#/views/community/index.vue'
-import DynamicDetailPage from '#/views/community/DynamicDetailPage.vue'
-import AddFriends from '#/views/friends/AddFriends.vue'
-import ConfirmAddFriend from '#/views/friends/ConfirmAddFriend.vue'
 import ConfirmAddGroup from '#/views/friends/ConfirmAddGroup.vue'
+import ConfirmAddFriend from '#/views/friends/ConfirmAddFriend.vue'
+import AddFriends from '#/views/friends/AddFriends.vue'
 import FriendInfo from '#/views/friends/FriendInfo.vue'
 import MobileFriendPage from '#/views/friends/index.vue'
 import StartGroupChat from '#/views/friends/StartGroupChat.vue'
@@ -43,7 +41,6 @@ import MobileMy from '#/views/my/index.vue'
 import MobileQRCode from '#/views/my/MobileQRCode.vue'
 import MobileSettings from '#/views/my/MobileSettings.vue'
 import MyMessages from '#/views/my/MyMessages.vue'
-import PublishCommunity from '#/views/my/PublishCommunity.vue'
 import Share from '#/views/my/Share.vue'
 import SimpleBio from '#/views/my/SimpleBio.vue'
 import AiAssistant from '#/views/my/AiAssistant.vue'
@@ -192,11 +189,6 @@ const getMobileRoutes = (): Array<RouteRecordRaw> => [
         component: MobileFriendPage
       },
       {
-        path: '/mobile/community',
-        name: 'mobileCommunity',
-        component: MobileCommunity
-      },
-      {
         path: '/mobile/my',
         name: 'mobileMy',
         component: MobileMy
@@ -232,11 +224,6 @@ const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'editBirthday',
         name: 'mobileEditBirthday',
         component: EditBirthday
-      },
-      {
-        path: 'publishCommunity',
-        name: 'mobilePublishCommunity',
-        component: PublishCommunity
       },
       {
         path: 'settings',
@@ -329,16 +316,9 @@ const getMobileRoutes = (): Array<RouteRecordRaw> => [
     path: '/mobile/rtcCall',
     name: 'rtcCall',
     component: () => import('../mobile/views/rtcCall/index.vue')
-  },
-  {
-    path: '/mobile/dynamic/:id',
-    name: 'mobileDynamicDetail',
-    component: DynamicDetailPage,
-    props: true
   }
 ]
 
-// 桌面端路由配置
 const getDesktopRoutes = (): Array<RouteRecordRaw> => [
   {
     path: '/home',

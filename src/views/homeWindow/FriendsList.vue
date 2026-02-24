@@ -124,7 +124,6 @@ import { MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum, UserType } from '@/enums
 import { useMitt } from '@/hooks/useMitt.ts'
 import type { DetailsContent } from '@/services/types'
 import { useContactStore } from '@/stores/contacts.ts'
-import { useFeedStore } from '@/stores/feed'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useGroupStore } from '@/stores/group'
 import { useSettingStore } from '@/stores/setting'
@@ -139,12 +138,10 @@ const menuList = computed(() => [
   { label: t('home.friends_list.menu.rename_group'), icon: 'edit' },
   { label: t('home.friends_list.menu.delete_group'), icon: 'delete' }
 ])
-/** 建议把此状态存入localStorage中 */
 const activeItem = ref('')
 const detailsShow = ref(false)
 const shrinkStatus = ref(false)
 const contactStore = useContactStore()
-const feedStore = useFeedStore()
 const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
 const userStatusStore = useUserStatusStore()
@@ -225,7 +222,7 @@ const handleApply = async (applyType: 'friend' | 'group') => {
   } else {
     globalStore.unReadMark.newGroupUnreadCount = 0
   }
-  unreadCountManager.refreshBadge(globalStore.unReadMark, feedStore.unreadCount)
+  unreadCountManager.refreshBadge(globalStore.unReadMark)
 
   useMitt.emit(MittEnum.APPLY_SHOW, {
     context: {

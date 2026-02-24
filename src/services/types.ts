@@ -433,13 +433,13 @@ export type TextBody = {
   /** 消息内容 */
   content: string
   /** 回复 */
-  reply: ReplyType
+  reply?: ReplyType
   /** @用户uid列表，用于精准渲染高亮 */
   atUidList?: string[] | null
   /**
    * 消息链接映射
    */
-  urlContentMap: Record<
+  urlContentMap?: Record<
     string,
     {
       title: string

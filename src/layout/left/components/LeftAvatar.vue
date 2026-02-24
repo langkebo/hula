@@ -7,7 +7,9 @@
     trigger="click">
     <template #trigger>
       <!-- 头像 -->
-      <div class="relative size-34px rounded-50% cursor-pointer">
+      <div
+        class="relative size-34px rounded-50% cursor-pointer"
+        @contextmenu="handleRightClick">
         <n-avatar
           :size="34"
           :src="avatarSrc"
@@ -85,6 +87,15 @@
       </n-flex>
     </n-flex>
   </n-popover>
+
+  <!-- 右键菜单 -->
+  <UserMenuDropdown
+    v-if="isMenuOpen"
+    :position="menuPosition"
+    :is-context-menu="true"
+    @close="closeMenu"
+    @item-click="handleMenuItemClick"
+  />
 </template>
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
@@ -96,6 +107,8 @@ import { useGroupStore } from '@/stores/group'
 import { AvatarUtils } from '@/utils/AvatarUtils.ts'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts'
 import { leftHook } from '../hook.ts'
+import UserMenuDropdown from '@/components/userMenu/UserMenuDropdown.vue'
+import { useUserMenu } from '@/components/userMenu/useUserMenu'
 
 const userStore = useUserStore()
 const groupStore = useGroupStore()
@@ -110,6 +123,14 @@ const currentUserLocation = computed(() => {
 })
 const { shrinkStatus, infoShow, themeColor, openContent, handleEditing } = leftHook()
 const { statusIcon, statusTitle, statusBgColor } = useOnlineStatus()
+
+const {
+  isOpen: isMenuOpen,
+  position: menuPosition,
+  closeMenu,
+  handleMenuItemClick,
+  handleRightClick
+} = useUserMenu()
 </script>
 <style lang="scss" scoped>
 @use '../style';

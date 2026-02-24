@@ -1340,5 +1340,6 @@ export const messageStrategyMap: Record<MsgEnum, MessageStrategy> = {
   [MsgEnum.BOT]: unsupportedMessageStrategy,
   [MsgEnum.VIDEO_CALL]: videoCallMessageStrategy,
   [MsgEnum.AUDIO_CALL]: audioCallMessageStrategy,
-  [MsgEnum.LOCATION]: locationMessageStrategy
+  [MsgEnum.LOCATION]: locationMessageStrategy,
+  [MsgEnum.AUDIO]: voiceMessageStrategy
 }

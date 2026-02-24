@@ -145,7 +145,7 @@ import { useDebounceFn } from '@vueuse/core'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
-import type { FriendItem, GroupDetailReq } from '@/services/types'
+import type { FriendItem } from '@/services/types'
 import { useCachedStore } from '@/stores/cached'
 import { useContactStore } from '@/stores/contacts'
 import { useGlobalStore } from '@/stores/global'
@@ -298,7 +298,7 @@ const handleTypeChange = () => {
 const groupStore = useGroupStore()
 // 判断是否已加入群聊
 const isInGroup = (roomId: string) => {
-  return groupStore.groupDetails.some((group: GroupDetailReq) => group.roomId === roomId)
+  return groupStore.groupDetails.some((group) => group.roomId === roomId)
 }
 
 // 通用排序函数

@@ -59,7 +59,6 @@ pub mod repository;
 pub mod timeout_config;
 pub mod utils;
 mod vo;
-pub mod websocket;
 #[cfg(target_os = "ios")]
 mod webview_helper;
 
@@ -442,16 +441,6 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
     use crate::mobiles::keyboard::set_webview_keyboard_adjustment;
     #[cfg(mobile)]
     use crate::mobiles::splash::hide_splash_screen;
-    use crate::websocket::commands::ws_disconnect;
-    use crate::websocket::commands::ws_force_reconnect;
-    use crate::websocket::commands::ws_get_app_background_state;
-    use crate::websocket::commands::ws_get_health;
-    use crate::websocket::commands::ws_get_state;
-    use crate::websocket::commands::ws_init_connection;
-    use crate::websocket::commands::ws_is_connected;
-    use crate::websocket::commands::ws_send_message;
-    use crate::websocket::commands::ws_set_app_background_state;
-    use crate::websocket::commands::ws_update_config;
 
     tauri::generate_handler![
         // 桌面端特定命令
@@ -512,17 +501,6 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         query_files,
         get_navigation_items,
         debug_message_stats,
-        // WebSocket 相关命令
-        ws_init_connection,
-        ws_disconnect,
-        ws_send_message,
-        ws_get_state,
-        ws_get_health,
-        ws_force_reconnect,
-        ws_update_config,
-        ws_is_connected,
-        ws_set_app_background_state,
-        ws_get_app_background_state,
         login_command,
         im_request_command,
         get_settings,

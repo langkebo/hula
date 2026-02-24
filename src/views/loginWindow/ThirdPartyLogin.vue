@@ -26,8 +26,12 @@ import { useLogin } from '@/hooks/useLogin'
 
 export type ThirdPartyLoginContext = Pick<
   ReturnType<typeof useLogin>,
-  'giteeLogin' | 'githubLogin' | 'gitcodeLogin' | 'loading' | 'loginDisabled'
->
+  'loading' | 'loginDisabled'
+> & {
+  giteeLogin?: () => void
+  githubLogin?: () => void
+  gitcodeLogin?: () => void
+}
 
 const props = withDefaults(
   defineProps<{
@@ -45,27 +49,32 @@ const defaultContext = useLogin()
 const resolvedContext = props.loginContext ? { ...defaultContext, ...props.loginContext } : defaultContext
 
 const thirdPartyLabel = computed(() => t('login.third_party.title'))
+
+const noop = () => {
+  window.$message?.info('第三方登录功能暂未开放，请使用账号密码登录')
+}
+
 const thirdPartyOptions = computed(() => [
   {
     key: 'gitee',
     label: t('login.third_party.gitee'),
     icon: '#gitee-login',
     style: 'color-#d5304f dark:color-#d5304f80',
-    action: resolvedContext.giteeLogin
+    action: (resolvedContext as any).giteeLogin || noop
   },
   {
     key: 'github',
     label: t('login.third_party.github'),
     icon: '#github-login',
     style: 'color-#303030 dark:color-#fefefe90',
-    action: resolvedContext.githubLogin
+    action: (resolvedContext as any).githubLogin || noop
   },
   {
     key: 'gitcode',
     label: t('login.third_party.gitcode'),
     icon: '#gitcode-login',
     style: 'color-#d5304f dark:color-#d5304f80',
-    action: resolvedContext.gitcodeLogin
+    action: (resolvedContext as any).gitcodeLogin || noop
   }
 ])
 

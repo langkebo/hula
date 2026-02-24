@@ -127,12 +127,8 @@ const scanStatusText = computed(() =>
   scanStatus.value.textKey ? t(`login.qr.overlay.${scanStatus.value.textKey}`) : ''
 )
 
-// 第三方登录相关逻辑
-const { giteeLogin, githubLogin, gitcodeLogin, loading: loginLoading, loginDisabled } = useLogin()
+const { loading: loginLoading, loginDisabled } = useLogin()
 const loginContext: ThirdPartyLoginContext = {
-  giteeLogin,
-  githubLogin,
-  gitcodeLogin,
   loading: loginLoading,
   loginDisabled
 }

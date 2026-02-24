@@ -3,12 +3,18 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { error, info } from '@tauri-apps/plugin-log'
 import { initConfig } from '@/utils/ImRequestUtils'
 import { CallTypeEnum, RTCCallStatus } from '@/enums'
-import rustWebSocketClient from '@/services/webSocketRust'
 import { useUserStore } from '@/stores/user'
-import { WsRequestMsgType, WsResponseMessageType } from '../services/wsType'
 import { isMobile } from '../utils/PlatformConstants'
 import { useMitt } from './useMitt'
 import { useTauriListener } from './useTauriListener'
+
+// TODO: Matrix VoIP 集成
+// rustWebSocketClient 已被移除，需要使用 Matrix SDK 的 VoIP 功能
+// 参考: https://matrix.org/docs/guides/voip-with-matrix
+const sendMatrixVoipSignal = async (type: string, data: any) => {
+  console.warn('[useWebRtc] VoIP 功能需要 Matrix SDK 集成:', type, data)
+  throw new Error('VoIP 功能暂未实现，请使用 Matrix SDK 集成')
+}
 
 interface RtcMsgVO {
   roomId: string
@@ -202,13 +208,10 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
    */
   const sendCall = async () => {
     try {
-      await rustWebSocketClient.sendMessage({
-        type: WsRequestMsgType.VIDEO_CALL_REQUEST,
-        data: {
-          roomId: roomId,
-          targetUid: remoteUserId,
-          isVideo: callType === CallTypeEnum.VIDEO
-        }
+      await sendMatrixVoipSignal('VIDEO_CALL_REQUEST', {
+        roomId: roomId,
+        targetUid: remoteUserId,
+        isVideo: callType === CallTypeEnum.VIDEO
       })
     } catch (error) {
       console.error('发送通话请求失败:', error)
@@ -267,13 +270,10 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   const sendRtcCall2VideoCallResponse = async (status: number) => {
     try {
       info(`发送 ws 请求，通知双方通话状态 ${status}`)
-      await rustWebSocketClient.sendMessage({
-        type: WsRequestMsgType.VIDEO_CALL_RESPONSE,
-        data: {
-          callerUid: remoteUserId,
-          roomId: roomId,
-          accepted: status
-        }
+      await sendMatrixVoipSignal('VIDEO_CALL_RESPONSE', {
+        callerUid: remoteUserId,
+        roomId: roomId,
+        accepted: status
       })
     } catch (error) {
       console.error('发送通话响应失败:', error)
@@ -559,10 +559,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       }
 
       info('ws发送 offer')
-      await rustWebSocketClient.sendMessage({
-        type: WsRequestMsgType.WEBRTC_SIGNAL,
-        data: signalData
-      })
+      await sendMatrixVoipSignal('WEBRTC_SIGNAL', signalData)
     } catch (error) {
       console.error('Failed to send SDP offer:', error)
     }
@@ -626,10 +623,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         mediaType: callType === CallTypeEnum.VIDEO ? 'VideoSignal' : 'AudioSignal'
       }
 
-      await rustWebSocketClient.sendMessage({
-        type: WsRequestMsgType.WEBRTC_SIGNAL,
-        data: signalData
-      })
+      await sendMatrixVoipSignal('WEBRTC_SIGNAL', signalData)
     } catch (error) {
       console.error('Failed to send ICE candidate:', error)
     }
@@ -698,10 +692,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       }
 
       console.log('发送SDP answer', signalData)
-      await rustWebSocketClient.sendMessage({
-        type: WsRequestMsgType.WEBRTC_SIGNAL,
-        data: signalData
-      })
+      await sendMatrixVoipSignal('WEBRTC_SIGNAL', signalData)
 
       console.log('SDP answer sent via WebSocket:', answer)
     } catch (error) {
@@ -1071,7 +1062,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   }
 
   // 监听 WebRTC 信令消息（注册并保存卸载函数）
-  // useMitt.on(WsResponseMessageType.WEBRTC_SIGNAL, handleSignalMessage)
+  // useMitt.on('WEBRTC_SIGNAL', handleSignalMessage)
   void (async () => {
     await addListener(
       listen('ws-webrtc-signal', (event: any) => {
@@ -1139,7 +1130,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
 
   onUnmounted(() => {
     // 移除 WebRTC 信令消息监听器
-    useMitt.off(WsResponseMessageType.WEBRTC_SIGNAL, handleSignalMessage)
+    useMitt.off('WEBRTC_SIGNAL', handleSignalMessage)
   })
 
   return {

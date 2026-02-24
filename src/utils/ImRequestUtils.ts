@@ -463,9 +463,9 @@ export async function updateRoomInfo(body: { id: string; name?: string; avatar?:
   const chatStore = useChatStore()
   const groupStore = useGroupStore()
 
-  body.name = body.name ?? groupStore.countInfo!.groupName
-  body.avatar = body.avatar ?? groupStore.countInfo!.avatar
-  body.allowScanEnter = body.allowScanEnter ?? groupStore.countInfo!.allowScanEnter
+  body.name = body.name ?? groupStore.countInfo?.groupName ?? groupStore.countInfo?.name
+  body.avatar = body.avatar ?? (groupStore.countInfo?.avatar ?? undefined)
+  body.allowScanEnter = body.allowScanEnter ?? groupStore.countInfo?.allowScanEnter
 
   await imRequest({
     url: ImUrlEnum.UPDATE_ROOM_INFO,
