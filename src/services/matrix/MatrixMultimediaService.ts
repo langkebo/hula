@@ -49,16 +49,14 @@ class MatrixMultimediaService {
 
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      
+
       this.audioContext = new AudioContext({ sampleRate: finalConfig.sampleRate })
       const source = this.audioContext.createMediaStreamSource(this.stream)
       this.analyser = this.audioContext.createAnalyser()
       this.analyser.fftSize = 256
       source.connect(this.analyser)
 
-      const mimeType = MediaRecorder.isTypeSupported(finalConfig.mimeType) 
-        ? finalConfig.mimeType 
-        : 'audio/webm'
+      const mimeType = MediaRecorder.isTypeSupported(finalConfig.mimeType) ? finalConfig.mimeType : 'audio/webm'
 
       this.mediaRecorder = new MediaRecorder(this.stream, { mimeType })
       this.audioChunks = []
@@ -113,7 +111,7 @@ class MatrixMultimediaService {
 
   private cleanup(): void {
     if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop())
+      this.stream.getTracks().forEach((track) => track.stop())
       this.stream = null
     }
     if (this.audioContext) {
@@ -147,11 +145,7 @@ class MatrixMultimediaService {
     return this.mediaRecorder?.state === 'recording'
   }
 
-  async generateThumbnail(
-    file: File,
-    maxWidth: number = 320,
-    maxHeight: number = 240
-  ): Promise<ImageThumbnail | null> {
+  async generateThumbnail(file: File, maxWidth: number = 320, maxHeight: number = 240): Promise<ImageThumbnail | null> {
     if (!file.type.startsWith('image/')) {
       return null
     }
@@ -179,21 +173,25 @@ class MatrixMultimediaService {
 
         ctx.drawImage(img, 0, 0, width, height)
 
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            reject(new Error('[Multimedia] 无法生成缩略图'))
-            return
-          }
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('[Multimedia] 无法生成缩略图'))
+              return
+            }
 
-          const url = URL.createObjectURL(blob)
-          resolve({
-            url,
-            width,
-            height,
-            size: blob.size,
-            mimetype: file.type
-          })
-        }, file.type, 0.8)
+            const url = URL.createObjectURL(blob)
+            resolve({
+              url,
+              width,
+              height,
+              size: blob.size,
+              mimetype: file.type
+            })
+          },
+          file.type,
+          0.8
+        )
 
         URL.revokeObjectURL(img.src)
       }
@@ -237,21 +235,25 @@ class MatrixMultimediaService {
 
         ctx.drawImage(video, 0, 0, width, height)
 
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            reject(new Error('[Multimedia] 无法生成视频缩略图'))
-            return
-          }
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('[Multimedia] 无法生成视频缩略图'))
+              return
+            }
 
-          const url = URL.createObjectURL(blob)
-          resolve({
-            url,
-            width,
-            height,
-            size: blob.size,
-            mimetype: 'image/jpeg'
-          })
-        }, 'image/jpeg', 0.8)
+            const url = URL.createObjectURL(blob)
+            resolve({
+              url,
+              width,
+              height,
+              size: blob.size,
+              mimetype: 'image/jpeg'
+            })
+          },
+          'image/jpeg',
+          0.8
+        )
 
         URL.revokeObjectURL(video.src)
       }
@@ -291,7 +293,7 @@ class MatrixMultimediaService {
 
   async downloadAndSave(mxcUrl: string, filename: string): Promise<void> {
     const blob = await this.downloadMedia(mxcUrl, filename)
-    
+
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -300,7 +302,7 @@ class MatrixMultimediaService {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    
+
     info(`[Multimedia] 保存文件成功: ${filename}`)
   }
 
@@ -338,10 +340,8 @@ class MatrixMultimediaService {
   getMediaDuration(file: File): Promise<number> {
     return new Promise((resolve, reject) => {
       if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
-        const media = file.type.startsWith('video/') 
-          ? document.createElement('video') 
-          : new Audio()
-        
+        const media = file.type.startsWith('video/') ? document.createElement('video') : new Audio()
+
         media.preload = 'metadata'
         media.onloadedmetadata = () => {
           resolve(Math.round(media.duration * 1000))
@@ -387,18 +387,22 @@ class MatrixMultimediaService {
 
         ctx.drawImage(img, 0, 0, width, height)
 
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            reject(new Error('[Multimedia] 压缩图片失败'))
-            return
-          }
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('[Multimedia] 压缩图片失败'))
+              return
+            }
 
-          const compressedFile = new File([blob], file.name, {
-            type: file.type,
-            lastModified: Date.now()
-          })
-          resolve(compressedFile)
-        }, file.type, quality)
+            const compressedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: Date.now()
+            })
+            resolve(compressedFile)
+          },
+          file.type,
+          quality
+        )
 
         URL.revokeObjectURL(img.src)
       }
@@ -428,7 +432,7 @@ class MatrixMultimediaService {
     const k = 1024
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    return parseFloat((bytes / k ** i).toFixed(2)) + ' ' + sizes[i]
   }
 
   formatDuration(ms: number): string {

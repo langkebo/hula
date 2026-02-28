@@ -75,7 +75,10 @@ const handleReaction = async (emoji: { value: MarkEnum; title: string }) => {
   }
 }
 
-const handleEmojiSelect = async (emoji: string | { renderUrl: string; serverUrl: string }, type: 'emoji' | 'emoji-url' = 'emoji') => {
+const handleEmojiSelect = async (
+  emoji: string | { renderUrl: string; serverUrl: string },
+  type: 'emoji' | 'emoji-url' = 'emoji'
+) => {
   if (type === 'emoji-url') {
     const emojiUrl = typeof emoji === 'string' ? emoji : emoji.serverUrl
     try {

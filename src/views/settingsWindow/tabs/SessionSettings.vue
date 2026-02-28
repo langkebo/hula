@@ -183,7 +183,7 @@ function handleDeleteDevice(device: DeviceInfo) {
 }
 
 function handleLogoutAllDevices() {
-  const deviceIds = otherDevices.value.map(d => d.deviceId)
+  const deviceIds = otherDevices.value.map((d) => d.deviceId)
   if (deviceIds.length === 0) return
 
   dialog.warning({
@@ -263,7 +263,8 @@ function handleLogoutAllDevices() {
   font-weight: 500;
 }
 
-.device-id, .device-meta {
+.device-id,
+.device-meta {
   font-size: 12px;
   color: #999;
 }

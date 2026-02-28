@@ -11,8 +11,7 @@
           v-model:value="language"
           :options="languageOptions"
           style="width: 150px"
-          @update:value="handleLanguageChange"
-        />
+          @update:value="handleLanguageChange" />
       </div>
     </div>
 
@@ -29,8 +28,7 @@
           v-model:value="sendKey"
           :options="sendKeyOptions"
           style="width: 150px"
-          @update:value="handleSendKeyChange"
-        />
+          @update:value="handleSendKeyChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
@@ -44,11 +42,7 @@
           <span class="setting-label">消息撤回时间</span>
           <span class="setting-desc">设置消息可撤回的时间窗口</span>
         </div>
-        <n-select
-          v-model:value="recallTime"
-          :options="recallTimeOptions"
-          style="width: 150px"
-        />
+        <n-select v-model:value="recallTime" :options="recallTimeOptions" style="width: 150px" />
       </div>
     </div>
 
@@ -81,11 +75,7 @@
           <span class="setting-label">表情大小</span>
           <span class="setting-desc">设置消息中表情的显示大小</span>
         </div>
-        <n-select
-          v-model:value="emojiSize"
-          :options="emojiSizeOptions"
-          style="width: 120px"
-        />
+        <n-select v-model:value="emojiSize" :options="emojiSizeOptions" style="width: 120px" />
       </div>
     </div>
   </div>
@@ -146,17 +136,17 @@ onMounted(() => {
   if (savedConfirm !== null) {
     messageConfirm.value = savedConfirm === 'true'
   }
-  
+
   const savedLinkPreview = localStorage.getItem('hula-link-preview')
   if (savedLinkPreview !== null) {
     linkPreview.value = savedLinkPreview === 'true'
   }
-  
+
   const savedEmoji = localStorage.getItem('hula-emoji-convert')
   if (savedEmoji !== null) {
     emojiConvert.value = savedEmoji === 'true'
   }
-  
+
   const savedEmojiSize = localStorage.getItem('hula-emoji-size')
   if (savedEmojiSize) {
     emojiSize.value = savedEmojiSize
@@ -168,12 +158,12 @@ function handleLanguageChange(value: string) {
   if (value !== 'AUTO') {
     locale.value = value
   }
-  message.success(`语言已切换为 ${languageOptions.find(l => l.value === value)?.label}`)
+  message.success(`语言已切换为 ${languageOptions.find((l) => l.value === value)?.label}`)
 }
 
 function handleSendKeyChange(value: string) {
   settingStore.setSendMessageShortcut(value)
-  message.success(`发送键已设置为 ${sendKeyOptions.find(s => s.value === value)?.label}`)
+  message.success(`发送键已设置为 ${sendKeyOptions.find((s) => s.value === value)?.label}`)
 }
 
 function handleConfirmChange(value: boolean) {

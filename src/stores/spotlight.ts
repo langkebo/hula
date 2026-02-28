@@ -33,17 +33,11 @@ export const useSpotlightStore = defineStore(StoresEnum.SPOTLIGHT, () => {
 
   const hasResults = computed(() => results.value.length > 0)
 
-  const messageResults = computed(() => 
-    results.value.filter(r => r.type === 'message')
-  )
+  const messageResults = computed(() => results.value.filter((r) => r.type === 'message'))
 
-  const roomResults = computed(() => 
-    results.value.filter(r => r.type === 'room')
-  )
+  const roomResults = computed(() => results.value.filter((r) => r.type === 'room'))
 
-  const userResults = computed(() => 
-    results.value.filter(r => r.type === 'user')
-  )
+  const userResults = computed(() => results.value.filter((r) => r.type === 'user'))
 
   function setQuery(value: string): void {
     query.value = value

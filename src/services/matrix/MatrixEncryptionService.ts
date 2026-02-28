@@ -242,12 +242,7 @@ class MatrixEncryptionService {
         throw new Error('[Encryption] 没有可用的密钥备份')
       }
 
-      const result = await crypto.restoreKeyBackup?.(
-        recoveryKey,
-        undefined,
-        undefined,
-        backupInfo
-      )
+      const result = await crypto.restoreKeyBackup?.(recoveryKey, undefined, undefined, backupInfo)
 
       info(`[Encryption] 从备份恢复密钥成功: ${result?.imported || 0} 个`)
       return {
@@ -288,7 +283,7 @@ class MatrixEncryptionService {
 
     try {
       const request = await client.requestVerificationDM?.(userId, deviceId, methods)
-      
+
       return {
         requestId: request?.transactionId || '',
         phase: request?.phase || 'requested',
@@ -304,10 +299,7 @@ class MatrixEncryptionService {
     }
   }
 
-  async requestUserVerification(
-    userId: string,
-    methods: string[] = ['m.sas.v1']
-  ): Promise<VerificationRequest> {
+  async requestUserVerification(userId: string, methods: string[] = ['m.sas.v1']): Promise<VerificationRequest> {
     const client = matrixClientService.getClient() as any
     if (!client) {
       throw new Error('[Encryption] 客户端未初始化')
@@ -315,7 +307,7 @@ class MatrixEncryptionService {
 
     try {
       const request = await client.requestVerification?.(userId, methods)
-      
+
       return {
         requestId: request?.transactionId || '',
         phase: request?.phase || 'requested',
@@ -411,7 +403,10 @@ class MatrixEncryptionService {
     }
   }
 
-  async getDeviceTrustLevel(userId: string, deviceId: string): Promise<{
+  async getDeviceTrustLevel(
+    userId: string,
+    deviceId: string
+  ): Promise<{
     isVerified: boolean
     isCrossSigningVerified: boolean
     isTofu: boolean
@@ -492,7 +487,7 @@ class MatrixEncryptionService {
 
       for (const member of members) {
         const userId = member.userId || member
-        const devices = await client.getStoredDevicesForUser?.(userId) || []
+        const devices = (await client.getStoredDevicesForUser?.(userId)) || []
 
         for (const device of devices) {
           const isVerified = device.isVerified?.()

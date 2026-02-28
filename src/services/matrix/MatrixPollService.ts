@@ -16,12 +16,7 @@ export interface PollData {
 }
 
 class MatrixPollService {
-  async createPoll(
-    roomId: string,
-    question: string,
-    options: string[],
-    endTime?: number
-  ): Promise<string> {
+  async createPoll(roomId: string, question: string, options: string[], endTime?: number): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Poll] 客户端未初始化')
@@ -61,11 +56,7 @@ class MatrixPollService {
     }
   }
 
-  async vote(
-    roomId: string,
-    pollEventId: string,
-    optionId: string
-  ): Promise<string> {
+  async vote(roomId: string, pollEventId: string, optionId: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Poll] 客户端未初始化')
@@ -93,10 +84,7 @@ class MatrixPollService {
     }
   }
 
-  async endPoll(
-    roomId: string,
-    pollEventId: string
-  ): Promise<string> {
+  async endPoll(roomId: string, pollEventId: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Poll] 客户端未初始化')
@@ -154,10 +142,7 @@ class MatrixPollService {
         const content = event.getContent()
         const relatesTo = content['m.relates_to']
 
-        if (
-          content.msgtype === 'm.poll.response' &&
-          relatesTo?.event_id === pollEventId
-        ) {
+        if (content.msgtype === 'm.poll.response' && relatesTo?.event_id === pollEventId) {
           const sender = event.getSender()
           const answers = content['m.poll.response']?.answers || []
 

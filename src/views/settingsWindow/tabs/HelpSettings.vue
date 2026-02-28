@@ -144,7 +144,7 @@ onMounted(async () => {
 async function loadVersionInfo() {
   try {
     platform.value = isDesktopPlatform ? 'Tauri Desktop' : 'Web Browser'
-    
+
     if (isDesktopPlatform) {
       try {
         const { getVersion } = await import('@tauri-apps/api/app')
@@ -152,7 +152,7 @@ async function loadVersionInfo() {
       } catch {
         appVersion.value = '1.0.0'
       }
-      
+
       try {
         const { getTauriVersion } = await import('@tauri-apps/api/app')
         tauriVersion.value = await getTauriVersion()
@@ -162,7 +162,7 @@ async function loadVersionInfo() {
     } else {
       tauriVersion.value = '-'
     }
-    
+
     try {
       const response = await fetch('/package.json')
       if (response.ok) {
@@ -188,15 +188,15 @@ async function loadVersionInfo() {
 async function handleCheckUpdate() {
   checkingUpdate.value = true
   updateInfo.value = null
-  
+
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
     updateInfo.value = {
       hasUpdate: false,
       latestVersion: appVersion.value
     }
-    
+
     message.success('已是最新版本')
   } catch (error) {
     message.error('检查更新失败')

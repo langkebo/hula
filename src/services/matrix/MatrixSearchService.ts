@@ -44,7 +44,7 @@ class MatrixSearchService {
             search_term: query,
             filter: {
               limit: options?.limit || 20,
-                rooms: options?.roomId ? [options.roomId] : undefined
+              rooms: options?.roomId ? [options.roomId] : undefined
             },
             order_by: 'recent',
             event_context: {
@@ -58,7 +58,7 @@ class MatrixSearchService {
 
       const response = await client.search(searchParams)
       const results = this.parseSearchResults(response as any)
-      
+
       info(`[MatrixSearch] 搜索完成: "${query}" 找到 ${results.length} 条结果`)
       return results
     } catch (err) {
@@ -84,10 +84,12 @@ class MatrixSearchService {
         content: event.content,
         timestamp: event.origin_server_ts,
         roomName: context?.profile_info?.[event.room_id]?.displayname,
-        context: context ? {
-          eventsBefore: context.events_before || [],
-          eventsAfter: context.events_after || []
-        } : undefined
+        context: context
+          ? {
+              eventsBefore: context.events_before || [],
+              eventsAfter: context.events_after || []
+            }
+          : undefined
       })
     }
 
@@ -132,12 +134,12 @@ class MatrixSearchService {
     const lowerQuery = query.toLowerCase()
 
     return rooms
-      .filter(room => {
+      .filter((room) => {
         const roomName = room.name?.toLowerCase() || ''
         const roomId = room.roomId.toLowerCase()
         return roomName.includes(lowerQuery) || roomId.includes(lowerQuery)
       })
-      .map(room => {
+      .map((room) => {
         const member = room.getMember(myUserId || '')
         return {
           roomId: room.roomId,

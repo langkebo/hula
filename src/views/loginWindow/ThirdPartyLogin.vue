@@ -24,10 +24,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLogin } from '@/hooks/useLogin'
 
-export type ThirdPartyLoginContext = Pick<
-  ReturnType<typeof useLogin>,
-  'loading' | 'loginDisabled'
-> & {
+export type ThirdPartyLoginContext = Pick<ReturnType<typeof useLogin>, 'loading' | 'loginDisabled'> & {
   giteeLogin?: () => void
   githubLogin?: () => void
   gitcodeLogin?: () => void

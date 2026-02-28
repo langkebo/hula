@@ -13,11 +13,7 @@
     </div>
 
     <div class="member-filter">
-      <n-input
-        v-model:value="searchQuery"
-        size="small"
-        :placeholder="t('room.members.search_placeholder')"
-        clearable>
+      <n-input v-model:value="searchQuery" size="small" :placeholder="t('room.members.search_placeholder')" clearable>
         <template #prefix>
           <svg class="size-14px">
             <use href="#search"></use>
@@ -36,11 +32,7 @@
               :key="member.userId"
               class="member-item"
               @click="$emit('member-click', member)">
-              <n-avatar
-                round
-                :size="36"
-                :src="member.avatarUrl"
-                :fallback-src="defaultAvatar" />
+              <n-avatar round :size="36" :src="member.avatarUrl" :fallback-src="defaultAvatar" />
               <div class="member-info">
                 <span class="member-name">{{ member.displayName || member.userId }}</span>
                 <span class="member-role">{{ t('room.members.admin') }}</span>
@@ -60,11 +52,7 @@
               :key="member.userId"
               class="member-item"
               @click="$emit('member-click', member)">
-              <n-avatar
-                round
-                :size="36"
-                :src="member.avatarUrl"
-                :fallback-src="defaultAvatar" />
+              <n-avatar round :size="36" :src="member.avatarUrl" :fallback-src="defaultAvatar" />
               <div class="member-info">
                 <span class="member-name">{{ member.displayName || member.userId }}</span>
                 <span class="member-role">{{ t('room.members.moderator') }}</span>
@@ -83,11 +71,7 @@
             :key="member.userId"
             class="member-item"
             @click="$emit('member-click', member)">
-            <n-avatar
-              round
-              :size="36"
-              :src="member.avatarUrl"
-              :fallback-src="defaultAvatar" />
+            <n-avatar round :size="36" :src="member.avatarUrl" :fallback-src="defaultAvatar" />
             <div class="member-info">
               <span class="member-name">{{ member.displayName || member.userId }}</span>
             </div>
@@ -130,27 +114,18 @@ const filteredMembers = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return props.members
     .filter((m) => m.membership === 'join')
-    .filter((m) => !query || 
-      m.displayName?.toLowerCase().includes(query) || 
-      m.userId.toLowerCase().includes(query)
-    )
+    .filter((m) => !query || m.displayName?.toLowerCase().includes(query) || m.userId.toLowerCase().includes(query))
     .map((m) => ({
       ...m,
       avatarUrl: AvatarUtils.getAvatarUrl(m.avatarUrl || '')
     }))
 })
 
-const adminMembers = computed(() => 
-  filteredMembers.value.filter((m) => m.powerLevel >= 100)
-)
+const adminMembers = computed(() => filteredMembers.value.filter((m) => m.powerLevel >= 100))
 
-const moderatorMembers = computed(() => 
-  filteredMembers.value.filter((m) => m.powerLevel >= 50 && m.powerLevel < 100)
-)
+const moderatorMembers = computed(() => filteredMembers.value.filter((m) => m.powerLevel >= 50 && m.powerLevel < 100))
 
-const regularMembers = computed(() => 
-  filteredMembers.value.filter((m) => m.powerLevel < 50)
-)
+const regularMembers = computed(() => filteredMembers.value.filter((m) => m.powerLevel < 50))
 </script>
 
 <style scoped lang="scss">

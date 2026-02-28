@@ -25,7 +25,11 @@ export interface ThreadMessage {
 }
 
 class MatrixThreadService {
-  async createThread(roomId: string, rootEventId: string, initialReply?: { body: string; html?: string }): Promise<string> {
+  async createThread(
+    roomId: string,
+    rootEventId: string,
+    initialReply?: { body: string; html?: string }
+  ): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixThread] 客户端未初始化')

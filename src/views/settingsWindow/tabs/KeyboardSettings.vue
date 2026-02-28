@@ -41,8 +41,7 @@
           :value="shortcutsStore.screenshot"
           readonly
           style="width: 150px"
-          @click="handleEditShortcut('screenshot')"
-        />
+          @click="handleEditShortcut('screenshot')" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
@@ -53,8 +52,7 @@
           :value="shortcutsStore.openMainPanel"
           readonly
           style="width: 150px"
-          @click="handleEditShortcut('openMainPanel')"
-        />
+          @click="handleEditShortcut('openMainPanel')" />
       </div>
       <div class="reset-section">
         <n-button @click="resetShortcuts">恢复默认快捷键</n-button>
@@ -123,22 +121,22 @@ function handleEditShortcut(type: string) {
 
 function handleKeyDown(event: KeyboardEvent) {
   if (!editingShortcut.value) return
-  
+
   event.preventDefault()
-  
+
   const keys: string[] = []
   if (event.ctrlKey) keys.push('Ctrl')
   if (event.altKey) keys.push('Alt')
   if (event.shiftKey) keys.push('Shift')
   if (event.metaKey) keys.push(isMac() ? 'Cmd' : 'Meta')
-  
+
   const key = event.key.toUpperCase()
   if (!['CONTROL', 'ALT', 'SHIFT', 'META'].includes(key)) {
     keys.push(key)
   }
-  
+
   currentEditingKeys.value = keys
-  
+
   if (keys.length >= 2) {
     const shortcutStr = keys.join('+')
     if (currentEditingType.value === 'screenshot') {
@@ -158,7 +156,7 @@ function resetShortcuts() {
     screenshot: isMac() ? 'Cmd+Ctrl+H' : 'Ctrl+Alt+H',
     openMainPanel: isMac() ? 'Cmd+Ctrl+P' : 'Ctrl+Alt+P'
   }
-  
+
   shortcutsStore.screenshot = defaults.screenshot
   shortcutsStore.openMainPanel = defaults.openMainPanel
   settingStore.setScreenshotShortcut(defaults.screenshot)

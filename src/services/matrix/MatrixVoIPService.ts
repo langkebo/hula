@@ -296,12 +296,12 @@ class MatrixVoIPService {
     }
 
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => track.stop())
+      this.localStream.getTracks().forEach((track) => track.stop())
       this.localStream = null
     }
 
     if (this.screenStream) {
-      this.screenStream.getTracks().forEach(track => track.stop())
+      this.screenStream.getTracks().forEach((track) => track.stop())
       this.screenStream = null
     }
 
@@ -365,7 +365,7 @@ class MatrixVoIPService {
     }
 
     if (this.screenStream) {
-      this.screenStream.getTracks().forEach(track => track.stop())
+      this.screenStream.getTracks().forEach((track) => track.stop())
       this.screenStream = null
     }
 
@@ -377,9 +377,7 @@ class MatrixVoIPService {
   }
 
   getActiveCalls(): CallInfo[] {
-    return Array.from(this.calls.values()).filter(
-      call => call.state !== 'ended'
-    )
+    return Array.from(this.calls.values()).filter((call) => call.state !== 'ended')
   }
 
   onCallUpdate(callId: string, handler: (call: CallInfo) => void): () => void {
@@ -399,7 +397,7 @@ class MatrixVoIPService {
 
     const handlers = this.callHandlers.get(callId)
     if (handlers) {
-      handlers.forEach(handler => handler(callInfo))
+      handlers.forEach((handler) => handler(callInfo))
     }
   }
 
@@ -450,8 +448,8 @@ class MatrixVoIPService {
   async checkMediaPermissions(): Promise<{ audio: boolean; video: boolean }> {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices()
-      const hasAudio = devices.some(d => d.kind === 'audioinput')
-      const hasVideo = devices.some(d => d.kind === 'videoinput')
+      const hasAudio = devices.some((d) => d.kind === 'audioinput')
+      const hasVideo = devices.some((d) => d.kind === 'videoinput')
       return { audio: hasAudio, video: hasVideo }
     } catch {
       return { audio: false, video: false }
@@ -462,8 +460,8 @@ class MatrixVoIPService {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices()
       return {
-        audio: devices.filter(d => d.kind === 'audioinput'),
-        video: devices.filter(d => d.kind === 'videoinput')
+        audio: devices.filter((d) => d.kind === 'audioinput'),
+        video: devices.filter((d) => d.kind === 'videoinput')
       }
     } catch {
       return { audio: [], video: [] }

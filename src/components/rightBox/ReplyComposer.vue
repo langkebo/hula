@@ -4,11 +4,7 @@
       <div class="reply-line"></div>
       <div class="reply-content">
         <div class="reply-header">
-          <n-avatar
-            round
-            :size="20"
-            :src="getAvatarUrl(replyTo.senderAvatar)"
-            :fallback-src="defaultAvatar" />
+          <n-avatar round :size="20" :src="getAvatarUrl(replyTo.senderAvatar)" :fallback-src="defaultAvatar" />
           <span class="reply-sender">{{ replyTo.senderName }}</span>
           <n-button text size="tiny" @click="handleCancel">
             <template #icon>
@@ -72,9 +68,7 @@ defineProps<{
   replyTo: ReplyToInfo | null
 }>()
 
-const emit = defineEmits<{
-  (e: 'cancel'): void
-}>()
+const emit = defineEmits<(e: 'cancel') => void>()
 
 const { t } = useI18n()
 const defaultAvatar = computed(() => '/logoD.png')

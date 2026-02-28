@@ -1,19 +1,9 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div
-        v-if="visible"
-        class="menu-overlay"
-        @click="handleOverlayClick"
-        @contextmenu.prevent
-      >
+      <div v-if="visible" class="menu-overlay" @click="handleOverlayClick" @contextmenu.prevent>
         <Transition name="slide">
-          <div
-            v-if="visible"
-            class="user-menu-dropdown"
-            :style="menuStyle"
-            @click.stop
-          >
+          <div v-if="visible" class="user-menu-dropdown" :style="menuStyle" @click.stop>
             <UserMenuHeader @theme-toggle="$emit('theme-toggle')" />
 
             <div class="menu-divider" />
@@ -28,8 +18,7 @@
                     'menu-item-danger': item.danger,
                     'menu-item-disabled': item.disabled
                   }"
-                  @click="handleItemClick(item.id)"
-                >
+                  @click="handleItemClick(item.id)">
                   <span class="menu-item-icon">
                     <Icon :icon="getIcon(item.icon)" :width="18" />
                   </span>
@@ -126,11 +115,15 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-watch(() => props.position, (newVal) => {
-  if (newVal) {
-    visible.value = true
-  }
-}, { immediate: true })
+watch(
+  () => props.position,
+  (newVal) => {
+    if (newVal) {
+      visible.value = true
+    }
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
@@ -230,7 +223,9 @@ onUnmounted(() => {
 
 .slide-enter-active,
 .slide-leave-active {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .slide-enter-from,

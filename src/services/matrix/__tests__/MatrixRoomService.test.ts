@@ -64,49 +64,37 @@ describe('MatrixRoomService', () => {
 
   describe('inviteUser', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixRoomService.inviteUser('!room:id', '@user:matrix.org')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixRoomService.inviteUser('!room:id', '@user:matrix.org')).rejects.toThrow('客户端未初始化')
     })
   })
 
   describe('kickUser', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixRoomService.kickUser('!room:id', '@user:matrix.org')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixRoomService.kickUser('!room:id', '@user:matrix.org')).rejects.toThrow('客户端未初始化')
     })
   })
 
   describe('banUser', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixRoomService.banUser('!room:id', '@user:matrix.org')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixRoomService.banUser('!room:id', '@user:matrix.org')).rejects.toThrow('客户端未初始化')
     })
   })
 
   describe('unbanUser', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixRoomService.unbanUser('!room:id', '@user:matrix.org')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixRoomService.unbanUser('!room:id', '@user:matrix.org')).rejects.toThrow('客户端未初始化')
     })
   })
 
   describe('setRoomName', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixRoomService.setRoomName('!room:id', 'New Room Name')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixRoomService.setRoomName('!room:id', 'New Room Name')).rejects.toThrow('客户端未初始化')
     })
   })
 
   describe('setRoomTopic', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixRoomService.setRoomTopic('!room:id', 'New Topic')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixRoomService.setRoomTopic('!room:id', 'New Topic')).rejects.toThrow('客户端未初始化')
     })
   })
 })

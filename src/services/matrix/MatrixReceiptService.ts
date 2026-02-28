@@ -41,8 +41,8 @@ class MatrixReceiptService {
 
     const timeline = room.getLiveTimeline()
     const events = timeline.getEvents()
-    const event = events.find(e => e.getId() === eventId)
-    
+    const event = events.find((e) => e.getId() === eventId)
+
     if (!event) {
       throw new Error(`[MatrixReceipt] 事件不存在: ${eventId}`)
     }
@@ -148,8 +148,10 @@ class MatrixReceiptService {
 
     const receipt = room.getEventReadUpTo(myUserId, false)
     if (!receipt) {
-      return room.getUnreadNotificationCount(NotificationCountType.Highlight) + 
-             room.getUnreadNotificationCount(NotificationCountType.Total)
+      return (
+        room.getUnreadNotificationCount(NotificationCountType.Highlight) +
+        room.getUnreadNotificationCount(NotificationCountType.Total)
+      )
     }
 
     const timeline = room.getLiveTimeline()
@@ -174,8 +176,10 @@ class MatrixReceiptService {
     const room = client.getRoom(roomId)
     if (!room) return false
 
-    return room.getUnreadNotificationCount(NotificationCountType.Highlight) > 0 || 
-           room.getUnreadNotificationCount(NotificationCountType.Total) > 0
+    return (
+      room.getUnreadNotificationCount(NotificationCountType.Highlight) > 0 ||
+      room.getUnreadNotificationCount(NotificationCountType.Total) > 0
+    )
   }
 
   getRoomsWithUnread(): string[] {
@@ -183,9 +187,7 @@ class MatrixReceiptService {
     if (!client) return []
 
     const rooms = client.getRooms()
-    return rooms
-      .filter(room => this.hasUnread(room.roomId))
-      .map(room => room.roomId)
+    return rooms.filter((room) => this.hasUnread(room.roomId)).map((room) => room.roomId)
   }
 }
 
