@@ -25,41 +25,39 @@ describe('MatrixEventService', () => {
 
   describe('sendTextMessage', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.sendTextMessage('!room:id', 'Hello World')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.sendTextMessage('!room:id', 'Hello World')).rejects.toThrow('客户端未初始化')
     })
   })
 
   describe('sendImageMessage', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.sendImageMessage('!room:id', 'mxc://matrix.org/image')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.sendImageMessage('!room:id', 'mxc://matrix.org/image')).rejects.toThrow(
+        '客户端未初始化'
+      )
     })
   })
 
   describe('sendFileMessage', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.sendFileMessage('!room:id', 'mxc://matrix.org/file')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.sendFileMessage('!room:id', 'mxc://matrix.org/file')).rejects.toThrow(
+        '客户端未初始化'
+      )
     })
   })
 
   describe('sendVideoMessage', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.sendVideoMessage('!room:id', 'mxc://matrix.org/video')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.sendVideoMessage('!room:id', 'mxc://matrix.org/video')).rejects.toThrow(
+        '客户端未初始化'
+      )
     })
   })
 
   describe('sendAudioMessage', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.sendAudioMessage('!room:id', 'mxc://matrix.org/audio')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.sendAudioMessage('!room:id', 'mxc://matrix.org/audio')).rejects.toThrow(
+        '客户端未初始化'
+      )
     })
   })
 
@@ -76,25 +74,21 @@ describe('MatrixEventService', () => {
 
   describe('sendLocationMessage', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.sendLocationMessage('!room:id', 'geo:0,0', 'Location')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.sendLocationMessage('!room:id', 'geo:0,0', 'Location')).rejects.toThrow(
+        '客户端未初始化'
+      )
     })
   })
 
   describe('redactEvent', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.redactEvent('!room:id', '$event:id')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.redactEvent('!room:id', '$event:id')).rejects.toThrow('客户端未初始化')
     })
   })
 
   describe('sendMessageReceipt', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.sendMessageReceipt('!room:id', '$event:id')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.sendMessageReceipt('!room:id', '$event:id')).rejects.toThrow('客户端未初始化')
     })
   })
 
@@ -112,33 +106,31 @@ describe('MatrixEventService', () => {
 
   describe('replyToEvent', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.replyToEvent('!room:id', '$event:id', 'Reply text')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.replyToEvent('!room:id', '$event:id', 'Reply text')).rejects.toThrow(
+        '客户端未初始化'
+      )
     })
   })
 
   describe('editEvent', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.editEvent('!room:id', '$event:id', 'Edited text')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.editEvent('!room:id', '$event:id', 'Edited text')).rejects.toThrow(
+        '客户端未初始化'
+      )
     })
   })
 
   describe('reactToEvent', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.reactToEvent('!room:id', '$event:id', '👍')
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.reactToEvent('!room:id', '$event:id', '👍')).rejects.toThrow('客户端未初始化')
     })
   })
 
   describe('sendEvent', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.sendEvent('!room:id', 'm.room.message', { body: 'test' })
-      ).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.sendEvent('!room:id', 'm.room.message', { body: 'test' })).rejects.toThrow(
+        '客户端未初始化'
+      )
     })
   })
 })

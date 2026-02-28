@@ -140,10 +140,14 @@ class MatrixNotificationService {
     }
   }
 
-  async showNotification(title: string, body: string, options?: {
-    icon?: string
-    tag?: string
-  }): Promise<void> {
+  async showNotification(
+    title: string,
+    body: string,
+    options?: {
+      icon?: string
+      tag?: string
+    }
+  ): Promise<void> {
     if (!this.config.enableDesktop) return
 
     const hasPermission = await this.requestNotificationPermission()

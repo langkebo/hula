@@ -92,9 +92,7 @@ export const useGroupStore = defineStore(
     const isCurrentUserModerator = computed(() => {
       const myUserId = matrixStore.userId
       if (!myUserId) return false
-      return currentRoomMembers.value.some(
-        (m) => m.userId === myUserId && (m.isModerator || m.isCreator)
-      )
+      return currentRoomMembers.value.some((m) => m.userId === myUserId && (m.isModerator || m.isCreator))
     })
 
     const userList = computed(() => currentRoomMembers.value)
@@ -250,7 +248,8 @@ export const useGroupStore = defineStore(
           memberNum: room.getJoinedMembers().length,
           onlineNum: room.getJoinedMembers().length,
           isEncrypted: client.isRoomEncrypted(roomId),
-          isPublic: room.currentState.getStateEvents('m.room.join_rules' as any, '')?.getContent()?.join_rule === 'public',
+          isPublic:
+            room.currentState.getStateEvents('m.room.join_rules' as any, '')?.getContent()?.join_rule === 'public',
           creator,
           groupName: room.name || roomId,
           roleId: 0,

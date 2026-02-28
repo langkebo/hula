@@ -8,8 +8,7 @@
           :key="theme.value"
           class="theme-option"
           :class="{ 'theme-option-active': currentTheme === theme.value }"
-          @click="handleThemeChange(theme.value)"
-        >
+          @click="handleThemeChange(theme.value)">
           <div class="theme-preview" :class="theme.previewClass">
             <div class="preview-sidebar" />
             <div class="preview-content" />
@@ -32,8 +31,7 @@
           v-model:value="fontFamily"
           :options="fontOptions"
           style="width: 150px"
-          @update:value="handleFontChange"
-        />
+          @update:value="handleFontChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
@@ -47,8 +45,7 @@
             :max="20"
             :step="1"
             style="width: 120px"
-            @update:value="handleFontSizeChange"
-          />
+            @update:value="handleFontSizeChange" />
           <span class="font-value">{{ fontSize }}px</span>
         </div>
       </div>
@@ -135,7 +132,7 @@ onMounted(() => {
     fontSize.value = parseInt(savedFontSize, 10)
     applyFontSize(fontSize.value)
   }
-  
+
   const savedBubbleStyle = localStorage.getItem('hula-bubble-style')
   if (savedBubbleStyle !== null) {
     bubbleStyle.value = savedBubbleStyle === 'true'

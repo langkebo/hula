@@ -95,10 +95,12 @@ class MatrixReactionService {
       if (event.getType() === 'm.reaction') {
         const content = event.getContent()
         const relatesTo = content['m.relates_to']
-        if (relatesTo?.rel_type === 'm.annotation' && 
-            relatesTo.event_id === eventId && 
-            relatesTo.key === emoji &&
-            event.getSender() === userId) {
+        if (
+          relatesTo?.rel_type === 'm.annotation' &&
+          relatesTo.event_id === eventId &&
+          relatesTo.key === emoji &&
+          event.getSender() === userId
+        ) {
           return event
         }
       }
@@ -127,13 +129,13 @@ class MatrixReactionService {
         if (relatesTo?.rel_type === 'm.annotation' && relatesTo.event_id === eventId) {
           const key = relatesTo.key
           if (!key) continue
-          
+
           const sender = event.getSender()
-          
+
           if (!reactionMap.has(key)) {
             reactionMap.set(key, { count: 0, users: [] })
           }
-          
+
           const info = reactionMap.get(key)!
           info.count++
           if (sender) {

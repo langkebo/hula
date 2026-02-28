@@ -47,10 +47,7 @@ class MatrixLocationService {
     })
   }
 
-  async sendLocation(
-    roomId: string,
-    location: LocationData
-  ): Promise<string> {
+  async sendLocation(roomId: string, location: LocationData): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Location] 客户端未初始化')
@@ -78,10 +75,7 @@ class MatrixLocationService {
     }
   }
 
-  async startLiveLocationShare(
-    roomId: string,
-    duration: number = 3600000
-  ): Promise<string> {
+  async startLiveLocationShare(roomId: string, duration: number = 3600000): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Location] 客户端未初始化')
@@ -115,11 +109,7 @@ class MatrixLocationService {
     }
   }
 
-  async updateLiveLocation(
-    roomId: string,
-    eventId: string,
-    location: LocationData
-  ): Promise<void> {
+  async updateLiveLocation(roomId: string, eventId: string, location: LocationData): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Location] 客户端未初始化')

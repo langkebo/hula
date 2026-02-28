@@ -16,11 +16,7 @@ export interface FileUploadResult {
 }
 
 class MatrixUploadService {
-  async uploadAndSendImage(
-    roomId: string,
-    file: File,
-    options: MatrixUploadOptions = {}
-  ): Promise<FileUploadResult> {
+  async uploadAndSendImage(roomId: string, file: File, options: MatrixUploadOptions = {}): Promise<FileUploadResult> {
     const matrixStore = useMatrixStore()
     if (!matrixStore.isLoggedIn) {
       throw new Error('未登录，无法上传文件')
@@ -58,11 +54,7 @@ class MatrixUploadService {
     }
   }
 
-  async uploadAndSendVideo(
-    roomId: string,
-    file: File,
-    options: MatrixUploadOptions = {}
-  ): Promise<FileUploadResult> {
+  async uploadAndSendVideo(roomId: string, file: File, options: MatrixUploadOptions = {}): Promise<FileUploadResult> {
     const matrixStore = useMatrixStore()
     if (!matrixStore.isLoggedIn) {
       throw new Error('未登录，无法上传文件')
@@ -101,11 +93,7 @@ class MatrixUploadService {
     }
   }
 
-  async uploadAndSendFile(
-    roomId: string,
-    file: File,
-    options: MatrixUploadOptions = {}
-  ): Promise<FileUploadResult> {
+  async uploadAndSendFile(roomId: string, file: File, options: MatrixUploadOptions = {}): Promise<FileUploadResult> {
     const matrixStore = useMatrixStore()
     if (!matrixStore.isLoggedIn) {
       throw new Error('未登录，无法上传文件')
@@ -141,11 +129,7 @@ class MatrixUploadService {
     }
   }
 
-  async uploadAndSendAudio(
-    roomId: string,
-    file: File,
-    options: MatrixUploadOptions = {}
-  ): Promise<FileUploadResult> {
+  async uploadAndSendAudio(roomId: string, file: File, options: MatrixUploadOptions = {}): Promise<FileUploadResult> {
     const matrixStore = useMatrixStore()
     if (!matrixStore.isLoggedIn) {
       throw new Error('未登录，无法上传文件')

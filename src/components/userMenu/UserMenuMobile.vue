@@ -1,22 +1,11 @@
 <template>
   <div class="user-menu-mobile" @click="handleTouchClick">
     <slot name="avatar">
-      <van-image
-        round
-        width="34px"
-        height="34px"
-        :src="userAvatar"
-        :error-icon="defaultAvatar"
-      />
+      <van-image round width="34px" height="34px" :src="userAvatar" :error-icon="defaultAvatar" />
     </slot>
     <div v-if="showOnlineStatus" class="online-indicator" :class="onlineClass" />
 
-    <van-popup
-      v-model:show="isOpen"
-      position="bottom"
-      round
-      :style="{ height: 'auto', maxHeight: '70vh' }"
-    >
+    <van-popup v-model:show="isOpen" position="bottom" round :style="{ height: 'auto', maxHeight: '70vh' }">
       <UserMenuHeader @theme-toggle="handleThemeToggle" />
 
       <div class="menu-divider" />
@@ -31,8 +20,7 @@
               'menu-item-danger': item.danger,
               'menu-item-disabled': item.disabled
             }"
-            @click="handleItemClick(item.id)"
-          >
+            @click="handleItemClick(item.id)">
             <template #icon>
               <Icon :icon="getIconName(item.icon)" class="menu-icon" />
             </template>
@@ -60,11 +48,7 @@ defineOptions({
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 
-const {
-  isOpen,
-  menuItems,
-  handleMenuItemClick
-} = useUserMenu()
+const { isOpen, menuItems, handleMenuItemClick } = useUserMenu()
 
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
 const defaultAvatar = computed(() => defaultAvatarImg)

@@ -28,8 +28,7 @@
             :max="100"
             :step="10"
             style="width: 100px"
-            @update:value="handleVolumeChange"
-          />
+            @update:value="handleVolumeChange" />
           <span class="volume-value">{{ soundVolume }}%</span>
         </div>
       </div>
@@ -68,20 +67,11 @@
       </div>
       <div v-if="keywordNotification" class="keywords-section">
         <div class="keywords-control">
-          <n-input
-            v-model:value="newKeyword"
-            placeholder="输入关键词后按回车添加"
-            @keyup.enter="addKeyword"
-          />
+          <n-input v-model:value="newKeyword" placeholder="输入关键词后按回车添加" @keyup.enter="addKeyword" />
           <n-button type="primary" @click="addKeyword">添加</n-button>
         </div>
         <div class="keywords-list">
-          <n-tag
-            v-for="keyword in keywords"
-            :key="keyword"
-            closable
-            @close="removeKeyword(keyword)"
-          >
+          <n-tag v-for="keyword in keywords" :key="keyword" closable @close="removeKeyword(keyword)">
             {{ keyword }}
           </n-tag>
         </div>
@@ -118,22 +108,22 @@ onMounted(() => {
   if (savedDesktopNotification !== null) {
     desktopNotification.value = savedDesktopNotification === 'true'
   }
-  
+
   const savedShowContent = localStorage.getItem('hula-show-content')
   if (savedShowContent !== null) {
     showMessageContent.value = savedShowContent === 'true'
   }
-  
+
   const savedShowSender = localStorage.getItem('hula-show-sender')
   if (savedShowSender !== null) {
     showSenderName.value = savedShowSender === 'true'
   }
-  
+
   const savedKeywords = localStorage.getItem('hula-keywords')
   if (savedKeywords) {
     keywords.value = JSON.parse(savedKeywords)
   }
-  
+
   const savedKeywordNotification = localStorage.getItem('hula-keyword-notification')
   if (savedKeywordNotification !== null) {
     keywordNotification.value = savedKeywordNotification === 'true'
@@ -188,7 +178,7 @@ function addKeyword() {
 }
 
 function removeKeyword(keyword: string) {
-  keywords.value = keywords.value.filter(k => k !== keyword)
+  keywords.value = keywords.value.filter((k) => k !== keyword)
   localStorage.setItem('hula-keywords', JSON.stringify(keywords.value))
   message.success(`已移除关键词: ${keyword}`)
 }

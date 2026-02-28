@@ -85,9 +85,7 @@ class MatrixTypingService {
     const typingUsers = this.getTypingUsers(roomId)
     if (typingUsers.length === 0) return ''
 
-    const displayNames = typingUsers
-      .slice(0, maxDisplay)
-      .map(u => u.displayName || u.userId)
+    const displayNames = typingUsers.slice(0, maxDisplay).map((u) => u.displayName || u.userId)
 
     if (typingUsers.length === 1) {
       return `${displayNames[0]} 正在输入...`
@@ -103,7 +101,7 @@ class MatrixTypingService {
 
   isUserTyping(roomId: string, userId: string): boolean {
     const typingUsers = this.getTypingUsers(roomId)
-    return typingUsers.some(u => u.userId === userId)
+    return typingUsers.some((u) => u.userId === userId)
   }
 
   cleanup(): void {

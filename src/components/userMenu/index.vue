@@ -21,11 +21,7 @@ defineOptions({
 
 const { isDesktop } = usePlatform()
 
-const UserMenuDesktop = defineAsyncComponent(() =>
-  import('./UserMenuDesktop.vue')
-)
+const UserMenuDesktop = defineAsyncComponent(() => import('./UserMenuDesktop.vue'))
 
-const UserMenuMobile = defineAsyncComponent(() =>
-  import('./UserMenuMobile.vue')
-)
+const UserMenuMobile = defineAsyncComponent(() => import('./UserMenuMobile.vue'))
 </script>

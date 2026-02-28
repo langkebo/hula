@@ -20,16 +20,8 @@
       </n-form-item>
 
       <n-form-item :label="t('room.create.avatar')" path="avatarUrl">
-        <n-upload
-          :max="1"
-          accept="image/*"
-          :custom-request="handleAvatarUpload"
-          :show-file-list="false">
-          <n-avatar
-            round
-            :size="64"
-            :src="formData.avatarUrl || defaultAvatar"
-            class="cursor-pointer" />
+        <n-upload :max="1" accept="image/*" :custom-request="handleAvatarUpload" :show-file-list="false">
+          <n-avatar round :size="64" :src="formData.avatarUrl || defaultAvatar" class="cursor-pointer" />
         </n-upload>
       </n-form-item>
 
@@ -43,9 +35,7 @@
       <n-form-item v-if="formData.isPublic" :label="t('room.create.alias')" path="alias">
         <n-input-group>
           <n-input-group-label>#</n-input-group-label>
-          <n-input
-            v-model:value="formData.alias"
-            :placeholder="t('room.create.alias_placeholder')" />
+          <n-input v-model:value="formData.alias" :placeholder="t('room.create.alias_placeholder')" />
           <n-input-group-label>:{{ serverDomain }}</n-input-group-label>
         </n-input-group>
       </n-form-item>
@@ -181,12 +171,7 @@ const handleCreate = async () => {
     if (formData.avatarUrl && room) {
       const client = (await import('@/services/matrix/MatrixClientService')).default.getClient()
       if (client) {
-        await client.sendStateEvent(
-          room.roomId,
-          'm.room.avatar' as any,
-          { url: formData.avatarUrl },
-          ''
-        )
+        await client.sendStateEvent(room.roomId, 'm.room.avatar' as any, { url: formData.avatarUrl }, '')
       }
     }
 

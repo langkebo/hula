@@ -19,8 +19,9 @@ function detectPlatform(): PlatformInfo {
 
   const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__
   const isDesktop = isTauri
-  const isMobile = !isDesktop && typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-  
+  const isMobile =
+    !isDesktop && typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
   const info: PlatformInfo = {
     isDesktop,
     isMobile,
@@ -35,7 +36,7 @@ function detectPlatform(): PlatformInfo {
 
 export function usePlatform(): PlatformInfo {
   const info = detectPlatform()
-  
+
   return {
     isDesktop: computed(() => info.isDesktop).value,
     isMobile: computed(() => info.isMobile).value,
@@ -51,7 +52,7 @@ export function usePlatformAsync(): {
 } {
   const isReady = ref(false)
   const platform = detectPlatform()
-  
+
   if (typeof window !== 'undefined') {
     isReady.value = true
   }

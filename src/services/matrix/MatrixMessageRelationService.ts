@@ -87,11 +87,7 @@ class MatrixMessageRelationService {
     }
   }
 
-  async editMediaMessage(
-    roomId: string,
-    originalEventId: string,
-    newCaption?: string
-  ): Promise<string> {
+  async editMediaMessage(roomId: string, originalEventId: string, newCaption?: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MessageRelation] 客户端未初始化')
@@ -417,7 +413,6 @@ class MatrixMessageRelationService {
     }
     return null
   }
-
 }
 
 export const matrixMessageRelationService = new MatrixMessageRelationService()

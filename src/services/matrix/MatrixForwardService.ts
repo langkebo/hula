@@ -63,7 +63,7 @@ class MatrixForwardService {
       }
     }
 
-    const successCount = results.filter(r => r.success).length
+    const successCount = results.filter((r) => r.success).length
     info(`[MatrixForward] 批量转发完成: ${successCount}/${targetRoomIds.length} 成功`)
 
     return results
@@ -95,10 +95,7 @@ class MatrixForwardService {
     }
   }
 
-  async forwardMediaMessage(
-    sourceEvent: MatrixEvent,
-    targetRoomId: string
-  ): Promise<string> {
+  async forwardMediaMessage(sourceEvent: MatrixEvent, targetRoomId: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixForward] 客户端未初始化')
@@ -106,7 +103,7 @@ class MatrixForwardService {
 
     try {
       const content = sourceEvent.getContent()
-      
+
       const forwardContent = {
         ...content,
         'm.relates_to': undefined
@@ -129,11 +126,11 @@ class MatrixForwardService {
     const myUserId = client.getUserId()
 
     return rooms
-      .filter(room => {
+      .filter((room) => {
         const member = room.getMember(myUserId || '')
         return member?.membership === 'join'
       })
-      .map(room => ({
+      .map((room) => ({
         roomId: room.roomId,
         roomName: room.name || room.roomId
       }))
@@ -148,7 +145,7 @@ class MatrixForwardService {
     const myUserId = client.getUserId()
 
     return rooms
-      .filter(room => {
+      .filter((room) => {
         const member = room.getMember(myUserId || '')
         return member?.membership === 'join'
       })
@@ -158,7 +155,7 @@ class MatrixForwardService {
         return bLastMessage - aLastMessage
       })
       .slice(0, limit)
-      .map(room => ({
+      .map((room) => ({
         roomId: room.roomId,
         roomName: room.name || room.roomId
       }))
@@ -173,16 +170,16 @@ class MatrixForwardService {
     const lowerQuery = query.toLowerCase()
 
     return rooms
-      .filter(room => {
+      .filter((room) => {
         const member = room.getMember(myUserId || '')
         if (member?.membership !== 'join') return false
 
         const roomName = room.name?.toLowerCase() || ''
         const roomId = room.roomId.toLowerCase()
-        
+
         return roomName.includes(lowerQuery) || roomId.includes(lowerQuery)
       })
-      .map(room => ({
+      .map((room) => ({
         roomId: room.roomId,
         roomName: room.name || room.roomId
       }))

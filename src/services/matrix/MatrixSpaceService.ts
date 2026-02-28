@@ -113,12 +113,7 @@ class MatrixSpaceService {
         content.order = options.order
       }
 
-      await client.sendStateEvent(
-        options.spaceId,
-        'm.space.child' as any,
-        content,
-        options.childRoomId
-      )
+      await client.sendStateEvent(options.spaceId, 'm.space.child' as any, content, options.childRoomId)
       info(`[Space] 添加子房间成功: ${options.childRoomId} -> ${options.spaceId}`)
     } catch (err) {
       error(`[Space] 添加子房间失败: ${err}`)
@@ -133,12 +128,7 @@ class MatrixSpaceService {
     }
 
     try {
-      await client.sendStateEvent(
-        spaceId,
-        'm.space.child' as any,
-        {},
-        childRoomId
-      )
+      await client.sendStateEvent(spaceId, 'm.space.child' as any, {}, childRoomId)
       info(`[Space] 移除子房间成功: ${childRoomId} -> ${spaceId}`)
     } catch (err) {
       error(`[Space] 移除子房间失败: ${err}`)
@@ -243,9 +233,7 @@ class MatrixSpaceService {
 
     try {
       const rooms = client.getRooms()
-      return rooms
-        .filter(room => this.isSpace(room))
-        .map(room => this.roomToSpace(room))
+      return rooms.filter((room) => this.isSpace(room)).map((room) => this.roomToSpace(room))
     } catch (err) {
       error(`[Space] 获取已加入空间失败: ${err}`)
       return []
