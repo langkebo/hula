@@ -1,0 +1,43 @@
+{
+  "title": "实验功能",
+  "description": "这些功能正在开发中，可能不稳定。启用后请谨慎使用。",
+  "experimental": "实验中",
+  "developer_section": "开发者选项",
+  "debug_mode": "调试模式",
+  "debug_mode_desc": "启用详细的调试日志和开发者工具",
+  "show_performance": "显示性能指标",
+  "show_performance_desc": "在界面上显示性能统计信息",
+  "reset": "重置所有实验功能为默认状态",
+  "feature_enabled": "已启用 {name}",
+  "feature_disabled": "已禁用 {name}",
+  "debug_enabled": "调试模式已启用",
+  "debug_disabled": "调试模式已禁用",
+  "performance_enabled": "性能指标已显示",
+  "performance_disabled": "性能指标已隐藏",
+  "reset_confirm": {
+    "title": "重置实验功能",
+    "message": "确定要将所有实验功能重置为默认状态吗？",
+    "confirm": "确定重置",
+    "cancel": "取消"
+  },
+  "reset_success": "所有实验功能已重置",
+  "features": {
+    "threads": "消息线程",
+    "threads_desc": "支持在消息中创建线程讨论，便于组织对话",
+    "spaces": "空间功能",
+    "spaces_desc": "将相关房间组织到空间中，便于管理社区和项目",
+    "voip": "语音视频通话",
+    "voip_desc": "支持一对一和群组语音视频通话",
+    "voip_warning": "此功能仍在早期开发阶段，可能存在稳定性问题",
+    "widget": "小部件支持",
+    "widget_desc": "在房间中嵌入第三方应用和工具",
+    "custom_status": "自定义状态消息",
+    "custom_status_desc": "设置自定义状态消息和过期时间",
+    "message_editing": "消息编辑历史",
+    "message_editing_desc": "查看和恢复消息的编辑历史",
+    "reactions": "消息反应",
+    "reactions_desc": "对消息添加表情反应",
+    "read_receipts": "已读回执详情",
+    "read_receipts_desc": "查看谁已阅读消息的详细信息"
+  }
+}

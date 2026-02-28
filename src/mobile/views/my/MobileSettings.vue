@@ -6,32 +6,141 @@
 
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
-        <div class="flex flex-col p-20px gap-20px">
-          <!-- 设置项 -->
-          <div
-            v-for="item in settings"
-            :key="item.key"
-            class="flex justify-between items-center bg-card text-card-foreground ring-1 p-12px rounded-lg shadow-sm">
-            <div class="text-base">{{ item.label }}</div>
-            <div>
-              <!-- 根据 type 渲染对应组件 -->
-              <n-switch v-if="item.type === 'switch'" v-model:value="item.value" />
-              <n-input v-else-if="item.type === 'input'" v-model:value="item.value" placeholder="请输入" class="w-40" />
-              <n-select
-                v-else-if="item.type === 'select'"
-                v-model:value="item.value"
-                :options="item.options"
-                placeholder="请选择"
-                class="w-40" />
-            </div>
+        <div class="flex flex-col p-16px gap-12px">
+          <div class="text-14px text-gray-500 mb-8px">{{ t('mobile_setting.account_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell :title="t('mobile_setting.status')" is-link @click="router.push('/mobile/mobileMy/status')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-green-50 mr-12px flex items-center justify-center">
+                  <Icon :icon="statusIcon" :width="20" :style="{ color: statusColor }" />
+                </div>
+              </template>
+              <template #value>
+                <span class="text-14px">{{ statusLabel }}</span>
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('mobile_setting.edit_profile')"
+              is-link
+              @click="router.push('/mobile/mobileMy/editProfile')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:account-edit" :width="20" color="#1989fa" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell :title="t('mobile_setting.security')" is-link @click="router.push('/mobile/mobileMy/security')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:shield-lock" :width="20" color="#ff4d4f" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.notification_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell
+              :title="t('mobile_setting.notifications')"
+              is-link
+              @click="router.push('/mobile/mobileMy/notifications')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:bell" :width="20" color="#fa8c16" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.appearance_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell :title="t('mobile_setting.theme')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-purple-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:palette" :width="20" color="#722ed1" />
+                </div>
+              </template>
+              <template #right-icon>
+                <van-radio-group v-model="themeValue" direction="horizontal">
+                  <van-radio name="light">{{ t('mobile_setting.themes.light') }}</van-radio>
+                  <van-radio name="dark">{{ t('mobile_setting.themes.dark') }}</van-radio>
+                </van-radio-group>
+              </template>
+            </van-cell>
+
+            <van-cell :title="t('mobile_setting.language')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-cyan-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:translate" :width="20" color="#13c2c2" />
+                </div>
+              </template>
+              <template #right-icon>
+                <van-radio-group v-model="languageValue" direction="horizontal">
+                  <van-radio name="zh-CN">中文</van-radio>
+                  <van-radio name="en">EN</van-radio>
+                </van-radio-group>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.help_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell :title="t('mobile_setting.help_feedback')" is-link @click="router.push('/mobile/mobileMy/help')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-indigo-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:help-circle" :width="20" color="#597ef7" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.advanced_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell
+              :title="t('mobile_setting.voice_video')"
+              is-link
+              @click="router.push('/mobile/mobileMy/voiceVideo')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-teal-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:video" :width="20" color="#20c997" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell :title="t('mobile_setting.labs')" is-link @click="router.push('/mobile/mobileMy/labs')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-pink-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:flask" :width="20" color="#eb2f96" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('mobile_setting.integrations')"
+              is-link
+              @click="router.push('/mobile/mobileMy/integrations')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-amber-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:puzzle" :width="20" color="#fa8c16" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div class="mt-16px">
+            <van-button type="danger" block @click="handleLogout" :disabled="isLoggingOut" :loading="isLoggingOut">
+              {{ t('mobile_setting.button.logout') }}
+            </van-button>
           </div>
 
-          <!-- 退出登录按钮 -->
-          <div class="mt-auto flex justify-center mb-20px">
-            <n-button type="error" @click="handleLogout" :disabled="isLoggingOut" :loading="isLoggingOut">
-              {{ t('mobile_setting.button.logout') }}
-            </n-button>
-          </div>
+          <div class="text-center text-12px text-gray-400 mt-16px">{{ t('mobile_setting.version') }}: v1.0.0</div>
         </div>
       </div>
     </template>
@@ -39,104 +148,71 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { showDialog, showToast } from 'vant'
+import { Icon } from '@iconify/vue'
 import { info } from '@tauri-apps/plugin-log'
-import { ThemeEnum } from '@/enums'
 import { useGlobalStore } from '@/stores/global'
 import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStore } from '@/stores/user'
+import { useUserStatusStore } from '@/stores/userStatus'
 import { useLogin } from '@/hooks/useLogin'
-import { showDialog } from 'vant'
 import * as ImRequestUtils from '@/utils/ImRequestUtils'
-import router from '@/router'
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const router = useRouter()
 const globalStore = useGlobalStore()
 const { isTrayMenuShow } = storeToRefs(globalStore)
 const settingStore = useSettingStore()
-const userStore = useUserStore()
+const userStatusStore = useUserStatusStore()
 
-// 定义设置项
-const settings = reactive([
-  {
-    key: 'notifications',
-    label: computed(() => t('mobile_setting.silent_label')),
-    type: 'switch',
-    value: computed({
-      get: () => true,
-      set: () => {
-        /* 更新通知设置 */
-      }
-    })
-  },
-  {
-    key: 'username',
-    label: computed(() => t('mobile_setting.nickname')),
-    type: 'input',
-    value: computed({
-      get: () => userStore.userInfo?.name || '',
-      set: () => {}
-    })
-  },
-  {
-    key: 'theme',
-    label: computed(() => t('mobile_setting.theme')),
-    type: 'select',
-    value: computed({
-      get: () => settingStore.themes.content,
-      set: (val) => settingStore.toggleTheme(val)
-    }),
-    options: [
-      { label: computed(() => t('mobile_setting.themes.light')), value: ThemeEnum.LIGHT },
-      { label: computed(() => t('mobile_setting.themes.dark')), value: ThemeEnum.DARK }
-    ]
-  },
-  {
-    key: 'language',
-    label: computed(() => t('mobile_setting.language')),
-    type: 'select',
-    value: computed({
-      get: () => settingStore.page.lang,
-      set: (v) => {
-        settingStore.page.lang = v
-      }
-    }),
-    options: [
-      {
-        label: 'Automatic',
-        value: 'AUTO'
-      },
-      {
-        label: '简体中文',
-        value: 'zh-CN'
-      },
-      {
-        label: 'English',
-        value: 'en'
-      }
-    ]
+const themeValue = computed({
+  get: () => settingStore.themes.content,
+  set: (val) => settingStore.toggleTheme(val)
+})
+
+const languageValue = computed({
+  get: () => settingStore.page.lang,
+  set: (v) => {
+    settingStore.page.lang = v
+    locale.value = v === 'zh-CN' ? 'zh-CN' : 'en'
   }
-])
+})
+
+const currentStatusId = computed(() => userStatusStore.stateId || 'online')
+
+const statusOptions = [
+  { id: 'online', label: t('mobile_setting.status_online'), icon: 'mdi:circle', color: '#52c41a' },
+  { id: 'away', label: t('mobile_setting.status_away'), icon: 'mdi:circle', color: '#faad14' },
+  { id: 'busy', label: t('mobile_setting.status_busy'), icon: 'mdi:circle', color: '#ff4d4f' },
+  { id: 'offline', label: t('mobile_setting.status_offline'), icon: 'mdi:circle-outline', color: '#999' }
+]
+
+const currentStatus = computed(() => {
+  return statusOptions.find((s) => s.id === currentStatusId.value) || statusOptions[0]
+})
+
+const statusLabel = computed(() => currentStatus.value.label)
+const statusIcon = computed(() => currentStatus.value.icon)
+const statusColor = computed(() => currentStatus.value.color)
 
 const { logout, resetLoginState } = useLogin()
 
-// 登出处理状态标志
 const isLoggingOut = ref(false)
 
-// 退出登录逻辑
 async function handleLogout() {
-  // 防止重复点击
   if (isLoggingOut.value) return
   isLoggingOut.value = true
 
   let logoutSuccess = false
 
   showDialog({
-    title: '退出登录',
-    message: '确定要退出登录吗？',
+    title: t('mobile_setting.logout_confirm.title'),
+    message: t('mobile_setting.logout_confirm.message'),
     showCancelButton: true,
-    confirmButtonText: '确定',
-    cancelButtonText: '取消'
+    confirmButtonText: t('mobile_setting.logout_confirm.confirm'),
+    cancelButtonText: t('mobile_setting.logout_confirm.cancel')
   })
     .then(async () => {
       try {
@@ -146,11 +222,8 @@ async function handleLogout() {
         console.error('服务器登出失败：', error)
       }
 
-      // 无论服务器登出是否成功，都执行本地状态清理
       try {
-        // 2. 重置登录状态
         await resetLoginState()
-        // 3. 最后调用登出方法(这会创建登录窗口或发送登出事件)
         await logout()
 
         settingStore.toggleLogin(false, false)
@@ -158,24 +231,27 @@ async function handleLogout() {
         isTrayMenuShow.value = false
 
         if (logoutSuccess) {
-          window.$message.success('登出成功')
+          showToast({
+            type: 'success',
+            message: t('mobile_setting.logout_success')
+          })
         }
         await router.push('/mobile/login')
       } catch (localError) {
         console.error('本地登出清理失败：', localError)
-        window.$message.error('本地登出清理失败，请重启应用')
+        showToast({
+          type: 'fail',
+          message: t('mobile_setting.logout_failed')
+        })
       }
     })
     .catch(() => {
       info('用户点击取消')
     })
     .finally(() => {
-      // 无论成功还是失败，都重置标志
       isLoggingOut.value = false
     })
 }
-
-// 你可以根据需要导出或操作 settings 数据
 </script>
 
-<style lang="scss" scoped></style>
+<style scoped></style>

@@ -9,6 +9,21 @@ export interface Command {
   execute: (roomId: string, args: string[]) => Promise<string | void>
 }
 
+interface EmoteContent {
+  msgtype: 'm.emote'
+  body: string
+}
+
+interface NoticeContent {
+  msgtype: 'm.notice'
+  body: string
+}
+
+interface TextContent {
+  msgtype: 'm.text'
+  body: string
+}
+
 class CommandParser {
   private commands: Map<string, Command> = new Map()
 
@@ -28,7 +43,7 @@ class CommandParser {
         const client = matrixClientService.getClient()
         if (!client) throw new Error('客户端未初始化')
 
-        const content: any = {
+        const content: EmoteContent = {
           msgtype: 'm.emote',
           body: action
         }
@@ -50,7 +65,7 @@ class CommandParser {
         const client = matrixClientService.getClient()
         if (!client) throw new Error('客户端未初始化')
 
-        const content: any = {
+        const content: NoticeContent = {
           msgtype: 'm.notice',
           body: message
         }
@@ -70,7 +85,7 @@ class CommandParser {
         const client = matrixClientService.getClient()
         if (!client) throw new Error('客户端未初始化')
 
-        const content: any = {
+        const content: TextContent = {
           msgtype: 'm.text',
           body: message
         }
@@ -90,7 +105,7 @@ class CommandParser {
         const client = matrixClientService.getClient()
         if (!client) throw new Error('客户端未初始化')
 
-        const content: any = {
+        const content: TextContent = {
           msgtype: 'm.text',
           body: message
         }
@@ -110,7 +125,7 @@ class CommandParser {
         const client = matrixClientService.getClient()
         if (!client) throw new Error('客户端未初始化')
 
-        const content: any = {
+        const content: TextContent = {
           msgtype: 'm.text',
           body: message
         }
@@ -131,12 +146,7 @@ class CommandParser {
         const client = matrixClientService.getClient()
         if (!client) throw new Error('客户端未初始化')
 
-        await client.sendStateEvent(
-          roomId,
-          'm.room.topic' as any,
-          { topic },
-          ''
-        )
+        await client.sendStateEvent(roomId, 'm.room.topic' as any, { topic }, '')
         info(`[Command] 设置房间主题: ${roomId}`)
       }
     })
@@ -255,7 +265,7 @@ class CommandParser {
       usage: '/op <用户ID> <等级>',
       execute: async (roomId: string, args: string[]) => {
         const userId = args[0]
-        const level = parseInt(args[1])
+        const level = parseInt(args[1], 10)
 
         if (!userId || !userId.startsWith('@')) {
           throw new Error('请输入有效的用户ID')

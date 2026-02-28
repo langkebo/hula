@@ -44,11 +44,7 @@ class MatrixAccountService {
     }
   }
 
-  async changePassword(
-    oldPassword: string,
-    newPassword: string,
-    logoutDevices: boolean = false
-  ): Promise<boolean> {
+  async changePassword(oldPassword: string, newPassword: string, logoutDevices: boolean = false): Promise<boolean> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixAccount] 客户端未初始化')
@@ -246,12 +242,28 @@ class MatrixAccountService {
     }
 
     try {
-      const ignoredUsers = userIds.map(userId => ({ user_id: userId }))
+      const ignoredUsers = userIds.map((userId) => ({ user_id: userId }))
       await (client as any).setAccountData('m.ignored_user_list', { ignored_users: ignoredUsers })
       info(`[MatrixAccount] 设置忽略用户列表成功: ${userIds.length} 个`)
       return true
     } catch (err) {
       error(`[MatrixAccount] 设置忽略用户列表失败: ${err}`)
+      throw err
+    }
+  }
+
+  async setPresence(presence: 'online' | 'offline' | 'unavailable', statusMessage?: string): Promise<boolean> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('[MatrixAccount] 客户端未初始化')
+    }
+
+    try {
+      await client.setPresence({ presence, status_msg: statusMessage })
+      info(`[MatrixAccount] 设置在线状态成功: ${presence}`)
+      return true
+    } catch (err) {
+      error(`[MatrixAccount] 设置在线状态失败: ${err}`)
       throw err
     }
   }

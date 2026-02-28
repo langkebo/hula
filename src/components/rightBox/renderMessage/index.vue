@@ -100,7 +100,7 @@
                 <n-popover
                   v-if="
                     globalStore.currentSessionRoomId === '1' &&
-                    cachedStore.badgeById(groupStore.getUserInfo(fromUser.uid)?.wearingItemId)?.img
+                    badgeStore.badgeById(groupStore.getUserInfo(fromUser.uid)?.wearingItemId)?.img
                   "
                   trigger="hover">
                   <template #trigger>
@@ -109,10 +109,10 @@
                       :size="18"
                       round
                       :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                      :src="cachedStore.badgeById(groupStore.getUserInfo(fromUser.uid)?.wearingItemId)?.img" />
+                      :src="badgeStore.badgeById(groupStore.getUserInfo(fromUser.uid)?.wearingItemId)?.img" />
                   </template>
                   <span>
-                    {{ cachedStore.badgeById(groupStore.getUserInfo(fromUser.uid)?.wearingItemId)?.describe }}
+                    {{ badgeStore.badgeById(groupStore.getUserInfo(fromUser.uid)?.wearingItemId)?.describe }}
                   </span>
                 </n-popover>
                 <!-- 用户名 -->
@@ -303,8 +303,8 @@ import { MessageStatusEnum, MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain'
 import { useMitt } from '@/hooks/useMitt'
 import { usePopover } from '@/hooks/usePopover'
-import type { MessageType } from '@/services/types'
-import { useCachedStore } from '@/stores/cached'
+import type { MessageType } from '@/stores/chat'
+import { useBadgeStore } from '@/stores/badge'
 import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
 import { useSettingStore } from '@/stores/setting'
@@ -316,6 +316,7 @@ import { useUserStore } from '@/stores/user'
 import { markMsg, getUserByIds } from '@/utils/ImRequestUtils'
 import { createMacContextSelectionGuard } from '@/utils/MacSelectionGuard'
 import { isMobile } from '@/utils/PlatformConstants'
+import { matrixEventService } from '@/services/matrix'
 import Announcement from './Announcement.vue'
 import AudioCall from './AudioCall.vue'
 import Emoji from './Emoji.vue'
@@ -369,7 +370,7 @@ const chatMainApi = injectedChatMain ?? useChatMain()
 const { optionsList, report, activeBubble, handleItemType, emojiList, specialMenuList, handleMsgClick } = chatMainApi
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
-const cachedStore = useCachedStore()
+const badgeStore = useBadgeStore()
 const resolvingUserSet = new Set<string>()
 const isMultiSelectDisabled = computed(() => !isMessageMultiSelectEnabled(props.message.message.type))
 const bubbleMaxWidth = computed(() => {
@@ -547,9 +548,106 @@ const hasUserMarkedEmoji = (item: MessageType, emojiType: number) => {
   return item.message.messageMarks[String(emojiType)]?.userMarked
 }
 
-const handleRetry = (item: MessageType): void => {
-  // TODO: 实现重试发送逻辑
-  console.log('重试发送消息:', item)
+const handleRetry = async (item: MessageType): Promise<void> => {
+  if (!item?.message) return
+
+  const { id, roomId, body, type } = item.message
+
+  chatStore.updateMsg({
+    msgId: id,
+    status: MessageStatusEnum.SENDING
+  })
+
+  try {
+    let eventId: string
+
+    switch (type) {
+      case MsgEnum.TEXT:
+        eventId = await matrixEventService.sendTextMessage(roomId, body.text || '')
+        break
+      case MsgEnum.IMAGE:
+        if (body.url) {
+          eventId = await matrixEventService.sendImageMessage(roomId, body.url, {
+            size: body.size || 0,
+            mimetype: body.mimetype || 'image/png',
+            width: body.width,
+            height: body.height
+          })
+        } else {
+          throw new Error('图片URL不存在')
+        }
+        break
+      case MsgEnum.VIDEO:
+        if (body.url) {
+          eventId = await matrixEventService.sendVideoMessage(
+            roomId,
+            body.url,
+            {
+              size: body.size || 0,
+              mimetype: body.mimetype || 'video/mp4',
+              width: body.width,
+              height: body.height
+            },
+            body.filename,
+            body.thumbnail,
+            body.thumbnailInfo
+          )
+        } else {
+          throw new Error('视频URL不存在')
+        }
+        break
+      case MsgEnum.AUDIO:
+        if (body.url) {
+          eventId = await matrixEventService.sendAudioMessage(
+            roomId,
+            body.url,
+            {
+              size: body.size || 0,
+              mimetype: body.mimetype || 'audio/ogg',
+              duration: body.duration
+            },
+            body.filename
+          )
+        } else {
+          throw new Error('音频URL不存在')
+        }
+        break
+      case MsgEnum.FILE:
+        if (body.url) {
+          eventId = await matrixEventService.sendFileMessage(
+            roomId,
+            body.url,
+            {
+              size: body.size || 0,
+              mimetype: body.mimetype || 'application/octet-stream'
+            },
+            body.filename
+          )
+        } else {
+          throw new Error('文件URL不存在')
+        }
+        break
+      default:
+        throw new Error(`不支持的消息类型: ${type}`)
+    }
+
+    chatStore.updateMsg({
+      msgId: id,
+      status: MessageStatusEnum.SUCCESS,
+      newMsgId: eventId
+    })
+
+    window.$message.success('消息重发成功')
+  } catch (error) {
+    console.error('[RenderMessage] 消息重发失败:', error)
+
+    chatStore.updateMsg({
+      msgId: id,
+      status: MessageStatusEnum.FAILED
+    })
+
+    window.$message.error('消息重发失败，请重试')
+  }
 }
 
 // 处理复制翻译文本

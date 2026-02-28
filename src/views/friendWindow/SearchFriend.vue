@@ -76,7 +76,7 @@
                       <n-space align="center" :size="10">
                         <span class="text-(14px [--text-color])">{{ item.name }}</span>
                         <template v-for="account in item.itemIds" :key="account">
-                          <img class="size-20px" :src="cachedStore.badgeById(account)?.img" alt="" />
+                          <img class="size-20px" :src="badgeStore.badgeById(account)?.img" alt="" />
                         </template>
                       </n-space>
                       <n-flex align="center" :size="10">
@@ -153,7 +153,7 @@ import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
 import { useWindow } from '@/hooks/useWindow'
 import type { FriendItem } from '@/services/types'
-import { useCachedStore } from '@/stores/cached'
+import { useBadgeStore } from '@/stores/badge'
 import { useContactStore } from '@/stores/contacts'
 import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
@@ -167,7 +167,7 @@ const contactStore = useContactStore()
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
-const cachedStore = useCachedStore()
+const badgeStore = useBadgeStore()
 const { themes } = storeToRefs(settingStore)
 
 // 定义标签页

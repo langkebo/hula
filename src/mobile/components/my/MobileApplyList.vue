@@ -373,7 +373,7 @@ watch(
     if (roomIds.length > 0) {
       // 批量加载群组信息
       roomIds.forEach((roomId) => {
-        if (!groupDetailsMap.value[roomId] && !loadingGroups.value.has(roomId)) {
+        if (roomId && !groupDetailsMap.value[roomId] && !loadingGroups.value.has(roomId)) {
           getGroupDetail(roomId)
         }
       })

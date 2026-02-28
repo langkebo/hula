@@ -1,6 +1,7 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { MsgEnum, MessageStatusEnum } from '@/enums'
-import type { MessageType, MsgType, TextBody, ImageBody, VideoBody, FileBody, VoiceBody } from '@/services/types'
+import type { MessageType } from '@/stores/chat'
+import type { MsgType, TextBody, ImageBody, VideoBody, FileBody, VoiceBody } from '@/services/types'
 
 export interface MatrixMessageAdapter {
   convertMatrixEventToMessageType(event: MatrixEvent, roomId: string): MessageType
@@ -20,8 +21,7 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
         uid: sender,
         username: senderMember?.name || sender.split(':')[0],
         avatar: senderMember?.getMxcAvatarUrl?.() || '',
-        locPlace: '',
-        badge: undefined
+        locPlace: ''
       },
       message: this.convertMatrixContent(content, msgType),
       sendTime: event.getTs(),

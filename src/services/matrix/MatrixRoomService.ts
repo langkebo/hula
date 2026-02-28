@@ -1,8 +1,4 @@
-import type {
-  Room,
-  RoomMember,
-  ICreateRoomOpts
-} from 'matrix-js-sdk'
+import type { Room, RoomMember, ICreateRoomOpts } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 
@@ -251,6 +247,77 @@ class MatrixRoomService {
     } catch (err) {
       error(`[MatrixRoom] 设置直接消息房间失败: ${err}`)
       throw err
+    }
+  }
+
+  async setMemberDisplayName(roomId: string, displayName: string): Promise<void> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+
+    try {
+      const userId = client.getUserId()
+      if (!userId) {
+        throw new Error('用户未登录')
+      }
+
+      const room = client.getRoom(roomId)
+      if (!room) {
+        throw new Error(`房间不存在: ${roomId}`)
+      }
+
+      const currentMember = room.getMember(userId)
+      const currentMembership = currentMember?.events.member?.getContent() || {}
+
+      await client.sendStateEvent(
+        roomId,
+        'm.room.member' as any,
+        {
+          ...currentMembership,
+          displayname: displayName,
+          membership: 'join'
+        },
+        userId
+      )
+
+      info(`[MatrixRoom] 设置成员昵称成功: ${roomId} -> ${displayName}`)
+    } catch (err) {
+      error(`[MatrixRoom] 设置成员昵称失败: ${err}`)
+      throw err
+    }
+  }
+
+  async getMemberDisplayName(roomId: string, userId: string): Promise<string | null> {
+    const room = await this.getRoom(roomId)
+    if (!room) {
+      return null
+    }
+
+    const member = room.getMember(userId)
+    return member?.rawDisplayName || member?.name || null
+  }
+
+  async translateText(text: string, _provider?: string): Promise<string> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+
+    try {
+      const response = await fetch(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=zh-CN&dt=t&q=${encodeURIComponent(text)}`
+      )
+      const data = await response.json()
+      if (data && data[0]) {
+        const translatedText = data[0].map((item: any[]) => item[0]).join('')
+        info(`[MatrixRoom] 翻译成功`)
+        return translatedText
+      }
+      return text
+    } catch (err) {
+      error(`[MatrixRoom] 翻译失败: ${err}`)
+      return text
     }
   }
 }

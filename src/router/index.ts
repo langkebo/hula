@@ -45,6 +45,16 @@ import Share from '#/views/my/Share.vue'
 import SimpleBio from '#/views/my/SimpleBio.vue'
 import AiAssistant from '#/views/my/AiAssistant.vue'
 import MyAlbum from '#/views/my/MyAlbum.vue'
+import StatusSettings from '#/views/my/StatusSettings.vue'
+import SecuritySettings from '#/views/my/SecuritySettings.vue'
+import DeviceManagement from '#/views/my/DeviceManagement.vue'
+import NotificationSettings from '#/views/my/NotificationSettings.vue'
+import HelpFeedback from '#/views/my/HelpFeedback.vue'
+import VoiceVideoSettings from '#/views/my/VoiceVideoSettings.vue'
+import LabsSettings from '#/views/my/LabsSettings.vue'
+import IntegrationsSettings from '#/views/my/IntegrationsSettings.vue'
+import Favorites from '#/views/my/Favorites.vue'
+import Files from '#/views/my/Files.vue'
 import { TauriCommand } from '@/enums'
 import ConfirmQRLogin from '#/views/ConfirmQRLogin.vue'
 import MyQRCode from '#/views/MyQRCode.vue'
@@ -254,6 +264,56 @@ const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'myAlbum',
         name: 'mobileMyAlbum',
         component: MyAlbum
+      },
+      {
+        path: 'status',
+        name: 'mobileStatusSettings',
+        component: StatusSettings
+      },
+      {
+        path: 'security',
+        name: 'mobileSecuritySettings',
+        component: SecuritySettings
+      },
+      {
+        path: 'devices',
+        name: 'mobileDeviceManagement',
+        component: DeviceManagement
+      },
+      {
+        path: 'notifications',
+        name: 'mobileNotificationSettings',
+        component: NotificationSettings
+      },
+      {
+        path: 'help',
+        name: 'mobileHelpFeedback',
+        component: HelpFeedback
+      },
+      {
+        path: 'voiceVideo',
+        name: 'mobileVoiceVideoSettings',
+        component: VoiceVideoSettings
+      },
+      {
+        path: 'labs',
+        name: 'mobileLabsSettings',
+        component: LabsSettings
+      },
+      {
+        path: 'integrations',
+        name: 'mobileIntegrationsSettings',
+        component: IntegrationsSettings
+      },
+      {
+        path: 'favorites',
+        name: 'mobileFavorites',
+        component: Favorites
+      },
+      {
+        path: 'files',
+        name: 'mobileFiles',
+        component: Files
       }
     ]
   },

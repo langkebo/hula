@@ -1,0 +1,8 @@
+{
+  "title": "媒体配额",
+  "exceeded": "配额已超限",
+  "exceededMessage": "您的媒体存储空间已用尽，请清理文件或升级存储空间。",
+  "warning": "配额即将用尽",
+  "warningMessage": "您的媒体存储空间使用率已超过 80%，建议及时清理。",
+  "alerts": "告警记录"
+}

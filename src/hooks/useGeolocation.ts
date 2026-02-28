@@ -1,4 +1,4 @@
-import { transformCoordinates } from '@/services/mapApi'
+import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
 import { useI18n } from 'vue-i18n'
 
 type GeolocationState = {
@@ -31,7 +31,6 @@ export const useGeolocation = () => {
   const error = computed(() => state.value.error)
   const currentPosition = computed(() => state.value.position)
 
-  // 检查权限状态
   const checkPermission = async (): Promise<PermissionState> => {
     if ('permissions' in navigator) {
       try {
@@ -45,7 +44,6 @@ export const useGeolocation = () => {
     return 'prompt'
   }
 
-  // 获取当前位置
   const getCurrentPosition = async (options?: GeolocationOptions): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -57,7 +55,7 @@ export const useGeolocation = () => {
       const defaultOptions: PositionOptions = {
         enableHighAccuracy: state.value.precision === 'high',
         timeout: 10000,
-        maximumAge: 300000, // 5分钟缓存
+        maximumAge: 300000,
         ...options
       }
 
@@ -94,39 +92,33 @@ export const useGeolocation = () => {
     })
   }
 
-  // 获取位置并转换坐标
   const getLocationWithTransform = async (options?: GeolocationOptions) => {
     const position = await getCurrentPosition(options)
     const { latitude, longitude } = position.coords
 
-    // 转换坐标
-    const transformed = await transformCoordinates(latitude, longitude)
+    const transformed = wgs84ToGcj02(latitude, longitude)
 
     return {
       original: { lat: latitude, lng: longitude },
       transformed,
       position,
-      address: '', // 后续可以通过逆地理编码获取
+      address: '',
       precision: state.value.precision,
       timestamp: Date.now()
     }
   }
 
-  // 清除错误状态
   const clearError = () => {
     state.value.error = null
   }
 
   return {
-    // 状态
     state: state.value,
     isSupported,
     hasPermission,
     isLoading,
     error,
     currentPosition,
-
-    // 方法
     checkPermission,
     getCurrentPosition,
     getLocationWithTransform,

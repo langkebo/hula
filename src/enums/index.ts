@@ -6,6 +6,47 @@
  *  枚举值：全部大写，单词间用下划线分割
  */
 
+/** WebSocket 消息类型 (从旧系统迁移) */
+export enum WsResponseMessageType {
+  NO_INTERNET = 'noInternet',
+  LOGIN_SUCCESS = 'loginSuccess',
+  RECEIVE_MESSAGE = 'receiveMessage',
+  ONLINE = 'online',
+  TOKEN_EXPIRED = 'tokenExpired',
+  INVALID_USER = 'invalidUser',
+  MSG_MARK_ITEM = 'msgMarkItem',
+  MSG_RECALL = 'msgRecall',
+  REQUEST_NEW_FRIEND = 'requestNewFriend',
+  WS_MEMBER_CHANGE = 'ws-member-change',
+  GROUP_SET_ADMIN_SUCCESS = 'groupSetAdmin',
+  OFFLINE = 'offline',
+  REQUEST_APPROVAL_FRIEND = 'requestApprovalFriend',
+  NOTIFY_EVENT = 'notifyEvent',
+  USER_STATE_CHANGE = 'userStateChange',
+  ROOM_INFO_CHANGE = 'roomInfoChange',
+  MY_ROOM_INFO_CHANGE = 'myRoomInfoChange',
+  ROOM_DISSOLUTION = 'roomDissolution',
+  JoinVideo = 'JoinVideo',
+  ROOM_GROUP_NOTICE_MSG = 'roomGroupNoticeMsg',
+  ROOM_EDIT_GROUP_NOTICE_MSG = 'roomEditGroupNoticeMsg',
+  ROOM_GROUP_NOTICE_READ_MSG = 'roomGroupNoticeReadMsg',
+  VideoCallRequest = 'VideoCallRequest',
+  CallAccepted = 'CallAccepted',
+  CallRejected = 'CallRejected',
+  RoomClosed = 'RoomClosed',
+  MediaControl = 'MediaControl',
+  TIMEOUT = 'TIMEOUT',
+  DROPPED = 'DROPPED',
+  LeaveVideo = 'LeaveVideo',
+  ScreenSharingStarted = 'ScreenSharingStarted',
+  ScreenSharingStopped = 'ScreenSharingStopped',
+  NetworkPoor = 'NetworkPoor',
+  UserKicked = 'UserKicked',
+  WEBRTC_SIGNAL = 'WEBRTC_SIGNAL',
+  AllMuted = 'AllMuted',
+  CANCEL = 'CANCEL'
+}
+
 /**请求响应码类型*/
 export enum RCodeEnum {
   /**成功请求*/
@@ -213,7 +254,13 @@ export enum StoresEnum {
   /** 通话 */
   CALL = 'call',
   /** Widget */
-  WIDGET = 'widget'
+  WIDGET = 'widget',
+  /** 徽章 */
+  BADGE = 'badge',
+  /** 配额 */
+  QUOTA = 'quota',
+  /** 内容审核 */
+  MODERATION = 'moderation'
 }
 
 /**

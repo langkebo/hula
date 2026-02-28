@@ -1,0 +1,10 @@
+{
+  "title": "收藏",
+  "messages": "消息",
+  "images": "图片",
+  "links": "链接",
+  "empty_messages": "暂无收藏的消息",
+  "empty_images": "暂无收藏的图片",
+  "empty_links": "暂无收藏的链接",
+  "removed": "已取消收藏"
+}

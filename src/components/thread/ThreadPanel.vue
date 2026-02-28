@@ -1,187 +1,196 @@
 <template>
-  <div v-if="visible" class="thread-panel">
-    <div class="thread-header">
-      <div class="header-left">
-        <span class="thread-title">{{ t('thread.title') }}</span>
-        <span v-if="replyCount > 0" class="reply-count">{{ replyCount }} {{ t('thread.replies') }}</span>
-      </div>
-      <n-button text @click="$emit('close')">
-        <template #icon>
-          <svg class="size-18px">
-            <use href="#close"></use>
-          </svg>
-        </template>
-      </n-button>
-    </div>
-
-    <div class="thread-content">
-      <n-scrollbar ref="scrollbarRef">
-        <div class="root-message" v-if="rootMessage">
-          <RenderMessage
-            :message="rootMessage"
-            :is-group="isGroup"
-            :from-user="rootMessage.fromUser" />
-        </div>
-
-        <div class="thread-replies">
-          <div
-            v-for="reply in replies"
-            :key="reply.eventId"
-            class="reply-item">
-            <div class="reply-message">
-              <n-avatar
-                round
-                :size="28"
-                :src="getAvatarUrl(reply.sender)" />
-              <div class="reply-content">
-                <span class="reply-sender">{{ reply.sender }}</span>
-                <span class="reply-text">{{ reply.content?.body }}</span>
-              </div>
-            </div>
+  <n-drawer v-model:show="visible" :width="400" placement="right" class="thread-panel">
+    <n-drawer-content :title="t('thread.title')" closable>
+      <div class="thread-content">
+        <div class="original-message">
+          <div class="message-header">
+            <n-avatar :size="32" :src="AvatarUtils.getAvatarUrl(originalMessage?.senderAvatar)" round />
+            <n-flex vertical :size="2">
+              <span class="sender-name">{{ originalMessage?.senderName }}</span>
+              <span class="message-time">{{ formatTime(originalMessage?.timestamp) }}</span>
+            </n-flex>
+          </div>
+          <div class="message-body">
+            {{ originalMessage?.content }}
           </div>
         </div>
-      </n-scrollbar>
-    </div>
 
-    <div class="thread-composer">
-      <ReplyComposer v-if="replyTo" :reply-to="replyTo" @cancel="replyTo = null" />
-      <MsgInput
-        ref="msgInputRef"
-        :placeholder="t('thread.reply_placeholder')"
-        @send="handleSend" />
-    </div>
-  </div>
+        <n-divider />
+
+        <div class="thread-replies">
+          <n-flex align="center" :size="8" class="mb-12px">
+            <span class="text-14px font-medium">{{ t('thread.replies') }}</span>
+            <n-tag size="small" type="info">{{ threadReplies.length }}</n-tag>
+          </n-flex>
+
+          <n-scrollbar style="height: calc(100vh - 350px)">
+            <n-empty v-if="threadReplies.length === 0" :description="t('thread.no_replies')" />
+            <div v-else class="reply-list">
+              <div v-for="reply in threadReplies" :key="reply.id" class="reply-item">
+                <n-flex :size="12">
+                  <n-avatar :size="28" :src="AvatarUtils.getAvatarUrl(reply.senderAvatar)" round />
+                  <n-flex vertical :size="4" class="flex-1">
+                    <n-flex align="center" :size="8">
+                      <span class="sender-name">{{ reply.senderName }}</span>
+                      <span class="message-time">{{ formatTime(reply.timestamp) }}</span>
+                    </n-flex>
+                    <div class="reply-content">{{ reply.content }}</div>
+                  </n-flex>
+                </n-flex>
+              </div>
+            </div>
+          </n-scrollbar>
+        </div>
+      </div>
+
+      <template #footer>
+        <n-flex :size="8">
+          <n-input
+            v-model:value="replyContent"
+            type="textarea"
+            :placeholder="t('thread.reply_placeholder')"
+            :autosize="{ minRows: 1, maxRows: 4 }"
+            @keydown.enter.ctrl="handleSendReply" />
+          <n-button type="primary" :disabled="!replyContent.trim()" @click="handleSendReply">
+            <template #icon>
+              <n-icon>
+                <svg><use href="#send" /></svg>
+              </n-icon>
+            </template>
+          </n-button>
+        </n-flex>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixThreadService, type ThreadMessage } from '@/services/matrix'
-import type { MessageType } from '@/services/types'
-import ReplyComposer from '@/components/rightBox/ReplyComposer.vue'
-import MsgInput from '@/components/rightBox/MsgInput.vue'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-
-const props = defineProps<{
-  visible: boolean
-  roomId: string
-  rootEventId: string
-  rootMessage?: MessageType | null
-  isGroup: boolean
-}>()
-
-const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'reply-sent', eventId: string): void
-}>()
+import dayjs from 'dayjs'
 
 const { t } = useI18n()
-const scrollbarRef = ref()
-const msgInputRef = ref()
-const replies = ref<ThreadMessage[]>([])
-const replyCount = ref(0)
-const replyTo = ref(null)
-const loading = ref(false)
 
-const getAvatarUrl = (userId: string) => {
-  return AvatarUtils.getAvatarUrl(userId)
+interface ThreadMessage {
+  id: string
+  senderId: string
+  senderName: string
+  senderAvatar?: string
+  content: string
+  timestamp: number
 }
 
-const loadReplies = async () => {
-  if (!props.roomId || !props.rootEventId) return
+const visible = defineModel<boolean>('show', { default: false })
 
-  loading.value = true
-  try {
-    const threadInfo = await matrixThreadService.getThread(props.roomId, props.rootEventId)
-    if (threadInfo) {
-      replyCount.value = threadInfo.replyCount
-    }
-    replies.value = await matrixThreadService.getThreadMessages(props.roomId, props.rootEventId)
-    scrollToBottom()
-  } catch (error) {
-    console.error('[ThreadPanel] 加载线程回复失败:', error)
-  } finally {
-    loading.value = false
-  }
+const props = defineProps<{
+  originalMessage?: ThreadMessage
+  threadId?: string
+}>()
+
+const emit = defineEmits<(e: 'sendReply', content: string) => void>()
+
+const replyContent = ref('')
+const threadReplies = ref<ThreadMessage[]>([])
+
+const formatTime = (timestamp?: number) => {
+  if (!timestamp) return ''
+  return dayjs(timestamp).format('MM-DD HH:mm')
 }
 
-const scrollToBottom = () => {
-  nextTick(() => {
-    scrollbarRef.value?.scrollTo({ top: 999999, behavior: 'smooth' })
-  })
+const handleSendReply = () => {
+  if (!replyContent.value.trim()) return
+
+  emit('sendReply', replyContent.value.trim())
+  replyContent.value = ''
 }
 
-const handleSend = async (content: any) => {
-  try {
-    const eventId = await matrixThreadService.sendThreadReply(props.roomId, props.rootEventId, {
-      body: content.text || content.body,
-      html: content.html
-    })
-    emit('reply-sent', eventId)
-    await loadReplies()
-  } catch (error) {
-    console.error('[ThreadPanel] 发送回复失败:', error)
-    window.$message?.error(t('thread.send_failed'))
+watch(visible, (val) => {
+  if (val && props.threadId) {
+    loadThreadReplies()
   }
+})
+
+const loadThreadReplies = async () => {
+  threadReplies.value = []
 }
-
-watch(
-  () => props.visible,
-  (visible) => {
-    if (visible) {
-      loadReplies()
-    }
-  }
-)
-
-watch(
-  () => props.rootEventId,
-  () => {
-    if (props.visible) {
-      loadReplies()
-    }
-  }
-)
 </script>
 
 <style scoped lang="scss">
 .thread-panel {
-  @apply flex flex-col h-full bg-[--bg-color] border-l-1px border-solid border-[--border-color];
-  width: 360px;
-}
-
-.thread-header {
-  @apply flex items-center justify-between p-12px border-b-1px border-solid border-[--border-color];
-}
-
-.header-left {
-  @apply flex items-center gap-8px;
-}
-
-.thread-title {
-  @apply text-14px font-medium;
-}
-
-.reply-count {
-  @apply text-12px color-#909090;
+  :deep(.n-drawer-body-content) {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .thread-content {
-  @apply flex-1 overflow-hidden;
+  flex: 1;
+  padding: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.root-message {
-  @apply p-12px border-b-1px border-solid border-[--border-color] bg-[--right-chat-reply-color];
+.original-message {
+  padding: 12px;
+  background: var(--bg-color);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary-color);
+
+  .message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .sender-name {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .message-time {
+    font-size: 12px;
+    color: var(--text-color-3);
+  }
+
+  .message-body {
+    font-size: 14px;
+    line-height: 1.5;
+  }
 }
 
 .thread-replies {
-  @apply flex flex-col gap-8px p-12px;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .reply-item {
-  @apply py-4px;
-}
+  padding: 8px 0;
 
-.thread-composer {
-  @apply border-t-1px border-solid border-[--border-color] p-8px;
+  .sender-name {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .message-time {
+    font-size: 11px;
+    color: var(--text-color-3);
+  }
+
+  .reply-content {
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-color);
+  }
 }
 </style>

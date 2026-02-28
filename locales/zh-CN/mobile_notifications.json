@@ -1,0 +1,19 @@
+{
+  "title": "通知设置",
+  "global_section": "全局设置",
+  "room_section": "房间通知",
+  "advanced_section": "高级设置",
+  "enable_notifications": "启用通知",
+  "enable_sound": "通知声音",
+  "all_messages": "私聊消息",
+  "group_messages": "群聊消息",
+  "notify": "通知",
+  "mention_only": "仅@提及",
+  "mute": "静音",
+  "desktop_notifications": "桌面通知",
+  "email_notifications": "邮件通知",
+  "encrypted_rooms": "加密房间通知",
+  "save": "保存设置",
+  "save_success": "设置已保存",
+  "save_failed": "保存失败"
+}

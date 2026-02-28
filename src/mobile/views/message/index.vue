@@ -212,7 +212,8 @@ import groupChatIcon from '@/assets/mobile/chat-home/group-chat.webp'
 import { RoomTypeEnum, NotificationTypeEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg'
-import { IsAllUserEnum, type SessionItem } from '@/services/types.ts'
+import { IsAllUserEnum } from '@/services/types.ts'
+import type { SessionItem } from '@/stores/chat'
 import { useChatStore } from '@/stores/chat.ts'
 import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
@@ -223,6 +224,7 @@ import { vOnLongPress } from '@vueuse/components'
 import { markMsgRead, setSessionTop } from '@/utils/ImRequestUtils'
 import { useContactStore } from '@/stores/contacts'
 import { useI18n } from 'vue-i18n'
+import { matrixClientService } from '@/services/matrix'
 
 const { t } = useI18n()
 const loading = ref(false)
@@ -442,8 +444,19 @@ const onRefresh = () => {
 
 onMounted(async () => {
   await contactStore.getContactList(true)
-  // TODO: Matrix SDK 消息监听器设置
-  // await matrixClientService.setupEventListeners()
+
+  const client = matrixClientService.getClient()
+  if (client) {
+    client.on('sync' as any, (state: string) => {
+      if (state === 'PREPARED') {
+        contactStore.getContactList(true)
+      }
+    })
+
+    client.on('Room.timeline' as any, () => {
+      contactStore.getContactList(false)
+    })
+  }
 })
 
 /**

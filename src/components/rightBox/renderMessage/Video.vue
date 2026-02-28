@@ -63,7 +63,7 @@
                 cx="22"
                 cy="22"
                 :stroke-dasharray="`${2 * Math.PI * 18}`"
-                :stroke-dashoffset="`${2 * Math.PI * 18 * (1 - uploadProgress / 100)}`" />
+                :stroke-dashoffset="`${2 * Math.PI * 18 * (1 - currentUploadProgress / 100)}`" />
             </svg>
             <svg class="upload-icon"><use href="#Importing"></use></svg>
           </div>
@@ -181,11 +181,11 @@ const isVideoDownloaded = ref<boolean | null>(null)
 const hasCheckedDownloadStatus = ref(false)
 // 视频上传状态
 const isUploading = computed(() => props.messageStatus === MessageStatusEnum.SENDING)
-const uploadProgress = computed(() => {
+const currentUploadProgress = computed(() => {
   return props.uploadProgress || 0
 })
 const fallbackVideoName = computed(() => t('message.video.unknown_video'))
-const uploadingTip = computed(() => t('message.video.uploading', { progress: uploadProgress.value }))
+const uploadingTip = computed(() => t('message.video.uploading', { progress: currentUploadProgress.value }))
 const openingTip = computed(() => t('message.video.opening'))
 const thumbnailStore = useThumbnailCacheStore()
 const { observe: observeVideoVisibility, disconnect: disconnectVideoVisibility } = useIntersectionTaskQueue({
@@ -202,7 +202,11 @@ const persistVideoLocalPath = async (absolutePath: string) => {
   const nextBody = { ...(target.message.body || {}), localPath: absolutePath }
   if (target.message.body?.localPath === absolutePath) return
 
-  chatStore.updateMsg({ msgId: target.message.id, status: target.message.status, body: nextBody })
+  chatStore.updateMsg({
+    msgId: target.message.id,
+    status: target.message.status ?? MessageStatusEnum.SUCCESS,
+    body: nextBody
+  })
   const updated = { ...target, message: { ...target.message, body: nextBody } }
   await invokeSilently(TauriCommand.SAVE_MSG, { data: updated as any })
 }

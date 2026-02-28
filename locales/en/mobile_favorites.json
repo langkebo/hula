@@ -1,0 +1,10 @@
+{
+  "title": "Favorites",
+  "messages": "Messages",
+  "images": "Images",
+  "links": "Links",
+  "empty_messages": "No favorite messages",
+  "empty_images": "No favorite images",
+  "empty_links": "No favorite links",
+  "removed": "Removed from favorites"
+}

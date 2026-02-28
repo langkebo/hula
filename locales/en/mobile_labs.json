@@ -1,0 +1,43 @@
+{
+  "title": "Labs",
+  "description": "These features are under development and may be unstable. Use with caution.",
+  "experimental": "Experimental",
+  "developer_section": "Developer Options",
+  "debug_mode": "Debug Mode",
+  "debug_mode_desc": "Enable detailed debug logs and developer tools",
+  "show_performance": "Show Performance Metrics",
+  "show_performance_desc": "Display performance statistics on the interface",
+  "reset": "Reset All Labs to Default",
+  "feature_enabled": "{name} enabled",
+  "feature_disabled": "{name} disabled",
+  "debug_enabled": "Debug mode enabled",
+  "debug_disabled": "Debug mode disabled",
+  "performance_enabled": "Performance metrics shown",
+  "performance_disabled": "Performance metrics hidden",
+  "reset_confirm": {
+    "title": "Reset Labs",
+    "message": "Are you sure you want to reset all labs to default?",
+    "confirm": "Reset",
+    "cancel": "Cancel"
+  },
+  "reset_success": "All labs have been reset",
+  "features": {
+    "threads": "Message Threads",
+    "threads_desc": "Create thread discussions within messages for better organization",
+    "spaces": "Spaces",
+    "spaces_desc": "Organize related rooms into spaces for communities and projects",
+    "voip": "Voice & Video Calls",
+    "voip_desc": "Support for one-on-one and group voice/video calls",
+    "voip_warning": "This feature is in early development and may have stability issues",
+    "widget": "Widget Support",
+    "widget_desc": "Embed third-party apps and tools in rooms",
+    "custom_status": "Custom Status Message",
+    "custom_status_desc": "Set custom status messages with expiration time",
+    "message_editing": "Message Edit History",
+    "message_editing_desc": "View and restore message edit history",
+    "reactions": "Message Reactions",
+    "reactions_desc": "Add emoji reactions to messages",
+    "read_receipts": "Read Receipts Details",
+    "read_receipts_desc": "View detailed information about who has read messages"
+  }
+}

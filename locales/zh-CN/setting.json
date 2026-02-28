@@ -158,5 +158,41 @@
       "simple": "极简素雅"
     }
   },
+  "push": {
+    "title": "推送设置",
+    "devices": "推送设备",
+    "noDevices": "暂无已注册的推送设备",
+    "rules": "推送规则",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "master": {
+      "label": "启用推送通知",
+      "desc": "全局控制所有推送通知"
+    },
+    "message": {
+      "label": "消息推送",
+      "desc": "接收新消息时发送推送通知"
+    },
+    "invite": {
+      "label": "邀请推送",
+      "desc": "收到房间邀请时发送推送通知"
+    },
+    "dnd": {
+      "title": "推送时间",
+      "label": "勿扰模式",
+      "desc": "在指定时间段内不发送推送通知",
+      "startTime": "开始时间",
+      "endTime": "结束时间"
+    },
+    "delete": {
+      "title": "删除推送设备",
+      "content": "确定要删除推送设备 \"{name}\" 吗？删除后将不再接收该设备的推送通知。",
+      "confirm": "确定删除",
+      "cancel": "取消",
+      "success": "推送设备已删除",
+      "failed": "删除推送设备失败"
+    },
+    "fetchFailed": "获取推送设备列表失败"
+  },
   "unknow": "未知"
 }

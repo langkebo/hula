@@ -2,7 +2,14 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { StoresEnum, OnlineEnum } from '@/enums'
 import { useGlobalStore } from '@/stores/global'
-import { matrixRoomService } from '@/services/matrix'
+import {
+  matrixFriendService,
+  type Friend,
+  type FriendRequest,
+  type FriendStatus,
+  type FriendServiceEventHandler
+} from '@/services/matrix/MatrixFriendService'
+import { matrixDirectMessageService } from '@/services/matrix/MatrixDirectMessageService'
 import { matrixClientService } from '@/services/matrix'
 import { info, error } from '@tauri-apps/plugin-log'
 
@@ -22,6 +29,9 @@ export interface MatrixContact {
   lastOptTime: number
   hideMyPosts: boolean
   hideTheirPosts: boolean
+  friendStatus?: FriendStatus
+  since?: number
+  note?: string
 }
 
 export interface ContactInvite {
@@ -32,6 +42,21 @@ export interface ContactInvite {
   isGroup: boolean
 }
 
+export interface FriendRequestItem {
+  userId?: string
+  displayName?: string
+  avatarUrl?: string
+  message?: string
+  timestamp?: number
+  direction?: 'incoming' | 'outgoing'
+  type?: string | number
+  roomId?: string
+  applyId: string
+  state?: number
+  applyType?: string | 'group' | 'friend'
+  markAsRead?: boolean
+}
+
 export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   const globalStore = useGlobalStore()
 
@@ -39,42 +64,141 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   const pendingInvites = ref<ContactInvite[]>([])
   const isLoading = ref(false)
   const contactsOptions = ref({ isLast: false, isLoading: false, cursor: '' })
-  const requestFriendsList = ref<any[]>([])
+  const requestFriendsList = ref<FriendRequestItem[]>([])
   const applyPageOptions = ref({ isLast: false, cursor: '', pageNo: 1 })
+  const friendFilter = ref<FriendStatus | 'all'>('all')
 
   const directContacts = computed(() => contactsList.value.filter((c) => c.directRoomId))
 
-  async function loadContacts(): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      error('[ContactStore] 客户端未初始化')
-      return
+  const filteredContacts = computed(() => {
+    if (friendFilter.value === 'all') {
+      return contactsList.value
     }
+    return contactsList.value.filter((c) => c.friendStatus === friendFilter.value)
+  })
 
+  const favoriteContacts = computed(() => contactsList.value.filter((c) => c.friendStatus === 'favorite'))
+
+  const blockedContacts = computed(() => contactsList.value.filter((c) => c.friendStatus === 'blocked'))
+
+  const incomingRequestsCount = computed(
+    () => requestFriendsList.value.filter((r) => r.direction === 'incoming').length
+  )
+
+  async function initialize(): Promise<void> {
+    try {
+      await matrixFriendService.initialize()
+      await matrixDirectMessageService.initialize()
+
+      matrixFriendService.on('sync', handleFriendSync as FriendServiceEventHandler)
+      matrixFriendService.on('friendAdded', handleFriendAdded as FriendServiceEventHandler)
+      matrixFriendService.on('friendRemoved', handleFriendRemoved as FriendServiceEventHandler)
+      matrixFriendService.on('friendUpdated', handleFriendUpdated as FriendServiceEventHandler)
+      matrixFriendService.on('requestReceived', handleRequestReceived as FriendServiceEventHandler)
+
+      await loadContacts()
+      await loadFriendRequests()
+      info('[ContactStore] 初始化完成')
+    } catch (err) {
+      error(`[ContactStore] 初始化失败: ${err}`)
+    }
+  }
+
+  function handleFriendSync(): void {
+    loadContacts()
+    loadFriendRequests()
+  }
+
+  function handleFriendAdded(friend: Friend): void {
+    const existingIndex = contactsList.value.findIndex((c) => c.userId === friend.userId)
+    const contact = friendToContact(friend)
+
+    if (existingIndex >= 0) {
+      contactsList.value[existingIndex] = { ...contactsList.value[existingIndex], ...contact }
+    } else {
+      contactsList.value.push(contact)
+    }
+  }
+
+  function handleFriendRemoved(userId: string): void {
+    contactsList.value = contactsList.value.filter((c) => c.userId !== userId)
+  }
+
+  function handleFriendUpdated(friend: Friend): void {
+    const index = contactsList.value.findIndex((c) => c.userId === friend.userId)
+    if (index >= 0) {
+      const contact = friendToContact(friend)
+      contactsList.value[index] = { ...contactsList.value[index], ...contact }
+    }
+  }
+
+  function handleRequestReceived(request: FriendRequest): void {
+    const existing = requestFriendsList.value.find((r) => r.userId === request.userId)
+    if (!existing) {
+      requestFriendsList.value.push({
+        userId: request.userId,
+        displayName: request.displayName,
+        avatarUrl: request.avatarUrl,
+        message: request.message,
+        timestamp: request.timestamp,
+        direction: request.direction,
+        applyId: request.userId
+      })
+      globalStore.unReadMark.newFriendUnreadCount++
+    }
+  }
+
+  function friendToContact(friend: Friend): MatrixContact {
+    return {
+      userId: friend.userId,
+      uid: friend.userId,
+      displayName: friend.displayName ?? null,
+      name: friend.displayName ?? friend.userId.split(':')[0],
+      avatarUrl: friend.avatarUrl ?? null,
+      avatar: friend.avatarUrl ?? '',
+      account: friend.userId.split(':')[0],
+      activeStatus: OnlineEnum.ONLINE,
+      remark: friend.note ?? '',
+      lastOptTime: friend.since ?? Date.now(),
+      hideMyPosts: false,
+      hideTheirPosts: false,
+      friendStatus: friend.status,
+      since: friend.since,
+      note: friend.note,
+      directRoomId: friend.dmRoomId
+    }
+  }
+
+  async function loadContacts(): Promise<void> {
     isLoading.value = true
     try {
-      const directRooms = await matrixRoomService.getDirectRooms()
-      const contacts: MatrixContact[] = []
+      const friends = matrixFriendService.getFriends()
+      const dmRoomInfos = matrixDirectMessageService.getDmRoomInfos()
 
-      for (const [userId, roomIds] of directRooms) {
-        if (roomIds.length > 0) {
-          const roomId = roomIds[0]
-          const room = client.getRoom(roomId)
+      const contacts: MatrixContact[] = friends.map((friend) => {
+        const dmRoom = dmRoomInfos.find((r) => r.partnerId === friend.userId)
+        return {
+          ...friendToContact(friend),
+          directRoomId: dmRoom?.roomId ?? friend.dmRoomId
+        }
+      })
 
+      for (const dmRoom of dmRoomInfos) {
+        if (!contacts.find((c) => c.userId === dmRoom.partnerId)) {
           contacts.push({
-            userId,
-            uid: userId,
-            displayName: room?.name || userId.split(':')[0],
-            name: room?.name || userId.split(':')[0],
-            avatarUrl: room?.getMxcAvatarUrl?.() || null,
-            avatar: room?.getMxcAvatarUrl?.() || '',
-            directRoomId: roomId,
-            account: userId.split(':')[0],
+            userId: dmRoom.partnerId,
+            uid: dmRoom.partnerId,
+            displayName: dmRoom.partnerName ?? null,
+            name: dmRoom.partnerName ?? dmRoom.partnerId.split(':')[0],
+            avatarUrl: dmRoom.partnerAvatar ?? null,
+            avatar: dmRoom.partnerAvatar ?? '',
+            account: dmRoom.partnerId.split(':')[0],
             activeStatus: OnlineEnum.ONLINE,
             remark: '',
-            lastOptTime: Date.now(),
+            lastOptTime: dmRoom.lastMessageTimestamp ?? Date.now(),
             hideMyPosts: false,
-            hideTheirPosts: false
+            hideTheirPosts: false,
+            directRoomId: dmRoom.roomId
           })
         }
       }
@@ -85,6 +209,39 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       error(`[ContactStore] 加载联系人失败: ${err}`)
     } finally {
       isLoading.value = false
+    }
+  }
+
+  async function loadFriendRequests(): Promise<void> {
+    try {
+      const incoming = matrixFriendService.getIncomingRequests()
+      const outgoing = matrixFriendService.getOutgoingRequests()
+
+      requestFriendsList.value = [
+        ...incoming.map((r) => ({
+          userId: r.userId,
+          displayName: r.displayName,
+          avatarUrl: r.avatarUrl,
+          message: r.message,
+          timestamp: r.timestamp,
+          direction: 'incoming' as const,
+          applyId: r.userId
+        })),
+        ...outgoing.map((r) => ({
+          userId: r.userId,
+          displayName: r.displayName,
+          avatarUrl: r.avatarUrl,
+          message: r.message,
+          timestamp: r.timestamp,
+          direction: 'outgoing' as const,
+          applyId: r.userId
+        }))
+      ]
+
+      globalStore.unReadMark.newFriendUnreadCount = incoming.length
+      info(`[ContactStore] 加载好友请求成功: ${requestFriendsList.value.length} 个`)
+    } catch (err) {
+      error(`[ContactStore] 加载好友请求失败: ${err}`)
     }
   }
 
@@ -118,61 +275,111 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         hideMyPosts: false,
         hideTheirPosts: false
       }
-    } catch (err) {
+    } catch (_err) {
       error(`[ContactStore] 获取用户资料失败: ${userId}`)
       return null
     }
   }
 
-  async function startDirectRoom(userId: string): Promise<string | null> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      error('[ContactStore] 客户端未初始化')
-      return null
-    }
-
+  async function startDirectRoom(userId: string, encrypted = false): Promise<string | null> {
     try {
       const existingContact = contactsList.value.find((c) => c.userId === userId)
       if (existingContact?.directRoomId) {
         return existingContact.directRoomId
       }
 
-      const roomId = await matrixRoomService.createDirectRoom(userId)
+      const room = await matrixDirectMessageService.getOrCreateDmRoom(userId, encrypted)
+      const roomId = room.roomId
 
-      contactsList.value.push({
-        userId,
-        uid: userId,
-        displayName: null,
-        name: userId.split(':')[0],
-        avatarUrl: null,
-        avatar: '',
-        directRoomId: roomId,
-        account: userId.split(':')[0],
-        activeStatus: OnlineEnum.ONLINE,
-        remark: '',
-        lastOptTime: Date.now(),
-        hideMyPosts: false,
-        hideTheirPosts: false
-      })
+      const contactIndex = contactsList.value.findIndex((c) => c.userId === userId)
+      if (contactIndex >= 0) {
+        contactsList.value[contactIndex].directRoomId = roomId
+      } else {
+        contactsList.value.push({
+          userId,
+          uid: userId,
+          displayName: null,
+          name: userId.split(':')[0],
+          avatarUrl: null,
+          avatar: '',
+          directRoomId: roomId,
+          account: userId.split(':')[0],
+          activeStatus: OnlineEnum.ONLINE,
+          remark: '',
+          lastOptTime: Date.now(),
+          hideMyPosts: false,
+          hideTheirPosts: false
+        })
+      }
 
-      await matrixRoomService.setDirectRoom(userId, roomId)
-
-      info(`[ContactStore] 创建直接消息房间成功: ${roomId}`)
+      info(`[ContactStore] 创建私聊房间成功: ${roomId}`)
       return roomId
     } catch (err) {
-      error(`[ContactStore] 创建直接消息房间失败: ${err}`)
+      error(`[ContactStore] 创建私聊房间失败: ${err}`)
       return null
     }
   }
 
-  async function removeFromContacts(userId: string): Promise<boolean> {
-    const contact = contactsList.value.find((c) => c.userId === userId)
-    if (!contact?.directRoomId) {
+  async function sendFriendRequest(userId: string, message?: string): Promise<boolean> {
+    try {
+      await matrixFriendService.sendFriendRequest(userId, message)
+      info(`[ContactStore] 发送好友请求成功: ${userId}`)
+      return true
+    } catch (err) {
+      error(`[ContactStore] 发送好友请求失败: ${err}`)
       return false
     }
+  }
 
+  async function acceptFriendRequest(userId: string): Promise<boolean> {
     try {
-      await matrixRoomService.leaveRoom(contact.directRoomId)
+      await matrixFriendService.acceptFriendRequest(userId)
+      requestFriendsList.value = requestFriendsList.value.filter(
+        (r) => !(r.userId === userId && r.direction === 'incoming')
+      )
+      globalStore.unReadMark.newFriendUnreadCount = Math.max(0, globalStore.unReadMark.newFriendUnreadCount - 1)
+      info(`[ContactStore] 接受好友请求成功: ${userId}`)
+      return true
+    } catch (err) {
+      error(`[ContactStore] 接受好友请求失败: ${err}`)
+      return false
+    }
+  }
+
+  async function rejectFriendRequest(userId: string): Promise<boolean> {
+    try {
+      await matrixFriendService.rejectFriendRequest(userId)
+      requestFriendsList.value = requestFriendsList.value.filter(
+        (r) => !(r.userId === userId && r.direction === 'incoming')
+      )
+      globalStore.unReadMark.newFriendUnreadCount = Math.max(0, globalStore.unReadMark.newFriendUnreadCount - 1)
+      info(`[ContactStore] 拒绝好友请求成功: ${userId}`)
+      return true
+    } catch (err) {
+      error(`[ContactStore] 拒绝好友请求失败: ${err}`)
+      return false
+    }
+  }
+
+  async function cancelFriendRequest(userId: string): Promise<boolean> {
+    try {
+      await matrixFriendService.cancelFriendRequest(userId)
+      requestFriendsList.value = requestFriendsList.value.filter(
+        (r) => !(r.userId === userId && r.direction === 'outgoing')
+      )
+      info(`[ContactStore] 取消好友请求成功: ${userId}`)
+      return true
+    } catch (err) {
+      error(`[ContactStore] 取消好友请求失败: ${err}`)
+      return false
+    }
+  }
+
+  async function removeFromContacts(userId: string): Promise<boolean> {
+    try {
+      if (matrixFriendService.isFriend(userId)) {
+        await matrixFriendService.removeFriend(userId)
+      }
       contactsList.value = contactsList.value.filter((c) => c.userId !== userId)
       info(`[ContactStore] 移除联系人成功: ${userId}`)
       return true
@@ -188,6 +395,37 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
   function deleteContact(uid: string): void {
     contactsList.value = contactsList.value.filter((c) => c.userId !== uid && c.uid !== uid)
+  }
+
+  async function setFriendNote(userId: string, note: string): Promise<boolean> {
+    try {
+      await matrixFriendService.setFriendNote(userId, note)
+      const contact = contactsList.value.find((c) => c.userId === userId)
+      if (contact) {
+        contact.remark = note
+        contact.note = note
+      }
+      info(`[ContactStore] 设置好友备注成功: ${userId}`)
+      return true
+    } catch (err) {
+      error(`[ContactStore] 设置好友备注失败: ${err}`)
+      return false
+    }
+  }
+
+  async function setFriendStatus(userId: string, status: FriendStatus): Promise<boolean> {
+    try {
+      await matrixFriendService.setFriendStatus(userId, status)
+      const contact = contactsList.value.find((c) => c.userId === userId)
+      if (contact) {
+        contact.friendStatus = status
+      }
+      info(`[ContactStore] 设置好友状态成功: ${userId} -> ${status}`)
+      return true
+    } catch (err) {
+      error(`[ContactStore] 设置好友状态失败: ${err}`)
+      return false
+    }
   }
 
   async function loadPendingInvites(): Promise<void> {
@@ -217,7 +455,6 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       }
 
       pendingInvites.value = invites
-      globalStore.unReadMark.newFriendUnreadCount = invites.filter((i) => !i.isGroup).length
       globalStore.unReadMark.newGroupUnreadCount = invites.filter((i) => i.isGroup).length
     } catch (err) {
       error(`[ContactStore] 加载邀请列表失败: ${err}`)
@@ -226,7 +463,11 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
   async function acceptInvite(roomId: string): Promise<boolean> {
     try {
-      await matrixRoomService.joinRoom(roomId)
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('客户端未初始化')
+      }
+      await client.joinRoom(roomId)
       pendingInvites.value = pendingInvites.value.filter((i) => i.roomId !== roomId)
       info(`[ContactStore] 接受邀请成功: ${roomId}`)
       return true
@@ -238,7 +479,11 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
   async function rejectInvite(roomId: string): Promise<boolean> {
     try {
-      await matrixRoomService.leaveRoom(roomId)
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('客户端未初始化')
+      }
+      await client.leave(roomId)
       pendingInvites.value = pendingInvites.value.filter((i) => i.roomId !== roomId)
       info(`[ContactStore] 拒绝邀请成功: ${roomId}`)
       return true
@@ -252,6 +497,14 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     return contactsList.value.find((c) => c.userId === userId || c.uid === userId)
   }
 
+  function isFriend(userId: string): boolean {
+    return matrixFriendService.isFriend(userId)
+  }
+
+  function setFriendFilter(filter: FriendStatus | 'all'): void {
+    friendFilter.value = filter
+  }
+
   function clearContacts(): void {
     contactsList.value = []
     pendingInvites.value = []
@@ -259,15 +512,24 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   }
 
   async function getApplyUnReadCount(): Promise<void> {
+    await loadFriendRequests()
     await loadPendingInvites()
   }
 
   async function getApplyPage(_applyType: string, _isFresh = false, _click = false): Promise<void> {
-    // TODO: 实现获取申请列表
+    await loadFriendRequests()
   }
 
-  async function onHandleInvite(_apply: any): Promise<void> {
-    // TODO: 实现处理邀请
+  async function onHandleInvite(apply: FriendRequestItem): Promise<void> {
+    if (apply.direction === 'incoming' && apply.userId) {
+      await acceptFriendRequest(apply.userId)
+    }
+  }
+
+  function cleanup(): void {
+    matrixFriendService.stop()
+    matrixDirectMessageService.stop()
+    clearContacts()
   }
 
   return {
@@ -278,20 +540,36 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     requestFriendsList,
     applyPageOptions,
     directContacts,
+    filteredContacts,
+    favoriteContacts,
+    blockedContacts,
+    incomingRequestsCount,
+    friendFilter,
+    initialize,
     loadContacts,
+    loadFriendRequests,
     getContactList,
     getUserProfile,
     startDirectRoom,
+    sendFriendRequest,
+    acceptFriendRequest,
+    rejectFriendRequest,
+    cancelFriendRequest,
     removeFromContacts,
     onDeleteFriend,
     deleteContact,
+    setFriendNote,
+    setFriendStatus,
     loadPendingInvites,
     acceptInvite,
     rejectInvite,
     getContactByUserId,
+    isFriend,
+    setFriendFilter,
     clearContacts,
     getApplyUnReadCount,
     getApplyPage,
-    onHandleInvite
+    onHandleInvite,
+    cleanup
   }
 })

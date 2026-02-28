@@ -247,7 +247,7 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useMyRoomInfoUpdater } from '@/hooks/useMyRoomInfoUpdater'
 import router from '@/router'
 import type { UserItem } from '@/services/types'
-import { useCachedStore } from '@/stores/cached'
+import { useAnnouncementStore } from '@/stores/announcement'
 import { useChatStore } from '@/stores/chat.ts'
 import { useContactStore } from '@/stores/contacts.ts'
 import { useGlobalStore } from '@/stores/global'
@@ -277,7 +277,7 @@ const userStore = useUserStore()
 const chatStore = useChatStore()
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
-const cacheStore = useCachedStore()
+const announcementStore = useAnnouncementStore()
 const contactStore = useContactStore()
 const { currentSessionRoomId } = storeToRefs(globalStore)
 const { persistMyRoomInfo } = useMyRoomInfoUpdater()
@@ -322,10 +322,8 @@ const initialNicknameValue = ref('')
 const initialNameValue = ref('')
 
 const {
-  fileInput,
   localImageUrl,
   showCropper,
-  cropperRef,
   openAvatarCropper,
   handleFileChange,
   handleCrop: onCrop
@@ -469,7 +467,7 @@ const handleLoadGroupAnnoun = async () => {
     // 设置是否可以添加公告
     isAddAnnoun.value = isLord.value || isAdmin.value || hasBadge6.value!
     // 获取群公告列表
-    const data = await cacheStore.getGroupAnnouncementList(roomId, 1, 10)
+    const data = await announcementStore.getGroupAnnouncementList(roomId, 1, 10)
     if (data) {
       announList.value = data.records
       // 处理置顶公告
@@ -479,7 +477,7 @@ const handleLoadGroupAnnoun = async () => {
           announList.value = [topAnnouncement, ...announList.value.filter((item: any) => !item.top)]
         }
       }
-      announNum.value = parseInt(data.total, 10)
+      announNum.value = data.total
       announError.value = false
     } else {
       announError.value = false

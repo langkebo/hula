@@ -59,7 +59,7 @@ import { RecycleScroller } from 'vue-virtual-scroller'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import { useGlobalStore } from '@/stores/global'
-import { useCachedStore } from '@/stores/cached'
+import { useAnnouncementStore } from '@/stores/announcement'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { onActivated } from 'vue'
 
@@ -73,7 +73,7 @@ const announList = ref<any[]>([])
 const groupStore = useGroupStore()
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
-const cacheStore = useCachedStore()
+const announcementStore = useAnnouncementStore()
 
 // 判断当前用户是否有权限添加公告
 const canAddAnnouncement = computed(() => {
@@ -102,7 +102,7 @@ const loadAnnouncementList = async () => {
       return
     }
 
-    const data = await cacheStore.getGroupAnnouncementList(roomId, 1, 10)
+    const data = await announcementStore.getGroupAnnouncementList(roomId, 1, 10)
     if (data && data.records) {
       announList.value = data.records
       // 处理置顶公告

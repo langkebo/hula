@@ -1,3 +1,8 @@
+/**
+ * @deprecated 此文件已废弃，Matrix 使用不同的认证机制
+ * 请使用 matrix-js-sdk 的 client.login() 或 SSO 登录
+ * 迁移完成后此文件将被删除
+ */
 import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { invoke } from '@tauri-apps/api/core'

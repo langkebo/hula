@@ -14,36 +14,20 @@
     <div class="call-content">
       <template v-if="isVideo">
         <div class="video-container">
-          <video
-            ref="remoteVideoRef"
-            class="remote-video"
-            autoplay
-            playsinline />
-          <video
-            ref="localVideoRef"
-            class="local-video"
-            autoplay
-            playsinline
-            muted />
+          <video ref="remoteVideoRef" class="remote-video" autoplay playsinline />
+          <video ref="localVideoRef" class="local-video" autoplay playsinline muted />
         </div>
       </template>
       <template v-else>
         <div class="voice-container">
-          <n-avatar
-            round
-            :size="120"
-            :src="remoteUser?.avatarUrl"
-            :fallback-src="defaultAvatar" />
+          <n-avatar round :size="120" :src="remoteUser?.avatarUrl" :fallback-src="defaultAvatar" />
           <span class="user-name">{{ remoteUser?.displayName || remoteUser?.userId }}</span>
         </div>
       </template>
     </div>
 
     <div class="call-controls">
-      <n-button
-        circle
-        :type="isMuted ? 'error' : 'default'"
-        @click="toggleMute">
+      <n-button circle :type="isMuted ? 'error' : 'default'" @click="toggleMute">
         <template #icon>
           <svg class="size-20px">
             <use :href="isMuted ? '#mic-off' : '#mic'"></use>
@@ -51,11 +35,7 @@
         </template>
       </n-button>
 
-      <n-button
-        v-if="isVideo"
-        circle
-        :type="isVideoMuted ? 'error' : 'default'"
-        @click="toggleVideo">
+      <n-button v-if="isVideo" circle :type="isVideoMuted ? 'error' : 'default'" @click="toggleVideo">
         <template #icon>
           <svg class="size-20px">
             <use :href="isVideoMuted ? '#video-off' : '#video'"></use>
@@ -63,11 +43,7 @@
         </template>
       </n-button>
 
-      <n-button
-        circle
-        type="error"
-        size="large"
-        @click="handleHangup">
+      <n-button circle type="error" size="large" @click="handleHangup">
         <template #icon>
           <svg class="size-24px">
             <use href="#phone-off"></use>
@@ -75,11 +51,7 @@
         </template>
       </n-button>
 
-      <n-button
-        v-if="isVideo"
-        circle
-        :type="isScreenSharing ? 'primary' : 'default'"
-        @click="toggleScreenShare">
+      <n-button v-if="isVideo" circle :type="isScreenSharing ? 'primary' : 'default'" @click="toggleScreenShare">
         <template #icon>
           <svg class="size-20px">
             <use href="#screen-share"></use>
@@ -111,8 +83,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const localVideoRef = ref<HTMLVideoElement>()
-const remoteVideoRef = ref<HTMLVideoElement>()
 const callDuration = ref(0)
 const isMuted = ref(false)
 const isVideoMuted = ref(false)

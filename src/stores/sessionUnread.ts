@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { StoresEnum } from '@/enums'
-import type { SessionItem } from '@/services/types'
+import type { SessionItem } from '@/stores/chat'
 
 type UnreadCache = Record<string, number>
 type CacheStore = Record<string, UnreadCache>

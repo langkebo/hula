@@ -123,7 +123,7 @@ const handleSearch = (value: string) => {
     // 在名称中搜索
     const nameMatch = session.name.toLowerCase().includes(value.toLowerCase())
     return nameMatch
-  })
+  }) as any[]
   // 如果有搜索关键词，这里可以保存到关键词历史记录（当前实现还不保存搜索关键词）
   if (value) {
     saveToHistory(value)

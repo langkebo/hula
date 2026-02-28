@@ -3,7 +3,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDebounceFn } from '@vueuse/core'
 import { sumBy } from 'es-toolkit'
 import { NotificationTypeEnum } from '@/enums'
-import type { SessionItem } from '@/services/types'
+import type { SessionItem } from '@/stores/chat'
 import { isIOS, isMac } from '@/utils/PlatformConstants'
 
 /**

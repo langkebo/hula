@@ -4,11 +4,37 @@
   "nickname": "Nickname",
   "theme": "Theme",
   "language": "Language",
+  "version": "Version",
   "button": {
     "logout": "Log Out"
   },
   "themes": {
     "dark": "Dark",
     "light": "Light"
-  }
+  },
+  "account_section": "Account",
+  "notification_section": "Notifications",
+  "appearance_section": "Appearance",
+  "help_section": "Help",
+  "advanced_section": "Advanced",
+  "status": "Online Status",
+  "edit_profile": "Edit Profile",
+  "security": "Security",
+  "notifications": "Notifications",
+  "help_feedback": "Help & Feedback",
+  "voice_video": "Voice & Video",
+  "labs": "Labs",
+  "integrations": "Integrations",
+  "status_online": "Online",
+  "status_away": "Away",
+  "status_busy": "Busy",
+  "status_offline": "Invisible",
+  "logout_confirm": {
+    "title": "Log Out",
+    "message": "Are you sure you want to log out?",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "logout_success": "Logged out successfully",
+  "logout_failed": "Local logout cleanup failed, please restart the app"
 }

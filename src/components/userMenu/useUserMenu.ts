@@ -1,10 +1,11 @@
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserMenuStore, type MenuPosition, type MenuTrigger } from '@/stores/userMenu'
 import { useSettingsDialogStore, type SettingsTabType } from '@/stores/settingsDialog'
 import { useMatrixStore } from '@/stores/matrix'
 import { useUserStore } from '@/stores/user'
 import { usePlatform } from '@/composables/usePlatform'
-import { getFilteredMenuItems, findMenuItemById, setLogoutCallback } from './menuConfig'
+import { getFilteredMenuItems, findMenuItemById, setLogoutCallback, setRouterInstance } from './menuConfig'
 import { useDialog, useMessage } from 'naive-ui'
 
 export function useUserMenu() {
@@ -15,6 +16,9 @@ export function useUserMenu() {
   const { isDesktop } = usePlatform()
   const dialog = useDialog()
   const message = useMessage()
+  const router = useRouter()
+
+  setRouterInstance(router)
 
   const isOpen = computed(() => userMenuStore.isOpen)
   const position = computed(() => userMenuStore.position)

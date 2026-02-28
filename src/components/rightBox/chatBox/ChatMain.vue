@@ -202,13 +202,13 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { usePopover } from '@/hooks/usePopover.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
-import type { MessageType } from '@/services/types.ts'
+import type { MessageType } from '@/stores/chat'
 import { useChatStore } from '@/stores/chat.ts'
 import { useGlobalStore } from '@/stores/global'
 import { useUserStore } from '@/stores/user.ts'
 import { audioManager } from '@/utils/AudioManager'
 import { timeToStr } from '@/utils/ComputedTime'
-import { useCachedStore } from '@/stores/cached'
+import { useAnnouncementStore } from '@/stores/announcement'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
 import FileUploadProgress from '@/components/rightBox/FileUploadProgress.vue'
@@ -227,7 +227,7 @@ type SessionChangedPayload = {
 }
 
 // Store 实例
-const cacheStore = useCachedStore()
+const announcementStore = useAnnouncementStore()
 const appWindow = WebviewWindow.getCurrent()
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
@@ -410,7 +410,7 @@ const loadTopAnnouncement = async (roomId?: string): Promise<void> => {
   }
 
   try {
-    const data = await cacheStore.getGroupAnnouncementList(targetRoomId, 1, 1)
+    const data = await announcementStore.getGroupAnnouncementList(targetRoomId, 1, 1)
     if (targetRoomId !== currentRoomId.value) {
       return
     }

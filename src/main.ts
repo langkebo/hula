@@ -1,5 +1,6 @@
 import 'uno.css'
-import '@unocss/reset/eric-meyer.css' // unocss提供的浏览器默认样式重置
+import '@unocss/reset/eric-meyer.css'
+import '@/styles/css/design-tokens.css'
 import TlbsMap from 'tlbs-map-vue'
 import { setupI18n } from '@/services/i18n'
 import { AppException } from '@/common/exception.ts'

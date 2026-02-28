@@ -1,0 +1,15 @@
+{
+  "title": "Online Status",
+  "subtitle": "Set your online status",
+  "status_message": "Status Message",
+  "status_message_placeholder": "Set a status message (optional)",
+  "save": "Save",
+  "save_success": "Status updated",
+  "save_failed": "Failed to set status",
+  "status": {
+    "online": "Online",
+    "away": "Away",
+    "busy": "Busy",
+    "offline": "Invisible"
+  }
+}

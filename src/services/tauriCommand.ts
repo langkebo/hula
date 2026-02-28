@@ -1,3 +1,8 @@
+/**
+ * @deprecated 此文件已废弃，将迁移到 Matrix SDK 登录
+ * 请使用 matrix-js-sdk 的认证功能
+ * 迁移完成后此文件将被删除
+ */
 import { invoke } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { TauriCommand } from '../enums'

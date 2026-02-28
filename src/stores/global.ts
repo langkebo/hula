@@ -2,18 +2,35 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { defineStore } from 'pinia'
 import { MittEnum, StoresEnum } from '@/enums'
-import type { FriendItem, RequestFriendItem, SessionItem } from '@/services/types'
-import { useChatStore } from '@/stores/chat'
+import { useChatStore, type SessionItem } from '@/stores/chat'
 import { clearQueue, readCountQueue } from '@/utils/ReadCountQueue.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
+
+export interface FriendItem {
+  uid: string
+  name?: string
+  avatar?: string
+  remark?: string
+}
+
+export interface RequestFriendItem {
+  uid: string
+  name?: string
+  avatar?: string
+  message?: string
+  timestamp: number
+  direction: 'incoming' | 'outgoing'
+  type?: string
+  roomId?: string
+  applyId?: string
+}
 
 export const useGlobalStore = defineStore(
   StoresEnum.GLOBAL,
   () => {
     const chatStore = useChatStore()
 
-    // 未读消息标记：好友请求未读数和新消息未读数
     const unReadMark = reactive<{
       newFriendUnreadCount: number
       newMsgUnreadCount: number
@@ -25,7 +42,6 @@ export const useGlobalStore = defineStore(
     })
     const unreadReady = ref<boolean>(true)
 
-    // 当前阅读未读列表状态
     const currentReadUnreadList = reactive<{ show: boolean; msgId: number | null }>({
       show: false,
       msgId: null
@@ -39,7 +55,6 @@ export const useGlobalStore = defineStore(
       const { roomId: _omit, ...rest } = session
       return rest
     }
-    // 当前会话信息：不暴露 roomId，统一从 currentSessionRoomId 读取
     const currentSession = computed((): CurrentSessionView | null => {
       const cachedRoomId = currentSessionRoomId.value
       if (!cachedRoomId) {
@@ -61,16 +76,13 @@ export const useGlobalStore = defineStore(
         : null
     })
 
-    /** 当前选中的联系人信息 */
     const currentSelectedContact = ref<FriendItem | RequestFriendItem>()
 
-    // 添加好友模态框信息 TODO: 虚拟列表添加好友有时候会不展示对应的用户信息
     const addFriendModalInfo = ref<{ show: boolean; uid?: string }>({
       show: false,
       uid: void 0
     })
 
-    // 添加群聊模态框信息
     const addGroupModalInfo = ref<{ show: boolean; name?: string; avatar?: string; account?: string }>({
       show: false,
       name: '',
@@ -78,35 +90,28 @@ export const useGlobalStore = defineStore(
       account: ''
     })
 
-    // 创建群聊模态框信息
     const createGroupModalInfo = reactive<{
       show: boolean
-      isInvite: boolean // 是否为邀请模式
-      selectedUid: number[] // 选中的用户ID列表
+      isInvite: boolean
+      selectedUid: number[]
     }>({
       show: false,
       isInvite: false,
       selectedUid: []
     })
 
-    /** 提示框显示状态 */
     const tipVisible = ref<boolean>(false)
-    /** 系统托盘菜单显示的状态 */
     const isTrayMenuShow = ref<boolean>(false)
 
-    // 设置提示框显示状态
     const setTipVisible = (visible: boolean) => {
       tipVisible.value = visible
     }
 
-    // 更新全局未读消息计数
     const updateGlobalUnreadCount = () => {
       info('[global]更新全局未读消息计数')
-      // 使用统一的计数管理器，避免重复逻辑
       unreadCountManager.calculateTotal(chatStore.sessionList, unReadMark)
     }
 
-    // 兜底同步 Dock/角标，防止未读数与徽章不同步
     watch(
       () => ({
         msg: unReadMark.newMsgUnreadCount,
@@ -119,7 +124,6 @@ export const useGlobalStore = defineStore(
       }
     )
 
-    // 监听当前会话变化，添加防重复触发逻辑
     watch(currentSessionRoomId, async (val, oldVal) => {
       if (!val || val === oldVal) {
         return
@@ -144,9 +148,7 @@ export const useGlobalStore = defineStore(
       const session = chatStore.getSession(val)
       if (session?.unreadCount) {
         info(`[global]当前会话发生实际变化: ${oldVal} -> ${val}`)
-        // 清理已读数查询队列
         clearQueue()
-        // 延攱1秒后开始查询已读数
         setTimeout(readCountQueue, 1000)
         chatStore.markSessionRead(val)
       }

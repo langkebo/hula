@@ -1,4 +1,9 @@
 /**
+ * @deprecated 此文件中的类型定义正在迁移到 Matrix SDK 类型
+ * 请逐步使用 matrix-js-sdk 提供的类型定义
+ * 迁移完成后此文件将被重构
+ */
+/**
  * 类型定义文件
  * 注意：请使用TSDoc规范进行注释，以便在使用时能够获得良好提示。
  * @see TSDoc规范https://tsdoc.org/

@@ -158,5 +158,41 @@
       "simple": "Minimal grace"
     }
   },
+  "push": {
+    "title": "Push Settings",
+    "devices": "Push Devices",
+    "noDevices": "No registered push devices",
+    "rules": "Push Rules",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "master": {
+      "label": "Enable Push Notifications",
+      "desc": "Globally control all push notifications"
+    },
+    "message": {
+      "label": "Message Push",
+      "desc": "Send push notifications when receiving new messages"
+    },
+    "invite": {
+      "label": "Invite Push",
+      "desc": "Send push notifications when receiving room invites"
+    },
+    "dnd": {
+      "title": "Push Schedule",
+      "label": "Do Not Disturb",
+      "desc": "Do not send push notifications during specified time period",
+      "startTime": "Start Time",
+      "endTime": "End Time"
+    },
+    "delete": {
+      "title": "Delete Push Device",
+      "content": "Are you sure you want to delete push device \"{name}\"? You will no longer receive push notifications from this device.",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "success": "Push device deleted",
+      "failed": "Failed to delete push device"
+    },
+    "fetchFailed": "Failed to fetch push devices"
+  },
   "unknow": "Unknow"
 }

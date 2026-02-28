@@ -164,10 +164,10 @@ const { editInfo, currentBadge, updateCurrentUserCache, saveEditInfo, toggleWarn
 const { countGraphemes } = useCommon()
 // 使用自定义hook处理头像上传
 const {
-  fileInput,
+  fileInput: _fileInput,
   localImageUrl,
   showCropper,
-  cropperRef,
+  cropperRef: _cropperRef,
   openAvatarCropper,
   handleFileChange,
   handleCrop: onCrop

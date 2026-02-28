@@ -4,11 +4,16 @@
       <h3 class="section-title">加密状态</h3>
       <div class="encryption-status">
         <div class="status-icon">
-          <Icon :icon="encryptionEnabled ? 'mdi:shield-check' : 'mdi:shield-off'" :width="48" :class="encryptionEnabled ? 'status-secure' : 'status-insecure'" />
+          <Icon
+            :icon="encryptionEnabled ? 'mdi:shield-check' : 'mdi:shield-off'"
+            :width="48"
+            :class="encryptionEnabled ? 'status-secure' : 'status-insecure'" />
         </div>
         <div class="status-info">
           <div class="status-title">{{ encryptionEnabled ? '端到端加密已启用' : '端到端加密未启用' }}</div>
-          <div class="status-desc">{{ encryptionEnabled ? '您的消息受到端到端加密保护' : '消息未加密，建议启用加密功能' }}</div>
+          <div class="status-desc">
+            {{ encryptionEnabled ? '您的消息受到端到端加密保护' : '消息未加密，建议启用加密功能' }}
+          </div>
         </div>
       </div>
     </div>
@@ -20,16 +25,18 @@
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">安全备份</span>
-          <span class="setting-desc">使用恢复密钥备份加密消息</span>
+          <span class="setting-desc">{{ backupStatusText }}</span>
         </div>
-        <n-button size="small" @click="handleSetupBackup">设置备份</n-button>
+        <n-button size="small" :loading="backupLoading" @click="handleSetupBackup">
+          {{ hasBackup ? '管理备份' : '设置备份' }}
+        </n-button>
       </div>
-      <div class="setting-item">
+      <div v-if="hasBackup" class="setting-item">
         <div class="setting-info">
           <span class="setting-label">导出恢复密钥</span>
           <span class="setting-desc">将恢复密钥导出到安全位置</span>
         </div>
-        <n-button size="small" @click="handleExportKey">导出</n-button>
+        <n-button size="small" :loading="exportLoading" @click="handleExportKey">导出</n-button>
       </div>
     </div>
 
@@ -74,6 +81,8 @@
         <n-empty v-else description="没有忽略的用户" />
       </n-spin>
     </div>
+
+    <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupSuccess" />
   </div>
 </template>
 
@@ -82,7 +91,9 @@ import { ref, computed, onMounted } from 'vue'
 import { NButton, NDivider, NSpin, NEmpty, NSwitch, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { matrixAccountService } from '@/services/matrix'
+import { matrixEncryptionService } from '@/services/matrix'
 import { matrixClientService } from '@/services/matrix'
+import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 
 defineOptions({
   name: 'SecuritySettings'
@@ -92,6 +103,11 @@ const message = useMessage()
 
 const loadingIgnored = ref(false)
 const ignoredUsers = ref<string[]>([])
+const showBackupDialog = ref(false)
+const backupLoading = ref(false)
+const exportLoading = ref(false)
+const hasBackup = ref(false)
+const backupInfo = ref<{ version: string | null; count: number } | null>(null)
 
 const showOnlineStatus = ref(true)
 const showTypingStatus = ref(true)
@@ -102,10 +118,33 @@ const encryptionEnabled = computed(() => {
   return !!(client as any)?.crypto
 })
 
+const backupStatusText = computed(() => {
+  if (!encryptionEnabled.value) {
+    return '加密未启用'
+  }
+  if (hasBackup.value && backupInfo.value) {
+    return `已备份 ${backupInfo.value.count} 个密钥`
+  }
+  return '未设置备份'
+})
+
 onMounted(async () => {
   await loadIgnoredUsers()
+  await loadBackupInfo()
   loadPrivacySettings()
 })
+
+async function loadBackupInfo() {
+  if (!encryptionEnabled.value) return
+
+  try {
+    const info = await matrixEncryptionService.getKeyBackupInfo()
+    hasBackup.value = !!info
+    backupInfo.value = info ? { version: info.version, count: info.count } : null
+  } catch (error) {
+    console.error('获取备份信息失败:', error)
+  }
+}
 
 async function loadIgnoredUsers() {
   loadingIgnored.value = true
@@ -123,12 +162,12 @@ function loadPrivacySettings() {
   if (savedOnline !== null) {
     showOnlineStatus.value = savedOnline === 'true'
   }
-  
+
   const savedTyping = localStorage.getItem('hula-show-typing')
   if (savedTyping !== null) {
     showTypingStatus.value = savedTyping === 'true'
   }
-  
+
   const savedReceipts = localStorage.getItem('hula-send-receipts')
   if (savedReceipts !== null) {
     sendReadReceipts.value = savedReceipts === 'true'
@@ -136,11 +175,41 @@ function loadPrivacySettings() {
 }
 
 function handleSetupBackup() {
-  message.info('安全备份设置功能开发中')
+  showBackupDialog.value = true
 }
 
-function handleExportKey() {
-  message.info('导出恢复密钥功能开发中')
+async function handleBackupSuccess() {
+  await loadBackupInfo()
+  message.success('安全备份设置成功')
+}
+
+async function handleExportKey() {
+  if (!encryptionEnabled.value) {
+    message.warning('请先启用加密功能')
+    return
+  }
+
+  exportLoading.value = true
+  try {
+    const keysJson = await matrixEncryptionService.exportRoomKeys()
+
+    const blob = new Blob([keysJson], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `hula-keys-backup-${Date.now()}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    message.success('密钥已导出，请妥善保管')
+  } catch (error) {
+    console.error('导出密钥失败:', error)
+    message.error('导出密钥失败')
+  } finally {
+    exportLoading.value = false
+  }
 }
 
 function handleOnlineStatusChange(value: boolean) {
@@ -160,7 +229,7 @@ function handleReadReceiptsChange(value: boolean) {
 
 async function handleUnignore(userId: string) {
   try {
-    const newIgnoredUsers = ignoredUsers.value.filter(u => u !== userId)
+    const newIgnoredUsers = ignoredUsers.value.filter((u) => u !== userId)
     await matrixAccountService.setIgnoredUsers(newIgnoredUsers)
     ignoredUsers.value = newIgnoredUsers
     message.success('已取消忽略该用户')

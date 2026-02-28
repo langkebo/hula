@@ -1,0 +1,88 @@
+{
+  "list": {
+    "title": "好友列表",
+    "search": "搜索好友",
+    "empty": "暂无好友",
+    "online": "在线",
+    "offline": "离线"
+  },
+  "filter": {
+    "all": "全部",
+    "favorite": "收藏",
+    "normal": "普通",
+    "blocked": "已屏蔽"
+  },
+  "status": {
+    "normal": "普通好友",
+    "favorite": "收藏好友",
+    "blocked": "已屏蔽",
+    "hidden": "已隐藏"
+  },
+  "request": {
+    "title": "好友请求",
+    "incoming": "收到请求",
+    "outgoing": "发送请求",
+    "accept": "接受",
+    "reject": "拒绝",
+    "cancel": "撤销",
+    "empty": {
+      "incoming": "暂无好友请求",
+      "outgoing": "暂无发送中的请求"
+    },
+    "success": {
+      "accept": "已接受好友请求",
+      "reject": "已拒绝好友请求",
+      "cancel": "已撤销好友请求"
+    },
+    "error": {
+      "accept": "接受好友请求失败",
+      "reject": "拒绝好友请求失败",
+      "cancel": "撤销好友请求失败"
+    }
+  },
+  "add": {
+    "title": "添加好友",
+    "placeholder": "输入用户ID搜索",
+    "message_label": "验证消息",
+    "message_placeholder": "我是...",
+    "hint": "输入用户ID搜索添加好友",
+    "not_found": "未找到该用户",
+    "already_friend": "该用户已是你的好友",
+    "search_error": "搜索用户失败",
+    "send": "发送请求",
+    "success": "好友请求已发送",
+    "error": "发送好友请求失败"
+  },
+  "detail": {
+    "title": "好友详情",
+    "status": "好友状态",
+    "note": "备注",
+    "since": "添加时间",
+    "note_section": "修改备注",
+    "note_placeholder": "设置好友备注",
+    "note_saved": "备注已保存",
+    "note_error": "保存备注失败",
+    "status_section": "设置状态",
+    "status_saved": "状态已更新",
+    "status_error": "更新状态失败",
+    "actions": "操作",
+    "send_message": "发消息",
+    "encrypted_chat": "加密聊天",
+    "remove_friend": "删除好友",
+    "chat_error": "创建聊天失败",
+    "remove_confirm": {
+      "title": "删除好友",
+      "content": "确定要删除该好友吗？删除后聊天记录将保留。"
+    },
+    "remove_success": "已删除好友",
+    "remove_error": "删除好友失败"
+  },
+  "context": {
+    "send_message": "发消息",
+    "encrypted_chat": "加密聊天",
+    "set_favorite": "设为收藏",
+    "set_normal": "设为普通",
+    "set_blocked": "屏蔽好友",
+    "remove": "删除好友"
+  }
+}

@@ -61,7 +61,7 @@
                 cx="12"
                 cy="12"
                 :stroke-dasharray="`${2 * Math.PI * 10}`"
-                :stroke-dashoffset="`${2 * Math.PI * 10 * (1 - (isUploading ? uploadProgress : downloadProgress) / 100)}`" />
+                :stroke-dashoffset="`${2 * Math.PI * 10 * (1 - (isUploading ? currentUploadProgress : downloadProgress) / 100)}`" />
             </svg>
           </div>
           <!-- 上传进度 -->
@@ -144,7 +144,7 @@ const iconDimensions = ref({ width: 40, height: 40 })
 
 // 上传状态
 const isUploading = computed(() => props.messageStatus === MessageStatusEnum.SENDING)
-const uploadProgress = computed(() => props.uploadProgress || 0)
+const currentUploadProgress = computed(() => props.uploadProgress || 0)
 
 // 文件下载状态
 const fileStatus = computed(() => {
@@ -169,7 +169,11 @@ const persistFileLocalPath = async (absolutePath: string) => {
   if (target.message.body?.localPath === absolutePath) return
 
   const nextBody = { ...(target.message.body || {}), localPath: absolutePath }
-  chatStore.updateMsg({ msgId: target.message.id, status: target.message.status, body: nextBody })
+  chatStore.updateMsg({
+    msgId: target.message.id,
+    status: target.message.status ?? MessageStatusEnum.SUCCESS,
+    body: nextBody
+  })
   const updated = { ...target, message: { ...target.message, body: nextBody } }
   await invokeSilently(TauriCommand.SAVE_MSG, { data: updated as any })
 }
