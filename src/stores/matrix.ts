@@ -25,11 +25,13 @@ export const useMatrixStore = defineStore(StoresEnum.MATRIX, () => {
       isInitialized.value = true
       connectionState.value = 'CONNECTING'
 
-      matrixClientService.on('connectionState', ({ state }: { state: string }) => {
+      matrixClientService.on('connectionState', (data: unknown) => {
+        const { state } = data as { state: string }
         connectionState.value = state.toUpperCase() as ConnectionState
       })
 
-      matrixClientService.on('sync', ({ state }: { state: string }) => {
+      matrixClientService.on('sync', (data: unknown) => {
+        const { state } = data as { state: string }
         syncState.value = state
       })
     } catch (error) {

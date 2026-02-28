@@ -1,0 +1,30 @@
+{
+  "create": {
+    "title": "Create Poll",
+    "question": "Question",
+    "question_placeholder": "Enter poll question",
+    "question_required": "Please enter a question",
+    "options": "Options",
+    "option_placeholder": "Option {{n}}",
+    "options_required": "Please add at least two options",
+    "add_option": "Add Option",
+    "settings": "Settings",
+    "anonymous": "Anonymous Poll",
+    "multiple": "Allow Multiple Choices",
+    "deadline": "Set Deadline",
+    "submit": "Create Poll",
+    "success": "Poll created successfully",
+    "error": "Failed to create poll"
+  },
+  "message": {
+    "votes": "{{count}} votes",
+    "anonymous": "Anonymous",
+    "ended": "Ended",
+    "soon": "Ending soon",
+    "minutes": "Ends in {{n}} minutes",
+    "hours": "Ends in {{n}} hours",
+    "vote": "Vote",
+    "vote_success": "Vote submitted",
+    "vote_error": "Failed to vote"
+  }
+}

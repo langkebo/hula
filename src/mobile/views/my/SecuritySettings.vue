@@ -1,0 +1,340 @@
+<template>
+  <AutoFixHeightPage :show-footer="false">
+    <template #header>
+      <HeaderBar border :isOfficial="false" :hidden-right="true" :room-name="t('mobile_security.title')" />
+    </template>
+
+    <template #container>
+      <div class="flex flex-col overflow-auto h-full">
+        <div class="flex flex-col p-16px gap-12px">
+          <van-cell-group inset>
+            <van-cell :title="t('mobile_security.change_password')" is-link @click="showPasswordDialog = true">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:lock" :width="20" color="#1989fa" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('mobile_security.devices')"
+              is-link
+              :value="deviceCount"
+              @click="router.push('/mobile/mobileMy/devices')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-green-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:devices" :width="20" color="#52c41a" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_security.encryption_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell :title="t('mobile_security.cross_signing')" :label="crossSigningStatus">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-purple-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:shield-check" :width="20" color="#722ed1" />
+                </div>
+              </template>
+              <template #right-icon>
+                <van-tag :type="crossSigningEnabled ? 'success' : 'warning'">
+                  {{ crossSigningEnabled ? t('mobile_security.enabled') : t('mobile_security.disabled') }}
+                </van-tag>
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('mobile_security.key_backup')"
+              :label="keyBackupStatus"
+              is-link
+              @click="showBackupDialog = true">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:backup-restore" :width="20" color="#fa8c16" />
+                </div>
+              </template>
+              <template #right-icon>
+                <van-tag :type="keyBackupEnabled ? 'success' : 'warning'">
+                  {{ keyBackupEnabled ? t('mobile_security.enabled') : t('mobile_security.disabled') }}
+                </van-tag>
+              </template>
+            </van-cell>
+
+            <van-cell :title="t('mobile_security.export_keys')" is-link @click="handleExportKeys">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-cyan-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:download" :width="20" color="#13c2c2" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_security.privacy_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell
+              :title="t('mobile_security.ignored_users')"
+              is-link
+              :value="ignoredUsersCount"
+              @click="router.push('/mobile/mobileMy/ignoredUsers')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:account-cancel" :width="20" color="#ff4d4f" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_security.danger_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell :title="t('mobile_security.deactivate_account')" is-link @click="handleDeactivate">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:alert-circle" :width="20" color="#ff4d4f" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+        </div>
+      </div>
+
+      <van-dialog
+        v-model:show="showPasswordDialog"
+        :title="t('mobile_security.change_password')"
+        show-cancel-button
+        :confirm-button-text="t('mobile_security.confirm')"
+        :cancel-button-text="t('mobile_security.cancel')"
+        @confirm="handleChangePassword">
+        <div class="p-16px">
+          <van-field
+            v-model="passwordForm.oldPassword"
+            type="password"
+            :label="t('mobile_security.old_password')"
+            :placeholder="t('mobile_security.old_password_placeholder')" />
+          <van-field
+            v-model="passwordForm.newPassword"
+            type="password"
+            :label="t('mobile_security.new_password')"
+            :placeholder="t('mobile_security.new_password_placeholder')" />
+          <van-field
+            v-model="passwordForm.confirmPassword"
+            type="password"
+            :label="t('mobile_security.confirm_password')"
+            :placeholder="t('mobile_security.confirm_password_placeholder')" />
+        </div>
+      </van-dialog>
+
+      <van-dialog
+        v-model:show="showBackupDialog"
+        :title="t('mobile_security.key_backup')"
+        show-cancel-button
+        :confirm-button-text="t('mobile_security.confirm')"
+        :cancel-button-text="t('mobile_security.cancel')"
+        @confirm="handleSetupBackup">
+        <div class="p-16px">
+          <div class="text-14px text-gray-600 mb-12px">
+            {{ t('mobile_security.backup_description') }}
+          </div>
+          <van-field
+            v-model="backupPassphrase"
+            type="password"
+            :label="t('mobile_security.backup_passphrase')"
+            :placeholder="t('mobile_security.backup_passphrase_placeholder')" />
+        </div>
+      </van-dialog>
+    </template>
+  </AutoFixHeightPage>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { showConfirmDialog, showToast, showLoadingToast } from 'vant'
+import { Icon } from '@iconify/vue'
+import { matrixAccountService } from '@/services/matrix/MatrixAccountService'
+import { matrixCryptoService } from '@/services/matrix'
+import { useLogin } from '@/hooks/useLogin'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+const router = useRouter()
+const { logout, resetLoginState } = useLogin()
+
+const deviceCount = ref('0')
+const ignoredUsersCount = ref('0')
+const crossSigningEnabled = ref(false)
+const keyBackupEnabled = ref(false)
+
+const showPasswordDialog = ref(false)
+const showBackupDialog = ref(false)
+
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const backupPassphrase = ref('')
+
+const crossSigningStatus = computed(() => {
+  return crossSigningEnabled.value
+    ? t('mobile_security.cross_signing_enabled')
+    : t('mobile_security.cross_signing_disabled')
+})
+
+const keyBackupStatus = computed(() => {
+  return keyBackupEnabled.value ? t('mobile_security.key_backup_enabled') : t('mobile_security.key_backup_disabled')
+})
+
+onMounted(async () => {
+  await loadSecurityInfo()
+})
+
+async function loadSecurityInfo() {
+  try {
+    const devices = await matrixAccountService.getDevices()
+    deviceCount.value = devices.length.toString()
+
+    const ignoredUsers = await matrixAccountService.getIgnoredUsers()
+    ignoredUsersCount.value = ignoredUsers.length.toString()
+
+    const cryptoStatus = await matrixCryptoService.getCryptoStatus()
+    if (cryptoStatus) {
+      crossSigningEnabled.value = cryptoStatus.crossSigningReady
+      keyBackupEnabled.value = cryptoStatus.keyBackupEnabled
+    }
+  } catch (error) {
+    console.error('[MobileSecurity] 加载安全信息失败:', error)
+  }
+}
+
+async function handleChangePassword() {
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    showToast({
+      type: 'fail',
+      message: t('mobile_security.password_mismatch')
+    })
+    return
+  }
+
+  if (passwordForm.value.newPassword.length < 8) {
+    showToast({
+      type: 'fail',
+      message: t('mobile_security.password_too_short')
+    })
+    return
+  }
+
+  try {
+    showLoadingToast({
+      message: t('mobile_security.changing_password'),
+      forbidClick: true
+    })
+
+    await matrixAccountService.changePassword(passwordForm.value.oldPassword, passwordForm.value.newPassword)
+
+    showToast({
+      type: 'success',
+      message: t('mobile_security.password_changed')
+    })
+
+    passwordForm.value = {
+      oldPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
+  } catch (error) {
+    console.error('[MobileSecurity] 修改密码失败:', error)
+    showToast({
+      type: 'fail',
+      message: t('mobile_security.password_change_failed')
+    })
+  }
+}
+
+async function handleSetupBackup() {
+  if (!backupPassphrase.value) {
+    showToast({
+      type: 'fail',
+      message: t('mobile_security.passphrase_required')
+    })
+    return
+  }
+
+  try {
+    showLoadingToast({
+      message: t('mobile_security.setting_up_backup'),
+      forbidClick: true
+    })
+
+    await matrixCryptoService.setupKeyBackup(backupPassphrase.value)
+
+    showToast({
+      type: 'success',
+      message: t('mobile_security.backup_setup_success')
+    })
+
+    backupPassphrase.value = ''
+    await loadSecurityInfo()
+  } catch (error) {
+    console.error('[MobileSecurity] 设置备份失败:', error)
+    showToast({
+      type: 'fail',
+      message: t('mobile_security.backup_setup_failed')
+    })
+  }
+}
+
+async function handleExportKeys() {
+  try {
+    await showConfirmDialog({
+      title: t('mobile_security.export_keys_confirm.title'),
+      message: t('mobile_security.export_keys_confirm.message'),
+      confirmButtonText: t('mobile_security.export_keys_confirm.confirm'),
+      cancelButtonText: t('mobile_security.export_keys_confirm.cancel')
+    })
+
+    showToast({
+      type: 'success',
+      message: t('mobile_security.export_keys_success')
+    })
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('[MobileSecurity] 导出密钥失败:', error)
+    }
+  }
+}
+
+async function handleDeactivate() {
+  try {
+    await showConfirmDialog({
+      title: t('mobile_security.deactivate_confirm.title'),
+      message: t('mobile_security.deactivate_confirm.message'),
+      confirmButtonText: t('mobile_security.deactivate_confirm.confirm'),
+      cancelButtonText: t('mobile_security.deactivate_confirm.cancel')
+    })
+
+    await matrixAccountService.deactivateAccount()
+    showToast({
+      type: 'success',
+      message: t('mobile_security.deactivate_success')
+    })
+    await resetLoginState()
+    await logout()
+    router.push('/mobile/login')
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('[MobileSecurity] 注销账户失败:', error)
+      showToast({
+        type: 'fail',
+        message: t('mobile_security.deactivate_failed')
+      })
+    }
+  }
+}
+</script>
+
+<style scoped></style>

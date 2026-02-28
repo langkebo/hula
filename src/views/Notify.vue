@@ -59,7 +59,7 @@ import { sumBy } from 'es-toolkit'
 import { RoomTypeEnum } from '@/enums'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
-import type { MessageType } from '@/services/types.ts'
+import type { MessageType } from '@/stores/chat'
 import { useChatStore } from '@/stores/chat.ts'
 import { useGlobalStore } from '@/stores/global.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -252,7 +252,7 @@ onMounted(async () => {
           existingGroup.timestamp = currentTime
           existingGroup.isAtMe = isAtMe
           if (session) {
-            existingGroup.avatar = session.avatar
+            existingGroup.avatar = session.avatar ?? ''
             existingGroup.name = session.name
           }
         } else {

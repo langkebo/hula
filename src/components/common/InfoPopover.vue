@@ -157,7 +157,7 @@
                   round
                   :width="38"
                   :height="38"
-                  :src="cachedStore.badgeById(id)?.img"
+                  :src="badgeStore.badgeById(id)?.img"
                   :color="themes.content === ThemeEnum.DARK ? '' : '#c8c8c8'"
                   :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   @load="badgeLoadedMap[id] = true"
@@ -169,7 +169,7 @@
                       <use href="#tips"></use>
                     </svg>
                   </template>
-                  <span class="text-12px">{{ cachedStore.badgeById(id)?.describe }}</span>
+                  <span class="text-12px">{{ badgeStore.badgeById(id)?.describe }}</span>
                 </n-popover>
               </div>
             </div>
@@ -213,7 +213,7 @@ import { useCommon } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import { leftHook } from '@/layout/left/hook'
-import { useCachedStore } from '@/stores/cached'
+import { useBadgeStore } from '@/stores/badge'
 import { useChatStore } from '@/stores/chat'
 import { useContactStore } from '@/stores/contacts.ts'
 import { useGlobalStore } from '@/stores/global'
@@ -240,7 +240,7 @@ const { openContent } = leftHook()
 const contactStore = useContactStore()
 const userStatusStore = useUserStatusStore()
 const userStore = useUserStore()
-const cachedStore = useCachedStore()
+const badgeStore = useBadgeStore()
 const { stateList } = storeToRefs(userStatusStore)
 
 const resolvedUserInfo = computed(() => groupStore.getUserInfo(uid) ?? null)

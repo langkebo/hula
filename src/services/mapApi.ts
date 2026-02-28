@@ -1,3 +1,8 @@
+/**
+ * @deprecated 此文件已废弃，将迁移到 Matrix Location API
+ * 请使用 matrix-js-sdk 的位置功能或第三方地图 SDK
+ * 迁移完成后此文件将被删除
+ */
 import { imRequest } from '@/utils/ImRequestUtils'
 import { ImUrlEnum } from '@/enums'
 import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'

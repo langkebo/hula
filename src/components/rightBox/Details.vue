@@ -31,9 +31,9 @@
           <template v-for="badge in item.itemIds" :key="badge">
             <n-popover trigger="hover">
               <template #trigger>
-                <img class="size-34px" :src="cacheStore.badgeById(badge)?.img" alt="" />
+                <img class="size-34px" :src="badgeStore.badgeById(badge)?.img" alt="" />
               </template>
-              <span>{{ cacheStore.badgeById(badge)?.describe }}</span>
+              <span>{{ badgeStore.badgeById(badge)?.describe }}</span>
             </n-popover>
           </template>
         </n-flex>
@@ -215,7 +215,8 @@ import { useCommon } from '@/hooks/useCommon.ts'
 import { useMyRoomInfoUpdater } from '@/hooks/useMyRoomInfoUpdater'
 import { useWindow } from '@/hooks/useWindow'
 import type { UserItem } from '@/services/types'
-import { useCachedStore } from '@/stores/cached'
+import { useAnnouncementStore } from '@/stores/announcement'
+import { useBadgeStore } from '@/stores/badge'
 import { useGroupStore } from '@/stores/group'
 import { useImageViewer } from '@/stores/imageViewer'
 import { useGlobalStore } from '@/stores/global'
@@ -242,7 +243,8 @@ const remarkInputRef = useTemplateRef('remarkInputRef')
 const isEditingNickname = ref(false)
 const nicknameValue = ref('')
 const nicknameInputRef = useTemplateRef('nicknameInputRef')
-const cacheStore = useCachedStore()
+const announcementStore = useAnnouncementStore()
+const badgeStore = useBadgeStore()
 const groupStore = useGroupStore()
 const { persistMyRoomInfo, resolveMyRoomNickname } = useMyRoomInfoUpdater()
 
@@ -257,7 +259,7 @@ const loadAnnouncement = async (roomId: string) => {
   }
 
   try {
-    const data: any = await cacheStore.getGroupAnnouncementList(roomId, 1, 10)
+    const data: any = await announcementStore.getGroupAnnouncementList(roomId, 1, 10)
     if (data && Array.isArray(data.records) && data.records.length > 0) {
       const topAnnouncement = data.records.find((item: any) => item.top)
       const targetAnnouncement = topAnnouncement || data.records[0]

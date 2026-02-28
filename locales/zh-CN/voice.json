@@ -1,0 +1,15 @@
+{
+  "recorder": {
+    "hint": "按住麦克风按钮开始录音",
+    "recording": "录音中",
+    "uploading": "上传中",
+    "rerecord": "重新录制",
+    "send": "发送",
+    "permission_denied": "无法获取麦克风权限",
+    "upload_failed": "上传失败"
+  },
+  "speed": "播放速度",
+  "transcription_failed": "语音转文字失败",
+  "download_success": "语音已保存",
+  "download_failed": "保存失败"
+}

@@ -1,0 +1,26 @@
+{
+  "title": "Device Management",
+  "subtitle": "Manage your login devices",
+  "loading": "Loading...",
+  "unnamed_device": "Unnamed Device",
+  "no_info": "No information",
+  "current": "Current",
+  "delete": "Delete",
+  "delete_other": "Delete Other Devices",
+  "no_other_devices": "No other devices",
+  "load_failed": "Failed to load devices",
+  "delete_success": "Deleted successfully",
+  "delete_failed": "Failed to delete",
+  "delete_confirm": {
+    "title": "Delete Device",
+    "message": "Are you sure you want to delete device \"{name}\"?",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "delete_other_confirm": {
+    "title": "Delete Other Devices",
+    "message": "Are you sure you want to delete {count} other devices?",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "list": {
+    "title": "Friends",
+    "search": "Search friends",
+    "empty": "No friends yet",
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "filter": {
+    "all": "All",
+    "favorite": "Favorites",
+    "normal": "Normal",
+    "blocked": "Blocked"
+  },
+  "status": {
+    "normal": "Normal",
+    "favorite": "Favorite",
+    "blocked": "Blocked",
+    "hidden": "Hidden"
+  },
+  "request": {
+    "title": "Friend Requests",
+    "incoming": "Incoming",
+    "outgoing": "Outgoing",
+    "accept": "Accept",
+    "reject": "Reject",
+    "cancel": "Cancel",
+    "empty": {
+      "incoming": "No friend requests",
+      "outgoing": "No pending requests"
+    },
+    "success": {
+      "accept": "Friend request accepted",
+      "reject": "Friend request rejected",
+      "cancel": "Friend request cancelled"
+    },
+    "error": {
+      "accept": "Failed to accept friend request",
+      "reject": "Failed to reject friend request",
+      "cancel": "Failed to cancel friend request"
+    }
+  },
+  "add": {
+    "title": "Add Friend",
+    "placeholder": "Enter user ID to search",
+    "message_label": "Verification Message",
+    "message_placeholder": "I am...",
+    "hint": "Enter user ID to search and add friend",
+    "not_found": "User not found",
+    "already_friend": "This user is already your friend",
+    "search_error": "Failed to search user",
+    "send": "Send Request",
+    "success": "Friend request sent",
+    "error": "Failed to send friend request"
+  },
+  "detail": {
+    "title": "Friend Details",
+    "status": "Friend Status",
+    "note": "Note",
+    "since": "Added",
+    "note_section": "Edit Note",
+    "note_placeholder": "Set friend note",
+    "note_saved": "Note saved",
+    "note_error": "Failed to save note",
+    "status_section": "Set Status",
+    "status_saved": "Status updated",
+    "status_error": "Failed to update status",
+    "actions": "Actions",
+    "send_message": "Send Message",
+    "encrypted_chat": "Encrypted Chat",
+    "remove_friend": "Remove Friend",
+    "chat_error": "Failed to create chat",
+    "remove_confirm": {
+      "title": "Remove Friend",
+      "content": "Are you sure you want to remove this friend? Chat history will be preserved."
+    },
+    "remove_success": "Friend removed",
+    "remove_error": "Failed to remove friend"
+  },
+  "context": {
+    "send_message": "Send Message",
+    "encrypted_chat": "Encrypted Chat",
+    "set_favorite": "Set as Favorite",
+    "set_normal": "Set as Normal",
+    "set_blocked": "Block Friend",
+    "remove": "Remove Friend"
+  }
+}

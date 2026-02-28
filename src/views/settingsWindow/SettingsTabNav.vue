@@ -5,8 +5,7 @@
       :key="tab.id"
       class="tab-item"
       :class="{ 'tab-item-active': tab.id === activeTab }"
-      @click="$emit('change', tab.id)"
-    >
+      @click="$emit('change', tab.id)">
       <span class="tab-icon">
         <Icon :icon="getIcon(tab.icon)" :width="18" />
       </span>
@@ -30,15 +29,14 @@ interface Props {
 
 defineProps<Props>()
 
-defineEmits<{
-  (e: 'change', tabId: SettingsTabType): void
-}>()
+defineEmits<(e: 'change', tabId: SettingsTabType) => void>()
 
 const iconMap: Record<string, string> = {
   user: 'mdi:account',
   devices: 'mdi:devices',
   palette: 'mdi:palette',
   bell: 'mdi:bell',
+  'bell-ring': 'mdi:bell-ring',
   settings: 'mdi:cog',
   keyboard: 'mdi:keyboard',
   shield: 'mdi:shield',

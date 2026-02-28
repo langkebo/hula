@@ -1,10 +1,6 @@
 <template>
   <div class="settings-dialog">
-    <SettingsTabNav
-      :tabs="filteredTabs"
-      :active-tab="activeTab"
-      @change="handleTabChange"
-    />
+    <SettingsTabNav :tabs="filteredTabs" :active-tab="activeTab" @change="handleTabChange" />
     <div class="settings-main">
       <div class="settings-header">
         <h2 class="settings-title">{{ currentTab?.label || '设置' }}</h2>
@@ -40,11 +36,11 @@ const { isDesktop } = usePlatform()
 
 const activeTab = computed(() => settingsDialogStore.activeTab)
 const currentTab = computed(() => {
-  return SETTINGS_TABS.find(tab => tab.id === activeTab.value)
+  return SETTINGS_TABS.find((tab) => tab.id === activeTab.value)
 })
 
 const filteredTabs = computed(() => {
-  return SETTINGS_TABS.filter(tab => {
+  return SETTINGS_TABS.filter((tab) => {
     if (tab.desktopOnly && !isDesktop) return false
     return true
   })
@@ -55,10 +51,14 @@ const tabComponentMap: Record<SettingsTabType, () => Promise<any>> = {
   sessions: () => import('./tabs/SessionSettings.vue'),
   appearance: () => import('./tabs/AppearanceSettings.vue'),
   notifications: () => import('./tabs/NotificationSettings.vue'),
+  push: () => import('./tabs/PushSettings.vue'),
+  voiceVideo: () => import('./tabs/VoiceVideoSettings.vue'),
+  integrations: () => import('./tabs/IntegrationsSettings.vue'),
   preferences: () => import('./tabs/PreferencesSettings.vue'),
   keyboard: () => import('./tabs/KeyboardSettings.vue'),
   security: () => import('./tabs/SecuritySettings.vue'),
   encryption: () => import('./tabs/EncryptionSettings.vue'),
+  labs: () => import('./tabs/LabsSettings.vue'),
   help: () => import('./tabs/HelpSettings.vue')
 }
 

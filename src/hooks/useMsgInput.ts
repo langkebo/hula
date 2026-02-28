@@ -6,8 +6,7 @@ import type { Ref } from 'vue'
 import { nextTick } from 'vue'
 import { LimitEnum, MessageStatusEnum, MittEnum, MsgEnum, UploadSceneEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { AIModel } from '@/services/types.ts'
-import type { BaseUserItem } from '@/stores/cached.ts'
+import type { AIModel, UserItem } from '@/services/types.ts'
 import { useChatStore } from '@/stores/chat.ts'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useGroupStore } from '@/stores/group.ts'
@@ -285,7 +284,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
    * @param userList 用户列表
    * @returns 被 @ 用户的uid数组
    */
-  const extractAtUserIds = (content: string, userList: (BaseUserItem & Partial<{ myName: string }>)[]): string[] => {
+  const extractAtUserIds = (content: string, userList: (UserItem & Partial<{ myName: string }>)[]): string[] => {
     const atUserIds: string[] = []
 
     const resolveUidByName = (rawName?: string | null) => {
@@ -703,7 +702,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
   }
 
   /** 处理点击 @ 提及框事件 */
-  const handleAit = (item: BaseUserItem) => {
+  const handleAit = (item: UserItem) => {
     // 如果正在输入拼音，不发送消息
     if (isChinese.value) {
       return

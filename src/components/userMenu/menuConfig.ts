@@ -1,4 +1,5 @@
 import type { SettingsTabType } from '@/stores/settingsDialog'
+import { useRouter } from 'vue-router'
 
 export interface MenuItem {
   id: string
@@ -19,6 +20,7 @@ export interface MenuConfig {
 }
 
 let logoutCallback: (() => Promise<void>) | null = null
+let routerInstance: ReturnType<typeof useRouter> | null = null
 
 export function setLogoutCallback(callback: () => Promise<void>): void {
   logoutCallback = callback
@@ -28,14 +30,24 @@ export function getLogoutCallback(): (() => Promise<void>) | null {
   return logoutCallback
 }
 
+export function setRouterInstance(router: ReturnType<typeof useRouter>): void {
+  routerInstance = router
+}
+
+function navigateToHome(): void {
+  if (routerInstance) {
+    routerInstance.push('/home')
+  } else {
+    console.warn('[UserMenu] Router instance not set')
+  }
+}
+
 export const MENU_ITEMS: MenuItem[] = [
   {
     id: 'home',
     label: '我的主页',
     icon: 'home',
-    action: () => {
-      console.log('Navigate to home')
-    }
+    action: navigateToHome
   },
   {
     id: 'link-device',
@@ -98,7 +110,7 @@ export const MENU_ITEMS: MenuItem[] = [
 ]
 
 export function getFilteredMenuItems(isDesktop: boolean): MenuItem[] {
-  return MENU_ITEMS.filter(item => {
+  return MENU_ITEMS.filter((item) => {
     if (item.desktopOnly && !isDesktop) return false
     if (item.mobileOnly && isDesktop) return false
     return true
@@ -106,5 +118,5 @@ export function getFilteredMenuItems(isDesktop: boolean): MenuItem[] {
 }
 
 export function findMenuItemById(id: string): MenuItem | undefined {
-  return MENU_ITEMS.find(item => item.id === id)
+  return MENU_ITEMS.find((item) => item.id === id)
 }

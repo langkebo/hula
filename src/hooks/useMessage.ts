@@ -1,6 +1,6 @@
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { SessionItem } from '@/services/types.ts'
+import type { SessionItem } from '@/stores/chat.ts'
 import { useChatStore } from '@/stores/chat.ts'
 import { useContactStore } from '@/stores/contacts.ts'
 import { useGlobalStore } from '@/stores/global.ts'
@@ -279,6 +279,7 @@ export const useMessage = () => {
         console.log('删除好友或退出群聊执行')
         // 单聊：删除好友
         if (item.type === RoomTypeEnum.SINGLE) {
+          if (!item.detailId) return
           await contactStore.onDeleteFriend(item.detailId)
           await handleMsgDelete(item.roomId)
           window.$message.success(t('message.message_menu.delete_friend_success'))

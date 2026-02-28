@@ -189,7 +189,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { useRoute } from 'vue-router'
 import { ThemeEnum } from '@/enums'
-import { useCachedStore } from '@/stores/cached'
+import { useAnnouncementStore } from '@/stores/announcement'
 import { useGroupStore } from '@/stores/group.ts'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
@@ -221,7 +221,7 @@ const announcementStates = ref<Record<string, { showDeleteConfirm: boolean; dele
 
 // 引入 group store
 const groupStore = useGroupStore()
-const cachedStore = useCachedStore()
+const announcementStore = useAnnouncementStore()
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
@@ -262,7 +262,7 @@ const handleInit = async () => {
     try {
       pageNum.value = 1
       isLast.value = false
-      const data = await cachedStore.getGroupAnnouncementList(roomId.value, pageNum.value, pageSize)
+      const data = await announcementStore.getGroupAnnouncementList(roomId.value, pageNum.value, pageSize)
       if (data) {
         announList.value = data.records
         if (announList.value.length === 0) {
@@ -315,7 +315,7 @@ const handleLoadMore = async () => {
   if (roomId.value && !isLoading.value && !isLast.value) {
     try {
       isLoading.value = true
-      const data = await cachedStore.getGroupAnnouncementList(roomId.value, pageNum.value, pageSize)
+      const data = await announcementStore.getGroupAnnouncementList(roomId.value, pageNum.value, pageSize)
       if (data) {
         // 如果没有数据，标记为最后一页
         if (!data.records) {
@@ -349,11 +349,6 @@ const handleLoadMore = async () => {
             return
           }
           pageNum.value++
-        } else if (pageNum.value < Number(data.pages)) {
-          // 如果当前页没有新数据但还没到最后一页，尝试加载下一页
-          pageNum.value++
-          handleLoadMore()
-          return
         } else {
           isLast.value = true
         }

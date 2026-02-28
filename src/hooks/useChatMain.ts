@@ -20,9 +20,8 @@ import { useCommon } from '@/hooks/useCommon.ts'
 import { useDownload } from '@/hooks/useDownload'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
-import { translateTextStream } from '@/services/translate'
-import type { FilesMeta, MessageType, RightMouseMessageItem } from '@/services/types.ts'
-import { useCachedStore } from '@/stores/cached'
+import type { FilesMeta, RightMouseMessageItem } from '@/services/types.ts'
+import type { MessageType } from '@/stores/chat'
 import { useChatStore } from '@/stores/chat.ts'
 import { useContactStore } from '@/stores/contacts'
 import { useEmojiStore } from '@/stores/emoji'
@@ -35,12 +34,13 @@ import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentS
 import { isDiffNow } from '@/utils/ComputedTime.ts'
 import { extractFileName, removeTag } from '@/utils/Formatting'
 import { detectImageFormat, imageUrlToUint8Array, isImageUrl } from '@/utils/ImageUtils'
-import { recallMsg, removeGroupMember, updateMyRoomInfo } from '@/utils/ImRequestUtils'
+import { recallMsg, removeGroupMember } from '@/utils/ImRequestUtils'
 import { detectRemoteFileType, getFilesMeta } from '@/utils/PathUtil'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useWindow } from './useWindow'
 import { useI18n } from 'vue-i18n'
+import { matrixRoomService } from '@/services/matrix'
 
 type UseChatMainOptions = {
   enableGroupNicknameModal?: boolean
@@ -64,7 +64,6 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()
   const chatStore = useChatStore()
-  const cachedStore = useCachedStore()
   const emojiStore = useEmojiStore()
   const userStore = useUserStore()
   const { downloadFile } = useDownload()
@@ -121,14 +120,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
 
     try {
       groupNicknameSubmitting.value = true
-      const remark = groupStore.countInfo?.remark || ''
-      const payload = {
-        id: roomId,
-        myName: trimmedName,
-        remark
-      }
-      await cachedStore.updateMyRoomInfo(payload)
-      await updateMyRoomInfo(payload)
+      await matrixRoomService.setMemberDisplayName(roomId, trimmedName)
       groupStore.updateUserItem(currentUid, { myName: trimmedName }, roomId)
       await groupStore.updateGroupDetail(roomId, { myName: trimmedName })
       if (currentUid === userUid.value) {
@@ -372,11 +364,17 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           return
         }
 
-        item.message.body.translatedText = { provider: chat.value.translate || 'tencent', text: '' }
-        await translateTextStream(content, chat.value.translate || 'tencent', (seg) => {
-          const prev = item.message.body.translatedText?.text || ''
-          item.message.body.translatedText = { provider: chat.value.translate || 'tencent', text: prev + seg }
-        })
+        item.message.body.translatedText = { provider: chat.value.translate || 'client', text: '' }
+        try {
+          const translatedText = await matrixRoomService.translateText(content, chat.value.translate)
+          item.message.body.translatedText = {
+            provider: chat.value.translate || 'client',
+            text: translatedText || content
+          }
+        } catch (error) {
+          console.error('翻译失败:', error)
+          item.message.body.translatedText = { provider: 'error', text: t('home.chat_main.translate.failed') }
+        }
       },
       visible: (item: MessageType) => item.message.type === MsgEnum.TEXT
     },

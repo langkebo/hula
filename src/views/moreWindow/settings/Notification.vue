@@ -155,7 +155,7 @@
 
 <script setup lang="ts">
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
-import type { SessionItem } from '@/services/types'
+import type { SessionItem } from '@/stores/chat'
 import { useChatStore } from '@/stores/chat'
 import { useSettingStore } from '@/stores/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'

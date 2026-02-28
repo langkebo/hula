@@ -2,18 +2,19 @@
   <div class="account-settings">
     <div class="settings-section">
       <h3 class="section-title">个人资料</h3>
-      
+
       <div class="profile-section">
         <div class="avatar-section">
-          <n-avatar
-            round
-            :size="80"
-            :src="userAvatar"
-            :fallback-src="defaultAvatar"
-          />
-          <n-button size="small" @click="handleAvatarChange">
-            更换头像
+          <n-avatar round :size="80" :src="displayAvatarUrl" :fallback-src="defaultAvatar" />
+          <n-button size="small" :loading="avatarUploading" @click="handleAvatarChange">
+            {{ avatarUploading ? '上传中...' : '更换头像' }}
           </n-button>
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            style="display: none"
+            @change="handleFileSelect" />
         </div>
 
         <n-form ref="formRef" :model="formData" label-placement="left" label-width="80">
@@ -22,8 +23,7 @@
               v-model:value="formData.displayName"
               placeholder="请输入昵称"
               :maxlength="50"
-              @blur="handleDisplayNameChange"
-            />
+              @blur="handleDisplayNameChange" />
           </n-form-item>
 
           <n-form-item label="用户ID">
@@ -37,15 +37,14 @@
 
     <div class="settings-section">
       <h3 class="section-title">账户安全</h3>
-      
+
       <n-form ref="passwordFormRef" :model="passwordForm" label-placement="left" label-width="100">
         <n-form-item label="当前密码" path="oldPassword">
           <n-input
             v-model:value="passwordForm.oldPassword"
             type="password"
             placeholder="请输入当前密码"
-            show-password-on="click"
-          />
+            show-password-on="click" />
         </n-form-item>
 
         <n-form-item label="新密码" path="newPassword">
@@ -53,8 +52,7 @@
             v-model:value="passwordForm.newPassword"
             type="password"
             placeholder="请输入新密码"
-            show-password-on="click"
-          />
+            show-password-on="click" />
         </n-form-item>
 
         <n-form-item label="确认密码" path="confirmPassword">
@@ -62,14 +60,11 @@
             v-model:value="passwordForm.confirmPassword"
             type="password"
             placeholder="请再次输入新密码"
-            show-password-on="click"
-          />
+            show-password-on="click" />
         </n-form-item>
 
         <n-form-item>
-          <n-button type="primary" :loading="passwordLoading" @click="handlePasswordChange">
-            修改密码
-          </n-button>
+          <n-button type="primary" :loading="passwordLoading" @click="handlePasswordChange">修改密码</n-button>
         </n-form-item>
       </n-form>
     </div>
@@ -78,10 +73,10 @@
 
     <div class="settings-section danger-zone">
       <h3 class="section-title">危险操作</h3>
-      <n-button type="error" @click="handleDeactivateAccount">
-        注销账户
-      </n-button>
+      <n-button type="error" @click="handleDeactivateAccount">注销账户</n-button>
     </div>
+
+    <AvatarCropper v-model:show="showCropper" :image-url="localImageUrl" @crop="handleCrop" ref="cropperRef" />
   </div>
 </template>
 
@@ -91,6 +86,9 @@ import { NAvatar, NButton, NForm, NFormItem, NInput, NDivider, useMessage, useDi
 import { useUserStore } from '@/stores/user'
 import { useMatrixStore } from '@/stores/matrix'
 import { matrixAccountService } from '@/services/matrix'
+import { matrixMediaService } from '@/services/matrix/MatrixMediaService'
+import AvatarCropper from '@/components/common/AvatarCropper.vue'
+import type { AvatarCropperInstance } from '@/components/common/AvatarCropper.vue'
 import defaultAvatarImg from '@/assets/img/win.png'
 
 defineOptions({
@@ -103,10 +101,22 @@ const userStore = useUserStore()
 const matrixStore = useMatrixStore()
 
 const passwordLoading = ref(false)
+const avatarUploading = ref(false)
+const showCropper = ref(false)
+const localImageUrl = ref('')
+const fileInputRef = ref<HTMLInputElement>()
+const cropperRef = ref<AvatarCropperInstance>()
 
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
 const defaultAvatar = computed(() => defaultAvatarImg)
 const userId = computed(() => matrixStore.userId || '')
+
+const displayAvatarUrl = computed(() => {
+  if (userAvatar.value && userAvatar.value.startsWith('mxc://')) {
+    return matrixMediaService.getMediaUrl(userAvatar.value, 160, 160) || userAvatar.value
+  }
+  return userAvatar.value
+})
 
 const formData = reactive({
   displayName: userStore.currentUserDisplayName || ''
@@ -119,12 +129,69 @@ const passwordForm = reactive({
 })
 
 function handleAvatarChange() {
-  message.info('头像修改功能开发中')
+  fileInputRef.value?.click()
+}
+
+function handleFileSelect(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    message.error('只支持 JPG、PNG、WebP 格式的图片')
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    message.error('图片大小不能超过 5MB')
+    return
+  }
+
+  const url = URL.createObjectURL(file)
+  localImageUrl.value = url
+  showCropper.value = true
+
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
+
+async function handleCrop(blob: Blob) {
+  avatarUploading.value = true
+
+  try {
+    const fileName = `avatar_${Date.now()}.webp`
+    const file = new File([blob], fileName, { type: 'image/webp' })
+
+    const uploadResult = await matrixMediaService.uploadImage(file, (progress) => {
+      console.log(`[Avatar] 上传进度: ${progress}%`)
+    })
+
+    const mxcUrl = uploadResult.contentUri
+
+    await matrixAccountService.updateAvatar(mxcUrl)
+
+    await userStore.updateAvatar(mxcUrl)
+
+    message.success('头像修改成功')
+    showCropper.value = false
+
+    if (localImageUrl.value) {
+      URL.revokeObjectURL(localImageUrl.value)
+      localImageUrl.value = ''
+    }
+  } catch (error) {
+    console.error('[AccountSettings] 头像上传失败:', error)
+    message.error('头像上传失败，请稍后重试')
+    cropperRef.value?.finishLoading()
+  } finally {
+    avatarUploading.value = false
+  }
 }
 
 async function handleDisplayNameChange() {
   if (formData.displayName === userStore.currentUserDisplayName) return
-  
+
   try {
     await matrixAccountService.updateDisplayName(formData.displayName)
     message.success('昵称修改成功')
@@ -147,10 +214,7 @@ async function handlePasswordChange() {
 
   passwordLoading.value = true
   try {
-    await matrixAccountService.changePassword(
-      passwordForm.oldPassword,
-      passwordForm.newPassword
-    )
+    await matrixAccountService.changePassword(passwordForm.oldPassword, passwordForm.newPassword)
     message.success('密码修改成功')
     passwordForm.oldPassword = ''
     passwordForm.newPassword = ''

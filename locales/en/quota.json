@@ -1,0 +1,8 @@
+{
+  "title": "Media Quota",
+  "exceeded": "Quota Exceeded",
+  "exceededMessage": "Your media storage is full. Please clean up files or upgrade your storage.",
+  "warning": "Quota Warning",
+  "warningMessage": "Your media storage usage has exceeded 80%. Consider cleaning up soon.",
+  "alerts": "Alert History"
+}

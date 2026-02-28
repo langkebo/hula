@@ -1,0 +1,44 @@
+{
+  "title": "Content Moderation",
+  "reports": "Reports",
+  "filters": "Content Filters",
+  "filterByStatus": "Filter by status",
+  "addFilter": "Add Filter",
+  "filterType": "Filter Type",
+  "filterPattern": "Filter Pattern",
+  "filterPatternPlaceholder": "Enter keyword, regex or image hash",
+  "filterAction": "Action",
+  "status": {
+    "open": "Open",
+    "resolved": "Resolved",
+    "dismissed": "Dismissed"
+  },
+  "filterTypeOptions": {
+    "keyword": "Keyword",
+    "regex": "Regex",
+    "imageHash": "Image Hash"
+  },
+  "filterActionOptions": {
+    "flag": "Flag",
+    "block": "Block",
+    "quarantine": "Quarantine"
+  },
+  "table": {
+    "reporter": "Reporter",
+    "reportedUser": "Reported User",
+    "reason": "Reason",
+    "createdAt": "Created At",
+    "actions": "Actions"
+  },
+  "actions": {
+    "warn": "Warn",
+    "ban": "Ban",
+    "dismiss": "Dismiss"
+  },
+  "toast": {
+    "reportResolved": "Report {action}ed",
+    "filterAdded": "Filter added successfully",
+    "filterRemoved": "Filter removed successfully",
+    "patternRequired": "Pattern is required"
+  }
+}

@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { MessageStatusEnum } from '@/enums'
-import type { MessageType } from '@/services/types'
+import type { MessageType } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
 

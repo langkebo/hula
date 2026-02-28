@@ -1,0 +1,28 @@
+{
+  "title": "AI Assistant",
+  "welcome": "Hello, I'm your AI Assistant",
+  "welcome_desc": "I can help you translate text, summarize content, write code, and more. Select a feature below or type your question.",
+  "thinking": "Thinking...",
+  "input_placeholder": "Type your question...",
+  "error": "Sorry, an error occurred. Please try again.",
+  "suggestions": {
+    "translate": "Translate Text",
+    "translate_desc": "Translate text to other languages",
+    "translate_prompt": "Please translate the following text:",
+    "summarize": "Summarize Content",
+    "summarize_desc": "Extract key information from text",
+    "summarize_prompt": "Please summarize the following content:",
+    "code": "Write Code",
+    "code_desc": "Help you write or explain code",
+    "code_prompt": "Please help me write code:",
+    "chat": "Free Chat",
+    "chat_desc": "Have a free conversation with AI",
+    "chat_prompt": "Hello, I'd like to chat with you"
+  },
+  "mock": {
+    "translate_response": "Sure, please provide the text you want to translate, and I'll help you translate it to your target language.",
+    "summarize_response": "Please provide the content you want to summarize, and I'll extract the key information and create a concise summary for you.",
+    "code_response": "Please tell me what functionality you need, and I'll help you write the code. I support multiple programming languages like Python, JavaScript, TypeScript, etc.",
+    "default_response": "I'm your AI assistant, happy to help! What can I do for you?"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "title": "AI 助手",
+  "welcome": "你好，我是 AI 助手",
+  "welcome_desc": "我可以帮助你翻译文本、总结内容、编写代码等。请选择下方功能或直接输入问题。",
+  "thinking": "思考中...",
+  "input_placeholder": "输入你的问题...",
+  "error": "抱歉，发生了错误，请重试。",
+  "suggestions": {
+    "translate": "翻译文本",
+    "translate_desc": "将文本翻译成其他语言",
+    "translate_prompt": "请帮我翻译以下文本：",
+    "summarize": "总结内容",
+    "summarize_desc": "提取文本的关键信息",
+    "summarize_prompt": "请帮我总结以下内容：",
+    "code": "编写代码",
+    "code_desc": "帮你编写或解释代码",
+    "code_prompt": "请帮我编写代码：",
+    "chat": "自由对话",
+    "chat_desc": "与 AI 进行自由交流",
+    "chat_prompt": "你好，我想和你聊聊天"
+  },
+  "mock": {
+    "translate_response": "好的，请提供需要翻译的文本，我会帮你翻译成目标语言。",
+    "summarize_response": "请提供需要总结的内容，我会提取关键信息并为你生成简洁的摘要。",
+    "code_response": "请告诉我你需要什么功能的代码，我会帮你编写。支持多种编程语言，如 Python、JavaScript、TypeScript 等。",
+    "default_response": "我是 AI 助手，很高兴为你服务！请问有什么可以帮助你的？"
+  }
+}

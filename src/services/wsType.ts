@@ -1,3 +1,8 @@
+/**
+ * @deprecated 此文件已废弃，Matrix 使用同步 API 替代 WebSocket
+ * 请使用 matrix-js-sdk 的同步机制
+ * 迁移完成后此文件将被删除
+ */
 import type { UserInfoType } from '@/services/types.ts'
 
 export enum WsResponseMessageType {

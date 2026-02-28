@@ -1,0 +1,15 @@
+{
+  "recorder": {
+    "hint": "Hold the microphone button to start recording",
+    "recording": "Recording",
+    "uploading": "Uploading",
+    "rerecord": "Re-record",
+    "send": "Send",
+    "permission_denied": "Cannot access microphone",
+    "upload_failed": "Upload failed"
+  },
+  "speed": "Playback Speed",
+  "transcription_failed": "Transcription failed",
+  "download_success": "Voice saved",
+  "download_failed": "Save failed"
+}

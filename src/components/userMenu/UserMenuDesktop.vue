@@ -1,17 +1,8 @@
 <template>
-  <div class="user-menu-desktop" ref="menuRef">
-    <div
-      class="avatar-container"
-      @click="handleLeftClick"
-      @contextmenu="handleRightClick"
-    >
+  <div class="user-menu-desktop" ref="_menuRef">
+    <div class="avatar-container" @click="handleLeftClick" @contextmenu="handleRightClick">
       <slot name="avatar">
-        <n-avatar
-          round
-          :size="34"
-          :src="userAvatar"
-          :fallback-src="defaultAvatar"
-        />
+        <n-avatar round :size="34" :src="userAvatar" :fallback-src="defaultAvatar" />
       </slot>
       <div v-if="showOnlineStatus" class="online-indicator" :class="onlineClass" />
     </div>
@@ -21,13 +12,12 @@
       :position="position"
       :is-context-menu="isContextMenu"
       @close="closeMenu"
-      @item-click="handleMenuItemClick"
-    />
+      @item-click="handleMenuItemClick" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { NAvatar } from 'naive-ui'
 import { useUserMenu } from './useUserMenu'
 import { useUserStore } from '@/stores/user'
@@ -39,20 +29,11 @@ defineOptions({
   name: 'UserMenuDesktop'
 })
 
-const menuRef = ref<HTMLElement | null>(null)
-
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 
-const {
-  isOpen,
-  position,
-  isContextMenu,
-  closeMenu,
-  handleMenuItemClick,
-  handleLeftClick,
-  handleRightClick
-} = useUserMenu()
+const { isOpen, position, isContextMenu, closeMenu, handleMenuItemClick, handleLeftClick, handleRightClick } =
+  useUserMenu()
 
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
 const defaultAvatar = computed(() => defaultAvatarImg)

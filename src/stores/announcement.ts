@@ -1,32 +1,36 @@
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
-import { useCachedStore } from '@/stores/cached'
 import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
+import { matrixRoomService } from '@/services/matrix'
+
+export interface Announcement {
+  id: string
+  content: string
+  top: boolean
+  author: string
+  timestamp: number
+}
 
 export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()
   const userStore = useUserStore()
-  const cachedStore = useCachedStore()
 
-  // 公告相关状态
-  const announList = ref<any[]>([])
+  const announList = ref<Announcement[]>([])
   const announNum = ref(0)
   const announError = ref(false)
   const isAddAnnoun = ref(false)
 
   const announcementContent = computed(() => (announList.value.length > 0 ? (announList.value[0]?.content ?? '') : ''))
 
-  // 判断当前用户是否有权限添加公告
   const canAddAnnouncement = computed(() => {
     if (!userStore.userInfo?.uid) return false
 
     const isLord = groupStore.isCurrentLord(userStore.userInfo.uid) ?? false
     const isAdmin = groupStore.isAdmin(userStore.userInfo.uid) ?? false
 
-    // 判断当前用户是否拥有id为6的徽章 并且是频道
     const hasBadge6 = () => {
       if (globalStore.currentSessionRoomId !== '1') return false
 
@@ -37,16 +41,13 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
     return isLord || isAdmin || hasBadge6()
   })
 
-  /**
-   * 清空公告
-   */
   const clearAnnouncements = () => {
     announList.value = []
     announNum.value = 0
     announError.value = false
   }
 
-  const formatRecords = (records: any[]) => {
+  const formatRecords = (records: Announcement[]): Announcement[] => {
     if (!records || records.length === 0) return []
     const topAnnouncement = records.find((item) => item.top)
     if (!topAnnouncement) return records
@@ -61,26 +62,55 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
     }
 
     try {
-      // 判断是否可以添加公告
       isAddAnnoun.value = canAddAnnouncement.value
 
-      // 获取群公告列表
-      const data = await cachedStore.getGroupAnnouncementList(targetRoomId, 1, 10)
+      const room = await matrixRoomService.getRoom(targetRoomId)
+      if (!room) {
+        announList.value = []
+        announNum.value = 0
+        return
+      }
 
-      // 会话已切换，避免覆盖其他房间的数据
       if (targetRoomId !== globalStore.currentSessionRoomId) {
         return
       }
 
-      if (data) {
-        announList.value = formatRecords([...(data.records ?? [])])
-        announNum.value = parseInt(data.total, 10)
-        announError.value = false
-      } else {
-        announList.value = []
-        announNum.value = 0
-        announError.value = false
+      const announcements: Announcement[] = []
+
+      const topic = room.currentState.getStateEvents('m.room.topic' as any, '')
+      if (topic) {
+        const content = topic.getContent()
+        announcements.push({
+          id: topic.getId() || 'topic',
+          content: content.topic || '',
+          top: true,
+          author: topic.getSender() || '',
+          timestamp: topic.getTs?.() || Date.now()
+        })
       }
+
+      const pinnedEvents = room.currentState.getStateEvents('m.room.pinned_events' as any, '')
+      if (pinnedEvents) {
+        const content = pinnedEvents.getContent()
+        if (content.pinned && Array.isArray(content.pinned)) {
+          for (const eventId of content.pinned) {
+            const event = room.findEventById?.(eventId)
+            if (event) {
+              announcements.push({
+                id: event.getId() || eventId,
+                content: event.getContent()?.body || '',
+                top: false,
+                author: event.getSender() || '',
+                timestamp: event.getTs?.() || Date.now()
+              })
+            }
+          }
+        }
+      }
+
+      announList.value = formatRecords(announcements)
+      announNum.value = announcements.length
+      announError.value = false
     } catch (error) {
       console.error('加载群公告失败:', error)
       if (targetRoomId === globalStore.currentSessionRoomId) {
@@ -89,13 +119,29 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
     }
   }
 
+  const getGroupAnnouncementList = async (roomId: string, _page: number, _pageSize: number) => {
+    await loadGroupAnnouncements(roomId)
+    return {
+      records: announList.value.map((item, index) => ({
+        ...item,
+        uid: item.author,
+        userName: item.author,
+        id: item.id || `ann-${index}`,
+        top: item.top
+      })),
+      total: announList.value.length
+    }
+  }
+
   return {
+    announList,
     announNum,
     announError,
     isAddAnnoun,
     announcementContent,
     canAddAnnouncement,
     loadGroupAnnouncements,
+    getGroupAnnouncementList,
     clearAnnouncements
   }
 })

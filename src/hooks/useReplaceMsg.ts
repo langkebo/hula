@@ -1,5 +1,5 @@
 import { MsgEnum, RoomTypeEnum } from '@/enums'
-import type { MessageType } from '@/services/types'
+import type { MessageType } from '@/stores/chat'
 import { useChatStore } from '@/stores/chat'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'

@@ -603,8 +603,9 @@ import { useMyRoomInfoUpdater } from '@/hooks/useMyRoomInfoUpdater'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useWindow } from '@/hooks/useWindow'
-import { IsAllUserEnum, type UserItem, type MessageType } from '@/services/types.ts'
-import { WsResponseMessageType } from '@/services/wsType'
+import { IsAllUserEnum, type UserItem } from '@/services/types.ts'
+import type { MessageType } from '@/stores/chat'
+import { WsResponseMessageType } from '@/enums'
 import { useChatStore } from '@/stores/chat.ts'
 import { useContactStore } from '@/stores/contacts.ts'
 import { useGlobalStore } from '@/stores/global'
@@ -1119,10 +1120,9 @@ const handleForwardGroupQr = async () => {
           height: previewHeight,
           size
         },
-        messageMarks: {}
+        messageMarks: {},
+        loading: false
       },
-      sendTime: Date.now(),
-      loading: false,
       isCheck: true
     }
 

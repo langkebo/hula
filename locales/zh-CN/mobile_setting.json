@@ -4,11 +4,37 @@
   "nickname": "昵称",
   "theme": "主题",
   "language": "语言",
+  "version": "版本",
   "button": {
     "logout": "退出登录"
   },
   "themes": {
     "dark": "深色",
     "light": "亮色"
-  }
+  },
+  "account_section": "账户",
+  "notification_section": "通知",
+  "appearance_section": "外观",
+  "help_section": "帮助",
+  "advanced_section": "高级",
+  "status": "在线状态",
+  "edit_profile": "编辑资料",
+  "security": "安全设置",
+  "notifications": "通知设置",
+  "help_feedback": "帮助与反馈",
+  "voice_video": "语音视频设置",
+  "labs": "实验功能",
+  "integrations": "集成管理",
+  "status_online": "在线",
+  "status_away": "离开",
+  "status_busy": "忙碌",
+  "status_offline": "隐身",
+  "logout_confirm": {
+    "title": "退出登录",
+    "message": "确定要退出登录吗？",
+    "confirm": "确定",
+    "cancel": "取消"
+  },
+  "logout_success": "登出成功",
+  "logout_failed": "本地登出清理失败，请重启应用"
 }

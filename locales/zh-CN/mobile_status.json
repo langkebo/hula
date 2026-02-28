@@ -1,0 +1,15 @@
+{
+  "title": "在线状态",
+  "subtitle": "设置您的在线状态",
+  "status_message": "状态消息",
+  "status_message_placeholder": "设置状态消息（可选）",
+  "save": "保存",
+  "save_success": "状态已更新",
+  "save_failed": "设置状态失败",
+  "status": {
+    "online": "在线",
+    "away": "离开",
+    "busy": "忙碌",
+    "offline": "隐身"
+  }
+}

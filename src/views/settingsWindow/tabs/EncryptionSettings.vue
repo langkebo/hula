@@ -27,7 +27,7 @@
           <span class="setting-label">备份版本</span>
           <span class="setting-desc">当前备份版本: {{ backupVersion }}</span>
         </div>
-        <n-button size="small" @click="handleCreateBackup">创建新备份</n-button>
+        <n-button size="small" :loading="createBackupLoading" @click="handleCreateBackup">创建新备份</n-button>
       </div>
       <div v-if="backupEnabled && encryptionEnabled" class="setting-item">
         <div class="setting-info">
@@ -78,17 +78,21 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <n-modal v-model:show="deviceKeyVisible" preset="card" title="设备密钥指纹" style="width: 400px">
-    <div class="device-key-display">
-      <div class="fingerprint">{{ deviceFingerprint }}</div>
-      <n-button size="small" @click="copyFingerprint">复制</n-button>
-    </div>
-    <div class="fingerprint-hint">
-      此指纹用于验证设备身份，请确保与登录时显示的指纹一致
-    </div>
-  </n-modal>
+    <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupCreated" />
+
+    <KeyBackupRestoreDialog v-model:show="showRestoreDialog" @success="handleRestoreSuccess" />
+
+    <DeviceVerifyDialog v-model:show="showVerifyDialog" @success="handleVerifySuccess" />
+
+    <n-modal v-model:show="deviceKeyVisible" preset="card" title="设备密钥指纹" style="width: 400px">
+      <div class="device-key-display">
+        <div class="fingerprint">{{ deviceFingerprint }}</div>
+        <n-button size="small" @click="copyFingerprint">复制</n-button>
+      </div>
+      <div class="fingerprint-hint">此指纹用于验证设备身份，请确保与登录时显示的指纹一致</div>
+    </n-modal>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -96,6 +100,10 @@ import { ref, computed, onMounted } from 'vue'
 import { NSwitch, NButton, NDivider, NTag, NModal, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { matrixClientService } from '@/services/matrix'
+import { matrixEncryptionService } from '@/services/matrix'
+import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
+import KeyBackupRestoreDialog from '@/components/encryption/KeyBackupRestoreDialog.vue'
+import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
 
 defineOptions({
   name: 'EncryptionSettings'
@@ -108,6 +116,10 @@ const backupVersion = ref('v1')
 const deviceVerified = ref(false)
 const deviceKeyVisible = ref(false)
 const deviceFingerprint = ref('')
+const showBackupDialog = ref(false)
+const showRestoreDialog = ref(false)
+const showVerifyDialog = ref(false)
+const createBackupLoading = ref(false)
 
 const encryptionEnabled = computed(() => {
   const client = matrixClientService.getClient()
@@ -140,18 +152,24 @@ async function loadEncryptionInfo() {
 
   try {
     const crypto = (client as any).crypto
-    
+
     if (crypto.getOwnDeviceKeys) {
       const keys = await crypto.getOwnDeviceKeys()
       if (keys.ed25519) {
         deviceFingerprint.value = formatFingerprint(keys.ed25519)
       }
     }
-    
+
     if (crypto.getGlobalBlacklistUnverifiedDevices) {
       deviceVerified.value = !crypto.getGlobalBlacklistUnverifiedDevices()
     }
-    
+
+    const backupInfo = await matrixEncryptionService.getKeyBackupInfo()
+    if (backupInfo) {
+      backupEnabled.value = true
+      backupVersion.value = `v${backupInfo.version || 1}`
+    }
+
     const savedBackup = localStorage.getItem('hula-backup-enabled')
     if (savedBackup !== null) {
       backupEnabled.value = savedBackup === 'true'
@@ -171,25 +189,40 @@ function handleBackupToggle(value: boolean) {
     backupEnabled.value = false
     return
   }
-  
+
   localStorage.setItem('hula-backup-enabled', value.toString())
   if (value) {
-    message.info('正在启用安全备份...')
+    showBackupDialog.value = true
   } else {
     message.warning('已禁用安全备份')
   }
 }
 
 function handleCreateBackup() {
-  message.info('创建备份功能开发中')
+  showBackupDialog.value = true
+}
+
+function handleBackupCreated() {
+  backupEnabled.value = true
+  backupVersion.value = `v${Date.now()}`
+  message.success('备份创建成功')
 }
 
 function handleRestoreBackup() {
-  message.info('恢复备份功能开发中')
+  showRestoreDialog.value = true
+}
+
+function handleRestoreSuccess() {
+  message.success('密钥恢复成功')
 }
 
 function handleVerifyDevice() {
-  message.info('设备验证功能开发中')
+  showVerifyDialog.value = true
+}
+
+function handleVerifySuccess() {
+  deviceVerified.value = true
+  message.success('设备验证成功')
 }
 
 function handleShowDeviceKey() {

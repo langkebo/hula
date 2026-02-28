@@ -1,0 +1,16 @@
+{
+  "title": "My Files",
+  "search_placeholder": "Search files",
+  "all": "All",
+  "documents": "Documents",
+  "media": "Media",
+  "empty": "No files",
+  "opening": "Opening {name}",
+  "deleted": "File deleted",
+  "actions": {
+    "open": "Open",
+    "save": "Save to Album",
+    "forward": "Forward",
+    "delete": "Delete"
+  }
+}

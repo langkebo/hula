@@ -1,0 +1,44 @@
+{
+  "title": "内容审核",
+  "reports": "举报列表",
+  "filters": "内容过滤器",
+  "filterByStatus": "按状态筛选",
+  "addFilter": "添加过滤器",
+  "filterType": "过滤器类型",
+  "filterPattern": "过滤模式",
+  "filterPatternPlaceholder": "请输入关键词、正则表达式或图片哈希",
+  "filterAction": "处理动作",
+  "status": {
+    "open": "待处理",
+    "resolved": "已解决",
+    "dismissed": "已驳回"
+  },
+  "filterTypeOptions": {
+    "keyword": "关键词",
+    "regex": "正则表达式",
+    "imageHash": "图片哈希"
+  },
+  "filterActionOptions": {
+    "flag": "标记",
+    "block": "拦截",
+    "quarantine": "隔离"
+  },
+  "table": {
+    "reporter": "举报人",
+    "reportedUser": "被举报用户",
+    "reason": "举报原因",
+    "createdAt": "创建时间",
+    "actions": "操作"
+  },
+  "actions": {
+    "warn": "警告",
+    "ban": "封禁",
+    "dismiss": "驳回"
+  },
+  "toast": {
+    "reportResolved": "举报已{action}",
+    "filterAdded": "过滤器添加成功",
+    "filterRemoved": "过滤器移除成功",
+    "patternRequired": "请输入过滤模式"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "create": {
+    "title": "创建投票",
+    "question": "问题",
+    "question_placeholder": "输入投票问题",
+    "question_required": "请输入投票问题",
+    "options": "选项",
+    "option_placeholder": "选项 {{n}}",
+    "options_required": "请至少添加两个选项",
+    "add_option": "添加选项",
+    "settings": "设置",
+    "anonymous": "匿名投票",
+    "multiple": "允许多选",
+    "deadline": "设置截止时间",
+    "submit": "创建投票",
+    "success": "投票创建成功",
+    "error": "创建投票失败"
+  },
+  "message": {
+    "votes": "{{count}} 人投票",
+    "anonymous": "匿名",
+    "ended": "已结束",
+    "soon": "即将结束",
+    "minutes": "{{n}} 分钟后结束",
+    "hours": "{{n}} 小时后结束",
+    "vote": "投票",
+    "vote_success": "投票成功",
+    "vote_error": "投票失败"
+  }
+}

@@ -7,7 +7,7 @@ import { useChatStore } from '@/stores/chat'
 import { detectRemoteFileType } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
-import { TauriCommand } from '@/enums'
+import { TauriCommand, MessageStatusEnum } from '@/enums'
 import { md5FromString } from '@/utils/Md5Util'
 
 type TaskKind = 'image' | 'video' | 'emoji'
@@ -55,7 +55,11 @@ export const useThumbnailCacheStore = defineStore(
       const msg = chatStore.getMessage(task.msgId)
       if (!msg) return
       const nextBody = buildUpdatedBody(task, msg.message.body || {}, abs)
-      chatStore.updateMsg({ msgId: task.msgId, status: msg.message.status, body: nextBody })
+      chatStore.updateMsg({
+        msgId: task.msgId,
+        status: msg.message.status ?? MessageStatusEnum.SUCCESS,
+        body: nextBody
+      })
       const updated = { ...msg, message: { ...msg.message, body: nextBody } }
       await invokeSilently(TauriCommand.SAVE_MSG, { data: updated as any })
     }

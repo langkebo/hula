@@ -84,24 +84,21 @@ const options = ref([
     icon: 'shoucang',
     label: t('mobile_my.favorites'),
     onClick: () => {
-      // TODO: 跳转到收藏页面
-      console.log('收藏')
+      router.push('/mobile/mobileMy/favorites')
     }
   },
   {
     icon: 'wenjian',
     label: t('mobile_my.files'),
     onClick: () => {
-      // TODO: 跳转到文件页面
-      console.log('文件')
+      router.push('/mobile/mobileMy/files')
     }
   },
   {
     icon: 'gexingzhuangban',
     label: t('mobile_my.appearance'),
     onClick: () => {
-      // TODO: 跳转到个性装扮页面
-      console.log('个性装扮')
+      router.push('/mobile/mobileMy/settings')
     }
   },
   {

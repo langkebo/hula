@@ -1,0 +1,25 @@
+{
+  "list": {
+    "title": "私聊列表",
+    "search": "搜索私聊",
+    "empty": "暂无私聊",
+    "no_message": "暂无消息"
+  },
+  "create": {
+    "title": "发起私聊",
+    "placeholder": "输入用户ID搜索",
+    "encrypted": "加密聊天",
+    "hint": "输入用户ID搜索发起私聊",
+    "not_found": "未找到该用户",
+    "action": "发起聊天",
+    "error": "创建私聊失败",
+    "recent_contacts": "最近联系人",
+    "no_recent": "暂无最近联系人"
+  },
+  "context": {
+    "pin": "置顶",
+    "unpin": "取消置顶",
+    "mark_read": "标记已读",
+    "delete": "删除会话"
+  }
+}
