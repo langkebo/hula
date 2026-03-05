@@ -106,3 +106,10 @@ export {
   type QuotaConfig,
   type ServerQuota
 } from './MatrixQuotaService'
+
+// 新增服务导出
+export { profileService, useProfile, type UserProfile } from './MatrixProfileService'
+export { userDirectoryService, useUserDirectory, type UserDirectorySearchResult } from './MatrixUserDirectoryService'
+export { retentionService, useRetention, type RetentionPolicy, type RoomRetention } from './MatrixRetentionService'
+export { reportService, useReport, ReportReason, type ReportRequest } from './MatrixReportService'
+export { syncService, useSync, type SyncOptions, type SyncState } from './MatrixSyncService'

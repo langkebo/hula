@@ -1,6 +1,5 @@
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
-import type { IMyDevice } from 'matrix-js-sdk'
 
 export interface DeviceInfo {
   deviceId: string
@@ -84,8 +83,10 @@ class MatrixAccountService {
     try {
       const response = await client.getDevices()
       const userId = client.getUserId()
-      info(`[MatrixAccount] 获取设备列表成功: ${response.devices.length} 个设备`)
-      return response.devices.map((d: IMyDevice) => ({
+      // getDevices() 返回数组
+      const devices = Array.isArray(response) ? response : []
+      info(`[MatrixAccount] 获取设备列表成功: ${devices.length} 个设备`)
+      return devices.map((d: any) => ({
         deviceId: d.device_id,
         userId: userId,
         displayName: d.display_name,

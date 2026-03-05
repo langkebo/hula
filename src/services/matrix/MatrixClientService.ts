@@ -278,6 +278,7 @@ class MatrixClientService {
       })
       this.connectionState = 'CONNECTED'
       this.setupEventListeners()
+
       info('[MatrixClient] 客户端启动成功')
     } catch (err) {
       this.connectionState = 'ERROR'

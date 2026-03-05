@@ -254,6 +254,8 @@
   </div>
 
   <DefinePlugins v-model="menuShow" />
+
+  <HomeserverDialog v-model:show="showHomeserverDialog" @save="handleHomeserverSave" />
 </template>
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
@@ -267,6 +269,7 @@ import { useSettingStore } from '@/stores/setting.ts'
 import { useItemsBottom, useMoreList } from '../config.tsx'
 import { leftHook } from '../hook.ts'
 import DefinePlugins from './definePlugins/index.vue'
+import HomeserverDialog from '@/components/common/HomeserverDialog.vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
@@ -285,7 +288,7 @@ const unreadReady = computed(() => globalStore.unreadReady)
 // const actionListRef = useTemplateRef('actionList')
 //const { } = toRefs(getCurrentInstance) // 所有菜单的外层div
 const menuShow = ref(false)
-const moreList = useMoreList()
+const { moreList, showHomeserverDialog, handleHomeserverSave } = useMoreList()
 // 显示在菜单的插件
 const activePlugins = computed(() => {
   return plugins.value.filter((i) => i.isAdd)

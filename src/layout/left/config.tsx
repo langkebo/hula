@@ -61,55 +61,74 @@ const useMoreList = () => {
   const settingStore = useSettingStore()
   const { login } = storeToRefs(settingStore)
   const { logout, resetLoginState } = useLogin()
+  const showHomeserverDialog = ref(false)
 
-  return computed<OPT.L.MoreList[]>(() => [
-    {
-      label: t('menu.check_update'),
-      icon: 'arrow-circle-up',
-      click: () => {
-        useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
-          type: ModalEnum.CHECK_UPDATE
-        })
-      }
-    },
-    {
-      label: t('menu.lock_screen'),
-      icon: 'lock',
-      click: () => {
-        useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
-          type: ModalEnum.LOCK_SCREEN
-        })
-      }
-    },
-    {
-      label: t('menu.settings'),
-      icon: 'settings',
-      click: async () => {
-        await createWebviewWindow('设置', 'settings', 840, 840, '', true, 840, 600)
-      }
-    },
-    {
-      label: t('menu.about'),
-      icon: 'info',
-      click: async () => {
-        await createWebviewWindow('关于', 'about', 360, 480)
-      }
-    },
-    {
-      label: t('menu.sign_out'),
-      icon: 'power',
-      click: async () => {
-        try {
-          await ImRequestUtils.logout({ autoLogin: login.value.autoLogin })
-          await resetLoginState()
-          await logout()
-        } catch (error) {
-          console.error('退出登录失败:', error)
-          window.$message.error('退出登录失败，请重试')
+  const openHomeserverDialog = () => {
+    showHomeserverDialog.value = true
+  }
+
+  const handleHomeserverSave = (url: string) => {
+    console.log('Homeserver saved:', url)
+  }
+
+  return {
+    showHomeserverDialog,
+    openHomeserverDialog,
+    handleHomeserverSave,
+    moreList: computed<OPT.L.MoreList[]>(() => [
+      {
+        label: t('menu.homeserver'),
+        icon: 'server',
+        click: openHomeserverDialog
+      },
+      {
+        label: t('menu.check_update'),
+        icon: 'arrow-circle-up',
+        click: () => {
+          useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
+            type: ModalEnum.CHECK_UPDATE
+          })
+        }
+      },
+      {
+        label: t('menu.lock_screen'),
+        icon: 'lock',
+        click: () => {
+          useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
+            type: ModalEnum.LOCK_SCREEN
+          })
+        }
+      },
+      {
+        label: t('menu.settings'),
+        icon: 'settings',
+        click: async () => {
+          await createWebviewWindow('设置', 'settings', 840, 840, '', true, 840, 600)
+        }
+      },
+      {
+        label: t('menu.about'),
+        icon: 'info',
+        click: async () => {
+          await createWebviewWindow('关于', 'about', 360, 480)
+        }
+      },
+      {
+        label: t('menu.sign_out'),
+        icon: 'power',
+        click: async () => {
+          try {
+            await ImRequestUtils.logout({ autoLogin: login.value.autoLogin })
+            await resetLoginState()
+            await logout()
+          } catch (error) {
+            console.error('退出登录失败:', error)
+            window.$message.error('退出登录失败，请重试')
+          }
         }
       }
-    }
-  ])
+    ])
+  }
 }
 
 /** 插件列表 */

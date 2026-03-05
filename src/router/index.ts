@@ -40,6 +40,7 @@ import EditProfile from '#/views/my/EditProfile.vue'
 import MobileMy from '#/views/my/index.vue'
 import MobileQRCode from '#/views/my/MobileQRCode.vue'
 import MobileSettings from '#/views/my/MobileSettings.vue'
+import HomeserverSettings from '@/mobile/views/my/HomeserverSettings.vue'
 import MyMessages from '#/views/my/MyMessages.vue'
 import Share from '#/views/my/Share.vue'
 import SimpleBio from '#/views/my/SimpleBio.vue'
@@ -304,6 +305,11 @@ const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'integrations',
         name: 'mobileIntegrationsSettings',
         component: IntegrationsSettings
+      },
+      {
+        path: 'homeserver',
+        name: 'mobileHomeserverSettings',
+        component: HomeserverSettings
       },
       {
         path: 'favorites',

@@ -132,6 +132,17 @@
                 </div>
               </template>
             </van-cell>
+
+            <van-cell
+              :title="t('mobile_setting.homeserver')"
+              is-link
+              @click="router.push('/mobile/mobileMy/homeserver')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:server" :width="20" color="#1890ff" />
+                </div>
+              </template>
+            </van-cell>
           </van-cell-group>
 
           <div class="mt-16px">

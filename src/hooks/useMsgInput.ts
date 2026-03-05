@@ -497,9 +497,10 @@ export const useMsgInput = (messageInputDom: Ref) => {
           provider: UploadProviderEnum.QINIU
         })
         const doUploadResult = await messageStrategy.doUpload(msg.path, uploadUrl, config)
+        const uploadResult = doUploadResult as { qiniuUrl?: string } | undefined
         // 更新消息体中的URL为服务器URL(判断使用的是七牛云还是默认上传方式),如果没有provider就默认赋值downloadUrl
         messageBody.url =
-          config?.provider && config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
+          config?.provider && config?.provider === UploadProviderEnum.QINIU ? uploadResult?.qiniuUrl : downloadUrl
         delete messageBody.path // 删除临时路径
 
         // 更新临时消息的URL
@@ -517,11 +518,11 @@ export const useMsgInput = (messageInputDom: Ref) => {
           const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(msg.thumbnail, {
             provider: UploadProviderEnum.QINIU
           })
-          const thumbnailUploadResult = await messageStrategy.doUploadThumbnail(
+          const thumbnailUploadResult = (await messageStrategy.doUploadThumbnail(
             msg.thumbnail,
             thumbnailUploadInfo.uploadUrl,
             thumbnailUploadInfo.config
-          )
+          )) as { qiniuUrl?: string } | undefined
           uploadResult =
             thumbnailUploadInfo.config?.provider === UploadProviderEnum.QINIU
               ? thumbnailUploadResult?.qiniuUrl || thumbnailUploadInfo.downloadUrl
@@ -541,7 +542,9 @@ export const useMsgInput = (messageInputDom: Ref) => {
         const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
           provider: UploadProviderEnum.QINIU
         })
-        const doUploadResult = await messageStrategy.doUpload(msg.path, uploadUrl, config)
+        const doUploadResult = (await messageStrategy.doUpload(msg.path, uploadUrl, config)) as
+          | { qiniuUrl?: string }
+          | undefined
         messageBody.url =
           config?.provider && config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
         delete messageBody.path // 删除临时路径
@@ -1205,7 +1208,9 @@ export const useMsgInput = (messageInputDom: Ref) => {
         const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
           provider: UploadProviderEnum.QINIU
         })
-        const doUploadResult = await messageStrategy.doUpload(msg.path, uploadUrl, config)
+        const doUploadResult = (await messageStrategy.doUpload(msg.path, uploadUrl, config)) as
+          | { qiniuUrl?: string }
+          | undefined
 
         // 更新消息体中的URL为服务器URL
         const finalUrl =
