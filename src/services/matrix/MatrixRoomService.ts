@@ -2,7 +2,35 @@ import type { Room, RoomMember, ICreateRoomOpts } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 
+/**
+ * Matrix 房间服务
+ *
+ * 提供房间管理功能，包括创建、加入、离开房间，以及成员管理等操作。
+ *
+ * @example
+ * ```typescript
+ * import { matrixRoomService } from '@/services/matrix'
+ *
+ * // 获取所有房间
+ * const rooms = await matrixRoomService.getRooms()
+ *
+ * // 创建房间
+ * const room = await matrixRoomService.createRoom({
+ *   name: 'My Room',
+ *   preset: 'private_chat'
+ * })
+ *
+ * // 邀请用户
+ * await matrixRoomService.inviteUser(room.roomId, '@user:example.org')
+ * ```
+ */
 class MatrixRoomService {
+  /**
+   * 获取所有房间
+   *
+   * @returns 房间列表
+   * @throws {Error} 如果客户端未初始化
+   */
   async getRooms(): Promise<Room[]> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -11,6 +39,13 @@ class MatrixRoomService {
     return client.getRooms()
   }
 
+  /**
+   * 获取指定房间
+   *
+   * @param roomId - 房间 ID
+   * @returns 房间实例，如果不存在则返回 null
+   * @throws {Error} 如果客户端未初始化
+   */
   async getRoom(roomId: string): Promise<Room | null> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -19,10 +54,24 @@ class MatrixRoomService {
     return client.getRoom(roomId) ?? null
   }
 
+  /**
+   * 创建房间
+   *
+   * @param options - 房间创建选项
+   * @returns 创建的房间
+   * @throws {Error} 如果客户端未初始化或创建失败
+   */
   async createRoom(options: ICreateRoomOpts): Promise<Room> {
     return matrixClientService.createRoom(options)
   }
 
+  /**
+   * 创建直接消息房间
+   *
+   * @param userId - 目标用户 ID
+   * @returns 创建的房间 ID
+   * @throws {Error} 如果客户端未初始化或创建失败
+   */
   async createDirectRoom(userId: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -44,14 +93,34 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 加入房间
+   *
+   * @param roomId - 房间 ID 或别名
+   * @returns 加入的房间
+   * @throws {Error} 如果客户端未初始化或加入失败
+   */
   async joinRoom(roomId: string): Promise<Room> {
     return matrixClientService.joinRoom(roomId)
   }
 
+  /**
+   * 离开房间
+   *
+   * @param roomId - 房间 ID
+   * @throws {Error} 如果客户端未初始化或离开失败
+   */
   async leaveRoom(roomId: string): Promise<void> {
     return matrixClientService.leaveRoom(roomId)
   }
 
+  /**
+   * 获取房间成员列表
+   *
+   * @param roomId - 房间 ID
+   * @returns 成员列表
+   * @throws {Error} 如果客户端未初始化或房间不存在
+   */
   async getMembers(roomId: string): Promise<RoomMember[]> {
     const room = await this.getRoom(roomId)
     if (!room) {
@@ -60,6 +129,13 @@ class MatrixRoomService {
     return room.getJoinedMembers()
   }
 
+  /**
+   * 邀请用户加入房间
+   *
+   * @param roomId - 房间 ID
+   * @param userId - 用户 ID
+   * @throws {Error} 如果客户端未初始化或邀请失败
+   */
   async inviteUser(roomId: string, userId: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -75,6 +151,14 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 将用户踢出房间
+   *
+   * @param roomId - 房间 ID
+   * @param userId - 用户 ID
+   * @param reason - 踢出原因 (可选)
+   * @throws {Error} 如果客户端未初始化或操作失败
+   */
   async kickUser(roomId: string, userId: string, reason?: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -90,6 +174,14 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 封禁用户
+   *
+   * @param roomId - 房间 ID
+   * @param userId - 用户 ID
+   * @param reason - 封禁原因 (可选)
+   * @throws {Error} 如果客户端未初始化或操作失败
+   */
   async banUser(roomId: string, userId: string, reason?: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -105,6 +197,13 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 解封用户
+   *
+   * @param roomId - 房间 ID
+   * @param userId - 用户 ID
+   * @throws {Error} 如果客户端未初始化或操作失败
+   */
   async unbanUser(roomId: string, userId: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -120,6 +219,13 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 设置房间名称
+   *
+   * @param roomId - 房间 ID
+   * @param name - 新名称
+   * @throws {Error} 如果客户端未初始化或操作失败
+   */
   async setRoomName(roomId: string, name: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -135,6 +241,13 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 设置房间主题
+   *
+   * @param roomId - 房间 ID
+   * @param topic - 主题内容
+   * @throws {Error} 如果客户端未初始化或操作失败
+   */
   async setRoomTopic(roomId: string, topic: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -150,6 +263,13 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 设置房间头像
+   *
+   * @param roomId - 房间 ID
+   * @param avatarUrl - 头像 URL (mxc://)
+   * @throws {Error} 如果客户端未初始化或操作失败
+   */
   async setRoomAvatar(roomId: string, avatarUrl: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -165,7 +285,14 @@ class MatrixRoomService {
     }
   }
 
-  async getRoomState(roomId: string): Promise<any[]> {
+  /**
+   * 获取房间状态事件
+   *
+   * @param roomId - 房间 ID
+   * @returns 状态事件列表
+   * @throws {Error} 如果客户端未初始化或房间不存在
+   */
+  async getRoomState(roomId: string): Promise<unknown[]> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('客户端未初始化')
@@ -183,6 +310,13 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 设置房间推送规则
+   *
+   * @param roomId - 房间 ID
+   * @param enabled - 是否启用推送
+   * @throws {Error} 如果客户端未初始化或操作失败
+   */
   async setPushRule(roomId: string, enabled: boolean): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -211,6 +345,12 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 获取直接消息房间映射
+   *
+   * @returns 用户 ID 到房间 ID 列表的映射
+   * @throws {Error} 如果客户端未初始化
+   */
   async getDirectRooms(): Promise<Map<string, string[]>> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -229,6 +369,13 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 设置直接消息房间
+   *
+   * @param userId - 用户 ID
+   * @param roomId - 房间 ID
+   * @throws {Error} 如果客户端未初始化或操作失败
+   */
   async setDirectRoom(userId: string, roomId: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -250,6 +397,13 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 设置当前用户在房间中的昵称
+   *
+   * @param roomId - 房间 ID
+   * @param displayName - 显示名称
+   * @throws {Error} 如果客户端未初始化、用户未登录或房间不存在
+   */
   async setMemberDisplayName(roomId: string, displayName: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -288,6 +442,13 @@ class MatrixRoomService {
     }
   }
 
+  /**
+   * 获取成员在房间中的显示名称
+   *
+   * @param roomId - 房间 ID
+   * @param userId - 用户 ID
+   * @returns 显示名称，如果不存在则返回 null
+   */
   async getMemberDisplayName(roomId: string, userId: string): Promise<string | null> {
     const room = await this.getRoom(roomId)
     if (!room) {
@@ -298,6 +459,13 @@ class MatrixRoomService {
     return member?.rawDisplayName || member?.name || null
   }
 
+  /**
+   * 翻译文本
+   *
+   * @param text - 要翻译的文本
+   * @param _provider - 翻译服务提供者 (当前使用 Google Translate)
+   * @returns 翻译后的文本
+   */
   async translateText(text: string, _provider?: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -310,7 +478,7 @@ class MatrixRoomService {
       )
       const data = await response.json()
       if (data && data[0]) {
-        const translatedText = data[0].map((item: any[]) => item[0]).join('')
+        const translatedText = data[0].map((item: unknown[]) => item[0]).join('')
         info(`[MatrixRoom] 翻译成功`)
         return translatedText
       }

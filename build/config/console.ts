@@ -23,6 +23,7 @@ const NODE_SUFFIX = isChineseLocale ? ' 版本: ' : ' version: '
 const PKG_MANAGER_LABEL = isChineseLocale ? '包管理器: ' : 'Package manager: '
 const SERVER_URL_LABEL = isChineseLocale ? '服务端项目地址: ' : 'Server project URL: '
 const CLIENT_URL_LABEL = isChineseLocale ? '客户端项目地址: ' : 'Client project URL: '
+const HOMESERVER_LABEL = isChineseLocale ? 'Matrix Homeserver: ' : 'Matrix Homeserver: '
 
 const getRuntimePackageManager = () => {
   const ua = process.env.npm_config_user_agent ?? ''
@@ -82,6 +83,11 @@ export const atStartup = (env: { [key: string]: string }, mode: string, host: st
         `  ${'\u001b[32m'}${'\x1b[1m'}${'\u001b[2m'}${'➜'}${'\x1b[0m'}  ` +
           CLIENT_URL_LABEL +
           `${'\x1b[35m'}${env.VITE_PC_URL}${'\x1b[0m'}`
+      )
+      console.log(
+        `  ${'\u001b[32m'}${'\x1b[1m'}${'\u001b[2m'}${'➜'}${'\x1b[0m'}  ` +
+          HOMESERVER_LABEL +
+          `${'\x1b[36m'}${env.VITE_HOMESERVER_URL}${'\x1b[0m'}`
       )
     }
   }

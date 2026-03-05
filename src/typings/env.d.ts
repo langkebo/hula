@@ -6,6 +6,8 @@ interface ImportMetaEnv {
   readonly VITE_PC_URL: string
   /** 项目名称 */
   readonly VITE_APP_NAME: string
+  /** Matrix Homeserver 地址 */
+  readonly VITE_HOMESERVER_URL: string
   /** giteeToken */
   readonly VITE_GITEE_TOKEN: string
 }

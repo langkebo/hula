@@ -28,9 +28,35 @@
             style="width: 200px; height: 28px"
             class="text-14px rounded-6px"></n-input>
 
-          <!-- 当前选择的模型显示 -->
+          <!-- AI Provider 选择 -->
           <n-flex align="center" :size="8" class="mt-4px">
-            <div class="flex items-center gap-6px">
+            <!-- OpenClaw 连接状态 -->
+            <n-tag v-if="aiProvider === 'openclaw'" :type="isOpenClawConnected ? 'success' : 'error'" size="small">
+              OpenClaw {{ isOpenClawConnected ? '已连接' : '未连接' }}
+            </n-tag>
+
+            <!-- Provider 切换 -->
+            <n-select
+              v-model:value="aiProvider"
+              :options="[
+                { label: 'OpenClaw', value: 'openclaw' },
+                { label: 'HuLa 后端', value: 'hula' }
+              ]"
+              size="tiny"
+              style="width: 120px"
+              @update:value="handleProviderChange" />
+
+            <!-- OpenClaw 模型选择 -->
+            <n-select
+              v-if="aiProvider === 'openclaw' && openClawModels.length > 0"
+              v-model:value="openClawCurrentModel"
+              :options="openClawModels.map((m) => ({ label: m, value: m }))"
+              size="tiny"
+              style="width: 180px"
+              placeholder="选择模型" />
+
+            <!-- 当前选择的模型显示 (仅 HuLa 模式) -->
+            <div v-if="aiProvider === 'hula'" class="flex items-center gap-6px">
               <span class="text-(11px #909090)">当前模型:</span>
               <n-tag
                 v-if="selectedModel"
@@ -918,6 +944,9 @@ import { storeToRefs } from 'pinia'
 import { useUpload, UploadProviderEnum } from '@/hooks/useUpload'
 import { UploadSceneEnum } from '@/enums'
 
+// OpenClaw 服务
+import { useOpenClaw } from '@/services/openclaw'
+
 const settingStore = useSettingStore()
 const userStore = useUserStore()
 const { page, themes } = storeToRefs(settingStore)
@@ -929,6 +958,20 @@ const markdownThemes = [SHIKI_LIGHT_THEME, SHIKI_DARK_THEME] as const as any
 const MsgInputRef = ref()
 /** 是否是编辑模式 */
 const isEdit = ref(false)
+
+// ========== AI Provider 选择 ==========
+type AIProvider = 'hula' | 'openclaw'
+const aiProvider = ref<AIProvider>('openclaw') // 默认使用 OpenClaw
+
+// OpenClaw 状态
+const {
+  isConnected: isOpenClawConnected,
+  availableModels: openClawModels,
+  currentModel: openClawCurrentModel,
+  connect: connectOpenClaw,
+  sendMessage: sendOpenClawMessage
+} = useOpenClaw()
+
 // AI 流式状态
 const isAIStreaming = ref(false)
 const currentAiRequestId = ref<string | null>(null)
@@ -1695,14 +1738,65 @@ const getAiPlaceholderText = (message: Message) => {
 }
 
 // AI消息发送处理
-const handleSendAI = (data: { content: string }) => {
-  if (!selectedModel.value) {
-    window.$message.warning('请先选择AI模型')
+// OpenClaw 消息发送处理
+const handleOpenClawSend = async (content: string) => {
+  if (!isOpenClawConnected.value) {
+    window.$message.warning('OpenClaw 未连接，请检查 Gateway')
     return
   }
 
+  // 添加用户消息
+  messageList.value.push({
+    type: 'user',
+    msgType: 1,
+    content: content,
+    createTime: Date.now()
+  })
+
+  // 添加 AI 消息占位符
+  const aiMessageIndex = messageList.value.length
+  messageList.value.push({
+    type: 'assistant',
+    msgType: 1,
+    content: '',
+    createTime: Date.now()
+  })
+
+  scrollToBottom()
+  isAIStreaming.value = true
+
+  try {
+    for await (const _ of sendOpenClawMessage(content, (text) => {
+      // 实时更新消息
+      messageList.value[aiMessageIndex].content = text
+      scrollToBottom()
+    })) {
+      // 流式接收中
+    }
+  } catch (e) {
+    console.error('OpenClaw 发送失败:', e)
+    messageList.value[aiMessageIndex].content = '发送失败: ' + (e instanceof Error ? e.message : '未知错误')
+  } finally {
+    isAIStreaming.value = false
+  }
+}
+
+const handleSendAI = (data: { content: string }) => {
   if (!data.content.trim()) {
     window.$message.warning('消息内容不能为空')
+    return
+  }
+
+  // 根据 AI Provider 选择不同的后端
+  if (aiProvider.value === 'openclaw') {
+    // 使用 OpenClaw
+    handleOpenClawSend(data.content)
+    return
+  }
+
+  // 使用原有 HuLa 后端
+  if (!selectedModel.value) {
+    window.$message.warning('请先选择AI模型')
     return
   }
 
@@ -2468,6 +2562,30 @@ const fetchModelList = async () => {
   }
 }
 
+// 处理 AI Provider 切换
+const handleProviderChange = async (provider: AIProvider) => {
+  if (provider === 'openclaw') {
+    // 连接 OpenClaw
+    if (!isOpenClawConnected.value) {
+      try {
+        await connectOpenClaw({
+          gatewayUrl: 'http://127.0.0.1:18789',
+          token:
+            'sk-cp-l46Ur27NFasi28UCTJLIiehkD9PHSnpPCa6adzL40tN5A_TKnBjfY4ENtj3w45PSUilSQZofIMKKHObkVZXuPQz0JWzvABt19QXq6j5XMiXf3fvNzkyrIAM'
+        })
+      } catch (e) {
+        console.error('OpenClaw 连接失败:', e)
+        window.$message.error('OpenClaw 连接失败，请确保 Gateway 已启动')
+      }
+    }
+  } else {
+    // HuLa 后端模式，确保模型已加载
+    if (modelList.value.length === 0) {
+      await fetchModelList()
+    }
+  }
+}
+
 // 处理模型点击
 const handleModelClick = () => {
   showModelPopover.value = !showModelPopover.value
@@ -2963,6 +3081,20 @@ const handleLeftChatTitle = (e: any) => {
 }
 
 onMounted(async () => {
+  // 初始化 OpenClaw (如果选择的是 OpenClaw)
+  if (aiProvider.value === 'openclaw') {
+    try {
+      await connectOpenClaw({
+        gatewayUrl: 'http://127.0.0.1:18789',
+        token:
+          'sk-cp-l46Ur27NFasi28UCTJLIiehkD9PHSnpPCa6adzL40tN5A_TKnBjfY4ENtj3w45PSUilSQZofIMKKHObkVZXuPQz0JWzvABt19QXq6j5XMiXf3fvNzkyrIAM'
+      })
+      console.log('OpenClaw 连接状态:', isOpenClawConnected.value)
+    } catch (e) {
+      console.error('OpenClaw 连接失败:', e)
+    }
+  }
+
   // 等待模型列表加载完成
   if (modelList.value.length === 0) {
     await fetchModelList()

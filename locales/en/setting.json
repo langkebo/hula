@@ -2,7 +2,9 @@
   "common": {
     "provider_label": "Provider",
     "provider_name": "HuLa",
-    "tag_new": "New"
+    "tag_new": "New",
+    "cancel": "Cancel",
+    "save": "Save"
   },
   "footer": {
     "like_product": "Like this product? On",

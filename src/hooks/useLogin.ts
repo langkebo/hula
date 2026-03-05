@@ -78,7 +78,7 @@ export const useLogin = () => {
     uid: ''
   })
   const uiState = ref<'manual' | 'auto'>('manual')
-  const homeserverUrl = ref('https://matrix.org')
+  const homeserverUrl = ref(import.meta.env.VITE_HOMESERVER_URL || 'http://localhost:8008')
   const identityServerUrl = ref('https://vector.im')
 
   const setLoginState = async () => {

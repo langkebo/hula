@@ -89,8 +89,9 @@ export const useCustomForwardTask = () => {
       })
       const doUploadResult = await messageStrategy.doUpload(msg.path, uploadUrl, config)
 
+      const uploadResult = doUploadResult as { qiniuUrl?: string } | undefined
       messageBody.url =
-        config?.provider && config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
+        config?.provider && config?.provider === UploadProviderEnum.QINIU ? uploadResult?.qiniuUrl : downloadUrl
       delete messageBody.path
 
       if (!messageBody.width) {

@@ -2,7 +2,9 @@
   "common": {
     "provider_label": "提供者",
     "provider_name": "HuLa",
-    "tag_new": "新"
+    "tag_new": "新",
+    "cancel": "取消",
+    "save": "保存"
   },
   "footer": {
     "like_product": "喜欢这款产品？ 在",
