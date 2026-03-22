@@ -119,10 +119,30 @@ impl ImRequestClient {
                 .send()
                 .await
                 .map_err(|e| anyhow::anyhow!("network_error: {}", e))?;
+
+            // 检查响应状态
+            let status = response.status();
+            if !status.is_success() {
+                let url = format!("{}/{}", self.base_url, path);
+                let status_code = status.as_u16();
+                // 尝试读取错误信息
+                let error_text = response.text().await.unwrap_or_default();
+                error!(
+                    "请求失败 URL: {} 状态码: {} 响应: {}",
+                    url, status_code, error_text
+                );
+                return Err(anyhow::anyhow!(
+                    "backend_error: HTTP {} - {}",
+                    status_code,
+                    error_text
+                ));
+            }
+
+            // 尝试解析 JSON 响应
             let result: ApiResult<T> = response
                 .json()
                 .await
-                .map_err(|e| anyhow::anyhow!("network_error: {}", e))?;
+                .map_err(|e| anyhow::anyhow!("backend_error: JSON解析失败 - {}", e))?;
 
             let url = format!("{}/{}", self.base_url, path);
 
