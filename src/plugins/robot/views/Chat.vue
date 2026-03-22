@@ -946,6 +946,82 @@ import { UploadSceneEnum } from '@/enums'
 
 // OpenClaw 服务
 import { useOpenClaw } from '@/services/openclaw'
+import { useSiliconFlow } from '@/services/siliconflow'
+import { useTrendRadar } from '@/services/trendradar'
+
+// ========== LocalStorage 持久化配置 ==========
+const STORAGE_KEYS = {
+  AI_PROVIDER: 'hula-chat-ai-provider',
+  OPENCLAW_CONFIG: 'hula-chat-openclaw-config',
+  TRENDRADAR_CONFIG: 'hula-chat-trendradar-config'
+}
+
+// OpenClaw 配置
+const openClawConfig = ref({
+  gatewayUrl: 'http://127.0.0.1:18789',
+  token:
+    'sk-cp-l46Ur27NFasi28UCTJLIiehkD9PHSnpPCa6adzL40tN5A_TKnBjfY4ENtj3w45PSUilSQZofIMKKHObkVZXuPQz0JWzvABt19QXq6j5XMiXf3fvNzkyrIAM'
+})
+
+// SiliconFlow 配置
+const siliconFlowConfig = ref({
+  apiKey: '',
+  baseUrl: 'https://api.siliconflow.cn',
+  model: 'deepseek-ai/DeepSeek-V3'
+})
+
+// TrendRadar 配置 (使用现有API格式)
+const trendRadarConfig = ref({
+  apiUrl: 'http://127.0.0.1:3333/mcp',
+  apiKey: ''
+})
+
+// 加载保存的配置
+const loadSavedConfig = () => {
+  try {
+    // 加载 aiProvider
+    const savedProvider = localStorage.getItem(STORAGE_KEYS.AI_PROVIDER)
+    if (savedProvider && ['hula', 'openclaw', 'siliconflow', 'trendradar'].includes(savedProvider)) {
+      aiProvider.value = savedProvider as AIProvider
+    }
+
+    // 加载 openClawConfig
+    const savedOpenClawConfig = localStorage.getItem(STORAGE_KEYS.OPENCLAW_CONFIG)
+    if (savedOpenClawConfig) {
+      const parsed = JSON.parse(savedOpenClawConfig)
+      if (parsed.gatewayUrl) openClawConfig.value.gatewayUrl = parsed.gatewayUrl
+      if (parsed.token) openClawConfig.value.token = parsed.token
+    }
+
+    // 加载 trendRadarConfig
+    const savedTrendRadarConfig = localStorage.getItem(STORAGE_KEYS.TRENDRADAR_CONFIG)
+    if (savedTrendRadarConfig) {
+      const parsed = JSON.parse(savedTrendRadarConfig)
+      if (parsed.mcpUrl) trendRadarConfig.value.mcpUrl = parsed.mcpUrl
+    }
+  } catch (e) {
+    console.error('加载保存的配置失败:', e)
+  }
+}
+
+// 保存 aiProvider
+const saveAiProvider = (provider: AIProvider) => {
+  localStorage.setItem(STORAGE_KEYS.AI_PROVIDER, provider)
+}
+
+// 保存 openClawConfig
+const saveOpenClawConfig = () => {
+  localStorage.setItem(STORAGE_KEYS.OPENCLAW_CONFIG, JSON.stringify(openClawConfig.value))
+}
+
+// 保存 trendRadarConfig
+const saveTrendRadarConfig = () => {
+  localStorage.setItem(STORAGE_KEYS.TRENDRADAR_CONFIG, JSON.stringify(trendRadarConfig.value))
+}
+
+// 监听配置变化，自动保存
+watch(openClawConfig, saveOpenClawConfig, { deep: true })
+watch(trendRadarConfig, saveTrendRadarConfig, { deep: true })
 
 const settingStore = useSettingStore()
 const userStore = useUserStore()
@@ -960,7 +1036,7 @@ const MsgInputRef = ref()
 const isEdit = ref(false)
 
 // ========== AI Provider 选择 ==========
-type AIProvider = 'hula' | 'openclaw'
+type AIProvider = 'hula' | 'openclaw' | 'siliconflow' | 'trendradar'
 const aiProvider = ref<AIProvider>('openclaw') // 默认使用 OpenClaw
 
 // OpenClaw 状态
@@ -971,6 +1047,21 @@ const {
   connect: connectOpenClaw,
   sendMessage: sendOpenClawMessage
 } = useOpenClaw()
+
+// SiliconFlow 状态
+const {
+  isConnected: isSiliconFlowConnected,
+  isConnecting: isSiliconFlowConnecting,
+  availableModels: siliconFlowModels,
+  currentModel: siliconFlowCurrentModel,
+  error: siliconFlowError,
+  connect: connectSiliconFlow,
+  testConnection: testSiliconFlow,
+  sendMessage: sendSiliconFlowMessage
+} = useSiliconFlow()
+
+// TrendRadar 状态 (使用现有API)
+const { isConnected: isTrendRadarConnected, setupTrendRadar, client: trendRadarClient } = useTrendRadar()
 
 // AI 流式状态
 const isAIStreaming = ref(false)
@@ -2564,20 +2655,25 @@ const fetchModelList = async () => {
 
 // 处理 AI Provider 切换
 const handleProviderChange = async (provider: AIProvider) => {
+  // 保存 provider 选择
+  saveAiProvider(provider)
+
   if (provider === 'openclaw') {
-    // 连接 OpenClaw
+    // 连接 OpenClaw (使用保存的配置)
     if (!isOpenClawConnected.value) {
       try {
         await connectOpenClaw({
-          gatewayUrl: 'http://127.0.0.1:18789',
-          token:
-            'sk-cp-l46Ur27NFasi28UCTJLIiehkD9PHSnpPCa6adzL40tN5A_TKnBjfY4ENtj3w45PSUilSQZofIMKKHObkVZXuPQz0JWzvABt19QXq6j5XMiXf3fvNzkyrIAM'
+          gatewayUrl: openClawConfig.value.gatewayUrl,
+          token: openClawConfig.value.token
         })
       } catch (e) {
         console.error('OpenClaw 连接失败:', e)
         window.$message.error('OpenClaw 连接失败，请确保 Gateway 已启动')
       }
     }
+  } else if (provider === 'trendradar') {
+    // TrendRadar 模式，使用保存的 mcpUrl
+    console.log('TrendRadar 模式，mcpUrl:', trendRadarConfig.value.mcpUrl)
   } else {
     // HuLa 后端模式，确保模型已加载
     if (modelList.value.length === 0) {
@@ -3081,13 +3177,15 @@ const handleLeftChatTitle = (e: any) => {
 }
 
 onMounted(async () => {
-  // 初始化 OpenClaw (如果选择的是 OpenClaw)
+  // 加载保存的配置
+  loadSavedConfig()
+
+  // 初始化 OpenClaw (如果选择的是 OpenClaw，使用保存的配置)
   if (aiProvider.value === 'openclaw') {
     try {
       await connectOpenClaw({
-        gatewayUrl: 'http://127.0.0.1:18789',
-        token:
-          'sk-cp-l46Ur27NFasi28UCTJLIiehkD9PHSnpPCa6adzL40tN5A_TKnBjfY4ENtj3w45PSUilSQZofIMKKHObkVZXuPQz0JWzvABt19QXq6j5XMiXf3fvNzkyrIAM'
+        gatewayUrl: openClawConfig.value.gatewayUrl,
+        token: openClawConfig.value.token
       })
       console.log('OpenClaw 连接状态:', isOpenClawConnected.value)
     } catch (e) {
