@@ -29,4 +29,5 @@ declare interface Window {
   $loadingBar: ReturnType<typeof useLoadingBar>
   $dialog: ReturnType<typeof useDialog>
   $modal: ReturnType<typeof useModal>
+  $invoke: (channel: string, payload?: unknown) => Promise<unknown>
 }

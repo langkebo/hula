@@ -80,9 +80,18 @@
   "context": {
     "send_message": "Send Message",
     "encrypted_chat": "Encrypted Chat",
+    "secret_chat": "Set as Secret Friend",
     "set_favorite": "Set as Favorite",
     "set_normal": "Set as Normal",
     "set_blocked": "Block Friend",
     "remove": "Remove Friend"
+  },
+  "secret_chat": {
+    "success": "Set as secret friend",
+    "error": "Failed to set secret friend",
+    "request_sent": "Secret friend request sent",
+    "request_received": "Secret friend request received",
+    "accept": "Accept",
+    "reject": "Reject"
   }
 }

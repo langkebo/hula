@@ -162,7 +162,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       lastOptTime: friend.since ?? Date.now(),
       hideMyPosts: false,
       hideTheirPosts: false,
-      friendStatus: friend.status,
+      friendStatus: friend.status as FriendStatus | undefined,
       since: friend.since,
       note: friend.note,
       directRoomId: friend.dmRoomId
@@ -172,11 +172,11 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   async function loadContacts(): Promise<void> {
     isLoading.value = true
     try {
-      const friends = matrixFriendService.getFriends()
-      const dmRoomInfos = matrixDirectMessageService.getDmRoomInfos()
+      const friends = await matrixFriendService.getFriends()
+      const dmRoomInfos = await matrixDirectMessageService.getDmRoomInfos()
 
       const contacts: MatrixContact[] = friends.map((friend) => {
-        const dmRoom = dmRoomInfos.find((r) => r.partnerId === friend.userId)
+        const dmRoom = dmRoomInfos.find((r) => r.invitees.includes(friend.userId) || r.inviter === friend.userId)
         return {
           ...friendToContact(friend),
           directRoomId: dmRoom?.roomId ?? friend.dmRoomId
@@ -184,18 +184,22 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       })
 
       for (const dmRoom of dmRoomInfos) {
-        if (!contacts.find((c) => c.userId === dmRoom.partnerId)) {
+        // 简单提取第一个非自己的参与者作为 partner
+        const partnerId = dmRoom.invitees[0] || dmRoom.inviter || ''
+        if (!partnerId) continue
+        
+        if (!contacts.find((c) => c.userId === partnerId)) {
           contacts.push({
-            userId: dmRoom.partnerId,
-            uid: dmRoom.partnerId,
-            displayName: dmRoom.partnerName ?? null,
-            name: dmRoom.partnerName ?? dmRoom.partnerId.split(':')[0],
-            avatarUrl: dmRoom.partnerAvatar ?? null,
-            avatar: dmRoom.partnerAvatar ?? '',
-            account: dmRoom.partnerId.split(':')[0],
+            userId: partnerId,
+            uid: partnerId,
+            displayName: dmRoom.name ?? null,
+            name: dmRoom.name ?? partnerId.split(':')[0],
+            avatarUrl: dmRoom.avatarUrl ?? null,
+            avatar: dmRoom.avatarUrl ?? '',
+            account: partnerId.split(':')[0],
             activeStatus: OnlineEnum.ONLINE,
             remark: '',
-            lastOptTime: dmRoom.lastMessageTimestamp ?? Date.now(),
+            lastOptTime: dmRoom.lastMessage?.timestamp ?? Date.now(),
             hideMyPosts: false,
             hideTheirPosts: false,
             directRoomId: dmRoom.roomId
@@ -214,8 +218,8 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
   async function loadFriendRequests(): Promise<void> {
     try {
-      const incoming = matrixFriendService.getIncomingRequests()
-      const outgoing = matrixFriendService.getOutgoingRequests()
+      const incoming = await matrixFriendService.getIncomingRequests()
+      const outgoing = await matrixFriendService.getOutgoingRequests()
 
       requestFriendsList.value = [
         ...incoming.map((r) => ({
@@ -288,8 +292,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         return existingContact.directRoomId
       }
 
-      const room = await matrixDirectMessageService.getOrCreateDmRoom(userId, encrypted)
-      const roomId = room.roomId
+      const roomId = await matrixDirectMessageService.createDm(userId, { userIds: [userId], isEncrypted: encrypted })
 
       const contactIndex = contactsList.value.findIndex((c) => c.userId === userId)
       if (contactIndex >= 0) {
@@ -377,7 +380,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
   async function removeFromContacts(userId: string): Promise<boolean> {
     try {
-      if (matrixFriendService.isFriend(userId)) {
+      if (await matrixFriendService.isFriend(userId)) {
         await matrixFriendService.removeFriend(userId)
       }
       contactsList.value = contactsList.value.filter((c) => c.userId !== userId)
@@ -439,9 +442,9 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       const invites: ContactInvite[] = []
 
       for (const room of rooms) {
-        const membership = room.getMyMembership()
+        const membership = (room as any).getMyMembership?.()
         if (membership === 'invite') {
-          const inviteState = room.getLiveTimeline().getState('f' as any)
+          const inviteState = room.getLiveTimeline()?.getState('f' as any)
           const inviteFrom = inviteState?.getStateEvents('m.room.member' as any, client.getUserId() ?? '')?.getSender()
 
           invites.push({
@@ -497,7 +500,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     return contactsList.value.find((c) => c.userId === userId || c.uid === userId)
   }
 
-  function isFriend(userId: string): boolean {
+  function isFriend(userId: string): Promise<boolean> {
     return matrixFriendService.isFriend(userId)
   }
 

@@ -27,7 +27,7 @@
 import { MittEnum, MsgEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import type { MessageBody, MsgType } from '@/services/types'
-import { useChatStore } from '@/stores/chat.ts'
+import { useChatStore } from '@/stores/chat'
 import { useUserStore } from '@/stores/user.ts'
 
 const props = defineProps<{

@@ -59,7 +59,7 @@ export class AppError extends Error {
 
   static fromMatrixError(error: unknown): AppError {
     if (error instanceof MatrixError) {
-      const mapped = ErrorCodeMap[error.errcode] || ErrorCodeMap.UNKNOWN
+      const mapped = (error.errcode ? ErrorCodeMap[error.errcode as keyof typeof ErrorCodeMap] : undefined) || ErrorCodeMap.UNKNOWN
       return new AppError(mapped.message, error.errcode, mapped.status, error)
     }
 

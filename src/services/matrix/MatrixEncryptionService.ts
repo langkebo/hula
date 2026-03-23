@@ -118,7 +118,7 @@ class MatrixEncryptionService {
       const encryptionEvent = room.currentState.getStateEvents('m.room.encryption' as any, '')
       if (!encryptionEvent) return null
 
-      const content = encryptionEvent.getContent()
+      const content = encryptionEvent.getContent() as { algorithm?: string; rotation_period_ms?: number; rotation_period_msgs?: number }
       return {
         algorithm: content.algorithm || 'm.megolm.v1.aes-sha2',
         rotationPeriodMs: content.rotation_period_ms || 604800000,

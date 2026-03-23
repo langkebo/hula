@@ -95,6 +95,7 @@ import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { matrixPushService } from '@/services/matrix'
+import type { IPushRule } from '@/types/matrix-js-sdk'
 import { PushRuleKind, TweakName } from 'matrix-js-sdk'
 import { useI18n } from 'vue-i18n'
 
@@ -119,8 +120,8 @@ async function loadPushRules() {
 
     const globalRules = rules.global
 
-    const overrideRules = globalRules[PushRuleKind.Override]
-    const roomRules = globalRules[PushRuleKind.RoomSpecific]
+    const overrideRules: IPushRule[] | undefined = globalRules[PushRuleKind.Override]
+    const roomRules: IPushRule[] | undefined = globalRules[PushRuleKind.RoomSpecific]
 
     const masterRule = overrideRules?.find((r) => r.rule_id === '.m.rule.master')
     if (masterRule && !masterRule.enabled) {
@@ -134,7 +135,10 @@ async function loadPushRules() {
 
     const messageRule = roomRules?.find((r) => r.rule_id === '.m.rule.message')
     if (messageRule) {
-      if (messageRule.actions?.some((a: any) => a.set_tweak === 'highlight' || a === 'notify')) {
+      if (messageRule.actions?.some((a) => {
+        const action = a as { set_tweak?: string } | string
+        return typeof action === 'string' ? action === 'notify' : action.set_tweak === 'highlight'
+      })) {
         groupNotifyMode.value = 'all'
       }
     }
@@ -157,7 +161,7 @@ async function handleSoundToggle(enabled: boolean) {
     const ruleIds = ['.m.rule.room_one_to_one', '.m.rule.message']
     for (const ruleId of ruleIds) {
       await matrixPushService.setPushRuleActions('global', PushRuleKind.RoomSpecific, ruleId, [
-        { set_tweak: TweakName.Sound, value: enabled ? 'default' : 'none' }
+        { set_tweak: { tweak: TweakName.Sound, value: enabled ? 'default' : 'none' } }
       ])
     }
   } catch (error) {

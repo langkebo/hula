@@ -2,7 +2,9 @@
  * Matrix SDK 版本检查工具
  */
 
-import * as sdk from 'matrix-js-sdk'
+import * as matrixSdk from 'matrix-js-sdk'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sdk = matrixSdk as any
 
 /**
  * SDK 最低版本要求
@@ -31,7 +33,6 @@ export function getSdkVersionInfo(): SdkVersionInfo {
   // 尝试获取 SDK 版本，如果不可用则使用默认值
   let version = 'unknown'
   try {
-    // @ts-expect-error
     version = (sdk as any).VERSION || 'unknown'
   } catch (_e) {
     // 版本获取失败

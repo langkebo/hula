@@ -6,6 +6,15 @@ import { useGroupStore } from '@/stores/group.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { UserType } from '@/enums'
 
+/** 选项接口 */
+interface SelectOption {
+  value: string
+  label: string
+  avatar?: string
+  disabled?: boolean
+  [key: string]: unknown
+}
+
 const contactStore = useContactStore()
 const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
@@ -14,7 +23,7 @@ export const options = computed(() => {
   return contactStore.contactsList
     .map((item) => {
       const userInfo = groupStore.getUserInfo(item.uid)
-      const contactAccount = (item as any).account
+      const contactAccount = (item as unknown as { account?: string }).account
       const isBotAccount =
         (userInfo?.account && userInfo.account.toLowerCase() === UserType.BOT) ||
         (typeof contactAccount === 'string' && contactAccount.toLowerCase() === UserType.BOT)
@@ -29,7 +38,7 @@ export const options = computed(() => {
         avatar: AvatarUtils.getAvatarUrl(userInfo?.avatar || '/logoD.png')
       }
     })
-    .filter(Boolean) as any
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
 })
 
 // 获取已禁用选项的值列表
@@ -54,20 +63,18 @@ export const getFilteredOptions = () => {
   if (!currentRoomId) return options.value
 
   // 标记已在群内的好友
-  return options.value.map((option: { value: string; label: string; avatar?: string; [key: string]: any }) => {
+  return options.value.map((option: SelectOption): SelectOption => {
     const isInGroup = disabledOptions.includes(option.value)
 
     if (isInGroup) {
-      // 对于已在群内的好友，添加禁用标记，但保持所有原始属性不变
       return {
         ...option,
         disabled: true
       }
     } else {
-      // 对于未在群内的好友，保持原样
       return option
     }
-  })
+  }) as SelectOption[]
 }
 
 // 统一的源列表渲染函数，通过参数控制是否使用过滤后的选项
@@ -81,14 +88,14 @@ export const renderSourceList = (
     const baseOptions = getFilteredOptions()
 
     // 根据搜索模式进一步过滤
-    const displayOptions = pattern
-      ? baseOptions.filter((option: { label: string }) => option.label?.toLowerCase().includes(pattern.toLowerCase()))
+    const displayOptions: SelectOption[] = pattern
+      ? baseOptions.filter((option) => option.label?.toLowerCase().includes(pattern.toLowerCase()))
       : baseOptions
 
     return (
       <div class="select-none">
         {placeholder && <div class="text-(12px [--chat-text-color]) pb-6px">{placeholder}</div>}
-        {displayOptions.map((option: any) => {
+        {displayOptions.map((option: SelectOption) => {
           // 判断是否是预选中的好友（仅在启用预选中时生效）
           const isPreSelected = enablePreSelection && option.value === preSelectedFriendId
           // 判断是否被禁用(已在群内)（仅在启用预选中时生效）
@@ -150,7 +157,7 @@ export const renderSourceList = (
   }
 }
 
-export const renderLabel: TransferRenderTargetLabel = ({ option }: { option: any }) => {
+export const renderLabel = (({ option }: { option: SelectOption }) => {
   return (
     <div class="select-none" style={{ display: 'flex', margin: '6px 0' }}>
       {option.avatar ? (
@@ -163,7 +170,7 @@ export const renderLabel: TransferRenderTargetLabel = ({ option }: { option: any
       <div style={{ display: 'flex', marginLeft: '12px', alignSelf: 'center', fontSize: '14px' }}>{option.label}</div>
     </div>
   )
-}
+}) as any as TransferRenderTargetLabel
 
 // 创建自定义的目标列表渲染函数
 export const renderTargetList = (
@@ -171,27 +178,23 @@ export const renderTargetList = (
   enablePreSelection = true,
   placeholder = '',
   requiredTag = ''
-) => {
+): TransferRenderSourceList => {
   return ({
     onCheck,
     checkedOptions,
     pattern
-  }: {
-    onCheck: (checkedValueList: Array<string | number>) => void
-    checkedOptions: any[]
-    pattern: string
   }) => {
     // 根据搜索模式过滤选项
     const displayOptions = pattern
-      ? checkedOptions.filter((option: { label: string }) =>
-          option.label?.toLowerCase().includes(pattern.toLowerCase())
+      ? checkedOptions.filter((option) =>
+          (option.label as string)?.toLowerCase().includes(pattern.toLowerCase())
         )
       : checkedOptions
 
     return (
       <div>
         {placeholder && <div class="text-(12px [--chat-text-color]) pb-6px">{placeholder}</div>}
-        {displayOptions.map((option: any) => {
+        {(displayOptions as SelectOption[]).map((option: any) => {
           const isPreSelected = enablePreSelection && option.value === preSelectedFriendId
 
           return (

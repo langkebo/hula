@@ -157,15 +157,27 @@
             </template>
             <span>{{ t('editor.voice') }}</span>
           </n-popover>
-          <n-popover v-if="!isMac()" trigger="hover" :show-arrow="false" placement="bottom">
-            <template #trigger>
-              <svg @click="showLocationModal = true" class="mr-18px">
-                <use href="#local"></use>
-              </svg>
-            </template>
-            <span>{{ t('editor.location') }}</span>
-          </n-popover>
-        </n-flex>
+          <n-popover trigger="hover" :show-arrow="false" placement="bottom">
+          <template #trigger>
+            <svg @click="showLocationModal = true" class="mr-18px">
+              <use href="#local"></use>
+            </svg>
+          </template>
+          <span>{{ t('editor.location') }}</span>
+        </n-popover>
+
+        <n-popover trigger="hover" :show-arrow="false" placement="bottom">
+          <template #trigger>
+            <svg
+              :class="{ 'text-[--primary-color]': isBurnAfterRead }"
+              @click="toggleBurnAfterRead"
+              class="mr-18px cursor-pointer">
+              <use href="#timer"></use>
+            </svg>
+          </template>
+          <span>{{ t('editor.burn_after_read') }}</span>
+        </n-popover>
+      </n-flex>
 
         <n-popover trigger="hover" :show-arrow="false" placement="bottom">
           <template #trigger>
@@ -266,6 +278,8 @@ const msgInputDom = ref<HTMLInputElement | null>(null)
 const emojiShow = ref(false)
 const recentlyTip = ref(false)
 const showLocationModal = ref(false)
+const isBurnAfterRead = ref(false)
+
 const isConceal = computed({
   get: () => settingStore.screenshot.isConceal,
   set: (value: boolean) => settingStore.setScreenshotConceal(value)
@@ -577,6 +591,16 @@ const handleLocationSelected = async (locationData: any) => {
     showLocationModal.value = false
   } catch (error) {
     console.error('发送位置消息失败:', error)
+  }
+}
+
+// 切换阅后即焚状态
+const toggleBurnAfterRead = () => {
+  isBurnAfterRead.value = !isBurnAfterRead.value
+  if (isBurnAfterRead.value) {
+    window.$message.success(t('editor.burn_after_read_enabled'))
+  } else {
+    window.$message.info(t('editor.burn_after_read_disabled'))
   }
 }
 

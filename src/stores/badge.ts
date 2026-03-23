@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
+import { matrixClientService } from '@/services/matrix'
 
 export interface Badge {
   id: string
@@ -27,8 +28,24 @@ export const useBadgeStore = defineStore(StoresEnum.BADGE, () => {
   }
 
   const loadBadges = async () => {
-    // TODO: 从 Matrix 账户数据加载徽章
-    // 暂时返回空数组，徽章功能待实现
+    try {
+      const client = matrixClientService.getClient()
+      if (!client) {
+        console.warn('[BadgeStore] Matrix client not initialized')
+        return
+      }
+
+      // 从账户数据加载徽章
+      const accountData = client.getAccountData('m.badges' as any)
+      if (accountData) {
+        const content = accountData.getContent()
+        if (content?.badges && Array.isArray(content.badges)) {
+          badges.value = content.badges as Badge[]
+        }
+      }
+    } catch (error) {
+      console.error('[BadgeStore] Failed to load badges:', error)
+    }
   }
 
   return {

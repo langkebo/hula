@@ -7,7 +7,7 @@ import { LimitEnum, MittEnum, MsgEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
-import { useChatStore } from '@/stores/chat.ts'
+import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -50,7 +50,7 @@ export const useCommon = () => {
     avatar: '',
     accountName: '',
     content: '',
-    key: 0,
+    key: '' as string | number,
     imgCount: 0
   })
 
@@ -63,18 +63,23 @@ export const useCommon = () => {
 
     return new Promise((resolve, reject) => {
       const cacheReader = new FileReader()
-      cacheReader.onload = async (e: any) => {
+      cacheReader.onload = async (e: Event) => {
         try {
+          const target = e.target as FileReader | null
+          if (!target) {
+            reject(new Error('FileReader failed'))
+            return
+          }
           const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
           const isExists = await exists(tempPath, { baseDir })
           if (!isExists) {
             await mkdir(tempPath, { baseDir, recursive: true })
           }
           const tempFile = await create(fullPath, { baseDir })
-          await tempFile.write(e.target.result)
+          await tempFile.write(new Uint8Array(target.result as ArrayBuffer))
           await tempFile.close()
 
-          console.log(`cache file saved: ${fullPath}, written: ${e.target.result.byteLength} bytes`)
+          console.log(`cache file saved: ${fullPath}, written: ${(target.result as ArrayBuffer).byteLength} bytes`)
           resolve(fullPath)
         } catch (error) {
           reject(error)
@@ -220,9 +225,9 @@ export const useCommon = () => {
 
     // 将节点插入范围最前面添加节点
     if (type === MsgEnum.AIT) {
-      // 为@节点保存展示名字和uid，后续提取atUidList时直接依赖结构化数据，避免误判
-      const mentionText = typeof dom === 'object' && dom !== null ? dom.name || dom.text || dom.label || '' : dom || ''
-      const mentionUid = typeof dom === 'object' && dom !== null ? dom.uid : undefined
+      const domObj = dom as any
+      const mentionText = typeof dom === 'object' && dom !== null ? domObj.name || domObj.text || domObj.label || '' : dom || ''
+      const mentionUid = typeof dom === 'object' && dom !== null ? domObj.uid : undefined
       // 创建一个span标签节点
       const spanNode = document.createElement('span')
       spanNode.id = 'aitSpan' // 设置id为aitSpan
@@ -244,7 +249,7 @@ export const useCommon = () => {
       // 将空格文本节点插入到光标位置
       range?.insertNode(spaceNode)
     } else if (type === MsgEnum.TEXT) {
-      range?.insertNode(document.createTextNode(dom))
+      range?.insertNode(document.createTextNode(String(dom)))
     } else if (type === MsgEnum.REPLY) {
       // 获取消息输入框元素
       const inputElement = document.getElementById('message-input')
@@ -254,7 +259,7 @@ export const useCommon = () => {
       inputElement.focus()
 
       // 创建回复节点
-      const replyNode = createReplyDom(dom)
+      const replyNode = createReplyDom(dom as any)
 
       // 如果已经存在回复框，则替换它
       const preReplyNode = document.getElementById('replyDiv')
@@ -679,10 +684,11 @@ export const useCommon = () => {
    * @param file 图片文件
    * @param dom 输入框dom
    */
-  const imgPaste = async (file: any, dom: HTMLElement) => {
+  const imgPaste = async (file: File | string, dom: HTMLElement) => {
+    const fileStr = file as string
     // 如果file是blob URL格式
-    if (typeof file === 'string' && file.startsWith('blob:')) {
-      const url = file.replace('blob:', '') // 移除blob:前缀
+    if (typeof file === 'string' && fileStr.startsWith('blob:')) {
+      const url = fileStr.replace('blob:', '') // 移除blob:前缀
       console.log(url)
 
       const img = document.createElement('img')
@@ -721,13 +727,15 @@ export const useCommon = () => {
     }
 
     //缓存文件
-    const cachePath = await saveCacheFile(file, 'img')
+    const cachePath = await saveCacheFile(file as File, 'img')
 
     // 原有的File对象处理逻辑
     const reader = new FileReader()
-    reader.onload = (e: any) => {
+    reader.onload = (e: Event) => {
+      const target = e.target as FileReader | null
+      if (!target) return
       const img = document.createElement('img')
-      img.src = e.target.result
+      img.src = target.result as string
       img.style.maxHeight = '88px'
       img.style.maxWidth = '140px'
       img.style.marginRight = '6px'
@@ -763,7 +771,7 @@ export const useCommon = () => {
       triggerInputEvent(dom)
     }
     // 读取文件
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(file as File)
   }
 
   /**
@@ -799,14 +807,14 @@ export const useCommon = () => {
    * @param dom 输入框dom
    * @param showFileModal 显示文件弹窗的回调函数
    */
-  const handlePaste = async (e: any, dom: HTMLElement, showFileModal?: (files: UploadFile[]) => void) => {
+  const handlePaste = async (e: ClipboardEvent, dom: HTMLElement, showFileModal?: (files: UploadFile[]) => void) => {
     e.preventDefault()
-    if (e.clipboardData.files.length > 0) {
-      // 使用通用文件处理函数
-      await processFiles(Array.from(e.clipboardData.files), dom, showFileModal)
+    const clipboardData = e.clipboardData
+    if (!clipboardData) return
+    if (clipboardData.files.length > 0) {
+      await processFiles(Array.from(clipboardData.files), dom, showFileModal)
     } else {
-      // 如果没有文件，而是文本，处理纯文本粘贴
-      const plainText = e.clipboardData.getData('text/plain')
+      const plainText = clipboardData.getData('text/plain')
       insertNode(MsgEnum.TEXT, plainText, dom)
       triggerInputEvent(dom)
     }

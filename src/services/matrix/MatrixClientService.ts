@@ -1,5 +1,11 @@
 import * as sdk from 'matrix-js-sdk'
-import type { MatrixClient, ICreateClientOpts, LoginResponse, Room, MatrixEvent, ICreateRoomOpts } from 'matrix-js-sdk'
+import { MatrixClient, Room, MatrixEvent } from 'matrix-js-sdk'
+import {
+  PendingEventOrdering,
+  ICreateClientOpts,
+  ICreateRoomOpts,
+  LoginResponse
+} from '@/types/matrix-js-sdk'
 import { info, error } from '@tauri-apps/plugin-log'
 
 /**
@@ -65,6 +71,7 @@ class MatrixClientService {
   private connectionState: ConnectionState = 'DISCONNECTED'
   private config: MatrixClientConfig | null = null
   private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
+  private slidingSyncInstance: any = null
 
   constructor() {
     info('[MatrixClient] Matrix 客户端服务初始化')
@@ -84,15 +91,53 @@ class MatrixClientService {
       baseUrl: config.homeserverUrl,
       deviceId: config.deviceId,
       accessToken: config.accessToken,
-      userId: config.userId
+      userId: config.userId,
+      useAuthorizationHeader: true
     }
 
     if (config.identityServerUrl) {
       clientOpts.idBaseUrl = config.identityServerUrl
     }
 
+    // Initialize temporary client to create SlidingSync instance
+    const tempClient = sdk.createClient(clientOpts)
+    
+    // Enable Sliding Sync (MSC3886)
+    const lists = new Map()
+    lists.set('default', {
+      ranges: [[0, 20]],
+      sort: ['by_recency'],
+      timeline_limit: 20,
+      required_state: [
+        ['m.room.name', ''],
+        ['m.room.avatar', ''],
+        ['m.room.encryption', ''],
+        ['m.room.member', '*']
+      ]
+    })
+
+    const slidingSync = new (sdk as any).SlidingSync(
+      config.homeserverUrl,
+      lists,
+      {
+        timeline_limit: 20,
+        required_state: [
+          ['m.room.name', ''],
+          ['m.room.avatar', ''],
+          ['m.room.encryption', ''],
+          ['m.room.member', '*']
+        ]
+      },
+      tempClient,
+      2000 // timeout
+    )
+    
+    // @ts-expect-error: slidingSync is an experimental/custom property not in ICreateClientOpts
+    clientOpts.slidingSync = slidingSync
+    this.slidingSyncInstance = slidingSync
     this.client = sdk.createClient(clientOpts)
-    info(`[MatrixClient] 客户端初始化完成: ${config.homeserverUrl}`)
+    
+    info(`[MatrixClient] 客户端初始化完成: ${config.homeserverUrl} (启用 Sliding Sync)`)
   }
 
   /**
@@ -110,7 +155,7 @@ class MatrixClientService {
 
     try {
       this.connectionState = 'CONNECTING'
-      const loginResponse: LoginResponse = await this.client.login('m.login.password', {
+      const loginResponse: sdk.LoginResponse = await this.client.login('m.login.password', {
         user: username,
         password: password,
         initial_device_display_name: deviceName || 'HuLa Client'
@@ -150,7 +195,7 @@ class MatrixClientService {
 
     try {
       const loginFlow = await this.client.loginFlows()
-      const ssoFlow = loginFlow.flows.find((flow) => flow.type === 'm.login.sso')
+      const ssoFlow = loginFlow.flows.find((flow: any) => flow.type === 'm.login.sso')
 
       if (!ssoFlow) {
         throw new Error('服务器不支持 SSO 登录')
@@ -180,7 +225,7 @@ class MatrixClientService {
 
     try {
       this.connectionState = 'CONNECTING'
-      const loginResponse: LoginResponse = await this.client.login('m.login.token', {
+      const loginResponse: sdk.LoginResponse = await this.client.login('m.login.token', {
         token: loginToken
       })
 
@@ -249,7 +294,7 @@ class MatrixClientService {
     }
 
     try {
-      await this.client.logout()
+      await this.client!.logout()
       await this.stopClient()
       info('[MatrixClient] 登出成功')
     } catch (err) {
@@ -272,9 +317,9 @@ class MatrixClientService {
     }
 
     try {
-      await this.client.startClient({
+      await this.client!.startClient({
         initialSyncLimit: 20,
-        pendingEventOrdering: sdk.PendingEventOrdering.Detached
+        pendingEventOrdering: PendingEventOrdering.Detached
       })
       this.connectionState = 'CONNECTED'
       this.setupEventListeners()
@@ -306,6 +351,13 @@ class MatrixClientService {
    */
   getClient(): MatrixClient | null {
     return this.client
+  }
+
+  /**
+   * 获取 Sliding Sync 实例
+   */
+  getSlidingSync(): any {
+    return this.slidingSyncInstance
   }
 
   /**
@@ -361,7 +413,7 @@ class MatrixClientService {
    * @returns 创建的房间
    * @throws {Error} 如果客户端未初始化或创建失败
    */
-  async createRoom(options: ICreateRoomOpts): Promise<Room> {
+  async createRoom(options: sdk.ICreateRoomOpts): Promise<Room> {
     if (!this.client) {
       throw new Error('客户端未初始化')
     }
@@ -394,9 +446,9 @@ class MatrixClientService {
     }
 
     try {
-      await this.client.joinRoom(roomId)
+      await this.client!.joinRoom(roomId)
       info(`[MatrixClient] 加入房间成功: ${roomId}`)
-      const room = this.client.getRoom(roomId)
+      const room = this.client!.getRoom(roomId)
       if (!room) {
         throw new Error('加入房间后无法获取房间实例')
       }
@@ -420,7 +472,7 @@ class MatrixClientService {
     }
 
     try {
-      await this.client.leave(roomId)
+      await this.client!.leave(roomId)
       info(`[MatrixClient] 离开房间成功: ${roomId}`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '离开房间失败'
@@ -470,21 +522,23 @@ class MatrixClientService {
 
   /**
    * 设置 SDK 事件监听器
+   * 注意: MatrixClient 继承自 EventEmitter，事件名称为字符串字面量
    */
   private setupEventListeners(): void {
     if (!this.client) return
 
-    this.client.on(sdk.ClientEvent.Sync, (state: string) => {
+    const client = this.client as any
+    client.on('sync', (state: string) => {
       this.emit('sync', { state })
       this.emit('connectionState', { state })
       info(`[MatrixClient] 同步状态: ${state}`)
     })
 
-    this.client.on(sdk.ClientEvent.Room, (room: Room) => {
+    client.on('room', (room: Room) => {
       this.emit('room', room)
     })
 
-    this.client.on(sdk.RoomEvent.Timeline, (event: MatrixEvent, room: Room | undefined) => {
+    client.on('room_timeline', (event: MatrixEvent, room: Room | undefined) => {
       this.emit('timeline', { event, room })
     })
   }

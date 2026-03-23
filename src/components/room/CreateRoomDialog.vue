@@ -70,7 +70,7 @@ import type { FormInst, FormRules, UploadCustomRequestOptions } from 'naive-ui'
 import { matrixRoomService } from '@/services/matrix'
 import { matrixMediaService } from '@/services/matrix'
 import matrixClientService from '@/services/matrix/MatrixClientService'
-import { Visibility, Preset } from 'matrix-js-sdk'
+import { Visibility, Preset } from '@/types/matrix-js-sdk'
 
 const props = defineProps<{
   visible: boolean

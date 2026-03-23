@@ -12,6 +12,8 @@ import { initializePlatform, isIOS, isMobile } from '@/utils/PlatformConstants'
 import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
 import { invoke } from '@tauri-apps/api/core'
 import App from '@/App.vue'
+import VueVirtualScroller from 'vue-virtual-scroller'
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 
 initializePlatform()
 startWebVitalObserver()
@@ -64,6 +66,7 @@ app
   .use(pinia)
   .use(TlbsMap)
   .use(setupI18n)
+  .use(VueVirtualScroller as any)
   .directive('resize', vResize)
   .directive('slide', vSlide)
   .mount('#app')

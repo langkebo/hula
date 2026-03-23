@@ -179,6 +179,7 @@ const handleSelectFriend = (friend: MatrixContact) => {
 const contextMenuItems = computed(() => [
   { label: t('friend.context.send_message'), icon: 'message' },
   { label: t('friend.context.encrypted_chat'), icon: 'lock' },
+  { label: t('friend.context.secret_chat'), icon: 'eye-close' },
   { label: 'divider', icon: '' },
   { label: t('friend.context.set_favorite'), icon: 'star' },
   { label: t('friend.context.set_normal'), icon: 'user' },
@@ -205,11 +206,14 @@ const handleContextMenuSelect = async (item: { label: string }) => {
     case t('friend.context.encrypted_chat'):
       await contactStore.startDirectRoom(friend.userId, true)
       break
+    case t('friend.context.secret_chat'):
+      await handleSetSecretFriend(friend)
+      break
     case t('friend.context.set_favorite'):
       await contactStore.setFriendStatus(friend.userId, 'favorite')
       break
     case t('friend.context.set_normal'):
-      await contactStore.setFriendStatus(friend.userId, 'normal')
+      await contactStore.setFriendStatus(friend.userId, 'accepted')
       break
     case t('friend.context.set_blocked'):
       await contactStore.setFriendStatus(friend.userId, 'blocked')
@@ -220,6 +224,17 @@ const handleContextMenuSelect = async (item: { label: string }) => {
   }
 
   selectedFriend.value = null
+}
+
+const handleSetSecretFriend = async (friend: MatrixContact) => {
+  try {
+    await window.$invoke('create_secret_friend', {
+      data: { friendId: friend.userId }
+    })
+    window.$message.success(t('friend.secret_chat.success'))
+  } catch (e) {
+    window.$message.error(String(e))
+  }
 }
 
 onMounted(async () => {

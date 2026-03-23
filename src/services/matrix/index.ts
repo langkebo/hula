@@ -113,3 +113,17 @@ export { userDirectoryService, useUserDirectory, type UserDirectorySearchResult 
 export { retentionService, useRetention, type RetentionPolicy, type RoomRetention } from './MatrixRetentionService'
 export { reportService, useReport, ReportReason, type ReportRequest } from './MatrixReportService'
 export { syncService, useSync, type SyncOptions, type SyncState } from './MatrixSyncService'
+export { matrixOidcService } from './MatrixOidcService'
+export { matrixWidgetService, type Widget } from './MatrixWidgetService'
+
+// Synapse Rust 扩展服务
+export {
+  synapseRustExtensionsService,
+  type SynapseFriendInfo,
+  type SynapseFriendRequest,
+  type SynapsePendingRequests,
+  type SynapseCreateDmResult,
+  type SynapseDmInfo,
+  type SynapseCheckFriendshipResult,
+  type SynapseFriendNoteResult
+} from './SynapseRustExtensionsService'

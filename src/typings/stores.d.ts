@@ -88,6 +88,13 @@ declare namespace STO {
       /** 提示音音量，范围 0-100 */
       volume: number
     }
+    /** 私密聊天设置 */
+    secretChat: {
+      /** 是否启用私密聊天 */
+      enabled: boolean
+      /** 密码哈希 */
+      passwordHash: string
+    }
   }
 
   /**

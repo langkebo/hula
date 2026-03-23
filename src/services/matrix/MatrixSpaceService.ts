@@ -168,7 +168,7 @@ class MatrixSpaceService {
         const stateKey = event.getStateKey()
         if (!stateKey) continue
 
-        const content = event.getContent()
+        const content = event.getContent() as { via?: string[]; order?: string; suggested?: boolean }
         if (!content.via || content.via.length === 0) continue
 
         const childRoom = client.getRoom(stateKey)
@@ -253,10 +253,13 @@ class MatrixSpaceService {
     const myUserId = client?.getUserId()
     const member = myUserId ? room.getMember(myUserId) : null
 
+    const topicEvent = room.currentState.getStateEvents('m.room.topic' as any, '')
+    const topicContent = topicEvent?.getContent() as { topic?: string } | undefined
+
     return {
       roomId: room.roomId,
       name: room.name || room.roomId,
-      topic: room.currentState.getStateEvents('m.room.topic' as any, '')?.getContent()?.topic,
+      topic: topicContent?.topic,
       avatarUrl: room.getMxcAvatarUrl() || undefined,
       isPublic: room.getJoinRule() === 'public',
       isJoined: member?.membership === 'join',

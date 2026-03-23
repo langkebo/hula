@@ -1,4 +1,18 @@
-export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screenConfig: any) {
+import { ref, computed, onUnmounted, type Ref } from 'vue'
+
+interface ScreenConfig {
+  startX: number
+  endX: number
+  startY: number
+  endY: number
+}
+
+export function useCanvasTool(
+  drawCanvas: any,
+  drawCtx: any,
+  imgCtx: any,
+  screenConfig: Ref<ScreenConfig>
+) {
   const drawConfig = ref({
     startX: 0,
     startY: 0,
@@ -6,22 +20,21 @@ export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screen
     endY: 0,
     scaleX: 1,
     scaleY: 1,
-    lineWidth: 2, // 线宽
-    color: 'red', // 颜色
-    isDrawing: false, // 正在绘制
-    brushSize: 10, // 马赛克大小
-    actions: [], // 存储绘制动作
+    lineWidth: 2,
+    color: 'red',
+    isDrawing: false,
+    brushSize: 10,
+    actions: [],
     undoStack: []
   })
 
   const currentTool = ref('')
-  // 标记当前一次绘制过程中是否实际产生了绘制
   const hasDrawn = ref(false)
-  // 是否可以撤回（当存在已保存的绘制动作时）
   const canUndo = computed(() => drawConfig.value.actions.length > 0)
 
   const draw = (type: string) => {
-    const { clientWidth: containerWidth, clientHeight: containerHeight } = drawCanvas.value
+    if (!drawCanvas) return
+    const { clientWidth: containerWidth, clientHeight: containerHeight } = drawCanvas
     drawConfig.value.scaleX = (screen.width * window.devicePixelRatio) / containerWidth
     drawConfig.value.scaleY = (screen.height * window.devicePixelRatio) / containerHeight
     currentTool.value = type
@@ -143,13 +156,13 @@ export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screen
     saveAction()
   }
 
-  const drawRectangle = (context: any, x: any, y: any, width: any, height: any) => {
+  const drawRectangle = (context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => {
     context.strokeStyle = drawConfig.value.color
     context.lineWidth = drawConfig.value.lineWidth
     context.strokeRect(x, y, width, height)
   }
 
-  const drawCircle = (context: any, startX: any, startY: any, endX: any, endY: any) => {
+  const drawCircle = (context: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number) => {
     // 限制圆形的绘制范围在框选矩形区域内
     const limitedEndX = Math.min(Math.max(endX, screenConfig.value.startX), screenConfig.value.endX)
     const limitedEndY = Math.min(Math.max(endY, screenConfig.value.startY), screenConfig.value.endY)
@@ -174,7 +187,7 @@ export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screen
     context.stroke()
   }
 
-  const drawArrow = (context: any, fromX: any, fromY: any, toX: any, toY: any) => {
+  const drawArrow = (context: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) => {
     const headLength = 15 // 箭头的长度
     const angle = Math.atan2(toY - fromY, toX - fromX) // 算出箭头的角度
 
@@ -200,12 +213,12 @@ export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screen
   }
 
   // 设置马赛克画笔大小
-  const drawMosaicBrushSize = (size: any) => {
+  const drawMosaicBrushSize = (size: number) => {
     drawConfig.value.brushSize = size
   }
 
   // 实时马赛克涂抹
-  const drawMosaic = (context: any, x: any, y: any, size: any) => {
+  const drawMosaic = (context: CanvasRenderingContext2D, x: number, y: number, size: number) => {
     // 确保马赛克绘制区域不会超出选区边界（考虑边框和画笔半径）
     const borderWidth = 2
     const halfSize = size / 2
@@ -230,7 +243,7 @@ export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screen
     }
   }
 
-  const blurImageData = (imageData: ImageData, size: any): ImageData => {
+  const blurImageData = (imageData: ImageData, size: number): ImageData => {
     const data = imageData.data
     const width = imageData.width
     const height = imageData.height

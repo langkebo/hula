@@ -1,12 +1,66 @@
 import { invoke } from '@tauri-apps/api/core'
 import { AppException, ErrorType } from '@/common/exception'
+import { Result, ok, err } from '@/common/result'
 
 /**
- * Tauri invoke 调用的统一错误处理包装器
+ * Tauri invoke 调用的统一错误处理包装器，返回 Result 模型
  * @param command Tauri 命令名称
  * @param args 命令参数
  * @param options 错误处理选项
- * @returns Promise<T>
+ * @returns Promise<Result<T, AppException>>
+ */
+export async function invokeWithResult<T = any>(
+  command: string,
+  args?: Record<string, any>,
+  options?: {
+    /** 是否显示错误提示，默认为 true */
+    showError?: boolean
+    /** 自定义错误消息 */
+    customErrorMessage?: string
+    /** 是否为重试相关的错误，默认为 false */
+    isRetryError?: boolean
+    /** 错误类型，默认为 Unknown */
+    errorType?: ErrorType
+  }
+): Promise<Result<T, AppException>> {
+  const { showError = true, customErrorMessage, isRetryError = false, errorType = ErrorType.Unknown } = options || {}
+
+  try {
+    const result = await invoke<T>(command, args)
+    return ok(result)
+  } catch (error) {
+    console.error(`[Tauri Invoke Error] 命令: ${command}`, error)
+
+    // 构造错误消息
+    let errorMessage = customErrorMessage
+    if (!errorMessage) {
+      if (typeof error === 'string') {
+        errorMessage = error
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+      } else {
+        errorMessage = `调用 ${command} 命令失败`
+      }
+    }
+
+    const appException = new AppException(errorMessage, {
+      type: errorType,
+      showError,
+      isRetryError,
+      details: {
+        command,
+        args,
+        originalError: error
+      }
+    })
+
+    return err(appException)
+  }
+}
+
+/**
+ * [Deprecated] 遗留的 Tauri invoke 调用包装器，直接抛出异常
+ * 建议使用 invokeWithResult 替代
  */
 export async function invokeWithErrorHandler<T = any>(
   command: string,

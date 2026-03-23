@@ -82,7 +82,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
         const content = topic.getContent()
         announcements.push({
           id: topic.getId() || 'topic',
-          content: content.topic || '',
+          content: (content.topic as string) || '',
           top: true,
           author: topic.getSender() || '',
           timestamp: topic.getTs?.() || Date.now()
@@ -98,7 +98,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
             if (event) {
               announcements.push({
                 id: event.getId() || eventId,
-                content: event.getContent()?.body || '',
+                content: (event.getContent()?.body as string) || '',
                 top: false,
                 author: event.getSender() || '',
                 timestamp: event.getTs?.() || Date.now()

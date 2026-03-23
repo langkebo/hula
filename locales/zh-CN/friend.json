@@ -80,9 +80,18 @@
   "context": {
     "send_message": "发消息",
     "encrypted_chat": "加密聊天",
+    "secret_chat": "设为私密好友",
     "set_favorite": "设为收藏",
     "set_normal": "设为普通",
     "set_blocked": "屏蔽好友",
     "remove": "删除好友"
+  },
+  "secret_chat": {
+    "success": "已设为私密好友",
+    "error": "设置私密好友失败",
+    "request_sent": "私密好友请求已发送",
+    "request_received": "收到私密好友请求",
+    "accept": "接受",
+    "reject": "拒绝"
   }
 }

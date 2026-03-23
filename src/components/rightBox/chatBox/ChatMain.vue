@@ -56,42 +56,55 @@
             class="flex-center gap-6px h-32px flex-shrink-0 cursor-default select-none">
             <p class="text-(12px #909090)">{{ t('home.chat_main.no_more') }}</p>
           </div>
-          <n-flex
-            v-for="(item, index) in chatStore.chatMessageList"
-            :key="item.message.id"
-            vertical
-            class="flex-y-center mb-12px"
-            :data-message-id="item.message.id"
-            :data-message-index="index">
-            <!-- 信息间隔时间 -->
-            <span class="text-(12px #909090) select-none p-4px" v-if="item.timeBlock" @click.stop>
-              {{ timeToStr(item.message.sendTime) }}
-            </span>
-            <!-- 消息内容容器 -->
-            <div
-              @mouseenter="hoverId = item.message.id"
-              :class="[
-                'w-full box-border',
-                item.message.type === MsgEnum.RECALL ? 'min-h-22px' : 'min-h-62px',
-                isGroup ? 'p-[14px_10px_14px_20px]' : 'chat-single p-[4px_10px_10px_20px]',
-                { 'active-reply': activeReply === item.message.id },
-                { 'bg-#90909020': computeMsgHover(item) }
-              ]"
-              @click="
-                () => {
-                  if (chatStore.isMsgMultiChoose && isMessageMultiSelectEnabled(item.message.type)) {
-                    item.isCheck = !item.isCheck
-                  }
-                }
-              ">
-              <RenderMessage
-                :message="item"
-                :is-group="isGroup"
-                :from-user="{ uid: item.fromUser.uid }"
-                :upload-progress="item.uploadProgress"
-                @jump2-reply="jumpToReplyMsg" />
-            </div>
-          </n-flex>
+          <DynamicScroller
+            class="scroller flex-1"
+            :items="chatStore.chatMessageList"
+            :min-item-size="40"
+            key-field="message.id"
+            v-slot="{ item, index, active }"
+          >
+            <DynamicScrollerItem
+              :item="item"
+              :active="active"
+              :size-dependencies="[item.message.body]"
+              :data-index="index"
+            >
+              <n-flex
+                vertical
+                class="flex-y-center mb-12px"
+                :data-message-id="item.message.id"
+                :data-message-index="index">
+                <!-- 信息间隔时间 -->
+                <span class="text-(12px #909090) select-none p-4px" v-if="item.timeBlock" @click.stop>
+                  {{ timeToStr(item.message.sendTime) }}
+                </span>
+                <!-- 消息内容容器 -->
+                <div
+                  @mouseenter="hoverId = item.message.id"
+                  :class="[
+                    'w-full box-border',
+                    item.message.type === MsgEnum.RECALL ? 'min-h-22px' : 'min-h-62px',
+                    isGroup ? 'p-[14px_10px_14px_20px]' : 'chat-single p-[4px_10px_10px_20px]',
+                    { 'active-reply': activeReply === item.message.id },
+                    { 'bg-#90909020': computeMsgHover(item) }
+                  ]"
+                  @click="
+                    () => {
+                      if (chatStore.isMsgMultiChoose && isMessageMultiSelectEnabled(item.message.type)) {
+                        item.isCheck = !item.isCheck
+                      }
+                    }
+                  ">
+                  <RenderMessage
+                    :message="item"
+                    :is-group="isGroup"
+                    :from-user="{ uid: item.fromUser.uid }"
+                    :upload-progress="item.uploadProgress"
+                    @jump2-reply="jumpToReplyMsg" />
+                </div>
+              </n-flex>
+            </DynamicScrollerItem>
+          </DynamicScroller>
         </div>
       </div>
     </div>
@@ -203,7 +216,7 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { usePopover } from '@/hooks/usePopover.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
 import type { MessageType } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat.ts'
+import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global'
 import { useUserStore } from '@/stores/user.ts'
 import { audioManager } from '@/utils/AudioManager'

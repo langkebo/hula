@@ -4,7 +4,7 @@ const DURATION = 300 // 持续时间
 const map = new WeakMap() // 弱引用映射
 
 /** 创建观察器 */
-const ob = new IntersectionObserver((entries: any) => {
+const ob = new IntersectionObserver((entries: IntersectionObserverEntry[]) => {
   for (const entry of entries) {
     if (entry.isIntersecting) {
       const animation = map.get(entry.target) // 获取映射中的动画
@@ -16,12 +16,12 @@ const ob = new IntersectionObserver((entries: any) => {
   }
 })
 
-function isBelowViewport(el: any) {
+function isBelowViewport(el: HTMLElement) {
   return el.getBoundingClientRect().top - DISTANCE > window.innerHeight // 判断元素是否在视口下方
 }
 
 export default {
-  mounted(el: any) {
+  mounted(el: HTMLElement) {
     if (!isBelowViewport(el)) return // 如果元素在视口内，则不执行下面的代码
     const animation = el.animate(
       [
@@ -44,7 +44,7 @@ export default {
     ob.observe(el) // 开始观察该元素
     map.set(el, animation) // 将动画对象存入映射中
   },
-  unmounted(el: any) {
+  unmounted(el: HTMLElement) {
     ob.unobserve(el) // 停止观察该元素
   }
 }

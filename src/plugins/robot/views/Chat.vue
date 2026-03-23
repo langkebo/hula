@@ -943,6 +943,7 @@ import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useUpload, UploadProviderEnum } from '@/hooks/useUpload'
 import { UploadSceneEnum } from '@/enums'
+import { matrixMessageRelationService } from '@/services/matrix'
 
 // OpenClaw 服务
 import { useOpenClaw } from '@/services/openclaw'
@@ -997,7 +998,7 @@ const loadSavedConfig = () => {
     const savedTrendRadarConfig = localStorage.getItem(STORAGE_KEYS.TRENDRADAR_CONFIG)
     if (savedTrendRadarConfig) {
       const parsed = JSON.parse(savedTrendRadarConfig)
-      if (parsed.mcpUrl) trendRadarConfig.value.mcpUrl = parsed.mcpUrl
+      if (parsed.apiUrl) trendRadarConfig.value.apiUrl = parsed.apiUrl
     }
   } catch (e) {
     console.error('加载保存的配置失败:', e)
@@ -2672,8 +2673,8 @@ const handleProviderChange = async (provider: AIProvider) => {
       }
     }
   } else if (provider === 'trendradar') {
-    // TrendRadar 模式，使用保存的 mcpUrl
-    console.log('TrendRadar 模式，mcpUrl:', trendRadarConfig.value.mcpUrl)
+    // TrendRadar 模式，使用保存的 apiUrl
+    console.log('TrendRadar 模式，apiUrl:', trendRadarConfig.value.apiUrl)
   } else {
     // HuLa 后端模式，确保模型已加载
     if (modelList.value.length === 0) {

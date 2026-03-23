@@ -1,0 +1,288 @@
+import { info, error } from '@tauri-apps/plugin-log'
+import matrixClientService from './MatrixClientService'
+
+export interface SynapseFriendInfo {
+  user_id: string
+  display_name?: string
+  avatar_url?: string
+  since: number
+  status?: string
+  last_active?: number
+  note?: string
+  dm_room_id?: string
+  is_private?: boolean
+}
+
+export interface SynapseFriendRequest {
+  request_id: number
+  requester: string
+  recipient: string
+  message?: string
+  status: 'pending' | 'accepted' | 'declined'
+  created_ts: number
+}
+
+export interface SynapsePendingRequests {
+  incoming: SynapseFriendRequest[]
+  outgoing: SynapseFriendRequest[]
+}
+
+export interface SynapseCreateDmResult {
+  room_id: string
+  created: boolean
+}
+
+export interface SynapseDmInfo {
+  room_id: string
+  exists: boolean
+}
+
+export interface SynapseCheckFriendshipResult {
+  are_friends: boolean
+}
+
+export interface SynapseFriendNoteResult {
+  status: string
+}
+
+class SynapseRustExtensionsService {
+  private baseUrl: string = ''
+  private accessToken: string = ''
+
+  async initialize(): Promise<void> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+
+    this.baseUrl = client.getHomeserverUrl()
+    this.accessToken = client.getAccessToken() || ''
+
+    if (!this.accessToken) {
+      error('[SynapseRust] 未获取到访问令牌')
+      return
+    }
+
+    info('[SynapseRust] SynapseRustExtensionsService 初始化完成')
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.accessToken}`,
+        ...options.headers
+      }
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      error(`[SynapseRust] API 请求失败: ${endpoint}`, data)
+      throw new Error(data.message || data.error || 'API 请求失败')
+    }
+
+    return data as T
+  }
+
+  private getData<T>(response: { data?: T; status: string; code?: string; message?: string }): T {
+    if (response.status === 'error') {
+      throw new Error(response.message || '请求失败')
+    }
+    return response.data as T
+  }
+
+  async getFriends(): Promise<SynapseFriendInfo[]> {
+    try {
+      const response = await this.request<{ data?: SynapseFriendInfo[] }>(
+        '/_matrix/client/v1/friends',
+        { method: 'GET' }
+      )
+      return this.getData({ ...response, status: 'ok' }) || []
+    } catch (err) {
+      error(`[SynapseRust] 获取好友列表失败: ${err}`)
+      return []
+    }
+  }
+
+  async sendFriendRequest(userId: string, message?: string): Promise<{
+    request_id: number
+    status: string
+  }> {
+    try {
+      const response = await this.request<{
+        data?: { request_id: number; status: string }
+      }>(
+        '/_matrix/client/v1/friends/request',
+        {
+          method: 'POST',
+          body: JSON.stringify({ user_id: userId, message })
+        }
+      )
+      const data = this.getData({ ...response, status: 'ok' })
+      info(`[SynapseRust] 发送好友请求成功: ${userId}`)
+      return data || { request_id: 0, status: 'error' }
+    } catch (err) {
+      error(`[SynapseRust] 发送好友请求失败: ${err}`)
+      throw err
+    }
+  }
+
+  async getPendingRequests(): Promise<SynapsePendingRequests> {
+    try {
+      const response = await this.request<{
+        data?: SynapseFriendRequest[]
+      }>(
+        '/_matrix/client/v1/friends/requests',
+        { method: 'GET' }
+      )
+      const requests = this.getData({ ...response, status: 'ok' }) || []
+
+      const currentUserId = matrixClientService.getClient()?.getUserId()
+
+      return {
+        incoming: requests.filter(r => r.recipient === currentUserId),
+        outgoing: requests.filter(r => r.requester === currentUserId)
+      }
+    } catch (err) {
+      error(`[SynapseRust] 获取待处理请求失败: ${err}`)
+      return { incoming: [], outgoing: [] }
+    }
+  }
+
+  async acceptFriendRequest(requestId: number): Promise<{
+    status: string
+    dm_room_id: string
+    friend: SynapseFriendInfo
+  }> {
+    try {
+      const response = await this.request<{
+        data?: {
+          status: string
+          dm_room_id: string
+          friend: SynapseFriendInfo
+        }
+      }>(
+        `/_matrix/client/v1/friends/request/${requestId}/accept`,
+        { method: 'POST', body: JSON.stringify({}) }
+      )
+      const data = this.getData({ ...response, status: 'ok' })
+      info(`[SynapseRust] 接受好友请求成功: ${requestId}`)
+      return data || { status: 'error', dm_room_id: '', friend: {} as SynapseFriendInfo }
+    } catch (err) {
+      error(`[SynapseRust] 接受好友请求失败: ${err}`)
+      throw err
+    }
+  }
+
+  async declineFriendRequest(requestId: number): Promise<void> {
+    try {
+      await this.request(
+        `/_matrix/client/v1/friends/request/${requestId}/decline`,
+        { method: 'POST', body: JSON.stringify({}) }
+      )
+      info(`[SynapseRust] 拒绝好友请求成功: ${requestId}`)
+    } catch (err) {
+      error(`[SynapseRust] 拒绝好友请求失败: ${err}`)
+      throw err
+    }
+  }
+
+  async removeFriend(userId: string): Promise<void> {
+    try {
+      await this.request(
+        '/_matrix/client/v1/friends',
+        {
+          method: 'DELETE',
+          body: JSON.stringify({ user_id: userId })
+        }
+      )
+      info(`[SynapseRust] 删除好友成功: ${userId}`)
+    } catch (err) {
+      error(`[SynapseRust] 删除好友失败: ${err}`)
+      throw err
+    }
+  }
+
+  async setFriendNote(userId: string, note: string): Promise<void> {
+    try {
+      await this.request(
+        '/_matrix/client/v1/friends/note',
+        {
+          method: 'PUT',
+          body: JSON.stringify({ user_id: userId, note })
+        }
+      )
+      info(`[SynapseRust] 设置好友备注成功: ${userId}`)
+    } catch (err) {
+      error(`[SynapseRust] 设置好友备注失败: ${err}`)
+      throw err
+    }
+  }
+
+  async checkFriendship(userId: string): Promise<boolean> {
+    try {
+      const response = await this.request<{
+        data?: SynapseCheckFriendshipResult
+      }>(
+        `/_matrix/client/v1/friends/check/${encodeURIComponent(userId)}`,
+        { method: 'GET' }
+      )
+      const data = this.getData({ ...response, status: 'ok' })
+      return data?.are_friends || false
+    } catch (err) {
+      error(`[SynapseRust] 检查好友关系失败: ${err}`)
+      return false
+    }
+  }
+
+  async createPrivateDm(userId: string, isPrivate = true): Promise<SynapseCreateDmResult> {
+    try {
+      const response = await this.request<{
+        data?: SynapseCreateDmResult
+      }>(
+        `/_matrix/client/v1/friends/dm/${encodeURIComponent(userId)}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ is_private: isPrivate })
+        }
+      )
+      const data = this.getData({ ...response, status: 'ok' })
+      info(`[SynapseRust] 创建私密私信房间: ${userId}, isPrivate=${isPrivate}`)
+      return data || { room_id: '', created: false }
+    } catch (err) {
+      error(`[SynapseRust] 创建私密私信房间失败: ${err}`)
+      throw err
+    }
+  }
+
+  async getDmRoom(userId: string): Promise<SynapseDmInfo> {
+    try {
+      const response = await this.request<{
+        data?: SynapseDmInfo
+      }>(
+        `/_matrix/client/v1/friends/dm/${encodeURIComponent(userId)}`,
+        { method: 'GET' }
+      )
+      const data = this.getData({ ...response, status: 'ok' })
+      return data || { room_id: '', exists: false }
+    } catch (err) {
+      error(`[SynapseRust] 获取私信房间失败: ${err}`)
+      return { room_id: '', exists: false }
+    }
+  }
+
+  stop(): void {
+    this.accessToken = ''
+    info('[SynapseRust] SynapseRustExtensionsService 已停止')
+  }
+}
+
+export const synapseRustExtensionsService = new SynapseRustExtensionsService()
+export default synapseRustExtensionsService

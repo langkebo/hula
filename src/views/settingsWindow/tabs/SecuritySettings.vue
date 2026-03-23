@@ -83,16 +83,67 @@
     </div>
 
     <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupSuccess" />
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">私密聊天</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">私密聊天密码</span>
+          <span class="setting-desc">{{ secretChatConfigured ? '已设置密码保护' : '未设置密码' }}</span>
+        </div>
+        <n-button size="small" @click="handleSetupSecretChat">
+          {{ secretChatConfigured ? '修改密码' : '设置密码' }}
+        </n-button>
+      </div>
+      <div v-if="secretChatConfigured" class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">清除私密聊天</span>
+          <span class="setting-desc">清除密码并重置所有隐藏会话</span>
+        </div>
+        <n-button size="small" @click="handleClearSecretChat">清除</n-button>
+      </div>
+    </div>
+
+    <n-modal v-model:show="showSecretChatDialog" preset="card" title="设置私密聊天密码" style="width: 400px">
+      <div class="secret-chat-form">
+        <n-form ref="secretChatFormRef" :model="secretChatForm" :rules="secretChatRules">
+          <n-form-item path="password" label="密码">
+            <n-input
+              v-model:value="secretChatForm.password"
+              type="password"
+              placeholder="请输入密码"
+              show-password-on="click"
+            />
+          </n-form-item>
+          <n-form-item path="confirmPassword" label="确认密码">
+            <n-input
+              v-model:value="secretChatForm.confirmPassword"
+              type="password"
+              placeholder="请再次输入密码"
+              show-password-on="click"
+            />
+          </n-form-item>
+        </n-form>
+        <div class="dialog-footer">
+          <n-button @click="showSecretChatDialog = false">取消</n-button>
+          <n-button type="primary" @click="handleSaveSecretChat" :loading="savingSecretChat">保存</n-button>
+        </div>
+      </div>
+    </n-modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { NButton, NDivider, NSpin, NEmpty, NSwitch, useMessage } from 'naive-ui'
+import { NButton, NDivider, NSpin, NEmpty, NSwitch, useMessage, NModal, NForm, NFormItem, useDialog } from 'naive-ui'
+import { storeToRefs } from 'pinia'
 import { Icon } from '@iconify/vue'
 import { matrixAccountService } from '@/services/matrix'
 import { matrixEncryptionService } from '@/services/matrix'
 import { matrixClientService } from '@/services/matrix'
+import { useSettingStore } from '@/stores/setting'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 
 defineOptions({
@@ -100,6 +151,9 @@ defineOptions({
 })
 
 const message = useMessage()
+const dialog = useDialog()
+const settingStore = useSettingStore()
+const { secretChat } = storeToRefs(settingStore)
 
 const loadingIgnored = ref(false)
 const ignoredUsers = ref<string[]>([])
@@ -112,6 +166,69 @@ const backupInfo = ref<{ version: string | null; count: number } | null>(null)
 const showOnlineStatus = ref(true)
 const showTypingStatus = ref(true)
 const sendReadReceipts = ref(true)
+
+const secretChatConfigured = computed(() => settingStore.isSecretChatConfigured())
+const showSecretChatDialog = ref(false)
+const savingSecretChat = ref(false)
+const secretChatFormRef = ref()
+const secretChatForm = reactive({
+  password: '',
+  confirmPassword: ''
+})
+const secretChatRules = {
+  password: {
+    required: true,
+    message: '请输入密码',
+    trigger: 'blur'
+  },
+  confirmPassword: {
+    required: true,
+    message: '请再次输入密码',
+    trigger: 'blur'
+  }
+}
+
+function handleSetupSecretChat() {
+  secretChatForm.password = ''
+  secretChatForm.confirmPassword = ''
+  showSecretChatDialog.value = true
+}
+
+async function handleSaveSecretChat() {
+  if (secretChatForm.password !== secretChatForm.confirmPassword) {
+    message.error('两次输入的密码不一致')
+    return
+  }
+
+  if (secretChatForm.password.length < 4) {
+    message.error('密码长度不能少于4位')
+    return
+  }
+
+  try {
+    savingSecretChat.value = true
+    settingStore.setSecretChatPassword(secretChatForm.password)
+    showSecretChatDialog.value = false
+    message.success('私密聊天密码设置成功')
+  } catch (error) {
+    message.error('设置失败')
+  } finally {
+    savingSecretChat.value = false
+  }
+}
+
+function handleClearSecretChat() {
+  dialog.warning({
+    title: '确认清除',
+    content: '确定要清除私密聊天密码吗？这将重置所有隐藏会话。',
+    positiveText: '确定',
+    negativeText: '取消',
+    onPositiveClick: () => {
+      settingStore.clearSecretChatPassword()
+      message.success('已清除私密聊天设置')
+    }
+  })
+}
 
 const encryptionEnabled = computed(() => {
   const client = matrixClientService.getClient()

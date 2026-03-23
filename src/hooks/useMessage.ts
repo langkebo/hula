@@ -1,7 +1,7 @@
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { SessionItem } from '@/stores/chat.ts'
-import { useChatStore } from '@/stores/chat.ts'
+import type { SessionItem } from '@/stores/chat'
+import { useChatStore } from '@/stores/chat'
 import { useContactStore } from '@/stores/contacts.ts'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useSettingStore } from '@/stores/setting.ts'
@@ -262,6 +262,20 @@ export const useMessage = () => {
       icon: 'delete',
       click: async (item: SessionItem) => {
         await handleMsgDelete(item.roomId)
+      }
+    },
+    {
+      label: (item: SessionItem) => (item.hide ? t('menu.secret_chat_cancel') : t('menu.secret_chat')),
+      icon: (item: SessionItem) => (item.hide ? 'eye' : 'eye-close'),
+      click: async (item: SessionItem) => {
+        const newHideState = !item.hide
+        try {
+          await invokeWithErrorHandler('hide_contact_command', { data: { roomId: item.roomId, hide: newHideState } })
+          chatStore.updateSession(item.roomId, { hide: newHideState })
+          window.$message.success(newHideState ? t('menu.secret_chat_success') : t('menu.secret_chat_cancel'))
+        } catch (e) {
+          window.$message.error(String(e))
+        }
       }
     },
     {

@@ -1,512 +1,253 @@
-/**
- * TrendRadar MCP 服务
- *
- * 提供趋势雷达 API 的 MCP 协议封装
- * API 文档: https://github.com/TendCode/TrendRadar
- */
+import { info, error, warn } from '@tauri-apps/plugin-log'
+import { ref, shallowRef } from 'vue'
 
-import { ref, readonly } from 'vue'
-
-// ============ 类型定义 ============
-
-export interface TrendRadarConfig {
-  apiUrl: string
-  apiKey: string
+export interface TrendRadarTool {
+  name: string
+  description: string
+  inputSchema: Record<string, any>
 }
 
-export interface NewsItem {
-  id: string
-  title: string
-  summary: string
-  url: string
-  source: string
-  publishedAt: string
-  sentiment?: 'positive' | 'neutral' | 'negative'
-  tags?: string[]
-}
-
-export interface TrendingTopic {
-  topic: string
-  trendScore: number
-  relatedKeywords: string[]
-  newsCount: number
-  sentiment: 'positive' | 'neutral' | 'negative'
-}
-
-export interface TrendAnalysis {
-  topic: string
-  trend: 'rising' | 'stable' | 'declining'
-  changePercent: number
-  forecast: {
-    direction: 'up' | 'down' | 'stable'
-    confidence: number
-  }
-  dataPoints: { date: string; value: number }[]
-}
-
-export interface SentimentAnalysis {
-  overall: 'positive' | 'neutral' | 'negative'
-  score: number
-  breakdown: {
-    positive: number
-    neutral: number
-    negative: number
-  }
-  keywords: { word: string; sentiment: string; weight: number }[]
-}
-
-export interface RSSFeed {
+export interface TrendRadarNews {
   title: string
   url: string
-  lastUpdated: string
-  items: NewsItem[]
+  platform: string
+  publishTime?: string
+  summary?: string
 }
 
-export interface Article {
-  id: string
-  title: string
-  content: string
-  url: string
-  source: string
-  publishedAt: string
-  author?: string
-  images?: string[]
-  tags?: string[]
+export interface TrendRadarSearchResult {
+  news: TrendRadarNews[]
+  total: number
 }
 
-export interface PeriodComparison {
-  period1: { start: string; end: string; newsCount: number; topTopics: string[] }
-  period2: { start: string; end: string; newsCount: number; topTopics: string[] }
-  comparison: {
-    newsChangePercent: number
-    emergingTopics: string[]
-    fadingTopics: string[]
-    sentimentShift: 'positive' | 'neutral' | 'negative'
-  }
-}
-
-// ============ 常量 ============
-
-const DEFAULT_API_URL = 'https://api.trendradar.io/v1'
-
-// ============ MCP 协议类型 ============
-
-export interface MCPRequest {
+export interface McpRpcRequest {
   jsonrpc: '2.0'
-  id: string | number
   method: string
-  params?: Record<string, unknown>
+  params?: {
+    name?: string
+    arguments?: Record<string, any>
+  }
+  id: number | string
 }
 
-export interface MCPResponse {
+export interface McpRpcResponse {
   jsonrpc: '2.0'
-  id: string | number
-  result?: unknown
+  result?: any
   error?: {
     code: number
     message: string
-    data?: unknown
   }
+  id: number | string
 }
 
-// ============ 核心类 ============
+const DEFAULT_MCP_ENDPOINT = 'http://127.0.0.1:3333/mcp'
+const DEFAULT_TIMEOUT = 30000
 
-class TrendRadarClient {
-  private config: TrendRadarConfig = {
-    apiUrl: DEFAULT_API_URL,
-    apiKey: ''
+class TrendRadarService {
+  private mcpEndpoint: string = DEFAULT_MCP_ENDPOINT
+  private requestId: number = 0
+
+  setEndpoint(endpoint: string): void {
+    this.mcpEndpoint = endpoint
+    info(`[TrendRadar] MCP endpoint set to: ${endpoint}`)
   }
 
-  private requestId = 0
-
-  /**
-   * 生成唯一请求 ID
-   */
-  private generateId(): string | number {
-    return ++this.requestId
+  getEndpoint(): string {
+    return this.mcpEndpoint
   }
 
-  /**
-   * 配置客户端
-   */
-  configure(config: Partial<TrendRadarConfig>) {
-    this.config = { ...this.config, ...config }
-  }
+  private async callMcp<T = any>(method: string, params?: Record<string, any>): Promise<T> {
+    const id = ++this.requestId
 
-  /**
-   * 获取当前配置
-   */
-  getConfig(): TrendRadarConfig {
-    return { ...this.config }
-  }
-
-  /**
-   * 发送 MCP 请求
-   */
-  private async request<T>(method: string, params?: Record<string, unknown>): Promise<T> {
-    const request: MCPRequest = {
+    const request: McpRpcRequest = {
       jsonrpc: '2.0',
-      id: this.generateId(),
       method,
-      params
+      params: params ? { arguments: params } : undefined,
+      id
     }
 
-    const response = await fetch(`${this.config.apiUrl}/mcp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.config.apiKey}`
-      },
-      body: JSON.stringify(request)
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT)
 
-    if (!response.ok) {
-      throw new Error(`API 请求失败: ${response.status} - ${response.statusText}`)
+    try {
+      const response = await fetch(this.mcpEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request),
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const data: McpRpcResponse = await response.json()
+
+      if (data.error) {
+        throw new Error(`MCP Error ${data.error.code}: ${data.error.message}`)
+      }
+
+      return data.result as T
+    } catch (err) {
+      clearTimeout(timeoutId)
+
+      if (err instanceof Error && err.name === 'AbortError') {
+        warn('[TrendRadar] MCP request timeout')
+        throw new Error('请求超时，请检查 TrendRadar 服务是否正常运行')
+      }
+
+      error(`[TrendRadar] MCP call failed: ${err}`)
+      throw err
     }
+  }
 
-    const mcpResponse: MCPResponse = await response.json()
-
-    if (mcpResponse.error) {
-      throw new Error(`MCP 错误: ${mcpResponse.error.message}`)
+  async listTools(): Promise<TrendRadarTool[]> {
+    try {
+      const result = await this.callMcp<{ tools: TrendRadarTool[] }>('tools/list')
+      info(`[TrendRadar] Listed ${result.tools?.length || 0} tools`)
+      return result.tools || []
+    } catch (err) {
+      error(`[TrendRadar] Failed to list tools: ${err}`)
+      throw new Error(`获取工具列表失败: ${err}`)
     }
-
-    return mcpResponse.result as T
   }
 
-  // ============ 工具方法 ============
-
-  /**
-   * 1. 获取最新新闻
-   * @param limit 返回数量限制
-   * @param category 可选分类
-   */
-  async getLatestNews(limit = 10, category?: string): Promise<NewsItem[]> {
-    return this.request<NewsItem[]>('news.latest', { limit, category })
+  async callTool(toolName: string, args?: Record<string, any>): Promise<any> {
+    info(`[TrendRadar] Calling tool: ${toolName}`)
+    try {
+      const result = await this.callMcp<any>('tools/call', {
+        name: toolName,
+        arguments: args || {}
+      })
+      info(`[TrendRadar] Tool ${toolName} called successfully`)
+      return result
+    } catch (err) {
+      error(`[TrendRadar] Failed to call tool ${toolName}: ${err}`)
+      throw new Error(`调用工具 ${toolName} 失败: ${err}`)
+    }
   }
 
-  /**
-   * 2. 搜索新闻
-   * @param query 搜索关键词
-   * @param limit 返回数量限制
-   * @param startDate 可选开始日期
-   * @param endDate 可选结束日期
-   */
-  async searchNews(query: string, limit = 10, startDate?: string, endDate?: string): Promise<NewsItem[]> {
-    return this.request<NewsItem[]>('news.search', { query, limit, startDate, endDate })
+  async getLatestNews(platforms?: string[], limit: number = 10): Promise<TrendRadarSearchResult> {
+    try {
+      const result = await this.callTool('get_latest_news', {
+        platforms: platforms || ['知乎', '今日头条', '百度热搜'],
+        limit
+      })
+      return {
+        news: result.news || result || [],
+        total: result.total || result.news?.length || 0
+      }
+    } catch (err) {
+      error(`[TrendRadar] Failed to get latest news: ${err}`)
+      throw new Error(`获取最新新闻失败: ${err}`)
+    }
   }
 
-  /**
-   * 3. 获取热门话题
-   * @param limit 返回数量限制
-   * @param category 可选分类
-   */
-  async getTrendingTopics(limit = 10, category?: string): Promise<TrendingTopic[]> {
-    return this.request<TrendingTopic[]>('trending.topics', { limit, category })
+  async searchNews(keyword: string, limit: number = 10): Promise<TrendRadarSearchResult> {
+    try {
+      const result = await this.callTool('search_news', {
+        keyword,
+        limit
+      })
+      return {
+        news: result.news || result || [],
+        total: result.total || result.news?.length || 0
+      }
+    } catch (err) {
+      error(`[TrendRadar] Failed to search news: ${err}`)
+      throw new Error(`搜索新闻失败: ${err}`)
+    }
   }
 
-  /**
-   * 4. 分析话题趋势
-   * @param topic 话题关键词
-   * @param period 分析周期 (7d, 30d, 90d)
-   */
-  async analyzeTopicTrend(topic: string, period = '30d'): Promise<TrendAnalysis> {
-    return this.request<TrendAnalysis>('trending.analyze', { topic, period })
+  async getTrendingTopics(limit: number = 10): Promise<any[]> {
+    try {
+      const result = await this.callTool('get_trending_topics', { limit })
+      return result.topics || result || []
+    } catch (err) {
+      error(`[TrendRadar] Failed to get trending topics: ${err}`)
+      throw new Error(`获取趋势话题失败: ${err}`)
+    }
   }
 
-  /**
-   * 5. 分析情感
-   * @param text 要分析的文本
-   * @param context 可选上下文
-   */
-  async analyzeSentiment(text: string, context?: string): Promise<SentimentAnalysis> {
-    return this.request<SentimentAnalysis>('sentiment.analyze', { text, context })
+  async getLatestRss(feeds?: string[], limit: number = 10): Promise<any[]> {
+    try {
+      const result = await this.callTool('get_latest_rss', {
+        feeds: feeds || [],
+        limit
+      })
+      return result.articles || result || []
+    } catch (err) {
+      error(`[TrendRadar] Failed to get RSS updates: ${err}`)
+      throw new Error(`获取 RSS 更新失败: ${err}`)
+    }
   }
 
-  /**
-   * 6. 聚合新闻
-   * @param keywords 关键词列表
-   * @param startDate 开始日期
-   * @param endDate 结束日期
-   */
-  async aggregateNews(keywords: string[], startDate?: string, endDate?: string): Promise<NewsItem[]> {
-    return this.request<NewsItem[]>('news.aggregate', { keywords, startDate, endDate })
+  async analyzeTopicTrend(topic: string): Promise<any> {
+    try {
+      const result = await this.callTool('analyze_topic_trend', { topic })
+      return result
+    } catch (err) {
+      error(`[TrendRadar] Failed to analyze topic trend: ${err}`)
+      throw new Error(`分析话题趋势失败: ${err}`)
+    }
   }
 
-  /**
-   * 7. 对比时间段
-   * @param period1Start 第一个周期开始
-   * @param period1End 第一个周期结束
-   * @param period2Start 第二个周期开始
-   * @param period2End 第二个周期结束
-   */
-  async comparePeriods(
-    period1Start: string,
-    period1End: string,
-    period2Start: string,
-    period2End: string
-  ): Promise<PeriodComparison> {
-    return this.request<PeriodComparison>('analysis.compare', {
-      period1: { start: period1Start, end: period1End },
-      period2: { start: period2Start, end: period2End }
-    })
-  }
-
-  /**
-   * 8. 获取最新 RSS 订阅
-   * @param source RSS 源名称
-   * @param limit 返回数量限制
-   */
-  async getLatestRss(source: string, limit = 10): Promise<RSSFeed> {
-    return this.request<RSSFeed>('rss.latest', { source, limit })
-  }
-
-  /**
-   * 9. 读取文章
-   * @param articleId 文章 ID
-   */
-  async readArticle(articleId: string): Promise<Article> {
-    return this.request<Article>('article.read', { articleId })
-  }
-
-  /**
-   * 10. 批量读取文章
-   * @param articleIds 文章 ID 列表
-   */
-  async readArticlesBatch(articleIds: string[]): Promise<Article[]> {
-    return this.request<Article[]>('article.readBatch', { articleIds })
-  }
-
-  /**
-   * 11. 获取分类新闻
-   * @param category 分类名称
-   * @param limit 返回数量限制
-   */
-  async getNewsByCategory(category: string, limit = 10): Promise<NewsItem[]> {
-    return this.request<NewsItem[]>('news.category', { category, limit })
-  }
-
-  /**
-   * 12. 获取新闻来源列表
-   */
-  async getNewsSources(): Promise<string[]> {
-    return this.request<string[]>('news.sources')
-  }
-
-  /**
-   * 13. 获取话题关联新闻
-   * @param topic 话题关键词
-   * @param limit 返回数量限制
-   */
-  async getTopicNews(topic: string, limit = 10): Promise<NewsItem[]> {
-    return this.request<NewsItem[]>('news.topic', { topic, limit })
-  }
-
-  /**
-   * 14. 获取实时热点
-   * @param limit 返回数量限制
-   */
-  async getRealtimeHot(limit = 20): Promise<TrendingTopic[]> {
-    return this.request<TrendingTopic[]>('trending.realtime', { limit })
-  }
-
-  /**
-   * 15. 分析新闻趋势
-   * @param topic 话题关键词
-   * @param metric 分析指标 (volume, sentiment, engagement)
-   */
-  async analyzeNewsTrend(topic: string, metric = 'volume'): Promise<TrendAnalysis> {
-    return this.request<TrendAnalysis>('trend.analyze', { topic, metric })
-  }
-
-  /**
-   * 16. 获取情感趋势
-   * @param topic 话题关键词
-   * @param period 时间周期
-   */
-  async getSentimentTrend(topic: string, period = '30d'): Promise<TrendAnalysis> {
-    return this.request<TrendAnalysis>('sentiment.trend', { topic, period })
-  }
-
-  /**
-   * 17. 提取关键词
-   * @param text 要分析的文本
-   * @param limit 返回数量限制
-   */
-  async extractKeywords(text: string, limit = 10): Promise<string[]> {
-    return this.request<string[]>('nlp.keywords', { text, limit })
-  }
-
-  /**
-   * 18. 提取实体
-   * @param text 要分析的文本
-   * @param types 实体类型 (person, org, location, etc.)
-   */
-  async extractEntities(
-    text: string,
-    types?: string[]
-  ): Promise<{ type: string; value: string; confidence: number }[]> {
-    return this.request<{ type: string; value: string; confidence: number }[]>('nlp.entities', { text, types })
-  }
-
-  /**
-   * 19. 订阅话题更新
-   * @param topic 话题关键词
-   * @param callbackUrl 回调 URL
-   */
-  async subscribeTopic(topic: string, callbackUrl: string): Promise<{ subscriptionId: string }> {
-    return this.request<{ subscriptionId: string }>('subscribe.topic', { topic, callbackUrl })
-  }
-
-  /**
-   * 20. 取消订阅
-   * @param subscriptionId 订阅 ID
-   */
-  async unsubscribe(subscriptionId: string): Promise<{ success: boolean }> {
-    return this.request<{ success: boolean }>('subscribe.cancel', { subscriptionId })
+  async healthCheck(): Promise<boolean> {
+    try {
+      await this.listTools()
+      return true
+    } catch {
+      return false
+    }
   }
 }
 
-// ============ 导出单例 ============
+const trendRadarClient = new TrendRadarService()
 
-export const trendRadarClient = new TrendRadarClient()
+const isConnected = ref(false)
 
-// ============ Vue Composable ============
+async function setupTrendRadar(endpoint?: string): Promise<void> {
+  if (endpoint) {
+    trendRadarClient.setEndpoint(endpoint)
+  }
 
-/**
- * Vue Composable: 使用 TrendRadar
- */
+  try {
+    const connected = await trendRadarClient.healthCheck()
+    isConnected.value = connected
+    if (connected) {
+      info('[TrendRadar] Connected successfully')
+    } else {
+      warn('[TrendRadar] Connection failed')
+    }
+  } catch (err) {
+    isConnected.value = false
+    error(`[TrendRadar] Setup failed: ${err}`)
+    throw err
+  }
+}
+
 export function useTrendRadar() {
-  // 响应式状态
-  const isConnected = ref(false)
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-
-  // 配置
-  const config = ref<TrendRadarConfig>({
-    apiUrl: DEFAULT_API_URL,
-    apiKey: ''
-  })
-
-  /**
-   * 配置客户端
-   */
-  function setupTrendRadar(newConfig: Partial<TrendRadarConfig>) {
-    config.value = { ...config.value, ...newConfig }
-    trendRadarClient.configure(config.value)
-    isConnected.value = true
-  }
-
-  /**
-   * 获取最新新闻
-   */
-  async function fetchLatestNews(limit?: number, category?: string) {
-    isLoading.value = true
-    error.value = null
-    try {
-      return await trendRadarClient.getLatestNews(limit, category)
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : '获取新闻失败'
-      throw e
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  /**
-   * 搜索新闻
-   */
-  async function searchNews(query: string, limit?: number, startDate?: string, endDate?: string) {
-    isLoading.value = true
-    error.value = null
-    try {
-      return await trendRadarClient.searchNews(query, limit, startDate, endDate)
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : '搜索失败'
-      throw e
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  /**
-   * 获取热门话题
-   */
-  async function fetchTrendingTopics(limit?: number, category?: string) {
-    isLoading.value = true
-    error.value = null
-    try {
-      return await trendRadarClient.getTrendingTopics(limit, category)
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : '获取热门话题失败'
-      throw e
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  /**
-   * 分析话题趋势
-   */
-  async function analyzeTopicTrend(topic: string, period?: string) {
-    isLoading.value = true
-    error.value = null
-    try {
-      return await trendRadarClient.analyzeTopicTrend(topic, period)
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : '分析失败'
-      throw e
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  /**
-   * 分析情感
-   */
-  async function analyzeSentiment(text: string, context?: string) {
-    isLoading.value = true
-    error.value = null
-    try {
-      return await trendRadarClient.analyzeSentiment(text, context)
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : '情感分析失败'
-      throw e
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   return {
-    // 状态 (只读)
-    isConnected: readonly(isConnected),
-    isLoading: readonly(isLoading),
-    error: readonly(error),
-    config: readonly(config),
-
-    // 方法
+    isConnected,
     setupTrendRadar,
-    fetchLatestNews,
-    searchNews,
-    fetchTrendingTopics,
-    analyzeTopicTrend,
-    analyzeSentiment,
-
-    // 直接访问客户端方法
-    client: trendRadarClient
+    client: trendRadarClient,
+    listTools: trendRadarClient.listTools.bind(trendRadarClient),
+    callTool: trendRadarClient.callTool.bind(trendRadarClient),
+    getLatestNews: trendRadarClient.getLatestNews.bind(trendRadarClient),
+    searchNews: trendRadarClient.searchNews.bind(trendRadarClient),
+    getTrendingTopics: trendRadarClient.getTrendingTopics.bind(trendRadarClient),
+    getLatestRss: trendRadarClient.getLatestRss.bind(trendRadarClient),
+    analyzeTopicTrend: trendRadarClient.analyzeTopicTrend.bind(trendRadarClient),
+    healthCheck: trendRadarClient.healthCheck.bind(trendRadarClient),
+    setEndpoint: trendRadarClient.setEndpoint.bind(trendRadarClient),
+    getEndpoint: trendRadarClient.getEndpoint.bind(trendRadarClient)
   }
 }
 
-// 导出所有工具方法作为独立函数
-export {
-  trendRadarClient as client,
-  type TrendRadarConfig,
-  type NewsItem,
-  type TrendingTopic,
-  type TrendAnalysis,
-  type SentimentAnalysis,
-  type RSSFeed,
-  type Article,
-  type PeriodComparison,
-  type MCPRequest,
-  type MCPResponse
-}
+export { TrendRadarService }
+export { trendRadarClient }
+export default useTrendRadar

@@ -289,7 +289,7 @@ class MatrixMessageRelationService {
       const event = room.findEventById(currentEventId)
       if (!event) break
 
-      const content = event.getContent()
+      const content = event.getContent() as { 'm.relates_to'?: { 'm.in_reply_to'?: { event_id?: string } } }
       chain.push({
         eventId: currentEventId,
         content: content,
@@ -297,7 +297,7 @@ class MatrixMessageRelationService {
         timestamp: event.getTs()
       })
 
-      const relatesTo = content['m.relates_to']
+      const relatesTo = content?.['m.relates_to']
       currentEventId = relatesTo?.['m.in_reply_to']?.event_id
       depth++
     }
@@ -401,17 +401,47 @@ class MatrixMessageRelationService {
   }
 
   getReplyToEventId(event: MatrixEvent): string | null {
-    const content = event.getContent()
-    return content['m.relates_to']?.['m.in_reply_to']?.event_id || null
+    const content = event.getContent() as { 'm.relates_to'?: { 'm.in_reply_to'?: { event_id?: string } } }
+    return content?.['m.relates_to']?.['m.in_reply_to']?.event_id || null
   }
 
   getThreadRootId(event: MatrixEvent): string | null {
-    const content = event.getContent()
-    const relatesTo = content['m.relates_to']
+    const content = event.getContent() as { 'm.relates_to'?: { rel_type?: string; event_id?: string } }
+    const relatesTo = content?.['m.relates_to']
     if (relatesTo?.rel_type === 'm.thread') {
       return relatesTo.event_id || null
     }
     return null
+  }
+
+  async deleteMessage(roomId: string, eventId: string, reason?: string): Promise<void> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('[MessageRelation] 客户端未初始化')
+    }
+
+    try {
+      const room = client.getRoom(roomId)
+      if (!room) {
+        throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
+      }
+
+      const event = room.findEventById(eventId)
+      if (!event) {
+        throw new Error(`[MessageRelation] 消息不存在: ${eventId}`)
+      }
+
+      const myUserId = client.getUserId()
+      if (event.getSender() !== myUserId) {
+        throw new Error('[MessageRelation] 只能删除自己发送的消息')
+      }
+
+      await client.redactEvent(roomId, eventId, undefined, reason ? { reason } : undefined)
+      info(`[MessageRelation] 删除消息成功: ${eventId}`)
+    } catch (err) {
+      error(`[MessageRelation] 删除消息失败: ${err}`)
+      throw err
+    }
   }
 }
 

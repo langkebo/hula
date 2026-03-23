@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { ImUrlEnum } from '@/enums'
-import { imRequest } from '@/utils/ImRequestUtils'
+import { imRequestResult } from '@/utils/ImRequestUtils'
 
 export type AssistantModelPreset = {
   id: string
@@ -29,10 +29,13 @@ const fetchAssistantModelPresets = async (force = false) => {
   assistantModelLoading.value = true
   assistantModelError.value = null
   try {
-    const response = await imRequest<AssistantModelPreset[]>({
+    const response = await imRequestResult<AssistantModelPreset[]>({
       url: ImUrlEnum.GET_ASSISTANT_MODEL_LIST
     })
-    const normalized = (response ?? []).map((preset) => ({
+    if (!response.isOk()) {
+      throw response.error
+    }
+    const normalized = (response.value ?? []).map((preset) => ({
       ...preset,
       modelUrl: appendVersionQuery(preset.modelUrl, preset.version)
     }))

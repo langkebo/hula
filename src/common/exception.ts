@@ -6,7 +6,10 @@ export enum ErrorType {
   Authentication = 'Authentication',
   Unknown = 'Unknown',
   TokenExpired = 'TokenExpired',
-  TokenInvalid = 'TokenInvalid'
+  TokenInvalid = 'TokenInvalid',
+  RateLimit = 'RateLimit',
+  Permission = 'Permission',
+  NotFound = 'NotFound'
 }
 
 export interface ErrorDetails {

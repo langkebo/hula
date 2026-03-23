@@ -1,4 +1,4 @@
-import type { Room, RoomMember, ICreateRoomOpts } from 'matrix-js-sdk'
+import type { Room, RoomMember, MatrixEvent, ICreateRoomOpts } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 
@@ -233,7 +233,7 @@ class MatrixRoomService {
     }
 
     try {
-      await client.setRoomName(roomId, name)
+      await (client as any).setRoomName(roomId, name)
       info(`[MatrixRoom] 设置房间名称成功: ${roomId} -> ${name}`)
     } catch (err) {
       error(`[MatrixRoom] 设置房间名称失败: ${err}`)
@@ -255,7 +255,7 @@ class MatrixRoomService {
     }
 
     try {
-      await client.setRoomTopic(roomId, topic)
+      await (client as any).setRoomTopic(roomId, topic)
       info(`[MatrixRoom] 设置房间主题成功: ${roomId}`)
     } catch (err) {
       error(`[MatrixRoom] 设置房间主题失败: ${err}`)
@@ -277,7 +277,7 @@ class MatrixRoomService {
     }
 
     try {
-      await client.sendStateEvent(roomId, 'm.room.avatar' as any, { url: avatarUrl }, '')
+      await (client as any).sendStateEvent(roomId, 'm.room.avatar', { url: avatarUrl }, '')
       info(`[MatrixRoom] 设置房间头像成功: ${roomId}`)
     } catch (err) {
       error(`[MatrixRoom] 设置房间头像失败: ${err}`)
@@ -303,7 +303,7 @@ class MatrixRoomService {
       if (!room) {
         throw new Error(`房间不存在: ${roomId}`)
       }
-      return room.currentState.getStateEvents([] as any)
+      return room.currentState.getStateEvents('*')
     } catch (err) {
       error(`[MatrixRoom] 获取房间状态失败: ${err}`)
       throw err
@@ -325,9 +325,9 @@ class MatrixRoomService {
 
     try {
       if (enabled) {
-        await client.deletePushRule('global', 'override' as any, roomId)
+        await (client as any).deletePushRule('global', 'override', roomId)
       } else {
-        await client.addPushRule('global', 'override' as any, roomId, {
+        await (client as any).addPushRule('global', 'override', roomId, {
           conditions: [
             {
               kind: 'event_match' as any,
@@ -358,7 +358,7 @@ class MatrixRoomService {
     }
 
     try {
-      const accountData = client.getAccountData('m.direct' as any)
+      const accountData = (client as any).getAccountData('m.direct')
       if (accountData) {
         return new Map(Object.entries(accountData.getContent()))
       }
@@ -388,7 +388,7 @@ class MatrixRoomService {
       if (!rooms.includes(roomId)) {
         rooms.push(roomId)
         directRooms.set(userId, rooms)
-        await client.setAccountData('m.direct' as any, Object.fromEntries(directRooms) as any)
+        await (client as any).setAccountData('m.direct', Object.fromEntries(directRooms))
       }
       info(`[MatrixRoom] 设置直接消息房间成功: ${userId} -> ${roomId}`)
     } catch (err) {
@@ -422,11 +422,11 @@ class MatrixRoomService {
       }
 
       const currentMember = room.getMember(userId)
-      const currentMembership = currentMember?.events.member?.getContent() || {}
+      const currentMembership = (currentMember as any)?.events?.member?.getContent() || {}
 
-      await client.sendStateEvent(
+      await (client as any).sendStateEvent(
         roomId,
-        'm.room.member' as any,
+        'm.room.member',
         {
           ...currentMembership,
           displayname: displayName,
@@ -457,6 +457,40 @@ class MatrixRoomService {
 
     const member = room.getMember(userId)
     return member?.rawDisplayName || member?.name || null
+  }
+
+  /**
+   * 设置成员权力等级（角色）
+   * @param roomId - 房间 ID
+   * @param userId - 用户 ID
+   * @param powerLevel - 权力等级 (0=普通成员, 50=管理员, 100=创建者)
+   */
+  async setMemberPowerLevel(roomId: string, userId: string, powerLevel: number): Promise<void> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+    try {
+      await (client as any).setUserPowerLevel(userId, roomId, powerLevel)
+      info(`[MatrixRoom] 成功设置用户 ${userId} 的权力等级为 ${powerLevel}`)
+    } catch (err) {
+      error(`[MatrixRoom] 设置权力等级失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 将成员设为管理员
+   */
+  async setMemberAsAdmin(roomId: string, userId: string): Promise<void> {
+    await this.setMemberPowerLevel(roomId, userId, 100)
+  }
+
+  /**
+   * 移除管理员权限
+   */
+  async removeMemberAsAdmin(roomId: string, userId: string): Promise<void> {
+    await this.setMemberPowerLevel(roomId, userId, 0)
   }
 
   /**

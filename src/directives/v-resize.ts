@@ -1,7 +1,9 @@
+import type { DirectiveBinding } from 'vue'
+
 const map = new WeakMap()
 
 // 创建一个ResizeObserver实例
-const ob = new ResizeObserver((entries: any[]) => {
+const ob = new ResizeObserver((entries: ResizeObserverEntry[]) => {
   // 遍历所有监测到的元素
   for (const entry of entries) {
     // 获取该元素的处理器
@@ -21,12 +23,12 @@ const ob = new ResizeObserver((entries: any[]) => {
  * 调整元素尺寸指令
  */
 export default {
-  mounted(el: any, binding: any) {
+  mounted(el: HTMLElement, binding: DirectiveBinding) {
     //监听el元素尺寸的变化
     map.set(el, binding.value)
     ob.observe(el)
   },
-  unmounted(el: any) {
+  unmounted(el: HTMLElement) {
     //取消监听
     ob.unobserve(el)
   }

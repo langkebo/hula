@@ -73,7 +73,12 @@
     "========= 链接HuLa skill =========": "",
     "skill": "node scripts/link-skills.js",
     "========= 单独提交 =========": "",
-    "gitcz": "git-cz"
+    "gitcz": "git-cz",
+    "create:refactor": "node scripts/create-hula-refactor.js",
+    "test:e2e": "playwright test",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "analyze": "vite build --mode production"
   },
   "dependencies": {
     "@actions/github": "^7.0.0",
@@ -143,12 +148,20 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.5",
+    "@chromatic-com/storybook": "^5.0.2",
     "@commitlint/cli": "^20.4.3",
     "@commitlint/config-conventional": "^20.4.3",
     "@iconify/vue": "^5.0.0",
     "@inquirer/prompts": "^8.3.0",
+    "@playwright/test": "^1.58.2",
     "@release-it/bumper": "^7.0.5",
     "@release-it/conventional-changelog": "10.0.1",
+    "@storybook/addon-a11y": "^10.3.1",
+    "@storybook/addon-docs": "^10.3.1",
+    "@storybook/addon-onboarding": "^10.3.1",
+    "@storybook/addon-vitest": "^10.3.1",
+    "@storybook/vue3": "^10.3.1",
+    "@storybook/vue3-vite": "^10.3.1",
     "@tauri-apps/cli": "2.9.5",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^25.3.3",
@@ -162,6 +175,7 @@
     "@unocss/vite": "^66.6.4",
     "@vitejs/plugin-vue": "^6.0.4",
     "@vitejs/plugin-vue-jsx": "^5.1.4",
+    "@vitest/browser-playwright": "4.0.18",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "@vue/test-utils": "^2.4.6",
@@ -173,10 +187,14 @@
     "happy-dom": "^20.8.3",
     "husky": "^9.1.7",
     "lint-staged": "^16.3.2",
+    "playwright": "^1.58.2",
     "postcss-pxtorem": "^6.1.0",
     "prettier": "^3.8.1",
     "release-it": "^19.2.4",
+    "rollup-plugin-visualizer": "^7.0.1",
     "sass": "1.97.2",
+    "storybook": "^10.3.1",
+    "ts-morph": "^27.0.2",
     "typescript": "^5.9.3",
     "unplugin-auto-import": "^20.3.0",
     "unplugin-vue-components": "^30.0.0",
@@ -197,6 +215,12 @@
       "lodash": "4.17.23",
       "lodash-es": "4.17.23"
     },
-    "ignoredBuiltDependencies": ["@parcel/watcher", "esbuild", "sharp", "tlbs-map-vue", "vue-demi"]
+    "ignoredBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild",
+      "sharp",
+      "tlbs-map-vue",
+      "vue-demi"
+    ]
   }
 }

@@ -16,7 +16,7 @@ export interface ValidationRule {
     | 'range'
   message?: string
   value?: number | RegExp
-  validator?: (value: any) => boolean | Promise<boolean>
+  validator?: (value: unknown) => boolean | Promise<boolean>
 }
 
 export interface ValidationResult {
