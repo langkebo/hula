@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
+import { visualizer } from 'rollup-plugin-visualizer'
 import UnoCSS from '@unocss/vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
@@ -122,7 +123,13 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         dirs: componentsDirs, // 根据平台加载对应组件目录
         resolvers: [NaiveUiResolver(), VantResolver()],
         dts: componentsDtsPath
-      })
+      }),
+      visualizer({
+        open: false,
+        gzipSize: true,
+        brotliSize: true,
+        filename: 'dist/stats.html',
+      }),
     ],
     worker: {
       format: 'es' as const

@@ -179,13 +179,13 @@ class MatrixThreadService {
 
     const replies = this.getThreadReplies(roomId, threadRootId)
     for (const reply of replies) {
-      const content = reply.getContent()
+      const content = reply.getContent() as { 'm.relates_to'?: { 'm.in_reply_to'?: { event_id?: string } } }
       messages.push({
         eventId: reply.getId()!,
         sender: reply.getSender()!,
         content: reply.getContent(),
         timestamp: reply.getTs(),
-        inReplyTo: content['m.relates_to']?.['m.in_reply_to']?.event_id
+        inReplyTo: content?.['m.relates_to']?.['m.in_reply_to']?.event_id
       })
     }
 
@@ -277,14 +277,14 @@ class MatrixThreadService {
   }
 
   isInThread(event: MatrixEvent): boolean {
-    const content = event.getContent()
-    const relatesTo = content['m.relates_to']
+    const content = event.getContent() as { 'm.relates_to'?: { rel_type?: string } }
+    const relatesTo = content?.['m.relates_to']
     return relatesTo?.rel_type === 'm.thread'
   }
 
   getThreadRootId(event: MatrixEvent): string | null {
-    const content = event.getContent()
-    const relatesTo = content['m.relates_to']
+    const content = event.getContent() as { 'm.relates_to'?: { rel_type?: string; event_id?: string } }
+    const relatesTo = content?.['m.relates_to']
     if (relatesTo?.rel_type === 'm.thread') {
       return relatesTo.event_id || null
     }

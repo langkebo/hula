@@ -216,8 +216,9 @@ export function retryable(config?: Partial<RetryConfig>) {
   ) => {
     const originalMethod = descriptor.value!
 
-    descriptor.value = async function (...args: any[]) {
-      return withRetry(() => originalMethod.apply(this, args), config)
+    descriptor.value = async function (this: any, ...args: any[]) {
+      const self = this
+      return withRetry(() => originalMethod.apply(self, args), config)
     } as T
 
     return descriptor

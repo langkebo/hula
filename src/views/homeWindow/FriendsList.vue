@@ -24,6 +24,18 @@
       <svg class="size-16px rotate-270 color-[--text-color]"><use href="#down"></use></svg>
     </n-flex>
   </n-flex>
+
+  <n-flex
+    @click="handleOpenSecretChat"
+    align="center"
+    justify="space-between"
+    class="my-10px p-12px hover:(bg-[--list-hover-color] cursor-pointer)">
+    <div class="text-(14px [--text-color])">{{ t('home.secret_chat.title') }}</div>
+    <n-flex align="center" :size="4">
+      <svg class="size-16px color-[--text-color]"><use href="#eye-close"></use></svg>
+    </n-flex>
+  </n-flex>
+
   <n-tabs type="segment" animated class="mt-4px p-[4px_10px_0px_8px]">
     <n-tab-pane name="1" :tab="t('home.friends_list.tabs.friend')">
       <n-collapse :display-directive="'show'" accordion :default-expanded-names="['1']">
@@ -118,7 +130,7 @@
 </template>
 <script setup lang="ts" name="friendsList">
 import { storeToRefs } from 'pinia'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
@@ -132,6 +144,7 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
 
 const route = useRoute()
+const router = useRouter()
 const { t } = useI18n()
 const menuList = computed(() => [
   { label: t('home.friends_list.menu.add_group'), icon: 'plus' },
@@ -231,6 +244,17 @@ const handleApply = async (applyType: 'friend' | 'group') => {
     } as DetailsContent
   })
   activeItem.value = ''
+}
+
+const handleOpenSecretChat = () => {
+  // 检查是否设置了私密聊天密码
+  if (!settingStore.isSecretChatConfigured()) {
+    window.$message.warning(t('home.secret_chat.no_password'))
+    // 可以导航到设置页面
+    return
+  }
+  // 导航到私密聊天页面
+  router.push('/secretChat')
 }
 
 /** 获取联系人数据 */

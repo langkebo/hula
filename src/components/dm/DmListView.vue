@@ -31,35 +31,32 @@
             v-for="dmRoom in filteredDmRooms"
             :key="dmRoom.roomId"
             class="dm-item"
-            :class="{ active: activeRoomId === dmRoom.roomId, pinned: dmRoom.isPinned }"
+            :class="{ active: activeRoomId === dmRoom.roomId }"
             @click="handleSelectRoom(dmRoom)"
             @contextmenu="handleContextMenu($event, dmRoom)">
             <n-flex align="center" :size="12">
-              <n-badge :dot="dmRoom.isPinned" color="#f0a020" :offset="[-4, 4]">
+              <n-badge :dot="false" color="#f0a020" :offset="[-4, 4]">
                 <n-avatar
                   :size="44"
-                  :src="AvatarUtils.getAvatarUrl(dmRoom.partnerAvatar)"
+                  :src="AvatarUtils.getAvatarUrl(dmRoom.avatarUrl)"
                   :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   round />
               </n-badge>
               <n-flex vertical :size="4" class="flex-1 truncate">
                 <n-flex align="center" justify="space-between">
                   <span class="text-14px truncate">
-                    {{ dmRoom.partnerName || dmRoom.partnerId }}
+                    {{ dmRoom.name || dmRoom.roomId }}
                   </span>
                   <span class="text-12px text-gray-500">
-                    {{ formatTime(dmRoom.lastMessageTimestamp) }}
+                    {{ formatTime(dmRoom.lastMessage?.timestamp) }}
                   </span>
                 </n-flex>
                 <n-flex align="center" justify="space-between">
                   <span class="text-12px text-gray-400 truncate flex-1">
-                    {{ dmRoom.lastMessage || t('dm.list.no_message') }}
+                    {{ dmRoom.lastMessage?.content || t('dm.list.no_message') }}
                   </span>
                   <n-flex align="center" :size="4">
-                    <n-icon v-if="dmRoom.isEncrypted" size="14" color="#18a058">
-                      <svg><use href="#lock" /></svg>
-                    </n-icon>
-                    <n-badge v-if="dmRoom.unreadCount > 0" :value="dmRoom.unreadCount" :max="99" type="info" />
+                    <n-badge v-if="(dmRoom.unreadCount || 0) > 0" :value="dmRoom.unreadCount" :max="99" type="info" />
                   </n-flex>
                 </n-flex>
               </n-flex>
@@ -109,14 +106,14 @@ const filteredDmRooms = computed(() => {
   if (searchValue.value.trim()) {
     const query = searchValue.value.toLowerCase()
     rooms = rooms.filter(
-      (r) => r.partnerId.toLowerCase().includes(query) || r.partnerName?.toLowerCase().includes(query)
+      (r) => r.roomId.toLowerCase().includes(query) || r.name?.toLowerCase().includes(query)
     )
   }
 
   return rooms.sort((a, b) => {
     if (pinnedRooms.value.has(a.roomId) && !pinnedRooms.value.has(b.roomId)) return -1
     if (!pinnedRooms.value.has(a.roomId) && pinnedRooms.value.has(b.roomId)) return 1
-    return (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0)
+    return (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0)
   })
 })
 
@@ -128,19 +125,25 @@ const formatTime = (timestamp?: number) => {
 const loadDmRooms = async () => {
   loading.value = true
   try {
-    dmRooms.value = matrixDirectMessageService.getDmRoomList()
+    const rooms = await matrixDirectMessageService.getDmRoomInfos()
+    dmRooms.value = rooms
   } finally {
     loading.value = false
   }
 }
 
 const handleSelectRoom = (room: DmRoomInfo) => {
-  activeRoomId.value = room.roomId
-  useMitt.emit(MittEnum.DETAILS_SHOW, {
-    context: { type: RoomTypeEnum.SINGLE, uid: room.partnerId, roomId: room.roomId },
-    detailsShow: true
-  })
-}
+    activeRoomId.value = room.roomId
+    const partnerId = room.invitees[0] || room.inviter || ''
+    
+    // Type assertion bypass for strictly typed pinia store
+    ;(chatStore as any).updateCurrentChat({
+      roomId: room.roomId,
+      context: { type: RoomTypeEnum.SINGLE, uid: partnerId, roomId: room.roomId },
+      isEncrypted: false,
+      members: []
+    })
+  }
 
 const contextMenuItems = computed(() => [
   { label: t('dm.context.pin'), icon: 'pin' },
@@ -171,10 +174,12 @@ const handleContextMenuSelect = async (item: { label: string }) => {
     case t('dm.context.mark_read'):
       chatStore.markSessionRead(room.roomId)
       break
-    case t('dm.context.delete'):
-      await matrixDirectMessageService.removeRoomFromDirect(room.roomId)
+    case t('dm.context.delete'): {
+      const partnerId = room.invitees[0] || room.inviter || ''
+      await matrixDirectMessageService.removeDmRoom(room.roomId, partnerId)
       await loadDmRooms()
       break
+    }
   }
 
   selectedRoom.value = null

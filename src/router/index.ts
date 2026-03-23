@@ -10,60 +10,60 @@ import {
 
 import FriendsList from '@/views/homeWindow/FriendsList.vue'
 import Message from '@/views/homeWindow/message/index.vue'
-import SearchDetails from '@/views/homeWindow/SearchDetails.vue'
-
-import ChatRoomLayout from '#/layout/chat-room/ChatRoomLayout.vue'
-import NoticeLayout from '#/layout/chat-room/NoticeLayout.vue'
-import FriendsLayout from '#/layout/friends/FriendsLayout.vue'
-import MobileHome from '#/layout/index.vue'
-import GroupChatMember from '#/views/chat-room/GroupChatMember.vue'
-import MobileInviteGroupMember from '#/views/chat-room/MobileInviteGroupMember.vue'
-import MyLayout from '#/layout/my/MyLayout.vue'
-import MobileLogin from '#/login.vue'
-import ChatSetting from '#/views/chat-room/ChatSetting.vue'
-import MobileChatMain from '#/views/chat-room/MobileChatMain.vue'
-import SearchChatContent from '#/views/chat-room/SearchChatContent.vue'
-import MediaViewer from '#/views/chat-room/MediaViewer.vue'
-import NoticeDetail from '#/views/chat-room/notice/NoticeDetail.vue'
-import NoticeEdit from '#/views/chat-room/notice/NoticeEdit.vue'
-import NoticeList from '#/views/chat-room/notice/NoticeList.vue'
-import ConfirmAddGroup from '#/views/friends/ConfirmAddGroup.vue'
-import ConfirmAddFriend from '#/views/friends/ConfirmAddFriend.vue'
-import AddFriends from '#/views/friends/AddFriends.vue'
-import FriendInfo from '#/views/friends/FriendInfo.vue'
-import MobileFriendPage from '#/views/friends/index.vue'
-import StartGroupChat from '#/views/friends/StartGroupChat.vue'
-import MobileMessagePage from '#/views/message/index.vue'
-import EditBio from '#/views/my/EditBio.vue'
-import EditBirthday from '#/views/my/EditBirthday.vue'
-import EditProfile from '#/views/my/EditProfile.vue'
-import MobileMy from '#/views/my/index.vue'
-import MobileQRCode from '#/views/my/MobileQRCode.vue'
-import MobileSettings from '#/views/my/MobileSettings.vue'
-import HomeserverSettings from '@/mobile/views/my/HomeserverSettings.vue'
-import MyMessages from '#/views/my/MyMessages.vue'
-import Share from '#/views/my/Share.vue'
-import SimpleBio from '#/views/my/SimpleBio.vue'
-import AiAssistant from '#/views/my/AiAssistant.vue'
-import MyAlbum from '#/views/my/MyAlbum.vue'
-import StatusSettings from '#/views/my/StatusSettings.vue'
-import SecuritySettings from '#/views/my/SecuritySettings.vue'
-import DeviceManagement from '#/views/my/DeviceManagement.vue'
-import NotificationSettings from '#/views/my/NotificationSettings.vue'
-import HelpFeedback from '#/views/my/HelpFeedback.vue'
-import VoiceVideoSettings from '#/views/my/VoiceVideoSettings.vue'
-import LabsSettings from '#/views/my/LabsSettings.vue'
-import IntegrationsSettings from '#/views/my/IntegrationsSettings.vue'
-import Favorites from '#/views/my/Favorites.vue'
-import Files from '#/views/my/Files.vue'
 import { TauriCommand } from '@/enums'
-import ConfirmQRLogin from '#/views/ConfirmQRLogin.vue'
-import MyQRCode from '#/views/MyQRCode.vue'
-import Splashscreen from '#/views/Splashscreen.vue'
-import MobileForgetPassword from '#/views/MobileForgetPassword.vue'
-import MobileServiceAgreement from '#/views/MobileServiceAgreement.vue'
-import MobilePrivacyAgreement from '#/views/MobilePrivacyAgreement.vue'
-import SyncData from '#/views/SyncData.vue'
+
+// Mobile views are imported dynamically below to implement lazy loading
+const ChatRoomLayout = () => import('#/layout/chat-room/ChatRoomLayout.vue')
+const NoticeLayout = () => import('#/layout/chat-room/NoticeLayout.vue')
+const FriendsLayout = () => import('#/layout/friends/FriendsLayout.vue')
+const MobileHome = () => import('#/layout/index.vue')
+const GroupChatMember = () => import('#/views/chat-room/GroupChatMember.vue')
+const MobileInviteGroupMember = () => import('#/views/chat-room/MobileInviteGroupMember.vue')
+const MyLayout = () => import('#/layout/my/MyLayout.vue')
+const MobileLogin = () => import('#/login.vue')
+const ChatSetting = () => import('#/views/chat-room/ChatSetting.vue')
+const MobileChatMain = () => import('#/views/chat-room/MobileChatMain.vue')
+const SearchChatContent = () => import('#/views/chat-room/SearchChatContent.vue')
+const MediaViewer = () => import('#/views/chat-room/MediaViewer.vue')
+const NoticeDetail = () => import('#/views/chat-room/notice/NoticeDetail.vue')
+const NoticeEdit = () => import('#/views/chat-room/notice/NoticeEdit.vue')
+const NoticeList = () => import('#/views/chat-room/notice/NoticeList.vue')
+const ConfirmAddGroup = () => import('#/views/friends/ConfirmAddGroup.vue')
+const ConfirmAddFriend = () => import('#/views/friends/ConfirmAddFriend.vue')
+const AddFriends = () => import('#/views/friends/AddFriends.vue')
+const FriendInfo = () => import('#/views/friends/FriendInfo.vue')
+const MobileFriendPage = () => import('#/views/friends/index.vue')
+const StartGroupChat = () => import('#/views/friends/StartGroupChat.vue')
+const MobileMessagePage = () => import('#/views/message/index.vue')
+const EditBio = () => import('#/views/my/EditBio.vue')
+const EditBirthday = () => import('#/views/my/EditBirthday.vue')
+const EditProfile = () => import('#/views/my/EditProfile.vue')
+const MobileMy = () => import('#/views/my/index.vue')
+const MobileQRCode = () => import('#/views/my/MobileQRCode.vue')
+const MobileSettings = () => import('#/views/my/MobileSettings.vue')
+const HomeserverSettings = () => import('@/mobile/views/my/HomeserverSettings.vue')
+const MyMessages = () => import('#/views/my/MyMessages.vue')
+const Share = () => import('#/views/my/Share.vue')
+const SimpleBio = () => import('#/views/my/SimpleBio.vue')
+const AiAssistant = () => import('#/views/my/AiAssistant.vue')
+const MyAlbum = () => import('#/views/my/MyAlbum.vue')
+const StatusSettings = () => import('#/views/my/StatusSettings.vue')
+const SecuritySettings = () => import('#/views/my/SecuritySettings.vue')
+const DeviceManagement = () => import('#/views/my/DeviceManagement.vue')
+const NotificationSettings = () => import('#/views/my/NotificationSettings.vue')
+const HelpFeedback = () => import('#/views/my/HelpFeedback.vue')
+const VoiceVideoSettings = () => import('#/views/my/VoiceVideoSettings.vue')
+const LabsSettings = () => import('#/views/my/LabsSettings.vue')
+const IntegrationsSettings = () => import('#/views/my/IntegrationsSettings.vue')
+const Favorites = () => import('#/views/my/Favorites.vue')
+const Files = () => import('#/views/my/Files.vue')
+const ConfirmQRLogin = () => import('#/views/ConfirmQRLogin.vue')
+const MyQRCode = () => import('#/views/MyQRCode.vue')
+const Splashscreen = () => import('#/views/Splashscreen.vue')
+const MobileForgetPassword = () => import('#/views/MobileForgetPassword.vue')
+const MobileServiceAgreement = () => import('#/views/MobileServiceAgreement.vue')
+const MobilePrivacyAgreement = () => import('#/views/MobilePrivacyAgreement.vue')
+const SyncData = () => import('#/views/SyncData.vue')
 
 /**! 创建窗口后再跳转页面就会导致样式没有生效所以不能使用懒加载路由的方式，有些页面需要快速响应的就不需要懒加载 */
 const { BASE_URL } = import.meta.env
@@ -543,6 +543,11 @@ const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/views/chatHistory/index.vue')
   },
   {
+    path: '/secretChat',
+    name: 'secretChat',
+    component: () => import('@/views/homeWindow/SecretChatPage.vue')
+  },
+  {
     path: '/rtcCall',
     name: 'rtcCall',
     component: () => import('@/views/callWindow/index.vue')
@@ -569,6 +574,10 @@ const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/views/friendWindow/AddGroupVerify.vue')
   }
 ]
+
+// Desktop views
+const SearchDetails = () => import('@/views/homeWindow/SearchDetails.vue')
+import ConfirmQRLoginDesktop from '@/views/ConfirmQRLogin.vue'
 
 // 通用路由配置（所有平台都需要）
 const getCommonRoutes = (): Array<RouteRecordRaw> => [
@@ -653,9 +662,9 @@ const getCommonRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/views/agreementWindow/Privacy.vue')
   },
   {
-    path: '/modal-remoteLogin',
-    name: 'modal-remoteLogin',
-    component: () => import('@/views/loginWindow/RemoteLoginModal.vue')
+    path: '/modal-secretChat',
+    name: 'modal-secretChat',
+    component: () => import('@/views/loginWindow/SecretChatModal.vue')
   }
 ]
 

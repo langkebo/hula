@@ -36,7 +36,7 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { useI18n } from 'vue-i18n'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
 import { useCheckUpdate } from '@/hooks/useCheckUpdate'
 import { useLogin } from '@/hooks/useLogin'
 import { useMitt } from '@/hooks/useMitt.ts'

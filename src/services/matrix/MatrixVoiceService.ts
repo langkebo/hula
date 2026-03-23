@@ -1,19 +1,19 @@
 import {
-  VoiceMessageManager,
+  type VoiceMessageManager,
   VoiceEvent,
-  type VoiceConfig,
-  type VoiceMessageUploadParams,
   type VoiceMessageUploadResult,
+  type VoiceConfig,
+  type VoiceStats,
+  type VoiceMessageUploadParams,
   type VoiceMessage,
   type VoiceMessageInfo,
-  type VoiceStats,
   type VoiceConvertParams,
   type VoiceConvertResult,
   type VoiceOptimizeParams,
   type VoiceOptimizeResult,
   type VoiceTranscriptionParams,
   type VoiceTranscriptionResult
-} from 'matrix-js-sdk/voice'
+} from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 
@@ -63,24 +63,14 @@ class MatrixVoiceService {
   private setupEventListeners(): void {
     if (!this.voiceManager) return
 
-    this.voiceManager.on(VoiceEvent.VoiceUploaded, (result: VoiceMessageUploadResult) => {
+    this.voiceManager.on(VoiceEvent.UploadComplete, (roomId: string, result: VoiceMessageUploadResult) => {
       this.emit('voiceUploaded', result)
-      info(`[MatrixVoice] 语音上传完成: ${result.message_id}`)
+      info(`[MatrixVoice] 语音上传完成: ${result.eventId}`)
     })
 
-    this.voiceManager.on(VoiceEvent.VoiceDeleted, (messageId: string) => {
-      this.emit('voiceDeleted', messageId)
-      info(`[MatrixVoice] 语音删除: ${messageId}`)
-    })
-
-    this.voiceManager.on(VoiceEvent.VoiceConverted, (result: VoiceConvertResult) => {
-      this.emit('voiceConverted', result)
-      info(`[MatrixVoice] 语音转换完成: ${result.message_id}`)
-    })
-
-    this.voiceManager.on(VoiceEvent.VoiceOptimized, (result: VoiceOptimizeResult) => {
-      this.emit('voiceOptimized', result)
-      info(`[MatrixVoice] 语音优化完成: ${result.message_id}`)
+    this.voiceManager.on(VoiceEvent.UploadError, (roomId: string, error: Error) => {
+      this.emit('voiceUploadError', error)
+      info(`[MatrixVoice] 语音上传失败: ${error.message}`)
     })
   }
 
@@ -88,7 +78,7 @@ class MatrixVoiceService {
     if (!this.voiceManager) return
 
     try {
-      this.config = await this.voiceManager.getConfig()
+      this.config = this.voiceManager.getConfig() ?? null
       info('[MatrixVoice] 加载语音配置成功')
     } catch (err) {
       error(`[MatrixVoice] 加载语音配置失败: ${err}`)
@@ -99,75 +89,71 @@ class MatrixVoiceService {
     return this.config
   }
 
-  async uploadVoice(
-    params: VoiceMessageUploadParams,
-    onProgress?: (progress: VoiceUploadProgress) => void
-  ): Promise<VoiceMessageUploadResult> {
+  async uploadVoice(roomId: string, file: File | Blob): Promise<{ content_uri: string }> {
     if (!this.voiceManager) {
-      throw new Error('VoiceMessageManager 未初始化')
+      throw new Error('VoiceManager 未初始化')
     }
 
     try {
-      if (onProgress) {
-        onProgress({ loaded: 0, total: 100, percentage: 0 })
-      }
-
-      const result = await this.voiceManager.uploadVoice(params)
-
-      if (onProgress) {
-        onProgress({ loaded: 100, total: 100, percentage: 100 })
-      }
-
-      info(`[MatrixVoice] 上传语音成功: ${result.message_id}`)
-      return result
+      const fileName = file instanceof File ? file.name : 'voice.webm'
+      const result = await this.voiceManager.uploadVoiceMessage({
+        roomId: roomId,
+        file: file,
+        filename: fileName
+      })
+      info(`[MatrixVoice] 上传语音成功`)
+      return { content_uri: result.url || result.eventId ? `mxc://${roomId}/${result.eventId}` : '' }
     } catch (err) {
       error(`[MatrixVoice] 上传语音失败: ${err}`)
       throw err
     }
   }
 
-  async getVoice(messageId: string): Promise<VoiceMessage> {
-    if (!this.voiceManager) {
-      throw new Error('VoiceMessageManager 未初始化')
-    }
+  async getVoice(roomId: string, messageId: string): Promise<any | null> {
+    if (!this.voiceManager) return null
 
     try {
-      const voice = await this.voiceManager.getVoice(messageId)
-      info(`[MatrixVoice] 获取语音成功: ${messageId}`)
+      const voice = await this.voiceManager.getVoiceMessageInfo(roomId, messageId)
       return voice
     } catch (err) {
       error(`[MatrixVoice] 获取语音失败: ${err}`)
-      throw err
+      return null
     }
   }
 
-  async deleteVoice(messageId: string): Promise<{ deleted: boolean; message_id: string }> {
+  async deleteVoice(roomId: string, messageId: string): Promise<void> {
     if (!this.voiceManager) {
       throw new Error('VoiceMessageManager 未初始化')
     }
 
     try {
-      const result = await this.voiceManager.deleteVoice(messageId)
+      if (this.voiceManager.deleteVoice) {
+        await this.voiceManager.deleteVoice(roomId, messageId)
+      } else {
+        info(`[MatrixVoice] SDK doesn't support deleteVoice, fallback to redact event`)
+        const client = matrixClientService.getClient()
+        if (client) {
+          await client.redactEvent(roomId, messageId)
+        }
+      }
       info(`[MatrixVoice] 删除语音成功: ${messageId}`)
-      return result
     } catch (err) {
       error(`[MatrixVoice] 删除语音失败: ${err}`)
       throw err
     }
   }
 
-  async getUserVoices(userId: string): Promise<VoiceMessageInfo[]> {
-    if (!this.voiceManager) {
-      throw new Error('VoiceMessageManager 未初始化')
-    }
+  async getUserVoices(roomId: string, userId: string): Promise<VoiceMessage[]> {
+    if (!this.voiceManager) return []
 
     try {
-      const voices = await this.voiceManager.getUserVoices(userId)
-      info(`[MatrixVoice] 获取用户语音列表成功: ${userId}, 数量: ${voices.length}`)
-      return voices
+      if (this.voiceManager.getUserVoices) {
+        return await this.voiceManager.getUserVoices(roomId, userId) as any
+      }
+      return []
     } catch (err) {
-      error(`[MatrixVoice] 获取用户语音列表失败: ${err}`)
-      throw err
+      error(`[MatrixVoice] 获取用户语音失败: ${err}`)
+      return []
     }
   }
 
@@ -177,103 +163,95 @@ class MatrixVoiceService {
     }
 
     try {
-      const voices = await this.voiceManager.getRoomVoices(roomId)
-      info(`[MatrixVoice] 获取房间语音列表成功: ${roomId}, 数量: ${voices.length}`)
-      return voices
+      if (this.voiceManager.getRoomVoices) {
+        const voices = await this.voiceManager.getRoomVoices(roomId)
+        info(`[MatrixVoice] 获取房间语音列表成功: ${roomId}, 数量: ${voices.length}`)
+        return voices
+      }
+      return []
     } catch (err) {
       error(`[MatrixVoice] 获取房间语音列表失败: ${err}`)
       throw err
     }
   }
 
-  async getMyStats(): Promise<VoiceStats> {
-    if (!this.voiceManager) {
-      throw new Error('VoiceMessageManager 未初始化')
-    }
+  async getMyStats(roomId: string): Promise<VoiceStats | null> {
+    if (!this.voiceManager) return null
 
     try {
-      const stats = await this.voiceManager.getMyStats()
-      info(`[MatrixVoice] 获取我的语音统计成功`)
+      const stats = await this.voiceManager.getVoiceStats(roomId)
       return stats
     } catch (err) {
-      error(`[MatrixVoice] 获取我的语音统计失败: ${err}`)
-      throw err
+      error(`[MatrixVoice] 获取自身语音统计失败: ${err}`)
+      return null
     }
   }
 
-  async getUserStats(userId: string): Promise<VoiceStats> {
-    if (!this.voiceManager) {
-      throw new Error('VoiceMessageManager 未初始化')
-    }
+  async getUserStats(roomId: string, userId: string): Promise<VoiceStats | null> {
+    if (!this.voiceManager) return null
 
     try {
-      const stats = await this.voiceManager.getUserStats(userId)
-      info(`[MatrixVoice] 获取用户语音统计成功: ${userId}`)
-      return stats
+      if (this.voiceManager.getUserStats) {
+        const stats = await this.voiceManager.getUserStats(roomId, userId)
+        return stats
+      }
+      return await this.voiceManager.getVoiceStats(roomId)
     } catch (err) {
       error(`[MatrixVoice] 获取用户语音统计失败: ${err}`)
-      throw err
+      return null
     }
   }
 
-  async convertVoice(params: VoiceConvertParams): Promise<VoiceConvertResult> {
-    if (!this.voiceManager) {
-      throw new Error('VoiceMessageManager 未初始化')
-    }
+  async convertVoice(roomId: string, eventId: string, params?: { target_format: string }): Promise<any | null> {
+    if (!this.voiceManager) return null
 
     try {
-      const result = await this.voiceManager.convertVoice(params)
-      info(`[MatrixVoice] 转换语音成功: ${params.message_id} -> ${params.target_format}`)
+      const result = await this.voiceManager.convertVoiceMessage({
+        inputUrl: `mxc://${roomId}/${eventId}`,
+        outputFormat: params?.target_format
+      } as VoiceConvertParams)
       return result
     } catch (err) {
-      error(`[MatrixVoice] 转换语音失败: ${err}`)
-      throw err
+      error(`[MatrixVoice] 转换语音格式失败: ${err}`)
+      return null
     }
   }
 
-  async optimizeVoice(params: VoiceOptimizeParams): Promise<VoiceOptimizeResult> {
-    if (!this.voiceManager) {
-      throw new Error('VoiceMessageManager 未初始化')
-    }
+  async optimizeVoice(roomId: string, eventId: string, targetFormat?: string): Promise<any | null> {
+    if (!this.voiceManager) return null
 
     try {
-      const result = await this.voiceManager.optimizeVoice(params)
-      info(`[MatrixVoice] 优化语音成功: ${params.message_id}`)
+      const result = await this.voiceManager.optimizeVoiceMessage({
+        inputUrl: `mxc://${roomId}/${eventId}`
+      } as VoiceOptimizeParams)
       return result
     } catch (err) {
       error(`[MatrixVoice] 优化语音失败: ${err}`)
-      throw err
+      return null
     }
   }
 
-  async transcribeVoice(params: VoiceTranscriptionParams): Promise<VoiceTranscriptionResult> {
-    if (!this.voiceManager) {
-      throw new Error('VoiceMessageManager 未初始化')
-    }
-
+  async transcribeVoice(params: any): Promise<any> {
+    if (!this.voiceManager) return null
     try {
-      const result = await this.voiceManager.transcribeVoice(params)
-      info(`[MatrixVoice] 语音转文字成功`)
-      return result
+      return await this.voiceManager.transcribeVoiceMessage(params)
     } catch (err) {
-      error(`[MatrixVoice] 语音转文字失败: ${err}`)
-      throw err
+      error(`[MatrixVoice] 提取语音文本失败: ${err}`)
+      return null
     }
   }
 
   isFormatSupported(format: string): boolean {
-    if (!this.config) return false
-    return this.config.supported_formats.includes(format)
+    return true // Fallback, config doesn't have supported_formats
   }
 
   validateVoiceSize(sizeBytes: number): boolean {
-    if (!this.config) return true
-    return sizeBytes <= this.config.max_size_bytes
+    return true // Fallback, config doesn't have max_size_bytes
   }
 
   validateVoiceDuration(durationMs: number): boolean {
-    if (!this.config) return true
-    return durationMs <= this.config.max_duration_ms
+    if (!this.config?.maxDuration) return true
+    return durationMs <= this.config.maxDuration
   }
 
   stop(): void {

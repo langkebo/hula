@@ -152,7 +152,7 @@ const handleCreate = async () => {
   try {
     const room = await matrixDirectMessageService.getOrCreateDmRoom(searchResult.value.userId, encrypted.value)
     if (room) {
-      emit('created', room.roomId)
+      emit('created', room)
       visible.value = false
       resetForm()
     }

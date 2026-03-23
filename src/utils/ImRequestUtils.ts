@@ -37,8 +37,12 @@ interface ImRequestOptions {
   }
 }
 
+import { Result, ok, err } from '@/common/result'
+import { AppException } from '@/common/exception'
+import { invokeWithResult } from '@/utils/TauriInvokeHandler'
+
 /**
- * 统一的 IM API 请求工具
+ * @deprecated 遗留的 IM API 请求工具，后续应迁移至 MatrixClientService
  */
 export async function imRequest<T = any>(
   requestParams: ImRequestParams,
@@ -71,22 +75,61 @@ export async function imRequest<T = any>(
 }
 
 /**
- * 静默的 IM 请求（不显示错误提示）
- *
- * @example
- * ```typescript
- * const result = await imRequestSilent({
- *   url: ImUrlEnum.NOTICE_UN_READ_COUNT
- * })
- * ```
+ * 使用 Result 模型的新版 IM API 请求工具
  */
-export async function imRequestSilent<T = any>(requestParams: ImRequestParams): Promise<T | null> {
+export async function imRequestResult<T = any>(
+  requestParams: ImRequestParams,
+  options?: Omit<ImRequestOptions, 'silent'>
+): Promise<Result<T, AppException>> {
+  const { retry, ...invokeOptions } = options || {}
+
+  // 构建调用参数
   const args = {
     url: requestParams.url,
-    body: requestParams.body || null,
-    params: requestParams.params || null
+    body: requestParams.body,
+    params: requestParams.params
   }
-  return await invokeSilently<T>('im_request_command', args)
+
+  const { maxRetries = 3, retryDelay = 1000 } = retry || {}
+  let attempt = 0
+
+  while (attempt < maxRetries) {
+    const isLastAttempt = attempt === maxRetries - 1
+    
+    // 最后一次尝试时使用用户配置的 showError，否则不显示错误（静默重试）
+    const currentOptions = {
+      ...invokeOptions,
+      showError: isLastAttempt ? invokeOptions.showError : false,
+      isRetryError: !isLastAttempt
+    }
+
+    const result = await invokeWithResult<T>((TauriCommand as any).IM_REQUEST || 'im_request', args, currentOptions)
+    
+    if (result.isOk()) {
+      return result
+    }
+
+    const error = result.error
+    
+    // 如果不是最后一次尝试，且是网络或服务器错误，则进行重试
+    if (!isLastAttempt && (error.type === ErrorType.Network || error.type === ErrorType.Server)) {
+      console.warn(`请求失败，准备第 ${attempt + 1} 次重试...`)
+      await new Promise((resolve) => setTimeout(resolve, retryDelay))
+      attempt++
+      continue
+    }
+    
+    return result
+  }
+  
+  return err(new AppException('Max retries exceeded'))
+}
+
+/**
+ * 静默的 IM 请求（使用 Result 模型）
+ */
+export async function imRequestSilentlyResult<T = any>(requestParams: ImRequestParams): Promise<Result<T, AppException>> {
+  return imRequestResult<T>(requestParams, { showError: false })
 }
 
 /**
@@ -148,42 +191,6 @@ export async function getGroupInfo(roomId: string) {
   })
 }
 
-/**
- * 快捷方法：获取联系人列表
- */
-export async function getContactList(options?: { pageSize?: number; cursor?: string }) {
-  return await imRequest({
-    url: ImUrlEnum.GET_CONTACT_LIST,
-    params: {
-      pageSize: options?.pageSize || 100,
-      cursor: options?.cursor || ''
-    }
-  })
-}
-
-/**
- * 获取通知未读数
- */
-export async function getNoticeUnreadCount() {
-  return await imRequestSilent({
-    url: ImUrlEnum.NOTICE_UN_READ_COUNT
-  })
-}
-
-/**
- * 快捷方法：获取群公告列表
- */
-export async function getAnnouncementList(roomId: string, page: number, pageSize: number = 10) {
-  return await imRequest({
-    url: ImUrlEnum.GET_ANNOUNCEMENT_LIST,
-    params: {
-      roomId,
-      current: page,
-      size: pageSize
-    }
-  })
-}
-
 export async function getMsgReadCount(msgIds: number[]) {
   return await imRequest({
     url: ImUrlEnum.GET_MSG_READ_COUNT,
@@ -202,34 +209,10 @@ export async function markMsgRead(roomId: string) {
   })
 }
 
-export async function getFriendPage(options?: { pageSize?: number; cursor?: string }) {
-  return await imRequest({
-    url: ImUrlEnum.GET_FRIEND_PAGE,
-    params: {
-      pageSize: options?.pageSize || 100,
-      cursor: options?.cursor || ''
-    }
-  })
-}
-
 export async function getBadgeList() {
   return await imRequest({
     url: ImUrlEnum.GET_BADGE_LIST
   })
-}
-
-export async function getBadgesBatch(body: CacheBadgeReq[]) {
-  return await imRequest({
-    url: ImUrlEnum.GET_BADGES_BATCH,
-    body: {
-      reqList: body
-    }
-  })
-}
-
-export async function groupListMember(roomId: string) {
-  const args: Record<string, any> = { roomId, room_id: roomId }
-  return await invokeWithErrorHandler(TauriCommand.GET_ROOM_MEMBERS, args, { errorType: ErrorType.Network })
 }
 
 export async function getMsgList(body: { msgIds?: string[]; async?: boolean }) {
@@ -256,13 +239,6 @@ export async function setUserBadge(body: { badgeId: string }) {
 export async function markMsg(body: { msgId: string; markType: number; actType: number }) {
   return await imRequest({
     url: ImUrlEnum.MARK_MSG,
-    body
-  })
-}
-
-export async function blockUser(body: { uid: string; deadline: string }) {
-  return await imRequest({
-    url: ImUrlEnum.BLOCK_USER,
     body
   })
 }
@@ -328,33 +304,6 @@ export async function sendAddFriendRequest(body: { targetUid: string; msg: strin
   })
 }
 
-export async function requestNoticePage(params: {
-  pageSize: number
-  pageNo: number
-  cursor: string
-  click: boolean
-  applyType: string
-}) {
-  return await imRequest({
-    url: ImUrlEnum.REQUEST_NOTICE_PAGE,
-    params
-  })
-}
-
-export async function requestNoticeRead(body: { noticeIdList: string[] }) {
-  return await imRequest({
-    url: ImUrlEnum.REQUEST_NOTICE_READ,
-    body
-  })
-}
-
-export async function handleInvite(body: { applyId: string; state: number }) {
-  return await imRequest({
-    url: ImUrlEnum.HANDLE_INVITE,
-    body
-  })
-}
-
 export async function deleteFriend(body: { targetUid: string }) {
   return await imRequest({
     url: ImUrlEnum.DELETE_FRIEND,
@@ -390,13 +339,6 @@ export async function removeGroupMember(body: { roomId: string; uidList: string[
   })
 }
 
-export async function getSessionDetail(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.SESSION_DETAIL,
-    params
-  })
-}
-
 export async function getSessionDetailWithFriends(params: { id: string; roomType: number }) {
   return await imRequest({
     url: ImUrlEnum.SESSION_DETAIL_WITH_FRIENDS,
@@ -407,13 +349,6 @@ export async function getSessionDetailWithFriends(params: { id: string; roomType
 export async function setSessionTop(body: { roomId: string; top: boolean }) {
   return await imRequest({
     url: ImUrlEnum.SET_SESSION_TOP,
-    body
-  })
-}
-
-export async function deleteSession(body: { roomId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.DELETE_SESSION,
     body
   })
 }
@@ -439,26 +374,6 @@ export async function exitGroup(body: { roomId: string }) {
   })
 }
 
-export async function addAdmin(body: { roomId: string; uidList: string[] }) {
-  return await imRequest({
-    url: ImUrlEnum.ADD_ADMIN,
-    body
-  })
-}
-
-export async function revokeAdmin(body: { roomId: string; uidList: string[] }) {
-  return await imRequest({
-    url: ImUrlEnum.REVOKE_ADMIN,
-    body
-  })
-}
-
-export async function groupList() {
-  return await imRequest({
-    url: ImUrlEnum.GROUP_LIST
-  })
-}
-
 export async function updateRoomInfo(body: { id: string; name?: string; avatar?: string; allowScanEnter?: boolean }) {
   const chatStore = useChatStore()
   const groupStore = useGroupStore()
@@ -476,13 +391,6 @@ export async function updateRoomInfo(body: { id: string; name?: string; avatar?:
   groupStore.updateGroupDetail(body.id, body)
 
   window.$message.success('更新成功')
-}
-
-export async function updateMyRoomInfo(body: { id: string; myName: string; remark: string }) {
-  return await imRequest({
-    url: ImUrlEnum.UPDATE_MY_ROOM_INFO,
-    body
-  })
 }
 
 export async function searchGroup(params: { account: string }) {
@@ -582,13 +490,6 @@ export async function register(body: RegisterUserReq) {
   })
 }
 
-export async function login(body: LoginUserReq) {
-  return await imRequest({
-    url: ImUrlEnum.LOGIN,
-    body
-  })
-}
-
 export async function logout(body: { autoLogin: boolean }) {
   return await imRequest({
     url: ImUrlEnum.LOGOUT,
@@ -664,136 +565,8 @@ export async function confirmQRCodeAPI(data: { qrId: string }) {
 }
 
 // 查看单条朋友圈
-export async function feedDetail(params: { feedId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_DETAIL,
-    params
-  })
-}
-
-export async function feedList(data: { pageSize?: number; cursor?: string }) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_LIST,
-    body: data
-  })
-}
-
-export async function pushFeed(data: {
-  content: string // 朋友圈文案
-  mediaType: 0 | 1 | 2 // 媒体类型, 0-纯文本内容,1-图片加内容,2-视频加内容
-  urls?: string[] // 图片URL列表
-  videoUrl?: string // 视频URL
-  permission: 'privacy' | 'open' | 'partVisible' | 'notAnyone' // 可见性权限
-  uidList?: number[] // 权限限制的用户ID列表
-  targetIds?: number[] // 权限限制的标签ID列表
-}) {
-  return await imRequest({
-    url: ImUrlEnum.PUSH_FEED,
-    body: data
-  })
-}
-
-export async function delFeed(data: { feedId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.DEL_FEED,
-    body: data
-  })
-}
-
-export async function editFeed(data: {
-  id: number // 朋友圈ID
-  content: string // 朋友圈文案
-  mediaType: 0 | 1 | 2 // 媒体类型
-  urls?: string[] // 图片URL列表
-  videoUrl?: string // 视频URL
-  permission: 'privacy' | 'open' | 'partVisible' | 'notAnyone' // 可见性权限
-  uidList?: number[] // 权限限制的用户ID列表
-  targetIds?: number[] // 权限限制的标签ID列表
-}) {
-  return await imRequest({
-    url: ImUrlEnum.EDIT_FEED,
-    body: data
-  })
-}
-
-export async function getFeedPermission(params: { feedId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.GET_FEED_PERMISSION,
-    params
-  })
-}
-
 // ==================== 朋友圈点赞相关 ====================
-
-export async function feedLikeToggle(data: { feedId: string; actType: number }) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_LIKE_TOGGLE,
-    body: data
-  })
-}
-
-export async function feedLikeList(params: { feedId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_LIKE_LIST,
-    params
-  })
-}
-
-export async function feedLikeCount(params: { feedId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_LIKE_COUNT,
-    params
-  })
-}
-
-export async function feedLikeHasLiked(params: { feedId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_LIKE_HAS_LIKED,
-    params
-  })
-}
-
 // ==================== 朋友圈评论相关 ====================
-
-export async function feedCommentAdd(data: {
-  feedId: string
-  content: string
-  replyCommentId?: string
-  replyUid?: string
-}) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_COMMENT_ADD,
-    body: data
-  })
-}
-
-export async function feedCommentDelete(data: { commentId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_COMMENT_DELETE,
-    body: data
-  })
-}
-
-export async function feedCommentList(data: { feedId: string; pageSize?: number; cursor?: string }) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_COMMENT_LIST,
-    body: data
-  })
-}
-
-export async function feedCommentCount(params: { feedId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_COMMENT_COUNT,
-    params
-  })
-}
-
-export async function feedCommentAll(params: { feedId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.FEED_COMMENT_ALL,
-    params
-  })
-}
 
 /**
  * SSE 流式数据事件类型
@@ -1045,13 +818,6 @@ export async function imageMyPage(params?: { pageNo?: number; pageSize?: number;
   })
 }
 
-export async function imageGet(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.IMAGE_GET,
-    params
-  })
-}
-
 // 生成图片
 export async function imageDraw(body: {
   modelId: string
@@ -1094,13 +860,6 @@ export async function videoMyPage(params?: { pageNo?: number; pageSize?: number;
 }
 
 // 获取【我的】视频生成记录
-export async function videoGet(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.VIDEO_GET,
-    params
-  })
-}
-
 // 根据ID列表获取【我的】视频记录
 export async function videoMyListByIds(params: { ids: string }) {
   return await imRequest({
@@ -1307,21 +1066,7 @@ export async function audioMyPage(params?: { pageNo?: number; pageSize?: number 
 }
 
 // 获取我的单个音频
-export async function audioGetMy(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.AUDIO_GET_MY,
-    params
-  })
-}
-
 // 删除我的音频
-export async function audioDeleteMy(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.AUDIO_DELETE_MY,
-    params
-  })
-}
-
 // 获取指定模型支持的声音列表
 export async function audioGetVoices(params: { model: string }): Promise<string[]> {
   return await imRequest({

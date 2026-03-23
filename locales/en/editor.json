@@ -18,5 +18,8 @@
   "screenshot_hide_curr_window": "Hide window during screenshot",
   "relation": {
     "not_friends": "You are no longer friends."
-  }
+  },
+  "burn_after_read": "Burn After Read",
+  "burn_after_read_enabled": "Burn after read enabled",
+  "burn_after_read_disabled": "Burn after read disabled"
 }

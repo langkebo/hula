@@ -30,14 +30,8 @@ class MatrixMediaServiceClass {
 
     try {
       const uploadResponse = await client.uploadContent(file, {
-        name: file.name,
-        type: file.type,
-        progressHandler: onProgress
-          ? (ev: ProgressEvent) => {
-              onProgress(Math.round((ev.loaded / ev.total) * 100))
-            }
-          : undefined
-      })
+        type: file.type
+      } as any)
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       info(`[MatrixMedia] 文件上传成功: ${contentUri}`)
@@ -59,14 +53,8 @@ class MatrixMediaServiceClass {
       const dimensions = await this.getImageDimensions(file)
 
       const uploadResponse = await client.uploadContent(file, {
-        name: file.name,
-        type: file.type,
-        progressHandler: onProgress
-          ? (ev: ProgressEvent) => {
-              onProgress(Math.round((ev.loaded / ev.total) * 100))
-            }
-          : undefined
-      })
+        type: file.type
+      } as any)
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       info(`[MatrixMedia] 图片上传成功: ${contentUri}`)
@@ -90,14 +78,8 @@ class MatrixMediaServiceClass {
       const metadata = await this.getVideoMetadata(file)
 
       const uploadResponse = await client.uploadContent(file, {
-        name: file.name,
-        type: file.type,
-        progressHandler: onProgress
-          ? (ev: ProgressEvent) => {
-              onProgress(Math.round((ev.loaded / ev.total) * 100))
-            }
-          : undefined
-      })
+        type: file.type
+      } as any)
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       info(`[MatrixMedia] 视频上传成功: ${contentUri}`)
@@ -122,14 +104,8 @@ class MatrixMediaServiceClass {
       const duration = await this.getAudioDuration(file)
 
       const uploadResponse = await client.uploadContent(file, {
-        name: file.name,
-        type: file.type,
-        progressHandler: onProgress
-          ? (ev: ProgressEvent) => {
-              onProgress(Math.round((ev.loaded / ev.total) * 100))
-            }
-          : undefined
-      })
+        type: file.type
+      } as any)
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       info(`[MatrixMedia] 音频上传成功: ${contentUri}`)
@@ -150,9 +126,8 @@ class MatrixMediaServiceClass {
 
     try {
       const uploadResponse = await client.uploadContent(blob, {
-        name: filename,
         type: mimetype
-      })
+      } as any)
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       info(`[MatrixMedia] Blob 上传成功: ${contentUri}`)

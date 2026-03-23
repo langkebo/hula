@@ -14,11 +14,11 @@
     "jsx": "preserve",
     "jsxImportSource": "vue",
 
-    "strict": false,
+    "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": false,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
 
     "baseUrl": ".",
     "paths": {

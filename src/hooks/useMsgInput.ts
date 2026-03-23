@@ -7,12 +7,13 @@ import { nextTick } from 'vue'
 import { LimitEnum, MessageStatusEnum, MittEnum, MsgEnum, UploadSceneEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import type { AIModel, UserItem } from '@/services/types.ts'
-import { useChatStore } from '@/stores/chat.ts'
+import type { MessageType } from '@/stores/chat'
+import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useGroupStore } from '@/stores/group.ts'
 import { useSettingStore } from '@/stores/setting.ts'
 import { useMessageSender } from '@/hooks/useMessageSender'
-import { messageStrategyMap } from '@/strategy/MessageStrategy.ts'
+import { messageStrategyMap, type MessageStrategy } from '@/strategy/MessageStrategy.ts'
 import { processClipboardImage } from '@/utils/ImageUtils.ts'
 import { getReplyContent } from '@/utils/MessageReply.ts'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
@@ -501,7 +502,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         // 更新消息体中的URL为服务器URL(判断使用的是七牛云还是默认上传方式),如果没有provider就默认赋值downloadUrl
         messageBody.url =
           config?.provider && config?.provider === UploadProviderEnum.QINIU ? uploadResult?.qiniuUrl : downloadUrl
-        delete messageBody.path // 删除临时路径
+        delete (messageBody as any).path // 删除临时路径
 
         // 更新临时消息的URL
         chatStore.updateMsg({
@@ -754,7 +755,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
   }
 
   /** 处理点击 / 提及框事件 */
-  const handleAI = (_item: any) => {
+  const handleAI = (_item: unknown) => {
     // 如果正在输入拼音，不发送消息
     if (isChinese.value) {
       return
@@ -831,7 +832,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
       cleanup()
 
       messageBody.url = config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
-      delete messageBody.path
+      delete (messageBody as any).path
 
       chatStore.updateMsg({
         msgId: tempMsgId,
@@ -906,7 +907,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
       cleanup()
 
       messageBody.url = config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
-      delete messageBody.path
+      delete (messageBody as any).path
 
       chatStore.updateMsg({
         msgId: tempMsgId,
@@ -960,7 +961,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
       })
     }
     /** 监听回复信息的传递 */
-    useMitt.on(MittEnum.REPLY_MEG, (event: any) => {
+    useMitt.on(MittEnum.REPLY_MEG, (event: MessageType) => {
       // 如果输入框不存在，直接返回
       if (!messageInputDom.value) return
 
@@ -983,7 +984,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         reply.value = { avatar: '', imgCount: 0, accountName: '', content: '', key: 0 }
 
         // 步骤3: 处理回复内容
-        const content = getReplyContent(event.message)
+        const content = getReplyContent(event.message as any)
 
         // 步骤4: 设置新的回复内容
         reply.value = {
@@ -991,7 +992,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
           avatar: avatar,
           accountName: accountName,
           content: content,
-          key: event.message.id
+          key: event.message.id as any
         }
 
         // 步骤5: 在DOM更新后插入回复框
@@ -1148,7 +1149,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
     }
   }
 
-  const sendVoiceDirect = async (voiceData: any) => {
+  const sendVoiceDirect = async (voiceData: { localPath: string; size: number; duration: number; filename: string }) => {
     const targetRoomId = globalStore.currentSessionRoomId
     try {
       // 创建语音消息数据
@@ -1216,7 +1217,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         const finalUrl =
           config?.provider && config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
         messageBody.url = finalUrl || ''
-        delete messageBody.path // 删除临时路径
+        delete (messageBody as any).path // 删除临时路径
 
         // 更新临时消息的URL
         chatStore.updateMsg({
@@ -1257,7 +1258,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
    * 发送地图的函数
    * @param locationData 地图数据
    */
-  const sendLocationDirect = async (locationData: any) => {
+  const sendLocationDirect = async (locationData: { latitude: number; longitude: number; accuracy?: number; description?: string; timestamp: number }) => {
     const targetRoomId = globalStore.currentSessionRoomId
     try {
       const tempMsgId = 'T' + Date.now().toString()

@@ -3,7 +3,7 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import pLimit from 'p-limit'
-import { StoresEnum } from '@/enums'
+import { ImUrlEnum, StoresEnum } from '@/enums'
 import type { EmojiItem } from '@/services/types'
 import { useUserStore } from '@/stores/user'
 import * as imRequestUtils from '@/utils/ImRequestUtils'
@@ -169,14 +169,18 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
       }
       return acc
     }, {})
-    const res = await imRequestUtils.getEmoji().catch(() => {
-      isLoading.value = false
-    })
-    if (res && requestUid === currentEmojiOwnerUid.value) {
-      emojiList.value = res.map((item: { id: string | number }) => {
-        const localUrl = localUrlCache[item.id]
-        return localUrl ? { ...item, localUrl } : item
+    try {
+      const res = await imRequestUtils.imRequestResult<EmojiItem[]>({ 
+        url: ImUrlEnum.GET_EMOJI 
       })
+      if (res.isOk() && requestUid === currentEmojiOwnerUid.value) {
+        emojiList.value = res.value.map((item: EmojiItem) => {
+          const localUrl = localUrlCache[item.id]
+          return localUrl ? { ...item, localUrl } : item
+        })
+      }
+    } catch (error) {
+      console.error('获取表情列表失败:', error)
     }
     isLoading.value = false
     if (requestUid !== currentEmojiOwnerUid.value) {
@@ -190,22 +194,43 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
    */
   const addEmoji = async (emojiUrl: string) => {
     const { uid } = userStore.userInfo!
-    if (!uid || !emojiUrl) return
-    imRequestUtils.addEmoji({ expressionUrl: emojiUrl }).then((res) => {
-      if (res) {
+    if (!uid || !emojiUrl) return false
+    try {
+      const res = await imRequestUtils.imRequestResult({
+        url: ImUrlEnum.ADD_EMOJI,
+        body: { expressionUrl: emojiUrl }
+      })
+      if (res.isOk()) {
         window.$message.success('添加表情成功')
+        await getEmojiList()
+        return true
       }
-    })
-    await getEmojiList()
+      return false
+    } catch (error) {
+      console.error('添加表情失败:', error)
+      return false
+    }
   }
 
   /**
    * 删除表情
    */
   const deleteEmoji = async (id: string) => {
-    if (!id) return
-    await imRequestUtils.deleteEmoji({ id })
-    await getEmojiList()
+    if (!id) return false
+    try {
+      const res = await imRequestUtils.imRequestResult({
+        url: ImUrlEnum.DELETE_EMOJI,
+        body: { id }
+      })
+      if (res.isOk()) {
+        await getEmojiList()
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('删除表情失败:', error)
+      return false
+    }
   }
 
   /**

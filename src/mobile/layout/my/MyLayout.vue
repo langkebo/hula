@@ -20,7 +20,8 @@ import { useMitt } from '@/hooks/useMitt'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/global'
 import { useUserStore } from '@/stores/user'
-import { getGroupDetail, scanQRCodeAPI } from '@/utils/ImRequestUtils'
+import { useGroupStore } from '@/stores/group'
+import { scanQRCodeAPI } from '@/utils/ImRequestUtils'
 
 interface ScanData {
   type: string // 必须有
@@ -91,11 +92,12 @@ const handleScanEnterGroup = async (data: ScanData) => {
   const roomId = data.roomId as string
 
   // 可能是扫码出来的
-  const groupDetail = await getGroupDetail(roomId)
+  const groupStore = useGroupStore()
+  const groupDetail = await groupStore.loadGroupInfo(roomId)
 
-  globalStore.addGroupModalInfo.account = groupDetail.account
-  globalStore.addGroupModalInfo.name = groupDetail.groupName
-  globalStore.addGroupModalInfo.avatar = groupDetail.avatar
+  globalStore.addGroupModalInfo.account = roomId
+  globalStore.addGroupModalInfo.name = groupDetail?.name || roomId
+  globalStore.addGroupModalInfo.avatar = groupDetail?.avatar || ''
 
   setTimeout(() => {
     router.push({ name: 'mobileConfirmAddGroup' })

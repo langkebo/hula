@@ -1,10 +1,11 @@
-import type { MatrixClient, MatrixEvent, IEventRelation, EventTimeline } from 'matrix-js-sdk'
+import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { TimelineWindow, ReceiptType } from 'matrix-js-sdk'
+import type { IEventRelation, EventTimeline } from '@/types/matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 
-const MESSAGE_EVENT_TYPE = 'm.room.message' as any
-const REACTION_EVENT_TYPE = 'm.reaction' as any
+const MESSAGE_EVENT_TYPE = 'm.room.message' as const
+const REACTION_EVENT_TYPE = 'm.reaction' as const
 
 /**
  * 消息内容接口
@@ -53,6 +54,12 @@ export interface SendMessageOptions {
   content: IMessageContent
   eventType?: string
   relation?: IEventRelation
+  /** 是否为阅后即焚消息 (synapse-rust 扩展) */
+  burnAfterRead?: boolean
+  /** 阅后即焚的过期时间（秒） */
+  burnDuration?: number
+  /** 是否为置顶/Sticky 消息 (MSC4354) */
+  isSticky?: boolean
 }
 
 /**
@@ -140,9 +147,8 @@ class MatrixEventService {
         }
       } else {
         const uploadResponse = await client.uploadContent(fileOrUrl, {
-          name: filename ?? fileOrUrl.name,
           type: fileOrUrl.type
-        })
+        } as any)
 
         content = {
           msgtype: 'm.image',
@@ -199,9 +205,8 @@ class MatrixEventService {
         }
       } else {
         const uploadResponse = await client.uploadContent(fileOrUrl, {
-          name: filename ?? fileOrUrl.name,
           type: fileOrUrl.type
-        })
+        } as any)
 
         content = {
           msgtype: 'm.file',
@@ -278,9 +283,8 @@ class MatrixEventService {
         }
       } else {
         const uploadResponse = await client.uploadContent(fileOrUrl, {
-          name: filename ?? fileOrUrl.name,
           type: fileOrUrl.type
-        })
+        } as any)
 
         content = {
           msgtype: 'm.video',
@@ -337,9 +341,8 @@ class MatrixEventService {
         }
       } else {
         const uploadResponse = await client.uploadContent(fileOrUrl, {
-          name: filename ?? fileOrUrl.name,
           type: fileOrUrl.type
-        })
+        } as any)
 
         content = {
           msgtype: 'm.audio',
@@ -574,7 +577,7 @@ class MatrixEventService {
       }
 
       const timelineSet = room.getUnfilteredTimelineSet()
-      const timelineWindow = new TimelineWindow(client, timelineSet, {
+      const timelineWindow = new (TimelineWindow as any)(client, timelineSet, {
         windowLimit: limit
       })
 
@@ -618,7 +621,7 @@ class MatrixEventService {
           'm.in_reply_to': {
             event_id: eventId
           }
-        } as IEventRelation
+        } as unknown as IEventRelation
       }
 
       const response = await client.sendEvent(roomId, MESSAGE_EVENT_TYPE, content)
@@ -731,6 +734,40 @@ class MatrixEventService {
       error(`[MatrixEvent] ${errorMessage}`)
       throw err
     }
+  }
+
+  /**
+   * 发送通用消息
+   */
+  async sendMessage(options: SendMessageOptions): Promise<MatrixEvent> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('Client not initialized')
+    }
+
+    const { roomId, content, eventType = 'm.room.message', relation } = options
+
+    const messageContent: any = { ...content }
+
+    if (relation) {
+      messageContent['m.relates_to'] = relation
+    }
+
+    // 处理阅后即焚
+    if (options.burnAfterRead) {
+      messageContent['org.matrix.msc_burn_after_read'] = {
+        enabled: true,
+        duration: options.burnDuration || 60
+      }
+    }
+
+    // 处理 Sticky Event
+    if (options.isSticky) {
+      messageContent['org.matrix.msc4354.sticky'] = true
+    }
+
+    const response = await client.sendEvent(roomId, eventType as any, messageContent)
+    return response as any
   }
 
   /**

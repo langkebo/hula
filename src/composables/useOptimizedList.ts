@@ -23,7 +23,7 @@ export function useOptimizedList<T>(initialValue: T[] = [], options: OptimizedLi
   // 对于大数据集，使用 shallowRef 避免深度响应式开销
   const data = shallowRef<T[]>(initialValue)
 
-  const log = (msg: string, ...args: any[]) => {
+  const log = (msg: string, ...args: unknown[]) => {
     if (debug) {
       console.log(`[OptimizedList] ${msg}`, ...args)
     }

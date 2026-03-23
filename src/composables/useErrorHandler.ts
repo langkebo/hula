@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import { useMessage } from 'naive-ui'
 
 export type ErrorLevel = 'info' | 'warning' | 'error' | 'success'
@@ -89,7 +90,7 @@ export function useErrorHandler() {
     options: {
       errorMsg?: string
       context?: string
-      onError?: (error: any) => void
+      onError?: (error: unknown) => void
     } = {}
   ): Promise<[T | null, Error | null]> => {
     const { errorMsg = '操作失败，请稍后重试', context, onError } = options
@@ -97,16 +98,17 @@ export function useErrorHandler() {
     try {
       const data = await promise
       return [data, null]
-    } catch (error: any) {
-      const errorMessage = errorMsg || error?.message || '未知错误'
+    } catch (error: unknown) {
+      const errorMessage = errorMsg || (error instanceof Error ? error.message : String(error)) || '未知错误'
+      const errorStack = error instanceof Error ? error.stack : undefined
       notifyError(errorMessage)
-      logError(errorMessage, 'error', context, error?.stack)
+      logError(errorMessage, 'error', context, errorStack)
 
       if (onError) {
         onError(error)
       }
 
-      return [null, error as Error]
+      return [null, error instanceof Error ? error : new Error(String(error))]
     }
   }
 
@@ -121,15 +123,16 @@ export function useErrorHandler() {
 
   // Promise rejection handler
   const createUnhandledRejectionHandler = (context?: string) => {
-    return (reason: any) => {
-      const errorMsg = reason?.message || String(reason)
-      logError(errorMsg, 'error', context, reason?.stack)
+    return (reason: unknown) => {
+      const errorMsg = reason instanceof Error ? reason.message : String(reason)
+      const errorStack = reason instanceof Error ? reason.stack : undefined
+      logError(errorMsg, 'error', context, errorStack)
     }
   }
 
   // 组件错误捕获
   const createVueErrorHandler = (context?: string) => {
-    return (err: Error, _instance: any, info: string) => {
+    return (err: Error, _instance: ComponentPublicInstance | null, info: string) => {
       const errorMsg = `${err.message} | Info: ${info}`
       logError(errorMsg, 'error', context, err.stack)
       notifyError('应用发生错误，请刷新页面')

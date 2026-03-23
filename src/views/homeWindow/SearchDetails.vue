@@ -72,7 +72,7 @@ import { useRouter } from 'vue-router'
 import { MittEnum, RoomTypeEnum } from '@/enums'
 import { useCommon } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt'
-import { useChatStore } from '@/stores/chat.ts'
+import { useChatStore } from '@/stores/chat'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useI18n } from 'vue-i18n'
 

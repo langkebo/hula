@@ -210,7 +210,13 @@ const isSelfUser = (uid: string): boolean => {
 // 处理自己加入群聊
 const handleSelfAdd = async (roomId: string) => {
   info('本人加入群聊，加载该群聊的会话数据')
-  await chatStore.addSession(roomId)
+  await chatStore.addSession({
+    roomId,
+    name: roomId,
+    type: RoomTypeEnum.SINGLE,
+    unreadCount: 0,
+    activeTime: Date.now()
+  })
   try {
     await groupStore.getGroupUserList(roomId, true)
   } catch (error) {

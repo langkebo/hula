@@ -80,6 +80,7 @@ import { ThemeEnum } from '@/enums'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
 import { matrixVoiceService } from '@/services/matrix/MatrixVoiceService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import type { VoiceBody } from '@/services/types'
@@ -92,6 +93,7 @@ const { themes } = storeToRefs(settingStore)
 const props = defineProps<{
   body: VoiceBody
   fromUserUid: string
+  roomId: string
   messageId: string
   showControls?: boolean
   transcriptionEnabled?: boolean
@@ -177,9 +179,9 @@ const handleTogglePlayback = async () => {
 const initAudio = async () => {
   loading.value = true
   try {
-    const voice = await matrixVoiceService.getVoice(props.messageId)
-    if (voice?.url) {
-      audioElement.value = new Audio(voice.url)
+    const voice = await matrixVoiceService.getVoice(props.roomId, props.messageId)
+    if (voice?.mxc_url) {
+      audioElement.value = new Audio(matrixClientService.getClient()?.mxcUrlToHttp(voice.mxc_url) || voice.mxc_url)
       audioElement.value.playbackRate = playbackSpeed.value
 
       audioElement.value.addEventListener('timeupdate', () => {
@@ -216,8 +218,6 @@ const handleTranscribe = async () => {
   try {
     showTranscription.value = true
     const result = await matrixVoiceService.transcribeVoice({
-      mxc: props.body?.url || '',
-      language: 'auto',
       message_id: props.messageId
     })
     transcription.value = result.text
@@ -229,9 +229,9 @@ const handleTranscribe = async () => {
 
 const handleDownload = async () => {
   try {
-    const voice = await matrixVoiceService.getVoice(props.messageId)
-    if (voice?.url) {
-      const response = await fetch(voice.url)
+    const voice = await matrixVoiceService.getVoice(props.roomId, props.messageId)
+    if (voice?.mxc_url) {
+      const response = await fetch(matrixClientService.getClient()?.mxcUrlToHttp(voice.mxc_url) || voice.mxc_url)
       const blob = await response.blob()
 
       const filePath = await save({

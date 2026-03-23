@@ -1,5 +1,5 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
-import { NotificationCountType, ReceiptType } from 'matrix-js-sdk'
+import { NotificationCountType, ReceiptType } from '@/types/matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 
@@ -149,12 +149,13 @@ class MatrixReceiptService {
     const receipt = room.getEventReadUpTo(myUserId, false)
     if (!receipt) {
       return (
-        room.getUnreadNotificationCount(NotificationCountType.Highlight) +
-        room.getUnreadNotificationCount(NotificationCountType.Total)
+        (room.getUnreadNotificationCount?.(NotificationCountType.Highlight) ?? 0) +
+        (room.getUnreadNotificationCount?.(NotificationCountType.Total) ?? 0)
       )
     }
 
     const timeline = room.getLiveTimeline()
+    if (!timeline) return 0
     const events = timeline.getEvents()
     let unreadCount = 0
 
@@ -177,8 +178,8 @@ class MatrixReceiptService {
     if (!room) return false
 
     return (
-      room.getUnreadNotificationCount(NotificationCountType.Highlight) > 0 ||
-      room.getUnreadNotificationCount(NotificationCountType.Total) > 0
+      (room.getUnreadNotificationCount?.(NotificationCountType.Highlight) ?? 0) > 0 ||
+      (room.getUnreadNotificationCount?.(NotificationCountType.Total) ?? 0) > 0
     )
   }
 

@@ -21,8 +21,11 @@ import { useDownload } from '@/hooks/useDownload'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import type { FilesMeta, RightMouseMessageItem } from '@/services/types.ts'
+
+/** 上下文菜单项目类型 - 支持从 fromUser.uid 或直接 uid 获取用户ID */
+type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<string, unknown>
 import type { MessageType } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat.ts'
+import { useChatStore } from '@/stores/chat'
 import { useContactStore } from '@/stores/contacts'
 import { useEmojiStore } from '@/stores/emoji'
 import { type FileDownloadStatus, useFileDownloadStore } from '@/stores/fileDownload'
@@ -223,7 +226,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     {
       label: () => t('menu.reply'),
       icon: 'reply',
-      click: (item: any) => {
+      click: (item: MessageType) => {
         useMitt.emit(MittEnum.REPLY_MEG, item)
       }
     },
@@ -517,7 +520,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           {
             label: () => t('menu.del'),
             icon: 'delete',
-            click: (item: any) => {
+            click: (item: MessageType) => {
               tips.value = t('home.chat_main.delete.confirm')
               modalShow.value = true
               delIndex.value = item.message.id
@@ -804,32 +807,32 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     {
       label: () => t('menu.send_message'),
       icon: 'message-action',
-      click: (item: any) => {
+      click: (item: ContextMenuItem) => {
         openMsgSession(item.uid || item.fromUser.uid)
       },
-      visible: (item: any) => checkFriendRelation(item.uid || item.fromUser.uid, 'friend')
+      visible: (item: ContextMenuItem) => checkFriendRelation(item.uid || item.fromUser.uid, 'friend')
     },
     {
       label: 'TA',
       icon: 'aite',
-      click: (item: any) => {
+      click: (item: ContextMenuItem) => {
         useMitt.emit(MittEnum.AT, item.uid || item.fromUser.uid)
       },
-      visible: (item: any) => (item.uid ? item.uid !== userUid.value : item.fromUser.uid !== userUid.value)
+      visible: (item: ContextMenuItem) => (item.uid ? item.uid !== userUid.value : item.fromUser.uid !== userUid.value)
     },
     {
       label: () => t('menu.get_user_info'),
       icon: 'notes',
-      click: (item: any, type: string) => {
+      click: (item: ContextMenuItem & { message?: { id: string } }, type: string) => {
         // 如果是聊天框内的资料就使用的是消息的key，如果是群聊成员的资料就使用的是uid
-        const uid = item.uid || item.message.id
+        const uid = (item.uid || item.message?.id) as string
         useMitt.emit(`${MittEnum.INFO_POPOVER}-${type}`, { uid: uid, type: type })
       }
     },
     {
       label: () => t('menu.modify_group_nickname'),
       icon: 'edit',
-      click: (item: any) => {
+      click: (item: ContextMenuItem) => {
         const targetUid = item.uid || item.fromUser?.uid
         const currentUid = userUid.value
         const roomId = globalStore.currentSessionRoomId
@@ -848,22 +851,22 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           originalNickname: currentNickname
         } as GroupNicknameModalPayload)
       },
-      visible: (item: any) => (item.uid ? item.uid === userUid.value : item.fromUser.uid === userUid.value)
+      visible: (item: ContextMenuItem) => (item.uid ? item.uid === userUid.value : item.fromUser.uid === userUid.value)
     },
     {
       label: () => t('menu.add_friend'),
       icon: 'people-plus',
-      click: async (item: any) => {
+      click: async (item: ContextMenuItem) => {
         await createWebviewWindow('申请加好友', 'addFriendVerify', 380, 300, '', false, 380, 300)
         globalStore.addFriendModalInfo.show = true
         globalStore.addFriendModalInfo.uid = item.uid || item.fromUser.uid
       },
-      visible: (item: any) => !checkFriendRelation(item.uid || item.fromUser.uid, 'all')
+      visible: (item: ContextMenuItem) => !checkFriendRelation(item.uid || item.fromUser.uid, 'all')
     },
     {
       label: () => t('menu.set_admin'),
       icon: 'people-safe',
-      click: async (item: any) => {
+      click: async (item: ContextMenuItem) => {
         const targetUid = item.uid || item.fromUser.uid
         const roomId = globalStore.currentSessionRoomId
         if (!roomId) return
@@ -875,7 +878,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           window.$message.error(t('menu.set_admin_fail'))
         }
       },
-      visible: (item: any) => {
+      visible: (item: ContextMenuItem) => {
         // 1. 检查是否在群聊中
         const isInGroup = globalStore.currentSession?.type === RoomTypeEnum.GROUP
         if (!isInGroup) return false
@@ -889,7 +892,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         if (!targetUid) return false
 
         // 4. 检查目标用户角色
-        let targetRoleId = item.roleId
+        let targetRoleId = item.roleId as number | undefined
 
         // 如果item中没有roleId，则通过uid从群成员列表中查找
         if (targetRoleId === void 0) {
@@ -908,7 +911,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     {
       label: () => t('menu.revoke_admin'),
       icon: 'reduce-user',
-      click: async (item: any) => {
+      click: async (item: ContextMenuItem) => {
         const targetUid = item.uid || item.fromUser.uid
         const roomId = globalStore.currentSessionRoomId
         if (!roomId) return
@@ -920,7 +923,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           window.$message.error(t('menu.revoke_admin_fail'))
         }
       },
-      visible: (item: any) => {
+      visible: (item: ContextMenuItem) => {
         // 1. 检查是否在群聊中
         const isInGroup = globalStore.currentSession?.type === RoomTypeEnum.GROUP
         if (!isInGroup) return false
@@ -934,7 +937,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         if (!targetUid) return false
 
         // 4. 检查目标用户角色
-        let targetRoleId = item.roleId
+        let targetRoleId = item.roleId as number | undefined
 
         // 如果item中没有roleId，则通过uid从群成员列表中查找
         if (targetRoleId === void 0) {
@@ -956,7 +959,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     {
       label: () => t('menu.remove_from_group'),
       icon: 'people-delete-one',
-      click: async (item: any) => {
+      click: async (item: ContextMenuItem) => {
         const targetUid = item.uid || item.fromUser.uid
         const roomId = globalStore.currentSessionRoomId
         if (!roomId) return
@@ -970,7 +973,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           window.$message.error(t('menu.remove_from_group_fail'))
         }
       },
-      visible: (item: any) => {
+      visible: (item: ContextMenuItem) => {
         // 1. 检查是否在群聊中
         const isInGroup = globalStore.currentSession?.type === RoomTypeEnum.GROUP
         if (!isInGroup) return false
@@ -984,7 +987,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         if (!targetUid) return false
 
         // 4. 检查目标用户角色
-        let targetRoleId = item.roleId
+        let targetRoleId = item.roleId as number | undefined
 
         // 如果item中没有roleId，则通过uid从群成员列表中查找
         if (targetRoleId === void 0) {

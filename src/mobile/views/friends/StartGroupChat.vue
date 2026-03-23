@@ -98,7 +98,7 @@ import { useGroupStore } from '@/stores/group'
 import { useUserStatusStore } from '@/stores/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import * as ImRequestUtils from '@/utils/ImRequestUtils'
-import { useChatStore } from '@/stores/chat.ts'
+import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global.ts'
 
 const userStatusStore = useUserStatusStore()

@@ -61,35 +61,35 @@ describe('MatrixFriendService', () => {
   })
 
   describe('initial state', () => {
-    it('should return empty friends list initially', () => {
-      const friends = matrixFriendService.getFriends()
+    it('should return empty friends list initially', async () => {
+      const friends = await matrixFriendService.getFriends()
       expect(friends).toEqual([])
     })
 
-    it('should return empty incoming requests initially', () => {
-      const requests = matrixFriendService.getIncomingRequests()
+    it('should return empty incoming requests initially', async () => {
+      const requests = await matrixFriendService.getIncomingRequests()
       expect(requests).toEqual([])
     })
 
-    it('should return empty outgoing requests initially', () => {
-      const requests = matrixFriendService.getOutgoingRequests()
+    it('should return empty outgoing requests initially', async () => {
+      const requests = await matrixFriendService.getOutgoingRequests()
       expect(requests).toEqual([])
     })
 
-    it('should return 0 friend count initially', () => {
-      const count = matrixFriendService.getFriendCount()
+    it('should return 0 friend count initially', async () => {
+      const count = await matrixFriendService.getFriendCount()
       expect(count).toBe(0)
     })
 
-    it('should return false for isFriend check initially', () => {
-      const result = matrixFriendService.isFriend('@user:example.org')
+    it('should return false for isFriend check initially', async () => {
+      const result = await matrixFriendService.isFriend('@user:example.org')
       expect(result).toBe(false)
     })
   })
 
   describe('getSyncState', () => {
-    it('should return current sync state', () => {
-      const state = matrixFriendService.getSyncState()
+    it('should return current sync state', async () => {
+      const state = await matrixFriendService.getSyncState()
       expect(state).toHaveProperty('friends')
       expect(state).toHaveProperty('incomingRequests')
       expect(state).toHaveProperty('outgoingRequests')

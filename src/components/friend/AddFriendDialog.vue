@@ -102,7 +102,7 @@ const handleSearch = async () => {
     const profile = await contactStore.getUserProfile(userId)
     searchResult.value = profile
 
-    if (contactStore.isFriend(userId)) {
+    if (await contactStore.isFriend(userId)) {
       window.$message.info(t('friend.add.already_friend'))
     }
   } catch (err) {

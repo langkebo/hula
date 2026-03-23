@@ -221,12 +221,12 @@ import { useGroupStore } from '@/stores/group'
 import { useImageViewer } from '@/stores/imageViewer'
 import { useGlobalStore } from '@/stores/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { getGroupDetail } from '@/utils/ImRequestUtils'
 
 const { t } = useI18n()
 const { openMsgSession } = useCommon()
 const { createWebviewWindow, startRtcCall } = useWindow()
 const globalStore = useGlobalStore()
+const groupStore = useGroupStore()
 const IMAGEWIDTH = 630
 const IMAGEHEIGHT = 660
 const { content } = defineProps<{
@@ -245,7 +245,6 @@ const nicknameValue = ref('')
 const nicknameInputRef = useTemplateRef('nicknameInputRef')
 const announcementStore = useAnnouncementStore()
 const badgeStore = useBadgeStore()
-const groupStore = useGroupStore()
 const { persistMyRoomInfo, resolveMyRoomNickname } = useMyRoomInfoUpdater()
 
 const remarkSnapshot = ref('')
@@ -301,10 +300,10 @@ watchEffect(async () => {
     nicknameSnapshot.value = ''
     announcementContent.value = ''
   } else {
-    await getGroupDetail(content.uid)
+    groupStore.loadGroupInfo(content.uid)
       .then((response: any) => {
         item.value = response
-        const normalizedNickname = resolveMyRoomNickname({ roomId: response.roomId, myName: response.myName })
+        const normalizedNickname = resolveMyRoomNickname({ roomId: response.roomId, myName: response.name })
         const normalizedRemark = response.remark || ''
         nicknameValue.value = normalizedNickname
         nicknameSnapshot.value = normalizedNickname

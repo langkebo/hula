@@ -114,8 +114,15 @@ export const useGroupStore = defineStore(
         const member = currentRoomMembers.value.find((m) => m.userId === myUserId)
         return member?.displayName || member?.name || ''
       },
-      set(_value: string) {
-        // TODO: 实现设置昵称
+      async set(value: string) {
+        const roomId = globalStore.currentSessionRoomId
+        if (!roomId) return
+        try {
+          await matrixRoomService.setMemberDisplayName(roomId, value)
+          info(`[GroupStore] Successfully set display name to: ${value}`)
+        } catch (e) {
+          error(`[GroupStore] Failed to set display name: ${e}`)
+        }
       }
     })
 
@@ -129,8 +136,19 @@ export const useGroupStore = defineStore(
         if (member.isModerator) return 1
         return 2
       },
-      set(_value: number) {
-        // TODO: 实现设置角色
+      async set(value: number) {
+        const myUserId = matrixStore.userId
+        const roomId = globalStore.currentSessionRoomId
+        if (!myUserId || !roomId) return
+        try {
+          // 0=创建者, 1=管理员, 2=普通成员
+          // Matrix power level: 100=创建者/管理员, 0=普通成员
+          const powerLevel = value <= 1 ? 100 : 0
+          await matrixRoomService.setMemberPowerLevel(roomId, myUserId, powerLevel)
+          info(`[GroupStore] 成功设置角色: ${value}`)
+        } catch (e) {
+          error(`[GroupStore] 设置角色失败: ${e}`)
+        }
       }
     })
 
@@ -243,7 +261,7 @@ export const useGroupStore = defineStore(
           name: room.name || roomId,
           avatarUrl: room.getMxcAvatarUrl?.() || null,
           avatar: room.getMxcAvatarUrl?.() || '',
-          topic: room.currentState.getStateEvents('m.room.topic' as any, '')?.getContent()?.topic || null,
+          topic: ((room.currentState.getStateEvents('m.room.topic' as any, '')?.getContent() as any)?.topic as string) || null,
           memberCount: room.getJoinedMembers().length,
           memberNum: room.getJoinedMembers().length,
           onlineNum: room.getJoinedMembers().length,
@@ -363,7 +381,7 @@ export const useGroupStore = defineStore(
         if (!room) return false
 
         const powerLevelsEvent = room.currentState.getStateEvents('m.room.power_levels' as any, '')
-        const powerLevels = powerLevelsEvent?.getContent() || {}
+        const powerLevels: { users?: Record<string, number>; [key: string]: any } = powerLevelsEvent?.getContent() || {}
 
         powerLevels.users = powerLevels.users || {}
         powerLevels.users[userId] = powerLevel
@@ -394,8 +412,14 @@ export const useGroupStore = defineStore(
       return membersMap[roomId]?.find((m) => m.userId === uid || m.uid === uid)
     }
 
-    function updateUserItem(_uid: string, _updates: Partial<MatrixRoomMember>, _roomId?: string): boolean {
-      // TODO: 实现更新用户信息
+    function updateUserItem(uid: string, updates: Partial<MatrixRoomMember>, roomId?: string): boolean {
+      const targetRoomId = roomId || globalStore.currentSessionRoomId
+      if (!targetRoomId || !membersMap[targetRoomId]) return false
+      
+      const memberIndex = membersMap[targetRoomId].findIndex((m) => m.userId === uid || m.uid === uid)
+      if (memberIndex === -1) return false
+      
+      Object.assign(membersMap[targetRoomId][memberIndex], updates)
       return true
     }
 
@@ -409,8 +433,24 @@ export const useGroupStore = defineStore(
       }
     }
 
-    function updateOnlineNum(_options: { uid?: string; roomId?: string; onlineNum?: number; isAdd?: boolean }): void {
-      // TODO: 实现更新在线人数
+    function updateOnlineNum(options: { uid?: string; roomId?: string; onlineNum?: number; isAdd?: boolean }): void {
+      const { uid, roomId, onlineNum, isAdd } = options
+      const targetRoomId = roomId || globalStore.currentSessionRoomId
+      
+      if (!targetRoomId || !membersMap[targetRoomId]) return
+      
+      if (uid) {
+        // 更新指定用户的在线状态
+        const member = membersMap[targetRoomId].find((m) => m.userId === uid || m.uid === uid)
+        if (member && onlineNum !== undefined) {
+          member.activeStatus = onlineNum > 0 ? OnlineEnum.ONLINE : OnlineEnum.OFFLINE
+        }
+      } else if (isAdd && onlineNum !== undefined) {
+        // 批量更新在线人数（增加）
+        membersMap[targetRoomId].forEach((m) => {
+          m.activeStatus = onlineNum > 0 ? OnlineEnum.ONLINE : OnlineEnum.OFFLINE
+        })
+      }
     }
 
     function updateGroupNumber(roomId: string, totalNum: number, onlineNum: number): void {
@@ -451,12 +491,32 @@ export const useGroupStore = defineStore(
       await leaveRoom(roomId)
     }
 
-    async function addAdmin(_uidList: string[]): Promise<void> {
-      // TODO: 实现添加管理员
+    async function addAdmin(uidList: string[]): Promise<void> {
+      const roomId = globalStore.currentSessionRoomId
+      if (!roomId) return
+      try {
+        for (const uid of uidList) {
+          await matrixRoomService.setMemberPowerLevel(roomId, uid, 100)
+        }
+        info(`[GroupStore] 成功添加 ${uidList.length} 个管理员`)
+      } catch (e) {
+        error(`[GroupStore] 添加管理员失败: ${e}`)
+        throw e
+      }
     }
 
-    async function revokeAdmin(_uidList: string[]): Promise<void> {
-      // TODO: 实现撤销管理员
+    async function revokeAdmin(uidList: string[]): Promise<void> {
+      const roomId = globalStore.currentSessionRoomId
+      if (!roomId) return
+      try {
+        for (const uid of uidList) {
+          await matrixRoomService.setMemberPowerLevel(roomId, uid, 0)
+        }
+        info(`[GroupStore] 成功撤销 ${uidList.length} 个管理员`)
+      } catch (e) {
+        error(`[GroupStore] 撤销管理员失败: ${e}`)
+        throw e
+      }
     }
 
     async function removeGroupMembers(uidList: string[], roomId?: string): Promise<void> {

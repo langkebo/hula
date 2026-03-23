@@ -18,5 +18,8 @@
   "screenshot_hide_curr_window": "截图时隐藏当前窗口",
   "relation": {
     "not_friends": "你们当前已经不是好友关系"
-  }
+  },
+  "burn_after_read": "阅后即焚",
+  "burn_after_read_enabled": "阅后即焚已开启",
+  "burn_after_read_disabled": "阅后即焚已关闭"
 }

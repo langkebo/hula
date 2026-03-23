@@ -1,12 +1,13 @@
 import { MsgEnum } from '@/enums'
 import type { MsgType } from '@/services/types'
+import type { MessageType } from '@/stores/chat'
 
 /**
  * 根据消息类型获取回复内容
  * @param message 消息对象
  * @returns 格式化后的回复内容
  */
-export const getReplyContent = (message: MsgType): string => {
+export const getReplyContent = (message: MsgType | MessageType['message']): string => {
   let content: string
 
   // 根据消息类型确定回复内容

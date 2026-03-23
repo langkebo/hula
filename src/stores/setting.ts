@@ -29,6 +29,16 @@ const setDocumentTheme = (theme: string) => {
   document.documentElement.dataset.theme = theme
 }
 
+const hashPassword = (password: string): string => {
+  let hash = 0
+  for (let i = 0; i < password.length; i++) {
+    const char = password.charCodeAt(i)
+    hash = (hash << 5) - hash + char
+    hash = hash & hash
+  }
+  return hash.toString(16)
+}
+
 // TODO 使用indexDB或sqlite缓存数据，还需要根据每个账号来进行配置 (nyh -> 2024-03-26 01:22:12)
 const isDesktopComputed = computed(() => isDesktop())
 export const useSettingStore = defineStore(StoresEnum.SETTING, {
@@ -73,6 +83,10 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     notification: {
       messageSound: true,
       volume: 80
+    },
+    secretChat: {
+      enabled: false,
+      passwordHash: ''
     }
   }),
   actions: {
@@ -199,6 +213,27 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       }
       const normalized = Math.min(100, Math.max(0, Math.round(volume)))
       this.notification.volume = normalized
+    },
+    /** 设置私密聊天密码 */
+    setSecretChatPassword(password: string) {
+      this.secretChat.enabled = true
+      this.secretChat.passwordHash = hashPassword(password)
+    },
+    /** 验证私密聊天密码 */
+    verifySecretChatPassword(password: string): boolean {
+      if (!this.secretChat.enabled) {
+        return false
+      }
+      return this.secretChat.passwordHash === hashPassword(password)
+    },
+    /** 清除私密聊天密码 */
+    clearSecretChatPassword() {
+      this.secretChat.enabled = false
+      this.secretChat.passwordHash = ''
+    },
+    /** 检查私密聊天是否已设置 */
+    isSecretChatConfigured(): boolean {
+      return this.secretChat.enabled && !!this.secretChat.passwordHash
     }
   },
   share: {

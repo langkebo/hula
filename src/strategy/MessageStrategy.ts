@@ -14,7 +14,7 @@ import { generateVideoThumbnail } from '@/utils/VideoThumbnail'
 import { useGroupStore } from '../stores/group'
 import { removeTempFile } from '@/utils/TempFileManager'
 
-interface MessageStrategy {
+export interface MessageStrategy {
   getMsg: (msgInputValue: string, replyValue: any, fileList?: File[]) => any
   buildMessageBody: (msg: any, reply: any) => any
   buildMessageType: (messageId: string, messageBody: any, globalStore: any, userUid: Ref<any>) => MessageType

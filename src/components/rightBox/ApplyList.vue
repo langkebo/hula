@@ -138,6 +138,7 @@ const userStore = useUserStore()
 const contactStore = useContactStore()
 const groupStore = useGroupStore()
 const { t } = useI18n()
+
 const currentUserId = ref('0')
 const loadingMap = ref<Record<string, boolean>>({})
 const isLoadingMore = ref(false)
@@ -181,7 +182,7 @@ const getGroupDetail = async (roomId: string) => {
   // 开始加载
   loadingGroups.value.add(roomId)
   try {
-    const groupInfo = await getGroupInfo(roomId)
+    const groupInfo = await groupStore.loadGroupInfo(roomId)
     if (groupInfo) {
       groupDetailsMap.value[roomId] = groupInfo
       return groupInfo

@@ -16,114 +16,120 @@
       <span class="leading-tight">{{ networkBanner.text }}</span>
     </div>
     <!--  会话列表  -->
-    <div v-if="sessionList.length > 0" class="p-[4px_10px_0px_8px]">
-      <ContextMenu
-        v-for="item in sessionList"
-        :key="item.roomId"
-        :class="getItemClasses(item)"
-        :data-key="item.roomId"
-        :menu="visibleMenu(item)"
-        :special-menu="visibleSpecialMenu(item)"
-        :content="item"
-        class="msg-box w-full h-75px mb-5px"
-        @click="handleMsgClick(item)"
-        @dblclick="handleMsgDblclick(item)"
-        @select="$event.click(item)"
-        @menu-show="handleMenuShow(item.roomId, $event)">
-        <n-flex :size="10" align="center" class="h-75px pl-6px pr-8px flex-1">
-          <n-avatar
-            style="border: 1px solid var(--avatar-border-color)"
-            :size="44"
-            :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-            :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-            :src="AvatarUtils.getAvatarUrl(item.avatar)"
-            round />
+    <div v-if="sessionList.length > 0" class="p-[4px_10px_0px_8px] h-full">
+      <RecycleScroller
+        class="scroller h-full"
+        :items="sessionList"
+        :item-size="80"
+        key-field="roomId"
+        v-slot="{ item }"
+      >
+        <ContextMenu
+          :class="getItemClasses(item)"
+          :data-key="item.roomId"
+          :menu="visibleMenu(item)"
+          :special-menu="visibleSpecialMenu(item)"
+          :content="item"
+          class="msg-box w-full h-75px mb-5px"
+          @click="handleMsgClick(item)"
+          @dblclick="handleMsgDblclick(item)"
+          @select="$event.click(item)"
+          @menu-show="handleMenuShow(item.roomId, $event)">
+          <n-flex :size="10" align="center" class="h-75px pl-6px pr-8px flex-1">
+            <n-avatar
+              style="border: 1px solid var(--avatar-border-color)"
+              :size="44"
+              :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
+              :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+              :src="AvatarUtils.getAvatarUrl(item.avatar)"
+              round />
 
-          <n-flex class="h-fit flex-1 truncate" justify="space-between" vertical>
-            <n-flex :size="4" align="center" class="flex-1 truncate" justify="space-between">
-              <n-flex :size="0" align="center" class="leading-tight flex-1 truncate">
-                <span class="text-14px leading-tight flex-1 truncate">{{ item.name }}</span>
-                <n-popover trigger="hover" v-if="item.hotFlag === IsAllUserEnum.Yes">
-                  <template #trigger>
-                    <svg
-                      :class="[globalStore.currentSessionRoomId === item.roomId ? 'color-#33ceab' : 'color-#13987f']"
-                      class="size-20px select-none outline-none cursor-pointer">
-                      <use href="#auth"></use>
-                    </svg>
-                  </template>
-                  <span>{{ t('message.message_list.official_popover') }}</span>
-                </n-popover>
+            <n-flex class="h-fit flex-1 truncate" justify="space-between" vertical>
+              <n-flex :size="4" align="center" class="flex-1 truncate" justify="space-between">
+                <n-flex :size="0" align="center" class="leading-tight flex-1 truncate">
+                  <span class="text-14px leading-tight flex-1 truncate">{{ item.name }}</span>
+                  <n-popover trigger="hover" v-if="item.hotFlag === IsAllUserEnum.Yes">
+                    <template #trigger>
+                      <svg
+                        :class="[globalStore.currentSessionRoomId === item.roomId ? 'color-#33ceab' : 'color-#13987f']"
+                        class="size-20px select-none outline-none cursor-pointer">
+                        <use href="#auth"></use>
+                      </svg>
+                    </template>
+                    <span>{{ t('message.message_list.official_popover') }}</span>
+                  </n-popover>
 
-                <n-popover trigger="hover" v-if="item.account === UserType.BOT">
-                  <template #trigger>
-                    <svg class="size-20px select-none outline-none cursor-pointer color-#13987f">
-                      <use href="#authenticationUser"></use>
-                    </svg>
-                  </template>
-                  <span>{{ t('message.message_list.bot_popover') }}</span>
-                </n-popover>
-              </n-flex>
-              <span
-                v-if="item.account !== UserType.BOT"
-                :class="{ 'color-#d5304f90!': item.shield && globalStore.currentSessionRoomId === item.roomId }"
-                class="text text-10px w-fit truncate text-right">
-                {{ item.lastMsgTime }}
-              </span>
-            </n-flex>
-
-            <n-flex align="center" justify="space-between">
-              <template v-if="item.isAtMe">
-                <span class="text flex-1 leading-tight text-12px truncate">
-                  <span class="text-#d5304f mr-4px">{{ t('message.message_list.mention_tag') }}</span>
-                  <span>{{ String(item.lastMsg || '').replace(':', '：') }}</span>
-                </span>
-              </template>
-              <template v-else-if="item.shield">
-                <span class="text flex-1 leading-tight text-12px truncate">
-                  <span :class="globalStore.currentSessionRoomId === item.roomId ? 'color-#d5304f90' : 'color-#909090'">
-                    {{
-                      item.type === RoomTypeEnum.GROUP
-                        ? t('message.message_list.shield_group')
-                        : t('message.message_list.shield_user')
-                    }}
-                  </span>
-                </span>
-              </template>
-              <template v-else>
+                  <n-popover trigger="hover" v-if="item.account === UserType.BOT">
+                    <template #trigger>
+                      <svg class="size-20px select-none outline-none cursor-pointer color-#13987f">
+                        <use href="#authenticationUser"></use>
+                      </svg>
+                    </template>
+                    <span>{{ t('message.message_list.bot_popover') }}</span>
+                  </n-popover>
+                </n-flex>
                 <span
-                  :class="[
-                    'text flex-1 leading-tight text-12px truncate',
-                    { 'text-[#707070]! dark:text-[#fff]!': item.account === UserType.BOT }
-                  ]">
-                  {{ String(item.lastMsg || t('message.message_list.default_last_msg')).replace(':', '：') }}
+                  v-if="item.account !== UserType.BOT"
+                  :class="{ 'color-#d5304f90!': item.shield && globalStore.currentSessionRoomId === item.roomId }"
+                  class="text text-10px w-fit truncate text-right">
+                  {{ item.lastMsgTime }}
                 </span>
-              </template>
+              </n-flex>
 
-              <!-- 消息提示 -->
-              <template v-if="item.shield">
-                <svg
-                  :class="[globalStore.currentSessionRoomId === item.roomId ? 'color-#d5304f90' : 'color-#909090']"
-                  class="size-14px">
-                  <use href="#forbid"></use>
-                </svg>
-              </template>
-              <template v-else-if="item.muteNotification === 1 && !item.unreadCount">
-                <svg
-                  :class="[globalStore.currentSessionRoomId === item.roomId ? 'color-#fefefe' : 'color-#909090']"
-                  class="size-14px">
-                  <use href="#close-remind"></use>
-                </svg>
-              </template>
-              <n-badge
-                v-else
-                :max="99"
-                :value="item.unreadCount"
-                :show="globalStore.unreadReady && item.unreadCount > 0"
-                :color="item.muteNotification === 1 ? 'rgba(128, 128, 128, 0.5)' : undefined" />
+              <n-flex align="center" justify="space-between">
+                <template v-if="item.isAtMe">
+                  <span class="text flex-1 leading-tight text-12px truncate">
+                    <span class="text-#d5304f mr-4px">{{ t('message.message_list.mention_tag') }}</span>
+                    <span>{{ String(item.lastMsg || '').replace(':', '：') }}</span>
+                  </span>
+                </template>
+                <template v-else-if="item.shield">
+                  <span class="text flex-1 leading-tight text-12px truncate">
+                    <span :class="globalStore.currentSessionRoomId === item.roomId ? 'color-#d5304f90' : 'color-#909090'">
+                      {{
+                        item.type === RoomTypeEnum.GROUP
+                          ? t('message.message_list.shield_group')
+                          : t('message.message_list.shield_user')
+                      }}
+                    </span>
+                  </span>
+                </template>
+                <template v-else>
+                  <span
+                    :class="[
+                      'text flex-1 leading-tight text-12px truncate',
+                      { 'text-[#707070]! dark:text-[#fff]!': item.account === UserType.BOT }
+                    ]">
+                    {{ String(item.lastMsg || t('message.message_list.default_last_msg')).replace(':', '：') }}
+                  </span>
+                </template>
+
+                <!-- 消息提示 -->
+                <template v-if="item.shield">
+                  <svg
+                    :class="[globalStore.currentSessionRoomId === item.roomId ? 'color-#d5304f90' : 'color-#909090']"
+                    class="size-14px">
+                    <use href="#forbid"></use>
+                  </svg>
+                </template>
+                <template v-else-if="item.muteNotification === 1 && !item.unreadCount">
+                  <svg
+                    :class="[globalStore.currentSessionRoomId === item.roomId ? 'color-#fefefe' : 'color-#909090']"
+                    class="size-14px">
+                    <use href="#close-remind"></use>
+                  </svg>
+                </template>
+                <n-badge
+                  v-else
+                  :max="99"
+                  :value="item.unreadCount"
+                  :show="globalStore.unreadReady && item.unreadCount > 0"
+                  :color="item.muteNotification === 1 ? 'rgba(128, 128, 128, 0.5)' : undefined" />
+              </n-flex>
             </n-flex>
           </n-flex>
-        </n-flex>
-      </ContextMenu>
+        </ContextMenu>
+      </RecycleScroller>
     </div>
 
     <!-- 加载中显示的骨架屏 -->
@@ -168,7 +174,7 @@ import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { IsAllUserEnum } from '@/services/types.ts'
 import type { SessionItem } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat.ts'
+import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useGroupStore } from '@/stores/group.ts'
 import { useSettingStore } from '@/stores/setting'

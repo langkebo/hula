@@ -3,7 +3,7 @@
  * 请使用 matrix-js-sdk 的位置功能或第三方地图 SDK
  * 迁移完成后此文件将被删除
  */
-import { imRequest } from '@/utils/ImRequestUtils'
+import { imRequestResult } from '@/utils/ImRequestUtils'
 import { ImUrlEnum } from '@/enums'
 import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
 
@@ -39,11 +39,14 @@ type ReverseGeocodeResult = {
 export const transformCoordinates = async (lat: number, lng: number): Promise<TransformedCoordinate> => {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new Error('坐标范围无效')
   try {
-    const data = await imRequest<{ lat: number; lng: number }>({
+    const data = await imRequestResult<{ lat: number; lng: number }>({
       url: ImUrlEnum.MAP_COORD_TRANSLATE,
       params: { lat, lng }
     })
-    return { lat: data.lat, lng: data.lng }
+    if (data.isOk()) {
+      return { lat: data.value.lat, lng: data.value.lng }
+    }
+    return wgs84ToGcj02(lat, lng)
   } catch (_error) {
     return wgs84ToGcj02(lat, lng)
   }
@@ -53,20 +56,20 @@ export const transformCoordinates = async (lat: number, lng: number): Promise<Tr
 export const reverseGeocode = async (lat: number, lng: number): Promise<ReverseGeocodeResult | null> => {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new Error('坐标范围无效')
   try {
-    const data = await imRequest<ReverseGeocodeResult>({
+    const data = await imRequestResult<ReverseGeocodeResult>({
       url: ImUrlEnum.MAP_REVERSE_GEOCODE,
       params: { lat, lng }
     })
-    return data
+    return data.isOk() ? data.value : null
   } catch (_error) {
     return null
   }
 }
 
 export const getStaticMap = async (lat: number, lng: number, width = 600, height = 400, zoom = 18): Promise<string> => {
-  const data = await imRequest<{ dataUrl: string }>({
+  const data = await imRequestResult<{ dataUrl: string }>({
     url: ImUrlEnum.MAP_STATIC,
     params: { lat, lng, width, height, zoom }
   })
-  return data.dataUrl || ''
+  return data.isOk() ? (data.value.dataUrl || '') : ''
 }

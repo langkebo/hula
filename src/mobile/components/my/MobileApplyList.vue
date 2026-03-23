@@ -137,7 +137,6 @@ import { useContactStore } from '@/stores/contacts.ts'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useGroupStore } from '@/stores/group'
-import { getGroupInfo } from '@/utils/ImRequestUtils'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -189,7 +188,7 @@ const getGroupDetail = async (roomId: string) => {
   // 开始加载
   loadingGroups.value.add(roomId)
   try {
-    const groupInfo = await getGroupInfo(roomId)
+    const groupInfo = await groupStore.loadGroupInfo(roomId)
     if (groupInfo) {
       groupDetailsMap.value[roomId] = groupInfo
       return groupInfo

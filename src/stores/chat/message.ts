@@ -1,91 +1,27 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
-import { sendNotification } from '@tauri-apps/plugin-notification'
-import { orderBy, uniqBy } from 'es-toolkit'
 import pLimit from 'p-limit'
 import { defineStore } from 'pinia'
 import { useRoute } from 'vue-router'
-import { MittEnum, MessageStatusEnum, MsgEnum, RoomTypeEnum, StoresEnum, NotificationTypeEnum } from '@/enums'
+import { MessageStatusEnum, MsgEnum, StoresEnum, RoomTypeEnum, MittEnum } from '@/enums'
+import { useMitt } from '@/hooks/useMitt'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useGroupStore } from '@/stores/group.ts'
 import { useUserStore } from '@/stores/user.ts'
-import { useSessionUnreadStore } from '@/stores/sessionUnread'
-import { unreadCountManager } from '@/utils/UnreadCountManager'
-import { useMitt } from '@/hooks/useMitt'
-import { matrixRoomService, matrixReceiptService, matrixClientService } from '@/services/matrix'
+import { useSessionStore, type SessionItem } from './session'
+import { matrixRoomService } from '@/services/matrix'
 import type { Room, MatrixEvent } from 'matrix-js-sdk'
+import { useMessageStore, pageSize, ROOM_MESSAGE_CACHE_LIMIT, RECALL_EXPIRATION_TIME, type MessageType, type RecalledMessage, type CustomForwardTask } from '../message'
 
-type RecalledMessage = {
-  messageId: string
-  content: string
-  recallTime: number
-  originalType: MsgEnum
+// Re-export for backward compatibility
+export type { MessageType, RecalledMessage, CustomForwardTask }
+export { pageSize, ROOM_MESSAGE_CACHE_LIMIT, RECALL_EXPIRATION_TIME }
+// Get timerWorker from message store
+const getTimerWorker = () => {
+  const msgStore = useMessageStore()
+  return msgStore.getTimerWorker()
 }
-
-type CustomForwardTask = {
-  id: string
-  type: MsgEnum.IMAGE
-  fileName: string
-  mimeType: string
-  bytes: Uint8Array
-  previewUrl: string
-  width: number
-  height: number
-  size: number
-}
-
-export interface SessionItem {
-  id?: string
-  roomId: string
-  name: string
-  avatar?: string
-  type: RoomTypeEnum
-  unreadCount: number
-  activeTime: number
-  text?: string
-  muteNotification?: NotificationTypeEnum
-  isCheck?: boolean
-  remark?: string
-  top?: boolean
-  shield?: boolean
-  hotFlag?: number
-  account?: string
-  detailId?: string
-  operate?: number
-}
-
-export interface MessageType {
-  message: {
-    id: string
-    roomId: string
-    sendTime: number
-    type: MsgEnum
-    body: any
-    status?: MessageStatusEnum
-    messageMarks?: Record<string, { count: number; userMarked: boolean }>
-    loading?: boolean
-  }
-  fromUser: {
-    uid: string
-    username?: string
-    avatar?: string
-    locPlace?: string
-  }
-  timeBlock?: number
-  uploadProgress?: number
-  isCheck?: boolean
-  sendTime?: number
-  loading?: boolean
-}
-
-export const pageSize = 20
-const ROOM_MESSAGE_CACHE_LIMIT = 40
-const RECALL_EXPIRATION_TIME = 2 * 60 * 1000
-
-const timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url))
-timerWorker.onerror = (err) => {
-  console.error('[Worker Error]', err)
-}
+import { sendNotification } from '@tauri-apps/plugin-notification'
 
 export const useChatStore = defineStore(
   StoresEnum.CHAT,
@@ -94,57 +30,8 @@ export const useChatStore = defineStore(
     const userStore = useUserStore()
     const globalStore = useGlobalStore()
     const groupStore = useGroupStore()
-    const sessionUnreadStore = useSessionUnreadStore()
-
-    const sessionList = ref<SessionItem[]>([])
-    const sessionMap = ref<Record<string, SessionItem>>({})
-    const sessionOptions = reactive({ isLast: false, isLoading: false, cursor: '' })
-    const syncLoading = ref(false)
-    syncLoading.value = false
-
-    const syncPersistedUnreadCounts = (targetSessions: SessionItem[] = sessionList.value) => {
-      if (!targetSessions.length) return
-      const updates = sessionUnreadStore.apply(userStore.userInfo?.uid, targetSessions)
-      for (const [roomId, unreadCount] of Object.entries(updates)) {
-        updateSession(roomId, { unreadCount })
-      }
-    }
-
-    const persistUnreadCount = (roomId: string, count: number) => {
-      if (!roomId) return
-      sessionUnreadStore.set(userStore.userInfo?.uid, roomId, count)
-    }
-
-    const removeUnreadCountCache = (roomId: string) => {
-      if (!roomId) return
-      sessionUnreadStore.remove(userStore.userInfo?.uid, roomId)
-    }
-
-    const rebuildSessionMap = () => {
-      if (!sessionList.value.length) return
-      sessionMap.value = sessionList.value.reduce(
-        (map, session) => {
-          map[session.roomId] = session
-          return map
-        },
-        {} as Record<string, SessionItem>
-      )
-    }
-
-    const resolveSessionByRoomId = (roomId: string) => {
-      if (!roomId) return undefined
-      let session = sessionMap.value[roomId]
-      if (!session) {
-        if (!Object.keys(sessionMap.value).length && sessionList.value.length) {
-          rebuildSessionMap()
-        }
-        session = sessionMap.value[roomId] ?? sessionList.value.find((item) => item.roomId === roomId)
-        if (session) {
-          sessionMap.value[roomId] = session
-        }
-      }
-      return session
-    }
+    const sessionStore = useSessionStore()
+    const messageStore = useMessageStore()
 
     const lastReadActiveTime = ref<Record<string, number>>({})
 
@@ -210,7 +97,7 @@ export const useChatStore = defineStore(
     const currentSessionInfo = computed(() => {
       const roomId = globalStore.currentSessionRoomId
       if (!roomId) return undefined
-      return resolveSessionByRoomId(roomId)
+      return sessionStore.getSession(roomId)
     })
 
     const newMsgCount = reactive<Record<string, { count: number; isStart: boolean }>>({})
@@ -251,40 +138,6 @@ export const useChatStore = defineStore(
         const msg = messageMap[roomId][msgId]
         if (shouldKeepTransientMessage(msg)) continue
         delete messageMap[roomId][msgId]
-      }
-    }
-
-    const convertRoomToSession = (room: Room): SessionItem => {
-      const client = matrixClientService.getClient()
-      const myUserId = client?.getUserId()
-      const members = room.getJoinedMembers()
-
-      let name = room.name || room.roomId
-      let avatar: string | undefined
-      let type = RoomTypeEnum.GROUP
-
-      if (room.isSpaceRoom?.()) {
-        type = RoomTypeEnum.GROUP
-      } else if (room.getJoinedMemberCount() === 2) {
-        type = RoomTypeEnum.SINGLE
-        const otherMember = members.find((m) => m.userId !== myUserId)
-        if (otherMember) {
-          name = otherMember.name || otherMember.userId
-          avatar = otherMember.getMxcAvatarUrl?.() || undefined
-        }
-      }
-
-      const unreadCount = matrixReceiptService.getUnreadCount(room.roomId)
-      const lastEvent = room.getLiveTimeline().getEvents().slice(-1)[0]
-      const activeTime = lastEvent?.getTs?.() || 0
-
-      return {
-        roomId: room.roomId,
-        name,
-        avatar,
-        type,
-        unreadCount,
-        activeTime
       }
     }
 
@@ -355,7 +208,7 @@ export const useChatStore = defineStore(
       }
 
       if (globalStore.currentSessionRoomId) {
-        markSessionRead(globalStore.currentSessionRoomId)
+        sessionStore.markSessionRead(globalStore.currentSessionRoomId)
       }
 
       currentMsgReply.value = {}
@@ -386,9 +239,9 @@ export const useChatStore = defineStore(
 
     const setAllSessionMsgList = async (size = pageSize) => {
       await info('初始设置所有会话消息列表')
-      if (sessionList.value.length === 0) return
+      if (sessionStore.sessionList.length === 0) return
 
-      const sortedSessions = [...sessionList.value].sort((a, b) => b.activeTime - a.activeTime)
+      const sortedSessions = [...sessionStore.sessionList].sort((a, b) => b.activeTime - a.activeTime)
       const limit = pLimit(5)
       const tasks = sortedSessions.map((session) => limit(() => getPageMsg(size, session.roomId, '', true)))
       const results = await Promise.allSettled(tasks)
@@ -457,112 +310,6 @@ export const useChatStore = defineStore(
       }
     }
 
-    const getSessionList = async (_isFresh = false) => {
-      try {
-        if (sessionOptions.isLoading) return
-        sessionOptions.isLoading = true
-        globalStore.unreadReady = false
-
-        const rooms = await matrixRoomService.getRooms()
-        const sessions = rooms.map(convertRoomToSession)
-
-        sessionList.value = sessions
-        syncPersistedUnreadCounts()
-        sessionOptions.isLoading = false
-
-        for (const session of sessionList.value) {
-          sessionMap.value[session.roomId] = session
-        }
-
-        sortAndUniqueSessionList()
-        updateTotalUnreadCount()
-
-        const currentRoomId = globalStore.currentSessionRoomId
-        if (currentRoomId) {
-          const currentSession = resolveSessionByRoomId(currentRoomId)
-          if (currentSession?.unreadCount) {
-            markSessionRead(currentRoomId)
-            updateTotalUnreadCount()
-          }
-        }
-
-        globalStore.unreadReady = true
-        unreadCountManager.refreshBadge(globalStore.unReadMark)
-      } catch (err) {
-        console.error('获取会话列表失败:', err)
-        sessionOptions.isLoading = false
-        globalStore.unreadReady = true
-        unreadCountManager.refreshBadge(globalStore.unReadMark)
-      } finally {
-        sessionOptions.isLoading = false
-      }
-    }
-
-    const sortAndUniqueSessionList = () => {
-      const uniqueAndSorted = orderBy(
-        uniqBy(sessionList.value, (item) => item.roomId),
-        [(item) => item.activeTime],
-        ['desc']
-      )
-      sessionList.value.splice(0, sessionList.value.length, ...uniqueAndSorted)
-    }
-
-    const updateSession = (roomId: string, data: Partial<SessionItem>) => {
-      const index = sessionList.value.findIndex((s) => s.roomId === roomId)
-      if (index !== -1) {
-        const oldSession = sessionList.value[index]
-        const updatedSession = { ...oldSession, ...data }
-        const newList = [...sessionList.value]
-        newList[index] = updatedSession
-        sessionList.value = newList
-        sessionMap.value[roomId] = updatedSession
-
-        if ('unreadCount' in data && typeof data.unreadCount === 'number') {
-          console.log('[updateSession] 更新未读数:', roomId, data.unreadCount)
-          persistUnreadCount(roomId, data.unreadCount)
-          requestUnreadCountUpdate(roomId)
-        }
-
-        if ('muteNotification' in data) {
-          requestUnreadCountUpdate()
-        }
-      } else {
-        console.warn('[updateSession] 会话不存在:', roomId)
-      }
-    }
-
-    const updateSessionLastActiveTime = (roomId: string) => {
-      const session = resolveSessionByRoomId(roomId)
-      if (session) {
-        Object.assign(session, { activeTime: Date.now() })
-      } else {
-        addSession(roomId)
-      }
-      return session
-    }
-
-    const addSession = async (roomId: string) => {
-      try {
-        const room = await matrixRoomService.getRoom(roomId)
-        if (!room) return
-
-        const session = convertRoomToSession(room)
-        sessionList.value.unshift(session)
-        sessionMap.value[roomId] = session
-        syncPersistedUnreadCounts([session])
-        sortAndUniqueSessionList()
-      } catch (err) {
-        console.error('添加会话失败:', err)
-      }
-    }
-
-    const getSession = (roomId: string) => {
-      if (!roomId) {
-        return sessionList.value[0]
-      }
-      return resolveSessionByRoomId(roomId)
-    }
-
     const pushMsg = async (msg: MessageType, options: { isActiveChatView?: boolean; activeRoomId?: string } = {}) => {
       if (!msg.message.id) {
         msg.message.id = `${msg.message.roomId}_${msg.message.sendTime}_${msg.fromUser.uid}`
@@ -592,7 +339,7 @@ export const useChatStore = defineStore(
       const uid = msg.fromUser.uid
       const cacheUser = groupStore.getUserInfo(uid)
 
-      const session = resolveSessionByRoomId(msg.message.roomId)
+      const session = sessionStore.getSession(msg.message.roomId)
       if (session) {
         const lastMsgUserName = cacheUser?.name
         const formattedText =
@@ -617,13 +364,24 @@ export const useChatStore = defineStore(
           console.log('[pushMsg] 增加未读数:', msg.message.roomId, updateData.unreadCount)
         }
 
-        updateSession(msg.message.roomId, updateData)
+        sessionStore.updateSession(msg.message.roomId, updateData)
       } else {
-        await addSession(msg.message.roomId)
-        const isSelfMessage = msg.fromUser.uid === userStore.userInfo!.uid
-        const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
-        if (shouldIncreaseUnread) {
-          updateSession(msg.message.roomId, { unreadCount: 1 })
+        const room = await matrixRoomService.getRoom(msg.message.roomId)
+        if (room) {
+          const newSession = {
+            roomId: room.roomId,
+            name: room.name || room.roomId,
+            avatar: room.getMxcAvatarUrl() || '',
+            type: room.getJoinedMemberCount() === 2 ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP,
+            unreadCount: 0,
+            activeTime: Date.now()
+          }
+          sessionStore.addSession(newSession)
+          const isSelfMessage = msg.fromUser.uid === userStore.userInfo!.uid
+          const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
+          if (shouldIncreaseUnread) {
+            sessionStore.updateSession(msg.message.roomId, { unreadCount: 1 })
+          }
         }
       }
 
@@ -710,7 +468,7 @@ export const useChatStore = defineStore(
       }
 
       if (data.recallUid === userStore.userInfo!.uid) {
-        timerWorker.postMessage({
+        getTimerWorker().postMessage({
           type: 'startTimer',
           msgId: data.msg.message.id,
           duration: RECALL_EXPIRATION_TIME
@@ -723,7 +481,7 @@ export const useChatStore = defineStore(
     const updateRecallMsg = async (data: { msgId: string; recallUid?: string; roomId?: string }) => {
       const { msgId } = data
       const resolvedRoomId = data.roomId || findRoomIdByMsgId(msgId)
-      const session = resolvedRoomId ? resolveSessionByRoomId(resolvedRoomId) : undefined
+      const session = resolvedRoomId ? sessionStore.getSession(resolvedRoomId) : undefined
       const sessionType = session?.type ?? RoomTypeEnum.SINGLE
       const roomMessages = resolvedRoomId ? messageMap[resolvedRoomId] : undefined
       const message = roomMessages?.[msgId] || currentMessageMap.value?.[msgId]
@@ -770,9 +528,9 @@ export const useChatStore = defineStore(
       }
 
       if (resolvedRoomId) {
-        const session = resolveSessionByRoomId(resolvedRoomId)
+        const session = sessionStore.getSession(resolvedRoomId)
         if (session && recallMessageBody) {
-          session.text = recallMessageBody
+          sessionStore.updateSession(resolvedRoomId, { text: recallMessageBody })
         }
         useMitt.emit(MittEnum.UPDATE_SESSION_LAST_MSG, { roomId: resolvedRoomId })
       }
@@ -883,50 +641,12 @@ export const useChatStore = defineStore(
       }
     }
 
-    const markSessionReadLock = new Set<string>()
-    const markMsgReadQueue = pLimit(1)
-
     const markSessionRead = (roomId: string) => {
-      if (markSessionReadLock.has(roomId)) return
-
-      const session = resolveSessionByRoomId(roomId)
-      if (!session) {
-        console.log('[markSessionRead] 会话不存在:', roomId)
-        return
-      }
-
-      markSessionReadLock.add(roomId)
-
-      const activeTime = session.activeTime || Date.now()
-      lastReadActiveTime.value[roomId] = activeTime
-      sessionUnreadStore.setLastRead(userStore.userInfo?.uid, roomId, activeTime)
-
-      persistUnreadCount(roomId, 0)
-      updateSession(roomId, { unreadCount: 0 })
-
-      markMsgReadQueue(async () => {
-        try {
-          await matrixReceiptService.markRoomAsRead(roomId)
-        } catch (err) {
-          console.error('[markSessionRead] 已读上报失败:', err)
-        }
-      }).catch((err) => {
-        console.error('[markSessionRead] 已读上报失败:', err)
-      })
-
-      updateTotalUnreadCount()
-
-      setTimeout(() => {
-        markSessionReadLock.delete(roomId)
-      }, 500)
+      sessionStore.markSessionRead(roomId)
     }
 
-    const clearCurrentSessionUnread = async () => {
-      const roomId = globalStore.currentSessionRoomId
-      if (!roomId) return
-      const session = resolveSessionByRoomId(roomId)
-      if (!session?.unreadCount) return
-      markSessionRead(roomId)
+    const clearCurrentSessionUnread = () => {
+      sessionStore.clearCurrentSessionUnread()
     }
 
     const getMessage = (messageId: string) => {
@@ -934,27 +654,10 @@ export const useChatStore = defineStore(
     }
 
     const removeSession = (roomId: string) => {
-      const session = resolveSessionByRoomId(roomId)
-      if (session) {
-        const index = sessionList.value.findIndex((s) => s.roomId === roomId)
-        if (index !== -1) {
-          sessionList.value.splice(index, 1)
-        }
-
-        delete sessionMap.value[roomId]
-        delete lastReadActiveTime.value[roomId]
-        sessionUnreadStore.setLastRead(userStore.userInfo?.uid, roomId, 0)
-
-        if (globalStore.currentSessionRoomId === roomId) {
-          globalStore.updateCurrentSessionRoomId(sessionList.value[0]?.roomId || '')
-        }
-
-        requestUnreadCountUpdate()
-      }
-      removeUnreadCountCache(roomId)
+      sessionStore.removeSession(roomId)
     }
 
-    timerWorker.onmessage = (e) => {
+    getTimerWorker().onmessage = (e) => {
       const { type, msgId } = e.data
 
       if (type === 'timeout') {
@@ -968,12 +671,12 @@ export const useChatStore = defineStore(
     }
 
     const terminateWorker = () => {
-      timerWorker.terminate()
+      getTimerWorker().terminate()
     }
 
     const clearAllExpirationTimers = () => {
       for (const msgId in expirationTimers) {
-        timerWorker.postMessage({
+        getTimerWorker().postMessage({
           type: 'clearTimer',
           msgId
         })
@@ -993,7 +696,7 @@ export const useChatStore = defineStore(
         if (now - msg.recallTime > RECALL_EXPIRATION_TIME) {
           delete recalledMessages[msgId]
           if (expirationTimers[msgId]) {
-            timerWorker.postMessage({ type: 'clearTimer', msgId })
+            getTimerWorker().postMessage({ type: 'clearTimer', msgId })
             delete expirationTimers[msgId]
           }
         }
@@ -1001,23 +704,16 @@ export const useChatStore = defineStore(
     }
 
     const updateTotalUnreadCount = () => {
-      unreadCountManager.calculateTotal(sessionList.value, globalStore.unReadMark)
+      sessionStore.updateTotalUnreadCount()
     }
 
-    unreadCountManager.setUpdateCallback(() => {
-      unreadCountManager.calculateTotal(sessionList.value, globalStore.unReadMark)
-    })
-
     const requestUnreadCountUpdate = (sessionId?: string) => {
-      unreadCountManager.requestUpdate(sessionId)
+      // sessionId parameter was removed in sessionStore, so we don't pass it
+      sessionStore.requestUnreadCountUpdate()
     }
 
     const clearUnreadCount = () => {
-      sessionList.value.forEach((session) => {
-        session.unreadCount = 0
-        persistUnreadCount(session.roomId, 0)
-      })
-      requestUnreadCountUpdate()
+      sessionStore.clearUnreadCount()
     }
 
     const clearRedundantMessages = (roomId: string, limit: number = pageSize) => {
@@ -1098,7 +794,7 @@ export const useChatStore = defineStore(
     }
 
     const getGroupSessions = () => {
-      return sessionList.value.filter((session) => session.type === RoomTypeEnum.GROUP)
+      return sessionStore.getGroupSessions()
     }
 
     const setMsgMultiChoose = (flag: boolean, mode: 'normal' | 'forward' = 'normal') => {
@@ -1111,9 +807,7 @@ export const useChatStore = defineStore(
     }
 
     const resetSessionSelection = () => {
-      sessionList.value.forEach((session) => {
-        session.isCheck = false
-      })
+      sessionStore.resetSessionSelection()
     }
 
     return {
@@ -1134,15 +828,23 @@ export const useChatStore = defineStore(
       currentReplyMap,
       currentNewMsgCount,
       loadMore,
-      currentMsgReply,
-      sessionList,
-      sessionOptions,
-      syncLoading,
-      getSessionList,
-      updateSession,
-      updateSessionLastActiveTime,
+      get sessionList() {
+        return sessionStore.sessionList
+      },
+      get sessionOptions() {
+        return sessionStore.sessionOptions
+      },
+      get syncLoading() {
+        return sessionStore.syncLoading
+      },
+      set syncLoading(val: boolean) {
+        sessionStore.syncLoading = val
+      },
+      getSessionList: sessionStore.getSessionList,
+      updateSession: sessionStore.updateSession,
+      updateSessionLastActiveTime: sessionStore.updateSessionLastActiveTime,
       markSessionRead,
-      getSession,
+      getSession: sessionStore.getSession,
       isGroup,
       currentSessionInfo,
       getMessage,
@@ -1158,7 +860,7 @@ export const useChatStore = defineStore(
       getGroupSessions,
       removeSession,
       changeRoom,
-      addSession,
+      addSession: sessionStore.addSession,
       setAllSessionMsgList,
       chatMessageListByRoomId,
       shouldShowNoMoreMessage,

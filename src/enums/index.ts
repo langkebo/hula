@@ -207,12 +207,15 @@ export enum StoresEnum {
   ANNOUNCEMENT = 'announcement',
   /** 全局 */
   GLOBAL = 'global',
+  SESSION = 'session',
   /** 表情 */
   EMOJI = 'emoji',
   /** 联系人 */
   CONTACTS = 'contacts',
   /** 聊天 */
   CHAT = 'chat',
+  /** 消息 */
+  MESSAGE = 'message',
   /** 会话未读缓存 */
   SESSION_UNREAD = 'sessionUnread',
   /** 缓存 */

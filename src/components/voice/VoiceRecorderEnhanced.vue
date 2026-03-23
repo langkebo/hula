@@ -136,6 +136,11 @@ import { info, error as logError } from '@tauri-apps/plugin-log'
 
 const { t } = useI18n()
 
+const props = defineProps<{
+  roomId: string
+  maxDuration?: number
+}>()
+
 const emit = defineEmits<{
   (e: 'cancel'): void
   (
@@ -277,27 +282,25 @@ const handleSend = async () => {
     const uint8Array = new Uint8Array(arrayBuffer)
 
     const result = await matrixVoiceService.uploadVoice(
-      {
-        content: '',
-        audio_data: uint8Array.buffer as ArrayBuffer,
-        filename: `voice_${Date.now()}.webm`,
-        content_type: 'audio/webm',
-        duration_ms: recordingDuration.value,
-        duration: recordingDuration.value
-      },
-      (progress: VoiceUploadProgress) => {
-        uploadProgress.value = progress.percentage
-      }
+      props.roomId,
+      new Blob([uint8Array.buffer], { type: 'audio/webm' })
     )
 
     emit('send', {
-      mxcUrl: result.mxc_url || '',
-      duration: recordingDuration.value,
-      size: audioBlob.value.size,
-      filename: result.filename || ''
-    })
+        type: 'm.voice',
+        content: {
+          msgtype: 'm.audio',
+          body: `Voice message (${recordingDuration.value}s)`,
+          url: result.content_uri,
+          info: {
+            duration: recordingDuration.value,
+            mimetype: 'audio/webm',
+            size: audioBlob.value.size
+          }
+        }
+      } as any)
 
-    info(`[VoiceRecorder] 语音上传成功: ${result.message_id}`)
+    info(`[VoiceRecorder] 语音上传成功: ${result.content_uri}`)
     resetState()
   } catch (err) {
     error.value = t('voice.recorder.upload_failed')
