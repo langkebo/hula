@@ -11,7 +11,15 @@ import { useUserStore } from '@/stores/user.ts'
 import { useSessionStore, type SessionItem } from './session'
 import { matrixRoomService } from '@/services/matrix'
 import type { Room, MatrixEvent } from 'matrix-js-sdk'
-import { useMessageStore, pageSize, ROOM_MESSAGE_CACHE_LIMIT, RECALL_EXPIRATION_TIME, type MessageType, type RecalledMessage, type CustomForwardTask } from '../message'
+import {
+  useMessageStore,
+  pageSize,
+  ROOM_MESSAGE_CACHE_LIMIT,
+  RECALL_EXPIRATION_TIME,
+  type MessageType,
+  type RecalledMessage,
+  type CustomForwardTask
+} from '../message'
 
 // Re-export for backward compatibility
 export type { MessageType, RecalledMessage, CustomForwardTask }
@@ -31,11 +39,13 @@ export const useChatStore = defineStore(
     const globalStore = useGlobalStore()
     const groupStore = useGroupStore()
     const sessionStore = useSessionStore()
-    const messageStore = useMessageStore()
+    const _messageStore = useMessageStore()
 
-    const lastReadActiveTime = ref<Record<string, number>>({})
+    const _lastReadActiveTime = ref<Record<string, number>>({})
 
-    const messageMap = reactive<Record<string, Record<string, MessageType>>>({})
+    // 使用两个数据结构：Map 用于快速查找和修改，Array 用于保持顺序和渲染
+    const messageMap = shallowReactive<Record<string, Record<string, MessageType>>>({})
+    const sortedMessageKeys = reactive<Record<string, string[]>>({})
     const messageOptions = reactive<Record<string, { isLast: boolean; isLoading: boolean; cursor: string }>>({})
 
     const transientStatuses = new Set<MessageStatusEnum>([
@@ -124,6 +134,9 @@ export const useChatStore = defineStore(
             const msg = messageMap[roomId][msgId]
             if (shouldKeepTransientMessage(msg)) continue
             delete messageMap[roomId][msgId]
+            if (sortedMessageKeys[roomId]) {
+              sortedMessageKeys[roomId] = sortedMessageKeys[roomId].filter((id) => id !== msgId)
+            }
           }
         }
       }
@@ -132,12 +145,16 @@ export const useChatStore = defineStore(
     const clearRoomMessagesExceptTransient = (roomId: string) => {
       if (!messageMap[roomId]) {
         messageMap[roomId] = {}
+        sortedMessageKeys[roomId] = []
         return
       }
       for (const msgId in messageMap[roomId]) {
         const msg = messageMap[roomId][msgId]
         if (shouldKeepTransientMessage(msg)) continue
         delete messageMap[roomId][msgId]
+        if (sortedMessageKeys[roomId]) {
+          sortedMessageKeys[roomId] = sortedMessageKeys[roomId].filter((id) => id !== msgId)
+        }
       }
     }
 
@@ -217,13 +234,15 @@ export const useChatStore = defineStore(
     const currentMsgReply = ref<Partial<MessageType>>({})
 
     const chatMessageList = computed(() => {
-      if (!currentMessageMap.value || Object.keys(currentMessageMap.value).length === 0) return []
-      return Object.values(currentMessageMap.value).sort((a, b) => Number(a.message.id) - Number(b.message.id))
+      const roomId = globalStore.currentSessionRoomId
+      if (!roomId || !sortedMessageKeys[roomId]) return []
+
+      return sortedMessageKeys[roomId].map((id) => messageMap[roomId][id]).filter(Boolean)
     })
 
     const chatMessageListByRoomId = computed(() => (roomId: string) => {
-      if (!messageMap[roomId] || Object.keys(messageMap[roomId]).length === 0) return []
-      return Object.values(messageMap[roomId]).sort((a, b) => Number(a.message.id) - Number(b.message.id))
+      if (!sortedMessageKeys[roomId]) return []
+      return sortedMessageKeys[roomId].map((id) => messageMap[roomId][id]).filter(Boolean)
     })
 
     const findRoomIdByMsgId = (msgId: string) => {
@@ -271,15 +290,37 @@ export const useChatStore = defineStore(
         if (!messageMap[roomId]) {
           messageMap[roomId] = {}
         }
+        if (!sortedMessageKeys[roomId]) {
+          sortedMessageKeys[roomId] = []
+        }
 
         const startIndex = cursor ? events.findIndex((e) => e.getId() === cursor) : 0
         const endIndex = Math.min(startIndex + pageSize, events.length)
         const pageEvents = events.slice(startIndex, endIndex)
 
+        const newKeys: string[] = []
         for (const event of pageEvents) {
           const msg = convertEventToMessage(event, room)
           if (msg) {
-            messageMap[roomId][msg.message.id] = msg
+            const msgId = msg.message.id
+            messageMap[roomId][msgId] = msg
+            newKeys.push(msgId)
+          }
+        }
+
+        // 合并排序
+        if (newKeys.length > 0) {
+          const existingKeys = new Set(sortedMessageKeys[roomId])
+          const uniqueNewKeys = newKeys.filter((id) => !existingKeys.has(id))
+          if (uniqueNewKeys.length > 0) {
+            const allKeys = [...sortedMessageKeys[roomId], ...uniqueNewKeys]
+            allKeys.sort((a, b) => {
+              const msgA = messageMap[roomId][a]
+              const msgB = messageMap[roomId][b]
+              if (!msgA || !msgB) return 0
+              return Number(msgA.message.id) - Number(msgB.message.id)
+            })
+            sortedMessageKeys[roomId] = allKeys
           }
         }
 
@@ -322,10 +363,44 @@ export const useChatStore = defineStore(
         messageMap[msg.message.roomId] = roomMessages
       }
 
+      // 幂等性检查：如果消息已存在且不是自己发送的更新状态，直接忽略
       const existedMsg = roomMessages[messageKey]
+      if (existedMsg) {
+        // 允许发送过程中的状态更新（如：发送中 -> 成功）
+        if (existedMsg.message.sendTime === msg.message.sendTime) {
+          return
+        }
+      }
+
       roomMessages[messageKey] = msg
 
-      if (existedMsg) return
+      // 二分查找插入，维持有序性
+      if (!sortedMessageKeys[msg.message.roomId]) {
+        sortedMessageKeys[msg.message.roomId] = []
+      }
+
+      if (!existedMsg) {
+        const keys = sortedMessageKeys[msg.message.roomId]
+        let low = 0
+        let high = keys.length - 1
+        const newIdNum = Number(msg.message.id)
+
+        while (low <= high) {
+          const mid = Math.floor((low + high) / 2)
+          const midMsg = roomMessages[keys[mid]]
+          const midIdNum = midMsg ? Number(midMsg.message.id) : 0
+
+          if (midIdNum === newIdNum) {
+            low = mid // 相同 ID 理论上不该走到这（前面有 existedMsg 判断）
+            break
+          } else if (midIdNum < newIdNum) {
+            low = mid + 1
+          } else {
+            high = mid - 1
+          }
+        }
+        keys.splice(low, 0, messageKey)
+      }
 
       const targetRoomId = options.activeRoomId ?? globalStore.currentSessionRoomId ?? ''
       let isActiveChatView = options.isActiveChatView
@@ -553,6 +628,10 @@ export const useChatStore = defineStore(
     const deleteMsg = (msgId: string) => {
       if (currentMessageMap.value && msgId in currentMessageMap.value) {
         delete currentMessageMap.value[msgId]
+        const roomId = globalStore.currentSessionRoomId
+        if (sortedMessageKeys[roomId]) {
+          sortedMessageKeys[roomId] = sortedMessageKeys[roomId].filter((id) => id !== msgId)
+        }
       }
     }
 
@@ -561,6 +640,10 @@ export const useChatStore = defineStore(
 
       if (messageMap[roomId]) {
         messageMap[roomId] = {}
+      }
+
+      if (sortedMessageKeys[roomId]) {
+        sortedMessageKeys[roomId] = []
       }
 
       if (replyMapping[roomId]) {
@@ -637,6 +720,30 @@ export const useChatStore = defineStore(
 
       if (newMsgId && msgId !== newMsgId) {
         delete roomMessages[msgId]
+        if (sortedMessageKeys[resolvedRoomId]) {
+          sortedMessageKeys[resolvedRoomId] = sortedMessageKeys[resolvedRoomId].filter((id) => id !== msgId)
+
+          // 如果是新的 msgId，需要按顺序插入
+          if (!sortedMessageKeys[resolvedRoomId].includes(newMsgId)) {
+            const keys = sortedMessageKeys[resolvedRoomId]
+            let low = 0
+            let high = keys.length - 1
+            const newIdNum = Number(newMsgId)
+
+            while (low <= high) {
+              const mid = Math.floor((low + high) / 2)
+              const midMsg = roomMessages[keys[mid]]
+              const midIdNum = midMsg ? Number(midMsg.message.id) : 0
+
+              if (midIdNum < newIdNum) {
+                low = mid + 1
+              } else {
+                high = mid - 1
+              }
+            }
+            keys.splice(low, 0, newMsgId)
+          }
+        }
         messageMap[resolvedRoomId] = { ...roomMessages }
       }
     }
@@ -707,7 +814,7 @@ export const useChatStore = defineStore(
       sessionStore.updateTotalUnreadCount()
     }
 
-    const requestUnreadCountUpdate = (sessionId?: string) => {
+    const requestUnreadCountUpdate = (_sessionId?: string) => {
       // sessionId parameter was removed in sessionStore, so we don't pass it
       sessionStore.requestUnreadCountUpdate()
     }

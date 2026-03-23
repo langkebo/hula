@@ -414,31 +414,21 @@ const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/plugins/robot/index.vue'),
     children: [
       {
-        path: '/welcome',
-        name: 'welcome',
-        component: () => import('@/plugins/robot/views/Welcome.vue')
-      },
-      {
         path: '/chat',
         name: 'chat',
         component: () => import('@/plugins/robot/views/Chat.vue')
-      },
-      {
-        path: '/chatSettings',
-        name: 'chatSettings',
-        component: () => import('@/plugins/robot/views/chatSettings/index.vue')
-      },
-      {
-        path: '/imageGeneration',
-        name: 'imageGeneration',
-        component: () => import('@/plugins/robot/views/ImageGeneration.vue')
-      },
-      {
-        path: '/videoGeneration',
-        name: 'videoGeneration',
-        component: () => import('@/plugins/robot/views/VideoGeneration.vue')
       }
     ]
+  },
+  {
+    path: '/trendradar',
+    name: 'trendradar',
+    component: () => import('@/views/trendradar/TrendRadarView.vue')
+  },
+  {
+    path: '/openclaw',
+    name: 'openclaw',
+    component: () => import('@/views/openclaw/OpenClawView.vue')
   },
   {
     path: '/mail',
@@ -577,7 +567,6 @@ const getDesktopRoutes = (): Array<RouteRecordRaw> => [
 
 // Desktop views
 const SearchDetails = () => import('@/views/homeWindow/SearchDetails.vue')
-import ConfirmQRLoginDesktop from '@/views/ConfirmQRLogin.vue'
 
 // 通用路由配置（所有平台都需要）
 const getCommonRoutes = (): Array<RouteRecordRaw> => [

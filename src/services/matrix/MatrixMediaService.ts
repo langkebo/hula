@@ -1,6 +1,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { matrixClientService } from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
+import { compressImage, isImageFile, formatFileSize } from '@/utils/imageCompressor'
 
 export interface UploadResult {
   contentUri: string
@@ -16,7 +17,32 @@ export interface MediaInfo {
   duration?: number
 }
 
+export interface CompressOptions {
+  quality?: number
+  maxWidth?: number
+  maxHeight?: number
+  maxSizeKB?: number
+}
+
+const DEFAULT_COMPRESS_OPTIONS: CompressOptions = {
+  quality: 0.8,
+  maxWidth: 1920,
+  maxHeight: 1920,
+  maxSizeKB: 1024
+}
+
 class MatrixMediaServiceClass {
+  private compressOptions: CompressOptions = { ...DEFAULT_COMPRESS_OPTIONS }
+  private enableCompression = true
+
+  setCompressOptions(options: CompressOptions) {
+    this.compressOptions = { ...DEFAULT_COMPRESS_OPTIONS, ...options }
+  }
+
+  setEnableCompression(enable: boolean) {
+    this.enableCompression = enable
+  }
+
   private getClient(): MatrixClient {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -25,7 +51,7 @@ class MatrixMediaServiceClass {
     return client
   }
 
-  async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResult> {
+  async uploadFile(file: File, _onProgress?: (progress: number) => void): Promise<UploadResult> {
     const client = this.getClient()
 
     try {
@@ -46,22 +72,40 @@ class MatrixMediaServiceClass {
     }
   }
 
-  async uploadImage(file: File, onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
+  async uploadImage(file: File, _onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
     const client = this.getClient()
 
     try {
       const dimensions = await this.getImageDimensions(file)
 
-      const uploadResponse = await client.uploadContent(file, {
-        type: file.type
+      let fileToUpload = file
+      let originalSize = file.size
+      let compressedSize = file.size
+
+      if (this.enableCompression && isImageFile(file)) {
+        try {
+          const result = await compressImage(file, this.compressOptions)
+          fileToUpload = new File([result.blob], file.name || 'image.jpg', { type: result.blob.type })
+          originalSize = result.originalSize
+          compressedSize = result.compressedSize
+          info(
+            `[MatrixMedia] 图片压缩完成: ${formatFileSize(originalSize)} -> ${formatFileSize(compressedSize)} (${result.compressionRatio.toFixed(1)}%)`
+          )
+        } catch (compressErr) {
+          error(`[MatrixMedia] 图片压缩失败，使用原图: ${compressErr}`)
+        }
+      }
+
+      const uploadResponse = await client.uploadContent(fileToUpload, {
+        type: fileToUpload.type
       } as any)
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       info(`[MatrixMedia] 图片上传成功: ${contentUri}`)
       return {
         contentUri,
-        size: file.size,
-        mimetype: file.type || 'image/png',
+        size: compressedSize,
+        mimetype: fileToUpload.type || 'image/png',
         width: dimensions.width,
         height: dimensions.height
       }
@@ -71,7 +115,7 @@ class MatrixMediaServiceClass {
     }
   }
 
-  async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
+  async uploadVideo(file: File, _onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
     const client = this.getClient()
 
     try {
@@ -97,7 +141,7 @@ class MatrixMediaServiceClass {
     }
   }
 
-  async uploadAudio(file: File, onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
+  async uploadAudio(file: File, _onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
     const client = this.getClient()
 
     try {
@@ -121,7 +165,7 @@ class MatrixMediaServiceClass {
     }
   }
 
-  async uploadBlob(blob: Blob, filename: string, mimetype: string): Promise<UploadResult> {
+  async uploadBlob(blob: Blob, _filename: string, mimetype: string): Promise<UploadResult> {
     const client = this.getClient()
 
     try {

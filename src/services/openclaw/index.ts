@@ -4,7 +4,7 @@
  * 仿飞书插件架构的 OpenClaw 客户端
  */
 
-export { openClawClient, useOpenClaw } from './OpenClawService'
+export { openClawClient, useOpenClaw, ConnectionState } from './OpenClawService'
 export type {
   OpenClawConfig,
   OpenClawMessage,

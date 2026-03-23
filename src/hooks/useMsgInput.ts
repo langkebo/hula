@@ -13,7 +13,7 @@ import { useGlobalStore } from '@/stores/global.ts'
 import { useGroupStore } from '@/stores/group.ts'
 import { useSettingStore } from '@/stores/setting.ts'
 import { useMessageSender } from '@/hooks/useMessageSender'
-import { messageStrategyMap, type MessageStrategy } from '@/strategy/MessageStrategy.ts'
+import { messageStrategyMap } from '@/strategy/MessageStrategy.ts'
 import { processClipboardImage } from '@/utils/ImageUtils.ts'
 import { getReplyContent } from '@/utils/MessageReply.ts'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
@@ -73,21 +73,38 @@ export const useMsgInput = (messageInputDom: Ref) => {
   const { getCursorSelectionRange, updateSelectionRange, focusOn } = useCursorManager()
   const { triggerInputEvent, insertNode, getMessageContentType, getEditorRange, imgPaste, reply, userUid } = useCommon()
 
-  const createRafProgressUpdater = (tempMsgId: string) => {
-    let scheduled = false
-    let latest = 0
-    return (value: number) => {
-      latest = value
-      if (scheduled) return
-      scheduled = true
-      requestAnimationFrame(() => {
-        scheduled = false
+  // ==================== 进度条节流更新器 ====================
+  const createRafProgressUpdater = (msgId: string, throttleMs = 200) => {
+    let lastTime = 0
+    let rafId: number | null = null
+    let latestPct = 0
+
+    return (pct: number) => {
+      latestPct = pct
+      const now = Date.now()
+
+      if (now - lastTime >= throttleMs) {
+        if (rafId) {
+          cancelAnimationFrame(rafId)
+          rafId = null
+        }
         chatStore.updateMsg({
-          msgId: tempMsgId,
+          msgId,
           status: MessageStatusEnum.SENDING,
-          uploadProgress: latest
+          uploadProgress: latestPct
         })
-      })
+        lastTime = now
+      } else if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          chatStore.updateMsg({
+            msgId,
+            status: MessageStatusEnum.SENDING,
+            uploadProgress: latestPct
+          })
+          lastTime = Date.now()
+          rafId = null
+        })
+      }
     }
   }
   const settingStore = useSettingStore()
@@ -1149,7 +1166,12 @@ export const useMsgInput = (messageInputDom: Ref) => {
     }
   }
 
-  const sendVoiceDirect = async (voiceData: { localPath: string; size: number; duration: number; filename: string }) => {
+  const sendVoiceDirect = async (voiceData: {
+    localPath: string
+    size: number
+    duration: number
+    filename: string
+  }) => {
     const targetRoomId = globalStore.currentSessionRoomId
     try {
       // 创建语音消息数据
@@ -1258,7 +1280,13 @@ export const useMsgInput = (messageInputDom: Ref) => {
    * 发送地图的函数
    * @param locationData 地图数据
    */
-  const sendLocationDirect = async (locationData: { latitude: number; longitude: number; accuracy?: number; description?: string; timestamp: number }) => {
+  const sendLocationDirect = async (locationData: {
+    latitude: number
+    longitude: number
+    accuracy?: number
+    description?: string
+    timestamp: number
+  }) => {
     const targetRoomId = globalStore.currentSessionRoomId
     try {
       const tempMsgId = 'T' + Date.now().toString()

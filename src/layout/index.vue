@@ -3,6 +3,11 @@
     id="layout"
     class="relative flex min-w-310px bg-[--right-bg-color] h-full"
     :class="{ 'is-dragging-files': isDraggingFiles }">
+    <PrivacyOverlay
+      v-if="isPrivacyMode"
+      :visible="isPrivacyMode"
+      :watermark-text="watermarkText"
+      :show-block-message="true" />
     <div class="flex flex-1 min-h-0">
       <!-- 使用keep-alive包裹异步组件 -->
       <keep-alive>
@@ -60,6 +65,8 @@ import { useRoute } from 'vue-router'
 import { audioManager } from '@/utils/AudioManager'
 import { useOverlayController } from '@/hooks/useOverlayController'
 import { useGroupStore } from '@/stores/group'
+import { usePrivacyProtection } from '@/composables/usePrivacyProtection'
+import PrivacyOverlay from '@/components/privacy/PrivacyOverlay.vue'
 import { RoomTypeEnum } from '@/enums'
 import { getFilesMeta } from '@/utils/PathUtil'
 import FileUtil from '@/utils/FileUtil'
@@ -89,6 +96,14 @@ const { overlayVisible, markAsyncLoaded } = useOverlayController({
   asyncTotal: 3,
   minDisplayMs: 600
 })
+
+const { isPrivacyMode, settings, enterPrivateChat, leavePrivateChat, generateWatermark } = usePrivacyProtection({
+  onPrivacyChange: (isPrivate) => {
+    console.info('[Layout] 隐私模式变更:', isPrivate)
+  }
+})
+
+const watermarkText = computed(() => generateWatermark())
 
 let initPromise: Promise<void> | null = null
 // 只有首次登录需要延迟异步组件的加载，后续重新登录直接渲染
