@@ -501,6 +501,14 @@ export type MsgType = {
   messageMarks: MessageMarkType
   /** 消息发送状态 */
   status: MessageStatusEnum
+  /** 是否阅后即焚 */
+  burnAfterRead?: boolean
+  /** 阅后即焚剩余秒数 */
+  burnRemainingSeconds?: number
+  /** 是否正在销毁中 */
+  isBurning?: boolean
+  /** 是否已销毁 */
+  isBurned?: boolean
 }
 
 export type ReplyType = {

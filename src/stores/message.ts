@@ -20,6 +20,14 @@ export interface MessageType {
     status?: MessageStatusEnum
     messageMarks?: Record<string, { count: number; userMarked: boolean }>
     loading?: boolean
+    /** 是否阅后即焚 */
+    burnAfterRead?: boolean
+    /** 阅后即焚剩余秒数 */
+    burnRemainingSeconds?: number
+    /** 是否正在销毁中 */
+    isBurning?: boolean
+    /** 是否已销毁 */
+    isBurned?: boolean
   }
   fromUser: {
     uid: string
@@ -65,6 +73,13 @@ timerWorker.onerror = (err) => {
 // Expose timerWorker for external access
 const getTimerWorker = () => timerWorker
 
+// 添加 Worker 清理函数
+const cleanupWorker = () => {
+  if (timerWorker) {
+    timerWorker.terminate()
+  }
+}
+
 export const useMessageStore = defineStore(
   StoresEnum.MESSAGE,
   () => {
@@ -73,8 +88,12 @@ export const useMessageStore = defineStore(
     const globalStore = useGlobalStore()
     const groupStore = useGroupStore()
 
+    onUnmounted(() => {
+      cleanupWorker()
+    })
+
     // ============ State ============
-    const messageMap = reactive<Record<string, Record<string, MessageType>>>({})
+    const messageMap = shallowReactive<Record<string, Record<string, MessageType>>>({})
     const messageOptions = reactive<Record<string, { isLast: boolean; isLoading: boolean; cursor: string }>>({})
     const replyMapping = reactive<Record<string, Record<string, string[]>>>({})
     const recalledMessages = reactive<Record<string, RecalledMessage>>({})

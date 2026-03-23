@@ -165,7 +165,49 @@
             :special-menu="specialMenuList(message.message.type)"
             @reply-emoji="handleEmojiSelect($event, message)"
             @click="handleMsgClick(message)">
+            <BurnMessage
+              v-if="message.message.burnAfterRead"
+              :msg-id="message.message.id"
+              :burn-after-read="message.message.burnAfterRead"
+              :burn-duration="30"
+              :remaining-seconds="message.message.burnRemainingSeconds"
+              :is-burning="message.message.isBurning"
+              :is-burned="message.message.isBurned">
+              <component
+                v-memo="[
+                  message.message.id,
+                  message.message.status,
+                  message.message.body?.translatedText?.text || '',
+                  uploadProgress,
+                  searchKeyword,
+                  historyMode
+                ]"
+                :class="[
+                  message.message.type === MsgEnum.VOICE ? 'select-none cursor-pointer' : 'select-text cursor-text',
+                  !isSpecialMsgType(message.message.type) ? (isMe ? 'bubble-oneself' : 'bubble') : '',
+                  {
+                    active:
+                      activeBubble === message.message.id &&
+                      !isSpecialMsgType(message.message.type) &&
+                      message.message.type !== MsgEnum.VOICE &&
+                      !isMobile()
+                  }
+                ]"
+                :is="componentMap[message.message.type]"
+                :body="message.message.body"
+                :message-status="message.message.status"
+                :upload-progress="uploadProgress"
+                :from-user-uid="fromUser?.uid"
+                :message="message.message"
+                :data-message-id="message.message.id"
+                :is-group="isGroup"
+                :on-image-click="onImageClick"
+                :onVideoClick="onVideoClick"
+                :search-keyword="searchKeyword"
+                :history-mode="historyMode" />
+            </BurnMessage>
             <component
+              v-else
               v-memo="[
                 message.message.id,
                 message.message.status,
@@ -333,6 +375,7 @@ import VideoCall from './VideoCall.vue'
 import Voice from './Voice.vue'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 import { vOnLongPress } from '@vueuse/components'
+import BurnMessage from '@/components/burn/BurnMessage.vue'
 
 const props = withDefaults(
   defineProps<{

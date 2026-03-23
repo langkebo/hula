@@ -1,43 +1,59 @@
 <template>
   <div>
-    <n-image
+    <div
       v-if="body?.url"
+      ref="imageContainerRef"
       class="select-none cursor-pointer"
-      :img-props="{
-        style: {
-          ...imageStyle
-        }
-      }"
-      object-fit="cover"
-      show-toolbar-tooltip
-      preview-disabled
-      style="border-radius: 8px; cursor: pointer !important"
-      :src="displayImageSrc"
-      @dblclick="handleOpenImageViewer"
-      @click="handleOpenImage"
-      @error="handleImageError">
-      <template #placeholder>
-        <n-flex
-          v-if="!isError"
-          align="center"
-          justify="center"
-          :style="{
-            width: `${imageStyle.width}`,
-            height: `${imageStyle.height}`,
-            backgroundColor: '#c8c8c833'
-          }"
-          class="rounded-10px">
-          <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
-        </n-flex>
-      </template>
-      <template #error>
-        <n-flex v-if="isError" align="center" justify="center" class="w-200px h-150px bg-#c8c8c833 rounded-10px">
-          <svg class="size-34px color-[--chat-text-color]">
-            <use href="#error-picture"></use>
-          </svg>
-        </n-flex>
-      </template>
-    </n-image>
+      :style="{ ...imageStyle, borderRadius: '8px', overflow: 'hidden' }">
+      <n-image
+        v-if="isInViewport"
+        :img-props="{
+          style: {
+            ...imageStyle
+          }
+        }"
+        object-fit="cover"
+        show-toolbar-tooltip
+        preview-disabled
+        style="border-radius: 8px; cursor: pointer !important; width: 100%; height: 100%"
+        :src="displayImageSrc"
+        @dblclick="handleOpenImageViewer"
+        @click="handleOpenImage"
+        @error="handleImageError">
+        <template #placeholder>
+          <n-flex
+            v-if="!isError"
+            align="center"
+            justify="center"
+            :style="{
+              width: `${imageStyle.width}`,
+              height: `${imageStyle.height}`,
+              backgroundColor: '#c8c8c833'
+            }"
+            class="rounded-10px">
+            <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
+          </n-flex>
+        </template>
+        <template #error>
+          <n-flex v-if="isError" align="center" justify="center" class="w-200px h-150px bg-#c8c8c833 rounded-10px">
+            <svg class="size-34px color-[--chat-text-color]">
+              <use href="#error-picture"></use>
+            </svg>
+          </n-flex>
+        </template>
+      </n-image>
+      <n-flex
+        v-else
+        align="center"
+        justify="center"
+        :style="{
+          width: '100%',
+          height: '100%',
+          backgroundColor: '#c8c8c833'
+        }">
+        <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
+      </n-flex>
+    </div>
 
     <!-- 图片预览组件 -->
     <component
@@ -83,6 +99,39 @@ const showImagePreviewRef = ref(false)
 const imagesRef = ref<string[]>([])
 const thumbnailStore = useThumbnailCacheStore()
 const localThumbnailSrc = ref<string | null>(null)
+
+// 视口检测 (懒加载/卸载)
+const imageContainerRef = ref<HTMLElement | null>(null)
+const isInViewport = ref(true) // 默认 true 保证初次渲染，稍后由 observer 接管
+
+let observer: IntersectionObserver | null = null
+
+onMounted(() => {
+  if (!imageContainerRef.value) return
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        // 当元素进入视口或在视口附近时加载，离开较远时卸载
+        isInViewport.value = entry.isIntersecting
+      })
+    },
+    {
+      // 扩大检测范围，上下各多预留 500px，避免滚动过快出现白屏
+      rootMargin: '500px 0px 500px 0px',
+      threshold: 0
+    }
+  )
+
+  observer.observe(imageContainerRef.value)
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+})
 
 // 处理图片加载错误
 const handleImageError = () => {
