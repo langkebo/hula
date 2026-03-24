@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error, warn } from '@tauri-apps/plugin-log'
 
@@ -63,7 +64,7 @@ class MatrixVoIPService {
     }
   }
 
-  private setupCallHandlers(client: any): void {
+  private setupCallHandlers(client: MatrixClient): void {
     client.on('Call.incoming', (call: any) => {
       this.handleIncomingCall(call)
     })
@@ -237,7 +238,7 @@ class MatrixVoIPService {
     }
   }
 
-  private getCallById(callId: string, client: any): any {
+  private getCallById(callId: string, client: MatrixClient): any {
     const calls = client.getCallHandler?.()?.calls || {}
     return calls[callId]
   }

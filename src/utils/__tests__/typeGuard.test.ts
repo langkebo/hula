@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isObject, isString, isNumber, isEmpty, getProp, getNestedProp } from '../typeGuard'
+import { isObject, isString, isNumber, isEmpty, getProperty, safeGet } from '../typeGuard'
 
 describe('typeGuard', () => {
   describe('isObject', () => {
@@ -59,20 +59,20 @@ describe('typeGuard', () => {
     })
   })
 
-  describe('getProp', () => {
+  describe('getProperty', () => {
     it('should get property safely', () => {
       const obj = { a: 1, b: 'hello' }
-      expect(getProp(obj, 'a')).toBe(1)
-      expect(getProp(obj, 'b')).toBe('hello')
-      expect(getProp(obj, 'c')).toBeUndefined()
+      expect(getProperty(obj, 'a')).toBe(1)
+      expect(getProperty(obj, 'b')).toBe('hello')
+      expect(getProperty(obj, 'c')).toBeUndefined()
     })
   })
 
-  describe('getNestedProp', () => {
+  describe('safeGet', () => {
     it('should get nested property', () => {
       const obj = { a: { b: { c: 'deep' } } }
-      expect(getNestedProp(obj, 'a.b.c')).toBe('deep')
-      expect(getNestedProp(obj, 'a.b.d')).toBeUndefined()
+      expect(safeGet(obj, 'a.b.c')).toBe('deep')
+      expect(safeGet(obj, 'a.b.d')).toBeUndefined()
     })
   })
 })

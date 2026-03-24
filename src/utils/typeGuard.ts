@@ -1,79 +1,194 @@
-/**
- * 类型守卫工具 - 替代 any 的安全方案
- */
+// =============================================================================
+// 类型守卫工具函数
+// =============================================================================
+// 提供安全的运行时类型检查，避免使用 any
+// 与 matrix-wrapper.ts 配合使用
+// =============================================================================
 
-/**
- * 检查值是否为对象
- */
-export function isObject(val: unknown): val is Record<string, unknown> {
-  return typeof val === 'object' && val !== null && !Array.isArray(val)
+export function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/**
- * 检查值是否为字符串
- */
-export function isString(val: unknown): val is string {
-  return typeof val === 'string'
+export function isArray(value: unknown): value is unknown[] {
+  return Array.isArray(value)
 }
 
-/**
- * 检查值是否为数字
- */
-export function isNumber(val: unknown): val is number {
-  return typeof val === 'number' && !Number.isNaN(val)
+export function isString(value: unknown): value is string {
+  return typeof value === 'string'
 }
 
-/**
- * 检查值是否为布尔值
- */
-export function isBoolean(val: unknown): val is boolean {
-  return typeof val === 'boolean'
+export function isNumber(value: unknown): value is number {
+  return typeof value === 'number'
 }
 
-/**
- * 检查值是否为数组
- */
-export function isArray<T>(val: unknown): val is T[] {
-  return Array.isArray(val)
+export function isBoolean(value: unknown): value is boolean {
+  return typeof value === 'boolean'
 }
 
-/**
- * 检查值是否为 undefined
- */
-export function isUndefined(val: unknown): val is undefined {
-  return val === undefined
+export function isFunction(value: unknown): value is (...args: unknown[]) => unknown {
+  return typeof value === 'function'
 }
 
-/**
- * 检查值是否为 null
- */
-export function isNull(val: unknown): val is null {
-  return val === null
+export function isPromise<T = unknown>(value: unknown): value is Promise<T> {
+  return value instanceof Promise || (isObject(value) && 'then' in value && 'catch' in value)
 }
 
-/**
- * 检查值是否为空（null, undefined, '', [], {}）
- */
-export function isEmpty(val: unknown): boolean {
-  if (isNull(val) || isUndefined(val)) return true
-  if (isString(val)) return val === ''
-  if (isArray(val)) return val.length === 0
-  if (isObject(val)) return Object.keys(val).length === 0
+export function isNullOrUndefined(value: unknown): value is null | undefined {
+  return value === null || value === undefined
+}
+
+export function isEmptyString(value: unknown): value is '' {
+  return value === ''
+}
+
+export function hasProperty<T extends object, K extends string>(obj: T, key: K): obj is T & { [P in K]: unknown } {
+  return key in obj
+}
+
+export function getProperty<T extends object, K extends string>(obj: T, key: K, defaultValue?: unknown): unknown {
+  if (key in obj) {
+    return (obj as Record<string, unknown>)[key]
+  }
+  return defaultValue
+}
+
+export function safeGet<T = unknown>(obj: unknown, path: string, defaultValue?: T): T | undefined {
+  if (!isObject(obj)) return defaultValue
+
+  const keys = path.split('.')
+  let current: unknown = obj
+
+  for (const key of keys) {
+    if (!isObject(current) || !(key in current)) {
+      return defaultValue
+    }
+    current = (current as Record<string, unknown>)[key]
+  }
+
+  return current as T
+}
+
+export function typeGuard<T>(value: unknown, guard: (val: unknown) => val is T, defaultValue: T): T {
+  return guard(value) ? value : defaultValue
+}
+
+export function unknownToString(value: unknown, _defaultValue = ''): string {
+  if (isString(value)) return value
+  if (isNumber(value)) return String(value)
+  if (value === null) return 'null'
+  if (value === undefined) return 'undefined'
+  return String(value)
+}
+
+export function unknownToNumber(value: unknown, defaultValue = 0): number {
+  if (isNumber(value)) return value
+  if (isString(value)) {
+    const parsed = parseFloat(value)
+    return isNaN(parsed) ? defaultValue : parsed
+  }
+  return defaultValue
+}
+
+export function unknownToBoolean(value: unknown, defaultValue = false): boolean {
+  if (isBoolean(value)) return value
+  if (isString(value)) return value.toLowerCase() === 'true'
+  return defaultValue
+}
+
+export function unknownToArray<T = unknown>(value: unknown): T[] {
+  if (isArray(value)) return value as T[]
+  return []
+}
+
+export function unknownToObject<T = Record<string, unknown>>(value: unknown): T | null {
+  return isObject(value) ? (value as T) : null
+}
+
+export function parseJSON<T = unknown>(json: string, defaultValue?: T): T | null {
+  try {
+    return JSON.parse(json) as T
+  } catch {
+    return defaultValue ?? null
+  }
+}
+
+export function stringifyJSON(value: unknown, defaultValue = '{}'): string {
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return defaultValue
+  }
+}
+
+export function isEmptyObject(value: unknown): boolean {
+  if (!isObject(value)) return false
+  return Object.keys(value).length === 0
+}
+
+export function isNonEmptyObject(value: unknown): value is Record<string, unknown> {
+  return isObject(value) && Object.keys(value).length > 0
+}
+
+export function isEmpty(value: unknown): boolean {
+  if (value === null || value === undefined) return true
+  if (isString(value) && value === '') return true
+  if (isArray(value) && value.length === 0) return true
+  if (isObject(value) && Object.keys(value).length === 0) return true
   return false
 }
 
-/**
- * 安全获取对象属性
- */
-export function getProp<T, K extends string>(obj: T, key: K): unknown {
-  return (obj as Record<string, unknown>)?.[key]
+export function isNonEmpty(value: unknown): boolean {
+  return !isEmpty(value)
 }
 
-/**
- * 安全获取嵌套属性
- */
-export function getNestedProp<T>(obj: T, path: string): unknown {
-  return path.split('.').reduce((acc: unknown, part: string) => {
-    return isObject(acc) ? (acc as Record<string, unknown>)[part] : undefined
-  }, obj)
+export function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+  const result = {} as Pick<T, K>
+  for (const key of keys) {
+    if (key in obj) {
+      result[key] = obj[key]
+    }
+  }
+  return result
+}
+
+export function omit<T extends object, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
+  const result = { ...obj }
+  for (const key of keys) {
+    delete result[key]
+  }
+  return result as Omit<T, K>
+}
+
+export function merge<T extends object, U extends object>(target: T, source: U): T & U {
+  return { ...target, ...source }
+}
+
+export function deepClone<T>(value: T): T {
+  if (value === null || value === undefined) return value
+  if (isArray(value)) return value.map((item) => deepClone(item)) as unknown as T
+  if (isObject(value)) {
+    const obj = value as Record<string, unknown>
+    const result: Record<string, unknown> = {}
+    for (const key in obj) {
+      result[key] = deepClone(obj[key])
+    }
+    return result as T
+  }
+  return value
+}
+
+export function isEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (a === null || b === null) return false
+  if (isArray(a) && isArray(b)) {
+    if (a.length !== b.length) return false
+    return a.every((item, index) => isEqual(item, b[index]))
+  }
+  if (isObject(a) && isObject(b)) {
+    const aKeys = Object.keys(a as Record<string, unknown>)
+    const bKeys = Object.keys(b as Record<string, unknown>)
+    if (aKeys.length !== bKeys.length) return false
+    return aKeys.every((key) => isEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]))
+  }
+  return false
 }
