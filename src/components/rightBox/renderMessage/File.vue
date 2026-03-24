@@ -166,9 +166,12 @@ const persistFileLocalPath = async (absolutePath: string) => {
   if (!props.message?.id || !absolutePath) return
   const target = chatStore.getMessage(props.message.id)
   if (!target) return
-  if (target.message.body?.localPath === absolutePath) return
 
-  const nextBody = { ...(target.message.body || {}), localPath: absolutePath }
+  const body = target.message.body
+  const currentBody = typeof body === 'object' && body !== null ? body : { content: String(body) }
+  if (currentBody.localPath === absolutePath) return
+
+  const nextBody = { ...currentBody, localPath: absolutePath }
   chatStore.updateMsg({
     msgId: target.message.id,
     status: target.message.status ?? MessageStatusEnum.SUCCESS,

@@ -23,6 +23,7 @@ import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import type { MsgId } from '@/typings/global'
+import { getBodyContent } from '@/utils/messageBody'
 
 const { contentList, msgIds, msgId } = defineProps<{
   contentList: string[]
@@ -35,6 +36,11 @@ const globalStore = useGlobalStore()
 const userStore = useUserStore()
 const chatStore = useChatStore()
 const groupStore = useGroupStore()
+
+// 安全获取消息 body 内容
+const getMsgBodyContent = (message: { message: { body: unknown } }): string => {
+  return getBodyContent(message.message.body)
+}
 
 // 计算聊天记录标题
 const chatRecordTitle = computed(() => {
@@ -70,13 +76,13 @@ const processedContentList = computed(() => {
 
       // 排除不需要显示的消息类型
       if (msgType === MsgEnum.UNKNOWN || msgType === MsgEnum.RECALL || msgType === MsgEnum.BOT) {
-        content = message.message.body.content || ''
+        content = getMsgBodyContent(message)
       } else if (MSG_REPLY_TEXT_MAP[msgType]) {
         // 对于特殊类型消息，显示对应的文本提示
         content = MSG_REPLY_TEXT_MAP[msgType]
       } else {
         // 文本消息或其他消息
-        content = message.message.body.content || ''
+        content = getMsgBodyContent(message)
       }
 
       return userName + ': ' + content

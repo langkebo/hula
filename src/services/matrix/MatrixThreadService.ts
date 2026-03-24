@@ -1,6 +1,32 @@
-import type { MatrixEvent } from 'matrix-js-sdk'
+import type { MatrixEvent, EventType } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
+
+type MsgType = string
+
+interface IContent {
+  [key: string]: unknown
+}
+
+interface RelatesTo {
+  rel_type: string
+  event_id?: string
+  'm.in_reply_to'?: {
+    event_id?: string
+  }
+}
+
+interface MessageContent {
+  msgtype?: MsgType
+  body: string
+  format?: string
+  formatted_body?: string
+  'm.relates_to'?: RelatesTo
+  mute?: boolean
+  frozen?: boolean
+  freeze?: boolean
+  [key: string]: unknown
+}
 
 export interface Thread {
   id: string
@@ -11,7 +37,7 @@ export interface Thread {
     eventId: string
     sender: string
     timestamp: number
-    content: any
+    content: IContent
   }
   participants: string[]
 }
@@ -19,7 +45,7 @@ export interface Thread {
 export interface ThreadMessage {
   eventId: string
   sender: string
-  content: any
+  content: IContent
   timestamp: number
   inReplyTo?: string
 }
@@ -40,7 +66,7 @@ class MatrixThreadService {
         return rootEventId
       }
 
-      const content: any = {
+      const content: MessageContent = {
         msgtype: 'm.text',
         body: initialReply.body,
         'm.relates_to': {
@@ -54,7 +80,7 @@ class MatrixThreadService {
         content.formatted_body = initialReply.html
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content)
       info(`[MatrixThread] 创建线程成功: ${rootEventId}`)
       return response.event_id
     } catch (err) {
@@ -74,8 +100,8 @@ class MatrixThreadService {
     }
 
     try {
-      const messageContent: any = {
-        msgtype: content.msgtype || 'm.text',
+      const messageContent: MessageContent = {
+        msgtype: (content.msgtype || 'm.text') as MsgType,
         body: content.body,
         'm.relates_to': {
           rel_type: 'm.thread',
@@ -88,7 +114,7 @@ class MatrixThreadService {
         messageContent.formatted_body = content.html
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, messageContent)
+      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, messageContent)
       info(`[MatrixThread] 发送线程回复成功: ${threadRootId}`)
       return response.event_id
     } catch (err) {
@@ -104,8 +130,7 @@ class MatrixThreadService {
     const room = client.getRoom(roomId)
     if (!room) return null
 
-    const rootEvent = room.findEventById(threadRootId)
-    if (!rootEvent) return null
+    room.findEventById(threadRootId)
 
     const replies = this.getThreadReplies(roomId, threadRootId)
     const participants = new Set<string>()
@@ -147,7 +172,7 @@ class MatrixThreadService {
     const events = timelineSet.getLiveTimeline().getEvents()
 
     for (const event of events) {
-      const content = event.getContent()
+      const content = event.getContent() as MessageContent
       const relatesTo = content['m.relates_to']
 
       if (relatesTo?.rel_type === 'm.thread' && relatesTo.event_id === threadRootId) {
@@ -179,7 +204,7 @@ class MatrixThreadService {
 
     const replies = this.getThreadReplies(roomId, threadRootId)
     for (const reply of replies) {
-      const content = reply.getContent() as { 'm.relates_to'?: { 'm.in_reply_to'?: { event_id?: string } } }
+      const content = reply.getContent() as MessageContent
       messages.push({
         eventId: reply.getId()!,
         sender: reply.getSender()!,
@@ -204,7 +229,7 @@ class MatrixThreadService {
     const events = timelineSet.getLiveTimeline().getEvents()
 
     for (const event of events) {
-      const content = event.getContent()
+      const content = event.getContent() as MessageContent
       const relatesTo = content['m.relates_to']
 
       if (relatesTo?.rel_type === 'm.thread') {
@@ -265,7 +290,7 @@ class MatrixThreadService {
     const events = timelineSet.getLiveTimeline().getEvents()
 
     for (const e of events) {
-      const content = e.getContent()
+      const content = e.getContent() as MessageContent
       const relatesTo = content['m.relates_to']
 
       if (relatesTo?.rel_type === 'm.thread' && relatesTo.event_id === eventId) {
@@ -277,13 +302,13 @@ class MatrixThreadService {
   }
 
   isInThread(event: MatrixEvent): boolean {
-    const content = event.getContent() as { 'm.relates_to'?: { rel_type?: string } }
+    const content = event.getContent() as MessageContent
     const relatesTo = content?.['m.relates_to']
     return relatesTo?.rel_type === 'm.thread'
   }
 
   getThreadRootId(event: MatrixEvent): string | null {
-    const content = event.getContent() as { 'm.relates_to'?: { rel_type?: string; event_id?: string } }
+    const content = event.getContent() as MessageContent
     const relatesTo = content?.['m.relates_to']
     if (relatesTo?.rel_type === 'm.thread') {
       return relatesTo.event_id || null
@@ -335,7 +360,7 @@ class MatrixThreadService {
     }
 
     try {
-      await client.sendEvent(roomId, 'm.thread_mute' as any, {
+      await client.sendEvent(roomId, 'm.thread_mute' as EventType, {
         'm.relates_to': {
           rel_type: 'm.thread',
           event_id: threadRootId
@@ -356,7 +381,7 @@ class MatrixThreadService {
     }
 
     try {
-      await client.sendEvent(roomId, 'm.thread_freeze' as any, {
+      await client.sendEvent(roomId, 'm.thread_freeze' as EventType, {
         'm.relates_to': {
           rel_type: 'm.thread',
           event_id: threadRootId
@@ -376,7 +401,7 @@ class MatrixThreadService {
     }
 
     try {
-      await client.sendEvent(roomId, 'm.thread_unfreeze' as any, {
+      await client.sendEvent(roomId, 'm.thread_unfreeze' as EventType, {
         'm.relates_to': {
           rel_type: 'm.thread',
           event_id: threadRootId
@@ -420,7 +445,7 @@ class MatrixThreadService {
       const events = timelineSet.getLiveTimeline().getEvents()
 
       for (const event of events) {
-        const content = event.getContent()
+        const content = event.getContent() as MessageContent
         const relatesTo = content['m.relates_to']
 
         if (relatesTo?.rel_type === 'm.thread' && relatesTo.event_id === threadRootId && content.mute === true) {
@@ -442,7 +467,7 @@ class MatrixThreadService {
       const events = timelineSet.getLiveTimeline().getEvents()
 
       for (const event of events) {
-        const content = event.getContent()
+        const content = event.getContent() as MessageContent
         const relatesTo = content['m.relates_to']
 
         if (

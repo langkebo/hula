@@ -242,10 +242,10 @@
 
             <!-- 显示翻译文本 -->
             <Transition name="fade-translate" appear mode="out-in">
-              <div v-if="message.message.body.translatedText" class="translated-text cursor-default flex flex-col">
+              <div v-if="messageBody.value.translatedText" class="translated-text cursor-default flex flex-col">
                 <n-flex align="center" justify="space-between" class="mb-6px">
                   <n-flex align="center" :size="4">
-                    <span class="text-(12px #909090)">{{ message.message.body.translatedText.provider }}</span>
+                    <span class="text-(12px #909090)">{{ messageBody.value.translatedText.provider }}</span>
                     <svg class="size-12px">
                       <use href="#success"></use>
                     </svg>
@@ -254,18 +254,18 @@
                       <template #trigger>
                         <svg
                           class="pl-6px size-10px cursor-pointer hover:color-#909090 hover:transition-colors"
-                          @click="handleCopyTranslation(message.message.body.translatedText.text)">
+                          @click="handleCopyTranslation(messageBody.value.translatedText.text)">
                           <use href="#copy"></use>
                         </svg>
                       </template>
                       <span>复制翻译</span>
                     </n-tooltip>
                   </n-flex>
-                  <svg class="size-10px cursor-pointer" @click="message.message.body.translatedText = null">
+                  <svg class="size-10px cursor-pointer" @click="messageBody.value.translatedText = null">
                     <use href="#close"></use>
                   </svg>
                 </n-flex>
-                <p class="select-text cursor-text">{{ message.message.body.translatedText.text }}</p>
+                <p class="select-text cursor-text">{{ messageBody.value.translatedText.text }}</p>
               </div>
             </Transition>
 
@@ -289,8 +289,8 @@
           <n-flex
             align="center"
             :size="6"
-            v-if="message.message.body.reply"
-            @click="emit('jump2Reply', message.message.body.reply.id)"
+            v-if="messageBody.value.reply"
+            @click="emit('jump2Reply', messageBody.value.reply.id)"
             :class="isMobile() ? 'bg-#fafafa text-13px' : 'bg-[--right-chat-reply-color] text-12px'"
             class="reply-bubble relative w-fit custom-shadow select-none chat-message-max-width"
             :style="{ 'max-width': bubbleMaxWidth }">
@@ -303,13 +303,13 @@
               :size="20"
               :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
               :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-              :src="getAvatarSrc(message.message.body.reply.uid)" />
-            <span>{{ `${message.message.body.reply.username}: ` }}</span>
+              :src="getAvatarSrc(messageBody.value.reply.uid)" />
+            <span>{{ `${messageBody.value.reply.username}: ` }}</span>
             <span class="content-span">
-              {{ message.message.body.reply.body }}
+              {{ messageBody.value.reply.body }}
             </span>
-            <div v-if="message.message.body.reply.imgCount" class="reply-img-sub">
-              {{ message.message.body.reply.imgCount }}
+            <div v-if="messageBody.value.reply.imgCount" class="reply-img-sub">
+              {{ messageBody.value.reply.imgCount }}
             </div>
           </n-flex>
 
@@ -358,6 +358,15 @@ import { useUserStore } from '@/stores/user'
 import { matrixMessageService, matrixContactService, matrixReactionService } from '@/services/matrix'
 import { createMacContextSelectionGuard } from '@/utils/MacSelectionGuard'
 import { isMobile } from '@/utils/PlatformConstants'
+import {
+  getBodyTranslatedText,
+  getBodyReply,
+  getBodyContent,
+  getBodyUrl,
+  getBodySize,
+  getBodyMimeType,
+  toSafeBody
+} from '@/utils/messageBody'
 import { matrixEventService } from '@/services/matrix'
 import Announcement from './Announcement.vue'
 import AudioCall from './AudioCall.vue'
@@ -400,6 +409,16 @@ const props = withDefaults(
 const emit = defineEmits(['jump2Reply'])
 const { t } = useI18n()
 const globalStore = useGlobalStore()
+
+// 安全获取消息 body - 直接返回 MessageBody 类型
+const messageBody = computed(() => {
+  const body = props.message?.message?.body
+  if (typeof body === 'object' && body !== null) {
+    return body
+  }
+  return { content: String(body || '') } as any
+})
+
 const selectKey = ref(props.fromUser!.uid)
 const infoPopoverRefs = reactive<Record<string, any>>({})
 const { handlePopoverUpdate } = usePopover(selectKey, 'image-chat-main')
@@ -593,7 +612,8 @@ const hasUserMarkedEmoji = (item: MessageType, emojiType: number) => {
 const handleRetry = async (item: MessageType): Promise<void> => {
   if (!item?.message) return
 
-  const { id, roomId, body, type } = item.message
+  const { id, roomId, body: rawBody, type } = item.message
+  const msgBody = toSafeBody(rawBody)
 
   chatStore.updateMsg({
     msgId: id,
@@ -605,65 +625,69 @@ const handleRetry = async (item: MessageType): Promise<void> => {
 
     switch (type) {
       case MsgEnum.TEXT:
-        eventId = await matrixEventService.sendTextMessage(roomId, body.text || '')
+        eventId = await matrixEventService.sendTextMessage(roomId, msgBody.text || '')
         break
       case MsgEnum.IMAGE:
-        if (body.url) {
-          eventId = await matrixEventService.sendImageMessage(roomId, body.url, {
-            size: body.size || 0,
-            mimetype: body.mimetype || 'image/png',
-            width: body.width,
-            height: body.height
+        if (msgBody.url) {
+          eventId = await matrixEventService.sendImageMessage(roomId, msgBody.url, {
+            size: msgBody.size || 0,
+            mimetype: msgBody.mimetype || 'image/png',
+            width: msgBody.width,
+            height: msgBody.height
           })
         } else {
           throw new Error('图片URL不存在')
         }
         break
       case MsgEnum.VIDEO:
-        if (body.url) {
+        if (msgBody.url) {
           eventId = await matrixEventService.sendVideoMessage(
             roomId,
-            body.url,
+            msgBody.url,
             {
-              size: body.size || 0,
-              mimetype: body.mimetype || 'video/mp4',
-              width: body.width,
-              height: body.height
+              size: msgBody.size || 0,
+              mimetype: msgBody.mimetype || 'video/mp4',
+              width: msgBody.width,
+              height: msgBody.height
             },
-            body.filename,
-            body.thumbnail,
-            body.thumbnailInfo
+            msgBody.filename,
+            msgBody.thumbnail,
+            {
+              width: msgBody.thumbnailInfo?.w || 0,
+              height: msgBody.thumbnailInfo?.h || 0,
+              size: msgBody.thumbnailInfo?.size || 0
+            }
           )
         } else {
           throw new Error('视频URL不存在')
         }
         break
       case MsgEnum.AUDIO:
-        if (body.url) {
+        if (msgBody.url) {
           eventId = await matrixEventService.sendAudioMessage(
             roomId,
-            body.url,
+            msgBody.url,
             {
-              size: body.size || 0,
-              mimetype: body.mimetype || 'audio/ogg',
-              duration: body.duration
+              size: msgBody.size || 0,
+              mimetype: msgBody.mimetype || 'audio/ogg',
+              duration: msgBody.duration
             },
-            body.filename
+            msgBody.filename
           )
         } else {
           throw new Error('音频URL不存在')
         }
         break
       case MsgEnum.FILE:
-        if (body.url) {
+        if (msgBody.url) {
           eventId = await matrixEventService.sendFileMessage(
             roomId,
-            body.url,
+            msgBody.url,
             {
-              size: body.size || 0,
-              mimetype: body.mimetype || 'application/octet-stream'
+              size: msgBody.size || 0,
+              mimetype: msgBody.mimetype || 'application/octet-stream'
             },
-            body.filename
+            msgBody.filename
           )
         } else {
           throw new Error('文件URL不存在')

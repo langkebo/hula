@@ -6,9 +6,54 @@ import { useUserStore } from '@/stores/user'
 import { useGroupStore } from '@/stores/group'
 import { sendNotification } from '@tauri-apps/plugin-notification'
 import { useRoute } from 'vue-router'
-import type { MatrixEvent } from 'matrix-js-sdk'
+import type { MatrixEvent, Room } from 'matrix-js-sdk'
 import { useMitt } from '@/hooks/useMitt'
 import { MittEnum } from '@/enums'
+
+export interface MessageBody {
+  content?: string
+  body?: string
+  atUidList?: string[]
+  url?: string
+  text?: string
+  fileName?: string
+  msgtype?: string
+  translatedText?: { text: string; provider?: string; from?: string; to?: string } | null
+  mimetype?: string
+  size?: number
+  duration?: number
+  w?: number
+  h?: number
+  thumbnail_url?: string
+  thumbnail_info?: {
+    w?: number
+    h?: number
+    size?: number
+    mimetype?: string
+  }
+  file?: {
+    url?: string
+    mimetype?: string
+    size?: number
+  }
+  info?: {
+    type?: string
+    w?: number
+    h?: number
+    duration?: number
+    size?: number
+    mimetype?: string
+  }
+  reply?: {
+    id: string
+    roomId: string
+    body?: string
+    uid?: string
+    username?: string
+    imgCount?: number
+  }
+  [key: string]: unknown
+}
 
 export interface MessageType {
   message: {
@@ -16,7 +61,7 @@ export interface MessageType {
     roomId: string
     sendTime: number
     type: MsgEnum
-    body: any
+    body: MessageBody
     status?: MessageStatusEnum
     messageMarks?: Record<string, { count: number; userMarked: boolean }>
     loading?: boolean
@@ -204,7 +249,7 @@ export const useMessageStore = defineStore(
     }
 
     // ============ Convert Methods ============
-    const convertEventToMessage = (event: MatrixEvent, room: any): MessageType | null => {
+    const convertEventToMessage = (event: MatrixEvent, room: Room): MessageType | null => {
       const content = event.getContent()
       const sender = event.getSender()
       const member = room.getMember(sender || '')
@@ -262,12 +307,13 @@ export const useMessageStore = defineStore(
       }
 
       // Handle notification mention
-      if (msg.message.body.atUidList?.includes(userStore.userInfo!.uid)) {
+      const bodyObj = typeof msg.message.body === 'object' ? (msg.message.body as MessageBody) : null
+      if (bodyObj?.atUidList?.includes(userStore.userInfo!.uid)) {
         const cacheUser = groupStore.getUserInfo(msg.fromUser.uid)
         if (cacheUser) {
           sendNotification({
             title: cacheUser.name as string,
-            body: msg.message.body.content || msg.message.body.body || '',
+            body: bodyObj.content || bodyObj.body || '',
             icon: cacheUser.avatar as string
           })
         }
@@ -296,7 +342,7 @@ export const useMessageStore = defineStore(
       msgId: string
       status: MessageStatusEnum
       newMsgId?: string
-      body?: any
+      body?: string | MessageBody
       uploadProgress?: number
       timeBlock?: number
       roomId?: string
@@ -330,7 +376,7 @@ export const useMessageStore = defineStore(
         msg.timeBlock = timeBlock
       }
       if (body) {
-        msg.message.body = body
+        msg.message.body = typeof body === 'string' ? { body } : body
       }
 
       const nextMsgId = newMsgId ?? msg.message.id
@@ -493,9 +539,12 @@ export const useMessageStore = defineStore(
       originalContent?: string
     }) => {
       const recallTime = Date.now()
+      const body = data.msg.message.body
+      const bodyContent =
+        typeof body === 'object' && body !== null ? (body as MessageBody).content || (body as MessageBody).body : ''
       recalledMessages[data.msg.message.id] = {
         messageId: data.msg.message.id,
-        content: data.originalContent ?? data.msg.message.body.content ?? data.msg.message.body.body ?? '',
+        content: data.originalContent ?? bodyContent ?? '',
         recallTime,
         originalType: data.originalType ?? data.msg.message.type
       }
@@ -546,8 +595,11 @@ export const useMessageStore = defineStore(
         }
 
         message.message.type = MsgEnum.RECALL
-        message.message.body.content = recallMessageBody
-        message.message.body.body = recallMessageBody
+        if (typeof message.message.body === 'object' && message.message.body !== null) {
+          const msgBody = message.message.body as MessageBody
+          msgBody.content = recallMessageBody
+          msgBody.body = recallMessageBody
+        }
       }
 
       if (resolvedRoomId) {
@@ -558,8 +610,11 @@ export const useMessageStore = defineStore(
       if (messageList) {
         for (const id of messageList) {
           const msg = currentMessageMap.value?.[id]
-          if (msg) {
-            msg.message.body.reply.body = '原消息已被撤回'
+          if (msg && typeof msg.message.body === 'object') {
+            const msgBody = msg.message.body as MessageBody
+            if (msgBody.reply) {
+              msgBody.reply.body = '原消息已被撤回'
+            }
           }
         }
       }
