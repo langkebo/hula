@@ -351,8 +351,7 @@
                       :value="groupStore.countInfo!.allowScanEnter"
                       @update:value="
                         (val: any) => {
-                          updateRoomInfo({
-                            id: groupStore.countInfo!.roomId,
+                          matrixGroupService.updateGroupInfo(groupStore.countInfo!.roomId, {
                             allowScanEnter: val
                           })
                         }
@@ -613,10 +612,11 @@ import { useGroupStore } from '@/stores/group.ts'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { notification, setSessionTop, shield, updateRoomInfo } from '@/utils/ImRequestUtils'
+import { notification, shield } from '@/utils/ImRequestUtils'
 import { canvasToImageBytes } from '@/utils/Canvas2Dom'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
+import { matrixSessionService, matrixGroupService } from '@/services/matrix'
 
 // 转发群二维码尺寸
 const QR_IMAGE_SIZE = 200
@@ -890,8 +890,7 @@ const {
   onSuccess: async (downloadUrl) => {
     const session = activeItem.value
     if (!session) return
-    await updateRoomInfo({
-      id: currentSessionRoomId.value,
+    await matrixGroupService.updateGroupInfo(currentSessionRoomId.value, {
       avatar: downloadUrl
     })
   }
@@ -1272,7 +1271,8 @@ const handleMedia = () => {
 const handleTop = (value: boolean) => {
   const session = activeItem.value
   if (!session) return
-  setSessionTop({ roomId: currentSessionRoomId.value, top: value })
+  matrixSessionService
+    .setSessionTop(currentSessionRoomId.value, value)
     .then(() => {
       // 更新本地会话状态
       chatStore.updateSession(currentSessionRoomId.value, { top: value })
@@ -1557,8 +1557,7 @@ const saveGroupName = async () => {
 
   try {
     // 调用更新群信息的API
-    await updateRoomInfo({
-      id: currentSessionRoomId.value,
+    await matrixGroupService.updateGroupInfo(currentSessionRoomId.value, {
       name: trimmedName
     })
     // 清空待保存的群信息

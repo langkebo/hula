@@ -37,7 +37,7 @@ import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentS
 import { isDiffNow } from '@/utils/ComputedTime.ts'
 import { extractFileName, removeTag } from '@/utils/Formatting'
 import { detectImageFormat, imageUrlToUint8Array, isImageUrl } from '@/utils/ImageUtils'
-import { recallMsg, removeGroupMember } from '@/utils/ImRequestUtils'
+import { matrixMessageService, matrixGroupService } from '@/services/matrix'
 import { detectRemoteFileType, getFilesMeta } from '@/utils/PathUtil'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
@@ -163,8 +163,10 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     })
   }
 
-  // 复制禁用类型
-  const copyDisabledTypes: MsgEnum[] = [MsgEnum.NOTICE, MsgEnum.MERGE, MsgEnum.LOCATION, MsgEnum.VOICE]
+  // 不能复制的消息类型
+  const copyDisabledTypes: MsgEnum[] = [MsgEnum.NOTICE, MsgEnum.MERGE, MsgEnum.LOCATION, MsgEnum.BEACON, MsgEnum.VOICE]
+
+  // 不能回复的消息类型
   const shouldHideCopy = (item: MessageType) => copyDisabledTypes.includes(item.message.type)
   const isNoticeMessage = (item: MessageType) => item.message.type === MsgEnum.NOTICE
   const revealInDirSafely = async (targetPath?: string | null) => {
@@ -235,12 +237,12 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       icon: 'corner-down-left',
       click: async (item: MessageType) => {
         const msg = { ...item }
-        // 在调用 API 前先保存原始类型，避免 WebSocket 消息先到达导致 type 被修改
         const originalType = item.message.type
         const originalContent = item.message.body.content
-        const res = await recallMsg({ roomId: globalStore.currentSessionRoomId, msgId: item.message.id })
-        if (res) {
-          window.$message.error(res)
+        try {
+          await matrixMessageService.recallMessage(globalStore.currentSessionRoomId, item.message.id)
+        } catch (res: unknown) {
+          window.$message.error(String(res))
           return
         }
         chatStore.recordRecallMsg({
@@ -965,7 +967,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         if (!roomId) return
 
         try {
-          await removeGroupMember({ roomId, uidList: [targetUid] })
+          await matrixGroupService.removeGroupMember(roomId, targetUid)
           // 从群成员列表中移除该用户
           groupStore.removeUserItem(targetUid, roomId)
           window.$message.success(t('menu.remove_from_group_success'))

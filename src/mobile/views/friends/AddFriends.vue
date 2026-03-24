@@ -153,7 +153,7 @@ import { useGroupStore } from '@/stores/group'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { searchFriend, searchGroup } from '@/utils/ImRequestUtils'
+import { matrixContactService, matrixGroupService } from '@/services/matrix'
 import { isMobile } from '@/utils/PlatformConstants'
 import router from '@/router'
 
@@ -250,8 +250,7 @@ const handleSearch = useDebounceFn(async () => {
 
   try {
     if (searchType.value === 'group') {
-      // 调用群聊搜索接口
-      const res = await searchGroup({ account: searchValue.value })
+      const res = await matrixGroupService.searchGroup(searchValue.value)
       searchResults.value = res.map((group: any) => ({
         account: group.account,
         name: group.name,
@@ -261,8 +260,7 @@ const handleSearch = useDebounceFn(async () => {
         roomId: group.roomId
       }))
     } else if (searchType.value === 'user') {
-      // 调用好友搜索接口
-      const res = await searchFriend({ key: searchValue.value })
+      const res = await matrixContactService.searchFriend(searchValue.value)
       searchResults.value = res.map((user: any) => ({
         uid: user.uid,
         name: user.name,

@@ -482,10 +482,43 @@ export type LocationBody = {
   timestamp: string
 }
 
-/**
- * 消息内容
- */
-export type MessageBody = TextBody | ImageBody | VoiceBody | VideoBody | FileBody | EmojiBody | LocationBody | any
+export type BeaconBody = {
+  /** 描述 */
+  description: string
+  /** 持续时间（毫秒） */
+  timeout: number
+  /** 是否为实时共享 */
+  isLive: boolean
+  /** 资产类型，通常是 'm.self' 或 'm.pin' */
+  assetType?: string
+  /** 最后更新时间 */
+  lastUpdateTs?: number
+}
+
+export type LinkPreviewBody = {
+  /** 原始 URL */
+  url: string
+  /** 页面标题 */
+  title: string
+  /** 页面描述 */
+  description?: string
+  /** 预览图 URL */
+  imageUrl?: string
+  /** 网站名称 */
+  siteName?: string
+}
+
+export type MessageBody =
+  | TextBody
+  | ImageBody
+  | VoiceBody
+  | VideoBody
+  | FileBody
+  | EmojiBody
+  | LocationBody
+  | BeaconBody
+  | LinkPreviewBody
+  | any
 export type MsgType = {
   /** 消息ID */
   id: string

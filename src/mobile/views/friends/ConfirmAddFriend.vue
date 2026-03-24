@@ -53,7 +53,7 @@ import { useGlobalStore } from '@/stores/global.ts'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { sendAddFriendRequest } from '@/utils/ImRequestUtils'
+import { matrixContactService } from '@/services/matrix'
 import router from '@/router'
 
 const globalStore = useGlobalStore()
@@ -73,10 +73,7 @@ watch(
 )
 
 const addFriend = async () => {
-  await sendAddFriendRequest({
-    msg: requestMsg.value,
-    targetUid: globalStore.addFriendModalInfo.uid as string
-  })
+  await matrixContactService.sendAddFriendRequest(globalStore.addFriendModalInfo.uid as string, requestMsg.value)
   window.$message.success('已发送好友申请')
   setTimeout(() => {
     router.push('/mobile/message')

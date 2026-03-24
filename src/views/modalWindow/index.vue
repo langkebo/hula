@@ -41,7 +41,7 @@ import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import { getDisabledOptions, getFilteredOptions, renderLabel, renderSourceList } from '@/layout/center/model.tsx'
 import { useGroupStore } from '@/stores/group'
-import { inviteGroupMember } from '@/utils/ImRequestUtils'
+import { matrixGroupService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -69,10 +69,7 @@ const handleInvite = async () => {
 
   try {
     // 调用邀请群成员API
-    await inviteGroupMember({
-      roomId: roomId.value,
-      uidList: selectedValue.value
-    })
+    await Promise.all(selectedValue.value.map((uid: string) => matrixGroupService.inviteGroupMember(roomId.value, uid)))
 
     window.$message.success('邀请成功')
     setTimeout(() => {

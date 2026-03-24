@@ -767,6 +767,13 @@ class MatrixEventService {
     }
 
     const response = await client.sendEvent(roomId, eventType as any, messageContent)
+
+    // 记录遥测数据
+    const telemetry = matrixClientService.getTelemetry()
+    if (telemetry) {
+      telemetry.trackMessageSent(roomId, messageContent.msgtype || eventType)
+    }
+
     return response as any
   }
 

@@ -327,6 +327,136 @@ class MatrixThreadService {
       info(`[MatrixThread] 标记线程已读: ${threadRootId}`)
     }
   }
+
+  async muteThread(roomId: string, threadRootId: string, mute: boolean): Promise<void> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('[MatrixThread] 客户端未初始化')
+    }
+
+    try {
+      await client.sendEvent(roomId, 'm.thread_mute' as any, {
+        'm.relates_to': {
+          rel_type: 'm.thread',
+          event_id: threadRootId
+        },
+        mute: mute
+      })
+      info(`[MatrixThread] ${mute ? '静音' : '取消静音'}线程成功: ${threadRootId}`)
+    } catch (err) {
+      error(`[MatrixThread] ${mute ? '静音' : '取消静音'}线程失败: ${err}`)
+      throw err
+    }
+  }
+
+  async freezeThread(roomId: string, threadRootId: string): Promise<void> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('[MatrixThread] 客户端未初始化')
+    }
+
+    try {
+      await client.sendEvent(roomId, 'm.thread_freeze' as any, {
+        'm.relates_to': {
+          rel_type: 'm.thread',
+          event_id: threadRootId
+        }
+      })
+      info(`[MatrixThread] 冻结线程成功: ${threadRootId}`)
+    } catch (err) {
+      error(`[MatrixThread] 冻结线程失败: ${err}`)
+      throw err
+    }
+  }
+
+  async unfreezeThread(roomId: string, threadRootId: string): Promise<void> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('[MatrixThread] 客户端未初始化')
+    }
+
+    try {
+      await client.sendEvent(roomId, 'm.thread_unfreeze' as any, {
+        'm.relates_to': {
+          rel_type: 'm.thread',
+          event_id: threadRootId
+        }
+      })
+      info(`[MatrixThread] 解冻线程成功: ${threadRootId}`)
+    } catch (err) {
+      error(`[MatrixThread] 解冻线程失败: ${err}`)
+      throw err
+    }
+  }
+
+  async getUnreadThreads(roomId?: string): Promise<Thread[]> {
+    const client = matrixClientService.getClient()
+    if (!client) return []
+
+    const threads = roomId ? this.getThreadsInRoom(roomId) : []
+
+    const unreadThreads: Thread[] = []
+    const myUserId = client.getUserId()
+    if (!myUserId) return []
+
+    for (const thread of threads) {
+      const unreadCount = await this.getThreadNotificationCount(roomId!, thread.id)
+      if (unreadCount > 0) {
+        unreadThreads.push(thread)
+      }
+    }
+
+    info(`[MatrixThread] 获取未读线程: ${unreadThreads.length} 个`)
+    return unreadThreads
+  }
+
+  isThreadMuted(threadRootId: string): boolean {
+    const client = matrixClientService.getClient()
+    if (!client) return false
+
+    const rooms = client.getRooms()
+    for (const room of rooms) {
+      const timelineSet = room.getUnfilteredTimelineSet()
+      const events = timelineSet.getLiveTimeline().getEvents()
+
+      for (const event of events) {
+        const content = event.getContent()
+        const relatesTo = content['m.relates_to']
+
+        if (relatesTo?.rel_type === 'm.thread' && relatesTo.event_id === threadRootId && content.mute === true) {
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  isThreadFrozen(threadRootId: string): boolean {
+    const client = matrixClientService.getClient()
+    if (!client) return false
+
+    const rooms = client.getRooms()
+    for (const room of rooms) {
+      const timelineSet = room.getUnfilteredTimelineSet()
+      const events = timelineSet.getLiveTimeline().getEvents()
+
+      for (const event of events) {
+        const content = event.getContent()
+        const relatesTo = content['m.relates_to']
+
+        if (
+          relatesTo?.rel_type === 'm.thread' &&
+          relatesTo.event_id === threadRootId &&
+          (content.frozen !== undefined || content.freeze !== undefined)
+        ) {
+          return true
+        }
+      }
+    }
+
+    return false
+  }
 }
 
 export const matrixThreadService = new MatrixThreadService()

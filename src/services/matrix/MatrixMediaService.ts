@@ -1,7 +1,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { matrixClientService } from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
-import { compressImage, isImageFile, formatFileSize } from '@/utils/imageCompressor'
+import { compressImage, isImageFile, formatFileSize } from '@/utils/ImageUtils'
 
 export interface UploadResult {
   contentUri: string
@@ -61,6 +61,13 @@ class MatrixMediaServiceClass {
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       info(`[MatrixMedia] 文件上传成功: ${contentUri}`)
+
+      // 记录遥测
+      const telemetry = matrixClientService.getTelemetry()
+      if (telemetry) {
+        telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
+      }
+
       return {
         contentUri,
         size: file.size,
@@ -86,8 +93,8 @@ class MatrixMediaServiceClass {
         try {
           const result = await compressImage(file, this.compressOptions)
           fileToUpload = new File([result.blob], file.name || 'image.jpg', { type: result.blob.type })
-          originalSize = result.originalSize
-          compressedSize = result.compressedSize
+          originalSize = result.originalSize ?? file.size
+          compressedSize = result.compressedSize ?? file.size
           info(
             `[MatrixMedia] 图片压缩完成: ${formatFileSize(originalSize)} -> ${formatFileSize(compressedSize)} (${result.compressionRatio.toFixed(1)}%)`
           )

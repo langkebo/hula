@@ -38,6 +38,10 @@ export interface QRLoginResult {
   userId?: string
   accessToken?: string
   deviceId?: string
+  ip?: string
+  expireTime?: string
+  deviceType?: string
+  locPlace?: string
 }
 
 export interface UseQRLoginOptions {
@@ -52,7 +56,7 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
   const pollInterval = options.pollInterval || 2000
   const maxRetries = options.maxRetries || 150
 
-  const state = ref<QRLoginState>({
+  const state = ref<QRLoginState & QRLoginResult>({
     status: 'idle'
   })
 
@@ -63,7 +67,7 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
   const isConnected = computed(() => state.value.status === 'success')
   const error = computed(() => state.value.error)
 
-  async function generateQR(): Promise<string | null> {
+  async function generateQR(): Promise<QRLoginResult | null> {
     try {
       state.value.status = 'generating'
       state.value.error = undefined
@@ -75,11 +79,22 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
         const qrData = result[0] as any
         state.value.qrId = qrData.qrId
         state.value.qrCode = qrData.qrCode || qrData.code
+        state.value.ip = qrData.ip
+        state.value.expireTime = qrData.expireTime
+        state.value.deviceType = qrData.deviceType
+        state.value.locPlace = qrData.locPlace
         state.value.status = 'waiting_scan'
         options.onStatusChange?.('waiting_scan')
 
         startPolling()
-        return state.value.qrCode || null
+        return {
+          qrId: state.value.qrId,
+          qrCode: state.value.qrCode,
+          ip: state.value.ip,
+          expireTime: state.value.expireTime,
+          deviceType: state.value.deviceType,
+          locPlace: state.value.locPlace
+        }
       }
 
       throw new Error('QR码生成失败')
@@ -151,11 +166,12 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
     }
   }
 
-  async function handleScan(): Promise<boolean> {
-    if (!state.value.qrId) return false
+  async function handleScan(qrId?: string): Promise<boolean> {
+    const finalQrId = qrId || state.value.qrId
+    if (!finalQrId) return false
 
     try {
-      await scanQRCodeAPI({ qrId: state.value.qrId })
+      await scanQRCodeAPI({ qrId: finalQrId })
       state.value.status = 'waiting_confirm'
       options.onStatusChange?.('waiting_confirm')
       return true
@@ -195,7 +211,7 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
     options.onError?.('二维码已过期，请刷新')
   }
 
-  async function refresh(): Promise<string | null> {
+  async function refresh(): Promise<QRLoginResult | null> {
     stopPolling()
     state.value.status = 'idle'
     return await generateQR()
@@ -247,6 +263,9 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
     refresh,
     reset,
     handleScan,
-    handleConfirm
+    handleConfirm,
+    checkStatus
   }
 }
+
+export const matrixQrLoginService = useQRLogin()

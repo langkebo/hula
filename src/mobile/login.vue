@@ -289,7 +289,7 @@ import type { RegisterUserReq, UserInfoType } from '@/services/types'
 import { useLoginHistoriesStore } from '@/stores/loginHistory.ts'
 import { useMobileStore } from '@/stores/mobile'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { register, sendCaptcha } from '@/utils/ImRequestUtils'
+import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
 import { isAndroid, isIOS } from '@/utils/PlatformConstants'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 import { useMitt } from '../hooks/useMitt'
@@ -347,6 +347,8 @@ const registerProtocol = ref(true)
 const registerLoading = ref(false)
 const sendCodeLoading = ref(false)
 const sendCodeCountdown = ref(0)
+const emailSessionId = ref('')
+const emailClientSecret = ref('')
 const MOBILE_EMAIL_TIMER_ID = 'mobile_register_email_timer'
 const timerWorker = new Worker(new URL('@/workers/timer.worker.ts', import.meta.url))
 const { normalLogin, loading, loginText, loginDisabled, info: userInfo } = useLogin()
@@ -557,11 +559,9 @@ const handleSendEmailCode = async () => {
 
   sendCodeLoading.value = true
   try {
-    await sendCaptcha({
-      email: registerInfo.value.email,
-      operationType: 'register',
-      templateCode: 'REGISTER_EMAIL'
-    })
+    emailClientSecret.value = generateClientSecret()
+    const result = await MatrixAuthService.requestEmailToken(registerInfo.value.email, 1)
+    emailSessionId.value = result.sid
     window.$message.success(t('login.mobile.code_sent_email'))
     startSendCodeCountdown()
   } catch (error) {
@@ -570,6 +570,15 @@ const handleSendEmailCode = async () => {
   } finally {
     sendCodeLoading.value = false
   }
+}
+
+const generateClientSecret = (): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 43; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
 }
 
 /** 完成注册 */
@@ -583,25 +592,24 @@ const handleRegisterComplete = async () => {
     registerLoading.value = true
     registerInfo.value.email = registerInfo.value.email.trim()
     registerInfo.value.code = registerInfo.value.code.trim()
-    // 随机生成头像编号
     const avatarNum = Math.floor(Math.random() * 21) + 1
     const avatarId = avatarNum.toString().padStart(3, '0')
     registerInfo.value.avatar = avatarId
 
-    // 注册 - 只传递API需要的字段
-    const { ...apiRegisterInfo } = registerInfo.value
+    await MatrixAuthService.register(
+      registerInfo.value.nickName,
+      registerInfo.value.password,
+      emailSessionId.value || undefined,
+      emailSessionId.value ? 'm.login.email.identity' : undefined,
+      registerInfo.value.code || undefined
+    )
 
-    await register(apiRegisterInfo)
-
-    // 关闭弹窗并切换到登录页面
     activeTab.value = 'login'
     userInfo.value.account = registerInfo.value.nickName || registerInfo.value.email
     window.$message.success(t('login.mobile.register_success'))
 
-    // 重置注册表单
     resetRegisterForm()
   } catch (error) {
-    // 处理注册失败
     window.$message.error((error as any) || t('login.mobile.register_fail'))
     console.error(error)
   } finally {

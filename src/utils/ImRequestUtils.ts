@@ -1,49 +1,65 @@
 import { ImUrlEnum, TauriCommand, type NotificationTypeEnum } from '@/enums'
-import type { CacheBadgeReq, LoginUserReq, ModifyUserInfoType, RegisterUserReq, UserItem } from '@/services/types'
-import { ErrorType, invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
+import type { RegisterUserReq, UserItem } from '@/services/types'
+import { ErrorType, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useChatStore } from '../stores/chat'
 import { useGroupStore } from '../stores/group'
+import { Result, err } from '@/common/result'
+import { AppException } from '@/common/exception'
+import { invokeWithResult } from '@/utils/TauriInvokeHandler'
+
+/**
+ * ============================================================================
+ * ⚠️ 废弃警告 (Deprecation Warning)
+ * ============================================================================
+ *
+ * 本文件包含的所有函数均为遗留 IM API，已被 Matrix 原生服务替代。
+ *
+ * 请使用以下 Matrix 原生服务代替本文件中的相应功能：
+ *
+ * | 旧 ImRequestUtils 函数 | 替代 Matrix 服务 |
+ * |----------------------|------------------|
+ * | sendMessageStream | MatrixMessageService.sendTextMessage |
+ * | getMessageList | MatrixMessageService.getMessageEvents |
+ * | addFriend | MatrixContactService.inviteUser |
+ * | searchFriend | MatrixContactService.searchUsers |
+ * | getGroupList | MatrixGroupService.getAllRooms |
+ * | createGroup | MatrixGroupService.createRoom |
+ * | getQrCode | MatrixQrLoginService.generateQR |
+ * | loginByQrCode | MatrixQrLoginService.handleConfirm |
+ *
+ * 新的 Matrix 服务位于: src/services/matrix/
+ *
+ * 导入示例:
+ * ```typescript
+ * import { matrixMessageService, matrixContactService, matrixGroupService } from '@/services/matrix'
+ * ```
+ *
+ * ============================================================================
+ */
 
 /**
  * IM 请求参数接口
  */
 interface ImRequestParams {
-  /** API URL 枚举 */
   url: ImUrlEnum
-  /** 请求体数据 */
-  body?: any
-  /** 查询参数 */
-  params?: Record<string, any>
+  body?: Record<string, unknown>
+  params?: Record<string, string | number | number[]>
 }
 
 /**
  * IM 请求选项接口
  */
 interface ImRequestOptions {
-  /** 是否显示错误提示，默认为 true */
   showError?: boolean
-  /** 自定义错误消息 */
   customErrorMessage?: string
-  /** 错误类型，默认为 Network */
   errorType?: ErrorType
-  /** 是否静默调用（不显示错误），默认为 false */
   silent?: boolean
-  /** 重试选项 */
   retry?: {
-    /** 最大重试次数，默认为 3 */
     maxRetries?: number
-    /** 重试间隔（毫秒），默认为 1000 */
     retryDelay?: number
   }
 }
 
-import { Result, ok, err } from '@/common/result'
-import { AppException } from '@/common/exception'
-import { invokeWithResult } from '@/utils/TauriInvokeHandler'
-
-/**
- * @deprecated 遗留的 IM API 请求工具，后续应迁移至 MatrixClientService
- */
 export async function imRequest<T = any>(
   requestParams: ImRequestParams,
   options?: Omit<ImRequestOptions, 'silent'>
@@ -95,7 +111,7 @@ export async function imRequestResult<T = any>(
 
   while (attempt < maxRetries) {
     const isLastAttempt = attempt === maxRetries - 1
-    
+
     // 最后一次尝试时使用用户配置的 showError，否则不显示错误（静默重试）
     const currentOptions = {
       ...invokeOptions,
@@ -104,13 +120,13 @@ export async function imRequestResult<T = any>(
     }
 
     const result = await invokeWithResult<T>((TauriCommand as any).IM_REQUEST || 'im_request', args, currentOptions)
-    
+
     if (result.isOk()) {
       return result
     }
 
     const error = result.error
-    
+
     // 如果不是最后一次尝试，且是网络或服务器错误，则进行重试
     if (!isLastAttempt && (error.type === ErrorType.Network || error.type === ErrorType.Server)) {
       console.warn(`请求失败，准备第 ${attempt + 1} 次重试...`)
@@ -118,18 +134,11 @@ export async function imRequestResult<T = any>(
       attempt++
       continue
     }
-    
+
     return result
   }
-  
-  return err(new AppException('Max retries exceeded'))
-}
 
-/**
- * 静默的 IM 请求（使用 Result 模型）
- */
-export async function imRequestSilentlyResult<T = any>(requestParams: ImRequestParams): Promise<Result<T, AppException>> {
-  return imRequestResult<T>(requestParams, { showError: false })
+  return err(new AppException('Max retries exceeded'))
 }
 
 /**
@@ -181,30 +190,11 @@ export async function getGroupDetail(roomId: string) {
   })
 }
 
-/**
- * 获取群组基础信息 [没进群的人、逻辑删除的群也可以查询]
- */
-export async function getGroupInfo(roomId: string) {
-  return await imRequest({
-    url: ImUrlEnum.GROUP_INFO,
-    params: { id: roomId }
-  })
-}
-
 export async function getMsgReadCount(msgIds: number[]) {
   return await imRequest({
     url: ImUrlEnum.GET_MSG_READ_COUNT,
     params: {
       msgIds
-    }
-  })
-}
-
-export async function markMsgRead(roomId: string) {
-  return await imRequest({
-    url: ImUrlEnum.MARK_MSG_READ,
-    body: {
-      roomId
     }
   })
 }
@@ -215,64 +205,9 @@ export async function getBadgeList() {
   })
 }
 
-export async function getMsgList(body: { msgIds?: string[]; async?: boolean }) {
-  return await imRequest({
-    url: ImUrlEnum.GET_MSG_LIST,
-    body
-  })
-}
-
-export async function ModifyUserInfo(body: ModifyUserInfoType) {
-  return await imRequest({
-    url: ImUrlEnum.MODIFY_USER_INFO,
-    body
-  })
-}
-
 export async function setUserBadge(body: { badgeId: string }) {
   return await imRequest({
     url: ImUrlEnum.SET_USER_BADGE,
-    body
-  })
-}
-
-export async function markMsg(body: { msgId: string; markType: number; actType: number }) {
-  return await imRequest({
-    url: ImUrlEnum.MARK_MSG,
-    body
-  })
-}
-
-export async function recallMsg(body: { msgId: string; roomId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.RECALL_MSG,
-    body
-  })
-}
-
-export async function addEmoji(body: { expressionUrl: string }) {
-  return await imRequest({
-    url: ImUrlEnum.ADD_EMOJI,
-    body
-  })
-}
-
-export async function deleteEmoji(body: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.DELETE_EMOJI,
-    body
-  })
-}
-
-export async function getEmoji() {
-  return await imRequest({
-    url: ImUrlEnum.GET_EMOJI
-  })
-}
-
-export async function uploadAvatar(body: { avatar: string }) {
-  return await imRequest({
-    url: ImUrlEnum.UPLOAD_AVATAR,
     body
   })
 }
@@ -287,20 +222,6 @@ export async function changeUserState(params: { id: string }) {
   return await imRequest({
     url: ImUrlEnum.CHANGE_USER_STATE,
     params
-  })
-}
-
-export async function searchFriend(params: { key: string }) {
-  return await imRequest({
-    url: ImUrlEnum.SEARCH_FRIEND,
-    params
-  })
-}
-
-export async function sendAddFriendRequest(body: { targetUid: string; msg: string }) {
-  return await imRequest({
-    url: ImUrlEnum.SEND_ADD_FRIEND_REQUEST,
-    body
   })
 }
 
@@ -325,27 +246,6 @@ export async function createGroup(body: { uidList: string[] }) {
   })
 }
 
-export async function inviteGroupMember(body: { roomId: string; uidList: string[] }) {
-  return await imRequest({
-    url: ImUrlEnum.INVITE_GROUP_MEMBER,
-    body
-  })
-}
-
-export async function removeGroupMember(body: { roomId: string; uidList: string[] }) {
-  return await imRequest({
-    url: ImUrlEnum.REMOVE_GROUP_MEMBER,
-    body
-  })
-}
-
-export async function getSessionDetailWithFriends(params: { id: string; roomType: number }) {
-  return await imRequest({
-    url: ImUrlEnum.SESSION_DETAIL_WITH_FRIENDS,
-    params
-  })
-}
-
 export async function setSessionTop(body: { roomId: string; top: boolean }) {
   return await imRequest({
     url: ImUrlEnum.SET_SESSION_TOP,
@@ -367,13 +267,6 @@ export async function shield(body: { roomId: string; state: boolean }) {
   })
 }
 
-export async function exitGroup(body: { roomId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.EXIT_GROUP,
-    body
-  })
-}
-
 export async function updateRoomInfo(body: { id: string; name?: string; avatar?: string; allowScanEnter?: boolean }) {
   const chatStore = useChatStore()
   const groupStore = useGroupStore()
@@ -391,66 +284,6 @@ export async function updateRoomInfo(body: { id: string; name?: string; avatar?:
   groupStore.updateGroupDetail(body.id, body)
 
   window.$message.success('更新成功')
-}
-
-export async function searchGroup(params: { account: string }) {
-  return await imRequest({
-    url: ImUrlEnum.SEARCH_GROUP,
-    params
-  })
-}
-
-export async function applyGroup(body: { account: string; msg: string; type: number }) {
-  return await imRequest({
-    url: ImUrlEnum.APPLY_GROUP,
-    body
-  })
-}
-
-export async function pushAnnouncement(body: { roomId: string; content: string; top: boolean }) {
-  return await imRequest({
-    url: ImUrlEnum.PUSH_ANNOUNCEMENT,
-    body
-  })
-}
-
-export async function deleteAnnouncement(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.DELETE_ANNOUNCEMENT,
-    params
-  })
-}
-
-export async function editAnnouncement(body: { id: string; roomId: string; content: string; top: boolean }) {
-  return await imRequest({
-    url: ImUrlEnum.EDIT_ANNOUNCEMENT,
-    body
-  })
-}
-
-export async function getAnnouncementDetail(params: { roomId: string; announcementId: string }) {
-  return await imRequest({
-    url: ImUrlEnum.ANNOUNCEMENT,
-    params
-  })
-}
-
-export async function getCaptcha() {
-  return await imRequest({
-    url: ImUrlEnum.GET_CAPTCHA
-  })
-}
-
-export async function sendCaptcha(body: {
-  email: string
-  uuid?: string
-  operationType?: 'register' | 'forgot'
-  templateCode: 'REGISTER_EMAIL' | 'REGISTER_SMS' | 'MOBILE_LOGIN' | 'MOBILE_EDIT' | 'EMAIL_EDIT' | 'PASSWORD_EDIT'
-}) {
-  return await imRequest({
-    url: ImUrlEnum.SEND_CAPTCHA,
-    body
-  })
 }
 
 export async function initConfig() {
@@ -494,34 +327,6 @@ export async function logout(body: { autoLogin: boolean }) {
   return await imRequest({
     url: ImUrlEnum.LOGOUT,
     body
-  })
-}
-
-export async function forgetPassword(body: {
-  email: string
-  code: string
-  uuid: string
-  password: string
-  confirmPassword: string
-  key: string
-}) {
-  return await imRequest({
-    url: ImUrlEnum.FORGET_PASSWORD,
-    body
-  })
-}
-
-export async function mergeMsg(body: { fromRoomId: string; type: number; roomIds: string[]; messageIds: string[] }) {
-  return await imRequest({
-    url: ImUrlEnum.MERGE_MSG,
-    body
-  })
-}
-
-export async function getUserByIds(uidList: string[]): Promise<UserItem[]> {
-  return await imRequest({
-    url: ImUrlEnum.GET_USER_BY_IDS,
-    body: { uidList }
   })
 }
 
@@ -588,501 +393,52 @@ export interface StreamCallbacks {
   onStart?: (requestId: string) => void
 }
 
-/**
- * 发送AI消息（流式）
- * 使用 Promise 包装整个 SSE 流程，监听 Tauri 事件接收流式数据
- *
- * @param body 请求参数
- * @param callbacks 流式数据回调函数
- * @returns Promise，在流结束后 resolve 完整内容
- */
-export async function messageSendStream(
-  body: { conversationId: string; content: string; useContext?: boolean; reasoningEnabled?: boolean },
-  callbacks?: StreamCallbacks
-): Promise<string> {
-  const { invoke, Channel } = await import('@tauri-apps/api/core')
-  const { TauriCommand } = await import('@/enums')
-
-  // 生成唯一的请求 ID
-  const requestId = `ai-stream-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-
-  return new Promise<string>((resolve, reject) => {
-    let fullContent = ''
-    let isResolved = false
-
-    // 创建 Channel 用于接收流式事件
-    const onEvent = new Channel<SseStreamEvent>()
-    onEvent.onmessage = (event: SseStreamEvent) => {
-      const { eventType, data, error, requestId: eventRequestId } = event
-
-      // 只处理当前请求的事件
-      if (eventRequestId !== requestId) {
-        return
-      }
-
-      switch (eventType) {
-        case 'chunk':
-          if (data) {
-            fullContent += data
-            callbacks?.onChunk?.(data)
-          }
-          break
-
-        case 'done':
-          if (!isResolved) {
-            isResolved = true
-            const finalContent = data || fullContent
-            callbacks?.onDone?.(finalContent)
-            resolve(finalContent)
-          }
-          break
-
-        case 'error':
-          if (!isResolved) {
-            isResolved = true
-            const errorMsg = error || '未知错误'
-            callbacks?.onError?.(errorMsg)
-            reject(new Error(errorMsg))
-          }
-          break
-      }
-    }
-
-    // 通知开始
-    callbacks?.onStart?.(requestId)
-
-    // 调用 Rust 后端命令发送请求
-    invoke(TauriCommand.AI_MESSAGE_SEND_STREAM, {
-      body,
-      requestId,
-      onEvent
-    }).catch((error) => {
-      if (!isResolved) {
-        isResolved = true
-        const errorMsg = error instanceof Error ? error.message : String(error)
-        callbacks?.onError?.(errorMsg)
-        reject(error)
-      }
-    })
-  })
-}
-
-/**
- * 取消 AI 流式消息
- */
-export async function messageCancelStream(requestId: string): Promise<void> {
-  const { invoke } = await import('@tauri-apps/api/core')
-  await invoke('ai_message_cancel_stream', { requestId })
-}
-
 // 获得指定对话的消息列表
-export async function messageListByConversationId(params: {
-  conversationId: string
-  pageNo?: number
-  pageSize?: number
-}) {
-  return await imRequest({
-    url: ImUrlEnum.MESSAGE_LIST_BY_CONVERSATION_ID,
-    params
-  })
-}
-
 // 删除单条消息
-export async function messageDelete(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.MESSAGE_DELETE,
-    params
-  })
-}
-
 // 删除指定对话的消息
-export async function messageDeleteByConversationId(body: { conversationIdList: string[] }) {
-  return await imRequest({
-    url: ImUrlEnum.MESSAGE_DELETE_BY_CONVERSATION_ID,
-    body
-  })
-}
-
 // 获取会话列表（我的）
-export async function conversationPage(params?: { pageNo?: number; pageSize?: number }) {
-  return await imRequest({
-    url: ImUrlEnum.CONVERSATION_PAGE,
-    params
-  })
-}
-
 // 获得【我的】聊天对话
-export async function conversationGetMy(params?: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.CONVERSATION_GET_MY,
-    params
-  })
-}
-
 // 创建会话（我的）
-export async function conversationCreateMy(body: {
-  roleId?: string
-  knowledgeId?: string
-  title?: string
-  modelId?: string
-  systemMessage?: string
-  temperature?: number
-  maxTokens?: number
-  maxContexts?: number
-}) {
-  return await imRequest({
-    url: ImUrlEnum.CONVERSATION_CREATE_MY,
-    body
-  })
-}
-
 // 更新会话（我的）
-export async function conversationUpdateMy(body: {
-  id: string
-  title?: string
-  pinned?: boolean
-  roleId?: string
-  modelId?: string
-  knowledgeId?: string
-  systemMessage?: string
-  temperature?: number
-  maxTokens?: number
-  maxContexts?: number
-}) {
-  return await imRequest({
-    url: ImUrlEnum.CONVERSATION_UPDATE_MY,
-    body
-  })
-}
-
 // 删除会话（我的）- 支持批量删除
-export async function conversationDeleteMy(body: { conversationIdList: string[] }) {
-  return await imRequest({
-    url: ImUrlEnum.CONVERSATION_DELETE_MY,
-    body
-  })
-}
-
 // 模型页面
-export async function modelPage(params?: { pageNo?: number; pageSize?: number }) {
-  return await imRequest({
-    url: ImUrlEnum.MODEL_PAGE,
-    params
-  })
-}
-
 // 更新模型
-export async function modelUpdate(body: {
-  id?: string
-  keyId: string
-  name: string
-  avatar?: string
-  model: string
-  platform: string
-  type: number
-  sort: number
-  status: number
-  temperature?: number
-  maxTokens?: number
-  maxContexts?: number
-  publicStatus?: number
-}) {
-  return await imRequest({
-    url: body.id ? ImUrlEnum.MODEL_UPDATE : ImUrlEnum.MODEL_CREATE,
-    body
-  })
-}
-
 // 删除模型
-export async function modelDelete(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.MODEL_DELETE,
-    params
-  })
-}
-
 // 获得模型剩余使用次数
-export async function getModelRemainingUsage(modelId: string) {
-  return await imRequest({
-    url: ImUrlEnum.MODEL_REMAINING_USAGE,
-    params: { id: modelId }
-  })
-}
-
 // ==================== AI 图片生成 ====================
-
-export async function imageMyPage(params?: { pageNo?: number; pageSize?: number; prompt?: string; status?: number }) {
-  return await imRequest({
-    url: ImUrlEnum.IMAGE_MY_PAGE,
-    params
-  })
-}
-
 // 生成图片
-export async function imageDraw(body: {
-  modelId: string
-  prompt: string
-  width?: number
-  height?: number
-  conversationId?: string
-  options?: Record<string, any>
-}) {
-  return await imRequest({
-    url: ImUrlEnum.IMAGE_DRAW,
-    body
-  })
-}
-
 // 根据ID列表获取【我的】图片记录
-export async function imageMyListByIds(params: { ids: string }) {
-  return await imRequest({
-    url: ImUrlEnum.IMAGE_MY_LIST_BY_IDS,
-    params
-  })
-}
-
 // 删除【我的】图片记录
-export async function imageDeleteMy(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.IMAGE_DELETE_MY,
-    params
-  })
-}
-
 // ==================== AI 视频生成 ====================
 
 // 获取【我的】视频生成分页
-export async function videoMyPage(params?: { pageNo?: number; pageSize?: number; prompt?: string; status?: number }) {
-  return await imRequest({
-    url: ImUrlEnum.VIDEO_MY_PAGE,
-    params
-  })
-}
-
 // 获取【我的】视频生成记录
 // 根据ID列表获取【我的】视频记录
-export async function videoMyListByIds(params: { ids: string }) {
-  return await imRequest({
-    url: ImUrlEnum.VIDEO_MY_LIST_BY_IDS,
-    params
-  })
-}
-
 // 生成视频
-export async function videoGenerate(body: {
-  modelId: string
-  prompt: string
-  width?: number
-  height?: number
-  duration?: number
-  options?: Record<string, any>
-}) {
-  return await imRequest({
-    url: ImUrlEnum.VIDEO_GENERATE,
-    body
-  })
-}
-
 // 删除【我的】视频记录
-export async function videoDeleteMy(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.VIDEO_DELETE_MY,
-    params
-  })
-}
-
 // ==================== API 密钥管理 ====================
 
 // API 密钥分页列表
-export async function apiKeyPage(params?: { pageNo?: number; pageSize?: number }) {
-  return await imRequest({
-    url: ImUrlEnum.API_KEY_PAGE,
-    params
-  })
-}
-
 // API 密钥简单列表（用于下拉选择）
-export async function apiKeySimpleList() {
-  return await imRequest({
-    url: ImUrlEnum.API_KEY_SIMPLE_LIST
-  })
-}
-
 // 创建 API 密钥
-export async function apiKeyCreate(body: {
-  name: string
-  apiKey: string
-  platform: string
-  url?: string
-  status: number
-}) {
-  return await imRequest({
-    url: ImUrlEnum.API_KEY_CREATE,
-    body
-  })
-}
-
 // 更新 API 密钥
-export async function apiKeyUpdate(body: {
-  id: string
-  name: string
-  apiKey: string
-  platform: string
-  url?: string
-  status: number
-}) {
-  return await imRequest({
-    url: ImUrlEnum.API_KEY_UPDATE,
-    body
-  })
-}
-
 // 删除 API 密钥
-export async function apiKeyDelete(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.API_KEY_DELETE,
-    params
-  })
-}
-
 // 获取平台列表
-export async function platformList() {
-  return await imRequest({
-    url: ImUrlEnum.PLATFORM_LIST
-  })
-}
-
 // 添加平台模型到示例列表
-export async function platformAddModel(platform: string, model: string) {
-  return await imRequest({
-    url: ImUrlEnum.PLATFORM_ADD_MODEL,
-    body: { platform, model }
-  })
-}
-
 // 查询 API 密钥余额
-export async function apiKeyBalance(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.API_KEY_BALANCE,
-    params
-  })
-}
-
 // ==================== 聊天角色管理 ====================
 
 // 聊天角色分页列表
-export async function chatRolePage(params?: { pageNo?: number; pageSize?: number }) {
-  return await imRequest({
-    url: ImUrlEnum.CHAT_ROLE_PAGE,
-    params
-  })
-}
-
 // 聊天角色类别列表
-export async function chatRoleCategoryList() {
-  return await imRequest({
-    url: ImUrlEnum.CHAT_ROLE_CATEGORY_LIST
-  })
-}
-
 // 创建聊天角色
-export async function chatRoleCreate(body: {
-  modelId?: string
-  name: string
-  avatar: string
-  category: string
-  sort: number
-  description: string
-  systemMessage: string
-  knowledgeIds?: string[]
-  toolIds?: string[]
-  publicStatus: boolean
-  status: number
-}) {
-  return await imRequest({
-    url: ImUrlEnum.CHAT_ROLE_CREATE,
-    body
-  })
-}
-
 // 更新聊天角色
-export async function chatRoleUpdate(body: {
-  id: string
-  modelId?: string
-  name: string
-  avatar: string
-  category: string
-  sort: number
-  description: string
-  systemMessage: string
-  knowledgeIds?: string[]
-  toolIds?: string[]
-  publicStatus: boolean
-  status: number
-}) {
-  return await imRequest({
-    url: ImUrlEnum.CHAT_ROLE_UPDATE,
-    body
-  })
-}
-
 // 删除聊天角色
-export async function chatRoleDelete(params: { id: string }) {
-  return await imRequest({
-    url: ImUrlEnum.CHAT_ROLE_DELETE,
-    params
-  })
-}
-
 // ==================== AI 音频生成 ====================
 
 // 生成音频
-export async function audioGenerate(body: {
-  modelId: number
-  prompt: string
-  conversationId?: string
-  options?: Record<string, string>
-}) {
-  return await imRequest({
-    url: ImUrlEnum.AUDIO_GENERATE,
-    body
-  })
-}
-
 // 获取我的音频列表（根据ID列表）
-export async function audioMyListByIds(params: { ids: string }) {
-  return await imRequest({
-    url: ImUrlEnum.AUDIO_MY_LIST_BY_IDS,
-    params
-  })
-}
-
 // 获取我的音频分页
-export async function audioMyPage(params?: { pageNo?: number; pageSize?: number }) {
-  return await imRequest({
-    url: ImUrlEnum.AUDIO_MY_PAGE,
-    params
-  })
-}
-
 // 获取我的单个音频
 // 删除我的音频
 // 获取指定模型支持的声音列表
-export async function audioGetVoices(params: { model: string }): Promise<string[]> {
-  return await imRequest({
-    url: ImUrlEnum.AUDIO_VOICES,
-    params
-  })
-}
-
 // 保存生成内容消息（用于音频、图片、视频等生成功能）
-export async function messageSaveGeneratedContent(params: {
-  conversationId: string
-  prompt: string
-  generatedContent: string
-}) {
-  return await imRequest({
-    url: ImUrlEnum.MESSAGE_SAVE_GENERATED_CONTENT,
-    params
-  })
-}

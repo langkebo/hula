@@ -154,7 +154,7 @@ import { useChatStore } from '@/stores/chat'
 import { useContactStore } from '@/stores/contacts'
 import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
-import { getSessionDetailWithFriends } from '@/utils/ImRequestUtils'
+import { matrixSessionService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
@@ -192,7 +192,11 @@ const isBotUser = (uid: string) => groupStore.getUserInfo(uid)?.account === User
 
 const toChatRoom = async () => {
   try {
-    const res = await getSessionDetailWithFriends({ id: uid, roomType: 2 })
+    const res = await matrixSessionService.getSessionDetailWithFriends(uid)
+    if (!res) {
+      console.error('获取会话详情失败')
+      return
+    }
     // 先检查会话是否已存在
     const existingSession = chatStore.getSession(res.roomId)
     if (!existingSession) {

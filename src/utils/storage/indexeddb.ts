@@ -125,7 +125,7 @@ class StorageService {
   /**
    * 保存同步数据
    */
-  async saveSyncData(data: any): Promise<void> {
+  async saveSyncData(data: Record<string, unknown>): Promise<void> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
@@ -136,7 +136,7 @@ class StorageService {
   /**
    * 获取同步数据
    */
-  async getSyncData(): Promise<any> {
+  async getSyncData(): Promise<Record<string, unknown> | undefined> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
@@ -158,7 +158,7 @@ class StorageService {
   /**
    * 保存待发送事件
    */
-  async savePendingEvent(event: any): Promise<void> {
+  async savePendingEvent(event: Record<string, unknown>): Promise<void> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }

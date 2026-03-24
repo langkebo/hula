@@ -1,11 +1,8 @@
 import * as sdk from 'matrix-js-sdk'
 import { MatrixClient, Room, MatrixEvent } from 'matrix-js-sdk'
-import {
-  PendingEventOrdering,
-  ICreateClientOpts,
-  ICreateRoomOpts,
-  LoginResponse
-} from '@/types/matrix-js-sdk'
+// @ts-expect-error
+import { TelemetryManager } from 'matrix-js-sdk/src/telemetry'
+import { PendingEventOrdering, ICreateClientOpts } from '@/types/matrix-js-sdk'
 import { info, error } from '@tauri-apps/plugin-log'
 
 /**
@@ -72,9 +69,17 @@ class MatrixClientService {
   private config: MatrixClientConfig | null = null
   private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
   private slidingSyncInstance: any = null
+  private telemetryManager: TelemetryManager | null = null
 
   constructor() {
     info('[MatrixClient] Matrix 客户端服务初始化')
+  }
+
+  /**
+   * 获取 Telemetry 实例
+   */
+  getTelemetry(): TelemetryManager | null {
+    return this.telemetryManager
   }
 
   /**
@@ -101,7 +106,7 @@ class MatrixClientService {
 
     // Initialize temporary client to create SlidingSync instance
     const tempClient = sdk.createClient(clientOpts)
-    
+
     // Enable Sliding Sync (MSC3886)
     const lists = new Map()
     lists.set('default', {
@@ -131,12 +136,12 @@ class MatrixClientService {
       tempClient,
       2000 // timeout
     )
-    
+
     // @ts-expect-error: slidingSync is an experimental/custom property not in ICreateClientOpts
     clientOpts.slidingSync = slidingSync
     this.slidingSyncInstance = slidingSync
     this.client = sdk.createClient(clientOpts)
-    
+
     info(`[MatrixClient] 客户端初始化完成: ${config.homeserverUrl} (启用 Sliding Sync)`)
   }
 

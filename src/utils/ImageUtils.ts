@@ -330,10 +330,17 @@ export const isImageUrl = (url: string): boolean => {
 
 /**
  * 处理剪贴板图片数据
+ /** Tauri 剪贴板图片对象 */
+interface ClipboardImage {
+  size: () => Promise<{ width: number; height: number }>
+  rgba: () => Promise<Uint8Array>
+}
+
+/**
  * 简化版本，专门用于处理 Tauri 剪贴板读取的图片数据
  * @param clipboardImage Tauri 剪贴板图片对象
  */
-export const processClipboardImage = async (clipboardImage: any): Promise<File> => {
+export const processClipboardImage = async (clipboardImage: ClipboardImage): Promise<File> => {
   // 获取图片的宽度和高度
   const { width, height } = await clipboardImage.size()
 
@@ -342,4 +349,127 @@ export const processClipboardImage = async (clipboardImage: any): Promise<File> 
 
   // 使用 rgbaToFile 函数转换为 File 对象
   return await rgbaToFile(imageData, width, height)
+}
+
+/**
+ * 压缩选项
+ */
+export interface CompressOptions {
+  maxWidth?: number
+  maxHeight?: number
+  quality?: number
+  format?: 'jpeg' | 'webp' | 'png'
+}
+
+/**
+ * 压缩结果
+ */
+export interface CompressResult {
+  blob: Blob
+  width: number
+  height: number
+  compressionRatio: number
+  originalSize?: number
+  compressedSize?: number
+}
+
+/**
+ * 压缩图片
+ * @param file 图片文件
+ * @param options 压缩选项
+ */
+export const compressImage = async (file: File, options: CompressOptions = {}): Promise<CompressResult> => {
+  const { maxWidth = 1920, maxHeight = 1920, quality = 0.8, format = 'jpeg' } = options
+
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      let { width, height } = img
+
+      // 计算缩放后的尺寸
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width
+        width = maxWidth
+      }
+      if (height > maxHeight) {
+        width = (width * maxHeight) / height
+        height = maxHeight
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('Failed to get canvas context'))
+        return
+      }
+
+      ctx.drawImage(img, 0, 0, width, height)
+
+      const mimeType = format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg'
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Failed to compress image'))
+            return
+          }
+          const originalSize = file.size
+          const compressedSize = blob.size
+          resolve({
+            blob,
+            width,
+            height,
+            compressionRatio: (compressedSize / originalSize) * 100,
+            originalSize,
+            compressedSize
+          })
+        },
+        mimeType,
+        quality
+      )
+    }
+    img.onerror = () => reject(new Error('Failed to load image'))
+    img.src = URL.createObjectURL(file)
+  })
+}
+
+/**
+ * 判断是否为图片文件
+ * @param file 文件对象或文件名
+ */
+export const isImageFile = (file: File | string): boolean => {
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico']
+
+  if (typeof file === 'string') {
+    const extension = file.split('.').pop()?.toLowerCase()
+    return imageExtensions.includes(extension || '')
+  }
+
+  // 检查 MIME 类型
+  if (file.type.startsWith('image/')) {
+    return true
+  }
+
+  // 检查文件扩展名
+  const extension = file.name.split('.').pop()?.toLowerCase()
+  return imageExtensions.includes(extension || '')
+}
+
+/**
+ * 格式化文件大小
+ * @param bytes 字节数
+ * @param decimals 小数位数
+ */
+export const formatFileSize = (bytes: number, decimals: number = 2): string => {
+  if (bytes === 0) return '0 Bytes'
+
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return parseFloat((bytes / k ** i).toFixed(dm)) + ' ' + sizes[i]
 }

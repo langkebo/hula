@@ -32,6 +32,19 @@ export interface VerificationRequest {
   }
 }
 
+export interface KeyRotationStatus {
+  enabled: boolean
+  intervalMs: number
+  lastRotation?: number
+  needsRotation: boolean
+}
+
+export interface KeyRotationRecord {
+  keyId: string
+  rotatedAt: number
+  deviceId: string
+}
+
 class MatrixEncryptionService {
   private crypto: any = null
 
@@ -118,7 +131,11 @@ class MatrixEncryptionService {
       const encryptionEvent = room.currentState.getStateEvents('m.room.encryption' as any, '')
       if (!encryptionEvent) return null
 
-      const content = encryptionEvent.getContent() as { algorithm?: string; rotation_period_ms?: number; rotation_period_msgs?: number }
+      const content = encryptionEvent.getContent() as {
+        algorithm?: string
+        rotation_period_ms?: number
+        rotation_period_msgs?: number
+      }
       return {
         algorithm: content.algorithm || 'm.megolm.v1.aes-sha2',
         rotationPeriodMs: content.rotation_period_ms || 604800000,
@@ -523,6 +540,146 @@ class MatrixEncryptionService {
       return false
     } catch {
       return false
+    }
+  }
+
+  async getKeyRotationStatus(): Promise<KeyRotationStatus> {
+    const client = matrixClientService.getClient() as any
+    if (!client) {
+      return { enabled: false, intervalMs: 0, needsRotation: false }
+    }
+
+    try {
+      const response = await (client as any).http.request({
+        method: 'GET',
+        path: '/_matrix/client/v1/keys/rotation/status'
+      })
+      return {
+        enabled: response.enabled ?? true,
+        intervalMs: response.interval_ms ?? 604800000,
+        lastRotation: response.last_rotation,
+        needsRotation: response.needs_rotation ?? true
+      }
+    } catch (err) {
+      error(`[Encryption] 获取密钥轮换状态失败: ${err}`)
+      return { enabled: true, intervalMs: 604800000, needsRotation: false }
+    }
+  }
+
+  async checkNeedsRotation(): Promise<boolean> {
+    const client = matrixClientService.getClient() as any
+    if (!client) return false
+
+    try {
+      const response = await (client as any).http.request({
+        method: 'GET',
+        path: '/_matrix/client/v1/keys/rotation/check'
+      })
+      return response.needs_rotation ?? false
+    } catch (err) {
+      error(`[Encryption] 检查密钥轮换需求失败: ${err}`)
+      return false
+    }
+  }
+
+  async rotateKeys(): Promise<{ success: boolean; keyId: string; rotatedAt: number }> {
+    const client = matrixClientService.getClient() as any
+    if (!client) {
+      throw new Error('[Encryption] 客户端未初始化')
+    }
+
+    try {
+      const response = await (client as any).http.request({
+        method: 'POST',
+        path: '/_matrix/client/v1/keys/rotation/rotate'
+      })
+      info('[Encryption] 密钥轮换成功')
+      return {
+        success: response.success ?? true,
+        keyId: response.key_id ?? '',
+        rotatedAt: response.rotated_at ?? Date.now()
+      }
+    } catch (err) {
+      error(`[Encryption] 密钥轮换失败: ${err}`)
+      throw err
+    }
+  }
+
+  async getRotationHistory(deviceId: string): Promise<KeyRotationRecord[]> {
+    const client = matrixClientService.getClient() as any
+    if (!client) return []
+
+    try {
+      const response = await (client as any).http.request({
+        method: 'GET',
+        path: `/_matrix/client/v1/keys/rotation/history/${encodeURIComponent(deviceId)}`
+      })
+      return (response.rotations ?? []).map((r: any) => ({
+        keyId: r.key_id ?? '',
+        rotatedAt: r.rotated_at ?? 0,
+        deviceId
+      }))
+    } catch (err) {
+      error(`[Encryption] 获取轮换历史失败: ${err}`)
+      return []
+    }
+  }
+
+  async revokeOldKeys(deviceId: string, keyIds: string[]): Promise<number> {
+    const client = matrixClientService.getClient() as any
+    if (!client) {
+      throw new Error('[Encryption] 客户端未初始化')
+    }
+
+    try {
+      const response = await (client as any).http.request({
+        method: 'POST',
+        path: '/_matrix/client/v1/keys/rotation/revoke',
+        data: { device_id: deviceId, key_ids: keyIds }
+      })
+      info(`[Encryption] 撤销旧密钥成功: ${response.revoked ?? 0} 个`)
+      return response.revoked ?? 0
+    } catch (err) {
+      error(`[Encryption] 撤销旧密钥失败: ${err}`)
+      throw err
+    }
+  }
+
+  async configureKeyRotation(enabled: boolean, intervalDays: number = 30): Promise<void> {
+    const client = matrixClientService.getClient() as any
+    if (!client) {
+      throw new Error('[Encryption] 客户端未初始化')
+    }
+
+    try {
+      await (client as any).http.request({
+        method: 'PUT',
+        path: '/_matrix/client/v1/keys/rotation/config',
+        data: { enabled, interval_days: intervalDays }
+      })
+      info('[Encryption] 密钥轮换配置已更新')
+    } catch (err) {
+      error(`[Encryption] 配置密钥轮换失败: ${err}`)
+      throw err
+    }
+  }
+
+  async resetCrossSigning(): Promise<void> {
+    const crypto = this.getCrypto()
+    if (!crypto) {
+      throw new Error('[Encryption] 加密模块不可用')
+    }
+
+    try {
+      if (crypto.resetCrossSigningKeys) {
+        await crypto.resetCrossSigningKeys()
+        info('[Encryption] 交叉签名已重置')
+      } else {
+        warn('[Encryption] 交叉签名重置方法不可用')
+      }
+    } catch (err) {
+      error(`[Encryption] 重置交叉签名失败: ${err}`)
+      throw err
     }
   }
 }

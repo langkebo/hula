@@ -54,6 +54,7 @@ pub mod common;
 pub mod configuration;
 pub mod error;
 mod im_request_client;
+pub mod matrix_auth;
 pub mod pojo;
 pub mod repository;
 pub mod timeout_config;
@@ -75,6 +76,10 @@ use crate::command::user_command::remove_tokens;
 use crate::configuration::Settings;
 use crate::configuration::get_configuration;
 use crate::error::CommonError;
+use crate::matrix_auth::{
+    matrix_forget_password, matrix_get_captcha, matrix_login, matrix_register,
+    matrix_request_email_token, matrix_reset_password, matrix_submit_email_token,
+};
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use serde::Serialize;
@@ -503,6 +508,14 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         debug_message_stats,
         login_command,
         im_request_command,
+        // Matrix Auth commands
+        matrix_login,
+        matrix_register,
+        matrix_request_email_token,
+        matrix_submit_email_token,
+        matrix_get_captcha,
+        matrix_forget_password,
+        matrix_reset_password,
         get_settings,
         update_settings,
         // AI 相关命令

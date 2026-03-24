@@ -52,7 +52,7 @@ import { useCommon } from '@/hooks/useCommon.ts'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useUserStore } from '@/stores/user.ts'
-import { applyGroup } from '@/utils/ImRequestUtils'
+import { matrixGroupService } from '@/services/matrix'
 
 const globalStore = useGlobalStore()
 const userStore = useUserStore()
@@ -69,11 +69,7 @@ watch(
 )
 
 const addFriend = async () => {
-  await applyGroup({
-    msg: requestMsg.value,
-    account: String(globalStore.addGroupModalInfo.account),
-    type: 2
-  })
+  await matrixGroupService.applyGroup(String(globalStore.addGroupModalInfo.account))
   window.$message.success('已发送群聊申请')
   setTimeout(() => {
     router.push('/mobile/message')

@@ -318,14 +318,7 @@ import type { FormRules, FormInst } from 'naive-ui'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { useUserStore } from '@/stores/user'
-import {
-  modelPage,
-  modelUpdate,
-  modelDelete,
-  apiKeySimpleList,
-  platformList,
-  platformAddModel
-} from '@/utils/ImRequestUtils'
+import { matrixApiKeyService, matrixModelService } from '@/services/matrix'
 import ApiKeyManagement from './ApiKeyManagement.vue'
 
 const showModal = defineModel<boolean>({ default: false })
@@ -383,7 +376,7 @@ const platformModelInfo = ref<Record<string, { examples: string; docs: string; h
 // 加载平台列表
 const loadPlatformList = async () => {
   try {
-    const data = await platformList()
+    const data = await matrixApiKeyService.platformList()
     if (data && Array.isArray(data)) {
       platformOptions.value = data.map((item: any) => ({
         label: item.label,
@@ -500,7 +493,7 @@ watch(
     // 防抖：用户停止输入 1 秒后再保存
     saveModelTimeout = setTimeout(async () => {
       try {
-        await platformAddModel(formData.value.platform, newModel)
+        await matrixApiKeyService.addPlatformModel(formData.value.platform, newModel)
         // 重新加载平台列表，更新示例
         await loadPlatformList()
         window.$message?.success('模型已添加到示例列表')
@@ -574,7 +567,7 @@ const getModelAvatar = (model: any) => {
 // 加载 API 密钥选项
 const loadApiKeyOptions = async () => {
   try {
-    const data = await apiKeySimpleList()
+    const data = await matrixApiKeyService.simpleList()
     apiKeyOptions.value = (data || []).map((item: any) => ({
       label: item.platform ? `${item.name} (${item.platform})` : item.name,
       value: item.id
@@ -589,7 +582,7 @@ const loadApiKeyOptions = async () => {
 const loadModelList = async () => {
   loading.value = true
   try {
-    const data = await modelPage({
+    const data = await matrixModelService.page({
       pageNo: pagination.value.pageNo,
       pageSize: pagination.value.pageSize
     })
@@ -717,10 +710,10 @@ const handleSubmit = async () => {
     }
     if (editingModel.value) {
       submitData.id = editingModel.value.id
-      await modelUpdate(submitData)
+      await matrixModelService.update(submitData)
       window.$message.success('模型更新成功')
     } else {
-      await modelUpdate(submitData)
+      await matrixModelService.update(submitData)
       window.$message.success('模型创建成功')
     }
 
@@ -743,7 +736,7 @@ const handleSubmit = async () => {
 // 删除模型
 const handleDelete = async (id: string) => {
   try {
-    await modelDelete({ id })
+    await matrixModelService.delete({ id })
     window.$message.success('模型删除成功')
     loadModelList()
     // 通知父组件刷新

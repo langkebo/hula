@@ -249,7 +249,7 @@ import Validation from '@/components/common/Validation.vue'
 import { useWindow } from '@/hooks/useWindow'
 import type { RegisterUserReq } from '@/services/types.ts'
 import { useSettingStore } from '@/stores/setting'
-import * as ImRequestUtils from '@/utils/ImRequestUtils'
+import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 
@@ -429,6 +429,11 @@ const handleInputState = (event: FocusEvent, type: InputType): void => {
   prefixMap[type].value = event.type === 'focus'
 }
 
+/** 邮箱验证码会话 ID */
+const emailSessionId = ref('')
+/** 邮箱验证码客户端密钥 */
+const emailClientSecret = ref('')
+
 /** 处理步骤操作 */
 const handleStepAction = async () => {
   if (btnEnable.value || loading.value) return
@@ -451,11 +456,9 @@ const handleStepAction = async () => {
   try {
     const email = info.email.trim()
     info.email = email
-    await ImRequestUtils.sendCaptcha({
-      email,
-      operationType: 'register',
-      templateCode: 'REGISTER_EMAIL'
-    })
+    emailClientSecret.value = generateClientSecret()
+    const result = await MatrixAuthService.requestEmailToken(email, 1)
+    emailSessionId.value = result.sid
     startSendCodeCountdown()
     window.$message.success(t('auth.register.messages.code_sent'))
     emailCodeModal.value = true
@@ -468,6 +471,15 @@ const handleStepAction = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const generateClientSecret = (): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 43; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
 }
 
 const startSendCodeCountdown = () => {
@@ -498,23 +510,25 @@ timerWorker.onerror = () => {
 const register = async () => {
   registerLoading.value = true
 
-  // 合并验证码
   info.code = emailCode.value
   info.email = info.email.trim()
 
   try {
-    // 随机生成头像编号
     const avatarNum = Math.floor(Math.random() * 21) + 1
     const avatarId = avatarNum.toString().padStart(3, '0')
     info.avatar = avatarId
 
     info.confirmPassword = confirmPassword.value
 
-    // 注册
-    await ImRequestUtils.register({ ...info })
+    await MatrixAuthService.register(
+      info.nickName,
+      info.password,
+      emailSessionId.value || undefined,
+      emailSessionId.value ? 'm.login.email.identity' : undefined,
+      emailCode.value || undefined
+    )
     window.$message.success(t('auth.register.messages.register_success'))
 
-    // 关闭弹窗并跳转到登录页
     emailCodeModal.value = false
     setTimeout(() => {
       WebviewWindow.getByLabel('login').then((win) => {

@@ -97,7 +97,7 @@ import { useContactStore } from '@/stores/contacts'
 import { useGroupStore } from '@/stores/group'
 import { useUserStatusStore } from '@/stores/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import * as ImRequestUtils from '@/utils/ImRequestUtils'
+import { matrixGroupService } from '@/services/matrix'
 import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global.ts'
 
@@ -166,7 +166,7 @@ const createGroup = async () => {
   }
 
   try {
-    const result: any = await ImRequestUtils.createGroup({ uidList: selectedList.value })
+    const result: any = await matrixGroupService.createGroupChat(selectedList.value)
 
     await chatStore.getSessionList(true)
 

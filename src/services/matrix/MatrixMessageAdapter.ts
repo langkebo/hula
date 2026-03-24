@@ -41,8 +41,17 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
       return MsgEnum.SYSTEM
     }
 
+    if (eventType === 'm.beacon_info' || eventType === 'm.beacon') {
+      return MsgEnum.BEACON
+    }
+
     if (eventType === 'm.room.message' || eventType === 'm.room.encrypted') {
       const msgtype = content.msgtype
+
+      // 检查是否包含 MSC2788 链接预览信息
+      if (content['org.matrix.msc2788.room.message']) {
+        return MsgEnum.LINK_PREVIEW
+      }
 
       switch (msgtype) {
         case 'm.text':
@@ -144,6 +153,29 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
           description: content.body || ''
         }
         return { ...baseMsgType, type: MsgEnum.LOCATION, body: locationBody }
+      }
+
+      case MsgEnum.BEACON: {
+        const beaconBody: any = {
+          description: content.description || content.body || '',
+          timeout: content.timeout || 0,
+          isLive: content.live || false,
+          assetType: content['org.matrix.msc3488.asset']?.type || 'm.self',
+          lastUpdateTs: content['org.matrix.msc3488.ts'] || Date.now()
+        }
+        return { ...baseMsgType, type: MsgEnum.BEACON, body: beaconBody }
+      }
+
+      case MsgEnum.LINK_PREVIEW: {
+        const previewData = content['org.matrix.msc2788.room.message'] || {}
+        const linkBody: any = {
+          url: previewData.url || content.body || '',
+          title: previewData.title || '',
+          description: previewData.description || '',
+          imageUrl: previewData.image_url || '',
+          siteName: previewData.site_name || ''
+        }
+        return { ...baseMsgType, type: MsgEnum.LINK_PREVIEW, body: linkBody }
       }
 
       case MsgEnum.RECALL: {

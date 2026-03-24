@@ -195,7 +195,7 @@ import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { deleteAnnouncement, editAnnouncement, pushAnnouncement } from '@/utils/ImRequestUtils'
+import { matrixAnnouncementService } from '@/services/matrix'
 import { extractLinkSegments, openExternalUrl } from '@/hooks/useLinkSegments'
 import { useI18n } from 'vue-i18n'
 
@@ -388,7 +388,10 @@ const handleDel = async (announcement: any) => {
     announcementStates.value[announcement.id].deleteLoading = true
 
     // 同时处理删除请求和最小延迟时间
-    await Promise.all([deleteAnnouncement({ id: announcement.id }), new Promise((resolve) => setTimeout(resolve, 600))])
+    await Promise.all([
+      matrixAnnouncementService.deleteAnnouncement(roomId.value, announcement.id),
+      new Promise((resolve) => setTimeout(resolve, 600))
+    ])
 
     // 重置该公告的确认框状态
     announcementStates.value[announcement.id].showDeleteConfirm = false
@@ -452,17 +455,15 @@ const handlePushAnnouncement = async () => {
 
   const apiCall = isEdit.value
     ? () =>
-        editAnnouncement({
+        matrixAnnouncementService.editAnnouncement(roomId.value, {
           id: editAnnoouncement.value.id,
-          roomId: roomId.value,
           content: announContent.value,
-          top: isTop.value
+          isPinned: isTop.value
         })
     : () =>
-        pushAnnouncement({
-          roomId: roomId.value,
+        matrixAnnouncementService.pushAnnouncement(roomId.value, {
           content: announContent.value,
-          top: isTop.value
+          isPinned: isTop.value
         })
 
   const successMessage = isEdit.value ? t('announcement.toast.editSuccess') : t('announcement.toast.createSuccess')

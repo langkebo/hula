@@ -54,7 +54,7 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import { useCommon } from '@/hooks/useCommon.ts'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useUserStore } from '@/stores/user.ts'
-import { applyGroup } from '@/utils/ImRequestUtils'
+import { matrixGroupService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -73,11 +73,7 @@ watch(
 )
 
 const addFriend = async () => {
-  await applyGroup({
-    msg: requestMsg.value,
-    account: String(globalStore.addGroupModalInfo.account),
-    type: 1
-  })
+  await matrixGroupService.applyGroup(String(globalStore.addGroupModalInfo.account))
   window.$message.success(t('message.group_verify.toast_success'))
   setTimeout(async () => {
     await getCurrentWebviewWindow().close()

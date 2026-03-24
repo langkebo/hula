@@ -217,7 +217,7 @@ import { useGroupStore } from '@/stores/group'
 import { useLoginHistoriesStore } from '@/stores/loginHistory'
 import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { ModifyUserInfo } from '@/utils/ImRequestUtils'
+import { matrixAccountService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -309,34 +309,33 @@ const updateCurrentUserCache = (key: 'name' | 'wearingItemId' | 'avatar', value:
   }
 }
 
-const saveEditInfo = () => {
+const saveEditInfo = async () => {
   if (!localUserInfo.value.name || localUserInfo.value.name.trim() === '') {
     window.$message.error('昵称不能为空')
     return
   }
-  // if (localUserInfo.value.modifyNameChance === 0) {
-  //   window.$message.error('改名次数不足')
-  //   return
-  // }
 
-  ModifyUserInfo({
-    name: localUserInfo.value.name!,
-    sex: localUserInfo.value.sex!,
-    phone: localUserInfo.value.phone ?? '',
-    avatar: localUserInfo.value.avatar ?? '',
-    resume: localUserInfo.value.resume ?? '',
-    modifyNameChance: localUserInfo.value.modifyNameChance!
-  }).then(() => {
-    // 更新本地缓存的用户信息
+  try {
+    if (localUserInfo.value.name !== userStore.userInfo?.name) {
+      await matrixAccountService.updateDisplayName(localUserInfo.value.name!)
+    }
+
+    if (localUserInfo.value.avatar !== userStore.userInfo?.avatar) {
+      await matrixAccountService.updateAvatar(localUserInfo.value.avatar!)
+    }
+
     userStore.userInfo!.name = localUserInfo.value.name!
     userStore.userInfo!.sex = localUserInfo.value.sex!
     userStore.userInfo!.phone = localUserInfo.value.phone!
-    loginHistoriesStore.updateLoginHistory(<UserInfoType>userStore.userInfo) // 更新登录历史记录
-    updateCurrentUserCache('name', localUserInfo.value.name) // 更新缓存里面的用户信息
+    loginHistoriesStore.updateLoginHistory(<UserInfoType>userStore.userInfo)
+    updateCurrentUserCache('name', localUserInfo.value.name)
     if (!localUserInfo.value.modifyNameChance) return
     localUserInfo.value.modifyNameChance -= 1
     window.$message.success('修改成功')
-  })
+  } catch (error) {
+    console.error('修改用户信息失败:', error)
+    window.$message.error('修改失败，请重试')
+  }
 }
 
 onMounted(async () => {

@@ -63,12 +63,12 @@ class MatrixVoiceService {
   private setupEventListeners(): void {
     if (!this.voiceManager) return
 
-    this.voiceManager.on(VoiceEvent.UploadComplete, (roomId: string, result: VoiceMessageUploadResult) => {
+    this.voiceManager.on(VoiceEvent.UploadComplete, (_roomId: string, result: VoiceMessageUploadResult) => {
       this.emit('voiceUploaded', result)
       info(`[MatrixVoice] 语音上传完成: ${result.eventId}`)
     })
 
-    this.voiceManager.on(VoiceEvent.UploadError, (roomId: string, error: Error) => {
+    this.voiceManager.on(VoiceEvent.UploadError, (_roomId: string, error: Error) => {
       this.emit('voiceUploadError', error)
       info(`[MatrixVoice] 语音上传失败: ${error.message}`)
     })
@@ -148,7 +148,7 @@ class MatrixVoiceService {
 
     try {
       if (this.voiceManager.getUserVoices) {
-        return await this.voiceManager.getUserVoices(roomId, userId) as any
+        return (await this.voiceManager.getUserVoices(roomId, userId)) as any
       }
       return []
     } catch (err) {
@@ -217,7 +217,7 @@ class MatrixVoiceService {
     }
   }
 
-  async optimizeVoice(roomId: string, eventId: string, targetFormat?: string): Promise<any | null> {
+  async optimizeVoice(roomId: string, eventId: string, _targetFormat?: string): Promise<any | null> {
     if (!this.voiceManager) return null
 
     try {
@@ -242,11 +242,25 @@ class MatrixVoiceService {
   }
 
   isFormatSupported(format: string): boolean {
-    return true // Fallback, config doesn't have supported_formats
+    if (!this.config) {
+      return true
+    }
+    const supportedFormats = (this.config as any).supported_formats || []
+    if (supportedFormats.length === 0) {
+      return true
+    }
+    return supportedFormats.includes(format.toLowerCase())
   }
 
   validateVoiceSize(sizeBytes: number): boolean {
-    return true // Fallback, config doesn't have max_size_bytes
+    if (!this.config) {
+      return true
+    }
+    const maxSizeBytes = (this.config as any).max_size_bytes || 0
+    if (maxSizeBytes === 0) {
+      return true
+    }
+    return sizeBytes <= maxSizeBytes
   }
 
   validateVoiceDuration(durationMs: number): boolean {

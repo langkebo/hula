@@ -56,7 +56,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { chatRolePage } from '@/utils/ImRequestUtils'
+import { matrixChatRoleService } from '@/services/matrix'
 
 const props = defineProps<{
   modelValue?: any
@@ -74,7 +74,7 @@ const currentRole = ref<any>(props.modelValue)
 // 加载角色列表
 const loadRoleList = async () => {
   try {
-    const data = await chatRolePage({ pageNo: 1, pageSize: 100 })
+    const data = await matrixChatRoleService.page({ pageNo: 1, pageSize: 100 })
     roleList.value = (data.list || []).filter((item: any) => item.status === 0) // 只显示可用的角色
 
     // 如果没有选中角色，默认选中第一个

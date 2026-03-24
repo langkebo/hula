@@ -301,7 +301,11 @@ export enum MsgEnum {
   NOTICE,
   /** Bot 消息 14 */
   BOT,
-  /** 混合 15 */
+  /** 链接预览 15 - org.matrix.msc2788.room.message */
+  LINK_PREVIEW,
+  /** 位置信标 16 - m.beacon_info / m.beacon */
+  BEACON,
+  /** 混合消息 */
   MIXED,
   /** 艾特 16 */
   AIT,

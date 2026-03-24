@@ -68,6 +68,16 @@ export const renderReplyContent = (name?: string, type?: MsgEnum, content?: stri
         ? `${name}:${MSG_REPLY_TEXT_MAP[MsgEnum.LOCATION]}`
         : MSG_REPLY_TEXT_MAP[MsgEnum.LOCATION]
     }
+    case MsgEnum.BEACON: {
+      return roomType === RoomTypeEnum.GROUP
+        ? `${name}:${MSG_REPLY_TEXT_MAP[MsgEnum.BEACON]}`
+        : MSG_REPLY_TEXT_MAP[MsgEnum.BEACON]
+    }
+    case MsgEnum.LINK_PREVIEW: {
+      return roomType === RoomTypeEnum.GROUP
+        ? `${name}:${MSG_REPLY_TEXT_MAP[MsgEnum.LINK_PREVIEW]}`
+        : MSG_REPLY_TEXT_MAP[MsgEnum.LINK_PREVIEW]
+    }
     default: {
       return ''
     }

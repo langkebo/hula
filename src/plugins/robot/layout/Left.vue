@@ -205,13 +205,7 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
 import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import {
-  conversationPage,
-  conversationCreateMy,
-  conversationDeleteMy,
-  conversationUpdateMy,
-  chatRolePage
-} from '@/utils/ImRequestUtils'
+import { matrixConversationService, matrixChatRoleService } from '@/services/matrix'
 import { formatTimestamp } from '@/utils/ComputedTime'
 
 const userStore = useUserStore()
@@ -259,7 +253,7 @@ const fetchConversationList = async (isLoadMore = false) => {
   }
 
   try {
-    const data = await conversationPage({
+    const data = await matrixConversationService.page({
       pageNo: pageNo.value,
       pageSize: pageSize.value
     })
@@ -401,7 +395,7 @@ const handleActive = (item: ChatItem) => {
 // 检查是否有可用角色
 const checkHasRoles = async () => {
   try {
-    const data = await chatRolePage({ pageNo: 1, pageSize: 100 })
+    const data = await matrixChatRoleService.page({ pageNo: 1, pageSize: 100 })
     // 检查是否有可用的角色（status === 0）
     const availableRoles = (data.list || []).filter((item: any) => item.status === 0)
     hasRoles.value = availableRoles.length > 0
@@ -439,7 +433,7 @@ const add = async () => {
   }
 
   try {
-    const data = await conversationCreateMy({
+    const data = await matrixConversationService.create({
       roleId: firstAvailableRoleId.value,
       knowledgeId: undefined,
       title: '新的会话'
@@ -448,11 +442,11 @@ const add = async () => {
     if (data) {
       const rawCreateTime = Number(data.createTime)
       const newChat: ChatItem = {
-        id: data.id || data,
+        id: data.id,
         title: data.title || '新的会话',
         createTime: Number.isFinite(rawCreateTime) ? rawCreateTime : Date.now(),
         messageCount: data.messageCount || 0,
-        isPinned: data.pinned || false,
+        isPinned: data.isPinned || data.pinned || false,
         roleId: firstAvailableRoleId.value,
         modelId: data.modelId
       }
@@ -479,7 +473,7 @@ const add = async () => {
 /** 删除单个会话 */
 const deleteChat = async (item: ChatItem) => {
   try {
-    await conversationDeleteMy({ conversationIdList: [item.id] })
+    await matrixConversationService.delete({ conversationIdList: [item.id] })
 
     const index = chatList.value.findIndex((chat) => chat.id === item.id)
     if (index !== -1) {
@@ -519,7 +513,7 @@ const deleteAllChats = async () => {
     }
 
     const allChatIds = chatList.value.map((chat) => chat.id)
-    await conversationDeleteMy({ conversationIdList: allChatIds })
+    await matrixConversationService.delete({ conversationIdList: allChatIds })
 
     // 清空本地列表
     chatList.value = []
@@ -565,7 +559,7 @@ const handleBlur = async (item: ChatItem, index: number) => {
   }
 
   try {
-    await conversationUpdateMy({
+    await matrixConversationService.update({
       id: item.id,
       title: nextTitle
     })

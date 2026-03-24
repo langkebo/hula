@@ -71,7 +71,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useGlobalStore } from '@/stores/global'
-import { getAnnouncementDetail, editAnnouncement, pushAnnouncement } from '@/utils/ImRequestUtils'
+import { matrixAnnouncementService } from '@/services/matrix'
 
 defineOptions({
   name: 'mobileChatNoticeEdit'
@@ -98,14 +98,15 @@ const loadAnnouncementDetail = async () => {
   }
 
   try {
-    const data = await getAnnouncementDetail({
-      roomId: globalStore.currentSessionRoomId,
-      announcementId: route.params.id as string
-    })
+    const data = await matrixAnnouncementService.getAnnouncementById(
+      globalStore.currentSessionRoomId,
+      route.params.id as string
+    )
 
-    // 填充表单数据
-    announcementContent.value = data.content
-    top.value = data.top || false
+    if (data) {
+      announcementContent.value = data.content
+      top.value = data.isPinned
+    }
     console.log('announcementContent ', announcementContent)
   } catch (error) {
     console.error('加载公告详情失败:', error)
@@ -137,7 +138,11 @@ const handleSubmit = async () => {
         top: top.value
       }
 
-      await editAnnouncement(announcementData)
+      await matrixAnnouncementService.editAnnouncement(announcementData.roomId, {
+        id: announcementData.id,
+        content: announcementData.content,
+        isPinned: announcementData.top
+      })
       window.$message?.success('公告修改成功')
       router.push({
         path: `/mobile/chatRoom/notice/detail/${announcementData.id}`
@@ -150,7 +155,10 @@ const handleSubmit = async () => {
         top: top.value
       }
 
-      await pushAnnouncement(announcementData)
+      await matrixAnnouncementService.pushAnnouncement(announcementData.roomId, {
+        content: announcementData.content,
+        isPinned: announcementData.top
+      })
       window.$message?.success('公告发布成功')
       router.back()
     }

@@ -138,6 +138,11 @@
                       <use href="#auth"></use>
                     </svg>
                   </span>
+                  <span v-if="item.isFavorite">
+                    <svg class="size-22px select-none outline-none cursor-pointer color-#f0a020">
+                      <use href="#star"></use>
+                    </svg>
+                  </span>
                   <span class="text-gray-600 whitespace-nowrap">
                     {{ formatTimestamp(item?.activeTime) }}
                   </span>
@@ -221,10 +226,9 @@ import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { vOnLongPress } from '@vueuse/components'
-import { markMsgRead, setSessionTop } from '@/utils/ImRequestUtils'
 import { useContactStore } from '@/stores/contacts'
 import { useI18n } from 'vue-i18n'
-import { matrixClientService } from '@/services/matrix'
+import { matrixClientService, matrixSessionService, matrixMessageService } from '@/services/matrix'
 
 const { t } = useI18n()
 const loading = ref(false)
@@ -369,10 +373,7 @@ const handleToggleTop = async (item: SessionItem | null) => {
   try {
     const newTopState = !item.top
 
-    await setSessionTop({
-      roomId: item.roomId,
-      top: newTopState
-    })
+    await matrixSessionService.setSessionTop(item.roomId, newTopState)
 
     // 更新本地会话状态
     chatStore.updateSession(item.roomId, { top: newTopState })
@@ -403,7 +404,11 @@ const handleToggleReadStatus = async (markAsRead: boolean, sessionItem?: Session
     globalStore.updateGlobalUnreadCount()
 
     if (markAsRead) {
-      await markMsgRead(item.roomId)
+      const client = matrixClientService.getClient()
+      const room = client?.getRoom(item.roomId)
+      const lastEvent = room?.timeline[room.timeline.length - 1]
+      const eventId = lastEvent?.getId() || ''
+      await matrixMessageService.markMessagesRead(item.roomId, eventId)
     }
 
     window.$message.success(successMsg)

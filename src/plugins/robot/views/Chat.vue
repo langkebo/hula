@@ -911,31 +911,7 @@ import { ROBOT_MARKDOWN_CUSTOM_ID } from '@/plugins/robot/utils/markdown'
 import { useResizeObserver } from '@vueuse/core'
 import { ThemeEnum, AiMsgContentTypeEnum } from '@/enums'
 import 'markstream-vue/index.css'
-import {
-  modelPage,
-  getModelRemainingUsage,
-  conversationCreateMy,
-  conversationUpdateMy,
-  conversationDeleteMy,
-  messageListByConversationId,
-  messageDelete,
-  messageDeleteByConversationId,
-  chatRolePage,
-  imageDraw,
-  videoGenerate,
-  audioGenerate,
-  imageMyPage,
-  videoMyPage,
-  audioMyPage,
-  imageMyListByIds,
-  videoMyListByIds,
-  audioMyListByIds,
-  audioGetVoices
-} from '@/utils/ImRequestUtils'
-import { messageSendStream } from '@/utils/ImRequestUtils'
-import { messageSaveGeneratedContent } from '@/utils/ImRequestUtils'
-import { messageCancelStream } from '@/utils/ImRequestUtils'
-import { conversationGetMy } from '@/utils/ImRequestUtils'
+import { matrixMessageService, matrixAIService, matrixConversationService } from '@/services/matrix'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { persistAiImageFile, resolveAiImagePath } from '@/utils/PathUtil'
 import { md5FromString } from '@/utils/Md5Util'
@@ -1096,7 +1072,7 @@ const remainingUsageTagType = computed(() => {
 /** 加载模型剩余使用次数 */
 const loadRemainingUsage = async (modelId: string) => {
   if (!modelId) return
-  remainingUsage.value = await getModelRemainingUsage(modelId)
+  remainingUsage.value = await matrixAIService.getModelRemainingUsage({ modelId })
 }
 
 // 计算是否是暗色主题，处理空值和未初始化的情况
@@ -1642,7 +1618,7 @@ const loadAudioVoices = async (model: any) => {
       return
     }
 
-    const voices = await audioGetVoices({ model: model.model })
+    const voices = await matrixAIService.audioGetVoices({ model: model.model })
 
     if (voices && voices.length > 0) {
       // 将声音列表转换为选项格式
@@ -1962,19 +1938,14 @@ const sendAIMessage = async (content: string, model: any) => {
     })
 
     isAIStreaming.value = true
-    await messageSendStream(
-      {
-        conversationId: currentChat.value.id,
-        content: content,
-        useContext: true,
-        reasoningEnabled: reasoningEnabled.value
-      },
+    await matrixAIService.messageSendStream(
+      currentChat.value.id,
+      content,
       {
         onStart: (rid: string) => {
           currentAiRequestId.value = rid
         },
         onChunk: (chunk: string) => {
-          // 兼容：JSON 包装增量 & 纯文本增量
           let handled = false
           try {
             const data = JSON.parse(chunk)
@@ -2026,21 +1997,23 @@ const sendAIMessage = async (content: string, model: any) => {
             createTime: latestTimestamp
           })
           if (currentChat.value.id && currentChat.value.id !== '0') {
-            conversationGetMy({ id: currentChat.value.id })
-              .then((conv: any) => {
+            matrixAIService
+              .conversationGetMy({ id: currentChat.value.id })
+              .then((convList: any) => {
+                const conv: any = Array.isArray(convList) ? convList[0] : convList
                 if (conv && typeof conv.tokenUsage === 'number') {
                   serverTokenUsage.value = conv.tokenUsage
                 }
               })
               .catch(() => {})
 
-            // 更新模型剩余使用次数
             if (model && model.id) {
               loadRemainingUsage(model.id)
             }
 
             if (!messageList.value[aiMessageIndex].reasoningContent) {
-              messageListByConversationId({ conversationId: currentChat.value.id, pageNo: 1, pageSize: 100 })
+              matrixAIService
+                .messageListByConversationId({ conversationId: currentChat.value.id, pageNo: 1, pageSize: 100 })
                 .then((list: any[]) => {
                   if (Array.isArray(list) && list.length > 0) {
                     const last = list[list.length - 1]
@@ -2059,7 +2032,9 @@ const sendAIMessage = async (content: string, model: any) => {
           isAIStreaming.value = false
           currentAiRequestId.value = null
         }
-      }
+      },
+      true,
+      reasoningEnabled.value
     )
 
     // 清空输入框
@@ -2081,7 +2056,7 @@ const handleStopAIStream = async () => {
   if (!isAIStreaming.value || !currentAiRequestId.value) return
   try {
     window.$message.destroyAll()
-    await messageCancelStream(currentAiRequestId.value)
+    await matrixAIService.messageCancelStream(currentAiRequestId.value)
     await new Promise((resolve) => setTimeout(resolve, 180))
     const lastMsg = messageList.value[messageList.value.length - 1]
     if (lastMsg && lastMsg.type === 'assistant' && lastMsg.content === AI_THINKING_PLACEHOLDER) {
@@ -2092,7 +2067,7 @@ const handleStopAIStream = async () => {
         ? lastMsg.content
         : currentAiAccumulatedContent.value
     if (latest && latest.trim()) {
-      await messageSaveGeneratedContent({
+      await matrixAIService.messageSaveGeneratedContent({
         conversationId: currentChat.value.id,
         prompt: lastAiPrompt.value,
         generatedContent: latest
@@ -2144,7 +2119,7 @@ const generateImage = async (prompt: string, model: any) => {
     // 解析尺寸
     const [width, height] = imageParams.value.size.split('x').map(Number)
 
-    const imageId = await imageDraw({
+    const imageId = await matrixAIService.generateImage({
       modelId: String(model.id),
       prompt: prompt,
       width: width,
@@ -2153,7 +2128,7 @@ const generateImage = async (prompt: string, model: any) => {
     })
 
     // 开始轮询查询生成状态
-    pollImageStatus(imageId, aiMessageIndex, prompt, width, height, model.name)
+    pollImageStatus(imageId as unknown as number, aiMessageIndex, prompt, width, height, model.name)
 
     // 清空输入框
     if (MsgInputRef.value?.clearInput) {
@@ -2202,7 +2177,7 @@ const pollImageStatus = async (
         return
       }
 
-      const imageList = await imageMyListByIds({ ids: imageId.toString() })
+      const imageList = await matrixAIService.imageMyListByIds({ ids: imageId.toString() })
 
       if (!imageList || !Array.isArray(imageList) || imageList.length === 0) {
         messageList.value[messageIndex].content = '图片生成失败: 记录不存在'
@@ -2319,7 +2294,7 @@ const generateVideo = async (prompt: string, model: any) => {
     }
 
     // 调用视频生成API，返回视频ID
-    const videoId = await videoGenerate(requestBody)
+    const videoId = await matrixAIService.videoGenerate(requestBody)
 
     // 开始轮询查询生成状态
     pollVideoStatus(videoId, aiMessageIndex, prompt, width, height, model.name)
@@ -2374,7 +2349,7 @@ const pollVideoStatus = async (
       }
 
       // 后端返回的是数组 List<AiVideoRespVO>
-      const videoList = await videoMyListByIds({ ids: videoId.toString() })
+      const videoList = await matrixAIService.videoMyListByIds({ ids: videoId.toString() })
 
       if (!videoList || !Array.isArray(videoList) || videoList.length === 0) {
         messageList.value[messageIndex].content = '视频生成失败: 记录不存在'
@@ -2469,7 +2444,7 @@ const generateAudio = async (prompt: string, model: any) => {
       速度: audioParams.value.speed
     })
 
-    const audioId = await audioGenerate({
+    const audioId = await matrixAIService.audioGenerate({
       modelId: model.id,
       prompt: prompt,
       conversationId: currentChat.value.id,
@@ -2519,7 +2494,7 @@ const pollAudioStatus = async (audioId: number, messageIndex: number, prompt: st
         return
       }
 
-      const audioList = await audioMyListByIds({ ids: audioId.toString() })
+      const audioList = await matrixAIService.audioMyListByIds({ ids: audioId.toString() })
 
       if (!audioList || !Array.isArray(audioList) || audioList.length === 0) {
         messageList.value[messageIndex].content = '音频生成失败: 记录不存在'
@@ -2639,7 +2614,7 @@ const getModelAvatar = (model: any) => {
 const fetchModelList = async () => {
   modelLoading.value = true
   try {
-    const data = await modelPage({
+    const data = await matrixAIService.modelPage({
       pageNo: modelPagination.value.pageNo,
       pageSize: modelPagination.value.pageSize
     })
@@ -2709,7 +2684,7 @@ const selectModel = async (model: any) => {
   // 如果当前有会话，则调用后端API更新会话的模型
   if (currentChat.value.id && currentChat.value.id !== '0') {
     try {
-      await conversationUpdateMy({
+      await matrixConversationService.update({
         id: currentChat.value.id,
         modelId: String(model.id)
       })
@@ -2746,7 +2721,7 @@ const handleOpenModelManagement = () => {
 const loadRoleList = async () => {
   roleLoading.value = true
   try {
-    const data = await chatRolePage({ pageNo: 1, pageSize: 100 })
+    const data = await matrixAIService.chatRolePage({ pageNo: 1, pageSize: 100 })
     roleList.value = (data.list || []).filter((item: any) => item.status === 0) // 只显示可用的角色
 
     // 如果没有选中角色，默认选中第一个
@@ -2768,7 +2743,7 @@ const handleSelectRole = async (role: any) => {
 
   try {
     if (currentChat.value.id && currentChat.value.id !== '0') {
-      await conversationUpdateMy({
+      await matrixConversationService.update({
         id: currentChat.value.id,
         roleId: role.id,
         modelId: role.modelId ? role.modelId : undefined
@@ -2800,7 +2775,7 @@ const handleBlur = async () => {
   }
 
   try {
-    await conversationUpdateMy({
+    await matrixConversationService.update({
       id: currentChat.value.id,
       title: currentChat.value.title
     })
@@ -2830,7 +2805,7 @@ const loadMessages = async (conversationId: string) => {
 
   try {
     loadingMessages.value = true
-    const data = await messageListByConversationId({
+    const data = await matrixAIService.messageListByConversationId({
       conversationId: conversationId,
       pageNo: 1,
       pageSize: 100
@@ -2892,7 +2867,8 @@ const loadMessages = async (conversationId: string) => {
         scrollToBottom()
       })
       try {
-        const conv = await conversationGetMy({ id: conversationId })
+        const convList = await matrixAIService.conversationGetMy({ id: conversationId })
+        const conv: any = Array.isArray(convList) ? convList[0] : convList
         if (conv && typeof conv.tokenUsage === 'number') {
           serverTokenUsage.value = conv.tokenUsage
         }
@@ -2912,7 +2888,7 @@ const loadMessages = async (conversationId: string) => {
 // 新增会话
 const handleCreateNewChat = async () => {
   try {
-    const data = await conversationCreateMy({
+    const data = await matrixConversationService.create({
       roleId: selectedRole.value?.id,
       knowledgeId: undefined,
       title: selectedRole.value?.name || '新的会话'
@@ -2954,7 +2930,7 @@ const handleDeleteMessage = async (messageId: string, index: number) => {
   }
 
   try {
-    await messageDelete({ id: messageId })
+    await matrixAIService.messageDelete({ id: messageId })
 
     // 从消息列表中移除
     messageList.value.splice(index, 1)
@@ -2985,14 +2961,14 @@ const handleDeleteChat = async () => {
   try {
     if (deleteWithMessages.value) {
       try {
-        await messageDeleteByConversationId({ conversationIdList: [currentChat.value.id] })
+        await matrixAIService.messageDeleteByConversationId({ conversationIdList: [currentChat.value.id] })
       } catch (error) {
         console.error('删除会话消息失败:', error)
       }
     }
 
     // 删除会话
-    await conversationDeleteMy({ conversationIdList: [currentChat.value.id] })
+    await matrixConversationService.delete({ conversationIdList: [currentChat.value.id] })
     window.$message.success(deleteWithMessages.value ? '会话及消息已删除' : '会话删除成功')
 
     // 关闭确认框
@@ -3091,19 +3067,23 @@ const handleOpenHistory = () => {
 const loadHistory = async () => {
   historyLoading.value = true
   try {
-    let apiFunc
+    let data
     if (historyType.value === 'image') {
-      apiFunc = imageMyPage
+      data = await matrixAIService.imageMyPage({
+        pageNo: historyPagination.value.pageNo,
+        pageSize: historyPagination.value.pageSize
+      })
     } else if (historyType.value === 'audio') {
-      apiFunc = audioMyPage
+      data = await matrixAIService.audioMyPage({
+        pageNo: historyPagination.value.pageNo,
+        pageSize: historyPagination.value.pageSize
+      })
     } else {
-      apiFunc = videoMyPage
+      data = await matrixAIService.videoMyPage({
+        pageNo: historyPagination.value.pageNo,
+        pageSize: historyPagination.value.pageSize
+      })
     }
-
-    const data = await apiFunc({
-      pageNo: historyPagination.value.pageNo,
-      pageSize: historyPagination.value.pageSize
-    })
     historyList.value = data.list || []
     historyPagination.value.total = data.total || 0
   } catch (error) {

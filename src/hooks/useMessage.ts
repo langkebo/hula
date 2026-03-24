@@ -7,7 +7,8 @@ import { useGlobalStore } from '@/stores/global.ts'
 import { useSettingStore } from '@/stores/setting.ts'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
-import { exitGroup, notification, setSessionTop, shield } from '@/utils/ImRequestUtils'
+import { shield, notification } from '@/utils/ImRequestUtils'
+import { matrixGroupService, matrixSessionService } from '@/services/matrix'
 import { invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
 import { useI18n } from 'vue-i18n'
 
@@ -126,7 +127,8 @@ export const useMessage = () => {
       label: (item: SessionItem) => (item.top ? t('menu.unpin') : t('menu.pin')),
       icon: (item: SessionItem) => (item.top ? 'to-bottom' : 'to-top'),
       click: (item: SessionItem) => {
-        setSessionTop({ roomId: item.roomId, top: !item.top })
+        matrixSessionService
+          .setSessionTop(item.roomId, !item.top)
           .then(() => {
             // 更新本地会话状态
             chatStore.updateSession(item.roomId, { top: !item.top })
@@ -311,7 +313,7 @@ export const useMessage = () => {
         }
 
         // 群聊：解散或退出
-        await exitGroup({ roomId: item.roomId })
+        await matrixGroupService.exitGroup(item.roomId)
         await handleMsgDelete(item.roomId)
         window.$message.success(
           item.operate === SessionOperateEnum.DISSOLUTION_GROUP
