@@ -37,10 +37,10 @@ class MatrixContactService {
         limit
       })
 
-      return response.results.map((user: any) => ({
-        userId: user.user_id,
-        displayName: user.display_name,
-        avatarUrl: user.avatar_url
+      return response.results.map((user: User) => ({
+        userId: user.userId,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl
       }))
     } catch (err) {
       logError(`[MatrixContact] Failed to search users: ${err}`)

@@ -614,7 +614,7 @@ export const useChatStore = defineStore(
       if (messageList) {
         for (const id of messageList) {
           const msg = currentMessageMap.value?.[id]
-          if (msg) {
+          if (msg && typeof msg.message.body === 'object' && msg.message.body.reply) {
             msg.message.body.reply.body = '原消息已被撤回'
           }
         }

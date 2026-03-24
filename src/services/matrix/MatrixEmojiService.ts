@@ -309,7 +309,7 @@ class MatrixEmojiService {
   /**
    * 解析表情响应数据
    */
-  private parseEmojiResponse(response: any): EmojiPack[] {
+  private parseEmojiResponse(response: Record<string, any>): EmojiPack[] {
     if (!response || !response.packs) {
       return []
     }

@@ -1,5 +1,6 @@
 import matrixClientService from './MatrixClientService'
 import { info, error, warn } from '@tauri-apps/plugin-log'
+import type { MatrixClient } from 'matrix-js-sdk'
 
 export interface EncryptionSettings {
   algorithm: string
@@ -17,7 +18,7 @@ export interface CrossSigningInfo {
 export interface KeyBackupInfo {
   version: string | null
   algorithm: string | null
-  authData: any
+  authData: Record<string, unknown>
   count: number
   etag: string
 }
@@ -46,7 +47,7 @@ export interface KeyRotationRecord {
 }
 
 class MatrixEncryptionService {
-  private crypto: any = null
+  private crypto: MatrixClient['crypto'] | null = null
 
   async initialize(): Promise<void> {
     const client = matrixClientService.getClient()
@@ -68,11 +69,11 @@ class MatrixEncryptionService {
     }
   }
 
-  private getCrypto(): any {
+  private getCrypto(): MatrixClient['crypto'] | null {
     if (!this.crypto) {
       const client = matrixClientService.getClient()
       if (client) {
-        this.crypto = (client as any).getCrypto?.()
+        this.crypto = (client as unknown as { getCrypto?: () => MatrixClient['crypto'] }).getCrypto?.()
       }
     }
     return this.crypto
@@ -112,7 +113,7 @@ class MatrixEncryptionService {
         encryptionEventContent.rotation_period_msgs = settings.rotationPeriodMsgs
       }
 
-      await client.sendStateEvent(roomId, 'm.room.encryption' as any, encryptionEventContent, '')
+      await client.sendStateEvent(roomId, 'm.room.encryption' as const, encryptionEventContent, '')
       info(`[Encryption] 启用房间加密: ${roomId}`)
     } catch (err) {
       error(`[Encryption] 启用房间加密失败: ${err}`)

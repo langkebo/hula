@@ -320,17 +320,18 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       icon: 'file2',
       click: async (item: MessageType) => {
         try {
-          const localPath = await getLocalVideoPath(item.message.body.url)
+          const videoUrl = item.message.body.url || ''
+          const localPath = await getLocalVideoPath(videoUrl)
 
           // 检查视频是否已下载
-          const isDownloaded = await checkVideoDownloaded(item.message.body.url)
+          const isDownloaded = await checkVideoDownloaded(videoUrl)
 
           if (!isDownloaded) {
             // 如果未下载，先下载视频
             const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
-            await downloadFile(item.message.body.url, localPath, baseDir)
+            await downloadFile(videoUrl, localPath, baseDir)
             // 通知相关组件更新视频下载状态
-            useMitt.emit(MittEnum.VIDEO_DOWNLOAD_STATUS_UPDATED, { url: item.message.body.url, downloaded: true })
+            useMitt.emit(MittEnum.VIDEO_DOWNLOAD_STATUS_UPDATED, { url: videoUrl, downloaded: true })
           }
 
           // 获取视频的绝对路径
@@ -734,6 +735,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         }
         try {
           const imageUrl = item.message.body.url
+          if (!imageUrl) return
           const suggestedName = imageUrl || 'image.png'
 
           // 这里会自动截取url后的文件名，可以尝试打印一下
@@ -760,9 +762,13 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       label: () => (isMac() ? t('menu.show_in_finder') : t('menu.show_in_folder')),
       icon: 'file2',
       click: async (item: MessageType) => {
-        const fileUrl = item.message.body.url || item.message.body.content
+        const fileUrl = (item.message.body.url || item.message.body.content) as string | undefined
+        if (!fileUrl) {
+          window.$message.warning(t('home.chat_main.image.locate_failed'))
+          return
+        }
         const fileName = item.message.body.fileName || extractFileName(fileUrl)
-        if (!fileUrl || !fileName) {
+        if (!fileName) {
           window.$message.warning(t('home.chat_main.image.locate_failed'))
           return
         }

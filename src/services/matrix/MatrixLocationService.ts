@@ -1,3 +1,4 @@
+import type { MatrixEvent, EventType, IContent } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 
@@ -15,6 +16,25 @@ export interface LiveLocationShare {
   location: LocationData
   expiresAt?: number
   lastUpdated: number
+}
+
+interface LocationContent extends IContent {
+  msgtype?: string
+  body: string
+  geo_uri: string
+  'm.location'?: {
+    uri: string
+    description?: string
+  }
+  'org.matrix.msc3488.asset'?: {
+    type: string
+  }
+  'org.matrix.msc3488.ts'?: number
+  expires_at?: number
+  'm.relates_to'?: {
+    rel_type: string
+    event_id?: string
+  }
 }
 
 class MatrixLocationService {
@@ -56,7 +76,7 @@ class MatrixLocationService {
     try {
       const geoUri = `geo:${location.latitude},${location.longitude}${location.accuracy ? `;u=${location.accuracy}` : ''}`
 
-      const content: any = {
+      const content: LocationContent = {
         msgtype: 'm.location',
         body: location.description || geoUri,
         geo_uri: geoUri,
@@ -66,7 +86,7 @@ class MatrixLocationService {
         }
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content)
       info(`[Location] 发送位置成功: ${roomId}`)
       return response.event_id
     } catch (err) {
@@ -85,7 +105,7 @@ class MatrixLocationService {
       const location = await this.getCurrentPosition()
       const geoUri = `geo:${location.latitude},${location.longitude}`
 
-      const content: any = {
+      const content: LocationContent = {
         msgtype: 'm.location',
         body: 'Live location',
         geo_uri: geoUri,
@@ -100,7 +120,7 @@ class MatrixLocationService {
         expires_at: Date.now() + duration
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content)
       info(`[Location] 开始实时位置分享: ${roomId}`)
       return response.event_id
     } catch (err) {
@@ -118,7 +138,7 @@ class MatrixLocationService {
     try {
       const geoUri = `geo:${location.latitude},${location.longitude}`
 
-      const content: any = {
+      const content: LocationContent = {
         msgtype: 'm.location',
         body: 'Live location update',
         geo_uri: geoUri,
@@ -136,7 +156,7 @@ class MatrixLocationService {
         }
       }
 
-      await client.sendEvent(roomId, 'm.room.message' as any, content)
+      await client.sendEvent(roomId, 'm.room.message' as EventType, content)
       info(`[Location] 更新实时位置: ${roomId}`)
     } catch (err) {
       error(`[Location] 更新实时位置失败: ${err}`)
@@ -144,9 +164,9 @@ class MatrixLocationService {
     }
   }
 
-  parseLocationEvent(event: any): LocationData | null {
+  parseLocationEvent(event: MatrixEvent): LocationData | null {
     try {
-      const content = event.getContent()
+      const content = event.getContent() as LocationContent
       if (content.msgtype !== 'm.location') return null
 
       const geoUri = content.geo_uri || ''
