@@ -99,7 +99,7 @@ abstract class AbstractMessageStrategy implements MessageStrategy {
     throw new AppException('该消息类型不支持文件上传')
   }
 
-  doUpload(path: string, uploadUrl: string, options?: any): Promise<{ qiniuUrl?: string } | void> {
+  doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
     console.log('Base doUpload method called with:', path, uploadUrl, options)
     throw new AppException('该消息类型不支持文件上传')
   }
@@ -502,7 +502,7 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
    * @param options 上传选项
    * @returns 上传结果
    */
-  async doUpload(path: string, uploadUrl: string, options?: any): Promise<{ qiniuUrl?: string } | void> {
+  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
     // 如果是URL，跳过上传
     if (this.isImageUrl(path)) {
       return
@@ -800,7 +800,7 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
    * @param options 上传选项
    * @returns 上传结果
    */
-  async doUpload(path: string, uploadUrl: string, options?: any): Promise<{ qiniuUrl?: string } | void> {
+  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
     try {
       // enableDeduplication启用文件去重
       const result = await this.uploadHook.doUpload(path, uploadUrl, { ...options, enableDeduplication: true })
@@ -896,7 +896,7 @@ class EmojiMessageStrategyImpl extends AbstractMessageStrategy {
   }
 
   // 表情包不需要实际上传，此方法为空实现
-  async doUpload(path?: string, uploadUrl?: string, options?: any): Promise<void> {
+  async doUpload(path?: string, uploadUrl?: string, options?: UploadOptions): Promise<void> {
     console.log('表情包无需上传，跳过上传步骤', path, uploadUrl, options)
     return Promise.resolve()
   }
@@ -1117,7 +1117,7 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
   async doUploadThumbnail(
     thumbnailFile: File,
     uploadUrl: string,
-    options?: any
+    options?: UploadOptions
   ): Promise<{ qiniuUrl?: string } | void> {
     try {
       // 将File对象写入临时文件，然后使用现有的doUpload方法
@@ -1194,7 +1194,7 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
       throw new AppException('获取视频上传链接失败')
     }
   }
-  async doUpload(path: string, uploadUrl: string, options?: any): Promise<{ qiniuUrl?: string } | void> {
+  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
     if (isVideoUrl(path)) {
       throw new AppException('检查是否是有效的视频URL')
     }
@@ -1307,7 +1307,7 @@ class VoiceMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  async doUpload(path: string, uploadUrl: string, options?: any): Promise<{ qiniuUrl?: string } | void> {
+  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
     const uploadHook = useUpload()
 
     try {
