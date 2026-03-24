@@ -151,7 +151,8 @@ import type { ModifyUserInfoType } from '@/services/types'
 import { useLoginHistoriesStore } from '@/stores/loginHistory'
 import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { getBadgeList, uploadAvatar } from '@/utils/ImRequestUtils'
+import { getBadgeList } from '@/utils/ImRequestUtils'
+import { matrixAccountService } from '@/services/matrix'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
 const appWindow = WebviewWindow.getCurrent()
@@ -173,8 +174,7 @@ const {
   handleCrop: onCrop
 } = useAvatarUpload({
   onSuccess: async (downloadUrl) => {
-    // 调用更新头像的API TODO 这里准备删除
-    await uploadAvatar({ avatar: downloadUrl })
+    await matrixAccountService.updateAvatar(downloadUrl)
     // 更新编辑信息
     editInfo.value.content.avatar = downloadUrl
     // 更新用户信息

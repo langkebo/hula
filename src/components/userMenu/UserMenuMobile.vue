@@ -8,25 +8,26 @@
     <van-popup v-model:show="isOpen" position="bottom" round :style="{ height: 'auto', maxHeight: '70vh' }">
       <UserMenuHeader @theme-toggle="handleThemeToggle" />
 
-      <div class="menu-divider" />
-
-      <div class="menu-items">
-        <template v-for="item in menuItems" :key="item.id">
-          <div v-if="item.divider" class="menu-divider" />
-          <van-cell
-            v-else
-            :title="item.label"
-            :class="{
-              'menu-item-danger': item.danger,
-              'menu-item-disabled': item.disabled
-            }"
-            @click="handleItemClick(item.id)">
-            <template #icon>
-              <Icon :icon="getIconName(item.icon)" class="menu-icon" />
-            </template>
-          </van-cell>
-        </template>
-      </div>
+      <template v-for="section in menuSections" :key="section.id">
+        <div v-if="section.title" class="menu-section-title">{{ section.title }}</div>
+        <div class="menu-items">
+          <template v-for="item in section.items" :key="item.id">
+            <div v-if="item.divider" class="menu-divider" />
+            <van-cell
+              v-else
+              :title="item.label"
+              :class="{
+                'menu-item-danger': item.danger,
+                'menu-item-disabled': item.disabled
+              }"
+              @click="handleItemClick(item.id)">
+              <template #icon>
+                <Icon :icon="getIconName(item.icon)" class="menu-icon" />
+              </template>
+            </van-cell>
+          </template>
+        </div>
+      </template>
 
       <div class="menu-safe-area" />
     </van-popup>
@@ -48,7 +49,7 @@ defineOptions({
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 
-const { isOpen, menuItems, handleMenuItemClick } = useUserMenu()
+const { isOpen, menuSections, handleMenuItemClick } = useUserMenu()
 
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
 const defaultAvatar = computed(() => defaultAvatarImg)
@@ -117,6 +118,13 @@ function handleTouchClick() {
   height: 1px;
   background-color: var(--van-border-color, #ebedf0);
   margin: 8px 0;
+}
+
+.menu-section-title {
+  padding: 8px 16px 4px;
+  font-size: 12px;
+  color: var(--van-text-color-secondary, #969799);
+  font-weight: 500;
 }
 
 .menu-items {

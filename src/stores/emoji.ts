@@ -3,10 +3,10 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import pLimit from 'p-limit'
-import { ImUrlEnum, StoresEnum } from '@/enums'
-import type { EmojiItem } from '@/services/types'
+import { StoresEnum } from '@/enums'
+import type { EmojiItem as EmojiItemType } from '@/services/types'
 import { useUserStore } from '@/stores/user'
-import * as imRequestUtils from '@/utils/ImRequestUtils'
+import { matrixEmojiService } from '@/services/matrix'
 import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
 import { md5FromString } from '@/utils/Md5Util'
 import { isMobile } from '@/utils/PlatformConstants'
@@ -15,7 +15,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
   const isLoading = ref(false) // 是否正在加载
   const isPrefetching = ref(false)
   const userStore = useUserStore()
-  const emojiList = ref<EmojiItem[]>([])
+  const emojiList = ref<EmojiItemType[]>([])
   const currentEmojiOwnerUid = ref<string | null>(null)
   let emojiWorker: Worker | null = null
 
@@ -104,7 +104,12 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
     return `${hash}.${ext}`
   }
 
-  const ensureEmojiCached = async (emoji: EmojiItem, emojiDir: string, baseDir: BaseDirectory, baseDirPath: string) => {
+  const ensureEmojiCached = async (
+    emoji: EmojiItemType,
+    emojiDir: string,
+    baseDir: BaseDirectory,
+    baseDirPath: string
+  ) => {
     const fileName = await buildFileName(emoji.expressionUrl)
     const relativePath = await join(emojiDir, fileName)
     const absolutePath = await join(baseDirPath, relativePath)
@@ -170,21 +175,22 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
       return acc
     }, {})
     try {
-      const res = await imRequestUtils.imRequestResult<EmojiItem[]>({ 
-        url: ImUrlEnum.GET_EMOJI 
-      })
-      if (res.isOk() && requestUid === currentEmojiOwnerUid.value) {
-        emojiList.value = res.value.map((item: EmojiItem) => {
-          const localUrl = localUrlCache[item.id]
-          return localUrl ? { ...item, localUrl } : item
-        })
+      const packs = await matrixEmojiService.emojiList({ userId: requestUid })
+      if (requestUid === currentEmojiOwnerUid.value) {
+        const items: EmojiItemType[] = []
+        for (const pack of packs) {
+          for (const item of pack.items) {
+            const localUrl = localUrlCache[item.id]
+            items.push(localUrl ? { ...item, expressionUrl: item.url, localUrl } : { ...item, expressionUrl: item.url })
+          }
+        }
+        emojiList.value = items
       }
     } catch (error) {
       console.error('获取表情列表失败:', error)
     }
     isLoading.value = false
     if (requestUid !== currentEmojiOwnerUid.value) {
-      // 期间用户已切换，丢弃旧账号的表情数据
       return
     }
   }
@@ -196,16 +202,10 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
     const { uid } = userStore.userInfo!
     if (!uid || !emojiUrl) return false
     try {
-      const res = await imRequestUtils.imRequestResult({
-        url: ImUrlEnum.ADD_EMOJI,
-        body: { expressionUrl: emojiUrl }
-      })
-      if (res.isOk()) {
-        window.$message.success('添加表情成功')
-        await getEmojiList()
-        return true
-      }
-      return false
+      await matrixEmojiService.emojiUpload({ url: emojiUrl } as any, 'custom_emoji')
+      window.$message.success('添加表情成功')
+      await getEmojiList()
+      return true
     } catch (error) {
       console.error('添加表情失败:', error)
       return false
@@ -218,15 +218,9 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
   const deleteEmoji = async (id: string) => {
     if (!id) return false
     try {
-      const res = await imRequestUtils.imRequestResult({
-        url: ImUrlEnum.DELETE_EMOJI,
-        body: { id }
-      })
-      if (res.isOk()) {
-        await getEmojiList()
-        return true
-      }
-      return false
+      await matrixEmojiService.emojiDelete(id)
+      await getEmojiList()
+      return true
     } catch (error) {
       console.error('删除表情失败:', error)
       return false
@@ -242,7 +236,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
     if (index !== -1) {
       if (!localUrl) {
         const { localUrl: _omit, ...rest } = emojiList.value[index]
-        emojiList.value[index] = rest as EmojiItem
+        emojiList.value[index] = rest as EmojiItemType
       } else {
         emojiList.value[index] = { ...emojiList.value[index], localUrl }
       }

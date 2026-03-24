@@ -46,7 +46,7 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
 import router from '@/router'
-import { confirmQRCodeAPI } from '@/utils/ImRequestUtils'
+import { matrixQrLoginService } from '@/services/matrix'
 
 const now = ref(dayjs()) // 当前时间对象
 
@@ -68,7 +68,7 @@ const qrCodeIcon = ref('/logo.png')
 
 const handleConfirmLogin = async () => {
   try {
-    await confirmQRCodeAPI({ qrId: props.qrId as string })
+    await matrixQrLoginService.handleConfirm()
 
     router.push('/mobile/message')
   } catch (error) {

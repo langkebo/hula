@@ -207,7 +207,7 @@ import { useGroupStore } from '@/stores/group.ts'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStatusStore } from '@/stores/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { getUserByIds } from '@/utils/ImRequestUtils'
+import { matrixContactService } from '@/services/matrix'
 import { useAnnouncementStore } from '@/stores/announcement'
 
 const { t } = useI18n()
@@ -278,7 +278,7 @@ const onClickMember = async (item: UserItem) => {
   selectKey.value = item.uid
 
   // 获取用户的最新数据，并更新 pinia
-  getUserByIds([item.uid]).then((users) => {
+  matrixContactService.getUserByIds([item.uid]).then((users) => {
     if (users && users.length > 0) {
       groupStore.updateUserItem(item.uid, users[0])
     }

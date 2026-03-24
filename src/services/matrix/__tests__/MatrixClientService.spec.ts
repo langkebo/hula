@@ -53,7 +53,7 @@ describe('MatrixClientService', () => {
     }
 
     await matrixClientService.initialize(config)
-    
+
     expect(sdk.createClient).toHaveBeenCalled()
     expect(matrixClientService.getConnectionState()).toBe('CONNECTING') // It starts client which sets state
   })
@@ -73,9 +73,9 @@ describe('MatrixClientService', () => {
 
     // Pre-initialize
     await matrixClientService.initialize({ homeserverUrl: 'https://test.com' })
-    
+
     const result = await matrixClientService.login('user', 'password')
-    
+
     expect(result.success).toBe(true)
     expect(result.userId).toBe('@user:example.com')
   })
@@ -86,9 +86,9 @@ describe('MatrixClientService', () => {
 
     // Pre-initialize
     await matrixClientService.initialize({ homeserverUrl: 'https://test.com' })
-    
+
     const result = await matrixClientService.login('user', 'wrong')
-    
+
     expect(result.success).toBe(false)
     expect(result.error).toContain('Invalid password')
   })

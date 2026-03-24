@@ -6,26 +6,27 @@
           <div v-if="visible" class="user-menu-dropdown" :style="menuStyle" @click.stop>
             <UserMenuHeader @theme-toggle="$emit('theme-toggle')" />
 
-            <div class="menu-divider" />
-
-            <div class="menu-items">
-              <template v-for="item in menuItems" :key="item.id">
-                <div v-if="item.divider" class="menu-divider" />
-                <div
-                  v-else
-                  class="menu-item"
-                  :class="{
-                    'menu-item-danger': item.danger,
-                    'menu-item-disabled': item.disabled
-                  }"
-                  @click="handleItemClick(item.id)">
-                  <span class="menu-item-icon">
-                    <Icon :icon="getIcon(item.icon)" :width="18" />
-                  </span>
-                  <span class="menu-item-label">{{ item.label }}</span>
-                </div>
-              </template>
-            </div>
+            <template v-for="section in menuSections" :key="section.id">
+              <div v-if="section.title" class="menu-section-title">{{ section.title }}</div>
+              <div class="menu-items">
+                <template v-for="item in section.items" :key="item.id">
+                  <div v-if="item.divider" class="menu-divider" />
+                  <div
+                    v-else
+                    class="menu-item"
+                    :class="{
+                      'menu-item-danger': item.danger,
+                      'menu-item-disabled': item.disabled
+                    }"
+                    @click="handleItemClick(item.id)">
+                    <span class="menu-item-icon">
+                      <Icon :icon="getIcon(item.icon)" :width="18" />
+                    </span>
+                    <span class="menu-item-label">{{ item.label }}</span>
+                  </div>
+                </template>
+              </div>
+            </template>
           </div>
         </Transition>
       </div>
@@ -61,7 +62,7 @@ const emit = defineEmits<{
 
 const visible = ref(false)
 
-const { menuItems } = useUserMenu()
+const { menuSections } = useUserMenu()
 
 const iconMap: Record<string, string> = {
   home: 'mdi:home',
@@ -167,6 +168,13 @@ onUnmounted(() => {
 
 :deep(.dark) .menu-divider {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-section-title {
+  padding: 8px 16px 4px;
+  font-size: 12px;
+  color: var(--text-secondary, #999);
+  font-weight: 500;
 }
 
 .menu-items {

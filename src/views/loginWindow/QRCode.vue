@@ -87,7 +87,7 @@ import { loginCommand } from '@/services/tauriCommand'
 import { TauriCommand } from '@/enums'
 import { useGlobalStore } from '@/stores/global'
 import { useSettingStore } from '@/stores/setting'
-import { checkQRStatus, generateQRCode } from '@/utils/ImRequestUtils'
+import { matrixQrLoginService } from '@/services/matrix'
 import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
 
 const globalStore = useGlobalStore()
@@ -219,12 +219,7 @@ const startPolling = () => {
     }
     pollingRequesting.value = true
     try {
-      const res: any = await checkQRStatus({
-        qrId: qrCodeResp.value.qrId,
-        clientId: localStorage.getItem('clientId') as string,
-        deviceHash: qrCodeResp.value.deviceHash,
-        deviceType: 'PC'
-      })
+      const res: any = await matrixQrLoginService.checkStatus()
       switch (res.status) {
         case 'PENDING':
           // 等待中
@@ -258,7 +253,7 @@ const startPolling = () => {
 /** 处理二维码显示和刷新 */
 const handleQRCodeLogin = async () => {
   try {
-    qrCodeResp.value = await generateQRCode()
+    qrCodeResp.value = await matrixQrLoginService.generateQR()
     qrCodeValue.value = JSON.stringify({ type: 'login', qrId: qrCodeResp.value.qrId })
     loadTextKey.value = 'scan_hint'
     loading.value = false

@@ -164,14 +164,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import type { FormRules, FormInst } from 'naive-ui'
-import {
-  apiKeyPage,
-  apiKeyCreate,
-  apiKeyUpdate,
-  apiKeyDelete,
-  apiKeyBalance,
-  platformList
-} from '@/utils/ImRequestUtils'
+import { matrixApiKeyService } from '@/services/matrix'
 
 const showModal = defineModel<boolean>({ default: false })
 const emit = defineEmits<{
@@ -212,7 +205,7 @@ const platformOptions = ref<Array<{ label: string; value: string }>>([])
 // 加载平台列表
 const loadPlatformList = async () => {
   try {
-    const data = await platformList()
+    const data = await matrixApiKeyService.platformList()
 
     if (data && Array.isArray(data)) {
       platformOptions.value = data.map((item: any) => ({
@@ -267,7 +260,7 @@ const maskApiKey = (key: string) => {
 const loadApiKeyList = async () => {
   loading.value = true
   try {
-    const data = await apiKeyPage({
+    const data = await matrixApiKeyService.page({
       pageNo: pagination.value.pageNo,
       pageSize: pagination.value.pageSize
     })
@@ -333,11 +326,11 @@ const handleSubmit = async () => {
     if (editingApiKey.value) {
       // 更新
       submitData.id = editingApiKey.value.id
-      await apiKeyUpdate(submitData)
+      await matrixApiKeyService.update(submitData)
       window.$message.success('密钥更新成功')
     } else {
       // 创建
-      await apiKeyCreate(submitData)
+      await matrixApiKeyService.create(submitData)
       window.$message.success('密钥创建成功')
     }
 
@@ -359,7 +352,7 @@ const handleSubmit = async () => {
 // 删除密钥
 const handleDelete = async (id: string) => {
   try {
-    await apiKeyDelete({ id })
+    await matrixApiKeyService.delete({ id })
     window.$message.success('密钥删除成功')
     loadApiKeyList()
     emit('refresh')
@@ -373,7 +366,7 @@ const handleDelete = async (id: string) => {
 const handleQueryBalance = async (id: string) => {
   try {
     balanceLoadingMap.value[id] = true
-    const data = await apiKeyBalance({ id })
+    const data = await matrixApiKeyService.balance({ id })
     balanceMap.value[id] = data
     window.$message.success('余额查询成功')
   } catch (error) {

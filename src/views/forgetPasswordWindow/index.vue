@@ -170,7 +170,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import Validation from '@/components/common/Validation.vue'
 import { useSettingStore } from '@/stores/setting'
-import { forgetPassword, getCaptcha, sendCaptcha } from '@/utils/ImRequestUtils'
+import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 
 const settingStore = useSettingStore()
@@ -269,38 +269,32 @@ const validateMinLength = (value: string) => value.length >= 6
 
 // 获取图片验证码
 const getCaptchaImage = async () => {
-  // 检查是否可以获取新的验证码
   if (captchaInCooldown.value) {
-    // 显示剩余冷却时间
     window.$message.warning(t('auth.forget.messages.captcha_cooldown', { seconds: captchaCooldownRemaining.value }))
     return
   }
 
   try {
-    // 更新上次获取时间并设置冷却状态
     lastCaptchaTime.value = Date.now()
     captchaInCooldown.value = true
 
-    const result = await getCaptcha()
-    captchaImage.value = result.img
-    formData.value.uuid = result.uuid
+    const result = await MatrixAuthService.getCaptcha()
+    captchaImage.value = result.mxc_url
+    formData.value.uuid = result.session
 
-    // 获取成功后，启动冷却计时器
     timerWorker.postMessage({
       type: 'startTimer',
       msgId: CAPTCHA_TIMER_ID,
-      duration: captchaInterval // 使用设定的冷却时间
+      duration: captchaInterval
     })
   } catch (error) {
     console.error('获取验证码失败', error)
-    // 获取失败时解除冷却状态，允许重试
     captchaInCooldown.value = false
   }
 }
 
 // 发送邮箱验证码
 const sendEmailCode = async () => {
-  // 邮箱校验
   if (!formData.value.email) {
     window.$message.warning(t('auth.forget.messages.enter_email'))
     return
@@ -311,36 +305,26 @@ const sendEmailCode = async () => {
     return
   }
 
-  // 设置loading状态
   sendingEmailCode.value = true
 
   try {
-    await sendCaptcha({
-      email: formData.value.email,
-      uuid: formData.value.uuid,
-      operationType: 'forgot',
-      templateCode: 'PASSWORD_EDIT'
-    })
+    await MatrixAuthService.requestEmailToken(formData.value.email, 1)
 
     window.$message.success(t('auth.forget.messages.code_sent'))
 
-    // 接口成功返回后才开始倒计时 - 使用 Web Worker
     sendBtnDisabled.value = true
     countDown.value = 60
     emailCodeBtnText.value = t('auth.forget.actions.retry_in', { seconds: countDown.value })
 
-    // 发送消息给 Worker 开始计时
     timerWorker.postMessage({
       type: 'startTimer',
       msgId: EMAIL_TIMER_ID,
-      duration: 60 * 1000 // 60秒，单位毫秒
+      duration: 60 * 1000
     })
   } catch (error) {
     console.error('发送验证码失败', error)
-    // 验证码可能错误，刷新图片验证码
     getCaptchaImage()
   } finally {
-    // 无论成功或失败，都需要关闭loading状态
     sendingEmailCode.value = false
   }
 }
@@ -376,15 +360,7 @@ const submitNewPassword = async () => {
     await (passwordFormRef.value as any).validate()
     submitLoading.value = true
 
-    // 调用忘记密码接口
-    await forgetPassword({
-      email: formData.value.email,
-      code: formData.value.emailCode,
-      uuid: formData.value.uuid,
-      password: passwordForm.value.password,
-      confirmPassword: passwordForm.value.confirmPassword,
-      key: 'PASSWORD_EDIT'
-    })
+    await MatrixAuthService.forgetPassword(formData.value.email)
 
     currentStep.value = 3
     stepStatus.value = 'finish'

@@ -132,7 +132,7 @@ import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { useGroupStore } from '@/stores/group'
-import { getGroupInfo } from '@/utils/ImRequestUtils'
+import { matrixGroupService } from '@/services/matrix'
 
 const userStore = useUserStore()
 const contactStore = useContactStore()

@@ -62,7 +62,7 @@ class MatrixFriendService {
     // Mapping legacy events to current SDK events where applicable
     // FriendAdded/FriendUpdated don't exist in SDK directly, we rely on ListUpdated
     // But we can listen to other specific events:
-    
+
     this.friendManager.on(FriendEvent.Removed, (userId: string) => {
       this.updateSyncState()
       this.emit('friendRemoved', userId)
@@ -120,7 +120,7 @@ class MatrixFriendService {
 
   async getFriend(userId: string): Promise<Friend | undefined> {
     const friends = await this.getFriends()
-    return friends.find(f => f.userId === userId)
+    return friends.find((f) => f.userId === userId)
   }
 
   async isFriend(userId: string): Promise<boolean> {
@@ -257,17 +257,44 @@ class MatrixFriendService {
     }
 
     try {
-      // Temporary fallback if SDK does not have setFriendStatus
+      const SPECIAL_FRIENDS_EVENT_TYPE = 'm.special_friends'
+      const content = client.getAccountData(SPECIAL_FRIENDS_EVENT_TYPE) as { special_friends?: string[] } | undefined
+      const currentList = content?.special_friends || []
+
+      let newList: string[]
+      if (status === 'favorite') {
+        if (!currentList.includes(userId)) {
+          newList = [...currentList, userId]
+        } else {
+          newList = currentList
+        }
+        await client.setAccountData(SPECIAL_FRIENDS_EVENT_TYPE, { special_friends: newList })
+      } else if (currentList.includes(userId)) {
+        newList = currentList.filter((id: string) => id !== userId)
+        await client.setAccountData(SPECIAL_FRIENDS_EVENT_TYPE, { special_friends: newList })
+      }
+
       if (typeof (this.friendManager as any).setFriendStatus === 'function') {
         await (this.friendManager as any).setFriendStatus(userId, status)
-      } else {
-        // Mock success
-        info(`[MatrixFriend] setFriendStatus mocked for ${userId}`)
       }
       info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
     } catch (err) {
       error(`[MatrixFriend] 设置好友状态失败: ${err}`)
       throw err
+    }
+  }
+
+  async getSpecialFriends(): Promise<string[]> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      return []
+    }
+    try {
+      const content = client.getAccountData('m.special_friends') as { special_friends?: string[] } | undefined
+      return content?.special_friends || []
+    } catch (err) {
+      error(`[MatrixFriend] 获取特别关注好友失败: ${err}`)
+      return []
     }
   }
 

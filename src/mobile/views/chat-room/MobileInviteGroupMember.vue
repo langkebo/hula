@@ -101,7 +101,7 @@ import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
 import { useChatStore } from '@/stores/chat'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { inviteGroupMember } from '@/utils/ImRequestUtils'
+import { matrixGroupService } from '@/services/matrix'
 import router from '@/router'
 
 defineOptions({
@@ -160,10 +160,11 @@ const handleInvite = async () => {
 
   isLoading.value = true
   try {
-    await inviteGroupMember({
-      roomId: globalStore.currentSessionRoomId,
-      uidList: selectedList.value
-    })
+    await Promise.all(
+      selectedList.value.map((uid: string) =>
+        matrixGroupService.inviteGroupMember(globalStore.currentSessionRoomId, uid)
+      )
+    )
 
     window.$message.success(`成功邀请 ${selectedList.value.length} 位好友`)
     // 返回群设置页面

@@ -66,7 +66,7 @@ import { useGroupStore } from '@/stores/group'
 import { useGlobalStore } from '@/stores/global'
 import { useUserStore } from '@/stores/user'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { getAnnouncementDetail } from '@/utils/ImRequestUtils'
+import { matrixAnnouncementService } from '@/services/matrix'
 
 defineOptions({
   name: 'mobileChatNoticeDetail'
@@ -118,11 +118,17 @@ const fetchAnnouncementDetail = async () => {
   try {
     loading.value = true
 
-    const data = await getAnnouncementDetail({
-      roomId: globalStore.currentSessionRoomId,
-      announcementId: route.params.id as string
-    })
-    announcement.value = data
+    const data = await matrixAnnouncementService.getAnnouncementById(
+      globalStore.currentSessionRoomId,
+      route.params.id as string
+    )
+    if (data) {
+      announcement.value = {
+        ...data,
+        uid: data.authorId,
+        createTime: data.createdAt
+      }
+    }
   } catch (err) {
     console.error('获取公告详情失败:', err)
     error.value = '获取公告详情失败，请重试'

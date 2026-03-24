@@ -476,13 +476,13 @@ export const useMsgInput = (messageInputDom: Ref) => {
       if (!retainRawContent(contentType))
         msgInput.value = messageInputDom.value.innerHTML.replace(replyDiv.outerHTML, '')
     }
-    const msg = await messageStrategy.getMsg(msgInput.value, reply.value)
+    const msg = await messageStrategy.getMsg(msgInput.value, reply.value as any)
     const atUidList = extractAtUserIds(msgInput.value, groupStore.userList)
     const tempMsgId = 'T' + Date.now().toString()
 
     // 根据消息类型创建消息体
     const messageBody = {
-      ...messageStrategy.buildMessageBody(msg, reply),
+      ...messageStrategy.buildMessageBody(msg, reply.value as any),
       atUidList
     }
 
@@ -511,14 +511,16 @@ export const useMsgInput = (messageInputDom: Ref) => {
       // 如果是图片或表情消息,需要先上传文件
       if (msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) {
         // TODO: 如果使用的是默认上传方式,则uploadFile方法就会返回上传和下载链接了，但是使用七牛云上传方式则需要调用doUpload方法后才会返回对应的下载链接
-        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
+        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
           provider: UploadProviderEnum.QINIU
         })
-        const doUploadResult = await messageStrategy.doUpload(msg.path, uploadUrl, config)
+        const doUploadResult = await messageStrategy.doUpload(msg.path as string, uploadUrl, config as any)
         const uploadResult = doUploadResult as { qiniuUrl?: string } | undefined
         // 更新消息体中的URL为服务器URL(判断使用的是七牛云还是默认上传方式),如果没有provider就默认赋值downloadUrl
-        messageBody.url =
-          config?.provider && config?.provider === UploadProviderEnum.QINIU ? uploadResult?.qiniuUrl : downloadUrl
+        ;(messageBody as any).url =
+          (config as any)?.provider && (config as any)?.provider === UploadProviderEnum.QINIU
+            ? uploadResult?.qiniuUrl
+            : downloadUrl
         delete (messageBody as any).path // 删除临时路径
 
         // 更新临时消息的URL
@@ -533,21 +535,21 @@ export const useMsgInput = (messageInputDom: Ref) => {
         // 先上传缩略图（使用去重功能）
         let uploadResult: string
         if (messageStrategy.uploadThumbnail && messageStrategy.doUploadThumbnail) {
-          const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(msg.thumbnail, {
+          const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(msg.thumbnail as File, {
             provider: UploadProviderEnum.QINIU
           })
           const thumbnailUploadResult = (await messageStrategy.doUploadThumbnail(
-            msg.thumbnail,
+            msg.thumbnail as File,
             thumbnailUploadInfo.uploadUrl,
-            thumbnailUploadInfo.config
+            thumbnailUploadInfo.config as any
           )) as { qiniuUrl?: string } | undefined
           uploadResult =
-            thumbnailUploadInfo.config?.provider === UploadProviderEnum.QINIU
+            (thumbnailUploadInfo.config as any)?.provider === UploadProviderEnum.QINIU
               ? thumbnailUploadResult?.qiniuUrl || thumbnailUploadInfo.downloadUrl
               : thumbnailUploadInfo.downloadUrl
         } else {
           uploadResult = await useUpload()
-            .uploadFile(msg.thumbnail, {
+            .uploadFile(msg.thumbnail as File, {
               provider: UploadProviderEnum.QINIU,
               scene: UploadSceneEnum.CHAT
             })
@@ -557,19 +559,21 @@ export const useMsgInput = (messageInputDom: Ref) => {
         }
 
         // 再上传视频文件
-        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
+        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
           provider: UploadProviderEnum.QINIU
         })
-        const doUploadResult = (await messageStrategy.doUpload(msg.path, uploadUrl, config)) as
+        const doUploadResult = (await messageStrategy.doUpload(msg.path as string, uploadUrl, config as any)) as
           | { qiniuUrl?: string }
           | undefined
-        messageBody.url =
-          config?.provider && config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
-        delete messageBody.path // 删除临时路径
-        messageBody.thumbUrl = uploadResult
-        messageBody.thumbSize = msg.thumbnail.size
-        messageBody.thumbWidth = 300
-        messageBody.thumbHeight = 150
+        ;(messageBody as any).url =
+          (config as any)?.provider && (config as any)?.provider === UploadProviderEnum.QINIU
+            ? doUploadResult?.qiniuUrl
+            : downloadUrl
+        delete (messageBody as any).path // 删除临时路径
+        ;(messageBody as any).thumbUrl = uploadResult
+        ;(messageBody as any).thumbSize = (msg.thumbnail as File).size
+        ;(messageBody as any).thumbWidth = 300
+        ;(messageBody as any).thumbHeight = 150
 
         // 更新临时消息的URL
         chatStore.updateMsg({
@@ -585,19 +589,23 @@ export const useMsgInput = (messageInputDom: Ref) => {
         payload: {
           id: tempMsgId,
           roomId: targetRoomId,
-          msgType: msg.type,
+          msgType: msg.type as MsgEnum,
           body: messageBody
         }
       })
 
       // 消息发送成功后释放预览URL
-      if ((msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) && msg.url.startsWith('blob:')) {
-        URL.revokeObjectURL(msg.url)
+      if ((msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) && (msg as any).url?.startsWith('blob:')) {
+        URL.revokeObjectURL((msg as any).url)
       }
 
       // 释放视频缩略图的本地预览URL
-      if (msg.type === MsgEnum.VIDEO && messageBody.thumbUrl && messageBody.thumbUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(messageBody.thumbUrl)
+      if (
+        msg.type === MsgEnum.VIDEO &&
+        (messageBody as any).thumbUrl &&
+        (messageBody as any).thumbUrl.startsWith('blob:')
+      ) {
+        URL.revokeObjectURL((messageBody as any).thumbUrl)
       }
     } catch (error) {
       console.error('消息发送失败:', error)
@@ -607,13 +615,17 @@ export const useMsgInput = (messageInputDom: Ref) => {
       })
 
       // 释放预览URL
-      if ((msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) && msg.url.startsWith('blob:')) {
-        URL.revokeObjectURL(msg.url)
+      if ((msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) && (msg as any).url?.startsWith('blob:')) {
+        URL.revokeObjectURL((msg as any).url)
       }
 
       // 释放视频缩略图的本地预览URL
-      if (msg.type === MsgEnum.VIDEO && messageBody.thumbUrl && messageBody.thumbUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(messageBody.thumbUrl)
+      if (
+        msg.type === MsgEnum.VIDEO &&
+        (messageBody as any).thumbUrl &&
+        (messageBody as any).thumbUrl.startsWith('blob:')
+      ) {
+        URL.revokeObjectURL((messageBody as any).thumbUrl)
       }
     }
   }
@@ -1276,6 +1288,86 @@ export const useMsgInput = (messageInputDom: Ref) => {
     }
   }
 
+  const sendBeaconDirect = async (beaconData: { description: string; timeout: number; isLive: boolean }) => {
+    const targetRoomId = globalStore.currentSessionRoomId
+    try {
+      const tempMsgId = 'T' + Date.now().toString()
+      const messageStrategy = messageStrategyMap[MsgEnum.BEACON]
+
+      // 将位置数据转换为JSON字符串作为消息内容
+      const content = JSON.stringify(beaconData)
+
+      // 构建位置消息
+      const msg = messageStrategy.getMsg(content, reply.value as any) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as any)
+
+      // 创建临时消息对象
+      const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
+
+      // 推送临时消息到聊天列表
+      chatStore.pushMsg(tempMsg)
+      chatStore.updateMsg({
+        msgId: tempMsgId,
+        status: MessageStatusEnum.SENDING
+      })
+
+      await sendWithTracking({
+        tempMsgId,
+        payload: {
+          id: tempMsgId,
+          roomId: targetRoomId,
+          msgType: MsgEnum.BEACON,
+          body: messageBody
+        }
+      })
+    } catch (error) {
+      console.error('实时位置共享消息发送失败:', error)
+    }
+  }
+
+  const sendLinkPreviewDirect = async (linkData: {
+    url: string
+    title: string
+    description?: string
+    imageUrl?: string
+    siteName?: string
+  }) => {
+    const targetRoomId = globalStore.currentSessionRoomId
+    try {
+      const tempMsgId = 'T' + Date.now().toString()
+      const messageStrategy = messageStrategyMap[MsgEnum.LINK_PREVIEW]
+
+      // 将链接数据转换为JSON字符串作为消息内容
+      const content = JSON.stringify(linkData)
+
+      // 构建链接预览消息
+      const msg = messageStrategy.getMsg(content, reply.value as any) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as any)
+
+      // 创建临时消息对象
+      const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
+
+      // 推送临时消息到聊天列表
+      chatStore.pushMsg(tempMsg)
+      chatStore.updateMsg({
+        msgId: tempMsgId,
+        status: MessageStatusEnum.SENDING
+      })
+
+      await sendWithTracking({
+        tempMsgId,
+        payload: {
+          id: tempMsgId,
+          roomId: targetRoomId,
+          msgType: MsgEnum.LINK_PREVIEW,
+          body: messageBody
+        }
+      })
+    } catch (error) {
+      console.error('链接预览消息发送失败:', error)
+    }
+  }
+
   /**
    * 发送地图的函数
    * @param locationData 地图数据
@@ -1296,8 +1388,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
       const content = JSON.stringify(locationData)
 
       // 构建位置消息
-      const msg = messageStrategy.getMsg(content, reply.value)
-      const messageBody = messageStrategy.buildMessageBody(msg, reply)
+      const msg = messageStrategy.getMsg(content, reply.value as any) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as any)
 
       // 创建临时消息对象
       const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
@@ -1339,8 +1431,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
       const messageStrategy = messageStrategyMap[MsgEnum.EMOJI]
 
       // 构建表情包消息
-      const msg = messageStrategy.getMsg(emojiUrl, reply.value)
-      const messageBody = messageStrategy.buildMessageBody(msg, reply)
+      const msg = messageStrategy.getMsg(emojiUrl, reply.value as any) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as any)
 
       // 创建临时消息对象
       const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
@@ -1381,6 +1473,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
     sendLocationDirect,
     sendFilesDirect,
     sendVoiceDirect,
+    sendBeaconDirect,
+    sendLinkPreviewDirect,
     sendEmojiDirect,
     personList,
     ait,

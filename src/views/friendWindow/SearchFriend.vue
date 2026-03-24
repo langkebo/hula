@@ -75,6 +75,9 @@
                     <n-flex vertical justify="center" :size="10" class="flex-1">
                       <n-space align="center" :size="10">
                         <span class="text-(14px [--text-color])">{{ item.name }}</span>
+                        <svg v-if="item.isFavorite" class="size-14px color-#f0a020">
+                          <use href="#star"></use>
+                        </svg>
                         <template v-for="account in item.itemIds" :key="account">
                           <img class="size-20px" :src="badgeStore.badgeById(account)?.img" alt="" />
                         </template>
@@ -160,7 +163,7 @@ import { useGroupStore } from '@/stores/group'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { searchFriend, searchGroup } from '@/utils/ImRequestUtils'
+import { matrixContactService, matrixGroupService, matrixFriendService } from '@/services/matrix'
 
 const { createWebviewWindow } = useWindow()
 const contactStore = useContactStore()
@@ -259,7 +262,7 @@ const handleSearch = useDebounceFn(async () => {
   try {
     if (searchType.value === 'group') {
       // 调用群聊搜索接口
-      const res = await searchGroup({ account: searchValue.value })
+      const res = await matrixGroupService.searchGroup(searchValue.value)
       searchResults.value = res.map((group: any) => ({
         account: group.account,
         name: group.name,
@@ -270,12 +273,14 @@ const handleSearch = useDebounceFn(async () => {
       }))
     } else if (searchType.value === 'user') {
       // 调用好友搜索接口
-      const res = await searchFriend({ key: searchValue.value })
+      const res = await matrixContactService.searchFriend(searchValue.value)
+      const specialFriends = await matrixFriendService.getSpecialFriends()
       searchResults.value = res.map((user: any) => ({
         uid: user.uid,
         name: user.name,
         avatar: user.avatar,
-        account: user.account
+        account: user.account,
+        isFavorite: specialFriends.includes(user.uid)
       }))
     } else {
       // 推荐标签搜索结果

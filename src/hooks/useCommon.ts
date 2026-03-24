@@ -13,7 +13,7 @@ import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { removeTag } from '@/utils/Formatting'
 import { SUPPORTED_IMAGE_EXTENSIONS, getFileExtension } from '@/utils/FileType'
-import { getSessionDetailWithFriends } from '@/utils/ImRequestUtils'
+import { matrixSessionService } from '@/services/matrix'
 import { getImageCache } from '@/utils/PathUtil.ts'
 import { isPathUploadFile, type UploadFile } from '@/utils/FileType'
 import { isMobile } from '@/utils/PlatformConstants'
@@ -226,7 +226,8 @@ export const useCommon = () => {
     // 将节点插入范围最前面添加节点
     if (type === MsgEnum.AIT) {
       const domObj = dom as any
-      const mentionText = typeof dom === 'object' && dom !== null ? domObj.name || domObj.text || domObj.label || '' : dom || ''
+      const mentionText =
+        typeof dom === 'object' && dom !== null ? domObj.name || domObj.text || domObj.label || '' : dom || ''
       const mentionUid = typeof dom === 'object' && dom !== null ? domObj.uid : undefined
       // 创建一个span标签节点
       const spanNode = document.createElement('span')
@@ -839,7 +840,11 @@ export const useCommon = () => {
     }
 
     info('打开消息会话')
-    const res = await getSessionDetailWithFriends({ id: uid, roomType: type })
+    const res = await matrixSessionService.getSessionDetailWithFriends({ id: uid, roomType: type })
+    if (!res) {
+      window.$message.error('获取会话详情失败')
+      return
+    }
     // 把隐藏的会话先显示
     try {
       await invokeWithErrorHandler('hide_contact_command', { data: { roomId: res.roomId, hide: false } })

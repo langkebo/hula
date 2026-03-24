@@ -219,14 +219,7 @@ import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { useMitt } from '@/hooks/useMitt'
 import { useUserStore } from '@/stores/user'
-import {
-  chatRolePage,
-  chatRoleCreate,
-  chatRoleUpdate,
-  chatRoleDelete,
-  chatRoleCategoryList,
-  modelPage
-} from '@/utils/ImRequestUtils'
+import { matrixChatRoleService, matrixModelService } from '@/services/matrix'
 
 const showModal = defineModel<boolean>({ default: false })
 const emit = defineEmits<{
@@ -359,7 +352,7 @@ const handleCrop = async (cropBlob: Blob) => {
 // 加载类别列表
 const loadCategoryList = async () => {
   try {
-    const data = await chatRoleCategoryList()
+    const data = await matrixChatRoleService.categoryList()
     if (data && data.length > 0) {
       categoryOptions.value = data
     }
@@ -371,7 +364,7 @@ const loadCategoryList = async () => {
 // 加载模型列表
 const loadModelList = async () => {
   try {
-    const data = await modelPage({ pageNo: 1, pageSize: 100 })
+    const data = await matrixModelService.page({ pageNo: 1, pageSize: 100 })
     modelOptions.value = (data.list || []).map((item: any) => ({
       label: item.name,
       value: item.id
@@ -385,7 +378,7 @@ const loadModelList = async () => {
 const loadRoleList = async () => {
   loading.value = true
   try {
-    const data = await chatRolePage({
+    const data = await matrixChatRoleService.page({
       pageNo: pagination.value.pageNo,
       pageSize: pagination.value.pageSize
     })
@@ -463,11 +456,11 @@ const handleSubmit = async () => {
     if (editingRole.value) {
       // 更新
       submitData.id = editingRole.value.id
-      await chatRoleUpdate(submitData)
+      await matrixChatRoleService.update(submitData)
       window.$message.success('角色更新成功')
     } else {
       // 创建
-      await chatRoleCreate(submitData)
+      await matrixChatRoleService.create(submitData)
       window.$message.success('角色创建成功')
     }
 
@@ -509,7 +502,7 @@ const resetForm = () => {
 // 删除角色
 const handleDelete = async (id: string) => {
   try {
-    await chatRoleDelete({ id })
+    await matrixChatRoleService.delete({ id })
     window.$message.success('角色删除成功')
     loadRoleList()
     emit('refresh')

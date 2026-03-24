@@ -208,17 +208,18 @@ export function createRetryableRequest<T>(
 /**
  * 重试装饰器
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function retryable(config?: Partial<RetryConfig>) {
-  return <T extends (...args: any[]) => Promise<any>>(
-    _target: any,
+  return <T extends (...args: unknown[]) => Promise<unknown>>(
+    _target: unknown,
     _propertyKey: string,
     descriptor: TypedPropertyDescriptor<T>
   ) => {
     const originalMethod = descriptor.value!
 
-    descriptor.value = async function (this: any, ...args: any[]) {
-      const self = this
-      return withRetry(() => originalMethod.apply(self, args), config)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    descriptor.value = async function (this: any, ...args: unknown[]) {
+      return withRetry(() => originalMethod.apply(this, args), config)
     } as T
 
     return descriptor

@@ -95,8 +95,7 @@ import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { matrixPushService } from '@/services/matrix'
-import type { IPushRule } from '@/types/matrix-js-sdk'
-import { PushRuleKind, TweakName } from 'matrix-js-sdk'
+import { PushRuleKind, TweakName, type IPushRule } from '@/types/matrix-js-sdk'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -135,10 +134,12 @@ async function loadPushRules() {
 
     const messageRule = roomRules?.find((r) => r.rule_id === '.m.rule.message')
     if (messageRule) {
-      if (messageRule.actions?.some((a) => {
-        const action = a as { set_tweak?: string } | string
-        return typeof action === 'string' ? action === 'notify' : action.set_tweak === 'highlight'
-      })) {
+      if (
+        messageRule.actions?.some((a) => {
+          const action = a as { set_tweak?: string } | string
+          return typeof action === 'string' ? action === 'notify' : action.set_tweak === 'highlight'
+        })
+      ) {
         groupNotifyMode.value = 'all'
       }
     }

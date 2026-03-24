@@ -21,7 +21,7 @@ import router from '@/router'
 import { useGlobalStore } from '@/stores/global'
 import { useUserStore } from '@/stores/user'
 import { useGroupStore } from '@/stores/group'
-import { scanQRCodeAPI } from '@/utils/ImRequestUtils'
+import { matrixQrLoginService } from '@/services/matrix'
 
 interface ScanData {
   type: string // 必须有
@@ -36,15 +36,17 @@ const handleScanLogin = async (data: ScanData) => {
 
   const { qrId } = data
 
-  const result = await scanQRCodeAPI({ qrId: qrId })
+  await matrixQrLoginService.handleScan(qrId as string)
+
+  const qrResult = await matrixQrLoginService.generateQR()
 
   router.push({
     name: 'mobileConfirmQRLogin',
     params: {
-      ip: result.ip,
-      expireTime: result.expireTime,
-      deviceType: result.deviceType,
-      locPlace: Object.hasOwn(result, 'locPlace') ? (result.locPlace ? result.locPlace : '深圳') : '深圳',
+      ip: qrResult?.ip || '',
+      expireTime: qrResult?.expireTime || '',
+      deviceType: qrResult?.deviceType || '',
+      locPlace: qrResult?.locPlace || '',
       qrId
     }
   })

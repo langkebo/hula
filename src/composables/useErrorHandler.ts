@@ -1,158 +1,174 @@
-import { ref, computed } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
-import { useMessage } from 'naive-ui'
+/**
+ * 统一错误处理 Composable
+ * 提供统一的错误处理、日志记录和用户提示
+ */
+import { logger } from '@/utils/Logger'
 
-export type ErrorLevel = 'info' | 'warning' | 'error' | 'success'
+export interface ErrorHandlerOptions {
+  /** 是否显示用户提示 */
+  showMessage?: boolean
+  /** 是否记录日志 */
+  logError?: boolean
+  /** 是否上报错误 */
+  reportError?: boolean
+  /** 自定义错误消息前缀 */
+  prefix?: string
+}
 
-export interface ErrorLog {
-  id: string
-  message: string
-  level: ErrorLevel
-  timestamp: number
-  context?: string
-  stack?: string
+const DEFAULT_OPTIONS: Required<ErrorHandlerOptions> = {
+  showMessage: true,
+  logError: true,
+  reportError: false,
+  prefix: ''
 }
 
 /**
- * 全局错误日志存储
+ * 获取错误消息文本
  */
-const errorLogs = ref<ErrorLog[]>([])
+function getErrorText(error: unknown, prefix: string): string {
+  let errorMessage: string
+  if (error instanceof Error) {
+    errorMessage = error.message
+  } else if (typeof error === 'string') {
+    errorMessage = error
+  } else {
+    errorMessage = String(error)
+  }
+  return prefix ? `${prefix}: ${errorMessage}` : errorMessage
+}
 
 /**
- * Error Handling Composable
- * 提供统一的错误处理、错误日志和用户通知功能
+ * 统一错误处理 hook
+ * @param defaultOptions 默认选项
  */
-export function useErrorHandler() {
-  const message = useMessage()
+export function useErrorHandler(defaultOptions?: ErrorHandlerOptions) {
+  const mergedOptions = { ...DEFAULT_OPTIONS, ...defaultOptions }
 
-  // 生成唯一 ID
-  const generateId = () => `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  /**
+   * 处理错误
+   * @param error 错误对象
+   * @param context 错误上下文/描述
+   * @param options 额外选项
+   */
+  function handleError(error: unknown, context: string, options?: ErrorHandlerOptions): void {
+    const opts = { ...mergedOptions, ...options }
+    const _prefix = opts.prefix || context
+    const errorText = getErrorText(error, '')
 
-  // 记录错误
-  const logError = (message: string, level: ErrorLevel = 'error', context?: string, stack?: string): string => {
-    const id = generateId()
-    const errorLog: ErrorLog = {
-      id,
-      message,
-      level,
-      timestamp: Date.now(),
-      context,
-      stack
-    }
-    errorLogs.value.unshift(errorLog) // 最新错误放在前面
-
-    // 限制日志数量，防止内存溢出
-    if (errorLogs.value.length > 100) {
-      errorLogs.value = errorLogs.value.slice(0, 100)
+    // 1. 记录日志
+    if (opts.logError) {
+      logger.error(`[${context}]`, error)
     }
 
-    return id
+    // 2. 显示用户提示
+    if (opts.showMessage) {
+      window.$message?.error(errorText)
+    }
+
+    // 3. 上报错误（可选）
+    if (opts.reportError) {
+      // TODO: 接入错误上报服务
+      // reportError(error, { context, ...opts })
+    }
   }
 
-  // 清理指定错误
-  const clearError = (id: string) => {
-    errorLogs.value = errorLogs.value.filter((log) => log.id !== id)
-  }
-
-  // 清理所有错误
-  const clearAllErrors = () => {
-    errorLogs.value = []
-  }
-
-  // 获取错误日志
-  const getErrorLogs = computed(() => errorLogs.value)
-
-  // 获取错误数量
-  const errorCount = computed(() => errorLogs.value.length)
-
-  // 显示错误消息给用户
-  const notifyError = (msg: string, duration = 5000) => {
-    message.error(msg, { duration })
-    logError(msg, 'error')
-  }
-
-  const notifyWarning = (msg: string, duration = 4000) => {
-    message.warning(msg, { duration })
-    logError(msg, 'warning')
-  }
-
-  const notifySuccess = (msg: string, duration = 3000) => {
-    message.success(msg, { duration })
-  }
-
-  const notifyInfo = (msg: string, duration = 3000) => {
-    message.info(msg, { duration })
-  }
-
-  // 统一处理 API 错误
-  const handleApiError = async <T>(
-    promise: Promise<T>,
-    options: {
-      errorMsg?: string
-      context?: string
-      onError?: (error: unknown) => void
-    } = {}
-  ): Promise<[T | null, Error | null]> => {
-    const { errorMsg = '操作失败，请稍后重试', context, onError } = options
-
-    try {
-      const data = await promise
-      return [data, null]
-    } catch (error: unknown) {
-      const errorMessage = errorMsg || (error instanceof Error ? error.message : String(error)) || '未知错误'
-      const errorStack = error instanceof Error ? error.stack : undefined
-      notifyError(errorMessage)
-      logError(errorMessage, 'error', context, errorStack)
-
-      if (onError) {
-        onError(error)
+  /**
+   * 异步错误处理包装器
+   * 用于包装 async 函数，自动捕获并处理错误
+   * @param fn 要包装的异步函数
+   * @param context 错误上下文
+   * @param options 错误处理选项
+   */
+  function withErrorHandler<T>(
+    fn: (...args: unknown[]) => Promise<T>,
+    context: string,
+    options?: ErrorHandlerOptions
+  ): (...args: unknown[]) => Promise<T | undefined> {
+    return async (...args: unknown[]): Promise<T | undefined> => {
+      try {
+        return await fn(...args)
+      } catch (error) {
+        handleError(error, context, options)
+        return undefined
       }
-
-      return [null, error instanceof Error ? error : new Error(String(error))]
     }
   }
 
-  // 全局错误捕获 handler（用于 window.onerror）
-  const createGlobalErrorHandler = (context?: string) => {
-    return (message: string, source?: string, lineno?: number, colno?: number, error?: Error) => {
-      const errorMsg = `${message} at ${source}:${lineno}:${colno}`
-      logError(errorMsg, 'error', context, error?.stack)
-      return false // 不阻止默认错误处理
+  /**
+   * 同步错误处理包装器
+   * 用于包装可能抛出异常的同步函数
+   * @param fn 要包装的函数
+   * @param context 错误上下文
+   * @param options 错误处理选项
+   */
+  function withErrorHandlerSync<T>(
+    fn: (...args: unknown[]) => T,
+    context: string,
+    options?: ErrorHandlerOptions
+  ): (...args: unknown[]) => T | undefined {
+    return (...args: unknown[]): T | undefined => {
+      try {
+        return fn(...args)
+      } catch (error) {
+        handleError(error, context, options)
+        return undefined
+      }
     }
   }
 
-  // Promise rejection handler
-  const createUnhandledRejectionHandler = (context?: string) => {
-    return (reason: unknown) => {
-      const errorMsg = reason instanceof Error ? reason.message : String(reason)
-      const errorStack = reason instanceof Error ? reason.stack : undefined
-      logError(errorMsg, 'error', context, errorStack)
+  /**
+   * 试运行函数，忽略错误
+   * @param fn 要运行的函数
+   * @param errorHandler 可选的自定义错误处理
+   */
+  function tryRun(fn: () => void, errorHandler?: (error: unknown) => void): void {
+    try {
+      fn()
+    } catch (error) {
+      if (errorHandler) {
+        errorHandler(error)
+      } else {
+        logger.warn('[tryRun] Error ignored:', error)
+      }
     }
   }
 
-  // 组件错误捕获
-  const createVueErrorHandler = (context?: string) => {
-    return (err: Error, _instance: ComponentPublicInstance | null, info: string) => {
-      const errorMsg = `${err.message} | Info: ${info}`
-      logError(errorMsg, 'error', context, err.stack)
-      notifyError('应用发生错误，请刷新页面')
+  /**
+   * 异步试运行函数，忽略错误
+   * @param fn 要运行的异步函数
+   * @param errorHandler 可选的自定义错误处理
+   */
+  async function tryRunAsync<T>(fn: () => Promise<T>, errorHandler?: (error: unknown) => void): Promise<T | undefined> {
+    try {
+      return await fn()
+    } catch (error) {
+      if (errorHandler) {
+        errorHandler(error)
+      } else {
+        logger.warn('[tryRunAsync] Error ignored:', error)
+      }
+      return undefined
     }
   }
 
   return {
-    errorLogs,
-    errorCount,
-    logError,
-    clearError,
-    clearAllErrors,
-    getErrorLogs,
-    notifyError,
-    notifyWarning,
-    notifySuccess,
-    notifyInfo,
-    handleApiError,
-    createGlobalErrorHandler,
-    createUnhandledRejectionHandler,
-    createVueErrorHandler
+    handleError,
+    withErrorHandler,
+    withErrorHandlerSync,
+    tryRun,
+    tryRunAsync
   }
 }
+
+/**
+ * 全局错误处理实例 - 带默认配置
+ * 默认显示错误消息并记录日志
+ */
+export const globalErrorHandler = useErrorHandler({
+  showMessage: true,
+  logError: true,
+  reportError: false
+})
+
+// 导出便捷方法
+export const { handleError, withErrorHandler, withErrorHandlerSync, tryRun, tryRunAsync } = globalErrorHandler

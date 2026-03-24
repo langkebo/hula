@@ -51,13 +51,13 @@ import { useChatMain } from '@/hooks/useChatMain'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import { useWindow } from '@/hooks/useWindow'
-import type { MessageType } from '@/stores/chat'
+import type { MessageType } from '@/stores/message'
 import type { UserItem } from '@/services/types'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { getMsgList, getUserByIds } from '@/utils/ImRequestUtils'
+import { matrixMessageService, matrixContactService } from '@/services/matrix'
 
 type Msg = {
   msgId: string
@@ -72,8 +72,8 @@ const { openVideoViewer } = useVideoViewer()
 const { specialMenuList } = useChatMain(true, { disableHistoryActions: true })
 
 const choosedMsgs = ref<Msg[]>([])
-const msgs = ref<MessageType[]>([])
-const users = ref<UserItem[]>([])
+const msgs = ref<any[]>([])
+const users = ref<any[]>([])
 const route = useRoute()
 
 const userUid = computed(() => userStore.userInfo?.uid)
@@ -147,12 +147,12 @@ const handleVideoClick = async (videoUrl: string) => {
 
 const getAllMsg = async () => {
   const msgIds = choosedMsgs.value.map((msg) => msg.msgId)
-  msgs.value = await getMsgList({ msgIds })
+  msgs.value = await matrixMessageService.getMsgListByIds({ msgIds })
 }
 
 const getAllUserInfo = async () => {
   const uids = choosedMsgs.value.map((msg) => msg.fromUid)
-  users.value = await getUserByIds(uids)
+  users.value = await matrixContactService.getUserByIds(uids)
 }
 
 onMounted(async () => {

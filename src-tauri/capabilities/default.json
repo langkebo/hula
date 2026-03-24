@@ -107,17 +107,7 @@
         {
           "name": "powershell",
           "cmd": "powershell",
-          "args": true
-        },
-        {
-          "name": "systemPath",
-          "cmd": "cmd",
-          "args": [
-            "-c",
-            {
-              "validator": "\\S+"
-            }
-          ]
+          "args": false
         }
       ]
     },
@@ -125,7 +115,16 @@
       "identifier": "fs:write-files",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$LOCALAPPDATA/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$TEMP/**"
         }
       ]
     },
@@ -133,7 +132,16 @@
       "identifier": "fs:allow-mkdir",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$LOCALAPPDATA/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$TEMP/**"
         }
       ]
     },
@@ -141,7 +149,16 @@
       "identifier": "fs:read-dirs",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$LOCALAPPDATA/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$RESOURCE/**"
         }
       ]
     },
@@ -149,7 +166,16 @@
       "identifier": "fs:read-files",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$LOCALAPPDATA/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$RESOURCE/**"
         }
       ]
     },
@@ -157,7 +183,13 @@
       "identifier": "fs:allow-copy-file",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$TEMP/**"
         }
       ]
     },
@@ -165,7 +197,13 @@
       "identifier": "fs:allow-read-text-file",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$RESOURCE/**"
         }
       ]
     },
@@ -173,16 +211,16 @@
       "identifier": "http:default",
       "allow": [
         {
-          "url": "http://**"
+          "url": "https://localhost:**"
         },
         {
-          "url": "https://**"
+          "url": "http://localhost:**"
         },
         {
-          "url": "http://*:*"
+          "url": "https://127.0.0.1:**"
         },
         {
-          "url": "https://*:*"
+          "url": "http://127.0.0.1:**"
         }
       ]
     }

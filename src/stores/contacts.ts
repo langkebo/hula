@@ -175,20 +175,24 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       const friends = await matrixFriendService.getFriends()
       const dmRoomInfos = await matrixDirectMessageService.getDmRoomInfos()
 
+      const specialFriends = await matrixFriendService.getSpecialFriends()
+
       const contacts: MatrixContact[] = friends.map((friend) => {
         const dmRoom = dmRoomInfos.find((r) => r.invitees.includes(friend.userId) || r.inviter === friend.userId)
+        const isSpecial = specialFriends.includes(friend.userId)
         return {
           ...friendToContact(friend),
-          directRoomId: dmRoom?.roomId ?? friend.dmRoomId
+          directRoomId: dmRoom?.roomId ?? friend.dmRoomId,
+          friendStatus: isSpecial ? 'favorite' : (friend.status as FriendStatus | undefined)
         }
       })
 
       for (const dmRoom of dmRoomInfos) {
-        // 简单提取第一个非自己的参与者作为 partner
         const partnerId = dmRoom.invitees[0] || dmRoom.inviter || ''
         if (!partnerId) continue
-        
+
         if (!contacts.find((c) => c.userId === partnerId)) {
+          const isSpecial = specialFriends.includes(partnerId)
           contacts.push({
             userId: partnerId,
             uid: partnerId,
@@ -202,7 +206,8 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
             lastOptTime: dmRoom.lastMessage?.timestamp ?? Date.now(),
             hideMyPosts: false,
             hideTheirPosts: false,
-            directRoomId: dmRoom.roomId
+            directRoomId: dmRoom.roomId,
+            friendStatus: isSpecial ? ('favorite' as FriendStatus) : undefined
           })
         }
       }

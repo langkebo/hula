@@ -67,13 +67,7 @@ export const useCustomForwardTask = () => {
     }
 
     const messageStrategy = messageStrategyMap[MsgEnum.IMAGE]
-    const replyContext: ReplyContext = {
-      value: {
-        content: '',
-        key: 0,
-        accountName: ''
-      }
-    }
+    const replyContext = null
 
     const fileBuffer = task.bytes.slice().buffer
     const file = new File([fileBuffer], task.fileName, { type: task.mimeType })
@@ -81,17 +75,19 @@ export const useCustomForwardTask = () => {
     let msg: Awaited<ReturnType<typeof messageStrategy.getMsg>> | null = null
 
     try {
-      msg = await messageStrategy.getMsg('', replyContext.value, [file])
+      msg = await messageStrategy.getMsg('', replyContext, [file])
       const messageBody = messageStrategy.buildMessageBody(msg, replyContext)
 
-      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
+      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
         provider: UploadProviderEnum.QINIU
       })
-      const doUploadResult = await messageStrategy.doUpload(msg.path, uploadUrl, config)
+      const doUploadResult = await messageStrategy.doUpload(msg.path as string, uploadUrl, config as any)
 
       const uploadResult = doUploadResult as { qiniuUrl?: string } | undefined
       messageBody.url =
-        config?.provider && config?.provider === UploadProviderEnum.QINIU ? uploadResult?.qiniuUrl : downloadUrl
+        (config as any)?.provider && (config as any)?.provider === UploadProviderEnum.QINIU
+          ? uploadResult?.qiniuUrl
+          : downloadUrl
       delete messageBody.path
 
       if (!messageBody.width) {
@@ -106,8 +102,8 @@ export const useCustomForwardTask = () => {
 
       return messageBody
     } finally {
-      releaseBlobUrl(msg?.url)
-      await removeTempFile(msg?.path, { reason: '删除临时二维码文件失败' })
+      releaseBlobUrl(msg?.url as string)
+      await removeTempFile(msg?.path as string, { reason: '删除临时二维码文件失败' })
     }
   }
 

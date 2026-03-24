@@ -1,5 +1,8 @@
 <template>
   <div class="msg-input-container">
+    <!-- 位置选择弹窗 -->
+    <LocationModal v-model:visible="showLocationModal" @location-selected="handleLocationSelected" />
+
     <!-- 录音模式 -->
     <VoiceRecorder v-show="isVoiceMode" @cancel="handleVoiceCancel" @send="sendVoiceDirect" />
 
@@ -53,6 +56,51 @@
               "></div>
           </n-scrollbar>
         </ContextMenu>
+
+        <!-- 工具栏 -->
+        <div v-if="!isMobile()" class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-gray-200/50">
+          <!-- 位置共享 -->
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <n-button quaternary size="small" @click="showLocationModal = true">
+                <template #icon>
+                  <svg class="w-18px h-18px">
+                    <use href="#location"></use>
+                  </svg>
+                </template>
+              </n-button>
+            </template>
+            {{ t('message.location.share') || '位置共享' }}
+          </n-tooltip>
+
+          <!-- Beacon 信标 -->
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <n-button quaternary size="small" @click="handleBeaconClick">
+                <template #icon>
+                  <svg class="w-18px h-18px">
+                    <use href="#signal"></use>
+                  </svg>
+                </template>
+              </n-button>
+            </template>
+            {{ t('message.beacon.share') || '发送信标' }}
+          </n-tooltip>
+
+          <!-- 文件上传 -->
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <n-button quaternary size="small" @click="handleFileUploadClick">
+                <template #icon>
+                  <svg class="w-18px h-18px">
+                    <use href="#image"></use>
+                  </svg>
+                </template>
+              </n-button>
+            </template>
+            {{ t('editor.upload_file') || '上传文件' }}
+          </n-tooltip>
+        </div>
 
         <!-- 发送按钮 -->
         <div
@@ -244,6 +292,8 @@ import { useGroupStore } from '@/stores/group'
 import { MobilePanelStateEnum } from '@/enums'
 import { useI18n, I18nT } from 'vue-i18n'
 import type { UploadFile } from '@/utils/FileType'
+import LocationModal from './location/LocationModal.vue'
+import { matrixBeaconService } from '@/services/matrix/MatrixBeaconService'
 
 interface Props {
   isAIMode?: boolean
@@ -266,7 +316,7 @@ const arrow = ref(false)
 /** 输入框dom元素 */
 const messageInputDom = ref<HTMLElement>()
 const gloabalStore = useGlobalStore()
-const { currentSession: activeItem } = storeToRefs(gloabalStore)
+const { currentSession: activeItem, currentSessionRoomId } = storeToRefs(gloabalStore)
 /** ait 虚拟列表 */
 const virtualListInstAit = useTemplateRef<VirtualListInst>('virtualListInst-ait')
 /** AI 虚拟列表 */
@@ -278,6 +328,8 @@ const groupStore = useGroupStore()
 // 文件上传弹窗状态
 const showFileModal = ref(false)
 const pendingFiles = ref<UploadFile[]>([])
+const showLocationModal = ref(false)
+const isBeaconActive = ref(false)
 
 /** 引入useMsgInput的相关方法 */
 const {
@@ -365,6 +417,48 @@ const handleInternalInput = (e: Event) => {
 const showFileModalCallback = (files: UploadFile[]) => {
   pendingFiles.value = files
   showFileModal.value = true
+}
+
+/** 处理 Beacon 信标点击 */
+const handleBeaconClick = async () => {
+  if (!currentSessionRoomId.value) return
+
+  try {
+    // 请求位置权限并获取当前位置
+    const { useGeolocation } = await import('@/hooks/useGeolocation')
+    const { getCurrentPosition } = useGeolocation()
+
+    const position = await getCurrentPosition()
+    const { latitude, longitude } = position.coords
+
+    // 创建 Beacon
+    const beacon = await matrixBeaconService.createBeacon({
+      roomId: currentSessionRoomId.value,
+      description: '实时位置共享'
+    })
+
+    if (beacon) {
+      // 发送初始位置更新
+      await matrixBeaconService.updateBeaconLocation({
+        roomId: currentSessionRoomId.value,
+        beaconInfoEventId: beacon.event_id,
+        latitude,
+        longitude,
+        uncertainty: position.coords.accuracy ?? undefined
+      })
+
+      isBeaconActive.value = true
+      window.$message?.success(t('message.beacon.started') || '信标已启动')
+    }
+  } catch (error) {
+    console.error('[MsgInput] 启动 Beacon 失败:', error)
+    window.$message?.error(t('message.beacon.failed') || '信标启动失败')
+  }
+}
+
+/** 处理文件上传点击 */
+const handleFileUploadClick = () => {
+  showFileModalCallback([])
 }
 
 const onPaste = async (e: ClipboardEvent) => {

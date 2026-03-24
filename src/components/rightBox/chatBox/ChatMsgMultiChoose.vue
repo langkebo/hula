@@ -152,7 +152,9 @@ import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { mergeMsg } from '@/utils/ImRequestUtils'
+import { matrixForwardService } from '@/services/matrix/MatrixForwardService'
+import { matrixMessageService } from '@/services/matrix/MatrixMessageService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { sendMessageWithChannel } from '@/utils/MessageSender'
@@ -275,6 +277,22 @@ const isCustomImageTask = computed(
   () => customForwardTask.value?.type === MsgEnum.IMAGE && Boolean(customForwardTask.value?.previewUrl)
 )
 
+const forwardMessages = async (roomIds: string[], messageIds: MsgId[]) => {
+  const client = matrixClientService.getClient()
+  if (!client) {
+    throw new Error('Matrix client not initialized')
+  }
+
+  for (const roomId of roomIds) {
+    for (const msgIdInfo of messageIds) {
+      const event = await matrixMessageService.getRoomMessage(msgIdInfo.fromUid, msgIdInfo.msgId)
+      if (event) {
+        await matrixForwardService.forwardEvent(event, roomId)
+      }
+    }
+  }
+}
+
 const toolOptions = computed(() => [
   {
     text: t('message.multi_choose.single_forward'),
@@ -391,13 +409,8 @@ const sendMsg = async () => {
     if (hasCustomTask) {
       await sendCustomForwardTask(selectedRoomIds)
     } else {
-      const selectedMsgIds = selectedMsgs.value.map((item) => item.message.id)
-      await mergeMsg({
-        roomIds: selectedRoomIds,
-        type: mergeMessageType,
-        messageIds: selectedMsgIds,
-        fromRoomId: globalStore.currentSessionRoomId
-      })
+      const selectedMsgIds = msgIds.value
+      await forwardMessages(selectedRoomIds, selectedMsgIds)
     }
     window.$message.success(t('message.multi_choose.forward_success'))
   } catch (error) {

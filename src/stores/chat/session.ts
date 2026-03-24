@@ -1,16 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, computed } from 'vue'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { info } from '@tauri-apps/plugin-log'
 import { orderBy, uniqBy } from 'es-toolkit'
 import { RoomTypeEnum, NotificationTypeEnum, StoresEnum } from '@/enums'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useUserStore } from '@/stores/user.ts'
 import { useSessionUnreadStore } from '@/stores/sessionUnread'
 import { useGroupStore } from '@/stores/group.ts'
-import { matrixRoomService, matrixReceiptService, matrixClientService } from '@/services/matrix'
+import { matrixReceiptService, matrixClientService, matrixFriendService } from '@/services/matrix'
 import type { Room } from 'matrix-js-sdk'
-import pLimit from 'p-limit'
 
 export interface SessionItem {
   id?: string
@@ -31,6 +28,7 @@ export interface SessionItem {
   detailId?: string
   operate?: number
   hide?: boolean
+  isFavorite?: boolean
 }
 
 export const useSessionStore = defineStore(
@@ -39,7 +37,7 @@ export const useSessionStore = defineStore(
     const globalStore = useGlobalStore()
     const userStore = useUserStore()
     const sessionUnreadStore = useSessionUnreadStore()
-    const groupStore = useGroupStore()
+    const _groupStore = useGroupStore()
 
     const sessionList = ref<SessionItem[]>([])
     const sessionMap = ref<Record<string, SessionItem>>({})
@@ -59,7 +57,7 @@ export const useSessionStore = defineStore(
       sessionUnreadStore.set(userStore.userInfo?.uid, roomId, count)
     }
 
-    const removeUnreadCountCache = (roomId: string) => {
+    const _removeUnreadCountCache = (roomId: string) => {
       if (!roomId) return
       sessionUnreadStore.remove(userStore.userInfo?.uid, roomId)
     }
@@ -155,11 +153,19 @@ export const useSessionStore = defineStore(
         const client = matrixClientService.getClient()
         if (!client) return
 
+        const specialFriends = await matrixFriendService.getSpecialFriends()
         const rooms = client.getVisibleRooms()
-        const sessions = rooms.map((room: Room) => convertRoomToSession(room))
+        const sessions = rooms.map((room: Room) => {
+          const session = convertRoomToSession(room)
+          const otherMember = room.getJoinedMembers().find((m) => m.userId !== client.getUserId())
+          if (otherMember && specialFriends.includes(otherMember.userId)) {
+            session.isFavorite = true
+          }
+          return session
+        })
 
         sessionList.value = uniqBy([...sessionList.value, ...sessions], (s) => s.roomId)
-        sessionList.value = orderBy(sessionList.value, ['top', 'activeTime'], ['desc', 'desc'])
+        sessionList.value = orderBy(sessionList.value, ['top', 'isFavorite', 'activeTime'], ['desc', 'desc', 'desc'])
         rebuildSessionMap()
 
         globalStore.unreadReady = true

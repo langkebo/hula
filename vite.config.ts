@@ -128,8 +128,8 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         open: false,
         gzipSize: true,
         brotliSize: true,
-        filename: 'dist/stats.html',
-      }),
+        filename: 'dist/stats.html'
+      })
     ],
     worker: {
       format: 'es' as const
@@ -171,13 +171,22 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         host: host,
         port: serverPort
       },
-      cors: true, // 配置 CORS
+      cors: mode === 'development', // 仅开发环境启用 CORS
       host: '0.0.0.0',
       port: serverPort,
       strictPort: true,
       watch: {
         // 3. tell vite to ignore watching `src-tauri`
         ignored: ['**/src-tauri/**']
+      }
+    },
+    preview: {
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'X-XSS-Protection': '1; mode=block',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
       }
     }
   }

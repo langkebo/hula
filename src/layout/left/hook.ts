@@ -11,7 +11,8 @@ import { useMenuTopStore } from '@/stores/menuTop.ts'
 import { useSettingStore } from '@/stores/setting.ts'
 import { useUserStore } from '@/stores/user.ts'
 import { useUserStatusStore } from '@/stores/userStatus.ts'
-import { ModifyUserInfo, setUserBadge } from '@/utils/ImRequestUtils'
+import { matrixAccountService } from '@/services/matrix'
+import { setUserBadge } from '@/utils/ImRequestUtils'
 import { storeToRefs } from 'pinia'
 
 export const leftHook = () => {
@@ -85,11 +86,10 @@ export const leftHook = () => {
       window.$message.error('改名次数不足')
       return
     }
-    ModifyUserInfo(localUserInfo).then(() => {
-      // 更新本地缓存的用户信息
+    matrixAccountService.updateDisplayName(localUserInfo.name!).then(() => {
       userStore.userInfo!.name = localUserInfo.name!
-      loginHistoriesStore.updateLoginHistory(<UserInfoType>userStore.userInfo) // 更新登录历史记录
-      updateCurrentUserCache('name', localUserInfo.name) // 更新缓存里面的用户信息
+      loginHistoriesStore.updateLoginHistory(<UserInfoType>userStore.userInfo)
+      updateCurrentUserCache('name', localUserInfo.name)
       if (!editInfo.value.content.modifyNameChance) return
       editInfo.value.content.modifyNameChance -= 1
       window.$message.success('保存成功')

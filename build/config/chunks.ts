@@ -25,6 +25,10 @@ export function createManualChunks(dependencies: string[]) {
       }
     }
 
+    if (id.includes('matrix-js-sdk') || id.includes('@matrix-org/') || id.includes('another-json')) {
+      return 'matrix'
+    }
+
     if (id.includes('node_modules')) {
       if (id.includes('node_modules/@vue-office/')) {
         const officeType = id.match(/@vue-office\/(\w+)/)?.[1]
@@ -83,14 +87,6 @@ export function createManualChunks(dependencies: string[]) {
 
       if (id.includes('node_modules/vant') || id.includes('node_modules/@vant/')) {
         return 'vant'
-      }
-
-      if (
-        id.includes('node_modules/matrix-js-sdk') ||
-        id.includes('node_modules/@matrix-org/') ||
-        id.includes('node_modules/another-json')
-      ) {
-        return 'matrix'
       }
 
       if (id.includes('node_modules/markstream-vue') || id.includes('node_modules/stream-markdown')) {
@@ -179,10 +175,26 @@ export function createManualChunks(dependencies: string[]) {
         return 'p-limit'
       }
 
-      const matchedDep = dependencies.find((dep) => id.includes(`node_modules/${dep}`))
-      if (matchedDep) {
-        return matchedDep.replace(/[@/]/g, '-')
+      // 提取 node_modules 中的包名
+      const match = id.match(/node_modules\/((?:@[^/]+\/)?[^/]+)/)
+      if (match) {
+        const depName = match[1]
+        // 将一些已知的相关子依赖组合在一起
+        if (depName.includes('@matrix-org') || depName.includes('matrix-')) {
+          return 'matrix-deps'
+        }
+        if (depName.includes('@babel') || depName.includes('core-js')) {
+          return 'babel-polyfill'
+        }
+        // 按顶级依赖分割
+        const matchedDep = dependencies.find((dep) => dep === depName)
+        if (matchedDep) {
+          return matchedDep.replace(/[@/]/g, '-')
+        }
+        // 如果是子依赖，将其归入 vendor-sub 包
+        return 'vendor-sub'
       }
+
       return 'vendor'
     }
 

@@ -5,7 +5,7 @@ import { AppException } from '@/common/exception.ts'
 import { MessageStatusEnum, MsgEnum, UploadSceneEnum } from '@/enums'
 import { parseInnerText } from '@/hooks/useCommon.ts'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/hooks/useUpload'
-import type { MessageType } from '@/stores/chat'
+import type { MessageType } from '@/stores/chat/message'
 import { fixFileMimeType, isVideoUrl } from '@/utils/FileType'
 import { getMimeTypeFromExtension, removeTag } from '@/utils/Formatting'
 import { getImageDimensions } from '@/utils/ImageUtils'
@@ -15,20 +15,33 @@ import { useGroupStore } from '../stores/group'
 import { removeTempFile } from '@/utils/TempFileManager'
 
 export interface MessageStrategy {
-  getMsg: (msgInputValue: string, replyValue: any, fileList?: File[]) => any
-  buildMessageBody: (msg: any, reply: any) => any
-  buildMessageType: (messageId: string, messageBody: any, globalStore: any, userUid: Ref<any>) => MessageType
+  getMsg: (
+    msgInputValue: string,
+    replyValue: MessageType | null,
+    fileList?: File[]
+  ) => Record<string, unknown> | Promise<Record<string, unknown>>
+  buildMessageBody: (msg: Record<string, unknown>, reply: MessageType | null) => Record<string, unknown>
+  buildMessageType: (
+    messageId: string,
+    messageBody: Record<string, unknown>,
+    globalStore: { currentSessionRoomId: string },
+    userUid: Ref<string>
+  ) => MessageType
   uploadFile: (
     path: string,
     options?: { provider?: UploadProviderEnum }
-  ) => Promise<{ uploadUrl: string; downloadUrl: string; config?: any }>
-  doUpload: (path: string, uploadUrl: string, options?: any) => Promise<{ qiniuUrl?: string } | void>
+  ) => Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }>
+  doUpload: (path: string, uploadUrl: string, options?: UploadOptions) => Promise<{ qiniuUrl?: string } | void>
   uploadThumbnail?: (
     thumbnailFile: File,
     options?: { provider?: UploadProviderEnum }
-  ) => Promise<{ uploadUrl: string; downloadUrl: string; config?: any }>
-  doUploadThumbnail?: (thumbnailFile: File, uploadUrl: string, options?: any) => Promise<{ qiniuUrl?: string } | void>
-  getUploadProgress?: () => { progress: any; onChange: any }
+  ) => Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }>
+  doUploadThumbnail?: (
+    thumbnailFile: File,
+    uploadUrl: string,
+    options?: UploadOptions
+  ) => Promise<{ qiniuUrl?: string } | void>
+  getUploadProgress?: () => { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void }
 }
 
 /**
@@ -41,12 +54,17 @@ abstract class AbstractMessageStrategy implements MessageStrategy {
     this.msgType = msgType
   }
 
-  buildMessageType(messageId: string, messageBody: any, globalStore: any, userUid: Ref<any>): MessageType {
+  buildMessageType(
+    messageId: string,
+    messageBody: Record<string, unknown>,
+    globalStore: { currentSessionRoomId: string },
+    userUid: Ref<string>
+  ): MessageType {
     const currentTime = new Date().getTime()
     const groupStore = useGroupStore()
     return {
       fromUser: {
-        uid: userUid.value || 0,
+        uid: userUid.value || '',
         username: groupStore.getUserInfo(userUid.value)?.name || '',
         avatar: groupStore.getUserInfo(userUid.value)?.avatar || '',
         locPlace: groupStore.getUserInfo(userUid.value)?.locPlace || ''
@@ -65,9 +83,13 @@ abstract class AbstractMessageStrategy implements MessageStrategy {
     }
   }
 
-  abstract buildMessageBody(msg: any, reply: any): any
+  abstract buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown>
 
-  abstract getMsg(msgInputValue: string, replyValue: any, fileList?: File[]): any
+  abstract getMsg(
+    msgInputValue: string,
+    replyValue: MessageType | null,
+    fileList?: File[]
+  ): Record<string, unknown> | Promise<Record<string, unknown>>
 
   uploadFile(
     path: string,
@@ -84,6 +106,68 @@ abstract class AbstractMessageStrategy implements MessageStrategy {
 }
 
 /**
+ * 处理 Beacon 位置信标消息
+ */
+class BeaconMessageStrategyImpl extends AbstractMessageStrategy {
+  constructor() {
+    super(MsgEnum.BEACON)
+  }
+
+  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
+    try {
+      const beaconData = JSON.parse(msgInputValue)
+
+      if (!beaconData.description || beaconData.timeout === undefined || beaconData.isLive === undefined) {
+        throw new AppException('无效的信标数据，缺少必要字段')
+      }
+
+      return {
+        type: this.msgType,
+        description: beaconData.description,
+        timeout: beaconData.timeout, // 持续时间（毫秒）
+        isLive: beaconData.isLive, // 是否为实时共享
+        reply: replyValue?.message?.body?.content
+          ? {
+              content: (replyValue.message.body as any).content,
+              key: (replyValue as any).id
+            }
+          : undefined
+      }
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new AppException('信标数据格式错误，必须是有效的JSON')
+      }
+      throw error
+    }
+  }
+
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+    return {
+      description: msg.description,
+      timeout: msg.timeout,
+      live: msg.isLive,
+      // Matrix 规定的信标资产类型，通常是 'm.self' (自己的位置) 或 'm.pin' (放置的图钉)
+      'org.matrix.msc3488.asset': {
+        type: 'm.self'
+      },
+      // 必须包含一个初始的位置点以便向后兼容
+      'org.matrix.msc3488.ts': Date.now(),
+      msgtype: 'm.beacon_info',
+      body: `开启了位置共享: ${msg.description}`,
+      replyMsgId: (msg.reply as any)?.key || void 0,
+      reply: reply?.message?.body?.content
+        ? {
+            body: (reply.message.body as any).content,
+            id: (reply as any).id,
+            username: reply.fromUser.username,
+            type: msg.type as string
+          }
+        : void 0
+    }
+  }
+}
+
+/**
  * 处理文本消息
  */
 class TextMessageStrategyImpl extends AbstractMessageStrategy {
@@ -91,27 +175,27 @@ class TextMessageStrategyImpl extends AbstractMessageStrategy {
     super(MsgEnum.TEXT)
   }
 
-  getMsg(msgInputValue: string, replyValue: any): any {
+  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
     // 处理&nbsp;为空格
     let content = removeTag(msgInputValue)
     if (content && typeof content === 'string') {
       content = content.replace(/&nbsp;/g, ' ')
     }
 
-    const msg = {
+    const msg: Record<string, any> = {
       type: this.msgType,
       content: content,
-      reply: replyValue.content
+      reply: replyValue?.message?.body?.content
         ? {
-            content: replyValue.content,
-            key: replyValue.key
+            content: (replyValue.message.body as any).content,
+            key: (replyValue as any).id
           }
         : undefined
     }
     // 处理回复内容
-    if (replyValue.content) {
+    if (replyValue?.message?.body?.content) {
       const tempDiv = document.createElement('div')
-      tempDiv.innerHTML = DOMPurify.sanitize(msg.content)
+      tempDiv.innerHTML = DOMPurify.sanitize(msg.content as string)
       const replyDiv = tempDiv.querySelector('#replyDiv')
       if (replyDiv) {
         replyDiv.parentNode?.removeChild(replyDiv)
@@ -131,16 +215,18 @@ class TextMessageStrategyImpl extends AbstractMessageStrategy {
     return msg
   }
 
-  buildMessageBody(msg: any, reply: any): any {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
       content: msg.content,
-      replyMsgId: msg.reply?.key || void 0,
-      reply: reply.value.content
+      msgtype: 'm.text',
+      body: msg.content,
+      replyMsgId: (msg.reply as any)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            body: reply.value.content,
-            id: reply.value.key,
-            username: reply.value.accountName,
-            type: msg.type
+            body: (reply.message.body as any).content,
+            id: (reply as any).id,
+            username: reply.fromUser.username,
+            type: msg.type as string
           }
         : void 0
     }
@@ -247,7 +333,11 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
    * @param fileList 附件文件列表
    * @returns 处理后的消息
    */
-  async getMsg(msgInputValue: string, replyValue: any, fileList?: File[]): Promise<any> {
+  async getMsg(
+    msgInputValue: string,
+    replyValue: MessageType | null,
+    fileList?: File[]
+  ): Promise<Record<string, unknown>> {
     // 优先处理fileList中的文件
     if (fileList && fileList.length > 0) {
       const file = fileList[0]
@@ -272,10 +362,10 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
           height, // 原始图片高度
           size: file.size // 原始文件大小
         },
-        reply: replyValue.content
+        reply: replyValue?.message?.body?.content
           ? {
-              content: replyValue.content,
-              key: replyValue.key
+              content: replyValue.message.body.content,
+              key: replyValue.message.id
             }
           : undefined
       }
@@ -296,10 +386,10 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
             height,
             size
           },
-          reply: replyValue.content
+          reply: replyValue?.message?.body?.content
             ? {
-                content: replyValue.content,
-                key: replyValue.key
+                content: replyValue.message.body.content,
+                key: replyValue.message.id
               }
             : undefined
         }
@@ -355,10 +445,10 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
           height, // 原始图片高度
           size: originalFile.size // 原始文件大小
         },
-        reply: replyValue.content
+        reply: replyValue?.message?.body?.content
           ? {
-              content: replyValue.content,
-              key: replyValue.key
+              content: replyValue.message.body.content,
+              key: replyValue.message.id
             }
           : undefined
       }
@@ -434,19 +524,19 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: any, reply: any): any {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
-      url: msg.url,
-      path: msg.path,
-      width: msg.imageInfo.width,
-      height: msg.imageInfo.height,
-      size: msg.imageInfo.size,
-      replyMsgId: msg.reply?.key || void 0,
-      reply: reply.value.content
+      url: msg.url as string,
+      path: msg.path as string,
+      width: (msg.imageInfo as any).width,
+      height: (msg.imageInfo as any).height,
+      size: (msg.imageInfo as any).size,
+      replyMsgId: (msg.reply as any)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            body: reply.value.content,
-            id: reply.value.key,
-            username: reply.value.accountName,
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
             type: msg.type
           }
         : void 0
@@ -468,7 +558,7 @@ class LocationMessageStrategyImpl extends AbstractMessageStrategy {
    * @param replyValue 回复信息
    * @returns 位置消息对象
    */
-  getMsg(msgInputValue: string, replyValue: any): any {
+  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
     try {
       // 解析位置数据
       const locationData = JSON.parse(msgInputValue)
@@ -485,10 +575,10 @@ class LocationMessageStrategyImpl extends AbstractMessageStrategy {
         address: locationData.address,
         precision: locationData.precision || '高精度',
         timestamp: locationData.timestamp || Date.now(),
-        reply: replyValue.content
+        reply: replyValue?.message?.body?.content
           ? {
-              content: replyValue.content,
-              key: replyValue.key
+              content: replyValue.message.body.content,
+              key: replyValue.message.id
             }
           : undefined
       }
@@ -506,22 +596,24 @@ class LocationMessageStrategyImpl extends AbstractMessageStrategy {
    * @param reply 回复信息
    * @returns 消息体
    */
-  buildMessageBody(msg: any, reply: any): any {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
-      latitude: msg.latitude,
-      longitude: msg.longitude,
-      address: msg.address,
-      precision: msg.precision,
-      timestamp: msg.timestamp,
-      replyMsgId: msg.reply?.key || undefined,
-      reply: reply.value.content
+      geo_uri: `geo:${msg.latitude},${msg.longitude};u=${msg.precision === '高精度' ? 10 : 100}`,
+      msgtype: 'm.location',
+      body: `位置: ${msg.address}`,
+      info: {
+        address: msg.address,
+        timestamp: msg.timestamp
+      },
+      replyMsgId: (msg.reply as any)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            body: reply.value.content,
-            id: reply.value.key,
-            username: reply.value.accountName,
-            type: msg.type
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
+            type: msg.type as string
           }
-        : undefined
+        : void 0
     }
   }
 
@@ -612,7 +704,11 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  async getMsg(msgInputValue: string, replyValue: any, fileList?: File[]): Promise<any> {
+  async getMsg(
+    msgInputValue: string,
+    replyValue: MessageType | null,
+    fileList?: File[]
+  ): Promise<Record<string, unknown>> {
     console.log('开始处理文件消息:', msgInputValue, replyValue, fileList?.length ? '有附件文件' : '无附件文件')
 
     let file: File | null = null
@@ -645,28 +741,28 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
       fileName: validatedFile.name,
       size: validatedFile.size,
       mimeType: validatedFile.type,
-      reply: replyValue.content
+      reply: replyValue?.message?.body?.content
         ? {
-            content: replyValue.content,
-            key: replyValue.key
+            content: replyValue.message.body.content,
+            key: replyValue.message.id
           }
         : undefined
     }
   }
 
-  buildMessageBody(msg: any, reply: any): any {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
       url: '', // 上传后会被设置
-      path: msg.path,
-      fileName: msg.fileName,
-      size: msg.size,
-      mimeType: msg.mimeType,
-      replyMsgId: msg.reply?.key || undefined,
-      reply: reply.value.content
+      path: msg.path as string,
+      fileName: msg.fileName as string,
+      size: msg.size as number,
+      mimeType: msg.mimeType as string,
+      replyMsgId: (msg.reply as any)?.key || undefined,
+      reply: reply?.message?.body?.content
         ? {
-            body: reply.value.content,
-            id: reply.value.key,
-            username: reply.value.accountName,
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
             type: msg.type
           }
         : undefined
@@ -725,10 +821,12 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
   /**
    * 暴露上传进度监听
    */
-  getUploadProgress() {
+  getUploadProgress(): { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void } {
     return {
       progress: this.uploadHook.progress,
-      onChange: this.uploadHook.onChange
+      onChange: (callback: (progress: number) => void) => {
+        this.uploadHook.onChange((p: any) => callback(Number(p)))
+      }
     }
   }
 }
@@ -751,7 +849,7 @@ class EmojiMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  getMsg(msgInputValue: string, replyValue: any): any {
+  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
     // 检查是否是URL
     if (!this.isValidEmojiUrl(msgInputValue)) {
       throw new AppException('无效的表情包URL')
@@ -761,25 +859,25 @@ class EmojiMessageStrategyImpl extends AbstractMessageStrategy {
       type: this.msgType,
       url: msgInputValue,
       path: msgInputValue,
-      reply: replyValue.content
+      reply: replyValue?.message?.body?.content
         ? {
-            content: replyValue.content,
-            key: replyValue.key
+            content: (replyValue.message.body as any).content,
+            key: (replyValue as any).id
           }
         : undefined
     }
   }
 
-  buildMessageBody(msg: any, reply: any): any {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
-      url: msg.url,
-      replyMsgId: msg.reply?.key || void 0,
-      reply: reply.value.content
+      url: msg.url as string,
+      replyMsgId: (msg.reply as any)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            body: reply.value.content,
-            id: reply.value.key,
-            username: reply.value.accountName,
-            type: msg.type
+            body: (reply.message.body as any).content,
+            id: (reply as any).id,
+            username: reply.fromUser.username,
+            type: msg.type as string
           }
         : void 0
     }
@@ -826,10 +924,12 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
   }
 
   // 暴露上传进度监听
-  getUploadProgress() {
+  getUploadProgress(): { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void } {
     return {
       progress: this.uploadHook.progress,
-      onChange: this.uploadHook.onChange
+      onChange: (callback: (progress: number) => void) => {
+        this.uploadHook.onChange((p: any) => callback(Number(p)))
+      }
     }
   }
 
@@ -849,7 +949,11 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
     return file
   }
 
-  async getMsg(msgInputValue: string, replyValue: any, fileList?: File[]): Promise<any> {
+  async getMsg(
+    msgInputValue: string,
+    replyValue: MessageType | null,
+    fileList?: File[]
+  ): Promise<Record<string, unknown>> {
     // 1. 优先处理fileList中的文件
     if (fileList && fileList.length > 0) {
       const file = fileList[0]
@@ -870,7 +974,9 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
         thumbnail: thumbnail || '',
         size: validatedFile.size,
         duration: 0, // 实际项目中可解析视频时长
-        reply: replyValue.content ? { content: replyValue.content, key: replyValue.key } : undefined
+        reply: replyValue?.message?.body?.content
+          ? { content: replyValue.message.body.content, key: replyValue.message.id }
+          : undefined
       }
     }
 
@@ -880,7 +986,9 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
         type: this.msgType,
         url: msgInputValue,
         path: msgInputValue,
-        reply: replyValue.content ? { content: replyValue.content, key: replyValue.key } : undefined
+        reply: replyValue?.message?.body?.content
+          ? { content: replyValue.message.body.content, key: replyValue.message.id }
+          : undefined
       }
     }
     const actualFile = await this.convertToVideoFile(msgInputValue)
@@ -900,7 +1008,9 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
       thumbnail: thumbnail || '',
       size: validatedFile.size,
       duration: 0, // 实际项目中可解析视频时长
-      reply: replyValue.content ? { content: replyValue.content, key: replyValue.key } : undefined
+      reply: replyValue?.message?.body?.content
+        ? { content: replyValue.message.body.content, key: replyValue.message.id }
+        : undefined
     }
   }
 
@@ -1036,7 +1146,7 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: any, reply: any): any {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     // 为缩略图创建本地预览URL
     let thumbUrl = ''
     if (msg.thumbnail instanceof File) {
@@ -1044,22 +1154,22 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
     }
 
     return {
-      url: msg.url,
-      path: msg.path,
+      url: msg.url as string,
+      path: msg.path as string,
       thumbnail: msg.thumbnail,
       thumbUrl: thumbUrl, // 本地预览URL，上传完成后会被替换为服务器URL
-      thumbSize: msg.thumbnail?.size || 0,
+      thumbSize: (msg.thumbnail as any)?.size || 0,
       thumbWidth: 300,
       thumbHeight: 150,
-      size: msg.size,
-      duration: msg.duration,
-      replyMsgId: msg.reply?.key || void 0,
-      reply: reply.value.content
+      size: msg.size as number,
+      duration: msg.duration as number,
+      replyMsgId: (msg.reply as any)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            body: reply.value.content,
-            id: reply.value.key,
-            username: reply.value.accountName,
-            type: msg.type
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
+            type: msg.type as string
           }
         : void 0
     }
@@ -1310,6 +1420,70 @@ class AudioCallMessageStrategyImpl extends AbstractMessageStrategy {
   }
 }
 
+/**
+ * 链接预览消息
+ */
+class LinkPreviewMessageStrategyImpl extends AbstractMessageStrategy {
+  constructor() {
+    super(MsgEnum.LINK_PREVIEW)
+  }
+
+  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
+    try {
+      const linkData = JSON.parse(msgInputValue)
+
+      if (!linkData.url || !linkData.title) {
+        throw new AppException('无效的链接预览数据，缺少必要字段')
+      }
+
+      return {
+        type: this.msgType,
+        url: linkData.url,
+        title: linkData.title,
+        description: linkData.description || '',
+        imageUrl: linkData.imageUrl || '',
+        siteName: linkData.siteName || '',
+        reply: replyValue?.message?.body?.content
+          ? {
+              content: (replyValue.message.body as any).content,
+              key: (replyValue as any).id
+            }
+          : undefined
+      }
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new AppException('链接数据格式错误，必须是有效的JSON')
+      }
+      throw error
+    }
+  }
+
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+    return {
+      msgtype: 'm.text',
+      body: msg.url as string,
+      format: 'org.matrix.custom.html',
+      formatted_body: `<a href="${msg.url}">${msg.title}</a>`,
+      'org.matrix.msc2788.room.message': {
+        url: msg.url,
+        title: msg.title,
+        description: msg.description,
+        image_url: msg.imageUrl,
+        site_name: msg.siteName
+      },
+      replyMsgId: (msg.reply as any)?.key || void 0,
+      reply: reply?.message?.body?.content
+        ? {
+            body: (reply.message.body as any).content,
+            id: (reply as any).id,
+            username: reply.fromUser.username,
+            type: msg.type as string
+          }
+        : void 0
+    }
+  }
+}
+
 const textMessageStrategy = new TextMessageStrategyImpl()
 const fileMessageStrategy = new FileMessageStrategyImpl()
 const imageMessageStrategy = new ImageMessageStrategyImpl()
@@ -1320,6 +1494,8 @@ const voiceMessageStrategy = new VoiceMessageStrategyImpl()
 const videoCallMessageStrategy = new VideoCallMessageStrategyImpl()
 const audioCallMessageStrategy = new AudioCallMessageStrategyImpl()
 const locationMessageStrategy = new LocationMessageStrategyImpl()
+const beaconMessageStrategy = new BeaconMessageStrategyImpl()
+const linkPreviewMessageStrategy = new LinkPreviewMessageStrategyImpl()
 
 export const messageStrategyMap: Record<MsgEnum, MessageStrategy> = {
   [MsgEnum.FILE]: fileMessageStrategy,
@@ -1341,5 +1517,7 @@ export const messageStrategyMap: Record<MsgEnum, MessageStrategy> = {
   [MsgEnum.VIDEO_CALL]: videoCallMessageStrategy,
   [MsgEnum.AUDIO_CALL]: audioCallMessageStrategy,
   [MsgEnum.LOCATION]: locationMessageStrategy,
-  [MsgEnum.AUDIO]: voiceMessageStrategy
+  [MsgEnum.AUDIO]: voiceMessageStrategy,
+  [MsgEnum.BEACON]: beaconMessageStrategy,
+  [MsgEnum.LINK_PREVIEW]: linkPreviewMessageStrategy
 }

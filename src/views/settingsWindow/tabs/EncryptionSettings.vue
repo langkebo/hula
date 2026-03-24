@@ -41,6 +41,34 @@
     <n-divider />
 
     <div class="settings-section">
+      <h3 class="section-title">交叉签名</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">交叉签名状态</span>
+          <span class="setting-desc">{{ crossSigningSetup ? '已设置' : '未设置' }}</span>
+        </div>
+        <n-button size="small" @click="showCrossSigningDialog = true">
+          {{ crossSigningSetup ? '管理' : '设置' }}
+        </n-button>
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">密钥轮换</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">密钥轮换状态</span>
+          <span class="setting-desc">{{ needsRotation ? '需要轮换' : '已是最新' }}</span>
+        </div>
+        <n-button size="small" @click="showKeyRotationDialog = true">管理</n-button>
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
       <h3 class="section-title">设备验证</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -85,6 +113,10 @@
 
     <DeviceVerifyDialog v-model:show="showVerifyDialog" @success="handleVerifySuccess" />
 
+    <CrossSigningDialog v-model:show="showCrossSigningDialog" />
+
+    <KeyRotationDialog v-model:show="showKeyRotationDialog" />
+
     <n-modal v-model:show="deviceKeyVisible" preset="card" title="设备密钥指纹" style="width: 400px">
       <div class="device-key-display">
         <div class="fingerprint">{{ deviceFingerprint }}</div>
@@ -104,6 +136,8 @@ import { matrixEncryptionService } from '@/services/matrix'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 import KeyBackupRestoreDialog from '@/components/encryption/KeyBackupRestoreDialog.vue'
 import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
+import CrossSigningDialog from '@/components/encryption/CrossSigningDialog.vue'
+import KeyRotationDialog from '@/components/encryption/KeyRotationDialog.vue'
 
 defineOptions({
   name: 'EncryptionSettings'
@@ -119,7 +153,11 @@ const deviceFingerprint = ref('')
 const showBackupDialog = ref(false)
 const showRestoreDialog = ref(false)
 const showVerifyDialog = ref(false)
+const showCrossSigningDialog = ref(false)
+const showKeyRotationDialog = ref(false)
 const createBackupLoading = ref(false)
+const crossSigningSetup = ref(false)
+const needsRotation = ref(false)
 
 const encryptionEnabled = computed(() => {
   const client = matrixClientService.getClient()
@@ -174,6 +212,12 @@ async function loadEncryptionInfo() {
     if (savedBackup !== null) {
       backupEnabled.value = savedBackup === 'true'
     }
+
+    const crossSigningInfo = await matrixEncryptionService.getCrossSigningInfo()
+    crossSigningSetup.value = crossSigningInfo.isSetup
+
+    const rotationStatus = await matrixEncryptionService.getKeyRotationStatus()
+    needsRotation.value = rotationStatus.needsRotation
   } catch (error) {
     console.error('加载加密信息失败:', error)
   }

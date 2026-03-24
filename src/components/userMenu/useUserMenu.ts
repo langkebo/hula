@@ -4,8 +4,8 @@ import { useUserMenuStore, type MenuPosition, type MenuTrigger } from '@/stores/
 import { useSettingsDialogStore, type SettingsTabType } from '@/stores/settingsDialog'
 import { useMatrixStore } from '@/stores/matrix'
 import { useUserStore } from '@/stores/user'
-import { usePlatform } from '@/composables/usePlatform'
-import { getFilteredMenuItems, findMenuItemById, setLogoutCallback, setRouterInstance } from './menuConfig'
+import { isDesktop } from '@/composables/usePlatform'
+import { getFilteredSections, findMenuItemById, setLogoutCallback, setRouterInstance } from './menuConfig'
 import { useDialog, useMessage } from 'naive-ui'
 
 export function useUserMenu() {
@@ -13,7 +13,6 @@ export function useUserMenu() {
   const settingsDialogStore = useSettingsDialogStore()
   const matrixStore = useMatrixStore()
   const userStore = useUserStore()
-  const { isDesktop } = usePlatform()
   const dialog = useDialog()
   const message = useMessage()
   const router = useRouter()
@@ -25,7 +24,7 @@ export function useUserMenu() {
   const trigger = computed(() => userMenuStore.trigger)
   const isContextMenu = computed(() => userMenuStore.isContextMenu)
 
-  const menuItems = computed(() => getFilteredMenuItems(isDesktop))
+  const menuSections = computed(() => getFilteredSections(isDesktop()))
 
   setLogoutCallback(async () => {
     showLogoutConfirm()
@@ -121,7 +120,7 @@ export function useUserMenu() {
     position,
     trigger,
     isContextMenu,
-    menuItems,
+    menuSections,
     openMenu,
     closeMenu,
     toggleMenu,

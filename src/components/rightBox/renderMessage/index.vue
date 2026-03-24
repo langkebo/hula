@@ -355,7 +355,7 @@ import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { useChatStore } from '@/stores/chat'
 import { useUserStore } from '@/stores/user'
-import { markMsg, getUserByIds } from '@/utils/ImRequestUtils'
+import { matrixMessageService, matrixContactService, matrixReactionService } from '@/services/matrix'
 import { createMacContextSelectionGuard } from '@/utils/MacSelectionGuard'
 import { isMobile } from '@/utils/PlatformConstants'
 import { matrixEventService } from '@/services/matrix'
@@ -366,6 +366,8 @@ import File from './File.vue'
 import Image from './Image.vue'
 import Location from './Location.vue'
 import MergeMessage from './MergeMessage.vue'
+import Beacon from './Beacon.vue'
+import LinkPreview from './LinkPreview.vue'
 import BotMessage from './special/BotMessage.vue'
 import RecallMessage from './special/RecallMessage.vue'
 import SystemMessage from './special/SystemMessage.vue'
@@ -475,7 +477,7 @@ const ensureSenderInfo = async (uid: string) => {
   if (!roomId) return
   resolvingUserSet.add(uid)
   try {
-    const users = await getUserByIds([uid])
+    const users = await matrixContactService.getUserByIds([uid])
     const user = Array.isArray(users) ? users[0] : null
     if (user?.uid) {
       // 将缺失用户信息写入消息所属的房间，避免污染其他房间或丢弃结果
@@ -516,7 +518,9 @@ const componentMap: Partial<Record<MsgEnum, Component>> = {
   [MsgEnum.RECALL]: RecallMessage,
   [MsgEnum.BOT]: BotMessage,
   [MsgEnum.MERGE]: MergeMessage,
-  [MsgEnum.LOCATION]: Location
+  [MsgEnum.LOCATION]: Location,
+  [MsgEnum.BEACON]: Beacon,
+  [MsgEnum.LINK_PREVIEW]: LinkPreview
 }
 
 const isSpecialMsgType = (type: number): boolean => {
@@ -558,12 +562,7 @@ const cancelReplyEmoji = async (item: MessageType, type: number): Promise<void> 
   // 只有当用户已标记时才发送取消请求
   if (userMarked) {
     try {
-      const data = {
-        msgId: item.message.id,
-        markType: type, // 使用对应的MarkEnum类型
-        actType: 2 // 使用Confirm作为操作类型
-      }
-      await markMsg(data)
+      await matrixReactionService.toggleReaction(item.message.roomId, item.message.id, String(type))
     } catch (error) {
       console.error('取消表情标记失败:', error)
     }
@@ -732,11 +731,7 @@ const handleEmojiSelect = async (
   // 只给没有标记过的图标标记
   if (!userMarked) {
     try {
-      await markMsg({
-        msgId: item.message.id,
-        markType: context.value,
-        actType: 1
-      })
+      await matrixReactionService.toggleReaction(item.message.roomId, item.message.id, String(context.value))
     } catch (error) {
       console.error('标记表情失败:', error)
     }
