@@ -192,7 +192,7 @@ pnpm run tauri:ios:init
 
 ```bash
 # 从 GitHub 克隆
-git clone https://github.com/HuLaSpark/HuLa.git
+git clone https://gitee.com/llangkebo/hula/.git
 
 # 或从 Gitee 克隆（国内推荐）
 git clone https://gitee.com/HuLaSpark/HuLa.git
@@ -363,7 +363,7 @@ HuLa/
 
 1. **🔍 搜索现有 Issues**
    - 在提交新 Issue 前，请先搜索是否已有类似问题
-   - 访问 [GitHub Issues](https://github.com/HuLaSpark/HuLa/issues)
+   - 访问 [GitHub Issues](https://gitee.com/llangkebo/hula/issues)
 
 2. **📝 创建新 Issue**
    ```markdown
@@ -571,8 +571,8 @@ pnpm run td
 ## 🤝 社区交流
 
 - 💬 **微信群**: 扫描 README 中的二维码加入讨论群
-- 🌟 **GitHub**: [https://github.com/HuLaSpark/HuLa](https://github.com/HuLaSpark/HuLa)
-- 🦄 **Gitee**: [https://gitee.com/HulaSpark/HuLa](https://gitee.com/HulaSpark/HuLa)
+- 🌟 **GitHub**: [https://gitee.com/llangkebo/hula/](https://gitee.com/llangkebo/hula/)
+- 🦄 **Gitee**: [https://gitee.com/llangkebo/hula](https://gitee.com/llangkebo/hula)
 - 📧 **邮箱**: 2439646234@qq.com
 - 🌐 **官网**: [https://hulaspark.com](https://hulaspark.com)
 

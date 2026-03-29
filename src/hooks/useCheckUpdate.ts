@@ -22,6 +22,8 @@ export const useCheckUpdate = () => {
    * @param initialCheck 是否是初始检查，默认为false。初始检查时只显示强制更新提示，不显示普通更新提示
    */
   const checkUpdate = async (closeWin: string, initialCheck: boolean = false) => {
+    // 自动更新功能已禁用
+    return
     if (import.meta.env.DEV) {
       return
     }

@@ -83,5 +83,25 @@ export default {
     recallSuccess: 'Message recalled',
     sendFailed: 'Send failed',
     unsupported: 'Unsupported message type'
+  },
+  report: {
+    title: 'Report Message',
+    select_reason: 'Please select a reason:',
+    placeholder: 'Select a reason',
+    submit: 'Submit Report',
+    success: 'Report submitted successfully',
+    fail: 'Report failed, please try again later',
+    error_no_client: 'Client not ready',
+    sexual: 'Sexual content',
+    violence: 'Violent content',
+    hate_speech: 'Hate speech',
+    self_harm: 'Self-harm',
+    terrorism: 'Terrorism',
+    spam: 'Spam',
+    violation: 'Violation',
+    other: 'Other'
+  },
+  menu: {
+    report: 'Report'
   }
 }

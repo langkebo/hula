@@ -1,0 +1,136 @@
+<template>
+  <div class="oidc-callback size-full flex-center flex-col gap-24px bg-[--bg-popover]">
+    <div v-if="status === 'loading'" class="flex-col-center gap-16px">
+      <n-spin size="large" />
+      <span class="text-14px text-#666">{{ t('login.oidc.processing') }}</span>
+    </div>
+
+    <div v-else-if="status === 'error'" class="flex-col-center gap-16px">
+      <n-result status="error" :title="t('login.oidc.error_title')" :description="errorMessage">
+        <template #footer>
+          <n-space justify="center">
+            <n-button @click="goToLogin">{{ t('login.oidc.back_to_login') }}</n-button>
+            <n-button type="primary" @click="retry">{{ t('login.oidc.retry') }}</n-button>
+          </n-space>
+        </template>
+      </n-result>
+    </div>
+
+    <div v-else-if="status === 'success'" class="flex-col-center gap-16px">
+      <n-result status="success" :title="t('login.oidc.success_title')">
+        <template #footer>
+          <n-space justify="center">
+            <n-button type="primary" @click="goToHome">{{ t('login.oidc.go_home') }}</n-button>
+          </n-space>
+        </template>
+      </n-result>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { NResult, NButton, NSpin, NSpace, useMessage } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { matrixOidcService } from '@/services/matrix/MatrixOidcService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { useLogin } from '@/hooks/useLogin'
+
+const { t } = useI18n()
+const router = useRouter()
+const message = useMessage()
+
+type CallbackStatus = 'loading' | 'success' | 'error'
+const status = ref<CallbackStatus>('loading')
+const errorMessage = ref('')
+
+const goToLogin = () => {
+  router.push('/login')
+}
+
+const goToHome = () => {
+  router.push('/home')
+}
+
+const retry = () => {
+  window.location.reload()
+}
+
+const handleOidcCallback = async () => {
+  try {
+    const urlParams = new URLSearchParams(window.location.search)
+    const code = urlParams.get('code')
+    const state = urlParams.get('state')
+    const error = urlParams.get('error')
+    const errorDescription = urlParams.get('error_description')
+
+    if (error) {
+      console.error('[OIDC Callback] OAuth error:', error, errorDescription)
+      status.value = 'error'
+      errorMessage.value = errorDescription || error
+      return
+    }
+
+    if (!code || !state) {
+      console.error('[OIDC Callback] Missing code or state parameter')
+      status.value = 'error'
+      errorMessage.value = t('login.oidc.missing_params')
+      return
+    }
+
+    console.log('[OIDC Callback] Processing callback...')
+    const tokenResponse = await matrixOidcService.handleCallback(code, state)
+
+    if (!tokenResponse) {
+      status.value = 'error'
+      errorMessage.value = t('login.oidc.token_exchange_failed')
+      return
+    }
+
+    const matrixTokens = await matrixOidcService.exchangeOidcForMatrixToken(
+      tokenResponse.access_token,
+      tokenResponse.refresh_token
+    )
+
+    if (!matrixTokens) {
+      status.value = 'error'
+      errorMessage.value = t('login.oidc.matrix_token_failed')
+      return
+    }
+
+    console.log('[OIDC Callback] OIDC login successful, initializing Matrix client...')
+    const client = matrixClientService.getClient()
+    if (client) {
+      await client.startWithToken(matrixTokens.access_token, matrixTokens.device_id)
+    }
+
+    const { completeLogin } = useLogin()
+    await completeLogin({
+      userId: matrixTokens.user_id,
+      accessToken: matrixTokens.access_token,
+      deviceId: matrixTokens.device_id
+    })
+
+    status.value = 'success'
+    message.success(t('login.oidc.login_success'))
+
+    setTimeout(() => {
+      goToHome()
+    }, 1500)
+  } catch (err) {
+    console.error('[OIDC Callback] Error:', err)
+    status.value = 'error'
+    errorMessage.value = err instanceof Error ? err.message : t('login.oidc.unknown_error')
+  }
+}
+
+onMounted(() => {
+  handleOidcCallback()
+})
+</script>
+
+<style scoped>
+.oidc-callback {
+  min-height: 100vh;
+}
+</style>

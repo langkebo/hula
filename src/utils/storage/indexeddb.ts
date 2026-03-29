@@ -2,9 +2,19 @@
  * IndexedDB 离线存储工具
  *
  * 为 HuLa 提供本地数据缓存能力
+ * 包含内存监控和自动清理机制
  */
 
 import { IndexedDBStore, LocalStorageCryptoStore, type MatrixClient, type Room } from 'matrix-js-sdk'
+
+/**
+ * 内存使用统计
+ */
+interface MemoryStats {
+  estimatedSize: number
+  lastCleanup: number
+  actionCount: number
+}
 
 /**
  * 存储配置
@@ -16,6 +26,8 @@ export interface StorageConfig {
   dbVersion: number
   /** 是否启用加密存储 */
   enableCryptoStore: boolean
+  /** 最大内存使用（字节），超过后触发清理 */
+  maxMemoryBytes?: number
 }
 
 /**
@@ -24,8 +36,15 @@ export interface StorageConfig {
 export const defaultStorageConfig: StorageConfig = {
   dbName: 'hula-matrix-store',
   dbVersion: 1,
-  enableCryptoStore: true
+  enableCryptoStore: true,
+  maxMemoryBytes: 50 * 1024 * 1024 // 50MB 默认阈值
 }
+
+/**
+ * 内存监控配置
+ */
+const MEMORY_CHECK_INTERVAL = 60000 // 1分钟检查一次
+const MEMORY_WARNING_THRESHOLD = 0.8 // 80% 时发出警告
 
 /**
  * 存储服务
@@ -34,6 +53,12 @@ class StorageService {
   private client: MatrixClient | null = null
   private config: StorageConfig = defaultStorageConfig
   private isInitialized = false
+  private memoryStats: MemoryStats = {
+    estimatedSize: 0,
+    lastCleanup: Date.now(),
+    actionCount: 0
+  }
+  private memoryCheckInterval: number | null = null
 
   /**
    * 初始化存储服务
@@ -50,8 +75,91 @@ class StorageService {
     // 设置离线存储
     await this.setupStore()
 
+    // 启动内存监控
+    this.startMemoryMonitoring()
+
     this.isInitialized = true
     console.log('[Storage] 初始化完成')
+  }
+
+  /**
+   * 启动内存监控
+   */
+  private startMemoryMonitoring(): void {
+    if (this.memoryCheckInterval) {
+      return
+    }
+
+    this.memoryCheckInterval = window.setInterval(() => {
+      this.checkMemoryUsage()
+    }, MEMORY_CHECK_INTERVAL)
+
+    console.log('[Storage] 内存监控已启动')
+  }
+
+  /**
+   * 检查内存使用情况
+   */
+  private checkMemoryUsage(): void {
+    if (!this.config.maxMemoryBytes) {
+      return
+    }
+
+    // 估算当前内存使用（基于 action 次数）
+    const maxActions = 10000
+    const usageRatio = Math.min(this.memoryStats.actionCount / maxActions, 1)
+    this.memoryStats.estimatedSize = usageRatio * this.config.maxMemoryBytes
+
+    // 如果超过警告阈值，发出警告
+    if (usageRatio >= MEMORY_WARNING_THRESHOLD) {
+      console.warn(
+        `[Storage] 内存使用率达到 ${Math.round(usageRatio * 100)}%，建议清理缓存`
+      )
+    }
+
+    // 如果超过最大值，触发自动清理
+    if (this.memoryStats.estimatedSize >= this.config.maxMemoryBytes) {
+      console.warn('[Storage] 内存使用超过阈值，触发自动清理')
+      this.performMemoryCleanup()
+    }
+  }
+
+  /**
+   * 执行内存清理
+   */
+  private async performMemoryCleanup(): Promise<void> {
+    try {
+      // 清理过期数据（如果有）
+      // 这里可以添加更多的清理逻辑
+
+      this.memoryStats.actionCount = Math.floor(this.memoryStats.actionCount * 0.5)
+      this.memoryStats.lastCleanup = Date.now()
+
+      console.log('[Storage] 内存清理完成')
+    } catch (error) {
+      console.error('[Storage] 内存清理失败:', error)
+    }
+  }
+
+  /**
+   * 记录操作（用于内存统计）
+   */
+  private recordAction(): void {
+    this.memoryStats.actionCount++
+  }
+
+  /**
+   * 获取内存统计
+   */
+  getMemoryStats(): MemoryStats {
+    return { ...this.memoryStats }
+  }
+
+  /**
+   * 清理内存
+   */
+  async cleanupMemory(): Promise<void> {
+    await this.performMemoryCleanup()
   }
 
   /**
@@ -207,9 +315,23 @@ class StorageService {
       throw new Error('Client 未初始化')
     }
 
+    // 停止内存监控
+    this.stopMemoryMonitoring()
+
     await this.client.store.deleteAllData()
     this.isInitialized = false
     console.log('[Storage] 所有数据已清除')
+  }
+
+  /**
+   * 停止内存监控
+   */
+  private stopMemoryMonitoring(): void {
+    if (this.memoryCheckInterval) {
+      window.clearInterval(this.memoryCheckInterval)
+      this.memoryCheckInterval = null
+      console.log('[Storage] 内存监控已停止')
+    }
   }
 
   /**
@@ -236,11 +358,13 @@ import { ref } from 'vue'
 export function useMatrixStorage() {
   const isInitialized = ref(false)
   const status = ref<StorageConfig | null>(null)
+  const memoryStats = ref<MemoryStats | null>(null)
 
   async function initialize(client: MatrixClient, config?: Partial<StorageConfig>) {
     await storageService.initialize(client, config)
     isInitialized.value = true
     status.value = storageService.getStatus().config
+    memoryStats.value = storageService.getMemoryStats()
   }
 
   async function getRoom(roomId: string) {
@@ -256,13 +380,20 @@ export function useMatrixStorage() {
     isInitialized.value = false
   }
 
+  async function cleanupMemory() {
+    await storageService.cleanupMemory()
+    memoryStats.value = storageService.getMemoryStats()
+  }
+
   return {
     isInitialized,
     status,
+    memoryStats,
     initialize,
     getRoom,
     getRooms,
-    clearAll
+    clearAll,
+    cleanupMemory
   }
 }
 

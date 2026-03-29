@@ -11,7 +11,7 @@
         v-for="group in content"
         :key="group.id"
         v-memo="[group.id, group.messageCount, group.latestContent, group.isAtMe, group.name, group.avatar]"
-        @click="handleClickMsg(group)"
+        @click="debouncedHandleClickMsg(group)"
         align="left"
         :size="10"
         class="mt-2px p-6px box-border rounded-8px hover:bg-[--tray-hover] cursor-pointer">
@@ -114,7 +114,6 @@ const division = () => {
 }
 
 // 处理点击消息的逻辑
-// TODO: 会导致频控触发
 const handleClickMsg = async (group: any) => {
   // 打开消息页面
   await checkWinExist('home')
@@ -126,12 +125,13 @@ const handleClickMsg = async (group: any) => {
       uid: group.roomType === RoomTypeEnum.SINGLE ? session.detailId : session.roomId,
       roomType: group.roomType
     })
-    // 收起通知面板
-    await debouncedHandleTip()
   } else {
     console.error('找不到对应的会话信息')
   }
 }
+
+// 带防抖的点击处理，避免频控触发
+const debouncedHandleClickMsg = useDebounceFn(handleClickMsg, 150)
 
 // 取消状态栏闪烁
 const handleTip = async () => {
@@ -172,11 +172,24 @@ const showWindow = async (event: Event<any>) => {
   }
 }
 
+// 增强的窗口隐藏逻辑：只有在鼠标不在窗口内时才隐藏
 const hideWindow = async () => {
-  if (!isMouseInWindow.value) {
-    const notifyWindow = await WebviewWindow.getCurrent()
-    await notifyWindow?.hide()
+  // 如果鼠标正在窗口内，不执行隐藏
+  if (isMouseInWindow.value) {
+    info('鼠标在窗口内，跳过隐藏')
+    return
   }
+  // 延迟检查，确保鼠标确实离开了窗口区域
+  await nextTick()
+  if (isMouseInWindow.value) {
+    return
+  }
+  globalStore.setTipVisible(false)
+  await appWindow?.setAlwaysOnTop(false)
+  await appWindow?.hide()
+  content.value = []
+  msgCount.value = 0
+  resizeWindow('notify', 280, 140)
 }
 
 const handleMouseEnter = () => {
@@ -184,13 +197,19 @@ const handleMouseEnter = () => {
   isMouseInWindow.value = true
 }
 
+// 增强的鼠标离开处理：增加延迟检测，避免托盘图标交互导致的误触发
 const handleMouseLeave = async () => {
   console.log('Mouse leave')
-  isMouseInWindow.value = false
-  await hideWindow()
+  // 延迟设置 isMouseInWindow 为 false，给鼠标移动到托盘图标的时间
+  setTimeout(() => {
+    // 只有在延迟后鼠标仍然不在窗口内时才隐藏
+    if (!isMouseInWindow.value) {
+      hideWindow()
+    }
+  }, 200)
 }
 
-// TODO 在托盘图标闪烁的时候鼠标移动到null的图标上的时候会导致Notify窗口消失或者直接不显示Notify，即使已经移动到Notify了也会消失。
+// 增强的鼠标离开处理：增加延迟检测，避免托盘图标交互导致的误触发
 onMounted(async () => {
   // 初始化窗口高度
   resizeWindow('notify', 280, 140)

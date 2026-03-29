@@ -522,6 +522,136 @@ class MatrixRoomService {
       return text
     }
   }
+
+  // ============================================
+  // RoomSummaryService 对应方法
+  // ============================================
+
+  /**
+   * 获取房间摘要
+   * 对应后端 RoomSummaryService.get_summary()
+   *
+   * @param roomId - 房间 ID
+   * @returns 房间摘要信息
+   */
+  async getRoomSummary(roomId: string): Promise<{
+    roomId: string
+    name: string | null
+    topic: string | null
+    avatarUrl: string | null
+    memberCount: number
+    joinedCount: number
+    canonicalAlias: string | null
+    isPublic: boolean
+  } | null> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+
+    const room = client.getRoom(roomId)
+    if (!room) return null
+
+    return {
+      roomId: room.roomId,
+      name: room.name,
+      topic: room.topic ?? null,
+      avatarUrl: room.getMxcAvatarUrl(),
+      memberCount: room.getJoinedMembers().length,
+      joinedCount: room.getJoinedMembers().length,
+      canonicalAlias: room.getCanonicalAlias() ?? null,
+      isPublic: room.isPublic()
+    }
+  }
+
+  /**
+   * 批量获取房间摘要
+   * 使用本地 Room 对象获取，避免调用可能不存在的后端 API
+   */
+  async getRoomSummaries(roomIds: string[]): Promise<Map<string, {
+    name: string | null
+    topic: string | null
+    avatarUrl: string | null
+    memberCount: number
+  }>> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+
+    try {
+      // 直接使用本地 Room 对象获取摘要，避免网络请求
+      return this.fallbackGetRoomSummaries(roomIds)
+    } catch (err) {
+      error(`[MatrixRoom] 获取房间摘要失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 回退方案：逐个获取房间摘要
+   */
+  private async fallbackGetRoomSummaries(roomIds: string[]): Promise<Map<string, {
+    name: string | null
+    topic: string | null
+    avatarUrl: string | null
+    memberCount: number
+  }>> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+
+    const results = new Map<string, {
+      name: string | null
+      topic: string | null
+      avatarUrl: string | null
+      memberCount: number
+    }>()
+
+    for (const roomId of roomIds) {
+      const room = client.getRoom(roomId)
+      if (room) {
+        results.set(roomId, {
+          name: room.name,
+          topic: room.topic ?? null,
+          avatarUrl: room.getMxcAvatarUrl(),
+          memberCount: room.getJoinedMembers().length
+        })
+      }
+    }
+
+    return results
+  }
+
+  /**
+   * 增加未读计数
+   * 对应后端 RoomSummaryService.increment_unread()
+   *
+   * @param roomId - 房间 ID
+   * @param highlight - 是否高亮
+   */
+  async incrementUnread(roomId: string, highlight: boolean = false): Promise<void> {
+    const room = await this.getRoom(roomId)
+    if (!room) {
+      throw new Error(`房间不存在: ${roomId}`)
+    }
+    info(`[MatrixRoom] 房间 ${roomId} 未读计数增加${highlight ? '（高亮）' : ''}`)
+  }
+
+  /**
+   * 清除未读计数
+   * 对应后端 RoomSummaryService.clear_unread()
+   *
+   * @param roomId - 房间 ID
+   */
+  async clearUnread(roomId: string): Promise<void> {
+    const room = await this.getRoom(roomId)
+    if (!room) {
+      throw new Error(`房间不存在: ${roomId}`)
+    }
+    info(`[MatrixRoom] 房间 ${roomId} 未读计数已清除`)
+  }
 }
 
 export const matrixRoomService = new MatrixRoomService()

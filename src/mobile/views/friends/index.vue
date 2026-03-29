@@ -72,51 +72,147 @@
 
       <n-tabs type="segment" animated class="mt-4px p-[4px_10px_0px_8px]">
         <n-tab-pane name="1" :tab="t('mobile_contact.tab.contacts')">
-          <n-collapse :display-directive="'show'" accordion :default-expanded-names="['1']">
+          <n-collapse :display-directive="'show'" :default-expanded-names="['special', 'normal']">
             <ContextMenu @contextmenu="showMenu($event)" @select="handleSelect($event.label)" :menu="menuList">
-              <n-collapse-item :title="t('mobile_contact.friend.title')" name="1">
+              <!-- 特殊关心分组 -->
+              <n-collapse-item v-if="specialContacts.length > 0" name="special">
+                <template #header>
+                  <n-flex align="center" :size="8">
+                    <svg class="size-14px color-#f5a623"><use href="#star-fill"></use></svg>
+                    <span>{{ t('mobile_contact.group.special') || '特别关心' }}</span>
+                  </n-flex>
+                </template>
                 <template #header-extra>
-                  <span class="text-(10px #707070)">{{ onlineCount }}/{{ contactStore.contactsList.length }}</span>
+                  <span class="text-(10px #707070)">{{ specialContacts.filter(c => c.activeStatus === OnlineEnum.ONLINE).length }}/{{ specialContacts.length }}</span>
                 </template>
                 <n-scrollbar style="max-height: calc(100vh - (340px + var(--safe-area-inset-top)))">
-                  <!-- 用户框 多套一层div来移除默认的右键事件然后覆盖掉因为margin空隙而导致右键可用 -->
                   <div @contextmenu.stop="$event.preventDefault()">
                     <n-flex
-                      :size="10"
+                      v-for="item in specialContacts"
+                      :key="item.uid"
                       @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
                       :class="{ active: activeItem === item.uid }"
                       class="item-box w-full h-75px mb-5px"
-                      v-for="item in sortedContacts"
-                      :key="item.uid">
-                      <n-flex align="center" :size="10" class="h-75px pl-6px pr-8px flex-1 truncate">
-                        <n-avatar
-                          round
-                          style="border: 1px solid var(--avatar-border-color)"
-                          :size="44"
-                          class="grayscale"
-                          :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE }"
-                          :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                          fallback-src="/logo.png" />
+                      align="center"
+                      :size="10">
+                      <n-avatar
+                        round
+                        style="border: 1px solid var(--avatar-border-color)"
+                        :size="44"
+                        class="grayscale"
+                        :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
+                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                        fallback-src="/logo.png" />
+                      <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
+                        <span class="text-14px leading-tight flex-1 truncate">
+                          {{ groupStore.getUserInfo(item.uid)?.name }}
+                        </span>
+                        <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
+                          [
+                          <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
+                          <template v-else-if="getUserState(item.uid)">
+                            <img class="size-12px rounded-50%" :src="getUserState(item.uid)?.url" alt="" />
+                            {{ getUserState(item.uid)?.title }}
+                          </template>
+                          <template v-else>
+                            <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
+                            {{ item.activeStatus === OnlineEnum.ONLINE ? (t('mobile_contact.status.online') || '在线') : (t('mobile_contact.status.offline') || '离线') }}
+                          </template>
+                          ]
+                        </div>
+                      </n-flex>
+                    </n-flex>
+                  </div>
+                </n-scrollbar>
+              </n-collapse-item>
 
-                        <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
-                          <span class="text-14px leading-tight flex-1 truncate">
-                            {{ groupStore.getUserInfo(item.uid)?.name }}
-                          </span>
+              <!-- 普通好友分组 -->
+              <n-collapse-item name="normal">
+                <template #header>
+                  <n-flex align="center" :size="8">
+                    <svg class="size-14px color-#666"><use href="#friends"></use></svg>
+                    <span>{{ t('mobile_contact.group.normal') || '我的好友' }}</span>
+                  </n-flex>
+                </template>
+                <template #header-extra>
+                  <span class="text-(10px #707070)">{{ onlineCount - specialContacts.filter(c => c.activeStatus === OnlineEnum.ONLINE).length }}/{{ normalContacts.length }}</span>
+                </template>
+                <n-scrollbar style="max-height: calc(100vh - (340px + var(--safe-area-inset-top)))">
+                  <div @contextmenu.stop="$event.preventDefault()">
+                    <n-flex
+                      v-for="item in normalContacts"
+                      :key="item.uid"
+                      @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
+                      :class="{ active: activeItem === item.uid }"
+                      class="item-box w-full h-75px mb-5px"
+                      align="center"
+                      :size="10">
+                      <n-avatar
+                        round
+                        style="border: 1px solid var(--avatar-border-color)"
+                        :size="44"
+                        class="grayscale"
+                        :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
+                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                        fallback-src="/logo.png" />
+                      <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
+                        <span class="text-14px leading-tight flex-1 truncate">
+                          {{ groupStore.getUserInfo(item.uid)?.name }}
+                        </span>
+                        <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
+                          [
+                          <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
+                          <template v-else-if="getUserState(item.uid)">
+                            <img class="size-12px rounded-50%" :src="getUserState(item.uid)?.url" alt="" />
+                            {{ getUserState(item.uid)?.title }}
+                          </template>
+                          <template v-else>
+                            <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
+                            {{ item.activeStatus === OnlineEnum.ONLINE ? (t('mobile_contact.status.online') || '在线') : (t('mobile_contact.status.offline') || '离线') }}
+                          </template>
+                          ]
+                        </div>
+                      </n-flex>
+                    </n-flex>
+                  </div>
+                </n-scrollbar>
+              </n-collapse-item>
 
-                          <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
-                            [
-                            <template v-if="isBotUser(item.uid)">助手</template>
-                            <template v-else-if="getUserState(item.uid)">
-                              <img class="size-12px rounded-50%" :src="getUserState(item.uid)?.url" alt="" />
-                              {{ getUserState(item.uid)?.title }}
-                            </template>
-                            <template v-else>
-                              <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
-                              {{ item.activeStatus === OnlineEnum.ONLINE ? '在线' : '离线' }}
-                            </template>
-                            ]
-                          </div>
-                        </n-flex>
+              <!-- 屏蔽好友分组 -->
+              <n-collapse-item v-if="blockedContacts.length > 0" name="blocked">
+                <template #header>
+                  <n-flex align="center" :size="8">
+                    <svg class="size-14px color-#999"><use href="#forbidden"></use></svg>
+                    <span>{{ t('mobile_contact.group.blocked') || '已屏蔽' }}</span>
+                  </n-flex>
+                </template>
+                <template #header-extra>
+                  <span class="text-(10px #707070)">{{ blockedContacts.length }}</span>
+                </template>
+                <n-scrollbar style="max-height: calc(100vh - (340px + var(--safe-area-inset-top)))">
+                  <div @contextmenu.stop="$event.preventDefault()">
+                    <n-flex
+                      v-for="item in blockedContacts"
+                      :key="item.uid"
+                      @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
+                      :class="{ active: activeItem === item.uid }"
+                      class="item-box w-full h-75px mb-5px opacity-60"
+                      align="center"
+                      :size="10">
+                      <n-avatar
+                        round
+                        style="border: 1px solid var(--avatar-border-color)"
+                        :size="44"
+                        class="grayscale"
+                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                        fallback-src="/logo.png" />
+                      <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
+                        <span class="text-14px leading-tight flex-1 truncate">
+                          {{ groupStore.getUserInfo(item.uid)?.name }}
+                        </span>
+                        <div class="text leading-tight text-12px text-#909090">
+                          [{{ t('mobile_contact.status.blocked') || '已屏蔽' }}]
+                        </div>
                       </n-flex>
                     </n-flex>
                   </div>
@@ -267,6 +363,39 @@ const sortedContacts = computed(() => {
     if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
     return 0
   })
+})
+
+/** 特殊关心好友列表 */
+const specialContacts = computed(() => {
+  return contactStore.favoriteContacts.sort((a, b) => {
+    if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
+    if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
+    return 0
+  })
+})
+
+/** 屏蔽好友列表 */
+const blockedContacts = computed(() => {
+  return contactStore.blockedContacts.sort((a, b) => {
+    return (b.lastOptTime || 0) - (a.lastOptTime || 0)
+  })
+})
+
+/** 普通好友列表（排除特殊关心和屏蔽的） */
+const normalContacts = computed(() => {
+  const specialIds = new Set(specialContacts.value.map(c => c.uid))
+  const blockedIds = new Set(blockedContacts.value.map(c => c.uid))
+  return contactStore.contactsList
+    .filter(c => !specialIds.has(c.uid) && !blockedIds.has(c.uid))
+    .sort((a, b) => {
+      const aIsBot = isBotUser(a.uid)
+      const bIsBot = isBotUser(b.uid)
+      if (aIsBot && !bIsBot) return -1
+      if (!aIsBot && bIsBot) return 1
+      if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
+      if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
+      return 0
+    })
 })
 
 const { preloadChatRoom } = useMessage()

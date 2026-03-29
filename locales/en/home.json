@@ -464,10 +464,16 @@
       "friend": "My Friends",
       "group": "My Groups"
     },
+    "group": {
+      "special": "Special Care",
+      "normal": "My Friends",
+      "blocked": "Blocked"
+    },
     "bot_tag": "Assistant",
     "status": {
       "online": "Online",
-      "offline": "Offline"
+      "offline": "Offline",
+      "blocked": "Blocked"
     },
     "menu": {
       "add_group": "Add Category",

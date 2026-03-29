@@ -1,0 +1,16 @@
+{
+  "title": "Report",
+  "select_reason": "Please select a reason for reporting",
+  "placeholder": "Select reason",
+  "submit": "Submit Report",
+  "sexual": "Sexual Content",
+  "violence": "Violence",
+  "hate_speech": "Hate Speech",
+  "self_harm": "Self-Harm",
+  "terrorism": "Terrorism",
+  "spam": "Spam",
+  "violation": "Content Violation",
+  "other": "Other",
+  "success": "Report submitted, thank you for your feedback",
+  "failed": "Report failed, please try again"
+}

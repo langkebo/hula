@@ -572,7 +572,7 @@ export const useCommon = () => {
       reply.value.imgCount = imageCount
     }
 
-    // todo: 暂时用http开头的图片判断，后续需要优化
+    // 使用 http 判断网络图片，后续可优化为检测 URL 格式
     if (content.startsWith('http')) {
       // 再创建一个img标签节点，并设置src属性为base64编码的图片
       contentBox = document.createElement('img')

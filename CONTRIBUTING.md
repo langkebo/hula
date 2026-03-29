@@ -13,7 +13,7 @@ HuLa is an open-source project, and we welcome your collaboration. Before you ju
 📦 Clone your forked repository to your local machine using the `git clone` command:
 
 ```bash
-git clone https://github.com/HuLaSpark/HuLa.git
+git clone https://gitee.com/llangkebo/hula/.git
 ```
 
 ## Create a New Branch
@@ -51,7 +51,7 @@ This will commit all the files to git, Please keep your commits focused and clea
 ⚙️ Periodically, sync your forked repository with the original (upstream) repository to stay up-to-date with the latest changes.
 
 ```bash
-git remote add upstream https://github.com/HuLaSpark/HuLa.git
+git remote add upstream https://gitee.com/llangkebo/hula/.git
 git fetch upstream
 git merge upstream/master
 ```

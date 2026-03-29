@@ -514,6 +514,46 @@ const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         path: '/shortcut',
         name: 'shortcut',
         component: () => import('@/views/moreWindow/settings/Shortcut.vue')
+      },
+      {
+        path: '/privateChat',
+        name: 'privateChat',
+        component: () => import('@/views/moreWindow/settings/PrivateChat.vue')
+      },
+      {
+        path: '/account',
+        name: 'account',
+        component: () => import('@/views/moreWindow/settings/Account.vue')
+      },
+      {
+        path: '/sessions',
+        name: 'sessions',
+        component: () => import('@/views/moreWindow/settings/Sessions.vue')
+      },
+      {
+        path: '/appearance',
+        name: 'appearance',
+        component: () => import('@/views/moreWindow/settings/Appearance.vue')
+      },
+      {
+        path: '/sidebar',
+        name: 'sidebar',
+        component: () => import('@/views/moreWindow/settings/Sidebar.vue')
+      },
+      {
+        path: '/voiceVideo',
+        name: 'voiceVideo',
+        component: () => import('@/views/moreWindow/settings/VoiceVideo.vue')
+      },
+      {
+        path: '/securityPrivacy',
+        name: 'securityPrivacy',
+        component: () => import('@/views/moreWindow/settings/SecurityPrivacy.vue')
+      },
+      {
+        path: '/helpAbout',
+        name: 'helpAbout',
+        component: () => import('@/views/moreWindow/settings/HelpAbout.vue')
       }
     ]
   },
@@ -654,6 +694,11 @@ const getCommonRoutes = (): Array<RouteRecordRaw> => [
     path: '/modal-secretChat',
     name: 'modal-secretChat',
     component: () => import('@/views/loginWindow/SecretChatModal.vue')
+  },
+  {
+    path: '/oidc/callback',
+    name: 'oidcCallback',
+    component: () => import('@/views/loginWindow/OidcCallback.vue')
   }
 ]
 

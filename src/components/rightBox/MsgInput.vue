@@ -805,7 +805,7 @@ onMounted(async () => {
       handleAitKeyChange(1, groupedAIModels, virtualListInstAI.value!, selectedAIKey)
     }
   })
-  // TODO: 暂时已经关闭了独立窗口聊天功能
+  // 独立窗口聊天功能已关闭
   emit('aloneWin')
   nextTick(() => {
     // 移动端不自动聚焦
@@ -815,8 +815,7 @@ onMounted(async () => {
       setIsFocus(true)
     }
   })
-  // TODO 应该把打开的窗口的item给存到set中，需要修改输入框和消息展示的搭配，输入框和消息展示模块应该是一体并且每个用户独立的，这样当我点击这个用户框输入消息的时候就可以暂存信息了并且可以判断每个消息框是什么类型是群聊还是单聊，不然会导致比如@框可以在单聊框中出现 (nyh -> 2024-04-09 01:03:59)
-  /** 当不是独立窗口的时候也就是组件与组件之间进行通信然后监听信息对话的变化 */
+  // 窗口与组件间通信：通过 mitt 事件监听，AT 功能需要在单聊/群聊中正确区分
   useMitt.on(MittEnum.AT, (event: any) => {
     handleAit(groupStore.getUserInfo(event)!)
   })

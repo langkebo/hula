@@ -1020,7 +1020,17 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     {
       label: () => t('menu.report'),
       icon: 'caution',
-      click: () => {}
+      click: async (item: ContextMenuItem & { message?: { id: string } }) => {
+        // 获取消息的 roomId 和 eventId
+        const roomId = globalStore.currentSessionRoomId
+        const eventId = item.message?.id
+        if (!roomId || !eventId) {
+          window.$message.warning('无法获取消息信息')
+          return
+        }
+        // TODO: 实现举报功能 - useReportDialog 模块未找到
+        window.$message.info('举报功能开发中')
+      }
     }
   ])
   /** emoji表情菜单 */

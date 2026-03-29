@@ -1,403 +1,316 @@
-import type { Room } from 'matrix-js-sdk'
-import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+/**
+ * Matrix Space API 服务
+ *
+ * 提供 Space (空间) 功能支持
+ * 统一使用 SDK SpaceManager
+ */
 
-export interface Space {
-  roomId: string
+import type { MatrixClient, Room } from 'matrix-js-sdk'
+import { SpaceManager, Space, SpaceChild, SpaceMember, SpaceHierarchy, CreateSpaceOptions } from 'matrix-js-sdk'
+
+export interface SpaceOptions {
+  name: string
+  topic?: string
+  visibility?: 'public' | 'private'
+  avatarUrl?: string
+}
+
+export interface SpaceInfo {
+  spaceId: string
   name: string
   topic?: string
   avatarUrl?: string
-  isPublic: boolean
-  isJoined: boolean
   memberCount: number
-  children: SpaceChild[]
+  childCount: number
 }
 
-export interface SpaceChild {
-  roomId: string
-  name?: string
-  avatarUrl?: string
-  order?: string
-  suggested: boolean
-  viaServers: string[]
-  isSpace: boolean
-  isJoined: boolean
-}
+/**
+ * Space 服务
+ * 统一使用 matrix-js-sdk 的 SpaceManager
+ */
+class SpaceService {
+  private client: MatrixClient | null = null
+  private spaceManager: SpaceManager | null = null
 
-export interface SpaceHierarchy {
-  spaceId: string
-  rooms: SpaceChild[]
-  nextBatch?: string
-}
+  /**
+   * 初始化服务
+   */
+  initialize(client: MatrixClient): void {
+    this.client = client
+    // 使用 SDK 的 SpaceManager
+    this.spaceManager = client.getSpaceManager()
+    console.log('[Space] 服务已初始化')
+  }
 
-export interface CreateSpaceOptions {
-  name: string
-  topic?: string
-  avatarUrl?: string
-  isPublic: boolean
-  alias?: string
-}
-
-export interface AddChildOptions {
-  spaceId: string
-  childRoomId: string
-  viaServers?: string[]
-  order?: string
-  suggested?: boolean
-}
-
-class MatrixSpaceService {
-  async createSpace(options: CreateSpaceOptions): Promise<string> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Space] 客户端未初始化')
+  /**
+   * 创建 Space
+   */
+  async createSpace(options: SpaceOptions): Promise<SpaceInfo | null> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
     }
 
     try {
-      const createOptions: any = {
+      const createOptions: CreateSpaceOptions = {
         name: options.name,
-        preset: options.isPublic ? 'public_chat' : 'private_chat',
-        room_alias_name: options.alias,
         topic: options.topic,
-        initial_state: [
-          {
-            type: 'm.room.history_visibility',
-            state_key: '',
-            content: {
-              history_visibility: options.isPublic ? 'world_readable' : 'shared'
-            }
-          },
-          {
-            type: 'm.space',
-            state_key: '',
-            content: {}
-          }
-        ],
-        creation_content: {
-          type: 'm.space'
-        }
+        visibility: options.visibility,
+        avatarUrl: options.avatarUrl
       }
 
-      if (options.avatarUrl) {
-        createOptions.initial_state.push({
-          type: 'm.room.avatar',
-          state_key: '',
-          content: {
-            url: options.avatarUrl
-          }
-        })
-      }
+      const space = await this.spaceManager.createSpace(createOptions)
 
-      const response = await client.createRoom(createOptions)
-      info(`[Space] 创建空间成功: ${response.room_id}`)
-      return response.room_id
-    } catch (err) {
-      error(`[Space] 创建空间失败: ${err}`)
-      throw err
+      console.log('[Space] Space 已创建:', space.space_id)
+
+      return {
+        spaceId: space.space_id,
+        name: space.name || options.name,
+        topic: space.topic || options.topic,
+        avatarUrl: space.avatar_url || options.avatarUrl,
+        memberCount: space.member_count || 0,
+        childCount: 0
+      }
+    } catch (error) {
+      console.error('[Space] 创建 Space 失败:', error)
+      throw error
     }
   }
 
-  async addChildToSpace(options: AddChildOptions): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Space] 客户端未初始化')
+  /**
+   * 获取 Space 信息
+   */
+  async getSpace(spaceId: string): Promise<SpaceInfo | null> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
     }
 
     try {
-      const content: any = {
-        via: options.viaServers || [client.getDomain() || 'matrix.org'],
-        suggested: options.suggested ?? false
+      const space = await this.spaceManager.getSpace(spaceId)
+      if (!space) return null
+
+      return {
+        spaceId: space.space_id,
+        name: space.name || '',
+        topic: space.topic,
+        avatarUrl: space.avatar_url,
+        memberCount: space.member_count || 0,
+        childCount: 0
       }
-
-      if (options.order) {
-        content.order = options.order
-      }
-
-      await client.sendStateEvent(options.spaceId, 'm.space.child' as any, content, options.childRoomId)
-      info(`[Space] 添加子房间成功: ${options.childRoomId} -> ${options.spaceId}`)
-    } catch (err) {
-      error(`[Space] 添加子房间失败: ${err}`)
-      throw err
-    }
-  }
-
-  async removeChildFromSpace(spaceId: string, childRoomId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Space] 客户端未初始化')
-    }
-
-    try {
-      await client.sendStateEvent(spaceId, 'm.space.child' as any, {}, childRoomId)
-      info(`[Space] 移除子房间成功: ${childRoomId} -> ${spaceId}`)
-    } catch (err) {
-      error(`[Space] 移除子房间失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getSpace(spaceId: string): Promise<Space | null> {
-    const client = matrixClientService.getClient()
-    if (!client) return null
-
-    try {
-      const room = client.getRoom(spaceId)
-      if (!room) return null
-
-      if (!this.isSpace(room)) return null
-
-      return this.roomToSpace(room)
-    } catch (err) {
-      error(`[Space] 获取空间信息失败: ${err}`)
+    } catch (error) {
+      console.error('[Space] 获取 Space 失败:', error)
       return null
     }
   }
 
-  async getSpaceChildren(spaceId: string): Promise<SpaceChild[]> {
-    const client = matrixClientService.getClient()
-    if (!client) return []
+  /**
+   * 更新 Space
+   */
+  async updateSpace(spaceId: string, options: Partial<SpaceOptions>): Promise<void> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
+    }
 
     try {
-      const room = client.getRoom(spaceId)
-      if (!room) return []
-
-      const children: SpaceChild[] = []
-      const childEvents = room.currentState.getStateEvents('m.space.child' as any)
-
-      for (const event of childEvents) {
-        const stateKey = event.getStateKey()
-        if (!stateKey) continue
-
-        const content = event.getContent() as { via?: string[]; order?: string; suggested?: boolean }
-        if (!content.via || content.via.length === 0) continue
-
-        const childRoom = client.getRoom(stateKey)
-        const isSpace = childRoom ? this.isSpace(childRoom) : false
-
-        children.push({
-          roomId: stateKey,
-          name: childRoom?.name,
-          avatarUrl: childRoom?.getMxcAvatarUrl() || undefined,
-          order: content.order,
-          suggested: content.suggested ?? false,
-          viaServers: content.via || [],
-          isSpace,
-          isJoined: !!childRoom
-        })
-      }
-
-      return children.sort((a, b) => {
-        if (a.order && b.order) {
-          return a.order.localeCompare(b.order)
-        }
-        if (a.order) return -1
-        if (b.order) return 1
-        return (a.name || '').localeCompare(b.name || '')
+      await this.spaceManager.updateSpace(spaceId, {
+        name: options.name,
+        topic: options.topic,
+        avatarUrl: options.avatarUrl
       })
-    } catch (err) {
-      error(`[Space] 获取子房间失败: ${err}`)
+      console.log('[Space] Space 已更新:', spaceId)
+    } catch (error) {
+      console.error('[Space] 更新 Space 失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 删除 Space
+   */
+  async deleteSpace(spaceId: string): Promise<void> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
+    }
+
+    try {
+      await this.spaceManager.deleteSpace(spaceId)
+      console.log('[Space] Space 已删除:', spaceId)
+    } catch (error) {
+      console.error('[Space] 删除 Space 失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 获取 Space 子房间
+   */
+  async getSpaceChildren(spaceId: string): Promise<SpaceChild[]> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
+    }
+
+    try {
+      const children = await this.spaceManager.getSpaceChildren(spaceId)
+      return children
+    } catch (error) {
+      console.error('[Space] 获取 Space 子房间失败:', error)
       return []
     }
   }
 
-  async getSpaceHierarchy(spaceId: string, maxDepth: number = 1): Promise<SpaceHierarchy[]> {
-    const result: SpaceHierarchy[] = []
-    await this.buildSpaceHierarchy(spaceId, result, maxDepth, 0)
-    return result
-  }
+  /**
+   * 添加子房间到 Space
+   */
+  async addChildToSpace(spaceId: string, roomId: string, options?: { via?: string[]; suggested?: boolean }): Promise<void> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
+    }
 
-  private async buildSpaceHierarchy(
-    spaceId: string,
-    result: SpaceHierarchy[],
-    maxDepth: number,
-    currentDepth: number
-  ): Promise<void> {
-    if (currentDepth >= maxDepth) return
-
-    const children = await this.getSpaceChildren(spaceId)
-    result.push({
-      spaceId,
-      rooms: children
-    })
-
-    for (const child of children) {
-      if (child.isSpace && child.isJoined) {
-        await this.buildSpaceHierarchy(child.roomId, result, maxDepth, currentDepth + 1)
-      }
+    try {
+      await this.spaceManager.addChild(spaceId, {
+        room_id: roomId,
+        via_servers: options?.via,
+        is_suggested: options?.suggested
+      })
+      console.log('[Space] 子房间已添加:', roomId, '到', spaceId)
+    } catch (error) {
+      console.error('[Space] 添加子房间失败:', error)
+      throw error
     }
   }
 
-  getJoinedSpaces(): Space[] {
-    const client = matrixClientService.getClient()
-    if (!client) return []
+  /**
+   * 从 Space 移除子房间
+   */
+  async removeChildFromSpace(spaceId: string, roomId: string): Promise<void> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
+    }
 
     try {
-      const rooms = client.getRooms()
-      return rooms.filter((room) => this.isSpace(room)).map((room) => this.roomToSpace(room))
-    } catch (err) {
-      error(`[Space] 获取已加入空间失败: ${err}`)
+      await this.spaceManager.removeChild(spaceId, roomId)
+      console.log('[Space] 子房间已移除:', roomId, '从', spaceId)
+    } catch (error) {
+      console.error('[Space] 移除子房间失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 获取 Space 成员
+   */
+  async getSpaceMembers(spaceId: string): Promise<SpaceMember[]> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
+    }
+
+    try {
+      const members = await this.spaceManager.getSpaceMembers(spaceId)
+      return members
+    } catch (error) {
+      console.error('[Space] 获取 Space 成员失败:', error)
       return []
     }
   }
 
-  isSpace(room: Room): boolean {
-    const createEvent = room.currentState.getStateEvents('m.room.create' as any, '')
-    if (!createEvent) return false
-
-    const createContent = createEvent.getContent()
-    return createContent.type === 'm.space'
-  }
-
-  private roomToSpace(room: Room): Space {
-    const client = matrixClientService.getClient()
-    const myUserId = client?.getUserId()
-    const member = myUserId ? room.getMember(myUserId) : null
-
-    const topicEvent = room.currentState.getStateEvents('m.room.topic' as any, '')
-    const topicContent = topicEvent?.getContent() as { topic?: string } | undefined
-
-    return {
-      roomId: room.roomId,
-      name: room.name || room.roomId,
-      topic: topicContent?.topic,
-      avatarUrl: room.getMxcAvatarUrl() || undefined,
-      isPublic: room.getJoinRule() === 'public',
-      isJoined: member?.membership === 'join',
-      memberCount: room.getJoinedMemberCount(),
-      children: []
-    }
-  }
-
-  async updateSpaceOrder(spaceId: string, childRoomId: string, order: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Space] 客户端未初始化')
+  /**
+   * 获取 Space 层级结构
+   */
+  async getSpaceHierarchy(spaceId: string): Promise<SpaceHierarchy | null> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
     }
 
     try {
-      const room = client.getRoom(spaceId)
-      if (!room) {
-        throw new Error(`[Space] 空间不存在: ${spaceId}`)
-      }
-
-      const existingEvent = room.currentState.getStateEvents('m.space.child' as any, childRoomId)
-      const existingContent = existingEvent?.getContent() || {}
-
-      await client.sendStateEvent(
-        spaceId,
-        'm.space.child' as any,
-        {
-          ...existingContent,
-          order
-        },
-        childRoomId
-      )
-      info(`[Space] 更新子房间顺序成功: ${childRoomId}`)
-    } catch (err) {
-      error(`[Space] 更新子房间顺序失败: ${err}`)
-      throw err
+      const hierarchy = await this.spaceManager.getSpaceHierarchy(spaceId)
+      return hierarchy
+    } catch (error) {
+      console.error('[Space] 获取 Space 层级结构失败:', error)
+      return null
     }
   }
 
-  async setSpaceSuggested(spaceId: string, childRoomId: string, suggested: boolean): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Space] 客户端未初始化')
+  /**
+   * 获取用户所有 Space
+   */
+  async getUserSpaces(): Promise<SpaceInfo[]> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
     }
 
     try {
-      const room = client.getRoom(spaceId)
-      if (!room) {
-        throw new Error(`[Space] 空间不存在: ${spaceId}`)
-      }
+      const spaces = await this.spaceManager.getUserSpaces()
 
-      const existingEvent = room.currentState.getStateEvents('m.space.child' as any, childRoomId)
-      const existingContent = existingEvent?.getContent() || {}
-
-      await client.sendStateEvent(
-        spaceId,
-        'm.space.child' as any,
-        {
-          ...existingContent,
-          suggested
-        },
-        childRoomId
-      )
-      info(`[Space] 设置建议房间成功: ${childRoomId}`)
-    } catch (err) {
-      error(`[Space] 设置建议房间失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getSpaceParents(roomId: string): Promise<string[]> {
-    const client = matrixClientService.getClient()
-    if (!client) return []
-
-    try {
-      const parents: string[] = []
-      const rooms = client.getRooms()
-
-      for (const room of rooms) {
-        if (!this.isSpace(room)) continue
-
-        const childEvent = room.currentState.getStateEvents('m.space.child' as any, roomId)
-        if (childEvent && childEvent.getContent()?.via) {
-          parents.push(room.roomId)
-        }
-      }
-
-      return parents
-    } catch {
+      return spaces.map((space: Space) => ({
+        spaceId: space.space_id,
+        name: space.name || '',
+        topic: space.topic,
+        avatarUrl: space.avatar_url,
+        memberCount: space.member_count || 0,
+        childCount: 0
+      }))
+    } catch (error) {
+      console.error('[Space] 获取用户 Spaces 失败:', error)
       return []
     }
   }
 
-  async inviteToSpace(spaceId: string, userId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Space] 客户端未初始化')
+  /**
+   * 搜索 Spaces
+   */
+  async searchSpaces(query: string, limit = 10): Promise<SpaceInfo[]> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
     }
 
     try {
-      await client.invite(spaceId, userId)
-      info(`[Space] 邀请用户加入空间: ${userId} -> ${spaceId}`)
-    } catch (err) {
-      error(`[Space] 邀请用户失败: ${err}`)
-      throw err
+      const spaces = await this.spaceManager.searchSpaces(query, limit)
+
+      return spaces.map((space: Space) => ({
+        spaceId: space.space_id,
+        name: space.name || '',
+        topic: space.topic,
+        avatarUrl: space.avatar_url,
+        memberCount: space.member_count || 0,
+        childCount: 0
+      }))
+    } catch (error) {
+      console.error('[Space] 搜索 Spaces 失败:', error)
+      return []
     }
   }
 
-  async joinSpace(spaceId: string, viaServers?: string[]): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Space] 客户端未初始化')
+  /**
+   * 检查房间是否是 Space
+   */
+  async isSpace(roomId: string): Promise<boolean> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
     }
 
     try {
-      await client.joinRoom(spaceId, { viaServers })
-      info(`[Space] 加入空间成功: ${spaceId}`)
-    } catch (err) {
-      error(`[Space] 加入空间失败: ${err}`)
-      throw err
+      return await this.spaceManager.isSpace(roomId)
+    } catch (error) {
+      console.error('[Space] 检查 Space 失败:', error)
+      return false
     }
   }
 
-  async leaveSpace(spaceId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Space] 客户端未初始化')
+  /**
+   * 获取 Space 统计信息
+   */
+  async getSpaceStats(spaceId: string): Promise<{ totalMessages: number; activeMembers: number; joinedMembers: number } | null> {
+    if (!this.spaceManager) {
+      throw new Error('SpaceManager 未初始化')
     }
 
     try {
-      await client.leave(spaceId)
-      info(`[Space] 离开空间成功: ${spaceId}`)
-    } catch (err) {
-      error(`[Space] 离开空间失败: ${err}`)
-      throw err
+      const stats = await this.spaceManager.getSpaceStats(spaceId)
+      return stats
+    } catch (error) {
+      console.error('[Space] 获取 Space 统计失败:', error)
+      return null
     }
   }
 }
 
-export const matrixSpaceService = new MatrixSpaceService()
-export default matrixSpaceService
+export const matrixSpaceService = new SpaceService()

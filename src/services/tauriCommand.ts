@@ -106,8 +106,7 @@ export const loginCommand = async (
     }
   }).then(async (res: any) => {
     // 数据库切换已在后端 login_command 中完成
-    // TODO: Matrix SDK 登录后初始化连接
-    // await matrixClientService.startClient()
+    // Matrix SDK 初始化连接通过 loginProcess -> setLoginState -> completeLogin 处理
     await loginProcess(res.token, res.refreshToken, res.client)
   })
 }

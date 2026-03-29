@@ -83,5 +83,25 @@ export default {
     recallSuccess: '消息已撤回',
     sendFailed: '发送失败',
     unsupported: '不支持的消息类型'
+  },
+  report: {
+    title: '举报消息',
+    select_reason: '请选择举报原因：',
+    placeholder: '选择举报原因',
+    submit: '提交举报',
+    success: '举报已提交',
+    fail: '举报失败，请稍后重试',
+    error_no_client: '客户端未就绪',
+    sexual: '色情内容',
+    violence: '暴力内容',
+    hate_speech: '仇恨言论',
+    self_harm: '自杀自残',
+    terrorism: '恐怖主义',
+    spam: '垃圾信息',
+    violation: '违规内容',
+    other: '其他'
+  },
+  menu: {
+    report: '举报'
   }
 }

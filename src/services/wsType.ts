@@ -112,7 +112,7 @@ export interface CallResponseData {
 
 export interface SignalData {
   roomId: string
-  signal: any
+  signal: unknown
   mediaType: 'AudioSignal' | 'VideoSignal'
 }
 

@@ -17,10 +17,10 @@
 
 <div align="center">
   <p>
-    <a href="https://gitee.com/HulaSpark/HuLa/stargazers">
-      <img src="https://gitee.com/HulaSpark/HuLa/badge/star.svg?theme=gvp" alt="Gitee Stars">
+    <a href="https://gitee.com/llangkebo/hula/stargazers">
+      <img src="https://gitee.com/llangkebo/hula/badge/star.svg?theme=gvp" alt="Gitee Stars">
     </a>
-    <a href="https://github.com/HulaSpark/HuLa/stargazers">
+    <a href="https://gitee.com/llangkebo/hula/stargazers">
       <img src="https://img.shields.io/github/stars/HulaSpark/HuLa?style=social" alt="GitHub Stars">
     </a>
     <a href="https://gitcode.com/HuLaSpark/HuLa">
@@ -285,7 +285,7 @@ HuLa 是一款基于 Tauri、Vite 7、Vue 3 和 TypeScript 构建的即时通讯
   <img src="https://openomy.com/svg?repo=HuLaSpark/HuLa&chart=podium&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
 </a>
 
-<!-- <a href="https://github.com/HuLaSpark/HuLa/graphs/contributors">
+<!-- <a href="https://gitee.com/llangkebo/hula/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=HuLaSpark/HuLa" />
 </a> -->
 
@@ -300,7 +300,7 @@ HuLa 是一款基于 Tauri、Vite 7、Vue 3 和 TypeScript 构建的即时通讯
 # 克隆项目
 git clone https://gitee.com/HuLaSpark/HuLa.git
 或者
-git clone https://github.com/HuLaSpark/HuLa.git
+git clone https://gitee.com/llangkebo/hula/.git
 
 # 进入项目目录
 cd HuLa
@@ -445,7 +445,7 @@ sudo xattr -r -d com.apple.quarantine /Applications/应用名称.app
 
 > 📝 **温馨提示**
 > 该名单为手动更新，如果您已赞助但未在列表中，请联系我们：
-> 🐛 [GitHub Issue](https://github.com/HuLaSpark/HuLa/issues) | 📧 邮箱: `2439646234@qq.com` | 💬 微信: `cy2439646234`
+> 🐛 [GitHub Issue](https://gitee.com/llangkebo/hula/issues) | 📧 邮箱: `2439646234@qq.com` | 💬 微信: `cy2439646234`
 
   <br>
 </div>

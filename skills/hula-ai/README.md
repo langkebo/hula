@@ -201,7 +201,7 @@ async function hula_new_feature(params) {
 
 ## 相关文档
 
-- [HuLa 前端项目](https://github.com/HuLaSpark/HuLa)
-- [HuLa 后端 synapse-rust](https://github.com/langkebo/synapse-rust)
+- [HuLa 前端项目](https://gitee.com/llangkebo/hula/)
+- [HuLa 后端 synapse-rust](https://gitee.com/llangkebo/hula)
 - [matrix-js-sdk](https://github.com/matrix-org/matrix-js-sdk)
 - [OpenClaw 文档](https://docs.openclaw.ai)

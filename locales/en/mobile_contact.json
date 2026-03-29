@@ -12,6 +12,15 @@
     "title": "My Friends"
   },
   "group": {
-    "title": "My Group"
+    "title": "My Group",
+    "special": "Special Care",
+    "normal": "My Friends",
+    "blocked": "Blocked"
+  },
+  "bot_tag": "Assistant",
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "blocked": "Blocked"
   }
 }

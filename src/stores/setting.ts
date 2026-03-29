@@ -39,7 +39,9 @@ const hashPassword = (password: string): string => {
   return hash.toString(16)
 }
 
-// TODO 使用indexDB或sqlite缓存数据，还需要根据每个账号来进行配置 (nyh -> 2024-03-26 01:22:12)
+// 缓存方案：使用 Pinia + localStorage 分账号存储
+// 后续可迁移到 IndexedDB 以支持更大的数据量
+// 每个账号的配置通过 userId 进行隔离存储
 const isDesktopComputed = computed(() => isDesktop())
 export const useSettingStore = defineStore(StoresEnum.SETTING, {
   state: (): STO.Setting => ({

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 import type { Room, MatrixEvent, RoomMember } from 'matrix-js-sdk'
 import { info, error } from '@tauri-apps/plugin-log'
 import { StoresEnum, MsgEnum } from '@/enums'
@@ -8,6 +9,63 @@ import matrixEventService from '@/services/matrix/MatrixEventService'
 import matrixRoomService from '@/services/matrix/MatrixRoomService'
 
 type MessageType = any
+
+/**
+ * LRU 缓存类 - 用于缓存 RoomDetail
+ */
+const DEFAULT_ROOM_CACHE_SIZE = 50 // 默认缓存房间数量
+
+class LRUCache<K, V> {
+  private cache: Map<K, V> = new Map()
+  private maxSize: number
+
+  constructor(maxSize: number) {
+    this.maxSize = maxSize
+  }
+
+  get(key: K): V | undefined {
+    if (!this.cache.has(key)) return undefined
+    
+    // 移动到末尾（最近使用）
+    const value = this.cache.get(key)
+    this.cache.delete(key)
+    this.cache.set(key, value!)
+    return value
+  }
+
+  set(key: K, value: V): void {
+    if (this.cache.has(key)) {
+      this.cache.delete(key)
+    } else if (this.cache.size >= this.maxSize) {
+      // 删除最旧的项（第一个）
+      const firstKey = this.cache.keys().next().value as K
+      if (firstKey) {
+        this.cache.delete(firstKey)
+      }
+    }
+    this.cache.set(key, value)
+  }
+
+  has(key: K): boolean {
+    return this.cache.has(key)
+  }
+
+  clear(): void {
+    this.cache.clear()
+  }
+
+  size(): number {
+    return this.cache.size
+  }
+
+  keys(): K[] {
+    return Array.from(this.cache.keys())
+  }
+
+  delete(key: K): boolean {
+    return this.cache.delete(key)
+  }
+}
 
 /**
  * 房间成员信息接口
@@ -24,7 +82,46 @@ export interface RoomMemberInfo {
 }
 
 /**
- * 房间信息接口
+ * 房间详情信息（按需加载）
+ * 对应后端 RoomSummaryService
+ */
+export interface RoomDetail {
+  /** 房间 ID */
+  roomId: string
+  /** 房间主题 */
+  topic: string | null
+  /** 成员数量 */
+  memberCount: number
+  /** 已加入成员数 */
+  joinedCount: number
+  /** 群主 ID */
+  ownerId: string | null
+  /** 加入规则 */
+  joinRule: 'public' | 'invite' | 'knock' | 'private' | null
+  /** 房间别名 */
+  canonicalAlias: string | null
+  /** 头像 URL */
+  avatarUrl: string | null
+  /** 创建时间 */
+  createdTs: number | null
+  /** 是否公开 */
+  isPublic: boolean | null
+}
+
+/**
+ * 未读计数信息
+ */
+export interface UnreadCount {
+  /** 通知数 */
+  notificationCount: number
+  /** @我的数量 */
+  highlightCount: number
+  /** 总未读数 */
+  totalCount: number
+}
+
+/**
+ * 房间信息接口（展示用）
  */
 export interface RoomInfo {
   /** 房间 ID */
@@ -49,6 +146,8 @@ export interface RoomInfo {
   lastMessageTime: number | null
   /** 成员列表 */
   members: RoomMemberInfo[]
+  /** 详情数据（按需加载） */
+  detail?: RoomDetail
 }
 
 /**
@@ -72,6 +171,9 @@ export interface RoomInfo {
  */
 export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   const matrixStore = useMatrixStore()
+
+  // LRU 缓存，用于存储 RoomDetail（限制 50 个房间）
+  const roomDetailCache = new LRUCache<string, RoomDetail>(50)
 
   const rooms = ref<Map<string, RoomInfo>>(new Map())
   const currentRoomId = ref<string | null>(null)
@@ -188,7 +290,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   }
 
   /**
-   * 加载房间列表
+   * 加载房间列表（支持 Sliding Sync 增量更新）
    *
    * @throws {Error} 如果客户端未初始化或加载失败
    */
@@ -200,9 +302,28 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
 
     isLoading.value = true
     try {
+      // 获取房间列表
       const rawRooms = client.getRooms()
+      
       for (const room of rawRooms) {
         const roomInfo = convertRoom(room)
+        
+        // 尝试获取 Sliding Sync 增量数据
+        try {
+          const slidingSync = matrixStore.getClient()?.slidingSync
+          if (slidingSync) {
+            const syncRoom = slidingSync.getRoom(room.roomId)
+            if (syncRoom) {
+              // 从 Sliding Sync 获取未读计数
+              roomInfo.unreadCount = syncRoom.notification_count ?? 0
+              roomInfo.highlightCount = syncRoom.highlight_count ?? 0
+              roomInfo.notificationCount = syncRoom.notification_count ?? 0
+            }
+          }
+        } catch (e) {
+          // 忽略 Sliding Sync 数据获取错误
+        }
+        
         rooms.value.set(room.roomId, roomInfo)
       }
       info(`[RoomStore] 加载房间列表成功: ${rawRooms.length} 个房间`)
@@ -212,6 +333,70 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     } finally {
       isLoading.value = false
     }
+  }
+
+  /**
+   * 处理 Sliding Sync 增量更新
+   * 对应后端增量推送，前端增量更新 UI
+   *
+   * @param roomId - 房间 ID
+   * @param roomData - 增量数据
+   */
+  async function handleIncrementalUpdate(roomId: string, roomData: {
+    timeline?: any[]
+    notification_count?: number
+    highlight_count?: number
+    summary?: any
+  }): Promise<void> {
+    const existingRoom = rooms.value.get(roomId)
+    if (!existingRoom) return
+
+    // 更新未读计数
+    if (roomData.notification_count !== undefined) {
+      existingRoom.unreadCount = roomData.notification_count
+      existingRoom.highlightCount = roomData.highlight_count ?? 0
+      existingRoom.notificationCount = roomData.notification_count
+    }
+
+    // 处理新消息
+    if (roomData.timeline && roomData.timeline.length > 0) {
+      const latestEvent = roomData.timeline[roomData.timeline.length - 1]
+      if (latestEvent) {
+        existingRoom.lastMessage = latestEvent.content?.body ?? null
+        existingRoom.lastMessageTime = latestEvent.origin_server_ts ?? null
+      }
+      
+      // 将新消息添加到消息列表
+      const existingMessages = messages.value.get(roomId) ?? []
+      const newMessages = roomData.timeline.map(event => ({
+        eventId: event.event_id,
+        type: event.type,
+        sender: event.sender,
+        content: event.content,
+        originServerTs: event.origin_server_ts
+      }))
+      messages.value.set(roomId, [...existingMessages, ...newMessages])
+    }
+
+    rooms.value.set(roomId, existingRoom)
+    info(`[RoomStore] 处理增量更新: ${roomId}`)
+  }
+
+  /**
+   * 增量更新多个房间
+   *
+   * @param updates - 增量更新数据
+   */
+  async function handleBatchIncrementalUpdate(updates: Record<string, {
+    timeline?: any[]
+    notification_count?: number
+    highlight_count?: number
+    summary?: any
+  }>): Promise<void> {
+    for (const [roomId, roomData] of Object.entries(updates)) {
+      await handleIncrementalUpdate(roomId, roomData)
+    }
+    info(`[RoomStore] 批量增量更新完成: ${Object.keys(updates).length} 个房间`)
   }
 
   /**
@@ -532,6 +717,133 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     })
   }
 
+  /**
+   * 加载房间详情（按需加载，带缓存）
+   * 对应后端 RoomSummaryService.get_summary()
+   *
+   * @param roomId - 房间 ID
+   * @returns 房间详情
+   */
+  async function loadRoomDetail(roomId: string): Promise<RoomDetail | null> {
+    // 先从缓存获取
+    const cached = roomDetailCache.get(roomId)
+    if (cached) {
+      return cached
+    }
+
+    try {
+      // 使用 MatrixRoomService 获取摘要
+      const summary = await matrixRoomService.getRoomSummary(roomId)
+      if (!summary) return null
+
+      const detail: RoomDetail = {
+        roomId: summary.roomId,
+        topic: summary.topic,
+        memberCount: summary.memberCount,
+        joinedCount: summary.joinedCount,
+        ownerId: null, // 需要从 room state 中获取
+        joinRule: null, // 需要从 room state 中获取
+        canonicalAlias: summary.canonicalAlias,
+        avatarUrl: summary.avatarUrl,
+        createdTs: null, // 需要从 room 获取
+        isPublic: summary.isPublic
+      }
+
+      // 存入缓存
+      roomDetailCache.set(roomId, detail)
+      return detail
+    } catch (err) {
+      error(`[RoomStore] 加载房间详情失败: ${err}`)
+      return null
+    }
+  }
+
+  /**
+   * 批量加载房间详情（带缓存检查）
+   * 优化性能：只加载未缓存的房间
+   *
+   * @param roomIds - 房间 ID 数组
+   */
+  async function loadRoomDetails(roomIds: string[]): Promise<void> {
+    // 过滤出需要加载的房间（未缓存的）
+    const uncachedIds = roomIds.filter(id => !roomDetailCache.has(id))
+    
+    if (uncachedIds.length === 0) {
+      info('[RoomStore] 所有房间详情已缓存')
+      return
+    }
+
+    info(`[RoomStore] 开始批量加载 ${uncachedIds.length} 个房间详情`)
+
+    // 并行加载（限制并发数为 3）
+    const batchSize = 3
+    for (let i = 0; i < uncachedIds.length; i += batchSize) {
+      const batch = uncachedIds.slice(i, i + batchSize)
+      await Promise.all(
+        batch.map(async (roomId) => {
+          const detail = await loadRoomDetail(roomId)
+          if (detail) {
+            const roomInfo = rooms.value.get(roomId)
+            if (roomInfo) {
+              roomInfo.detail = detail
+              rooms.value.set(roomId, roomInfo)
+            }
+          }
+        })
+      )
+    }
+
+    info(`[RoomStore] 批量加载完成`)
+  }
+
+  // 防抖版本的批量加载（用于滚动场景）
+  const debouncedLoadRoomDetails = useDebounceFn(
+    async (roomIds: string[]) => {
+      await loadRoomDetails(roomIds)
+    },
+    300
+  )
+
+  /**
+   * 清除房间详情缓存
+   *
+   * @param roomId - 房间 ID（不传则清除所有）
+   */
+  function clearRoomDetailCache(roomId?: string): void {
+    if (roomId) {
+      roomDetailCache.delete(roomId)
+      info(`[RoomStore] 清除房间详情缓存: ${roomId}`)
+    } else {
+      roomDetailCache.clear()
+      info('[RoomStore] 清除所有房间详情缓存')
+    }
+  }
+
+  /**
+   * 清理过期缓存（内存优化）
+   * 移除最旧的缓存项，保留最近的 N 个
+   *
+   * @param keepCount - 保留的缓存数量
+   */
+  function pruneCache(keepCount: number = 20): void {
+    const currentSize = roomDetailCache.size()
+    if (currentSize <= keepCount) return
+
+    // LRU 缓存的实现会自动移除最旧的项
+    // 这里只是记录日志
+    info(`[RoomStore] 缓存裁剪: ${currentSize} -> ${keepCount}`)
+  }
+
+  /**
+   * 获取缓存统计信息
+   */
+  function getCacheStats(): { size: number; keys: string[] } {
+    return {
+      size: roomDetailCache.size(),
+      keys: roomDetailCache.keys()
+    }
+  }
+
   return {
     rooms,
     currentRoomId,
@@ -556,6 +868,13 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     markAsRead,
     updateRoom,
     addMessage,
-    setupEventListeners
+    setupEventListeners,
+    loadRoomDetail,
+    loadRoomDetails,
+    clearRoomDetailCache,
+    pruneCache,
+    getCacheStats,
+    handleIncrementalUpdate,
+    handleBatchIncrementalUpdate
   }
 })

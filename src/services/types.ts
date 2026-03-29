@@ -22,7 +22,7 @@ import type {
 } from '@/enums'
 
 /**响应请求体*/
-export type ServiceResponse = {
+export type ServiceResponse<T = unknown> = {
   /** 成功标识true or false */
   success: boolean
   /** 状态码 */
@@ -30,7 +30,7 @@ export type ServiceResponse = {
   /** 错误消息 */
   msg: string
   /** 数据 */
-  data: any
+  data: T
   /** 版本号 */
   version: string
 }
@@ -493,6 +493,8 @@ export type BeaconBody = {
   assetType?: string
   /** 最后更新时间 */
   lastUpdateTs?: number
+  /** URI (Matrix MSC3489) */
+  uri?: string
 }
 
 export type LinkPreviewBody = {

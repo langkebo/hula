@@ -1,6 +1,6 @@
 <template>
   <div class="user-menu-desktop" ref="_menuRef">
-    <div class="avatar-container" @click="handleLeftClick" @contextmenu="handleRightClick">
+    <div class="avatar-container" @click="handleLeftClick">
       <slot name="avatar">
         <n-avatar round :size="34" :src="userAvatar" :fallback-src="defaultAvatar" />
       </slot>
@@ -32,7 +32,7 @@ defineOptions({
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 
-const { isOpen, position, isContextMenu, closeMenu, handleMenuItemClick, handleLeftClick, handleRightClick } =
+const { isOpen, position, isContextMenu, closeMenu, handleMenuItemClick, handleLeftClick } =
   useUserMenu()
 
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')

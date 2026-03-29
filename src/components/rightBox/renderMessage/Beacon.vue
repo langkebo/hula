@@ -42,14 +42,31 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { BeaconBody } from '@/services/types'
-import { isWindows } from '@/utils/PlatformConstants'
+import { matrixLocationService } from '@/services/matrix'
 
 defineOptions({
   inheritAttrs: false
 })
 
+/**
+ * Beacon 消息组件 - 用于显示实时位置共享消息
+ * Matrix MSC3672: https://github.com/matrix-org/matrix-spec-proposals/pull/3672
+ *
+ * @remarks
+ * Beacon 是一种实时位置共享功能，允许用户分享他们的实时位置给房间成员。
+ * 组件支持：
+ * - 显示位置共享的实时状态（共享中/已结束）
+ * - 倒计时显示剩余共享时间
+ * - 点击查看实时位置地图
+ *
+ * @example
+ * ```vue
+ * <Beacon :body="beaconData" />
+ * ```
+ */
 const props = withDefaults(
   defineProps<{
+    /** Beacon 事件的消息体 */
     body?: BeaconBody
   }>(),
   {
@@ -57,13 +74,25 @@ const props = withDefaults(
   }
 )
 
-// 计算是否仍在共享中
+/**
+ * Beacon 数据结构说明：
+ * - description: 位置共享的描述信息
+ * - isLive: 是否正在实时共享
+ * - lastUpdateTs: 最后更新时间戳
+ * - timeout: 共享持续时间（毫秒）
+ * - uri: 位置的 URI (geo:latitude,longitude 格式)
+ * - timestamp: 共享开始时间戳
+ */
+
+/**
+ * 当前时间引用，用于实时更新倒计时
+ */
 const now = ref(Date.now())
-let timer: ReturnType<typeof setInterval>
+let timer: ReturnType<typeof setInterval> | undefined
 
 const isActive = computed(() => {
   if (!props.body || !props.body.isLive) return false
-  const startTime = props.body.lastUpdateTs || Date.now() // 理想情况应该使用消息的发送时间
+  const startTime = props.body.lastUpdateTs || Date.now()
   return now.value < startTime + (props.body.timeout || 0)
 })
 
@@ -85,10 +114,46 @@ const remainingTimeText = computed(() => {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 })
 
+/**
+ * 从 URI 解析位置数据
+ */
+const parseGeoUri = (uri: string): { latitude: number; longitude: number; timestamp: number } | null => {
+  if (!uri) return null
+  const match = uri.match(/geo:([-\d.]+),([-\d.]+)/)
+  if (match) {
+    return {
+      latitude: parseFloat(match[1]),
+      longitude: parseFloat(match[2]),
+      timestamp: Date.now()
+    }
+  }
+  return null
+}
+
+/**
+ * 打开地图查看位置
+ */
 const handleBeaconClick = () => {
-  if (!isWindows() || !isActive.value) return
-  // TODO: 打开地图查看实时位置的逻辑
-  window.$message.info('打开实时位置地图模块 (待实现)')
+  if (!isActive.value) {
+    window.$message.info('位置共享已结束，无法查看')
+    return
+  }
+
+  const uri = props.body?.uri
+  if (!uri) {
+    window.$message.info('无法获取位置信息')
+    return
+  }
+
+  const location = parseGeoUri(uri)
+  if (!location) {
+    window.$message.info('位置信息格式无效')
+    return
+  }
+
+  // 使用 OpenStreetMap 打开地图（无需 API Key）
+  const mapsUrl = matrixLocationService.getOpenStreetMapUrl(location)
+  window.open(mapsUrl, '_blank')
 }
 
 const handleJoinClick = () => {

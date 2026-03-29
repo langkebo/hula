@@ -7,7 +7,7 @@
     trigger="click">
     <template #trigger>
       <!-- 头像 -->
-      <div class="relative size-34px rounded-50% cursor-pointer" @contextmenu="handleRightClick">
+      <div class="relative size-34px rounded-50% cursor-pointer">
         <n-avatar
           :size="34"
           :src="avatarSrc"
@@ -121,7 +121,7 @@ const currentUserLocation = computed(() => {
 const { shrinkStatus, infoShow, themeColor, openContent, handleEditing } = leftHook()
 const { statusIcon, statusTitle, statusBgColor } = useOnlineStatus()
 
-const { isOpen: isMenuOpen, position: menuPosition, closeMenu, handleMenuItemClick, handleRightClick } = useUserMenu()
+const { isOpen: isMenuOpen, position: menuPosition, closeMenu, handleMenuItemClick } = useUserMenu()
 </script>
 <style lang="scss" scoped>
 @use '../style';

@@ -5,6 +5,7 @@
  */
 
 import type { MatrixClient } from 'matrix-js-sdk'
+import { AdminManager, UserInfo as SdkUserInfo, RoomInfo as SdkRoomInfo } from 'matrix-js-sdk'
 
 export interface ServerStats {
   /** 房间数 */
@@ -60,12 +61,15 @@ export interface WhoisInfo {
  */
 class AdminService {
   private client: MatrixClient | null = null
+  private adminManager: AdminManager | null = null
 
   /**
    * 初始化服务
    */
   initialize(client: MatrixClient): void {
     this.client = client
+    // 使用 SDK 的 AdminManager
+    this.adminManager = client.getAdminManager()
     console.log('[Admin] 服务已初始化')
   }
 
@@ -73,19 +77,19 @@ class AdminService {
    * 获取服务器统计信息
    */
   async getServerStats(): Promise<ServerStats> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      const stats = await (this.client as any).adminClient.getStats('')
+      const stats = await this.adminManager.getServerStats()
 
       return {
-        roomCount: stats.room_count || 0,
-        userCount: stats.user_count || 0,
-        dailyActiveUsers: stats.daily_active_users || 0,
-        messageCount: stats.total_nonlocal_users || 0,
-        startServerTime: stats.server_start_time || 0
+        roomCount: (stats as any).room_count || 0,
+        userCount: (stats as any).user_count || 0,
+        dailyActiveUsers: (stats as any).daily_active_users || 0,
+        messageCount: (stats as any).total_nonlocal_users || 0,
+        startServerTime: (stats as any).server_start_time || 0
       }
     } catch (error) {
       console.error('[Admin] 获取统计失败:', error)
@@ -103,18 +107,15 @@ class AdminService {
    * 获取用户列表
    */
   async getUsers(limit = 100, from?: string): Promise<{ users: UserInfo[]; nextToken?: string }> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      const result = await (this.client as any).adminClient.getUsers('', {
-        limit,
-        from
-      })
+      const result = await this.adminManager.getUsers({ from, limit })
 
-      const users: UserInfo[] = (result.users || []).map((u: any) => ({
-        userId: u.name || '',
+      const users: UserInfo[] = result.users.map((u: SdkUserInfo) => ({
+        userId: u.user_id || '',
         name: u.name,
         avatarUrl: u.avatar_url,
         admin: u.admin || false,
@@ -136,15 +137,16 @@ class AdminService {
    * 获取用户信息
    */
   async getUser(userId: string): Promise<UserInfo | null> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      const user = await (this.client as any).adminClient.getUser(userId)
+      const user = await this.adminManager.getUser(userId)
+      if (!user) return null
 
       return {
-        userId: user.name || userId,
+        userId: user.user_id || userId,
         name: user.name,
         avatarUrl: user.avatar_url,
         admin: user.admin,
@@ -168,20 +170,20 @@ class AdminService {
       displayname?: string
     }
   ): Promise<UserInfo | null> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      const user = await (this.client as any).adminClient.register(username, password, {
+      const user = await this.adminManager.createUser(username, password, {
         admin: options?.admin,
         displayname: options?.displayname
       })
 
-      console.log('[Admin] 用户已创建:', user.name)
+      console.log('[Admin] 用户已创建:', user.user_id)
 
       return {
-        userId: user.name || username,
+        userId: user.user_id || username,
         name: user.name,
         admin: user.admin,
         displayname: user.displayname
@@ -196,12 +198,12 @@ class AdminService {
    * 重置用户密码
    */
   async resetPassword(userId: string, newPassword: string): Promise<void> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      await (this.client as any).adminClient.resetPassword(userId, newPassword)
+      await this.adminManager.resetPassword(userId, newPassword)
       console.log('[Admin] 密码已重置:', userId)
     } catch (error) {
       console.error('[Admin] 重置密码失败:', error)
@@ -213,12 +215,12 @@ class AdminService {
    * 停用用户
    */
   async deactivateUser(userId: string): Promise<void> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      await (this.client as any).adminClient.deactivate(userId)
+      await this.adminManager.deactivateUser(userId)
       console.log('[Admin] 用户已停用:', userId)
     } catch (error) {
       console.error('[Admin] 停用用户失败:', error)
@@ -230,17 +232,14 @@ class AdminService {
    * 获取房间列表
    */
   async getRooms(limit = 100, from?: string): Promise<{ rooms: RoomInfo[]; nextToken?: string }> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      const result = await (this.client as any).adminClient.getRooms('', {
-        limit,
-        from
-      })
+      const result = await this.adminManager.getRooms({ from, limit })
 
-      const rooms: RoomInfo[] = (result.rooms || []).map((r: any) => ({
+      const rooms: RoomInfo[] = result.rooms.map((r: SdkRoomInfo) => ({
         roomId: r.room_id || '',
         name: r.name,
         topic: r.topic,
@@ -266,12 +265,13 @@ class AdminService {
    * 获取房间详情
    */
   async getRoom(roomId: string): Promise<RoomInfo | null> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      const room = await (this.client as any).adminClient.getRoom(roomId)
+      const room = await this.adminManager.getRoom(roomId)
+      if (!room) return null
 
       return {
         roomId: room.room_id || roomId,
@@ -345,12 +345,12 @@ class AdminService {
    * 获取用户 Whois 信息
    */
   async getWhois(userId: string): Promise<WhoisInfo | null> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      const whois = await (this.client as any).adminClient.getWhois(userId)
+      const whois = await this.adminManager.getWhois(userId)
 
       return {
         userId: whois.user_id || userId,
@@ -376,12 +376,12 @@ class AdminService {
    * 关闭房间
    */
   async shutdownRoom(roomId: string, message?: string): Promise<void> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      await (this.client as any).adminClient.shutdownRoom(roomId, message)
+      await this.adminManager.shutdownRoom(roomId)
       console.log('[Admin] 房间已关闭:', roomId)
     } catch (error) {
       console.error('[Admin] 关闭房间失败:', error)
@@ -393,12 +393,12 @@ class AdminService {
    * 删除房间
    */
   async deleteRoom(roomId: string): Promise<void> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
+    if (!this.adminManager) {
+      throw new Error('AdminManager 未初始化')
     }
 
     try {
-      await (this.client as any).adminClient.deleteRoom(roomId)
+      await this.adminManager.deleteRoom(roomId)
       console.log('[Admin] 房间已删除:', roomId)
     } catch (error) {
       console.error('[Admin] 删除房间失败:', error)
