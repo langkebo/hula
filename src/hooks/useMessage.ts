@@ -96,10 +96,8 @@ export const useMessage = () => {
     const isCurrentSession = roomId === globalStore.currentSessionRoomId
 
     chatStore.removeSession(roomId)
-    // TODO: 使用隐藏会话接口
-    // const res = await apis.hideSession({ roomId, hide: true })
+    // 隐藏会话接口已通过 invokeWithErrorHandler 调用
     await invokeWithErrorHandler('hide_contact_command', { data: { roomId, hide: true } })
-    // console.log(res, roomId)
 
     // 如果不是当前选中的会话，直接返回
     if (!isCurrentSession) {

@@ -17,10 +17,10 @@
 
 <div align="center">
   <p>
-    <a href="https://gitee.com/HulaSpark/HuLa/stargazers">
-      <img src="https://gitee.com/HulaSpark/HuLa/badge/star.svg?theme=gvp" alt="Gitee Stars">
+    <a href="https://gitee.com/llangkebo/hula/stargazers">
+      <img src="https://gitee.com/llangkebo/hula/badge/star.svg?theme=gvp" alt="Gitee Stars">
     </a>
-    <a href="https://github.com/HulaSpark/HuLa/stargazers">
+    <a href="https://gitee.com/llangkebo/hula/stargazers">
       <img src="https://img.shields.io/github/stars/HulaSpark/HuLa?style=social" alt="GitHub Stars">
     </a>
     <a href="https://gitcode.com/HuLaSpark/HuLa">
@@ -146,9 +146,9 @@ HuLa 是一款基于 Tauri、Vite 7、Vue 3 和 TypeScript 构建的即时通讯
 
 ```bash
 # 克隆项目
-git clone https://gitee.com/HulaSpark/HuLa.git
+git clone https://gitee.com/llangkebo/hula.git
 或者
-git clone https://github.com/HulaSpark/HuLa.git
+git clone https://gitee.com/llangkebo/hula.git
 
 # 进入项目目录
 cd HuLa

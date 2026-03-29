@@ -8,9 +8,24 @@ const useSideOptions = () => {
 
   return computed<OPT.L.SettingSide[]>(() => [
     {
+      url: '/account',
+      label: t('setting.account.title'),
+      icon: 'mdi:account'
+    },
+    {
+      url: '/sessions',
+      label: t('setting.sessions.title'),
+      icon: 'mdi:devices'
+    },
+    {
       url: '/general',
       label: t('setting.general.title'),
       icon: 'setting-config'
+    },
+    {
+      url: '/appearance',
+      label: t('setting.appearance.title'),
+      icon: 'mdi:palette'
     },
     {
       url: '/notification',
@@ -21,6 +36,26 @@ const useSideOptions = () => {
       url: '/shortcut',
       label: t('setting.shortcut.title'),
       icon: 'enter-the-keyboard'
+    },
+    {
+      url: '/sidebar',
+      label: t('setting.sidebar.title'),
+      icon: 'mdi:view-sidebar'
+    },
+    {
+      url: '/voiceVideo',
+      label: t('setting.voice_video.title'),
+      icon: 'mdi:video'
+    },
+    {
+      url: '/securityPrivacy',
+      label: t('setting.security_privacy.title'),
+      icon: 'mdi:shield'
+    },
+    {
+      url: '/privateChat',
+      label: t('setting.private_chat.title'),
+      icon: 'lock'
     },
     {
       url: '/manageStore',
@@ -35,8 +70,12 @@ const useSideOptions = () => {
     {
       url: '/versatile',
       label: t('setting.theme.title'),
-      icon: 'platte',
-      versionStatus: 'setting.common.tag_new'
+      icon: 'platte'
+    },
+    {
+      url: '/helpAbout',
+      label: t('setting.help_about.title'),
+      icon: 'mdi:help-circle'
     }
   ])
 }

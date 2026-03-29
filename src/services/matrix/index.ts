@@ -112,6 +112,10 @@ export type {
   UpdateBeaconLocationParams
 } from './MatrixBeaconService'
 
+// Location 服务
+export { matrixLocationService } from './MatrixLocationService'
+export type { LocationData, LiveLocationShare } from './MatrixLocationService'
+
 // URL 预览服务
 export { matrixUrlPreviewService } from './MatrixUrlPreviewService'
 export type { UrlPreview, UrlPreviewParams } from './MatrixUrlPreviewService'

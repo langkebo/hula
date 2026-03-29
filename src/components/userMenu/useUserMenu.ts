@@ -97,15 +97,6 @@ export function useUserMenu() {
     toggleMenu(pos, 'left')
   }
 
-  function handleRightClick(event: MouseEvent): void {
-    event.preventDefault()
-    const pos: MenuPosition = {
-      x: event.clientX,
-      y: event.clientY
-    }
-    openMenu(pos, 'right')
-  }
-
   function handleTouch(event: TouchEvent): void {
     const touch = event.touches[0]
     const pos: MenuPosition = {
@@ -127,7 +118,6 @@ export function useUserMenu() {
     handleMenuItemClick,
     openSettings,
     handleLeftClick,
-    handleRightClick,
     handleTouch,
     showLogoutConfirm,
     handleLogout

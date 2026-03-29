@@ -1260,11 +1260,13 @@ const saveGroupInfo = async () => {
 }
 
 const handleAssist = () => {
-  window.$message.warning(t('home.chat_header.toast.todo'))
+  // AI 助手功能待实现
+  window.$message.info(t('home.chat_header.toast.todo'))
 }
 
 const handleMedia = () => {
-  window.$message.warning(t('home.chat_header.toast.todo'))
+  // 媒体分享功能待实现
+  window.$message.info(t('home.chat_header.toast.todo'))
 }
 
 /** 置顶 */

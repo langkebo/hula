@@ -1,13 +1,20 @@
 <template>
   <div class="h-100vh w-100vw">
     <NaiveProvider :message-max="3" :notific-max="3" class="h-full">
-      <div v-if="!isLock" class="h-full">
+      <SplashScreen
+        v-if="showSplash"
+        :visible="showSplash"
+        :percentage="bootstrapProgress"
+        :loading-text="bootstrapMessage"
+        :show-error="!!bootstrapError"
+        :error-message="bootstrapError || undefined"
+        :retryable="true"
+        @retry="handleBootstrapRetry" />
+      <div v-else-if="!isLock" class="h-full">
         <router-view />
       </div>
-      <!-- 锁屏页面 -->
       <LockScreen v-else />
     </NaiveProvider>
-    <!-- 内存监控组件（仅开发环境 + PC home 窗口） -->
     <MemoryMonitor v-if="isDev && showMemoryMonitor && isHomeDesktopWindow" />
   </div>
   <component :is="mobileRtcCallFloatCell" v-if="mobileRtcCallFloatCell" />
@@ -27,6 +34,8 @@ import { useSettingStore } from '@/stores/setting.ts'
 import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
 import LockScreen from '@/views/LockScreen.vue'
 import MemoryMonitor from '@/components/common/MemoryMonitor.vue'
+import SplashScreen from '@/components/common/SplashScreen.vue'
+import { useBootstrap } from '@/composables/useBootstrap'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
 import {
   type LoginSuccessResType,
@@ -52,6 +61,14 @@ const mobileRtcCallFloatCell = isMobile()
 const isDev = import.meta.env.DEV
 const showMemoryMonitor = ref(true)
 const isHomeDesktopWindow = computed(() => isDesktop() && appWindow.label === 'home')
+
+const { state: bootstrapState, loadingMessage: bootstrapMessage, loadingProgress: bootstrapProgress, error: bootstrapError, bootstrap } = useBootstrap()
+
+const showSplash = computed(() => bootstrapState.value === 'initializing' || bootstrapState.value === 'idle')
+
+const handleBootstrapRetry = async () => {
+  await bootstrap()
+}
 
 const userStore = useUserStore()
 const contactStore = useContactStore()
@@ -532,8 +549,9 @@ const requestNetworkPermissionForIOS = async () => {
   })
 }
 
-onMounted(() => {
-  // iOS应用启动时预请求网络权限（必须在最开始执行）
+onMounted(async () => {
+  await bootstrap()
+
   if (isIOS()) {
     requestNetworkPermissionForIOS()
   }
@@ -706,7 +724,8 @@ const setConfigProxy = async () => {
   })
 }
 // 在整个应用挂载前，运行一次这段代码
-onBeforeMount(setConfigProxy)
+// setConfigProxy 已在 bootstrap() 中执行
+onBeforeMount(() => {})
 </script>
 <style lang="scss">
 /* 修改naive-ui select 组件的样式 */

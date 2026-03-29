@@ -191,7 +191,7 @@
           <n-flex vertical :size="2">
             <div
               class="register text-14px cursor-pointer hover:bg-#90909030 hover:rounded-6px p-8px"
-              @click="createWebviewWindow('注册', 'register', 600, 600)">
+              @click="router.push('/register')">
               {{ t('login.register') }}
             </div>
             <div
@@ -268,7 +268,7 @@ const protocol = ref(true)
 const arrowStatus = ref(false)
 const moreShow = ref(false)
 const showServerConfig = ref(false)
-const homeserverUrl = ref('')
+const homeserverUrl = ref(import.meta.env.VITE_HOMESERVER_URL || 'http://localhost:8008')
 const identityServerUrl = ref('')
 const { createWebviewWindow, createModalWindow, getWindowPayload } = useWindow()
 const { checkUpdate, CHECK_UPDATE_LOGIN_TIME } = useCheckUpdate()

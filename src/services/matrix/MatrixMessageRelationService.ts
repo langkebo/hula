@@ -1,21 +1,50 @@
-import type { MatrixEvent } from 'matrix-js-sdk'
+import type { MatrixEvent, EventType } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 
 export interface MessageEdit {
   eventId: string
-  originalContent: any
-  newContent: any
+  originalContent: Record<string, unknown>
+  newContent: Record<string, unknown>
   timestamp: number
   sender: string
 }
 
 export interface ReplyChain {
   eventId: string
-  content: any
+  content: Record<string, unknown>
   sender: string
   timestamp: number
   inReplyTo?: ReplyChain
+}
+
+export interface ReplyContent {
+  msgtype: string
+  body: string
+  format?: string
+  formatted_body?: string
+  'm.relates_to': {
+    'm.in_reply_to': {
+      event_id: string
+    }
+  }
+}
+
+export interface RichContent {
+  msgtype: string
+  body: string
+  format?: string
+  formatted_body?: string
+  'm.new_content'?: {
+    msgtype: string
+    body: string
+    format?: string
+    formatted_body?: string
+  }
+  'm.relates_to'?: {
+    rel_type: string
+    event_id: string
+  }
 }
 
 export interface ThreadInfo {
@@ -57,7 +86,7 @@ class MatrixMessageRelationService {
         throw new Error('[MessageRelation] 只能编辑自己发送的消息')
       }
 
-      const content: any = {
+      const content: Record<string, unknown> = {
         ...originalEvent.getContent(),
         msgtype: newContent.msgtype || 'm.text',
         body: `* ${newContent.body}`,
@@ -72,13 +101,13 @@ class MatrixMessageRelationService {
       }
 
       if (newContent.html) {
-        content['m.new_content'].format = 'org.matrix.custom.html'
-        content['m.new_content'].formatted_body = newContent.html
+        ;(content['m.new_content'] as Record<string, unknown>).format = 'org.matrix.custom.html'
+        ;(content['m.new_content'] as Record<string, unknown>).formatted_body = newContent.html
         content.format = 'org.matrix.custom.html'
         content.formatted_body = `* ${newContent.html}`
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content as Record<string, unknown>)
       info(`[MessageRelation] 编辑消息成功: ${originalEventId}`)
       return response.event_id
     } catch (err) {
@@ -110,9 +139,9 @@ class MatrixMessageRelationService {
       }
 
       const originalContent = originalEvent.getContent()
-      const newBody = newCaption || originalContent.body || ''
+      const newBody = newCaption || (originalContent.body as string) || ''
 
-      const content: any = {
+      const content: Record<string, unknown> = {
         ...originalContent,
         body: `* ${newBody}`,
         'm.new_content': {
@@ -125,7 +154,7 @@ class MatrixMessageRelationService {
         }
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content as Record<string, unknown>)
       info(`[MessageRelation] 编辑媒体消息成功: ${originalEventId}`)
       return response.event_id
     } catch (err) {
@@ -213,7 +242,7 @@ class MatrixMessageRelationService {
         throw new Error(`[MessageRelation] 回复的消息不存在: ${replyToEventId}`)
       }
 
-      const messageContent: any = {
+      const messageContent: Record<string, unknown> = {
         msgtype: content.msgtype || 'm.text',
         body: content.body,
         'm.relates_to': {
@@ -228,7 +257,7 @@ class MatrixMessageRelationService {
         messageContent.formatted_body = content.html
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, messageContent)
+      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, messageContent as Record<string, unknown>)
       info(`[MessageRelation] 回复消息成功: ${replyToEventId}`)
       return response.event_id
     } catch (err) {
@@ -248,7 +277,7 @@ class MatrixMessageRelationService {
     }
 
     try {
-      const messageContent: any = {
+      const messageContent: Record<string, unknown> = {
         msgtype: content.msgtype || 'm.text',
         body: content.body,
         'm.relates_to': {
@@ -265,7 +294,7 @@ class MatrixMessageRelationService {
         messageContent.formatted_body = content.html
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, messageContent)
+      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, messageContent as Record<string, unknown>)
       info(`[MessageRelation] 线程回复成功: ${threadRootId}`)
       return response.event_id
     } catch (err) {

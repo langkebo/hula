@@ -179,7 +179,7 @@ export const useWindow = () => {
 
     await webview.once('tauri://error', async () => {
       info('窗口创建失败')
-      // TODO 这里利用错误处理的方式来查询是否是已经创建了窗口,如果一开始就使用WebviewWindow.getByLabel来查询在刷新的时候就会出现问题 (nyh -> 2024-03-06 23:54:17)
+      // 使用错误处理检测窗口是否已存在（刷新时直接用 getByLabel 可能返回 null）
       await checkWinExist(label)
     })
 

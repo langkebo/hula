@@ -5,6 +5,9 @@ import { TelemetryManager } from 'matrix-js-sdk/src/telemetry'
 import { PendingEventOrdering, ICreateClientOpts } from '@/types/matrix-js-sdk'
 import { info, error } from '@tauri-apps/plugin-log'
 
+// 导入并初始化 Manager 扩展
+import 'matrix-js-sdk/src/manager-extensions'
+
 /**
  * 连接状态类型
  */
@@ -166,8 +169,16 @@ class MatrixClientService {
         initial_device_display_name: deviceName || 'HuLa Client'
       })
 
-      this.connectionState = 'CONNECTED'
       info(`[MatrixClient] 登录成功: ${loginResponse.user_id}`)
+
+      await this.initialize({
+        ...this.config!,
+        accessToken: loginResponse.access_token,
+        userId: loginResponse.user_id,
+        deviceId: loginResponse.device_id ?? undefined
+      })
+
+      this.connectionState = 'CONNECTED'
 
       return {
         success: true,

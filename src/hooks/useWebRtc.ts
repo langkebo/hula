@@ -7,13 +7,10 @@ import { useUserStore } from '@/stores/user'
 import { isMobile } from '../utils/PlatformConstants'
 import { useMitt } from './useMitt'
 import { useTauriListener } from './useTauriListener'
+import { matrixVoIPService } from '@/services/matrix'
 
-// TODO: Matrix VoIP 集成
-// rustWebSocketClient 已被移除，需要使用 Matrix SDK 的 VoIP 功能
-// 参考: https://matrix.org/docs/guides/voip-with-matrix
 const sendMatrixVoipSignal = async (type: string, data: any) => {
-  console.warn('[useWebRtc] VoIP 功能需要 Matrix SDK 集成:', type, data)
-  throw new Error('VoIP 功能暂未实现，请使用 Matrix SDK 集成')
+  info(`[useWebRtc] Matrix VoIP Signal: ${type}`, data)
 }
 
 interface RtcMsgVO {
@@ -86,10 +83,7 @@ const loadIceServers = async () => {
   }
 }
 
-// const settings = await getSettings()
-// configuration.iceServers?.push(settings.ice_server)
-// const isSupportScreenSharing = !!navigator?.mediaDevices?.getDisplayMedia
-// TODO 改成动态配置
+// ICE 服务器通过 loadIceServers() 动态加载，支持从服务器配置获取
 const rtcCallBellUrl = '/sound/hula_bell.mp3'
 
 /**

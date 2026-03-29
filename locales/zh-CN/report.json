@@ -1,0 +1,16 @@
+{
+  "title": "举报",
+  "select_reason": "请选择举报原因",
+  "placeholder": "选择举报原因",
+  "submit": "提交举报",
+  "sexual": "色情低俗",
+  "violence": "暴力血腥",
+  "hate_speech": "仇恨言论",
+  "self_harm": "自残自杀",
+  "terrorism": "恐怖主义",
+  "spam": "垃圾广告",
+  "violation": "违规内容",
+  "other": "其他",
+  "success": "举报成功，感谢您的反馈",
+  "failed": "举报失败，请重试"
+}

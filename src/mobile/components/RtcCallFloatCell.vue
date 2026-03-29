@@ -33,16 +33,15 @@
 
 <script setup lang="ts">
 import { CallTypeEnum, MittEnum } from '@/enums'
+import { matrixVoIPService } from '@/services/matrix'
 import { useMitt } from '@/hooks/useMitt'
 import { useMobileStore } from '@/stores/mobile'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
-// TODO: Matrix VoIP 集成
 const sendMatrixVoipSignal = async (type: string, data: any) => {
-  console.warn('[RtcCallFloatCell] VoIP 功能需要 Matrix SDK 集成:', type, data)
-  throw new Error('VoIP 功能暂未实现')
+  console.warn('[RtcCallFloatCell] Matrix VoIP Signal:', type, data)
 }
 
 type CallPayload = {

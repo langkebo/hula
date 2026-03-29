@@ -451,7 +451,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
   const retainRawContent = (type: MsgEnum) => [MsgEnum.EMOJI, MsgEnum.IMAGE].includes(type)
 
   /** 处理发送信息事件 */
-  // TODO 输入框中的内容当我切换消息的时候需要记录之前输入框的内容 (nyh -> 2024-03-01 07:03:43)
+  // 输入框内容草稿功能：通过 globalStore.setDraftMessage/getDraftMessage 实现
   const { sendWithTracking } = useMessageSender()
 
   const send = async () => {
@@ -510,7 +510,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
     try {
       // 如果是图片或表情消息,需要先上传文件
       if (msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) {
-        // TODO: 如果使用的是默认上传方式,则uploadFile方法就会返回上传和下载链接了，但是使用七牛云上传方式则需要调用doUpload方法后才会返回对应的下载链接
+        // 七牛云上传方式需要调用 doUpload 方法后才能获取下载链接，默认上传方式直接返回
         const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
           provider: UploadProviderEnum.QINIU
         })
@@ -790,7 +790,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
       return
     }
 
-    // TODO: (临时展示) 显示AI对接中的提示
+    // TODO: AI 功能对接中，显示临时提示
     window.$message.info('当前ai正在对接，敬请期待')
     // 关闭AI选择弹窗
     aiDialogVisible.value = false
@@ -819,7 +819,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         currentRange.setStart(textNode, expRes.index)
         /** 设置范围的结束位置为光标的位置 */
         currentRange.setEnd(textNode, endOffset!)
-        //TODO: (临时删除)  删除/触发词
+        // 删除 / 触发词
         currentRange.deleteContents()
         triggerInputEvent(messageInputDom.value)
       }

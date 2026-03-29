@@ -411,7 +411,7 @@ export const useUpload = () => {
     const suffix = name.split('.').pop()?.trim().toLowerCase() || ''
     const baseInfo = { name, size, type, suffix, ...addParams }
 
-    // TODO：这里应该不需要进行类型判断了，可以直接返回baseInfo
+    // 根据文件类型获取额外的元数据（图片需要宽高，音频需要时长）
     if (type.includes('image')) {
       const { width, height, tempUrl } = (await getImgWH(file)) as any
       return { ...baseInfo, width, height, tempUrl }

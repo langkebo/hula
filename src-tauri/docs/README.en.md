@@ -19,10 +19,10 @@
 
 <div align="center">
   <p>
-    <a href="https://gitee.com/HulaSpark/HuLa/stargazers">
-      <img src="https://gitee.com/HulaSpark/HuLa/badge/star.svg?theme=gvp" alt="Gitee Stars">
+    <a href="https://gitee.com/llangkebo/hula/stargazers">
+      <img src="https://gitee.com/llangkebo/hula/badge/star.svg?theme=gvp" alt="Gitee Stars">
     </a>
-    <a href="https://github.com/HulaSpark/HuLa/stargazers">
+    <a href="https://gitee.com/llangkebo/hula/stargazers">
       <img src="https://img.shields.io/github/stars/HulaSpark/HuLa?style=social" alt="GitHub Stars">
     </a>
     <a href="https://gitcode.com/HuLaSpark/HuLa">
@@ -277,7 +277,7 @@ HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScr
   <img src="https://openomy.com/svg?repo=HuLaSpark/HuLa&chart=podium&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
 </a>
 
-<!-- <a href="https://github.com/HuLaSpark/HuLa/graphs/contributors">
+<!-- <a href="https://gitee.com/llangkebo/hula/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=HuLaSpark/HuLa" />
 </a> -->
 
@@ -290,9 +290,9 @@ HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScr
 
 ```bash
 # Clone the project
-git clone https://gitee.com/HulaSpark/HuLa.git
+git clone https://gitee.com/llangkebo/hula.git
 # or
-git clone https://github.com/HulaSpark/HuLa.git
+git clone https://gitee.com/llangkebo/hula.git
 
 # Enter project directory
 cd HuLa
@@ -432,7 +432,7 @@ Execute **pnpm run commit** to invoke _git commit_ interaction, complete informa
 
   > 📝 **Friendly Reminder**
   > This list is manually updated. If you have sponsored but are not listed, please contact us:
-  > 🐛 [GitHub Issue](https://github.com/HuLaSpark/HuLa/issues) | 📧 Email: `2439646234@qq.com` | 💬 WeChat: `cy2439646234`
+  > 🐛 [GitHub Issue](https://gitee.com/llangkebo/hula/issues) | 📧 Email: `2439646234@qq.com` | 💬 WeChat: `cy2439646234`
 
   <br>
 </div>

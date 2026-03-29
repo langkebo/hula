@@ -188,7 +188,7 @@ export function callFn<T>(fn: (() => T) | undefined, fallback: T): T {
 /**
  * 防抖函数调用
  */
-export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {
+export function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null
 
   return (...args: Parameters<T>) => {
@@ -200,7 +200,7 @@ export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number
 /**
  * 节流函数调用
  */
-export function throttle<T extends (...args: any[]) => any>(fn: T, limit: number): (...args: Parameters<T>) => void {
+export function throttle<T extends (...args: unknown[]) => unknown>(fn: T, limit: number): (...args: Parameters<T>) => void {
   let inThrottle = false
 
   return (...args: Parameters<T>) => {

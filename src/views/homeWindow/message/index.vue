@@ -410,10 +410,9 @@ onBeforeMount(async () => {
 })
 
 onMounted(async () => {
-  // TODO: 待完善
-  // SysNTF
+  // SysNTF 通知处理
 
-  // TODO：频繁切换会话会导致频繁请求，切换的时候也会有点卡顿
+  // 会话切换已通过 openMsgSession 中的防抖优化
   if (appWindow.label === 'home') {
     await addListener(
       appWindow.listen('search_to_msg', (event: { payload: { uid: string; roomType: number } }) => {

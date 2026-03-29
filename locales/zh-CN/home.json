@@ -460,10 +460,16 @@
       "friend": "我的好友",
       "group": "我的群聊"
     },
+    "group": {
+      "special": "特别关心",
+      "normal": "我的好友",
+      "blocked": "已屏蔽"
+    },
     "bot_tag": "助手",
     "status": {
       "online": "在线",
-      "offline": "离线"
+      "offline": "离线",
+      "blocked": "已屏蔽"
     },
     "menu": {
       "add_group": "添加分组",

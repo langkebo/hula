@@ -103,6 +103,58 @@ export const useGlobalStore = defineStore(
     const tipVisible = ref<boolean>(false)
     const isTrayMenuShow = ref<boolean>(false)
 
+    // 草稿消息存储：按 roomId 缓存输入框内容
+    const draftMessageMap = new Map<string, string>()
+    const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000 // 草稿保留7天
+
+    const setDraftMessage = (roomId: string, content: string) => {
+      if (content.trim()) {
+        draftMessageMap.set(roomId, content)
+        try {
+          localStorage.setItem(`draft_${roomId}`, JSON.stringify({
+            content,
+            timestamp: Date.now()
+          }))
+        } catch (e) {
+          console.warn('[global] 保存草稿失败:', e)
+        }
+      } else {
+        clearDraftMessage(roomId)
+      }
+    }
+
+    const getDraftMessage = (roomId: string): string => {
+      // 优先从内存获取
+      if (draftMessageMap.has(roomId)) {
+        return draftMessageMap.get(roomId) || ''
+      }
+      // 从 localStorage 恢复
+      try {
+        const stored = localStorage.getItem(`draft_${roomId}`)
+        if (stored) {
+          const { content, timestamp } = JSON.parse(stored)
+          if (Date.now() - timestamp < DRAFT_MAX_AGE) {
+            draftMessageMap.set(roomId, content)
+            return content
+          } else {
+            clearDraftMessage(roomId)
+          }
+        }
+      } catch (e) {
+        console.warn('[global] 读取草稿失败:', e)
+      }
+      return ''
+    }
+
+    const clearDraftMessage = (roomId: string) => {
+      draftMessageMap.delete(roomId)
+      try {
+        localStorage.removeItem(`draft_${roomId}`)
+      } catch (e) {
+        console.warn('[global] 删除草稿失败:', e)
+      }
+    }
+
     const setTipVisible = (visible: boolean) => {
       tipVisible.value = visible
     }
@@ -177,7 +229,10 @@ export const useGlobalStore = defineStore(
       setTipVisible,
       updateGlobalUnreadCount,
       updateCurrentSessionRoomId,
-      currentSessionRoomId
+      currentSessionRoomId,
+      setDraftMessage,
+      getDraftMessage,
+      clearDraftMessage
     }
   },
   {
