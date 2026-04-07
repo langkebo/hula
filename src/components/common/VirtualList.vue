@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const props = defineProps<{
   items: any[]
@@ -56,6 +57,9 @@ const LOADING_OFFSET = 26 // 加载中需要的偏移量(26px是加载动画的�
 const ESTIMATED_ITEM_HEIGHT = props.estimatedItemHeight || DEFAULT_ESTIMATED_HEIGHT // 每项的预估高度
 const SCROLL_THRESHOLD = 26 // 滚动到顶部的阈值，用于触发加载更多
 const DOM_CLEANUP_INTERVAL = 60000 // DOM清理间隔，默认1分钟
+
+// 定时器管理器
+const timerManager = useTimerManager()
 
 // 响应式引用
 const containerRef = ref<HTMLElement | null>(null) // 容器元素引用
@@ -318,10 +322,10 @@ const cleanupInvisibleDOMNodes = () => {
 // 定时清理DOM节点
 const startDOMCleanupTimer = () => {
   if (cleanupTimerId !== null) {
-    clearInterval(cleanupTimerId)
+    timerManager.clearInterval(cleanupTimerId)
   }
 
-  cleanupTimerId = window.setInterval(() => {
+  cleanupTimerId = timerManager.setInterval(() => {
     cleanupInvisibleDOMNodes()
   }, DOM_CLEANUP_INTERVAL)
 }
@@ -638,7 +642,7 @@ defineExpose<VirtualListExpose>({
     // 立即执行一次；仅在平滑滚动时再补偿一次
     executeScroll()
     if (options.behavior === 'smooth') {
-      setTimeout(executeScroll, 100)
+      timerManager.setTimeout(executeScroll, 100)
     }
   },
   getContainer: () => containerRef.value
