@@ -73,11 +73,26 @@ export function createManualChunks(dependencies: string[]) {
       if (id.includes('node_modules/dayjs')) return 'dayjs'
       if (id.includes('node_modules/axios')) return 'axios'
       if (id.includes('node_modules/crypto-js') || id.includes('node_modules/digest-wasm')) return 'crypto'
-      if (id.includes('node_modules/naive-ui') || id.includes('node_modules/vueuc') || id.includes('node_modules/vooks') || id.includes('node_modules/@css-render') || id.includes('node_modules/css-render') || id.includes('node_modules/seemly')) return 'naive-ui'
+      if (
+        id.includes('node_modules/naive-ui') ||
+        id.includes('node_modules/vueuc') ||
+        id.includes('node_modules/vooks') ||
+        id.includes('node_modules/@css-render') ||
+        id.includes('node_modules/css-render') ||
+        id.includes('node_modules/seemly')
+      )
+        return 'naive-ui'
       if (id.includes('node_modules/vant') || id.includes('node_modules/@vant/')) return 'vant'
       if (id.includes('node_modules/markstream-vue') || id.includes('node_modules/stream-markdown')) return 'markdown'
       if (id.includes('node_modules/breezystack-lamejs')) return 'audio-encoder'
-      if (id.includes('node_modules/vue') || id.includes('node_modules/@vue/') || id.includes('node_modules/pinia') || id.includes('node_modules/vue-router') || id.includes('node_modules/@vueuse/')) return 'vue-core'
+      if (
+        id.includes('node_modules/vue') ||
+        id.includes('node_modules/@vue/') ||
+        id.includes('node_modules/pinia') ||
+        id.includes('node_modules/vue-router') ||
+        id.includes('node_modules/@vueuse/')
+      )
+        return 'vue-core'
       if (id.includes('node_modules/@tauri-apps/')) return 'tauri'
       if (id.includes('node_modules/@fingerprintjs/') || id.includes('node_modules/fingerprintjs')) return 'fingerprint'
       if (id.includes('node_modules/dompurify')) return 'dompurify'
@@ -100,18 +115,18 @@ export function createManualChunks(dependencies: string[]) {
       const match = id.match(/node_modules\/((?:@[^/]+\/)?[^/]+)/)
       if (match) {
         const depName = match[1]
-        
+
         // matrix 相关
         if (depName.includes('@matrix-org') || depName.includes('matrix-')) return 'matrix-deps'
         // babel polyfill
         if (depName.includes('@babel') || depName.includes('core-js')) return 'babel-polyfill'
-        
+
         // 检查是否是顶级依赖
         const matchedDep = dependencies.find((dep) => dep === depName)
         if (matchedDep) {
           return matchedDep.replace(/[@/]/g, '-')
         }
-        
+
         // TD-12: 子依赖按范围分组，避免全部进入 vendor-sub
         // @types 开头的
         if (depName.startsWith('@types')) return 'vendor-types'
@@ -133,7 +148,7 @@ export function createManualChunks(dependencies: string[]) {
         if (depName.startsWith('@vant')) return 'vendor-vant'
         // 其他 @ 开头的包
         if (depName.startsWith('@')) return 'vendor-misc'
-        
+
         // 非 @ 开头的子依赖 - 根据关键词分组
         if (depName.includes('lodash') || depName.includes('es-toolkit')) return 'utils-lodash'
         if (depName.includes('axios')) return 'axios'
@@ -151,7 +166,7 @@ export function createManualChunks(dependencies: string[]) {
         if (depName.includes('grapheme')) return 'grapheme-splitter'
         if (depName.includes('colorthief')) return 'colorthief'
         if (depName.includes('p-limit') || depName.includes('yocto-queue')) return 'p-limit'
-        
+
         // 其他子依赖归入 vendor-sub (减少体积)
         return 'vendor-sub'
       }

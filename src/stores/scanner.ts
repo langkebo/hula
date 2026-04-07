@@ -5,6 +5,9 @@ import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
 import { ErrorType, invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler.ts'
 import { getUserDataRootAbsoluteDir } from '@/utils/PathUtil'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ScannerStore')
 
 type DirectoryScanProgress = {
   current_path: string
@@ -88,7 +91,7 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
 
     // 监听扫描取消
     const cancelListener = await listen('directory-scan-cancelled', () => {
-      console.log('收到扫描取消事件')
+      logger.debug('收到扫描取消事件')
       scanning.value = false
       scanComplete.value = false
       showDiskUsage.value = false
@@ -113,7 +116,7 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
         await startScan()
       }
     } catch (error) {
-      console.error('初始化扫描器失败:', error)
+      logger.error('初始化扫描器失败:', error)
       window.$message?.error('初始化扫描器失败')
     }
   }
@@ -122,7 +125,7 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
     try {
       defaultDirectory.value = await getUserDataRootAbsoluteDir()
     } catch (error) {
-      console.error('获取 userData 根目录失败，回退到 appCacheDir:', error)
+      logger.error('获取 userData 根目录失败，回退到 appCacheDir:', error)
       defaultDirectory.value = await appCacheDir()
     }
   }
@@ -174,7 +177,7 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
       scanComplete.value = true
       scanning.value = false
     } catch (error) {
-      console.error('扫描失败:', error)
+      logger.error('扫描失败:', error)
       scanning.value = false
     }
   }
@@ -182,9 +185,9 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
   const cancelScan = async () => {
     try {
       await invokeSilently('cancel_directory_scan')
-      console.log('扫描已取消')
+      logger.debug('扫描已取消')
     } catch (error) {
-      console.error('取消扫描失败:', error)
+      logger.error('取消扫描失败:', error)
     }
   }
 
@@ -219,7 +222,7 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
       try {
         unlisten()
       } catch (error) {
-        console.warn('清理监听器失败:', error)
+        logger.warn('清理监听器失败:', error)
       }
     })
     listeners.value = []

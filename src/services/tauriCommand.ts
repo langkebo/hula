@@ -16,7 +16,10 @@ import { getAllUserState, getUserDetail } from '../utils/ImRequestUtils'
 import { ErrorType, invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
 import { getEnhancedFingerprint } from './fingerprint'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
+import { createLogger } from '@/utils/Logger'
 import type { UserInfoType } from './types'
+
+const logger = createLogger('TauriCommand')
 
 export type Settings = {
   database: {
@@ -153,7 +156,7 @@ const openHomeWindow = async () => {
   const registerWindow = await WebviewWindow.getByLabel('register')
   if (registerWindow) {
     await registerWindow.close().catch((error) => {
-      console.warn('关闭注册窗口失败:', error)
+      logger.warn('关闭注册窗口失败:', error)
     })
   }
   await createWebviewWindow('HuLa', 'home', 960, 720, 'login', true, 330, 480, undefined, false)

@@ -4,6 +4,9 @@
  */
 
 import { AppException, ErrorType } from './exception'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('GlobalErrorHandler')
 
 // 错误回调类型
 type ErrorCallback = (error: Error, context?: Record<string, unknown>) => void
@@ -74,15 +77,13 @@ class GlobalErrorHandler {
         standardError = new Error(String(error))
       }
 
-      // 记录错误日志
-      console.error('[GlobalErrorHandler]', standardError, context)
+      logger.error(standardError, context)
 
-      // 触发所有注册的回调
       this.errorCallbacks.forEach((callback) => {
         try {
           callback(standardError, context)
         } catch (callbackError) {
-          console.error('[GlobalErrorHandler] 回调执行失败:', callbackError)
+          logger.error('回调执行失败:', callbackError)
         }
       })
     } finally {

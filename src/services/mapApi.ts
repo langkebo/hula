@@ -71,5 +71,5 @@ export const getStaticMap = async (lat: number, lng: number, width = 600, height
     url: ImUrlEnum.MAP_STATIC,
     params: { lat, lng, width, height, zoom }
   })
-  return data.isOk() ? (data.value.dataUrl || '') : ''
+  return data.isOk() ? data.value.dataUrl || '' : ''
 }

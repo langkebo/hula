@@ -133,6 +133,10 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { useGroupStore } from '@/stores/group'
 import { matrixGroupService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+const logger = createLogger('ApplyList')
+const timerManager = useTimerManager()
 
 const userStore = useUserStore()
 const contactStore = useContactStore()
@@ -188,7 +192,7 @@ const getGroupDetail = async (roomId: string) => {
       return groupInfo
     }
   } catch (error) {
-    console.error('获取群组信息失败:', error)
+    logger.error('获取群组信息失败:', error)
   } finally {
     loadingGroups.value.delete(roomId)
   }
@@ -334,7 +338,7 @@ const handleAgree = async (item: NoticeItem) => {
       markAsRead: true
     })
   } finally {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       loadingMap.value[applyId] = false
     }, 600)
   }
@@ -360,7 +364,7 @@ const handleFriendAction = async (action: string, applyId: string) => {
       })
     }
   } finally {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       loadingMap.value[applyId] = false
     }, 600)
   }
@@ -369,6 +373,10 @@ const handleFriendAction = async (action: string, applyId: string) => {
 onMounted(() => {
   // 组件挂载时刷新一次列表
   contactStore.getApplyPage(props.type, true)
+})
+
+onUnmounted(() => {
+  timerManager.clearAll()
 })
 
 // 监听applyList变化，批量加载群组信息

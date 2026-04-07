@@ -141,6 +141,7 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { showDialog } from 'vant'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
@@ -156,6 +157,8 @@ import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
 import { matrixSessionService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('PersonalInfo')
 
 const props = defineProps({
   isShow: {
@@ -194,7 +197,7 @@ const toChatRoom = async () => {
   try {
     const res = await matrixSessionService.getSessionDetailWithFriends(uid)
     if (!res) {
-      console.error('获取会话详情失败')
+      logger.error('获取会话详情失败')
       return
     }
     // 先检查会话是否已存在
@@ -208,7 +211,7 @@ const toChatRoom = async () => {
     await preloadChatRoom(res.roomId)
     router.push(`/mobile/chatRoom/chatMain`)
   } catch (error) {
-    console.error('私聊尝试进入聊天室失败:', error)
+    logger.error('私聊尝试进入聊天室失败:', error)
   }
 }
 
@@ -303,7 +306,7 @@ const handleDelete = () => {
           router.back()
         } catch (error) {
           window.$message.warning(t('mobile_personal_info.delete_user.failed'))
-          console.error('删除好友失败：', error)
+          logger.error('删除好友失败：', error)
         } finally {
           loading.value = false
         }

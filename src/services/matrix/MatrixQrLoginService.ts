@@ -7,6 +7,9 @@
 
 import { ref, computed } from 'vue'
 import { generateQRCode, checkQRStatus, scanQRCodeAPI, confirmQRCodeAPI } from '@/utils/ImRequestUtils'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('QRLogin')
 
 export type QRLoginStatus =
   | 'idle'
@@ -176,7 +179,7 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
       options.onStatusChange?.('waiting_confirm')
       return true
     } catch (err) {
-      console.error('[QRLogin] 扫码失败:', err)
+      logger.error('扫码失败:', err)
       return false
     }
   }
@@ -197,7 +200,7 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
 
       return false
     } catch (err) {
-      console.error('[QRLogin] 确认登录失败:', err)
+      logger.error('确认登录失败:', err)
       state.value.error = '确认登录失败'
       return false
     }

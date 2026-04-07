@@ -13,6 +13,9 @@ import { createI18n } from 'vue-i18n'
 import type { Locale } from 'vue-i18n'
 import { useSettingStore } from '../stores/setting'
 import { setDayjsLocale } from '@/utils/ComputedTime'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('I18n')
 
 const i18n = createI18n({
   legacy: false,
@@ -107,7 +110,7 @@ function findLocales(lang: string) {
 
   const prefix = getLangPrefix(lang)
   const like = availableLocales.find((lang) => getLangPrefix(lang) === prefix)
-  // When “lang" does not exist, "zh-CN" as the default value.
+  // When "lang" does not exist, "zh-CN" as the default value.
   return locales[like ?? 'zh-CN']
 }
 
@@ -124,7 +127,7 @@ export async function loadLanguage(lang: Locale) {
 
   const messageParts = findLocales(resolvedLang)
   if (!messageParts) {
-    console.warn(`No locale data found for: ${resolvedLang}`)
+    logger.warn(`No locale data found for: ${resolvedLang}`)
     return
   }
 

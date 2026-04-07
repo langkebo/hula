@@ -46,6 +46,10 @@ import { ref, computed, reactive } from 'vue'
 import { NModal, NButton, NSpin, NForm, NFormItem, NInput, NProgress, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { matrixEncryptionService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+const logger = createLogger('KeyBackupRestore')
+const timerManager = useTimerManager()
 
 defineOptions({
   name: 'KeyBackupRestoreDialog'
@@ -98,7 +102,7 @@ async function handleRestore() {
   restoreResult.value = null
 
   try {
-    const progressInterval = setInterval(() => {
+    const progressInterval = timerManager.setInterval(() => {
       if (restoreProgress.value !== null && restoreProgress.value < 90) {
         restoreProgress.value += 10
       }
@@ -106,7 +110,7 @@ async function handleRestore() {
 
     const result = await matrixEncryptionService.restoreFromBackup(formData.recoveryKey.trim())
 
-    clearInterval(progressInterval)
+    timerManager.clearInterval(progressInterval)
     restoreProgress.value = 100
 
     restoreResult.value = {
@@ -116,13 +120,13 @@ async function handleRestore() {
 
     message.success('密钥恢复成功')
 
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       visible.value = false
       resetState()
       emit('success')
     }, 1500)
   } catch (error) {
-    console.error('[KeyBackupRestore] 恢复失败:', error)
+    logger.error('恢复失败:', error)
     restoreProgress.value = null
     restoreResult.value = {
       success: false,

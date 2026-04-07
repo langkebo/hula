@@ -2,6 +2,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { StoresEnum } from '@/enums'
 import { matrixClientService, type ConnectionState, type MatrixClientConfig } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MatrixStore')
 
 export const useMatrixStore = defineStore(StoresEnum.MATRIX, () => {
   const connectionState = ref<ConnectionState>('DISCONNECTED')
@@ -35,7 +38,7 @@ export const useMatrixStore = defineStore(StoresEnum.MATRIX, () => {
         syncState.value = state
       })
     } catch (error) {
-      console.error('[MatrixStore] 初始化失败:', error)
+      logger.error('初始化失败:', error)
       connectionState.value = 'ERROR'
       throw error
     }
@@ -56,12 +59,12 @@ export const useMatrixStore = defineStore(StoresEnum.MATRIX, () => {
         return true
       } else {
         connectionState.value = 'ERROR'
-        console.error('[MatrixStore] 登录失败:', result.error)
+        logger.error('登录失败:', result.error)
         return false
       }
     } catch (error) {
       connectionState.value = 'ERROR'
-      console.error('[MatrixStore] 登录异常:', error)
+      logger.error('登录异常:', error)
       return false
     }
   }
@@ -70,7 +73,7 @@ export const useMatrixStore = defineStore(StoresEnum.MATRIX, () => {
     try {
       return await matrixClientService.getSSOLoginUrl(identityProviderId)
     } catch (error) {
-      console.error('[MatrixStore] 获取 SSO 登录 URL 失败:', error)
+      logger.error('获取 SSO 登录 URL 失败:', error)
       throw error
     }
   }
@@ -90,12 +93,12 @@ export const useMatrixStore = defineStore(StoresEnum.MATRIX, () => {
         return true
       } else {
         connectionState.value = 'ERROR'
-        console.error('[MatrixStore] SSO 登录失败:', result.error)
+        logger.error('SSO 登录失败:', result.error)
         return false
       }
     } catch (error) {
       connectionState.value = 'ERROR'
-      console.error('[MatrixStore] SSO 登录异常:', error)
+      logger.error('SSO 登录异常:', error)
       return false
     }
   }
@@ -114,12 +117,12 @@ export const useMatrixStore = defineStore(StoresEnum.MATRIX, () => {
         return true
       } else {
         connectionState.value = 'ERROR'
-        console.error('[MatrixStore] Token 登录失败:', result.error)
+        logger.error('Token 登录失败:', result.error)
         return false
       }
     } catch (error) {
       connectionState.value = 'ERROR'
-      console.error('[MatrixStore] Token 登录异常:', error)
+      logger.error('Token 登录异常:', error)
       return false
     }
   }
@@ -128,7 +131,7 @@ export const useMatrixStore = defineStore(StoresEnum.MATRIX, () => {
     try {
       await matrixClientService.logout()
     } catch (error) {
-      console.error('[MatrixStore] 登出异常:', error)
+      logger.error('登出异常:', error)
     } finally {
       userId.value = null
       deviceId.value = null

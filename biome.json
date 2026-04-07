@@ -64,7 +64,8 @@
         "noImplicitAnyLet": "off",
         "noConfusingVoidType": "off",
         "noArrayIndexKey": "off",
-        "useIterableCallbackReturn": "off"
+        "useIterableCallbackReturn": "off",
+        "noConsole": "warn"
       }
     }
   },

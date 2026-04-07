@@ -257,7 +257,11 @@ class MatrixMessageRelationService {
         messageContent.formatted_body = content.html
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, messageContent as Record<string, unknown>)
+      const response = await client.sendEvent(
+        roomId,
+        'm.room.message' as EventType,
+        messageContent as Record<string, unknown>
+      )
       info(`[MessageRelation] 回复消息成功: ${replyToEventId}`)
       return response.event_id
     } catch (err) {
@@ -294,7 +298,11 @@ class MatrixMessageRelationService {
         messageContent.formatted_body = content.html
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, messageContent as Record<string, unknown>)
+      const response = await client.sendEvent(
+        roomId,
+        'm.room.message' as EventType,
+        messageContent as Record<string, unknown>
+      )
       info(`[MessageRelation] 线程回复成功: ${threadRootId}`)
       return response.event_id
     } catch (err) {

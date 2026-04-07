@@ -1,6 +1,8 @@
 import { BaseDirectory, exists, mkdir, writeFile } from '@tauri-apps/plugin-fs'
 import { createEventHook } from '@vueuse/core'
 import { isMobile } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Download')
 
 export const useDownload = () => {
   const process = ref(0)
@@ -62,7 +64,7 @@ export const useDownload = () => {
       await writeFile(savePath, allChunks, { baseDir })
       trigger('success')
     } catch (error) {
-      console.error('下载失败:', error)
+      logger.error('下载失败:', error)
       trigger('fail')
       throw error
     } finally {

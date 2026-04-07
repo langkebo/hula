@@ -207,7 +207,7 @@
         "delete_friend": "Delete this friend?",
         "dissolve_group": "Disband this group?",
         "exit_group": "Leave this group?",
-        "rename_group": "Rename group to {name} ?",
+        "rename_group": "Rename group to {name}?",
         "update_info": "Save changes to group info?",
         "delete_history": "Delete local chat history?"
       }

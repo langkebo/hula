@@ -28,7 +28,7 @@ export function toMessageBody(body: unknown): MessageBody {
   if (isObject(body)) {
     return body as MessageBody
   }
-  return { content: String(body ?? '') }
+  return { content: String(body) }
 }
 
 /**

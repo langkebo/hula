@@ -2,6 +2,14 @@ import { ImUrlEnum } from '@/enums'
 import { imRequest } from '@/utils/ImRequestUtils'
 import { matrixClientService } from './MatrixClientService'
 import { info, error as logError } from '@tauri-apps/plugin-log'
+import type {
+  AIModelListResponse,
+  AIImageListResponse,
+  AIVideoListResponse,
+  AIAudioListResponse,
+  AIChatRoleListResponse,
+  AIVoice
+} from '@/types/matrix-api'
 
 export interface AIConversation {
   id: string
@@ -358,9 +366,9 @@ class MatrixAIService {
     }
   }
 
-  async modelPage(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: any[]; total: number }> {
+  async modelPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIModelListResponse> {
     try {
-      const result = await imRequest<{ list: any[]; total: number }>({
+      const result = await imRequest<AIModelListResponse>({
         url: ImUrlEnum.MODEL_PAGE,
         params
       })
@@ -386,9 +394,9 @@ class MatrixAIService {
     }
   }
 
-  async imageMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: any[]; total: number }> {
+  async imageMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIImageListResponse> {
     try {
-      const result = await imRequest<{ list: any[]; total: number }>({
+      const result = await imRequest<AIImageListResponse>({
         url: ImUrlEnum.IMAGE_MY_PAGE,
         params
       })
@@ -400,9 +408,9 @@ class MatrixAIService {
     }
   }
 
-  async imageMyListByIds(params: { ids: string }): Promise<any[]> {
+  async imageMyListByIds(params: { ids: string }): Promise<AIImage[]> {
     try {
-      const result = await imRequest<any[]>({
+      const result = await imRequest<AIImage[]>({
         url: ImUrlEnum.IMAGE_MY_LIST_BY_IDS,
         params
       })
@@ -414,9 +422,9 @@ class MatrixAIService {
     }
   }
 
-  async videoMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: any[]; total: number }> {
+  async videoMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIVideoListResponse> {
     try {
-      const result = await imRequest<{ list: any[]; total: number }>({
+      const result = await imRequest<AIVideoListResponse>({
         url: ImUrlEnum.VIDEO_MY_PAGE,
         params
       })
@@ -428,9 +436,9 @@ class MatrixAIService {
     }
   }
 
-  async videoMyListByIds(params: { ids: string }): Promise<any[]> {
+  async videoMyListByIds(params: { ids: string }): Promise<AIVideo[]> {
     try {
-      const result = await imRequest<any[]>({
+      const result = await imRequest<AIVideo[]>({
         url: ImUrlEnum.VIDEO_MY_LIST_BY_IDS,
         params
       })
@@ -456,9 +464,9 @@ class MatrixAIService {
     }
   }
 
-  async audioMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: any[]; total: number }> {
+  async audioMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIAudioListResponse> {
     try {
-      const result = await imRequest<{ list: any[]; total: number }>({
+      const result = await imRequest<AIAudioListResponse>({
         url: ImUrlEnum.AUDIO_MY_PAGE,
         params
       })
@@ -470,9 +478,9 @@ class MatrixAIService {
     }
   }
 
-  async audioMyListByIds(params: { ids: string }): Promise<any[]> {
+  async audioMyListByIds(params: { ids: string }): Promise<AIAudio[]> {
     try {
-      const result = await imRequest<any[]>({
+      const result = await imRequest<AIAudio[]>({
         url: ImUrlEnum.AUDIO_MY_LIST_BY_IDS,
         params
       })
@@ -498,16 +506,16 @@ class MatrixAIService {
     }
   }
 
-  async audioGetVoices(params: { model: string }): Promise<any[]> {
+  async audioGetVoices(params: { model: string }): Promise<AIVoice[]> {
     try {
-      const result = await imRequest<any[]>({
-        url: ImUrlEnum.AUDIO_VOICES,
+      const result = await imRequest<AIVoice[]>({
+        url: ImUrlEnum.AUDIO_GET_VOICES,
         params
       })
-      info(`[MatrixAI] 获取音频声音列表成功`)
+      info(`[MatrixAI] 获取语音列表成功`)
       return result
     } catch (err) {
-      logError(`[MatrixAI] 获取音频声音列表失败: ${err}`)
+      logError(`[MatrixAI] 获取语音列表失败: ${err}`)
       throw err
     }
   }
@@ -540,16 +548,16 @@ class MatrixAIService {
     }
   }
 
-  async chatRolePage(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: any[]; total: number }> {
+  async chatRolePage(params?: { pageNo?: number; pageSize?: number }): Promise<AIChatRoleListResponse> {
     try {
-      const result = await imRequest<{ list: any[]; total: number }>({
+      const result = await imRequest<AIChatRoleListResponse>({
         url: ImUrlEnum.CHAT_ROLE_PAGE,
         params
       })
-      info(`[MatrixAI] 获取角色列表成功`)
+      info(`[MatrixAI] 获取聊天角色列表成功`)
       return result
     } catch (err) {
-      logError(`[MatrixAI] 获取角色列表失败: ${err}`)
+      logError(`[MatrixAI] 获取聊天角色列表失败: ${err}`)
       throw err
     }
   }

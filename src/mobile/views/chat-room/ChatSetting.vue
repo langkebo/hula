@@ -265,6 +265,9 @@ import {
 } from '@/utils/ImRequestUtils'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 import { useI18n, I18nT } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ChatSetting')
 
 defineOptions({
   name: 'mobileChatSetting'
@@ -424,11 +427,11 @@ async function handleExit() {
 
         router.push('/mobile/message')
       } catch (error) {
-        console.error('创建登录窗口失败:', error)
+        logger.error('创建登录窗口失败:', error)
       }
     },
     onNegativeClick: () => {
-      console.log('用户点击了取消')
+      logger.debug('用户点击了取消')
     }
   })
 }
@@ -461,7 +464,7 @@ const handleLoadGroupAnnoun = async () => {
   try {
     const roomId = globalStore.currentSessionRoomId
     if (!roomId) {
-      console.error('当前会话没有roomId')
+      logger.error('当前会话没有roomId')
       return
     }
     // 设置是否可以添加公告
@@ -483,7 +486,7 @@ const handleLoadGroupAnnoun = async () => {
       announError.value = false
     }
   } catch (error) {
-    console.error('加载群公告失败:', error)
+    logger.error('加载群公告失败:', error)
     announError.value = true
   }
 }
@@ -587,7 +590,7 @@ const fetchGroupMembers = async (roomId: string) => {
 
     options.value = memberDetails
   } catch (error) {
-    console.error('获取群成员失败:', error)
+    logger.error('获取群成员失败:', error)
   }
 }
 
@@ -703,7 +706,7 @@ onMounted(async () => {
         }
       })
       .catch((e: any) => {
-        console.error('获取群组详情失败:', e)
+        logger.error('获取群组详情失败:', e)
       })
   } else {
     // 这里需要拿到好友的信息

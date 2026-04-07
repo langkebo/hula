@@ -160,11 +160,16 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import Validation from '@/components/common/Validation.vue'
 import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('MobileForgetPassword')
+const timerManager = useTimerManager()
 
 // 导入Web Worker
 const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url))
@@ -278,7 +283,7 @@ const getCaptchaImage = async () => {
       duration: captchaInterval
     })
   } catch (error) {
-    console.error('获取验证码失败', error)
+    logger.error('获取验证码失败', error)
     captchaInCooldown.value = false
   }
 }
@@ -312,7 +317,7 @@ const sendEmailCode = async () => {
       duration: 60 * 1000
     })
   } catch (error) {
-    console.error('发送验证码失败', error)
+    logger.error('发送验证码失败', error)
     getCaptchaImage()
   } finally {
     sendingEmailCode.value = false
@@ -328,12 +333,12 @@ const verifyEmail = async () => {
     verifyLoading.value = true
 
     // 这里只是验证表单，实际上不需要调用后端接口，直接进入下一步
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       currentStep.value = 2
       verifyLoading.value = false
     }, 500)
   } catch (error) {
-    console.error('表单验证失败', error)
+    logger.error('表单验证失败', error)
   }
 }
 
@@ -360,7 +365,7 @@ const submitNewPassword = async () => {
       router.push('/mobile/login')
     }, 2000)
   } catch (error) {
-    console.error('重置密码失败', error)
+    logger.error('重置密码失败', error)
     submitLoading.value = false
   }
 }
@@ -396,7 +401,7 @@ timerWorker.onmessage = (e) => {
 
 // Worker 错误处理
 timerWorker.onerror = (error) => {
-  console.error('[Timer Worker Error]', error)
+  logger.error('Timer Worker Error', error)
   // 发生错误时恢复按钮状态
   sendBtnDisabled.value = false
   emailCodeBtnText.value = t('mobile_forget_code.button.send_email_code')

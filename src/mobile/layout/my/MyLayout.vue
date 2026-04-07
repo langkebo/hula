@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { createLogger } from '@/utils/Logger'
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import router from '@/router'
@@ -22,6 +22,10 @@ import { useGlobalStore } from '@/stores/global'
 import { useUserStore } from '@/stores/user'
 import { useGroupStore } from '@/stores/group'
 import { matrixQrLoginService } from '@/services/matrix'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('MyLayout')
+const timerManager = useTimerManager()
 
 interface ScanData {
   type: string // 必须有
@@ -56,7 +60,7 @@ const globalStore = useGlobalStore()
 const userStore = useUserStore()
 
 const handleScanAddFriend = async (data: ScanData) => {
-  console.log('尝试扫码添加好友')
+  logger.debug('尝试扫码添加好友')
   if (!Object.hasOwn(data, 'uid')) {
     window.$message.warning('登录二维码不存在uid')
     throw new Error('登录二维码不存在uid:', data as any)
@@ -76,7 +80,7 @@ const handleScanAddFriend = async (data: ScanData) => {
 
   globalStore.addFriendModalInfo.uid = uid
 
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     router.push({ name: 'mobileConfirmAddFriend' })
   }, 100)
 }
@@ -85,7 +89,7 @@ const handleScanAddFriend = async (data: ScanData) => {
  * 扫码进群
  */
 const handleScanEnterGroup = async (data: ScanData) => {
-  console.log('尝试扫码加群', data, Object.hasOwn(data, 'roomId'))
+  logger.debug('尝试扫码加群', data, Object.hasOwn(data, 'roomId'))
   if (!Object.hasOwn(data, 'roomId')) {
     window.$message.warning('加群二维码不存在roomId')
     throw new Error('加群二维码不存在roomId:', data as any)
@@ -101,7 +105,7 @@ const handleScanEnterGroup = async (data: ScanData) => {
   globalStore.addGroupModalInfo.name = groupDetail?.name || roomId
   globalStore.addGroupModalInfo.avatar = groupDetail?.avatar || ''
 
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     router.push({ name: 'mobileConfirmAddGroup' })
   }, 100)
 }
@@ -120,21 +124,21 @@ useMitt.on(MittEnum.QR_SCAN_EVENT, async (data: ScanData) => {
       try {
         await handleScanLogin(data)
       } catch (error) {
-        console.log('扫码尝试获取Token失败:', error)
+        logger.debug('扫码尝试获取Token失败:', error)
       }
       break
     case 'addFriend':
       try {
         await handleScanAddFriend(data)
       } catch (error) {
-        console.log('扫码添加好友失败:', error)
+        logger.debug('扫码添加好友失败:', error)
       }
       break
     case 'scanEnterGroup':
       try {
         await handleScanEnterGroup(data)
       } catch (error) {
-        console.log('扫码加入群失败:', error)
+        logger.debug('扫码加入群失败:', error)
       }
       break
     default:

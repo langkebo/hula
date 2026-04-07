@@ -152,11 +152,13 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 
+const logger = createLogger('VoiceVideoSettings')
 const { t } = useI18n()
 
 const devicesLoading = ref(false)
@@ -253,7 +255,7 @@ async function loadDevices() {
       videoInputId.value = videoInputDevices.value[0].deviceId
     }
   } catch (error) {
-    console.error('[MobileVoiceVideo] 获取设备列表失败:', error)
+    logger.error('获取设备列表失败:', error)
     showToast({
       type: 'fail',
       message: t('mobile_voice_video.device_error')
@@ -336,7 +338,7 @@ async function startAudioTest() {
       message: t('mobile_voice_video.test_started')
     })
   } catch (error) {
-    console.error('[MobileVoiceVideo] 麦克风测试失败:', error)
+    logger.error('麦克风测试失败:', error)
     showToast({
       type: 'fail',
       message: t('mobile_voice_video.mic_error')
@@ -404,7 +406,7 @@ async function startPreview() {
       message: t('mobile_voice_video.preview_started')
     })
   } catch (error) {
-    console.error('[MobileVoiceVideo] 视频预览失败:', error)
+    logger.error('视频预览失败:', error)
     showToast({
       type: 'fail',
       message: t('mobile_voice_video.camera_error')

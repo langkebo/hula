@@ -6,6 +6,9 @@
 
 import type { MatrixClient } from 'matrix-js-sdk'
 import { AdminManager, UserInfo as SdkUserInfo, RoomInfo as SdkRoomInfo } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Admin')
 
 export interface ServerStats {
   /** 房间数 */
@@ -70,7 +73,7 @@ class AdminService {
     this.client = client
     // 使用 SDK 的 AdminManager
     this.adminManager = client.getAdminManager()
-    console.log('[Admin] 服务已初始化')
+    logger.info('服务已初始化')
   }
 
   /**
@@ -92,7 +95,7 @@ class AdminService {
         startServerTime: (stats as any).server_start_time || 0
       }
     } catch (error) {
-      console.error('[Admin] 获取统计失败:', error)
+      logger.error('获取统计失败:', error)
       return {
         roomCount: 0,
         userCount: 0,
@@ -128,7 +131,7 @@ class AdminService {
         nextToken: result.next_token
       }
     } catch (error) {
-      console.error('[Admin] 获取用户列表失败:', error)
+      logger.error('获取用户列表失败:', error)
       return { users: [] }
     }
   }
@@ -154,7 +157,7 @@ class AdminService {
         displayname: user.displayname
       }
     } catch (error) {
-      console.error('[Admin] 获取用户信息失败:', error)
+      logger.error('获取用户信息失败:', error)
       return null
     }
   }
@@ -180,7 +183,7 @@ class AdminService {
         displayname: options?.displayname
       })
 
-      console.log('[Admin] 用户已创建:', user.user_id)
+      logger.info('用户已创建:', user.user_id)
 
       return {
         userId: user.user_id || username,
@@ -189,7 +192,7 @@ class AdminService {
         displayname: user.displayname
       }
     } catch (error) {
-      console.error('[Admin] 创建用户失败:', error)
+      logger.error('创建用户失败:', error)
       return null
     }
   }
@@ -204,9 +207,9 @@ class AdminService {
 
     try {
       await this.adminManager.resetPassword(userId, newPassword)
-      console.log('[Admin] 密码已重置:', userId)
+      logger.info('密码已重置:', userId)
     } catch (error) {
-      console.error('[Admin] 重置密码失败:', error)
+      logger.error('重置密码失败:', error)
       throw error
     }
   }
@@ -221,9 +224,9 @@ class AdminService {
 
     try {
       await this.adminManager.deactivateUser(userId)
-      console.log('[Admin] 用户已停用:', userId)
+      logger.info('用户已停用:', userId)
     } catch (error) {
-      console.error('[Admin] 停用用户失败:', error)
+      logger.error('停用用户失败:', error)
       throw error
     }
   }
@@ -256,7 +259,7 @@ class AdminService {
         nextToken: result.next_token
       }
     } catch (error) {
-      console.error('[Admin] 获取房间列表失败:', error)
+      logger.error('获取房间列表失败:', error)
       return { rooms: [] }
     }
   }
@@ -285,7 +288,7 @@ class AdminService {
         creator: room.creator
       }
     } catch (error) {
-      console.error('[Admin] 获取房间详情失败:', error)
+      logger.error('获取房间详情失败:', error)
       return null
     }
   }
@@ -300,9 +303,9 @@ class AdminService {
 
     try {
       await this.client.kick(roomId, userId, reason)
-      console.log('[Admin] 用户已踢出房间:', userId, roomId)
+      logger.info('用户已踢出房间:', userId, roomId)
     } catch (error) {
-      console.error('[Admin] 踢出用户失败:', error)
+      logger.error('踢出用户失败:', error)
       throw error
     }
   }
@@ -317,9 +320,9 @@ class AdminService {
 
     try {
       await this.client.ban(roomId, userId, reason)
-      console.log('[Admin] 用户已封禁:', userId, roomId)
+      logger.info('用户已封禁:', userId, roomId)
     } catch (error) {
-      console.error('[Admin] 封禁用户失败:', error)
+      logger.error('封禁用户失败:', error)
       throw error
     }
   }
@@ -334,9 +337,9 @@ class AdminService {
 
     try {
       await this.client.unban(roomId, userId)
-      console.log('[Admin] 用户已解除封禁:', userId, roomId)
+      logger.info('用户已解除封禁:', userId, roomId)
     } catch (error) {
-      console.error('[Admin] 解除封禁失败:', error)
+      logger.error('解除封禁失败:', error)
       throw error
     }
   }
@@ -367,7 +370,7 @@ class AdminService {
         }))
       }
     } catch (error) {
-      console.error('[Admin] 获取 Whois 失败:', error)
+      logger.error('获取 Whois 失败:', error)
       return null
     }
   }
@@ -375,16 +378,16 @@ class AdminService {
   /**
    * 关闭房间
    */
-  async shutdownRoom(roomId: string, message?: string): Promise<void> {
+  async shutdownRoom(roomId: string, _message?: string): Promise<void> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
 
     try {
       await this.adminManager.shutdownRoom(roomId)
-      console.log('[Admin] 房间已关闭:', roomId)
+      logger.info('房间已关闭:', roomId)
     } catch (error) {
-      console.error('[Admin] 关闭房间失败:', error)
+      logger.error('关闭房间失败:', error)
       throw error
     }
   }
@@ -399,9 +402,9 @@ class AdminService {
 
     try {
       await this.adminManager.deleteRoom(roomId)
-      console.log('[Admin] 房间已删除:', roomId)
+      logger.info('房间已删除:', roomId)
     } catch (error) {
-      console.error('[Admin] 删除房间失败:', error)
+      logger.error('删除房间失败:', error)
       throw error
     }
   }

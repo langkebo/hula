@@ -106,7 +106,10 @@ import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { open } from '@tauri-apps/plugin-dialog'
 import { isDesktop } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
 import { useBotStore } from '@/stores/bot'
+
+const logger = createLogger('Bot')
 import { useAssistantModelPresets, type AssistantModelPreset } from '@/hooks/useAssistantModelPresets'
 import HuLaAssistant from './HuLaAssistant.vue'
 
@@ -293,7 +296,7 @@ const clearWebviewListeners = () => {
       const unsubscribe = webviewListeners.pop()
       unsubscribe?.()
     } catch (error) {
-      console.warn('取消 webview 监听失败:', error)
+      logger.warn('取消 webview 监听失败:', error)
     }
   }
 }
@@ -306,7 +309,7 @@ const updateExternalWebviewBounds = async () => {
     await externalWebview.value.setPosition(new LogicalPosition(rect.left, rect.top))
     await externalWebview.value.setSize(new LogicalSize(rect.width, rect.height))
   } catch (error) {
-    console.warn('更新嵌入 Webview 尺寸失败:', error)
+    logger.warn('更新嵌入 Webview 尺寸失败:', error)
   }
 }
 
@@ -326,7 +329,7 @@ const destroyExternalWebview = async () => {
     try {
       await externalWebview.value.close()
     } catch (error) {
-      console.warn('关闭嵌入 Webview 失败:', error)
+      logger.warn('关闭嵌入 Webview 失败:', error)
     }
     externalWebview.value = null
   }
@@ -340,7 +343,7 @@ const handleAssistantReady = () => {
 }
 
 const handleAssistantError = async (error: unknown) => {
-  console.error('加载 HuLa 小管家失败:', error)
+  logger.error('加载 HuLa 小管家失败:', error)
   customModelPath.value = null
   selectedModelKey.value = null
   applyFirstPreset({ force: true })
@@ -401,7 +404,7 @@ const openLocalModel = async () => {
     selectedModelKey.value = 'local'
     await showAssistant(true, true)
   } catch (error) {
-    console.error('选择本地模型失败:', error)
+    logger.error('选择本地模型失败:', error)
     window.$message?.error('选择模型文件失败，请重试')
   }
 }
@@ -459,7 +462,7 @@ const createExternalWebview = async (url: string) => {
     finishLoading()
   })
   const errorListener = await newWebview.once('tauri://error', async (error) => {
-    console.error('嵌入 Webview 创建失败:', error)
+    logger.error('嵌入 Webview 创建失败:', error)
     errorLoading()
     await destroyExternalWebview()
     isViewingLink.value = false
@@ -467,7 +470,7 @@ const createExternalWebview = async (url: string) => {
     try {
       await openUrl(url)
     } catch (openError) {
-      console.error('在浏览器中打开失败:', openError)
+      logger.error('在浏览器中打开失败:', openError)
     }
   })
   webviewListeners.push(createdListener, errorListener)
@@ -491,7 +494,7 @@ const showExternalLink = async (url: string, recordHistory = true) => {
     try {
       await openUrl(url)
     } catch (error) {
-      console.error('在浏览器中打开失败:', error)
+      logger.error('在浏览器中打开失败:', error)
       errorLoading()
     }
     return
@@ -500,7 +503,7 @@ const showExternalLink = async (url: string, recordHistory = true) => {
   try {
     await createExternalWebview(url)
   } catch (error) {
-    console.error('创建嵌入 Webview 失败:', error)
+    logger.error('创建嵌入 Webview 失败:', error)
     errorLoading()
     if (recordHistory) {
       historyStack.value.pop()
@@ -542,7 +545,7 @@ const loadReadme = async (recordHistory = false, resetHistory = false) => {
     finishLoading()
     botStore.setReadme(currentLang.value)
   } catch (error) {
-    console.error('加载 README 失败:', error)
+    logger.error('加载 README 失败:', error)
     renderedMarkdown.value = '<p>加载失败,请稍后重试</p>'
     if (recordHistory) {
       historyStack.value.pop()
@@ -578,7 +581,7 @@ const loadMarkdownFile = async (filePath: string, recordHistory = true) => {
     finishLoading()
     botStore.setMarkdown(filePath)
   } catch (error) {
-    console.error('加载 markdown 文件失败:', error)
+    logger.error('加载 markdown 文件失败:', error)
     renderedMarkdown.value = `<p>加载文件失败: ${filePath}</p><p>错误: ${error}</p>`
     if (recordHistory) {
       historyStack.value.pop()
@@ -602,7 +605,7 @@ const attachLinkListeners = () => {
 
   // 使用事件委托在容器级别监听,使用捕获阶段确保优先处理
   markdownContainer.value.addEventListener('click', handleLinkClick, true)
-  console.log('已附加链接监听器')
+  logger.debug('已附加链接监听器')
 }
 
 // 处理链接点击
@@ -622,11 +625,11 @@ const handleLinkClick = async (event: Event) => {
   event.preventDefault()
   event.stopPropagation()
 
-  console.log('点击链接:', href)
+  logger.debug('点击链接:', href)
 
   // 处理锚点链接 - 滚动到对应位置
   if (href.startsWith('#')) {
-    console.log('滚动到锚点:', href)
+    logger.debug('滚动到锚点:', href)
     const id = href.substring(1)
     const element = markdownContainer.value?.querySelector(`#${id}`)
     if (element) {
@@ -634,11 +637,11 @@ const handleLinkClick = async (event: Event) => {
     }
   } else if (href.endsWith('.md')) {
     // 如果是 .md 文件,使用 Rust 后端解析并渲染
-    console.log('加载 markdown 文件:', href)
+    logger.debug('加载 markdown 文件:', href)
     await loadMarkdownFile(href, true)
   } else {
     // 所有其他链接(包括外部链接和相对链接)都通过 Tauri Webview 内嵌打开
-    console.log('在组件内打开:', href)
+    logger.debug('在组件内打开:', href)
     await showExternalLink(href)
   }
 }
@@ -649,7 +652,7 @@ const openInBrowser = async () => {
   try {
     await openUrl(currentUrl.value)
   } catch (error) {
-    console.error('在浏览器中打开失败:', error)
+    logger.error('在浏览器中打开失败:', error)
   }
 }
 

@@ -320,6 +320,12 @@ import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { useUserStore } from '@/stores/user'
 import { matrixApiKeyService, matrixModelService } from '@/services/matrix'
 import ApiKeyManagement from './ApiKeyManagement.vue'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('ModelManagement')
+const timerManager = useTimerManager()
 
 const showModal = defineModel<boolean>({ default: false })
 const emit = defineEmits<{
@@ -470,7 +476,7 @@ const modelHint = computed(() => {
 })
 
 // 监听模型输入变化，自动保存到后端
-let saveModelTimeout: NodeJS.Timeout | null = null
+let saveModelTimeout: number | null = null
 watch(
   () => formData.value.model,
   async (newModel, _oldModel) => {
@@ -491,14 +497,14 @@ watch(
     }
 
     // 防抖：用户停止输入 1 秒后再保存
-    saveModelTimeout = setTimeout(async () => {
+    saveModelTimeout = timerManager.setTimeout(async () => {
       try {
         await matrixApiKeyService.addPlatformModel(formData.value.platform, newModel)
         // 重新加载平台列表，更新示例
         await loadPlatformList()
         window.$message?.success('模型已添加到示例列表')
       } catch (error) {
-        console.error('保存模型失败:', error)
+        logger.error('保存模型失败:', error)
         // 静默失败，不影响用户操作
       }
     }, 1000)
@@ -574,7 +580,7 @@ const loadApiKeyOptions = async () => {
     }))
     apiKeyMap.value = new Map((data || []).map((item: any) => [item.id, item]))
   } catch (error) {
-    console.error('加载 API 密钥列表失败:', error)
+    logger.error('加载 API 密钥列表失败:', error)
   }
 }
 
@@ -589,7 +595,7 @@ const loadModelList = async () => {
     modelList.value = data.list || []
     pagination.value.total = data.total || 0
   } catch (error) {
-    console.error('加载模型列表失败:', error)
+    logger.error('加载模型列表失败:', error)
     window.$message.error('加载模型列表失败')
   } finally {
     loading.value = false
@@ -726,7 +732,7 @@ const handleSubmit = async () => {
       // 表单验证错误
       return
     }
-    console.error('保存模型失败:', error)
+    logger.error('保存模型失败:', error)
     window.$message.error('保存模型失败')
   } finally {
     submitting.value = false
@@ -742,7 +748,7 @@ const handleDelete = async (id: string) => {
     // 通知父组件刷新
     emit('refresh')
   } catch (error) {
-    console.error('删除模型失败:', error)
+    logger.error('删除模型失败:', error)
     window.$message.error('删除模型失败')
   }
 }

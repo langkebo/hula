@@ -159,6 +159,7 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { showDialog, showToast } from 'vant'
@@ -170,6 +171,8 @@ import { useUserStatusStore } from '@/stores/userStatus'
 import { useLogin } from '@/hooks/useLogin'
 import * as ImRequestUtils from '@/utils/ImRequestUtils'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('MobileSettings')
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -230,7 +233,7 @@ async function handleLogout() {
         await ImRequestUtils.logout({ autoLogin: true })
         logoutSuccess = true
       } catch (error) {
-        console.error('服务器登出失败：', error)
+        logger.error('服务器登出失败：', error)
       }
 
       try {
@@ -249,7 +252,7 @@ async function handleLogout() {
         }
         await router.push('/mobile/login')
       } catch (localError) {
-        console.error('本地登出清理失败：', localError)
+        logger.error('本地登出清理失败：', localError)
         showToast({
           type: 'fail',
           message: t('mobile_setting.logout_failed')

@@ -56,6 +56,9 @@ import { useGlobalStore } from '@/stores/global.ts'
 import { useUserStore } from '@/stores/user.ts'
 import { matrixGroupService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AddGroupVerify')
 
 const { t } = useI18n()
 const globalStore = useGlobalStore()
@@ -81,7 +84,7 @@ const addFriend = async () => {
 }
 
 onMounted(async () => {
-  console.log(userInfo.value)
+  logger.debug('userInfo', userInfo.value)
 
   await getCurrentWebviewWindow().show()
   requestMsg.value = t('message.group_verify.default_msg', { name: userStore.userInfo!.name })

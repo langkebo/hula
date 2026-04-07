@@ -73,6 +73,9 @@
 import { ref, onMounted } from 'vue'
 import { NSwitch, NButton, NDivider, NSpin, NTag, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('LabsSettings')
 
 defineOptions({
   name: 'LabsSettings'
@@ -168,7 +171,7 @@ function loadSavedSettings() {
         feature.enabled = enabledIds.includes(feature.id)
       })
     } catch (e) {
-      console.error('Failed to parse saved lab features')
+      logger.error('Failed to parse saved lab features')
     }
   }
 

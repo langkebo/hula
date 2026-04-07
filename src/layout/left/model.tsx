@@ -27,6 +27,11 @@ import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isMac } from '@/utils/PlatformConstants'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+import { TimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('LeftModel')
+const timerManager = new TimerManager()
 
 const formRef = ref<FormInst | null>()
 const formValue = ref({
@@ -50,7 +55,7 @@ export const lock = ref({
       lock.value.loading = true
       lockScreen.value.password = formValue.value.lockPassword
       lockScreen.value.enable = true
-      setTimeout(async () => {
+      timerManager.setTimeout(async () => {
         /** 发送锁屏事件，当打开的窗口接受到后会自动锁屏 */
         await emit(EventEnum.LOCK_SCREEN)
         lock.value.loading = false
@@ -231,7 +236,7 @@ export const CheckUpdate = defineComponent(() => {
         try {
           await relaunch()
         } catch (e) {
-          console.log(e)
+          logger.debug(e)
           window.$message.error(t('message.check_update.restart_failed'))
         }
       })

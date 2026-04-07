@@ -6,6 +6,9 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
 import { useSettingStore } from '@/stores/setting'
 import * as ImRequestUtils from '@/utils/ImRequestUtils'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('LeftConfig')
 
 /**
  * 这里的顶部的操作栏使用pinia写入了localstorage中
@@ -68,7 +71,7 @@ const useMoreList = () => {
   }
 
   const handleHomeserverSave = (url: string) => {
-    console.log('Homeserver saved:', url)
+    logger.debug('Homeserver saved:', url)
   }
 
   return {
@@ -122,7 +125,7 @@ const useMoreList = () => {
             await resetLoginState()
             await logout()
           } catch (error) {
-            console.error('退出登录失败:', error)
+            logger.error('退出登录失败:', error)
             window.$message.error('退出登录失败，请重试')
           }
         }

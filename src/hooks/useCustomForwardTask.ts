@@ -4,16 +4,8 @@ import { useChatStore } from '@/stores/chat'
 import { messageStrategyMap } from '@/strategy/MessageStrategy'
 import { removeTempFile } from '@/utils/TempFileManager'
 
-type ReplyContext = {
-  value: {
-    content: string
-    key: number
-    accountName: string
-  }
-}
-
 /**
- * 针对“自定义转发任务”（目前用于群二维码）的统一 Hook。
+ * 针对"自定义转发任务"（目前用于群二维码）的统一 Hook。
  * 负责 blob 资源释放、临时消息清理、多选状态复位以及重新上传临时图片。
  * 后续如果增加“名片/机器人卡片”等其它临时转发形态，只需要在这里扩展即可。
  */

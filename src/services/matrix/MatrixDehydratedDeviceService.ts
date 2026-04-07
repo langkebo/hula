@@ -3,19 +3,22 @@
  * 允许在不使用密钥的情况下创建和恢复设备
  */
 import { matrixClientService } from './MatrixClientService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('DehydratedDevice')
 
 export interface DehydratedDevice {
   deviceId: string
   userId: string
   initialDeviceDisplayName?: string
-  deviceData?: Record<string, any>
+  deviceData?: Record<string, unknown>
   createdAt: number
   expiresAt?: number
 }
 
 export interface CreateDehydratedDeviceParams {
   initialDeviceDisplayName?: string
-  deviceData?: Record<string, any>
+  deviceData?: Record<string, unknown>
 }
 
 export interface ClaimDehydratedDeviceParams {
@@ -51,7 +54,7 @@ class MatrixDehydratedDeviceService {
             initial_device_display_name: initialDeviceDisplayName
           })
         }
-      )) as any
+      )) as { device_id: string; device_data?: Record<string, unknown>; expires_at?: number }
 
       return {
         deviceId: response.device_id,
@@ -62,7 +65,7 @@ class MatrixDehydratedDeviceService {
         expiresAt: response.expires_at
       }
     } catch (error) {
-      console.error('[DehydratedDevice] 创建失败:', error)
+      logger.error('创建失败:', error)
       return null
     }
   }
@@ -77,7 +80,13 @@ class MatrixDehydratedDeviceService {
         'GET',
         `/_matrix/client/v1/dehydrated_device/${deviceId}`,
         undefined
-      )) as any
+      )) as {
+        device_id: string
+        initial_device_display_name?: string
+        device_data?: Record<string, unknown>
+        created_at: number
+        expires_at?: number
+      }
 
       return {
         deviceId: response.device_id,
@@ -88,7 +97,7 @@ class MatrixDehydratedDeviceService {
         expiresAt: response.expires_at
       }
     } catch (error) {
-      console.error('[DehydratedDevice] 获取设备失败:', error)
+      logger.error('获取设备失败:', error)
       return null
     }
   }
@@ -103,9 +112,15 @@ class MatrixDehydratedDeviceService {
         'GET',
         '/_matrix/client/v1/dehydrated_device',
         undefined
-      )) as any
-
-      const devices: DehydratedDevice[] = []
+      )) as {
+        devices: Array<{
+          device_id: string
+          initial_device_display_name?: string
+          device_data?: Record<string, unknown>
+          created_at: number
+          expires_at?: number
+        }>
+      }
       for (const device of response.devices || []) {
         devices.push({
           deviceId: device.device_id,
@@ -119,7 +134,7 @@ class MatrixDehydratedDeviceService {
 
       return devices
     } catch (error) {
-      console.error('[DehydratedDevice] 获取设备列表失败:', error)
+      logger.error('获取设备列表失败:', error)
       return []
     }
   }
@@ -143,14 +158,14 @@ class MatrixDehydratedDeviceService {
             signing_pubkey: signingPubKey
           })
         }
-      )) as any
+      )) as { access_token: string; device_id: string }
 
       return {
         accessToken: response.access_token,
         deviceId: response.device_id
       }
     } catch (error) {
-      console.error('[DehydratedDevice] 认领设备失败:', error)
+      logger.error('认领设备失败:', error)
       return null
     }
   }
@@ -158,7 +173,7 @@ class MatrixDehydratedDeviceService {
   /**
    * 更新脱水设备数据
    */
-  async updateDeviceData(deviceId: string, deviceData: Record<string, any>): Promise<boolean> {
+  async updateDeviceData(deviceId: string, deviceData: Record<string, unknown>): Promise<boolean> {
     try {
       await this.client.http.authedRequest({}, 'PUT', `/_matrix/client/v1/dehydrated_device/${deviceId}`, undefined, {
         body: JSON.stringify({
@@ -168,7 +183,7 @@ class MatrixDehydratedDeviceService {
 
       return true
     } catch (error) {
-      console.error('[DehydratedDevice] 更新设备数据失败:', error)
+      logger.error('更新设备数据失败:', error)
       return false
     }
   }
@@ -182,7 +197,7 @@ class MatrixDehydratedDeviceService {
 
       return true
     } catch (error) {
-      console.error('[DehydratedDevice] 删除设备失败:', error)
+      logger.error('删除设备失败:', error)
       return false
     }
   }
@@ -202,7 +217,7 @@ class MatrixDehydratedDeviceService {
 
       return response
     } catch (error) {
-      console.error('[DehydratedDevice] 获取设备事件失败:', error)
+      logger.error('获取设备事件失败:', error)
       return null
     }
   }

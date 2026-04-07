@@ -10,6 +10,22 @@ export interface DeviceInfo {
   lastSeenUserAgent: string | undefined
 }
 
+interface DeviceResponse {
+  device_id: string
+  display_name?: string
+  last_seen_ip?: string
+  last_seen_ts?: number
+  last_seen_user_agent?: string
+}
+
+interface AuthData {
+  type?: string
+  user?: string
+  password?: string
+  session?: string
+  [key: string]: unknown
+}
+
 class MatrixAccountService {
   async updateDisplayName(displayName: string): Promise<boolean> {
     const client = matrixClientService.getClient()
@@ -86,7 +102,7 @@ class MatrixAccountService {
       // getDevices() 返回数组
       const devices = Array.isArray(response) ? response : []
       info(`[MatrixAccount] 获取设备列表成功: ${devices.length} 个设备`)
-      return devices.map((d: any) => ({
+      return (devices as DeviceResponse[]).map((d) => ({
         deviceId: d.device_id,
         userId: userId,
         displayName: d.display_name,
@@ -140,7 +156,7 @@ class MatrixAccountService {
     }
   }
 
-  async deleteDevice(deviceId: string, authData?: any): Promise<boolean> {
+  async deleteDevice(deviceId: string, authData?: AuthData): Promise<boolean> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixAccount] 客户端未初始化')
@@ -156,7 +172,7 @@ class MatrixAccountService {
     }
   }
 
-  async deleteDevices(deviceIds: string[], authData?: any): Promise<boolean> {
+  async deleteDevices(deviceIds: string[], authData?: AuthData): Promise<boolean> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixAccount] 客户端未初始化')
@@ -204,7 +220,7 @@ class MatrixAccountService {
     }
   }
 
-  async deactivateAccount(authData?: any, erase: boolean = false): Promise<void> {
+  async deactivateAccount(authData?: AuthData, erase: boolean = false): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixAccount] 客户端未初始化')

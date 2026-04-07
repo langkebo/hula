@@ -158,6 +158,9 @@ import { matrixAccountService } from '@/services/matrix/MatrixAccountService'
 import { matrixCryptoService } from '@/services/matrix'
 import { useLogin } from '@/hooks/useLogin'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SecuritySettings')
 
 const { t } = useI18n()
 const router = useRouter()
@@ -207,7 +210,7 @@ async function loadSecurityInfo() {
       keyBackupEnabled.value = cryptoStatus.keyBackupEnabled
     }
   } catch (error) {
-    console.error('[MobileSecurity] 加载安全信息失败:', error)
+    logger.error('加载安全信息失败:', error)
   }
 }
 
@@ -247,7 +250,7 @@ async function handleChangePassword() {
       confirmPassword: ''
     }
   } catch (error) {
-    console.error('[MobileSecurity] 修改密码失败:', error)
+    logger.error('修改密码失败:', error)
     showToast({
       type: 'fail',
       message: t('mobile_security.password_change_failed')
@@ -280,7 +283,7 @@ async function handleSetupBackup() {
     backupPassphrase.value = ''
     await loadSecurityInfo()
   } catch (error) {
-    console.error('[MobileSecurity] 设置备份失败:', error)
+    logger.error('设置备份失败:', error)
     showToast({
       type: 'fail',
       message: t('mobile_security.backup_setup_failed')
@@ -303,7 +306,7 @@ async function handleExportKeys() {
     })
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('[MobileSecurity] 导出密钥失败:', error)
+      logger.error('导出密钥失败:', error)
     }
   }
 }
@@ -327,7 +330,7 @@ async function handleDeactivate() {
     router.push('/mobile/login')
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('[MobileSecurity] 注销账户失败:', error)
+      logger.error('注销账户失败:', error)
       showToast({
         type: 'fail',
         message: t('mobile_security.deactivate_failed')

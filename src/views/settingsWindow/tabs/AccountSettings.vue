@@ -85,6 +85,9 @@ import { ref, computed, reactive } from 'vue'
 import { NAvatar, NButton, NForm, NFormItem, NInput, NDivider, useMessage, useDialog } from 'naive-ui'
 import { useUserStore } from '@/stores/user'
 import { useMatrixStore } from '@/stores/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AccountSettings')
 import { matrixAccountService } from '@/services/matrix'
 import { matrixMediaService } from '@/services/matrix/MatrixMediaService'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
@@ -164,7 +167,7 @@ async function handleCrop(blob: Blob) {
     const file = new File([blob], fileName, { type: 'image/webp' })
 
     const uploadResult = await matrixMediaService.uploadImage(file, (progress) => {
-      console.log(`[Avatar] 上传进度: ${progress}%`)
+      logger.debug(`上传进度: ${progress}%`)
     })
 
     const mxcUrl = uploadResult.contentUri
@@ -181,7 +184,7 @@ async function handleCrop(blob: Blob) {
       localImageUrl.value = ''
     }
   } catch (error) {
-    console.error('[AccountSettings] 头像上传失败:', error)
+    logger.error('头像上传失败:', error)
     message.error('头像上传失败，请稍后重试')
     cropperRef.value?.finishLoading()
   } finally {

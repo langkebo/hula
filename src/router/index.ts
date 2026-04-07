@@ -11,6 +11,9 @@ import {
 import FriendsList from '@/views/homeWindow/FriendsList.vue'
 import Message from '@/views/homeWindow/message/index.vue'
 import { TauriCommand } from '@/enums'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('RouterGuard')
 
 // Mobile views are imported dynamically below to implement lazy loading
 const ChatRoomLayout = () => import('#/layout/chat-room/ChatRoomLayout.vue')
@@ -719,44 +722,61 @@ const router: any = createRouter({
 })
 
 // 在创建路由后，添加全局前置守卫
-// 为解决 “已声明‘to’，但从未读取其值” 的问题，将 to 参数改为下划线开头表示该参数不会被使用
 router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
-  // 桌面端直接放行
-  if (!isMobile) {
-    console.log('[守卫] 非移动端，直接放行')
+  // 设置页面标题
+  const title = to.meta.title as string | undefined
+  if (title) {
+    document.title = `${title} - HuLa`
+  }
+
+  // 白名单路由：不需要认证的页面
+  const publicRoutes = [
+    '/login',
+    '/register',
+    '/forgetPassword',
+    '/mobile/login',
+    '/mobile/splashscreen',
+    '/mobile/MobileForgetPassword',
+    '/mobile/serviceAgreement',
+    '/mobile/privacyAgreement',
+    '/oidcCallback'
+  ]
+
+  // 检查是否是白名单路由
+  const isPublicRoute = publicRoutes.some((route) => to.path === route || to.path.startsWith(route + '/'))
+
+  if (isPublicRoute) {
     return next()
   }
 
   try {
-    const isLoginPage = to.path === '/mobile/login'
-    const isSplashPage = to.path === '/mobile/splashscreen'
-    const isForgetPage = to.path === '/mobile/MobileForgetPassword'
-    const isAgreementPage = to.path === '/mobile/serviceAgreement' || to.path === '/mobile/privacyAgreement'
-
-    // 闪屏页白名单：不论登录状态都允许进入
-    console.log('路由守卫to->', to.path)
-    if (isSplashPage || isForgetPage || isAgreementPage) {
-      return next()
-    }
-
+    // 获取用户 tokens
     const tokens = await invoke<{ token: string | null; refreshToken: string | null }>(TauriCommand.GET_USER_TOKENS)
     const isLoggedIn = !!(tokens.token && tokens.refreshToken)
 
-    // 未登录且不是登录页 → 跳转登录
-    if (!isLoggedIn && !isLoginPage) {
-      console.warn('[守卫] 未登录，强制跳转到 /mobile/login')
-      return next('/mobile/login')
+    if (!isLoggedIn) {
+      const loginPath = isMobile ? '/mobile/login' : '/login'
+      logger.warn(`未登录，跳转到 ${loginPath}`)
+      return next(loginPath)
+    }
+
+    // 检查权限（如果路由需要特定权限）
+    const requiredPermission = to.meta.permission as string | undefined
+    if (requiredPermission) {
+      // 这里可以添加权限检查逻辑
+      // const userStore = useUserStore()
+      // if (!userStore.hasPermission(requiredPermission)) {
+      //   return next('/403')
+      // }
     }
 
     return next()
-  } catch (error) {
-    console.error('[守卫] 获取token错误:', error)
-    // 出错时也跳转登录页（避免死循环）
-    if (to.path !== '/mobile/login') {
-      console.warn('[守卫] 出错，强制跳转到 /mobile/login')
-      return next('/mobile/login')
+  } catch (err) {
+    logger.error('认证检查错误:', err)
+    const loginPath = isMobile ? '/mobile/login' : '/login'
+    if (to.path !== loginPath) {
+      return next(loginPath)
     }
-    // console.log('[守卫] 出错但目标是登录页，直接放行')
     return next()
   }
 })

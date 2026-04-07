@@ -294,6 +294,9 @@ import { useI18n, I18nT } from 'vue-i18n'
 import type { UploadFile } from '@/utils/FileType'
 import LocationModal from './location/LocationModal.vue'
 import { matrixBeaconService } from '@/services/matrix/MatrixBeaconService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MsgInput')
 
 interface Props {
   isAIMode?: boolean
@@ -451,7 +454,7 @@ const handleBeaconClick = async () => {
       window.$message?.success(t('message.beacon.started') || '信标已启动')
     }
   } catch (error) {
-    console.error('[MsgInput] 启动 Beacon 失败:', error)
+    logger.error('启动 Beacon 失败:', error)
     window.$message?.error(t('message.beacon.failed') || '信标启动失败')
   }
 }
@@ -470,7 +473,7 @@ const handleFileConfirm = async (files: UploadFile[]) => {
   try {
     await sendFilesDirect(files)
   } catch (error) {
-    console.error('弹窗发送文件失败:', error)
+    logger.error('弹窗发送文件失败:', error)
   }
   showFileModal.value = false
   pendingFiles.value = []
@@ -488,7 +491,7 @@ const handleGlobalFilesDrop = async (files: UploadFile[]) => {
   try {
     await processFiles(files, messageInputDom.value, showFileModalCallback)
   } catch (error) {
-    console.error('处理拖拽文件失败:', error)
+    logger.error('处理拖拽文件失败:', error)
     window.$message?.error?.('处理拖拽文件失败')
   }
 }
@@ -842,7 +845,7 @@ onMounted(async () => {
 
         await processFiles([file], messageInputDom.value, showFileModalCallback)
       } catch (error) {
-        console.error('处理截图失败:', error)
+        logger.error('处理截图失败:', error)
       }
     }
   })

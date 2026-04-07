@@ -32,8 +32,7 @@ defineOptions({
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 
-const { isOpen, position, isContextMenu, closeMenu, handleMenuItemClick, handleLeftClick } =
-  useUserMenu()
+const { isOpen, position, isContextMenu, closeMenu, handleMenuItemClick, handleLeftClick } = useUserMenu()
 
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
 const defaultAvatar = computed(() => defaultAvatarImg)

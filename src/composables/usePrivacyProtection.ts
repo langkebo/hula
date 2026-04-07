@@ -10,6 +10,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { isDesktop } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('PrivacyProtection')
 
 export interface PrivacySettings {
   blockScreenshot: boolean
@@ -36,7 +38,7 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
   async function enablePrivacyProtection() {
     if (!isDesktop()) {
-      console.warn('[PrivacyProtection] 仅桌面端支持 FLAG_SECURE')
+      logger.warn('仅桌面端支持 FLAG_SECURE')
       return false
     }
 
@@ -46,10 +48,10 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
       await window.setDecorations(true)
 
-      console.info('[PrivacyProtection] 已启用隐私保护模式')
+      logger.info('已启用隐私保护模式')
       return true
     } catch (error) {
-      console.error('[PrivacyProtection] 启用隐私保护失败:', error)
+      logger.error('启用隐私保护失败:', error)
       return false
     }
   }
@@ -63,10 +65,10 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
       await window.setDecorations(true)
 
-      console.info('[PrivacyProtection] 已禁用隐私保护模式')
+      logger.info('已禁用隐私保护模式')
       return true
     } catch (error) {
-      console.error('[PrivacyProtection] 禁用隐私保护失败:', error)
+      logger.error('禁用隐私保护失败:', error)
       return false
     }
   }
@@ -77,7 +79,7 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
     await enablePrivacyProtection()
 
-    console.info(`[PrivacyProtection] 进入私密聊天: ${roomId}`)
+    logger.info(`进入私密聊天: ${roomId}`)
   }
 
   async function leavePrivateChat(roomId: string) {
@@ -86,7 +88,7 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
     await disablePrivacyProtection()
 
-    console.info(`[PrivacyProtection] 离开私密聊天: ${roomId}`)
+    logger.info(`离开私密聊天: ${roomId}`)
   }
 
   async function setupPrivacyEventListener() {
@@ -94,7 +96,7 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
     try {
       unlistenPrivacyEvent = await listen<{ action: string; roomId?: string }>('com.hula.privacy', (event) => {
-        console.info('[PrivacyProtection] 收到隐私事件:', event.payload)
+        logger.info('收到隐私事件:', event.payload)
 
         const { action, roomId } = event.payload
 
@@ -122,9 +124,9 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
         }
       })
 
-      console.info('[PrivacyProtection] 隐私事件监听已设置')
+      logger.info('隐私事件监听已设置')
     } catch (error) {
-      console.error('[PrivacyProtection] 设置隐私事件监听失败:', error)
+      logger.error('设置隐私事件监听失败:', error)
     }
   }
 

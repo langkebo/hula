@@ -165,6 +165,9 @@
 import { Icon } from '@iconify/vue'
 import type { FormRules, FormInst } from 'naive-ui'
 import { matrixApiKeyService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ApiKeyManagement')
 
 const showModal = defineModel<boolean>({ default: false })
 const emit = defineEmits<{
@@ -213,7 +216,7 @@ const loadPlatformList = async () => {
         value: item.platform
       }))
     } else {
-      console.warn('平台列表数据格式不正确:', data)
+      logger.warn('平台列表数据格式不正确:', data)
       platformOptions.value = []
     }
   } catch (error) {
@@ -267,7 +270,7 @@ const loadApiKeyList = async () => {
     apiKeyList.value = data.list || []
     pagination.value.total = data.total || 0
   } catch (error) {
-    console.error('加载 API 密钥列表失败:', error)
+    logger.error('加载 API 密钥列表失败:', error)
     window.$message.error('加载 API 密钥列表失败')
   } finally {
     loading.value = false
@@ -336,13 +339,12 @@ const handleSubmit = async () => {
 
     showEditModal.value = false
     loadApiKeyList()
-    // 通知父组件刷新
     emit('refresh')
   } catch (error: any) {
     if (error?.errors) {
       return
     }
-    console.error('保存密钥失败:', error)
+    logger.error('保存密钥失败:', error)
     window.$message.error('保存密钥失败')
   } finally {
     submitting.value = false
@@ -357,7 +359,7 @@ const handleDelete = async (id: string) => {
     loadApiKeyList()
     emit('refresh')
   } catch (error) {
-    console.error('删除密钥失败:', error)
+    logger.error('删除密钥失败:', error)
     window.$message.error('删除密钥失败')
   }
 }
@@ -370,7 +372,7 @@ const handleQueryBalance = async (id: string) => {
     balanceMap.value[id] = data
     window.$message.success('余额查询成功')
   } catch (error) {
-    console.error('查询余额失败:', error)
+    logger.error('查询余额失败:', error)
     window.$message.error('查询余额失败')
   } finally {
     balanceLoadingMap.value[id] = false

@@ -71,6 +71,8 @@ import { matrixRoomService } from '@/services/matrix'
 import { matrixMediaService } from '@/services/matrix'
 import matrixClientService from '@/services/matrix/MatrixClientService'
 import { Visibility, Preset } from '@/types/matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('CreateRoomDialog')
 
 const props = defineProps<{
   visible: boolean
@@ -123,7 +125,7 @@ const handleAvatarUpload = async ({ file }: UploadCustomRequestOptions) => {
     const result = await matrixMediaService.uploadFile(uploadFile)
     formData.avatarUrl = result.contentUri
   } catch (error) {
-    console.error('[CreateRoomDialog] 上传头像失败:', error)
+    logger.error('上传头像失败:', error)
     window.$message?.error(t('room.create.avatar_upload_failed'))
   }
 }
@@ -180,7 +182,7 @@ const handleCreate = async () => {
     emit('update:visible', false)
     resetForm()
   } catch (error) {
-    console.error('[CreateRoomDialog] 创建房间失败:', error)
+    logger.error('创建房间失败:', error)
     window.$message?.error(t('room.create.failed'))
   } finally {
     creating.value = false

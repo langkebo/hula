@@ -152,6 +152,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { NSelect, NSlider, NButton, NSwitch, NDivider, useMessage } from 'naive-ui'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('VoiceVideoSettings')
 
 defineOptions({
   name: 'VoiceVideoSettings'
@@ -230,7 +233,7 @@ async function loadDevices() {
       videoInputId.value = videoInputOptions.value[0].value
     }
   } catch (error) {
-    console.error('[VoiceVideoSettings] 获取设备列表失败:', error)
+    logger.error('获取设备列表失败:', error)
     message.error('获取设备列表失败，请检查权限')
   } finally {
     devicesLoading.value = false
@@ -331,7 +334,7 @@ async function startAudioTest() {
     updateAudioLevel()
     message.success('麦克风测试已开始')
   } catch (error) {
-    console.error('[VoiceVideoSettings] 麦克风测试失败:', error)
+    logger.error('麦克风测试失败:', error)
     message.error('无法访问麦克风，请检查权限')
   }
 }
@@ -393,7 +396,7 @@ async function startPreview() {
     isPreviewing.value = true
     message.success('视频预览已开始')
   } catch (error) {
-    console.error('[VoiceVideoSettings] 视频预览失败:', error)
+    logger.error('视频预览失败:', error)
     message.error('无法访问摄像头，请检查权限')
   }
 }

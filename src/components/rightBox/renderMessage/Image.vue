@@ -75,6 +75,9 @@ import { isMobile } from '@/utils/PlatformConstants'
 import { useThumbnailCacheStore } from '@/stores/thumbnailCache'
 import { buildQiniuThumbnailUrl, getPreferredQiniuFormat } from '@/utils/QiniuImageUtils'
 
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Image')
+
 const ImagePreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/ImagePreview.vue')) : void 0
 
 const props = defineProps<{
@@ -209,7 +212,7 @@ const ensureLocalThumbnail = async () => {
       return
     }
   } catch (error) {
-    console.warn('[Image] 检查缩略图文件失败:', error)
+    logger.warn('检查缩略图文件失败:', error)
   }
   localThumbnailSrc.value = null
   thumbnailStore.invalidate(downloadKey.value)

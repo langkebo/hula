@@ -198,7 +198,7 @@ export const useWindow = () => {
     if (!isDesktop()) {
       return Promise.resolve()
     }
-    console.log('新窗口的载荷：', payload)
+    logger.debug('新窗口的载荷:', payload)
     return invoke<void>('push_window_payload', {
       label: windowLabel,
       // 这个payload只要是json就能传，不限制字段
@@ -239,7 +239,7 @@ export const useWindow = () => {
    *
    * @example
    * const unlisten = await getWindowPayloadListener<MyPayload>('my-window', (event) => {
-   *   console.log('收到 payload 更新：', event.payload)
+   *   logger.debug('收到 payload 更新:', event.payload)
    * })
    *
    * // 需要时手动取消监听
@@ -343,7 +343,7 @@ export const useWindow = () => {
             movable: false
           })
         } catch (error) {
-          console.error('设置子窗口不可拖动失败:', error)
+          logger.error('设置子窗口不可拖动失败:', error)
         }
         try {
           await invoke('set_macos_traffic_lights_spacing', {
@@ -357,7 +357,7 @@ export const useWindow = () => {
 
     // 监听错误事件
     modalWindow.once('tauri://error', async (e) => {
-      console.error(`${title}窗口创建失败:`, e)
+      logger.error(`${title}窗口创建失败:`, e)
       window.$message?.error(`创建${title}窗口失败`)
       await parentWindow?.setEnabled(true)
     })
@@ -370,7 +370,7 @@ export const useWindow = () => {
         try {
           await parentWindow?.setEnabled(true)
         } catch (error) {
-          console.error('重新启用父窗口失败:', error)
+          logger.error('重新启用父窗口失败:', error)
         }
       }
     })
@@ -396,7 +396,7 @@ export const useWindow = () => {
     const newSize = new LogicalSize(clampedSize.width, clampedSize.height)
     // 调用窗口的 setSize 方法进行尺寸调整
     await webview?.setSize(newSize).catch((error) => {
-      console.error('无法调整窗口大小:', error)
+      logger.error('无法调整窗口大小:', error)
     })
   }
 
@@ -442,7 +442,7 @@ export const useWindow = () => {
     const webview = await WebviewWindow.getByLabel(label)
     if (webview) {
       await webview.setResizable(resizable).catch((error) => {
-        console.error('设置窗口可调整大小失败:', error)
+        logger.error('设置窗口可调整大小失败:', error)
       })
     }
   }
@@ -468,7 +468,7 @@ export const useWindow = () => {
       }
       await createRtcCallWindow(false, remoteUid, globalStore.currentSessionRoomId, callType)
     } catch (error) {
-      console.error('创建视频通话窗口失败:', error)
+      logger.error('创建视频通话窗口失败:', error)
     }
   }
 

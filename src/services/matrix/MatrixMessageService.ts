@@ -267,7 +267,7 @@ class MatrixMessageService {
     }
   }
 
-  async getReadReceipt(roomId: string, eventId: string): Promise<Record<string, any>> {
+  async getReadReceipt(roomId: string, eventId: string): Promise<{ hasRead: boolean }> {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
@@ -276,14 +276,16 @@ class MatrixMessageService {
 
       const room = client.getRoom(roomId)
       if (!room) {
-        return {}
+        return { hasRead: false }
       }
 
       const event = room.findEventById(eventId)
-      if (!event) return {}
+      if (!event) return { hasRead: false }
       const myUserId = client.getUserId()
-      if (!myUserId) return {}
-      const hasRead = (room as any).hasUserReadEvent(myUserId, eventId)
+      if (!myUserId) return { hasRead: false }
+      const hasRead = (
+        room as unknown as { hasUserReadEvent: (userId: string, eventId: string) => boolean }
+      ).hasUserReadEvent(myUserId, eventId)
       return { hasRead }
     } catch (err) {
       logError(`[MatrixMessage] Failed to get read receipt: ${err}`)
@@ -464,7 +466,10 @@ class MatrixMessageService {
    * @param limit - 消息数量限制
    * @returns 消息列表
    */
-  async getMsgListByIds(params: { msgIds?: string[]; async?: boolean } | string, limit?: number): Promise<any[]> {
+  async getMsgListByIds(
+    params: { msgIds?: string[]; async?: boolean } | string,
+    limit?: number
+  ): Promise<MatrixEvent[]> {
     if (typeof params === 'object' && 'msgIds' in params) {
       try {
         const client = matrixClientService.getClient()
@@ -472,21 +477,14 @@ class MatrixMessageService {
           throw new Error('Matrix client not initialized')
         }
 
-        const messages: any[] = []
+        const messages: MatrixEvent[] = []
         for (const msgId of params.msgIds || []) {
           try {
             const room = client.getRoom(msgId)
             if (room) {
               const event = room.findEventById(msgId)
               if (event) {
-                messages.push({
-                  msgId: event.getId(),
-                  roomId: event.getRoomId(),
-                  content: event.getContent(),
-                  sender: event.getSender(),
-                  timestamp: event.localTimestamp,
-                  type: event.getType()
-                })
+                messages.push(event)
               }
             }
           } catch (e) {

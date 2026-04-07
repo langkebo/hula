@@ -78,6 +78,8 @@ import { useGroupStore } from '@/stores/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import UserItem from './UserItem.vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('UserList')
 
 type FileManagerState = {
   activeNavigation: Ref<string>
@@ -257,7 +259,7 @@ const loadContacts = async () => {
     loading.value = true
     await contactStore.getContactList()
   } catch (error) {
-    console.error('加载联系人失败:', error)
+    logger.error('加载联系人失败:', error)
   } finally {
     loading.value = false
   }
@@ -270,7 +272,7 @@ const loadContactsOriginal = async () => {
     const contacts = (await invoke('list_contacts_command')) as any[]
     contactList.value = contacts
   } catch (error) {
-    console.error('加载联系人失败:', error)
+    logger.error('加载联系人失败:', error)
   } finally {
     loading.value = false
   }
@@ -286,7 +288,7 @@ const loadSessions = async () => {
       avatar: AvatarUtils.getAvatarUrl(item.avatar)
     }))
   } catch (error) {
-    console.error('加载会话失败:', error)
+    logger.error('加载会话失败:', error)
   } finally {
     loading.value = false
   }
@@ -299,7 +301,7 @@ const loadGroups = async () => {
     // 群组数据已经在 groupStore 中管理，无需额外加载
     // 如果需要刷新群组数据，可以调用相应的 store 方法
   } catch (error) {
-    console.error('加载群聊失败:', error)
+    logger.error('加载群聊失败:', error)
   } finally {
     loading.value = false
   }

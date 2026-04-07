@@ -42,7 +42,9 @@ class MatrixTypingService {
   }
 
   stopTyping(roomId: string): void {
-    this.sendTypingNotification(roomId, false)
+    this.sendTypingNotification(roomId, false).catch(() => {
+      // 忽略客户端未初始化或网络错误
+    })
 
     if (this.typingTimeouts.has(roomId)) {
       clearTimeout(this.typingTimeouts.get(roomId)!)

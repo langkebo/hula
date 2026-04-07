@@ -73,6 +73,7 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { MergeMessageType, MittEnum } from '@/enums'
 import { useChatStore } from '@/stores/chat'
 import { useFileDownloadStore } from '@/stores/fileDownload'
@@ -81,6 +82,8 @@ import { useMitt } from '@/hooks/useMitt'
 import { extractFileName } from '@/utils/Formatting'
 import type { MsgType } from '@/services/types'
 import type { CSSProperties } from 'vue'
+
+const logger = createLogger('ImagePreview')
 
 interface Props {
   visible: boolean
@@ -172,31 +175,28 @@ const handleSave = async () => {
     const fileName = extractFileName(imageUrl) || 'image.png'
     const result = await fileDownloadStore.downloadFile(imageUrl, fileName)
     if (result && window.$message) {
-      console.log('图片保存路径:', result)
+      logger.debug('图片保存路径:', result)
       window.$message.success('图片已保存')
 
-      // 保存文件信息到 file store
       const roomId = getCurrentRoomId()
       if (roomId) {
-        // 获取文件状态，使用相对路径（localPath）而不是绝对路径
         const fileStatus = fileDownloadStore.getFileStatus(imageUrl)
         const localPath = fileStatus.localPath || result
 
-        // 如果没有消息信息，手动创建文件信息
         const fileInfo = {
-          id: props.message!.id, // 生成唯一ID
+          id: props.message!.id,
           roomId,
           fileName,
           type: 'image' as const,
-          url: localPath, // 使用相对路径
+          url: localPath,
           suffix: fileName.split('.').pop()?.toLowerCase()
         }
         fileStore.addFile(fileInfo)
-        console.log('[ImagePreview Debug] 保存文件信息到 fileStore:', fileInfo)
+        logger.debug('保存文件信息到 fileStore:', fileInfo)
       }
     }
   } catch (e) {
-    console.error('保存图片失败:', e)
+    logger.error('保存图片失败:', e)
     if (window.$message) {
       window.$message.error('保存失败')
     }

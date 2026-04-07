@@ -57,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import type { CSSProperties } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { useFileDownloadStore } from '@/stores/fileDownload'
@@ -64,6 +65,8 @@ import { useFileStore } from '@/stores/file'
 import { extractFileName } from '@/utils/Formatting'
 import type { MsgType } from '@/services/types'
 import { isMobile } from '@/utils/PlatformConstants'
+
+const logger = createLogger('VideoPreview')
 
 interface Props {
   visible: boolean
@@ -151,7 +154,7 @@ const handleSave = async () => {
     }
     window.$message?.success?.('视频已保存')
   } catch (error) {
-    console.error('保存视频失败:', error)
+    logger.error('保存视频失败:', error)
     window.$message?.error?.('保存失败')
   }
 }

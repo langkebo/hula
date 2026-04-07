@@ -18,7 +18,7 @@ export function isString(value: unknown): value is string {
 }
 
 export function isNumber(value: unknown): value is number {
-  return typeof value === 'number'
+  return typeof value === 'number' && !Number.isNaN(value)
 }
 
 export function isBoolean(value: unknown): value is boolean {
@@ -84,7 +84,7 @@ export function unknownToNumber(value: unknown, defaultValue = 0): number {
   if (isNumber(value)) return value
   if (isString(value)) {
     const parsed = parseFloat(value)
-    return isNaN(parsed) ? defaultValue : parsed
+    return Number.isNaN(parsed) ? defaultValue : parsed
   }
   return defaultValue
 }

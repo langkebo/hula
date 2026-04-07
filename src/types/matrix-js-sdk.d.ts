@@ -30,18 +30,18 @@ declare module 'matrix-js-sdk' {
     R0 = '/_matrix/client/r0',
     IdentityPrefix_V2 = '/_matrix/identity/v2'
   }
-  
+
   export enum Visibility {
     Public = 'public',
     Private = 'private'
   }
-  
+
   export enum Preset {
     PrivateChat = 'private_chat',
     PublicChat = 'public_chat',
     TrustedPrivateChat = 'trusted_private_chat'
   }
-  
+
   export enum PushRuleKind {
     Override = 'override',
     ContentSpecific = 'content',
@@ -49,7 +49,7 @@ declare module 'matrix-js-sdk' {
     SenderSpecific = 'sender',
     Underride = 'underride'
   }
-  
+
   export enum ReceiptType {
     Read = 'm.read',
     ReadPrivate = 'm.read.private',
@@ -67,7 +67,7 @@ declare module 'matrix-js-sdk' {
     Space = 'm.space',
     Enums = 0
   }
-  
+
   export enum EventType {
     RoomName = 'm.room.name',
     RoomTopic = 'm.room.topic',
@@ -88,7 +88,7 @@ declare module 'matrix-js-sdk' {
 
   export type PushRuleAction = string | { set_tweak: { tweak: TweakName; value: unknown } }
   export type EmptyObject = Record<string, never>
-  
+
   // ==================== 接口补充 ====================
   export interface ICreateRoomOpts {
     room_alias_name?: string
@@ -104,14 +104,14 @@ declare module 'matrix-js-sdk' {
     room_version?: string
     power_level_content_override?: Record<string, unknown>
   }
-  
+
   export interface SlidingSync {
     start(): void
     stop(): void
     registerExtension(extension: unknown): void
     on(event: string, callback: (...args: unknown[]) => void): void
   }
-  
+
   export interface ICreateClientOpts {
     baseUrl: string
     accessToken?: string
@@ -122,7 +122,7 @@ declare module 'matrix-js-sdk' {
     idBaseUrl?: string
     useAuthorizationHeader?: boolean
   }
-  
+
   export interface LoginResponse {
     user_id: string
     access_token: string
@@ -161,13 +161,13 @@ declare module 'matrix-js-sdk' {
     msgtype?: string
     [key: string]: unknown
   }
-  
+
   export interface IMemberEvent {
     membership?: string
     avatar_url?: string
     displayname?: string
   }
-  
+
   // ==================== OIDC ====================
   export function generateOidcAuthorizationUrl(config: unknown): Promise<{ url: string; state: string }>
   export function discoverAndValidateOIDCIssuerWellKnown(url: string): Promise<unknown>
@@ -178,7 +178,7 @@ declare module 'matrix-js-sdk' {
     redirectUri: string
   }
   export function generateScope(scopes: string[]): string
-  
+
   // ==================== Push ====================
   export type PushRuleSet = {
     [k in PushRuleKind]?: IPushRule[]
@@ -224,10 +224,12 @@ declare module 'matrix-js-sdk' {
     paginate(direction: string, limit: number): Promise<boolean>
     getEvents(): MatrixEvent[]
   }
-  
+
   export interface EventTimeline {
-    static readonly FORWARDS: 'f'
-    static readonly BACKWARDS: 'b'
+    static
+    readonly FORWARDS: 'f'
+    static
+    readonly BACKWARDS: 'b'
     getEvents(): MatrixEvent[]
     getState(direction: 'f' | 'b'): RoomState | undefined
   }
@@ -790,7 +792,7 @@ declare module 'matrix-js-sdk' {
     rel_type: 'm.annotation' | 'm.reference' | 'm.replace' | string
     event_id: string
     is_falling_back?: boolean
-    "m.relates_to"?: {
+    'm.relates_to'?: {
       rel_type: string
       event_id: string
       [key: string]: unknown
@@ -827,7 +829,7 @@ declare module 'matrix-js-sdk' {
       rel_type: 'm.thread'
       event_id: string
       is_falling_back?: boolean
-      "m.in_reply_to"?: {
+      'm.in_reply_to'?: {
         event_id: string
       }
     }

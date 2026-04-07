@@ -33,6 +33,9 @@ import { merge } from 'es-toolkit'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { useWindow } from '@/hooks/useWindow'
 import { getFile } from '@/utils/PathUtil'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('PreviewFile')
 
 type PayloadData = {
   userId: string
@@ -119,15 +122,14 @@ const updateFile = async (absolutePath: string, exists: boolean) => {
       const buffer = await file.file.arrayBuffer()
       uiData.fileBuffer = buffer
 
-      uiData.fileLoading = true // 文件加载完毕，准备好渲染
-      console.log('已更新本地文件 ', file.file.size, uiData.file.size)
+      uiData.fileLoading = true
+      logger.debug('已更新本地文件 ', file.file.size, uiData.file.size)
     } else {
-      // 网络文件默认标记为可加载
       uiData.fileLoading = true
     }
   } catch (error) {
-    console.error('读取文件时出错：', error)
-    uiData.fileLoading = false // 读取失败也应标记为 false
+    logger.error('读取文件时出错：', error)
+    uiData.fileLoading = false
   }
 }
 
@@ -141,7 +143,7 @@ onMounted(async () => {
   await addListener(
     listen(`${label}:update`, (event: any) => {
       const payload: PayloadData = event.payload.payload
-      console.log('payload更新：', payload)
+      logger.debug('payload更新：', payload)
 
       merge(uiData.payload, payload)
 
@@ -152,13 +154,13 @@ onMounted(async () => {
 
   try {
     const payload = await getWindowPayload<PayloadData>(label)
-    console.log('获取的载荷信息：', payload)
+    logger.debug('获取的载荷信息：', payload)
 
     merge(uiData.payload, payload)
 
     updateFile(payload.resourceFile.absolutePath || '', payload.resourceFile.localExists)
   } catch (error) {
-    console.log('获取错误：', error)
+    logger.error('获取错误：', error)
   }
 
   await webviewWindow.show()

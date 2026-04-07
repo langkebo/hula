@@ -7,6 +7,8 @@ import { useChatStore } from '@/stores/chat'
 import { useUserStore } from '@/stores/user'
 import { useVideoViewer as useVideoViewerStore } from '@/stores/videoViewer'
 import { isMobile } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('VideoViewer')
 
 /** 视频处理 */
 export const useVideoViewer = () => {
@@ -72,7 +74,7 @@ export const useVideoViewer = () => {
         return await exists(localPath, { baseDir })
       }
     } catch (error) {
-      console.error('检查视频下载状态失败:', error)
+      logger.error('检查视频下载状态失败:', error)
     }
     return false
   }

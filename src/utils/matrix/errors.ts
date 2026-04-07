@@ -5,6 +5,9 @@
  */
 
 import { MatrixError } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MatrixErrors')
 
 /**
  * 错误代码映射
@@ -59,7 +62,8 @@ export class AppError extends Error {
 
   static fromMatrixError(error: unknown): AppError {
     if (error instanceof MatrixError) {
-      const mapped = (error.errcode ? ErrorCodeMap[error.errcode as keyof typeof ErrorCodeMap] : undefined) || ErrorCodeMap.UNKNOWN
+      const mapped =
+        (error.errcode ? ErrorCodeMap[error.errcode as keyof typeof ErrorCodeMap] : undefined) || ErrorCodeMap.UNKNOWN
       return new AppError(mapped.message, error.errcode, mapped.status, error)
     }
 
@@ -98,7 +102,7 @@ export function useMatrixErrorHandler() {
    * 处理错误并返回用户友好的消息
    */
   function handleError(error: unknown): AppError {
-    console.error('[Matrix Error]', error)
+    logger.error('Matrix Error', error)
 
     if (error instanceof AppError) {
       return error
@@ -167,7 +171,7 @@ export function notifyGlobalError(error: AppError) {
     try {
       handler(error)
     } catch (e) {
-      console.error('[Global Error Handler Error]', e)
+      logger.error('Global Error Handler Error', e)
     }
   })
 }

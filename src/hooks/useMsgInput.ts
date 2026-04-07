@@ -18,11 +18,13 @@ import { processClipboardImage } from '@/utils/ImageUtils.ts'
 import { getReplyContent } from '@/utils/MessageReply.ts'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
 import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
-import { type SelectionRange, useCommon } from './useCommon.ts'
+import type { SelectionRange } from './useCommon.ts'
 import { globalFileUploadQueue } from './useFileUploadQueue.ts'
 import { useTrigger } from './useTrigger'
 import { UploadProviderEnum, useUpload } from './useUpload.ts'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('MsgInput')
 
 /**
  * 光标管理器
@@ -233,7 +235,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
 
               imageProcessed = true
             } catch (error) {
-              console.error('Tauri处理图片数据失败:', error)
+              logger.error('Tauri处理图片数据失败:', error)
             }
           }
 
@@ -253,7 +255,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
             }
           }
         } catch (error) {
-          console.error('粘贴失败:', error)
+          logger.error('粘贴失败:', error)
         }
       }
     },
@@ -430,7 +432,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
 
       return ''
     } catch (error) {
-      console.error('Error in stripHtml:', error)
+      logger.error('Error in stripHtml:', error)
       return ''
     }
   }
@@ -444,7 +446,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
       messageInputDom.value.textContent = ''
       reply.value = { avatar: '', imgCount: 0, accountName: '', content: '', key: 0 }
     } catch (error) {
-      console.error('Error in resetInput:', error)
+      logger.error('Error in resetInput:', error)
     }
   }
 
@@ -608,7 +610,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         URL.revokeObjectURL((messageBody as any).thumbUrl)
       }
     } catch (error) {
-      console.error('消息发送失败:', error)
+      logger.error('消息发送失败:', error)
       chatStore.updateMsg({
         msgId: tempMsgId,
         status: MessageStatusEnum.FAILED
@@ -1044,11 +1046,11 @@ export const useMsgInput = (messageInputDom: Ref) => {
             // 触发input事件以更新UI
             triggerInputEvent(messageInputDom.value)
           } catch (err) {
-            console.error('插入回复框时错误:', err)
+            logger.error('插入回复框时错误:', err)
           }
         })
       } catch (err) {
-        console.error('回复_meg处理程序错误:', err)
+        logger.error('回复_meg处理程序错误:', err)
       }
     })
   })
@@ -1139,7 +1141,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
             globalFileUploadQueue.updateFileStatus(job.fileId, 'completed', 100)
           }
         } catch (error) {
-          console.error(`${job.file.name} 发送失败:`, error)
+          logger.error(`${job.file.name} 发送失败:`, error)
 
           // 失败 - 更新队列和消息状态
           if (job.fileId) {
@@ -1174,7 +1176,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         }
       }
     } catch (error) {
-      console.error('自动发送输入框图片失败:', error)
+      logger.error('自动发送输入框图片失败:', error)
     }
   }
 
@@ -1284,7 +1286,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         throw uploadError
       }
     } catch (error) {
-      console.error('语音消息发送失败:', error)
+      logger.error('语音消息发送失败:', error)
     }
   }
 
@@ -1321,7 +1323,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         }
       })
     } catch (error) {
-      console.error('实时位置共享消息发送失败:', error)
+      logger.error('实时位置共享消息发送失败:', error)
     }
   }
 
@@ -1364,7 +1366,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         }
       })
     } catch (error) {
-      console.error('链接预览消息发送失败:', error)
+      logger.error('链接预览消息发送失败:', error)
     }
   }
 
@@ -1414,7 +1416,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         }
       })
     } catch (error) {
-      console.error('位置消息发送失败:', error)
+      logger.error('位置消息发送失败:', error)
     }
   }
 
@@ -1457,7 +1459,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         }
       })
     } catch (error) {
-      console.error('[useMsgInput] 表情包消息发送失败:', error)
+      logger.error('表情包消息发送失败:', error)
       throw error
     }
   }

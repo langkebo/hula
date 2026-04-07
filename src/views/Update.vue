@@ -42,6 +42,9 @@ import { check } from '@tauri-apps/plugin-updater'
 import { NCarousel, NCarouselItem } from 'naive-ui'
 import { changeColor } from 'seemly'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Update')
 
 const list = ref<string[]>([])
 const updating = ref(false)
@@ -91,7 +94,7 @@ const setupCommitList = async (version: string) => {
     const releaseData = await fetchGiteeReleaseData(version)
     list.value = extractCommitMessages(releaseData.body)
   } catch (err) {
-    console.error(`${t('message.update_window.fetch_commit_failed', { version })}:`, err)
+    logger.error(`${t('message.update_window.fetch_commit_failed', { version })}:`, err)
     list.value =
       err instanceof Error
         ? [t('message.update_window.fetch_release_error_with_reason', { reason: err.message })]
@@ -124,11 +127,11 @@ const doUpdate = async () => {
       try {
         await relaunch()
       } catch (e) {
-        console.log(e)
+        logger.error('relaunch failed:', e)
       }
     })
     .catch((e) => {
-      console.log(e)
+      logger.error('update failed:', e)
     })
     .finally(() => {
       updating.value = false

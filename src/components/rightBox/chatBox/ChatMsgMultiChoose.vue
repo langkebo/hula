@@ -165,6 +165,9 @@ import { useCustomForwardTask } from '@/hooks/useCustomForwardTask'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import ChatMultiMsg from './ChatMultiMsg.vue'
 
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('ChatMsgMultiChoose')
+
 const { t } = useI18n()
 const chatStore = useChatStore()
 const groupStore = useGroupStore()
@@ -263,7 +266,7 @@ const handleBatchDelete = async () => {
     useMitt.emit(MittEnum.UPDATE_SESSION_LAST_MSG, { roomId })
     showDeleteConfirm.value = false
   } catch (error) {
-    console.error('批量删除消息失败:', error)
+    logger.error('批量删除消息失败:', error)
     window.$message?.error(t('message.multi_choose.delete_failed_retry'))
   } finally {
     isDeleting.value = false
@@ -414,7 +417,7 @@ const sendMsg = async () => {
     }
     window.$message.success(t('message.multi_choose.forward_success'))
   } catch (error) {
-    console.error('消息转发失败', error)
+    logger.error('消息转发失败', error)
     window.$message.error(t('message.multi_choose.forward_failed'))
   } finally {
     isForwarding.value = false

@@ -151,6 +151,9 @@ import { emitTo } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SearchFriend')
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
@@ -201,11 +204,9 @@ const initialLoading = ref(true)
 
 // 从缓存存储中获取用户数据
 const getCachedUsers = () => {
-  // 从缓存中获取所有用户
   const users = groupStore.allUserInfo
-  console.log(users)
+  logger.debug('getCachedUsers', users)
 
-  // 筛选出需要显示的用户（ID在20016-20030之间的用户）
   return sortSearchResults(
     users
       .filter((user) => {

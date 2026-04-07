@@ -34,6 +34,9 @@ import { MarkEnum } from '@/enums'
 import { matrixReactionService } from '@/services/matrix'
 import Emoticon from '@/components/rightBox/emoticon/index.vue'
 
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('ReactionPicker')
+
 const props = defineProps<{
   roomId: string
   eventId: string
@@ -71,7 +74,7 @@ const handleReaction = async (emoji: { value: MarkEnum; title: string }) => {
       emit('reaction-added', String(emoji.value))
     }
   } catch (error) {
-    console.error('[ReactionPicker] 反应操作失败:', error)
+    logger.error('反应操作失败:', error)
   }
 }
 
@@ -85,7 +88,7 @@ const handleEmojiSelect = async (
       await matrixReactionService.addReaction(props.roomId, props.eventId, emojiUrl)
       emit('reaction-added', emojiUrl)
     } catch (error) {
-      console.error('[ReactionPicker] 添加表情反应失败:', error)
+      logger.error('添加表情反应失败:', error)
     }
   }
 }

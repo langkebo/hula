@@ -150,7 +150,9 @@ import { formatBytes } from '@/utils/Formatting.ts'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
+const logger = createLogger('Video')
 const { openVideoViewer, getLocalVideoPath, checkVideoDownloaded } = useVideoViewer()
 const VideoPreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/VideoPreview.vue')) : void 0
 const videoViewerStore = useVideoViewerStore()
@@ -292,7 +294,7 @@ const ensureLocalVideoThumbnail = async () => {
       return
     }
   } catch (error) {
-    console.warn('[Video] 检查缩略图文件失败:', error)
+    logger.warn('检查缩略图文件失败:', error)
   }
 
   localVideoThumbSrc.value = null
@@ -321,7 +323,7 @@ watch(
         }
       }
     } catch (error) {
-      console.warn('[Video] 本地视频校验失败:', error)
+      logger.warn('本地视频校验失败:', error)
     }
   },
   { immediate: true }
@@ -377,7 +379,7 @@ const downloadVideo = async () => {
       }
     }
   } catch (error) {
-    console.error('下载视频失败:', error)
+    logger.error('下载视频失败:', error)
   }
 }
 
@@ -442,7 +444,7 @@ const handleOpenVideoViewer = async () => {
 
         // 如果下载失败，不继续打开视频
         if (!isVideoDownloaded.value) {
-          console.error('视频下载失败，无法打开')
+          logger.error('视频下载失败，无法打开')
           return
         }
       }
@@ -450,7 +452,7 @@ const handleOpenVideoViewer = async () => {
       if (isMobile()) {
         const playableUrl = await resolveMobilePlayableUrl()
         if (!playableUrl) {
-          console.error('未找到可播放的视频地址')
+          logger.error('未找到可播放的视频地址')
           return
         }
         mobileVideoUrl.value = playableUrl
@@ -460,7 +462,7 @@ const handleOpenVideoViewer = async () => {
 
       await openVideoViewer(props.body.url, [MsgEnum.VIDEO])
     } catch (error) {
-      console.error('打开视频失败:', error)
+      logger.error('打开视频失败:', error)
     } finally {
       isOpening.value = false
     }

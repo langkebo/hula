@@ -142,10 +142,10 @@ class MatrixDirectMessageService {
     if (!this.dmManager) return []
     const client = matrixClientService.getClient()
     if (!client) return []
-    
+
     const userDmMap = await this.dmManager.getDirectRoomsByUser()
     const rooms: Room[] = []
-    
+
     for (const userId of userIds) {
       const roomIds = userDmMap[userId] || []
       for (const roomId of roomIds) {

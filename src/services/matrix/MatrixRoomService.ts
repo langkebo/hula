@@ -1,4 +1,4 @@
-import type { Room, RoomMember, MatrixEvent, ICreateRoomOpts } from 'matrix-js-sdk'
+import type { Room, RoomMember, ICreateRoomOpts } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 
@@ -568,12 +568,17 @@ class MatrixRoomService {
    * 批量获取房间摘要
    * 使用本地 Room 对象获取，避免调用可能不存在的后端 API
    */
-  async getRoomSummaries(roomIds: string[]): Promise<Map<string, {
-    name: string | null
-    topic: string | null
-    avatarUrl: string | null
-    memberCount: number
-  }>> {
+  async getRoomSummaries(roomIds: string[]): Promise<
+    Map<
+      string,
+      {
+        name: string | null
+        topic: string | null
+        avatarUrl: string | null
+        memberCount: number
+      }
+    >
+  > {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('客户端未初始化')
@@ -591,23 +596,31 @@ class MatrixRoomService {
   /**
    * 回退方案：逐个获取房间摘要
    */
-  private async fallbackGetRoomSummaries(roomIds: string[]): Promise<Map<string, {
-    name: string | null
-    topic: string | null
-    avatarUrl: string | null
-    memberCount: number
-  }>> {
+  private async fallbackGetRoomSummaries(roomIds: string[]): Promise<
+    Map<
+      string,
+      {
+        name: string | null
+        topic: string | null
+        avatarUrl: string | null
+        memberCount: number
+      }
+    >
+  > {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('客户端未初始化')
     }
 
-    const results = new Map<string, {
-      name: string | null
-      topic: string | null
-      avatarUrl: string | null
-      memberCount: number
-    }>()
+    const results = new Map<
+      string,
+      {
+        name: string | null
+        topic: string | null
+        avatarUrl: string | null
+        memberCount: number
+      }
+    >()
 
     for (const roomId of roomIds) {
       const room = client.getRoom(roomId)

@@ -21,6 +21,7 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum } from '@/enums'
@@ -36,6 +37,8 @@ import { audioManager } from '@/utils/AudioManager'
 import { isMobile, isWindows } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useRoute } from 'vue-router'
+
+const logger = createLogger('MobileLayout')
 interface MobileLayoutProps {
   /** 是否应用顶部安全区域 */
   safeAreaTop?: boolean
@@ -68,7 +71,7 @@ const playMessageSound = async () => {
     audio.volume = Math.min(1, Math.max(0, volume / 100))
     await audioManager.play(audio, 'message-notification')
   } catch (error) {
-    console.warn('播放消息音效失败:', error)
+    logger.warn('播放消息音效失败:', error)
   }
 }
 
@@ -162,7 +165,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
   if (chatStore.checkMsgExist(data.message.roomId, data.message.id)) {
     return
   }
-  console.log('[mobile/layout] 收到的消息：', data)
+  logger.debug('[mobile/layout] 收到的消息：', data)
   // 只有在聊天室页面且当前选中的会话就是消息来源的会话时，才不增加未读数
   chatStore.pushMsg(data, {
     isActiveChatView:
@@ -200,8 +203,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
             shouldPlaySound = true
           }
         } catch (error) {
-          console.warn('检查窗口状态失败:', error)
-          // 如果检查失败，默认播放音效
+          logger.warn('检查窗口状态失败:', error)
           shouldPlaySound = true
         }
       }

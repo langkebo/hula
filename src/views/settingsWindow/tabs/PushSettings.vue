@@ -86,6 +86,9 @@ import { useI18n } from 'vue-i18n'
 import { matrixPushService } from '@/services/matrix'
 import { matrixClientService } from '@/services/matrix'
 import type { IPusher, IPushRules } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('PushSettings')
 
 defineOptions({
   name: 'PushSettings'
@@ -146,7 +149,7 @@ async function fetchPushRules() {
     pushRules.value = rules
     updateUIFromRules(rules)
   } catch (error) {
-    console.error('[PushSettings] 获取推送规则失败:', error)
+    logger.error('获取推送规则失败:', error)
     loadSavedSettings()
   } finally {
     rulesLoading.value = false
@@ -223,7 +226,7 @@ async function handleMasterToggle(enabled: boolean) {
     await matrixPushService.setPushRuleEnabled('global', 'override' as any, '.m.rule.master', !enabled)
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
-    console.error('[PushSettings] 设置主规则失败:', error)
+    logger.error('设置主规则失败:', error)
     message.error('设置失败')
     masterEnabled.value = !enabled
   }
@@ -239,7 +242,7 @@ async function handleMessagePushToggle(enabled: boolean) {
     }
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
-    console.error('[PushSettings] 设置消息规则失败:', error)
+    logger.error('设置消息规则失败:', error)
     message.error('设置失败')
     messagePushEnabled.value = !enabled
   }
@@ -250,7 +253,7 @@ async function handleInvitePushToggle(enabled: boolean) {
     await matrixPushService.setPushRuleEnabled('global', 'override' as any, '.m.rule.invite_for_me', enabled)
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
-    console.error('[PushSettings] 设置邀请规则失败:', error)
+    logger.error('设置邀请规则失败:', error)
     message.error('设置失败')
     invitePushEnabled.value = !enabled
   }

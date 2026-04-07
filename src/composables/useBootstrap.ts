@@ -9,6 +9,8 @@ import { initializePlatform } from '@/utils/PlatformConstants'
 import { useNotificationPermission } from './useNotificationPermission'
 import { useMediaPermission } from './useMediaPermission'
 import { useFileSystemPermission } from './useFileSystemPermission'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Bootstrap')
 
 export type BootstrapState = 'idle' | 'initializing' | 'ready' | 'error'
 
@@ -98,23 +100,13 @@ const useSharedBootstrap = createSharedComposable(() => {
     try {
       const proxySettings = JSON.parse(proxySettingsStr)
       const baseUrl =
-        proxySettings.apiType +
-        '://' +
-        proxySettings.apiIp +
-        ':' +
-        proxySettings.apiPort +
-        proxySettings.apiSuffix
+        proxySettings.apiType + '://' + proxySettings.apiIp + ':' + proxySettings.apiPort + proxySettings.apiSuffix
       const wsUrl =
-        proxySettings.wsType +
-        '://' +
-        proxySettings.wsIp +
-        ':' +
-        proxySettings.wsPort +
-        proxySettings.wsSuffix
+        proxySettings.wsType + '://' + proxySettings.wsIp + ':' + proxySettings.wsPort + proxySettings.wsSuffix
 
       await updateSettings({ baseUrl, wsUrl })
     } catch (err) {
-      console.warn('[Bootstrap] 恢复代理设置失败:', err)
+      logger.warn('恢复代理设置失败:', err)
     }
   }
 
@@ -134,7 +126,7 @@ const useSharedBootstrap = createSharedComposable(() => {
   async function checkSession() {
     const hasSession = userStore.isLoggedIn
     if (!hasSession) {
-      console.log('[Bootstrap] 无可恢复会话')
+      logger.debug('无可恢复会话')
     }
   }
 

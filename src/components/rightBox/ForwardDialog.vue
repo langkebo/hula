@@ -7,10 +7,7 @@
     :bordered="false"
     @update:show="$emit('update:visible', $event)">
     <div class="forward-dialog">
-      <n-input
-        v-model:value="searchQuery"
-        :placeholder="t('message.forward.search_placeholder')"
-        clearable>
+      <n-input v-model:value="searchQuery" :placeholder="t('message.forward.search_placeholder')" clearable>
         <template #prefix>
           <svg class="size-16px">
             <use href="#search"></use>
@@ -26,14 +23,8 @@
             class="room-item"
             :class="{ selected: selectedRooms.includes(room.roomId) }"
             @click="toggleRoom(room.roomId)">
-            <n-checkbox
-              :checked="selectedRooms.includes(room.roomId)"
-              @update:checked="toggleRoom(room.roomId)" />
-            <n-avatar
-              round
-              :size="36"
-              :src="room.avatar"
-              :fallback-src="defaultAvatar" />
+            <n-checkbox :checked="selectedRooms.includes(room.roomId)" @update:checked="toggleRoom(room.roomId)" />
+            <n-avatar round :size="36" :src="room.avatar" :fallback-src="defaultAvatar" />
             <div class="room-info">
               <span class="room-name">{{ room.name }}</span>
               <span v-if="room.isEncrypted" class="encrypted-badge">
@@ -50,7 +41,7 @@
         <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
         <n-button type="primary" :disabled="selectedRooms.length === 0" :loading="forwarding" @click="handleForward">
           {{ t('message.forward.send') }}
-          <template v-if="selectedRooms.length > 0"> ({{ selectedRooms.length }}) </template>
+          <template v-if="selectedRooms.length > 0">({{ selectedRooms.length }})</template>
         </n-button>
       </div>
     </div>
@@ -62,6 +53,8 @@ import { useI18n } from 'vue-i18n'
 import { matrixForwardService } from '@/services/matrix'
 import { useRoomStore } from '@/stores/room'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('ForwardDialog')
 
 const props = defineProps<{
   visible: boolean
@@ -138,7 +131,7 @@ const handleForward = async () => {
       window.$message?.error(t('message.forward.failed'))
     }
   } catch (error) {
-    console.error('[ForwardDialog] 转发失败:', error)
+    logger.error('转发失败:', error)
     window.$message?.error(t('message.forward.failed'))
   } finally {
     forwarding.value = false

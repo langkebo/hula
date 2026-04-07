@@ -10,6 +10,9 @@ import { matrixEmojiService } from '@/services/matrix'
 import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
 import { md5FromString } from '@/utils/Md5Util'
 import { isMobile } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('EmojiStore')
 
 export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
   const isLoading = ref(false) // 是否正在加载
@@ -93,7 +96,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
       const info = await detectRemoteFileType({ url, fileSize: null })
       if (info?.ext) return info.ext
     } catch (error) {
-      console.warn('[emoji] 识别表情类型失败:', error)
+      logger.warn('识别表情类型失败:', error)
     }
     return 'png'
   }
@@ -142,7 +145,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
         emojiList.value.map((emoji) =>
           limit(() =>
             ensureEmojiCached(emoji, emojiDir, baseDir, baseDirPath).catch((error) => {
-              console.error('[emoji] 缓存失败:', emoji.expressionUrl, error)
+              logger.error('缓存失败:', emoji.expressionUrl, error)
             })
           )
         )
@@ -187,7 +190,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
         emojiList.value = items
       }
     } catch (error) {
-      console.error('获取表情列表失败:', error)
+      logger.error('获取表情列表失败:', error)
     }
     isLoading.value = false
     if (requestUid !== currentEmojiOwnerUid.value) {
@@ -207,7 +210,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
       await getEmojiList()
       return true
     } catch (error) {
-      console.error('添加表情失败:', error)
+      logger.error('添加表情失败:', error)
       return false
     }
   }
@@ -222,7 +225,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
       await getEmojiList()
       return true
     } catch (error) {
-      console.error('删除表情失败:', error)
+      logger.error('删除表情失败:', error)
       return false
     }
   }

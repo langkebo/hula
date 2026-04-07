@@ -64,7 +64,7 @@ export interface InviteAllowlist {
 export interface StickyEvent {
   event_id: string
   event_type: string
-  content: Record<string, any>
+  content: Record<string, unknown>
   updated_ts: number
 }
 

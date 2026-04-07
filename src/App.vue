@@ -54,6 +54,9 @@ import { listen } from '@tauri-apps/api/event'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { updateSettings } from '@/services/tauriCommand.ts'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('App')
 const mobileRtcCallFloatCell = isMobile()
   ? defineAsyncComponent(() => import('@/mobile/components/RtcCallFloatCell.vue'))
   : null
@@ -62,7 +65,13 @@ const isDev = import.meta.env.DEV
 const showMemoryMonitor = ref(true)
 const isHomeDesktopWindow = computed(() => isDesktop() && appWindow.label === 'home')
 
-const { state: bootstrapState, loadingMessage: bootstrapMessage, loadingProgress: bootstrapProgress, error: bootstrapError, bootstrap } = useBootstrap()
+const {
+  state: bootstrapState,
+  loadingMessage: bootstrapMessage,
+  loadingProgress: bootstrapProgress,
+  error: bootstrapError,
+  bootstrap
+} = useBootstrap()
 
 const showSplash = computed(() => bootstrapState.value === 'initializing' || bootstrapState.value === 'idle')
 
@@ -155,7 +164,7 @@ useMitt.on(WsResponseMessageType.MY_ROOM_INFO_CHANGE, (data: { myName: string; r
 useMitt.on(
   WsResponseMessageType.REQUEST_NEW_FRIEND,
   async (data: { uid: number; unReadCount4Friend: number; unReadCount4Group: number }) => {
-    console.log('收到好友申请')
+    logger.debug('收到好友申请')
     // 更新未读数
     globalStore.unReadMark.newFriendUnreadCount = data.unReadCount4Friend || 0
     globalStore.unReadMark.newGroupUnreadCount = data.unReadCount4Group || 0
@@ -237,7 +246,7 @@ const handleSelfAdd = async (roomId: string) => {
   try {
     await groupStore.getGroupUserList(roomId, true)
   } catch (error) {
-    console.error('初始化群成员失败:', error)
+    logger.error('初始化群成员失败:', error)
   }
 }
 
@@ -276,7 +285,7 @@ useMitt.on(
 )
 
 useMitt.on(WsResponseMessageType.MSG_MARK_ITEM, async (data: { markList: MarkItemType[] }) => {
-  console.log('收到消息标记更新:', data)
+  logger.debug('收到消息标记更新:', data)
 
   // 确保data.markList是一个数组再传递给updateMarkCount
   if (data && data.markList && Array.isArray(data.markList)) {
@@ -337,7 +346,7 @@ useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExp
           allowHtml: false
         })
       } catch (error) {
-        console.error('处理token过期失败：', error)
+        logger.error('处理token过期失败：', error)
       }
     } else {
       // 桌面端处理：聚焦主窗口并显示远程登录弹窗
@@ -358,7 +367,7 @@ useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExp
 })
 
 useMitt.on(WsResponseMessageType.INVALID_USER, (param: { uid: string }) => {
-  console.log('无效用户')
+  logger.debug('无效用户')
   const data = param
   // 消息列表删掉拉黑的发言
   // chatStore.filterUser(data.uid)
@@ -367,7 +376,7 @@ useMitt.on(WsResponseMessageType.INVALID_USER, (param: { uid: string }) => {
 })
 
 useMitt.on(WsResponseMessageType.ONLINE, async (onStatusChangeType: OnStatusChangeType) => {
-  console.log('收到用户上线通知')
+  logger.debug('收到用户上线通知')
   // 群聊
   if (onStatusChangeType.type === 1) {
     groupStore.updateOnlineNum({
@@ -387,7 +396,7 @@ useMitt.on(WsResponseMessageType.ONLINE, async (onStatusChangeType: OnStatusChan
 })
 
 useMitt.on(WsResponseMessageType.ROOM_DISSOLUTION, async (roomId: string) => {
-  console.log('收到群解散通知', roomId)
+  logger.debug('收到群解散通知', roomId)
   // 移除群聊的会话
   chatStore.removeSession(roomId)
   // 移除群聊的详情
@@ -399,19 +408,19 @@ useMitt.on(WsResponseMessageType.ROOM_DISSOLUTION, async (roomId: string) => {
 })
 
 useMitt.on(WsResponseMessageType.USER_STATE_CHANGE, async (data: { uid: string; userStateId: string }) => {
-  console.log('收到用户状态改变', data)
+  logger.debug('收到用户状态改变', data)
   groupStore.updateUserItem(data.uid, {
     userStateId: data.userStateId
   })
 })
 
 useMitt.on(WsResponseMessageType.GROUP_SET_ADMIN_SUCCESS, (event) => {
-  console.log('设置群管理员---> ', event)
+  logger.debug('设置群管理员---> ', event)
   groupStore.updateAdminStatus(event.roomId, event.uids, event.status)
 })
 
 useMitt.on(WsResponseMessageType.OFFLINE, async (onStatusChangeType: OnStatusChangeType) => {
-  console.log('收到用户下线通知', onStatusChangeType)
+  logger.debug('收到用户下线通知', onStatusChangeType)
   // 群聊
   if (onStatusChangeType.type === 1) {
     groupStore.updateOnlineNum({
@@ -435,7 +444,7 @@ const handleVideoCall = async (remotedUid: string, callType: CallTypeEnum) => {
   const currentSession = globalStore.currentSession
   const targetUid = remotedUid || currentSession?.detailId
   if (!targetUid) {
-    console.warn('[App] 当前会话尚未就绪或无法解析对端用户，忽略通话事件')
+    logger.warn('当前会话尚未就绪或无法解析对端用户，忽略通话事件')
     return
   }
   if (isMobile()) {
@@ -484,7 +493,7 @@ const refreshActiveGroupMembers = async () => {
     }
     await Promise.allSettled(tasks)
   } catch (error) {
-    console.error('[Network] 刷新群成员失败:', error)
+    logger.error('刷新群成员失败:', error)
   }
 }
 
@@ -558,7 +567,7 @@ onMounted(async () => {
 
   if (isWindows10()) {
     void appWindow.setShadow(false).catch((error) => {
-      console.warn('禁用窗口阴影失败:', error)
+      logger.warn('禁用窗口阴影失败:', error)
     })
   }
   // 判断是否是桌面端，桌面端需要调整样式
@@ -672,7 +681,7 @@ watch(
 watch(
   () => themes.value.versatile,
   async (val, oldVal) => {
-    console.log(val)
+    logger.debug(val)
 
     await import(`@/styles/scss/theme/${val}.scss`)
     // 然后给最顶层的div设置val的类样式
@@ -701,7 +710,7 @@ useMitt.on(MittEnum.MSG_INIT, async () => {
         await announcementStore.loadGroupAnnouncements()
       }
     } catch (error) {
-      console.error('会话切换处理失败:', error)
+      logger.error('会话切换处理失败:', error)
     }
   })
 })

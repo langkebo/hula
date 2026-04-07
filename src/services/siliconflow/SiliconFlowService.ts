@@ -6,7 +6,10 @@
  * 认证: Bearer Token (API Key)
  */
 
-import { ref, readonly } from 'vue'
+import { ref } from 'vue'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SiliconFlow')
 
 // ============ 类型定义 ============
 
@@ -153,7 +156,7 @@ class SiliconFlowClient {
         connected: false,
         error: errorMessage
       })
-      console.error('SiliconFlow ping 失败:', errorMessage)
+      logger.error('ping 失败:', errorMessage)
       return false
     }
   }
@@ -357,18 +360,8 @@ export function useSiliconFlow() {
     }
   }
 
-  async function sendMessageSimple(content: string): Promise<string> {
-    let fullContent = ''
-
-    for await (const chunk of sendMessage(content)) {
-      fullContent = chunk
-    }
-
-    return fullContent
-  }
-
-  function setModel(model: string) {
-    currentModel.value = model
+  function setModel(modelId: string) {
+    currentModel.value = modelId
   }
 
   function clearHistory() {
@@ -377,7 +370,6 @@ export function useSiliconFlow() {
 
   function destroy() {
     siliconFlowClient.destroy()
-    clearHistory()
   }
 
   return {
@@ -393,7 +385,6 @@ export function useSiliconFlow() {
     disconnect,
     testConnection,
     sendMessage,
-    sendMessageSimple,
     setModel,
     clearHistory,
     destroy

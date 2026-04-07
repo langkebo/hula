@@ -361,9 +361,11 @@ import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import router from '@/router'
 import { useGroupStore } from '@/stores/group'
 import { CallResponseStatus } from '../../services/wsType'
+import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+const logger = createLogger('CallWindow')
 const settingStore = useSettingStore()
 const { themes } = storeToRefs(settingStore)
 const route = useRoute()
@@ -600,7 +602,7 @@ const updateRemoteVideoAudio = () => {
 const toggleSpeaker = () => {
   isSpeakerOn.value = !isSpeakerOn.value
   updateRemoteVideoAudio()
-  console.log('切换扬声器状态:', isSpeakerOn.value, '远程视频静音:', !isSpeakerOn.value)
+  logger.debug('切换扬声器状态:', isSpeakerOn.value, '远程视频静音:', !isSpeakerOn.value)
 
   if (connectionStatus.value === RTCCallStatus.CALLING && !isSpeakerOn.value) {
     pauseBell()
@@ -620,7 +622,7 @@ const toggleVideo = async () => {
     // 重新分配视频流
     await assignVideoStreams()
   } catch (error) {
-    console.error('切换视频失败:', error)
+    logger.error('切换视频失败:', error)
   }
 }
 
@@ -658,10 +660,10 @@ const acceptCall = async () => {
     try {
       await currentWindow.setFocus()
     } catch (error) {
-      console.warn('Failed to set window focus after accepting call:', error)
+      logger.warn('Failed to set window focus after accepting call:', error)
     }
   } catch (error) {
-    console.error('Failed to resize window after accepting call:', error)
+    logger.error('Failed to resize window after accepting call:', error)
   }
 }
 
@@ -714,7 +716,7 @@ onMounted(async () => {
         unlistenCloseRequested()
       }
     } catch (error) {
-      console.error('发送挂断消息失败:', error)
+      logger.error('发送挂断消息失败:', error)
     }
   })
 

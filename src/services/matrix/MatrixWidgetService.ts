@@ -1,13 +1,12 @@
 import { info, error } from '@tauri-apps/plugin-log'
 import { matrixClientService } from './MatrixClientService'
-import { MatrixEvent } from 'matrix-js-sdk'
 
 export interface Widget {
   id: string
   type: string
   url: string
   name?: string
-  data?: Record<string, any>
+  data?: Record<string, unknown>
 }
 
 /**
@@ -27,7 +26,7 @@ class MatrixWidgetService {
     if (!room) return []
 
     const widgets: Widget[] = []
-    
+
     // Matrix standard widget event type is 'im.vector.modular.widgets' or 'm.widget'
     const widgetEvents = room.currentState.getStateEvents('im.vector.modular.widgets') || []
     const mWidgetEvents = room.currentState.getStateEvents('m.widget') || []
@@ -35,7 +34,12 @@ class MatrixWidgetService {
     const allEvents = [...widgetEvents, ...mWidgetEvents]
 
     for (const event of allEvents) {
-      const content = event.getContent() as { type?: string; url?: string; name?: string; data?: Record<string, any> }
+      const content = event.getContent() as {
+        type?: string
+        url?: string
+        name?: string
+        data?: Record<string, unknown>
+      }
       // If type is not defined, it means the widget was deleted
       if (content && content.type && content.url) {
         widgets.push({
@@ -59,13 +63,18 @@ class MatrixWidgetService {
     if (!client) return false
 
     try {
-      await client.sendStateEvent(roomId, 'im.vector.modular.widgets' as any, {
-        type: widget.type,
-        url: widget.url,
-        name: widget.name,
-        data: widget.data
-      }, widgetId)
-      
+      await client.sendStateEvent(
+        roomId,
+        'im.vector.modular.widgets' as any,
+        {
+          type: widget.type,
+          url: widget.url,
+          name: widget.name,
+          data: widget.data
+        },
+        widgetId
+      )
+
       info(`[MatrixWidgetService] Added widget ${widgetId} to room ${roomId}`)
       return true
     } catch (err) {

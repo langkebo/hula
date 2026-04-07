@@ -28,8 +28,11 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { useRouter } from 'vue-router'
 import { useSettingStore } from '@/stores/setting'
+
+const logger = createLogger('SyncData')
 
 const router = useRouter()
 const settingStore = useSettingStore()
@@ -49,7 +52,7 @@ const handleConfirmLogin = async () => {
     // 跳转到主页面
     router.push('/mobile/home')
   } catch (error) {
-    console.error('登录确认失败:', error)
+    logger.error('登录确认失败:', error)
   }
 }
 

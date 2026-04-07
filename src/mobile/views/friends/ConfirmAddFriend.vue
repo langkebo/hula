@@ -52,9 +52,14 @@ import { useCommon } from '@/hooks/useCommon.ts'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user.ts'
+import { createLogger } from '@/utils/Logger'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixContactService } from '@/services/matrix'
 import router from '@/router'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('ConfirmAddFriend')
+const timerManager = useTimerManager()
 
 const globalStore = useGlobalStore()
 const userStore = useUserStore()
@@ -75,13 +80,13 @@ watch(
 const addFriend = async () => {
   await matrixContactService.sendAddFriendRequest(globalStore.addFriendModalInfo.uid as string, requestMsg.value)
   window.$message.success('已发送好友申请')
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     router.push('/mobile/message')
   }, 2000)
 }
 
 onMounted(async () => {
-  console.log(userInfo.value)
+  logger.debug(userInfo.value)
   requestMsg.value = `我是${userStore.userInfo!.name}`
 })
 </script>

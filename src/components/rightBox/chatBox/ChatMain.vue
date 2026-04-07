@@ -61,14 +61,12 @@
             :items="chatStore.chatMessageList"
             :min-item-size="40"
             key-field="message.id"
-            v-slot="{ item, index, active }"
-          >
+            v-slot="{ item, index, active }">
             <DynamicScrollerItem
               :item="item"
               :active="active"
               :size-dependencies="[item.message.body]"
-              :data-index="index"
-            >
+              :data-index="index">
               <n-flex
                 vertical
                 class="flex-y-center mb-12px"
@@ -224,8 +222,12 @@ import { timeToStr } from '@/utils/ComputedTime'
 import { useAnnouncementStore } from '@/stores/announcement'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
+import { useTimerManager } from '@/utils/TimerManager'
 import FileUploadProgress from '@/components/rightBox/FileUploadProgress.vue'
+import { createLogger } from '@/utils/Logger'
 
+const logger = createLogger('ChatMain')
+const timerManager = useTimerManager()
 const selfEmit = defineEmits(['scroll'])
 const { t } = useI18n()
 
@@ -360,7 +362,7 @@ const temporarilySuppressTopLoadMore = () => {
   const release = () => {
     suppressTopLoadMore.value = false
   }
-  setTimeout(release, 32)
+  timerManager.setTimeout(release, 32)
 }
 
 // 滚轮滚动限制状态
@@ -448,7 +450,7 @@ const loadTopAnnouncement = async (roomId?: string): Promise<void> => {
       topAnnouncement.value = null
     }
   } catch (error) {
-    console.error('获取置顶公告失败:', error)
+    logger.error('获取置顶公告失败:', error)
     if (targetRoomId === currentRoomId.value) {
       topAnnouncement.value = null
     }
@@ -537,7 +539,9 @@ const jumpToReplyMsg = async (key: string): Promise<void> => {
     }
 
     // 简单延时，避免快速请求
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    await new Promise<void>((resolve) => {
+      timerManager.setTimeout(() => resolve(), 300)
+    })
   }
 
   // 重置加载标记
@@ -638,7 +642,7 @@ const handleFloatButtonClick = async () => {
     }
     scrollToBottom()
   } catch (error) {
-    console.error('重置消息列表失败:', error)
+    logger.error('重置消息列表失败:', error)
     scrollToBottom()
   }
 }
@@ -792,7 +796,7 @@ const handleLoadMore = async (): Promise<void> => {
     // 恢复滚动位置
     container.scrollTop = newScrollTop
   } catch (error) {
-    console.error('加载历史消息失败:', error)
+    logger.error('加载历史消息失败:', error)
     window.$message?.error('加载历史消息失败，请稍后重试')
   } finally {
     isLoadingMore.value = false
@@ -853,12 +857,12 @@ onMounted(() => {
         }
       })
     } catch (error) {
-      console.error('Failed to initialize listeners:', error)
+      logger.error('Failed to initialize listeners:', error)
     }
   }
 
   // 异步初始化监听器（不等待结果）
-  initListeners().catch(console.error)
+  initListeners().catch((e) => logger.error('initListeners failed:', e))
 
   scrollToBottom()
 })
@@ -873,6 +877,7 @@ onUnmounted(() => {
   }
   stopAutoScrollGuard()
   stopWheelListener()
+  timerManager.clearAll()
 })
 </script>
 

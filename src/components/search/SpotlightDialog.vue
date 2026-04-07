@@ -49,11 +49,7 @@
                 class="result-item"
                 @click="handleMessageClick(result)">
                 <div class="result-avatar">
-                  <n-avatar
-                    round
-                    :size="36"
-                    :src="result.avatarUrl"
-                    :fallback-src="defaultAvatar" />
+                  <n-avatar round :size="36" :src="result.avatarUrl" :fallback-src="defaultAvatar" />
                 </div>
                 <div class="result-info">
                   <div class="result-header">
@@ -79,11 +75,7 @@
                 class="result-item"
                 @click="handleRoomClick(result)">
                 <div class="result-avatar">
-                  <n-avatar
-                    round
-                    :size="36"
-                    :src="result.avatarUrl"
-                    :fallback-src="defaultAvatar" />
+                  <n-avatar round :size="36" :src="result.avatarUrl" :fallback-src="defaultAvatar" />
                 </div>
                 <div class="result-info">
                   <span class="result-name">{{ result.name }}</span>
@@ -107,11 +99,7 @@
                 class="result-item"
                 @click="handleUserClick(result)">
                 <div class="result-avatar">
-                  <n-avatar
-                    round
-                    :size="36"
-                    :src="result.avatarUrl"
-                    :fallback-src="defaultAvatar" />
+                  <n-avatar round :size="36" :src="result.avatarUrl" :fallback-src="defaultAvatar" />
                 </div>
                 <div class="result-info">
                   <span class="result-name">{{ result.name }}</span>
@@ -158,6 +146,8 @@ import { matrixSearchService } from '@/services/matrix'
 import { useSpotlightStore } from '@/stores/spotlight'
 import { formatTimestamp } from '@/utils/ComputedTime'
 import { useDebounceFn } from '@vueuse/core'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('SpotlightDialog')
 
 const props = defineProps<{
   visible: boolean
@@ -221,7 +211,7 @@ const handleSearch = useDebounceFn(async () => {
 
     spotlightStore.addRecentSearch(query)
   } catch (error) {
-    console.error('[SpotlightDialog] 搜索失败:', error)
+    logger.error('搜索失败:', error)
   } finally {
     isSearching.value = false
   }

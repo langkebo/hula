@@ -3,6 +3,9 @@
  * 企业 SSO 集成
  */
 import { matrixClientService } from './MatrixClientService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('CAS')
 
 export interface CasService {
   serviceId: string
@@ -40,7 +43,7 @@ class MatrixCasService {
         enabled: true
       }
     } catch (error) {
-      console.error('[CAS] 注册服务失败:', error)
+      logger.error('注册服务失败:', error)
       return null
     }
   }
@@ -64,7 +67,7 @@ class MatrixCasService {
         enabled: s.enabled
       }))
     } catch (error) {
-      console.error('[CAS] 获取服务列表失败:', error)
+      logger.error('获取服务列表失败:', error)
       return []
     }
   }
@@ -77,7 +80,7 @@ class MatrixCasService {
       await this.client.http.authedRequest({}, 'DELETE', `//_matrix/client/v1/cas/services/${serviceId}`, undefined)
       return true
     } catch (error) {
-      console.error('[CAS] 删除服务失败:', error)
+      logger.error('删除服务失败:', error)
       return false
     }
   }
@@ -93,7 +96,7 @@ class MatrixCasService {
 
       return { valid: response.valid, userId: response.user_id }
     } catch (error) {
-      console.error('[CAS] 验证票据失败:', error)
+      logger.error('验证票据失败:', error)
       return { valid: false }
     }
   }
@@ -106,14 +109,13 @@ class MatrixCasService {
       const response = (await this.client.http.authedRequest({}, 'POST', '/_matrix/client/v1/cas/tickets', undefined, {
         body: JSON.stringify({ service: serviceUrl })
       })) as any
-
       return {
         ticket: response.ticket,
         service: serviceUrl,
         expiresAt: response.expires_at
       }
     } catch (error) {
-      console.error('[CAS] 创建票据失败:', error)
+      logger.error('创建票据失败:', error)
       return null
     }
   }
@@ -129,13 +131,11 @@ class MatrixCasService {
         `//_matrix/client/v1/cas/users/${userId}/attributes`,
         undefined
       )) as any
-
       return response.attributes || {}
     } catch (error) {
-      console.error('[CAS] 获取用户属性失败:', error)
+      logger.error('获取用户属性失败:', error)
       return {}
     }
   }
 }
-
 export const matrixCasService = new MatrixCasService()

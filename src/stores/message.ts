@@ -9,6 +9,9 @@ import { useRoute } from 'vue-router'
 import type { MatrixEvent, Room } from 'matrix-js-sdk'
 import { useMitt } from '@/hooks/useMitt'
 import { MittEnum } from '@/enums'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MessageStore')
 
 export interface MessageBody {
   content?: string
@@ -112,7 +115,7 @@ const RECALL_EXPIRATION_TIME = 2 * 60 * 1000
 
 const timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url))
 timerWorker.onerror = (err) => {
-  console.error('[Worker Error]', err)
+  logger.error('Worker Error', err)
 }
 
 // Expose timerWorker for external access
@@ -227,10 +230,16 @@ export const useMessageStore = defineStore(
     const clearOtherRoomsMessages = (currentRoomId: string) => {
       for (const roomId in messageMap) {
         if (roomId !== currentRoomId) {
-          for (const msgId in messageMap[roomId]) {
-            const msg = messageMap[roomId][msgId]
-            if (shouldKeepTransientMessage(msg)) continue
-            delete messageMap[roomId][msgId]
+          const roomMessages = messageMap[roomId]
+          const newRoomMessages: Record<string, MessageType> = {}
+          for (const msgId in roomMessages) {
+            const msg = roomMessages[msgId]
+            if (shouldKeepTransientMessage(msg)) {
+              newRoomMessages[msgId] = msg
+            }
+          }
+          if (Object.keys(newRoomMessages).length !== Object.keys(roomMessages).length) {
+            messageMap[roomId] = newRoomMessages
           }
         }
       }
@@ -241,11 +250,15 @@ export const useMessageStore = defineStore(
         messageMap[roomId] = {}
         return
       }
-      for (const msgId in messageMap[roomId]) {
-        const msg = messageMap[roomId][msgId]
-        if (shouldKeepTransientMessage(msg)) continue
-        delete messageMap[roomId][msgId]
+      const roomMessages = messageMap[roomId]
+      const newRoomMessages: Record<string, MessageType> = {}
+      for (const msgId in roomMessages) {
+        const msg = roomMessages[msgId]
+        if (shouldKeepTransientMessage(msg)) {
+          newRoomMessages[msgId] = msg
+        }
       }
+      messageMap[roomId] = newRoomMessages
     }
 
     // ============ Convert Methods ============
@@ -293,7 +306,9 @@ export const useMessageStore = defineStore(
       }
 
       const existedMsg = roomMessages[messageKey]
-      roomMessages[messageKey] = msg
+      if (!existedMsg) {
+        messageMap[msg.message.roomId] = { ...roomMessages, [messageKey]: msg }
+      }
 
       if (existedMsg) return
 
@@ -326,7 +341,13 @@ export const useMessageStore = defineStore(
 
     const deleteMsg = (msgId: string) => {
       if (currentMessageMap.value && msgId in currentMessageMap.value) {
-        delete currentMessageMap.value[msgId]
+        const roomId = globalStore.currentSessionRoomId
+        const roomMessages = messageMap[roomId]
+        if (roomMessages) {
+          const newRoomMessages = { ...roomMessages }
+          delete newRoomMessages[msgId]
+          messageMap[roomId] = newRoomMessages
+        }
       }
     }
 
@@ -385,7 +406,7 @@ export const useMessageStore = defineStore(
       }
 
       if (uploadProgress !== undefined) {
-        console.log(`更新消息进度: ${uploadProgress}% (消息ID: ${msgId})`)
+        logger.debug(`更新消息进度: ${uploadProgress}% (消息ID: ${msgId})`)
         roomMessages[nextMsgId] = { ...msg, uploadProgress }
         messageMap[resolvedRoomId] = { ...roomMessages }
       } else {
@@ -462,11 +483,13 @@ export const useMessageStore = defineStore(
       const keepMessageIds = new Set(keptMessages.map((msg) => msg.message.id))
       const fallbackCursor = keptMessages[keptMessages.length - 1]?.message.id || ''
 
+      const newRoomMessages: Record<string, MessageType> = {}
       for (const msgId in currentMessages) {
-        if (!keepMessageIds.has(msgId)) {
-          delete currentMessages[msgId]
+        if (keepMessageIds.has(msgId)) {
+          newRoomMessages[msgId] = currentMessages[msgId]
         }
       }
+      messageMap[roomId] = newRoomMessages
 
       if (!messageOptions[roomId]) {
         messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '' }
@@ -480,8 +503,8 @@ export const useMessageStore = defineStore(
         }
       }
 
-      console.info(
-        '[message][trim]',
+      logger.info(
+        'trim',
         `roomId=${roomId}`,
         `removed=${sortedMessages.length - keptMessages.length}`,
         `kept=${keptMessages.length}`,
@@ -668,7 +691,7 @@ export const useMessageStore = defineStore(
       const { type, msgId } = e.data
 
       if (type === 'timeout') {
-        console.log(`[Timeout] 消息ID: ${msgId} 已过期`)
+        logger.debug(`消息ID: ${msgId} 已过期`)
         delete recalledMessages[msgId]
         delete expirationTimers[msgId]
       } else if (type === 'allTimersCompleted') {
@@ -705,9 +728,9 @@ export const useMessageStore = defineStore(
           }
         }
 
-        console.log('[Network] 已重置并刷新当前聊天室的消息列表')
+        logger.debug('已重置并刷新当前聊天室的消息列表')
       } catch (err) {
-        console.error('[Network] 重置并刷新消息列表失败:', err)
+        logger.error('重置并刷新消息列表失败:', err)
         if (globalStore.currentSessionRoomId === requestRoomId) {
           messageOptions[requestRoomId] = {
             isLast: false,

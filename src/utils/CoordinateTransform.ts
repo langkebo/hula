@@ -3,6 +3,10 @@
  * 用于在不同坐标系之间进行转换
  */
 
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('CoordinateTransform')
+
 // 坐标转换常量
 const PI = Math.PI
 const A = 6378245.0 // 长半轴
@@ -214,7 +218,7 @@ export const transformCoordinate = (
     case 'BD09_TO_GCJ02':
       return bd09ToGcj02(lat, lng)
     default:
-      console.warn(`不支持的坐标转换: ${fromType} -> ${toType}`)
+      logger.warn(`不支持的坐标转换: ${fromType} -> ${toType}`)
       return { lat, lng }
   }
 }

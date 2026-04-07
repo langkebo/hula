@@ -1,5 +1,7 @@
 import { createSharedComposable } from '@vueuse/core'
 import { ref, readonly } from 'vue'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('NotificationPermission')
 
 export type NotificationPermission = 'granted' | 'denied' | 'default' | 'unsupported'
 
@@ -38,7 +40,7 @@ const useSharedNotificationPermission = createSharedComposable(() => {
       permission.value = result as NotificationPermission
       return permission.value
     } catch (err) {
-      console.warn('[NotificationPermission] 请求权限失败:', err)
+      logger.warn('请求权限失败:', err)
       permission.value = 'denied'
       return 'denied'
     }

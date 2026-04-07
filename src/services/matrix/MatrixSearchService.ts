@@ -5,13 +5,10 @@ export interface SearchResult {
   roomId: string
   eventId: string
   sender: string
-  content: any
+  content: Record<string, unknown>
   timestamp: number
   roomName?: string
-  context?: {
-    eventsBefore: any[]
-    eventsAfter: any[]
-  }
+  context?: SearchEventContext
 }
 
 export interface RoomSearchResult {
@@ -105,7 +102,7 @@ class MatrixSearchService {
     })
   }
 
-  async searchUsers(query: string, limit: number = 10): Promise<any[]> {
+  async searchUsers(query: string, limit: number = 10): Promise<UserSearchResult[]> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixSearch] 客户端未初始化')
@@ -117,8 +114,14 @@ class MatrixSearchService {
         limit
       })
 
-      info(`[MatrixSearch] 用户搜索完成: "${query}" 找到 ${response.results?.length || 0} 个用户`)
-      return response.results || []
+      const results: UserSearchResult[] = (response.results || []).map((user) => ({
+        userId: user.user_id,
+        displayName: user.display_name,
+        avatarUrl: user.avatar_url
+      }))
+
+      info(`[MatrixSearch] 用户搜索完成: "${query}" 找到 ${results.length} 个用户`)
+      return results
     } catch (err) {
       error(`[MatrixSearch] 用户搜索失败: ${err}`)
       throw err

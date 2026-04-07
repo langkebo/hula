@@ -7,6 +7,8 @@ import { useUserStore } from '@/stores/user'
 import { isDesktop } from '@/composables/usePlatform'
 import { getFilteredSections, findMenuItemById, setLogoutCallback, setRouterInstance } from './menuConfig'
 import { useDialog, useMessage } from 'naive-ui'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('UserMenu')
 
 export function useUserMenu() {
   const userMenuStore = useUserMenuStore()
@@ -51,7 +53,7 @@ export function useUserMenu() {
       window.location.reload()
     } catch (error) {
       message.error('退出登录失败')
-      console.error('[UserMenu] 退出登录失败:', error)
+      logger.error('退出登录失败:', error)
     } finally {
       loading.destroy()
     }

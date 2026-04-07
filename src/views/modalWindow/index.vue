@@ -43,6 +43,11 @@ import { getDisabledOptions, getFilteredOptions, renderLabel, renderSourceList }
 import { useGroupStore } from '@/stores/group'
 import { matrixGroupService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('ModalWindow')
+const timerManager = useTimerManager()
 
 const { t } = useI18n()
 const { getWindowPayload } = useWindow()
@@ -72,11 +77,11 @@ const handleInvite = async () => {
     await Promise.all(selectedValue.value.map((uid: string) => matrixGroupService.inviteGroupMember(roomId.value, uid)))
 
     window.$message.success('邀请成功')
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       handleClose()
     }, 1000)
   } catch (error) {
-    console.error('邀请失败:', error)
+    logger.error('邀请失败:', error)
     window.$message.error('邀请失败，请重试')
   }
 }

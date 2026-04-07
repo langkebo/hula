@@ -3,11 +3,14 @@
  * 图形验证码功能
  */
 import { matrixClientService } from './MatrixClientService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Captcha')
 
 export interface Captcha {
   captchaId: string
   type: 'image' | 'audio'
-  data: string // base64 或 URL
+  data: string
   expiresAt: number
 }
 
@@ -37,7 +40,7 @@ class MatrixCaptchaService {
         expiresAt: Date.now() + (response.expires_in || 300) * 1000
       }
     } catch (error) {
-      console.error('[Captcha] 获取验证码失败:', error)
+      logger.error('获取验证码失败:', error)
       return null
     }
   }
@@ -52,7 +55,7 @@ class MatrixCaptchaService {
       })
       return true
     } catch (error) {
-      console.error('[Captcha] 发送验证码失败:', error)
+      logger.error('发送验证码失败:', error)
       return false
     }
   }
@@ -74,7 +77,7 @@ class MatrixCaptchaService {
 
       return response.valid || false
     } catch (error) {
-      console.error('[Captcha] 验证失败:', error)
+      logger.error('验证失败:', error)
       return false
     }
   }
@@ -87,7 +90,7 @@ class MatrixCaptchaService {
       await this.client.http.authedRequest({}, 'DELETE', `/_matrix/client/v1/captcha/${captchaId}`, undefined)
       return true
     } catch (error) {
-      console.error('[Captcha] 使失效失败:', error)
+      logger.error('使失效失败:', error)
       return false
     }
   }

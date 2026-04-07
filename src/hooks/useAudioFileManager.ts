@@ -4,6 +4,8 @@ import type { Ref } from 'vue'
 import type { FilesMeta } from '@/services/types'
 import { getFilesMeta, getImageCache } from '@/utils/PathUtil'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('AudioFileManager')
 
 /**
  * 单个文件元数据接口
@@ -180,7 +182,7 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
       // 检查音频格式支持(mac)
       const support = checkAudioSupport(mimeType)
       if (!support && isMacOS) {
-        console.warn(`Mac系统可能不支持此音频格式: ${mimeType}`)
+        logger.warn(`Mac系统可能不支持此音频格式: ${mimeType}`)
         // 降级到远程URL
         return originalUrl
       } else {
@@ -241,7 +243,7 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
         return arrayBuffer
       }
     } catch (error) {
-      console.error('加载音频波形失败:', error)
+      logger.error('加载音频波形失败:', error)
       isFileReady.value = false
       throw error
     }

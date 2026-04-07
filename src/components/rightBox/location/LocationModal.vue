@@ -122,6 +122,8 @@ import { reverseGeocode } from '@/services/mapApi'
 import StaticProxyMap from './StaticProxyMap.vue'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('LocationModal')
 
 type LocationData = {
   latitude: number
@@ -188,7 +190,7 @@ const getLocation = async () => {
 
     // 获取地址信息
     const geocodeResult = await reverseGeocode(result.transformed.lat, result.transformed.lng).catch((error) => {
-      console.warn(t('message.location.modal.errors.geocode_failed'), error)
+      logger.warn('逆地理编码失败:', error)
       return null
     })
     const address =
@@ -203,7 +205,7 @@ const getLocation = async () => {
       timestamp: result.timestamp
     }
   } catch (error) {
-    console.error('获取位置失败:', error)
+    logger.error('获取位置失败:', error)
   }
 }
 
@@ -239,7 +241,7 @@ const handleLocationChange = async (newLocation: { lat: number; lng: number }) =
 
   // 获取新位置的地址
   const geocodeResult = await reverseGeocode(newLocation.lat, newLocation.lng).catch((error) => {
-    console.warn(t('message.location.modal.errors.geocode_failed'), error)
+    logger.warn('逆地理编码失败:', error)
     return null
   })
   const address =

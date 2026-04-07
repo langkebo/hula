@@ -197,7 +197,10 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { matrixAnnouncementService } from '@/services/matrix'
 import { extractLinkSegments, openExternalUrl } from '@/hooks/useLinkSegments'
+import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('Announcement')
 
 // 定义响应式变量
 const title = ref('')
@@ -292,7 +295,7 @@ const handleInit = async () => {
         pageNum.value++
       }
     } catch (error) {
-      console.error('获取群公告列表失败:', error)
+      logger.error('获取群公告列表失败:', error)
     }
   }
 }
@@ -354,7 +357,7 @@ const handleLoadMore = async () => {
         }
       }
     } catch (error) {
-      console.error('加载更多公告失败:', error)
+      logger.error('加载更多公告失败:', error)
     } finally {
       isLoading.value = false
     }
@@ -418,7 +421,7 @@ const handleDel = async (announcement: any) => {
       topAnnouncement: newTopAnnouncement
     })
   } catch (error) {
-    console.error('删除公告失败:', error)
+    logger.error('删除公告失败:', error)
     announcementStates.value[announcement.id].deleteLoading = false
   }
 }
@@ -498,7 +501,7 @@ const handlePushAnnouncement = async () => {
       isBack.value = false
     }
   } catch (error) {
-    console.error(errorMessage, error)
+    logger.error(errorMessage, error)
     window.$message.error(errorMessage)
   }
 }
@@ -529,7 +532,7 @@ onMounted(async () => {
       title.value = await currentWindow.title()
     }, 200)
   } catch (error) {
-    console.error('组件挂载初始化失败:', error)
+    logger.error('组件挂载初始化失败:', error)
   }
 })
 </script>

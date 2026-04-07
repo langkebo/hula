@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { CallTypeEnum, MittEnum } from '@/enums'
 import { matrixVoIPService } from '@/services/matrix'
 import { useMitt } from '@/hooks/useMitt'
@@ -40,8 +41,10 @@ import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
+const logger = createLogger('RtcCallFloatCell')
+
 const sendMatrixVoipSignal = async (type: string, data: any) => {
-  console.warn('[RtcCallFloatCell] Matrix VoIP Signal:', type, data)
+  logger.warn('Matrix VoIP Signal:', type, data)
 }
 
 type CallPayload = {
@@ -159,7 +162,7 @@ const handleReject = async () => {
       accepted: 'rejected'
     })
   } catch (error) {
-    console.error('发送拒绝响应失败:', error)
+    logger.error('发送拒绝响应失败:', error)
   } finally {
     clearCall()
   }
@@ -180,7 +183,7 @@ const handleAccept = async () => {
   try {
     await router.push({ path: '/mobile/rtcCall', query })
   } catch (error) {
-    console.error('跳转通话页面失败:', error)
+    logger.error('跳转通话页面失败:', error)
   } finally {
     clearCall()
   }
@@ -219,7 +222,7 @@ useMitt.on('RoomClosed', handleCallEnd)
   justify-content: center;
   border-radius: 50%;
   transition: transform 0.15s ease-out;
-  
+
   &:active {
     transform: scale(0.95);
   }

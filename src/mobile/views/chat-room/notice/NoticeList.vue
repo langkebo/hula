@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { useRoute, useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
 import { useGroupStore } from '@/stores/group'
@@ -62,6 +63,8 @@ import { useGlobalStore } from '@/stores/global'
 import { useAnnouncementStore } from '@/stores/announcement'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { onActivated } from 'vue'
+
+const logger = createLogger('NoticeList')
 
 defineOptions({
   name: 'mobileChatNoticeList'
@@ -98,7 +101,7 @@ const loadAnnouncementList = async () => {
   try {
     const roomId = globalStore.currentSessionRoomId
     if (!roomId) {
-      console.error('当前会话没有roomId')
+      logger.error('当前会话没有roomId')
       return
     }
 
@@ -114,19 +117,17 @@ const loadAnnouncementList = async () => {
       }
     }
   } catch (error) {
-    console.error('加载群公告失败:', error)
+    logger.error('加载群公告失败:', error)
   }
 }
 
 const goToNoticeDetail = (id: string) => {
-  // 跳转到公告详情页面
-  console.log(`跳转到公告详情页面，公告ID: ${id}`)
+  logger.debug(`跳转到公告详情页面，公告ID: ${id}`)
   router.push(`/mobile/chatRoom/notice/detail/${id}`)
 }
 
 const goToAddNotice = () => {
-  // 跳转到新增公告页面
-  console.log('跳转到新增公告页面')
+  logger.debug('跳转到新增公告页面')
   router.push('/mobile/chatRoom/notice/add')
 }
 

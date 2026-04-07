@@ -43,6 +43,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { ensureModelFile } from '@/utils/PathUtil'
 import { isDesktop } from '@/utils/PlatformConstants'
 import { useAssistantModelPresets } from '@/hooks/useAssistantModelPresets'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('HuLaAssistant')
 
 const props = defineProps<{
   active: boolean
@@ -100,7 +103,7 @@ const resolveDracoDecoderPath = async () => {
       dracoDecoderBasePath = assetUrl.endsWith('/') ? assetUrl : `${assetUrl}/`
       return dracoDecoderBasePath
     } catch (error) {
-      console.warn('获取 Draco 解码器资源路径失败, 回退 CDN', error)
+      logger.warn('获取 Draco 解码器资源路径失败, 回退 CDN', error)
     }
   }
   dracoDecoderBasePath = DRACO_DECODER_BASE_URL
@@ -117,7 +120,7 @@ const ensureDracoLoader = async () => {
       await dracoLoader.preload()
     } catch (error) {
       if (decoderPath !== DRACO_DECODER_BASE_URL) {
-        console.warn('预加载本地 Draco 解码器失败, 回退 CDN', error)
+        logger.warn('预加载本地 Draco 解码器失败, 回退 CDN', error)
         dracoDecoderBasePath = DRACO_DECODER_BASE_URL
         decoderPath = DRACO_DECODER_BASE_URL
         dracoLoader.setDecoderPath(decoderPath)
@@ -153,7 +156,7 @@ const resolveModelSource = async () => {
           lastResolvedModelSource = localUrl
           return localUrl
         } catch (error) {
-          console.warn('缓存远程模型失败, 回退为在线加载', error)
+          logger.warn('缓存远程模型失败, 回退为在线加载', error)
         }
       }
     }
@@ -327,7 +330,7 @@ const loadModel = async () => {
         },
         (error) => {
           loadingProgress.value = 0
-          console.error('[Assistant] 模型加载失败', modelSource, error)
+          logger.error('模型加载失败', modelSource, error)
           reject(error)
         }
       )
@@ -397,7 +400,7 @@ const loadModel = async () => {
     activeAction = mixer.clipAction(preferred)
     activeAction.reset().play()
   } else {
-    console.debug('[Assistant] 模型没有动画片段')
+    logger.debug('模型没有动画片段')
   }
   adjustFraming(scaledSize, centerY)
   loadingProgress.value = 100

@@ -3,6 +3,9 @@
  */
 
 import * as matrixSdk from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SdkCheck')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sdk = matrixSdk as any
 
@@ -88,7 +91,7 @@ export function checkSdkVersion(): void {
   const info = getSdkVersionInfo()
 
   if (!info.isSupported) {
-    console.warn('[Matrix SDK]', info.warning)
+    logger.warn(info.warning)
 
     if (!info.isCompatible) {
       throw new Error(`Matrix SDK 版本不兼容: ${info.version} (要求: ${MIN_SDK_VERSION} - ${MAX_SDK_VERSION})`)
@@ -96,10 +99,10 @@ export function checkSdkVersion(): void {
   }
 
   if (info.warning) {
-    console.warn('[Matrix SDK]', info.warning)
+    logger.warn(info.warning)
   }
 
-  console.log('[Matrix SDK] 版本检查通过:', info.version)
+  logger.debug('版本检查通过:', info.version)
 }
 
 /**
@@ -150,7 +153,7 @@ export function beforeCreateClient(): void {
   // 检查版本
   checkSdkVersion()
 
-  console.log('[Matrix SDK] 初始化前检查完成')
+  logger.debug('初始化前检查完成')
 }
 
 export default {

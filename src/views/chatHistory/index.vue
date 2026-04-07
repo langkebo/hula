@@ -112,6 +112,9 @@ import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatDateGroupLabel } from '@/utils/ComputedTime'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ChatHistory')
 
 type ChatHistoryResponse = {
   messages: MessageType[]
@@ -321,7 +324,7 @@ const loadMessages = async () => {
 
     hasMore.value = response.hasMore
   } catch (error) {
-    console.error('加载聊天记录失败:', error)
+    logger.error('加载聊天记录失败:', error)
   } finally {
     loading.value = false
   }

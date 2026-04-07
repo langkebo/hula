@@ -2,6 +2,10 @@
  * 全局音频管理器
  * 确保同时只有一个音频在播放
  */
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AudioManager')
+
 class AudioManager {
   private static instance: AudioManager
   private currentAudio: HTMLAudioElement | null = null
@@ -48,7 +52,7 @@ class AudioManager {
         this.currentAudioId = null
         return
       }
-      console.error('音频播放失败:', error)
+      logger.error('音频播放失败:', error)
       this.currentAudio = null
       this.currentAudioId = null
       throw error
@@ -65,8 +69,7 @@ class AudioManager {
           this.currentAudio.pause()
         }
       } catch (error) {
-        // 忽略音频元素已被销毁或状态异常的错误
-        console.warn('暂停音频时出现错误:', error)
+        logger.warn('暂停音频时出现错误:', error)
         this.currentAudio = null
         this.currentAudioId = null
       }
@@ -84,8 +87,7 @@ class AudioManager {
         }
         this.currentAudio.currentTime = 0
       } catch (error) {
-        // 忽略音频元素已被销毁或状态异常的错误
-        console.warn('停止音频时出现错误:', error)
+        logger.warn('停止音频时出现错误:', error)
       } finally {
         this.currentAudio = null
         this.currentAudioId = null
@@ -109,8 +111,7 @@ class AudioManager {
           audio.currentTime = 0
         }
       } catch (error) {
-        // 忽略音频元素已被销毁或状态异常的错误
-        console.warn('停止页面音频时出现错误:', error)
+        logger.warn('停止页面音频时出现错误:', error)
       }
     })
 

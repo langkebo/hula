@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/global'
 import { storeToRefs } from 'pinia'
@@ -46,6 +47,8 @@ import { UserType } from '@/enums'
 import { open } from '@tauri-apps/plugin-dialog'
 import HuLaAssistant from '@/components/rightBox/chatBox/HuLaAssistant.vue'
 import { useAssistantModelPresets, type AssistantModelPreset } from '@/hooks/useAssistantModelPresets'
+
+const logger = createLogger('MobileChatMain')
 
 defineOptions({
   name: 'mobileChatRoomDefault'
@@ -209,7 +212,7 @@ const handleAssistantImport = async () => {
     selectedModelKey.value = 'local'
     customModelPath.value = filePath
   } catch (error) {
-    console.error('选择模型文件失败:', error)
+    logger.error('选择模型文件失败:', error)
     window.$message?.error?.('选择模型文件失败，请重试')
   }
 }

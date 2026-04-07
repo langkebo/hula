@@ -6,6 +6,9 @@ import { useChatStore, type SessionItem } from '@/stores/chat'
 import { clearQueue, readCountQueue } from '@/utils/ReadCountQueue.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('GlobalStore')
 
 export interface FriendItem {
   uid: string
@@ -111,12 +114,15 @@ export const useGlobalStore = defineStore(
       if (content.trim()) {
         draftMessageMap.set(roomId, content)
         try {
-          localStorage.setItem(`draft_${roomId}`, JSON.stringify({
-            content,
-            timestamp: Date.now()
-          }))
+          localStorage.setItem(
+            `draft_${roomId}`,
+            JSON.stringify({
+              content,
+              timestamp: Date.now()
+            })
+          )
         } catch (e) {
-          console.warn('[global] 保存草稿失败:', e)
+          logger.warn('保存草稿失败:', e)
         }
       } else {
         clearDraftMessage(roomId)
@@ -141,7 +147,7 @@ export const useGlobalStore = defineStore(
           }
         }
       } catch (e) {
-        console.warn('[global] 读取草稿失败:', e)
+        logger.warn('读取草稿失败:', e)
       }
       return ''
     }
@@ -151,7 +157,7 @@ export const useGlobalStore = defineStore(
       try {
         localStorage.removeItem(`draft_${roomId}`)
       } catch (e) {
-        console.warn('[global] 删除草稿失败:', e)
+        logger.warn('删除草稿失败:', e)
       }
     }
 
@@ -184,7 +190,7 @@ export const useGlobalStore = defineStore(
       try {
         await chatStore.changeRoom()
       } catch (error) {
-        console.error('[global] 切换会话时加载消息失败:', error)
+        logger.error('切换会话时加载消息失败:', error)
         return
       }
 

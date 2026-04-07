@@ -2,6 +2,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { StoresEnum } from '@/enums'
 import { matrixQuotaService, type QuotaStatus, type QuotaStats, type QuotaAlert } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('QuotaStore')
 
 export const useQuotaStore = defineStore(StoresEnum.QUOTA, () => {
   const quotaStatus = ref<QuotaStatus | null>(null)
@@ -45,7 +48,7 @@ export const useQuotaStore = defineStore(StoresEnum.QUOTA, () => {
     try {
       alerts.value = await matrixQuotaService.getQuotaAlerts()
     } catch (e) {
-      console.error('[QuotaStore] 获取配额告警失败:', e)
+      logger.error('获取配额告警失败:', e)
     }
   }
 

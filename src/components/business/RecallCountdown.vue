@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useTimerManager } from '@/utils/TimerManager'
 
 interface Props {
   /** 消息发送时间 */
@@ -12,8 +13,9 @@ const props = withDefaults(defineProps<Props>(), {
   expirationTime: () => 2 * 60 * 1000
 })
 
+const timerManager = useTimerManager()
 const remainingSeconds = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
+let timer: number | null = null
 
 const canRecall = computed(() => remainingSeconds.value > 0)
 
@@ -35,7 +37,7 @@ const updateRemainingTime = () => {
   remainingSeconds.value = remaining
 
   if (remaining <= 0 && timer) {
-    clearInterval(timer)
+    timerManager.clearInterval(timer)
     timer = null
   }
 }
@@ -43,15 +45,16 @@ const updateRemainingTime = () => {
 onMounted(() => {
   updateRemainingTime()
   if (remainingSeconds.value > 0) {
-    timer = setInterval(updateRemainingTime, 1000)
+    timer = timerManager.setInterval(updateRemainingTime, 1000)
   }
 })
 
 onUnmounted(() => {
   if (timer) {
-    clearInterval(timer)
+    timerManager.clearInterval(timer)
     timer = null
   }
+  timerManager.clearAll()
 })
 
 defineExpose({

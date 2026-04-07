@@ -305,6 +305,14 @@
       "current": "当前佩戴的徽章:",
       "wear": "佩戴"
     },
+    "errorBoundary": {
+      "title": "出现错误",
+      "message": "应用程序遇到了一个错误，请尝试刷新页面或重新加载应用。",
+      "retry": "重试",
+      "reload": "重新加载",
+      "showDetails": "显示详细信息",
+      "hideDetails": "隐藏详细信息"
+    },
     "form": {
       "nickname": {
         "label": "昵称",

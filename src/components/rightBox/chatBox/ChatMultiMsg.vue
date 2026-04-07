@@ -25,6 +25,9 @@ import { useUserStore } from '@/stores/user'
 import type { MsgId } from '@/typings/global'
 import { getBodyContent } from '@/utils/messageBody'
 
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('ChatMultiMsg')
+
 const { contentList, msgIds, msgId } = defineProps<{
   contentList: string[]
   msgIds: MsgId[]
@@ -104,7 +107,7 @@ const openMultiMsgWindow = async () => {
     // 向窗口发送消息数据
     await sendWindowPayload(label, msgIds)
   } catch (e) {
-    console.error('创建聊天记录窗口失败:', e)
+    logger.error('创建聊天记录窗口失败:', e)
     window.$message?.error('打开聊天记录失败')
   }
 }

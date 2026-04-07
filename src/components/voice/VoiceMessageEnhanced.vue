@@ -84,6 +84,8 @@ import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import type { VoiceBody } from '@/services/types'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('VoiceMessageEnhanced')
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
@@ -201,7 +203,7 @@ const initAudio = async () => {
       })
     }
   } catch (err) {
-    console.error('加载语音失败:', err)
+    logger.error('加载语音失败:', err)
   } finally {
     loading.value = false
   }

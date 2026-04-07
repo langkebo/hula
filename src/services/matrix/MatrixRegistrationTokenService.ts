@@ -3,6 +3,9 @@
  * 管理和使用注册邀请令牌
  */
 import { matrixClientService } from './MatrixClientService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('RegistrationToken')
 
 export interface RegistrationToken {
   token: string
@@ -39,7 +42,7 @@ class MatrixRegistrationTokenService {
       )) as any
       return this.mapToken(response)
     } catch (error) {
-      console.error('[RegistrationToken] 生成失败:', error)
+      logger.error('生成失败:', error)
       return null
     }
   }
@@ -57,7 +60,7 @@ class MatrixRegistrationTokenService {
       )) as any
       return this.mapToken(response)
     } catch (error) {
-      console.error('[RegistrationToken] 获取失败:', error)
+      logger.error('获取失败:', error)
       return null
     }
   }
@@ -75,7 +78,7 @@ class MatrixRegistrationTokenService {
       )) as any
       return (response.tokens || []).map(this.mapToken)
     } catch (error) {
-      console.error('[RegistrationToken] 列表失败:', error)
+      logger.error('列表失败:', error)
       return []
     }
   }
@@ -93,7 +96,7 @@ class MatrixRegistrationTokenService {
       )
       return true
     } catch (error) {
-      console.error('[RegistrationToken] 删除失败:', error)
+      logger.error('删除失败:', error)
       return false
     }
   }
@@ -120,7 +123,7 @@ class MatrixRegistrationTokenService {
         access_token: response.access_token
       }
     } catch (error) {
-      console.error('[RegistrationToken] 注册失败:', error)
+      logger.error('注册失败:', error)
       return null
     }
   }

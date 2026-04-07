@@ -3,6 +3,9 @@
  * 第三方应用服务集成
  */
 import { matrixClientService } from './MatrixClientService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ApplicationService')
 
 export interface ApplicationService {
   id: string
@@ -43,7 +46,7 @@ class MatrixApplicationService {
       })
       return true
     } catch (error) {
-      console.error('[ApplicationService] 注册失败:', error)
+      logger.error('注册失败:', error)
       return false
     }
   }
@@ -61,7 +64,7 @@ class MatrixApplicationService {
       )) as any
       return response.services || []
     } catch (error) {
-      console.error('[ApplicationService] 获取列表失败:', error)
+      logger.error('获取列表失败:', error)
       return []
     }
   }
@@ -80,7 +83,7 @@ class MatrixApplicationService {
       )
       return true
     } catch (error) {
-      console.error('[ApplicationService] 设置启用状态失败:', error)
+      logger.error('设置启用状态失败:', error)
       return false
     }
   }

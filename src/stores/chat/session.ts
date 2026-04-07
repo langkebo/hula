@@ -8,6 +8,9 @@ import { useSessionUnreadStore } from '@/stores/sessionUnread'
 import { useGroupStore } from '@/stores/group.ts'
 import { matrixReceiptService, matrixClientService, matrixFriendService } from '@/services/matrix'
 import type { Room } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SessionStore')
 
 export interface SessionItem {
   id?: string
@@ -170,7 +173,7 @@ export const useSessionStore = defineStore(
 
         globalStore.unreadReady = true
       } catch (err) {
-        console.error('获取会话列表失败:', err)
+        logger.error('获取会话列表失败:', err)
       } finally {
         sessionOptions.isLoading = false
       }
@@ -183,7 +186,7 @@ export const useSessionStore = defineStore(
       try {
         await matrixReceiptService.markRoomAsRead(roomId)
       } catch (err) {
-        console.error('标记会话已读失败:', err)
+        logger.error('标记会话已读失败:', err)
       }
     }
 

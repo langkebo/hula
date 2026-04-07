@@ -207,6 +207,11 @@ import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixConversationService, matrixChatRoleService } from '@/services/matrix'
 import { formatTimestamp } from '@/utils/ComputedTime'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('RobotLeft')
+const timerManager = useTimerManager()
 
 const userStore = useUserStore()
 const activeItem = ref<ChatItem | null>(null)
@@ -282,7 +287,7 @@ const fetchConversationList = async (isLoadMore = false) => {
         // 首次加载且有会话时，自动选择第一个会话
         if (newChats.length > 0) {
           // 延迟发送事件，确保 Chat.vue 的列表已加载
-          setTimeout(() => {
+          timerManager.setTimeout(() => {
             handleActive(newChats[0])
           }, 500)
         }
@@ -298,7 +303,7 @@ const fetchConversationList = async (isLoadMore = false) => {
       }
     }
   } catch (error) {
-    console.error('获取会话列表失败:', error)
+    logger.error('获取会话列表失败:', error)
     window.$message.error('获取会话列表失败')
   } finally {
     loading.value = false
@@ -346,7 +351,7 @@ const menuList = ref<OPT.RightMenu[]>([
     label: '打开独立聊天窗口',
     icon: 'freezing-line-column',
     click: (item: ChatItem) => {
-      console.log('打开独立窗口:', item)
+      logger.debug('打开独立窗口:', item)
     }
   },
   {
@@ -402,7 +407,7 @@ const checkHasRoles = async () => {
     // 保存第一个可用角色的ID
     firstAvailableRoleId.value = availableRoles.length > 0 ? availableRoles[0].id : null
   } catch (error) {
-    console.error('检查角色失败:', error)
+    logger.error('检查角色失败:', error)
     hasRoles.value = false
     firstAvailableRoleId.value = null
   }
@@ -465,7 +470,7 @@ const add = async () => {
       window.$message.success('会话创建成功')
     }
   } catch (error) {
-    console.error('❌ 创建会话失败:', error)
+    logger.error('创建会话失败:', error)
     window.$message.error('创建会话失败')
   }
 }
@@ -498,7 +503,7 @@ const deleteChat = async (item: ChatItem) => {
       window.$message.success('会话删除成功')
     }
   } catch (error) {
-    console.error('❌ 删除会话失败:', error)
+    logger.error('删除会话失败:', error)
     window.$message.error('删除会话失败')
   }
 }
@@ -525,7 +530,7 @@ const deleteAllChats = async () => {
 
     window.$message.success('全部会话已删除')
   } catch (error) {
-    console.error('删除全部会话失败:', error)
+    logger.error('删除全部会话失败:', error)
     window.$message.error('删除全部会话失败')
   }
 }
@@ -569,7 +574,7 @@ const handleBlur = async (item: ChatItem, index: number) => {
     useMitt.emit('left-chat-title', { id: item.id, title: nextTitle })
     useMitt.emit('update-chat-title', { id: item.id, title: nextTitle })
   } catch (error) {
-    console.error('❌ 重命名会话失败:', error)
+    logger.error('重命名会话失败:', error)
     item.title = previousTitle
     chatList.value[index].title = previousTitle
     originalTitle.value = previousTitle

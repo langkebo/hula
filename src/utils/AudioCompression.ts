@@ -1,4 +1,7 @@
 import * as lamejs from '@breezystack/lamejs'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AudioCompression')
 
 /**
  * 音频压缩配置接口
@@ -53,7 +56,7 @@ export async function compressAudioToMp3(audioBuffer: ArrayBuffer, config: Audio
 
     return blob
   } catch (error) {
-    console.error('音频压缩失败:', error)
+    logger.error('音频压缩失败:', error)
     throw new Error('音频压缩失败')
   }
 }

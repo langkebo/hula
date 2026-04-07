@@ -43,6 +43,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { BeaconBody } from '@/services/types'
 import { matrixLocationService } from '@/services/matrix'
+import { useTimerManager } from '@/utils/TimerManager'
 
 defineOptions({
   inheritAttrs: false
@@ -88,6 +89,7 @@ const props = withDefaults(
  * 当前时间引用，用于实时更新倒计时
  */
 const now = ref(Date.now())
+const timerManager = useTimerManager()
 let timer: ReturnType<typeof setInterval> | undefined
 
 const isActive = computed(() => {
@@ -161,14 +163,14 @@ const handleJoinClick = () => {
 }
 
 onMounted(() => {
-  timer = setInterval(() => {
+  timer = timerManager.setInterval(() => {
     now.value = Date.now()
   }, 1000)
 })
 
 onUnmounted(() => {
   if (timer) {
-    clearInterval(timer)
+    timerManager.clearInterval(timer)
   }
 })
 </script>

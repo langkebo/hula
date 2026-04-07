@@ -14,151 +14,147 @@
           <span class="text-(24px #70938c) textFont">{{ t('auth.register.title') }}</span>
           <img class="w-100px h-40px" src="/hula.png" alt="" />
         </n-flex>
-        
+
         <div class="overflow-y-auto max-h-380px px-10px">
           <n-form :model="info" :rules="rules" ref="registerForm">
             <!-- 注册信息 -->
             <div>
-            <n-form-item path="name">
-              <div class="relative w-full">
-                <n-input
-                  class="w-full"
-                  maxlength="8"
-                  minlength="1"
-                  size="large"
-                  v-model:value="info.nickName"
-                  type="text"
-                  spellCheck="false"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  :allow-input="noSideSpace"
-                  :placeholder="t('auth.register.placeholders.nickname')"
-                  clearable>
-                </n-input>
-                <div 
-                  v-if="showNamePrefix || info.nickName"
-                  class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
-                  :class="{ 'top-8px transform-none text-10px': showNamePrefix }">
-                  {{ t('auth.register.labels.nickname') }}
+              <n-form-item path="name">
+                <div class="relative w-full">
+                  <n-input
+                    class="w-full"
+                    maxlength="8"
+                    minlength="1"
+                    size="large"
+                    v-model:value="info.nickName"
+                    type="text"
+                    spellCheck="false"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    :allow-input="noSideSpace"
+                    :placeholder="t('auth.register.placeholders.nickname')"
+                    clearable></n-input>
+                  <div
+                    v-if="showNamePrefix || info.nickName"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
+                    :class="{ 'top-8px transform-none text-10px': showNamePrefix }">
+                    {{ t('auth.register.labels.nickname') }}
+                  </div>
                 </div>
-              </div>
-            </n-form-item>
+              </n-form-item>
 
-            <n-form-item path="password">
-              <div class="relative w-full">
-                <n-input
-                  class="w-full"
-                  maxlength="16"
-                  minlength="6"
-                  size="large"
-                  spellCheck="false"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  show-password-on="click"
-                  v-model:value="info.password"
-                  type="password"
-                  :allow-input="noSideSpace"
-                  :placeholder="t('auth.register.placeholders.password')"
-                  clearable>
-                </n-input>
-                <div 
-                  v-if="showPasswordPrefix || info.password"
-                  class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
-                  :class="{ 'top-8px transform-none text-10px': showPasswordPrefix }">
-                  {{ t('auth.register.labels.password') }}
+              <n-form-item path="password">
+                <div class="relative w-full">
+                  <n-input
+                    class="w-full"
+                    maxlength="16"
+                    minlength="6"
+                    size="large"
+                    spellCheck="false"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    show-password-on="click"
+                    v-model:value="info.password"
+                    type="password"
+                    :allow-input="noSideSpace"
+                    :placeholder="t('auth.register.placeholders.password')"
+                    clearable></n-input>
+                  <div
+                    v-if="showPasswordPrefix || info.password"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
+                    :class="{ 'top-8px transform-none text-10px': showPasswordPrefix }">
+                    {{ t('auth.register.labels.password') }}
+                  </div>
                 </div>
-              </div>
-            </n-form-item>
+              </n-form-item>
 
-            <n-form-item path="confirmPassword">
-              <div class="relative w-full">
-                <n-input
-                  class="w-full"
-                  maxlength="16"
-                  minlength="6"
-                  size="large"
-                  spellCheck="false"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  show-password-on="click"
-                  v-model:value="confirmPassword"
-                  type="password"
-                  :allow-input="noSideSpace"
-                  :placeholder="t('auth.register.placeholders.confirm_placeholder')"
-                  clearable>
-                </n-input>
-                <div 
-                  v-if="showConfirmPasswordPrefix || confirmPassword"
-                  class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
-                  :class="{ 'top-8px transform-none text-10px': showConfirmPasswordPrefix }">
-                  {{ t('auth.register.labels.confirm') }}
+              <n-form-item path="confirmPassword">
+                <div class="relative w-full">
+                  <n-input
+                    class="w-full"
+                    maxlength="16"
+                    minlength="6"
+                    size="large"
+                    spellCheck="false"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    show-password-on="click"
+                    v-model:value="confirmPassword"
+                    type="password"
+                    :allow-input="noSideSpace"
+                    :placeholder="t('auth.register.placeholders.confirm_placeholder')"
+                    clearable></n-input>
+                  <div
+                    v-if="showConfirmPasswordPrefix || confirmPassword"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
+                    :class="{ 'top-8px transform-none text-10px': showConfirmPasswordPrefix }">
+                    {{ t('auth.register.labels.confirm') }}
+                  </div>
                 </div>
-              </div>
-            </n-form-item>
+              </n-form-item>
 
-            <n-form-item path="email">
-              <div class="relative w-full">
-                <n-auto-complete
-                  class="w-full"
-                  size="large"
-                  v-model:value="info.email"
-                  :placeholder="t('auth.register.placeholders.email')"
-                  :options="commonEmailDomains"
-                  :get-show="getShow"
-                  :append="true"
-                  clearable
-                  type="text"
-                  spellCheck="false"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off">
-                </n-auto-complete>
-                <div 
-                  v-if="showemailPrefix || info.email"
-                  class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
-                  :class="{ 'top-8px transform-none text-10px': showemailPrefix }">
-                  {{ t('auth.register.labels.email') }}
+              <n-form-item path="email">
+                <div class="relative w-full">
+                  <n-auto-complete
+                    class="w-full"
+                    size="large"
+                    v-model:value="info.email"
+                    :placeholder="t('auth.register.placeholders.email')"
+                    :options="commonEmailDomains"
+                    :get-show="getShow"
+                    :append="true"
+                    clearable
+                    type="text"
+                    spellCheck="false"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"></n-auto-complete>
+                  <div
+                    v-if="showemailPrefix || info.email"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
+                    :class="{ 'top-8px transform-none text-10px': showemailPrefix }">
+                    {{ t('auth.register.labels.email') }}
+                  </div>
                 </div>
-              </div>
-            </n-form-item>
+              </n-form-item>
 
-            <!-- 密码提示信息 -->
-            <n-flex vertical v-if="info.password">
-              <n-flex vertical :size="4">
-                <Validation
-                  :value="info.password"
-                  :message="t('auth.register.password_hints.min_length')"
-                  :validator="validateMinLength" />
-                <Validation
-                  :value="info.password"
-                  :message="t('auth.register.password_hints.alpha_numeric')"
-                  :validator="validateAlphaNumeric" />
-                <Validation
-                  :value="info.password"
-                  :message="t('auth.register.password_hints.special_char')"
-                  :validator="validateSpecialChar" />
+              <!-- 密码提示信息 -->
+              <n-flex vertical v-if="info.password">
+                <n-flex vertical :size="4">
+                  <Validation
+                    :value="info.password"
+                    :message="t('auth.register.password_hints.min_length')"
+                    :validator="validateMinLength" />
+                  <Validation
+                    :value="info.password"
+                    :message="t('auth.register.password_hints.alpha_numeric')"
+                    :validator="validateAlphaNumeric" />
+                  <Validation
+                    :value="info.password"
+                    :message="t('auth.register.password_hints.special_char')"
+                    :validator="validateSpecialChar" />
+                </n-flex>
               </n-flex>
-            </n-flex>
 
-            <!-- 协议 -->
-            <n-flex align="center" justify="center" :size="6" class="mt-10px">
-              <n-checkbox v-model:checked="protocol" />
-              <div class="text-12px color-#909090 cursor-default lh-14px">
-                <span>{{ t('login.term.checkout.text1') }}</span>
-                <span class="color-#13987f cursor-pointer" @click.stop="openServiceAgreement">
-                  {{ t('login.term.checkout.text2') }}
-                </span>
-                <span>{{ t('login.term.checkout.text3') }}</span>
-                <span class="color-#13987f cursor-pointer" @click.stop="openPrivacyAgreement">
-                  {{ t('login.term.checkout.text4') }}
-                </span>
-              </div>
-            </n-flex>
-          </div>
-        </n-form>
+              <!-- 协议 -->
+              <n-flex align="center" justify="center" :size="6" class="mt-10px">
+                <n-checkbox v-model:checked="protocol" />
+                <div class="text-12px color-#909090 cursor-default lh-14px">
+                  <span>{{ t('login.term.checkout.text1') }}</span>
+                  <span class="color-#13987f cursor-pointer" @click.stop="openServiceAgreement">
+                    {{ t('login.term.checkout.text2') }}
+                  </span>
+                  <span>{{ t('login.term.checkout.text3') }}</span>
+                  <span class="color-#13987f cursor-pointer" @click.stop="openPrivacyAgreement">
+                    {{ t('login.term.checkout.text4') }}
+                  </span>
+                </div>
+              </n-flex>
+            </div>
+          </n-form>
         </div>
 
         <n-button
@@ -259,6 +255,9 @@ import dayjs from 'dayjs'
 import { darkTheme, lightTheme, type FormInst } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Register')
 import PinInput from '@/components/atomic/PinInput.vue'
 import Validation from '@/components/common/Validation.vue'
 import { useWindow } from '@/hooks/useWindow'
@@ -507,7 +506,7 @@ const handleStepAction = async () => {
       pinInputRef.value?.focus()
     })
   } catch (error) {
-    console.error('发送验证码失败', error)
+    logger.error('发送验证码失败', error)
   } finally {
     loading.value = false
   }

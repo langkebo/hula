@@ -13,6 +13,9 @@
 import { emit } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useTauriListener } from '@/hooks/useTauriListener'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SharedScreen')
 
 const appWindow = WebviewWindow.getCurrent()
 const { addListener } = useTauriListener()
@@ -34,11 +37,11 @@ onBeforeUnmount(async () => {
 onMounted(async () => {
   await addListener(
     appWindow.listen('offer', async (event) => {
-      console.log(event.payload)
+      logger.debug('offer payload', event.payload)
       await peerConnection.setRemoteDescription(new RTCSessionDescription(event.payload as RTCSessionDescriptionInit))
       const answer = await peerConnection.createAnswer()
       await peerConnection.setLocalDescription(answer)
-      console.log(JSON.stringify(answer))
+      logger.debug('answer', JSON.stringify(answer))
     }),
     'shared-screen-offer'
   )

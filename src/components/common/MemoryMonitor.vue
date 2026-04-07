@@ -39,6 +39,10 @@ import { ref, onMounted, onUnmounted, nextTick, reactive, computed } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { useGroupStore } from '@/stores/group'
 import { useGlobalStore } from '@/stores/global'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+const logger = createLogger('MemoryMonitor')
+const timerManager = useTimerManager()
 
 const storeInfo = ref<Record<string, string | number>>({})
 const expanded = ref(true)
@@ -57,7 +61,7 @@ const dragState = reactive({
 const isDragging = ref(false)
 const suppressClickOnce = ref(false)
 
-let timer: ReturnType<typeof setInterval> | null = null
+let timer: number | null = null
 
 const formatBytes = (bytes: number) => {
   if (bytes < 1024) return bytes + ' B'
@@ -156,14 +160,14 @@ const updateMemory = () => {
       'Stores Total': formatBytes(sessionSize + messageSize + memberSize + userInfoSize)
     }
   } catch (e) {
-    console.warn('Memory monitor error:', e)
+    logger.warn('Memory monitor error:', e)
     storeInfo.value = { error: String(e) }
   }
 }
 
 onMounted(() => {
   updateMemory()
-  timer = setInterval(updateMemory, 3000)
+  timer = timerManager.setInterval(updateMemory, 3000)
   nextTick(() => {
     setInitialPosition()
     window.addEventListener('resize', handleResize)
@@ -171,7 +175,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (timer) clearInterval(timer)
+  if (timer) timerManager.clearInterval(timer)
   window.removeEventListener('resize', handleResize)
   detachDragListeners()
 })

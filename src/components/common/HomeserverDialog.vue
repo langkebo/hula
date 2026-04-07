@@ -34,6 +34,8 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NModal, NInput, NButton } from 'naive-ui'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('HomeserverDialog')
 
 const { t } = useI18n()
 
@@ -84,7 +86,7 @@ async function handleSave() {
     window.$message.success(t('menu.homeserver_saved'))
     showModal.value = false
   } catch (error) {
-    console.error('保存 homeserver 失败:', error)
+    logger.error('保存 homeserver 失败:', error)
     window.$message.error(t('menu.homeserver_save_failed'))
   } finally {
     saving.value = false

@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { matrixUrlPreviewService, simplifyUrl, getDomain } from '../MatrixUrlPreviewService'
 
-// Mock MatrixClientService
+const mockAuthedRequest = vi.fn()
+
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
     getClient: vi.fn(() => ({
       getUserId: vi.fn(() => '@test:example.com'),
       getMediaApiUrl: vi.fn(() => 'https://example.com/_matrix/media'),
       http: {
-        authedRequest: vi.fn()
+        authedRequest: mockAuthedRequest
       }
     }))
   }
@@ -21,10 +22,7 @@ describe('MatrixUrlPreviewService', () => {
 
   describe('getPreview', () => {
     it('should return URL preview', async () => {
-      const mockClient = await import('@/services/matrix/MatrixClientService')
-      const client = (mockClient.matrixClientService as any).getClient()
-
-      vi.mocked(client.http.authedRequest).mockResolvedValue({
+      mockAuthedRequest.mockResolvedValueOnce({
         'og:title': 'Example Page',
         'og:description': 'A test page',
         'og:image': 'https://example.com/image.jpg'
@@ -37,10 +35,15 @@ describe('MatrixUrlPreviewService', () => {
     })
 
     it('should return null for empty response', async () => {
-      const mockClient = await import('@/services/matrix/MatrixClientService')
-      const client = (mockClient.matrixClientService as any).getClient()
+      mockAuthedRequest.mockResolvedValueOnce({})
 
-      vi.mocked(client.http.authedRequest).mockResolvedValue({})
+      const result = await matrixUrlPreviewService.getPreview({ url: 'https://example.com' })
+
+      expect(result).toBeNull()
+    })
+
+    it('should return null on error', async () => {
+      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
 
       const result = await matrixUrlPreviewService.getPreview({ url: 'https://example.com' })
 
@@ -50,10 +53,7 @@ describe('MatrixUrlPreviewService', () => {
 
   describe('getPreviews', () => {
     it('should return previews for multiple URLs', async () => {
-      const mockClient = await import('@/services/matrix/MatrixClientService')
-      const client = (mockClient.matrixClientService as any).getClient()
-
-      vi.mocked(client.http.authedRequest).mockResolvedValue({
+      mockAuthedRequest.mockResolvedValue({
         'og:title': 'Page'
       })
 
@@ -96,7 +96,6 @@ describe('MatrixUrlPreviewService', () => {
       const preview = { url: 'https://example.com', title: 'Test' }
       matrixUrlPreviewService.cachePreview('https://example.com', preview)
 
-      // Clear cache manually
       matrixUrlPreviewService.clearCache()
 
       const result = matrixUrlPreviewService.getCachedPreview('https://example.com')

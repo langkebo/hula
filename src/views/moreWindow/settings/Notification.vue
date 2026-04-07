@@ -162,6 +162,9 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { notification, shield } from '@/utils/ImRequestUtils'
 import { assign } from 'es-toolkit/compat'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Notification')
 
 type NotificationChangeKey = 'allow' | 'mute' | 'shield'
 
@@ -367,7 +370,7 @@ const batchSetNotification = async (type: NotificationChangeKey) => {
     // 清空选择
     selectedSessions.value = []
   } catch (error) {
-    console.error('批量设置失败:', error)
+    logger.error('批量设置失败:', error)
     window.$message?.error(t('setting.notice.setup_fail'))
   } finally {
     // 延迟隐藏进度条，让用户看到完成状态
@@ -453,7 +456,7 @@ const handleNotificationChange = async (
         break
     }
   } catch (error) {
-    console.error('设置群消息通知失败:', error)
+    logger.error('设置群消息通知失败:', error)
     if (!silent) {
       window.$message?.error('设置失败，请重试')
       return

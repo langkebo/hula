@@ -11,6 +11,8 @@ import { getQiniuToken, getUploadProvider } from '@/utils/ImRequestUtils'
 import { isAndroid, isMobile } from '@/utils/PlatformConstants'
 import { getWasmMd5 } from '@/utils/Md5Util'
 import { removeTempFile } from '@/utils/TempFileManager'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Upload')
 
 /** 文件信息类型 */
 export type FileInfoType = {
@@ -135,7 +137,7 @@ export const useUpload = () => {
   const calculateFileHash = async (file: File): Promise<string> => {
     const startTime = performance.now()
     try {
-      console.log('开始计算MD5哈希值，文件大小:', file.size, 'bytes')
+      logger.debug('开始计算MD5哈希值，文件大小:', file.size, 'bytes')
       const arrayBuffer = await file.arrayBuffer()
       const uint8Array = new Uint8Array(arrayBuffer)
       let hash: string
@@ -150,12 +152,12 @@ export const useUpload = () => {
       }
       const endTime = performance.now()
       const duration = (endTime - startTime).toFixed(2)
-      console.log(`MD5计算完成，耗时: ${duration}ms，哈希值: ${hash}`)
+      logger.debug(`MD5计算完成，耗时: ${duration}ms，哈希值: ${hash}`)
       return hash.toLowerCase()
     } catch (error) {
       const endTime = performance.now()
       const duration = (endTime - startTime).toFixed(2)
-      console.error(`计算文件哈希值失败，耗时: ${duration}ms:`, error)
+      logger.error(`计算文件哈希值失败，耗时: ${duration}ms:`, error)
       // 如果计算失败，返回时间戳作为备用方案
       return Date.now().toString()
     }
@@ -182,7 +184,7 @@ export const useUpload = () => {
       // 获取当前登录用户的account
       const account = userStore.userInfo!.account
       key = `${options.scene}/${account}/${fileHash}.${fileSuffix}`
-      console.log('使用文件去重模式，文件哈希:', fileHash)
+      logger.debug('使用文件去重模式，文件哈希:', fileHash)
     } else {
       // 使用时间戳生成唯一的文件名
       key = `${options.scene}/${Date.now()}_${fileName}`
@@ -236,7 +238,7 @@ export const useUpload = () => {
       }
     } catch (error) {
       isUploading.value = false
-      console.error('Qiniu upload failed:', error)
+      logger.error('Qiniu upload failed:', error)
       return { error: 'Upload failed' }
     }
   }
@@ -272,7 +274,7 @@ export const useUpload = () => {
         currentChunkProgress: 0
       }
 
-      console.log('开始七牛云分片上传:', {
+      logger.debug('开始七牛云分片上传:', {
         fileName: file.name,
         fileSize: totalSize,
         chunkSize,
@@ -302,7 +304,7 @@ export const useUpload = () => {
 
         if (!blockResponse.ok) {
           const errorText = await blockResponse.text()
-          console.error(`上传分片 ${i + 1}/${totalChunks} 失败:`, {
+          logger.error(`上传分片 ${i + 1}/${totalChunks} 失败:`, {
             status: blockResponse.status,
             statusText: blockResponse.statusText,
             errorText
@@ -316,7 +318,7 @@ export const useUpload = () => {
 
         progress.value = Math.floor((progressInfo.uploadedChunks / progressInfo.totalChunks) * 100)
 
-        console.log(`上传分片 ${progressInfo.uploadedChunks}/${progressInfo.totalChunks} 成功:`, {
+        logger.debug(`上传分片 ${progressInfo.uploadedChunks}/${progressInfo.totalChunks} 成功:`, {
           ctx: blockResult.ctx.substring(0, 10) + '...',
           progress: progress.value + '%'
         })
@@ -337,7 +339,7 @@ export const useUpload = () => {
       }
 
       const completeResult = await completeResponse.json()
-      console.log('完成分片上传:', completeResult)
+      logger.debug('完成分片上传:', completeResult)
 
       isUploading.value = false
       progress.value = 100
@@ -352,7 +354,7 @@ export const useUpload = () => {
       if (!inner) {
         trigger('fail')
       }
-      console.error('七牛云分片上传失败:', error)
+      logger.error('七牛云分片上传失败:', error)
       return { error: 'Upload failed' }
     }
   }
@@ -480,16 +482,16 @@ export const useUpload = () => {
           return { downloadUrl: (cred as any).downloadUrl }
         }
 
-        console.log(`uploadFile - 文件大小检查: ${file.size} bytes, 阈值: ${CHUNK_THRESHOLD} bytes`)
+        logger.debug(`uploadFile - 文件大小检查: ${file.size} bytes, 阈值: ${CHUNK_THRESHOLD} bytes`)
         if (file.size > CHUNK_THRESHOLD) {
-          console.log('uploadFile - 使用分片上传方式')
+          logger.debug('uploadFile - 使用分片上传方式')
           const result = (await uploadToQiniuWithChunks(file, cred as any, QINIU_CHUNK_SIZE)) as any
           if (result && result.downloadUrl) {
             fileInfo.value = { ...info, downloadUrl: result.downloadUrl }
           }
           return result
         } else {
-          console.log('uploadFile - 使用默认的普通上传方式')
+          logger.debug('uploadFile - 使用默认的普通上传方式')
           const result = await uploadToQiniu(
             file,
             options?.scene || UploadSceneEnum.CHAT,
@@ -502,7 +504,7 @@ export const useUpload = () => {
           return result
         }
       } catch (error) {
-        console.error('获取上传凭证失败:', error)
+        logger.error('获取上传凭证失败:', error)
         await trigger('fail')
       }
     } else if (currentProvider.value === UploadProviderEnum.MINIO) {
@@ -526,7 +528,7 @@ export const useUpload = () => {
         return { downloadUrl: presign.downloadUrl }
       } catch (error) {
         isUploading.value = false
-        console.error('MinIO 上传失败:', error)
+        logger.error('MinIO 上传失败:', error)
         await trigger('fail')
       }
     }
@@ -643,7 +645,7 @@ export const useUpload = () => {
             return (cred as any).downloadUrl
           }
         } catch (error) {
-          console.error('获取上传凭证失败', error)
+          logger.error('获取上传凭证失败', error)
         }
       }
 
@@ -694,12 +696,12 @@ export const useUpload = () => {
       } catch (error) {
         isUploading.value = false
         trigger('fail')
-        console.error('七牛云上传失败:', error)
+        logger.error('七牛云上传失败:', error)
         throw new Error('文件上传失败，请重试')
       }
     } else {
       // 使用默认上传方式
-      console.log('执行文件上传:', path)
+      logger.debug('执行文件上传:', path)
       try {
         if (!uploadUrl) {
           throw new Error('获取上传链接失败，请重试')
@@ -739,7 +741,7 @@ export const useUpload = () => {
 
         isUploading.value = false
         progress.value = 100
-        console.log('文件上传成功')
+        logger.debug('文件上传成功')
         trigger('success')
 
         // 返回下载URL
@@ -747,7 +749,7 @@ export const useUpload = () => {
       } catch (error) {
         isUploading.value = false
         trigger('fail')
-        console.error('文件上传失败:', error)
+        logger.error('文件上传失败:', error)
         throw new Error('文件上传失败，请重试')
       }
     }

@@ -1,4 +1,6 @@
 import { shallowRef, triggerRef, shallowReactive, isShallow } from 'vue'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('OptimizedList')
 
 export interface OptimizedListOptions<_T> {
   /** 初始数据大小阈值，超过则使用 shallowRef */
@@ -25,7 +27,7 @@ export function useOptimizedList<T>(initialValue: T[] = [], options: OptimizedLi
 
   const log = (msg: string, ...args: unknown[]) => {
     if (debug) {
-      console.log(`[OptimizedList] ${msg}`, ...args)
+      logger.debug(msg, ...args)
     }
   }
 

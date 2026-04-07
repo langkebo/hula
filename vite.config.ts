@@ -136,16 +136,14 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     },
     build: {
       // 设置兼容低版本浏览器的目标
-      target: ['chrome87', 'edge88', 'firefox78', 'safari14'],
+      target: ['chrome90', 'edge90', 'firefox90', 'safari15'],
       cssCodeSplit: true, // 启用 CSS 代码拆分
       minify: 'esbuild' as const, // 指定使用哪种混淆器
       // chunk 大小警告的限制(kb)
       chunkSizeWarningLimit: 1200,
       // esbuild配置，解决低版本浏览器兼容性问题
       esbuild: {
-        supported: {
-          'top-level-await': false
-        },
+        target: 'es2020',
         // 生产环境移除 console.log、debugger(默认移除注释)
         drop: mode === 'production' ? ['console', 'debugger'] : []
       },

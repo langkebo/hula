@@ -150,11 +150,13 @@ import { useGroupStore } from '@/stores/group'
 import { useSettingStore } from '@/stores/setting.ts'
 import * as ImRequestUtils from '@/utils/ImRequestUtils'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
+import { useTimerManager } from '@/utils/TimerManager'
 import { options, renderLabel, renderSourceList, renderTargetList } from './model.tsx'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const { createWebviewWindow } = useWindow()
+const timerManager = useTimerManager()
 
 const chatStore = useChatStore()
 const settingStore = useSettingStore()
@@ -376,7 +378,7 @@ const handleSearchFocus = () => {
   isSearchMode.value = true
 
   // 延迟发送当前搜索框的值到SearchDetails组件
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     useMitt.emit('search_input_change', searchText.value)
   }, 100)
 }
@@ -435,7 +437,7 @@ const stopDrag = () => {
   document.removeEventListener('mousemove', doDrag, false)
   document.removeEventListener('mouseup', stopDrag, false)
   isDragging.value = false
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     // 移除 hover 样式
     const resizeHandle = document.querySelector('.resize-handle') as HTMLElement
     resizeHandle.classList.remove('hover')
@@ -466,6 +468,7 @@ onUnmounted(() => {
     document.body.style.userSelect = ''
     isDragging.value = false
   }
+  timerManager.clearAll()
 })
 </script>
 

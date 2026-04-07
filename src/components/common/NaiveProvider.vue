@@ -35,6 +35,8 @@ import {
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
 import { useSettingStore } from '@/stores/setting.ts'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('NaiveProvider')
 
 const { notificMax, messageMax } = defineProps<{
   notificMax?: number
@@ -72,7 +74,7 @@ const isValidContent = (theme?: string): theme is ThemeEnum => theme === ThemeEn
 const applyThemeContent = (theme: ThemeEnum) => {
   globalTheme.value = theme === ThemeEnum.DARK ? darkTheme : lightTheme
   document.documentElement.dataset.theme = theme
-  console.log(globalTheme.value)
+  logger.debug(globalTheme.value)
 }
 
 const syncOsTheme = () => {

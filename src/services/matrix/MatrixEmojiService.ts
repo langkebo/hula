@@ -201,7 +201,7 @@ class MatrixEmojiService {
         iconUrl = uploadResult.contentUri
       }
 
-      const packData: Record<string, any> = {
+      const packData: Record<string, unknown> = {
         name,
         created_at: Date.now()
       }
@@ -309,18 +309,18 @@ class MatrixEmojiService {
   /**
    * 解析表情响应数据
    */
-  private parseEmojiResponse(response: Record<string, any>): EmojiPack[] {
+  private parseEmojiResponse(response: Record<string, unknown>): EmojiPack[] {
     if (!response || !response.packs) {
       return []
     }
 
     const packs: EmojiPack[] = []
 
-    for (const [packId, packData] of Object.entries(response.packs as Record<string, any>)) {
+    for (const [packId, packData] of Object.entries(response.packs as Record<string, unknown>)) {
       const items: EmojiItem[] = []
 
       if (packData.emoticons && Array.isArray(packData.emoticons)) {
-        for (const [emojiId, emojiData] of Object.entries(packData.emoticons as Record<string, any>)) {
+        for (const [emojiId, emojiData] of Object.entries(packData.emoticons as Record<string, unknown>)) {
           items.push({
             id: emojiId,
             name: emojiData.name || emojiId,

@@ -114,16 +114,14 @@
               v-model:value="secretChatForm.password"
               type="password"
               placeholder="请输入密码"
-              show-password-on="click"
-            />
+              show-password-on="click" />
           </n-form-item>
           <n-form-item path="confirmPassword" label="确认密码">
             <n-input
               v-model:value="secretChatForm.confirmPassword"
               type="password"
               placeholder="请再次输入密码"
-              show-password-on="click"
-            />
+              show-password-on="click" />
           </n-form-item>
         </n-form>
         <div class="dialog-footer">
@@ -145,6 +143,9 @@ import { matrixEncryptionService } from '@/services/matrix'
 import { matrixClientService } from '@/services/matrix'
 import { useSettingStore } from '@/stores/setting'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SecuritySettings')
 
 defineOptions({
   name: 'SecuritySettings'
@@ -259,7 +260,7 @@ async function loadBackupInfo() {
     hasBackup.value = !!info
     backupInfo.value = info ? { version: info.version, count: info.count } : null
   } catch (error) {
-    console.error('获取备份信息失败:', error)
+    logger.error('获取备份信息失败:', error)
   }
 }
 
@@ -268,7 +269,7 @@ async function loadIgnoredUsers() {
   try {
     ignoredUsers.value = await matrixAccountService.getIgnoredUsers()
   } catch (error) {
-    console.error('获取忽略用户列表失败:', error)
+    logger.error('获取忽略用户列表失败:', error)
   } finally {
     loadingIgnored.value = false
   }
@@ -322,7 +323,7 @@ async function handleExportKey() {
 
     message.success('密钥已导出，请妥善保管')
   } catch (error) {
-    console.error('导出密钥失败:', error)
+    logger.error('导出密钥失败:', error)
     message.error('导出密钥失败')
   } finally {
     exportLoading.value = false

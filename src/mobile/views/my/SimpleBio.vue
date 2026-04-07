@@ -64,10 +64,13 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import router from '@/router'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('SimpleBio')
 
 const userStore = useUserStore()
 const { t } = useI18n()
@@ -123,14 +126,8 @@ const toMyInfo = () => {
 }
 
 const handleBack = async () => {
-  // const result = await invoke('plugin:hula|ping', {
-  //   payload: { value: 'hello world' }
-  // })
-  // console.log('插件测试结果：', result)
-
-  // TODO 返回上一页
   router.back()
-  console.log('返回')
+  logger.debug('返回')
 }
 </script>
 
