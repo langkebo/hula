@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 import { ImUrlEnum } from '@/enums'
 import { imRequestResult } from '@/utils/ImRequestUtils'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('AssistantModelPresets')
 
 export type AssistantModelPreset = {
   id: string
@@ -50,7 +52,7 @@ const fetchAssistantModelPresets = async (force = false) => {
     assistantModelMeta.value = metaMap
     assistantModelPresets.value = sorted
   } catch (error) {
-    console.error('获取 AI 模型列表失败:', error)
+    logger.error('获取 AI 模型列表失败:', error)
     assistantModelError.value = error
     assistantModelPresets.value = []
     assistantModelMeta.value = {}

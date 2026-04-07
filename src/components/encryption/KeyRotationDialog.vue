@@ -116,6 +116,8 @@ import { NModal, NButton, NSwitch, NSelect, NDivider, NSpin, NEmpty, NFlex, useM
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { matrixEncryptionService, type KeyRotationRecord } from '@/services/matrix/MatrixEncryptionService'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('KeyRotation')
 
 const { t } = useI18n()
 const message = useMessage()
@@ -167,7 +169,7 @@ const loadRotationStatus = async () => {
     autoRotate.value = status.enabled
     rotationInterval.value = Math.round(status.intervalMs / (24 * 60 * 60 * 1000)) || 7
   } catch (err) {
-    console.error('[KeyRotation] 加载状态失败:', err)
+    logger.error('加载状态失败:', err)
   } finally {
     loading.value = false
   }
@@ -180,7 +182,7 @@ const loadRotationHistory = async () => {
       rotationHistory.value = await matrixEncryptionService.getRotationHistory(client.deviceId)
     }
   } catch (err) {
-    console.error('[KeyRotation] 加载历史失败:', err)
+    logger.error('加载历史失败:', err)
   }
 }
 
@@ -197,7 +199,7 @@ const handleRotate = async () => {
       message.error(t('encryption.key_rotation.rotation_failed'))
     }
   } catch (err) {
-    console.error('[KeyRotation] 轮换失败:', err)
+    logger.error('轮换失败:', err)
     message.error(t('encryption.key_rotation.rotation_failed'))
   } finally {
     rotating.value = false
@@ -209,7 +211,7 @@ const handleConfigChange = async () => {
     await matrixEncryptionService.configureKeyRotation(autoRotate.value, rotationInterval.value)
     message.success(t('encryption.key_rotation.config_success'))
   } catch (err) {
-    console.error('[KeyRotation] 配置失败:', err)
+    logger.error('配置失败:', err)
     message.error(t('encryption.key_rotation.config_failed'))
   }
 }

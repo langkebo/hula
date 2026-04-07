@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('BadgeStore')
 
 export interface Badge {
   id: string
@@ -31,7 +34,7 @@ export const useBadgeStore = defineStore(StoresEnum.BADGE, () => {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        console.warn('[BadgeStore] Matrix client not initialized')
+        logger.warn('Matrix client not initialized')
         return
       }
 
@@ -44,7 +47,7 @@ export const useBadgeStore = defineStore(StoresEnum.BADGE, () => {
         }
       }
     } catch (error) {
-      console.error('[BadgeStore] Failed to load badges:', error)
+      logger.error('Failed to load badges:', error)
     }
   }
 

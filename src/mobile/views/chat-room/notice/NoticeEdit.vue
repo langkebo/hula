@@ -69,9 +69,12 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { useRoute, useRouter } from 'vue-router'
 import { useGlobalStore } from '@/stores/global'
 import { matrixAnnouncementService } from '@/services/matrix'
+
+const logger = createLogger('NoticeEdit')
 
 defineOptions({
   name: 'mobileChatNoticeEdit'
@@ -107,9 +110,9 @@ const loadAnnouncementDetail = async () => {
       announcementContent.value = data.content
       top.value = data.isPinned
     }
-    console.log('announcementContent ', announcementContent)
+    logger.debug('announcementContent ', announcementContent)
   } catch (error) {
-    console.error('加载公告详情失败:', error)
+    logger.error('加载公告详情失败:', error)
   }
 }
 
@@ -163,7 +166,7 @@ const handleSubmit = async () => {
       router.back()
     }
   } catch (error) {
-    console.error('保存公告失败:', error)
+    logger.error('保存公告失败:', error)
     window.$message?.error('保存公告失败，请重试')
   } finally {
     submitting.value = false

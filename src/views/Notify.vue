@@ -64,7 +64,12 @@ import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isWindows } from '@/utils/PlatformConstants'
+import { useTimerManager } from '@/utils/TimerManager'
+import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('Notify')
+const timerManager = useTimerManager()
 
 // import { useTauriListener } from '../hooks/useTauriListener'
 
@@ -126,7 +131,7 @@ const handleClickMsg = async (group: any) => {
       roomType: group.roomType
     })
   } else {
-    console.error('找不到对应的会话信息')
+    logger.error('找不到对应的会话信息')
   }
 }
 
@@ -193,15 +198,14 @@ const hideWindow = async () => {
 }
 
 const handleMouseEnter = () => {
-  console.log('Mouse enter')
+  logger.debug('Mouse enter')
   isMouseInWindow.value = true
 }
 
-// 增强的鼠标离开处理：增加延迟检测，避免托盘图标交互导致的误触发
 const handleMouseLeave = async () => {
-  console.log('Mouse leave')
+  logger.debug('Mouse leave')
   // 延迟设置 isMouseInWindow 为 false，给鼠标移动到托盘图标的时间
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     // 只有在延迟后鼠标仍然不在窗口内时才隐藏
     if (!isMouseInWindow.value) {
       hideWindow()
@@ -221,7 +225,7 @@ onMounted(async () => {
     })
 
     appWindow.listen('notify_leave', async () => {
-      setTimeout(async () => {
+      timerManager.setTimeout(async () => {
         await hideWindow()
       }, 300)
     })
@@ -337,6 +341,7 @@ onUnmounted(() => {
     homeBlurUnlisten()
     homeBlurUnlisten = null
   }
+  timerManager.clearAll()
 })
 </script>
 <style scoped lang="scss">

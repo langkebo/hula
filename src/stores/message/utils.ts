@@ -5,6 +5,9 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { MsgEnum } from '@/enums'
 import type { MessageType } from './types'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MessageUtils')
 
 /**
  * 将 Matrix 事件转换为消息类型
@@ -84,7 +87,7 @@ export function convertEventToMessage(event: MatrixEvent, _room: any): MessageTy
 
     return message
   } catch (error) {
-    console.error('[convertEventToMessage] Error:', error)
+    logger.error('Error:', error)
     return null
   }
 }

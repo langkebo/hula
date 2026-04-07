@@ -20,6 +20,13 @@ export interface ErrorDetails {
   isRetryError?: boolean
 }
 
+const logRetryError = (message: string, details?: Record<string, any>) => {
+  import('@/utils/Logger').then(({ createLogger }) => {
+    const logger = createLogger('AppException')
+    logger.info('重试错误:', message, details)
+  })
+}
+
 export class AppException extends Error {
   public readonly type: ErrorType
   public readonly code?: number
@@ -34,11 +41,9 @@ export class AppException extends Error {
     this.code = errorDetails?.code
     this.details = errorDetails?.details
 
-    // 只有在明确指定显示错误时才显示
     if (errorDetails?.showError && !AppException.hasShownError) {
-      // 如果是重试相关的错误，使用console.log打印而不是弹窗提示
       if (errorDetails?.isRetryError) {
-        console.log('重试错误:', message, this.details)
+        logRetryError(message, this.details)
       } else {
         window.$message.error(message)
         AppException.hasShownError = true

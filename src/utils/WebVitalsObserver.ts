@@ -1,5 +1,8 @@
 import type { Metric } from 'web-vitals'
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('WebVitalsObserver')
 
 type WebVitalMetric =
   | (Metric & { type: 'web-vital' })
@@ -15,7 +18,7 @@ type Reporter = (metric: WebVitalMetric) => void
 
 const defaultReporter: Reporter = (metric) => {
   const label = metric.type === 'web-vital' ? metric.name : 'longtask'
-  console.info('[performance]', label, metric)
+  logger.info(label, metric)
 }
 
 let hasStarted = false
@@ -57,7 +60,7 @@ export const startWebVitalObserver = (reporter: Reporter = defaultReporter) => {
     try {
       observer.observe({ type: 'longtask', buffered: true })
     } catch (error) {
-      console.warn('[performance] longtask observer failed:', error)
+      logger.warn('longtask observer failed:', error)
     }
   }
 }

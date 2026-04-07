@@ -1,5 +1,7 @@
 import { createSharedComposable } from '@vueuse/core'
 import { ref, readonly } from 'vue'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('FileSystemPermission')
 
 const useSharedFileSystemPermission = createSharedComposable(() => {
   const isSupported = ref(false)
@@ -36,7 +38,7 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
     types?: { description: string; accept: Record<string, string[]> }[]
   }): Promise<File[] | null> {
     if (!isReadSupported.value) {
-      console.warn('[FileSystemPermission] 文件读取不支持')
+      logger.warn('文件读取不支持')
       return null
     }
 
@@ -59,7 +61,7 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
       return files
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        console.warn('[FileSystemPermission] 打开文件失败:', err)
+        logger.warn('打开文件失败:', err)
       }
       return null
     }
@@ -70,7 +72,7 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
     types?: { description: string; accept: Record<string, string[]> }[]
   }): Promise<FileSystemFileHandle | null> {
     if (!isWriteSupported.value) {
-      console.warn('[FileSystemPermission] 文件写入不支持')
+      logger.warn('文件写入不支持')
       return null
     }
 
@@ -88,7 +90,7 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
       return handle
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        console.warn('[FileSystemPermission] 保存文件失败:', err)
+        logger.warn('保存文件失败:', err)
       }
       return null
     }
@@ -96,7 +98,7 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
 
   async function openDirectoryPicker(): Promise<FileSystemDirectoryHandle | null> {
     if (!isSupported.value) {
-      console.warn('[FileSystemPermission] 目录选择不支持')
+      logger.warn('目录选择不支持')
       return null
     }
 
@@ -106,7 +108,7 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
       return handle
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        console.warn('[FileSystemPermission] 打开目录失败:', err)
+        logger.warn('打开目录失败:', err)
       }
       return null
     }
@@ -119,7 +121,7 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
       await writable.close()
       return true
     } catch (err) {
-      console.warn('[FileSystemPermission] 写入文件失败:', err)
+      logger.warn('写入文件失败:', err)
       return false
     }
   }

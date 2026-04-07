@@ -333,7 +333,7 @@ const saveEditInfo = async () => {
     localUserInfo.value.modifyNameChance -= 1
     window.$message.success('修改成功')
   } catch (error) {
-    console.error('修改用户信息失败:', error)
+    logger.error('修改用户信息失败:', error)
     window.$message.error('修改失败，请重试')
   }
 }

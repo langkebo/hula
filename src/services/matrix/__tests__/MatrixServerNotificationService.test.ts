@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { matrixServerNotificationService } from '../MatrixServerNotificationService'
 
-// Mock MatrixClientService
+const mockAuthedRequest = vi.fn()
+
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
     getClient: vi.fn(() => ({
       getUserId: vi.fn(() => '@test:example.com'),
       http: {
-        authedRequest: vi.fn()
+        authedRequest: mockAuthedRequest
       }
     }))
   }
@@ -20,10 +21,7 @@ describe('MatrixServerNotificationService', () => {
 
   describe('createNotification', () => {
     it('should create notification', async () => {
-      const mockClient = await import('@/services/matrix/MatrixClientService')
-      const client = (mockClient.matrixClientService as any).getClient()
-
-      vi.mocked(client.http.authedRequest).mockResolvedValue({
+      mockAuthedRequest.mockResolvedValueOnce({
         notification_id: 1,
         room_id: '!room:example.com',
         type: 'test',
@@ -46,14 +44,23 @@ describe('MatrixServerNotificationService', () => {
       expect(result).toBeTruthy()
       expect(result?.notificationId).toBe(1)
     })
+
+    it('should return null on error', async () => {
+      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+
+      const result = await matrixServerNotificationService.createNotification({
+        type: 'test',
+        title: 'Test',
+        content: 'Content'
+      })
+
+      expect(result).toBeNull()
+    })
   })
 
   describe('getNotification', () => {
     it('should get notification by ID', async () => {
-      const mockClient = await import('@/services/matrix/MatrixClientService')
-      const client = (mockClient.matrixClientService as any).getClient()
-
-      vi.mocked(client.http.authedRequest).mockResolvedValue({
+      mockAuthedRequest.mockResolvedValueOnce({
         notification_id: 1,
         type: 'test',
         severity: 'warning',
@@ -67,14 +74,19 @@ describe('MatrixServerNotificationService', () => {
       expect(result).toBeTruthy()
       expect(result?.notificationId).toBe(1)
     })
+
+    it('should return null on error', async () => {
+      mockAuthedRequest.mockRejectedValueOnce(new Error('Not found'))
+
+      const result = await matrixServerNotificationService.getNotification(999)
+
+      expect(result).toBeNull()
+    })
   })
 
   describe('listActive', () => {
     it('should list active notifications', async () => {
-      const mockClient = await import('@/services/matrix/MatrixClientService')
-      const client = (mockClient.matrixClientService as any).getClient()
-
-      vi.mocked(client.http.authedRequest).mockResolvedValue({
+      mockAuthedRequest.mockResolvedValueOnce({
         notifications: [
           { notification_id: 1, type: 'test', title: 'Test 1' },
           { notification_id: 2, type: 'test', title: 'Test 2' }
@@ -85,59 +97,87 @@ describe('MatrixServerNotificationService', () => {
 
       expect(result).toHaveLength(2)
     })
+
+    it('should return empty array on error', async () => {
+      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+
+      const result = await matrixServerNotificationService.listActive()
+
+      expect(result).toEqual([])
+    })
   })
 
   describe('markAsRead', () => {
     it('should mark notification as read', async () => {
-      const mockClient = await import('@/services/matrix/MatrixClientService')
-      const client = (mockClient.matrixClientService as any).getClient()
-
-      vi.mocked(client.http.authedRequest).mockResolvedValue({})
+      mockAuthedRequest.mockResolvedValueOnce({})
 
       const result = await matrixServerNotificationService.markAsRead(1)
 
       expect(result).toBe(true)
     })
+
+    it('should return false on error', async () => {
+      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+
+      const result = await matrixServerNotificationService.markAsRead(1)
+
+      expect(result).toBe(false)
+    })
   })
 
   describe('dismiss', () => {
     it('should dismiss notification', async () => {
-      const mockClient = await import('@/services/matrix/MatrixClientService')
-      const client = (mockClient.matrixClientService as any).getClient()
-
-      vi.mocked(client.http.authedRequest).mockResolvedValue({})
+      mockAuthedRequest.mockResolvedValueOnce({})
 
       const result = await matrixServerNotificationService.dismiss(1)
 
       expect(result).toBe(true)
     })
+
+    it('should return false on error', async () => {
+      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+
+      const result = await matrixServerNotificationService.dismiss(1)
+
+      expect(result).toBe(false)
+    })
   })
 
   describe('delete', () => {
     it('should delete notification', async () => {
-      const mockClient = await import('@/services/matrix/MatrixClientService')
-      const client = (mockClient.matrixClientService as any).getClient()
-
-      vi.mocked(client.http.authedRequest).mockResolvedValue({})
+      mockAuthedRequest.mockResolvedValueOnce({})
 
       const result = await matrixServerNotificationService.delete(1)
 
       expect(result).toBe(true)
     })
+
+    it('should return false on error', async () => {
+      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+
+      const result = await matrixServerNotificationService.delete(1)
+
+      expect(result).toBe(false)
+    })
   })
 
   describe('listTemplates', () => {
     it('should list templates', async () => {
-      const mockClient = await import('@/services/matrix/MatrixClientService')
-      const client = (mockClient.matrixClientService as any).getClient()
-
-      vi.mocked(client.http.authedRequest).mockResolvedValue({
+      mockAuthedRequest.mockResolvedValueOnce({
         templates: [{ name: 'template1', type: 'test' }]
       })
 
       const result = await matrixServerNotificationService.listTemplates()
 
       expect(Array.isArray(result)).toBe(true)
+    })
+
+    it('should return empty array on error', async () => {
+      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+
+      const result = await matrixServerNotificationService.listTemplates()
+
+      expect(result).toEqual([])
     })
   })
 })

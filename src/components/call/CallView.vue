@@ -65,6 +65,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { matrixVoIPService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+const logger = createLogger('CallView')
+const timerManager = useTimerManager()
 
 const props = defineProps<{
   callId: string
@@ -132,7 +136,7 @@ const toggleScreenShare = async () => {
       isScreenSharing.value = true
     }
   } catch (error) {
-    console.error('[CallView] 屏幕共享失败:', error)
+    logger.error('屏幕共享失败:', error)
   }
 }
 
@@ -142,15 +146,15 @@ const handleHangup = async () => {
 }
 
 const startDurationTimer = () => {
-  if (durationTimer) clearInterval(durationTimer)
-  durationTimer = window.setInterval(() => {
+  if (durationTimer) timerManager.clearInterval(durationTimer)
+  durationTimer = timerManager.setInterval(() => {
     callDuration.value++
   }, 1000)
 }
 
 const stopDurationTimer = () => {
   if (durationTimer) {
-    clearInterval(durationTimer)
+    timerManager.clearInterval(durationTimer)
     durationTimer = null
   }
 }
@@ -168,6 +172,7 @@ watch(
 
 onUnmounted(() => {
   stopDurationTimer()
+  timerManager.clearAll()
 })
 </script>
 

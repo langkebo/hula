@@ -58,6 +58,9 @@ import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { matrixMessageService, matrixContactService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MultiMsgWindow')
 
 type Msg = {
   msgId: string
@@ -164,7 +167,7 @@ onMounted(async () => {
       await getAllUserInfo()
     })
     .catch((e) => {
-      console.error(e)
+      logger.error('Failed to load multi message', e)
     })
 })
 </script>

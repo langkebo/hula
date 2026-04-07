@@ -179,16 +179,10 @@ export const renderTargetList = (
   placeholder = '',
   requiredTag = ''
 ): TransferRenderSourceList => {
-  return ({
-    onCheck,
-    checkedOptions,
-    pattern
-  }) => {
+  return ({ onCheck, checkedOptions, pattern }) => {
     // 根据搜索模式过滤选项
     const displayOptions = pattern
-      ? checkedOptions.filter((option) =>
-          (option.label as string)?.toLowerCase().includes(pattern.toLowerCase())
-        )
+      ? checkedOptions.filter((option) => (option.label as string)?.toLowerCase().includes(pattern.toLowerCase()))
       : checkedOptions
 
     return (

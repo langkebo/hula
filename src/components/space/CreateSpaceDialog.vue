@@ -1,11 +1,5 @@
 <template>
-  <n-modal
-    v-model:show="visible"
-    preset="card"
-    :title="t('space.create.title')"
-    :style="{ width: '480px' }"
-    :bordered="false"
-    @update:show="$emit('update:visible', $event)">
+  <div class="create-space-dialog">
     <n-form ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="80">
       <n-form-item :label="t('space.create.name')" path="name">
         <n-input v-model:value="formData.name" :placeholder="t('space.create.name_placeholder')" />
@@ -20,151 +14,101 @@
       </n-form-item>
 
       <n-form-item :label="t('space.create.avatar')" path="avatarUrl">
-        <n-upload
-          :max="1"
-          accept="image/*"
-          :custom-request="handleAvatarUpload"
-          :show-file-list="false">
-          <n-avatar
-            round
-            :size="64"
-            :src="formData.avatarUrl || defaultAvatar"
-            class="cursor-pointer" />
+        <n-upload :max="1" accept="image/*" :custom-request="handleAvatarUpload" :show-file-list="false">
+          <n-avatar round :size="64" />
         </n-upload>
-      </n-form-item>
-
-      <n-form-item :label="t('space.create.visibility')" path="isPublic">
-        <n-radio-group v-model:value="formData.isPublic">
-          <n-radio :value="false">{{ t('space.create.private') }}</n-radio>
-          <n-radio :value="true">{{ t('space.create.public') }}</n-radio>
-        </n-radio-group>
-      </n-form-item>
-
-      <n-form-item v-if="formData.isPublic" :label="t('space.create.alias')" path="alias">
-        <n-input-group>
-          <n-input-group-label>#</n-input-group-label>
-          <n-input
-            v-model:value="formData.alias"
-            :placeholder="t('space.create.alias_placeholder')" />
-          <n-input-group-label>:{{ serverDomain }}</n-input-group-label>
-        </n-input-group>
       </n-form-item>
     </n-form>
 
-    <template #footer>
-      <div class="dialog-footer">
-        <n-button @click="$emit('update:visible', false)">{{ t('common.cancel') }}</n-button>
-        <n-button type="primary" :loading="creating" @click="handleCreate">
-          {{ t('space.create.create') }}
-        </n-button>
-      </div>
-    </template>
-  </n-modal>
+    <div class="dialog-footer">
+      <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
+      <n-button type="primary" :loading="loading" @click="handleSubmit">
+        {{ t('common.create') }}
+      </n-button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
+import { ref, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { FormInst, FormRules, UploadCustomRequestOptions } from 'naive-ui'
-import { matrixSpaceService } from '@/services/matrix'
-import { matrixMediaService } from '@/services/matrix'
-import matrixClientService from '@/services/matrix/MatrixClientService'
+import { useRouter } from 'vue-router'
+import { useSpaceStore } from '@/stores/space'
+import { matrixSpaceService } from '@/services/matrix/MatrixSpaceService'
+import { matrixUploadService } from '@/services/matrix/MatrixUploadService'
+import { createLogger } from '@/utils/Logger'
+
+import type { FormInst } from 'naive-ui'
+
+const logger = createLogger('CreateSpaceDialog')
+const { t } = useI18n()
+const router = useRouter()
+const spaceStore = useSpaceStore()
 
 const props = defineProps<{
   visible: boolean
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:visible', value: boolean): void
-  (e: 'created', spaceId: string): void
+  'update:visible': [value: boolean]
 }>()
 
-const { t } = useI18n()
-const formRef = ref<FormInst>()
-const creating = ref(false)
-const defaultAvatar = '/logoD.png'
+const formRef = ref<FormInst | null>(null)
+const loading = ref(false)
 
 const formData = reactive({
   name: '',
   topic: '',
-  avatarUrl: '',
-  isPublic: false,
-  alias: ''
+  avatarUrl: ''
 })
 
-const rules: FormRules = {
-  name: [
-    { required: true, message: t('space.create.name_required'), trigger: 'blur' },
-    { min: 2, max: 100, message: t('space.create.name_length'), trigger: 'blur' }
-  ]
+const rules = {
+  name: {
+    required: true,
+    message: t('space.create.name_required')
+  }
 }
 
-const serverDomain = computed(() => {
-  const client = matrixClientService.getClient()
-  return client?.getDomain() || 'matrix.org'
-})
-
-const handleAvatarUpload = async ({ file }: UploadCustomRequestOptions) => {
+const handleAvatarUpload = async ({ file }: { file: File }) => {
   try {
-    const uploadFile = file.file
-    if (!uploadFile) return
-
-    const result = await matrixMediaService.uploadFile(uploadFile)
-    formData.avatarUrl = result.contentUri
+    const result = await matrixUploadService.uploadFile(file)
+    formData.avatarUrl = result.url
   } catch (error) {
-    console.error('[CreateSpaceDialog] 上传头像失败:', error)
-    window.$message?.error(t('space.create.avatar_upload_failed'))
+    logger.error('[CreateSpaceDialog] 上传头像失败:', error)
   }
 }
 
-const handleCreate = async () => {
+const handleSubmit = async () => {
   try {
+    loading.value = true
     await formRef.value?.validate()
-  } catch {
-    return
-  }
-
-  creating.value = true
-  try {
-    const spaceId = await matrixSpaceService.createSpace({
+    await matrixSpaceService.createSpace({
       name: formData.name,
       topic: formData.topic,
-      avatarUrl: formData.avatarUrl,
-      isPublic: formData.isPublic,
-      alias: formData.alias
+      avatarUrl: formData.avatarUrl
     })
-
-    window.$message?.success(t('space.create.success'))
-    emit('created', spaceId)
     emit('update:visible', false)
-    resetForm()
   } catch (error) {
-    console.error('[CreateSpaceDialog] 创建空间失败:', error)
-    window.$message?.error(t('space.create.failed'))
+    logger.error('[CreateSpaceDialog] 创建空间失败:', error)
   } finally {
-    creating.value = false
+    loading.value = false
   }
 }
 
-const resetForm = () => {
-  formData.name = ''
-  formData.topic = ''
-  formData.avatarUrl = ''
-  formData.isPublic = false
-  formData.alias = ''
+const handleCancel = () => {
+  emit('update:visible', false)
 }
-
-watch(
-  () => props.visible,
-  (visible) => {
-    if (!visible) {
-      resetForm()
-    }
-  }
-)
 </script>
 
 <style scoped lang="scss">
+.create-space-dialog {
+  padding: 16px;
+}
+
 .dialog-footer {
-  @apply flex justify-end gap-12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
 }
 </style>

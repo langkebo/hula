@@ -6,6 +6,9 @@ import { useGroupStore } from '../stores/group'
 import { Result, err } from '@/common/result'
 import { AppException } from '@/common/exception'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ImRequestUtils')
 
 /**
  * ============================================================================
@@ -129,7 +132,7 @@ export async function imRequestResult<T = any>(
 
     // 如果不是最后一次尝试，且是网络或服务器错误，则进行重试
     if (!isLastAttempt && (error.type === ErrorType.Network || error.type === ErrorType.Server)) {
-      console.warn(`请求失败，准备第 ${attempt + 1} 次重试...`)
+      logger.warn(`请求失败，准备第 ${attempt + 1} 次重试...`)
       await new Promise((resolve) => setTimeout(resolve, retryDelay))
       attempt++
       continue
@@ -376,7 +379,7 @@ export async function confirmQRCodeAPI(data: { qrId: string }) {
 /**
  * SSE 流式数据事件类型
  */
-interface SseStreamEvent {
+export interface SseStreamEvent {
   eventType: 'chunk' | 'done' | 'error'
   data?: string
   error?: string

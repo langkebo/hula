@@ -188,7 +188,7 @@ function loadSavedSettings() {
         feature.enabled = enabledIds.includes(feature.id)
       })
     } catch (e) {
-      console.error('Failed to parse saved lab features')
+      logger.error('Failed to parse saved lab features')
     }
   }
 

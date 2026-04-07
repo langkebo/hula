@@ -34,6 +34,9 @@ import { useI18n } from 'vue-i18n'
 import { matrixMessageRelationService } from '@/services/matrix'
 import { useDebounceFn } from '@vueuse/core'
 
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('MessageEditor')
+
 const props = defineProps<{
   visible: boolean
   roomId: string
@@ -90,7 +93,7 @@ const handleSave = useDebounceFn(async () => {
     emit('update:visible', false)
     window.$message?.success(t('message.edit_success'))
   } catch (error) {
-    console.error('[MessageEditor] 编辑消息失败:', error)
+    logger.error('编辑消息失败:', error)
     window.$message?.error(t('message.edit_failed'))
   } finally {
     saving.value = false

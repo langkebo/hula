@@ -158,26 +158,26 @@
             <span>{{ t('editor.voice') }}</span>
           </n-popover>
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
-          <template #trigger>
-            <svg @click="showLocationModal = true" class="mr-18px">
-              <use href="#local"></use>
-            </svg>
-          </template>
-          <span>{{ t('editor.location') }}</span>
-        </n-popover>
+            <template #trigger>
+              <svg @click="showLocationModal = true" class="mr-18px">
+                <use href="#local"></use>
+              </svg>
+            </template>
+            <span>{{ t('editor.location') }}</span>
+          </n-popover>
 
-        <n-popover trigger="hover" :show-arrow="false" placement="bottom">
-          <template #trigger>
-            <svg
-              :class="{ 'text-[--primary-color]': isBurnAfterRead }"
-              @click="toggleBurnAfterRead"
-              class="mr-18px cursor-pointer">
-              <use href="#timer"></use>
-            </svg>
-          </template>
-          <span>{{ t('editor.burn_after_read') }}</span>
-        </n-popover>
-      </n-flex>
+          <n-popover trigger="hover" :show-arrow="false" placement="bottom">
+            <template #trigger>
+              <svg
+                :class="{ 'text-[--primary-color]': isBurnAfterRead }"
+                @click="toggleBurnAfterRead"
+                class="mr-18px cursor-pointer">
+                <use href="#timer"></use>
+              </svg>
+            </template>
+            <span>{{ t('editor.burn_after_read') }}</span>
+          </n-popover>
+        </n-flex>
 
         <n-popover trigger="hover" :show-arrow="false" placement="bottom">
           <template #trigger>
@@ -249,7 +249,9 @@ import { extractFileName, getMimeTypeFromExtension } from '@/utils/Formatting'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
 import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
+const logger = createLogger('ChatFooter')
 const { t } = useI18n()
 // 移动端组件条件导入
 const More = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/chat-room/panel/More.vue')) : void 0
@@ -430,14 +432,14 @@ const sendEmojiWithDebounce = useDebounceFn((payload: EmojiUrlPayload) => {
   try {
     // 不等待发送完成，立即返回（避免卡顿）
     MsgInputRef.value?.sendEmojiDirect(payload.serverUrl).catch((error: unknown) => {
-      console.error('[ChatFooter] 发送表情包失败:', error)
+      logger.error('发送表情包失败:', error)
       window.$message?.error?.('发送表情包失败')
     })
 
     // 添加到最近使用表情列表
     updateRecentEmojis(payload.serverUrl)
   } catch (error) {
-    console.error('[ChatFooter] 发送表情包失败:', error)
+    logger.error('发送表情包失败:', error)
     window.$message?.error?.('发送表情包失败')
   }
 }, 200)
@@ -590,7 +592,7 @@ const handleLocationSelected = async (locationData: any) => {
     await MsgInputRef.value.handleLocationSelected(locationData)
     showLocationModal.value = false
   } catch (error) {
-    console.error('发送位置消息失败:', error)
+    logger.error('发送位置消息失败:', error)
   }
 }
 
@@ -670,7 +672,7 @@ const handleMobileVoiceSend = async (voiceData: any) => {
   try {
     await MsgInputRef.value?.sendVoiceDirect(voiceData)
   } catch (error) {
-    console.error('发送语音失败', error)
+    logger.error('发送语音失败', error)
   }
   // 发送后关闭面板
   handleMobileVoiceCancel()
@@ -681,7 +683,7 @@ const handleMoreSendFiles = async (files: File[]) => {
   try {
     await MsgInputRef.value?.sendFilesDirect(files)
   } catch (error) {
-    console.error('移动端发送文件失败:', error)
+    logger.error('移动端发送文件失败:', error)
     window.$message?.error?.('发送文件失败')
   }
 }

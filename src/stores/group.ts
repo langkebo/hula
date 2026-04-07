@@ -6,6 +6,9 @@ import { useMatrixStore } from '@/stores/matrix'
 import { matrixRoomService } from '@/services/matrix'
 import { matrixClientService } from '@/services/matrix'
 import { info, error } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('GroupStore')
 
 export interface MatrixRoomMember {
   userId: string
@@ -261,7 +264,9 @@ export const useGroupStore = defineStore(
           name: room.name || roomId,
           avatarUrl: room.getMxcAvatarUrl?.() || null,
           avatar: room.getMxcAvatarUrl?.() || '',
-          topic: ((room.currentState.getStateEvents('m.room.topic' as any, '')?.getContent() as any)?.topic as string) || null,
+          topic:
+            ((room.currentState.getStateEvents('m.room.topic' as any, '')?.getContent() as any)?.topic as string) ||
+            null,
           memberCount: room.getJoinedMembers().length,
           memberNum: room.getJoinedMembers().length,
           onlineNum: room.getJoinedMembers().length,
@@ -415,10 +420,10 @@ export const useGroupStore = defineStore(
     function updateUserItem(uid: string, updates: Partial<MatrixRoomMember>, roomId?: string): boolean {
       const targetRoomId = roomId || globalStore.currentSessionRoomId
       if (!targetRoomId || !membersMap[targetRoomId]) return false
-      
+
       const memberIndex = membersMap[targetRoomId].findIndex((m) => m.userId === uid || m.uid === uid)
       if (memberIndex === -1) return false
-      
+
       Object.assign(membersMap[targetRoomId][memberIndex], updates)
       return true
     }
@@ -436,9 +441,9 @@ export const useGroupStore = defineStore(
     function updateOnlineNum(options: { uid?: string; roomId?: string; onlineNum?: number; isAdd?: boolean }): void {
       const { uid, roomId, onlineNum, isAdd } = options
       const targetRoomId = roomId || globalStore.currentSessionRoomId
-      
+
       if (!targetRoomId || !membersMap[targetRoomId]) return
-      
+
       if (uid) {
         // 更新指定用户的在线状态
         const member = membersMap[targetRoomId].find((m) => m.userId === uid || m.uid === uid)
@@ -596,7 +601,7 @@ export const useGroupStore = defineStore(
         await loadGroupInfo(session.roomId)
         return { success: true }
       } catch (error) {
-        console.error('[GroupStore] switchSession error:', error)
+        logger.error('switchSession error:', error)
         return { success: false }
       }
     }

@@ -94,6 +94,8 @@ import type { FileBody } from '@/services/types'
 import { useGroupStore } from '@/stores/group'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import EmptyState from './EmptyState.vue'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('FileContent')
 
 type TimeGroup = {
   date: string
@@ -216,7 +218,7 @@ const fileContextMenu = computed<OPT.RightMenu[]>(() => [
           await saveFileAttachmentAs(saveParams)
         }
       } catch (error) {
-        console.error('文件另存为失败:', error)
+        logger.error('文件另存为失败:', error)
       }
     }
   }
@@ -230,7 +232,7 @@ const handleFileMenuSelect = async (menuItem: OPT.RightMenu | null, file: any) =
   try {
     await menuItem.click(file)
   } catch (error) {
-    console.error('执行文件菜单操作失败:', error)
+    logger.error('执行文件菜单操作失败:', error)
   }
 }
 

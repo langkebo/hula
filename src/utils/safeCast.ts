@@ -3,6 +3,9 @@
  */
 
 import { isObject, isString, isNumber, isArray, isBoolean } from './typeGuard'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SafeCast')
 
 // ==================== 通用转换 ====================
 
@@ -97,7 +100,7 @@ export function getNestedValue<T = unknown>(obj: unknown, path: string, fallback
 export function as<T>(value: unknown): asserts value is T {
   // 仅在开发环境警告
   if (import.meta.env.DEV && value === undefined) {
-    console.warn('[typeGuard] as() received undefined')
+    logger.warn('as() received undefined')
   }
 }
 
@@ -131,7 +134,7 @@ export function createEventHandler<T>(handler: (data: T) => void): EventHandler<
     try {
       handler(data)
     } catch (error) {
-      console.error('[EventHandler] Error:', error)
+      logger.error('Error:', error)
     }
   }
 }
@@ -188,7 +191,10 @@ export function callFn<T>(fn: (() => T) | undefined, fallback: T): T {
 /**
  * 防抖函数调用
  */
-export function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): (...args: Parameters<T>) => void {
+export function debounce<T extends (...args: unknown[]) => unknown>(
+  fn: T,
+  delay: number
+): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null
 
   return (...args: Parameters<T>) => {
@@ -200,7 +206,10 @@ export function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay
 /**
  * 节流函数调用
  */
-export function throttle<T extends (...args: unknown[]) => unknown>(fn: T, limit: number): (...args: Parameters<T>) => void {
+export function throttle<T extends (...args: unknown[]) => unknown>(
+  fn: T,
+  limit: number
+): (...args: Parameters<T>) => void {
   let inThrottle = false
 
   return (...args: Parameters<T>) => {

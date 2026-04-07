@@ -210,6 +210,9 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixContactService } from '@/services/matrix'
 import { useAnnouncementStore } from '@/stores/announcement'
 
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('ChatSidebar')
+
 const { t } = useI18n()
 const appWindow = WebviewWindow.getCurrent()
 const emit = defineEmits<(e: 'ready') => void>()
@@ -267,14 +270,14 @@ watch(
     try {
       await announcementStore.loadGroupAnnouncements(roomId)
     } catch (error) {
-      console.error('刷新群公告失败:', error)
+      logger.error('刷新群公告失败:', error)
     }
   },
   { immediate: true }
 )
 
 const onClickMember = async (item: UserItem) => {
-  console.log('点击用户', item)
+  logger.debug('点击用户', item)
   selectKey.value = item.uid
 
   // 获取用户的最新数据，并更新 pinia

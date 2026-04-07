@@ -56,6 +56,9 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixContactService } from '@/services/matrix'
 import { useGroupStore } from '@/stores/group'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AddFriendVerify')
 
 const { t } = useI18n()
 const globalStore = useGlobalStore()
@@ -83,7 +86,7 @@ const addFriend = async () => {
 }
 
 onMounted(async () => {
-  console.log(userInfo.value)
+  logger.debug('userInfo', userInfo.value)
 
   await getCurrentWebviewWindow().show()
   requestMsg.value = t('message.friend_verify.default_msg', { name: userStore.userInfo!.name })

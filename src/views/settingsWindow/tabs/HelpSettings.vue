@@ -121,6 +121,9 @@ import { ref, onMounted } from 'vue'
 import { NButton, NDivider, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { usePlatform } from '@/composables/usePlatform'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('HelpSettings')
 
 defineOptions({
   name: 'HelpSettings'
@@ -178,10 +181,10 @@ async function loadVersionInfo() {
         }
       }
     } catch {
-      console.log('无法加载 package.json')
+      logger.debug('无法加载 package.json')
     }
   } catch (error) {
-    console.error('加载版本信息失败:', error)
+    logger.error('加载版本信息失败:', error)
   }
 }
 

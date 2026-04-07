@@ -13,6 +13,9 @@ import { isMobile } from '@/utils/PlatformConstants'
 import { generateVideoThumbnail } from '@/utils/VideoThumbnail'
 import { useGroupStore } from '../stores/group'
 import { removeTempFile } from '@/utils/TempFileManager'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MessageStrategy')
 
 export interface MessageStrategy {
   getMsg: (
@@ -95,12 +98,12 @@ abstract class AbstractMessageStrategy implements MessageStrategy {
     path: string,
     options?: { provider?: UploadProviderEnum }
   ): Promise<{ uploadUrl: string; downloadUrl: string }> {
-    console.log('Base uploadFile method called with:', path, options)
+    logger.debug('Base uploadFile method called with:', path, options)
     throw new AppException('该消息类型不支持文件上传')
   }
 
   doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
-    console.log('Base doUpload method called with:', path, uploadUrl, options)
+    logger.debug('Base doUpload method called with:', path, uploadUrl, options)
     throw new AppException('该消息类型不支持文件上传')
   }
 }
@@ -394,7 +397,7 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
             : undefined
         }
       } catch (error) {
-        console.error('处理图片URL失败:', error)
+        logger.error('处理图片URL失败:', error)
         if (error instanceof AppException) {
           throw error
         }
@@ -416,7 +419,7 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
 
     // 标准化路径
     const normalizedPath = path.replace(/\\/g, '/')
-    console.log('标准化路径:', normalizedPath)
+    logger.debug('标准化路径:', normalizedPath)
 
     try {
       const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
@@ -453,7 +456,7 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
           : undefined
       }
     } catch (error) {
-      console.error('处理图片失败:', error)
+      logger.error('处理图片失败:', error)
       if (error instanceof AppException) {
         throw error
       }
@@ -479,8 +482,7 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
       }
     }
 
-    // 使用useUpload hook获取上传和下载URL
-    console.log('开始上传图片:', path)
+    logger.debug('开始上传图片:', path)
     try {
       const uploadOptions: UploadOptions = {
         provider: options?.provider || UploadProviderEnum.QINIU,
@@ -490,7 +492,7 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
       const result = await this.uploadHook.getUploadAndDownloadUrl(path, uploadOptions)
       return result
     } catch (error) {
-      console.error('获取上传链接失败:', error)
+      logger.error('获取上传链接失败:', error)
       throw new AppException('获取上传链接失败，请重试')
     }
   }
@@ -516,7 +518,7 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
         return { qiniuUrl: result as string }
       }
     } catch (error) {
-      console.error('文件上传失败:', error)
+      logger.error('文件上传失败:', error)
       if (error instanceof AppException) {
         throw error
       }
@@ -699,7 +701,7 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
 
       return new File([new Uint8Array(fileData)], fileName, { type: fileType })
     } catch (error) {
-      console.error('读取文件失败:', error)
+      logger.error('读取文件失败:', error)
       throw new AppException('无法读取文件，请检查文件是否存在')
     }
   }
@@ -709,7 +711,7 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
     replyValue: MessageType | null,
     fileList?: File[]
   ): Promise<Record<string, unknown>> {
-    console.log('开始处理文件消息:', msgInputValue, replyValue, fileList?.length ? '有附件文件' : '无附件文件')
+    logger.debug('开始处理文件消息:', msgInputValue, replyValue, fileList?.length ? '有附件文件' : '无附件文件')
 
     let file: File | null = null
 
@@ -788,7 +790,7 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
       const result = await this.uploadHook.getUploadAndDownloadUrl(path, uploadOptions)
       return result
     } catch (error) {
-      console.error('获取文件上传链接失败:', error)
+      logger.error('获取文件上传链接失败:', error)
       throw new AppException('获取文件上传链接失败，请重试')
     }
   }
@@ -810,7 +812,7 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
         return { qiniuUrl: result as string }
       }
     } catch (error) {
-      console.error('文件上传失败:', error)
+      logger.error('文件上传失败:', error)
       if (error instanceof AppException) {
         throw error
       }
@@ -818,9 +820,6 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  /**
-   * 暴露上传进度监听
-   */
   getUploadProgress(): { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void } {
     return {
       progress: this.uploadHook.progress,
@@ -883,21 +882,19 @@ class EmojiMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  // 表情包不需要实际上传，直接返回原始URL
   async uploadFile(
     path: string,
     options?: { provider?: UploadProviderEnum }
   ): Promise<{ uploadUrl: string; downloadUrl: string }> {
-    console.log('表情包使用原始URL:', path, options)
+    logger.debug('表情包使用原始URL:', path, options)
     return {
-      uploadUrl: '', // 不需要上传URL
-      downloadUrl: path // 直接使用原始URL
+      uploadUrl: '',
+      downloadUrl: path
     }
   }
 
-  // 表情包不需要实际上传，此方法为空实现
   async doUpload(path?: string, uploadUrl?: string, options?: UploadOptions): Promise<void> {
-    console.log('表情包无需上传，跳过上传步骤', path, uploadUrl, options)
+    logger.debug('表情包无需上传，跳过上传步骤', path, uploadUrl, options)
     return Promise.resolve()
   }
 }
@@ -1038,7 +1035,7 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
         const fileName = `video_${Date.now()}.mp4` // 默认文件名
         return new File([blob], fileName, { type: blob.type || 'video/mp4' })
       } catch (error) {
-        console.error('Blob 转换失败:', error)
+        logger.error('Blob 转换失败:', error)
         throw new AppException('无法从 Blob URL 创建视频文件')
       }
     }
@@ -1056,12 +1053,11 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
         type: this.getVideoType(fileName)
       })
     } catch (error) {
-      console.error('视频文件读取失败:', error)
+      logger.error('视频文件读取失败:', error)
       throw new AppException('无法读取视频文件，请检查文件路径是否正确')
     }
   }
 
-  // 根据文件名获取视频类型
   private getVideoType(fileName: string): string {
     const extension = fileName.split('.').pop()?.toLowerCase()
     switch (extension) {
@@ -1102,7 +1098,7 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
       const result = await this.uploadHook.getUploadAndDownloadUrl(tempPath, uploadOptions)
       return result
     } catch (error) {
-      console.error('获取缩略图上传链接失败:', error)
+      logger.error('获取缩略图上传链接失败:', error)
       throw new AppException('获取缩略图上传链接失败，请重试')
     }
   }
@@ -1138,7 +1134,7 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
         return { qiniuUrl: result as string }
       }
     } catch (error) {
-      console.error('缩略图上传失败:', error)
+      logger.error('缩略图上传失败:', error)
       if (error instanceof AppException) {
         throw error
       }
@@ -1206,7 +1202,7 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
         return { qiniuUrl: result as string }
       }
     } catch (error) {
-      console.error('文件上传失败:', error)
+      logger.error('文件上传失败:', error)
       if (error instanceof AppException) {
         throw error
       }

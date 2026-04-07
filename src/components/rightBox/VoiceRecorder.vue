@@ -99,7 +99,9 @@
 <script setup lang="ts">
 import { useVoiceRecordRust } from '@/hooks/useVoiceRecordRust'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
+const logger = createLogger('VoiceRecorder')
 const { t } = useI18n()
 
 // 事件定义
@@ -129,10 +131,10 @@ const {
   formatTime
 } = useVoiceRecordRust({
   onStart: () => {
-    console.log('开始录音')
+    logger.debug('开始录音')
   },
   onStop: (blob, duration, localPath) => {
-    console.log('录音结束', duration, '本地路径:', localPath)
+    logger.debug('录音结束', duration, '本地路径:', localPath)
     audioBlob.value = blob
     recordingDuration.value = duration
     localAudioPath.value = localPath
@@ -217,7 +219,7 @@ const togglePlayback = () => {
 // 发送语音
 const handleSend = async () => {
   if (!audioBlob.value || !localAudioPath.value) {
-    console.log('🎤 缺少音频数据，退出发送')
+    logger.debug('缺少音频数据，退出发送')
     return
   }
 
@@ -234,13 +236,13 @@ const handleSend = async () => {
       type: 'audio/mp3'
     }
 
-    console.log('🎤 发送语音数据:', voiceData)
+    logger.debug('发送语音数据:', voiceData)
     emit('send', voiceData)
 
     // 发送后立即重置状态，避免下次打开时还显示这条录音
     resetRecordingState()
   } catch (error) {
-    console.error('🎤 发送语音失败:', error)
+    logger.error('发送语音失败:', error)
   } finally {
     sending.value = false
   }

@@ -32,9 +32,12 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('HomeserverSettings')
 
 const { t } = useI18n()
 
@@ -79,7 +82,7 @@ async function handleSave() {
       message: t('mobile_setting.homeserver_saved')
     })
   } catch (error) {
-    console.error('保存 homeserver 失败:', error)
+    logger.error('保存 homeserver 失败:', error)
     showToast({
       type: 'fail',
       message: t('mobile_setting.homeserver_save_failed')

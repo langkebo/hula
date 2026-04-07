@@ -1,5 +1,7 @@
 import { useThrottleFn } from '@vueuse/core'
 import type { Ref } from 'vue'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('WaveformRenderer')
 
 /**
  * 波形颜色配置接口
@@ -162,7 +164,7 @@ export const useWaveformRenderer = (
       shouldUpdateCache.value = true
       drawWaveform()
     } catch (error) {
-      console.error('生成波形数据失败:', error)
+      logger.error('生成波形数据失败:', error)
       // 生成默认波形
       waveformData.value = Array.from({ length: waveformSamples.value }, () => Math.random() * 0.8 + 0.2)
       shouldUpdateCache.value = true
@@ -255,7 +257,7 @@ export const useWaveformRenderer = (
           }
         }
       } catch (error) {
-        console.error('绘制播放进度失败:', error)
+        logger.error('绘制播放进度失败:', error)
       }
     }
   }

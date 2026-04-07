@@ -131,6 +131,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { NSwitch, NButton, NDivider, NTag, NModal, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('EncryptionSettings')
 import { matrixClientService } from '@/services/matrix'
 import { matrixEncryptionService } from '@/services/matrix'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
@@ -219,7 +222,7 @@ async function loadEncryptionInfo() {
     const rotationStatus = await matrixEncryptionService.getKeyRotationStatus()
     needsRotation.value = rotationStatus.needsRotation
   } catch (error) {
-    console.error('加载加密信息失败:', error)
+    logger.error('加载加密信息失败:', error)
   }
 }
 

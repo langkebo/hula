@@ -920,6 +920,9 @@ import { storeToRefs } from 'pinia'
 import { useUpload, UploadProviderEnum } from '@/hooks/useUpload'
 import { UploadSceneEnum } from '@/enums'
 import { matrixMessageRelationService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('RobotChat')
 
 // OpenClaw 服务
 import { useOpenClaw } from '@/services/openclaw'
@@ -977,7 +980,7 @@ const loadSavedConfig = () => {
       if (parsed.apiUrl) trendRadarConfig.value.apiUrl = parsed.apiUrl
     }
   } catch (e) {
-    console.error('加载保存的配置失败:', e)
+    logger.error('加载保存的配置失败:', e)
   }
 }
 
@@ -1301,7 +1304,7 @@ const buildAiMediaFileName = async (url: string, fallbackExt: string, prefix: st
     const hash = await md5FromString(url)
     return `${prefix}-${hash}.${ext}`
   } catch (error) {
-    console.error('生成 AI 媒体文件名失败:', error)
+    logger.error('生成 AI 媒体文件名失败:', error)
     return `${prefix}-${Date.now()}.${ext}`
   }
 }
@@ -1339,7 +1342,7 @@ const ensureLocalAiImage = async (remoteUrl: string, messageIndex: number) => {
       messageList.value[messageIndex].imageUrl = remoteUrl
     }
   } catch (error) {
-    console.error('AI 图片本地化失败:', error)
+    logger.error('AI 图片本地化失败:', error)
   }
 }
 
@@ -1377,7 +1380,7 @@ const ensureLocalAiVideo = async (remoteUrl: string, messageIndex: number) => {
       messageList.value[messageIndex].videoUrl = remoteUrl
     }
   } catch (error) {
-    console.error('AI 视频本地化失败:', error)
+    logger.error('AI 视频本地化失败:', error)
   }
 }
 
@@ -1415,7 +1418,7 @@ const ensureLocalAiAudio = async (remoteUrl: string, messageIndex: number) => {
       messageList.value[messageIndex].audioUrl = remoteUrl
     }
   } catch (error) {
-    console.error('AI 音频本地化失败:', error)
+    logger.error('AI 音频本地化失败:', error)
   }
 }
 
@@ -1641,7 +1644,7 @@ const loadAudioVoices = async (model: any) => {
       audioParams.value.voice = 'default'
     }
   } catch (error) {
-    console.error('加载声音列表失败:', error)
+    logger.error('加载声音列表失败:', error)
     // 保持默认选项
   }
 }
@@ -1703,13 +1706,13 @@ const handleVideoImageUpload = async (options: { file: UploadFileInfo; onFinish:
     if (qiniuUrl) {
       videoParams.value.image = qiniuUrl
       videoImagePreview.value = qiniuUrl
-      console.log('视频参考图片上传成功，七牛云URL:', qiniuUrl)
+      logger.debug('视频参考图片上传成功，七牛云URL:', qiniuUrl)
       options.onFinish()
     } else {
       throw new Error('未获取到图片URL')
     }
   } catch (error) {
-    console.error('图片上传失败:', error)
+    logger.error('图片上传失败:', error)
     options.onError()
   } finally {
     isUploadingVideoImage.value = false
@@ -1733,7 +1736,7 @@ const pollingTasks = new Map<number, { timerId: number; conversationId: string; 
 const stopAllPolling = () => {
   pollingTasks.forEach(({ timerId }) => window.clearInterval(timerId))
   pollingTasks.clear()
-  console.log('已停止所有轮询任务')
+  logger.debug('已停止所有轮询任务')
 }
 
 // 停止特定会话的轮询任务
@@ -1747,7 +1750,7 @@ const stopConversationPolling = (conversationId: string) => {
   })
   tasksToStop.forEach((id) => pollingTasks.delete(id))
   if (tasksToStop.length > 0) {
-    console.log(`已停止会话 ${conversationId} 的 ${tasksToStop.length} 个轮询任务`)
+    logger.debug(`已停止会话 ${conversationId} 的 ${tasksToStop.length} 个轮询任务`)
   }
 }
 
@@ -1842,7 +1845,7 @@ const handleOpenClawSend = async (content: string) => {
       // 流式接收中
     }
   } catch (e) {
-    console.error('OpenClaw 发送失败:', e)
+    logger.error('OpenClaw 发送失败:', e)
     messageList.value[aiMessageIndex].content = '发送失败: ' + (e instanceof Error ? e.message : '未知错误')
   } finally {
     isAIStreaming.value = false
@@ -1900,7 +1903,7 @@ const sendAIMessage = async (content: string, model: any) => {
     }
     window.$message.loading('AI思考中...', { duration: 0 })
 
-    console.log('开始发送AI消息:', {
+    logger.debug('开始发送AI消息:', {
       内容: content,
       模型: model.name,
       会话ID: currentChat.value.id
@@ -2027,7 +2030,7 @@ const sendAIMessage = async (content: string, model: any) => {
           }
         },
         onError: (error: string) => {
-          console.error('AI流式响应错误:', error)
+          logger.error('AI流式响应错误:', error)
           messageList.value[aiMessageIndex].content = '抱歉，发生了错误：' + error
           isAIStreaming.value = false
           currentAiRequestId.value = null
@@ -2044,7 +2047,7 @@ const sendAIMessage = async (content: string, model: any) => {
 
     // 更新消息计数
   } catch (error) {
-    console.error('AI消息发送失败:', error)
+    logger.error('AI消息发送失败:', error)
     window.$message.error('发送失败，请检查网络连接')
   } finally {
     window.$message.destroyAll()
@@ -2075,7 +2078,7 @@ const handleStopAIStream = async () => {
     }
     window.$message.success('已停止生成')
   } catch (e) {
-    console.error('停止生成失败:', e)
+    logger.error('停止生成失败:', e)
     window.$message.error('停止生成失败')
   } finally {
     isAIStreaming.value = false
@@ -2110,7 +2113,7 @@ const generateImage = async (prompt: string, model: any) => {
 
     scrollToBottom()
 
-    console.log('开始生成图片:', {
+    logger.debug('开始生成图片:', {
       提示词: prompt,
       模型: model.name,
       尺寸: imageParams.value.size
@@ -2135,7 +2138,7 @@ const generateImage = async (prompt: string, model: any) => {
       MsgInputRef.value.clearInput()
     }
   } catch (error: any) {
-    console.error('图片生成失败:', error)
+    logger.error('图片生成失败:', error)
     // 更新为错误消息
     const lastMessage = messageList.value[messageList.value.length - 1]
     if (lastMessage && lastMessage.isGenerating) {
@@ -2222,9 +2225,9 @@ const pollImageStatus = async (
       }
 
       // 状态=10 (进行中), 继续轮询
-      console.log('图片生成中，继续轮询...')
+      logger.debug('图片生成中，继续轮询...')
     } catch (error: any) {
-      console.error('轮询图片状态失败:', error)
+      logger.error('轮询图片状态失败:', error)
       messageList.value[messageIndex].content = `查询状态失败: ${error.message || '未知错误'}`
       messageList.value[messageIndex].isGenerating = false
       pollingTasks.delete(imageId)
@@ -2266,7 +2269,7 @@ const generateVideo = async (prompt: string, model: any) => {
 
     scrollToBottom()
 
-    console.log('开始生成视频:', {
+    logger.debug('开始生成视频:', {
       提示词: prompt,
       模型: model.name,
       尺寸: videoParams.value.size,
@@ -2305,7 +2308,7 @@ const generateVideo = async (prompt: string, model: any) => {
     }
     clearVideoImage()
   } catch (error: any) {
-    console.error('视频生成失败:', error)
+    logger.error('视频生成失败:', error)
     // 更新为错误消息
     const lastMessage = messageList.value[messageList.value.length - 1]
     if (lastMessage && lastMessage.isGenerating) {
@@ -2395,7 +2398,7 @@ const pollVideoStatus = async (
 
       // 状态=10 (进行中), 继续轮询
     } catch (error: any) {
-      console.error('轮询视频状态失败:', error)
+      logger.error('轮询视频状态失败:', error)
       messageList.value[messageIndex].content = `查询状态失败: ${error.message || '未知错误'}`
       messageList.value[messageIndex].isGenerating = false
       pollingTasks.delete(videoId)
@@ -2437,7 +2440,7 @@ const generateAudio = async (prompt: string, model: any) => {
 
     scrollToBottom()
 
-    console.log('开始生成音频:', {
+    logger.debug('开始生成音频:', {
       提示词: prompt,
       模型: model.name,
       语音: audioParams.value.voice,
@@ -2460,7 +2463,7 @@ const generateAudio = async (prompt: string, model: any) => {
       MsgInputRef.value.clearInput()
     }
   } catch (error: any) {
-    console.error('音频生成失败:', error)
+    logger.error('音频生成失败:', error)
     const lastMessage = messageList.value[messageList.value.length - 1]
     if (lastMessage && lastMessage.isGenerating) {
       lastMessage.content = `音频生成失败: ${error.message || '未知错误'}`
@@ -2622,7 +2625,7 @@ const fetchModelList = async () => {
     modelList.value = data.list || []
     modelPagination.value.total = data.total || 0
   } catch (error) {
-    console.error('获取模型列表失败:', error)
+    logger.error('获取模型列表失败:', error)
     window.$message.error('获取模型列表失败')
   } finally {
     modelLoading.value = false
@@ -2643,13 +2646,13 @@ const handleProviderChange = async (provider: AIProvider) => {
           token: openClawConfig.value.token
         })
       } catch (e) {
-        console.error('OpenClaw 连接失败:', e)
+        logger.error('OpenClaw 连接失败:', e)
         window.$message.error('OpenClaw 连接失败，请确保 Gateway 已启动')
       }
     }
   } else if (provider === 'trendradar') {
     // TrendRadar 模式，使用保存的 apiUrl
-    console.log('TrendRadar 模式，apiUrl:', trendRadarConfig.value.apiUrl)
+    logger.debug('TrendRadar 模式，apiUrl:', trendRadarConfig.value.apiUrl)
   } else {
     // HuLa 后端模式，确保模型已加载
     if (modelList.value.length === 0) {
@@ -2689,7 +2692,7 @@ const selectModel = async (model: any) => {
         modelId: String(model.id)
       })
     } catch (error) {
-      console.error('切换模型失败:', error)
+      logger.error('切换模型失败:', error)
       window.$message.destroyAll()
       window.$message.error('切换模型失败')
     }
@@ -2729,7 +2732,7 @@ const loadRoleList = async () => {
       selectedRole.value = roleList.value[0]
     }
   } catch (error) {
-    console.error('加载角色列表失败:', error)
+    logger.error('加载角色列表失败:', error)
     window.$message.error('加载角色列表失败')
   } finally {
     roleLoading.value = false
@@ -2753,7 +2756,7 @@ const handleSelectRole = async (role: any) => {
       window.$message.success(`已选择角色: ${role.name}`)
     }
   } catch (error) {
-    console.error('切换角色失败:', error)
+    logger.error('切换角色失败:', error)
     window.$message.destroyAll()
     window.$message.error('切换角色失败')
   }
@@ -2782,7 +2785,7 @@ const handleBlur = async () => {
 
     useMitt.emit('update-chat-title', { title: currentChat.value.title, id: currentChat.value.id })
   } catch (error) {
-    console.error('更新会话标题失败:', error)
+    logger.error('更新会话标题失败:', error)
     window.$message.error('重命名失败')
     currentChat.value.title = originalTitle.value
   }
@@ -2799,7 +2802,7 @@ const handleEdit = () => {
 // 加载会话的历史消息
 const loadMessages = async (conversationId: string) => {
   if (!conversationId || conversationId === '0') {
-    console.log('会话ID无效，跳过加载消息')
+    logger.debug('会话ID无效，跳过加载消息')
     return
   }
 
@@ -2877,7 +2880,7 @@ const loadMessages = async (conversationId: string) => {
       messageList.value = []
     }
   } catch (error) {
-    console.error('加载消息失败:', error)
+    logger.error('加载消息失败:', error)
     window.$message.error('加载消息失败')
     messageList.value = []
   } finally {
@@ -2917,7 +2920,7 @@ const handleCreateNewChat = async () => {
       router.push('/chat')
     }
   } catch (error) {
-    console.error('创建会话失败:', error)
+    logger.error('创建会话失败:', error)
     window.$message.error('创建会话失败')
   }
 }
@@ -2945,7 +2948,7 @@ const handleDeleteMessage = async (messageId: string, index: number) => {
       createTime: latestTimestamp
     })
   } catch (error) {
-    console.error('删除消息失败:', error)
+    logger.error('删除消息失败:', error)
     window.$message.error('删除消息失败')
   }
 }
@@ -2963,7 +2966,7 @@ const handleDeleteChat = async () => {
       try {
         await matrixAIService.messageDeleteByConversationId({ conversationIdList: [currentChat.value.id] })
       } catch (error) {
-        console.error('删除会话消息失败:', error)
+        logger.error('删除会话消息失败:', error)
       }
     }
 
@@ -2989,7 +2992,7 @@ const handleDeleteChat = async () => {
     await router.push('/welcome')
     useMitt.emit('refresh-conversations')
   } catch (error) {
-    console.error('删除会话失败:', error)
+    logger.error('删除会话失败:', error)
     window.$message.error('删除会话失败')
     showDeleteChatConfirm.value = false
   }
@@ -3087,7 +3090,7 @@ const loadHistory = async () => {
     historyList.value = data.list || []
     historyPagination.value.total = data.total || 0
   } catch (error) {
-    console.error('加载历史记录失败:', error)
+    logger.error('加载历史记录失败:', error)
     window.$message.error('加载历史记录失败')
   } finally {
     historyLoading.value = false
@@ -3121,7 +3124,7 @@ const handlePreviewVideo = (item: any) => {
 
 // 事件处理函数(定义在顶层作用域,以便在 onUnmounted 中移除)
 const handleRefreshRoleList = () => {
-  console.log('收到角色列表刷新事件')
+  logger.debug('收到角色列表刷新事件')
   loadRoleList()
 }
 
@@ -3137,12 +3140,12 @@ const handleRefreshModelList = async () => {
       // 更新为新的模型对象
       selectedModel.value = { ...updatedModel }
       loadRemainingUsage(updatedModel.id)
-      console.log('已更新 selectedModel:', selectedModel.value)
+      logger.debug('已更新 selectedModel:', selectedModel.value)
 
       // 如果模型类型从 8 改为其他类型，清空参考图片
       if (oldType === 8 && updatedModel.type !== 8) {
         clearVideoImage()
-        console.log('模型类型已改变，已清空参考图片')
+        logger.debug('模型类型已改变，已清空参考图片')
       }
     }
   }
@@ -3168,9 +3171,9 @@ onMounted(async () => {
         gatewayUrl: openClawConfig.value.gatewayUrl,
         token: openClawConfig.value.token
       })
-      console.log('OpenClaw 连接状态:', isOpenClawConnected.value)
+      logger.debug('OpenClaw 连接状态:', isOpenClawConnected.value)
     } catch (e) {
-      console.error('OpenClaw 连接失败:', e)
+      logger.error('OpenClaw 连接失败:', e)
     }
   }
 

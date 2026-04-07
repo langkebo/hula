@@ -18,6 +18,8 @@ import { getImageCache } from '@/utils/PathUtil.ts'
 import { isPathUploadFile, type UploadFile } from '@/utils/FileType'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Common')
 
 export interface SelectionRange {
   range: Range
@@ -59,7 +61,7 @@ export const useCommon = () => {
     const tempPath = getImageCache(subFolder, userUid.value!)
     const fullPath = `${tempPath}${fileName}`
 
-    console.log(`cache file start: ${fullPath}, size: ${file.size} bytes`)
+    logger.debug(`cache file start: ${fullPath}, size: ${file.size} bytes`)
 
     return new Promise((resolve, reject) => {
       const cacheReader = new FileReader()
@@ -79,7 +81,7 @@ export const useCommon = () => {
           await tempFile.write(new Uint8Array(target.result as ArrayBuffer))
           await tempFile.close()
 
-          console.log(`cache file saved: ${fullPath}, written: ${(target.result as ArrayBuffer).byteLength} bytes`)
+          logger.debug(`cache file saved: ${fullPath}, written: ${(target.result as ArrayBuffer).byteLength} bytes`)
           resolve(fullPath)
         } catch (error) {
           reject(error)
@@ -690,7 +692,7 @@ export const useCommon = () => {
     // 如果file是blob URL格式
     if (typeof file === 'string' && fileStr.startsWith('blob:')) {
       const url = fileStr.replace('blob:', '') // 移除blob:前缀
-      console.log(url)
+      logger.debug('blob URL:', url)
 
       const img = document.createElement('img')
       img.src = url

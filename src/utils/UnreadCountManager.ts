@@ -5,6 +5,9 @@ import { sumBy } from 'es-toolkit'
 import { NotificationTypeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/chat'
 import { isIOS, isMac } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('UnreadCountManager')
 
 /**
  * 统一的未读计数管理器
@@ -115,7 +118,7 @@ export class UnreadCountManager {
       try {
         await invoke('set_ios_badge', { count: countValue ?? null })
       } catch (error) {
-        console.warn('[UnreadCountManager] Failed to set iOS badge', error)
+        logger.warn('Failed to set iOS badge', error)
       }
     }
 

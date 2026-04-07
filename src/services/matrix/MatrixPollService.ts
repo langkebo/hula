@@ -103,7 +103,10 @@ class MatrixPollService {
 
       const pollContent = pollEvent.getContent()
       const votes = await this.getVotes(roomId, pollEventId)
-      const results = this.calculateResults((pollContent['m.poll'] as { answers: { id: string; text: string }[] })?.answers || [], votes)
+      const results = this.calculateResults(
+        (pollContent['m.poll'] as { answers: { id: string; text: string }[] })?.answers || [],
+        votes
+      )
 
       const content: any = {
         msgtype: 'm.poll.end',

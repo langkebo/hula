@@ -42,6 +42,9 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user.ts'
 import { isMac } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('RemoteLoginModal')
 
 const ip = ref('未知IP')
 const showModal = ref(true)
@@ -61,7 +64,7 @@ const assignIpFromPayload = async () => {
       ip.value = payload.ip
     }
   } catch (error) {
-    console.error('获取异地登录信息失败:', error)
+    logger.error('获取异地登录信息失败:', error)
   }
 }
 

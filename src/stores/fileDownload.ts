@@ -7,6 +7,9 @@ import type { FilesMeta } from '@/services/types'
 import { useUserStore } from '@/stores/user'
 import { getFilesMeta } from '@/utils/PathUtil'
 import { isMobile } from '../utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('FileDownloadStore')
 
 export interface FileDownloadStatus {
   /** 文件是否已下载 */
@@ -69,7 +72,7 @@ export const useFileDownloadStore = defineStore(
       fileName: string
       exists?: boolean
     }) => {
-      console.log('触发状态刷新：', options)
+      logger.debug('触发状态刷新：', options)
       const fileStatus = downloadStatusMap.value[options.fileUrl]
 
       const resetStatus = () => {
@@ -100,34 +103,34 @@ export const useFileDownloadStore = defineStore(
       // 如果直接知道文件不存在，那就直接刷新，如果不知道则再做处理
       if (Object.hasOwn(options, 'exists')) {
         if (options.exists && fileStatus?.isDownloaded) {
-          console.log('匹配1')
+          logger.debug('匹配1')
           return
         }
 
         if (options.exists) {
-          console.log('匹配2')
+          logger.debug('匹配2')
           updateSuccess(absolutePath)
           return
         }
 
         if (options.exists && !fileStatus?.isDownloaded) {
-          console.log('匹配3')
+          logger.debug('匹配3')
           updateSuccess(absolutePath)
           return
         }
 
         if (!options.exists && fileStatus?.isDownloaded) {
-          console.log('匹配4')
+          logger.debug('匹配4')
           resetStatus()
           return
         }
 
         if (!options.exists && fileStatus?.isDownloaded) {
-          console.log('匹配5')
+          logger.debug('匹配5')
           resetStatus()
           return
         }
-        console.log('匹配6')
+        logger.debug('匹配6')
 
         resetStatus()
         return
@@ -140,11 +143,11 @@ export const useFileDownloadStore = defineStore(
       if (fileMeta.exists) {
         // 把状态更新为完成
         updateSuccess(absolutePath)
-        console.log('匹配7')
+        logger.debug('匹配7')
       } else {
         // 把状态更新为未完成
         resetStatus()
-        console.log('匹配8')
+        logger.debug('匹配8')
       }
     }
 
@@ -181,7 +184,7 @@ export const useFileDownloadStore = defineStore(
 
         return fileExists
       } catch (error) {
-        console.error('检查文件是否存在失败:', error)
+        logger.error('检查文件是否存在失败:', error)
         return false
       }
     }
@@ -276,11 +279,10 @@ export const useFileDownloadStore = defineStore(
         const absolutePath = await join(baseDirPath, filePath)
 
         finalizeSuccessfulWrite(fileUrl, fileName, absolutePath, filePath)
-        return absolutePath // 返回原生路径格式
+        return absolutePath
       } catch (error) {
-        console.error('文件下载失败:', error)
+        logger.error('文件下载失败:', error)
 
-        // 更新状态为失败
         updateFileStatus(fileUrl, {
           status: 'failed',
           error: error instanceof Error ? error.message : '下载失败'
@@ -311,7 +313,7 @@ export const useFileDownloadStore = defineStore(
         finalizeSuccessfulWrite(fileUrl, fileName, absolutePath, filePath)
         return absolutePath
       } catch (error) {
-        console.error('保存文件失败:', error)
+        logger.error('保存文件失败:', error)
         updateFileStatus(fileUrl, {
           status: 'failed',
           error: error instanceof Error ? error.message : '保存失败'

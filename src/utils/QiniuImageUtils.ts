@@ -1,4 +1,7 @@
 import { useConfigStore } from '@/stores/config'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('QiniuImageUtils')
 
 const extractHostname = (domain?: string) => {
   if (!domain) return null
@@ -21,7 +24,7 @@ const getQiniuHostKeywords = () => {
     // ignore store access errors and fall through to warning
   }
   if (!hasWarnedMissingDomain) {
-    console.warn('未获取到七牛 ossDomain，请检查配置')
+    logger.warn('未获取到七牛 ossDomain，请检查配置')
     hasWarnedMissingDomain = true
   }
   return []

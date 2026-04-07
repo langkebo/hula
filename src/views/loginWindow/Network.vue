@@ -108,6 +108,9 @@
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Network')
 import { darkTheme, lightTheme } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -220,7 +223,7 @@ const handleSave = async () => {
     const settings = JSON.stringify(proxySettings)
     localStorage.setItem('proxySettings', settings)
     await updateTauriSettings(proxySettings)
-    console.log('settings', proxySettings)
+    logger.debug('settings', proxySettings)
 
     window.$message.success(t('login.network.messages.save_success'))
   } catch (error) {

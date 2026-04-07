@@ -22,8 +22,7 @@
         :items="sessionList"
         :item-size="80"
         key-field="roomId"
-        v-slot="{ item }"
-      >
+        v-slot="{ item }">
         <ContextMenu
           :class="getItemClasses(item)"
           :data-key="item.roomId"
@@ -85,7 +84,8 @@
                 </template>
                 <template v-else-if="item.shield">
                   <span class="text flex-1 leading-tight text-12px truncate">
-                    <span :class="globalStore.currentSessionRoomId === item.roomId ? 'color-#d5304f90' : 'color-#909090'">
+                    <span
+                      :class="globalStore.currentSessionRoomId === item.roomId ? 'color-#d5304f90' : 'color-#909090'">
                       {{
                         item.type === RoomTypeEnum.GROUP
                           ? t('message.message_list.shield_group')
@@ -183,8 +183,10 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { useI18n } from 'vue-i18n'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
+const timerManager = useTimerManager()
 const route = useRoute()
 const appWindow = WebviewWindow.getCurrent()
 const chatStore = useChatStore()
@@ -219,7 +221,7 @@ const networkBanner = computed(() => {
   return null
 })
 // 未读清空的定时器
-let clearUnreadTimer: NodeJS.Timeout | null = null
+let clearUnreadTimer: number | null = null
 
 type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
 
@@ -372,10 +374,10 @@ watch(
         const session = chatStore.getSession(currentRoomId)
         // 如果选中的会话有未读数，则延迟2秒后清空并上报
         if (session?.unreadCount && session.unreadCount > 0) {
-          clearUnreadTimer = setTimeout(() => {
+          clearUnreadTimer = timerManager.setTimeout(() => {
             chatStore.markSessionRead(currentRoomId)
             clearUnreadTimer = null
-          }, 2000) // 等待2秒
+          }, 2000)
         }
       }
     }

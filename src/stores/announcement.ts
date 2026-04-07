@@ -4,6 +4,9 @@ import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import { matrixRoomService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AnnouncementStore')
 
 export interface Announcement {
   id: string
@@ -57,7 +60,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
   const loadGroupAnnouncements = async (roomId?: string) => {
     const targetRoomId = roomId ?? globalStore.currentSessionRoomId
     if (!targetRoomId) {
-      console.error('当前会话没有roomId')
+      logger.error('当前会话没有roomId')
       return
     }
 
@@ -112,7 +115,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
       announNum.value = announcements.length
       announError.value = false
     } catch (error) {
-      console.error('加载群公告失败:', error)
+      logger.error('加载群公告失败:', error)
       if (targetRoomId === globalStore.currentSessionRoomId) {
         announError.value = true
       }

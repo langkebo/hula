@@ -7,10 +7,7 @@
     :bordered="false"
     @update:show="$emit('update:visible', $event)">
     <div class="invite-dialog">
-      <n-input
-        v-model:value="searchQuery"
-        :placeholder="t('room.invite.search_placeholder')"
-        clearable>
+      <n-input v-model:value="searchQuery" :placeholder="t('room.invite.search_placeholder')" clearable>
         <template #prefix>
           <svg class="size-16px">
             <use href="#search"></use>
@@ -26,14 +23,8 @@
             class="user-item"
             :class="{ selected: selectedUsers.includes(user.userId) }"
             @click="toggleUser(user.userId)">
-            <n-checkbox
-              :checked="selectedUsers.includes(user.userId)"
-              @update:checked="toggleUser(user.userId)" />
-            <n-avatar
-              round
-              :size="36"
-              :src="user.avatarUrl"
-              :fallback-src="defaultAvatar" />
+            <n-checkbox :checked="selectedUsers.includes(user.userId)" @update:checked="toggleUser(user.userId)" />
+            <n-avatar round :size="36" :src="user.avatarUrl" :fallback-src="defaultAvatar" />
             <div class="user-info">
               <span class="user-name">{{ user.displayName || user.userId }}</span>
               <span class="user-id">{{ user.userId }}</span>
@@ -64,13 +55,9 @@
     <template #footer>
       <div class="dialog-footer">
         <n-button @click="$emit('update:visible', false)">{{ t('common.cancel') }}</n-button>
-        <n-button
-          type="primary"
-          :disabled="selectedUsers.length === 0"
-          :loading="inviting"
-          @click="handleInvite">
+        <n-button type="primary" :disabled="selectedUsers.length === 0" :loading="inviting" @click="handleInvite">
           {{ t('room.invite.invite') }}
-          <template v-if="selectedUsers.length > 0"> ({{ selectedUsers.length }}) </template>
+          <template v-if="selectedUsers.length > 0">({{ selectedUsers.length }})</template>
         </n-button>
       </div>
     </template>
@@ -81,6 +68,8 @@
 import { useI18n } from 'vue-i18n'
 import { matrixSearchService } from '@/services/matrix'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('InviteDialog')
 
 const props = defineProps<{
   visible: boolean
@@ -118,7 +107,7 @@ const searchUsers = async (query: string) => {
     const results = await matrixSearchService.searchUsers(query)
     searchResults.value = results
   } catch (error) {
-    console.error('[InviteDialog] 搜索用户失败:', error)
+    logger.error('搜索用户失败:', error)
   }
 }
 
@@ -160,7 +149,7 @@ const handleInvite = async () => {
     emit('update:visible', false)
     selectedUsers.value = []
   } catch (error) {
-    console.error('[InviteDialog] 邀请失败:', error)
+    logger.error('邀请失败:', error)
     window.$message?.error(t('room.invite.failed'))
   } finally {
     inviting.value = false

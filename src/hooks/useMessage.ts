@@ -25,6 +25,9 @@ const registerShrinkListener = () => {
   })
 }
 
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Message')
+
 export const useMessage = () => {
   const { t } = useI18n()
   const globalStore = useGlobalStore()
@@ -61,7 +64,7 @@ export const useMessage = () => {
     msgBoxShow.value = true
     // 更新当前会话信息
     const roomId = item.roomId
-    console.log('[handleMsgClick] 点击会话:', roomId, 'UI未读数:', item.unreadCount)
+    logger.debug('点击会话:', roomId, 'UI未读数:', item.unreadCount)
 
     globalStore.updateCurrentSessionRoomId(roomId)
 
@@ -72,7 +75,7 @@ export const useMessage = () => {
     try {
       await ensureGroupMembersSynced(roomId, item.type)
     } catch (error) {
-      console.error('[useMessage] 同步群成员失败:', error)
+      logger.error('同步群成员失败:', error)
     }
   }
 
@@ -117,7 +120,7 @@ export const useMessage = () => {
   /** 处理双击事件 */
   const handleMsgDblclick = (item: SessionItem) => {
     if (!chat.value.isDouble) return
-    console.log(item)
+    logger.debug('双击消息项:', item)
   }
 
   const menuList = ref<OPT.RightMenu[]>([
@@ -290,7 +293,7 @@ export const useMessage = () => {
         return 'logout'
       },
       click: async (item: SessionItem) => {
-        console.log('删除好友或退出群聊执行')
+        logger.debug('删除好友或退出群聊执行')
         // 单聊：删除好友
         if (item.type === RoomTypeEnum.SINGLE) {
           if (!item.detailId) return

@@ -219,9 +219,7 @@
         <n-form-item label="Identity Server URL">
           <n-input v-model:value="identityServerUrl" placeholder="https://vector.im" clearable />
         </n-form-item>
-        <n-alert type="info" :bordered="false">
-          修改服务器配置后需要重新登录
-        </n-alert>
+        <n-alert type="info" :bordered="false">修改服务器配置后需要重新登录</n-alert>
       </n-flex>
     </n-modal>
   </n-config-provider>
@@ -249,8 +247,12 @@ import { useLogin } from '@/hooks/useLogin'
 import { formatBottomText } from '@/utils/Formatting'
 import { ThemeEnum } from '@/enums'
 import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
+const logger = createLogger('Login')
+const timerManager = useTimerManager()
 
 const settingStore = useSettingStore()
 const { themes } = storeToRefs(settingStore)
@@ -287,7 +289,7 @@ let autoLoginTimer: number | null = null
 
 const clearAutoLoginTimer = () => {
   if (autoLoginTimer !== null) {
-    window.clearTimeout(autoLoginTimer)
+    timerManager.clearTimeout(autoLoginTimer)
     autoLoginTimer = null
   }
   autoLoginPending.value = false
@@ -300,7 +302,7 @@ const startAutoLoginCountdown = () => {
   }
   clearAutoLoginTimer()
   autoLoginPending.value = true
-  autoLoginTimer = window.setTimeout(() => {
+  autoLoginTimer = timerManager.setTimeout(() => {
     autoLoginPending.value = false
     autoLoginTimer = null
     normalLogin('PC', true, true)
@@ -415,7 +417,7 @@ const isJumpDirectly = ref(false)
 const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url))
 
 timerWorker.onerror = (error) => {
-  console.error('[Worker Error]', error)
+  logger.error('Worker Error', error)
 }
 
 timerWorker.onmessage = (e) => {
@@ -506,7 +508,7 @@ const handlePendingRemoteLoginPayload = async () => {
       openRemoteLoginModal(payload.remoteLogin.ip)
     }
   } catch (error) {
-    console.error('处理异地登录载荷失败:', error)
+    logger.error('处理异地登录载荷失败:', error)
   }
 }
 

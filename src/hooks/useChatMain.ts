@@ -21,6 +21,8 @@ import { useDownload } from '@/hooks/useDownload'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import type { FilesMeta, RightMouseMessageItem } from '@/services/types.ts'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('ChatMain')
 
 /** 上下文菜单项目类型 - 支持从 fromUser.uid 或直接 uid 获取用户ID */
 type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<string, unknown>
@@ -131,7 +133,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       }
       groupNicknameModalVisible.value = false
     } catch (error) {
-      console.error('修改群昵称失败', error)
+      logger.error('修改群昵称失败', error)
       groupNicknameSubmitting.value = false
     }
   }
@@ -177,7 +179,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     try {
       await revealItemInDir(targetPath)
     } catch (error) {
-      console.error('在文件夹中显示文件失败:', error)
+      logger.error('在文件夹中显示文件失败:', error)
       window.$message?.error(t('home.chat_main.file.show_failed'))
     }
   }
@@ -339,7 +341,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           const absolutePath = await join(baseDirPath, localPath)
           await revealInDirSafely(absolutePath)
         } catch (error) {
-          console.error('Failed to show video in folder:', error)
+          logger.error('Failed to show video in folder:', error)
         }
       }
     }
@@ -378,7 +380,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
             text: translatedText || content
           }
         } catch (error) {
-          console.error('翻译失败:', error)
+          logger.error('翻译失败:', error)
           item.message.body.translatedText = { provider: 'error', text: t('home.chat_main.translate.failed') }
         }
       },
@@ -466,7 +468,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
               label: () => (isMac() ? t('menu.show_in_finder') : t('menu.show_in_folder')),
               icon: 'file2',
               click: async (item: RightMouseMessageItem) => {
-                console.log('打开文件夹的item项：', item)
+                logger.debug('打开文件夹的item项：', item)
 
                 const fileUrl = item.message.body.url
                 const fileName = item.message.body.fileName || extractFileName(fileUrl)
@@ -474,7 +476,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
                 // 检查文件是否已下载
                 const fileStatus = fileDownloadStore.getFileStatus(fileUrl)
 
-                console.log('找到的文件状态：', fileStatus)
+                logger.debug('找到的文件状态:', fileStatus)
                 const currentChatRoomId = globalStore.currentSessionRoomId // 这个id可能为群id可能为用户uid，所以不能只用用户uid
                 const currentUserUid = userStore.userInfo!.uid as string
 
@@ -540,7 +542,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       label: () => t('menu.preview'),
       icon: 'preview-open',
       click: (item: RightMouseMessageItem) => {
-        console.log('预览文件的参数：', item)
+        logger.debug('预览文件的参数:', item)
         nextTick(async () => {
           const path = 'previewFile'
           const LABEL = 'previewFile'
@@ -628,10 +630,10 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           } catch (error) {
             // 本地信息获取失败，可能是路径非法或 RPC 异常，兜底走远程解析
             await fallbackToRemotePayload()
-            console.error('检查文件出错：', error)
+            logger.error('检查文件出错:', error)
           }
 
-          console.log('预览时刷新下载状态')
+          logger.debug('预览时刷新下载状态')
           await fileDownloadStore.refreshFileDownloadStatus({
             fileUrl: item.message.body.url,
             roomId: currentChatRoomId,
@@ -666,7 +668,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       label: () => (isMac() ? t('menu.show_in_finder') : t('menu.show_in_folder')),
       icon: 'file2',
       click: async (item: RightMouseMessageItem) => {
-        console.log('打开文件夹的item项：', item)
+        logger.debug('打开文件夹的item项:', item)
 
         const fileUrl = item.message.body.url
         const fileName = item.message.body.fileName || extractFileName(fileUrl)
@@ -674,7 +676,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         // 检查文件是否已下载
         const fileStatus = fileDownloadStore.getFileStatus(fileUrl)
 
-        console.log('找到的文件状态：', fileStatus)
+        logger.debug('找到的文件状态:', fileStatus)
         const currentChatRoomId = globalStore.currentSessionRoomId // 这个id可能为群id可能为用户uid，所以不能只用用户uid
         const currentUserUid = userStore.userInfo!.uid as string
 
@@ -753,7 +755,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
             await downloadFile(imageUrl, savePath)
           }
         } catch (error) {
-          console.error('保存图片失败:', error)
+          logger.error('保存图片失败:', error)
           window.$message.error(t('home.chat_main.image.save_failed'))
         }
       }
@@ -1236,7 +1238,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           const successMessage = imageFormat === 'PNG' ? '图片已复制到剪贴板' : '图片已转换为 PNG 格式并复制到剪贴板'
           window.$message?.success(successMessage)
         } catch (imageError) {
-          console.error('图片复制失败:', imageError)
+          logger.error('图片复制失败:', imageError)
         }
       } else {
         // 如果是纯文本
@@ -1245,7 +1247,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         window.$message?.success(message)
       }
     } catch (error) {
-      console.error('复制失败:', error)
+      logger.error('复制失败:', error)
     }
   }
 
@@ -1290,7 +1292,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       modalShow.value = false
       window.$message?.success('消息已删除')
     } catch (error) {
-      console.error('删除消息失败:', error)
+      logger.error('删除消息失败:', error)
     }
   }
 

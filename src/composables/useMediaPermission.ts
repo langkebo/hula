@@ -1,5 +1,7 @@
 import { createSharedComposable, createEventHook } from '@vueuse/core'
 import { ref, readonly } from 'vue'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('MediaPermission')
 
 export type MediaPermission = 'granted' | 'denied' | 'default' | 'unsupported'
 export type MediaDeviceKind = 'audioinput' | 'audiooutput' | 'videoinput'
@@ -54,11 +56,7 @@ const useSharedMediaPermission = createSharedComposable(() => {
 
     try {
       const constraints: MediaStreamConstraints =
-        mediaType === 'audio'
-          ? { audio: true }
-          : mediaType === 'video'
-            ? { video: true }
-            : { audio: true, video: true }
+        mediaType === 'audio' ? { audio: true } : mediaType === 'video' ? { video: true } : { audio: true, video: true }
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints)
       stream.getTracks().forEach((track) => track.stop())
@@ -82,7 +80,9 @@ const useSharedMediaPermission = createSharedComposable(() => {
     try {
       const allDevices = await navigator.mediaDevices.enumerateDevices()
       const mediaDevices: MediaDevice[] = allDevices
-        .filter((device) => device.kind === 'audioinput' || device.kind === 'audiooutput' || device.kind === 'videoinput')
+        .filter(
+          (device) => device.kind === 'audioinput' || device.kind === 'audiooutput' || device.kind === 'videoinput'
+        )
         .map((device) => ({
           deviceId: device.deviceId,
           label: device.label || `${device.kind} (${device.deviceId.slice(0, 8)})`,
@@ -96,7 +96,7 @@ const useSharedMediaPermission = createSharedComposable(() => {
 
       return mediaDevices
     } catch (err) {
-      console.warn('[MediaPermission] 获取设备列表失败:', err)
+      logger.warn('获取设备列表失败:', err)
       return []
     }
   }

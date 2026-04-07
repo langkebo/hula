@@ -25,10 +25,7 @@
                   </div>
                 </template>
                 <template #value>
-                  <van-picker
-                    v-model="selectedProvider"
-                    :columns="providerColumns"
-                    @change="handleProviderChange" />
+                  <van-picker v-model="selectedProvider" :columns="providerColumns" @change="handleProviderChange" />
                 </template>
               </van-cell>
             </van-cell-group>
@@ -249,6 +246,9 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AiAssistant')
 
 const { t } = useI18n()
 
@@ -430,7 +430,7 @@ function loadCharacters() {
       characters.value = []
     }
   } catch (err) {
-    console.error('[AiAssistant] 加载角色列表失败:', err)
+    logger.error('加载角色列表失败:', err)
     characters.value = []
   }
 }
@@ -446,7 +446,7 @@ function loadConversations() {
       }
     }
   } catch (err) {
-    console.error('[AiAssistant] 加载对话列表失败:', err)
+    logger.error('加载对话列表失败:', err)
     conversations.value = []
   }
 }
@@ -461,7 +461,7 @@ function loadMessages(conversationId: string) {
       messages.value = []
     }
   } catch (err) {
-    console.error('[AiAssistant] 加载消息列表失败:', err)
+    logger.error('加载消息列表失败:', err)
     messages.value = []
   }
 }
@@ -526,7 +526,7 @@ async function deleteCharacter(id: string) {
     }
     showToast(t('ai_assistant.character_deleted'))
   } catch (err) {
-    console.error('[AiAssistant] 删除角色失败:', err)
+    logger.error('删除角色失败:', err)
   }
 }
 
@@ -560,7 +560,7 @@ async function saveCharacter() {
     editingCharacter.value = null
     characterForm.value = { name: '', description: '', systemPrompt: '' }
   } catch (err) {
-    console.error('[AiAssistant] 保存角色失败:', err)
+    logger.error('保存角色失败:', err)
   }
 }
 
@@ -575,7 +575,7 @@ function loadApiKeySettings() {
       apiKeySettings.value = JSON.parse(stored)
     }
   } catch (e) {
-    console.warn('[AiAssistant] 加载 API 设置失败:', e)
+    logger.warn('加载 API 设置失败:', e)
   }
 }
 
@@ -590,7 +590,7 @@ function loadProviderSettings() {
       selectedProvider.value = stored as AIProvider
     }
   } catch (e) {
-    console.warn('[AiAssistant] 加载 Provider 设置失败:', e)
+    logger.warn('加载 Provider 设置失败:', e)
   }
 }
 
@@ -602,7 +602,7 @@ async function testConnection() {
   try {
     const response = await fetch(`${apiKeySettings.value.baseUrl}/v1/models`, {
       headers: {
-        'Authorization': `Bearer ${apiKeySettings.value.apiKey}`
+        Authorization: `Bearer ${apiKeySettings.value.apiKey}`
       }
     })
     if (response.ok) {
@@ -612,7 +612,7 @@ async function testConnection() {
       showToast(t('ai_assistant.connection_failed'))
     }
   } catch (err) {
-    console.error('[AiAssistant] 测试连接失败:', err)
+    logger.error('测试连接失败:', err)
     showToast(t('ai_assistant.connection_failed'))
   }
 }
@@ -682,7 +682,7 @@ async function handleSend() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKeySettings.value.apiKey}`
+        Authorization: `Bearer ${apiKeySettings.value.apiKey}`
       },
       body: JSON.stringify({
         model: selectedModel.value?.id,

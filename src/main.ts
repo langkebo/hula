@@ -14,13 +14,16 @@ import { invoke } from '@tauri-apps/api/core'
 import App from '@/App.vue'
 import VueVirtualScroller from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Main')
 
 initializePlatform()
 startWebVitalObserver()
 
 if (isIOS()) {
   invoke('request_ios_badge_authorization').catch((error) => {
-    console.warn('[HuLaBadge] 请求 iOS 角标权限失败', error)
+    logger.warn('请求 iOS 角标权限失败', error)
   })
 }
 

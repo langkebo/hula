@@ -58,6 +58,9 @@ import type { EmojiBody, MsgType } from '@/services/types'
 import { getRemoteFileSize } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Emoji')
+
 const props = defineProps<{
   body: EmojiBody
   onImageClick?: (url: string) => void
@@ -79,7 +82,7 @@ const displayEmojiSrc = computed(() => localEmojiSrc.value || props.body?.url ||
 
 const handleImageError = () => {
   isError.value = true
-  console.error('表情包加载失败:', props.body.url)
+  logger.error('表情包加载失败:', props.body.url)
 }
 
 const handleOpenImage = () => {
@@ -115,7 +118,7 @@ const ensureLocalEmoji = async () => {
       return
     }
   } catch (error) {
-    console.warn('[Emoji] 检查本地表情失败:', error)
+    logger.warn('检查本地表情失败:', error)
   }
   localEmojiSrc.value = null
   await maybeDownloadEmoji()
@@ -138,7 +141,7 @@ const maybeDownloadEmoji = async () => {
       localEmojiSrc.value = convertFileSrc(path)
     }
   } catch (error) {
-    console.warn('[Emoji] 自动下载失败:', error)
+    logger.warn('自动下载失败:', error)
   }
 }
 

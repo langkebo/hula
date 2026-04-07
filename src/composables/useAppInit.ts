@@ -37,6 +37,9 @@ import {
   WsResponseMessageType
 } from '@/enums'
 
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('AppInit')
+
 export function useAppInit() {
   const userStore = useUserStore()
   const contactStore = useContactStore()
@@ -52,7 +55,7 @@ export function useAppInit() {
   const { addListener } = useTauriListener()
   const { initializeGlobalShortcut, cleanupGlobalShortcut } = useGlobalShortcut()
 
-  const { themes, lockScreen, page } = storeToRefs(settingStore)
+  const { themes, page } = storeToRefs(settingStore)
 
   // 检查是否为当前用户
   const isSelfUser = (uid: string): boolean => {
@@ -91,7 +94,7 @@ export function useAppInit() {
       }
       await Promise.allSettled(tasks)
     } catch (error) {
-      console.error('[Network] 刷新群成员失败:', error)
+      logger.error('刷新群成员失败:', error)
     }
   }
 
@@ -151,7 +154,7 @@ export function useAppInit() {
     try {
       await groupStore.getGroupUserList(roomId, true)
     } catch (error) {
-      console.error('初始化群成员失败:', error)
+      logger.error('初始化群成员失败:', error)
     }
   }
 
@@ -172,7 +175,7 @@ export function useAppInit() {
     const currentSession = globalStore.currentSession
     const targetUid = remoteUid || currentSession?.detailId
     if (!targetUid) {
-      console.warn('[App] 当前会话尚未就绪或无法解析对端用户，忽略通话事件')
+      logger.warn('当前会话尚未就绪或无法解析对端用户，忽略通话事件')
       return
     }
     if (isMobile()) {
@@ -203,7 +206,7 @@ export function useAppInit() {
 
   // 处理新好友申请
   const handleNewFriend = async (data: { uid: number; unReadCount4Friend: number; unReadCount4Group: number }) => {
-    console.log('收到好友申请')
+    logger.debug('收到好友申请')
     globalStore.unReadMark.newFriendUnreadCount = data.unReadCount4Friend || 0
     globalStore.unReadMark.newGroupUnreadCount = data.unReadCount4Group || 0
     unreadCountManager.refreshBadge(globalStore.unReadMark)
@@ -346,7 +349,7 @@ export function useAppInit() {
 
       if (isWindows10()) {
         void appWindow.setShadow(false).catch((error) => {
-          console.warn('禁用窗口阴影失败:', error)
+          logger.warn('禁用窗口阴影失败:', error)
         })
       }
 
@@ -482,7 +485,7 @@ export function useAppInit() {
             await announcementStore.loadGroupAnnouncements()
           }
         } catch (error) {
-          console.error('会话切换处理失败:', error)
+          logger.error('会话切换处理失败:', error)
         }
       })
     })
@@ -529,7 +532,7 @@ export function useAppInit() {
     watch(
       () => themes.value.versatile,
       async (val, oldVal) => {
-        console.log(val)
+        logger.debug('主题切换:', val)
         await import(`@/styles/scss/theme/${val}.scss`)
         const app = document.querySelector('#app')?.classList as DOMTokenList
         app.remove(oldVal as string)

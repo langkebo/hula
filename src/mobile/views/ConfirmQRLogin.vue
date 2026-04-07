@@ -44,9 +44,14 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import dayjs from 'dayjs'
 import router from '@/router'
 import { matrixQrLoginService } from '@/services/matrix'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('ConfirmQRLogin')
+const timerManager = useTimerManager()
 
 const now = ref(dayjs()) // 当前时间对象
 
@@ -54,7 +59,7 @@ const nowFormatted = computed(() => now.value.format('YYYY-MM-DD HH:mm:ss'))
 
 // 倒计时
 const countdown = ref(0)
-let timer: number | null = null
+let timer: ReturnType<typeof setInterval> | null = null
 
 const props = defineProps({
   ip: String,
@@ -72,7 +77,7 @@ const handleConfirmLogin = async () => {
 
     router.push('/mobile/message')
   } catch (error) {
-    console.error('确认登录出错：', error)
+    logger.error('确认登录出错：', error)
   }
 }
 
@@ -87,17 +92,17 @@ onMounted(() => {
   }
 
   // 开启定时器
-  timer = window.setInterval(() => {
+  timer = timerManager.setInterval(() => {
     if (countdown.value > 0) {
       countdown.value--
     } else {
-      if (timer) clearInterval(timer)
+      if (timer) timerManager.clearInterval(timer)
     }
   }, 1000)
 })
 
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
+  if (timer) timerManager.clearInterval(timer)
 })
 </script>
 

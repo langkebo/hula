@@ -71,6 +71,9 @@ import { RoomTypeEnum } from '@/enums'
 import { getFilesMeta } from '@/utils/PathUtil'
 import FileUtil from '@/utils/FileUtil'
 import type { FilesMeta } from '@/services/types'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Layout')
 
 const { t } = useI18n()
 const route = useRoute()
@@ -99,7 +102,7 @@ const { overlayVisible, markAsyncLoaded } = useOverlayController({
 
 const { isPrivacyMode, settings, enterPrivateChat, leavePrivateChat, generateWatermark } = usePrivacyProtection({
   onPrivacyChange: (isPrivate) => {
-    console.info('[Layout] 隐私模式变更:', isPrivate)
+    logger.info('隐私模式变更:', isPrivate)
   }
 })
 
@@ -147,7 +150,7 @@ const runInitWithMode = (_block: boolean) => {
   })
 
   return p.catch((error) => {
-    console.error('[layout] 初始化失败:', error)
+    logger.error('初始化失败:', error)
     throw error
   })
 }
@@ -227,9 +230,8 @@ const tauriFileDropUnlisteners: UnlistenFn[] = []
 // 导入Web Worker
 const timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url))
 
-// 添加错误处理
 timerWorker.onerror = (error) => {
-  console.error('[Worker Error]', error)
+  logger.error('Worker Error', error)
 }
 
 // 监听 Worker 消息
@@ -284,7 +286,7 @@ const playMessageSound = async () => {
     audio.volume = Math.min(1, Math.max(0, volume / 100))
     await audioManager.play(audio, 'message-notification')
   } catch (error) {
-    console.warn('播放消息音效失败:', error)
+    logger.warn('播放消息音效失败:', error)
   }
 }
 
@@ -391,8 +393,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
             await home.requestUserAttention(UserAttentionType.Critical)
           }
         } catch (error) {
-          console.warn('检查窗口状态失败:', error)
-          // 如果检查失败，默认播放音效
+          logger.warn('检查窗口状态失败:', error)
           shouldPlaySound = true
         }
       } else {
@@ -432,7 +433,7 @@ const buildPathUploadFiles = async (paths: string[]) => {
     const filesMeta = (await getFilesMeta<FilesMeta>(paths)) ?? []
     return await FileUtil.map2PathUploadFile(paths, filesMeta)
   } catch (error) {
-    console.error('[layout] 解析拖拽文件元数据失败:', error)
+    logger.error('解析拖拽文件元数据失败:', error)
     window.$message?.error?.('解析拖拽文件失败')
     return []
   }
@@ -448,7 +449,7 @@ const handleNativeFileDrop = async (paths: string[]) => {
       window.$message?.error?.('无法识别拖拽的文件')
     }
   } catch (error) {
-    console.error('[layout] 处理原生拖拽文件失败:', error)
+    logger.error('处理原生拖拽文件失败:', error)
   } finally {
     isDraggingFiles.value = false
   }
@@ -476,7 +477,7 @@ const setupNativeFileDropListeners = async () => {
     })
     tauriFileDropUnlisteners.push(unlisten)
   } catch (error) {
-    console.error('[layout] 注册原生文件拖拽监听失败:', error)
+    logger.error('注册原生文件拖拽监听失败:', error)
   }
 }
 
@@ -501,7 +502,7 @@ onBeforeMount(async () => {
       try {
         await groupStore.getGroupUserList(globalStore.currentSessionRoomId, true)
       } catch (error) {
-        console.error('[layout] 页面初始化：刷新群成员列表失败', error)
+        logger.error('页面初始化：刷新群成员列表失败', error)
       }
     }
   }
@@ -528,7 +529,7 @@ onMounted(async () => {
           await emitTo('tray', 'home_focus', {})
           await emitTo('notify', 'home_focus', {})
         } catch (error) {
-          console.warn('[layout] 向其他窗口广播聚焦事件失败:', error)
+          logger.warn('向其他窗口广播聚焦事件失败:', error)
         }
       })
 
@@ -537,7 +538,7 @@ onMounted(async () => {
           await emitTo('tray', 'home_blur', {})
           await emitTo('notify', 'home_blur', {})
         } catch (error) {
-          console.warn('[layout] 向其他窗口广播失焦事件失败:', error)
+          logger.warn('向其他窗口广播失焦事件失败:', error)
         }
       })
     }

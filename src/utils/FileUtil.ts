@@ -6,6 +6,9 @@ import type { PathUploadFile } from '@/utils/FileType'
 import { extractFileName } from '@/utils/Formatting'
 import { useUserStore } from '../stores/user'
 import { getFilesMeta } from './PathUtil'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('FileUtil')
 
 class FileUtil {
   private static _userStore: ReturnType<typeof useUserStore> | null = null
@@ -60,7 +63,7 @@ class FileUtil {
         try {
           await copyFile(filePathStr, await join(userResourceDir, fileMeta.name))
         } catch (error) {
-          console.error('[FileUtil] 复制文件失败:', error)
+          logger.error('复制文件失败:', error)
         }
       }
     }
@@ -83,7 +86,7 @@ class FileUtil {
         try {
           size = (await stat(path)).size
         } catch (error) {
-          console.error('[FileUtil] 获取文件大小失败:', error)
+          logger.error('获取文件大小失败:', error)
         }
 
         return {

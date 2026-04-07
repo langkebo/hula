@@ -6,6 +6,9 @@
  */
 
 import { IndexedDBStore, LocalStorageCryptoStore, type MatrixClient, type Room } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('IndexedDB')
 
 /**
  * 内存使用统计
@@ -65,7 +68,7 @@ class StorageService {
    */
   async initialize(client: MatrixClient, config?: Partial<StorageConfig>): Promise<void> {
     if (this.isInitialized) {
-      console.warn('[Storage] 已经初始化')
+      logger.warn('已经初始化')
       return
     }
 
@@ -79,7 +82,7 @@ class StorageService {
     this.startMemoryMonitoring()
 
     this.isInitialized = true
-    console.log('[Storage] 初始化完成')
+    logger.debug('初始化完成')
   }
 
   /**
@@ -94,7 +97,7 @@ class StorageService {
       this.checkMemoryUsage()
     }, MEMORY_CHECK_INTERVAL)
 
-    console.log('[Storage] 内存监控已启动')
+    logger.debug('内存监控已启动')
   }
 
   /**
@@ -112,14 +115,11 @@ class StorageService {
 
     // 如果超过警告阈值，发出警告
     if (usageRatio >= MEMORY_WARNING_THRESHOLD) {
-      console.warn(
-        `[Storage] 内存使用率达到 ${Math.round(usageRatio * 100)}%，建议清理缓存`
-      )
+      logger.warn(`内存使用率达到 ${Math.round(usageRatio * 100)}%，建议清理缓存`)
     }
 
-    // 如果超过最大值，触发自动清理
     if (this.memoryStats.estimatedSize >= this.config.maxMemoryBytes) {
-      console.warn('[Storage] 内存使用超过阈值，触发自动清理')
+      logger.warn('内存使用超过阈值，触发自动清理')
       this.performMemoryCleanup()
     }
   }
@@ -135,17 +135,10 @@ class StorageService {
       this.memoryStats.actionCount = Math.floor(this.memoryStats.actionCount * 0.5)
       this.memoryStats.lastCleanup = Date.now()
 
-      console.log('[Storage] 内存清理完成')
+      logger.debug('内存清理完成')
     } catch (error) {
-      console.error('[Storage] 内存清理失败:', error)
+      logger.error('内存清理失败:', error)
     }
-  }
-
-  /**
-   * 记录操作（用于内存统计）
-   */
-  private recordAction(): void {
-    this.memoryStats.actionCount++
   }
 
   /**
@@ -187,14 +180,13 @@ class StorageService {
     if (this.config.enableCryptoStore) {
       try {
         const _cryptoStore = new LocalStorageCryptoStore(window.localStorage)
-        // 注意：加密存储需要在 client 初始化时设置
-        console.log('[Storage] 加密存储已配置')
+        logger.debug('加密存储已配置')
       } catch (e) {
-        console.warn('[Storage] 加密存储配置失败:', e)
+        logger.warn('加密存储配置失败:', e)
       }
     }
 
-    console.log('[Storage] 存储已配置')
+    logger.debug('存储已配置')
   }
 
   /**
@@ -320,7 +312,7 @@ class StorageService {
 
     await this.client.store.deleteAllData()
     this.isInitialized = false
-    console.log('[Storage] 所有数据已清除')
+    logger.debug('所有数据已清除')
   }
 
   /**
@@ -330,7 +322,7 @@ class StorageService {
     if (this.memoryCheckInterval) {
       window.clearInterval(this.memoryCheckInterval)
       this.memoryCheckInterval = null
-      console.log('[Storage] 内存监控已停止')
+      logger.debug('内存监控已停止')
     }
   }
 

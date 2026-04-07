@@ -1,4 +1,4 @@
-import { ref, readonly, computed, shallowReadonly } from 'vue'
+import { ref, computed, shallowReadonly } from 'vue'
 import type { AIProviderType, AIProvider, AIChatRequest, AIChatResponse, AIChatChunk } from './ai-provider'
 import { openClawClient } from './openclaw/OpenClawService'
 import { trendRadarClient } from './trendradar/TrendRadarService'
@@ -10,7 +10,7 @@ class AIProviderManager {
   private _currentProviderType = ref<AIProviderType>('openclaw')
   private _lastError = ref<string | null>(null)
   private _initialized = ref(false)
-  
+
   private providers: Partial<Record<AIProviderType, AIProvider>> = {}
 
   get state() {
@@ -41,7 +41,7 @@ class AIProviderManager {
       }
     })
   }
-  
+
   private getActiveProvider(): AIProvider | undefined {
     return this.providers[this._currentProviderType.value]
   }
@@ -50,29 +50,29 @@ class AIProviderManager {
     if (this._initialized.value) {
       return
     }
-    
+
     // Initialize available providers
     this.providers['openclaw'] = openClawClient as unknown as AIProvider
     this.providers['trendradar'] = trendRadarClient as unknown as AIProvider
-    
+
     // Default to OpenClaw
     this._currentProviderType.value = 'openclaw'
-    
+
     this._initialized.value = true
   }
 
   async setProvider(type: AIProviderType): Promise<void> {
     if (this._currentProviderType.value === type) return
-    
+
     // Disconnect current provider if connected
     const current = this.getActiveProvider()
     if (current && current.state === 'connected') {
       current.disconnect()
     }
-    
+
     this._currentProviderType.value = type
     this._connectionState.value = 'disconnected'
-    
+
     // Automatically connect to the new provider
     await this.connect()
   }
@@ -90,7 +90,7 @@ class AIProviderManager {
       if (!provider) {
         throw new Error(`Provider ${this._currentProviderType.value} is not implemented yet`)
       }
-      
+
       await provider.connect()
       this._connectionState.value = 'connected'
     } catch (err) {
@@ -112,10 +112,10 @@ class AIProviderManager {
     const targetType = type || this._currentProviderType.value
     const provider = this.providers[targetType]
     if (!provider) return false
-    
+
     return provider.testConnection()
   }
-  
+
   async chat(request: AIChatRequest): Promise<AIChatResponse> {
     const provider = this.getActiveProvider()
     if (!provider) {

@@ -1,5 +1,5 @@
 import { info, error, warn } from '@tauri-apps/plugin-log'
-import { ref, shallowRef } from 'vue'
+import { ref } from 'vue'
 
 export interface TrendRadarTool {
   name: string

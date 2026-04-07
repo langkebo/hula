@@ -133,8 +133,10 @@
 import { useI18n } from 'vue-i18n'
 import { matrixVoiceService, type VoiceUploadProgress } from '@/services/matrix/MatrixVoiceService'
 import { info, error as logError } from '@tauri-apps/plugin-log'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
+const timerManager = useTimerManager()
 
 const props = defineProps<{
   roomId: string
@@ -170,7 +172,7 @@ let audioChunks: Blob[] = []
 let audioContext: AudioContext | null = null
 let analyser: AnalyserNode | null = null
 let previewAudio: HTMLAudioElement | null = null
-let recordingInterval: ReturnType<typeof setInterval> | null = null
+let recordingInterval: number | null = null
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60)
@@ -217,7 +219,7 @@ const startRecording = async () => {
     isRecording.value = true
     recordingTime.value = 0
 
-    recordingInterval = setInterval(() => {
+    recordingInterval = timerManager.setInterval(() => {
       recordingTime.value++
 
       if (analyser) {
@@ -287,18 +289,18 @@ const handleSend = async () => {
     )
 
     emit('send', {
-        type: 'm.voice',
-        content: {
-          msgtype: 'm.audio',
-          body: `Voice message (${recordingDuration.value}s)`,
-          url: result.content_uri,
-          info: {
-            duration: recordingDuration.value,
-            mimetype: 'audio/webm',
-            size: audioBlob.value.size
-          }
+      type: 'm.voice',
+      content: {
+        msgtype: 'm.audio',
+        body: `Voice message (${recordingDuration.value}s)`,
+        url: result.content_uri,
+        info: {
+          duration: recordingDuration.value,
+          mimetype: 'audio/webm',
+          size: audioBlob.value.size
         }
-      } as any)
+      }
+    } as any)
 
     info(`[VoiceRecorder] 语音上传成功: ${result.content_uri}`)
     resetState()
@@ -331,7 +333,7 @@ const resetState = () => {
   }
 
   if (recordingInterval) {
-    clearInterval(recordingInterval)
+    timerManager.clearInterval(recordingInterval)
     recordingInterval = null
   }
 }
@@ -341,6 +343,7 @@ onUnmounted(() => {
   if (audioContext) {
     audioContext.close()
   }
+  timerManager.clearAll()
 })
 </script>
 

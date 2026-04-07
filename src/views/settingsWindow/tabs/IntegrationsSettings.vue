@@ -126,6 +126,9 @@
 import { ref, onMounted } from 'vue'
 import { NSwitch, NButton, NDivider, NSpin, NEmpty, NInput, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('IntegrationsSettings')
 
 defineOptions({
   name: 'IntegrationsSettings'
@@ -206,7 +209,7 @@ function loadSavedSettings() {
     try {
       permissions.value = JSON.parse(savedPermissions)
     } catch (e) {
-      console.error('Failed to parse saved permissions')
+      logger.error('Failed to parse saved permissions')
     }
   }
 }

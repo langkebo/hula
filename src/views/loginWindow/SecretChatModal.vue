@@ -14,9 +14,7 @@
               <use href="#lock"></use>
             </svg>
             <span class="text-(14px [--text-color]) font-bold">私密聊天</span>
-            <div class="text-(13px [--text-color-tertiary]) text-center px-8px leading-relaxed">
-              请输入私密聊天密码
-            </div>
+            <div class="text-(13px [--text-color-tertiary]) text-center px-8px leading-relaxed">请输入私密聊天密码</div>
           </n-flex>
 
           <n-form ref="formRef" :model="formValue" :rules="rules" class="w-full px-8px">
@@ -28,8 +26,7 @@
                 size="large"
                 @keyup.enter="handleConfirm"
                 show-password-on="click"
-                :disabled="loading">
-              </n-input>
+                :disabled="loading"></n-input>
             </n-form-item>
           </n-form>
 
@@ -61,6 +58,9 @@ import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
 import { isMac } from '@/utils/PlatformConstants'
 import { useI18n } from '@/plugins/i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SecretChatModal')
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
@@ -106,7 +106,7 @@ const handleConfirm = async () => {
     }
   } catch (error) {
     errorMsg.value = '验证失败'
-    console.error('私密聊天密码验证失败:', error)
+    logger.error('私密聊天密码验证失败:', error)
   } finally {
     loading.value = false
   }

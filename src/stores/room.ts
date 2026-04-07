@@ -8,8 +8,30 @@ import { useMatrixStore } from './matrix'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import matrixRoomService from '@/services/matrix/MatrixRoomService'
 import { LRUCache } from '@/utils/LRUCache'
+import type { MessageType } from '@/services/types'
 
-type MessageType = any
+type TimelineEvent = {
+  event_id: string
+  type: string
+  sender: string
+  content: {
+    body?: string
+    msgtype?: string
+    [key: string]: unknown
+  }
+  origin_server_ts: number
+}
+
+type TimelineUpdate = {
+  timeline?: TimelineEvent[]
+  notification_count?: number
+  highlight_count?: number
+  summary?: {
+    name?: string
+    avatar_url?: string
+    joined_member_count?: number
+  }
+}
 
 const _DEFAULT_ROOM_CACHE_SIZE = 50
 
@@ -121,12 +143,45 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   // LRU 缓存，用于存储 RoomDetail（限制 50 个房间）
   const roomDetailCache = new LRUCache<string, RoomDetail>(50)
 
+  // 消息缓存最大房间数
+  const MAX_MESSAGE_CACHE_ROOMS = 20
+
   const rooms = ref<Map<string, RoomInfo>>(new Map())
   const currentRoomId = ref<string | null>(null)
   const messages = ref<Map<string, MessageType[]>>(new Map())
   const isLoading = ref(false)
   const isLoadingMore = ref(false)
   const hasMoreMessages = ref<Map<string, boolean>>(new Map())
+
+  /**
+   * 清理消息缓存，保留当前房间和最近活跃的房间
+   */
+  function _pruneMessagesCache(): void {
+    const currentRoom = currentRoomId.value
+    const roomIds = Array.from(messages.value.keys())
+
+    if (roomIds.length <= MAX_MESSAGE_CACHE_ROOMS) return
+
+    // 获取最近活跃的房间（按最后消息时间排序）
+    const recentRoomIds = roomIds
+      .map((roomId) => {
+        const room = rooms.value.get(roomId)
+        return { roomId, lastTime: room?.lastMessageTime ?? 0 }
+      })
+      .sort((a, b) => b.lastTime - a.lastTime)
+      .slice(0, MAX_MESSAGE_CACHE_ROOMS)
+      .map((item) => item.roomId)
+
+    // 删除不在保留列表中的房间消息
+    for (const roomId of roomIds) {
+      if (!recentRoomIds.includes(roomId) && roomId !== currentRoom) {
+        messages.value.delete(roomId)
+        hasMoreMessages.value.delete(roomId)
+      }
+    }
+
+    info(`[RoomStore] 消息缓存清理: ${roomIds.length} -> ${messages.value.size}`)
+  }
 
   const roomList = computed<RoomInfo[]>(() => {
     return Array.from(rooms.value.values()).sort((a, b) => {
@@ -336,17 +391,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
    *
    * @param updates - 增量更新数据
    */
-  async function handleBatchIncrementalUpdate(
-    updates: Record<
-      string,
-      {
-        timeline?: any[]
-        notification_count?: number
-        highlight_count?: number
-        summary?: any
-      }
-    >
-  ): Promise<void> {
+  async function handleBatchIncrementalUpdate(updates: Record<string, TimelineUpdate>): Promise<void> {
     for (const [roomId, roomData] of Object.entries(updates)) {
       await handleIncrementalUpdate(roomId, roomData)
     }

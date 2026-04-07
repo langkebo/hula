@@ -147,6 +147,7 @@ import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
 import type { FriendItem } from '@/services/types'
 import { useBadgeStore } from '@/stores/badge'
+import { createLogger } from '@/utils/Logger'
 import { useContactStore } from '@/stores/contacts'
 import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
@@ -156,6 +157,8 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixContactService, matrixGroupService } from '@/services/matrix'
 import { isMobile } from '@/utils/PlatformConstants'
 import router from '@/router'
+
+const logger = createLogger('AddFriends')
 
 const contactStore = useContactStore()
 const userStore = useUserStore()
@@ -190,9 +193,8 @@ const initialLoading = ref(true)
 
 // 从缓存存储中获取用户数据
 const getCachedUsers = () => {
-  // 从缓存中获取所有用户
   const users = groupStore.allUserInfo
-  console.log(users)
+  logger.debug(users)
 
   // 筛选出需要显示的用户（ID在20016-20030之间的用户）
   return sortSearchResults(

@@ -2,6 +2,34 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
 import { info, error, warn } from '@tauri-apps/plugin-log'
 
+interface VoIPCall {
+  callId: string
+  roomId: string
+  isVideo: boolean
+  on(event: string, callback: (...args: unknown[]) => void): void
+  off(event: string, callback: (...args: unknown[]) => void): void
+  hangup(reason?: string): void
+  answer(stream?: MediaStream, video?: boolean): void
+  setLocalVideoMuted(muted: boolean): void
+  setLocalAudioMuted(muted: boolean): void
+  setScreensharingEnabled(enabled: boolean, opts?: { audio: boolean }): Promise<boolean>
+  peerConn?: RTCPeerConnection
+}
+
+interface VoIPCallFeed {
+  stream: MediaStream
+  purpose: string
+  audioMuted: boolean
+  videoMuted: boolean
+  isLocal(): boolean
+  setAudioMuted(muted: boolean): void
+  setVideoMuted(muted: boolean): void
+}
+
+interface VoIPCallHandler {
+  calls: Record<string, VoIPCall>
+}
+
 export interface CallInfo {
   callId: string
   roomId: string
@@ -65,20 +93,20 @@ class MatrixVoIPService {
   }
 
   private setupCallHandlers(client: MatrixClient): void {
-    client.on('Call.incoming', (call: any) => {
+    client.on('Call.incoming', (call: VoIPCall) => {
       this.handleIncomingCall(call)
     })
 
-    client.on('Call.hangup', (call: any) => {
+    client.on('Call.hangup', (call: VoIPCall) => {
       this.handleCallHangup(call)
     })
 
-    client.on('Call.replaced', (newCall: any, oldCall: any) => {
+    client.on('Call.replaced', (newCall: VoIPCall, oldCall: VoIPCall) => {
       this.handleCallReplaced(newCall, oldCall)
     })
   }
 
-  private handleIncomingCall(call: any): void {
+  private handleIncomingCall(call: VoIPCall): void {
     const callId = call.callId
     const roomId = call.roomId
 
@@ -97,7 +125,7 @@ class MatrixVoIPService {
     this.notifyCallUpdate(callId)
   }
 
-  private handleCallHangup(call: any): void {
+  private handleCallHangup(call: VoIPCall): void {
     const callId = call.callId
     info(`[VoIP] 通话结束: ${callId}`)
 
@@ -109,7 +137,7 @@ class MatrixVoIPService {
     }
   }
 
-  private handleCallReplaced(newCall: any, oldCall: any): void {
+  private handleCallReplaced(newCall: VoIPCall, oldCall: VoIPCall): void {
     info(`[VoIP] 通话被替换: ${oldCall.callId} -> ${newCall.callId}`)
     this.handleCallHangup(oldCall)
     this.handleIncomingCall(newCall)
@@ -238,13 +266,14 @@ class MatrixVoIPService {
     }
   }
 
-  private getCallById(callId: string, client: MatrixClient): any {
-    const calls = client.getCallHandler?.()?.calls || {}
+  private getCallById(callId: string, client: MatrixClient): VoIPCall | undefined {
+    const calls = (client as unknown as { getCallHandler?: () => VoIPCallHandler }).getCallHandler?.()?.calls || {}
     return calls[callId]
   }
 
-  private setupCallEventHandlers(call: any, callId: string): void {
-    call.on('feeds_changed', (feeds: any[]) => {
+  private setupCallEventHandlers(call: VoIPCall, callId: string): void {
+    call.on('feeds_changed', (...args: unknown[]) => {
+      const feeds = args[0] as VoIPCallFeed[]
       this.handleFeedsChanged(callId, feeds)
     })
 
@@ -252,7 +281,8 @@ class MatrixVoIPService {
       this.cleanupCall(callId)
     })
 
-    call.on('error', (err: Error) => {
+    call.on('error', (...args: unknown[]) => {
+      const err = args[0] as Error
       error(`[VoIP] 通话错误: ${err}`)
       const callInfo = this.calls.get(callId)
       if (callInfo) {
@@ -261,7 +291,8 @@ class MatrixVoIPService {
       }
     })
 
-    call.on('state', (state: string) => {
+    call.on('state', (...args: unknown[]) => {
+      const state = args[0] as string
       const callInfo = this.calls.get(callId)
       if (callInfo) {
         if (state === 'connected') {
@@ -272,7 +303,7 @@ class MatrixVoIPService {
     })
   }
 
-  private handleFeedsChanged(callId: string, feeds: any[]): void {
+  private handleFeedsChanged(callId: string, feeds: VoIPCallFeed[]): void {
     const callInfo = this.calls.get(callId)
     if (!callInfo) return
 
@@ -344,10 +375,7 @@ class MatrixVoIPService {
       const call = this.getCallById(callId, client)
 
       if (call && this.screenStream) {
-        const videoTrack = this.screenStream.getVideoTracks()[0]
-        if (videoTrack) {
-          await call.setScreensharingEnabled(true, videoTrack)
-        }
+        await call.setScreensharingEnabled(true, { audio: false })
       }
 
       info(`[VoIP] 开始屏幕共享: ${callId}`)

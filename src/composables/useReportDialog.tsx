@@ -2,6 +2,9 @@ import { ref } from 'vue'
 import { useDialog } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { reportService, ReportReason, type ReportRequest } from '@/services/matrix/MatrixReportService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ReportDialog')
 
 export function useReportDialog() {
   const { t } = useI18n()
@@ -46,7 +49,7 @@ export function useReportDialog() {
           window.$message.success(t('report.success'))
           return true
         } catch (error) {
-          console.error('[useReportDialog] report failed:', error)
+          logger.error('report failed:', error)
           window.$message.error(t('report.failed'))
           return false
         } finally {
@@ -101,7 +104,7 @@ export function useReportDialog() {
           window.$message.success(t('report.success'))
           return true
         } catch (error) {
-          console.error('[useReportDialog] report failed:', error)
+          logger.error('report failed:', error)
           window.$message.error(t('report.failed'))
           return false
         } finally {

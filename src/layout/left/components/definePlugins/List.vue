@@ -138,11 +138,13 @@ import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { PluginEnum } from '@/enums'
 import { usePluginsList } from '@/layout/left/config.tsx'
 import { usePluginsStore } from '@/stores/plugins.ts'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
 const appWindow = WebviewWindow.getCurrent()
 const pluginsStore = usePluginsStore()
 const pluginsList = usePluginsList()
+const timerManager = useTimerManager()
 const { plugins } = storeToRefs(pluginsStore)
 const isCurrently = ref(-1)
 const allPlugins = ref([] as STO.Plugins<PluginEnum>[])
@@ -164,11 +166,11 @@ const syncPlugins = (list: STO.Plugins<PluginEnum>[]) =>
 const handleState = (plugin: STO.Plugins<PluginEnum>) => {
   if (plugin.state === PluginEnum.INSTALLED) return
   plugin.state = PluginEnum.DOWNLOADING
-  const interval = setInterval(() => {
+  const interval = timerManager.setInterval(() => {
     if (plugin.progress < 100) {
       plugin.progress += 50
     } else {
-      clearInterval(interval)
+      timerManager.clearInterval(interval)
       plugin.state = PluginEnum.INSTALLED
       plugin.progress = 0
       pluginsStore.addPlugin(plugin)
@@ -178,7 +180,7 @@ const handleState = (plugin: STO.Plugins<PluginEnum>) => {
 
 const handleUnload = (plugin: STO.Plugins<PluginEnum>) => {
   plugin.state = PluginEnum.UNINSTALLING
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     handleDelete(plugin)
     plugin.state = PluginEnum.NOT_INSTALLED
     plugin.progress = 0
@@ -189,7 +191,7 @@ const handleUnload = (plugin: STO.Plugins<PluginEnum>) => {
 const handleDelete = (p: STO.Plugins<PluginEnum>) => {
   const plugin = plugins.value.find((i) => i.url === p.url)
   if (plugin) {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       pluginsStore.updatePlugin({ ...plugin, isAdd: false })
       p.isAdd = false
       emitTo(appWindow.label, 'startResize')
@@ -200,7 +202,7 @@ const handleDelete = (p: STO.Plugins<PluginEnum>) => {
 const handleAdd = (p: STO.Plugins<PluginEnum>) => {
   const plugin = plugins.value.find((i) => i.url === p.url)
   if (plugin) {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       pluginsStore.updatePlugin({ ...plugin, isAdd: true })
       p.isAdd = true
       emitTo(appWindow.label, 'startResize')
@@ -231,6 +233,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('click', closeMenu, true)
+  timerManager.clearAll()
 })
 </script>
 

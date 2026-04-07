@@ -4,6 +4,9 @@
 
 import { MatrixError } from 'matrix-js-sdk'
 import { AppError } from './errors'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MatrixRetry')
 
 /**
  * 重试配置
@@ -125,7 +128,7 @@ export function withRetry<T>(fn: () => Promise<T>, config: Partial<RetryConfig> 
     } catch (error) {
       if (shouldRetry(error, attempt, finalConfig)) {
         const delay = calculateDelay(attempt, finalConfig)
-        console.log(`[Retry] 等待 ${Math.round(delay)}ms 后重试 (尝试 ${attempt + 1}/${finalConfig.maxRetries})`)
+        logger.debug(`等待 ${Math.round(delay)}ms 后重试 (尝试 ${attempt + 1}/${finalConfig.maxRetries})`)
 
         await sleep(delay)
         return retry(attempt + 1)
@@ -165,7 +168,7 @@ export class RetryablePromise<T> {
     } catch (error) {
       if (shouldRetry(error, this.attempt, this.config)) {
         const delay = calculateDelay(this.attempt, this.config)
-        console.log(`[RetryablePromise] 等待 ${Math.round(delay)}ms 后重试`)
+        logger.debug(`等待 ${Math.round(delay)}ms 后重试`)
 
         this.attempt++
         await sleep(delay)

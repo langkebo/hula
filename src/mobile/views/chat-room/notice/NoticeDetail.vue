@@ -61,12 +61,15 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { useRoute, useRouter } from 'vue-router'
 import { useGroupStore } from '@/stores/group'
 import { useGlobalStore } from '@/stores/global'
 import { useUserStore } from '@/stores/user'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { matrixAnnouncementService } from '@/services/matrix'
+
+const logger = createLogger('NoticeDetail')
 
 defineOptions({
   name: 'mobileChatNoticeDetail'
@@ -130,7 +133,7 @@ const fetchAnnouncementDetail = async () => {
       }
     }
   } catch (err) {
-    console.error('获取公告详情失败:', err)
+    logger.error('获取公告详情失败:', err)
     error.value = '获取公告详情失败，请重试'
   } finally {
     loading.value = false

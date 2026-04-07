@@ -503,7 +503,7 @@ const ensureSenderInfo = async (uid: string) => {
       groupStore.updateUserItem(user.uid, user, roomId)
     }
   } catch (error) {
-    console.error('[Message] 拉取缺失用户信息失败:', error)
+    logger.error('拉取缺失用户信息失败:', error)
   } finally {
     resolvingUserSet.delete(uid)
   }
@@ -522,6 +522,10 @@ const senderLocPlace = computed(() => {
   }
   return props.message.fromUser.locPlace || ''
 })
+
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('RenderMessage')
 
 const componentMap: Partial<Record<MsgEnum, Component>> = {
   [MsgEnum.TEXT]: Text,
@@ -583,7 +587,7 @@ const cancelReplyEmoji = async (item: MessageType, type: number): Promise<void> 
     try {
       await matrixReactionService.toggleReaction(item.message.roomId, item.message.id, String(type))
     } catch (error) {
-      console.error('取消表情标记失败:', error)
+      logger.error('取消表情标记失败:', error)
     }
   }
 }
@@ -705,7 +709,7 @@ const handleRetry = async (item: MessageType): Promise<void> => {
 
     window.$message.success('消息重发成功')
   } catch (error) {
-    console.error('[RenderMessage] 消息重发失败:', error)
+    logger.error('消息重发失败:', error)
 
     chatStore.updateMsg({
       msgId: id,
@@ -757,7 +761,7 @@ const handleEmojiSelect = async (
     try {
       await matrixReactionService.toggleReaction(item.message.roomId, item.message.id, String(context.value))
     } catch (error) {
-      console.error('标记表情失败:', error)
+      logger.error('标记表情失败:', error)
     }
   } else {
     window.$message.warning('该表情已标记')

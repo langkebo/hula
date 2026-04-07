@@ -1,5 +1,7 @@
 import { nextTick, type Ref } from 'vue'
 import { TriggerEnum } from '@/enums'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Trigger')
 
 // 添加选择器常量
 const SELECTORS = {
@@ -130,7 +132,7 @@ export const useTrigger = (
       const pattern = new RegExp(`\\${triggerSymbol}([^\\${triggerSymbol}]*)$`)
       return pattern.test(searchStr)
     } catch (err) {
-      console.error('检查触发条件出错:', err)
+      logger.error('检查触发条件出错:', err)
       return false
     }
   }
@@ -147,7 +149,7 @@ export const useTrigger = (
       const matches = pattern.exec(searchStr)
       return matches && matches.length > 1 ? matches[1] : null
     } catch (err) {
-      console.error('提取关键词出错:', err)
+      logger.error('提取关键词出错:', err)
       return null
     }
   }
@@ -189,7 +191,7 @@ export const useTrigger = (
 
       return hasTriggered
     } catch (err) {
-      console.error('处理触发事件出错:', err)
+      logger.error('处理触发事件出错:', err)
       resetAllStates()
       return false
     }

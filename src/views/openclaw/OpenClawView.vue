@@ -98,6 +98,9 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useOpenClaw, ConnectionState } from '@/services/openclaw'
 import ConnectionStatus from '@/components/openclaw/ConnectionStatus.vue'
 import ModelSelector from '@/components/openclaw/ModelSelector.vue'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('OpenClawView')
 
 interface Model {
   id: string
@@ -159,7 +162,7 @@ const handleConnect = async () => {
   try {
     await connect()
   } catch (error) {
-    console.error('连接失败:', error)
+    logger.error('连接失败:', error)
   }
 }
 

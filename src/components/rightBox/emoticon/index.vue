@@ -196,6 +196,9 @@ import { md5FromString } from '@/utils/Md5Util'
 import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Emoticon')
 
 type TabItem = {
   id: number
@@ -452,7 +455,7 @@ const resolveEmojiExtension = async (url: string) => {
     const info = await detectRemoteFileType({ url, fileSize: null })
     ext = info?.ext || ''
   } catch (error) {
-    console.warn('识别表情类型失败:', error)
+    logger.warn('识别表情类型失败:', error)
   }
   if (!ext) {
     ext = 'png'
@@ -502,7 +505,7 @@ const ensureEmojiCacheEnvironment = async () => {
     emojiCacheEnv.value = env
     return env
   } catch (error) {
-    console.error('初始化表情缓存目录失败:', error)
+    logger.error('初始化表情缓存目录失败:', error)
     return null
   }
 }
@@ -619,7 +622,7 @@ const handleEmojiVisibility = async (emojiItem: EmojiListItem) => {
   try {
     await ensureEmojiCached(emojiItem, env.emojiDir, env.baseDir, env.baseDirPath)
   } catch (error) {
-    console.error('缓存表情失败:', emojiItem.expressionUrl, error)
+    logger.error('缓存表情失败:', emojiItem.expressionUrl, error)
   } finally {
     cachingEmojiIds.delete(id)
     releaseEmojiObserver(id)
@@ -680,7 +683,7 @@ const hydrateEmojiLocalCache = async () => {
           try {
             await ensureEmojiCached(item, env.emojiDir, env.baseDir, env.baseDirPath)
           } catch (error) {
-            console.error('[emoji] 重新缓存表情失败:', item.expressionUrl, error)
+            logger.error('重新缓存表情失败:', item.expressionUrl, error)
           } finally {
             downloadingUrls.delete(item.expressionUrl)
           }
@@ -777,7 +780,7 @@ const deleteMyEmoji = async (id: string) => {
     localUrlCache.clear()
     emojiUrlToLocalMap.clear()
   } catch (error) {
-    console.error('删除表情失败:', error)
+    logger.error('删除表情失败:', error)
     window.$message.error(t('emoticon.favorites.deleteFail'))
   }
 }

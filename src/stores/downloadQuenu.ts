@@ -1,6 +1,9 @@
 import { save } from '@tauri-apps/plugin-dialog'
 import { defineStore } from 'pinia'
 import { useDownload } from '@/hooks/useDownload.ts'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('DownloadQueueStore')
 
 type DownloadObjType = {
   url: string
@@ -75,7 +78,7 @@ export const useDownloadQuenuStore = defineStore('downloadQuenu', () => {
 
       await downloadFile(url, savePath)
     } catch (error) {
-      console.error('保存失败:', error)
+      logger.error('保存失败:', error)
       window.$message.error('保存失败')
       removeQuenuAction(url)
     }

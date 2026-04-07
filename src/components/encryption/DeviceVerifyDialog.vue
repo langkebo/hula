@@ -84,6 +84,8 @@ import { NModal, NButton, NSpin, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { matrixEncryptionService } from '@/services/matrix'
 import { matrixClientService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('DeviceVerify')
 
 defineOptions({
   name: 'DeviceVerifyDialog'
@@ -169,7 +171,7 @@ async function startVerification() {
 
     step.value = 'showKey'
   } catch (error) {
-    console.error('[DeviceVerify] 获取设备密钥失败:', error)
+    logger.error('获取设备密钥失败:', error)
     message.error('获取设备密钥失败')
   } finally {
     loading.value = false
@@ -192,7 +194,7 @@ async function handleConfirm() {
     step.value = 'success'
     message.success('设备验证成功')
   } catch (error) {
-    console.error('[DeviceVerify] 验证失败:', error)
+    logger.error('验证失败:', error)
     message.error('验证失败')
   } finally {
     loading.value = false

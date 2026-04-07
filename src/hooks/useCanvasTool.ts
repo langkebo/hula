@@ -1,4 +1,6 @@
 import { ref, computed, onUnmounted, type Ref } from 'vue'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('CanvasTool')
 
 interface ScreenConfig {
   startX: number
@@ -7,12 +9,7 @@ interface ScreenConfig {
   endY: number
 }
 
-export function useCanvasTool(
-  drawCanvas: any,
-  drawCtx: any,
-  imgCtx: any,
-  screenConfig: Ref<ScreenConfig>
-) {
+export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screenConfig: Ref<ScreenConfig>) {
   const drawConfig = ref({
     startX: 0,
     startY: 0,
@@ -162,7 +159,13 @@ export function useCanvasTool(
     context.strokeRect(x, y, width, height)
   }
 
-  const drawCircle = (context: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number) => {
+  const drawCircle = (
+    context: CanvasRenderingContext2D,
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number
+  ) => {
     // 限制圆形的绘制范围在框选矩形区域内
     const limitedEndX = Math.min(Math.max(endX, screenConfig.value.startX), screenConfig.value.endX)
     const limitedEndY = Math.min(Math.max(endY, screenConfig.value.startY), screenConfig.value.endY)
@@ -329,7 +332,7 @@ export function useCanvasTool(
     drawConfig.value.undoStack = []
     drawConfig.value.isDrawing = false
     currentTool.value = ''
-    console.log('绘图状态已重置，历史记录已清除')
+    logger.info('绘图状态已重置，历史记录已清除')
   }
 
   // 停止当前绘图操作
@@ -337,13 +340,13 @@ export function useCanvasTool(
     drawConfig.value.isDrawing = false
     currentTool.value = ''
     closeListen()
-    console.log('绘图操作已停止')
+    logger.info('绘图操作已停止')
   }
 
   // 清除事件监听
   const clearEvents = () => {
     closeListen()
-    console.log('绘图事件监听已清除')
+    logger.info('绘图事件监听已清除')
   }
 
   const startListen = () => {

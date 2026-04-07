@@ -82,7 +82,7 @@ const loadRoleList = async () => {
       handleSelectRole(roleList.value[0])
     }
   } catch (error) {
-    console.error('加载角色列表失败:', error)
+    logger.error('加载角色列表失败:', error)
   }
 }
 

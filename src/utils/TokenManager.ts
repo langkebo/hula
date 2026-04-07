@@ -1,6 +1,9 @@
 import { TauriCommand } from '@/enums'
 import { getUserDetail } from '@/utils/ImRequestUtils'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('TokenManager')
 
 /**
  * Token 管理工具类
@@ -38,9 +41,9 @@ export class TokenManager {
           showError: true
         }
       )
-      console.log('Token 更新成功')
+      logger.debug('Token 更新成功')
     } catch (error) {
-      console.error('Token 更新失败:', error)
+      logger.error('Token 更新失败:', error)
       throw error
     }
   }
@@ -68,7 +71,7 @@ export class TokenManager {
       )
       return true
     } catch (error) {
-      console.error('静默更新 token 失败:', error)
+      logger.error('静默更新 token 失败:', error)
       return false
     }
   }

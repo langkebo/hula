@@ -3,6 +3,9 @@
  * 举报违规消息/事件
  */
 import { matrixClientService } from './MatrixClientService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('EventReport')
 
 export interface EventReport {
   reportId: number
@@ -38,7 +41,7 @@ class MatrixEventReportService {
       const response = (await this.client.http.authedRequest(
         {},
         'POST',
-        '/_matrix/client/v1/rooms/${encodeURIComponent(params.roomId)}/report',
+        `/_matrix/client/v1/rooms/${encodeURIComponent(params.roomId)}/report`,
         undefined,
         {
           body: JSON.stringify({
@@ -50,7 +53,7 @@ class MatrixEventReportService {
       )) as any
       return response.report_id
     } catch (error) {
-      console.error('[EventReport] 举报失败:', error)
+      logger.error('举报失败:', error)
       return null
     }
   }
@@ -68,7 +71,7 @@ class MatrixEventReportService {
       )) as any
       return this.mapReport(response)
     } catch (error) {
-      console.error('[EventReport] 获取详情失败:', error)
+      logger.error('获取详情失败:', error)
       return null
     }
   }
@@ -85,7 +88,7 @@ class MatrixEventReportService {
 
       return (response.event_reports || []).map(this.mapReport)
     } catch (error) {
-      console.error('[EventReport] 获取房间举报失败:', error)
+      logger.error('获取房间举报失败:', error)
       return []
     }
   }
@@ -104,7 +107,7 @@ class MatrixEventReportService {
 
       return (response.event_reports || []).map(this.mapReport)
     } catch (error) {
-      console.error('[EventReport] 获取用户举报失败:', error)
+      logger.error('获取用户举报失败:', error)
       return []
     }
   }
@@ -119,7 +122,7 @@ class MatrixEventReportService {
       })
       return true
     } catch (error) {
-      console.error('[EventReport] 处理失败:', error)
+      logger.error('处理失败:', error)
       return false
     }
   }

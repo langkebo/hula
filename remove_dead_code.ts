@@ -1,8 +1,8 @@
-import { Project } from 'ts-morph';
+import { Project } from 'ts-morph'
 
-const project = new Project();
-project.addSourceFilesAtPaths("src/utils/ImRequestUtils.ts");
-const sourceFile = project.getSourceFileOrThrow("src/utils/ImRequestUtils.ts");
+const project = new Project()
+project.addSourceFilesAtPaths('src/utils/ImRequestUtils.ts')
+const sourceFile = project.getSourceFileOrThrow('src/utils/ImRequestUtils.ts')
 
 const unusedFunctions = [
   'getNoticeUnreadCount',
@@ -37,14 +37,13 @@ const unusedFunctions = [
   'audioMyPage',
   'audioGetMy',
   'audioDeleteMy'
-];
+]
 
 for (const fn of unusedFunctions) {
-  const func = sourceFile.getFunction(fn);
+  const func = sourceFile.getFunction(fn)
   if (func) {
-    func.remove();
+    func.remove()
   }
 }
 
-sourceFile.saveSync();
-console.log("Done!");
+sourceFile.saveSync()

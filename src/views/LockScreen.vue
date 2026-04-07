@@ -119,6 +119,7 @@ import { useSettingStore } from '@/stores/setting.ts'
 import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { getWeekday } from '@/utils/ComputedTime'
+import { useTimerManager } from '@/utils/TimerManager'
 import { useI18n } from 'vue-i18n'
 
 const appWindow = WebviewWindow.getCurrent()
@@ -127,6 +128,7 @@ const userStore = useUserStore()
 const { lockScreen } = storeToRefs(settingStore)
 const { logout } = useLogin()
 const { t } = useI18n()
+const timerManager = useTimerManager()
 /** 解锁密码 */
 const password = ref('')
 /** 是否是解锁页面 */
@@ -142,8 +144,6 @@ const currentMonthAndDate = ref(dayjs().format('MM/DD'))
 // const currentMonthAndDate = ref(new Date().toLocaleDateString('chinese', { month: 'long', day: 'numeric' }))
 /** 当前星期 */
 const currentWeekday = ref(getWeekday(new Date().toLocaleString()))
-/** 计算当前时间的定时器 */
-let intervalId: NodeJS.Timeout | null = null
 /** 密码输入框实例 */
 const inputInstRef = ref<InputInst | null>(null)
 /** 白名单窗口（锁屏时不隐藏的窗口） */
@@ -153,8 +153,7 @@ const hiddenWindows = ref<string[]>([])
 
 watch(isUnlockPage, (val) => {
   if (val) {
-    /** 延迟 300ms 后自动获取焦点，不然会触发一次回车事件 */
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       inputInstRef.value?.focus()
     }, 300)
   }
@@ -176,12 +175,12 @@ const unlock = () => {
   } else {
     isLogining.value = true
     if (password.value === lockScreen.value.password) {
-      setTimeout(() => {
+      timerManager.setTimeout(() => {
         lockScreen.value.enable = false
         isLogining.value = false
       }, 1000)
     } else {
-      setTimeout(() => {
+      timerManager.setTimeout(() => {
         isWrongPassword.value = true
       }, 300)
     }
@@ -193,7 +192,7 @@ const init = () => {
   if (isWrongPassword.value) {
     isWrongPassword.value = false
     isLogining.value = false
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       inputInstRef.value?.focus()
     }, 600)
     password.value = ''
@@ -233,7 +232,7 @@ watchEffect(() => {
 })
 
 onMounted(() => {
-  intervalId = setInterval(() => {
+  timerManager.setInterval(() => {
     currentTime.value = dayjs().format('HH:mm')
     currentMonthAndDate.value = dayjs().format('MM/DD')
     currentWeekday.value = getWeekday(new Date().toLocaleString())
@@ -246,14 +245,11 @@ onMounted(() => {
     })
   }
 
-  // 锁屏时隐藏其他窗口，解锁时显示
   hideOtherWindows()
 })
 
 onUnmounted(() => {
-  if (intervalId) {
-    clearInterval(intervalId)
-  }
+  timerManager.clearAll()
 })
 </script>
 <style scoped lang="scss">

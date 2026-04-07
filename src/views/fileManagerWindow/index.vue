@@ -22,6 +22,9 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import FileContent from '@/components/fileManager/FileContent.vue'
 import SideNavigation from '@/components/fileManager/SideNavigation.vue'
 import UserList from '@/components/fileManager/UserList.vue'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('FileManager')
 
 // 定义文件管理的响应式状态
 const activeNavigation = ref('myFiles')
@@ -71,7 +74,7 @@ const queryFiles = async () => {
     timeGroupedFiles.value = response.timeGroupedFiles
     userList.value = response.userList
   } catch (error) {
-    console.error('查询文件失败:', error)
+    logger.error('查询文件失败:', error)
   } finally {
     loading.value = false
   }
@@ -83,7 +86,7 @@ const getNavigationItems = async () => {
     const items = (await invoke('get_navigation_items')) as any[]
     navigationItems.value = items
   } catch (error) {
-    console.error('获取导航菜单失败:', error)
+    logger.error('获取导航菜单失败:', error)
   }
 }
 

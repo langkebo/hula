@@ -1,6 +1,9 @@
 import { invoke } from '@tauri-apps/api/core'
 import { AppException, ErrorType } from '@/common/exception'
 import { Result, ok, err } from '@/common/result'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('TauriInvokeHandler')
 
 /**
  * Tauri invoke 调用的统一错误处理包装器，返回 Result 模型
@@ -29,7 +32,7 @@ export async function invokeWithResult<T = any>(
     const result = await invoke<T>(command, args)
     return ok(result)
   } catch (error) {
-    console.error(`[Tauri Invoke Error] 命令: ${command}`, error)
+    logger.error(`命令: ${command}`, error)
 
     // 构造错误消息
     let errorMessage = customErrorMessage
@@ -82,7 +85,7 @@ export async function invokeWithErrorHandler<T = any>(
     const result = await invoke<T>(command, args)
     return result
   } catch (error) {
-    console.error(`[Tauri Invoke Error] 命令: ${command}`, error)
+    logger.error(`命令: ${command}`, error)
 
     // 构造错误消息
     let errorMessage = customErrorMessage
@@ -161,7 +164,7 @@ export async function invokeWithRetry<T = any>(
       lastError = error
 
       if (attempt < maxRetries) {
-        console.log(`重试 ${command} 命令 (${attempt}/${maxRetries})...`)
+        logger.debug(`重试 ${command} 命令 (${attempt}/${maxRetries})...`)
         await new Promise((resolve) => setTimeout(resolve, retryDelay))
       }
     }

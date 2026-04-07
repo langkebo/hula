@@ -10,7 +10,6 @@ interface SpecialFriendsContent {
 
 class MatrixSpecialFriendService {
   private listeners: Set<() => void> = new Set()
-  private cache: Set<string> | null = null
 
   constructor() {
     this.setupSyncListener()

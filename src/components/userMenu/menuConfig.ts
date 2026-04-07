@@ -1,6 +1,8 @@
 import type { SettingsTabType } from '@/stores/settingsDialog'
 import { useRouter } from 'vue-router'
 import { useDialog, useMessage } from 'naive-ui'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('MenuConfig')
 
 export interface MenuItem {
   id: string
@@ -43,7 +45,7 @@ function navigateToHome(): void {
   if (routerInstance) {
     routerInstance.push('/home')
   } else {
-    console.warn('[UserMenu] Router instance not set')
+    logger.warn('Router instance not set')
   }
 }
 
@@ -266,7 +268,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           if (logoutCallback) {
             logoutCallback()
           } else {
-            console.log('Logout callback not set')
+            logger.debug('Logout callback not set')
           }
         }
       }

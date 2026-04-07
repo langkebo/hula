@@ -1,23 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { aiProviderManager } from '../AIProviderManager'
 
-const mockOpenClawProvider = {
+const _mockOpenClawProvider = {
   type: 'openclaw' as const,
   state: 'connected' as const,
   connect: vi.fn().mockResolvedValue(undefined),
   disconnect: vi.fn(),
   testConnection: vi.fn().mockResolvedValue(true),
-  chat: vi.fn().mockResolvedValue({ id: '1', model: 'test', message: { role: 'assistant', content: 'openclaw response' }, finish_reason: 'stop' }),
+  chat: vi.fn().mockResolvedValue({
+    id: '1',
+    model: 'test',
+    message: { role: 'assistant', content: 'openclaw response' },
+    finish_reason: 'stop'
+  }),
   streamChat: vi.fn()
 }
 
-const mockTrendRadarProvider = {
+const _mockTrendRadarProvider = {
   type: 'trendradar' as const,
   state: 'connected' as const,
   connect: vi.fn().mockResolvedValue(undefined),
   disconnect: vi.fn(),
   testConnection: vi.fn().mockResolvedValue(true),
-  chat: vi.fn().mockResolvedValue({ id: '1', model: 'test', message: { role: 'assistant', content: 'trendradar response' }, finish_reason: 'stop' }),
+  chat: vi.fn().mockResolvedValue({
+    id: '1',
+    model: 'test',
+    message: { role: 'assistant', content: 'trendradar response' },
+    finish_reason: 'stop'
+  }),
   streamChat: vi.fn()
 }
 
@@ -34,7 +44,12 @@ vi.mock('../AIProviderManager', () => {
       disconnect: vi.fn(),
       setProvider: vi.fn(),
       testConnection: vi.fn().mockResolvedValue(true),
-      chat: vi.fn().mockResolvedValue({ id: '1', model: 'test', message: { role: 'assistant', content: 'test response' }, finish_reason: 'stop' }),
+      chat: vi.fn().mockResolvedValue({
+        id: '1',
+        model: 'test',
+        message: { role: 'assistant', content: 'test response' },
+        finish_reason: 'stop'
+      }),
       getAvailableProviders: vi.fn().mockReturnValue(['openclaw', 'trendradar', 'hula']),
       isProviderAvailable: vi.fn().mockReturnValue(true)
     }

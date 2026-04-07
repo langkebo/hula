@@ -97,6 +97,9 @@ import { Icon } from '@iconify/vue'
 import { matrixPushService } from '@/services/matrix'
 import { PushRuleKind, TweakName, type IPushRule } from '@/types/matrix-js-sdk'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('NotificationSettings')
 
 const { t } = useI18n()
 
@@ -144,7 +147,7 @@ async function loadPushRules() {
       }
     }
   } catch (error) {
-    console.error('[MobileNotifications] 加载推送规则失败:', error)
+    logger.error('加载推送规则失败:', error)
   }
 }
 
@@ -152,7 +155,7 @@ async function handleNotificationsToggle(enabled: boolean) {
   try {
     await matrixPushService.setPushRuleEnabled('global', PushRuleKind.Override, '.m.rule.master', !enabled)
   } catch (error) {
-    console.error('[MobileNotifications] 设置通知开关失败:', error)
+    logger.error('设置通知开关失败:', error)
     notificationsEnabled.value = !enabled
   }
 }
@@ -166,7 +169,7 @@ async function handleSoundToggle(enabled: boolean) {
       ])
     }
   } catch (error) {
-    console.error('[MobileNotifications] 设置声音失败:', error)
+    logger.error('设置声音失败:', error)
     soundEnabled.value = !enabled
   }
 }
@@ -190,7 +193,7 @@ async function handleSave() {
       message: t('mobile_notifications.save_success')
     })
   } catch (error) {
-    console.error('[MobileNotifications] 保存设置失败:', error)
+    logger.error('保存设置失败:', error)
     showToast({
       type: 'fail',
       message: t('mobile_notifications.save_failed')

@@ -30,6 +30,9 @@ const getTimerWorker = () => {
   return msgStore.getTimerWorker()
 }
 import { sendNotification } from '@tauri-apps/plugin-notification'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ChatMessageStore')
 
 export const useChatStore = defineStore(
   StoresEnum.CHAT,
@@ -130,13 +133,16 @@ export const useChatStore = defineStore(
     const clearOtherRoomsMessages = (currentRoomId: string) => {
       for (const roomId in messageMap) {
         if (roomId !== currentRoomId) {
-          for (const msgId in messageMap[roomId]) {
-            const msg = messageMap[roomId][msgId]
-            if (shouldKeepTransientMessage(msg)) continue
-            delete messageMap[roomId][msgId]
-            if (sortedMessageKeys[roomId]) {
-              sortedMessageKeys[roomId] = sortedMessageKeys[roomId].filter((id) => id !== msgId)
+          const roomMessages = messageMap[roomId]
+          const newRoomMessages: Record<string, MessageType> = {}
+          for (const msgId in roomMessages) {
+            const msg = roomMessages[msgId]
+            if (shouldKeepTransientMessage(msg)) {
+              newRoomMessages[msgId] = msg
             }
+          }
+          if (Object.keys(newRoomMessages).length !== Object.keys(roomMessages).length) {
+            messageMap[roomId] = newRoomMessages
           }
         }
       }
@@ -148,14 +154,18 @@ export const useChatStore = defineStore(
         sortedMessageKeys[roomId] = []
         return
       }
-      for (const msgId in messageMap[roomId]) {
-        const msg = messageMap[roomId][msgId]
-        if (shouldKeepTransientMessage(msg)) continue
-        delete messageMap[roomId][msgId]
-        if (sortedMessageKeys[roomId]) {
-          sortedMessageKeys[roomId] = sortedMessageKeys[roomId].filter((id) => id !== msgId)
+      const roomMessages = messageMap[roomId]
+      const newRoomMessages: Record<string, MessageType> = {}
+      const newSortedKeys: string[] = []
+      for (const msgId in roomMessages) {
+        const msg = roomMessages[msgId]
+        if (shouldKeepTransientMessage(msg)) {
+          newRoomMessages[msgId] = msg
+          newSortedKeys.push(msgId)
         }
       }
+      messageMap[roomId] = newRoomMessages
+      sortedMessageKeys[roomId] = newSortedKeys
     }
 
     const convertEventToMessage = (event: MatrixEvent, room: Room): MessageType | null => {
@@ -216,7 +226,7 @@ export const useChatStore = defineStore(
       try {
         await getPageMsg(pageSize, roomId, '')
       } catch (err) {
-        console.error('无法加载消息:', err)
+        logger.error('无法加载消息:', err)
         currentMessageOptions.value = {
           isLast: false,
           isLoading: false,
@@ -330,7 +340,7 @@ export const useChatStore = defineStore(
           cursor: pageEvents[pageEvents.length - 1]?.getId() || ''
         }
       } catch (err) {
-        console.error('获取消息失败:', err)
+        logger.error('获取消息失败:', err)
         messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '' }
       }
     }
@@ -436,7 +446,7 @@ export const useChatStore = defineStore(
 
         if (shouldIncreaseUnread) {
           updateData.unreadCount = (session.unreadCount || 0) + 1
-          console.log('[pushMsg] 增加未读数:', msg.message.roomId, updateData.unreadCount)
+          logger.debug('增加未读数:', msg.message.roomId, updateData.unreadCount)
         }
 
         sessionStore.updateSession(msg.message.roomId, updateData)
@@ -711,7 +721,7 @@ export const useChatStore = defineStore(
       }
 
       if (uploadProgress !== undefined) {
-        console.log(`更新消息进度: ${uploadProgress}% (消息ID: ${msgId})`)
+        logger.debug(`更新消息进度: ${uploadProgress}% (消息ID: ${msgId})`)
         roomMessages[nextMsgId] = { ...msg, uploadProgress }
         messageMap[resolvedRoomId] = { ...roomMessages }
       } else {
@@ -768,7 +778,7 @@ export const useChatStore = defineStore(
       const { type, msgId } = e.data
 
       if (type === 'timeout') {
-        console.log(`[Timeout] 消息ID: ${msgId} 已过期`)
+        logger.debug(`消息ID: ${msgId} 已过期`)
         delete recalledMessages[msgId]
         delete expirationTimers[msgId]
       } else if (type === 'allTimersCompleted') {
@@ -853,8 +863,8 @@ export const useChatStore = defineStore(
         }
       }
 
-      console.info(
-        '[chat][trim]',
+      logger.info(
+        'trim',
         `roomId=${roomId}`,
         `removed=${sortedMessages.length - keptMessages.length}`,
         `kept=${keptMessages.length}`,
@@ -887,9 +897,9 @@ export const useChatStore = defineStore(
 
         await getPageMsg(pageSize, requestRoomId, '')
 
-        console.log('[Network] 已重置并刷新当前聊天室的消息列表')
+        logger.debug('已重置并刷新当前聊天室的消息列表')
       } catch (err) {
-        console.error('[Network] 重置并刷新消息列表失败:', err)
+        logger.error('重置并刷新消息列表失败:', err)
         if (globalStore.currentSessionRoomId === requestRoomId) {
           messageOptions[requestRoomId] = {
             isLast: false,

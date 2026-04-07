@@ -85,6 +85,8 @@ import { ref, computed } from 'vue'
 import { NModal, NButton, NSpin, NCheckbox, NInput, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { matrixEncryptionService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('KeyBackupSetup')
 
 defineOptions({
   name: 'KeyBackupSetupDialog'
@@ -158,7 +160,7 @@ async function startSetup() {
     recoveryKey.value = key
     step.value = 'showKey'
   } catch (error) {
-    console.error('[KeyBackupSetup] 创建备份失败:', error)
+    logger.error('创建备份失败:', error)
     message.error('创建安全备份失败，请稍后重试')
     step.value = 'intro'
   } finally {
@@ -206,7 +208,7 @@ async function verifyKeyInput() {
       message.error('备份验证失败，请重试')
     }
   } catch (error) {
-    console.error('[KeyBackupSetup] 验证备份失败:', error)
+    logger.error('验证备份失败:', error)
     message.error('验证备份失败')
   } finally {
     loading.value = false

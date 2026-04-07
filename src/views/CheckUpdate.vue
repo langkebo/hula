@@ -116,6 +116,9 @@ import { handRelativeTime } from '@/utils/ComputedTime'
 import { isMac } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler.ts'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('CheckUpdate')
 
 const settingStore = useSettingStore()
 const { t } = useI18n()
@@ -261,7 +264,7 @@ const moveWindowToBottomRight = async () => {
     // 移动窗口到计算的位置
     await checkUpdateWindow.setPosition(new PhysicalPosition(x, y))
   } catch (error) {
-    console.error('移动窗口失败:', error)
+    logger.error('移动窗口失败:', error)
   }
 }
 
@@ -297,7 +300,7 @@ const init = async () => {
     try {
       await invokeSilently('hide_title_bar_buttons', { windowLabel: 'checkupdate' })
     } catch (error) {
-      console.error('隐藏标题栏按钮失败:', error)
+      logger.error('隐藏标题栏按钮失败:', error)
     }
   }
 }

@@ -6,4 +6,3 @@
 
 export { trendRadarClient, useTrendRadar } from './TrendRadarService'
 export * from './TrendRadarService'
-

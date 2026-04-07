@@ -55,6 +55,8 @@ import { useSettingStore } from '@/stores/setting'
 import { useMatrixStore } from '@/stores/matrix'
 import { matrixAccountService } from '@/services/matrix'
 import defaultAvatarImg from '@/assets/img/win.png'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('UserMenuHeader')
 
 defineOptions({
   name: 'UserMenuHeader'
@@ -137,7 +139,7 @@ async function handleStatusChange(statusId: string) {
     await matrixAccountService.setPresence(presenceMap[statusId] || 'online')
     message.success('状态已更新')
   } catch (error) {
-    console.error('[UserMenuHeader] 设置状态失败:', error)
+    logger.error('设置状态失败:', error)
   }
 }
 </script>

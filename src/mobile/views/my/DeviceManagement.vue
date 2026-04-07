@@ -50,12 +50,15 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { ref, onMounted } from 'vue'
 import { showConfirmDialog, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { matrixAccountService, type DeviceInfo } from '@/services/matrix/MatrixAccountService'
 import { matrixClientService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('DeviceManagement')
 
 const { t } = useI18n()
 
@@ -76,7 +79,7 @@ async function loadDevices() {
     }
     devices.value = await matrixAccountService.getDevices()
   } catch (error) {
-    console.error('[MobileDevices] 获取设备列表失败:', error)
+    logger.error('获取设备列表失败:', error)
     showToast({
       type: 'fail',
       message: t('mobile_devices.load_failed')
@@ -132,7 +135,7 @@ async function handleDeleteDevice(device: DeviceInfo) {
     await loadDevices()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('[MobileDevices] 删除设备失败:', error)
+      logger.error('删除设备失败:', error)
       showToast({
         type: 'fail',
         message: t('mobile_devices.delete_failed')
@@ -165,7 +168,7 @@ async function handleDeleteOtherDevices() {
     await loadDevices()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('[MobileDevices] 批量删除设备失败:', error)
+      logger.error('批量删除设备失败:', error)
       showToast({
         type: 'fail',
         message: t('mobile_devices.delete_failed')

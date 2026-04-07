@@ -95,6 +95,7 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { OnlineEnum } from '@/enums'
 import { useContactStore } from '@/stores/contacts.ts'
 import { useGlobalStore } from '@/stores/global'
@@ -103,6 +104,8 @@ import { useChatStore } from '@/stores/chat'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixGroupService } from '@/services/matrix'
 import router from '@/router'
+
+const logger = createLogger('MobileInviteGroupMember')
 
 defineOptions({
   name: 'mobileInviteGroupMember'
@@ -170,7 +173,7 @@ const handleInvite = async () => {
     // 返回群设置页面
     router.back()
   } catch (error) {
-    console.error('邀请失败:', error)
+    logger.error('邀请失败:', error)
     window.$message.error('邀请失败，请重试')
   } finally {
     isLoading.value = false
@@ -204,7 +207,7 @@ onMounted(async () => {
         .map((session: any) => groupStore.getGroupUserList(session.roomId))
     )
   } catch (error) {
-    console.error('加载用户信息失败:', error)
+    logger.error('加载用户信息失败:', error)
   }
 
   calculateScrollHeight()

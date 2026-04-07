@@ -220,6 +220,12 @@ import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { useMitt } from '@/hooks/useMitt'
 import { useUserStore } from '@/stores/user'
 import { matrixChatRoleService, matrixModelService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('ChatRoleManagement')
+const timerManager = useTimerManager()
 
 const showModal = defineModel<boolean>({ default: false })
 const emit = defineEmits<{
@@ -357,7 +363,7 @@ const loadCategoryList = async () => {
       categoryOptions.value = data
     }
   } catch (error) {
-    console.error('加载角色类别列表失败:', error)
+    logger.error('加载角色类别列表失败:', error)
   }
 }
 
@@ -370,7 +376,8 @@ const loadModelList = async () => {
       value: item.id
     }))
   } catch (error) {
-    console.error('加载模型列表失败:', error)
+    logger.error('加载模型列表失败:', error)
+    window.$message.error('加载模型列表失败')
   }
 }
 
@@ -385,7 +392,7 @@ const loadRoleList = async () => {
     roleList.value = data.list || []
     pagination.value.total = data.total || 0
   } catch (error) {
-    console.error('加载角色列表失败:', error)
+    logger.error('加载角色列表失败:', error)
     window.$message.error('加载角色列表失败')
   } finally {
     loading.value = false
@@ -475,7 +482,7 @@ const handleSubmit = async () => {
     if (error?.errors) {
       return
     }
-    console.error('保存角色失败:', error)
+    logger.error('保存角色失败:', error)
     window.$message.error('保存角色失败')
   } finally {
     submitting.value = false
@@ -509,7 +516,7 @@ const handleDelete = async (id: string) => {
     // 通知左侧刷新角色状态
     useMitt.emit('refresh-roles')
   } catch (error) {
-    console.error('删除角色失败:', error)
+    logger.error('删除角色失败:', error)
     window.$message.error('删除角色失败')
   }
 }
@@ -530,7 +537,7 @@ watch(showEditModal, (val) => {
     loadModelList()
   } else {
     // 延迟重置，避免关闭动画时看到数据清空
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       resetForm()
     }, 300)
   }

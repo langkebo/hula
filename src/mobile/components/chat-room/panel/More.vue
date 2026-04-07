@@ -69,10 +69,13 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { CallTypeEnum, RoomTypeEnum } from '@/enums'
 import { UploaderFileListItem } from 'vant'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/global'
+
+const logger = createLogger('More')
 
 const globalStore = useGlobalStore()
 
@@ -145,19 +148,18 @@ const afterReadFile = (fileList: UploaderFileListItem | UploaderFileListItem[]) 
   const imageTypes = ['image/jpeg', 'image/png', 'image/gif']
   const files = Array.isArray(fileList) ? fileList : [fileList]
 
-  console.log('选择的文件：', files)
+  logger.debug('选择的文件：', files)
 
   for (const file of files) {
     const rawFile = file.file
 
     if (!rawFile) {
-      console.log('文件不存在:', file)
+      logger.debug('文件不存在:', file)
       continue
     }
 
-    // ✅ 只保留非图片文件
     if (imageTypes.includes(rawFile.type)) {
-      console.log('已过滤图片文件:', file)
+      logger.debug('已过滤图片文件:', file)
       continue
     }
 
@@ -168,7 +170,7 @@ const afterReadFile = (fileList: UploaderFileListItem | UploaderFileListItem[]) 
       message: '待上传（非图片）'
     })
 
-    console.log('已选择文件：', file)
+    logger.debug('已选择文件：', file)
   }
 
   if (selectedFiles.value.length > 0) {
@@ -182,18 +184,18 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
   const validTypes = ['image/jpeg', 'image/png', 'image/gif']
   const files = Array.isArray(fileList) ? fileList : [fileList]
 
-  console.log('选择的文件：', files)
+  logger.debug('选择的文件：', files)
 
   for (const file of files) {
     const rawFile = file.file
 
     if (!rawFile) {
-      console.log('文件不存在:', file)
+      logger.debug('文件不存在:', file)
       continue
     }
 
     if (!validTypes.includes(rawFile.type)) {
-      console.log('已过滤非图片文件:', file)
+      logger.debug('已过滤非图片文件:', file)
       if (!Array.isArray(fileList)) {
         window.$message.warning('只能选择图片哦~')
       }
@@ -207,7 +209,7 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
       message: '待上传'
     })
 
-    console.log('已添加文件：', file)
+    logger.debug('已添加文件：', file)
   }
 
   if (selectedFiles.value.length > 0) {

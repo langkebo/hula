@@ -48,11 +48,16 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { useCommon } from '@/hooks/useCommon.ts'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useUserStore } from '@/stores/user.ts'
 import { matrixGroupService } from '@/services/matrix'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('ConfirmAddGroup')
+const timerManager = useTimerManager()
 
 const globalStore = useGlobalStore()
 const userStore = useUserStore()
@@ -71,13 +76,13 @@ watch(
 const addFriend = async () => {
   await matrixGroupService.applyGroup(String(globalStore.addGroupModalInfo.account))
   window.$message.success('已发送群聊申请')
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     router.push('/mobile/message')
   }, 2000)
 }
 
 onMounted(async () => {
-  console.log(userInfo.value)
+  logger.debug('userInfo:', userInfo.value)
   requestMsg.value = `我是${userStore.userInfo!.name}`
 })
 </script>

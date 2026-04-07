@@ -128,6 +128,8 @@ import { NModal, NButton, NTag, NDivider, NSpin, NFlex, useMessage } from 'naive
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { matrixEncryptionService } from '@/services/matrix/MatrixEncryptionService'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('CrossSigning')
 
 const { t } = useI18n()
 const message = useMessage()
@@ -163,7 +165,7 @@ const loadCrossSigningInfo = async () => {
     selfSigningKey.value = info.selfSigningPublicKey ?? null
     userSigningKey.value = info.userSigningPublicKey ?? null
   } catch (err) {
-    console.error('[CrossSigning] 加载信息失败:', err)
+    logger.error('加载信息失败:', err)
   } finally {
     loading.value = false
   }
@@ -176,7 +178,7 @@ const handleSetup = async () => {
     message.success(t('encryption.cross_signing.setup_success'))
     await loadCrossSigningInfo()
   } catch (err) {
-    console.error('[CrossSigning] 设置失败:', err)
+    logger.error('设置失败:', err)
     message.error(t('encryption.cross_signing.setup_failed'))
   } finally {
     settingUp.value = false
@@ -190,7 +192,7 @@ const handleReset = async () => {
     message.success(t('encryption.cross_signing.reset_success'))
     await loadCrossSigningInfo()
   } catch (err) {
-    console.error('[CrossSigning] 重置失败:', err)
+    logger.error('重置失败:', err)
     message.error(t('encryption.cross_signing.reset_failed'))
   } finally {
     resetting.value = false
@@ -208,7 +210,7 @@ const handleCopyKeys = async () => {
     await navigator.clipboard.writeText(keysText)
     message.success(t('encryption.cross_signing.copied'))
   } catch (err) {
-    console.error('[CrossSigning] 复制失败:', err)
+    logger.error('复制失败:', err)
     message.error(t('encryption.cross_signing.copy_failed'))
   }
 }

@@ -74,7 +74,10 @@ import { useCommon } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useChatStore } from '@/stores/chat'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('SearchDetails')
 
 type SessionItem = {
   avatar: string
@@ -152,8 +155,7 @@ const loadHistory = () => {
       }
     }
   } catch (error) {
-    console.error('加载历史记录失败:', error)
-    // 如果加载失败，重置为空数组
+    logger.error('加载历史记录失败:', error)
     historyList.value = []
   }
 }
@@ -163,14 +165,13 @@ const saveHistoryToStorage = () => {
   try {
     localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(historyList.value))
   } catch (error) {
-    console.error('保存历史记录失败:', error)
+    logger.error('保存历史记录失败:', error)
   }
 }
 
 // 保存搜索关键词到历史记录
 const saveToHistory = (term: string) => {
-  console.log(`保存搜索记录: ${term}`)
-  // 可以实现关键词搜索记录的保存
+  logger.debug(`保存搜索记录: ${term}`)
 }
 
 // 保存会话到历史记录

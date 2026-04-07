@@ -1,5 +1,8 @@
 import { invoke } from '@tauri-apps/api/core'
 import { useDebounceFn } from '@vueuse/core'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('FixedScale')
+
 export type FixedScaleMode = 'zoom' | 'transform'
 
 export type UseFixedScaleOptions = {
@@ -124,7 +127,7 @@ export const useFixedScale = (options: UseFixedScaleOptions = {}): FixedScaleCon
         )
       }
     } catch (error) {
-      console.warn('Failed to get Windows scale info:', error)
+      logger.warn('Failed to get Windows scale info:', error)
     }
   }
 
@@ -304,7 +307,7 @@ export const useFixedScale = (options: UseFixedScaleOptions = {}): FixedScaleCon
           })
         }
       } catch (error) {
-        console.log(`Failed to create media query for ${dpr}dppx:`, error)
+        logger.debug(`Failed to create media query for ${dpr}dppx:`, error)
       }
     })
   }
@@ -321,7 +324,7 @@ export const useFixedScale = (options: UseFixedScaleOptions = {}): FixedScaleCon
           cleanup()
         }
       } catch (error) {
-        console.log(`Error removing listener ${key}:`, error)
+        logger.debug(`Error removing listener ${key}:`, error)
       }
     })
 

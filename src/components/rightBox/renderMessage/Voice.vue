@@ -75,6 +75,9 @@ import type { VoiceBody } from '@/services/types'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
 
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Voice')
+
 const props = defineProps<{
   body: VoiceBody
   fromUserUid: string
@@ -213,7 +216,7 @@ onMounted(async () => {
     const audioUrl = await fileManager.getAudioUrl(props.body.url)
     await audioPlayback.createAudioElement(audioUrl, audioId, second.value)
   } catch (error) {
-    console.error('组件初始化失败:', error)
+    logger.error('组件初始化失败:', error)
   }
 })
 onUnmounted(() => {

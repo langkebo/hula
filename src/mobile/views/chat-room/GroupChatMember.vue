@@ -51,12 +51,14 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { useDebounceFn } from '@vueuse/core'
 import type { UserItem } from '@/services/types'
 import { useGroupStore } from '@/stores/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 
+const logger = createLogger('GroupChatMember')
 const measure = ref(null)
 
 const virtualScrollerHeight = ref(0)
@@ -81,7 +83,7 @@ onMounted(() => {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         virtualScrollerHeight.value = entry.contentRect.height
-        console.log('高度：', virtualScrollerHeight.value)
+        logger.debug('高度：', virtualScrollerHeight.value)
       }
     })
     observer.observe(measure.value)

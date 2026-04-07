@@ -3,6 +3,9 @@
  * 管理 federation 级别的服务器黑名单
  */
 import { matrixClientService } from './MatrixClientService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('FederationBlacklist')
 
 export interface FederationBlacklistEntry {
   domain: string
@@ -35,7 +38,7 @@ class MatrixFederationBlacklistService {
       })
       return true
     } catch (error) {
-      console.error('[FederationBlacklist] 添加失败:', error)
+      logger.error('添加失败:', error)
       return false
     }
   }
@@ -53,7 +56,7 @@ class MatrixFederationBlacklistService {
       )
       return true
     } catch (error) {
-      console.error('[FederationBlacklist] 移除失败:', error)
+      logger.error('移除失败:', error)
       return false
     }
   }
@@ -71,7 +74,7 @@ class MatrixFederationBlacklistService {
       )) as any
       return (response.entries || []).map(this.mapEntry)
     } catch (error) {
-      console.error('[FederationBlacklist] 列表失败:', error)
+      logger.error('列表失败:', error)
       return []
     }
   }
@@ -107,7 +110,7 @@ class MatrixFederationBlacklistService {
       )) as any
       return response.imported || 0
     } catch (error) {
-      console.error('[FederationBlacklist] 批量导入失败:', error)
+      logger.error('批量导入失败:', error)
       return 0
     }
   }
@@ -125,7 +128,7 @@ class MatrixFederationBlacklistService {
       )) as any
       return response.entries || []
     } catch (error) {
-      console.error('[FederationBlacklist] 导出失败:', error)
+      logger.error('导出失败:', error)
       return []
     }
   }

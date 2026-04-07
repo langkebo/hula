@@ -215,12 +215,6 @@
       "lodash": "4.17.23",
       "lodash-es": "4.17.23"
     },
-    "ignoredBuiltDependencies": [
-      "@parcel/watcher",
-      "esbuild",
-      "sharp",
-      "tlbs-map-vue",
-      "vue-demi"
-    ]
+    "ignoredBuiltDependencies": ["@parcel/watcher", "esbuild", "sharp", "tlbs-map-vue", "vue-demi"]
   }
 }

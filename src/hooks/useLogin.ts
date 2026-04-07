@@ -28,6 +28,8 @@ import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { useI18nGlobal } from '../services/i18n'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { SexEnum } from '@/enums'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Login')
 
 export const useLogin = () => {
   const { resizeWindow } = useWindow()
@@ -49,14 +51,14 @@ export const useLogin = () => {
     userScopedStoreKeys.forEach((key) => {
       localStorage.removeItem(key)
     })
-    console.log('[useLogin] User localStorage has been cleared')
+    logger.debug('User localStorage has been cleared')
   }
 
   const clearMessageCache = () => {
     for (const key of Object.keys(groupStore.membersMap)) {
       delete groupStore.membersMap[key]
     }
-    console.log('[useLogin] Message cache has been cleared')
+    logger.debug('Message cache has been cleared')
   }
 
   let router: ReturnType<typeof useRouter> | null = null

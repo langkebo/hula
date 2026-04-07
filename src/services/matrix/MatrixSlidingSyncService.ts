@@ -1,11 +1,9 @@
 import matrixClientService from './MatrixClientService'
 import { useRoomStore } from '@/stores/room'
 import { info, error } from '@tauri-apps/plugin-log'
-import type { Room, RoomSummary } from 'matrix-js-sdk'
 
 export class MatrixSlidingSyncService {
   private slidingSync: any = null
-  private isInitialized = false
 
   /**
    * 初始化 Sliding Sync 服务
@@ -60,12 +58,12 @@ export class MatrixSlidingSyncService {
     if (!resp) return
 
     const roomStore = useRoomStore()
-    
+
     // 处理房间列表更新
     if (resp.rooms) {
       for (const roomId of Object.keys(resp.rooms)) {
         const roomData = resp.rooms[roomId]
-        
+
         // 更新未读计数
         if (roomData.notification_count !== undefined || roomData.highlight_count !== undefined) {
           const roomInfo = roomStore.rooms.get(roomId)
@@ -90,7 +88,7 @@ export class MatrixSlidingSyncService {
    */
   private onRoomData(roomId: string, roomData: any) {
     const roomStore = useRoomStore()
-    
+
     // 更新房间信息
     if (roomData.summary) {
       roomStore.updateRoom(roomId)

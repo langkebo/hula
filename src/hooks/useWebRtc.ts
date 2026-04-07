@@ -7,7 +7,9 @@ import { useUserStore } from '@/stores/user'
 import { isMobile } from '../utils/PlatformConstants'
 import { useMitt } from './useMitt'
 import { useTauriListener } from './useTauriListener'
-import { matrixVoIPService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+import { TimerManager } from '@/utils/TimerManager'
+const logger = createLogger('WebRtc')
 
 const sendMatrixVoipSignal = async (type: string, data: any) => {
   info(`[useWebRtc] Matrix VoIP Signal: ${type}`, data)
@@ -129,8 +131,11 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   // 添加铃声相关状态
   const bellAudio = ref<HTMLAudioElement | null>(null)
 
+  // TimerManager 实例
+  const timerManager = new TimerManager()
+
   // 添加计时器引用
-  const callTimer = ref<NodeJS.Timeout | null>(null)
+  const callTimer = ref<number | null>(null)
 
   // 添加计时相关的变量
   const callDuration = ref(0)
@@ -155,7 +160,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       }
       await currentWindow.setFocus()
     } catch (e) {
-      console.warn('设置窗口聚焦失败:', e)
+      logger.warn('设置窗口聚焦失败:', e)
     }
   }
 
@@ -188,7 +193,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
    */
   const startBell = () => {
     if (!rtcCallBellUrl) {
-      console.log('rtc通话已经静音')
+      logger.debug('rtc通话已经静音')
       bellAudio.value = null
       return
     }
@@ -208,7 +213,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         isVideo: callType === CallTypeEnum.VIDEO
       })
     } catch (error) {
-      console.error('发送通话请求失败:', error)
+      logger.error('发送通话请求失败:', error)
     }
   }
 
@@ -270,7 +275,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         accepted: status
       })
     } catch (error) {
-      console.error('发送通话响应失败:', error)
+      logger.error('发送通话响应失败:', error)
     }
   }
 
@@ -329,7 +334,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       if (!constraints.audio && !constraints.video) {
         window.$message.error('没有可用的设备!')
         // 没有可用设备时自动挂断并关闭窗口
-        setTimeout(async () => {
+        timerManager.setTimeout(async () => {
           if (isReceiver) {
             // 接听方：发送拒绝响应
             await handleCallResponse(0)
@@ -364,7 +369,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
 
       return true
     } catch (err) {
-      console.error('获取本地流失败:', err)
+      logger.error('获取本地流失败:', err)
       window.$message.error('获取本地媒体流失败，请检查设备!')
       error(`获取本地媒体流失败，请检查设备! ${err}`)
       await sendRtcCall2VideoCallResponse(2)
@@ -381,7 +386,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       pc.ontrack = (event) => {
         info('pc 监听到 ontrack 事件')
         if (event.streams[0]) {
-          console.log('收到远程流:', event.streams[0])
+          logger.debug('收到远程流:', event.streams[0])
           remoteStream.value = event.streams[0]
         } else {
           remoteStream.value = null
@@ -395,7 +400,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
           localStream.value && pc.addTrack(track, localStream.value)
         })
       } else {
-        console.warn('localStream 为 null，无法添加本地流到 PeerConnection')
+        logger.warn('localStream 为 null，无法添加本地流到 PeerConnection')
       }
 
       // 连接状态变化 "closed" | "connected" | "connecting" | "disconnected" | "failed" | "new";
@@ -420,14 +425,14 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
             info('RTC 连接断开')
             connectionStatus.value = RTCCallStatus.END
             window.$message.error('RTC通讯连接失败!')
-            setTimeout(async () => {
+            timerManager.setTimeout(async () => {
               await endCall()
             }, 500)
             break
           case 'closed':
             info('RTC 连接关闭')
             connectionStatus.value = RTCCallStatus.END
-            setTimeout(async () => {
+            timerManager.setTimeout(async () => {
               await endCall()
             }, 500)
             break
@@ -435,7 +440,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
             connectionStatus.value = RTCCallStatus.ERROR
             info('RTC 连接失败')
             window.$message.error('RTC通讯连接失败!')
-            setTimeout(async () => {
+            timerManager.setTimeout(async () => {
               await endCall()
             }, 500)
             break
@@ -455,7 +460,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         // console.log("收到消息:", event.data);
       }
       channel.value.onerror = (event) => {
-        console.warn('信道出错:', event)
+        logger.warn('信道出错:', event)
       }
       channel.value.onclose = () => {
         // console.log("信道已关闭");
@@ -466,13 +471,13 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
           try {
             pendingCandidates.value.push(event.candidate)
           } catch (err) {
-            console.error('发送ICE候选者出错:', err)
+            logger.error('发送ICE候选者出错:', err)
           }
         }
       }
       peerConnection.value = pc
     } catch (err) {
-      console.error('创建 PeerConnection 失败:', err)
+      logger.error('创建 PeerConnection 失败:', err)
       connectionStatus.value = RTCCallStatus.ERROR
       throw err
     }
@@ -488,7 +493,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       if (!(await getDevices())) {
         window.$message.error('获取设备失败!')
         // 获取设备失败时自动关闭窗口
-        setTimeout(async () => {
+        timerManager.setTimeout(async () => {
           await handleCallResponse(0)
         }, 1000)
         return
@@ -502,7 +507,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       }
       isLinker.value = true // 标记是会话人
       // 设置30秒超时定时器
-      callTimer.value = setTimeout(() => {
+      callTimer.value = timerManager.setTimeout(() => {
         if (connectionStatus.value === RTCCallStatus.CALLING) {
           window.$message.warning('通话无人接听，自动挂断')
           endCall()
@@ -512,7 +517,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       if (!(await getLocalStream(type))) {
         clear()
         // 获取本地媒体流失败时自动关闭窗口
-        setTimeout(async () => {
+        timerManager.setTimeout(async () => {
           await endCall()
         }, 1000)
         return false
@@ -533,7 +538,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       connectionStatus.value = RTCCallStatus.CALLING
       rtcStatus.value = 'new'
     } catch (err) {
-      console.error('开始通话失败:', err)
+      logger.error('开始通话失败:', err)
       window.$message.error('RTC通讯连接失败!')
       clear()
       return false
@@ -555,7 +560,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       info('ws发送 offer')
       await sendMatrixVoipSignal('WEBRTC_SIGNAL', signalData)
     } catch (error) {
-      console.error('Failed to send SDP offer:', error)
+      logger.error('Failed to send SDP offer:', error)
     }
   }
 
@@ -563,11 +568,9 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
     try {
       // 停止铃声并重置
       stopBell()
-      // 清除超时定时器
-      if (callTimer.value) {
-        clearTimeout(callTimer.value)
-        callTimer.value = null
-      }
+      // 清除所有定时器
+      timerManager.clearAll()
+      callTimer.value = null
       // 停止计时器
       stopCallTimer()
       // 关闭信道
@@ -579,7 +582,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       remoteStream.value?.getTracks().forEach((track) => track.stop())
     } catch (error) {
       window.$message.error('部分资源清理失败!')
-      console.error('清理资源失败:', error)
+      logger.error('清理资源失败:', error)
     } finally {
       // 重置状态
       rtcMsg.value = {
@@ -619,14 +622,14 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
 
       await sendMatrixVoipSignal('WEBRTC_SIGNAL', signalData)
     } catch (error) {
-      console.error('Failed to send ICE candidate:', error)
+      logger.error('Failed to send ICE candidate:', error)
     }
   }
 
   // 处理收到的 offer - 接听者
   const handleOffer = async (signal: RTCSessionDescriptionInit, video: boolean, roomId: string) => {
     try {
-      console.log('处理 offer')
+      logger.debug('处理 offer')
       connectionStatus.value = RTCCallStatus.CALLING
       await nextTick()
 
@@ -639,7 +642,9 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       // 检查本地媒体流是否获取成功
       if (!hasLocalStream || !localStream.value) {
         // 睡眠 3s
-        await new Promise((resolve) => setTimeout(resolve, 3000))
+        await new Promise<void>((resolve) => {
+          timerManager.setTimeout(() => resolve(), 3000)
+        })
         await handleCallResponse(0)
         return false
       }
@@ -685,12 +690,12 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         video: callType === CallTypeEnum.VIDEO
       }
 
-      console.log('发送SDP answer', signalData)
+      logger.debug('发送SDP answer', signalData)
       await sendMatrixVoipSignal('WEBRTC_SIGNAL', signalData)
 
-      console.log('SDP answer sent via WebSocket:', answer)
+      logger.debug('SDP answer sent via WebSocket:', answer)
     } catch (error) {
-      console.error('Failed to send SDP answer:', error)
+      logger.error('Failed to send SDP answer:', error)
     }
   }
 
@@ -699,8 +704,8 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       info('处理 answer 消息')
       if (peerConnection.value) {
         // 清除超时定时器
-        if (callTimer.value) {
-          clearTimeout(callTimer.value)
+        if (callTimer.value !== null) {
+          timerManager.clearTimeout(callTimer.value)
           callTimer.value = null
         }
 
@@ -715,12 +720,12 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
             return
           }
           // 4. 发起者 - 设置远程描述
-          console.log('发起者 - 设置远程描述', answer)
+          logger.debug('发起者 - 设置远程描述', answer)
           await peerConnection.value.setRemoteDescription(answer)
         }
       }
     } catch (error) {
-      console.error('处理 answer 失败:', error)
+      logger.error('处理 answer 失败:', error)
       connectionStatus.value = RTCCallStatus.ERROR
       await endCall()
     }
@@ -734,7 +739,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         await peerConnection.value!.addIceCandidate(signal)
       }
     } catch (error) {
-      console.error('处理 candidate 失败:', error)
+      logger.error('处理 candidate 失败:', error)
     }
   }
 
@@ -760,13 +765,13 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         videoTrack.enabled = !videoTrack.enabled
         isVideoEnabled.value = videoTrack.enabled
 
-        console.log(`视频轨道${videoTrack.enabled ? '开启' : '关闭'}`)
+        logger.debug(`视频轨道${videoTrack.enabled ? '开启' : '关闭'}`)
 
         // 如果是关闭视频，通知对方
         if (!videoTrack.enabled) {
-          console.log('本地视频已关闭，对方将看不到视频')
+          logger.debug('本地视频已关闭，对方将看不到视频')
         } else {
-          console.log('本地视频已开启，对方可以看到视频')
+          logger.debug('本地视频已开启，对方可以看到视频')
         }
       } else if (callType === CallTypeEnum.VIDEO) {
         // 如果没有视频轨道但是视频通话，尝试重新获取
@@ -785,10 +790,10 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
             localStream.value!.addTrack(newVideoTrack)
             isVideoEnabled.value = true
 
-            console.log('重新获取视频轨道成功')
+            logger.debug('重新获取视频轨道成功')
           }
         } catch (error) {
-          console.error('重新获取视频轨道失败:', error)
+          logger.error('重新获取视频轨道失败:', error)
           window.$message.error('无法开启摄像头')
         }
       }
@@ -832,7 +837,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       }
     } catch (error) {
       window.$message.error('切换音频设备失败！')
-      console.error('切换音频设备失败:', error)
+      logger.error('切换音频设备失败:', error)
     }
   }
 
@@ -859,7 +864,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   // 切换前置/后置摄像头（移动端专用）
   const switchCameraFacing = async () => {
     if (!isMobile) {
-      console.warn('摄像头翻转功能仅在移动端可用')
+      logger.warn('摄像头翻转功能仅在移动端可用')
       return
     }
 
@@ -878,7 +883,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       await switchVideoDevice(targetDevice.deviceId)
     } catch (error) {
       window.$message.error('摄像头翻转失败！')
-      console.error('摄像头翻转失败:', error)
+      logger.error('摄像头翻转失败:', error)
     }
   }
 
@@ -917,7 +922,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       }
     } catch (error) {
       window.$message.error('切换视频设备失败！')
-      console.error('切换视频设备失败:', error)
+      logger.error('切换视频设备失败:', error)
     }
   }
 
@@ -989,7 +994,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       localStream.value.addTrack(newVideoTrack)
       isScreenSharing.value = true // 开始桌面共享
     } catch (error: any) {
-      console.error('开始桌面共享失败:', error)
+      logger.error('开始桌面共享失败:', error)
       isScreenSharing.value = false
       stopScreenShare()
       if (error?.name === 'NotAllowedError') {
@@ -1048,10 +1053,10 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
           break
 
         default:
-          console.log('未知信令类型:', data.signalType)
+          logger.debug('未知信令类型:', data.signalType)
       }
     } catch (error) {
-      console.error('处理信令消息错误:', error)
+      logger.error('处理信令消息错误:', error)
     }
   }
 
@@ -1117,7 +1122,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   onMounted(async () => {
     await loadIceServers()
     if (!isReceiver) {
-      console.log(`调用方发送${callType === CallTypeEnum.VIDEO ? '视频' : '语音'}通话请求`)
+      logger.debug(`调用方发送${callType === CallTypeEnum.VIDEO ? '视频' : '语音'}通话请求`)
       await startCall(roomId, callType, [remoteUserId])
     }
   })

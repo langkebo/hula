@@ -229,6 +229,11 @@ import { vOnLongPress } from '@vueuse/components'
 import { useContactStore } from '@/stores/contacts'
 import { useI18n } from 'vue-i18n'
 import { matrixClientService, matrixSessionService, matrixMessageService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('MobileMessage')
+const timerManager = useTimerManager()
 
 const { t } = useI18n()
 const loading = ref(false)
@@ -360,7 +365,7 @@ const handleDelete = async (item: SessionItem | null) => {
   try {
     await handleMsgDelete(item.roomId)
   } catch (error) {
-    console.error('删除会话失败:', error)
+    logger.error('删除会话失败:', error)
   } finally {
     maskHandler.close()
   }
@@ -378,7 +383,7 @@ const handleToggleTop = async (item: SessionItem | null) => {
     // 更新本地会话状态
     chatStore.updateSession(item.roomId, { top: newTopState })
   } catch (error) {
-    console.error('置顶操作失败:', error)
+    logger.error('置顶操作失败:', error)
   } finally {
     maskHandler.close()
   }
@@ -421,7 +426,7 @@ const handleToggleReadStatus = async (markAsRead: boolean, sessionItem?: Session
 
     const errorMsg = markAsRead ? t('mobile_home.mark_as_read_failed') : t('mobile_home.mark_as_unread_failed')
     window.$message.error(errorMsg)
-    console.error(errorMsg, error)
+    logger.error(errorMsg, error)
   } finally {
     maskHandler.close()
   }
@@ -439,11 +444,11 @@ const onRefresh = () => {
     .then(([res]) => {
       // 接口和延时都完成后执行
       loading.value = false
-      console.log('刷新完成', res)
+      logger.debug('刷新完成', res)
     })
     .catch((error) => {
       loading.value = false
-      console.log('刷新会话列表失败：', error)
+      logger.error('刷新会话列表失败：', error)
     })
 }
 
@@ -540,7 +545,7 @@ const maskHandler = {
       window.scrollTo(0, scrollY) // 恢复滚动位置
     }
 
-    setTimeout(closeModal, 60)
+    timerManager.setTimeout(closeModal, 60)
 
     longPressState.value.disable()
   }
@@ -556,7 +561,7 @@ const addIconHandler = {
    * 选项选择时关闭蒙板
    */
   select: (item: string) => {
-    console.log('选择的项：', item)
+    logger.debug('选择的项：', item)
     router.push(item)
     maskHandler.close()
   },
@@ -602,7 +607,7 @@ const intoRoom = (item: any) => {
   handleMsgClick(item)
   const foundedUser = allUserMap.value.get(item.detailId)
 
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     // 如果找到用户，就表示该会话属于好友，那就传入好友的uid;同时排除id为1的hula小管家
     if (foundedUser && foundedUser.uid !== '1') {
       router.push({
@@ -625,7 +630,7 @@ const toSimpleBio = () => {
 
 // 锁滚动（和蒙板一样）
 const lockScroll = () => {
-  console.log('锁定触发')
+  logger.debug('锁定触发')
   const scrollEl = document.querySelector('.flex-1.overflow-auto') as HTMLElement
   if (scrollEl) {
     scrollEl.style.overflow = 'hidden'
@@ -633,7 +638,7 @@ const lockScroll = () => {
 }
 
 const unlockScroll = () => {
-  console.log('锁定解除')
+  logger.debug('锁定解除')
   const scrollEl = document.querySelector('.flex-1.overflow-auto') as HTMLElement
   if (scrollEl) {
     scrollEl.style.overflow = 'auto'

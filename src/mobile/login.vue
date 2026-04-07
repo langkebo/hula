@@ -281,6 +281,7 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { useDebounceFn } from '@vueuse/core'
 import { invoke } from '@tauri-apps/api/core'
 import Validation from '@/components/common/Validation.vue'
@@ -298,6 +299,8 @@ import { useSettingStore } from '../stores/setting'
 import { clearListener } from '../utils/ReadCountQueue'
 import { useLogin } from '../hooks/useLogin'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('MobileLogin')
 
 // 本地注册信息类型，扩展API类型以包含确认密码
 interface LocalRegisterInfo extends RegisterUserReq {}
@@ -565,7 +568,7 @@ const handleSendEmailCode = async () => {
     window.$message.success(t('login.mobile.code_sent_email'))
     startSendCodeCountdown()
   } catch (error) {
-    console.error(t('login.mobile.code_send_failed_with_reason', { reason: error }))
+    logger.error(t('login.mobile.code_send_failed_with_reason', { reason: error }))
     window.$message.error(t('login.mobile.code_send_failed_retry'))
   } finally {
     sendCodeLoading.value = false
@@ -611,7 +614,7 @@ const handleRegisterComplete = async () => {
     resetRegisterForm()
   } catch (error) {
     window.$message.error((error as any) || t('login.mobile.register_fail'))
-    console.error(error)
+    logger.error('注册失败:', error)
   } finally {
     registerLoading.value = false
   }

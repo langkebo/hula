@@ -3,6 +3,9 @@
  * 管理系统通知
  */
 import { matrixClientService } from './MatrixClientService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ServerNotification')
 
 export interface ServerNotification {
   notificationId: number
@@ -17,7 +20,7 @@ export interface ServerNotification {
   active: boolean
   read: boolean
   dismissed: boolean
-  data?: Record<string, any>
+  data?: Record<string, unknown>
 }
 
 export interface NotificationTemplate {
@@ -36,7 +39,7 @@ export interface CreateNotificationParams {
   severity?: 'info' | 'warning' | 'error'
   title: string
   content: string
-  data?: Record<string, any>
+  data?: Record<string, unknown>
 }
 
 class MatrixServerNotificationService {
@@ -63,7 +66,7 @@ class MatrixServerNotificationService {
 
       return this.mapNotification(response)
     } catch (error) {
-      console.error('[ServerNotification] 创建失败:', error)
+      logger.error('创建失败:', error)
       return null
     }
   }
@@ -82,7 +85,7 @@ class MatrixServerNotificationService {
 
       return this.mapNotification(response)
     } catch (error) {
-      console.error('[ServerNotification] 获取失败:', error)
+      logger.error('获取失败:', error)
       return null
     }
   }
@@ -101,7 +104,7 @@ class MatrixServerNotificationService {
 
       return (response.notifications || []).map(this.mapNotification)
     } catch (error) {
-      console.error('[ServerNotification] 获取活跃列表失败:', error)
+      logger.error('获取活跃列表失败:', error)
       return []
     }
   }
@@ -119,7 +122,7 @@ class MatrixServerNotificationService {
 
       return (response.notifications || []).map(this.mapNotification)
     } catch (error) {
-      console.error('[ServerNotification] 获取用户通知失败:', error)
+      logger.error('获取用户通知失败:', error)
       return []
     }
   }
@@ -137,7 +140,7 @@ class MatrixServerNotificationService {
       )
       return true
     } catch (error) {
-      console.error('[ServerNotification] 标记已读失败:', error)
+      logger.error('标记已读失败:', error)
       return false
     }
   }
@@ -155,7 +158,7 @@ class MatrixServerNotificationService {
       )
       return true
     } catch (error) {
-      console.error('[ServerNotification] 忽略失败:', error)
+      logger.error('忽略失败:', error)
       return false
     }
   }
@@ -173,7 +176,7 @@ class MatrixServerNotificationService {
       )) as any
       return response.count || 0
     } catch (error) {
-      console.error('[ServerNotification] 全部已读失败:', error)
+      logger.error('全部已读失败:', error)
       return 0
     }
   }
@@ -191,7 +194,7 @@ class MatrixServerNotificationService {
       )
       return true
     } catch (error) {
-      console.error('[ServerNotification] 删除失败:', error)
+      logger.error('删除失败:', error)
       return false
     }
   }
@@ -210,7 +213,7 @@ class MatrixServerNotificationService {
       )
       return true
     } catch (error) {
-      console.error('[ServerNotification] 创建模板失败:', error)
+      logger.error('创建模板失败:', error)
       return false
     }
   }
@@ -228,7 +231,7 @@ class MatrixServerNotificationService {
       )) as any
       return response.templates || []
     } catch (error) {
-      console.error('[ServerNotification] 获取模板失败:', error)
+      logger.error('获取模板失败:', error)
       return []
     }
   }

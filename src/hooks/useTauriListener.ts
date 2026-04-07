@@ -2,6 +2,8 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { error, info } from '@tauri-apps/plugin-log'
 import { getCurrentInstance, onUnmounted } from 'vue'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('TauriListener')
 
 // 全局监听器管理
 const globalListeners = new Map<string, Promise<UnlistenFn>[]>()
@@ -16,7 +18,7 @@ const safeUnlisten = (unlisten: UnlistenFn) => {
     unlisten()
     calledUnlisteners.add(unlisten)
   } catch (e) {
-    console.warn('safeUnlisten error:', e)
+    logger.warn('safeUnlisten error:', e)
   }
 }
 
@@ -104,7 +106,7 @@ export const useTauriListener = () => {
         listenerIds.length = 0
         listeners.length = 0
       } catch (error) {
-        console.error('清理监听器失败:', error)
+        logger.error('清理监听器失败:', error)
       }
     }
   }
@@ -133,7 +135,7 @@ export const useTauriListener = () => {
         }
       }
     } catch (error) {
-      console.error('清理监听器失败:', error)
+      logger.error('清理监听器失败:', error)
     }
   }
 
@@ -163,7 +165,7 @@ export const useTauriListener = () => {
         windowCloseListenerSetup.set(currentWindowLabel, closeUnlisten)
       }
     } catch (error) {
-      console.warn('设置窗口关闭监听器失败:', error)
+      logger.warn('设置窗口关闭监听器失败:', error)
     }
   }
 

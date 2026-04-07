@@ -205,6 +205,9 @@ import { useGlobalStore } from '@/stores/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ManageGroupMember')
 
 defineOptions({
   name: 'ManageGroupMember'
@@ -298,7 +301,7 @@ const handleRemove = async () => {
     handleClose()
     return true
   } catch (error) {
-    console.error('踢出失败:', error)
+    logger.error('踢出失败:', error)
     window.$message.error(t('home.manage_group_member.remove_failed'))
     return false
   } finally {
@@ -342,7 +345,7 @@ onMounted(async () => {
       await groupStore.getGroupUserList(globalStore.currentSessionRoomId)
     }
   } catch (error) {
-    console.error('加载成员列表失败:', error)
+    logger.error('加载成员列表失败:', error)
   }
 
   if (isMobileView.value) {

@@ -30,6 +30,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ThirdPartyLogin')
 import { useLogin } from '@/hooks/useLogin'
 import { matrixOidcService } from '@/services/matrix/MatrixOidcService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
@@ -73,7 +76,7 @@ const getHomeserverUrl = (): string => {
       return client.getHomeserverUrl()
     }
   } catch (e) {
-    console.warn('[ThirdPartyLogin] Failed to get homeserver URL:', e)
+    logger.warn('Failed to get homeserver URL:', e)
   }
   return 'http://localhost:8008'
 }
@@ -97,7 +100,7 @@ const handleOidcLogin = async () => {
       window.$message?.error('获取 OIDC 授权 URL 失败')
     }
   } catch (error) {
-    console.error('[SSO] OIDC login error:', error)
+    logger.error('OIDC login error:', error)
     window.$message?.error('OIDC 登录失败')
   }
 }

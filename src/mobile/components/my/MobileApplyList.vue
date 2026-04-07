@@ -130,6 +130,7 @@
   </n-flex>
 </template>
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { uniq } from 'es-toolkit'
 import type { NoticeItem } from '@/services/types.ts'
 import { NoticeType, RequestNoticeAgreeStatus } from '@/services/types.ts'
@@ -137,7 +138,11 @@ import { useContactStore } from '@/stores/contacts.ts'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useGroupStore } from '@/stores/group'
+import { matrixGroupService } from '@/services/matrix'
+import { useTimerManager } from '@/utils/TimerManager'
 import { useI18n } from 'vue-i18n'
+const logger = createLogger('MobileApplyList')
+const timerManager = useTimerManager()
 
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -194,7 +199,7 @@ const getGroupDetail = async (roomId: string) => {
       return groupInfo
     }
   } catch (error) {
-    console.error('获取群组信息失败:', error)
+    logger.error('获取群组信息失败:', error)
   } finally {
     loadingGroups.value.delete(roomId)
   }
@@ -327,7 +332,7 @@ const handleAgree = async (item: NoticeItem) => {
       markAsRead: true
     })
   } finally {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       loadingMap.value[applyId] = false
     }, 600)
   }
@@ -353,7 +358,7 @@ const handleFriendAction = async (action: string, applyId: string) => {
       })
     }
   } finally {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       loadingMap.value[applyId] = false
     }, 600)
   }

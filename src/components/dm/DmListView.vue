@@ -105,9 +105,7 @@ const filteredDmRooms = computed(() => {
 
   if (searchValue.value.trim()) {
     const query = searchValue.value.toLowerCase()
-    rooms = rooms.filter(
-      (r) => r.roomId.toLowerCase().includes(query) || r.name?.toLowerCase().includes(query)
-    )
+    rooms = rooms.filter((r) => r.roomId.toLowerCase().includes(query) || r.name?.toLowerCase().includes(query))
   }
 
   return rooms.sort((a, b) => {
@@ -133,17 +131,17 @@ const loadDmRooms = async () => {
 }
 
 const handleSelectRoom = (room: DmRoomInfo) => {
-    activeRoomId.value = room.roomId
-    const partnerId = room.invitees[0] || room.inviter || ''
-    
-    // Type assertion bypass for strictly typed pinia store
-    ;(chatStore as any).updateCurrentChat({
-      roomId: room.roomId,
-      context: { type: RoomTypeEnum.SINGLE, uid: partnerId, roomId: room.roomId },
-      isEncrypted: false,
-      members: []
-    })
-  }
+  activeRoomId.value = room.roomId
+  const partnerId = room.invitees[0] || room.inviter || ''
+
+  // Type assertion bypass for strictly typed pinia store
+  ;(chatStore as any).updateCurrentChat({
+    roomId: room.roomId,
+    context: { type: RoomTypeEnum.SINGLE, uid: partnerId, roomId: room.roomId },
+    isEncrypted: false,
+    members: []
+  })
+}
 
 const contextMenuItems = computed(() => [
   { label: t('dm.context.pin'), icon: 'pin' },

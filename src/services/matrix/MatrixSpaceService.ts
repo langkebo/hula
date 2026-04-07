@@ -5,8 +5,11 @@
  * 统一使用 SDK SpaceManager
  */
 
-import type { MatrixClient, Room } from 'matrix-js-sdk'
+import type { MatrixClient } from 'matrix-js-sdk'
 import { SpaceManager, Space, SpaceChild, SpaceMember, SpaceHierarchy, CreateSpaceOptions } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Space')
 
 export interface SpaceOptions {
   name: string
@@ -29,7 +32,6 @@ export interface SpaceInfo {
  * 统一使用 matrix-js-sdk 的 SpaceManager
  */
 class SpaceService {
-  private client: MatrixClient | null = null
   private spaceManager: SpaceManager | null = null
 
   /**
@@ -39,7 +41,7 @@ class SpaceService {
     this.client = client
     // 使用 SDK 的 SpaceManager
     this.spaceManager = client.getSpaceManager()
-    console.log('[Space] 服务已初始化')
+    logger.info('服务已初始化')
   }
 
   /**
@@ -60,7 +62,7 @@ class SpaceService {
 
       const space = await this.spaceManager.createSpace(createOptions)
 
-      console.log('[Space] Space 已创建:', space.space_id)
+      logger.info('Space 已创建:', space.space_id)
 
       return {
         spaceId: space.space_id,
@@ -71,7 +73,7 @@ class SpaceService {
         childCount: 0
       }
     } catch (error) {
-      console.error('[Space] 创建 Space 失败:', error)
+      logger.error('创建 Space 失败:', error)
       throw error
     }
   }
@@ -97,7 +99,7 @@ class SpaceService {
         childCount: 0
       }
     } catch (error) {
-      console.error('[Space] 获取 Space 失败:', error)
+      logger.error('获取 Space 失败:', error)
       return null
     }
   }
@@ -116,9 +118,9 @@ class SpaceService {
         topic: options.topic,
         avatarUrl: options.avatarUrl
       })
-      console.log('[Space] Space 已更新:', spaceId)
+      logger.info('Space 已更新:', spaceId)
     } catch (error) {
-      console.error('[Space] 更新 Space 失败:', error)
+      logger.error('更新 Space 失败:', error)
       throw error
     }
   }
@@ -133,9 +135,9 @@ class SpaceService {
 
     try {
       await this.spaceManager.deleteSpace(spaceId)
-      console.log('[Space] Space 已删除:', spaceId)
+      logger.info('Space 已删除:', spaceId)
     } catch (error) {
-      console.error('[Space] 删除 Space 失败:', error)
+      logger.error('删除 Space 失败:', error)
       throw error
     }
   }
@@ -152,7 +154,7 @@ class SpaceService {
       const children = await this.spaceManager.getSpaceChildren(spaceId)
       return children
     } catch (error) {
-      console.error('[Space] 获取 Space 子房间失败:', error)
+      logger.error('获取 Space 子房间失败:', error)
       return []
     }
   }
@@ -160,7 +162,11 @@ class SpaceService {
   /**
    * 添加子房间到 Space
    */
-  async addChildToSpace(spaceId: string, roomId: string, options?: { via?: string[]; suggested?: boolean }): Promise<void> {
+  async addChildToSpace(
+    spaceId: string,
+    roomId: string,
+    options?: { via?: string[]; suggested?: boolean }
+  ): Promise<void> {
     if (!this.spaceManager) {
       throw new Error('SpaceManager 未初始化')
     }
@@ -171,9 +177,9 @@ class SpaceService {
         via_servers: options?.via,
         is_suggested: options?.suggested
       })
-      console.log('[Space] 子房间已添加:', roomId, '到', spaceId)
+      logger.info('子房间已添加:', roomId, '到', spaceId)
     } catch (error) {
-      console.error('[Space] 添加子房间失败:', error)
+      logger.error('添加子房间失败:', error)
       throw error
     }
   }
@@ -188,9 +194,9 @@ class SpaceService {
 
     try {
       await this.spaceManager.removeChild(spaceId, roomId)
-      console.log('[Space] 子房间已移除:', roomId, '从', spaceId)
+      logger.info('子房间已移除:', roomId, '从', spaceId)
     } catch (error) {
-      console.error('[Space] 移除子房间失败:', error)
+      logger.error('移除子房间失败:', error)
       throw error
     }
   }
@@ -207,7 +213,7 @@ class SpaceService {
       const members = await this.spaceManager.getSpaceMembers(spaceId)
       return members
     } catch (error) {
-      console.error('[Space] 获取 Space 成员失败:', error)
+      logger.error('获取 Space 成员失败:', error)
       return []
     }
   }
@@ -224,7 +230,7 @@ class SpaceService {
       const hierarchy = await this.spaceManager.getSpaceHierarchy(spaceId)
       return hierarchy
     } catch (error) {
-      console.error('[Space] 获取 Space 层级结构失败:', error)
+      logger.error('获取 Space 层级结构失败:', error)
       return null
     }
   }
@@ -249,7 +255,7 @@ class SpaceService {
         childCount: 0
       }))
     } catch (error) {
-      console.error('[Space] 获取用户 Spaces 失败:', error)
+      logger.error('获取用户 Spaces 失败:', error)
       return []
     }
   }
@@ -274,7 +280,7 @@ class SpaceService {
         childCount: 0
       }))
     } catch (error) {
-      console.error('[Space] 搜索 Spaces 失败:', error)
+      logger.error('搜索 Spaces 失败:', error)
       return []
     }
   }
@@ -290,7 +296,7 @@ class SpaceService {
     try {
       return await this.spaceManager.isSpace(roomId)
     } catch (error) {
-      console.error('[Space] 检查 Space 失败:', error)
+      logger.error('检查 Space 失败:', error)
       return false
     }
   }
@@ -298,7 +304,9 @@ class SpaceService {
   /**
    * 获取 Space 统计信息
    */
-  async getSpaceStats(spaceId: string): Promise<{ totalMessages: number; activeMembers: number; joinedMembers: number } | null> {
+  async getSpaceStats(
+    spaceId: string
+  ): Promise<{ totalMessages: number; activeMembers: number; joinedMembers: number } | null> {
     if (!this.spaceManager) {
       throw new Error('SpaceManager 未初始化')
     }
@@ -307,7 +315,7 @@ class SpaceService {
       const stats = await this.spaceManager.getSpaceStats(spaceId)
       return stats
     } catch (error) {
-      console.error('[Space] 获取 Space 统计失败:', error)
+      logger.error('获取 Space 统计失败:', error)
       return null
     }
   }

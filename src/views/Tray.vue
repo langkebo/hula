@@ -80,7 +80,12 @@ import { useUserStore } from '@/stores/user'
 import { useUserStatusStore } from '@/stores/userStatus'
 import { changeUserState } from '@/utils/ImRequestUtils'
 import { isWindows } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('Tray')
+const timerManager = useTimerManager()
 
 const appWindow = WebviewWindow.getCurrent()
 const { checkWinExist, createWebviewWindow, resizeWindow } = useWindow()
@@ -132,7 +137,7 @@ const toggleStatus = async (item: UserState) => {
     userStore.userInfo!.userStateId = item.id
     appWindow.hide()
   } catch (error) {
-    console.error('更新状态失败:', error)
+    logger.error('更新状态失败:', error)
     appWindow.hide()
   }
 }
@@ -144,13 +149,12 @@ const toggleMessageSound = () => {
   })
 }
 
-let blinkTask: NodeJS.Timeout | null = null
+let blinkTask: number | null = null
 let homeFocusUnlisten: (() => void) | null = null
 let homeBlurUnlisten: (() => void) | null = null
 
 const startBlinkTask = () => {
-  blinkTask = setInterval(async () => {
-    // 定时器触发时，切换图标状态
+  blinkTask = timerManager.setInterval(async () => {
     const tray = await TrayIcon.getById('tray')
     tray?.setIcon(iconVisible.value ? 'tray/icon.png' : null)
     iconVisible.value = !iconVisible.value
@@ -159,15 +163,14 @@ const startBlinkTask = () => {
 
 const stopBlinkTask = async () => {
   if (blinkTask) {
-    clearInterval(blinkTask)
+    timerManager.clearInterval(blinkTask)
     blinkTask = null
 
-    // 恢复托盘图标为默认状态，防止图标消失
     try {
       const tray = await TrayIcon.getById('tray')
       await tray?.setIcon('tray/icon.png')
     } catch (e) {
-      console.warn('[Tray] 恢复托盘图标失败:', e)
+      logger.warn('恢复托盘图标失败:', e)
     }
     iconVisible.value = false
   }

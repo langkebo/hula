@@ -1,6 +1,9 @@
-﻿import { save } from '@tauri-apps/plugin-dialog'
+import { save } from '@tauri-apps/plugin-dialog'
 import type { useDownload } from '@/hooks/useDownload'
 import { extractFileName } from './Formatting'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AttachmentSaver')
 
 const VIDEO_FILE_EXTENSIONS = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'] as const
 
@@ -47,7 +50,7 @@ const saveAttachmentAs = async ({
       window.$message.success(successMessage)
     }
   } catch (error) {
-    console.error(errorMessage || '保存文件失败:', error)
+    logger.error(errorMessage || '保存文件失败:', error)
     if (errorMessage) {
       window.$message.error(errorMessage)
     }

@@ -49,7 +49,11 @@
               </n-flex>
             </template>
             <template #header-extra>
-              <span class="text-(10px #707070)">{{ specialContacts.filter(c => c.activeStatus === OnlineEnum.ONLINE).length }}/{{ specialContacts.length }}</span>
+              <span class="text-(10px #707070)">
+                {{ specialContacts.filter((c) => c.activeStatus === OnlineEnum.ONLINE).length }}/{{
+                  specialContacts.length
+                }}
+              </span>
             </template>
             <n-scrollbar style="max-height: calc(100vh / var(--page-scale, 1) - 270px)" @scroll="handleFriendScroll">
               <div @contextmenu.stop="$event.preventDefault()">
@@ -71,7 +75,9 @@
                     :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
                     :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
                   <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
-                    <span class="text-14px leading-tight flex-1 truncate">{{ groupStore.getUserInfo(item.uid)!.name }}</span>
+                    <span class="text-14px leading-tight flex-1 truncate">
+                      {{ groupStore.getUserInfo(item.uid)!.name }}
+                    </span>
                     <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
                       [
                       <template v-if="isBotUser(item.uid)">{{ t('home.friends_list.bot_tag') }}</template>
@@ -81,7 +87,11 @@
                       </template>
                       <template v-else>
                         <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
-                        {{ item.activeStatus === OnlineEnum.ONLINE ? t('home.friends_list.status.online') : t('home.friends_list.status.offline') }}
+                        {{
+                          item.activeStatus === OnlineEnum.ONLINE
+                            ? t('home.friends_list.status.online')
+                            : t('home.friends_list.status.offline')
+                        }}
                       </template>
                       ]
                     </div>
@@ -100,7 +110,11 @@
               </n-flex>
             </template>
             <template #header-extra>
-              <span class="text-(10px #707070)">{{ onlineCount - specialContacts.filter(c => c.activeStatus === OnlineEnum.ONLINE).length }}/{{ normalContacts.length }}</span>
+              <span class="text-(10px #707070)">
+                {{ onlineCount - specialContacts.filter((c) => c.activeStatus === OnlineEnum.ONLINE).length }}/{{
+                  normalContacts.length
+                }}
+              </span>
             </template>
             <n-scrollbar style="max-height: calc(100vh / var(--page-scale, 1) - 270px)" @scroll="handleFriendScroll">
               <div @contextmenu.stop="$event.preventDefault()">
@@ -122,7 +136,9 @@
                     :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
                     :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
                   <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
-                    <span class="text-14px leading-tight flex-1 truncate">{{ groupStore.getUserInfo(item.uid)!.name }}</span>
+                    <span class="text-14px leading-tight flex-1 truncate">
+                      {{ groupStore.getUserInfo(item.uid)!.name }}
+                    </span>
                     <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
                       [
                       <template v-if="isBotUser(item.uid)">{{ t('home.friends_list.bot_tag') }}</template>
@@ -132,7 +148,11 @@
                       </template>
                       <template v-else>
                         <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
-                        {{ item.activeStatus === OnlineEnum.ONLINE ? t('home.friends_list.status.online') : t('home.friends_list.status.offline') }}
+                        {{
+                          item.activeStatus === OnlineEnum.ONLINE
+                            ? t('home.friends_list.status.online')
+                            : t('home.friends_list.status.offline')
+                        }}
                       </template>
                       ]
                     </div>
@@ -172,7 +192,9 @@
                     :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
                     :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
                   <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
-                    <span class="text-14px leading-tight flex-1 truncate">{{ groupStore.getUserInfo(item.uid)!.name }}</span>
+                    <span class="text-14px leading-tight flex-1 truncate">
+                      {{ groupStore.getUserInfo(item.uid)!.name }}
+                    </span>
                     <div class="text leading-tight text-12px text-#909090">
                       [{{ t('home.friends_list.status.blocked') }}]
                     </div>
@@ -230,6 +252,9 @@ import { useSettingStore } from '@/stores/setting'
 import { useUserStatusStore } from '@/stores/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('FriendsList')
 
 const route = useRoute()
 const router = useRouter()
@@ -283,10 +308,10 @@ const blockedContacts = computed(() => {
 
 /** 普通好友列表（排除特殊关心和屏蔽的） */
 const normalContacts = computed(() => {
-  const specialIds = new Set(specialContacts.value.map(c => c.uid))
-  const blockedIds = new Set(blockedContacts.value.map(c => c.uid))
+  const specialIds = new Set(specialContacts.value.map((c) => c.uid))
+  const blockedIds = new Set(blockedContacts.value.map((c) => c.uid))
   return contactStore.contactsList
-    .filter(c => !specialIds.has(c.uid) && !blockedIds.has(c.uid))
+    .filter((c) => !specialIds.has(c.uid) && !blockedIds.has(c.uid))
     .sort((a, b) => {
       const aIsBot = isBotUser(a.uid)
       const bIsBot = isBotUser(b.uid)
@@ -340,11 +365,11 @@ const handleClick = (index: string, type: number) => {
 }
 // todo 需要循环数组来展示分组
 const showMenu = (event: MouseEvent) => {
-  console.log(event)
+  logger.debug('showMenu', event)
 }
 
 const handleSelect = (event: MouseEvent) => {
-  console.log(event)
+  logger.debug('handleSelect', event)
 }
 
 const handleFriendScroll = (e: Event) => {
@@ -401,7 +426,7 @@ const fetchContactData = async () => {
     // 同时获取好友列表和群聊列表
     await Promise.all([contactStore.getContactList()])
   } catch (error) {
-    console.error('获取联系人数据失败:', error)
+    logger.error('获取联系人数据失败:', error)
   }
 }
 

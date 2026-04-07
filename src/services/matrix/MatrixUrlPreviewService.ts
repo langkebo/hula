@@ -3,6 +3,9 @@
  * 链接预览功能
  */
 import { matrixClientService } from './MatrixClientService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('UrlPreview')
 
 export interface UrlPreview {
   url: string
@@ -76,7 +79,7 @@ class MatrixUrlPreviewService {
 
       const response = (await this.client.http.authedRequest({}, 'GET', previewUrl.replace(api, ''), undefined, {
         global: false
-      })) as Record<string, any>
+      })) as Record<string, unknown>
 
       if (!response || !Object.keys(response).length) {
         return null
@@ -105,7 +108,7 @@ class MatrixUrlPreviewService {
 
       return result
     } catch (error) {
-      console.error('[UrlPreview] 获取预览失败:', error)
+      logger.error('获取预览失败:', error)
       return null
     }
   }

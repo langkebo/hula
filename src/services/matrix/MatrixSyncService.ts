@@ -4,7 +4,7 @@
  * 提供数据同步功能
  */
 
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { info, error } from '@tauri-apps/plugin-log'
 
 /**
@@ -52,7 +52,7 @@ class SyncService {
     isSyncing: false,
     lastSyncTime: 0
   }
-  private syncListeners: Map<string, Function> = new Map()
+  private syncListeners: Map<string, (...args: unknown[]) => void> = new Map()
 
   /**
    * 初始化服务
@@ -117,7 +117,7 @@ class SyncService {
   /**
    * 获取房间列表
    */
-  getRooms(): any[] {
+  getRooms(): Room[] {
     if (!this.client) {
       return []
     }
@@ -128,28 +128,28 @@ class SyncService {
   /**
    * 获取已加入的房间
    */
-  getJoinedRooms(): any[] {
+  getJoinedRooms(): Room[] {
     return this.getRooms().filter((room) => room.getMyMembership?.() === 'join')
   }
 
   /**
    * 获取邀请的房间
    */
-  getInvitedRooms(): any[] {
+  getInvitedRooms(): Room[] {
     return this.getRooms().filter((room) => room.getMyMembership?.() === 'invite')
   }
 
   /**
    * 获取离开的房间
    */
-  getLeftRooms(): any[] {
+  getLeftRooms(): Room[] {
     return this.getRooms().filter((room) => room.getMyMembership?.() === 'leave')
   }
 
   /**
    * 监听同步事件
    */
-  onSync(event: string, callback: Function): void {
+  onSync(event: string, callback: (...args: unknown[]) => void): void {
     this.syncListeners.set(event, callback)
 
     if (this.client) {
@@ -210,7 +210,7 @@ export const syncService = new SyncService()
 import { ref } from 'vue'
 
 export function useSync() {
-  const rooms = ref<any[]>([])
+  const rooms = ref<Room[]>([])
   const isSyncing = ref(false)
   const unreadCount = ref(0)
   const notificationCount = ref(0)

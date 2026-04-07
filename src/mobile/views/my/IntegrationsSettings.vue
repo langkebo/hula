@@ -100,10 +100,15 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('IntegrationsSettings')
+const timerManager = useTimerManager()
 
 const { t } = useI18n()
 
@@ -175,7 +180,7 @@ function loadSavedSettings() {
     try {
       permissions.value = JSON.parse(savedPermissions)
     } catch (e) {
-      console.error('Failed to parse saved permissions')
+      logger.error('Failed to parse saved permissions')
     }
   }
 }
@@ -204,7 +209,7 @@ function handleInstallIntegration(integration: Integration) {
     duration: 1000
   })
 
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     integrations.value.push({
       ...integration,
       enabled: true

@@ -4,7 +4,8 @@
  * 管理阅后即焚消息的状态、倒计时和销毁逻辑
  */
 
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
+import { useTimerManager } from '@/utils/TimerManager'
 
 export interface BurnMessage {
   msgId: string
@@ -27,6 +28,7 @@ export interface UseBurnAfterReadOptions {
 
 export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
   const defaultDuration = options.defaultDuration || 60
+  const timerManager = useTimerManager()
 
   const burnMessages = ref<Map<string, BurnMessage>>(new Map())
 
@@ -77,10 +79,10 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
     const msg = burnMessages.value.get(msgId)
     if (!msg) return
 
-    const intervalId = setInterval(() => {
+    const intervalId = timerManager.setInterval(() => {
       const currentMsg = burnMessages.value.get(msgId)
       if (!currentMsg || !currentMsg.isBurning || currentMsg.isBurned) {
-        clearInterval(intervalId)
+        timerManager.clearInterval(intervalId)
         return
       }
 
@@ -90,14 +92,10 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
       options.onBurnTick?.(currentMsg, currentMsg.remainingSeconds)
 
       if (currentMsg.remainingSeconds <= 0) {
-        clearInterval(intervalId)
+        timerManager.clearInterval(intervalId)
         completeBurn(msgId)
       }
     }, 1000)
-
-    onUnmounted(() => {
-      clearInterval(intervalId)
-    })
   }
 
   function completeBurn(msgId: string) {

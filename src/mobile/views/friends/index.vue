@@ -83,7 +83,11 @@
                   </n-flex>
                 </template>
                 <template #header-extra>
-                  <span class="text-(10px #707070)">{{ specialContacts.filter(c => c.activeStatus === OnlineEnum.ONLINE).length }}/{{ specialContacts.length }}</span>
+                  <span class="text-(10px #707070)">
+                    {{ specialContacts.filter((c) => c.activeStatus === OnlineEnum.ONLINE).length }}/{{
+                      specialContacts.length
+                    }}
+                  </span>
                 </template>
                 <n-scrollbar style="max-height: calc(100vh - (340px + var(--safe-area-inset-top)))">
                   <div @contextmenu.stop="$event.preventDefault()">
@@ -116,7 +120,11 @@
                           </template>
                           <template v-else>
                             <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
-                            {{ item.activeStatus === OnlineEnum.ONLINE ? (t('mobile_contact.status.online') || '在线') : (t('mobile_contact.status.offline') || '离线') }}
+                            {{
+                              item.activeStatus === OnlineEnum.ONLINE
+                                ? t('mobile_contact.status.online') || '在线'
+                                : t('mobile_contact.status.offline') || '离线'
+                            }}
                           </template>
                           ]
                         </div>
@@ -135,7 +143,11 @@
                   </n-flex>
                 </template>
                 <template #header-extra>
-                  <span class="text-(10px #707070)">{{ onlineCount - specialContacts.filter(c => c.activeStatus === OnlineEnum.ONLINE).length }}/{{ normalContacts.length }}</span>
+                  <span class="text-(10px #707070)">
+                    {{ onlineCount - specialContacts.filter((c) => c.activeStatus === OnlineEnum.ONLINE).length }}/{{
+                      normalContacts.length
+                    }}
+                  </span>
                 </template>
                 <n-scrollbar style="max-height: calc(100vh - (340px + var(--safe-area-inset-top)))">
                   <div @contextmenu.stop="$event.preventDefault()">
@@ -168,7 +180,11 @@
                           </template>
                           <template v-else>
                             <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
-                            {{ item.activeStatus === OnlineEnum.ONLINE ? (t('mobile_contact.status.online') || '在线') : (t('mobile_contact.status.offline') || '离线') }}
+                            {{
+                              item.activeStatus === OnlineEnum.ONLINE
+                                ? t('mobile_contact.status.online') || '在线'
+                                : t('mobile_contact.status.offline') || '离线'
+                            }}
                           </template>
                           ]
                         </div>
@@ -276,8 +292,12 @@ import { useGroupStore } from '@/stores/group'
 import { useUserStatusStore } from '@/stores/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
+const logger = createLogger('AddFriends')
+const timerManager = useTimerManager()
 /**
  * 渲染图片图标的函数工厂
  * @param {string} src - 图标图片路径
@@ -335,7 +355,7 @@ const toMessage = async () => {
     await Promise.all([contactStore.getApplyPage('friend', true, true), contactStore.getApplyPage('group', true, true)])
     await contactStore.getApplyUnReadCount()
   } catch (error) {
-    console.error('刷新通知并标记已读失败', error)
+    logger.error('刷新通知并标记已读失败', error)
     window.$message?.error?.('刷新通知失败，请稍后再试')
   } finally {
     router.push('/mobile/mobileMy/myMessages')
@@ -383,10 +403,10 @@ const blockedContacts = computed(() => {
 
 /** 普通好友列表（排除特殊关心和屏蔽的） */
 const normalContacts = computed(() => {
-  const specialIds = new Set(specialContacts.value.map(c => c.uid))
-  const blockedIds = new Set(blockedContacts.value.map(c => c.uid))
+  const specialIds = new Set(specialContacts.value.map((c) => c.uid))
+  const blockedIds = new Set(blockedContacts.value.map((c) => c.uid))
   return contactStore.contactsList
-    .filter(c => !specialIds.has(c.uid) && !blockedIds.has(c.uid))
+    .filter((c) => !specialIds.has(c.uid) && !blockedIds.has(c.uid))
     .sort((a, b) => {
       const aIsBot = isBotUser(a.uid)
       const bIsBot = isBotUser(b.uid)
@@ -424,7 +444,7 @@ const handleClick = async (id: string, type: number) => {
       await preloadChatRoom(id)
       router.push(`/mobile/chatRoom/chatMain`)
     } catch (error) {
-      console.error(error)
+      logger.error(error)
     }
   } else {
     router.push(`/mobile/mobileFriends/friendInfo/${id}`)
@@ -433,11 +453,11 @@ const handleClick = async (id: string, type: number) => {
 
 // todo 需要循环数组来展示分组
 const showMenu = (event: MouseEvent) => {
-  console.log(event)
+  logger.debug(event)
 }
 
 const handleSelect = (event: MouseEvent) => {
-  console.log(event)
+  logger.debug(event)
 }
 
 /** 获取用户状态 */
@@ -459,7 +479,7 @@ onMounted(async () => {
     await contactStore.getContactList(true)
     await contactStore.getApplyPage('friend', false)
   } catch (error) {
-    console.log('请求好友申请列表失败')
+    logger.debug('请求好友申请列表失败')
   }
 })
 
@@ -500,13 +520,13 @@ const maskHandler = {
    * 关闭蒙板，恢复滚动状态和位置
    */
   close: () => {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       showMask.value = false
       document.body.style.overflow = ''
       document.body.style.position = ''
       document.body.style.top = ''
       document.body.style.width = ''
-      window.scrollTo(0, scrollY) // 恢复滚动位置
+      window.scrollTo(0, scrollY)
     }, 200)
   }
 }
@@ -519,7 +539,7 @@ const addIconHandler = {
    * 选项选择时关闭蒙板
    */
   select: (item: string) => {
-    console.log('选择的项：', item)
+    logger.debug('选择的项：', item)
     router.push(item)
     maskHandler.close()
   },

@@ -151,6 +151,9 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ManageStore')
 import { open } from '@tauri-apps/plugin-dialog'
 import { useScannerStore } from '@/stores/scanner.ts'
 import { formatBytes } from '@/utils/Formatting.ts'
@@ -193,7 +196,7 @@ const selectCustomDirectory = async () => {
       scannerStore.setCustomDirectory(result)
     }
   } catch (error) {
-    console.error('选择目录失败:', error)
+    logger.error('选择目录失败:', error)
     window.$message?.error('选择目录失败')
   }
 }
