@@ -1,5 +1,5 @@
 import { TauriCommand } from '@/enums'
-import { getUserDetail } from '@/utils/ImRequestUtils'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { createLogger } from '@/utils/Logger'
 
@@ -21,8 +21,11 @@ export class TokenManager {
       let targetUid = uid || ''
       if (!targetUid) {
         try {
-          const user = await getUserDetail()
-          targetUid = user?.uid || user?.id || ''
+          const client = matrixClientService.getClient()
+          if (client) {
+            const userId = client.getUserId()
+            targetUid = userId || ''
+          }
         } catch (_) {
           // ignore detail fetch error here
         }

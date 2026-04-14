@@ -1,6 +1,5 @@
 import { ref } from 'vue'
-import { ImUrlEnum } from '@/enums'
-import { imRequestResult } from '@/utils/ImRequestUtils'
+import { matrixModelService, type AIModel } from '@/services/matrix/MatrixModelService'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('AssistantModelPresets')
 
@@ -20,31 +19,25 @@ const assistantModelLoading = ref(false)
 const assistantModelError = ref<unknown>(null)
 const assistantModelMeta = ref<Record<string, { name: string; version: string }>>({})
 
-const appendVersionQuery = (url: string, version: string) => {
-  const encoded = encodeURIComponent(version)
-  const separator = url.includes('?') ? '&' : '?'
-  return `${url}${separator}v=${encoded}`
-}
-
 const fetchAssistantModelPresets = async (force = false) => {
   if (assistantModelLoading.value || (assistantModelLoaded.value && !force)) return
   assistantModelLoading.value = true
   assistantModelError.value = null
   try {
-    const response = await imRequestResult<AssistantModelPreset[]>({
-      url: ImUrlEnum.GET_ASSISTANT_MODEL_LIST
-    })
-    if (!response.isOk()) {
-      throw response.error
-    }
-    const normalized = (response.value ?? []).map((preset) => ({
-      ...preset,
-      modelUrl: appendVersionQuery(preset.modelUrl, preset.version)
+    const response = await matrixModelService.page({ pageNo: 1, pageSize: 100 })
+    const normalized = (response.list ?? []).map((model: AIModel) => ({
+      id: model.id,
+      modelKey: model.model,
+      modelName: model.name,
+      modelUrl: model.platform,
+      description: model.name,
+      status: model.status === 1,
+      version: String(model.updatedAt ?? Date.now())
     }))
     const sorted = normalized.slice().sort((a, b) => Number(a.id) - Number(b.id))
     const metaMap: Record<string, { name: string; version: string }> = {}
     for (const preset of sorted) {
-      metaMap[preset.modelUrl] = {
+      metaMap[preset.modelKey] = {
         name: preset.modelName,
         version: preset.version
       }
@@ -62,11 +55,19 @@ const fetchAssistantModelPresets = async (force = false) => {
   }
 }
 
+const resetAssistantModelPresets = () => {
+  assistantModelPresets.value = []
+  assistantModelLoaded.value = false
+  assistantModelError.value = null
+  assistantModelMeta.value = {}
+}
+
 export const useAssistantModelPresets = () => ({
   presets: assistantModelPresets,
+  metaMap: assistantModelMeta,
   loaded: assistantModelLoaded,
   loading: assistantModelLoading,
   error: assistantModelError,
   fetchAssistantModelPresets,
-  metaMap: assistantModelMeta
+  resetAssistantModelPresets
 })

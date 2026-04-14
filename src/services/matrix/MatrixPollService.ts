@@ -1,5 +1,6 @@
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
 export interface PollOption {
   id: string
@@ -15,45 +16,39 @@ export interface PollData {
   totalVotes: number
 }
 
-class MatrixPollService {
+class MatrixPollService extends BaseManager {
   async createPoll(roomId: string, question: string, options: string[], endTime?: number): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Poll] 客户端未初始化')
     }
+    const pollOptions = options.map((text, index) => ({
+      id: index.toString(),
+      text
+    }))
 
-    try {
-      const pollOptions = options.map((text, index) => ({
-        id: index.toString(),
-        text
-      }))
-
-      const content: any = {
-        msgtype: 'm.poll.start',
-        body: question,
-        'm.poll': {
-          question: {
-            text: question
-          },
-          answers: pollOptions.map((opt) => ({
-            id: opt.id,
-            text: opt.text
-          })),
-          kind: 'm.poll.disclosed'
-        }
+    const content: any = {
+      msgtype: 'm.poll.start',
+      body: question,
+      'm.poll': {
+        question: {
+          text: question
+        },
+        answers: pollOptions.map((opt) => ({
+          id: opt.id,
+          text: opt.text
+        })),
+        kind: 'm.poll.disclosed'
       }
-
-      if (endTime) {
-        content['m.poll'].end_time = endTime
-      }
-
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
-      info(`[Poll] 创建投票成功: ${roomId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[Poll] 创建投票失败: ${err}`)
-      throw err
     }
+
+    if (endTime) {
+      content['m.poll'].end_time = endTime
+    }
+
+    const response = await client.sendEvent(roomId, 'm.room.message', content)
+    info(`[Poll] 创建投票成功: ${roomId}`)
+    return response.event_id
   }
 
   async vote(roomId: string, pollEventId: string, optionId: string): Promise<string> {
@@ -61,27 +56,21 @@ class MatrixPollService {
     if (!client) {
       throw new Error('[Poll] 客户端未初始化')
     }
-
-    try {
-      const content: any = {
-        msgtype: 'm.poll.response',
-        body: optionId,
-        'm.poll.response': {
-          answers: [optionId]
-        },
-        'm.relates_to': {
-          rel_type: 'm.reference',
-          event_id: pollEventId
-        }
+    const content: any = {
+      msgtype: 'm.poll.response',
+      body: optionId,
+      'm.poll.response': {
+        answers: [optionId]
+      },
+      'm.relates_to': {
+        rel_type: 'm.reference',
+        event_id: pollEventId
       }
-
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
-      info(`[Poll] 投票成功: ${pollEventId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[Poll] 投票失败: ${err}`)
-      throw err
     }
+
+    const response = await client.sendEvent(roomId, 'm.room.message', content)
+    info(`[Poll] 投票成功: ${pollEventId}`)
+    return response.event_id
   }
 
   async endPoll(roomId: string, pollEventId: string): Promise<string> {
@@ -89,44 +78,38 @@ class MatrixPollService {
     if (!client) {
       throw new Error('[Poll] 客户端未初始化')
     }
-
-    try {
-      const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(`[Poll] 房间不存在: ${roomId}`)
-      }
-
-      const pollEvent = room.findEventById(pollEventId)
-      if (!pollEvent) {
-        throw new Error(`[Poll] 投票不存在: ${pollEventId}`)
-      }
-
-      const pollContent = pollEvent.getContent()
-      const votes = await this.getVotes(roomId, pollEventId)
-      const results = this.calculateResults(
-        (pollContent['m.poll'] as { answers: { id: string; text: string }[] })?.answers || [],
-        votes
-      )
-
-      const content: any = {
-        msgtype: 'm.poll.end',
-        body: 'Poll ended',
-        'm.poll.end': {
-          results
-        },
-        'm.relates_to': {
-          rel_type: 'm.reference',
-          event_id: pollEventId
-        }
-      }
-
-      const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
-      info(`[Poll] 结束投票成功: ${pollEventId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[Poll] 结束投票失败: ${err}`)
-      throw err
+    const room = client.getRoom(roomId)
+    if (!room) {
+      throw new Error(`[Poll] 房间不存在: ${roomId}`)
     }
+
+    const pollEvent = room.findEventById(pollEventId)
+    if (!pollEvent) {
+      throw new Error(`[Poll] 投票不存在: ${pollEventId}`)
+    }
+
+    const pollContent = pollEvent.getContent()
+    const votes = await this.getVotes(roomId, pollEventId)
+    const results = this.calculateResults(
+      (pollContent['m.poll'] as { answers: { id: string; text: string }[] })?.answers || [],
+      votes
+    )
+
+    const content: any = {
+      msgtype: 'm.poll.end',
+      body: 'Poll ended',
+      'm.poll.end': {
+        results
+      },
+      'm.relates_to': {
+        rel_type: 'm.reference',
+        event_id: pollEventId
+      }
+    }
+
+    const response = await client.sendEvent(roomId, 'm.room.message', content)
+    info(`[Poll] 结束投票成功: ${pollEventId}`)
+    return response.event_id
   }
 
   async getVotes(roomId: string, pollEventId: string): Promise<Map<string, string[]>> {

@@ -1,5 +1,6 @@
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
 export interface VoiceMessageConfig {
   maxDuration: number
@@ -30,7 +31,7 @@ export interface ImageThumbnail {
   mimetype: string
 }
 
-class MatrixMultimediaService {
+class MatrixMultimediaService extends BaseManager {
   private mediaRecorder: MediaRecorder | null = null
   private audioChunks: Blob[] = []
   private recordingStartTime: number = 0
@@ -46,34 +47,28 @@ class MatrixMultimediaService {
 
   async startVoiceRecording(config: Partial<VoiceMessageConfig> = {}): Promise<void> {
     const finalConfig = { ...this.defaultVoiceConfig, ...config }
+    this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
 
-    try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    this.audioContext = new AudioContext({ sampleRate: finalConfig.sampleRate })
+    const source = this.audioContext.createMediaStreamSource(this.stream)
+    this.analyser = this.audioContext.createAnalyser()
+    this.analyser.fftSize = 256
+    source.connect(this.analyser)
 
-      this.audioContext = new AudioContext({ sampleRate: finalConfig.sampleRate })
-      const source = this.audioContext.createMediaStreamSource(this.stream)
-      this.analyser = this.audioContext.createAnalyser()
-      this.analyser.fftSize = 256
-      source.connect(this.analyser)
+    const mimeType = MediaRecorder.isTypeSupported(finalConfig.mimeType) ? finalConfig.mimeType : 'audio/webm'
 
-      const mimeType = MediaRecorder.isTypeSupported(finalConfig.mimeType) ? finalConfig.mimeType : 'audio/webm'
+    this.mediaRecorder = new MediaRecorder(this.stream, { mimeType })
+    this.audioChunks = []
 
-      this.mediaRecorder = new MediaRecorder(this.stream, { mimeType })
-      this.audioChunks = []
-
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data)
-        }
+    this.mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        this.audioChunks.push(event.data)
       }
-
-      this.mediaRecorder.start(100)
-      this.recordingStartTime = Date.now()
-      info('[Multimedia] 开始语音录制')
-    } catch (err) {
-      error(`[Multimedia] 启动语音录制失败: ${err}`)
-      throw err
     }
+
+    this.mediaRecorder.start(100)
+    this.recordingStartTime = Date.now()
+    info('[Multimedia] 开始语音录制')
   }
 
   async stopVoiceRecording(): Promise<{ blob: Blob; duration: number }> {
@@ -270,25 +265,19 @@ class MatrixMultimediaService {
     if (!client) {
       throw new Error('[Multimedia] 客户端未初始化')
     }
-
-    try {
-      const httpUrl = client.mxcUrlToHttp(mxcUrl)
-      if (!httpUrl) {
-        throw new Error('[Multimedia] 无效的 MXC URL')
-      }
-
-      const response = await fetch(httpUrl)
-      if (!response.ok) {
-        throw new Error(`[Multimedia] 下载失败: ${response.status}`)
-      }
-
-      const blob = await response.blob()
-      info(`[Multimedia] 下载媒体成功: ${filename}`)
-      return blob
-    } catch (err) {
-      error(`[Multimedia] 下载媒体失败: ${err}`)
-      throw err
+    const httpUrl = client.mxcUrlToHttp(mxcUrl)
+    if (!httpUrl) {
+      throw new Error('[Multimedia] 无效的 MXC URL')
     }
+
+    const response = await fetch(httpUrl)
+    if (!response.ok) {
+      throw new Error(`[Multimedia] 下载失败: ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    info(`[Multimedia] 下载媒体成功: ${filename}`)
+    return blob
   }
 
   async downloadAndSave(mxcUrl: string, filename: string): Promise<void> {

@@ -6,7 +6,7 @@ import type { Ref } from 'vue'
 import { nextTick } from 'vue'
 import { LimitEnum, MessageStatusEnum, MittEnum, MsgEnum, UploadSceneEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { AIModel, UserItem } from '@/services/types.ts'
+import type { AIModel, UserItem, MsgType } from '@/services/types.ts'
 import type { MessageType } from '@/stores/chat'
 import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global.ts'
@@ -19,11 +19,13 @@ import { getReplyContent } from '@/utils/MessageReply.ts'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
 import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
 import type { SelectionRange } from './useCommon.ts'
+import { useCommon } from './useCommon.ts'
 import { globalFileUploadQueue } from './useFileUploadQueue.ts'
 import { useTrigger } from './useTrigger'
-import { UploadProviderEnum, useUpload } from './useUpload.ts'
+import { UploadProviderEnum, useUpload, type QiniuCredential, type UploadOptions } from './useUpload.ts'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+import type { ImageBody, VideoBody } from '@/services/types'
 const logger = createLogger('MsgInput')
 
 /**
@@ -478,13 +480,16 @@ export const useMsgInput = (messageInputDom: Ref) => {
       if (!retainRawContent(contentType))
         msgInput.value = messageInputDom.value.innerHTML.replace(replyDiv.outerHTML, '')
     }
-    const msg = await messageStrategy.getMsg(msgInput.value, reply.value as any)
+    const msg = await messageStrategy.getMsg(
+      msgInput.value,
+      reply.value.content ? (reply.value as unknown as MessageType) : null
+    )
     const atUidList = extractAtUserIds(msgInput.value, groupStore.userList)
     const tempMsgId = 'T' + Date.now().toString()
 
     // 根据消息类型创建消息体
     const messageBody = {
-      ...messageStrategy.buildMessageBody(msg, reply.value as any),
+      ...messageStrategy.buildMessageBody(msg, reply.value.content ? (reply.value as unknown as MessageType) : null),
       atUidList
     }
 
@@ -516,14 +521,16 @@ export const useMsgInput = (messageInputDom: Ref) => {
         const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
           provider: UploadProviderEnum.QINIU
         })
-        const doUploadResult = await messageStrategy.doUpload(msg.path as string, uploadUrl, config as any)
+        const qiniuConfig = config as QiniuCredential & { provider?: UploadProviderEnum }
+        const doUploadResult = await messageStrategy.doUpload(msg.path as string, uploadUrl, qiniuConfig)
         const uploadResult = doUploadResult as { qiniuUrl?: string } | undefined
         // 更新消息体中的URL为服务器URL(判断使用的是七牛云还是默认上传方式),如果没有provider就默认赋值downloadUrl
-        ;(messageBody as any).url =
-          (config as any)?.provider && (config as any)?.provider === UploadProviderEnum.QINIU
-            ? uploadResult?.qiniuUrl
+        const imageBody = messageBody as unknown as ImageBody & { path?: string }
+        imageBody.url =
+          qiniuConfig?.provider && qiniuConfig.provider === UploadProviderEnum.QINIU
+            ? uploadResult?.qiniuUrl || ''
             : downloadUrl
-        delete (messageBody as any).path // 删除临时路径
+        delete imageBody.path // 删除临时路径
 
         // 更新临时消息的URL
         chatStore.updateMsg({
@@ -540,42 +547,42 @@ export const useMsgInput = (messageInputDom: Ref) => {
           const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(msg.thumbnail as File, {
             provider: UploadProviderEnum.QINIU
           })
+          const thumbnailQiniuConfig = thumbnailUploadInfo.config as QiniuCredential & { provider?: UploadProviderEnum }
           const thumbnailUploadResult = (await messageStrategy.doUploadThumbnail(
             msg.thumbnail as File,
             thumbnailUploadInfo.uploadUrl,
-            thumbnailUploadInfo.config as any
+            thumbnailQiniuConfig
           )) as { qiniuUrl?: string } | undefined
           uploadResult =
-            (thumbnailUploadInfo.config as any)?.provider === UploadProviderEnum.QINIU
+            thumbnailQiniuConfig?.provider === UploadProviderEnum.QINIU
               ? thumbnailUploadResult?.qiniuUrl || thumbnailUploadInfo.downloadUrl
               : thumbnailUploadInfo.downloadUrl
         } else {
-          uploadResult = await useUpload()
-            .uploadFile(msg.thumbnail as File, {
-              provider: UploadProviderEnum.QINIU,
-              scene: UploadSceneEnum.CHAT
-            })
-            .then((UploadResult) => {
-              return UploadResult.downloadUrl
-            })
+          const uploadFileResult = await useUpload().uploadFile(msg.thumbnail as File, {
+            provider: UploadProviderEnum.QINIU,
+            scene: UploadSceneEnum.CHAT
+          })
+          uploadResult = uploadFileResult?.downloadUrl || ''
         }
 
         // 再上传视频文件
         const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
           provider: UploadProviderEnum.QINIU
         })
-        const doUploadResult = (await messageStrategy.doUpload(msg.path as string, uploadUrl, config as any)) as
+        const videoQiniuConfig = config as QiniuCredential & { provider?: UploadProviderEnum }
+        const doUploadResult = (await messageStrategy.doUpload(msg.path as string, uploadUrl, videoQiniuConfig)) as
           | { qiniuUrl?: string }
           | undefined
-        ;(messageBody as any).url =
-          (config as any)?.provider && (config as any)?.provider === UploadProviderEnum.QINIU
-            ? doUploadResult?.qiniuUrl
+        const videoBody = messageBody as unknown as VideoBody & { path?: string }
+        videoBody.url =
+          videoQiniuConfig?.provider && videoQiniuConfig.provider === UploadProviderEnum.QINIU
+            ? doUploadResult?.qiniuUrl || ''
             : downloadUrl
-        delete (messageBody as any).path // 删除临时路径
-        ;(messageBody as any).thumbUrl = uploadResult
-        ;(messageBody as any).thumbSize = (msg.thumbnail as File).size
-        ;(messageBody as any).thumbWidth = 300
-        ;(messageBody as any).thumbHeight = 150
+        delete videoBody.path // 删除临时路径
+        videoBody.thumbUrl = uploadResult
+        videoBody.thumbSize = (msg.thumbnail as File).size
+        videoBody.thumbWidth = 300
+        videoBody.thumbHeight = 150
 
         // 更新临时消息的URL
         chatStore.updateMsg({
@@ -597,17 +604,19 @@ export const useMsgInput = (messageInputDom: Ref) => {
       })
 
       // 消息发送成功后释放预览URL
-      if ((msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) && (msg as any).url?.startsWith('blob:')) {
-        URL.revokeObjectURL((msg as any).url)
+      const msgWithUrl = msg as { url?: string }
+      if ((msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) && msgWithUrl.url?.startsWith('blob:')) {
+        URL.revokeObjectURL(msgWithUrl.url)
       }
 
       // 释放视频缩略图的本地预览URL
+      const videoBodyForCleanup = messageBody as unknown as VideoBody
       if (
         msg.type === MsgEnum.VIDEO &&
-        (messageBody as any).thumbUrl &&
-        (messageBody as any).thumbUrl.startsWith('blob:')
+        videoBodyForCleanup.thumbUrl &&
+        videoBodyForCleanup.thumbUrl.startsWith('blob:')
       ) {
-        URL.revokeObjectURL((messageBody as any).thumbUrl)
+        URL.revokeObjectURL(videoBodyForCleanup.thumbUrl)
       }
     } catch (error) {
       logger.error('消息发送失败:', error)
@@ -617,17 +626,19 @@ export const useMsgInput = (messageInputDom: Ref) => {
       })
 
       // 释放预览URL
-      if ((msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) && (msg as any).url?.startsWith('blob:')) {
-        URL.revokeObjectURL((msg as any).url)
+      const msgWithUrl = msg as { url?: string }
+      if ((msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) && msgWithUrl.url?.startsWith('blob:')) {
+        URL.revokeObjectURL(msgWithUrl.url)
       }
 
       // 释放视频缩略图的本地预览URL
+      const videoBodyWithThumb = messageBody as unknown as VideoBody
       if (
         msg.type === MsgEnum.VIDEO &&
-        (messageBody as any).thumbUrl &&
-        (messageBody as any).thumbUrl.startsWith('blob:')
+        videoBodyWithThumb.thumbUrl &&
+        videoBodyWithThumb.thumbUrl.startsWith('blob:')
       ) {
-        URL.revokeObjectURL((messageBody as any).thumbUrl)
+        URL.revokeObjectURL(videoBodyWithThumb.thumbUrl)
       }
     }
   }
@@ -863,7 +874,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
       cleanup()
 
       messageBody.url = config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
-      delete (messageBody as any).path
+      const fileBody = messageBody as { path?: string }
+      delete fileBody.path
 
       chatStore.updateMsg({
         msgId: tempMsgId,
@@ -938,7 +950,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
       cleanup()
 
       messageBody.url = config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
-      delete (messageBody as any).path
+      const fileBody = messageBody as { path?: string }
+      delete fileBody.path
 
       chatStore.updateMsg({
         msgId: tempMsgId,
@@ -1015,7 +1028,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         reply.value = { avatar: '', imgCount: 0, accountName: '', content: '', key: 0 }
 
         // 步骤3: 处理回复内容
-        const content = getReplyContent(event.message as any)
+        const content = getReplyContent(event.message as MsgType)
 
         // 步骤4: 设置新的回复内容
         reply.value = {
@@ -1023,7 +1036,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
           avatar: avatar,
           accountName: accountName,
           content: content,
-          key: event.message.id as any
+          key: event.message.id as string | number
         }
 
         // 步骤5: 在DOM更新后插入回复框
@@ -1245,7 +1258,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
           provider: UploadProviderEnum.QINIU
         })
-        const doUploadResult = (await messageStrategy.doUpload(msg.path, uploadUrl, config)) as
+        const doUploadResult = (await messageStrategy.doUpload(msg.path, uploadUrl, config as UploadOptions)) as
           | { qiniuUrl?: string }
           | undefined
 
@@ -1253,7 +1266,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
         const finalUrl =
           config?.provider && config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
         messageBody.url = finalUrl || ''
-        delete (messageBody as any).path // 删除临时路径
+        const voiceBody = messageBody as { path?: string }
+        delete voiceBody.path // 删除临时路径
 
         // 更新临时消息的URL
         chatStore.updateMsg({
@@ -1300,8 +1314,14 @@ export const useMsgInput = (messageInputDom: Ref) => {
       const content = JSON.stringify(beaconData)
 
       // 构建位置消息
-      const msg = messageStrategy.getMsg(content, reply.value as any) as Record<string, unknown>
-      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as any)
+      const msg = messageStrategy.getMsg(
+        content,
+        reply.value.content ? (reply.value as unknown as MessageType) : null
+      ) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(
+        msg,
+        reply.value.content ? (reply.value as unknown as MessageType) : null
+      )
 
       // 创建临时消息对象
       const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
@@ -1343,8 +1363,14 @@ export const useMsgInput = (messageInputDom: Ref) => {
       const content = JSON.stringify(linkData)
 
       // 构建链接预览消息
-      const msg = messageStrategy.getMsg(content, reply.value as any) as Record<string, unknown>
-      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as any)
+      const msg = messageStrategy.getMsg(
+        content,
+        reply.value.content ? (reply.value as unknown as MessageType) : null
+      ) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(
+        msg,
+        reply.value.content ? (reply.value as unknown as MessageType) : null
+      )
 
       // 创建临时消息对象
       const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
@@ -1390,8 +1416,14 @@ export const useMsgInput = (messageInputDom: Ref) => {
       const content = JSON.stringify(locationData)
 
       // 构建位置消息
-      const msg = messageStrategy.getMsg(content, reply.value as any) as Record<string, unknown>
-      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as any)
+      const msg = messageStrategy.getMsg(
+        content,
+        reply.value.content ? (reply.value as unknown as MessageType) : null
+      ) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(
+        msg,
+        reply.value.content ? (reply.value as unknown as MessageType) : null
+      )
 
       // 创建临时消息对象
       const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
@@ -1433,8 +1465,14 @@ export const useMsgInput = (messageInputDom: Ref) => {
       const messageStrategy = messageStrategyMap[MsgEnum.EMOJI]
 
       // 构建表情包消息
-      const msg = messageStrategy.getMsg(emojiUrl, reply.value as any) as Record<string, unknown>
-      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as any)
+      const msg = messageStrategy.getMsg(
+        emojiUrl,
+        reply.value.content ? (reply.value as unknown as MessageType) : null
+      ) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(
+        msg,
+        reply.value.content ? (reply.value as unknown as MessageType) : null
+      )
 
       // 创建临时消息对象
       const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)

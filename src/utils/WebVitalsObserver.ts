@@ -16,6 +16,16 @@ type WebVitalMetric =
 
 type Reporter = (metric: WebVitalMetric) => void
 
+// 扩展 PerformanceObserver 类型以包含 supportedEntryTypes
+interface ExtendedPerformanceObserver extends PerformanceObserver {
+  supportedEntryTypes?: string[]
+}
+
+// 扩展 PerformanceEntry 类型以包含 attribution
+interface ExtendedPerformanceEntry extends PerformanceEntry {
+  attribution?: Record<string, unknown>
+}
+
 const defaultReporter: Reporter = (metric) => {
   const label = metric.type === 'web-vital' ? metric.name : 'longtask'
   logger.info(label, metric)
@@ -42,17 +52,18 @@ export const startWebVitalObserver = (reporter: Reporter = defaultReporter) => {
 
   if (
     'PerformanceObserver' in window &&
-    Array.isArray((PerformanceObserver as any).supportedEntryTypes) &&
-    (PerformanceObserver as any).supportedEntryTypes.includes('longtask')
+    Array.isArray((PerformanceObserver as unknown as ExtendedPerformanceObserver).supportedEntryTypes) &&
+    (PerformanceObserver as unknown as ExtendedPerformanceObserver).supportedEntryTypes?.includes('longtask')
   ) {
     const observer = new PerformanceObserver((entryList) => {
       for (const entry of entryList.getEntries()) {
+        const extendedEntry = entry as ExtendedPerformanceEntry
         reporter({
           type: 'longtask',
           name: entry.name || 'longtask',
           startTime: entry.startTime,
           duration: entry.duration,
-          attribution: (entry as any).attribution
+          attribution: extendedEntry.attribution
         })
       }
     })

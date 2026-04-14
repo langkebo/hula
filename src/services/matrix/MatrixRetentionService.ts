@@ -5,7 +5,8 @@
  */
 
 import type { MatrixClient } from 'matrix-js-sdk'
-import { info, error } from '@tauri-apps/plugin-log'
+import type { ExtendedMatrixClientForRetention } from '@/types/matrix-api'
+import { info } from '@tauri-apps/plugin-log'
 
 /**
  * 消息保留策略
@@ -30,7 +31,7 @@ export interface RoomRetention {
 /**
  * 消息保留服务
  */
-class RetentionService {
+class RetentionService extends BaseManager {
   private client: MatrixClient | null = null
 
   /**
@@ -50,19 +51,19 @@ class RetentionService {
     }
 
     try {
-      const policy = await (this.client as any).getRoomStateEvent(roomId, 'm.room.retention', '')
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForRetention
+      const policy = await extendedClient.getRoomStateEvent?.(roomId, 'm.room.retention', '')
 
       return {
         roomId,
         policy: policy
           ? {
-              min_lifetime: policy.min_lifetime,
-              max_lifetime: policy.max_lifetime
+              min_lifetime: (policy as RetentionPolicy).min_lifetime,
+              max_lifetime: (policy as RetentionPolicy).max_lifetime
             }
           : undefined
       }
-    } catch (err) {
-      error(`[Retention] 获取保留策略失败: ${err}`)
+    } catch (_err) {
       return { roomId }
     }
   }
@@ -74,14 +75,9 @@ class RetentionService {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
-
-    try {
-      await (this.client as any).sendStateEvent(roomId, 'm.room.retention', '', policy)
-      info(`[Retention] 设置保留策略成功: ${roomId}`)
-    } catch (err) {
-      error(`[Retention] 设置保留策略失败: ${err}`)
-      throw err
-    }
+    const extendedClient = this.client as unknown as ExtendedMatrixClientForRetention
+    await extendedClient.sendStateEvent?.(roomId, 'm.room.retention', '', policy)
+    info(`[Retention] 设置保留策略成功: ${roomId}`)
   }
 
   /**
@@ -91,14 +87,9 @@ class RetentionService {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
-
-    try {
-      await (this.client as any).redact(roomId, '')
-      info(`[Retention] 删除保留策略成功: ${roomId}`)
-    } catch (err) {
-      error(`[Retention] 删除保留策略失败: ${err}`)
-      throw err
-    }
+    const extendedClient = this.client as unknown as ExtendedMatrixClientForRetention
+    await extendedClient.redact?.(roomId, '')
+    info(`[Retention] 删除保留策略成功: ${roomId}`)
   }
 
   /**
@@ -110,11 +101,10 @@ class RetentionService {
     }
 
     try {
-      // 获取服务器默认保留策略
-      const config = await (this.client as any).getServerRetention()
-      return config || null
-    } catch (err) {
-      error(`[Retention] 获取默认保留策略失败: ${err}`)
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForRetention
+      const config = await extendedClient.getServerRetention?.()
+      return (config as RetentionPolicy) || null
+    } catch (_err) {
       return null
     }
   }
@@ -129,6 +119,7 @@ export const retentionService = new RetentionService()
  * Vue Composable
  */
 import { ref } from 'vue'
+import { BaseManager } from './BaseManager'
 
 export function useRetention() {
   const retention = ref<RoomRetention | null>(null)

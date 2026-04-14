@@ -285,6 +285,8 @@ const getUserInfo = (item: any) => {
     case NoticeType.GROUP_INVITE_ME:
     case NoticeType.GROUP_APPLY:
       return groupStore.getUserInfo(item.senderId)
+    default:
+      return undefined
   }
 }
 

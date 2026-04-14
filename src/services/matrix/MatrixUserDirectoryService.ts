@@ -5,7 +5,9 @@
  */
 
 import type { MatrixClient } from 'matrix-js-sdk'
-import { info, error } from '@tauri-apps/plugin-log'
+import type { ExtendedMatrixClientForUserDirectory } from '@/types/matrix-api'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
 /**
  * 用户目录搜索结果
@@ -22,7 +24,7 @@ export interface UserDirectorySearchResult {
 /**
  * 用户目录服务
  */
-class UserDirectoryService {
+class UserDirectoryService extends BaseManager {
   private client: MatrixClient | null = null
 
   /**
@@ -36,60 +38,50 @@ class UserDirectoryService {
   /**
    * 搜索用户
    */
-  async searchUsers(query: string, limit = 10): Promise<UserDirectorySearchResult[]> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
-    }
-
+  async searchUsers(query: string, limit = 10, throwOnError = true): Promise<UserDirectorySearchResult[]> {
     try {
-      const result = await (this.client as any).searchUserDirectory({
+      if (!this.client) {
+        throw new Error('Client 未初始化')
+      }
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForUserDirectory
+      const result = await extendedClient.searchUserDirectory({
         term: query,
         limit
       })
 
-      return (result.results || []).map((user: any) => ({
+      return (result.results || []).map((user) => ({
         userId: user.user_id,
         displayName: user.display_name,
         avatarUrl: user.avatar_url
       }))
-    } catch (err) {
-      error(`[UserDirectory] 搜索用户失败: ${err}`)
-      throw err
+    } catch (error) {
+      return this.handleError(error, 'searchUsers', [] as UserDirectorySearchResult[], throwOnError)
     }
   }
 
-  /**
-   * 获取用户目录
-   */
-  async getUserDirectory(): Promise<UserDirectorySearchResult[]> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
-    }
-
+  async getUserDirectory(throwOnError = true): Promise<UserDirectorySearchResult[]> {
     try {
-      // Matrix API 不提供直接获取整个目录的方法
-      // 这里返回空数组，需要通过搜索获取
+      if (!this.client) {
+        throw new Error('Client 未初始化')
+      }
+
       return []
-    } catch (err) {
-      error(`[UserDirectory] 获取目录失败: ${err}`)
-      return []
+    } catch (error) {
+      return this.handleError(error, 'getUserDirectory', [] as UserDirectorySearchResult[], throwOnError)
     }
   }
 
-  /**
-   * 检查用户是否可搜索
-   */
-  async isSearchable(userId: string): Promise<boolean> {
-    if (!this.client) {
-      return false
-    }
-
+  async isSearchable(userId: string, throwOnError = true): Promise<boolean> {
     try {
-      const profile = await (this.client as any).getProfile(userId)
-      // 如果能获取到资料，说明可搜索
+      if (!this.client) {
+        return false
+      }
+
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForUserDirectory
+      const profile = await extendedClient.getProfile(userId)
       return !!profile
-    } catch {
-      return false
+    } catch (error) {
+      return this.handleError(error, 'isSearchable', false, throwOnError)
     }
   }
 }

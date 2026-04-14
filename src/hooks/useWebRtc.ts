@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { error, info } from '@tauri-apps/plugin-log'
-import { initConfig } from '@/utils/ImRequestUtils'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { CallTypeEnum, RTCCallStatus } from '@/enums'
 import { useUserStore } from '@/stores/user'
 import { isMobile } from '../utils/PlatformConstants'
@@ -68,17 +68,22 @@ let configuration: RTCConfiguration = {
 
 const loadIceServers = async () => {
   try {
-    const init: any = await initConfig()
-    const ice = init?.iceServer
-    if (ice && Array.isArray(ice.urls) && ice.urls.length > 0) {
-      const entry: RTCIceServer =
-        ice.username && ice.credential
-          ? { urls: ice.urls, username: ice.username, credential: ice.credential }
-          : { urls: ice.urls }
-      configuration = { iceServers: [entry], iceTransportPolicy: 'all' }
-      info(`ICE 配置已加载: ${JSON.stringify(configuration)}`)
+    const client = matrixClientService.getClient()
+    if (client) {
+      const turnServers = await client.getTurnServers()
+      if (turnServers?.uris?.length) {
+        const entry: RTCIceServer = {
+          urls: turnServers.uris,
+          username: turnServers.username,
+          credential: turnServers.password
+        }
+        configuration = { iceServers: [entry], iceTransportPolicy: 'all' }
+        info(`ICE 配置已加载: ${JSON.stringify(configuration)}`)
+      } else {
+        info('TURN 服务器为空，使用内置默认配置')
+      }
     } else {
-      info('ICE 配置为空，使用内置默认配置')
+      info('客户端未初始化，使用内置默认配置')
     }
   } catch (e) {
     error(`加载 ICE 配置失败: ${String(e)}`)
@@ -484,7 +489,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   }
 
   // 发起通话
-  const startCall = async (roomId: string, type: CallTypeEnum, uidList?: string[]) => {
+  const startCall = async (roomId: string, type: CallTypeEnum, uidList?: string[]): Promise<boolean> => {
     try {
       if (!roomId) {
         return false
@@ -496,7 +501,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         timerManager.setTimeout(async () => {
           await handleCallResponse(0)
         }, 1000)
-        return
+        return false
       }
       // 保存通话信息
       rtcMsg.value = {
@@ -537,6 +542,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       // 开始通话
       connectionStatus.value = RTCCallStatus.CALLING
       rtcStatus.value = 'new'
+      return true
     } catch (err) {
       logger.error('开始通话失败:', err)
       window.$message.error('RTC通讯连接失败!')
@@ -627,7 +633,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   }
 
   // 处理收到的 offer - 接听者
-  const handleOffer = async (signal: RTCSessionDescriptionInit, video: boolean, roomId: string) => {
+  const handleOffer = async (signal: RTCSessionDescriptionInit, video: boolean, roomId: string): Promise<boolean> => {
     try {
       logger.debug('处理 offer')
       connectionStatus.value = RTCCallStatus.CALLING
@@ -672,9 +678,11 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       await sendAnswer(answer)
       connectionStatus.value = RTCCallStatus.ACCEPT
       info('处理 offer 结束')
+      return true
     } catch (e) {
       error(`处理 offer 失败: ${e}`)
       await endCall()
+      return false
     }
   }
 

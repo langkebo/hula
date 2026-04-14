@@ -169,7 +169,7 @@ import { useGlobalStore } from '@/stores/global'
 import { useSettingStore } from '@/stores/setting.ts'
 import { useUserStatusStore } from '@/stores/userStatus'
 import { useLogin } from '@/hooks/useLogin'
-import * as ImRequestUtils from '@/utils/ImRequestUtils'
+import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
 import { useI18n } from 'vue-i18n'
 
 const logger = createLogger('MobileSettings')
@@ -230,7 +230,7 @@ async function handleLogout() {
   })
     .then(async () => {
       try {
-        await ImRequestUtils.logout({ autoLogin: true })
+        await MatrixAuthService.logout()
         logoutSuccess = true
       } catch (error) {
         logger.error('服务器登出失败：', error)

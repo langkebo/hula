@@ -86,7 +86,7 @@ const addFriend = async () => {
 }
 
 onMounted(async () => {
-  logger.debug(userInfo.value)
+  logger.debug('userInfo:', userInfo.value?.userId)
   requestMsg.value = `我是${userStore.userInfo!.name}`
 })
 </script>

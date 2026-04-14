@@ -13,6 +13,7 @@ import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
 import { invoke } from '@tauri-apps/api/core'
 import App from '@/App.vue'
 import VueVirtualScroller from 'vue-virtual-scroller'
+import type { Plugin } from 'vue'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { createLogger } from '@/utils/Logger'
 
@@ -69,7 +70,7 @@ app
   .use(pinia)
   .use(TlbsMap)
   .use(setupI18n)
-  .use(VueVirtualScroller as any)
+  .use(VueVirtualScroller as unknown as Plugin)
   .directive('resize', vResize)
   .directive('slide', vSlide)
   .mount('#app')

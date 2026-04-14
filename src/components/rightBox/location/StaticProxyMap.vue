@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { getStaticMap } from '@/services/mapApi'
+import { matrixMapService } from '@/services/matrix/MatrixMapService'
 
 type LocationData = { latitude: number; longitude: number }
 
@@ -65,7 +65,7 @@ const fetchImage = async () => {
     const lat = Math.max(-85, Math.min(85, centerLat.value))
     const lng = Math.max(-180, Math.min(180, centerLng.value))
     const prev = imgSrc.value
-    const next = await getStaticMap(lat, lng, w, h, zoom.value)
+    const next = await matrixMapService.getStaticMap(lat, lng, w, h, zoom.value)
     imgSrc.value = next || prev
     emit('map-ready')
   } catch (e: any) {

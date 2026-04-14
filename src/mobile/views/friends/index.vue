@@ -444,7 +444,7 @@ const handleClick = async (id: string, type: number) => {
       await preloadChatRoom(id)
       router.push(`/mobile/chatRoom/chatMain`)
     } catch (error) {
-      logger.error(error)
+      logger.error('preloadChatRoom failed:', error)
     }
   } else {
     router.push(`/mobile/mobileFriends/friendInfo/${id}`)
@@ -453,11 +453,11 @@ const handleClick = async (id: string, type: number) => {
 
 // todo 需要循环数组来展示分组
 const showMenu = (event: MouseEvent) => {
-  logger.debug(event)
+  logger.debug('showMenu at:', event.clientX, event.clientY)
 }
 
 const handleSelect = (event: MouseEvent) => {
-  logger.debug(event)
+  logger.debug('handleSelect at:', event.clientX, event.clientY)
 }
 
 /** 获取用户状态 */

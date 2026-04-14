@@ -49,7 +49,7 @@
           @click="opt.onClick">
           <n-tooltip>
             <template #trigger>
-              <n-icon :size="24" :component="opt.icon" />
+              <n-icon v-if="opt.icon" :size="24" :component="opt.icon" />
             </template>
             {{ opt.label }}
           </n-tooltip>
@@ -125,7 +125,8 @@ const badgeStore = useBadgeStore()
 const props = defineProps({
   content: {
     type: Object as PropType<{ type: RoomTypeEnum; uid: string }>,
-    required: true
+    required: false,
+    default: () => ({ type: RoomTypeEnum.SINGLE, uid: '' })
   }
 })
 
@@ -153,9 +154,11 @@ const handleOpenAnnouncement = async () => {
   )
 }
 
-const displayNickname = computed(() =>
-  resolveMyRoomNickname({ roomId: item.value?.roomId, myName: item.value?.myName })
-)
+const displayNickname = computed(async () => {
+  const roomId = item.value?.roomId
+  if (!roomId) return item.value?.myName || ''
+  return (await resolveMyRoomNickname(roomId)) || item.value?.myName || ''
+})
 
 const isBotUser = computed(() => {
   if (props.content.type !== RoomTypeEnum.SINGLE || !item.value?.uid) return false

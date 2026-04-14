@@ -1,5 +1,5 @@
 <template>
-  <n-modal v-model:show="visible" preset="card" :title="dialogTitle" style="width: 500px" :mask-closable="false">
+  <n-modal :show="show" @update:show="emit('update:show', $event)" preset="card" :title="dialogTitle" style="width: 500px" :mask-closable="false">
     <n-spin :show="loading">
       <div v-if="step === 'intro'" class="step-content">
         <div class="intro-icon">

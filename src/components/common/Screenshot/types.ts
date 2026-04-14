@@ -24,7 +24,7 @@ export interface ResizeStartPosition {
   top: number
 }
 
-export interface SelectionAreaStyle {
+export interface SelectionAreaStyle extends Record<string, string> {
   left: string
   top: string
   width: string

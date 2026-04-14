@@ -80,7 +80,7 @@ import { ThemeEnum } from '@/enums'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
 import { matrixVoiceService } from '@/services/matrix/MatrixVoiceService'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixMediaService } from '@/services/matrix/MatrixMediaService'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import type { VoiceBody } from '@/services/types'
@@ -183,7 +183,7 @@ const initAudio = async () => {
   try {
     const voice = await matrixVoiceService.getVoice(props.roomId, props.messageId)
     if (voice?.mxc_url) {
-      audioElement.value = new Audio(matrixClientService.getClient()?.mxcUrlToHttp(voice.mxc_url) || voice.mxc_url)
+      audioElement.value = new Audio(matrixMediaService.mxcUrlToHttp(voice.mxc_url) || voice.mxc_url)
       audioElement.value.playbackRate = playbackSpeed.value
 
       audioElement.value.addEventListener('timeupdate', () => {
@@ -219,9 +219,7 @@ const handleSpeedChange = (speed: number) => {
 const handleTranscribe = async () => {
   try {
     showTranscription.value = true
-    const result = await matrixVoiceService.transcribeVoice({
-      message_id: props.messageId
-    })
+    const result = await matrixVoiceService.transcribeVoice(props.messageId)
     transcription.value = result.text
     emit('transcribed', result.text)
   } catch (err) {
@@ -233,7 +231,7 @@ const handleDownload = async () => {
   try {
     const voice = await matrixVoiceService.getVoice(props.roomId, props.messageId)
     if (voice?.mxc_url) {
-      const response = await fetch(matrixClientService.getClient()?.mxcUrlToHttp(voice.mxc_url) || voice.mxc_url)
+      const response = await fetch(matrixMediaService.mxcUrlToHttp(voice.mxc_url) || voice.mxc_url)
       const blob = await response.blob()
 
       const filePath = await save({

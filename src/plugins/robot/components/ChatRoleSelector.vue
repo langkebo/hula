@@ -57,6 +57,8 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { matrixChatRoleService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('ChatRoleSelector')
 
 const props = defineProps<{
   modelValue?: any

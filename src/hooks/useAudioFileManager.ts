@@ -191,8 +191,10 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
         if (fileData.fileBuffer instanceof ArrayBuffer) {
           arrayBuffer = fileData.fileBuffer
         } else {
-          arrayBuffer = new ArrayBuffer((fileData.fileBuffer as any).byteLength)
-          new Uint8Array(arrayBuffer).set(new Uint8Array(fileData.fileBuffer as any))
+          // fileBuffer 可能是 Uint8Array 或其他 TypedArray
+          const typedArray = fileData.fileBuffer as Uint8Array
+          arrayBuffer = new ArrayBuffer(typedArray.byteLength)
+          new Uint8Array(arrayBuffer).set(new Uint8Array(typedArray))
         }
         return URL.createObjectURL(new Blob([new Uint8Array(arrayBuffer)], { type: mimeType }))
       }

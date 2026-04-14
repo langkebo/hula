@@ -159,7 +159,8 @@ import type { SessionItem } from '@/stores/chat'
 import { useChatStore } from '@/stores/chat'
 import { useSettingStore } from '@/stores/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { notification, shield } from '@/utils/ImRequestUtils'
+import { matrixPushService } from '@/services/matrix'
+import { PushRuleKind } from 'matrix-js-sdk'
 import { assign } from 'es-toolkit/compat'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
@@ -391,19 +392,12 @@ const handleNotificationChange = async (
   try {
     switch (key) {
       case 'allow':
-        // 如果当前是屏蔽状态，需要先取消屏蔽
         if (session.shield) {
-          await shield({
-            roomId: session.roomId,
-            state: false
-          })
+          await matrixPushService.unmuteRoom(session.roomId)
           applySessionUpdate(session, { shield: false })
         }
 
-        await notification({
-          roomId: session.roomId,
-          type: NotificationTypeEnum.RECEPTION
-        })
+        await matrixPushService.deletePushRule(PushRuleKind.Override, session.roomId)
 
         applySessionUpdate(session, {
           muteNotification: NotificationTypeEnum.RECEPTION
@@ -415,25 +409,17 @@ const handleNotificationChange = async (
         break
 
       case 'mute':
-        // 如果当前是屏蔽状态，需要先取消屏蔽
         if (session.shield) {
-          await shield({
-            roomId: session.roomId,
-            state: false
-          })
+          await matrixPushService.unmuteRoom(session.roomId)
           applySessionUpdate(session, { shield: false })
         }
 
-        await notification({
-          roomId: session.roomId,
-          type: NotificationTypeEnum.NOT_DISTURB
-        })
+        await matrixPushService.muteRoom(session.roomId)
 
         applySessionUpdate(session, {
           muteNotification: NotificationTypeEnum.NOT_DISTURB
         })
 
-        // 设置免打扰时更新全局未读数
         chatStore.updateTotalUnreadCount()
         if (!silent) {
           window.$message?.success(t('setting.notice.message_reminder_silent'))
@@ -441,10 +427,7 @@ const handleNotificationChange = async (
         break
 
       case 'shield':
-        await shield({
-          roomId: session.roomId,
-          state: true
-        })
+        await matrixPushService.muteRoom(session.roomId)
 
         applySessionUpdate(session, {
           shield: true

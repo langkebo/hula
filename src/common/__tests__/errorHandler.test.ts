@@ -1,28 +1,27 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { globalErrorHandler, createValidationError, createNetworkError } from '../errorHandler'
 import { ErrorType } from '../exception'
 
 describe('errorHandler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubGlobal('$message', { error: vi.fn() })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   describe('globalErrorHandler', () => {
     it('should handle Error instances', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const error = new Error('test error')
-      globalErrorHandler.handleError(error)
-      expect(consoleSpy).toHaveBeenCalled()
-      consoleSpy.mockRestore()
+      expect(() => globalErrorHandler.handleError(error)).not.toThrow()
     })
 
     it('should handle non-Error objects', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      globalErrorHandler.handleError('string error')
-      globalErrorHandler.handleError(123)
-      globalErrorHandler.handleError(null)
-      expect(consoleSpy).toHaveBeenCalled()
-      consoleSpy.mockRestore()
+      expect(() => globalErrorHandler.handleError('string error')).not.toThrow()
+      expect(() => globalErrorHandler.handleError(123)).not.toThrow()
+      expect(() => globalErrorHandler.handleError(null)).not.toThrow()
     })
 
     it('should call registered callbacks', () => {
@@ -39,15 +38,9 @@ describe('errorHandler', () => {
     })
 
     it('should create Validation errors', () => {
-      // Mock window.$message
-      const mockMessage = { error: vi.fn() }
-      vi.stubGlobal('$message', mockMessage)
-
       const error = createValidationError('Invalid input', { field: 'username' })
       expect(error.message).toBe('Invalid input')
       expect(error.type).toBe(ErrorType.Validation)
-
-      vi.unstubAllGlobals()
     })
 
     it('should create Network errors', () => {

@@ -58,7 +58,7 @@ import type { UserState } from '@/services/types'
 import { useUserStore } from '@/stores/user'
 import { useUserStatusStore } from '@/stores/userStatus'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts'
-import { changeUserState } from '@/utils/ImRequestUtils'
+import { matrixPresenceService } from '@/services/matrix'
 
 const userStatusStore = useUserStatusStore()
 const userStore = useUserStore()
@@ -91,7 +91,14 @@ watchEffect(() => {
  */
 const handleActive = async (item: UserState) => {
   try {
-    await changeUserState({ id: item.id })
+    const presenceMap: Record<string, 'online' | 'offline' | 'unavailable' | 'busy'> = {
+      '1': 'online',
+      '2': 'busy',
+      '3': 'unavailable',
+      '4': 'offline'
+    }
+    const presence = presenceMap[item.id] || 'online'
+    await matrixPresenceService.setPresence(presence)
 
     stateId.value = item.id
     userStore.userInfo!.userStateId = item.id
@@ -129,6 +136,7 @@ onMounted(async () => {
     overflow: hidden;
     text-overflow: ellipsis;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     white-space: normal;
   }

@@ -3,9 +3,7 @@
  * 链接预览功能
  */
 import { matrixClientService } from './MatrixClientService'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('UrlPreview')
+import { BaseManager } from './BaseManager'
 
 export interface UrlPreview {
   url: string
@@ -53,7 +51,7 @@ export interface UrlPreviewParams {
   timestamp?: number
 }
 
-class MatrixUrlPreviewService {
+class MatrixUrlPreviewService extends BaseManager {
   private get client() {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -77,7 +75,8 @@ class MatrixUrlPreviewService {
         previewUrl += `&ts=${timestamp}`
       }
 
-      const response = (await this.client.http.authedRequest({}, 'GET', previewUrl.replace(api, ''), undefined, {
+      const response = (await this.client.http.authedRequest('GET', previewUrl.replace(api, ''), undefined, undefined, {
+        prefix: '',
         global: false
       })) as Record<string, unknown>
 
@@ -88,15 +87,15 @@ class MatrixUrlPreviewService {
       // 处理 Matrix 0.6.1 格式的响应
       const result: UrlPreview = {
         url,
-        title: response['og:title'] ?? response.title,
-        description: response['og:description'] ?? response.description,
-        image: response['og:image'] ?? response.image,
-        imageType: response['matrix:image:type'] ?? undefined,
-        imageSize: response['matrix:image:size'] ?? undefined,
-        siteName: response['og:site_name'] ?? response.site_name,
-        mediaId: response['matrix:image_id'] ?? undefined,
-        mxContent: response['matrix:content'] ?? undefined,
-        imageUrl: response['og:image'] ?? response.image
+        title: (response['og:title'] ?? response.title) as string | undefined,
+        description: (response['og:description'] ?? response.description) as string | undefined,
+        image: (response['og:image'] ?? response.image) as string | undefined,
+        imageType: (response['matrix:image:type'] ?? undefined) as string | undefined,
+        imageSize: (response['matrix:image:size'] ?? undefined) as number | undefined,
+        siteName: (response['og:site_name'] ?? response.site_name) as string | undefined,
+        mediaId: (response['matrix:image_id'] ?? undefined) as string | undefined,
+        mxContent: (response['matrix:content'] ?? undefined) as string | undefined,
+        imageUrl: (response['og:image'] ?? response.image) as string | undefined
       }
 
       // 如果图片是 mxc:// URL，转换为完整 URL
@@ -107,8 +106,7 @@ class MatrixUrlPreviewService {
       }
 
       return result
-    } catch (error) {
-      logger.error('获取预览失败:', error)
+    } catch (_error) {
       return null
     }
   }

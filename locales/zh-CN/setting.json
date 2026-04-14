@@ -309,6 +309,10 @@
   "security_privacy": {
     "title": "安全与隐私",
     "online_status": "在线状态",
+    "presence_status": "在线状态",
+    "presence_status_desc": "设置您的在线状态，其他人将看到此状态",
+    "presence_updated": "在线状态已更新",
+    "presence_update_failed": "在线状态更新失败",
     "show_online_status": "显示我的在线状态",
     "show_online_status_desc": "允许他人查看您的在线状态",
     "show_typing_status": "显示我的输入状态",

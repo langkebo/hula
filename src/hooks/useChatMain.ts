@@ -46,6 +46,7 @@ import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useWindow } from './useWindow'
 import { useI18n } from 'vue-i18n'
 import { matrixRoomService } from '@/services/matrix'
+import { useReportDialog } from '@/composables/useReportDialog'
 
 type UseChatMainOptions = {
   enableGroupNicknameModal?: boolean
@@ -155,6 +156,15 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     if (!target) {
       return
     }
+
+    if (isMobile()) {
+      useMitt.emit(MittEnum.MOBILE_FORWARD, {
+        eventId: item.message.id,
+        roomId: item.message.roomId
+      })
+      return
+    }
+
     chatStore.clearMsgCheck()
     target.isCheck = true
     chatStore.setMsgMultiChoose(true, 'forward')
@@ -212,10 +222,6 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       label: () => t('menu.forward'),
       icon: 'share',
       click: (item: MessageType) => {
-        if (isMobile()) {
-          window.$message.warning(t('home.chat_main.feature.coming_soon'))
-          return
-        }
         handleForward(item)
       },
       visible: (item: MessageType) => !isNoticeMessage(item)
@@ -1023,15 +1029,14 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       label: () => t('menu.report'),
       icon: 'caution',
       click: async (item: ContextMenuItem & { message?: { id: string } }) => {
-        // 获取消息的 roomId 和 eventId
         const roomId = globalStore.currentSessionRoomId
         const eventId = item.message?.id
         if (!roomId || !eventId) {
           window.$message.warning('无法获取消息信息')
           return
         }
-        // TODO: 实现举报功能 - useReportDialog 模块未找到
-        window.$message.info('举报功能开发中')
+        const { showReportDialog } = useReportDialog()
+        showReportDialog({ roomId, eventId })
       }
     }
   ])

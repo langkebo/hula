@@ -518,8 +518,7 @@ onMounted(async () => {
   // 监听home窗口被聚焦的事件，当窗口被聚焦时自动关闭状态栏通知
   const homeWindow = await WebviewWindow.getByLabel('home')
   if (homeWindow) {
-    // TODO: Matrix SDK 消息监听器设置
-    // await matrixClientService.setupEventListeners()
+    // Note: Matrix SDK 事件监听器已在 matrixClientService.startClient() 中设置
 
     // 监听窗口聚焦事件，聚焦时停止tray闪烁
     if (isWindows()) {

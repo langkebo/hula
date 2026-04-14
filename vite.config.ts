@@ -80,6 +80,13 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         '~': fileURLToPath(new URL('.', import.meta.url))
       }
     },
+    // 依赖预构建优化
+    optimizeDeps: {
+      include: ['vue', 'vue-router', 'pinia', '@vueuse/core', 'matrix-js-sdk', 'naive-ui', '@varlet/ui', 'axios'],
+      exclude: ['vue-demi']
+    },
+    // 缓存目录
+    cacheDir: 'node_modules/.vite',
     css: {
       preprocessorOptions: {
         scss: {

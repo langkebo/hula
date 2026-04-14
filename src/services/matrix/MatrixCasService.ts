@@ -2,11 +2,15 @@
  * CAS (Central Authentication Service) 单点登录
  * 企业 SSO 集成
  */
+import type {
+  CasServiceResponse,
+  CasServiceListResponse,
+  CasValidateResponse,
+  CasTicketResponse,
+  CasUserAttributesResponse
+} from '@/types/matrix-api'
 import { matrixClientService } from './MatrixClientService'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('CAS')
-
+import { BaseManager } from './BaseManager'
 export interface CasService {
   serviceId: string
   name: string
@@ -20,7 +24,7 @@ export interface CasTicket {
   expiresAt: number
 }
 
-class MatrixCasService {
+class MatrixCasService extends BaseManager {
   private get client() {
     const c = matrixClientService.getClient()
     if (!c) throw new Error('Matrix client not initialized')
@@ -32,9 +36,13 @@ class MatrixCasService {
    */
   async registerService(service: { name: string; url: string }): Promise<CasService | null> {
     try {
-      const response = (await this.client.http.authedRequest({}, 'POST', '/_matrix/client/v1/cas/services', undefined, {
-        body: JSON.stringify(service)
-      })) as any
+      const response = (await this.client.http.authedRequest(
+        'POST',
+        '/_matrix/client/v1/cas/services',
+        undefined,
+        JSON.stringify(service),
+        { prefix: '' }
+      )) as CasServiceResponse
 
       return {
         serviceId: response.service_id,
@@ -42,8 +50,7 @@ class MatrixCasService {
         url: response.url,
         enabled: true
       }
-    } catch (error) {
-      logger.error('注册服务失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -54,20 +61,20 @@ class MatrixCasService {
   async listServices(): Promise<CasService[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         '/_matrix/client/v1/cas/services',
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as CasServiceListResponse
 
-      return (response.services || []).map((s: any) => ({
+      return (response.services || []).map((s) => ({
         serviceId: s.service_id,
         name: s.name,
         url: s.url,
         enabled: s.enabled
       }))
-    } catch (error) {
-      logger.error('获取服务列表失败:', error)
+    } catch (_error) {
       return []
     }
   }
@@ -77,10 +84,15 @@ class MatrixCasService {
    */
   async deleteService(serviceId: string): Promise<boolean> {
     try {
-      await this.client.http.authedRequest({}, 'DELETE', `//_matrix/client/v1/cas/services/${serviceId}`, undefined)
+      await this.client.http.authedRequest(
+        'DELETE',
+        `/_matrix/client/v1/cas/services/${serviceId}`,
+        undefined,
+        undefined,
+        { prefix: '' }
+      )
       return true
-    } catch (error) {
-      logger.error('删除服务失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -90,13 +102,16 @@ class MatrixCasService {
    */
   async validateTicket(ticket: string, service: string): Promise<{ valid: boolean; userId?: string }> {
     try {
-      const response = (await this.client.http.authedRequest({}, 'POST', '/_matrix/client/v1/cas/validate', undefined, {
-        body: JSON.stringify({ ticket, service })
-      })) as any
+      const response = (await this.client.http.authedRequest(
+        'POST',
+        '/_matrix/client/v1/cas/validate',
+        undefined,
+        JSON.stringify({ ticket, service }),
+        { prefix: '' }
+      )) as CasValidateResponse
 
       return { valid: response.valid, userId: response.user_id }
-    } catch (error) {
-      logger.error('验证票据失败:', error)
+    } catch (_error) {
       return { valid: false }
     }
   }
@@ -106,16 +121,19 @@ class MatrixCasService {
    */
   async createServiceTicket(serviceUrl: string): Promise<CasTicket | null> {
     try {
-      const response = (await this.client.http.authedRequest({}, 'POST', '/_matrix/client/v1/cas/tickets', undefined, {
-        body: JSON.stringify({ service: serviceUrl })
-      })) as any
+      const response = (await this.client.http.authedRequest(
+        'POST',
+        '/_matrix/client/v1/cas/tickets',
+        undefined,
+        JSON.stringify({ service: serviceUrl }),
+        { prefix: '' }
+      )) as CasTicketResponse
       return {
         ticket: response.ticket,
         service: serviceUrl,
         expiresAt: response.expires_at
       }
-    } catch (error) {
-      logger.error('创建票据失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -126,14 +144,14 @@ class MatrixCasService {
   async getUserAttributes(userId: string): Promise<Record<string, string>> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
-        `//_matrix/client/v1/cas/users/${userId}/attributes`,
-        undefined
-      )) as any
+        `/_matrix/client/v1/cas/users/${userId}/attributes`,
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as CasUserAttributesResponse
       return response.attributes || {}
-    } catch (error) {
-      logger.error('获取用户属性失败:', error)
+    } catch (_error) {
       return {}
     }
   }

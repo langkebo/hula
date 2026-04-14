@@ -33,6 +33,50 @@
             </van-cell>
           </van-cell-group>
 
+          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_notifications.highlight_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell :title="t('mobile_notifications.highlight_words')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:format-text-highlight" :width="20" color="#fa8c16" />
+                </div>
+              </template>
+              <template #label>
+                <div class="flex flex-wrap gap-8px mt-8px">
+                  <van-tag
+                    v-for="word in highlightWords"
+                    :key="word"
+                    closeable
+                    type="primary"
+                    plain
+                    @close="handleRemoveWord(word)">
+                    {{ word }}
+                  </van-tag>
+                  <van-tag
+                    v-if="showAddWordInput"
+                    type="primary"
+                    class="add-word-tag">
+                    <input
+                      ref="addWordInputRef"
+                      v-model="newWord"
+                      class="add-word-input"
+                      :placeholder="t('mobile_notifications.enter_word')"
+                      @keyup.enter="handleAddWord"
+                      @blur="handleAddWordBlur" />
+                  </van-tag>
+                  <van-tag
+                    v-else
+                    type="primary"
+                    plain
+                    @click="showAddWordInput = true">
+                    + {{ t('mobile_notifications.add_word') }}
+                  </van-tag>
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
           <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_notifications.room_section') }}</div>
 
           <van-cell-group inset>
@@ -53,6 +97,18 @@
                   <van-radio name="mention">{{ t('mobile_notifications.mention_only') }}</van-radio>
                   <van-radio name="none">{{ t('mobile_notifications.mute') }}</van-radio>
                 </van-radio-group>
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('mobile_notifications.room_rules')"
+              is-link
+              :value="roomRulesCount"
+              @click="showRoomRules = true">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-purple-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:room-service" :width="20" color="#722ed1" />
+                </div>
               </template>
             </van-cell>
           </van-cell-group>
@@ -86,16 +142,60 @@
           </div>
         </div>
       </div>
+
+      <van-popup
+        v-model:show="showRoomRules"
+        position="bottom"
+        round
+        :style="{ height: '60%' }">
+        <div class="flex flex-col h-full">
+          <div class="flex items-center justify-between p-16px border-b border-gray-100">
+            <span class="text-16px font-medium">{{ t('mobile_notifications.room_rules_title') }}</span>
+            <Icon icon="mdi:close" :width="24" @click="showRoomRules = false" />
+          </div>
+
+          <div class="flex-1 overflow-auto p-16px">
+            <div v-if="loadingRoomRules" class="flex justify-center items-center py-40px">
+              <van-loading size="24px" />
+            </div>
+
+            <div v-else-if="roomRules.length === 0" class="flex flex-col items-center justify-center py-40px">
+              <Icon icon="mdi:bell-off" :width="48" color="#999" />
+              <div class="text-14px text-gray-400 mt-16px">{{ t('mobile_notifications.no_room_rules') }}</div>
+            </div>
+
+            <van-cell-group v-else inset>
+              <van-cell
+                v-for="rule in roomRules"
+                :key="rule.roomId"
+                :title="getRoomName(rule.roomId)"
+                :label="rule.roomId">
+                <template #right-icon>
+                  <van-dropdown-menu>
+                    <van-dropdown-item
+                      v-model="rule.ruleType"
+                      :options="ruleTypeOptions"
+                      @change="handleRoomRuleChange(rule)" />
+                  </van-dropdown-menu>
+                </template>
+              </van-cell>
+            </van-cell-group>
+          </div>
+        </div>
+      </van-popup>
     </template>
   </AutoFixHeightPage>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { matrixPushService } from '@/services/matrix'
-import { PushRuleKind, TweakName, type IPushRule } from '@/types/matrix-js-sdk'
+import type { IPushRule } from 'matrix-js-sdk'
+import { PushRuleKind } from 'matrix-js-sdk'
+import { matrixSettingsService, type RoomPushRule } from '@/services/matrix/MatrixSettingsService'
+import matrixClientService from '@/services/matrix/MatrixClientService'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
@@ -112,35 +212,66 @@ const emailNotifications = ref(false)
 const encryptedRoomNotifications = ref(true)
 const saving = ref(false)
 
-onMounted(async () => {
-  await loadPushRules()
+const highlightWords = ref<string[]>([])
+const showAddWordInput = ref(false)
+const newWord = ref('')
+const addWordInputRef = ref<HTMLInputElement | null>(null)
+
+const showRoomRules = ref(false)
+const roomRules = ref<RoomPushRule[]>([])
+const loadingRoomRules = ref(false)
+
+const roomRulesCount = computed(() => {
+  return roomRules.value.length > 0 ? `${roomRules.value.length}` : ''
 })
+
+const ruleTypeOptions = [
+  { text: t('mobile_notifications.all_messages'), value: 'all_messages' },
+  { text: t('mobile_notifications.mentions_only'), value: 'mentions_only' },
+  { text: t('mobile_notifications.mute'), value: 'mute' }
+]
+
+onMounted(async () => {
+  await Promise.all([loadPushRules(), loadHighlightWords(), loadRoomRules()])
+})
+
+function findAllRules(rules: {
+  override?: IPushRule[]
+  content?: IPushRule[]
+  room?: IPushRule[]
+  sender?: IPushRule[]
+  underride?: IPushRule[]
+}): IPushRule[] {
+  return [
+    ...(rules.override || []),
+    ...(rules.content || []),
+    ...(rules.room || []),
+    ...(rules.sender || []),
+    ...(rules.underride || [])
+  ]
+}
 
 async function loadPushRules() {
   try {
-    const rules = await matrixPushService.getPushRules()
+    const rules = await matrixPushService.getRawPushRules()
 
-    const globalRules = rules.global
+    const allRules = findAllRules(rules?.global)
 
-    const overrideRules: IPushRule[] | undefined = globalRules[PushRuleKind.Override]
-    const roomRules: IPushRule[] | undefined = globalRules[PushRuleKind.RoomSpecific]
-
-    const masterRule = overrideRules?.find((r) => r.rule_id === '.m.rule.master')
+    const masterRule = allRules.find((r) => r.rule_id === '.m.rule.master')
     if (masterRule && !masterRule.enabled) {
       notificationsEnabled.value = true
     }
 
-    const dmRule = roomRules?.find((r) => r.rule_id === '.m.rule.room_one_to_one')
+    const dmRule = allRules.find((r) => r.rule_id === '.m.rule.room_one_to_one')
     if (dmRule) {
       roomNotifyMode.value = dmRule.enabled ? 'all' : 'none'
     }
 
-    const messageRule = roomRules?.find((r) => r.rule_id === '.m.rule.message')
+    const messageRule = allRules.find((r) => r.rule_id === '.m.rule.message')
     if (messageRule) {
       if (
         messageRule.actions?.some((a) => {
-          const action = a as { set_tweak?: string } | string
-          return typeof action === 'string' ? action === 'notify' : action.set_tweak === 'highlight'
+          return a === 'notify'
         })
       ) {
         groupNotifyMode.value = 'all'
@@ -151,9 +282,29 @@ async function loadPushRules() {
   }
 }
 
+async function loadHighlightWords() {
+  try {
+    const words = await matrixSettingsService.getHighlightWords()
+    highlightWords.value = words.filter((w) => w.enabled).map((w) => w.word)
+  } catch (error) {
+    logger.error('加载高亮关键词失败:', error)
+  }
+}
+
+async function loadRoomRules() {
+  loadingRoomRules.value = true
+  try {
+    roomRules.value = await matrixSettingsService.getRoomPushRules()
+  } catch (error) {
+    logger.error('加载房间规则失败:', error)
+  } finally {
+    loadingRoomRules.value = false
+  }
+}
+
 async function handleNotificationsToggle(enabled: boolean) {
   try {
-    await matrixPushService.setPushRuleEnabled('global', PushRuleKind.Override, '.m.rule.master', !enabled)
+    await matrixPushService.setPushRuleEnabled(PushRuleKind.Override, '.m.rule.master', !enabled)
   } catch (error) {
     logger.error('设置通知开关失败:', error)
     notificationsEnabled.value = !enabled
@@ -162,15 +313,90 @@ async function handleNotificationsToggle(enabled: boolean) {
 
 async function handleSoundToggle(enabled: boolean) {
   try {
-    const ruleIds = ['.m.rule.room_one_to_one', '.m.rule.message']
-    for (const ruleId of ruleIds) {
-      await matrixPushService.setPushRuleActions('global', PushRuleKind.RoomSpecific, ruleId, [
-        { set_tweak: { tweak: TweakName.Sound, value: enabled ? 'default' : 'none' } }
-      ])
-    }
+    const actions = enabled ? ['notify'] : ['dont_notify']
+
+    await matrixPushService.updatePushRuleActions(PushRuleKind.Underride, '.m.rule.room_one_to_one', actions)
+    await matrixPushService.updatePushRuleActions(PushRuleKind.Underride, '.m.rule.message', actions)
   } catch (error) {
     logger.error('设置声音失败:', error)
     soundEnabled.value = !enabled
+  }
+}
+
+async function handleAddWord() {
+  if (!newWord.value.trim()) {
+    showAddWordInput.value = false
+    return
+  }
+
+  const word = newWord.value.trim()
+  if (highlightWords.value.includes(word)) {
+    showToast({
+      type: 'fail',
+      message: t('mobile_notifications.word_exists')
+    })
+    return
+  }
+
+  try {
+    const success = await matrixSettingsService.addHighlightWord(word)
+    if (success) {
+      highlightWords.value.push(word)
+      newWord.value = ''
+      showAddWordInput.value = false
+    }
+  } catch (error) {
+    logger.error('添加关键词失败:', error)
+    showToast({
+      type: 'fail',
+      message: t('mobile_notifications.add_word_failed')
+    })
+  }
+}
+
+function handleAddWordBlur() {
+  nextTick(() => {
+    if (newWord.value.trim()) {
+      handleAddWord()
+    } else {
+      showAddWordInput.value = false
+    }
+  })
+}
+
+async function handleRemoveWord(word: string) {
+  try {
+    const success = await matrixSettingsService.removeHighlightWord(word)
+    if (success) {
+      highlightWords.value = highlightWords.value.filter((w) => w !== word)
+    }
+  } catch (error) {
+    logger.error('移除关键词失败:', error)
+    showToast({
+      type: 'fail',
+      message: t('mobile_notifications.remove_word_failed')
+    })
+  }
+}
+
+function getRoomName(roomId: string): string {
+  const room = matrixClientService.getRoom(roomId)
+  return room?.name || roomId
+}
+
+async function handleRoomRuleChange(rule: RoomPushRule) {
+  try {
+    await matrixSettingsService.setRoomPushRule(rule.roomId, rule.ruleType)
+    showToast({
+      type: 'success',
+      message: t('mobile_notifications.room_rule_updated')
+    })
+  } catch (error) {
+    logger.error('更新房间规则失败:', error)
+    showToast({
+      type: 'fail',
+      message: t('mobile_notifications.room_rule_failed')
+    })
   }
 }
 
@@ -180,13 +406,8 @@ async function handleSave() {
     const dmEnabled = roomNotifyMode.value !== 'none'
     const msgEnabled = groupNotifyMode.value !== 'none'
 
-    await matrixPushService.setPushRuleEnabled(
-      'global',
-      PushRuleKind.RoomSpecific,
-      '.m.rule.room_one_to_one',
-      dmEnabled
-    )
-    await matrixPushService.setPushRuleEnabled('global', PushRuleKind.RoomSpecific, '.m.rule.message', msgEnabled)
+    await matrixPushService.setPushRuleEnabled(PushRuleKind.Underride, '.m.rule.room_one_to_one', dmEnabled)
+    await matrixPushService.setPushRuleEnabled(PushRuleKind.Underride, '.m.rule.message', msgEnabled)
 
     showToast({
       type: 'success',
@@ -204,4 +425,16 @@ async function handleSave() {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+.add-word-tag {
+  padding: 2px 8px;
+}
+
+.add-word-input {
+  width: 80px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12px;
+}
+</style>

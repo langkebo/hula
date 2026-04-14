@@ -1,6 +1,6 @@
-import { ImUrlEnum } from '@/enums'
-import { imRequest } from '@/utils/ImRequestUtils'
+import { Method } from 'matrix-js-sdk'
 import { matrixClientService } from './MatrixClientService'
+import { BaseManager } from './BaseManager'
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import type {
   AIModelListResponse,
@@ -8,7 +8,10 @@ import type {
   AIVideoListResponse,
   AIAudioListResponse,
   AIChatRoleListResponse,
-  AIVoice
+  AIVoice,
+  AIImage,
+  AIVideo,
+  AIAudio
 } from '@/types/matrix-api'
 
 export interface AIConversation {
@@ -57,42 +60,37 @@ export interface StreamCallbacks {
   onStart?: (requestId: string) => void
 }
 
-class MatrixAIService {
-  /**
-   * 获取用户的 AI 对话列表
-   *
-   * @param params - 查询参数
-   * @param params.id - 对话 ID（可选）
-   * @returns AI 对话列表
-   */
+class MatrixAIService extends BaseManager {
+  private get client() {
+    const client = matrixClientService.getClient()
+    if (!client) throw new Error('Matrix client not initialized')
+    return client
+  }
+
+  private httpRequest<T>(
+    method: Method,
+    path: string,
+    queryParams?: Record<string, unknown>,
+    body?: Record<string, unknown>
+  ): Promise<T> {
+    return (this.client.http as any).authedRequest(method, path, queryParams ?? {}, body ?? {})
+  }
+
   async conversationGetMy(params?: { id?: string }): Promise<AIConversation[]> {
     try {
-      const result = await imRequest<AIConversation[]>({
-        url: ImUrlEnum.CONVERSATION_GET_MY,
+      const result = await this.httpRequest<AIConversation[]>(
+        Method.Get,
+        '/_matrix/client/v1/ai/conversation/my',
         params
-      })
+      )
       info(`[MatrixAI] 获取 AI 对话列表成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 获取 AI 对话列表失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'conversationGetMy', [])
     }
   }
 
-  /**
-   * 创建新的 AI 对话
-   *
-   * @param params - 创建参数
-   * @param params.roleId - 角色 ID
-   * @param params.knowledgeId - 知识库 ID
-   * @param params.title - 对话标题
-   * @param params.modelId - 模型 ID
-   * @param params.systemMessage - 系统消息
-   * @param params.temperature - 温度参数
-   * @param params.maxTokens - 最大令牌数
-   * @param params.maxContexts - 最大上下文数
-   * @returns 创建的对话
-   */
   async conversationCreate(params: {
     roleId?: string
     knowledgeId?: string
@@ -104,34 +102,20 @@ class MatrixAIService {
     maxContexts?: number
   }): Promise<AIConversation> {
     try {
-      const result = await imRequest<AIConversation>({
-        url: ImUrlEnum.CONVERSATION_CREATE_MY,
-        body: params
-      })
+      const result = await this.httpRequest<AIConversation>(
+        Method.Post,
+        '/_matrix/client/v1/ai/conversation/create',
+        undefined,
+        params
+      )
       info(`[MatrixAI] 创建 AI 对话成功: ${result.id}`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 创建 AI 对话失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'conversationCreate', null)
     }
   }
 
-  /**
-   * 更新 AI 对话元数据
-   *
-   * @param params - 更新参数
-   * @param params.id - 对话 ID
-   * @param params.title - 对话标题
-   * @param params.pinned - 是否置顶
-   * @param params.roleId - 角色 ID
-   * @param params.modelId - 模型 ID
-   * @param params.knowledgeId - 知识库 ID
-   * @param params.systemMessage - 系统消息
-   * @param params.temperature - 温度参数
-   * @param params.maxTokens - 最大令牌数
-   * @param params.maxContexts - 最大上下文数
-   * @returns 更新后的对话
-   */
   async conversationUpdate(params: {
     id: string
     title?: string
@@ -145,71 +129,48 @@ class MatrixAIService {
     maxContexts?: number
   }): Promise<AIConversation> {
     try {
-      const result = await imRequest<AIConversation>({
-        url: ImUrlEnum.CONVERSATION_UPDATE_MY,
-        body: params
-      })
+      const result = await this.httpRequest<AIConversation>(
+        Method.Post,
+        '/_matrix/client/v1/ai/conversation/update',
+        undefined,
+        params
+      )
       info(`[MatrixAI] 更新 AI 对话成功: ${params.id}`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 更新 AI 对话失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'conversationUpdate', null)
     }
   }
 
-  /**
-   * 删除 AI 对话
-   *
-   * @param conversationIdList - 要删除的对话 ID 列表
-   * @returns 是否删除成功
-   */
   async conversationDelete(conversationIdList: string[]): Promise<boolean> {
     try {
-      await imRequest({
-        url: ImUrlEnum.CONVERSATION_DELETE_MY,
-        body: { conversationIdList }
+      await this.httpRequest(Method.Post, '/_matrix/client/v1/ai/conversation/delete', undefined, {
+        conversationIdList
       })
       info(`[MatrixAI] 删除 AI 对话成功: ${conversationIdList.join(', ')}`)
       return true
     } catch (err) {
       logError(`[MatrixAI] 删除 AI 对话失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'conversationDelete', false)
     }
   }
 
-  /**
-   * 保存 AI 生成的内容消息
-   *
-   * @param params - 保存参数
-   * @param params.conversationId - 对话 ID
-   * @param params.prompt - 提示词
-   * @param params.generatedContent - 生成的内容
-   * @returns 是否保存成功
-   */
   async messageSaveGeneratedContent(params: {
     conversationId: string
     prompt: string
     generatedContent: string
   }): Promise<boolean> {
     try {
-      await imRequest({
-        url: ImUrlEnum.MESSAGE_SAVE_GENERATED_CONTENT,
-        params
-      })
+      await this.httpRequest(Method.Post, '/_matrix/client/v1/ai/message/save_generated', undefined, params)
       info(`[MatrixAI] 保存生成内容成功`)
       return true
     } catch (err) {
       logError(`[MatrixAI] 保存生成内容失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'messageSaveGeneratedContent', false)
     }
   }
 
-  /**
-   * 取消正在进行的 AI 流式生成
-   *
-   * @param requestId - 请求 ID
-   * @returns 是否取消成功
-   */
   async messageCancelStream(requestId: string): Promise<boolean> {
     try {
       const { invoke } = await import('@tauri-apps/api/core')
@@ -222,16 +183,6 @@ class MatrixAIService {
     }
   }
 
-  /**
-   * 发送 AI 消息（流式）
-   *
-   * @param conversationId - 对话 ID
-   * @param content - 消息内容
-   * @param callbacks - 流式回调
-   * @param useContext - 是否使用上下文
-   * @param reasoningEnabled - 是否启用推理
-   * @returns 完整内容
-   */
   async messageSendStream(
     conversationId: string,
     content: string,
@@ -313,252 +264,199 @@ class MatrixAIService {
     })
   }
 
-  /**
-   * 生成图片
-   *
-   * @param request - 图片生成参数
-   * @param request.modelId - 模型 ID
-   * @param request.prompt - 提示词
-   * @param request.width - 宽度
-   * @param request.height - 高度
-   * @param request.conversationId - 对话 ID
-   * @param request.options - 其他选项
-   * @returns 图片生成结果
-   */
   async generateImage(request: ImageGenerationRequest): Promise<any> {
     try {
-      const result = await imRequest({
-        url: ImUrlEnum.IMAGE_DRAW,
-        body: request
-      })
+      const result = await this.httpRequest(Method.Post, '/_matrix/client/v1/ai/image/generate', undefined, request)
       info(`[MatrixAI] 生成图片请求成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 生成图片失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'generateImage', null)
     }
   }
 
-  /**
-   * 获取对话消息列表
-   *
-   * @param params - 查询参数
-   * @param params.conversationId - 对话 ID
-   * @param params.pageNo - 页码
-   * @param params.pageSize - 每页数量
-   * @returns 消息列表
-   */
   async messageListByConversationId(params: {
     conversationId: string
     pageNo?: number
     pageSize?: number
   }): Promise<AIMessage[]> {
     try {
-      const result = await imRequest<AIMessage[]>({
-        url: ImUrlEnum.MESSAGE_LIST_BY_CONVERSATION_ID,
-        params
-      })
+      const result = await this.httpRequest<AIMessage[]>(Method.Get, '/_matrix/client/v1/ai/message/list', params)
       info(`[MatrixAI] 获取对话消息列表成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 获取对话消息列表失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'messageListByConversationId', [])
     }
   }
 
   async modelPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIModelListResponse> {
     try {
-      const result = await imRequest<AIModelListResponse>({
-        url: ImUrlEnum.MODEL_PAGE,
-        params
-      })
+      const result = await this.httpRequest<AIModelListResponse>(Method.Get, '/_matrix/client/v1/ai/model/page', params)
       info(`[MatrixAI] 获取模型列表成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 获取模型列表失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'modelPage', null)
     }
   }
 
   async getModelRemainingUsage(params: { modelId: string }): Promise<any> {
     try {
-      const result = await imRequest({
-        url: ImUrlEnum.MODEL_REMAINING_USAGE,
-        params
-      })
+      const result = await this.httpRequest(Method.Get, '/_matrix/client/v1/ai/model/remaining_usage', params)
       info(`[MatrixAI] 获取模型剩余使用量成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 获取模型剩余使用量失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'getModelRemainingUsage', null)
     }
   }
 
   async imageMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIImageListResponse> {
     try {
-      const result = await imRequest<AIImageListResponse>({
-        url: ImUrlEnum.IMAGE_MY_PAGE,
+      const result = await this.httpRequest<AIImageListResponse>(
+        Method.Get,
+        '/_matrix/client/v1/ai/image/my_page',
         params
-      })
+      )
       info(`[MatrixAI] 获取我的图片列表成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 获取我的图片列表失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'imageMyPage', null)
     }
   }
 
   async imageMyListByIds(params: { ids: string }): Promise<AIImage[]> {
     try {
-      const result = await imRequest<AIImage[]>({
-        url: ImUrlEnum.IMAGE_MY_LIST_BY_IDS,
-        params
-      })
+      const result = await this.httpRequest<AIImage[]>(Method.Get, '/_matrix/client/v1/ai/image/my_list_by_ids', params)
       info(`[MatrixAI] 根据ID列表获取图片成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 根据ID列表获取图片失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'imageMyListByIds', [])
     }
   }
 
   async videoMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIVideoListResponse> {
     try {
-      const result = await imRequest<AIVideoListResponse>({
-        url: ImUrlEnum.VIDEO_MY_PAGE,
+      const result = await this.httpRequest<AIVideoListResponse>(
+        Method.Get,
+        '/_matrix/client/v1/ai/video/my_page',
         params
-      })
+      )
       info(`[MatrixAI] 获取我的视频列表成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 获取我的视频列表失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'videoMyPage', null)
     }
   }
 
   async videoMyListByIds(params: { ids: string }): Promise<AIVideo[]> {
     try {
-      const result = await imRequest<AIVideo[]>({
-        url: ImUrlEnum.VIDEO_MY_LIST_BY_IDS,
-        params
-      })
+      const result = await this.httpRequest<AIVideo[]>(Method.Get, '/_matrix/client/v1/ai/video/my_list_by_ids', params)
       info(`[MatrixAI] 根据ID列表获取视频成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 根据ID列表获取视频失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'videoMyListByIds', [])
     }
   }
 
   async videoGenerate(body: any): Promise<any> {
     try {
-      const result = await imRequest({
-        url: ImUrlEnum.VIDEO_GENERATE,
-        body
-      })
+      const result = await this.httpRequest(Method.Post, '/_matrix/client/v1/ai/video/generate', undefined, body)
       info(`[MatrixAI] 请求视频生成成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 请求视频生成失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'videoGenerate', null)
     }
   }
 
   async audioMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIAudioListResponse> {
     try {
-      const result = await imRequest<AIAudioListResponse>({
-        url: ImUrlEnum.AUDIO_MY_PAGE,
+      const result = await this.httpRequest<AIAudioListResponse>(
+        Method.Get,
+        '/_matrix/client/v1/ai/audio/my_page',
         params
-      })
+      )
       info(`[MatrixAI] 获取我的音频列表成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 获取我的音频列表失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'audioMyPage', null)
     }
   }
 
   async audioMyListByIds(params: { ids: string }): Promise<AIAudio[]> {
     try {
-      const result = await imRequest<AIAudio[]>({
-        url: ImUrlEnum.AUDIO_MY_LIST_BY_IDS,
-        params
-      })
+      const result = await this.httpRequest<AIAudio[]>(Method.Get, '/_matrix/client/v1/ai/audio/my_list_by_ids', params)
       info(`[MatrixAI] 根据ID列表获取音频成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 根据ID列表获取音频失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'audioMyListByIds', [])
     }
   }
 
   async audioGenerate(body: any): Promise<any> {
     try {
-      const result = await imRequest({
-        url: ImUrlEnum.AUDIO_GENERATE,
-        body
-      })
+      const result = await this.httpRequest(Method.Post, '/_matrix/client/v1/ai/audio/generate', undefined, body)
       info(`[MatrixAI] 请求音频生成成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 请求音频生成失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'audioGenerate', null)
     }
   }
 
   async audioGetVoices(params: { model: string }): Promise<AIVoice[]> {
     try {
-      const result = await imRequest<AIVoice[]>({
-        url: ImUrlEnum.AUDIO_GET_VOICES,
-        params
-      })
+      const result = await this.httpRequest<AIVoice[]>(Method.Get, '/_matrix/client/v1/ai/audio/voices', params)
       info(`[MatrixAI] 获取语音列表成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 获取语音列表失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'audioGetVoices', [])
     }
   }
 
   async messageDelete(params: { id: string }): Promise<boolean> {
     try {
-      await imRequest({
-        url: ImUrlEnum.MESSAGE_DELETE,
-        params
-      })
+      await this.httpRequest(Method.Post, '/_matrix/client/v1/ai/message/delete', undefined, params)
       info(`[MatrixAI] 删除消息成功: ${params.id}`)
       return true
     } catch (err) {
       logError(`[MatrixAI] 删除消息失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'messageDelete', false)
     }
   }
 
   async messageDeleteByConversationId(params: { conversationIdList: string[] }): Promise<boolean> {
     try {
-      await imRequest({
-        url: ImUrlEnum.MESSAGE_DELETE_BY_CONVERSATION_ID,
-        body: params
-      })
+      await this.httpRequest(Method.Post, '/_matrix/client/v1/ai/message/delete_by_conversation', undefined, params)
       info(`[MatrixAI] 删除会话所有消息成功`)
       return true
     } catch (err) {
       logError(`[MatrixAI] 删除会话所有消息失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'messageDeleteByConversationId', false)
     }
   }
 
   async chatRolePage(params?: { pageNo?: number; pageSize?: number }): Promise<AIChatRoleListResponse> {
     try {
-      const result = await imRequest<AIChatRoleListResponse>({
-        url: ImUrlEnum.CHAT_ROLE_PAGE,
+      const result = await this.httpRequest<AIChatRoleListResponse>(
+        Method.Get,
+        '/_matrix/client/v1/ai/chatrole/page',
         params
-      })
+      )
       info(`[MatrixAI] 获取聊天角色列表成功`)
       return result
     } catch (err) {
       logError(`[MatrixAI] 获取聊天角色列表失败: ${err}`)
-      throw err
+      throw this.handleError(err, 'chatRolePage', null)
     }
   }
 }

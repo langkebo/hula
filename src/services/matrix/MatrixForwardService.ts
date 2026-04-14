@@ -1,6 +1,7 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
 export interface ForwardTarget {
   roomId: string
@@ -14,33 +15,27 @@ export interface ForwardResult {
   error?: string
 }
 
-class MatrixForwardService {
+class MatrixForwardService extends BaseManager {
   async forwardEvent(event: MatrixEvent, targetRoomId: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixForward] 客户端未初始化')
     }
+    const content = event.getContent()
+    const eventType = event.getType()
 
-    try {
-      const content = event.getContent()
-      const eventType = event.getType()
-
-      const forwardContent = {
-        ...content,
-        'm.relates_to': {
-          'm.in_reply_to': {
-            event_id: event.getId()
-          }
+    const forwardContent = {
+      ...content,
+      'm.relates_to': {
+        'm.in_reply_to': {
+          event_id: event.getId()
         }
       }
-
-      const response = await client.sendEvent(targetRoomId, eventType as any, forwardContent)
-      info(`[MatrixForward] 转发消息成功: ${event.getId()} -> ${targetRoomId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[MatrixForward] 转发消息失败: ${err}`)
-      throw err
     }
+
+    const response = await client.sendEvent(targetRoomId, eventType, forwardContent)
+    info(`[MatrixForward] 转发消息成功: ${event.getId()} -> ${targetRoomId}`)
+    return response.event_id
   }
 
   async forwardEventToMultipleRooms(event: MatrixEvent, targetRoomIds: string[]): Promise<ForwardResult[]> {
@@ -74,25 +69,19 @@ class MatrixForwardService {
     if (!client) {
       throw new Error('[MatrixForward] 客户端未初始化')
     }
-
-    try {
-      const content: any = {
-        msgtype: 'm.text',
-        body: text
-      }
-
-      if (html) {
-        content.format = 'org.matrix.custom.html'
-        content.formatted_body = html
-      }
-
-      const response = await client.sendEvent(targetRoomId, 'm.room.message' as any, content)
-      info(`[MatrixForward] 转发文本消息成功: ${targetRoomId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[MatrixForward] 转发文本消息失败: ${err}`)
-      throw err
+    const content: any = {
+      msgtype: 'm.text',
+      body: text
     }
+
+    if (html) {
+      content.format = 'org.matrix.custom.html'
+      content.formatted_body = html
+    }
+
+    const response = await client.sendEvent(targetRoomId, 'm.room.message', content)
+    info(`[MatrixForward] 转发文本消息成功: ${targetRoomId}`)
+    return response.event_id
   }
 
   async forwardMediaMessage(sourceEvent: MatrixEvent, targetRoomId: string): Promise<string> {
@@ -100,22 +89,16 @@ class MatrixForwardService {
     if (!client) {
       throw new Error('[MatrixForward] 客户端未初始化')
     }
+    const content = sourceEvent.getContent()
 
-    try {
-      const content = sourceEvent.getContent()
-
-      const forwardContent = {
-        ...content,
-        'm.relates_to': undefined
-      }
-
-      const response = await client.sendEvent(targetRoomId, 'm.room.message' as any, forwardContent)
-      info(`[MatrixForward] 转发媒体消息成功: ${sourceEvent.getId()} -> ${targetRoomId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[MatrixForward] 转发媒体消息失败: ${err}`)
-      throw err
+    const forwardContent = {
+      ...content,
+      'm.relates_to': undefined
     }
+
+    const response = await client.sendEvent(targetRoomId, 'm.room.message', forwardContent)
+    info(`[MatrixForward] 转发媒体消息成功: ${sourceEvent.getId()} -> ${targetRoomId}`)
+    return response.event_id
   }
 
   getForwardableRooms(): ForwardTarget[] {

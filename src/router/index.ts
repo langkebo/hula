@@ -58,8 +58,13 @@ const HelpFeedback = () => import('#/views/my/HelpFeedback.vue')
 const VoiceVideoSettings = () => import('#/views/my/VoiceVideoSettings.vue')
 const LabsSettings = () => import('#/views/my/LabsSettings.vue')
 const IntegrationsSettings = () => import('#/views/my/IntegrationsSettings.vue')
+const IgnoredUsers = () => import('#/views/my/IgnoredUsers.vue')
+const LoginHistory = () => import('#/views/my/LoginHistory.vue')
+const ThreePidManagement = () => import('#/mobile/views/my/ThreePidManagement.vue')
 const Favorites = () => import('#/views/my/Favorites.vue')
 const Files = () => import('#/views/my/Files.vue')
+const OpenClawChat = () => import('#/views/my/OpenClawChat.vue')
+const MobileRoomList = () => import('#/views/room/index.vue')
 const ConfirmQRLogin = () => import('#/views/ConfirmQRLogin.vue')
 const MyQRCode = () => import('#/views/MyQRCode.vue')
 const Splashscreen = () => import('#/views/Splashscreen.vue')
@@ -126,6 +131,11 @@ const getMobileRoutes = (): Array<RouteRecordRaw> => [
         component: MobileChatMain,
         props: true,
         meta: { keepAlive: true }
+      },
+      {
+        path: 'spaceDetail/:roomId',
+        name: 'mobileSpaceDetail',
+        component: () => import('@/mobile/views/room/SpaceDetail.vue')
       },
       {
         path: 'setting',
@@ -196,6 +206,11 @@ const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: '/mobile/message',
         name: 'mobileMessage',
         component: MobileMessagePage
+      },
+      {
+        path: '/mobile/rooms',
+        name: 'mobileRooms',
+        component: MobileRoomList
       },
       {
         path: '/mobile/friends',
@@ -283,6 +298,31 @@ const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'devices',
         name: 'mobileDeviceManagement',
         component: DeviceManagement
+      },
+      {
+        path: 'keyBackup',
+        name: 'mobileKeyBackup',
+        component: () => import('@/mobile/views/my/MobileKeyBackup.vue')
+      },
+      {
+        path: 'ignoredUsers',
+        name: 'mobileIgnoredUsers',
+        component: IgnoredUsers
+      },
+      {
+        path: 'loginHistory',
+        name: 'mobileLoginHistory',
+        component: LoginHistory
+      },
+      {
+        path: 'threePid',
+        name: 'mobileThreePid',
+        component: ThreePidManagement
+      },
+      {
+        path: 'openclaw',
+        name: 'mobileOpenClawChat',
+        component: OpenClawChat
       },
       {
         path: 'notifications',
@@ -405,6 +445,16 @@ const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         component: FriendsList
       },
       {
+        path: '/roomList',
+        name: 'roomList',
+        component: () => import('@/views/homeWindow/RoomList.vue')
+      },
+      {
+        path: '/spaceList',
+        name: 'spaceList',
+        component: () => import('@/views/homeWindow/SpaceList.vue')
+      },
+      {
         path: '/searchDetails',
         name: 'searchDetails',
         component: SearchDetails
@@ -444,19 +494,14 @@ const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/views/fileManagerWindow/index.vue')
   },
   {
-    path: '/dynamic',
-    name: 'dynamic',
-    component: () => import('@/plugins/dynamic/index.vue')
+    path: '/space',
+    name: 'space',
+    component: () => import('@/views/spaceWindow/index.vue')
   },
   {
-    path: '/dynamic/:id',
-    name: 'dynamicDetailWithId',
-    component: () => import('@/plugins/dynamic/detail.vue')
-  },
-  {
-    path: '/dynamicDetail',
-    name: 'dynamicDetail',
-    component: () => import('@/plugins/dynamic/detail.vue')
+    path: '/space/:roomId',
+    name: 'spaceDetail',
+    component: () => import('@/views/spaceWindow/SpaceDetail.vue')
   },
   {
     path: '/onlineStatus',

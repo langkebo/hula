@@ -7,8 +7,8 @@ import { useGlobalStore } from '@/stores/global.ts'
 import { useSettingStore } from '@/stores/setting.ts'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
-import { shield, notification } from '@/utils/ImRequestUtils'
-import { matrixGroupService, matrixSessionService } from '@/services/matrix'
+import { matrixGroupService, matrixSessionService, matrixPushService } from '@/services/matrix'
+import { PushRuleKind } from 'matrix-js-sdk'
 import { invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
 import { useI18n } from 'vue-i18n'
 
@@ -178,12 +178,8 @@ export const useMessage = () => {
             label: () => t('menu.allow_notifications'),
             icon: !item.shield && item.muteNotification === NotificationTypeEnum.RECEPTION ? 'check-small' : '',
             click: async () => {
-              // 如果当前是屏蔽状态，需要先取消屏蔽
               if (item.shield) {
-                await shield({
-                  roomId: item.roomId,
-                  state: false
-                })
+                await matrixPushService.unmuteRoom(item.roomId)
                 chatStore.updateSession(item.roomId, { shield: false })
               }
               await handleNotificationChange(item, NotificationTypeEnum.RECEPTION)
@@ -193,12 +189,8 @@ export const useMessage = () => {
             label: () => t('menu.receive_silently'),
             icon: !item.shield && item.muteNotification === NotificationTypeEnum.NOT_DISTURB ? 'check-small' : '',
             click: async () => {
-              // 如果当前是屏蔽状态，需要先取消屏蔽
               if (item.shield) {
-                await shield({
-                  roomId: item.roomId,
-                  state: false
-                })
+                await matrixPushService.unmuteRoom(item.roomId)
                 chatStore.updateSession(item.roomId, { shield: false })
               }
               await handleNotificationChange(item, NotificationTypeEnum.NOT_DISTURB)
@@ -208,12 +200,12 @@ export const useMessage = () => {
             label: () => t('menu.block_group_messages'),
             icon: item.shield ? 'check-small' : '',
             click: async () => {
-              await shield({
-                roomId: item.roomId,
-                state: !item.shield
-              })
+              if (!item.shield) {
+                await matrixPushService.muteRoom(item.roomId)
+              } else {
+                await matrixPushService.unmuteRoom(item.roomId)
+              }
 
-              // 更新本地会话状态
               chatStore.updateSession(item.roomId, {
                 shield: !item.shield
               })
@@ -243,12 +235,12 @@ export const useMessage = () => {
       label: (item: SessionItem) => (item.shield ? t('menu.unblock_user_messages') : t('menu.block_user_messages')),
       icon: (item: SessionItem) => (item.shield ? 'message-success' : 'people-unknown'),
       click: async (item: SessionItem) => {
-        await shield({
-          roomId: item.roomId,
-          state: !item.shield
-        })
+        if (!item.shield) {
+          await matrixPushService.muteRoom(item.roomId)
+        } else {
+          await matrixPushService.unmuteRoom(item.roomId)
+        }
 
-        // 更新本地会话状态
         chatStore.updateSession(item.roomId, {
           shield: !item.shield
         })
@@ -339,10 +331,11 @@ export const useMessage = () => {
 
   // 添加通知设置变更处理函数
   const handleNotificationChange = async (item: SessionItem, newType: NotificationTypeEnum) => {
-    await notification({
-      roomId: item.roomId,
-      type: newType
-    })
+    if (newType === NotificationTypeEnum.RECEPTION) {
+      await matrixPushService.unmuteRoom(item.roomId)
+    } else {
+      await matrixPushService.muteRoom(item.roomId)
+    }
 
     // 更新本地会话状态
     chatStore.updateSession(item.roomId, {

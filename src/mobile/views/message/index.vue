@@ -409,8 +409,7 @@ const handleToggleReadStatus = async (markAsRead: boolean, sessionItem?: Session
     globalStore.updateGlobalUnreadCount()
 
     if (markAsRead) {
-      const client = matrixClientService.getClient()
-      const room = client?.getRoom(item.roomId)
+      const room = matrixClientService.getRoom(item.roomId)
       const lastEvent = room?.timeline[room.timeline.length - 1]
       const eventId = lastEvent?.getId() || ''
       await matrixMessageService.markMessagesRead(item.roomId, eventId)
@@ -455,18 +454,15 @@ const onRefresh = () => {
 onMounted(async () => {
   await contactStore.getContactList(true)
 
-  const client = matrixClientService.getClient()
-  if (client) {
-    client.on('sync' as any, (state: string) => {
-      if (state === 'PREPARED') {
-        contactStore.getContactList(true)
-      }
-    })
+  matrixClientService.on('sync', (data: any) => {
+    if (data.state === 'PREPARED') {
+      contactStore.getContactList(true)
+    }
+  })
 
-    client.on('Room.timeline' as any, () => {
-      contactStore.getContactList(false)
-    })
-  }
+  matrixClientService.on('timeline', () => {
+    contactStore.getContactList(false)
+  })
 })
 
 /**

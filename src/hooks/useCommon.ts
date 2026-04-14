@@ -7,6 +7,7 @@ import { LimitEnum, MittEnum, MsgEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
+import type { SessionItem } from '@/stores/chat'
 import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useUserStore } from '@/stores/user.ts'
@@ -227,7 +228,7 @@ export const useCommon = () => {
 
     // 将节点插入范围最前面添加节点
     if (type === MsgEnum.AIT) {
-      const domObj = dom as any
+      const domObj = dom as { name?: string; text?: string; label?: string; uid?: string }
       const mentionText =
         typeof dom === 'object' && dom !== null ? domObj.name || domObj.text || domObj.label || '' : dom || ''
       const mentionUid = typeof dom === 'object' && dom !== null ? domObj.uid : undefined
@@ -262,7 +263,7 @@ export const useCommon = () => {
       inputElement.focus()
 
       // 创建回复节点
-      const replyNode = createReplyDom(dom as any)
+      const replyNode = createReplyDom(dom as { accountName: string; content: string; avatar: string })
 
       // 如果已经存在回复框，则替换它
       const preReplyNode = document.getElementById('replyDiv')
@@ -701,7 +702,8 @@ export const useCommon = () => {
       img.style.marginRight = '6px'
 
       // 获取MsgInput组件暴露的lastEditRange
-      const lastEditRange = (dom as any).getLastEditRange?.()
+      const domWithRange = dom as HTMLElement & { getLastEditRange?: () => Range }
+      const lastEditRange = domWithRange.getLastEditRange?.()
 
       // 确保dom获得焦点
       dom.focus()
@@ -747,7 +749,8 @@ export const useCommon = () => {
       img.setAttribute('data-path', cachePath)
 
       // 获取MsgInput组件暴露的lastEditRange
-      const lastEditRange = (dom as any).getLastEditRange?.()
+      const domWithRange = dom as HTMLElement & { getLastEditRange?: () => Range }
+      const lastEditRange = domWithRange.getLastEditRange?.()
 
       // 确保dom获得焦点
       dom.focus()
@@ -866,7 +869,7 @@ export const useCommon = () => {
 
     // 发送消息定位
     useMitt.emit(MittEnum.LOCATE_SESSION, { roomId: res.roomId })
-    handleMsgClick(res as any)
+    handleMsgClick(res as unknown as SessionItem)
     useMitt.emit(MittEnum.TO_SEND_MSG, { url: 'message' })
   }
 
@@ -906,7 +909,8 @@ export const useCommon = () => {
       const mimeType = file.type || ''
       const extension = getFileExtension(file.name)
       const isImage =
-        (mimeType.startsWith('image/') || SUPPORTED_IMAGE_EXTENSIONS.includes(extension as any)) &&
+        (mimeType.startsWith('image/') ||
+          SUPPORTED_IMAGE_EXTENSIONS.includes(extension as (typeof SUPPORTED_IMAGE_EXTENSIONS)[number])) &&
         extension !== 'svg' &&
         !mimeType.includes('svg')
 

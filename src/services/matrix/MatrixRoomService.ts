@@ -1,336 +1,212 @@
-import type { Room, RoomMember, ICreateRoomOpts } from 'matrix-js-sdk'
+import type { Room, RoomMember } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager, NotFoundError } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
-/**
- * Matrix 房间服务
- *
- * 提供房间管理功能，包括创建、加入、离开房间，以及成员管理等操作。
- *
- * @example
- * ```typescript
- * import { matrixRoomService } from '@/services/matrix'
- *
- * // 获取所有房间
- * const rooms = await matrixRoomService.getRooms()
- *
- * // 创建房间
- * const room = await matrixRoomService.createRoom({
- *   name: 'My Room',
- *   preset: 'private_chat'
- * })
- *
- * // 邀请用户
- * await matrixRoomService.inviteUser(room.roomId, '@user:example.org')
- * ```
- */
-class MatrixRoomService {
-  /**
-   * 获取所有房间
-   *
-   * @returns 房间列表
-   * @throws {Error} 如果客户端未初始化
-   */
-  async getRooms(): Promise<Room[]> {
+class MatrixRoomService extends BaseManager {
+  private getClient() {
     const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client.getRooms()
+    if (!client) throw new Error('客户端未初始化')
+    return client
   }
 
-  /**
-   * 获取指定房间
-   *
-   * @param roomId - 房间 ID
-   * @returns 房间实例，如果不存在则返回 null
-   * @throws {Error} 如果客户端未初始化
-   */
-  async getRoom(roomId: string): Promise<Room | null> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client.getRoom(roomId) ?? null
+  private getRoomManager() {
+    return (this.getClient() as any).getRoomManager()
   }
 
-  /**
-   * 创建房间
-   *
-   * @param options - 房间创建选项
-   * @returns 创建的房间
-   * @throws {Error} 如果客户端未初始化或创建失败
-   */
-  async createRoom(options: ICreateRoomOpts): Promise<Room> {
-    return matrixClientService.createRoom(options)
+  private getRoomSettingsManager() {
+    return (this.getClient() as any).getRoomSettingsManager()
   }
 
-  /**
-   * 创建直接消息房间
-   *
-   * @param userId - 目标用户 ID
-   * @returns 创建的房间 ID
-   * @throws {Error} 如果客户端未初始化或创建失败
-   */
-  async createDirectRoom(userId: string): Promise<string> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
+  private getRoomJoiningManager() {
+    return (this.getClient() as any).getRoomJoiningManager()
+  }
 
+  private getRoomCreationManager() {
+    return (this.getClient() as any).getRoomCreationManager()
+  }
+
+  private getDirectMessageManager() {
+    return (this.getClient() as any).getDirectMessageManager()
+  }
+
+  private getPushManager() {
+    return (this.getClient() as any).getPushManager()
+  }
+
+  private getPowerLevelsManager() {
+    return (this.getClient() as any).getPowerLevelsManager()
+  }
+
+  private getRoomSummaryManager() {
+    return (this.getClient() as any).getRoomSummaryManager()
+  }
+
+  async getRooms(throwOnError = true): Promise<Room[]> {
     try {
-      const room = await client.createRoom({
-        is_direct: true,
-        invite: [userId],
-        preset: 'trusted_private_chat' as any,
-        visibility: 'private' as any
-      })
-      info(`[MatrixRoom] 创建直接消息房间成功: ${room.room_id}`)
-      return room.room_id
-    } catch (err) {
-      error(`[MatrixRoom] 创建直接消息房间失败: ${err}`)
-      throw err
+      const manager = this.getRoomManager()
+      return manager.getRooms()
+    } catch (error) {
+      return this.handleError(error, 'getRooms', [] as Room[], throwOnError)
     }
   }
 
-  /**
-   * 加入房间
-   *
-   * @param roomId - 房间 ID 或别名
-   * @returns 加入的房间
-   * @throws {Error} 如果客户端未初始化或加入失败
-   */
-  async joinRoom(roomId: string): Promise<Room> {
-    return matrixClientService.joinRoom(roomId)
-  }
-
-  /**
-   * 离开房间
-   *
-   * @param roomId - 房间 ID
-   * @throws {Error} 如果客户端未初始化或离开失败
-   */
-  async leaveRoom(roomId: string): Promise<void> {
-    return matrixClientService.leaveRoom(roomId)
-  }
-
-  /**
-   * 获取房间成员列表
-   *
-   * @param roomId - 房间 ID
-   * @returns 成员列表
-   * @throws {Error} 如果客户端未初始化或房间不存在
-   */
-  async getMembers(roomId: string): Promise<RoomMember[]> {
-    const room = await this.getRoom(roomId)
-    if (!room) {
-      throw new Error(`房间不存在: ${roomId}`)
-    }
-    return room.getJoinedMembers()
-  }
-
-  /**
-   * 邀请用户加入房间
-   *
-   * @param roomId - 房间 ID
-   * @param userId - 用户 ID
-   * @throws {Error} 如果客户端未初始化或邀请失败
-   */
-  async inviteUser(roomId: string, userId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
+  async getRoom(roomId: string, throwOnError = true): Promise<Room | null> {
     try {
-      await client.invite(roomId, userId)
-      info(`[MatrixRoom] 邀请用户成功: ${userId} -> ${roomId}`)
-    } catch (err) {
-      error(`[MatrixRoom] 邀请用户失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 将用户踢出房间
-   *
-   * @param roomId - 房间 ID
-   * @param userId - 用户 ID
-   * @param reason - 踢出原因 (可选)
-   * @throws {Error} 如果客户端未初始化或操作失败
-   */
-  async kickUser(roomId: string, userId: string, reason?: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
-    try {
-      await client.kick(roomId, userId, reason)
-      info(`[MatrixRoom] 踢出用户成功: ${userId} <- ${roomId}`)
-    } catch (err) {
-      error(`[MatrixRoom] 踢出用户失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 封禁用户
-   *
-   * @param roomId - 房间 ID
-   * @param userId - 用户 ID
-   * @param reason - 封禁原因 (可选)
-   * @throws {Error} 如果客户端未初始化或操作失败
-   */
-  async banUser(roomId: string, userId: string, reason?: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
-    try {
-      await client.ban(roomId, userId, reason)
-      info(`[MatrixRoom] 封禁用户成功: ${userId} <- ${roomId}`)
-    } catch (err) {
-      error(`[MatrixRoom] 封禁用户失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 解封用户
-   *
-   * @param roomId - 房间 ID
-   * @param userId - 用户 ID
-   * @throws {Error} 如果客户端未初始化或操作失败
-   */
-  async unbanUser(roomId: string, userId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
-    try {
-      await client.unban(roomId, userId)
-      info(`[MatrixRoom] 解封用户成功: ${userId} <- ${roomId}`)
-    } catch (err) {
-      error(`[MatrixRoom] 解封用户失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 设置房间名称
-   *
-   * @param roomId - 房间 ID
-   * @param name - 新名称
-   * @throws {Error} 如果客户端未初始化或操作失败
-   */
-  async setRoomName(roomId: string, name: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
-    try {
-      await (client as any).setRoomName(roomId, name)
-      info(`[MatrixRoom] 设置房间名称成功: ${roomId} -> ${name}`)
-    } catch (err) {
-      error(`[MatrixRoom] 设置房间名称失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 设置房间主题
-   *
-   * @param roomId - 房间 ID
-   * @param topic - 主题内容
-   * @throws {Error} 如果客户端未初始化或操作失败
-   */
-  async setRoomTopic(roomId: string, topic: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
-    try {
-      await (client as any).setRoomTopic(roomId, topic)
-      info(`[MatrixRoom] 设置房间主题成功: ${roomId}`)
-    } catch (err) {
-      error(`[MatrixRoom] 设置房间主题失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 设置房间头像
-   *
-   * @param roomId - 房间 ID
-   * @param avatarUrl - 头像 URL (mxc://)
-   * @throws {Error} 如果客户端未初始化或操作失败
-   */
-  async setRoomAvatar(roomId: string, avatarUrl: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
-    try {
-      await (client as any).sendStateEvent(roomId, 'm.room.avatar', { url: avatarUrl }, '')
-      info(`[MatrixRoom] 设置房间头像成功: ${roomId}`)
-    } catch (err) {
-      error(`[MatrixRoom] 设置房间头像失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 获取房间状态事件
-   *
-   * @param roomId - 房间 ID
-   * @returns 状态事件列表
-   * @throws {Error} 如果客户端未初始化或房间不存在
-   */
-  async getRoomState(roomId: string): Promise<unknown[]> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
-    try {
-      const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(`房间不存在: ${roomId}`)
+      const manager = this.getRoomManager()
+      const room = manager.getRoom(roomId) ?? null
+      if (!room && throwOnError) {
+        throw new NotFoundError(`Room not found: ${roomId}`)
       }
-      return room.currentState.getStateEvents('*')
-    } catch (err) {
-      error(`[MatrixRoom] 获取房间状态失败: ${err}`)
-      throw err
+      return room
+    } catch (error) {
+      return this.handleError(error, 'getRoom', null, throwOnError)
     }
   }
 
-  /**
-   * 设置房间推送规则
-   *
-   * @param roomId - 房间 ID
-   * @param enabled - 是否启用推送
-   * @throws {Error} 如果客户端未初始化或操作失败
-   */
-  async setPushRule(roomId: string, enabled: boolean): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
+  async createRoom(options: Record<string, unknown>, throwOnError = false): Promise<{ room_id: string }> {
     try {
+      const manager = this.getRoomCreationManager()
+      const result = await manager.createRoom(options)
+      info(`[MatrixRoom] 创建房间成功: ${result.room_id}`)
+      return result
+    } catch (error) {
+      return this.handleError(error, 'createRoom', { room_id: '' }, throwOnError)
+    }
+  }
+
+  async createDirectRoom(userId: string, throwOnError = true): Promise<string> {
+    try {
+      const manager = this.getDirectMessageManager()
+      const roomId = await manager.createDmRoom(userId)
+      info(`[MatrixRoom] 创建直接消息房间成功: ${roomId}`)
+      return roomId
+    } catch (error) {
+      return this.handleError(error, 'createDirectRoom', '', throwOnError)
+    }
+  }
+
+  async joinRoom(roomId: string, throwOnError = true): Promise<Room> {
+    try {
+      const manager = this.getRoomJoiningManager()
+      return await manager.joinRoom(roomId)
+    } catch (error) {
+      return this.handleError(error, 'joinRoom', null as unknown as Room, throwOnError)
+    }
+  }
+
+  async leaveRoom(roomId: string, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getRoomJoiningManager()
+      await manager.leaveRoom(roomId)
+      info(`[MatrixRoom] 离开房间成功: ${roomId}`)
+    } catch (error) {
+      this.handleError(error, 'leaveRoom', undefined, throwOnError)
+    }
+  }
+
+  async getMembers(roomId: string, throwOnError = true): Promise<RoomMember[]> {
+    try {
+      const room = await this.getRoom(roomId, throwOnError)
+      if (!room) {
+        if (throwOnError) throw new NotFoundError(`Room not found: ${roomId}`)
+        return []
+      }
+      return room.getJoinedMembers()
+    } catch (error) {
+      return this.handleError(error, 'getMembers', [] as RoomMember[], throwOnError)
+    }
+  }
+
+  async inviteUser(roomId: string, userId: string, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getRoomJoiningManager()
+      await manager.inviteUser(userId, roomId)
+      info(`[MatrixRoom] 邀请用户成功: ${userId} -> ${roomId}`)
+    } catch (error) {
+      this.handleError(error, 'inviteUser', undefined, throwOnError)
+    }
+  }
+
+  async kickUser(roomId: string, userId: string, reason?: string, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getRoomJoiningManager()
+      await manager.kickUser(userId, roomId, reason)
+      info(`[MatrixRoom] 踢出用户成功: ${userId} <- ${roomId}`)
+    } catch (error) {
+      this.handleError(error, 'kickUser', undefined, throwOnError)
+    }
+  }
+
+  async banUser(roomId: string, userId: string, reason?: string, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getRoomJoiningManager()
+      await manager.banUser(userId, roomId, reason)
+      info(`[MatrixRoom] 封禁用户成功: ${userId} <- ${roomId}`)
+    } catch (error) {
+      this.handleError(error, 'banUser', undefined, throwOnError)
+    }
+  }
+
+  async unbanUser(roomId: string, userId: string, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getRoomJoiningManager()
+      await manager.unbanUser(userId, roomId)
+      info(`[MatrixRoom] 解封用户成功: ${userId} <- ${roomId}`)
+    } catch (error) {
+      this.handleError(error, 'unbanUser', undefined, throwOnError)
+    }
+  }
+
+  async setRoomName(roomId: string, name: string, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getRoomSettingsManager()
+      await manager.setRoomName(roomId, name)
+      info(`[MatrixRoom] 设置房间名称成功: ${roomId} -> ${name}`)
+    } catch (error) {
+      this.handleError(error, 'setRoomName', undefined, throwOnError)
+    }
+  }
+
+  async setRoomTopic(roomId: string, topic: string, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getRoomSettingsManager()
+      await manager.setRoomTopic(roomId, topic)
+      info(`[MatrixRoom] 设置房间主题成功: ${roomId}`)
+    } catch (error) {
+      this.handleError(error, 'setRoomTopic', undefined, throwOnError)
+    }
+  }
+
+  async setRoomAvatar(roomId: string, avatarUrl: string, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getRoomSettingsManager()
+      await manager.setRoomAvatar(roomId, avatarUrl)
+      info(`[MatrixRoom] 设置房间头像成功: ${roomId}`)
+    } catch (error) {
+      this.handleError(error, 'setRoomAvatar', undefined, throwOnError)
+    }
+  }
+
+  async getRoomState(roomId: string, throwOnError = true): Promise<unknown[]> {
+    try {
+      const manager = this.getRoomManager()
+      return await manager.getState(roomId)
+    } catch (error) {
+      return this.handleError(error, 'getRoomState', [] as unknown[], throwOnError)
+    }
+  }
+
+  async setPushRule(roomId: string, enabled: boolean, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getPushManager()
       if (enabled) {
-        await (client as any).deletePushRule('global', 'override', roomId)
+        await manager.deletePushRule('global', 'override', roomId)
       } else {
-        await (client as any).addPushRule('global', 'override', roomId, {
+        await manager.createPushRule('global', 'override', roomId, {
           conditions: [
             {
-              kind: 'event_match' as any,
+              kind: 'event_match',
               key: 'room_id',
               pattern: roomId
             }
@@ -339,92 +215,55 @@ class MatrixRoomService {
         })
       }
       info(`[MatrixRoom] 设置推送规则成功: ${roomId} -> ${enabled}`)
-    } catch (err) {
-      error(`[MatrixRoom] 设置推送规则失败: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'setPushRule', undefined, throwOnError)
     }
   }
 
-  /**
-   * 获取直接消息房间映射
-   *
-   * @returns 用户 ID 到房间 ID 列表的映射
-   * @throws {Error} 如果客户端未初始化
-   */
-  async getDirectRooms(): Promise<Map<string, string[]>> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
+  async getDirectRooms(throwOnError = true): Promise<Map<string, string[]>> {
     try {
-      const accountData = (client as any).getAccountData('m.direct')
-      if (accountData) {
-        return new Map(Object.entries(accountData.getContent()))
+      const manager = this.getDirectMessageManager()
+      const directMap = await manager.getDirectRoomsByUser()
+      const result = new Map<string, string[]>()
+      if (directMap && typeof directMap === 'object') {
+        for (const [userId, roomIds] of Object.entries(directMap)) {
+          if (Array.isArray(roomIds)) {
+            result.set(userId, roomIds as string[])
+          }
+        }
       }
-      return new Map()
-    } catch (err) {
-      error(`[MatrixRoom] 获取直接消息房间失败: ${err}`)
-      return new Map()
+      return result
+    } catch (error) {
+      return this.handleError(error, 'getDirectRooms', new Map<string, string[]>(), throwOnError)
     }
   }
 
-  /**
-   * 设置直接消息房间
-   *
-   * @param userId - 用户 ID
-   * @param roomId - 房间 ID
-   * @throws {Error} 如果客户端未初始化或操作失败
-   */
-  async setDirectRoom(userId: string, roomId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
+  async setDirectRoom(userId: string, roomId: string, throwOnError = true): Promise<void> {
     try {
-      const directRooms = await this.getDirectRooms()
-      const rooms = directRooms.get(userId) || []
-      if (!rooms.includes(roomId)) {
-        rooms.push(roomId)
-        directRooms.set(userId, rooms)
-        await (client as any).setAccountData('m.direct', Object.fromEntries(directRooms))
-      }
+      const manager = this.getDirectMessageManager()
+      await manager.setDmRoom(roomId, userId)
       info(`[MatrixRoom] 设置直接消息房间成功: ${userId} -> ${roomId}`)
-    } catch (err) {
-      error(`[MatrixRoom] 设置直接消息房间失败: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'setDirectRoom', undefined, throwOnError)
     }
   }
 
-  /**
-   * 设置当前用户在房间中的昵称
-   *
-   * @param roomId - 房间 ID
-   * @param displayName - 显示名称
-   * @throws {Error} 如果客户端未初始化、用户未登录或房间不存在
-   */
-  async setMemberDisplayName(roomId: string, displayName: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
+  async setMemberDisplayName(roomId: string, displayName: string, throwOnError = true): Promise<void> {
+    const client = this.getClient()
     try {
       const userId = client.getUserId()
-      if (!userId) {
-        throw new Error('用户未登录')
-      }
+      if (!userId) throw new Error('用户未登录')
 
       const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(`房间不存在: ${roomId}`)
-      }
+      if (!room) throw new Error(`房间不存在: ${roomId}`)
 
       const currentMember = room.getMember(userId)
-      const currentMembership = (currentMember as any)?.events?.member?.getContent() || {}
+      const memberEvent = (currentMember as { events?: { member?: { getContent: () => Record<string, unknown> } } })
+        ?.events?.member
+      const currentMembership = memberEvent?.getContent() || {}
 
-      await (client as any).sendStateEvent(
+      const manager = this.getRoomManager()
+      await manager.sendStateEvent(
         roomId,
         'm.room.member',
         {
@@ -436,234 +275,247 @@ class MatrixRoomService {
       )
 
       info(`[MatrixRoom] 设置成员昵称成功: ${roomId} -> ${displayName}`)
-    } catch (err) {
-      error(`[MatrixRoom] 设置成员昵称失败: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'setMemberDisplayName', undefined, throwOnError)
     }
   }
 
-  /**
-   * 获取成员在房间中的显示名称
-   *
-   * @param roomId - 房间 ID
-   * @param userId - 用户 ID
-   * @returns 显示名称，如果不存在则返回 null
-   */
-  async getMemberDisplayName(roomId: string, userId: string): Promise<string | null> {
-    const room = await this.getRoom(roomId)
-    if (!room) {
-      return null
-    }
-
-    const member = room.getMember(userId)
-    return member?.rawDisplayName || member?.name || null
-  }
-
-  /**
-   * 设置成员权力等级（角色）
-   * @param roomId - 房间 ID
-   * @param userId - 用户 ID
-   * @param powerLevel - 权力等级 (0=普通成员, 50=管理员, 100=创建者)
-   */
-  async setMemberPowerLevel(roomId: string, userId: string, powerLevel: number): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
+  async getMemberDisplayName(roomId: string, userId: string, throwOnError = true): Promise<string | null> {
     try {
-      await (client as any).setUserPowerLevel(userId, roomId, powerLevel)
+      const room = await this.getRoom(roomId, throwOnError)
+      if (!room) return null
+      const member = room.getMember(userId)
+      return member?.rawDisplayName || member?.name || null
+    } catch (error) {
+      return this.handleError(error, 'getMemberDisplayName', null, throwOnError)
+    }
+  }
+
+  async setMemberPowerLevel(roomId: string, userId: string, powerLevel: number, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getPowerLevelsManager()
+      await manager.setUserPowerLevel(userId, roomId, powerLevel)
       info(`[MatrixRoom] 成功设置用户 ${userId} 的权力等级为 ${powerLevel}`)
-    } catch (err) {
-      error(`[MatrixRoom] 设置权力等级失败: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'setMemberPowerLevel', undefined, throwOnError)
     }
   }
 
-  /**
-   * 将成员设为管理员
-   */
-  async setMemberAsAdmin(roomId: string, userId: string): Promise<void> {
-    await this.setMemberPowerLevel(roomId, userId, 100)
+  async setMemberAsAdmin(roomId: string, userId: string, throwOnError = true): Promise<void> {
+    await this.setMemberPowerLevel(roomId, userId, 100, throwOnError)
   }
 
-  /**
-   * 移除管理员权限
-   */
-  async removeMemberAsAdmin(roomId: string, userId: string): Promise<void> {
-    await this.setMemberPowerLevel(roomId, userId, 0)
+  async removeMemberAsAdmin(roomId: string, userId: string, throwOnError = true): Promise<void> {
+    await this.setMemberPowerLevel(roomId, userId, 0, throwOnError)
   }
 
-  /**
-   * 翻译文本
-   *
-   * @param text - 要翻译的文本
-   * @param _provider - 翻译服务提供者 (当前使用 Google Translate)
-   * @returns 翻译后的文本
-   */
-  async translateText(text: string, _provider?: string): Promise<string> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
-    try {
-      const response = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=zh-CN&dt=t&q=${encodeURIComponent(text)}`
-      )
-      const data = await response.json()
-      if (data && data[0]) {
-        const translatedText = data[0].map((item: unknown[]) => item[0]).join('')
-        info(`[MatrixRoom] 翻译成功`)
-        return translatedText
-      }
-      return text
-    } catch (err) {
-      error(`[MatrixRoom] 翻译失败: ${err}`)
-      return text
-    }
-  }
-
-  // ============================================
-  // RoomSummaryService 对应方法
-  // ============================================
-
-  /**
-   * 获取房间摘要
-   * 对应后端 RoomSummaryService.get_summary()
-   *
-   * @param roomId - 房间 ID
-   * @returns 房间摘要信息
-   */
-  async getRoomSummary(roomId: string): Promise<{
+  async getRoomSummary(
+    roomId: string,
+    throwOnError = true
+  ): Promise<{
     roomId: string
+    roomType: string | null
     name: string | null
     topic: string | null
     avatarUrl: string | null
+    canonicalAlias: string | null
+    joinRule: string
+    historyVisibility: string
+    guestAccess: string
+    isDirect: boolean
+    isSpace: boolean
+    isEncrypted: boolean
+    isPublic: boolean
     memberCount: number
     joinedCount: number
-    canonicalAlias: string | null
-    isPublic: boolean
+    invitedCount: number
+    heroes: Array<{ userId: string; displayName?: string; avatarUrl?: string }>
+    lastEventTs: number | null
+    lastMessageTs: number | null
   } | null> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
-    const room = client.getRoom(roomId)
-    if (!room) return null
-
-    return {
-      roomId: room.roomId,
-      name: room.name,
-      topic: room.topic ?? null,
-      avatarUrl: room.getMxcAvatarUrl(),
-      memberCount: room.getJoinedMembers().length,
-      joinedCount: room.getJoinedMembers().length,
-      canonicalAlias: room.getCanonicalAlias() ?? null,
-      isPublic: room.isPublic()
-    }
-  }
-
-  /**
-   * 批量获取房间摘要
-   * 使用本地 Room 对象获取，避免调用可能不存在的后端 API
-   */
-  async getRoomSummaries(roomIds: string[]): Promise<
-    Map<
-      string,
-      {
-        name: string | null
-        topic: string | null
-        avatarUrl: string | null
-        memberCount: number
-      }
-    >
-  > {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
     try {
-      // 直接使用本地 Room 对象获取摘要，避免网络请求
-      return this.fallbackGetRoomSummaries(roomIds)
-    } catch (err) {
-      error(`[MatrixRoom] 获取房间摘要失败: ${err}`)
-      throw err
+      const manager = this.getRoomSummaryManager()
+      const summary = await manager.getRoomSummary(roomId)
+      if (!summary) return null
+
+      return {
+        roomId: summary.room_id,
+        roomType: summary.room_type ?? null,
+        name: summary.name ?? null,
+        topic: summary.topic ?? null,
+        avatarUrl: summary.avatar_url ?? null,
+        canonicalAlias: summary.canonical_alias ?? null,
+        joinRule: summary.join_rule ?? '',
+        historyVisibility: summary.history_visibility ?? '',
+        guestAccess: summary.guest_access ?? '',
+        isDirect: summary.is_direct ?? false,
+        isSpace: summary.is_space ?? false,
+        isEncrypted: summary.is_encrypted ?? false,
+        isPublic: summary.join_rule === 'public',
+        memberCount: summary.member_count ?? 0,
+        joinedCount: summary.joined_member_count ?? 0,
+        invitedCount: summary.invited_member_count ?? 0,
+        heroes: (summary.heroes || []).map((h: any) => ({
+          userId: h.user_id ?? '',
+          displayName: h.display_name ?? undefined,
+          avatarUrl: h.avatar_url ?? undefined
+        })),
+        lastEventTs: summary.last_event_ts ?? null,
+        lastMessageTs: summary.last_message_ts ?? null
+      }
+    } catch (error) {
+      if (throwOnError) {
+        return this.handleError(error, 'getRoomSummary', null, true)
+      }
+      const room = await this.getRoom(roomId)
+      if (!room) return null
+
+      const topicEvent = room.currentState.getStateEvents('m.room.topic', '')
+      const topic = (topicEvent?.getContent()?.topic as string | undefined) ?? null
+      const joinRulesEvent = room.currentState.getStateEvents('m.room.join_rules', '')
+      const joinRule = (joinRulesEvent?.getContent()?.join_rule as string) ?? ''
+      const historyVisEvent = room.currentState.getStateEvents('m.room.history_visibility', '')
+      const historyVisibility = (historyVisEvent?.getContent()?.history_visibility as string) ?? ''
+      const guestAccessEvent = room.currentState.getStateEvents('m.room.guest_access', '')
+      const guestAccess = (guestAccessEvent?.getContent()?.guest_access as string) ?? ''
+      const isEncrypted = room.currentState.getStateEvents('m.room.encryption', '') !== null
+
+      return {
+        roomId: room.roomId,
+        roomType: null,
+        name: room.name,
+        topic,
+        avatarUrl: room.getMxcAvatarUrl() ?? null,
+        canonicalAlias: room.getCanonicalAlias() ?? null,
+        joinRule,
+        historyVisibility,
+        guestAccess,
+        isDirect: false,
+        isSpace: false,
+        isEncrypted,
+        isPublic: joinRule === 'public',
+        memberCount: room.getJoinedMembers().length,
+        joinedCount: room.getJoinedMembers().length,
+        invitedCount: 0,
+        heroes: [],
+        lastEventTs: null,
+        lastMessageTs: null
+      }
     }
   }
 
-  /**
-   * 回退方案：逐个获取房间摘要
-   */
-  private async fallbackGetRoomSummaries(roomIds: string[]): Promise<
-    Map<
-      string,
-      {
-        name: string | null
-        topic: string | null
-        avatarUrl: string | null
-        memberCount: number
-      }
-    >
+  async getRoomSummaries(
+    roomIds: string[],
+    _throwOnError = true
+  ): Promise<
+    Map<string, { name: string | null; topic: string | null; avatarUrl: string | null; memberCount: number }>
   > {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
     const results = new Map<
       string,
-      {
-        name: string | null
-        topic: string | null
-        avatarUrl: string | null
-        memberCount: number
-      }
+      { name: string | null; topic: string | null; avatarUrl: string | null; memberCount: number }
     >()
+    const client = this.getClient()
 
-    for (const roomId of roomIds) {
-      const room = client.getRoom(roomId)
-      if (room) {
-        results.set(roomId, {
-          name: room.name,
-          topic: room.topic ?? null,
-          avatarUrl: room.getMxcAvatarUrl(),
-          memberCount: room.getJoinedMembers().length
-        })
+    const settled = await Promise.allSettled(
+      roomIds.map(async (roomId) => {
+        try {
+          const manager = this.getRoomSummaryManager()
+          const summary = await manager.getRoomSummary(roomId)
+          if (summary) {
+            return {
+              roomId,
+              data: {
+                name: summary.name ?? null,
+                topic: summary.topic ?? null,
+                avatarUrl: summary.avatar_url ?? null,
+                memberCount: summary.member_count ?? 0
+              }
+            }
+          }
+        } catch {
+          // fallback to local room
+        }
+
+        const room = client.getRoom(roomId)
+        if (room) {
+          const topicEvent = room.currentState.getStateEvents('m.room.topic', '')
+          const topic = (topicEvent?.getContent()?.topic as string | undefined) ?? null
+          return {
+            roomId,
+            data: {
+              name: room.name,
+              topic,
+              avatarUrl: room.getMxcAvatarUrl() ?? null,
+              memberCount: room.getJoinedMembers().length
+            }
+          }
+        }
+        return null
+      })
+    )
+
+    for (const result of settled) {
+      if (result.status === 'fulfilled' && result.value) {
+        results.set(result.value.roomId, result.value.data)
       }
     }
 
     return results
   }
 
-  /**
-   * 增加未读计数
-   * 对应后端 RoomSummaryService.increment_unread()
-   *
-   * @param roomId - 房间 ID
-   * @param highlight - 是否高亮
-   */
-  async incrementUnread(roomId: string, highlight: boolean = false): Promise<void> {
-    const room = await this.getRoom(roomId)
-    if (!room) {
-      throw new Error(`房间不存在: ${roomId}`)
+  async deleteRoomFromStore(roomId: string, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getRoomManager()
+      await manager.leave(roomId)
+      await manager.forget(roomId)
+      info(`[MatrixRoom] 已从存储删除房间: ${roomId}`)
+    } catch (error) {
+      this.handleError(error, 'deleteRoomFromStore', undefined, throwOnError)
     }
-    info(`[MatrixRoom] 房间 ${roomId} 未读计数增加${highlight ? '（高亮）' : ''}`)
   }
 
-  /**
-   * 清除未读计数
-   * 对应后端 RoomSummaryService.clear_unread()
-   *
-   * @param roomId - 房间 ID
-   */
-  async clearUnread(roomId: string): Promise<void> {
-    const room = await this.getRoom(roomId)
-    if (!room) {
-      throw new Error(`房间不存在: ${roomId}`)
+  async setRoomPinStatus(roomId: string, pinned: boolean, throwOnError = true): Promise<void> {
+    try {
+      const manager = this.getRoomManager()
+      await manager.setRoomAccountData(roomId, 'm.fully_read', { pinned })
+      info(`[MatrixRoom] 设置房间置顶状态: ${roomId} -> ${pinned}`)
+    } catch (error) {
+      this.handleError(error, 'setRoomPinStatus', undefined, throwOnError)
     }
-    info(`[MatrixRoom] 房间 ${roomId} 未读计数已清除`)
+  }
+
+  async setRoomNotificationStatus(
+    roomId: string,
+    _notificationType: number,
+    shield: boolean,
+    throwOnError = true
+  ): Promise<void> {
+    try {
+      const manager = this.getPushManager()
+      if (shield) {
+        await manager.muteRoom(roomId)
+      } else {
+        await manager.unmuteRoom(roomId)
+      }
+      info(`[MatrixRoom] 设置房间通知状态: ${roomId} -> shield=${shield}`)
+    } catch (error) {
+      this.handleError(error, 'setRoomNotificationStatus', undefined, throwOnError)
+    }
+  }
+
+  async translateText(text: string, targetLanguage: string, throwOnError = true): Promise<string | null> {
+    try {
+      const response = await fetch(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLanguage}&dt=t&q=${encodeURIComponent(text)}`
+      )
+      const data = await response.json()
+      if (data && data[0]) {
+        return data[0].map((item: string[]) => item[0]).join('')
+      }
+      return null
+    } catch (error) {
+      return this.handleError(error, 'translateText', null, throwOnError)
+    }
   }
 }
 

@@ -60,7 +60,7 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const isGroup = computed(() => props.type === RoomTypeEnum.GROUP)
-const isChannel = computed(() => props.hotFlag === IsAllUserEnum.Yes)
+const isChannel = computed(() => props.hotFlag === IsAllUserEnum.YES)
 
 const nameInitial = computed(() => {
   return props.name?.charAt(0)?.toUpperCase() || '?'

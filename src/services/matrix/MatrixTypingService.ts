@@ -1,5 +1,7 @@
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
+import type { ExtendedRoomForTyping } from '@/types/matrix-api'
 
 export interface TypingUser {
   userId: string
@@ -8,7 +10,7 @@ export interface TypingUser {
   lastTyped: number
 }
 
-class MatrixTypingService {
+class MatrixTypingService extends BaseManager {
   private typingTimeouts: Map<string, ReturnType<typeof setTimeout>> = new Map()
   private readonly DEFAULT_TIMEOUT = 30000
 
@@ -17,14 +19,8 @@ class MatrixTypingService {
     if (!client) {
       throw new Error('[MatrixTyping] 客户端未初始化')
     }
-
-    try {
-      await client.sendTyping(roomId, isTyping, timeout || this.DEFAULT_TIMEOUT)
-      info(`[MatrixTyping] 发送输入状态: ${roomId} -> ${isTyping ? 'typing' : 'stopped'}`)
-    } catch (err) {
-      error(`[MatrixTyping] 发送输入状态失败: ${err}`)
-      throw err
-    }
+    await client.sendTyping(roomId, isTyping, timeout || this.DEFAULT_TIMEOUT)
+    info(`[MatrixTyping] 发送输入状态: ${roomId} -> ${isTyping ? 'typing' : 'stopped'}`)
   }
 
   startTyping(roomId: string, timeout: number = this.DEFAULT_TIMEOUT): void {
@@ -62,7 +58,10 @@ class MatrixTypingService {
     const myUserId = client.getUserId()
     const typingUsers: TypingUser[] = []
 
-    const typingState = (room as any).getLiveTimeline()?.getState?.('f')?.getStateEvents?.('m.typing')
+    const typingState = (room as unknown as ExtendedRoomForTyping)
+      .getLiveTimeline?.()
+      ?.getState?.('f')
+      ?.getStateEvents?.('m.typing')
     if (!typingState) return []
 
     const content = typingState.getContent()

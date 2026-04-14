@@ -11,6 +11,7 @@ import { info, error } from '@tauri-apps/plugin-log'
 export interface MatrixUserProfile {
   userId: string
   displayName: string | null
+  name?: string
   avatarUrl: string | null
   presence?: string
   statusMessage?: string
@@ -165,6 +166,13 @@ export const useUserStore = defineStore(
       matrixProfile.value = null
     }
 
+    function getUserById(userId: string): MatrixUserProfile | null {
+      if (matrixProfile.value?.userId === userId) {
+        return matrixProfile.value
+      }
+      return null
+    }
+
     return {
       userInfo,
       matrixProfile,
@@ -179,7 +187,8 @@ export const useUserStore = defineStore(
       initUserInfo,
       getUserRoomDir,
       getUserRoomAbsoluteDir,
-      clearUser
+      clearUser,
+      getUserById
     }
   },
   {

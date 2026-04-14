@@ -2,7 +2,7 @@
   <div class="space-panel">
     <div class="space-header">
       <span class="space-title">{{ t('space.title') }}</span>
-      <n-button text @click="showCreateDialog" :true>
+      <n-button text @click="showCreateDialog">
         <template #icon>
           <svg class="size-18px">
             <use href="#add"></use>
@@ -19,7 +19,7 @@
           class="space-item"
           :class="{ active: activeSpaceId === space.roomId }"
           @click="handleSpaceClick(space)">
-          <n-avatar round :size="40" :src="space.avatarUrl" :fallback-src="defaultAvatar" />
+          <n-avatar round :size="40" :src="space.avatarUrl ?? undefined" :fallback-src="defaultAvatar" />
           <div class="space-info">
             <span class="space-name">{{ space.name }}</span>
             <span class="space-meta">{{ space.memberCount }} {{ t('space.members') }}</span>
@@ -43,6 +43,7 @@ const { t } = useI18n()
 const router = useRouter()
 const matrixStore = useMatrixStore()
 const spaceStore = useSpaceStore()
+const defaultAvatar = '/images/default-avatar.png'
 
 const spaces = computed(() => spaceStore.spaces)
 const activeSpaceId = computed(() => spaceStore.activeSpaceId)

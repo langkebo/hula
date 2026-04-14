@@ -78,7 +78,7 @@ import { useGlobalStore } from '@/stores/global.ts'
 import { useSettingStore } from '@/stores/setting.ts'
 import { useUserStore } from '@/stores/user'
 import { useUserStatusStore } from '@/stores/userStatus'
-import { changeUserState } from '@/utils/ImRequestUtils'
+import { matrixPresenceService } from '@/services/matrix'
 import { isWindows } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
@@ -131,7 +131,14 @@ const handleExit = () => {
 
 const toggleStatus = async (item: UserState) => {
   try {
-    await changeUserState({ id: item.id })
+    const presenceMap: Record<string, 'online' | 'offline' | 'unavailable' | 'busy'> = {
+      '1': 'online',
+      '2': 'busy',
+      '3': 'unavailable',
+      '4': 'offline'
+    }
+    const presence = presenceMap[item.id] || 'online'
+    await matrixPresenceService.setPresence(presence)
 
     stateId.value = item.id
     userStore.userInfo!.userStateId = item.id

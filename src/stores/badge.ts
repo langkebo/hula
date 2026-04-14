@@ -39,7 +39,7 @@ export const useBadgeStore = defineStore(StoresEnum.BADGE, () => {
       }
 
       // 从账户数据加载徽章
-      const accountData = client.getAccountData('m.badges' as any)
+      const accountData = client.getAccountData('m.badges')
       if (accountData) {
         const content = accountData.getContent()
         if (content?.badges && Array.isArray(content.badges)) {

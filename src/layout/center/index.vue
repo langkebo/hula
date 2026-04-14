@@ -148,7 +148,7 @@ import { useChatStore } from '@/stores/chat'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useGroupStore } from '@/stores/group'
 import { useSettingStore } from '@/stores/setting.ts'
-import * as ImRequestUtils from '@/utils/ImRequestUtils'
+import { matrixRoomService } from '@/services/matrix'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
 import { options, renderLabel, renderSourceList, renderTargetList } from './model.tsx'
@@ -340,7 +340,11 @@ const resetCreateGroupState = () => {
 const handleCreateGroup = async () => {
   if (selectedValue.value.length < 2) return
   try {
-    const result: any = await ImRequestUtils.createGroup({ uidList: selectedValue.value })
+    const result: any = await matrixRoomService.createRoom({
+      visibility: 'private',
+      invite: selectedValue.value,
+      is_direct: false
+    })
 
     // 创建成功后刷新会话列表以显示新群聊
     await chatStore.getSessionList(true)

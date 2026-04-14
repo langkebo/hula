@@ -8,6 +8,20 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
+vi.mock('@/services/matrix/BaseManager', () => {
+  return {
+    BaseManager: class {
+      protected handleError<T>(error: unknown, _operation: string, defaultValue: T, throwOnError: boolean): T {
+        if (throwOnError) throw error
+        return defaultValue
+      }
+      protected normalizeError(error: unknown, _operation: string) {
+        return error
+      }
+    }
+  }
+})
+
 vi.mock('@/services/matrix', () => ({
   matrixClientService: {
     getClient: vi.fn(() => null),

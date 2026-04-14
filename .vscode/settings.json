@@ -2,6 +2,7 @@
   "css.customData": [
     ".vscode/tailwindcss.json"
   ],
+  "scss.lint.unknownAtDirectives": "ignore",
   "java.configuration.updateBuildConfiguration": "disabled",
   "typescript.tsdk": "node_modules/typescript/lib",
   "i18n-ally.autoDetection": false,

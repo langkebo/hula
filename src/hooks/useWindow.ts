@@ -7,6 +7,9 @@ import { assign } from 'es-toolkit/compat'
 import { CallTypeEnum, EventEnum, RoomTypeEnum } from '@/enums'
 import { useGlobalStore } from '@/stores/global'
 import { isCompatibility, isDesktop, isMac, isWindows, isWindows10 } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('useWindow')
 
 /** 判断是兼容的系统 */
 const isCompatibilityMode = computed(() => isCompatibility())
@@ -169,7 +172,7 @@ export const useWindow = () => {
             windowLabel: label,
             spacing: MAC_TRAFFIC_LIGHTS_SPACING
           })
-        } catch {}
+        } catch (_err) {}
       }
       if (wantCloseWindow) {
         const win = await WebviewWindow.getByLabel(wantCloseWindow)
@@ -350,7 +353,7 @@ export const useWindow = () => {
             windowLabel: label,
             spacing: MAC_TRAFFIC_LIGHTS_SPACING
           })
-        } catch {}
+        } catch (_err) {}
         attachMacModalOverlay(label)
       }
     })
@@ -517,4 +520,38 @@ export const useWindow = () => {
     startRtcCall,
     createRtcCallWindow
   }
+}
+
+let _createWebviewWindowInstance: ReturnType<typeof useWindow>['createWebviewWindow'] | null = null
+
+export async function createWebviewWindow(
+  title: string,
+  label: string,
+  width: number,
+  height: number,
+  wantCloseWindow?: string,
+  resizable = false,
+  minW = 330,
+  minH = 495,
+  transparent?: boolean,
+  visible = false,
+  queryParams?: Record<string, string | number | boolean>
+) {
+  if (!_createWebviewWindowInstance) {
+    const windowUtils = useWindow()
+    _createWebviewWindowInstance = windowUtils.createWebviewWindow
+  }
+  return _createWebviewWindowInstance(
+    title,
+    label,
+    width,
+    height,
+    wantCloseWindow,
+    resizable,
+    minW,
+    minH,
+    transparent,
+    visible,
+    queryParams
+  )
 }

@@ -43,13 +43,15 @@ import {
   WsResponseMessageType,
   type WsTokenExpire
 } from '@/services/wsType.ts'
+import matrixSlidingSyncService from '@/services/matrix/MatrixSlidingSyncService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useContactStore } from '@/stores/contacts.ts'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import { useAnnouncementStore } from '@/stores/announcement'
 import type { MarkItemType, RevokedMsgType, UserItem } from '@/services/types.ts'
-import * as ImRequestUtils from '@/utils/ImRequestUtils'
+import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
 import { listen } from '@tauri-apps/api/event'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { updateSettings } from '@/services/tauriCommand.ts'
@@ -359,7 +361,7 @@ useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExp
           timestamp: Date.now()
         }
       })
-      await ImRequestUtils.logout({ autoLogin: login.value.autoLogin })
+      await MatrixAuthService.logout()
       await resetLoginState()
       await logout()
     }
@@ -592,6 +594,27 @@ onMounted(async () => {
   if (isDesktop() && appWindow.label === 'home') {
     initializeGlobalShortcut()
   }
+
+  // 移动端初始化 Sliding Sync 服务
+  if (isMobile()) {
+    // 等待客户端就绪后初始化 SlidingSync 事件监听器
+    const initSlidingSync = async () => {
+      if (matrixClientService.isConnected() && !matrixSlidingSyncService.isInitialized) {
+        try {
+          await matrixSlidingSyncService.initialize()
+          info('[App] Mobile SlidingSync initialized')
+        } catch (err) {
+          logger.error('[App] Mobile SlidingSync initialization failed:', err)
+        }
+      } else if (!client) {
+        // 客户端未就绪，延迟重试
+        setTimeout(initSlidingSync, 1000)
+      }
+    }
+    // 延迟启动，等待登录完成
+    setTimeout(initSlidingSync, 2000)
+  }
+
   /** 开发环境不禁止 */
   if (process.env.NODE_ENV !== 'development') {
     /** 禁用浏览器默认的快捷键 */

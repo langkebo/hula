@@ -219,6 +219,8 @@ import { useUserStore } from '@/stores/user.ts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixAccountService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('EditProfile')
 
 const { t } = useI18n()
 const genderText = computed(() => {

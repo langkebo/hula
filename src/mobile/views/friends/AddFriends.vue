@@ -194,7 +194,7 @@ const initialLoading = ref(true)
 // 从缓存存储中获取用户数据
 const getCachedUsers = () => {
   const users = groupStore.allUserInfo
-  logger.debug(users)
+  logger.debug('getCachedUsers called, users count:', users.length)
 
   // 筛选出需要显示的用户（ID在20016-20030之间的用户）
   return sortSearchResults(

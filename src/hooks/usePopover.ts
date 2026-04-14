@@ -20,9 +20,9 @@ export const usePopover = (selectKey: Ref<string>, id: string) => {
     }
   }
 
-  const handlePopoverUpdate = (key: string, show?: boolean) => {
+  const handlePopoverUpdate = (key: string, show?: boolean): boolean => {
     const scrollbar = document.querySelector(`#${id}`) as HTMLElement
-    if (!scrollbar) return
+    if (!scrollbar) return false
 
     if (selectKey.value === key) {
       if (show) {
@@ -35,6 +35,7 @@ export const usePopover = (selectKey: Ref<string>, id: string) => {
       }
       return true
     }
+    return false
   }
 
   onMounted(() => {

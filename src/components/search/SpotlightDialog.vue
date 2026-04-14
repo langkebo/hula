@@ -1,6 +1,6 @@
 <template>
   <n-modal
-    v-model:show="visible"
+    :show="visible" @update:show="emit('update:visible', $event)"
     :style="{ width: '600px', maxWidth: '90vw' }"
     :bordered="false"
     :mask-closable="true"

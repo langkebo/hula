@@ -192,6 +192,31 @@ export const useLogin = () => {
     }
   }
 
+  const completeLogin = async (params: { userId: string; accessToken: string; deviceId: string }) => {
+    await init()
+
+    const account = {
+      uid: params.userId,
+      name: params.userId,
+      account: params.userId,
+      email: '',
+      avatar: '',
+      modifyNameChance: 0,
+      sex: SexEnum.MAN,
+      userStateId: '',
+      avatarUpdateTime: 0,
+      client: isDesktop() ? 'PC' : 'MOBILE',
+      resume: ''
+    }
+    userStore.userInfo = account
+    loginHistoriesStore.addLoginHistory(account)
+
+    localStorage.setItem('TOKEN', params.accessToken)
+    localStorage.setItem('user', JSON.stringify(account))
+
+    await routerOrOpenHomeWindow()
+  }
+
   const normalLogin = async (
     _deviceType: 'PC' | 'MOBILE',
     _syncRecentMessages: boolean,
@@ -285,6 +310,7 @@ export const useLogin = () => {
     setLoginState,
     logout,
     normalLogin,
+    completeLogin,
     loading,
     loginText,
     loginDisabled,

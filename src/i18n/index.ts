@@ -18,11 +18,13 @@ export const i18n = createI18n({
   fallbackWarn: false
 })
 
+type I18nGlobal = typeof i18n.global
+
 /**
  * 切换语言
  */
 export function setLocale(locale: 'zh-CN' | 'en-US') {
-  ;(i18n.global.locale as any).value = locale
+  ;(i18n.global.locale as I18nGlobal['locale']).value = locale
   localStorage.setItem('hula-locale', locale)
 }
 
@@ -39,7 +41,7 @@ export function getLocale(): 'zh-CN' | 'en-US' {
 export function initLocale() {
   const saved = localStorage.getItem('hula-locale')
   if (saved && ['zh-CN', 'en-US'].includes(saved)) {
-    ;(i18n.global.locale as any).value = saved
+    ;(i18n.global.locale as I18nGlobal['locale']).value = saved as 'zh-CN' | 'en-US'
   }
 }
 

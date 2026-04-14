@@ -37,6 +37,13 @@
       </div>
     </Transition>
 
+    <!-- 置顶消息栏 -->
+    <PinnedEventsBar
+      v-if="currentRoomId"
+      :room-id="currentRoomId"
+      v-model:show="showPinnedBar"
+      @jump-to-message="handleJumpToMessage" />
+
     <!-- 聊天内容 -->
     <div class="flex flex-col flex-1 min-h-0">
       <div
@@ -224,6 +231,7 @@ import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
 import FileUploadProgress from '@/components/rightBox/FileUploadProgress.vue'
+import PinnedEventsBar from '@/components/pinned/PinnedEventsBar.vue'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ChatMain')
@@ -348,6 +356,7 @@ const showScrollbar = ref<boolean>(true)
 const isAnnouncementHover = ref<boolean>(false)
 const topAnnouncement = ref<AnnouncementData | null>(null)
 const hoverId = ref('')
+const showPinnedBar = ref(true)
 // 添加标记，用于识别是否正在加载历史消息
 const isLoadingMore = ref(false)
 // 避免初始化自动触发顶部加载
@@ -810,6 +819,11 @@ const handleViewAnnouncement = (): void => {
     if (!currentRoomId.value) return
     await createWebviewWindow('查看群公告', `announList/${currentRoomId.value}/1`, 420, 620)
   })
+}
+
+const handleJumpToMessage = async (eventId: string): Promise<void> => {
+  if (!eventId) return
+  await jumpToReplyMsg(`Q${eventId}`)
 }
 
 // 监听滚动到底部的事件

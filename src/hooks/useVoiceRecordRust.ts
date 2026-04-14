@@ -126,7 +126,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
         const audioData = await readFile(audioPath)
 
         // 获取原始音频信息
-        const originalInfo = await getAudioInfo(audioData.buffer as any)
+        const originalInfo = await getAudioInfo(audioData.buffer as ArrayBuffer)
         logger.debug('原始音频信息:', {
           duration: `${originalInfo.duration.toFixed(2)}秒`,
           sampleRate: `${originalInfo.sampleRate}Hz`,
@@ -135,7 +135,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
         })
 
         // 压缩音频为MP3格式
-        const compressedBlob = await compressAudioToMp3(audioData.buffer as any, {
+        const compressedBlob = await compressAudioToMp3(audioData.buffer as ArrayBuffer, {
           channels: 1, // 单声道
           sampleRate: 22050, // 降低采样率
           bitRate: 64 // 较低比特率

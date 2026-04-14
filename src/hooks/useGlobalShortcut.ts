@@ -334,7 +334,8 @@ export const useGlobalShortcut = () => {
 
     // 监听全局快捷键开关变化
     listen('global-shortcut-enabled-changed', (event) => {
-      const enabled = (event.payload as any)?.enabled
+      const payload = event.payload as { enabled?: boolean }
+      const enabled = payload?.enabled
       if (typeof enabled === 'boolean') {
         handleGlobalShortcutToggle(enabled)
       } else {
@@ -345,7 +346,8 @@ export const useGlobalShortcut = () => {
     // 监听每个快捷键的更新事件
     for (const config of shortcutConfigs) {
       listen(config.updateEventName, (event) => {
-        const newShortcut = (event.payload as any)?.shortcut
+        const payload = event.payload as { shortcut?: string }
+        const newShortcut = payload?.shortcut
         if (newShortcut) {
           // 只有全局快捷键开启时才处理更新
           const globalEnabled = settingStore.shortcuts?.globalEnabled ?? false

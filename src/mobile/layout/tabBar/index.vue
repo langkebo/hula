@@ -44,6 +44,9 @@ const getUnReadCount = (label: string) => {
   if (label === t('mobile_tabbar.items.contacts')) {
     return globalStore.unReadMark.newFriendUnreadCount + globalStore.unReadMark.newGroupUnreadCount
   }
+  if (label === t('mobile_tabbar.items.rooms')) {
+    return globalStore.unReadMark.newMsgUnreadCount
+  }
   return 0
 }
 
@@ -53,6 +56,12 @@ const navItems: NavItem[] = [
     path: '/mobile/message',
     icon: 'message',
     actionIcon: 'message-action'
+  },
+  {
+    label: t('mobile_tabbar.items.rooms'),
+    path: '/mobile/rooms',
+    icon: 'chat',
+    actionIcon: 'chat-action'
   },
   {
     label: t('mobile_tabbar.items.contacts'),

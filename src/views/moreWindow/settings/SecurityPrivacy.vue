@@ -6,10 +6,20 @@
       <n-flex class="item p-12px" :size="12" vertical>
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
+            <span>{{ t('setting.security_privacy.presence_status') }}</span>
+            <span class="text-(12px #909090)">{{ t('setting.security_privacy.presence_status_desc') }}</span>
+          </n-flex>
+          <PresenceSelector v-model:presence="currentPresence" @change="handlePresenceChange" />
+        </n-flex>
+
+        <span class="w-full h-1px bg-[--line-color]"></span>
+
+        <n-flex align="center" justify="space-between">
+          <n-flex vertical :size="4">
             <span>{{ t('setting.security_privacy.show_online_status') }}</span>
             <span class="text-(12px #909090)">{{ t('setting.security_privacy.show_online_status_desc') }}</span>
           </n-flex>
-          <n-switch size="small" v-model:value="showOnlineStatus" />
+          <n-switch size="small" v-model:value="showOnlineStatus" @update:value="handleOnlineStatusChange" />
         </n-flex>
 
         <span class="w-full h-1px bg-[--line-color]"></span>
@@ -106,6 +116,9 @@
 <script setup lang="ts">
 import { NButton, NSwitch, NInput, NModal, NScrollbar, useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { PresenceSelector } from '@/components/presence'
+import matrixPresenceService from '@/services/matrix/MatrixPresenceService'
+import type { PresenceStatus } from '@/services/matrix/MatrixPresenceService'
 
 interface BlockedUser {
   user_id: string
@@ -116,6 +129,7 @@ interface BlockedUser {
 const { t } = useI18n()
 const message = useMessage()
 
+const currentPresence = ref<PresenceStatus>('online')
 const showOnlineStatus = ref(true)
 const showTypingStatus = ref(true)
 const shareReadReceipts = ref(true)
@@ -135,6 +149,30 @@ const filteredBlockedUsers = computed(() => {
       user.user_id.toLowerCase().includes(searchKeyword.value.toLowerCase())
   )
 })
+
+const handlePresenceChange = async (status: PresenceStatus) => {
+  try {
+    await matrixPresenceService.setPresence(status)
+    message.success(t('setting.security_privacy.presence_updated', '在线状态已更新'))
+  } catch {
+    message.error(t('setting.security_privacy.presence_update_failed', '在线状态更新失败'))
+  }
+}
+
+const handleOnlineStatusChange = async (value: boolean) => {
+  try {
+    if (value) {
+      await matrixPresenceService.setPresence('online')
+      currentPresence.value = 'online'
+    } else {
+      await matrixPresenceService.setPresence('offline')
+      currentPresence.value = 'offline'
+    }
+  } catch {
+    showOnlineStatus.value = !value
+    message.error(t('setting.security_privacy.presence_update_failed', '在线状态更新失败'))
+  }
+}
 
 const handleUnblockUser = (user: BlockedUser) => {
   const index = blockedUsers.value.findIndex((u) => u.user_id === user.user_id)

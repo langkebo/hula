@@ -5,7 +5,7 @@ import { useLogin } from '@/hooks/useLogin.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
 import { useSettingStore } from '@/stores/setting'
-import * as ImRequestUtils from '@/utils/ImRequestUtils'
+import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LeftConfig')
@@ -121,7 +121,7 @@ const useMoreList = () => {
         icon: 'power',
         click: async () => {
           try {
-            await ImRequestUtils.logout({ autoLogin: login.value.autoLogin })
+            await MatrixAuthService.logout()
             await resetLoginState()
             await logout()
           } catch (error) {
@@ -137,18 +137,18 @@ const useMoreList = () => {
 /** 插件列表 */
 const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle'>> = [
   {
-    url: 'dynamic',
-    icon: 'fire',
-    iconAction: 'fire-action',
+    url: 'space',
+    icon: 'folder-multiple',
+    iconAction: 'folder-multiple',
     state: PluginEnum.BUILTIN,
     isAdd: true,
     dot: false,
     progress: 0,
     size: {
-      width: 600,
-      height: 800,
+      width: 800,
+      height: 600,
       minWidth: 600,
-      minHeight: 550
+      minHeight: 400
     },
     window: {
       resizable: true
@@ -173,69 +173,6 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
     },
     miniShow: false
   }
-  // {
-  //   icon: 'Music',
-  //   url: 'music',
-  //   title: 'HuLa云音乐',
-  //   shortTitle: '云音乐',
-  //   tip: 'HuLa云音乐开发中，敬请期待',
-  //   state: PluginEnum.NOT_INSTALLED,
-  //   version: 'v1.0.0-Alpha',
-  //   isAdd: false,
-  //   dot: true,
-  //   progress: 0,
-  //   size: {
-  //     minWidth: 780,
-  //     width: 980,
-  //     height: 800
-  //   },
-  //   window: {
-  //     resizable: true
-  //   },
-  //   miniShow: false
-  // },
-  // {
-  //   icon: 'UimSlack',
-  //   url: 'collaboration',
-  //   title: 'HuLa协作',
-  //   shortTitle: '协作',
-  //   tip: 'HuLa协作开发中，敬请期待',
-  //   state: PluginEnum.NOT_INSTALLED,
-  //   version: 'v1.0.0-Alpha',
-  //   isAdd: false,
-  //   dot: true,
-  //   progress: 0,
-  //   size: {
-  //     minWidth: 780,
-  //     width: 980,
-  //     height: 800
-  //   },
-  //   window: {
-  //     resizable: true
-  //   },
-  //   miniShow: false
-  // },
-  // {
-  //   icon: 'vigo',
-  //   url: 'collaboration',
-  //   title: 'HuLa短视频',
-  //   shortTitle: '短视频',
-  //   tip: 'HuLa短视频开发中，敬请期待',
-  //   state: PluginEnum.NOT_INSTALLED,
-  //   version: 'v1.0.0-Alpha',
-  //   isAdd: false,
-  //   dot: true,
-  //   progress: 0,
-  //   size: {
-  //     minWidth: 780,
-  //     width: 980,
-  //     height: 800
-  //   },
-  //   window: {
-  //     resizable: true
-  //   },
-  //   miniShow: false
-  // }
 ]
 
 const usePluginsList = () =>
@@ -244,8 +181,8 @@ const usePluginsList = () =>
     return computed<STO.Plugins<PluginEnum>[]>(() => [
       {
         ...basePluginsList[0],
-        title: t('home.plugins.dynamic'),
-        shortTitle: t('home.plugins.dynamic_short_title')
+        title: t('home.plugins.space'),
+        shortTitle: t('home.plugins.space_short_title')
       },
       {
         ...basePluginsList[1],

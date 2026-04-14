@@ -1,25 +1,15 @@
-/**
- * Matrix 管理员 API 服务
- *
- * 提供管理员功能支持
- */
-
 import type { MatrixClient } from 'matrix-js-sdk'
 import { AdminManager, UserInfo as SdkUserInfo, RoomInfo as SdkRoomInfo } from 'matrix-js-sdk'
+import { BaseManager } from './BaseManager'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Admin')
 
 export interface ServerStats {
-  /** 房间数 */
   roomCount: number
-  /** 用户数 */
   userCount: number
-  /** 活跃用户数 */
   dailyActiveUsers: number
-  /** 消息数 */
   messageCount: number
-  /** 启动时间 */
   startServerTime: number
 }
 
@@ -59,27 +49,17 @@ export interface WhoisInfo {
   }>
 }
 
-/**
- * 管理员服务
- */
-class AdminService {
+class AdminService extends BaseManager {
   private client: MatrixClient | null = null
   private adminManager: AdminManager | null = null
 
-  /**
-   * 初始化服务
-   */
   initialize(client: MatrixClient): void {
     this.client = client
-    // 使用 SDK 的 AdminManager
     this.adminManager = client.getAdminManager()
     logger.info('服务已初始化')
   }
 
-  /**
-   * 获取服务器统计信息
-   */
-  async getServerStats(): Promise<ServerStats> {
+  async getServerStats(throwOnError = true): Promise<ServerStats> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
@@ -95,21 +75,16 @@ class AdminService {
         startServerTime: (stats as any).server_start_time || 0
       }
     } catch (error) {
-      logger.error('获取统计失败:', error)
-      return {
-        roomCount: 0,
-        userCount: 0,
-        dailyActiveUsers: 0,
-        messageCount: 0,
-        startServerTime: 0
-      }
+      return this.handleError(
+        error,
+        'getServerStats',
+        { roomCount: 0, userCount: 0, dailyActiveUsers: 0, messageCount: 0, startServerTime: 0 } as ServerStats,
+        throwOnError
+      )
     }
   }
 
-  /**
-   * 获取用户列表
-   */
-  async getUsers(limit = 100, from?: string): Promise<{ users: UserInfo[]; nextToken?: string }> {
+  async getUsers(limit = 100, from?: string, throwOnError = true): Promise<{ users: UserInfo[]; nextToken?: string }> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
@@ -131,15 +106,11 @@ class AdminService {
         nextToken: result.next_token
       }
     } catch (error) {
-      logger.error('获取用户列表失败:', error)
-      return { users: [] }
+      return this.handleError(error, 'getUsers', { users: [] as UserInfo[] }, throwOnError)
     }
   }
 
-  /**
-   * 获取用户信息
-   */
-  async getUser(userId: string): Promise<UserInfo | null> {
+  async getUser(userId: string, throwOnError = true): Promise<UserInfo | null> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
@@ -157,21 +128,18 @@ class AdminService {
         displayname: user.displayname
       }
     } catch (error) {
-      logger.error('获取用户信息失败:', error)
-      return null
+      return this.handleError(error, 'getUser', null as UserInfo | null, throwOnError)
     }
   }
 
-  /**
-   * 创建用户
-   */
   async createUser(
     username: string,
     password: string,
     options?: {
       admin?: boolean
       displayname?: string
-    }
+    },
+    throwOnError = true
   ): Promise<UserInfo | null> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
@@ -192,15 +160,11 @@ class AdminService {
         displayname: user.displayname
       }
     } catch (error) {
-      logger.error('创建用户失败:', error)
-      return null
+      return this.handleError(error, 'createUser', null as UserInfo | null, throwOnError)
     }
   }
 
-  /**
-   * 重置用户密码
-   */
-  async resetPassword(userId: string, newPassword: string): Promise<void> {
+  async resetPassword(userId: string, newPassword: string, throwOnError = true): Promise<void> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
@@ -209,15 +173,11 @@ class AdminService {
       await this.adminManager.resetPassword(userId, newPassword)
       logger.info('密码已重置:', userId)
     } catch (error) {
-      logger.error('重置密码失败:', error)
-      throw error
+      this.handleError(error, 'resetPassword', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 停用用户
-   */
-  async deactivateUser(userId: string): Promise<void> {
+  async deactivateUser(userId: string, throwOnError = true): Promise<void> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
@@ -226,15 +186,11 @@ class AdminService {
       await this.adminManager.deactivateUser(userId)
       logger.info('用户已停用:', userId)
     } catch (error) {
-      logger.error('停用用户失败:', error)
-      throw error
+      this.handleError(error, 'deactivateUser', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 获取房间列表
-   */
-  async getRooms(limit = 100, from?: string): Promise<{ rooms: RoomInfo[]; nextToken?: string }> {
+  async getRooms(limit = 100, from?: string, throwOnError = true): Promise<{ rooms: RoomInfo[]; nextToken?: string }> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
@@ -259,15 +215,11 @@ class AdminService {
         nextToken: result.next_token
       }
     } catch (error) {
-      logger.error('获取房间列表失败:', error)
-      return { rooms: [] }
+      return this.handleError(error, 'getRooms', { rooms: [] as RoomInfo[] }, throwOnError)
     }
   }
 
-  /**
-   * 获取房间详情
-   */
-  async getRoom(roomId: string): Promise<RoomInfo | null> {
+  async getRoom(roomId: string, throwOnError = true): Promise<RoomInfo | null> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
@@ -288,15 +240,11 @@ class AdminService {
         creator: room.creator
       }
     } catch (error) {
-      logger.error('获取房间详情失败:', error)
-      return null
+      return this.handleError(error, 'getRoom', null as RoomInfo | null, throwOnError)
     }
   }
 
-  /**
-   * 踢出房间成员
-   */
-  async kickUser(roomId: string, userId: string, reason?: string): Promise<void> {
+  async kickUser(roomId: string, userId: string, reason?: string, throwOnError = true): Promise<void> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
@@ -305,15 +253,11 @@ class AdminService {
       await this.client.kick(roomId, userId, reason)
       logger.info('用户已踢出房间:', userId, roomId)
     } catch (error) {
-      logger.error('踢出用户失败:', error)
-      throw error
+      this.handleError(error, 'kickUser', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 封禁房间成员
-   */
-  async banUser(roomId: string, userId: string, reason?: string): Promise<void> {
+  async banUser(roomId: string, userId: string, reason?: string, throwOnError = true): Promise<void> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
@@ -322,15 +266,11 @@ class AdminService {
       await this.client.ban(roomId, userId, reason)
       logger.info('用户已封禁:', userId, roomId)
     } catch (error) {
-      logger.error('封禁用户失败:', error)
-      throw error
+      this.handleError(error, 'banUser', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 解除封禁
-   */
-  async unbanUser(roomId: string, userId: string): Promise<void> {
+  async unbanUser(roomId: string, userId: string, throwOnError = true): Promise<void> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
@@ -339,15 +279,11 @@ class AdminService {
       await this.client.unban(roomId, userId)
       logger.info('用户已解除封禁:', userId, roomId)
     } catch (error) {
-      logger.error('解除封禁失败:', error)
-      throw error
+      this.handleError(error, 'unbanUser', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 获取用户 Whois 信息
-   */
-  async getWhois(userId: string): Promise<WhoisInfo | null> {
+  async getWhois(userId: string, throwOnError = true): Promise<WhoisInfo | null> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
@@ -370,15 +306,11 @@ class AdminService {
         }))
       }
     } catch (error) {
-      logger.error('获取 Whois 失败:', error)
-      return null
+      return this.handleError(error, 'getWhois', null as WhoisInfo | null, throwOnError)
     }
   }
 
-  /**
-   * 关闭房间
-   */
-  async shutdownRoom(roomId: string, _message?: string): Promise<void> {
+  async shutdownRoom(roomId: string, _message?: string, throwOnError = true): Promise<void> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
@@ -387,15 +319,11 @@ class AdminService {
       await this.adminManager.shutdownRoom(roomId)
       logger.info('房间已关闭:', roomId)
     } catch (error) {
-      logger.error('关闭房间失败:', error)
-      throw error
+      this.handleError(error, 'shutdownRoom', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 删除房间
-   */
-  async deleteRoom(roomId: string): Promise<void> {
+  async deleteRoom(roomId: string, throwOnError = true): Promise<void> {
     if (!this.adminManager) {
       throw new Error('AdminManager 未初始化')
     }
@@ -404,20 +332,13 @@ class AdminService {
       await this.adminManager.deleteRoom(roomId)
       logger.info('房间已删除:', roomId)
     } catch (error) {
-      logger.error('删除房间失败:', error)
-      throw error
+      this.handleError(error, 'deleteRoom', undefined as void, throwOnError)
     }
   }
 }
 
-/**
- * 单例
- */
 export const adminService = new AdminService()
 
-/**
- * Vue Composable
- */
 import { ref } from 'vue'
 
 export function useAdmin() {

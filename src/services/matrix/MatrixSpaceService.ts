@@ -1,15 +1,7 @@
-/**
- * Matrix Space API 服务
- *
- * 提供 Space (空间) 功能支持
- * 统一使用 SDK SpaceManager
- */
-
 import type { MatrixClient } from 'matrix-js-sdk'
-import { SpaceManager, Space, SpaceChild, SpaceMember, SpaceHierarchy, CreateSpaceOptions } from 'matrix-js-sdk'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('Space')
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
+import matrixClientService from './MatrixClientService'
 
 export interface SpaceOptions {
   name: string
@@ -27,298 +19,275 @@ export interface SpaceInfo {
   childCount: number
 }
 
-/**
- * Space 服务
- * 统一使用 matrix-js-sdk 的 SpaceManager
- */
-class SpaceService {
-  private spaceManager: SpaceManager | null = null
-
-  /**
-   * 初始化服务
-   */
-  initialize(client: MatrixClient): void {
-    this.client = client
-    // 使用 SDK 的 SpaceManager
-    this.spaceManager = client.getSpaceManager()
-    logger.info('服务已初始化')
+class MatrixSpaceService extends BaseManager {
+  private getClient(): MatrixClient {
+    const client = matrixClientService.getClient()
+    if (!client) throw new Error('客户端未初始化')
+    return client
   }
 
-  /**
-   * 创建 Space
-   */
-  async createSpace(options: SpaceOptions): Promise<SpaceInfo | null> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
+  private getSpaceManager() {
+    const client = this.getClient()
+    const manager = (client as any).getSpaceManager?.()
+    if (!manager) throw new Error('SpaceManager 未初始化')
+    return manager
+  }
+
+  private async mapSpaceToInfo(space: any): Promise<SpaceInfo> {
+    let memberCount = 0
+    let childCount = 0
 
     try {
-      const createOptions: CreateSpaceOptions = {
+      const manager = this.getSpaceManager()
+      const stats = await manager.getSpaceStats(space.space_id)
+      if (stats) {
+        memberCount = stats.member_count ?? stats.memberCount ?? 0
+        childCount = stats.child_count ?? stats.childCount ?? 0
+      }
+    } catch {
+      // stats not available, fallback to 0
+    }
+
+    return {
+      spaceId: space.space_id,
+      name: space.name || '',
+      topic: space.topic,
+      avatarUrl: space.avatar_url,
+      memberCount,
+      childCount
+    }
+  }
+
+  async createSpace(options: SpaceOptions, throwOnError = true): Promise<SpaceInfo | null> {
+    try {
+      const manager = this.getSpaceManager()
+      const createOptions = {
         name: options.name,
         topic: options.topic,
         visibility: options.visibility,
-        avatarUrl: options.avatarUrl
+        avatar_url: options.avatarUrl
       }
-
-      const space = await this.spaceManager.createSpace(createOptions)
-
-      logger.info('Space 已创建:', space.space_id)
-
-      return {
-        spaceId: space.space_id,
-        name: space.name || options.name,
-        topic: space.topic || options.topic,
-        avatarUrl: space.avatar_url || options.avatarUrl,
-        memberCount: space.member_count || 0,
-        childCount: 0
-      }
+      const space = await manager.createSpace(createOptions)
+      info(`[Space] 已创建: ${space.space_id}`)
+      return this.mapSpaceToInfo(space)
     } catch (error) {
-      logger.error('创建 Space 失败:', error)
-      throw error
+      return this.handleError(error, 'createSpace', null, throwOnError)
     }
   }
 
-  /**
-   * 获取 Space 信息
-   */
-  async getSpace(spaceId: string): Promise<SpaceInfo | null> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+  async getSpace(spaceId: string, throwOnError = true): Promise<SpaceInfo | null> {
     try {
-      const space = await this.spaceManager.getSpace(spaceId)
+      const manager = this.getSpaceManager()
+      const space = await manager.getSpace(spaceId)
       if (!space) return null
-
-      return {
-        spaceId: space.space_id,
-        name: space.name || '',
-        topic: space.topic,
-        avatarUrl: space.avatar_url,
-        memberCount: space.member_count || 0,
-        childCount: 0
-      }
+      return this.mapSpaceToInfo(space)
     } catch (error) {
-      logger.error('获取 Space 失败:', error)
-      return null
+      return this.handleError(error, 'getSpace', null, throwOnError)
     }
   }
 
-  /**
-   * 更新 Space
-   */
-  async updateSpace(spaceId: string, options: Partial<SpaceOptions>): Promise<void> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+  async updateSpace(spaceId: string, options: Partial<SpaceOptions>, throwOnError = true): Promise<void> {
     try {
-      await this.spaceManager.updateSpace(spaceId, {
+      const manager = this.getSpaceManager()
+      await manager.updateSpace(spaceId, {
         name: options.name,
         topic: options.topic,
-        avatarUrl: options.avatarUrl
+        avatar_url: options.avatarUrl
       })
-      logger.info('Space 已更新:', spaceId)
+      info(`[Space] 已更新: ${spaceId}`)
     } catch (error) {
-      logger.error('更新 Space 失败:', error)
-      throw error
+      this.handleError(error, 'updateSpace', undefined, throwOnError)
     }
   }
 
-  /**
-   * 删除 Space
-   */
-  async deleteSpace(spaceId: string): Promise<void> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+  async deleteSpace(spaceId: string, throwOnError = true): Promise<void> {
     try {
-      await this.spaceManager.deleteSpace(spaceId)
-      logger.info('Space 已删除:', spaceId)
+      const manager = this.getSpaceManager()
+      await manager.deleteSpace(spaceId)
+      info(`[Space] 已删除: ${spaceId}`)
     } catch (error) {
-      logger.error('删除 Space 失败:', error)
-      throw error
+      this.handleError(error, 'deleteSpace', undefined, throwOnError)
     }
   }
 
-  /**
-   * 获取 Space 子房间
-   */
-  async getSpaceChildren(spaceId: string): Promise<SpaceChild[]> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+  async getSpaceChildren(spaceId: string, throwOnError = true): Promise<any[]> {
     try {
-      const children = await this.spaceManager.getSpaceChildren(spaceId)
-      return children
+      const manager = this.getSpaceManager()
+      return await manager.getSpaceChildren(spaceId)
     } catch (error) {
-      logger.error('获取 Space 子房间失败:', error)
-      return []
+      return this.handleError(error, 'getSpaceChildren', [] as any[], throwOnError)
     }
   }
 
-  /**
-   * 添加子房间到 Space
-   */
   async addChildToSpace(
     spaceId: string,
     roomId: string,
-    options?: { via?: string[]; suggested?: boolean }
+    options?: { via?: string[]; suggested?: boolean },
+    throwOnError = true
   ): Promise<void> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
     try {
-      await this.spaceManager.addChild(spaceId, {
+      const manager = this.getSpaceManager()
+      await manager.addChild(spaceId, {
         room_id: roomId,
         via_servers: options?.via,
-        is_suggested: options?.suggested
+        suggested: options?.suggested
       })
-      logger.info('子房间已添加:', roomId, '到', spaceId)
+      info(`[Space] 子房间已添加: ${roomId} -> ${spaceId}`)
     } catch (error) {
-      logger.error('添加子房间失败:', error)
-      throw error
+      this.handleError(error, 'addChildToSpace', undefined, throwOnError)
     }
   }
 
-  /**
-   * 从 Space 移除子房间
-   */
-  async removeChildFromSpace(spaceId: string, roomId: string): Promise<void> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+  async removeChildFromSpace(spaceId: string, roomId: string, throwOnError = true): Promise<void> {
     try {
-      await this.spaceManager.removeChild(spaceId, roomId)
-      logger.info('子房间已移除:', roomId, '从', spaceId)
+      const manager = this.getSpaceManager()
+      await manager.removeChild(spaceId, roomId)
+      info(`[Space] 子房间已移除: ${roomId} <- ${spaceId}`)
     } catch (error) {
-      logger.error('移除子房间失败:', error)
-      throw error
+      this.handleError(error, 'removeChildFromSpace', undefined, throwOnError)
     }
   }
 
-  /**
-   * 获取 Space 成员
-   */
-  async getSpaceMembers(spaceId: string): Promise<SpaceMember[]> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+  async getSpaceMembers(spaceId: string, throwOnError = true): Promise<any[]> {
     try {
-      const members = await this.spaceManager.getSpaceMembers(spaceId)
-      return members
+      const manager = this.getSpaceManager()
+      return await manager.getSpaceMembers(spaceId)
     } catch (error) {
-      logger.error('获取 Space 成员失败:', error)
-      return []
+      return this.handleError(error, 'getSpaceMembers', [] as any[], throwOnError)
     }
   }
 
-  /**
-   * 获取 Space 层级结构
-   */
-  async getSpaceHierarchy(spaceId: string): Promise<SpaceHierarchy | null> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+  async getSpaceHierarchy(spaceId: string, throwOnError = true): Promise<any | null> {
     try {
-      const hierarchy = await this.spaceManager.getSpaceHierarchy(spaceId)
-      return hierarchy
+      const manager = this.getSpaceManager()
+      return await manager.getSpaceHierarchy(spaceId)
     } catch (error) {
-      logger.error('获取 Space 层级结构失败:', error)
-      return null
+      return this.handleError(error, 'getSpaceHierarchy', null, throwOnError)
     }
   }
 
-  /**
-   * 获取用户所有 Space
-   */
-  async getUserSpaces(): Promise<SpaceInfo[]> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+  async getUserSpaces(throwOnError = true): Promise<SpaceInfo[]> {
     try {
-      const spaces = await this.spaceManager.getUserSpaces()
-
-      return spaces.map((space: Space) => ({
-        spaceId: space.space_id,
-        name: space.name || '',
-        topic: space.topic,
-        avatarUrl: space.avatar_url,
-        memberCount: space.member_count || 0,
-        childCount: 0
-      }))
+      const manager = this.getSpaceManager()
+      const spaces = await manager.getUserSpaces()
+      const results: SpaceInfo[] = []
+      for (const space of spaces) {
+        results.push(await this.mapSpaceToInfo(space))
+      }
+      return results
     } catch (error) {
-      logger.error('获取用户 Spaces 失败:', error)
-      return []
+      return this.handleError(error, 'getUserSpaces', [] as SpaceInfo[], throwOnError)
     }
   }
 
-  /**
-   * 搜索 Spaces
-   */
-  async searchSpaces(query: string, limit = 10): Promise<SpaceInfo[]> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+  async searchSpaces(query: string, limit = 10, throwOnError = true): Promise<SpaceInfo[]> {
     try {
-      const spaces = await this.spaceManager.searchSpaces(query, limit)
-
-      return spaces.map((space: Space) => ({
-        spaceId: space.space_id,
-        name: space.name || '',
-        topic: space.topic,
-        avatarUrl: space.avatar_url,
-        memberCount: space.member_count || 0,
-        childCount: 0
-      }))
+      const manager = this.getSpaceManager()
+      const spaces = await manager.searchSpaces(query, limit)
+      const results: SpaceInfo[] = []
+      for (const space of spaces) {
+        results.push(await this.mapSpaceToInfo(space))
+      }
+      return results
     } catch (error) {
-      logger.error('搜索 Spaces 失败:', error)
-      return []
+      return this.handleError(error, 'searchSpaces', [] as SpaceInfo[], throwOnError)
     }
   }
 
-  /**
-   * 检查房间是否是 Space
-   */
-  async isSpace(roomId: string): Promise<boolean> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+  async isSpace(roomId: string, throwOnError = true): Promise<boolean> {
     try {
-      return await this.spaceManager.isSpace(roomId)
+      const manager = this.getSpaceManager()
+      return await manager.isSpace(roomId)
     } catch (error) {
-      logger.error('检查 Space 失败:', error)
-      return false
+      return this.handleError(error, 'isSpace', false, throwOnError)
     }
   }
 
-  /**
-   * 获取 Space 统计信息
-   */
   async getSpaceStats(
-    spaceId: string
-  ): Promise<{ totalMessages: number; activeMembers: number; joinedMembers: number } | null> {
-    if (!this.spaceManager) {
-      throw new Error('SpaceManager 未初始化')
-    }
-
+    spaceId: string,
+    throwOnError = true
+  ): Promise<{ memberCount: number; childCount: number } | null> {
     try {
-      const stats = await this.spaceManager.getSpaceStats(spaceId)
-      return stats
+      const manager = this.getSpaceManager()
+      return await manager.getSpaceStats(spaceId)
     } catch (error) {
-      logger.error('获取 Space 统计失败:', error)
-      return null
+      return this.handleError(error, 'getSpaceStats', null, throwOnError)
+    }
+  }
+
+  async joinSpace(spaceId: string, throwOnError = false): Promise<boolean> {
+    try {
+      const manager = this.getSpaceManager()
+      await manager.joinSpace(spaceId)
+      info(`[Space] 已加入: ${spaceId}`)
+      return true
+    } catch (error) {
+      return this.handleError(error, 'joinSpace', false, throwOnError)
+    }
+  }
+
+  async leaveSpace(spaceId: string, throwOnError = false): Promise<boolean> {
+    try {
+      const manager = this.getSpaceManager()
+      await manager.leaveSpace(spaceId)
+      info(`[Space] 已离开: ${spaceId}`)
+      return true
+    } catch (error) {
+      return this.handleError(error, 'leaveSpace', false, throwOnError)
+    }
+  }
+
+  async inviteToSpace(spaceId: string, userId: string, throwOnError = false): Promise<boolean> {
+    try {
+      const manager = this.getSpaceManager()
+      await manager.inviteToSpace(spaceId, userId)
+      info(`[Space] 已邀请: ${userId} -> ${spaceId}`)
+      return true
+    } catch (error) {
+      return this.handleError(error, 'inviteToSpace', false, throwOnError)
+    }
+  }
+
+  async getSpaceRooms(spaceId: string, throwOnError = true): Promise<any[]> {
+    try {
+      const manager = this.getSpaceManager()
+      return await manager.getSpaceRooms(spaceId)
+    } catch (error) {
+      return this.handleError(error, 'getSpaceRooms', [] as any[], throwOnError)
+    }
+  }
+
+  async getSpaceState(spaceId: string, throwOnError = true): Promise<any | null> {
+    try {
+      const manager = this.getSpaceManager()
+      return await manager.getSpaceState(spaceId)
+    } catch (error) {
+      return this.handleError(error, 'getSpaceState', null, throwOnError)
+    }
+  }
+
+  async getSpaceSummary(spaceId: string, throwOnError = true): Promise<any | null> {
+    try {
+      const manager = this.getSpaceManager()
+      return await manager.getSpaceSummary(spaceId)
+    } catch (error) {
+      return this.handleError(error, 'getSpaceSummary', null, throwOnError)
+    }
+  }
+
+  async getPublicSpaces(throwOnError = true): Promise<SpaceInfo[]> {
+    try {
+      const manager = this.getSpaceManager()
+      const spaces = await manager.getPublicSpaces()
+      const results: SpaceInfo[] = []
+      for (const space of spaces) {
+        results.push(await this.mapSpaceToInfo(space))
+      }
+      return results
+    } catch (error) {
+      return this.handleError(error, 'getPublicSpaces', [] as SpaceInfo[], throwOnError)
     }
   }
 }
 
-export const matrixSpaceService = new SpaceService()
+export const matrixSpaceService = new MatrixSpaceService()

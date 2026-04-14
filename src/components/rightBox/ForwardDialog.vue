@@ -1,6 +1,6 @@
 <template>
   <n-modal
-    v-model:show="visible"
+    :show="visible" @update:show="emit('update:visible', $event)"
     preset="card"
     :title="t('message.forward.title')"
     :style="{ width: '400px' }"
@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixForwardService } from '@/services/matrix'
+import { matrixForwardService, matrixClientService } from '@/services/matrix'
 import { useRoomStore } from '@/stores/room'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
@@ -110,10 +110,7 @@ const handleForward = async () => {
 
   forwarding.value = true
   try {
-    const client = (await import('@/services/matrix/MatrixClientService')).default.getClient()
-    if (!client) return
-
-    const room = client.getRoom(props.roomId)
+    const room = matrixClientService.getRoom(props.roomId)
     if (!room) return
 
     const event = room.findEventById(props.eventId)

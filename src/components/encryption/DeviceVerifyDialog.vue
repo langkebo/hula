@@ -1,5 +1,5 @@
 <template>
-  <n-modal v-model:show="visible" preset="card" title="设备验证" style="width: 450px" :mask-closable="false">
+  <n-modal :show="show" @update:show="emit('update:show', $event)" preset="card" title="设备验证" style="width: 450px" :mask-closable="false">
     <n-spin :show="loading">
       <div v-if="step === 'intro'" class="step-content">
         <div class="intro-icon">
@@ -82,8 +82,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { NModal, NButton, NSpin, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
-import { matrixEncryptionService } from '@/services/matrix'
-import { matrixClientService } from '@/services/matrix'
+import { matrixEncryptionService, matrixAccountService, matrixClientService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('DeviceVerify')
 
@@ -121,10 +120,7 @@ const fingerprintChunks = computed(() => {
 })
 
 onMounted(async () => {
-  const client = matrixClientService.getClient()
-  if (client) {
-    userId.value = client.getUserId() || ''
-  }
+  userId.value = matrixAccountService.getCurrentUserId() || ''
 })
 
 function handleCancel() {
@@ -147,23 +143,17 @@ async function startVerification() {
   loading.value = true
 
   try {
-    const client = matrixClientService.getClient() as any
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
-    const crypto = client.getCrypto?.()
-    if (!crypto) {
+    if (!matrixEncryptionService.isEncryptionEnabled()) {
       throw new Error('加密模块不可用')
     }
 
-    const targetDeviceId = props.deviceId || client.deviceId
-    const keys = await crypto.getOwnDeviceKeys?.()
+    const targetDeviceId = props.deviceId || matrixEncryptionService.getDeviceId()
+    const keys = await matrixEncryptionService.getOwnDeviceKeys()
 
     if (keys?.ed25519) {
       fingerprint.value = keys.ed25519
-    } else {
-      const deviceKeys = await client.getStoredDevice?.(userId.value, targetDeviceId)
+    } else if (targetDeviceId) {
+      const deviceKeys = await matrixEncryptionService.getStoredDevice(userId.value, targetDeviceId)
       if (deviceKeys) {
         fingerprint.value = deviceKeys.getFingerprint?.() || '无法获取指纹'
       }
@@ -182,12 +172,10 @@ async function handleConfirm() {
   loading.value = true
 
   try {
-    const client = matrixClientService.getClient() as any
-    if (!client) {
-      throw new Error('客户端未初始化')
+    const targetDeviceId = props.deviceId || matrixEncryptionService.getDeviceId()
+    if (!targetDeviceId) {
+      throw new Error('设备 ID 不可用')
     }
-
-    const targetDeviceId = props.deviceId || client.deviceId
 
     await matrixEncryptionService.trustDevice(userId.value, targetDeviceId)
 

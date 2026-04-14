@@ -25,7 +25,7 @@
                   </div>
                 </template>
                 <template #value>
-                  <van-picker v-model="selectedProvider" :columns="providerColumns" @change="handleProviderChange" />
+                  <van-picker v-model="selectedProviderArray" :columns="providerColumns" @change="handleProviderChange" />
                 </template>
               </van-cell>
             </van-cell-group>
@@ -311,6 +311,14 @@ const siliconflowModels: AIModel[] = [
 ]
 
 const selectedProvider = ref<AIProvider>('openclaw')
+const selectedProviderArray = computed({
+  get: () => [selectedProvider.value],
+  set: (val: string[]) => {
+    if (val.length > 0) {
+      selectedProvider.value = val[0] as AIProvider
+    }
+  }
+})
 const selectedModel = ref<AIModel | null>(null)
 const loadingModels = ref(false)
 

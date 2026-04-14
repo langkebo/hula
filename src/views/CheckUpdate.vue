@@ -150,12 +150,13 @@ const commitTypeMap: { [key: string]: string } = {
   chore: 'hammer-and-wrench'
 }
 
-const mapCommitType = (commitMessage: string) => {
+const mapCommitType = (commitMessage: string): string => {
   for (const type in commitTypeMap) {
     if (new RegExp(`^${type}`, 'i').test(commitMessage)) {
       return commitTypeMap[type]
     }
   }
+  return 'commit'
 }
 
 /* 记录检测更新的版本 */

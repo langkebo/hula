@@ -57,7 +57,7 @@ export function useScreenshotDraw(
       }
 
       try {
-        drawTools.draw(type as DrawToolType)
+        drawTools.draw(type)
         return true
       } catch (error) {
         logger.error(`绘图工具激活失败: ${type}`, error)

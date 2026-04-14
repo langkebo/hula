@@ -1,163 +1,132 @@
-/**
- * Matrix 用户资料服务
- *
- * 提供用户资料获取和设置功能
- */
-
 import type { MatrixClient } from 'matrix-js-sdk'
-import { info, error } from '@tauri-apps/plugin-log'
+import type { ExtendedMatrixClientForProfile } from '@/types/matrix-api'
+import { BaseManager } from './BaseManager'
+import { getGlobalCache } from '@/composables/useCache'
+import { info } from '@tauri-apps/plugin-log'
 
-/**
- * 用户资料
- */
 export interface UserProfile {
-  /** 用户 ID */
   userId: string
-  /** 显示名 */
   displayname?: string
-  /** 头像 URL */
   avatarUrl?: string
-  /** 签名 */
   signature?: string
 }
 
-/**
- * 用户资料服务
- */
-class ProfileService {
+export class ProfileService extends BaseManager {
   private client: MatrixClient | null = null
+  private profileCache = getGlobalCache<UserProfile>('profile', { maxSize: 200, ttl: 60000 })
 
-  /**
-   * 初始化服务
-   */
   initialize(client: MatrixClient): void {
     this.client = client
+    this.profileCache.clear()
     info('[Profile] 服务已初始化')
   }
 
-  /**
-   * 获取用户资料
-   */
-  async getProfile(userId: string): Promise<UserProfile> {
+  getProfileFromCache(userId: string): UserProfile | null {
+    return this.profileCache.get(userId) ?? null
+  }
+
+  async getProfile(userId: string, throwOnError = true): Promise<UserProfile> {
+    const cached = this.profileCache.get(userId)
+    if (cached) return cached
+
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
 
     try {
-      const profile = await (this.client as any).getProfile(userId)
-      return {
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForProfile
+      const profile = await extendedClient.getProfile?.(userId)
+      const result: UserProfile = {
         userId,
-        displayname: profile.displayname,
-        avatarUrl: profile.avatar_url
+        displayname: profile?.displayname,
+        avatarUrl: profile?.avatar_url
       }
+      this.profileCache.set(userId, result)
+      return result
     } catch (err) {
-      error(`[Profile] 获取用户资料失败: ${err}`)
-      throw err
+      return this.handleError(err, 'getProfile', { userId } as UserProfile, throwOnError)
     }
   }
 
-  /**
-   * 获取显示名
-   */
-  async getDisplayName(userId: string): Promise<string | undefined> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
-    }
+  async getDisplayName(userId: string, throwOnError = true): Promise<string | undefined> {
+    const cached = this.profileCache.get(userId)
+    if (cached) return cached.displayname
 
     try {
-      const profile = await (this.client as any).getProfile(userId)
+      const profile = await this.getProfile(userId, throwOnError)
       return profile.displayname
     } catch (err) {
-      error(`[Profile] 获取显示名失败: ${err}`)
-      return undefined
+      return this.handleError(err, 'getDisplayName', undefined, throwOnError)
     }
   }
 
-  /**
-   * 获取头像
-   */
-  async getAvatarUrl(userId: string): Promise<string | undefined> {
-    if (!this.client) {
-      throw new Error('Client 未初始化')
-    }
+  async getAvatarUrl(userId: string, throwOnError = true): Promise<string | undefined> {
+    const cached = this.profileCache.get(userId)
+    if (cached) return cached.avatarUrl
 
     try {
-      const profile = await (this.client as any).getProfile(userId)
-      return profile.avatar_url
+      const profile = await this.getProfile(userId, throwOnError)
+      return profile.avatarUrl
     } catch (err) {
-      error(`[Profile] 获取头像失败: ${err}`)
-      return undefined
+      return this.handleError(err, 'getAvatarUrl', undefined, throwOnError)
     }
   }
 
-  /**
-   * 设置显示名
-   */
-  async setDisplayName(displayname: string): Promise<void> {
+  async setDisplayName(displayname: string, throwOnError = false): Promise<void> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
 
     try {
-      await (this.client as any).setDisplayName(displayname)
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForProfile
+      await extendedClient.setDisplayName?.(displayname)
       info(`[Profile] 设置显示名成功: ${displayname}`)
     } catch (err) {
-      error(`[Profile] 设置显示名失败: ${err}`)
-      throw err
+      this.handleError(err, 'setDisplayName', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 设置头像
-   */
-  async setAvatarUrl(avatarUrl: string): Promise<void> {
+  async setAvatarUrl(avatarUrl: string, throwOnError = false): Promise<void> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
 
     try {
-      await (this.client as any).setAvatarUrl(avatarUrl)
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForProfile
+      await extendedClient.setAvatarUrl?.(avatarUrl)
       info(`[Profile] 设置头像成功: ${avatarUrl}`)
     } catch (err) {
-      error(`[Profile] 设置头像失败: ${err}`)
-      throw err
+      this.handleError(err, 'setAvatarUrl', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 上传并设置头像
-   */
-  async uploadAndSetAvatar(file: File | Blob): Promise<string> {
+  async uploadAndSetAvatar(file: File | Blob, throwOnError = false): Promise<string> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
 
     try {
-      // 上传图片
-      const { content_uri } = await (this.client as any).uploadContent(file, {
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForProfile
+      const response = await extendedClient.uploadContent?.(file, {
         type: file.type,
         rawResponse: false
       })
 
-      // 设置头像
-      await this.setAvatarUrl(content_uri)
+      if (!response?.content_uri) {
+        throw new Error('上传失败：未返回 content_uri')
+      }
 
-      return content_uri
+      await this.setAvatarUrl(response.content_uri, throwOnError)
+
+      return response.content_uri
     } catch (err) {
-      error(`[Profile] 上传头像失败: ${err}`)
-      throw err
+      return this.handleError(err, 'uploadAndSetAvatar', '' as string, throwOnError)
     }
   }
 }
 
-/**
- * 单例实例
- */
 export const profileService = new ProfileService()
 
-/**
- * Vue Composable
- */
 import { ref } from 'vue'
 
 export function useProfile() {

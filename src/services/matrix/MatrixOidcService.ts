@@ -1,5 +1,6 @@
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import { matrixClientService } from './MatrixClientService'
+import { BaseManager } from './BaseManager'
 
 export interface OidcDiscoveryDocument {
   issuer: string
@@ -43,7 +44,7 @@ export interface OidcTokenResponse {
 const OIDC_DISCOVERY_PATH = '/.well-known/openid-configuration'
 const DEFAULT_OIDC_SCOPES = ['openid', 'profile', 'email']
 
-class MatrixOidcService {
+class MatrixOidcService extends BaseManager {
   private discovery: OidcDiscoveryDocument | null = null
   private homeserverUrl: string = ''
 

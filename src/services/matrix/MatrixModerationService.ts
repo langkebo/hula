@@ -1,5 +1,6 @@
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
 export interface Report {
   id: string
@@ -81,7 +82,7 @@ const ModerationEvent = {
   Error: 'Moderation.error'
 } as const
 
-class MatrixModerationService {
+class MatrixModerationService extends BaseManager {
   private moderationManager: ModerationManager | null = null
   private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
 
@@ -100,7 +101,6 @@ class MatrixModerationService {
 
     this.moderationManager = (client as unknown as { moderationManager?: ModerationManager }).moderationManager ?? null
     if (!this.moderationManager) {
-      error('[MatrixModeration] ModerationManager 未在客户端上找到')
       return
     }
 
@@ -139,89 +139,53 @@ class MatrixModerationService {
 
     this.moderationManager.on(ModerationEvent.Error, (err: Error) => {
       this.emit('error', err)
-      error(`[MatrixModeration] 错误: ${err.message}`)
     })
   }
 
   async getReports(filters?: ReportFilters): Promise<Report[]> {
     const manager = this.getManager()
-    try {
-      const reports = await manager.getReports(filters)
-      info(`[MatrixModeration] 获取举报列表: ${reports.length} 条`)
-      return reports
-    } catch (err) {
-      error(`[MatrixModeration] 获取举报列表失败: ${err}`)
-      throw err
-    }
+    const reports = await manager.getReports(filters)
+    info(`[MatrixModeration] 获取举报列表: ${reports.length} 条`)
+    return reports
   }
 
   async resolveReport(reportId: string, request: ResolveReportRequest): Promise<void> {
     const manager = this.getManager()
-    try {
-      await manager.resolveReport(reportId, request)
-      info(`[MatrixModeration] 处理举报成功: ${reportId} -> ${request.action}`)
-    } catch (err) {
-      error(`[MatrixModeration] 处理举报失败: ${err}`)
-      throw err
-    }
+    await manager.resolveReport(reportId, request)
+    info(`[MatrixModeration] 处理举报成功: ${reportId} -> ${request.action}`)
   }
 
   async getUserReputation(userId: string): Promise<UserReputation> {
     const manager = this.getManager()
-    try {
-      const reputation = await manager.getUserReputation(userId)
-      info(`[MatrixModeration] 获取用户信誉: ${userId} -> ${reputation.level}`)
-      return reputation
-    } catch (err) {
-      error(`[MatrixModeration] 获取用户信誉失败: ${err}`)
-      throw err
-    }
+    const reputation = await manager.getUserReputation(userId)
+    info(`[MatrixModeration] 获取用户信誉: ${userId} -> ${reputation.level}`)
+    return reputation
   }
 
   async setUserReputation(userId: string, score: number): Promise<void> {
     const manager = this.getManager()
-    try {
-      await manager.setUserReputation(userId, score)
-      info(`[MatrixModeration] 设置用户信誉: ${userId} -> ${score}`)
-    } catch (err) {
-      error(`[MatrixModeration] 设置用户信誉失败: ${err}`)
-      throw err
-    }
+    await manager.setUserReputation(userId, score)
+    info(`[MatrixModeration] 设置用户信誉: ${userId} -> ${score}`)
   }
 
   async getContentFilters(): Promise<ContentFilter[]> {
     const manager = this.getManager()
-    try {
-      const filters = await manager.getContentFilters()
-      info(`[MatrixModeration] 获取内容过滤器: ${filters.length} 条`)
-      return filters
-    } catch (err) {
-      error(`[MatrixModeration] 获取内容过滤器失败: ${err}`)
-      throw err
-    }
+    const filters = await manager.getContentFilters()
+    info(`[MatrixModeration] 获取内容过滤器: ${filters.length} 条`)
+    return filters
   }
 
   async addContentFilter(filter: CreateContentFilterRequest): Promise<ContentFilter> {
     const manager = this.getManager()
-    try {
-      const result = await manager.addContentFilter(filter)
-      info(`[MatrixModeration] 添加内容过滤器: ${result.id}`)
-      return result
-    } catch (err) {
-      error(`[MatrixModeration] 添加内容过滤器失败: ${err}`)
-      throw err
-    }
+    const result = await manager.addContentFilter(filter)
+    info(`[MatrixModeration] 添加内容过滤器: ${result.id}`)
+    return result
   }
 
   async removeContentFilter(filterId: string): Promise<void> {
     const manager = this.getManager()
-    try {
-      await manager.removeContentFilter(filterId)
-      info(`[MatrixModeration] 移除内容过滤器: ${filterId}`)
-    } catch (err) {
-      error(`[MatrixModeration] 移除内容过滤器失败: ${err}`)
-      throw err
-    }
+    await manager.removeContentFilter(filterId)
+    info(`[MatrixModeration] 移除内容过滤器: ${filterId}`)
   }
 
   stop(): void {

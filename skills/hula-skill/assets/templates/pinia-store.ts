@@ -29,7 +29,6 @@ export const useExampleStore = defineStore(StoresEnum.EXAMPLE, () => {
       hasMore.value = result.hasMore
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
-      console.error('[ExampleStore] Failed to fetch items:', e)
     } finally {
       loading.value = false
     }
@@ -51,7 +50,6 @@ export const useExampleStore = defineStore(StoresEnum.EXAMPLE, () => {
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
       currentPage.value--
-      console.error('[ExampleStore] Failed to fetch more items:', e)
     } finally {
       loading.value = false
     }
@@ -67,7 +65,7 @@ export const useExampleStore = defineStore(StoresEnum.EXAMPLE, () => {
       return newItem
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
-      console.error('[ExampleStore] Failed to add item:', e)
+
       return null
     } finally {
       loading.value = false
@@ -87,7 +85,7 @@ export const useExampleStore = defineStore(StoresEnum.EXAMPLE, () => {
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
-      console.error('[ExampleStore] Failed to update item:', e)
+
       return false
     } finally {
       loading.value = false
@@ -104,7 +102,7 @@ export const useExampleStore = defineStore(StoresEnum.EXAMPLE, () => {
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
-      console.error('[ExampleStore] Failed to delete item:', e)
+
       return false
     } finally {
       loading.value = false

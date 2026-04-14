@@ -77,7 +77,7 @@ class GlobalErrorHandler {
         standardError = new Error(String(error))
       }
 
-      logger.error(standardError, context)
+      logger.error(standardError.message, context)
 
       this.errorCallbacks.forEach((callback) => {
         try {

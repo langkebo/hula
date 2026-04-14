@@ -83,9 +83,9 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { NSpin, NEmpty, NButton, NSwitch, NDivider, NTimePicker, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import { matrixPushService } from '@/services/matrix'
+import { matrixPushService, PushRuleKind } from '@/services/matrix'
 import { matrixClientService } from '@/services/matrix'
-import type { IPusher, IPushRules } from 'matrix-js-sdk'
+import type { IPusher, IPushRules } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PushSettings')
@@ -113,17 +113,11 @@ onMounted(async () => {
   await Promise.all([fetchPushers(), fetchPushRules()])
   loadDndSettings()
 
-  const client = matrixClientService.getClient() as any
-  if (client) {
-    client.on('pushRules', handlePushRulesUpdate)
-  }
+  matrixClientService.on('pushRules', handlePushRulesUpdate)
 })
 
 onUnmounted(() => {
-  const client = matrixClientService.getClient() as any
-  if (client) {
-    client.removeListener('pushRules', handlePushRulesUpdate)
-  }
+  matrixClientService.off('pushRules', handlePushRulesUpdate)
 })
 
 function handlePushRulesUpdate(rules: IPushRules) {
@@ -145,7 +139,7 @@ async function fetchPushers() {
 async function fetchPushRules() {
   rulesLoading.value = true
   try {
-    const rules = await matrixPushService.getPushRules()
+    const rules = await matrixPushService.getRawPushRules()
     pushRules.value = rules
     updateUIFromRules(rules)
   } catch (error) {
@@ -158,13 +152,13 @@ async function fetchPushRules() {
 
 function updateUIFromRules(rules: IPushRules) {
   if (rules.global) {
-    const masterRule = rules.global.override?.find((r: any) => r.rule_id === '.m.rule.master')
+    const masterRule = rules.global.override?.find((r) => r.rule_id === '.m.rule.master')
     masterEnabled.value = !masterRule?.enabled
 
-    const messageRule = rules.global.content?.find((r: any) => r.rule_id === '.m.rule.contains_user_name')
+    const messageRule = rules.global.content?.find((r) => r.rule_id === '.m.rule.contains_user_name')
     messagePushEnabled.value = messageRule?.enabled !== false
 
-    const inviteRule = rules.global.override?.find((r: any) => r.rule_id === '.m.rule.invite_for_me')
+    const inviteRule = rules.global.override?.find((r) => r.rule_id === '.m.rule.invite_for_me')
     invitePushEnabled.value = inviteRule?.enabled !== false
   }
 }
@@ -223,7 +217,7 @@ function handleDeletePusher(pusher: IPusher) {
 
 async function handleMasterToggle(enabled: boolean) {
   try {
-    await matrixPushService.setPushRuleEnabled('global', 'override' as any, '.m.rule.master', !enabled)
+    await matrixPushService.setPushRuleEnabled('global', PushRuleKind.Override, '.m.rule.master', !enabled)
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
     logger.error('设置主规则失败:', error)
@@ -235,10 +229,15 @@ async function handleMasterToggle(enabled: boolean) {
 async function handleMessagePushToggle(enabled: boolean) {
   try {
     const rules = pushRules.value?.global?.content || []
-    const messageRule = rules.find((r: any) => r.rule_id === '.m.rule.contains_user_name')
+    const messageRule = rules.find((r) => r.rule_id === '.m.rule.contains_user_name')
 
     if (messageRule) {
-      await matrixPushService.setPushRuleEnabled('global', 'content' as any, '.m.rule.contains_user_name', enabled)
+      await matrixPushService.setPushRuleEnabled(
+        'global',
+        PushRuleKind.ContentSpecific,
+        '.m.rule.contains_user_name',
+        enabled
+      )
     }
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
@@ -250,7 +249,7 @@ async function handleMessagePushToggle(enabled: boolean) {
 
 async function handleInvitePushToggle(enabled: boolean) {
   try {
-    await matrixPushService.setPushRuleEnabled('global', 'override' as any, '.m.rule.invite_for_me', enabled)
+    await matrixPushService.setPushRuleEnabled('global', PushRuleKind.Override, '.m.rule.invite_for_me', enabled)
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
     logger.error('设置邀请规则失败:', error)

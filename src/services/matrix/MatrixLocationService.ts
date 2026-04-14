@@ -1,43 +1,55 @@
-import type { MatrixEvent, EventType, IContent } from 'matrix-js-sdk'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
 export interface LocationData {
   latitude: number
   longitude: number
   accuracy?: number
+  altitude?: number
   description?: string
   timestamp: number
 }
 
-export interface LiveLocationShare {
-  roomId: string
-  userId: string
-  location: LocationData
-  expiresAt?: number
-  lastUpdated: number
+export interface ParsedLocation {
+  latitude: number
+  longitude: number
+  uncertainty?: number
+  altitude?: number
+  description?: string
+  timestamp: number
+  assetType: string
+  geoUri: string
 }
 
-interface LocationContent extends IContent {
-  msgtype?: string
-  body: string
-  geo_uri: string
-  'm.location'?: {
-    uri: string
-    description?: string
-  }
-  'org.matrix.msc3488.asset'?: {
-    type: string
-  }
-  'org.matrix.msc3488.ts'?: number
-  expires_at?: number
-  'm.relates_to'?: {
-    rel_type: string
-    event_id?: string
-  }
-}
+class MatrixLocationService extends BaseManager {
+  private locationManager: any = null
+  private initialized = false
 
-class MatrixLocationService {
+  initialize(): void {
+    if (this.initialized) return
+
+    const client = matrixClientService.getClient()
+    if (!client) {
+      return
+    }
+
+    try {
+      this.locationManager = (client as any).getLocationManager?.() ?? null
+      if (this.locationManager) {
+        this.initialized = true
+        info('[Location] 服务初始化成功 (SDK LocationManager)')
+      } else {
+        this.initialized = true
+        info('[Location] LocationManager 不可用，使用 fallback 模式')
+      }
+    } catch (_err) {
+      // handleError: [Location] 服务初始化失败: ${err}`)
+    }
+  }
+
   async getCurrentPosition(): Promise<LocationData> {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -51,11 +63,12 @@ class MatrixLocationService {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             accuracy: position.coords.accuracy,
+            altitude: position.coords.altitude ?? undefined,
             timestamp: position.timestamp
           })
         },
         (err) => {
-          error(`[Location] 获取位置失败: ${err.message}`)
+          // handleError: [Location] 获取位置失败: ${err.message}`)
           reject(err)
         },
         {
@@ -68,130 +81,144 @@ class MatrixLocationService {
   }
 
   async sendLocation(roomId: string, location: LocationData): Promise<string> {
+    if (this.locationManager) {
+      try {
+        const result = await this.locationManager.sendLocation(roomId, {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          uncertainty: location.accuracy,
+          altitude: location.altitude,
+          description: location.description,
+          timestamp: location.timestamp
+        })
+        info(`[Location] 发送位置成功 (SDK): ${roomId}`)
+        return result.event_id
+      } catch (_err) {
+        // handleError: [Location] SDK 发送位置失败，尝试 fallback: ${err}`)
+      }
+    }
+
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Location] 客户端未初始化')
     }
+    const geoUri = this.buildGeoUri(location)
 
-    try {
-      const geoUri = `geo:${location.latitude},${location.longitude}${location.accuracy ? `;u=${location.accuracy}` : ''}`
+    const content: any = {
+      msgtype: 'm.location',
+      body: location.description || geoUri,
+      geo_uri: geoUri,
+      'm.location': {
+        uri: geoUri,
+        description: location.description
+      },
+      'org.matrix.msc3488.location': {
+        uri: geoUri,
+        description: location.description
+      },
+      'm.asset': { type: 'm.self' },
+      'org.matrix.msc3488.asset': { type: 'm.self' },
+      'm.ts': location.timestamp,
+      'org.matrix.msc3488.ts': location.timestamp
+    }
 
-      const content: LocationContent = {
-        msgtype: 'm.location',
-        body: location.description || geoUri,
-        geo_uri: geoUri,
-        'm.location': {
-          uri: geoUri,
-          description: location.description
+    const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+    info(`[Location] 发送位置成功 (fallback): ${roomId}`)
+    return response.event_id
+  }
+
+  parseLocationEvent(event: MatrixEvent): ParsedLocation | null {
+    if (this.locationManager) {
+      try {
+        const parsed = this.locationManager.parseLocationEvent(event)
+        if (parsed) {
+          return {
+            latitude: parsed.latitude,
+            longitude: parsed.longitude,
+            uncertainty: parsed.uncertainty,
+            altitude: parsed.altitude,
+            description: parsed.description,
+            timestamp: parsed.timestamp,
+            assetType: parsed.assetType,
+            geoUri: parsed.geoUri
+          }
         }
+      } catch {
+        // fallback to manual parsing
       }
-
-      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content)
-      info(`[Location] 发送位置成功: ${roomId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[Location] 发送位置失败: ${err}`)
-      throw err
-    }
-  }
-
-  async startLiveLocationShare(roomId: string, duration: number = 3600000): Promise<string> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Location] 客户端未初始化')
     }
 
     try {
-      const location = await this.getCurrentPosition()
-      const geoUri = `geo:${location.latitude},${location.longitude}`
-
-      const content: LocationContent = {
-        msgtype: 'm.location',
-        body: 'Live location',
-        geo_uri: geoUri,
-        'm.location': {
-          uri: geoUri,
-          description: 'Live location share'
-        },
-        'org.matrix.msc3488.asset': {
-          type: 'm.self'
-        },
-        'org.matrix.msc3488.ts': Date.now(),
-        expires_at: Date.now() + duration
-      }
-
-      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content)
-      info(`[Location] 开始实时位置分享: ${roomId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[Location] 开始实时位置分享失败: ${err}`)
-      throw err
-    }
-  }
-
-  async updateLiveLocation(roomId: string, eventId: string, location: LocationData): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Location] 客户端未初始化')
-    }
-
-    try {
-      const geoUri = `geo:${location.latitude},${location.longitude}`
-
-      const content: LocationContent = {
-        msgtype: 'm.location',
-        body: 'Live location update',
-        geo_uri: geoUri,
-        'm.location': {
-          uri: geoUri,
-          description: 'Live location update'
-        },
-        'org.matrix.msc3488.asset': {
-          type: 'm.self'
-        },
-        'org.matrix.msc3488.ts': Date.now(),
-        'm.relates_to': {
-          rel_type: 'm.replace',
-          event_id: eventId
-        }
-      }
-
-      await client.sendEvent(roomId, 'm.room.message' as EventType, content)
-      info(`[Location] 更新实时位置: ${roomId}`)
-    } catch (err) {
-      error(`[Location] 更新实时位置失败: ${err}`)
-      throw err
-    }
-  }
-
-  parseLocationEvent(event: MatrixEvent): LocationData | null {
-    try {
-      const content = event.getContent() as LocationContent
+      const content = event.getContent() as any
       if (content.msgtype !== 'm.location') return null
 
-      const geoUri = content.geo_uri || ''
-      const match = geoUri.match(/geo:([0-9.-]+),([0-9.-]+)(?:;u=([0-9.]+))?/)
+      const locationContent = content['m.location'] ?? content['org.matrix.msc3488.location']
+      const geoUri = content.geo_uri || locationContent?.uri || ''
+      const match = geoUri.match(/geo:([-\d.]+),([-\d.]+)(?:;u=([-\d.]+))?(?:;h=([-\d.]+))?/)
 
       if (!match) return null
+
+      const assetContent = content['m.asset'] ?? content['org.matrix.msc3488.asset']
+      const assetType = assetContent?.type ?? 'm.self'
 
       return {
         latitude: parseFloat(match[1]),
         longitude: parseFloat(match[2]),
-        accuracy: match[3] ? parseFloat(match[3]) : undefined,
-        description: content.body || content['m.location']?.description,
-        timestamp: event.getTs()
+        uncertainty: match[3] ? parseFloat(match[3]) : undefined,
+        altitude: match[4] ? parseFloat(match[4]) : undefined,
+        description: locationContent?.description || content.body,
+        timestamp: content['m.ts'] ?? content['org.matrix.msc3488.ts'] ?? event.getTs(),
+        assetType,
+        geoUri
       }
-    } catch {
+    } catch (_err) {
       return null
     }
   }
 
+  buildGeoUri(location: LocationData): string {
+    let uri = `geo:${location.latitude},${location.longitude}`
+    const params: string[] = []
+
+    if (location.accuracy !== undefined) {
+      params.push(`u=${location.accuracy}`)
+    }
+    if (location.altitude !== undefined) {
+      params.push(`h=${location.altitude}`)
+    }
+
+    if (params.length > 0) {
+      uri += `;${params.join(';')}`
+    }
+
+    return uri
+  }
+
   getGoogleMapsUrl(location: LocationData): string {
+    if (this.locationManager) {
+      return this.locationManager.getGoogleMapsUrl(location)
+    }
     return `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
   }
 
   getOpenStreetMapUrl(location: LocationData): string {
+    if (this.locationManager) {
+      return this.locationManager.getOpenStreetMapUrl(location)
+    }
     return `https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=15/${location.latitude}/${location.longitude}`
+  }
+
+  formatCoordinate(value: number, type: 'lat' | 'lon'): string {
+    if (this.locationManager) {
+      return this.locationManager.formatCoordinate(value, type)
+    }
+
+    const absolute = Math.abs(value)
+    const degrees = Math.floor(absolute)
+    const minutes = Math.floor((absolute - degrees) * 60)
+    const seconds = ((absolute - degrees - minutes / 60) * 3600).toFixed(2)
+    const direction = type === 'lat' ? (value >= 0 ? 'N' : 'S') : value >= 0 ? 'E' : 'W'
+    return `${degrees}°${minutes}'${seconds}"${direction}`
   }
 }
 
