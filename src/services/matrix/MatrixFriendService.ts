@@ -1,10 +1,10 @@
 import { FriendManager, FriendEvent, type Friend, type FriendRequest } from 'matrix-js-sdk/friend'
 
-// Extend FriendStatus for local UI needs
 export type FriendStatus = 'pending' | 'accepted' | 'rejected' | 'favorite' | 'normal' | 'blocked'
 
 import type { MatrixClient } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
+import { BaseManager } from './BaseManager'
 import { info, error } from '@tauri-apps/plugin-log'
 
 export type { Friend, FriendRequest }
@@ -17,7 +17,7 @@ export interface FriendSyncState {
 
 export type FriendServiceEventHandler = (data?: unknown) => void
 
-class MatrixFriendService {
+class MatrixFriendService extends BaseManager {
   private friendManager: FriendManager | null = null
   private eventListeners: Map<string, Set<FriendServiceEventHandler>> = new Map()
   private syncState: FriendSyncState = {
@@ -58,10 +58,6 @@ class MatrixFriendService {
       this.emit('sync', this.syncState)
       info('[MatrixFriend] 同步完成')
     })
-
-    // Mapping legacy events to current SDK events where applicable
-    // FriendAdded/FriendUpdated don't exist in SDK directly, we rely on ListUpdated
-    // But we can listen to other specific events:
 
     this.friendManager.on(FriendEvent.Removed, (userId: string) => {
       this.updateSyncState()
@@ -114,38 +110,66 @@ class MatrixFriendService {
     }
   }
 
-  async getFriends(): Promise<Friend[]> {
-    return this.friendManager?.getFriends() ?? []
+  async getFriends(throwOnError = true): Promise<Friend[]> {
+    try {
+      return this.friendManager?.getFriends() ?? []
+    } catch (err) {
+      return this.handleError(err, 'getFriends', [] as Friend[], throwOnError)
+    }
   }
 
-  async getFriend(userId: string): Promise<Friend | undefined> {
-    const friends = await this.getFriends()
-    return friends.find((f) => f.userId === userId)
+  async getFriend(userId: string, throwOnError = true): Promise<Friend | undefined> {
+    try {
+      const friends = await this.getFriends(throwOnError)
+      return friends.find((f) => f.userId === userId)
+    } catch (err) {
+      return this.handleError(err, 'getFriend', undefined, throwOnError)
+    }
   }
 
-  async isFriend(userId: string): Promise<boolean> {
-    return this.friendManager?.isFriend(userId) ?? false
+  async isFriend(userId: string, throwOnError = true): Promise<boolean> {
+    try {
+      return this.friendManager?.isFriend(userId) ?? false
+    } catch (err) {
+      return this.handleError(err, 'isFriend', false, throwOnError)
+    }
   }
 
-  async getFriendCount(): Promise<number> {
-    const friends = await this.getFriends()
-    return friends.length
+  async getFriendCount(throwOnError = true): Promise<number> {
+    try {
+      const friends = await this.getFriends(throwOnError)
+      return friends.length
+    } catch (err) {
+      return this.handleError(err, 'getFriendCount', 0, throwOnError)
+    }
   }
 
-  async getIncomingRequests(): Promise<FriendRequest[]> {
-    return this.friendManager?.getIncomingRequests() ?? []
+  async getIncomingRequests(throwOnError = true): Promise<FriendRequest[]> {
+    try {
+      return this.friendManager?.getIncomingRequests() ?? []
+    } catch (err) {
+      return this.handleError(err, 'getIncomingRequests', [] as FriendRequest[], throwOnError)
+    }
   }
 
-  async getOutgoingRequests(): Promise<FriendRequest[]> {
-    return this.friendManager?.getOutgoingRequests() ?? []
+  async getOutgoingRequests(throwOnError = true): Promise<FriendRequest[]> {
+    try {
+      return this.friendManager?.getOutgoingRequests() ?? []
+    } catch (err) {
+      return this.handleError(err, 'getOutgoingRequests', [] as FriendRequest[], throwOnError)
+    }
   }
 
-  async getSyncState(): Promise<FriendSyncState> {
-    await this.updateSyncState()
-    return this.syncState
+  async getSyncState(throwOnError = true): Promise<FriendSyncState> {
+    try {
+      await this.updateSyncState()
+      return this.syncState
+    } catch (err) {
+      return this.handleError(err, 'getSyncState', this.syncState, throwOnError)
+    }
   }
 
-  async sendFriendRequest(userId: string, reason?: string): Promise<void> {
+  async sendFriendRequest(userId: string, reason?: string, throwOnError = false): Promise<void> {
     if (!this.friendManager) {
       throw new Error('FriendManager 未初始化')
     }
@@ -154,12 +178,11 @@ class MatrixFriendService {
       await this.friendManager.sendFriendRequest(userId, reason)
       info(`[MatrixFriend] 发送好友请求成功: ${userId}`)
     } catch (err) {
-      error(`[MatrixFriend] 发送好友请求失败: ${err}`)
-      throw err
+      this.handleError(err, 'sendFriendRequest', undefined as void, throwOnError)
     }
   }
 
-  async acceptFriendRequest(userId: string): Promise<void> {
+  async acceptFriendRequest(userId: string, throwOnError = false): Promise<void> {
     if (!this.friendManager) {
       throw new Error('FriendManager 未初始化')
     }
@@ -168,12 +191,11 @@ class MatrixFriendService {
       await this.friendManager.acceptFriendRequest(userId)
       info(`[MatrixFriend] 接受好友请求成功: ${userId}`)
     } catch (err) {
-      error(`[MatrixFriend] 接受好友请求失败: ${err}`)
-      throw err
+      this.handleError(err, 'acceptFriendRequest', undefined as void, throwOnError)
     }
   }
 
-  async cancelFriendRequest(userId: string): Promise<void> {
+  async cancelFriendRequest(userId: string, throwOnError = false): Promise<void> {
     if (!this.friendManager) {
       throw new Error('FriendManager 未初始化')
     }
@@ -182,12 +204,11 @@ class MatrixFriendService {
       await this.friendManager.cancelFriendRequest(userId)
       info(`[MatrixFriend] 取消好友请求成功: ${userId}`)
     } catch (err) {
-      error(`[MatrixFriend] 取消好友请求失败: ${err}`)
-      throw err
+      this.handleError(err, 'cancelFriendRequest', undefined as void, throwOnError)
     }
   }
 
-  async rejectFriendRequest(userId: string): Promise<void> {
+  async rejectFriendRequest(userId: string, throwOnError = false): Promise<void> {
     if (!this.friendManager) {
       throw new Error('FriendManager 未初始化')
     }
@@ -196,12 +217,11 @@ class MatrixFriendService {
       await this.friendManager.rejectFriendRequest(userId)
       info(`[MatrixFriend] 拒绝好友请求成功: ${userId}`)
     } catch (err) {
-      error(`[MatrixFriend] 拒绝好友请求失败: ${err}`)
-      throw err
+      this.handleError(err, 'rejectFriendRequest', undefined as void, throwOnError)
     }
   }
 
-  async removeFriend(userId: string): Promise<void> {
+  async removeFriend(userId: string, throwOnError = false): Promise<void> {
     if (!this.friendManager) {
       throw new Error('FriendManager 未初始化')
     }
@@ -210,12 +230,11 @@ class MatrixFriendService {
       await this.friendManager.removeFriend(userId)
       info(`[MatrixFriend] 删除好友成功: ${userId}`)
     } catch (err) {
-      error(`[MatrixFriend] 删除好友失败: ${err}`)
-      throw err
+      this.handleError(err, 'removeFriend', undefined as void, throwOnError)
     }
   }
 
-  async setFriendDisplayName(userId: string, displayName: string): Promise<void> {
+  async setFriendDisplayName(userId: string, displayName: string, throwOnError = false): Promise<void> {
     if (!this.friendManager) {
       throw new Error('FriendManager 未初始化')
     }
@@ -224,33 +243,29 @@ class MatrixFriendService {
       await this.friendManager.setFriendDisplayName(userId, displayName)
       info(`[MatrixFriend] 设置好友备注成功: ${userId}`)
     } catch (err) {
-      error(`[MatrixFriend] 设置好友备注失败: ${err}`)
-      throw err
+      this.handleError(err, 'setFriendDisplayName', undefined as void, throwOnError)
     }
   }
 
-  async setFriendNote(userId: string, note: string): Promise<void> {
+  async setFriendNote(userId: string, note: string, throwOnError = false): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('Client 未初始化')
     }
 
     try {
-      // Temporary fallback if SDK does not have setFriendNote
       if (typeof (this.friendManager as any).setFriendNote === 'function') {
         await (this.friendManager as any).setFriendNote(userId, note)
       } else {
-        // Mock success or use backend directly
         info(`[MatrixFriend] setFriendNote mocked for ${userId}`)
       }
       info(`[MatrixFriend] 设置好友笔记成功: ${userId}`)
     } catch (err) {
-      error(`[MatrixFriend] 设置好友笔记失败: ${err}`)
-      throw err
+      this.handleError(err, 'setFriendNote', undefined as void, throwOnError)
     }
   }
 
-  async setFriendStatus(userId: string, status: FriendStatus): Promise<void> {
+  async setFriendStatus(userId: string, status: FriendStatus, throwOnError = false): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('Client 未初始化')
@@ -279,12 +294,11 @@ class MatrixFriendService {
       }
       info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
     } catch (err) {
-      error(`[MatrixFriend] 设置好友状态失败: ${err}`)
-      throw err
+      this.handleError(err, 'setFriendStatus', undefined as void, throwOnError)
     }
   }
 
-  async getSpecialFriends(): Promise<string[]> {
+  async getSpecialFriends(throwOnError = true): Promise<string[]> {
     const client = matrixClientService.getClient()
     if (!client) {
       return []
@@ -293,12 +307,11 @@ class MatrixFriendService {
       const content = client.getAccountData('m.special_friends') as { special_friends?: string[] } | undefined
       return content?.special_friends || []
     } catch (err) {
-      error(`[MatrixFriend] 获取特别关注好友失败: ${err}`)
-      return []
+      return this.handleError(err, 'getSpecialFriends', [] as string[], throwOnError)
     }
   }
 
-  async getFriendInfo(userId: string): Promise<Friend | undefined> {
+  async getFriendInfo(userId: string, throwOnError = true): Promise<Friend | undefined> {
     if (!this.friendManager) {
       throw new Error('FriendManager 未初始化')
     }
@@ -308,12 +321,11 @@ class MatrixFriendService {
       info(`[MatrixFriend] 获取好友信息成功: ${userId}`)
       return friend ?? undefined
     } catch (err) {
-      error(`[MatrixFriend] 获取好友信息失败: ${err}`)
-      throw err
+      return this.handleError(err, 'getFriendInfo', undefined, throwOnError)
     }
   }
 
-  async sync(): Promise<void> {
+  async sync(throwOnError = true): Promise<void> {
     if (!this.friendManager) {
       throw new Error('FriendManager 未初始化')
     }
@@ -322,8 +334,7 @@ class MatrixFriendService {
       await this.updateSyncState()
       info('[MatrixFriend] 手动同步完成')
     } catch (err) {
-      error(`[MatrixFriend] 同步失败: ${err}`)
-      throw err
+      this.handleError(err, 'sync', undefined as void, throwOnError)
     }
   }
 

@@ -1,7 +1,7 @@
 <template>
   <n-modal
     :trap-focus="false"
-    v-model:show="visible"
+    :show="show" @update:show="emit('update:show', $event)"
     :mask-closable="false"
     class="rounded-8px"
     transform-origin="center">

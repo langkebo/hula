@@ -199,13 +199,28 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
   }
 
   /**
+   * 从 URL 获取图片并创建 File 对象
+   */
+  const fetchImageAsFile = async (url: string, name: string): Promise<File> => {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`下载图片失败: ${response.status}`)
+    }
+    const blob = await response.blob()
+    const ext = url.split('.').pop()?.split('?')[0] || 'png'
+    const fileName = `${name}.${ext}`
+    return new File([blob], fileName, { type: blob.type || 'image/png' })
+  }
+
+  /**
    * 添加表情
    */
   const addEmoji = async (emojiUrl: string) => {
     const { uid } = userStore.userInfo!
     if (!uid || !emojiUrl) return false
     try {
-      await matrixEmojiService.emojiUpload({ url: emojiUrl } as any, 'custom_emoji')
+      const file = await fetchImageAsFile(emojiUrl, 'custom_emoji')
+      await matrixEmojiService.emojiUpload(file, 'custom_emoji')
       window.$message.success('添加表情成功')
       await getEmojiList()
       return true

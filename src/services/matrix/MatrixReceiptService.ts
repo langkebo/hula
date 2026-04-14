@@ -1,7 +1,9 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
+import type { ExtendedRoomForReceipt } from '@/types/matrix-api'
 import { NotificationCountType, ReceiptType } from '@/types/matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
 export interface ReadReceipt {
   userId: string
@@ -11,67 +13,66 @@ export interface ReadReceipt {
   displayName?: string
 }
 
-class MatrixReceiptService {
-  async sendReadReceipt(roomId: string, event: MatrixEvent): Promise<string | undefined> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixReceipt] 客户端未初始化')
-    }
-
+class MatrixReceiptService extends BaseManager {
+  async sendReadReceipt(roomId: string, event: MatrixEvent, throwOnError = false): Promise<string | undefined> {
     try {
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[MatrixReceipt] 客户端未初始化')
+      }
       const response = await client.sendReadReceipt(event, ReceiptType.Read)
       info(`[MatrixReceipt] 发送阅读回执成功: ${roomId}/${event.getId()}`)
       return response?.event_id
-    } catch (err) {
-      error(`[MatrixReceipt] 发送阅读回执失败: ${err}`)
-      throw err
+    } catch (error) {
+      return this.handleError(error, 'sendReadReceipt', undefined, throwOnError)
     }
   }
 
-  async sendReadReceiptByEventId(roomId: string, eventId: string): Promise<string | undefined> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixReceipt] 客户端未初始化')
-    }
-
-    const room = client.getRoom(roomId)
-    if (!room) {
-      throw new Error(`[MatrixReceipt] 房间不存在: ${roomId}`)
-    }
-
-    const timeline = room.getLiveTimeline()
-    const events = timeline.getEvents()
-    const event = events.find((e) => e.getId() === eventId)
-
-    if (!event) {
-      throw new Error(`[MatrixReceipt] 事件不存在: ${eventId}`)
-    }
-
-    return this.sendReadReceipt(roomId, event)
-  }
-
-  async sendReadMarker(roomId: string, eventId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixReceipt] 客户端未初始化')
-    }
-
+  async sendReadReceiptByEventId(roomId: string, eventId: string, throwOnError = false): Promise<string | undefined> {
     try {
-      await client.setRoomReadMarkers(roomId, eventId, undefined as any, undefined as any)
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[MatrixReceipt] 客户端未初始化')
+      }
+
+      const room = client.getRoom(roomId)
+      if (!room) {
+        throw new Error(`[MatrixReceipt] 房间不存在: ${roomId}`)
+      }
+
+      const timeline = room.getLiveTimeline()
+      const events = timeline.getEvents()
+      const event = events.find((e) => e.getId() === eventId)
+
+      if (!event) {
+        throw new Error(`[MatrixReceipt] 事件不存在: ${eventId}`)
+      }
+
+      return this.sendReadReceipt(roomId, event, throwOnError)
+    } catch (error) {
+      return this.handleError(error, 'sendReadReceiptByEventId', undefined, throwOnError)
+    }
+  }
+
+  async sendReadMarker(roomId: string, eventId: string, throwOnError = false): Promise<void> {
+    try {
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[MatrixReceipt] 客户端未初始化')
+      }
+      await client.setRoomReadMarkers(roomId, eventId, eventId, eventId)
       info(`[MatrixReceipt] 设置阅读标记成功: ${roomId}/${eventId}`)
-    } catch (err) {
-      error(`[MatrixReceipt] 设置阅读标记失败: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'sendReadMarker', undefined as unknown as void, throwOnError)
     }
   }
 
-  async markRoomAsRead(roomId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixReceipt] 客户端未初始化')
-    }
-
+  async markRoomAsRead(roomId: string, throwOnError = false): Promise<void> {
     try {
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[MatrixReceipt] 客户端未初始化')
+      }
       const room = client.getRoom(roomId)
       if (!room) {
         throw new Error(`[MatrixReceipt] 房间不存在: ${roomId}`)
@@ -82,11 +83,10 @@ class MatrixReceiptService {
       const lastEvent = events[events.length - 1]
 
       if (lastEvent) {
-        await this.sendReadReceipt(roomId, lastEvent)
+        await this.sendReadReceipt(roomId, lastEvent, throwOnError)
       }
-    } catch (err) {
-      error(`[MatrixReceipt] 标记房间已读失败: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'markRoomAsRead', undefined as unknown as void, throwOnError)
     }
   }
 
@@ -98,7 +98,8 @@ class MatrixReceiptService {
     if (!room) return []
 
     const receipts: ReadReceipt[] = []
-    const receiptContent = (room as any).getReadReceipts?.() || []
+    const extendedRoom = room as unknown as ExtendedRoomForReceipt
+    const receiptContent = extendedRoom.getReadReceipts?.() || []
 
     for (const receipt of receiptContent) {
       if (receipt.eventId === eventId) {
@@ -126,7 +127,8 @@ class MatrixReceiptService {
     const readers: string[] = []
     const myUserId = client.getUserId()
 
-    const receiptContent = (room as any).getReadReceipts?.() || []
+    const extendedRoom = room as unknown as ExtendedRoomForReceipt
+    const receiptContent = extendedRoom.getReadReceipts?.() || []
     for (const receipt of receiptContent) {
       if (receipt.eventId === eventId && receipt.userId !== myUserId) {
         readers.push(receipt.userId)

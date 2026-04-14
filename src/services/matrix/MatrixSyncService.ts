@@ -5,7 +5,9 @@
  */
 
 import type { MatrixClient, Room } from 'matrix-js-sdk'
-import { info, error } from '@tauri-apps/plugin-log'
+import type { ExtendedMatrixClientForSync, ExtendedRoomForSync } from '@/types/matrix-api'
+import { BaseManager } from './BaseManager'
+import { info, error as logError } from '@tauri-apps/plugin-log'
 
 /**
  * 同步选项
@@ -44,7 +46,7 @@ export interface SyncState {
 /**
  * 同步服务
  */
-class SyncService {
+export class SyncService extends BaseManager {
   private client: MatrixClient | null = null
   private syncState: SyncState = {
     currentIdx: 0,
@@ -53,21 +55,59 @@ class SyncService {
     lastSyncTime: 0
   }
   private syncListeners: Map<string, (...args: unknown[]) => void> = new Map()
+  private syncToken: string | null = null
+  private retryCount = 0
+  private maxRetries = 3
+  private syncIntervalTimer: number | null = null
+  private syncIntervalMs: number = 30000
 
   /**
    * 初始化服务
    */
   initialize(client: MatrixClient): void {
     this.client = client
+    this.loadSyncToken()
     info('[Sync] 服务已初始化')
+  }
+
+  /**
+   * 从本地存储加载同步 token
+   */
+  private loadSyncToken(): void {
+    try {
+      const stored = localStorage.getItem('hula_sync_token')
+      if (stored) {
+        this.syncToken = stored
+        info('[Sync] 已加载同步 token')
+      }
+    } catch (_err) {}
+  }
+
+  /**
+   * 保存同步 token 到本地存储
+   */
+  private saveSyncToken(token: string): void {
+    try {
+      localStorage.setItem('hula_sync_token', token)
+      this.syncToken = token
+      info('[Sync] 已保存同步 token')
+    } catch (_err) {}
+  }
+
+  /**
+   * 获取同步超时时间（移动端30s，桌面端60s）
+   */
+  private getSyncTimeout(): number {
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+    return isMobile ? 30000 : 60000
   }
 
   /**
    * 开始同步
    */
-  async startSync(options?: SyncOptions): Promise<void> {
+  async startSync(options?: SyncOptions, throwOnError = true): Promise<void> {
     if (!this.client) {
-      throw new Error('Client 未初始化')
+      return this.handleError(new Error('Client 未初始化'), 'startSync', undefined as unknown as void, throwOnError)
     }
 
     if (this.syncState.isSyncing) {
@@ -77,23 +117,108 @@ class SyncService {
 
     this.syncState.isSyncing = true
 
+    const syncParams: Record<string, unknown> = {
+      timeout: this.getSyncTimeout(),
+      full_state: !this.syncToken || options?.fullState === true,
+      set_presence: 'online'
+    }
+
+    if (this.syncToken && !options?.fullState) {
+      syncParams.since = this.syncToken
+    }
+
     try {
-      // 使用客户端内置的同步功能
-      await (this.client as any).sync(options || {})
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForSync
+      const response = await extendedClient.sync?.(syncParams)
+
+      if (response?.next_batch) {
+        this.saveSyncToken(response.next_batch)
+        this.retryCount = 0
+        this.processSyncResponse(response)
+      }
+
       this.syncState.lastSyncTime = Date.now()
       info('[Sync] 同步完成')
     } catch (err) {
-      error(`[Sync] 同步失败: ${err}`)
-      throw err
+      await this.handleSyncError(err)
     } finally {
       this.syncState.isSyncing = false
     }
   }
 
   /**
+   * 处理同步错误（重试机制）
+   */
+  private async handleSyncError(err: unknown): Promise<void> {
+    if (this.retryCount < this.maxRetries) {
+      this.retryCount++
+      const delay = 2 ** this.retryCount * 1000
+      info(`[Sync] ${delay}ms 后进行第 ${this.retryCount} 次重试`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      return this.startSync()
+    }
+    this.emit('sync_error', err)
+  }
+
+  /**
+   * 处理同步响应，更新未读计数
+   */
+  private processSyncResponse(response: any): void {
+    if (response.rooms?.join) {
+      for (const [roomId, roomData] of Object.entries(response.rooms.join) as any) {
+        const unread = roomData.unread_notifications
+        if (unread) {
+          this.emit('room_unread', {
+            roomId,
+            notificationCount: unread.notification_count,
+            highlightCount: unread.highlight_count
+          })
+        }
+      }
+    }
+    this.emit('sync_complete', response)
+  }
+
+  /**
+   * 触发事件
+   */
+  private emit(event: string, data: any): void {
+    const callback = this.syncListeners.get(event)
+    if (callback) {
+      callback(data)
+    }
+  }
+
+  /**
+   * 设置定时同步间隔
+   */
+  setSyncInterval(intervalMs: number): void {
+    this.syncIntervalMs = intervalMs
+    if (this.syncIntervalTimer) {
+      clearInterval(this.syncIntervalTimer)
+    }
+    this.syncIntervalTimer = window.setInterval(() => {
+      if (!this.syncState.isSyncing && navigator.onLine) {
+        this.startSync().catch((err) => logError(`[Sync] 定时同步失败: ${err}`))
+      }
+    }, intervalMs)
+  }
+
+  /**
+   * 清除同步 token（登出时调用）
+   */
+  clearSyncToken(): void {
+    try {
+      localStorage.removeItem('hula_sync_token')
+      this.syncToken = null
+      info('[Sync] 已清除同步 token')
+    } catch (_err) {}
+  }
+
+  /**
    * 停止同步
    */
-  async stopSync(): Promise<void> {
+  async stopSync(throwOnError = false): Promise<void> {
     if (!this.client) {
       return
     }
@@ -102,8 +227,8 @@ class SyncService {
       this.client.stopClient()
       this.syncState.isSyncing = false
       info('[Sync] 同步已停止')
-    } catch (err) {
-      error(`[Sync] 停止同步失败: ${err}`)
+    } catch (error) {
+      this.handleError(error, 'stopSync', undefined as unknown as void, throwOnError)
     }
   }
 
@@ -153,7 +278,8 @@ class SyncService {
     this.syncListeners.set(event, callback)
 
     if (this.client) {
-      ;(this.client as any).on(event, callback)
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForSync
+      extendedClient.on?.(event, callback)
     }
   }
 
@@ -163,7 +289,8 @@ class SyncService {
   offSync(event: string): void {
     const callback = this.syncListeners.get(event)
     if (callback && this.client) {
-      ;(this.client as any).off(event, callback)
+      const extendedClient = this.client as unknown as ExtendedMatrixClientForSync
+      extendedClient.off?.(event, callback)
       this.syncListeners.delete(event)
     }
   }
@@ -176,7 +303,8 @@ class SyncService {
     const rooms = this.getJoinedRooms()
 
     for (const room of rooms) {
-      const unread = (room as any).getUnreadNotificationCount()
+      const extendedRoom = room as unknown as ExtendedRoomForSync
+      const unread = extendedRoom.getUnreadNotificationCount?.()
       total += unread?.highlight || 0
     }
 
@@ -191,11 +319,22 @@ class SyncService {
     const rooms = this.getJoinedRooms()
 
     for (const room of rooms) {
-      const unread = (room as any).getUnreadNotificationCount()
+      const extendedRoom = room as unknown as ExtendedRoomForSync
+      const unread = extendedRoom.getUnreadNotificationCount?.()
       total += unread?.notification || 0
     }
 
     return total
+  }
+
+  async startVideoCall(roomId: string): Promise<string> {
+    const { matrixVoIPService } = await import('./MatrixVoIPService')
+    return matrixVoIPService.startCall(roomId, { audio: true, video: true })
+  }
+
+  async startVoiceCall(roomId: string): Promise<string> {
+    const { matrixVoIPService } = await import('./MatrixVoIPService')
+    return matrixVoIPService.startCall(roomId, { audio: true, video: false })
   }
 }
 
@@ -203,6 +342,7 @@ class SyncService {
  * 单例实例
  */
 export const syncService = new SyncService()
+export const matrixSyncService = syncService
 
 /**
  * Vue Composable

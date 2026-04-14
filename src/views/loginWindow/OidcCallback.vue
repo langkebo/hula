@@ -101,10 +101,7 @@ const handleOidcCallback = async () => {
     }
 
     logger.debug('OIDC login successful, initializing Matrix client...')
-    const client = matrixClientService.getClient()
-    if (client) {
-      await client.startWithToken(matrixTokens.access_token, matrixTokens.device_id)
-    }
+    await matrixClientService.startWithToken(matrixTokens.access_token, matrixTokens.device_id)
 
     const { completeLogin } = useLogin()
     await completeLogin({

@@ -1,8 +1,10 @@
 import type { Emitter, Handler } from 'mitt'
 import mitt from 'mitt'
-import type { MittEnum } from '@/enums'
+import { MittEnum } from '@/enums'
 
-const mittInstance: Emitter<any> = mitt()
+export { MittEnum }
+
+const mittInstance: Emitter<Record<string, any>> = mitt()
 
 export const useMitt = {
   on: (event: MittEnum | string, handler: Handler<any>) => {

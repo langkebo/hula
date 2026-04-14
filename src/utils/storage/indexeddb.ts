@@ -11,6 +11,21 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('IndexedDB')
 
 /**
+ * 扩展 Store 接口以包含自定义方法
+ */
+interface ExtendedStore {
+  getUserData?: () => Promise<Record<string, unknown>>
+  saveSyncData?: (data: Record<string, unknown>) => Promise<void>
+  getSyncData?: () => Promise<Record<string, unknown> | undefined>
+  getPendingEvents?: () => Promise<unknown[]>
+  savePendingEvent?: (event: Record<string, unknown>) => Promise<void>
+  removePendingEvent?: (eventId: string) => Promise<void>
+  getSessionToken?: () => Promise<string | null>
+  saveSessionToken?: (token: string) => Promise<void>
+  deleteAllData?: () => Promise<void>
+}
+
+/**
  * 内存使用统计
  */
 interface MemoryStats {
@@ -214,12 +229,16 @@ class StorageService {
   /**
    * 获取用户数据
    */
-  async getUserData(): Promise<Record<string, any>> {
+  async getUserData(): Promise<Record<string, unknown>> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
 
-    return (this.client.store as any).getUserData()
+    const store = this.client.store as unknown as ExtendedStore
+    if (!store.getUserData) {
+      throw new Error('Store 不支持 getUserData 方法')
+    }
+    return store.getUserData()
   }
 
   /**
@@ -230,7 +249,11 @@ class StorageService {
       throw new Error('Client 未初始化')
     }
 
-    await (this.client.store as any).saveSyncData(data)
+    const store = this.client.store as unknown as ExtendedStore
+    if (!store.saveSyncData) {
+      throw new Error('Store 不支持 saveSyncData 方法')
+    }
+    await store.saveSyncData(data)
   }
 
   /**
@@ -241,18 +264,26 @@ class StorageService {
       throw new Error('Client 未初始化')
     }
 
-    return (this.client.store as any).getSyncData()
+    const store = this.client.store as unknown as ExtendedStore
+    if (!store.getSyncData) {
+      throw new Error('Store 不支持 getSyncData 方法')
+    }
+    return store.getSyncData()
   }
 
   /**
    * 获取待发送事件
    */
-  async getPendingEvents(): Promise<any[]> {
+  async getPendingEvents(): Promise<unknown[]> {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
 
-    return (this.client.store as any).getPendingEvents()
+    const store = this.client.store as unknown as ExtendedStore
+    if (!store.getPendingEvents) {
+      throw new Error('Store 不支持 getPendingEvents 方法')
+    }
+    return store.getPendingEvents()
   }
 
   /**
@@ -263,7 +294,11 @@ class StorageService {
       throw new Error('Client 未初始化')
     }
 
-    await (this.client.store as any).savePendingEvent(event)
+    const store = this.client.store as unknown as ExtendedStore
+    if (!store.savePendingEvent) {
+      throw new Error('Store 不支持 savePendingEvent 方法')
+    }
+    await store.savePendingEvent(event)
   }
 
   /**
@@ -274,7 +309,11 @@ class StorageService {
       throw new Error('Client 未初始化')
     }
 
-    await (this.client.store as any).removePendingEvent(eventId)
+    const store = this.client.store as unknown as ExtendedStore
+    if (!store.removePendingEvent) {
+      throw new Error('Store 不支持 removePendingEvent 方法')
+    }
+    await store.removePendingEvent(eventId)
   }
 
   /**
@@ -285,7 +324,11 @@ class StorageService {
       throw new Error('Client 未初始化')
     }
 
-    return (this.client.store as any).getSessionToken()
+    const store = this.client.store as unknown as ExtendedStore
+    if (!store.getSessionToken) {
+      throw new Error('Store 不支持 getSessionToken 方法')
+    }
+    return store.getSessionToken()
   }
 
   /**
@@ -296,7 +339,11 @@ class StorageService {
       throw new Error('Client 未初始化')
     }
 
-    await (this.client.store as any).saveSessionToken(token)
+    const store = this.client.store as unknown as ExtendedStore
+    if (!store.saveSessionToken) {
+      throw new Error('Store 不支持 saveSessionToken 方法')
+    }
+    await store.saveSessionToken(token)
   }
 
   /**

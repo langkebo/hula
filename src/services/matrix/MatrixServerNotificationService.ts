@@ -2,11 +2,14 @@
  * 服务器通知服务
  * 管理系统通知
  */
+import type {
+  ServerNotificationResponse,
+  ServerNotificationListResponse,
+  MarkAllReadResponse,
+  NotificationTemplateListResponse
+} from '@/types/matrix-api'
 import { matrixClientService } from './MatrixClientService'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('ServerNotification')
-
+import { BaseManager } from './BaseManager'
 export interface ServerNotification {
   notificationId: number
   roomId?: string
@@ -42,7 +45,7 @@ export interface CreateNotificationParams {
   data?: Record<string, unknown>
 }
 
-class MatrixServerNotificationService {
+class MatrixServerNotificationService extends BaseManager {
   private get client() {
     const c = matrixClientService.getClient()
     if (!c) throw new Error('Matrix client not initialized')
@@ -55,18 +58,15 @@ class MatrixServerNotificationService {
   async createNotification(params: CreateNotificationParams): Promise<ServerNotification | null> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'POST',
         '/_matrix/client/v1/admin/server_notifications',
         undefined,
-        {
-          body: JSON.stringify(params)
-        }
-      )) as any
+        JSON.stringify(params),
+        { prefix: '' }
+      )) as ServerNotificationResponse
 
       return this.mapNotification(response)
-    } catch (error) {
-      logger.error('创建失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -77,15 +77,15 @@ class MatrixServerNotificationService {
   async getNotification(notificationId: number): Promise<ServerNotification | null> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         `/_matrix/client/v1/admin/server_notifications/${notificationId}`,
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as ServerNotificationResponse
 
       return this.mapNotification(response)
-    } catch (error) {
-      logger.error('获取失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -96,15 +96,15 @@ class MatrixServerNotificationService {
   async listActive(): Promise<ServerNotification[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         '/_matrix/client/v1/admin/server_notifications/active',
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as ServerNotificationListResponse
 
       return (response.notifications || []).map(this.mapNotification)
-    } catch (error) {
-      logger.error('获取活跃列表失败:', error)
+    } catch (_error) {
       return []
     }
   }
@@ -118,11 +118,12 @@ class MatrixServerNotificationService {
         ? `/_matrix/client/v1/admin/server_notifications/user/${userId}`
         : '/_matrix/client/v1/admin/server_notifications'
 
-      const response = (await this.client.http.authedRequest({}, 'GET', path, undefined)) as any
+      const response = (await this.client.http.authedRequest('GET', path, undefined, undefined, {
+        prefix: ''
+      })) as ServerNotificationListResponse
 
       return (response.notifications || []).map(this.mapNotification)
-    } catch (error) {
-      logger.error('获取用户通知失败:', error)
+    } catch (_error) {
       return []
     }
   }
@@ -133,14 +134,14 @@ class MatrixServerNotificationService {
   async markAsRead(notificationId: number): Promise<boolean> {
     try {
       await this.client.http.authedRequest(
-        {},
         'PUT',
         `/_matrix/client/v1/admin/server_notifications/${notificationId}/read`,
-        undefined
+        undefined,
+        undefined,
+        { prefix: '' }
       )
       return true
-    } catch (error) {
-      logger.error('标记已读失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -151,14 +152,14 @@ class MatrixServerNotificationService {
   async dismiss(notificationId: number): Promise<boolean> {
     try {
       await this.client.http.authedRequest(
-        {},
         'PUT',
         `/_matrix/client/v1/admin/server_notifications/${notificationId}/dismiss`,
-        undefined
+        undefined,
+        undefined,
+        { prefix: '' }
       )
       return true
-    } catch (error) {
-      logger.error('忽略失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -169,14 +170,14 @@ class MatrixServerNotificationService {
   async markAllAsRead(): Promise<number> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'PUT',
         '/_matrix/client/v1/admin/server_notifications/read_all',
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as MarkAllReadResponse
       return response.count || 0
-    } catch (error) {
-      logger.error('全部已读失败:', error)
+    } catch (_error) {
       return 0
     }
   }
@@ -187,14 +188,14 @@ class MatrixServerNotificationService {
   async delete(notificationId: number): Promise<boolean> {
     try {
       await this.client.http.authedRequest(
-        {},
         'DELETE',
         `/_matrix/client/v1/admin/server_notifications/${notificationId}`,
-        undefined
+        undefined,
+        undefined,
+        { prefix: '' }
       )
       return true
-    } catch (error) {
-      logger.error('删除失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -205,15 +206,14 @@ class MatrixServerNotificationService {
   async createTemplate(template: NotificationTemplate): Promise<boolean> {
     try {
       await this.client.http.authedRequest(
-        {},
         'POST',
         '/_matrix/client/v1/admin/server_notifications/templates',
         undefined,
-        { body: JSON.stringify(template) }
+        JSON.stringify(template),
+        { prefix: '' }
       )
       return true
-    } catch (error) {
-      logger.error('创建模板失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -224,19 +224,19 @@ class MatrixServerNotificationService {
   async listTemplates(): Promise<NotificationTemplate[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         '/_matrix/client/v1/admin/server_notifications/templates',
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as NotificationTemplateListResponse
       return response.templates || []
-    } catch (error) {
-      logger.error('获取模板失败:', error)
+    } catch (_error) {
       return []
     }
   }
 
-  private mapNotification(data: any): ServerNotification {
+  private mapNotification(data: ServerNotificationResponse): ServerNotification {
     return {
       notificationId: data.notification_id,
       roomId: data.room_id,

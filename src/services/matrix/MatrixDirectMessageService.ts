@@ -1,11 +1,12 @@
 import type { Room } from 'matrix-js-sdk'
 import { DirectMessageManager, type CreateDmOptions, type DmRoomInfo, type IDirectRoomsMap } from 'matrix-js-sdk/dm'
 import matrixClientService from './MatrixClientService'
+import { BaseManager } from './BaseManager'
 import { info, error } from '@tauri-apps/plugin-log'
 
 export type { CreateDmOptions, DmRoomInfo, IDirectRoomsMap }
 
-class MatrixDirectMessageService {
+class MatrixDirectMessageService extends BaseManager {
   private dmManager: DirectMessageManager | null = null
   private dmRoomsCache: Map<string, DmRoomInfo[]> = new Map()
 
@@ -38,14 +39,13 @@ class MatrixDirectMessageService {
     }
   }
 
-  async createDm(userId: string, options?: Partial<CreateDmOptions>): Promise<string> {
+  async createDm(userId: string, options?: Partial<CreateDmOptions>, throwOnError = false): Promise<string> {
     if (!this.dmManager) {
       throw new Error('DirectMessageManager 未初始化')
     }
 
     try {
       const opts = options ?? { userIds: [userId] }
-      // 确保 userIds 存在
       if (!opts.userIds) {
         opts.userIds = [userId]
       }
@@ -54,12 +54,11 @@ class MatrixDirectMessageService {
       info(`[MatrixDM] 创建私聊房间成功: ${roomId} -> ${userId}`)
       return roomId
     } catch (err) {
-      error(`[MatrixDM] 创建私聊房间失败: ${err}`)
-      throw err
+      return this.handleError(err, 'createDm', '' as string, throwOnError)
     }
   }
 
-  async createTrustedDm(userId: string): Promise<string> {
+  async createTrustedDm(userId: string, throwOnError = false): Promise<string> {
     if (!this.dmManager) {
       throw new Error('DirectMessageManager 未初始化')
     }
@@ -70,25 +69,36 @@ class MatrixDirectMessageService {
       info(`[MatrixDM] 创建加密私聊房间成功: ${roomId} -> ${userId}`)
       return roomId
     } catch (err) {
-      error(`[MatrixDM] 创建加密私聊房间失败: ${err}`)
-      throw err
+      return this.handleError(err, 'createTrustedDm', '' as string, throwOnError)
     }
   }
 
-  async getDMRooms(): Promise<DmRoomInfo[]> {
-    return this.dmManager?.getDMRooms() ?? []
+  async getDMRooms(throwOnError = true): Promise<DmRoomInfo[]> {
+    try {
+      return this.dmManager?.getDMRooms() ?? []
+    } catch (err) {
+      return this.handleError(err, 'getDMRooms', [] as DmRoomInfo[], throwOnError)
+    }
   }
 
-  async getDmForUser(userId: string): Promise<string | null> {
-    return this.dmManager?.getDmForUser(userId) ?? null
+  async getDmForUser(userId: string, throwOnError = true): Promise<string | null> {
+    try {
+      return this.dmManager?.getDmForUser(userId) ?? null
+    } catch (err) {
+      return this.handleError(err, 'getDmForUser', null as string | null, throwOnError)
+    }
   }
 
-  async checkRoomIsDm(roomId: string): Promise<boolean> {
-    const roomInfo = await this.getDmRoomInfo(roomId)
-    return !!roomInfo
+  async checkRoomIsDm(roomId: string, throwOnError = true): Promise<boolean> {
+    try {
+      const roomInfo = await this.getDmRoomInfo(roomId, throwOnError)
+      return !!roomInfo
+    } catch (err) {
+      return this.handleError(err, 'checkRoomIsDm', false, throwOnError)
+    }
   }
 
-  async setDmRoom(roomId: string, userId: string): Promise<void> {
+  async setDmRoom(roomId: string, userId: string, throwOnError = false): Promise<void> {
     if (!this.dmManager) {
       throw new Error('DirectMessageManager 未初始化')
     }
@@ -98,12 +108,11 @@ class MatrixDirectMessageService {
       await this.refreshCache()
       info(`[MatrixDM] 设置房间为私聊: ${roomId} -> ${userId}`)
     } catch (err) {
-      error(`[MatrixDM] 设置房间为私聊失败: ${err}`)
-      throw err
+      this.handleError(err, 'setDmRoom', undefined as void, throwOnError)
     }
   }
 
-  async removeDmRoom(roomId: string, userId: string): Promise<void> {
+  async removeDmRoom(roomId: string, userId: string, throwOnError = false): Promise<void> {
     if (!this.dmManager) {
       throw new Error('DirectMessageManager 未初始化')
     }
@@ -113,59 +122,68 @@ class MatrixDirectMessageService {
       await this.refreshCache()
       info(`[MatrixDM] 从私聊列表移除房间: ${roomId}`)
     } catch (err) {
-      error(`[MatrixDM] 从私聊列表移除房间失败: ${err}`)
-      throw err
+      this.handleError(err, 'removeDmRoom', undefined as void, throwOnError)
     }
   }
 
-  async getDmPartner(roomId: string): Promise<string | null> {
-    const roomInfo = await this.getDmRoomInfo(roomId)
-    return roomInfo?.invitees?.[0] ?? roomInfo?.inviter ?? null
+  async getDmPartner(roomId: string, throwOnError = true): Promise<string | null> {
+    try {
+      const roomInfo = await this.getDmRoomInfo(roomId, throwOnError)
+      return roomInfo?.invitees?.[0] ?? roomInfo?.inviter ?? null
+    } catch (err) {
+      return this.handleError(err, 'getDmPartner', null as string | null, throwOnError)
+    }
   }
 
-  async getDmRoomInfo(roomId: string): Promise<DmRoomInfo | null> {
+  async getDmRoomInfo(roomId: string, throwOnError = true): Promise<DmRoomInfo | null> {
     if (!this.dmManager) return null
-    return this.dmManager.getDmRoomInfo(roomId)
+    try {
+      return this.dmManager.getDmRoomInfo(roomId)
+    } catch (err) {
+      return this.handleError(err, 'getDmRoomInfo', null as DmRoomInfo | null, throwOnError)
+    }
   }
 
-  async getDmRoomInfos(): Promise<DmRoomInfo[]> {
+  async getDmRoomInfos(throwOnError = true): Promise<DmRoomInfo[]> {
     if (!this.dmManager) return []
-    return this.dmManager.getDMRooms()
+    try {
+      return this.dmManager.getDMRooms()
+    } catch (err) {
+      return this.handleError(err, 'getDmRoomInfos', [] as DmRoomInfo[], throwOnError)
+    }
   }
 
-  /**
-   * Get Room objects for specified user IDs
-   * @param userIds - Array of user IDs to find DM rooms for
-   * @returns Promise resolving to array of Room objects
-   */
-  async getDmRoomsByUserIds(userIds: string[]): Promise<Room[]> {
+  async getDmRoomsByUserIds(userIds: string[], throwOnError = true): Promise<Room[]> {
     if (!this.dmManager) return []
     const client = matrixClientService.getClient()
     if (!client) return []
 
-    const userDmMap = await this.dmManager.getDirectRoomsByUser()
-    const rooms: Room[] = []
+    try {
+      const userDmMap = await this.dmManager.getDirectRoomsByUser()
+      const rooms: Room[] = []
 
-    for (const userId of userIds) {
-      const roomIds = userDmMap[userId] || []
-      for (const roomId of roomIds) {
-        const room = client.getRoom(roomId)
-        if (room) {
-          rooms.push(room)
+      for (const userId of userIds) {
+        const roomIds = userDmMap[userId] || []
+        for (const roomId of roomIds) {
+          const room = client.getRoom(roomId)
+          if (room) {
+            rooms.push(room)
+          }
         }
       }
+      return rooms
+    } catch (err) {
+      return this.handleError(err, 'getDmRoomsByUserIds', [] as Room[], throwOnError)
     }
-    return rooms
   }
 
-  /**
-   * Get Room object by room ID
-   * @param roomId - The room ID to look up
-   * @returns Promise resolving to Room object or null
-   */
-  async getDmRoom(roomId: string): Promise<Room | null> {
-    const client = matrixClientService.getClient()
-    return client?.getRoom(roomId) ?? null
+  async getDmRoom(roomId: string, throwOnError = true): Promise<Room | null> {
+    try {
+      const client = matrixClientService.getClient()
+      return client?.getRoom(roomId) ?? null
+    } catch (err) {
+      return this.handleError(err, 'getDmRoom', null as Room | null, throwOnError)
+    }
   }
 
   getCachedDmRooms(userId: string): DmRoomInfo[] {
@@ -176,36 +194,52 @@ class MatrixDirectMessageService {
     return new Map(this.dmRoomsCache)
   }
 
-  async getOrCreateDmRoom(userId: string, encrypted = false): Promise<string> {
-    const existingRoomId = await this.getDmForUser(userId)
-    if (existingRoomId) {
-      info(`[MatrixDM] 使用现有私聊房间: ${existingRoomId}`)
-      return existingRoomId
+  async getOrCreateDmRoom(userId: string, encrypted = false, throwOnError = true): Promise<string> {
+    try {
+      const existingRoomId = await this.getDmForUser(userId, throwOnError)
+      if (existingRoomId) {
+        info(`[MatrixDM] 使用现有私聊房间: ${existingRoomId}`)
+        return existingRoomId
+      }
+
+      if (encrypted) {
+        return this.createTrustedDm(userId, throwOnError)
+      }
+      return this.createDm(userId, undefined, throwOnError)
+    } catch (err) {
+      return this.handleError(err, 'getOrCreateDmRoom', '' as string, throwOnError)
     }
+  }
 
-    if (encrypted) {
-      return this.createTrustedDm(userId)
+  async getDmRoomList(throwOnError = true): Promise<DmRoomInfo[]> {
+    try {
+      const roomInfos = await this.getDMRooms(throwOnError)
+      return roomInfos.sort((a, b) => {
+        const aTime = a.lastMessage?.timestamp ?? 0
+        const bTime = b.lastMessage?.timestamp ?? 0
+        return bTime - aTime
+      })
+    } catch (err) {
+      return this.handleError(err, 'getDmRoomList', [] as DmRoomInfo[], throwOnError)
     }
-    return this.createDm(userId)
   }
 
-  async getDmRoomList(): Promise<DmRoomInfo[]> {
-    const roomInfos = await this.getDMRooms()
-    return roomInfos.sort((a, b) => {
-      const aTime = a.lastMessage?.timestamp ?? 0
-      const bTime = b.lastMessage?.timestamp ?? 0
-      return bTime - aTime
-    })
+  async getUnreadDmRooms(throwOnError = true): Promise<DmRoomInfo[]> {
+    try {
+      const roomInfos = await this.getDMRooms(throwOnError)
+      return roomInfos.filter((room) => (room.unreadCount ?? 0) > 0)
+    } catch (err) {
+      return this.handleError(err, 'getUnreadDmRooms', [] as DmRoomInfo[], throwOnError)
+    }
   }
 
-  async getUnreadDmRooms(): Promise<DmRoomInfo[]> {
-    const roomInfos = await this.getDMRooms()
-    return roomInfos.filter((room) => (room.unreadCount ?? 0) > 0)
-  }
-
-  async getTotalUnreadCount(): Promise<number> {
-    const roomInfos = await this.getDMRooms()
-    return roomInfos.reduce((sum, room) => sum + (room.unreadCount ?? 0), 0)
+  async getTotalUnreadCount(throwOnError = true): Promise<number> {
+    try {
+      const roomInfos = await this.getDMRooms(throwOnError)
+      return roomInfos.reduce((sum, room) => sum + (room.unreadCount ?? 0), 0)
+    } catch (err) {
+      return this.handleError(err, 'getTotalUnreadCount', 0, throwOnError)
+    }
   }
 
   stop(): void {

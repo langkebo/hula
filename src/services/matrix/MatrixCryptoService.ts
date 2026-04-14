@@ -1,92 +1,39 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
-import { info, error, warn } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info, warn } from '@tauri-apps/plugin-log'
 
-/**
- * 设备信息接口
- */
 export interface DeviceInfo {
-  /** 设备 ID */
   deviceId: string
-  /** 用户 ID */
   userId: string
-  /** 设备显示名称 */
   displayName?: string
-  /** 最后_seen时间戳 */
   lastSeenTs?: number
-  /** 最后_seen IP */
   lastSeenIp?: string
-  /** 是否已验证 */
   isVerified?: boolean
 }
 
-/**
- * 验证状态接口
- */
 export interface VerificationStatus {
-  /** 是否已验证 */
   verified: boolean
-  /** 跨设备签名是否验证 */
   crossSigningVerified: boolean
-  /** 设备跨设备签名是否验证 */
   devicesCrossSigningVerified: boolean
 }
 
-/**
- * 跨设备签名状态接口
- */
 export interface CrossSigningStatus {
-  /** 私钥是否已缓存 */
   privateKeysCached: boolean
-  /** 跨设备签名是否验证 */
   crossSigningVerified: boolean
 }
 
-/**
- * 加密算法类型
- */
 export type EncryptionAlgorithm = 'm.megolm.v1.aes-sha2' | 'm.olm.v1.curve25519-aes-sha2'
 
-/**
- * 密钥备份数据
- */
 export interface KeyBackupData {
   version: string
   algorithm: string
   auth_data: Record<string, unknown>
 }
 
-/**
- * Matrix 加密服务
- *
- * 负责设备验证、密钥备份、房间加密等加密相关功能。
- *
- * @example
- * ```typescript
- * const cryptoService = matrixCryptoService;
- *
- * // 初始化加密模块
- * await cryptoService.initializeCrypto();
- *
- * // 获取设备列表
- * const devices = await cryptoService.getDevices('@user:server');
- *
- * // 验证设备
- * await cryptoService.verifyDevice('@user:server', 'DEVICEID');
- *
- * // 启用房间加密
- * await cryptoService.enableEncryption('!roomId:server');
- * ```
- */
-class MatrixCryptoService {
+class MatrixCryptoService extends BaseManager {
   private crypto: unknown = null
 
-  /**
-   * 获取 Matrix 客户端实例
-   *
-   * @returns Matrix 客户端实例
-   * @throws {Error} 如果客户端未初始化
-   */
   private getClient(): MatrixClient {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -95,11 +42,6 @@ class MatrixCryptoService {
     return client
   }
 
-  /**
-   * 获取加密模块
-   *
-   * @returns 加密模块实例
-   */
   private getCrypto(): unknown {
     if (this.crypto) {
       return this.crypto
@@ -112,12 +54,7 @@ class MatrixCryptoService {
     return this.crypto
   }
 
-  /**
-   * 初始化加密模块
-   *
-   * @throws {Error} 如果客户端未初始化或初始化失败
-   */
-  async initializeCrypto(): Promise<void> {
+  async initializeCrypto(throwOnError = false): Promise<void> {
     const client = this.getClient()
 
     try {
@@ -129,17 +66,13 @@ class MatrixCryptoService {
         warn('[MatrixCrypto] 加密模块未启用')
       }
     } catch (err) {
-      error(`[MatrixCrypto] 加密模块初始化失败: ${err}`)
-      throw err
+      this.handleError(err, 'initializeCrypto', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 获取加密状态
-   *
-   * @returns 加密状态信息
-   */
-  async getCryptoStatus(): Promise<{ crossSigningReady: boolean; keyBackupEnabled: boolean } | null> {
+  async getCryptoStatus(
+    throwOnError = true
+  ): Promise<{ crossSigningReady: boolean; keyBackupEnabled: boolean } | null> {
     try {
       const crypto = this.getCrypto() as Record<string, unknown> | null
       if (!crypto) return null
@@ -156,19 +89,11 @@ class MatrixCryptoService {
 
       return { crossSigningReady, keyBackupEnabled }
     } catch (err) {
-      error(`[MatrixCrypto] 获取加密状态失败: ${err}`)
-      return null
+      return this.handleError(err, 'getCryptoStatus', null, throwOnError)
     }
   }
 
-  /**
-   * 获取用户的所有设备
-   *
-   * @param userId - 用户 ID
-   * @returns 设备列表
-   * @throws {Error} 如果客户端未初始化或获取失败
-   */
-  async getDevices(userId: string): Promise<DeviceInfo[]> {
+  async getDevices(userId: string, throwOnError = true): Promise<DeviceInfo[]> {
     const client = this.getClient()
 
     try {
@@ -189,20 +114,11 @@ class MatrixCryptoService {
         }
       })
     } catch (err) {
-      error(`[MatrixCrypto] 获取设备列表失败: ${err}`)
-      throw err
+      return this.handleError(err, 'getDevices', [] as DeviceInfo[], throwOnError)
     }
   }
 
-  /**
-   * 获取指定设备信息
-   *
-   * @param userId - 用户 ID
-   * @param deviceId - 设备 ID
-   * @returns 设备信息，如果不存在则返回 null
-   * @throws {Error} 如果客户端未初始化或获取失败
-   */
-  async getDevice(userId: string, deviceId: string): Promise<DeviceInfo | null> {
+  async getDevice(userId: string, deviceId: string, throwOnError = true): Promise<DeviceInfo | null> {
     const client = this.getClient()
 
     try {
@@ -226,19 +142,11 @@ class MatrixCryptoService {
         isVerified: typeof d.isVerified === 'function' ? (d.isVerified() as boolean) : undefined
       }
     } catch (err) {
-      error(`[MatrixCrypto] 获取设备信息失败: ${err}`)
-      throw err
+      return this.handleError(err, 'getDevice', null as DeviceInfo | null, throwOnError)
     }
   }
 
-  /**
-   * 验证设备
-   *
-   * @param userId - 用户 ID
-   * @param deviceId - 设备 ID
-   * @throws {Error} 如果客户端未初始化或验证失败
-   */
-  async verifyDevice(userId: string, deviceId: string): Promise<void> {
+  async verifyDevice(userId: string, deviceId: string, throwOnError = false): Promise<void> {
     const client = this.getClient()
 
     try {
@@ -261,19 +169,11 @@ class MatrixCryptoService {
         }
       }
     } catch (err) {
-      error(`[MatrixCrypto] 设备验证失败: ${err}`)
-      throw err
+      this.handleError(err, 'verifyDevice', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 取消设备验证
-   *
-   * @param userId - 用户 ID
-   * @param deviceId - 设备 ID
-   * @throws {Error} 如果客户端未初始化或取消失败
-   */
-  async unverifyDevice(userId: string, deviceId: string): Promise<void> {
+  async unverifyDevice(userId: string, deviceId: string, throwOnError = false): Promise<void> {
     const client = this.getClient()
 
     try {
@@ -297,30 +197,26 @@ class MatrixCryptoService {
         }
       }
     } catch (err) {
-      error(`[MatrixCrypto] 取消设备验证失败: ${err}`)
-      throw err
+      this.handleError(err, 'unverifyDevice', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 获取设备验证状态
-   *
-   * @param userId - 用户 ID
-   * @param deviceId - 设备 ID
-   * @returns 验证状态
-   * @throws {Error} 如果客户端未初始化
-   */
-  async getDeviceVerificationStatus(userId: string, deviceId: string): Promise<VerificationStatus> {
+  async getDeviceVerificationStatus(
+    userId: string,
+    deviceId: string,
+    throwOnError = true
+  ): Promise<VerificationStatus> {
     const client = this.getClient()
+    const defaultStatus: VerificationStatus = {
+      verified: false,
+      crossSigningVerified: false,
+      devicesCrossSigningVerified: false
+    }
 
     try {
       const getStoredDevice = (client as unknown as Record<string, unknown>).getStoredDevice
       if (typeof getStoredDevice !== 'function') {
-        return {
-          verified: false,
-          crossSigningVerified: false,
-          devicesCrossSigningVerified: false
-        }
+        return defaultStatus
       }
 
       const device = await (getStoredDevice as (userId: string, deviceId: string) => Promise<unknown>).call(
@@ -329,11 +225,7 @@ class MatrixCryptoService {
         deviceId
       )
       if (!device) {
-        return {
-          verified: false,
-          crossSigningVerified: false,
-          devicesCrossSigningVerified: false
-        }
+        return defaultStatus
       }
 
       const d = device as Record<string, unknown>
@@ -369,17 +261,11 @@ class MatrixCryptoService {
         devicesCrossSigningVerified
       }
     } catch (err) {
-      error(`[MatrixCrypto] 获取设备验证状态失败: ${err}`)
-      throw err
+      return this.handleError(err, 'getDeviceVerificationStatus', defaultStatus, throwOnError)
     }
   }
 
-  /**
-   * 备份密钥
-   *
-   * @throws {Error} 如果客户端未初始化或备份失败
-   */
-  async backupKeys(): Promise<void> {
+  async backupKeys(throwOnError = false): Promise<void> {
     try {
       const crypto = this.getCrypto() as Record<string, unknown> | null
       if (crypto) {
@@ -397,18 +283,11 @@ class MatrixCryptoService {
         }
       }
     } catch (err) {
-      error(`[MatrixCrypto] 备份密钥失败: ${err}`)
-      throw err
+      this.handleError(err, 'backupKeys', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 设置密钥备份
-   *
-   * @param _passphrase - 密码短语 (暂未使用)
-   * @throws {Error} 如果客户端未初始化或设置失败
-   */
-  async setupKeyBackup(_passphrase: string): Promise<void> {
+  async setupKeyBackup(_passphrase: string, throwOnError = false): Promise<void> {
     try {
       const crypto = this.getCrypto() as Record<string, unknown> | null
       if (crypto) {
@@ -430,18 +309,11 @@ class MatrixCryptoService {
         }
       }
     } catch (err) {
-      error(`[MatrixCrypto] 设置密钥备份失败: ${err}`)
-      throw err
+      this.handleError(err, 'setupKeyBackup', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 恢复密钥
-   *
-   * @param backupKey - 备份密钥
-   * @throws {Error} 如果客户端未初始化或恢复失败
-   */
-  async restoreKeys(backupKey: string): Promise<void> {
+  async restoreKeys(backupKey: string, throwOnError = false): Promise<void> {
     try {
       const crypto = this.getCrypto() as Record<string, unknown> | null
       if (crypto) {
@@ -459,19 +331,11 @@ class MatrixCryptoService {
         }
       }
     } catch (err) {
-      error(`[MatrixCrypto] 恢复密钥失败: ${err}`)
-      throw err
+      this.handleError(err, 'restoreKeys', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 导出密钥
-   *
-   * @param _passphrase - 密码短语 (暂未使用)
-   * @returns 导出的密钥数据 (JSON 字符串)
-   * @throws {Error} 如果客户端未初始化或导出失败
-   */
-  async exportKeys(_passphrase: string): Promise<string> {
+  async exportKeys(_passphrase: string, throwOnError = false): Promise<string> {
     try {
       const crypto = this.getCrypto() as Record<string, unknown> | null
       if (crypto) {
@@ -485,19 +349,11 @@ class MatrixCryptoService {
       }
       return ''
     } catch (err) {
-      error(`[MatrixCrypto] 导出密钥失败: ${err}`)
-      throw err
+      return this.handleError(err, 'exportKeys', '' as string, throwOnError)
     }
   }
 
-  /**
-   * 导入密钥
-   *
-   * @param data - 密钥数据 (JSON 字符串)
-   * @param _passphrase - 密码短语 (暂未使用)
-   * @throws {Error} 如果客户端未初始化或导入失败
-   */
-  async importKeys(data: string, _passphrase: string): Promise<void> {
+  async importKeys(data: string, _passphrase: string, throwOnError = false): Promise<void> {
     try {
       const crypto = this.getCrypto() as Record<string, unknown> | null
       if (crypto) {
@@ -509,18 +365,11 @@ class MatrixCryptoService {
         }
       }
     } catch (err) {
-      error(`[MatrixCrypto] 导入密钥失败: ${err}`)
-      throw err
+      this.handleError(err, 'importKeys', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 检查房间是否加密
-   *
-   * @param roomId - 房间 ID
-   * @returns 是否加密
-   */
-  async isRoomEncrypted(roomId: string): Promise<boolean> {
+  async isRoomEncrypted(roomId: string, throwOnError = true): Promise<boolean> {
     const client = this.getClient()
 
     try {
@@ -533,39 +382,26 @@ class MatrixCryptoService {
       }
       return false
     } catch (err) {
-      error(`[MatrixCrypto] 检查房间加密状态失败: ${err}`)
-      return false
+      return this.handleError(err, 'isRoomEncrypted', false, throwOnError)
     }
   }
 
-  /**
-   * 启用房间加密
-   *
-   * @param roomId - 房间 ID
-   * @param algorithm - 加密算法 (默认: m.megolm.v1.aes-sha2)
-   * @throws {Error} 如果客户端未初始化或启用失败
-   */
-  async enableEncryption(roomId: string, algorithm: EncryptionAlgorithm = 'm.megolm.v1.aes-sha2'): Promise<void> {
+  async enableEncryption(
+    roomId: string,
+    algorithm: EncryptionAlgorithm = 'm.megolm.v1.aes-sha2',
+    throwOnError = false
+  ): Promise<void> {
     const client = this.getClient()
 
     try {
-      await client.sendStateEvent(roomId, 'm.room.encryption' as any, { algorithm }, '')
+      await client.sendStateEvent(roomId, 'm.room.encryption', { algorithm }, '')
       info(`[MatrixCrypto] 启用房间加密: ${roomId}`)
     } catch (err) {
-      error(`[MatrixCrypto] 启用房间加密失败: ${err}`)
-      throw err
+      this.handleError(err, 'enableEncryption', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 请求设备验证
-   *
-   * @param userId - 用户 ID
-   * @param deviceId - 设备 ID
-   * @returns 验证请求的事务 ID
-   * @throws {Error} 如果客户端未初始化或请求失败
-   */
-  async requestVerification(userId: string, deviceId: string): Promise<string> {
+  async requestVerification(userId: string, deviceId: string, throwOnError = false): Promise<string> {
     const client = this.getClient()
 
     try {
@@ -582,26 +418,21 @@ class MatrixCryptoService {
       }
       return ''
     } catch (err) {
-      error(`[MatrixCrypto] 请求验证失败: ${err}`)
-      throw err
+      return this.handleError(err, 'requestVerification', '' as string, throwOnError)
     }
   }
 
-  /**
-   * 获取跨设备签名状态
-   *
-   * @returns 跨设备签名状态
-   */
-  async getCrossSigningStatus(): Promise<CrossSigningStatus> {
+  async getCrossSigningStatus(throwOnError = true): Promise<CrossSigningStatus> {
     const client = this.getClient()
+    const defaultStatus: CrossSigningStatus = {
+      privateKeysCached: false,
+      crossSigningVerified: false
+    }
 
     try {
       const crypto = this.getCrypto() as Record<string, unknown> | null
       if (!crypto) {
-        return {
-          privateKeysCached: false,
-          crossSigningVerified: false
-        }
+        return defaultStatus
       }
 
       const getCrossSigningStatus = crypto.getCrossSigningStatus
@@ -625,11 +456,7 @@ class MatrixCryptoService {
         crossSigningVerified
       }
     } catch (err) {
-      error(`[MatrixCrypto] 获取跨设备签名状态失败: ${err}`)
-      return {
-        privateKeysCached: false,
-        crossSigningVerified: false
-      }
+      return this.handleError(err, 'getCrossSigningStatus', defaultStatus, throwOnError)
     }
   }
 }

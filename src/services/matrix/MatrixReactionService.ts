@@ -1,6 +1,7 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
 export interface ReactionInfo {
   key: string
@@ -9,29 +10,23 @@ export interface ReactionInfo {
   users: string[]
 }
 
-class MatrixReactionService {
+class MatrixReactionService extends BaseManager {
   async addReaction(roomId: string, eventId: string, emoji: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixReaction] 客户端未初始化')
     }
-
-    try {
-      const content = {
-        'm.relates_to': {
-          rel_type: 'm.annotation',
-          event_id: eventId,
-          key: emoji
-        }
+    const content = {
+      'm.relates_to': {
+        rel_type: 'm.annotation',
+        event_id: eventId,
+        key: emoji
       }
-
-      const response = await client.sendEvent(roomId, 'm.reaction' as any, content)
-      info(`[MatrixReaction] 添加反应成功: ${eventId} -> ${emoji}`)
-      return response.event_id
-    } catch (err) {
-      error(`[MatrixReaction] 添加反应失败: ${err}`)
-      throw err
     }
+
+    const response = await client.sendEvent(roomId, 'm.reaction', content)
+    info(`[MatrixReaction] 添加反应成功: ${eventId} -> ${emoji}`)
+    return response.event_id
   }
 
   async removeReaction(roomId: string, reactionEventId: string): Promise<void> {
@@ -39,14 +34,8 @@ class MatrixReactionService {
     if (!client) {
       throw new Error('[MatrixReaction] 客户端未初始化')
     }
-
-    try {
-      await client.redactEvent(roomId, reactionEventId, undefined as any, {} as any)
-      info(`[MatrixReaction] 移除反应成功: ${reactionEventId}`)
-    } catch (err) {
-      error(`[MatrixReaction] 移除反应失败: ${err}`)
-      throw err
-    }
+    await client.redactEvent(roomId, reactionEventId)
+    info(`[MatrixReaction] 移除反应成功: ${reactionEventId}`)
   }
 
   async toggleReaction(roomId: string, eventId: string, emoji: string): Promise<{ added: boolean; eventId?: string }> {
@@ -54,30 +43,24 @@ class MatrixReactionService {
     if (!client) {
       throw new Error('[MatrixReaction] 客户端未初始化')
     }
+    const room = client.getRoom(roomId)
+    if (!room) {
+      throw new Error(`[MatrixReaction] 房间不存在: ${roomId}`)
+    }
 
-    try {
-      const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(`[MatrixReaction] 房间不存在: ${roomId}`)
-      }
+    const myUserId = client.getUserId()
+    if (!myUserId) {
+      throw new Error('[MatrixReaction] 用户ID不存在')
+    }
 
-      const myUserId = client.getUserId()
-      if (!myUserId) {
-        throw new Error('[MatrixReaction] 用户ID不存在')
-      }
+    const existingReaction = this.findUserReaction(roomId, eventId, emoji, myUserId)
 
-      const existingReaction = this.findUserReaction(roomId, eventId, emoji, myUserId)
-
-      if (existingReaction) {
-        await this.removeReaction(roomId, existingReaction.getId()!)
-        return { added: false }
-      } else {
-        const newEventId = await this.addReaction(roomId, eventId, emoji)
-        return { added: true, eventId: newEventId }
-      }
-    } catch (err) {
-      error(`[MatrixReaction] 切换反应失败: ${err}`)
-      throw err
+    if (existingReaction) {
+      await this.removeReaction(roomId, existingReaction.getId()!)
+      return { added: false }
+    } else {
+      const newEventId = await this.addReaction(roomId, eventId, emoji)
+      return { added: true, eventId: newEventId }
     }
   }
 

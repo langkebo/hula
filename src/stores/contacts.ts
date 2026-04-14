@@ -110,7 +110,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   }
 
   function handleFriendAdded(friend: Friend): void {
-    const existingIndex = contactsList.value.findIndex((c) => c.userId === friend.userId)
+    const existingIndex = contactsList.value.findIndex((c) => c.userId === friend.user_id)
     const contact = friendToContact(friend)
 
     if (existingIndex >= 0) {
@@ -125,7 +125,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   }
 
   function handleFriendUpdated(friend: Friend): void {
-    const index = contactsList.value.findIndex((c) => c.userId === friend.userId)
+    const index = contactsList.value.findIndex((c) => c.userId === friend.user_id)
     if (index >= 0) {
       const contact = friendToContact(friend)
       contactsList.value[index] = { ...contactsList.value[index], ...contact }
@@ -133,16 +133,16 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   }
 
   function handleRequestReceived(request: FriendRequest): void {
-    const existing = requestFriendsList.value.find((r) => r.userId === request.userId)
+    const existing = requestFriendsList.value.find((r) => r.userId === request.user_id)
     if (!existing) {
       requestFriendsList.value.push({
-        userId: request.userId,
-        displayName: request.displayName,
-        avatarUrl: request.avatarUrl,
+        userId: request.user_id,
+        displayName: request.display_name,
+        avatarUrl: request.avatar_url,
         message: request.message,
         timestamp: request.timestamp,
         direction: request.direction,
-        applyId: request.userId
+        applyId: request.user_id
       })
       globalStore.unReadMark.newFriendUnreadCount++
     }
@@ -150,13 +150,13 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
   function friendToContact(friend: Friend): MatrixContact {
     return {
-      userId: friend.userId,
-      uid: friend.userId,
-      displayName: friend.displayName ?? null,
-      name: friend.displayName ?? friend.userId.split(':')[0],
-      avatarUrl: friend.avatarUrl ?? null,
-      avatar: friend.avatarUrl ?? '',
-      account: friend.userId.split(':')[0],
+      userId: friend.user_id,
+      uid: friend.user_id,
+      displayName: friend.display_name ?? null,
+      name: friend.display_name ?? friend.user_id.split(':')[0],
+      avatarUrl: friend.avatar_url ?? null,
+      avatar: friend.avatar_url ?? '',
+      account: friend.user_id.split(':')[0],
       activeStatus: OnlineEnum.ONLINE,
       remark: friend.note ?? '',
       lastOptTime: friend.since ?? Date.now(),
@@ -165,7 +165,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       friendStatus: friend.status as FriendStatus | undefined,
       since: friend.since,
       note: friend.note,
-      directRoomId: friend.dmRoomId
+      directRoomId: friend.dm_room_id
     }
   }
 
@@ -178,11 +178,11 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       const specialFriends = await matrixFriendService.getSpecialFriends()
 
       const contacts: MatrixContact[] = friends.map((friend) => {
-        const dmRoom = dmRoomInfos.find((r) => r.invitees.includes(friend.userId) || r.inviter === friend.userId)
-        const isSpecial = specialFriends.includes(friend.userId)
+        const dmRoom = dmRoomInfos.find((r) => r.invitees.includes(friend.user_id) || r.inviter === friend.user_id)
+        const isSpecial = specialFriends.includes(friend.user_id)
         return {
           ...friendToContact(friend),
-          directRoomId: dmRoom?.roomId ?? friend.dmRoomId,
+          directRoomId: dmRoom?.roomId ?? friend.dm_room_id,
           friendStatus: isSpecial ? 'favorite' : (friend.status as FriendStatus | undefined)
         }
       })
@@ -228,22 +228,22 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
       requestFriendsList.value = [
         ...incoming.map((r) => ({
-          userId: r.userId,
-          displayName: r.displayName,
-          avatarUrl: r.avatarUrl,
+          userId: r.user_id,
+          displayName: r.display_name,
+          avatarUrl: r.avatar_url,
           message: r.message,
           timestamp: r.timestamp,
           direction: 'incoming' as const,
-          applyId: r.userId
+          applyId: r.user_id
         })),
         ...outgoing.map((r) => ({
-          userId: r.userId,
-          displayName: r.displayName,
-          avatarUrl: r.avatarUrl,
+          userId: r.user_id,
+          displayName: r.display_name,
+          avatarUrl: r.avatar_url,
           message: r.message,
           timestamp: r.timestamp,
           direction: 'outgoing' as const,
-          applyId: r.userId
+          applyId: r.user_id
         }))
       ]
 
@@ -447,10 +447,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       const invites: ContactInvite[] = []
 
       for (const room of rooms) {
-        const membership = (room as any).getMyMembership?.()
+        const membership = room.getMyMembership?.()
         if (membership === 'invite') {
-          const inviteState = room.getLiveTimeline()?.getState('f' as any)
-          const inviteFrom = inviteState?.getStateEvents('m.room.member' as any, client.getUserId() ?? '')?.getSender()
+          const inviteState = room.getLiveTimeline()?.getState('f')
+          const inviteFrom = inviteState?.getStateEvents('m.room.member', client.getUserId() ?? '')?.getSender()
 
           invites.push({
             roomId: room.roomId,

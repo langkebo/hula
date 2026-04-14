@@ -83,13 +83,12 @@ function shouldRetry(error: unknown, attempt: number, config: RetryConfig): bool
   // 检查 MatrixError
   if (error instanceof MatrixError) {
     // 检查状态码
-    const status = (error as any).status
-    if (status && config.retryableStatusCodes.includes(status)) {
+    const matrixError = error as MatrixError & { status?: number; errcode?: string }
+    if (matrixError.status && config.retryableStatusCodes.includes(matrixError.status)) {
       return true
     }
     // 检查错误码
-    const errcode = (error as any).errcode
-    if (errcode && config.retryableErrorCodes.includes(errcode)) {
+    if (matrixError.errcode && config.retryableErrorCodes.includes(matrixError.errcode)) {
       return true
     }
   }

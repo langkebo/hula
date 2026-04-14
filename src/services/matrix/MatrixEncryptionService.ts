@@ -1,6 +1,20 @@
 import matrixClientService from './MatrixClientService'
+import matrixKeyBackupService from './MatrixKeyBackupService'
+import matrixVerificationService from './MatrixVerificationService'
 import { info, error, warn } from '@tauri-apps/plugin-log'
+import { Method } from 'matrix-js-sdk'
 import type { MatrixClient } from 'matrix-js-sdk'
+import { BaseManager } from './BaseManager'
+import type {
+  ExtendedMatrixClient,
+  MatrixCrypto,
+  EncryptionEventContent,
+  KeyRotationStatusResponse,
+  KeyRotationCheckResponse,
+  KeyRotationResponse,
+  KeyRotationHistoryResponse,
+  KeyRevocationResponse
+} from '@/types/matrix-api'
 
 export interface EncryptionSettings {
   algorithm: string
@@ -46,26 +60,27 @@ export interface KeyRotationRecord {
   deviceId: string
 }
 
-class MatrixEncryptionService {
+class MatrixEncryptionService extends BaseManager {
   private crypto: MatrixClient['crypto'] | null = null
 
-  async initialize(): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
-    }
-
+  async initialize(throwOnError = true): Promise<void> {
     try {
-      const isCryptoEnabled = (client as any).isCryptoEnabled?.()
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[Encryption] 客户端未初始化')
+      }
+
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      const isCryptoEnabled = extendedClient.isCryptoEnabled?.()
       if (isCryptoEnabled) {
-        this.crypto = (client as any).getCrypto?.()
+        this.crypto = extendedClient.getCrypto?.() ?? null
         info('[Encryption] 加密模块初始化成功')
       } else {
         warn('[Encryption] 加密模块未启用')
       }
     } catch (err) {
       error(`[Encryption] 加密模块初始化失败: ${err}`)
-      throw err
+      return this.handleError(err, 'initialize', undefined as unknown as void, throwOnError)
     }
   }
 
@@ -73,7 +88,8 @@ class MatrixEncryptionService {
     if (!this.crypto) {
       const client = matrixClientService.getClient()
       if (client) {
-        this.crypto = (client as unknown as { getCrypto?: () => MatrixClient['crypto'] }).getCrypto?.()
+        const extendedClient = client as unknown as ExtendedMatrixClient
+        this.crypto = extendedClient.getCrypto?.() ?? null
       }
     }
     return this.crypto
@@ -84,25 +100,73 @@ class MatrixEncryptionService {
     return !!crypto
   }
 
+  isEncryptionEnabled(): boolean {
+    return !!this.getCrypto()
+  }
+
+  getDeviceId(): string | null {
+    const client = matrixClientService.getClient()
+    if (!client) return null
+    return (client as any).deviceId ?? null
+  }
+
+  async getOwnDeviceKeys(): Promise<Record<string, string> | null> {
+    const crypto = this.getCrypto()
+    if (!crypto) return null
+    try {
+      if ((crypto as any).getOwnDeviceKeys) {
+        return await (crypto as any).getOwnDeviceKeys()
+      }
+    } catch {
+      return null
+    }
+    return null
+  }
+
+  isGlobalBlacklistUnverifiedDevices(): boolean {
+    const crypto = this.getCrypto()
+    if (!crypto) return false
+    try {
+      if ((crypto as any).getGlobalBlacklistUnverifiedDevices) {
+        return (crypto as any).getGlobalBlacklistUnverifiedDevices()
+      }
+    } catch {
+      return false
+    }
+    return false
+  }
+
+  async getStoredDevice(userId: string, deviceId: string): Promise<any | null> {
+    const client = matrixClientService.getClient()
+    if (!client) return null
+    try {
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      return (await extendedClient.getStoredDevice?.(userId, deviceId)) ?? null
+    } catch {
+      return null
+    }
+  }
+
   async isRoomEncrypted(roomId: string): Promise<boolean> {
     const client = matrixClientService.getClient()
     if (!client) return false
 
     try {
-      return (client as any).isRoomEncrypted?.(roomId) ?? false
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      return extendedClient.isRoomEncrypted?.(roomId) ?? false
     } catch {
       return false
     }
   }
 
-  async enableRoomEncryption(roomId: string, settings?: Partial<EncryptionSettings>): Promise<void> {
+  async enableRoomEncryption(roomId: string, settings?: Partial<EncryptionSettings>, throwOnError = false): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
+      return this.handleError(new Error('[Encryption] 客户端未初始化'), 'enableRoomEncryption', undefined as unknown as void, throwOnError)
     }
 
     try {
-      const encryptionEventContent: any = {
+      const encryptionEventContent: EncryptionEventContent = {
         algorithm: settings?.algorithm || 'm.megolm.v1.aes-sha2'
       }
 
@@ -117,7 +181,7 @@ class MatrixEncryptionService {
       info(`[Encryption] 启用房间加密: ${roomId}`)
     } catch (err) {
       error(`[Encryption] 启用房间加密失败: ${err}`)
-      throw err
+      this.handleError(err, 'enableRoomEncryption', undefined as unknown as void, throwOnError)
     }
   }
 
@@ -129,14 +193,10 @@ class MatrixEncryptionService {
       const room = client.getRoom(roomId)
       if (!room) return null
 
-      const encryptionEvent = room.currentState.getStateEvents('m.room.encryption' as any, '')
+      const encryptionEvent = room.currentState.getStateEvents('m.room.encryption', '')
       if (!encryptionEvent) return null
 
-      const content = encryptionEvent.getContent() as {
-        algorithm?: string
-        rotation_period_ms?: number
-        rotation_period_msgs?: number
-      }
+      const content = encryptionEvent.getContent() as unknown as EncryptionEventContent
       return {
         algorithm: content.algorithm || 'm.megolm.v1.aes-sha2',
         rotationPeriodMs: content.rotation_period_ms || 604800000,
@@ -148,15 +208,17 @@ class MatrixEncryptionService {
     }
   }
 
-  async setupCrossSigning(authParams?: { password?: string; authData?: any }): Promise<void> {
+  async setupCrossSigning(authParams?: { password?: string; authData?: Record<string, unknown> }, throwOnError = false): Promise<void> {
     const crypto = this.getCrypto()
     if (!crypto) {
-      throw new Error('[Encryption] 加密模块不可用')
+      return this.handleError(new Error('[Encryption] 加密模块不可用'), 'setupCrossSigning', undefined as unknown as void, throwOnError)
     }
 
     try {
       await crypto.bootstrapCrossSigning?.({
-        authUploadDeviceSigningKeys: async (makeRequest: (authData: any) => Promise<any>) => {
+        authUploadDeviceSigningKeys: async (
+          makeRequest: (authData: Record<string, unknown>) => Promise<Record<string, unknown>>
+        ) => {
           if (authParams?.authData) {
             return makeRequest(authParams.authData)
           }
@@ -166,7 +228,7 @@ class MatrixEncryptionService {
       info('[Encryption] 交叉签名设置成功')
     } catch (err) {
       error(`[Encryption] 设置交叉签名失败: ${err}`)
-      throw err
+      this.handleError(err, 'setupCrossSigning', undefined as unknown as void, throwOnError)
     }
   }
 
@@ -178,13 +240,14 @@ class MatrixEncryptionService {
 
     try {
       const status = await crypto.getCrossSigningStatus?.()
-      const crossSigningKeyId = (crypto as any).crossSigningInfo?.getId?.()
+      const matrixCrypto = crypto as unknown as MatrixCrypto
+      const crossSigningKeyId = matrixCrypto.crossSigningInfo?.getId?.()
 
       return {
         isSetup: status?.privateKeysCached ?? false,
         masterPublicKey: crossSigningKeyId,
-        selfSigningPublicKey: (crypto as any).crossSigningInfo?.getId?.('self_signing'),
-        userSigningPublicKey: (crypto as any).crossSigningInfo?.getId?.('user_signing')
+        selfSigningPublicKey: matrixCrypto.crossSigningInfo?.getId?.('self_signing'),
+        userSigningPublicKey: matrixCrypto.crossSigningInfo?.getId?.('user_signing')
       }
     } catch (err) {
       error(`[Encryption] 获取交叉签名信息失败: ${err}`)
@@ -193,54 +256,43 @@ class MatrixEncryptionService {
   }
 
   async isCrossSigningReady(): Promise<boolean> {
-    const client = matrixClientService.getClient() as any
+    const client = matrixClientService.getClient()
     if (!client) return false
 
     try {
-      return client.isCrossSigningReady?.() ?? false
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      return extendedClient.isCrossSigningReady?.() ?? false
     } catch {
       return false
     }
   }
 
-  async setupKeyBackup(recoveryKey?: string): Promise<string> {
-    const crypto = this.getCrypto()
-    if (!crypto) {
-      throw new Error('[Encryption] 加密模块不可用')
-    }
-
+  async setupKeyBackup(recoveryKey?: string, throwOnError = false): Promise<string> {
     try {
-      let key: string
-
       if (recoveryKey) {
-        await crypto.restoreKeyBackup?.(recoveryKey)
-        key = recoveryKey
-      } else {
-        key = await crypto.resetKeyBackup?.()
+        await matrixKeyBackupService.recoverKeys(recoveryKey)
+        return recoveryKey
       }
-
+      const result = await matrixKeyBackupService.createBackupVersion()
       info('[Encryption] 密钥备份设置成功')
-      return key
+      return result?.version ?? ''
     } catch (err) {
       error(`[Encryption] 设置密钥备份失败: ${err}`)
-      throw err
+      return this.handleError(err, 'setupKeyBackup', '', throwOnError)
     }
   }
 
   async getKeyBackupInfo(): Promise<KeyBackupInfo | null> {
-    const crypto = this.getCrypto()
-    if (!crypto) return null
-
     try {
-      const backupInfo = await crypto.getKeyBackupVersion?.()
-      if (!backupInfo) return null
-
+      const versions = await matrixKeyBackupService.getBackupVersions()
+      if (!versions || versions.length === 0) return null
+      const latest = versions[0]
       return {
-        version: backupInfo.version,
-        algorithm: backupInfo.algorithm,
-        authData: backupInfo.auth_data,
-        count: backupInfo.count || 0,
-        etag: backupInfo.etag
+        version: latest.version,
+        algorithm: latest.algorithm,
+        authData: latest.authData,
+        count: latest.count ?? 0,
+        etag: latest.etag ?? ''
       }
     } catch (err) {
       error(`[Encryption] 获取密钥备份信息失败: ${err}`)
@@ -248,108 +300,77 @@ class MatrixEncryptionService {
     }
   }
 
-  async restoreFromBackup(recoveryKey: string): Promise<{ imported: number; total: number }> {
-    const crypto = this.getCrypto()
-    if (!crypto) {
-      throw new Error('[Encryption] 加密模块不可用')
-    }
-
+  async restoreFromBackup(recoveryKey: string, throwOnError = false): Promise<{ imported: number; total: number }> {
     try {
-      const backupInfo = await crypto.getKeyBackupVersion?.()
-      if (!backupInfo) {
-        throw new Error('[Encryption] 没有可用的密钥备份')
-      }
-
-      const result = await crypto.restoreKeyBackup?.(recoveryKey, undefined, undefined, backupInfo)
-
-      info(`[Encryption] 从备份恢复密钥成功: ${result?.imported || 0} 个`)
-      return {
-        imported: result?.imported || 0,
-        total: result?.total || 0
-      }
+      await matrixKeyBackupService.recoverKeys(recoveryKey)
+      info('[Encryption] 从备份恢复密钥成功')
+      return { imported: 0, total: 0 }
     } catch (err) {
       error(`[Encryption] 从备份恢复密钥失败: ${err}`)
-      throw err
+      return this.handleError(err, 'restoreFromBackup', { imported: 0, total: 0 }, throwOnError)
     }
   }
 
-  async deleteKeyBackup(): Promise<void> {
-    const crypto = this.getCrypto()
-    if (!crypto) return
-
+  async deleteKeyBackup(throwOnError = false): Promise<void> {
     try {
-      const backupInfo = await crypto.getKeyBackupVersion?.()
-      if (backupInfo) {
-        await crypto.deleteKeyBackupVersion?.(backupInfo.version)
+      const versions = await matrixKeyBackupService.getBackupVersions()
+      if (versions && versions.length > 0) {
+        await matrixKeyBackupService.deleteBackupVersion(versions[0].version)
         info('[Encryption] 删除密钥备份成功')
       }
     } catch (err) {
       error(`[Encryption] 删除密钥备份失败: ${err}`)
-      throw err
+      this.handleError(err, 'deleteKeyBackup', undefined as unknown as void, throwOnError)
     }
   }
 
   async requestDeviceVerification(
     userId: string,
-    deviceId: string,
-    methods: string[] = ['m.sas.v1', 'm.qr_code.show.v1', 'm.reciprocate.v1']
+    _deviceId: string,
+    methods: string[] = ['m.sas.v1', 'm.qr_code.show.v1', 'm.reciprocate.v1'],
+    throwOnError = false
   ): Promise<VerificationRequest> {
-    const client = matrixClientService.getClient() as any
-    if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
-    }
-
     try {
-      const request = await client.requestVerificationDM?.(userId, deviceId, methods)
-
+      const request = await matrixVerificationService.requestVerification(userId, methods)
       return {
         requestId: request?.transactionId || '',
-        phase: request?.phase || 'requested',
+        phase: 'requested',
         methods: request?.methods || methods,
         otherParty: {
           userId,
-          deviceId
+          deviceId: request?.deviceId || ''
         }
       }
     } catch (err) {
       error(`[Encryption] 请求设备验证失败: ${err}`)
-      throw err
+      return this.handleError(err, 'requestDeviceVerification', { requestId: '', phase: '', methods: [], otherParty: { userId, deviceId: '' } } as VerificationRequest, throwOnError)
     }
   }
 
-  async requestUserVerification(userId: string, methods: string[] = ['m.sas.v1']): Promise<VerificationRequest> {
-    const client = matrixClientService.getClient() as any
-    if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
-    }
-
+  async requestUserVerification(userId: string, methods: string[] = ['m.sas.v1'], throwOnError = false): Promise<VerificationRequest> {
     try {
-      const request = await client.requestVerification?.(userId, methods)
-
+      const request = await matrixVerificationService.requestVerification(userId, methods)
       return {
         requestId: request?.transactionId || '',
-        phase: request?.phase || 'requested',
+        phase: 'requested',
         methods: request?.methods || methods,
         otherParty: {
           userId,
-          deviceId: ''
+          deviceId: request?.deviceId || ''
         }
       }
     } catch (err) {
       error(`[Encryption] 请求用户验证失败: ${err}`)
-      throw err
+      return this.handleError(err, 'requestUserVerification', { requestId: '', phase: '', methods: [], otherParty: { userId, deviceId: '' } } as VerificationRequest, throwOnError)
     }
   }
 
   async getVerificationRequests(userId: string): Promise<VerificationRequest[]> {
-    const client = matrixClientService.getClient() as any
-    if (!client) return []
-
     try {
-      const requests = client.getVerificationRequestsToDevice?.(userId) || []
-      return requests.map((r: any) => ({
+      const requests = await matrixVerificationService.getVerificationRequests(userId)
+      return requests.map((r) => ({
         requestId: r.transactionId,
-        phase: r.phase,
+        phase: 'requested',
         methods: r.methods || [],
         otherParty: {
           userId: r.userId,
@@ -361,63 +382,67 @@ class MatrixEncryptionService {
     }
   }
 
-  async trustDevice(userId: string, deviceId: string): Promise<void> {
-    const client = matrixClientService.getClient() as any
+  async trustDevice(userId: string, deviceId: string, throwOnError = false): Promise<void> {
+    const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
+      return this.handleError(new Error('[Encryption] 客户端未初始化'), 'trustDevice', undefined as unknown as void, throwOnError)
     }
 
     try {
-      await client.setDeviceVerified?.(userId, deviceId)
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      await extendedClient.setDeviceVerified?.(userId, deviceId)
       info(`[Encryption] 信任设备: ${userId}:${deviceId}`)
     } catch (err) {
       error(`[Encryption] 信任设备失败: ${err}`)
-      throw err
+      this.handleError(err, 'trustDevice', undefined as unknown as void, throwOnError)
     }
   }
 
-  async untrustDevice(userId: string, deviceId: string): Promise<void> {
-    const client = matrixClientService.getClient() as any
+  async untrustDevice(userId: string, deviceId: string, throwOnError = false): Promise<void> {
+    const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
+      return this.handleError(new Error('[Encryption] 客户端未初始化'), 'untrustDevice', undefined as unknown as void, throwOnError)
     }
 
     try {
-      await client.setDeviceKnown?.(userId, deviceId, false)
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      await extendedClient.setDeviceKnown?.(userId, deviceId, false)
       info(`[Encryption] 取消信任设备: ${userId}:${deviceId}`)
     } catch (err) {
       error(`[Encryption] 取消信任设备失败: ${err}`)
-      throw err
+      this.handleError(err, 'untrustDevice', undefined as unknown as void, throwOnError)
     }
   }
 
-  async blockDevice(userId: string, deviceId: string): Promise<void> {
-    const client = matrixClientService.getClient() as any
+  async blockDevice(userId: string, deviceId: string, throwOnError = false): Promise<void> {
+    const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
+      return this.handleError(new Error('[Encryption] 客户端未初始化'), 'blockDevice', undefined as unknown as void, throwOnError)
     }
 
     try {
-      await client.setDeviceBlocked?.(userId, deviceId, true)
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      await extendedClient.setDeviceBlocked?.(userId, deviceId, true)
       info(`[Encryption] 阻止设备: ${userId}:${deviceId}`)
     } catch (err) {
       error(`[Encryption] 阻止设备失败: ${err}`)
-      throw err
+      this.handleError(err, 'blockDevice', undefined as unknown as void, throwOnError)
     }
   }
 
-  async unblockDevice(userId: string, deviceId: string): Promise<void> {
-    const client = matrixClientService.getClient() as any
+  async unblockDevice(userId: string, deviceId: string, throwOnError = false): Promise<void> {
+    const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
+      return this.handleError(new Error('[Encryption] 客户端未初始化'), 'unblockDevice', undefined as unknown as void, throwOnError)
     }
 
     try {
-      await client.setDeviceBlocked?.(userId, deviceId, false)
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      await extendedClient.setDeviceBlocked?.(userId, deviceId, false)
       info(`[Encryption] 取消阻止设备: ${userId}:${deviceId}`)
     } catch (err) {
       error(`[Encryption] 取消阻止设备失败: ${err}`)
-      throw err
+      this.handleError(err, 'unblockDevice', undefined as unknown as void, throwOnError)
     }
   }
 
@@ -429,18 +454,19 @@ class MatrixEncryptionService {
     isCrossSigningVerified: boolean
     isTofu: boolean
   }> {
-    const client = matrixClientService.getClient() as any
+    const client = matrixClientService.getClient()
     if (!client) {
       return { isVerified: false, isCrossSigningVerified: false, isTofu: false }
     }
 
     try {
-      const device = await client.getStoredDevice?.(userId, deviceId)
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      const device = await extendedClient.getStoredDevice?.(userId, deviceId)
       if (!device) {
         return { isVerified: false, isCrossSigningVerified: false, isTofu: false }
       }
 
-      const trustInfo = await client.checkDeviceTrust?.(userId, deviceId)
+      const trustInfo = await extendedClient.checkDeviceTrust?.(userId, deviceId)
 
       return {
         isVerified: device.isVerified?.() ?? false,
@@ -452,10 +478,10 @@ class MatrixEncryptionService {
     }
   }
 
-  async exportRoomKeys(): Promise<string> {
+  async exportRoomKeys(throwOnError = true): Promise<string> {
     const crypto = this.getCrypto()
     if (!crypto) {
-      throw new Error('[Encryption] 加密模块不可用')
+      return this.handleError(new Error('[Encryption] 加密模块不可用'), 'exportRoomKeys', '', throwOnError)
     }
 
     try {
@@ -465,14 +491,14 @@ class MatrixEncryptionService {
       return exported
     } catch (err) {
       error(`[Encryption] 导出房间密钥失败: ${err}`)
-      throw err
+      return this.handleError(err, 'exportRoomKeys', '', throwOnError)
     }
   }
 
-  async importRoomKeys(keysJson: string): Promise<{ imported: number; total: number }> {
+  async importRoomKeys(keysJson: string, throwOnError = false): Promise<{ imported: number; total: number }> {
     const crypto = this.getCrypto()
     if (!crypto) {
-      throw new Error('[Encryption] 加密模块不可用')
+      return this.handleError(new Error('[Encryption] 加密模块不可用'), 'importRoomKeys', { imported: 0, total: 0 }, throwOnError)
     }
 
     try {
@@ -488,24 +514,28 @@ class MatrixEncryptionService {
       }
     } catch (err) {
       error(`[Encryption] 导入房间密钥失败: ${err}`)
-      throw err
+      return this.handleError(err, 'importRoomKeys', { imported: 0, total: 0 }, throwOnError)
     }
   }
 
   async getUnverifiedDevicesInRoom(roomId: string): Promise<string[]> {
-    const client = matrixClientService.getClient() as any
+    const client = matrixClientService.getClient()
     if (!client) return []
 
     try {
       const room = client.getRoom(roomId)
       if (!room) return []
 
-      const members = room.getEncryptionTargetMembers?.() || room.getJoinedMembers?.() || []
+      const members =
+        (room as { getEncryptionTargetMembers?: () => unknown[] }).getEncryptionTargetMembers?.() ||
+        room.getJoinedMembers?.() ||
+        []
       const unverifiedDevices: string[] = []
+      const extendedClient = client as unknown as ExtendedMatrixClient
 
       for (const member of members) {
-        const userId = member.userId || member
-        const devices = (await client.getStoredDevicesForUser?.(userId)) || []
+        const userId = (member as { userId?: string }).userId || (member as string)
+        const devices = (await extendedClient.getStoredDevicesForUser?.(userId)) || []
 
         for (const device of devices) {
           const isVerified = device.isVerified?.()
@@ -522,7 +552,7 @@ class MatrixEncryptionService {
   }
 
   async hasUndecryptableEvents(roomId: string): Promise<boolean> {
-    const client = matrixClientService.getClient() as any
+    const client = matrixClientService.getClient()
     if (!client) return false
 
     try {
@@ -533,7 +563,7 @@ class MatrixEncryptionService {
       const events = timeline.getEvents()
 
       for (const event of events) {
-        if (event.isDecryptionFailure?.()) {
+        if ((event as { isDecryptionFailure?: () => boolean }).isDecryptionFailure?.()) {
           return true
         }
       }
@@ -545,16 +575,20 @@ class MatrixEncryptionService {
   }
 
   async getKeyRotationStatus(): Promise<KeyRotationStatus> {
-    const client = matrixClientService.getClient() as any
+    const client = matrixClientService.getClient()
     if (!client) {
       return { enabled: false, intervalMs: 0, needsRotation: false }
     }
 
     try {
-      const response = await (client as any).http.request({
-        method: 'GET',
-        path: '/_matrix/client/v1/keys/rotation/status'
-      })
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      const response = (await extendedClient.http.request(
+        Method.Get,
+        '/_matrix/client/v1/keys/rotation/status',
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as KeyRotationStatusResponse
       return {
         enabled: response.enabled ?? true,
         intervalMs: response.interval_ms ?? 604800000,
@@ -568,14 +602,18 @@ class MatrixEncryptionService {
   }
 
   async checkNeedsRotation(): Promise<boolean> {
-    const client = matrixClientService.getClient() as any
+    const client = matrixClientService.getClient()
     if (!client) return false
 
     try {
-      const response = await (client as any).http.request({
-        method: 'GET',
-        path: '/_matrix/client/v1/keys/rotation/check'
-      })
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      const response = (await extendedClient.http.request(
+        Method.Get,
+        '/_matrix/client/v1/keys/rotation/check',
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as KeyRotationCheckResponse
       return response.needs_rotation ?? false
     } catch (err) {
       error(`[Encryption] 检查密钥轮换需求失败: ${err}`)
@@ -583,17 +621,21 @@ class MatrixEncryptionService {
     }
   }
 
-  async rotateKeys(): Promise<{ success: boolean; keyId: string; rotatedAt: number }> {
-    const client = matrixClientService.getClient() as any
+  async rotateKeys(throwOnError = false): Promise<{ success: boolean; keyId: string; rotatedAt: number }> {
+    const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
+      return this.handleError(new Error('[Encryption] 客户端未初始化'), 'rotateKeys', { success: false, keyId: '', rotatedAt: 0 }, throwOnError)
     }
 
     try {
-      const response = await (client as any).http.request({
-        method: 'POST',
-        path: '/_matrix/client/v1/keys/rotation/rotate'
-      })
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      const response = (await extendedClient.http.request(
+        Method.Post,
+        '/_matrix/client/v1/keys/rotation/rotate',
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as KeyRotationResponse
       info('[Encryption] 密钥轮换成功')
       return {
         success: response.success ?? true,
@@ -602,20 +644,24 @@ class MatrixEncryptionService {
       }
     } catch (err) {
       error(`[Encryption] 密钥轮换失败: ${err}`)
-      throw err
+      return this.handleError(err, 'rotateKeys', { success: false, keyId: '', rotatedAt: 0 }, throwOnError)
     }
   }
 
   async getRotationHistory(deviceId: string): Promise<KeyRotationRecord[]> {
-    const client = matrixClientService.getClient() as any
+    const client = matrixClientService.getClient()
     if (!client) return []
 
     try {
-      const response = await (client as any).http.request({
-        method: 'GET',
-        path: `/_matrix/client/v1/keys/rotation/history/${encodeURIComponent(deviceId)}`
-      })
-      return (response.rotations ?? []).map((r: any) => ({
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      const response = (await extendedClient.http.request(
+        Method.Get,
+        `/_matrix/client/v1/keys/rotation/history/${encodeURIComponent(deviceId)}`,
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as KeyRotationHistoryResponse
+      return (response.rotations ?? []).map((r) => ({
         keyId: r.key_id ?? '',
         rotatedAt: r.rotated_at ?? 0,
         deviceId
@@ -626,49 +672,55 @@ class MatrixEncryptionService {
     }
   }
 
-  async revokeOldKeys(deviceId: string, keyIds: string[]): Promise<number> {
-    const client = matrixClientService.getClient() as any
+  async revokeOldKeys(deviceId: string, keyIds: string[], throwOnError = false): Promise<number> {
+    const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
+      return this.handleError(new Error('[Encryption] 客户端未初始化'), 'revokeOldKeys', 0, throwOnError)
     }
 
     try {
-      const response = await (client as any).http.request({
-        method: 'POST',
-        path: '/_matrix/client/v1/keys/rotation/revoke',
-        data: { device_id: deviceId, key_ids: keyIds }
-      })
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      const response = (await extendedClient.http.request(
+        Method.Post,
+        '/_matrix/client/v1/keys/rotation/revoke',
+        undefined,
+        { device_id: deviceId, key_ids: keyIds },
+        { prefix: '' }
+      )) as KeyRevocationResponse
       info(`[Encryption] 撤销旧密钥成功: ${response.revoked ?? 0} 个`)
       return response.revoked ?? 0
     } catch (err) {
       error(`[Encryption] 撤销旧密钥失败: ${err}`)
-      throw err
+      return this.handleError(err, 'revokeOldKeys', 0, throwOnError)
     }
   }
 
-  async configureKeyRotation(enabled: boolean, intervalDays: number = 30): Promise<void> {
-    const client = matrixClientService.getClient() as any
+  async configureKeyRotation(enabled: boolean, intervalDays: number = 30, throwOnError = false): Promise<void> {
+    const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[Encryption] 客户端未初始化')
+      return this.handleError(new Error('[Encryption] 客户端未初始化'), 'configureKeyRotation', undefined as unknown as void, throwOnError)
     }
 
     try {
-      await (client as any).http.request({
-        method: 'PUT',
-        path: '/_matrix/client/v1/keys/rotation/config',
-        data: { enabled, interval_days: intervalDays }
-      })
+      const extendedClient = client as unknown as ExtendedMatrixClient
+      await extendedClient.http.request(
+        Method.Put,
+        '/_matrix/client/v1/keys/rotation/config',
+        undefined,
+        { enabled, interval_days: intervalDays },
+        { prefix: '' }
+      )
       info('[Encryption] 密钥轮换配置已更新')
     } catch (err) {
       error(`[Encryption] 配置密钥轮换失败: ${err}`)
-      throw err
+      this.handleError(err, 'configureKeyRotation', undefined as unknown as void, throwOnError)
     }
   }
 
-  async resetCrossSigning(): Promise<void> {
+  async resetCrossSigning(throwOnError = false): Promise<void> {
     const crypto = this.getCrypto()
     if (!crypto) {
-      throw new Error('[Encryption] 加密模块不可用')
+      return this.handleError(new Error('[Encryption] 加密模块不可用'), 'resetCrossSigning', undefined as unknown as void, throwOnError)
     }
 
     try {
@@ -680,7 +732,7 @@ class MatrixEncryptionService {
       }
     } catch (err) {
       error(`[Encryption] 重置交叉签名失败: ${err}`)
-      throw err
+      this.handleError(err, 'resetCrossSigning', undefined as unknown as void, throwOnError)
     }
   }
 }

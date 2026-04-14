@@ -2,13 +2,34 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { matrixClientService } from '../MatrixClientService'
 import * as sdk from 'matrix-js-sdk'
 
-// Mock tauri plugin log
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn()
 }))
 
-// Mock matrix-js-sdk
+vi.mock('../BaseManager', () => {
+  return {
+    BaseManager: class {
+      protected handleError<T>(error: unknown, _operation: string, defaultValue: T, throwOnError: boolean): T {
+        if (throwOnError) throw error
+        return defaultValue
+      }
+      protected normalizeError(error: unknown, _operation: string) {
+        return error
+      }
+    }
+  }
+})
+
+vi.mock('matrix-js-sdk/src/manager-extensions', () => ({
+  extendMatrixClientWithManagers: vi.fn(),
+  isManagerExtensionsInitialized: vi.fn(() => true)
+}))
+
+vi.mock('matrix-js-sdk/src/telemetry', () => ({
+  initTelemetryFromClient: vi.fn()
+}))
+
 vi.mock('matrix-js-sdk', () => {
   const mockClient = {
     login: vi.fn(),
@@ -20,24 +41,35 @@ vi.mock('matrix-js-sdk', () => {
     removeListener: vi.fn(),
     getUserId: vi.fn().mockReturnValue('@user:example.com'),
     getDeviceId: vi.fn().mockReturnValue('DEVICE_ID'),
-    getAccessToken: vi.fn().mockReturnValue('ACCESS_TOKEN')
+    getAccessToken: vi.fn().mockReturnValue('ACCESS_TOKEN'),
+    getHomeserverUrl: vi.fn().mockReturnValue('https://matrix.example.com'),
+    setAccessToken: vi.fn()
   }
 
   return {
     createClient: vi.fn(() => mockClient),
-    SlidingSync: class {
-      start = vi.fn()
-      stop = vi.fn()
-    }
+    SlidingSync: vi.fn().mockImplementation(function (this: {
+      start: ReturnType<typeof vi.fn>
+      stop: ReturnType<typeof vi.fn>
+    }) {
+      this.start = vi.fn()
+      this.stop = vi.fn()
+    }),
+    MatrixClient: vi.fn()
   }
 })
+
+interface MatrixClientServiceInternal {
+  client: unknown
+  connectionState: string
+}
 
 describe('MatrixClientService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Reset service state if possible (may need to cast to any to access private props for testing)
-    ;(matrixClientService as any).client = null
-    ;(matrixClientService as any).connectionState = 'DISCONNECTED'
+    const serviceInternal = matrixClientService as unknown as MatrixClientServiceInternal
+    serviceInternal.client = null
+    serviceInternal.connectionState = 'DISCONNECTED'
   })
 
   it('should be defined', () => {
@@ -55,7 +87,7 @@ describe('MatrixClientService', () => {
     await matrixClientService.initialize(config)
 
     expect(sdk.createClient).toHaveBeenCalled()
-    expect(matrixClientService.getConnectionState()).toBe('CONNECTING') // It starts client which sets state
+    expect(matrixClientService.getConnectionState()).toBe('CONNECTING')
   })
 
   it('should return null when getting client before init', () => {
@@ -65,13 +97,12 @@ describe('MatrixClientService', () => {
 
   it('should handle login successfully', async () => {
     const mockClient = sdk.createClient({ baseUrl: '' })
-    ;(mockClient.login as any).mockResolvedValue({
+    vi.mocked(mockClient.login).mockResolvedValue({
       user_id: '@user:example.com',
       device_id: 'DEV1',
       access_token: 'token123'
     })
 
-    // Pre-initialize
     await matrixClientService.initialize({ homeserverUrl: 'https://test.com' })
 
     const result = await matrixClientService.login('user', 'password')
@@ -82,9 +113,8 @@ describe('MatrixClientService', () => {
 
   it('should handle login failure', async () => {
     const mockClient = sdk.createClient({ baseUrl: '' })
-    ;(mockClient.login as any).mockRejectedValue(new Error('Invalid password'))
+    vi.mocked(mockClient.login).mockRejectedValue(new Error('Invalid password'))
 
-    // Pre-initialize
     await matrixClientService.initialize({ homeserverUrl: 'https://test.com' })
 
     const result = await matrixClientService.login('user', 'wrong')

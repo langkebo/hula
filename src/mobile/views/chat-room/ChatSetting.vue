@@ -254,15 +254,8 @@ import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import {
-  deleteFriend,
-  getGroupDetail,
-  modifyFriendRemark,
-  notification,
-  setSessionTop,
-  shield,
-  updateRoomInfo
-} from '@/utils/ImRequestUtils'
+import { matrixPushService, matrixRoomService, matrixContactService, matrixSessionService } from '@/services/matrix'
+import { PushRuleKind } from 'matrix-js-sdk'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 import { useI18n, I18nT } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
@@ -421,7 +414,7 @@ async function handleExit() {
             window.$message.warning(t('mobile_chat_setting.get_friend_info_failed'))
             return
           }
-          await deleteFriend({ targetUid: detailId })
+          await matrixContactService.removeFriend(detailId)
           window.$message.success(t('mobile_chat_setting.delete_friend_success'))
         }
 
@@ -495,7 +488,7 @@ const handleLoadGroupAnnoun = async () => {
 const handleTop = (value: boolean) => {
   const session = activeItem.value
   if (!session) return
-  setSessionTop({ roomId: currentSessionRoomId.value, top: value })
+  matrixRoomService.setRoomPinStatus(currentSessionRoomId.value, value)
     .then(() => {
       // 更新本地会话状态
       chatStore.updateSession(currentSessionRoomId.value, { top: value })
@@ -539,10 +532,7 @@ const handleInfoUpdate = async () => {
       window.$message.warning(t('mobile_chat_setting.get_friend_info_failed'))
       return
     }
-    await modifyFriendRemark({
-      targetUid: detailId,
-      remark: remarkValue.value
-    })
+    await matrixContactService.setFriendRemark(detailId, remarkValue.value)
 
     if (friend.value) {
       friend.value.remark = remarkValue.value
@@ -563,11 +553,7 @@ const handleGroupInfoUpdate = async () => {
     return
   }
 
-  await updateRoomInfo({
-    id: currentSessionRoomId.value,
-    name: nameValue.value,
-    avatar: avatarValue.value
-  })
+  await matrixRoomService.setRoomName(currentSessionRoomId.value, nameValue.value)
   session.avatar = avatarValue.value
 
   // 更新初始值
@@ -605,10 +591,10 @@ const fetchGroupMembers = async (roomId: string) => {
 const handleShield = (value: boolean) => {
   const session = activeItem.value
   if (!session) return
-  shield({
-    roomId: currentSessionRoomId.value,
-    state: value
-  })
+  const mutePromise = value
+    ? matrixPushService.muteRoom(currentSessionRoomId.value)
+    : matrixPushService.unmuteRoom(currentSessionRoomId.value)
+  mutePromise
     .then(() => {
       // 更新本地会话状态
       chatStore.updateSession(currentSessionRoomId.value, {
@@ -641,10 +627,11 @@ const handleNotification = (value: boolean) => {
   if (session.shield) {
     handleShield(false)
   }
-  notification({
-    roomId: currentSessionRoomId.value,
-    type: newType
-  })
+  if (newType === NotificationTypeEnum.RECEPTION) {
+    matrixPushService.unmuteRoom(currentSessionRoomId.value)
+  } else {
+    matrixPushService.muteRoom(currentSessionRoomId.value)
+  }
     .then(() => {
       // 更新本地会话状态
       chatStore.updateSession(currentSessionRoomId.value, {
@@ -689,13 +676,19 @@ const handleSearchChatContent = () => {
 onMounted(async () => {
   await handleLoadGroupAnnoun()
   if (isGroup.value) {
-    await getGroupDetail(globalStore.currentSessionRoomId)
-      .then((response: any) => {
-        item.value = response
-        nameValue.value = response.groupName || ''
-        avatarValue.value = response.avatar
-        nicknameValue.value = response.myName || ''
-        remarkValue.value = response.remark || ''
+    await matrixRoomService.getRoomSummary(globalStore.currentSessionRoomId)
+      .then((summary: any) => {
+        if (summary) {
+          item.value = {
+            roomId: summary.roomId,
+            groupName: summary.name || '',
+            avatar: summary.avatarUrl,
+            remark: ''
+          }
+          nameValue.value = summary.name || ''
+          avatarValue.value = summary.avatarUrl || ''
+          nicknameValue.value = ''
+          remarkValue.value = ''
 
         // 保存初始值
         initialNameValue.value = nameValue.value

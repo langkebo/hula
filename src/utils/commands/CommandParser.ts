@@ -48,7 +48,7 @@ class CommandParser {
           body: action
         }
 
-        const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+        const response = await client.sendEvent(roomId, 'm.room.message', content)
         return response.event_id
       }
     })
@@ -70,7 +70,7 @@ class CommandParser {
           body: message
         }
 
-        const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+        const response = await client.sendEvent(roomId, 'm.room.message', content)
         return response.event_id
       }
     })
@@ -90,7 +90,7 @@ class CommandParser {
           body: message
         }
 
-        const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+        const response = await client.sendEvent(roomId, 'm.room.message', content)
         return response.event_id
       }
     })
@@ -110,7 +110,7 @@ class CommandParser {
           body: message
         }
 
-        const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+        const response = await client.sendEvent(roomId, 'm.room.message', content)
         return response.event_id
       }
     })
@@ -130,7 +130,7 @@ class CommandParser {
           body: message
         }
 
-        const response = await client.sendEvent(roomId, 'm.room.message' as any, content)
+        const response = await client.sendEvent(roomId, 'm.room.message', content)
         return response.event_id
       }
     })
@@ -146,7 +146,7 @@ class CommandParser {
         const client = matrixClientService.getClient()
         if (!client) throw new Error('客户端未初始化')
 
-        await client.sendStateEvent(roomId, 'm.room.topic' as any, { topic }, '')
+        await client.sendStateEvent(roomId, 'm.room.topic', { topic }, '')
         info(`[Command] 设置房间主题: ${roomId}`)
       }
     })

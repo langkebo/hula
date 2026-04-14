@@ -1,6 +1,11 @@
 import { MSG_REPLY_TEXT_MAP } from '@/common/message'
 import { MsgEnum, RoomTypeEnum } from '@/enums'
 
+// 文件内容类型
+interface FileContent {
+  fileName?: string
+}
+
 // 计算展示的回复消息的内容
 export const renderReplyContent = (name?: string, type?: MsgEnum, content?: string, roomType?: RoomTypeEnum) => {
   switch (type) {
@@ -19,7 +24,7 @@ export const renderReplyContent = (name?: string, type?: MsgEnum, content?: stri
       if (typeof content === 'string') {
         fileContent = content
       } else if (content && typeof content === 'object' && 'fileName' in content) {
-        fileContent = (content as any).fileName
+        fileContent = (content as unknown as FileContent).fileName || ''
       }
       fileContent = fileContent || MSG_REPLY_TEXT_MAP[MsgEnum.FILE]
 

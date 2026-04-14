@@ -2,11 +2,9 @@
  * 注册令牌服务
  * 管理和使用注册邀请令牌
  */
+import type { RegistrationTokenResponse, RegistrationTokenListResponse, RegistrationResponse } from '@/types/matrix-api'
 import { matrixClientService } from './MatrixClientService'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('RegistrationToken')
-
+import { BaseManager } from './BaseManager'
 export interface RegistrationToken {
   token: string
   uses_allowed: number
@@ -21,7 +19,7 @@ export interface GenerateTokenParams {
   duration?: number
 }
 
-class MatrixRegistrationTokenService {
+class MatrixRegistrationTokenService extends BaseManager {
   private get client() {
     const c = matrixClientService.getClient()
     if (!c) throw new Error('Matrix client not initialized')
@@ -34,15 +32,14 @@ class MatrixRegistrationTokenService {
   async generate(params: GenerateTokenParams): Promise<RegistrationToken | null> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'POST',
         '/_matrix/client/v1/admin/registration_tokens',
         undefined,
-        { body: JSON.stringify(params) }
-      )) as any
+        JSON.stringify(params),
+        { prefix: '' }
+      )) as RegistrationTokenResponse
       return this.mapToken(response)
-    } catch (error) {
-      logger.error('生成失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -53,14 +50,14 @@ class MatrixRegistrationTokenService {
   async get(token: string): Promise<RegistrationToken | null> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         `/_matrix/client/v1/admin/registration_tokens/${encodeURIComponent(token)}`,
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as RegistrationTokenResponse
       return this.mapToken(response)
-    } catch (error) {
-      logger.error('获取失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -71,14 +68,14 @@ class MatrixRegistrationTokenService {
   async list(): Promise<RegistrationToken[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         '/_matrix/client/v1/admin/registration_tokens',
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as RegistrationTokenListResponse
       return (response.tokens || []).map(this.mapToken)
-    } catch (error) {
-      logger.error('列表失败:', error)
+    } catch (_error) {
       return []
     }
   }
@@ -89,14 +86,14 @@ class MatrixRegistrationTokenService {
   async delete(token: string): Promise<boolean> {
     try {
       await this.client.http.authedRequest(
-        {},
         'DELETE',
         `/_matrix/client/v1/admin/registration_tokens/${encodeURIComponent(token)}`,
-        undefined
+        undefined,
+        undefined,
+        { prefix: '' }
       )
       return true
-    } catch (error) {
-      logger.error('删除失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -110,25 +107,28 @@ class MatrixRegistrationTokenService {
     token: string
   ): Promise<{ user_id: string; access_token: string } | null> {
     try {
-      const response = (await this.client.http.authedRequest({}, 'POST', '/_matrix/client/v1/register', undefined, {
-        body: JSON.stringify({
+      const response = (await this.client.http.authedRequest(
+        'POST',
+        '/_matrix/client/v1/register',
+        undefined,
+        JSON.stringify({
           auth: { type: 'm.login.registration_token', token },
           username,
           password
-        })
-      })) as any
+        }),
+        { prefix: '' }
+      )) as RegistrationResponse
 
       return {
         user_id: response.user_id,
         access_token: response.access_token
       }
-    } catch (error) {
-      logger.error('注册失败:', error)
+    } catch (_error) {
       return null
     }
   }
 
-  private mapToken(data: any): RegistrationToken {
+  private mapToken(data: RegistrationTokenResponse): RegistrationToken {
     return {
       token: data.token,
       uses_allowed: data.uses_allowed,

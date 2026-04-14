@@ -232,8 +232,7 @@ function handleClearSecretChat() {
 }
 
 const encryptionEnabled = computed(() => {
-  const client = matrixClientService.getClient()
-  return !!(client as any)?.crypto
+  return matrixEncryptionService.isEncryptionEnabled()
 })
 
 const backupStatusText = computed(() => {

@@ -1,6 +1,7 @@
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
 const SPECIAL_FRIENDS_EVENT_TYPE = 'm.special_friends' as const
 
@@ -8,10 +9,11 @@ interface SpecialFriendsContent {
   special_friends?: string[]
 }
 
-class MatrixSpecialFriendService {
+class MatrixSpecialFriendService extends BaseManager {
   private listeners: Set<() => void> = new Set()
 
   constructor() {
+    super()
     this.setupSyncListener()
   }
 
@@ -48,8 +50,7 @@ class MatrixSpecialFriendService {
         return content.special_friends
       }
       return []
-    } catch (err) {
-      error(`[SpecialFriend] 获取特别关注好友失败: ${err}`)
+    } catch (_err) {
       return []
     }
   }
@@ -73,7 +74,6 @@ class MatrixSpecialFriendService {
       info(`[SpecialFriend] 添加特别关注好友成功: ${userId}`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '添加特别关注好友失败'
-      error(`[SpecialFriend] ${errorMessage}`)
       throw new Error(errorMessage)
     }
   }
@@ -97,7 +97,6 @@ class MatrixSpecialFriendService {
       info(`[SpecialFriend] 移除特别关注好友成功: ${userId}`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '移除特别关注好友失败'
-      error(`[SpecialFriend] ${errorMessage}`)
       throw new Error(errorMessage)
     }
   }

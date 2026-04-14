@@ -6,8 +6,14 @@ import * as matrixSdk from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SdkCheck')
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const sdk = matrixSdk as any
+
+// 定义 SDK 类型以包含 VERSION 属性
+interface MatrixSdkWithVersion {
+  VERSION?: string
+  [key: string]: unknown
+}
+
+const sdk = matrixSdk as MatrixSdkWithVersion
 
 /**
  * SDK 最低版本要求
@@ -36,7 +42,7 @@ export function getSdkVersionInfo(): SdkVersionInfo {
   // 尝试获取 SDK 版本，如果不可用则使用默认值
   let version = 'unknown'
   try {
-    version = (sdk as any).VERSION || 'unknown'
+    version = sdk.VERSION || 'unknown'
   } catch (_e) {
     // 版本获取失败
   }
@@ -91,7 +97,9 @@ export function checkSdkVersion(): void {
   const info = getSdkVersionInfo()
 
   if (!info.isSupported) {
-    logger.warn(info.warning)
+    if (info.warning) {
+      logger.warn(info.warning)
+    }
 
     if (!info.isCompatible) {
       throw new Error(`Matrix SDK 版本不兼容: ${info.version} (要求: ${MIN_SDK_VERSION} - ${MAX_SDK_VERSION})`)
@@ -116,10 +124,10 @@ export function getClientOptions() {
     userId: '',
 
     // 存储选项
-    store: undefined as any, // MemoryStore, IndexedDBStore
+    store: undefined as unknown, // MemoryStore, IndexedDBStore
 
     // 加密选项
-    cryptoStore: undefined as any,
+    cryptoStore: undefined as unknown,
     verificationLocalDeviceStorageKey: undefined as string | undefined,
 
     // 同步选项
@@ -130,8 +138,8 @@ export function getClientOptions() {
     pendingEventOrdering: 'detached',
 
     // 客户端选项
-    request: undefined as any,
-    timer: undefined as any,
+    request: undefined as unknown,
+    timer: undefined as unknown,
     localTimeoutSeconds: undefined as number | undefined,
 
     // 设备选项
@@ -139,7 +147,7 @@ export function getClientOptions() {
 
     // 高级选项
     unstableClientRelationAggregation: true,
-    matrixClient: undefined as any,
+    matrixClient: undefined as unknown,
     forceTURN: false,
     ICE_SERVERS: [] as RTCIceServer[],
     loggingHook: undefined as ((message: string) => void) | undefined

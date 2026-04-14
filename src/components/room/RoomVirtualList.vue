@@ -84,13 +84,13 @@ const handleContextMenu = (event: MouseEvent, room: RoomInfo) => {
 }
 
 // 处理滚动
-const handleScroll = (_scrollTop: number) => {
+const handleScroll = (_event: Event) => {
   // 可以用于滚动位置恢复
 }
 
 // 处理可见项变化
-const handleVisibleItemsChange = (visibleItems: RoomListItemData[]) => {
-  visibleRoomIds.value = visibleItems.map((item) => item.roomId)
+const handleVisibleItemsChange = (visibleIds: string[]) => {
+  visibleRoomIds.value = visibleIds
 }
 
 // 处理加载更多
@@ -99,8 +99,7 @@ const handleLoadMore = async () => {
 
   isLoadingMore.value = true
   try {
-    const result = await roomStore.loadMoreRooms()
-    hasMore.value = result.hasMore
+    await roomStore.loadRooms()
   } catch (error) {
     logger.error('加载更多房间失败:', error)
   } finally {

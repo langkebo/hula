@@ -10,7 +10,7 @@
             class="flex flex-col gap-8px items-center justify-center rounded-2">
             <svg
               v-if="item.label !== '文件' && item.label !== '图片' && item.isShow()"
-              class="h-24px w-24px iconpark-icon">
+              :class="[item.label === '阅后即焚' && isBurnAfterRead ? 'text-[--primary-color]' : '', 'h-24px w-24px iconpark-icon']">
               <use :href="`#${item.icon}`"></use>
             </svg>
 
@@ -74,15 +74,16 @@ import { CallTypeEnum, RoomTypeEnum } from '@/enums'
 import { UploaderFileListItem } from 'vant'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/global'
+import { useChatFooter } from '@/hooks/useChatFooter'
 
 const logger = createLogger('More')
 
 const globalStore = useGlobalStore()
+const { isBurnAfterRead, toggleBurnAfterRead, isSingleChat } = useChatFooter()
 
 const isGroup = computed(() => globalStore.currentSession?.type === RoomTypeEnum.GROUP)
 
 const pickRtcCall = ref(false)
-// ==== 展开面板 ====
 const options = ref([
   { label: '文件', icon: 'file', showArrow: false, isRotate: true, onClick: () => {}, isShow: () => true },
   { label: '图片', icon: 'photo', showArrow: false, isRotate: true, onClick: () => {}, isShow: () => true },
@@ -98,6 +99,18 @@ const options = ref([
     },
     isShow: () => {
       return !isGroup.value
+    }
+  },
+  {
+    label: '阅后即焚',
+    icon: 'timer',
+    showArrow: false,
+    isRotate: false,
+    onClick: () => {
+      toggleBurnAfterRead()
+    },
+    isShow: () => {
+      return isSingleChat.value && !isGroup.value
     }
   }
 ])

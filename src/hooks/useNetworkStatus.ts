@@ -1,6 +1,7 @@
 /**
  * 网络状态监测钩子
  */
+import { computed } from 'vue'
 import { createSharedComposable, tryOnScopeDispose, useOnline } from '@vueuse/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { useMatrixStore } from '@/stores/matrix'

@@ -1,7 +1,10 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import type { UploadContentOptions, UploadContentResponse } from '@/types/matrix-api'
 import { matrixClientService } from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 import { compressImage, isImageFile, formatFileSize } from '@/utils/ImageUtils'
+import { LRUCache } from '@/utils/LRUCache'
 
 export interface UploadResult {
   contentUri: string
@@ -31,9 +34,11 @@ const DEFAULT_COMPRESS_OPTIONS: CompressOptions = {
   maxSizeKB: 1024
 }
 
-class MatrixMediaServiceClass {
+class MatrixMediaServiceClass extends BaseManager {
   private compressOptions: CompressOptions = { ...DEFAULT_COMPRESS_OPTIONS }
   private enableCompression = true
+  private mediaManager: any = null
+  private mxcUrlCache = new LRUCache<string, string>(500)
 
   setCompressOptions(options: CompressOptions) {
     this.compressOptions = { ...DEFAULT_COMPRESS_OPTIONS, ...options }
@@ -51,146 +56,150 @@ class MatrixMediaServiceClass {
     return client
   }
 
-  async uploadFile(file: File, _onProgress?: (progress: number) => void): Promise<UploadResult> {
+  private getMediaManager() {
     const client = this.getClient()
+    this.mediaManager = (client as any).getMediaManager?.() ?? null
+    return this.mediaManager
+  }
 
-    try {
-      const uploadResponse = await client.uploadContent(file, {
+  async uploadFile(file: File, _onProgress?: (progress: number) => void): Promise<UploadResult> {
+    const manager = this.getMediaManager()
+    let contentUri: string
+
+    if (manager) {
+      const result = await manager.uploadContent(file, { type: file.type })
+      contentUri = typeof result === 'string' ? result : result.content_uri
+    } else {
+      const client = this.getClient()
+      const uploadResponse = (await client.uploadContent(file, {
         type: file.type
-      } as any)
+      } as UploadContentOptions)) as string | UploadContentResponse
+      contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+    }
 
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] 文件上传成功: ${contentUri}`)
+    info(`[MatrixMedia] 文件上传成功: ${contentUri}`)
 
-      // 记录遥测
-      const telemetry = matrixClientService.getTelemetry()
-      if (telemetry) {
-        telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
-      }
+    const telemetry = matrixClientService.getTelemetry()
+    if (telemetry) {
+      telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
+    }
 
-      return {
-        contentUri,
-        size: file.size,
-        mimetype: file.type || 'application/octet-stream'
-      }
-    } catch (err) {
-      error(`[MatrixMedia] 文件上传失败: ${err}`)
-      throw err
+    return {
+      contentUri,
+      size: file.size,
+      mimetype: file.type || 'application/octet-stream'
     }
   }
 
   async uploadImage(file: File, _onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
     const client = this.getClient()
+    const dimensions = await this.getImageDimensions(file)
 
-    try {
-      const dimensions = await this.getImageDimensions(file)
+    let fileToUpload = file
+    let originalSize = file.size
+    let compressedSize = file.size
 
-      let fileToUpload = file
-      let originalSize = file.size
-      let compressedSize = file.size
+    if (this.enableCompression && isImageFile(file)) {
+      try {
+        const result = await compressImage(file, this.compressOptions)
+        fileToUpload = new File([result.blob], file.name || 'image.jpg', { type: result.blob.type })
+        originalSize = result.originalSize ?? file.size
+        compressedSize = result.compressedSize ?? file.size
+        info(
+          `[MatrixMedia] 图片压缩完成: ${formatFileSize(originalSize)} -> ${formatFileSize(compressedSize)} (${result.compressionRatio.toFixed(1)}%)`
+        )
+      } catch (_compressErr) {}
+    }
 
-      if (this.enableCompression && isImageFile(file)) {
-        try {
-          const result = await compressImage(file, this.compressOptions)
-          fileToUpload = new File([result.blob], file.name || 'image.jpg', { type: result.blob.type })
-          originalSize = result.originalSize ?? file.size
-          compressedSize = result.compressedSize ?? file.size
-          info(
-            `[MatrixMedia] 图片压缩完成: ${formatFileSize(originalSize)} -> ${formatFileSize(compressedSize)} (${result.compressionRatio.toFixed(1)}%)`
-          )
-        } catch (compressErr) {
-          error(`[MatrixMedia] 图片压缩失败，使用原图: ${compressErr}`)
-        }
-      }
+    const uploadResponse = (await client.uploadContent(fileToUpload, {
+      type: fileToUpload.type
+    } as UploadContentOptions)) as string | UploadContentResponse
 
-      const uploadResponse = await client.uploadContent(fileToUpload, {
-        type: fileToUpload.type
-      } as any)
-
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] 图片上传成功: ${contentUri}`)
-      return {
-        contentUri,
-        size: compressedSize,
-        mimetype: fileToUpload.type || 'image/png',
-        width: dimensions.width,
-        height: dimensions.height
-      }
-    } catch (err) {
-      error(`[MatrixMedia] 图片上传失败: ${err}`)
-      throw err
+    const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+    info(`[MatrixMedia] 图片上传成功: ${contentUri}`)
+    return {
+      contentUri,
+      size: compressedSize,
+      mimetype: fileToUpload.type || 'image/png',
+      width: dimensions.width,
+      height: dimensions.height
     }
   }
 
   async uploadVideo(file: File, _onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
     const client = this.getClient()
+    const metadata = await this.getVideoMetadata(file)
 
-    try {
-      const metadata = await this.getVideoMetadata(file)
+    const uploadResponse = (await client.uploadContent(file, {
+      type: file.type
+    } as UploadContentOptions)) as string | UploadContentResponse
 
-      const uploadResponse = await client.uploadContent(file, {
-        type: file.type
-      } as any)
-
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] 视频上传成功: ${contentUri}`)
-      return {
-        contentUri,
-        size: file.size,
-        mimetype: file.type || 'video/mp4',
-        width: metadata.width,
-        height: metadata.height,
-        duration: metadata.duration
-      }
-    } catch (err) {
-      error(`[MatrixMedia] 视频上传失败: ${err}`)
-      throw err
+    const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+    info(`[MatrixMedia] 视频上传成功: ${contentUri}`)
+    return {
+      contentUri,
+      size: file.size,
+      mimetype: file.type || 'video/mp4',
+      width: metadata.width,
+      height: metadata.height,
+      duration: metadata.duration
     }
   }
 
   async uploadAudio(file: File, _onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
     const client = this.getClient()
+    const duration = await this.getAudioDuration(file)
 
-    try {
-      const duration = await this.getAudioDuration(file)
+    const uploadResponse = (await client.uploadContent(file, {
+      type: file.type
+    } as UploadContentOptions)) as string | UploadContentResponse
 
-      const uploadResponse = await client.uploadContent(file, {
-        type: file.type
-      } as any)
-
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] 音频上传成功: ${contentUri}`)
-      return {
-        contentUri,
-        size: file.size,
-        mimetype: file.type || 'audio/ogg',
-        duration
-      }
-    } catch (err) {
-      error(`[MatrixMedia] 音频上传失败: ${err}`)
-      throw err
+    const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+    info(`[MatrixMedia] 音频上传成功: ${contentUri}`)
+    return {
+      contentUri,
+      size: file.size,
+      mimetype: file.type || 'audio/ogg',
+      duration
     }
   }
 
   async uploadBlob(blob: Blob, _filename: string, mimetype: string): Promise<UploadResult> {
     const client = this.getClient()
+    const uploadResponse = (await client.uploadContent(blob, {
+      type: mimetype
+    } as UploadContentOptions)) as string | UploadContentResponse
 
-    try {
-      const uploadResponse = await client.uploadContent(blob, {
-        type: mimetype
-      } as any)
-
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] Blob 上传成功: ${contentUri}`)
-      return {
-        contentUri,
-        size: blob.size,
-        mimetype
-      }
-    } catch (err) {
-      error(`[MatrixMedia] Blob 上传失败: ${err}`)
-      throw err
+    const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+    info(`[MatrixMedia] Blob 上传成功: ${contentUri}`)
+    return {
+      contentUri,
+      size: blob.size,
+      mimetype
     }
+  }
+
+  mxcUrlToHttp(mxcUrl: string, width?: number, height?: number, resizeMethod?: 'scale' | 'crop'): string | null {
+    if (!mxcUrl || !mxcUrl.startsWith('mxc://')) {
+      return null
+    }
+
+    const cacheKey = `${mxcUrl}:${width || 0}:${height || 0}:${resizeMethod || 'scale'}`
+    const cached = this.mxcUrlCache.get(cacheKey)
+    if (cached !== undefined) return cached
+
+    const client = matrixClientService.getClient()
+    if (!client) return null
+
+    let result: string | null
+    if (width && height) {
+      result = client.mxcUrlToHttp(mxcUrl, width, height, resizeMethod || 'scale') ?? null
+    } else {
+      result = client.mxcUrlToHttp(mxcUrl) ?? null
+    }
+
+    if (result) this.mxcUrlCache.set(cacheKey, result)
+    return result
   }
 
   getMediaUrl(mxcUrl: string, width?: number, height?: number): string | null {
@@ -198,13 +207,21 @@ class MatrixMediaServiceClass {
       return null
     }
 
+    const cacheKey = `${mxcUrl}:${width || 0}:${height || 0}:scale`
+    const cached = this.mxcUrlCache.get(cacheKey)
+    if (cached !== undefined) return cached
+
     const client = this.getClient()
 
+    let result: string | null
     if (width && height) {
-      return client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
+      result = client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
+    } else {
+      result = client.mxcUrlToHttp(mxcUrl) ?? null
     }
 
-    return client.mxcUrlToHttp(mxcUrl) ?? null
+    if (result) this.mxcUrlCache.set(cacheKey, result)
+    return result
   }
 
   getThumbnailUrl(mxcUrl: string, width: number, height: number): string | null {
@@ -212,8 +229,49 @@ class MatrixMediaServiceClass {
       return null
     }
 
+    const cacheKey = `${mxcUrl}:${width}:${height}:scale`
+    const cached = this.mxcUrlCache.get(cacheKey)
+    if (cached !== undefined) return cached
+
     const client = this.getClient()
-    return client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
+    const result = client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
+    if (result) this.mxcUrlCache.set(cacheKey, result)
+    return result
+  }
+
+  async deleteMedia(serverName: string, mediaId: string): Promise<void> {
+    const manager = this.getMediaManager()
+    if (manager) {
+      await manager.deleteMedia(serverName, mediaId)
+      info(`[MatrixMedia] 媒体已删除: ${serverName}/${mediaId}`)
+    } else {
+      throw new Error('MediaManager 不可用，无法删除媒体')
+    }
+  }
+
+  async previewUrl(url: string): Promise<{ title?: string; description?: string; image?: string } | null> {
+    const manager = this.getMediaManager()
+    if (manager) {
+      return await manager.previewUrl(url)
+    }
+    return null
+  }
+
+  async uploadContentWithId(
+    serverName: string,
+    mediaId: string,
+    content: Blob | File,
+    contentType: string,
+    throwOnError = false
+  ): Promise<string | null> {
+    try {
+      const manager = this.getMediaManager()
+      if (!manager) throw new Error('MediaManager 不可用')
+      const result = await manager.uploadContentWithId(serverName, mediaId, content, contentType)
+      return result?.content_uri ?? null
+    } catch (error) {
+      return this.handleError(error, 'uploadContentWithId', null, throwOnError)
+    }
   }
 
   private getImageDimensions(file: File): Promise<{ width: number; height: number }> {

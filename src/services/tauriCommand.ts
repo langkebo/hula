@@ -12,7 +12,8 @@ import { useLoginHistoriesStore } from '../stores/loginHistory'
 import { useSettingStore } from '../stores/setting'
 import { useUserStore } from '../stores/user'
 import { useUserStatusStore } from '../stores/userStatus'
-import { getAllUserState, getUserDetail } from '../utils/ImRequestUtils'
+import { matrixClientService } from './matrix/MatrixClientService'
+import { matrixPresenceService } from './matrix/MatrixPresenceService'
 import { ErrorType, invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
 import { getEnhancedFingerprint } from './fingerprint'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
@@ -120,10 +121,23 @@ const loginProcess = async (token: string, refreshToken: string, client: string)
   const loginHistoriesStore = useLoginHistoriesStore()
   const { setLoginState } = useLogin()
 
-  userStatusStore.stateList = await getAllUserState()
+  const client = matrixClientService.getClient()
+  if (client) {
+    try {
+      const presence = await matrixPresenceService.getPresence(client.getUserId() ?? '')
+      userStatusStore.stateId = presence?.presence === 'busy' ? '2' : presence?.presence === 'unavailable' ? '3' : '1'
+    } catch (_) {}
+  }
 
-  const userDetail: any = await getUserDetail()
-  userStatusStore.stateId = userDetail.userStateId
+  const userId = client?.getUserId() ?? ''
+  const displayName = client?.getUser(userId)?.displayName ?? ''
+  const avatarUrl = client?.getUser(userId)?.avatarUrl ?? ''
+  const userDetail: any = {
+    uid: userId,
+    userStateId: userStatusStore.stateId,
+    name: displayName,
+    avatar: avatarUrl
+  }
 
   const account = {
     ...userDetail,

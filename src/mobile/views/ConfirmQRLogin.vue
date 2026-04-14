@@ -59,7 +59,7 @@ const nowFormatted = computed(() => now.value.format('YYYY-MM-DD HH:mm:ss'))
 
 // 倒计时
 const countdown = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
+let timer: number | null = null
 
 const props = defineProps({
   ip: String,

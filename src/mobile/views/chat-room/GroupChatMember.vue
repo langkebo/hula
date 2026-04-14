@@ -51,16 +51,13 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
-import { useDebounceFn } from '@vueuse/core'
+import { useDebounceFn, useResizeObserver } from '@vueuse/core'
 import type { UserItem } from '@/services/types'
 import { useGroupStore } from '@/stores/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 
-const logger = createLogger('GroupChatMember')
-const measure = ref(null)
-
+const measure = ref<HTMLElement | null>(null)
 const virtualScrollerHeight = ref(0)
 
 defineOptions({
@@ -75,24 +72,15 @@ const formData = ref({
 
 const filteredList = ref<UserItem[]>([])
 
+useResizeObserver(measure, (entries) => {
+  const entry = entries[0]
+  if (entry) {
+    virtualScrollerHeight.value = entry.contentRect.height
+  }
+})
+
 onMounted(() => {
   filteredList.value = groupStore.memberList
-  // TODO 增加observer来专门监听measure，然后改变virtualScrollerHeight
-
-  if (measure.value) {
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        virtualScrollerHeight.value = entry.contentRect.height
-        logger.debug('高度：', virtualScrollerHeight.value)
-      }
-    })
-    observer.observe(measure.value)
-
-    // 组件卸载时记得断开
-    onBeforeUnmount(() => {
-      observer.disconnect()
-    })
-  }
 })
 
 const toFriendInfo = (uid: string) => toFriendInfoPage(uid)

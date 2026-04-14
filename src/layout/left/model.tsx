@@ -159,12 +159,13 @@ export const CheckUpdate = defineComponent(() => {
     chore: 'hammer-and-wrench'
   }
 
-  const mapCommitType = (commitMessage: string) => {
+  const mapCommitType = (commitMessage: string): string => {
     for (const type in commitTypeMap) {
       if (new RegExp(`^${type}`, 'i').test(commitMessage)) {
         return commitTypeMap[type]
       }
     }
+    return 'commit'
   }
 
   /* 记录检测更新的版本 */
@@ -236,7 +237,7 @@ export const CheckUpdate = defineComponent(() => {
         try {
           await relaunch()
         } catch (e) {
-          logger.debug(e)
+          logger.debug('relaunch failed:', e)
           window.$message.error(t('message.check_update.restart_failed'))
         }
       })

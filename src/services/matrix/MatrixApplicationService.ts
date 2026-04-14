@@ -3,10 +3,8 @@
  * 第三方应用服务集成
  */
 import { matrixClientService } from './MatrixClientService'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('ApplicationService')
-
+import { BaseManager } from './BaseManager'
+import type { ApplicationServiceListResponse, ApplicationServiceNamespaceResponse } from '@/types/matrix-api'
 export interface ApplicationService {
   id: string
   url: string
@@ -29,7 +27,7 @@ export interface AsRegistration {
   rate_limited?: boolean
 }
 
-class MatrixApplicationService {
+class MatrixApplicationService extends BaseManager {
   private get client() {
     const c = matrixClientService.getClient()
     if (!c) throw new Error('Matrix client not initialized')
@@ -41,12 +39,15 @@ class MatrixApplicationService {
    */
   async register(asInfo: AsRegistration): Promise<boolean> {
     try {
-      await this.client.http.authedRequest({}, 'POST', '/_matrix/client/v3/applicationservice/register', undefined, {
-        body: JSON.stringify(asInfo)
-      })
+      await this.client.http.authedRequest(
+        'POST',
+        '/_matrix/client/v3/applicationservice/register',
+        undefined,
+        JSON.stringify(asInfo),
+        { prefix: '' }
+      )
       return true
-    } catch (error) {
-      logger.error('注册失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -57,14 +58,14 @@ class MatrixApplicationService {
   async list(): Promise<ApplicationService[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         '/_matrix/client/v3/applicationservice/services',
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as ApplicationServiceListResponse
       return response.services || []
-    } catch (error) {
-      logger.error('获取列表失败:', error)
+    } catch (_error) {
       return []
     }
   }
@@ -82,8 +83,7 @@ class MatrixApplicationService {
         { body: JSON.stringify({ enabled }) }
       )
       return true
-    } catch (error) {
-      logger.error('设置启用状态失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -94,11 +94,12 @@ class MatrixApplicationService {
   async getUsersNamespace(serviceId: string): Promise<{ exclusive: boolean; pattern: string }[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         `/_matrix/client/v3/applicationservice/services/${serviceId}/users`,
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as ApplicationServiceNamespaceResponse
       return response.namespaces?.users || []
     } catch {
       return []
@@ -111,11 +112,12 @@ class MatrixApplicationService {
   async getRoomsNamespace(serviceId: string): Promise<{ exclusive: boolean; pattern: string }[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         `/_matrix/client/v3/applicationservice/services/${serviceId}/rooms`,
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as ApplicationServiceNamespaceResponse
       return response.namespaces?.rooms || []
     } catch {
       return []

@@ -1,12 +1,29 @@
 import * as sdk from 'matrix-js-sdk'
 import { MatrixClient, Room, MatrixEvent } from 'matrix-js-sdk'
-// @ts-expect-error
 import { TelemetryManager } from 'matrix-js-sdk/src/telemetry'
 import { PendingEventOrdering, ICreateClientOpts } from '@/types/matrix-js-sdk'
-import { info, error } from '@tauri-apps/plugin-log'
+import { ExtendedMatrixClientForEvents } from '@/types/matrix-api'
+import { info, warn } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
 
-// 导入并初始化 Manager 扩展
 import 'matrix-js-sdk/src/manager-extensions'
+import { extendMatrixClientWithManagers } from 'matrix-js-sdk/src/manager-extensions'
+
+import matrixPresenceService from './MatrixPresenceService'
+import matrixKeyBackupService from './MatrixKeyBackupService'
+import matrixVerificationService from './MatrixVerificationService'
+import matrixSecureBackupService from './MatrixSecureBackupService'
+import matrixAccountDataService from './MatrixAccountDataService'
+import matrixRendezvousService from './MatrixRendezvousService'
+import { matrixBeaconService } from './MatrixBeaconService'
+import { matrixLocationService } from './MatrixLocationService'
+import matrixThreadService from './MatrixThreadService'
+import matrixKeyRotationService from './MatrixKeyRotationService'
+import matrixBurnAfterReadService from './MatrixBurnAfterReadService'
+import matrixPinnedEventsService from './MatrixPinnedEventsService'
+import matrixWidgetService from './MatrixWidgetService'
+import matrixAIConnectionService from './MatrixAIConnectionService'
+import matrixGuestService from './MatrixGuestService'
 
 /**
  * 连接状态类型
@@ -66,15 +83,22 @@ export interface LoginResult {
  * }
  * ```
  */
-class MatrixClientService {
+class MatrixClientService extends BaseManager {
   private client: MatrixClient | null = null
   private connectionState: ConnectionState = 'DISCONNECTED'
   private config: MatrixClientConfig | null = null
   private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
   private slidingSyncInstance: any = null
   private telemetryManager: TelemetryManager | null = null
+  // 存储 SDK 事件监听器引用，用于清理
+  private sdkEventHandlers: Map<string, (...args: unknown[]) => void> = new Map()
+  private tokenRefreshTimer: number | null = null
+  private refreshToken: string | null = null
+  private _tokenExpiresIn: number | null = null
+  private _tokenStartTime: number | null = null
 
   constructor() {
+    super()
     info('[MatrixClient] Matrix 客户端服务初始化')
   }
 
@@ -83,6 +107,116 @@ class MatrixClientService {
    */
   getTelemetry(): TelemetryManager | null {
     return this.telemetryManager
+  }
+
+  /**
+   * 启动 Token 自动刷新
+   *
+   * @param expiresIn - Token 过期时间（毫秒）
+   * @param refreshToken - Refresh Token
+   */
+  private startTokenRefresh(expiresIn: number, refreshToken?: string): void {
+    this._tokenExpiresIn = expiresIn
+    this._tokenStartTime = Date.now()
+    this.refreshToken = refreshToken || null
+
+    // 清除旧的定时器
+    if (this.tokenRefreshTimer) {
+      clearInterval(this.tokenRefreshTimer)
+    }
+
+    // 在 Token 过期前 5 分钟刷新（移动端提前 10 分钟）
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+    const refreshBuffer = isMobile ? 10 * 60 * 1000 : 5 * 60 * 1000
+    let refreshInterval = expiresIn - refreshBuffer
+
+    // 确保刷新间隔至少为 1 分钟
+    if (refreshInterval < 60000) {
+      refreshInterval = 60000
+    }
+
+    if (refreshInterval > 0) {
+      this.tokenRefreshTimer = window.setInterval(async () => {
+        await this.refreshAccessToken()
+      }, refreshInterval)
+
+      info(`[MatrixClient] Token 自动刷新已启动，将在 ${Math.floor(refreshInterval / 1000 / 60)} 分钟后刷新`)
+    }
+  }
+
+  /**
+   * 停止 Token 自动刷新
+   */
+  private stopTokenRefresh(): void {
+    if (this.tokenRefreshTimer) {
+      clearInterval(this.tokenRefreshTimer)
+      this.tokenRefreshTimer = null
+    }
+    this._tokenExpiresIn = null
+    this.refreshToken = null
+  }
+
+  /**
+   * 刷新 Access Token
+   */
+  async refreshAccessToken(): Promise<boolean> {
+    if (!this.client || !this.refreshToken) {
+      warn('[MatrixClient] 无法刷新 Token：客户端未初始化或无 Refresh Token')
+      return false
+    }
+
+    const startTime = performance.now()
+
+    try {
+      info('[MatrixClient] 开始刷新 Access Token')
+
+      const result = await this.client.refreshAccessToken(this.refreshToken)
+
+      const duration = performance.now() - startTime
+
+      // 更新 Token
+      if (result.access_token) {
+        this.client.http.opts.accessToken = result.access_token
+        info('[MatrixClient] Access Token 刷新成功')
+      }
+
+      // 更新 Refresh Token（如果服务器返回了新的）
+      if (result.refresh_token) {
+        this.refreshToken = result.refresh_token
+      }
+
+      // 重新启动刷新定时器
+      if (result.expires_in_ms) {
+        this.startTokenRefresh(result.expires_in_ms, this.refreshToken || undefined)
+      }
+
+      // 性能监控：记录刷新耗时
+      this.telemetryManager?.track('token_refresh_success', {
+        duration_ms: duration,
+        expires_in_ms: result.expires_in_ms
+      })
+
+      // 性能告警：如果刷新时间超过 500ms，记录警告
+      if (duration > 500) {
+        warn(`[MatrixClient] Token 刷新耗时过长: ${duration.toFixed(2)}ms`)
+        this.telemetryManager?.track('token_refresh_slow', {
+          duration_ms: duration
+        })
+      }
+
+      return true
+    } catch (err) {
+      const duration = performance.now() - startTime
+      // 错误上报
+      this.telemetryManager?.track('token_refresh_failed', {
+        duration_ms: duration,
+        error: err instanceof Error ? err.message : String(err)
+      })
+
+      // Token 刷新失败，可能需要重新登录
+      this.stopTokenRefresh()
+      return false
+    }
   }
 
   /**
@@ -110,40 +244,51 @@ class MatrixClientService {
     // Initialize temporary client to create SlidingSync instance
     const tempClient = sdk.createClient(clientOpts)
 
-    // Enable Sliding Sync (MSC3886)
-    const lists = new Map()
-    lists.set('default', {
-      ranges: [[0, 20]],
-      sort: ['by_recency'],
-      timeline_limit: 20,
-      required_state: [
-        ['m.room.name', ''],
-        ['m.room.avatar', ''],
-        ['m.room.encryption', ''],
-        ['m.room.member', '*']
-      ]
-    })
-
-    const slidingSync = new (sdk as any).SlidingSync(
-      config.homeserverUrl,
-      lists,
-      {
-        timeline_limit: 20,
-        required_state: [
+    // Detect mobile platform for optimized parameters
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+    const timelineLimit = isMobile ? 10 : 20
+    const requiredState = isMobile
+      ? [
+          ['m.room.name', ''],
+          ['m.room.avatar', '']
+        ]
+      : [
           ['m.room.name', ''],
           ['m.room.avatar', ''],
           ['m.room.encryption', ''],
           ['m.room.member', '*']
         ]
+
+    // Enable Sliding Sync (MSC3886)
+    const lists = new Map()
+    lists.set('default', {
+      ranges: [[0, timelineLimit === 10 ? 10 : 20]],
+      sort: ['by_recency'],
+      timeline_limit: timelineLimit,
+      required_state: requiredState
+    })
+
+    const SlidingSyncCtor = (sdk as any).SlidingSync
+    const slidingSync = new SlidingSyncCtor(
+      config.homeserverUrl,
+      lists,
+      {
+        timeline_limit: timelineLimit,
+        required_state: requiredState
       },
       tempClient,
-      2000 // timeout
+      isMobile ? 5000 : 2000 // longer timeout for mobile
     )
+
+    info(`[MatrixClient] Sliding Sync configured: isMobile=${isMobile}, timelineLimit=${timelineLimit}`)
 
     // @ts-expect-error: slidingSync is an experimental/custom property not in ICreateClientOpts
     clientOpts.slidingSync = slidingSync
     this.slidingSyncInstance = slidingSync
     this.client = sdk.createClient(clientOpts)
+
+    // 注册所有 SDK Manager 扩展 (AI Connection, Voice, Widget, BurnAfterRead 等)
+    await extendMatrixClientWithManagers()
 
     info(`[MatrixClient] 客户端初始化完成: ${config.homeserverUrl} (启用 Sliding Sync)`)
   }
@@ -180,6 +325,11 @@ class MatrixClientService {
 
       this.connectionState = 'CONNECTED'
 
+      // 启动 Token 自动刷新（如果服务器返回了 refresh_token 和 expires_in）
+      if (loginResponse.refresh_token && loginResponse.expires_in) {
+        this.startTokenRefresh(loginResponse.expires_in, loginResponse.refresh_token)
+      }
+
       return {
         success: true,
         userId: loginResponse.user_id,
@@ -189,7 +339,6 @@ class MatrixClientService {
     } catch (err) {
       this.connectionState = 'ERROR'
       const errorMessage = err instanceof Error ? err.message : '登录失败'
-      error(`[MatrixClient] 登录失败: ${errorMessage}`)
       return {
         success: false,
         error: errorMessage
@@ -222,8 +371,7 @@ class MatrixClientService {
       info(`[MatrixClient] 获取 SSO 登录 URL 成功`)
       return ssoUrl
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '获取 SSO 登录 URL 失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '获取 SSO 登录 URL 失败'
       throw err
     }
   }
@@ -257,7 +405,6 @@ class MatrixClientService {
     } catch (err) {
       this.connectionState = 'ERROR'
       const errorMessage = err instanceof Error ? err.message : 'SSO 登录失败'
-      error(`[MatrixClient] ${errorMessage}`)
       return {
         success: false,
         error: errorMessage
@@ -293,7 +440,6 @@ class MatrixClientService {
     } catch (err) {
       this.connectionState = 'ERROR'
       const errorMessage = err instanceof Error ? err.message : 'Token 登录失败'
-      error(`[MatrixClient] ${errorMessage}`)
       return {
         success: false,
         error: errorMessage
@@ -312,10 +458,11 @@ class MatrixClientService {
     try {
       await this.client!.logout()
       await this.stopClient()
+      // 重置密钥恢复状态
+      matrixKeyBackupService.resetRestoreState()
       info('[MatrixClient] 登出成功')
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '登出失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '登出失败'
     } finally {
       this.client = null
       this.connectionState = 'DISCONNECTED'
@@ -339,12 +486,17 @@ class MatrixClientService {
       })
       this.connectionState = 'CONNECTED'
       this.setupEventListeners()
+      this.initializeServices()
+
+      // 新设备自动恢复密钥（非阻塞）
+      matrixKeyBackupService.autoRestoreKeysOnNewDevice().catch((err) => {
+        warn(`[MatrixClient] 密钥自动恢复失败: ${err}`)
+      })
 
       info('[MatrixClient] 客户端启动成功')
     } catch (err) {
       this.connectionState = 'ERROR'
-      const errorMessage = err instanceof Error ? err.message : '客户端启动失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '客户端启动失败'
       throw err
     }
   }
@@ -354,6 +506,9 @@ class MatrixClientService {
    */
   async stopClient(): Promise<void> {
     if (this.client) {
+      // 先清理事件监听器，防止内存泄漏
+      this.cleanupEventListeners()
+
       this.client.stopClient()
       this.connectionState = 'DISCONNECTED'
       info('[MatrixClient] 客户端已停止')
@@ -367,6 +522,80 @@ class MatrixClientService {
    */
   getClient(): MatrixClient | null {
     return this.client
+  }
+
+  isConnected(): boolean {
+    return this.client !== null
+  }
+
+  getHomeserverUrl(): string | null {
+    if (!this.client) return null
+    return this.client.getHomeserverUrl()
+  }
+
+  getDomain(): string | null {
+    if (!this.client) return null
+    return (this.client as any).getDomain?.() ?? null
+  }
+
+  async startWithToken(accessToken: string, deviceId?: string): Promise<void> {
+    if (!this.client) return
+    await (this.client as any).startWithToken?.(accessToken, deviceId)
+  }
+
+  /**
+   * 获取客户端配置
+   *
+   * @returns 客户端配置，如果未初始化则返回 null
+   */
+  getConfig(): MatrixClientConfig | null {
+    return this.config
+  }
+
+  /**
+   * 注册新用户
+   *
+   * @param username - 用户名
+   * @param password - 密码
+   * @param session - 认证会话 (可选)
+   * @returns 注册结果
+   */
+  async register(username: string, password: string, session?: string): Promise<LoginResult> {
+    if (!this.client) {
+      return { success: false, error: '客户端未初始化' }
+    }
+
+    try {
+      this.connectionState = 'CONNECTING'
+      const authData: any = session ? { session } : undefined
+
+      const registerResponse = await this.client.register(username, password, undefined, authData)
+
+      info(`[MatrixClient] 注册成功: ${registerResponse.user_id}`)
+
+      await this.initialize({
+        ...this.config!,
+        accessToken: registerResponse.access_token,
+        userId: registerResponse.user_id,
+        deviceId: registerResponse.device_id ?? undefined
+      })
+
+      this.connectionState = 'CONNECTED'
+
+      return {
+        success: true,
+        userId: registerResponse.user_id,
+        deviceId: registerResponse.device_id,
+        accessToken: registerResponse.access_token
+      }
+    } catch (err) {
+      this.connectionState = 'ERROR'
+      const errorMessage = err instanceof Error ? err.message : '注册失败'
+      return {
+        success: false,
+        error: errorMessage
+      }
+    }
   }
 
   /**
@@ -443,8 +672,7 @@ class MatrixClientService {
       }
       return room
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '创建房间失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '创建房间失败'
       throw err
     }
   }
@@ -470,8 +698,7 @@ class MatrixClientService {
       }
       return room
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '加入房间失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '加入房间失败'
       throw err
     }
   }
@@ -491,8 +718,7 @@ class MatrixClientService {
       await this.client!.leave(roomId)
       info(`[MatrixClient] 离开房间成功: ${roomId}`)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '离开房间失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '离开房间失败'
       throw err
     }
   }
@@ -540,23 +766,78 @@ class MatrixClientService {
    * 设置 SDK 事件监听器
    * 注意: MatrixClient 继承自 EventEmitter，事件名称为字符串字面量
    */
+  private initializeServices(): void {
+    if (!this.client) return
+    try {
+      matrixPresenceService.initialize(this.client)
+      matrixKeyBackupService.initialize(this.client)
+      matrixVerificationService.initialize(this.client)
+      matrixSecureBackupService.initialize(this.client)
+      matrixAccountDataService.initialize(this.client)
+      matrixRendezvousService.initialize(this.client)
+      matrixBeaconService.initialize()
+      matrixLocationService.initialize()
+      matrixThreadService.initialize()
+      matrixKeyRotationService.initialize()
+      matrixBurnAfterReadService.initialize()
+      matrixPinnedEventsService.initialize()
+      matrixWidgetService.initialize()
+      matrixAIConnectionService.initialize()
+      matrixGuestService.initialize()
+      info('[MatrixClient] 服务初始化完成')
+    } catch (error) {
+      this.handleError(error, 'initializeServices', undefined as unknown as void, false)
+    }
+  }
+
   private setupEventListeners(): void {
     if (!this.client) return
 
-    const client = this.client as any
-    client.on('sync', (state: string) => {
+    const client = this.client as unknown as ExtendedMatrixClientForEvents
+
+    // 创建并存储事件处理器引用，以便后续清理
+    const syncHandler = (...args: unknown[]) => {
+      const state = args[0] as string
       this.emit('sync', { state })
       this.emit('connectionState', { state })
       info(`[MatrixClient] 同步状态: ${state}`)
-    })
+    }
+    this.sdkEventHandlers.set('sync', syncHandler)
+    client.on('sync', syncHandler)
 
-    client.on('room', (room: Room) => {
+    const roomHandler = (...args: unknown[]) => {
+      const room = args[0] as Room
       this.emit('room', room)
+    }
+    this.sdkEventHandlers.set('room', roomHandler)
+    client.on('room', roomHandler)
+
+    const timelineHandler = (...args: unknown[]) => {
+      const event = args[0] as MatrixEvent
+      const room = args[1] as Room | undefined
+      this.emit('timeline', { event, room })
+    }
+    this.sdkEventHandlers.set('room_timeline', timelineHandler)
+    client.on('room_timeline', timelineHandler)
+  }
+
+  /**
+   * 清理 SDK 事件监听器
+   * 在停止客户端或登出时调用，防止内存泄漏
+   */
+  private cleanupEventListeners(): void {
+    if (!this.client) return
+
+    const client = this.client as unknown as ExtendedMatrixClientForEvents
+
+    // 移除所有已注册的事件监听器
+    this.sdkEventHandlers.forEach((handler, eventName) => {
+      client.off(eventName, handler)
+      info(`[MatrixClient] 已移除事件监听器: ${eventName}`)
     })
 
-    client.on('room_timeline', (event: MatrixEvent, room: Room | undefined) => {
-      this.emit('timeline', { event, room })
-    })
+    // 清空监听器引用
+    this.sdkEventHandlers.clear()
   }
 }
 

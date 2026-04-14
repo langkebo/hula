@@ -22,19 +22,8 @@
         </div>
         <n-switch v-model:value="backupEnabled" :disabled="!encryptionEnabled" @update:value="handleBackupToggle" />
       </div>
-      <div v-if="backupEnabled && encryptionEnabled" class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">备份版本</span>
-          <span class="setting-desc">当前备份版本: {{ backupVersion }}</span>
-        </div>
-        <n-button size="small" :loading="createBackupLoading" @click="handleCreateBackup">创建新备份</n-button>
-      </div>
-      <div v-if="backupEnabled && encryptionEnabled" class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">恢复密钥</span>
-          <span class="setting-desc">使用恢复密钥还原加密消息</span>
-        </div>
-        <n-button size="small" @click="handleRestoreBackup">恢复</n-button>
+      <div v-if="backupEnabled && encryptionEnabled">
+        <KeyBackupVersionManager />
       </div>
     </div>
 
@@ -75,8 +64,11 @@
           <span class="setting-label">验证状态</span>
           <span class="setting-desc">{{ deviceVerified ? '此设备已验证' : '此设备未验证' }}</span>
         </div>
-        <n-button v-if="!deviceVerified" size="small" type="primary" @click="handleVerifyDevice">验证设备</n-button>
-        <n-tag v-else type="success">已验证</n-tag>
+        <n-flex :size="8">
+          <n-button v-if="!deviceVerified" size="small" type="primary" @click="handleVerifyDevice">验证设备</n-button>
+          <n-button v-if="!deviceVerified" size="small" @click="handleSasVerify">SAS 验证</n-button>
+          <n-tag v-if="deviceVerified" type="success">已验证</n-tag>
+        </n-flex>
       </div>
       <div class="setting-item">
         <div class="setting-info">
@@ -109,9 +101,9 @@
 
     <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupCreated" />
 
-    <KeyBackupRestoreDialog v-model:show="showRestoreDialog" @success="handleRestoreSuccess" />
-
     <DeviceVerifyDialog v-model:show="showVerifyDialog" @success="handleVerifySuccess" />
+
+    <SasVerificationDialog v-model:show="showSasDialog" :user-id="currentUserId" @verified="handleVerifySuccess" />
 
     <CrossSigningDialog v-model:show="showCrossSigningDialog" />
 
@@ -129,16 +121,18 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { NSwitch, NButton, NDivider, NTag, NModal, useMessage } from 'naive-ui'
+import { NSwitch, NButton, NDivider, NTag, NModal, NFlex, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('EncryptionSettings')
-import { matrixClientService } from '@/services/matrix'
+import { matrixClientService, matrixAccountService } from '@/services/matrix'
 import { matrixEncryptionService } from '@/services/matrix'
+import matrixKeyRotationService from '@/services/matrix/MatrixKeyRotationService'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
-import KeyBackupRestoreDialog from '@/components/encryption/KeyBackupRestoreDialog.vue'
+import KeyBackupVersionManager from '@/components/encryption/KeyBackupVersionManager.vue'
 import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
+import SasVerificationDialog from '@/components/encryption/SasVerificationDialog.vue'
 import CrossSigningDialog from '@/components/encryption/CrossSigningDialog.vue'
 import KeyRotationDialog from '@/components/encryption/KeyRotationDialog.vue'
 
@@ -149,22 +143,20 @@ defineOptions({
 const message = useMessage()
 
 const backupEnabled = ref(false)
-const backupVersion = ref('v1')
 const deviceVerified = ref(false)
 const deviceKeyVisible = ref(false)
 const deviceFingerprint = ref('')
 const showBackupDialog = ref(false)
-const showRestoreDialog = ref(false)
 const showVerifyDialog = ref(false)
+const showSasDialog = ref(false)
+const currentUserId = ref('')
 const showCrossSigningDialog = ref(false)
 const showKeyRotationDialog = ref(false)
-const createBackupLoading = ref(false)
 const crossSigningSetup = ref(false)
 const needsRotation = ref(false)
 
 const encryptionEnabled = computed(() => {
-  const client = matrixClientService.getClient()
-  return !!(client as any)?.crypto
+  return matrixEncryptionService.isEncryptionEnabled()
 })
 
 const keyStatus = computed(() => {
@@ -186,29 +178,23 @@ onMounted(async () => {
 })
 
 async function loadEncryptionInfo() {
-  const client = matrixClientService.getClient()
-  if (!client || !(client as any).crypto) {
+  if (!matrixEncryptionService.isEncryptionEnabled()) {
     return
   }
 
+  currentUserId.value = matrixAccountService.getCurrentUserId() || ''
+
   try {
-    const crypto = (client as any).crypto
-
-    if (crypto.getOwnDeviceKeys) {
-      const keys = await crypto.getOwnDeviceKeys()
-      if (keys.ed25519) {
-        deviceFingerprint.value = formatFingerprint(keys.ed25519)
-      }
+    const keys = await matrixEncryptionService.getOwnDeviceKeys()
+    if (keys?.ed25519) {
+      deviceFingerprint.value = formatFingerprint(keys.ed25519)
     }
 
-    if (crypto.getGlobalBlacklistUnverifiedDevices) {
-      deviceVerified.value = !crypto.getGlobalBlacklistUnverifiedDevices()
-    }
+    deviceVerified.value = !matrixEncryptionService.isGlobalBlacklistUnverifiedDevices()
 
     const backupInfo = await matrixEncryptionService.getKeyBackupInfo()
     if (backupInfo) {
       backupEnabled.value = true
-      backupVersion.value = `v${backupInfo.version || 1}`
     }
 
     const savedBackup = localStorage.getItem('hula-backup-enabled')
@@ -219,8 +205,8 @@ async function loadEncryptionInfo() {
     const crossSigningInfo = await matrixEncryptionService.getCrossSigningInfo()
     crossSigningSetup.value = crossSigningInfo.isSetup
 
-    const rotationStatus = await matrixEncryptionService.getKeyRotationStatus()
-    needsRotation.value = rotationStatus.needsRotation
+    const rotationStatus = await matrixKeyRotationService.getRotationStatus()
+    needsRotation.value = rotationStatus.needs_rotation
   } catch (error) {
     logger.error('加载加密信息失败:', error)
   }
@@ -245,26 +231,17 @@ function handleBackupToggle(value: boolean) {
   }
 }
 
-function handleCreateBackup() {
-  showBackupDialog.value = true
-}
-
 function handleBackupCreated() {
   backupEnabled.value = true
-  backupVersion.value = `v${Date.now()}`
   message.success('备份创建成功')
-}
-
-function handleRestoreBackup() {
-  showRestoreDialog.value = true
-}
-
-function handleRestoreSuccess() {
-  message.success('密钥恢复成功')
 }
 
 function handleVerifyDevice() {
   showVerifyDialog.value = true
+}
+
+function handleSasVerify() {
+  showSasDialog.value = true
 }
 
 function handleVerifySuccess() {

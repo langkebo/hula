@@ -1,6 +1,8 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import type { ExtendedMatrixClientForVoIP, RTCStatsReport } from '@/types/matrix-api'
 import matrixClientService from './MatrixClientService'
-import { info, error, warn } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info, warn } from '@tauri-apps/plugin-log'
 
 interface VoIPCall {
   callId: string
@@ -13,6 +15,7 @@ interface VoIPCall {
   setLocalVideoMuted(muted: boolean): void
   setLocalAudioMuted(muted: boolean): void
   setScreensharingEnabled(enabled: boolean, opts?: { audio: boolean }): Promise<boolean>
+  placeCall(stream: MediaStream, video: boolean): Promise<void>
   peerConn?: RTCPeerConnection
 }
 
@@ -67,43 +70,84 @@ export interface CallStats {
   roundTripTime: number
 }
 
-class MatrixVoIPService {
+class MatrixVoIPService extends BaseManager {
   private calls: Map<string, CallInfo> = new Map()
   private callHandlers: Map<string, Set<(call: CallInfo) => void>> = new Map()
   private localStream: MediaStream | null = null
   private screenStream: MediaStream | null = null
+  // 存储事件处理器引用，用于清理
+  private eventHandlers: Map<string, (...args: unknown[]) => void> = new Map()
 
   async initialize(): Promise<void> {
-    const client = matrixClientService.getClient() as any
+    const client = matrixClientService.getClient()
     if (!client) {
       warn('[VoIP] 客户端未初始化')
       return
     }
 
     try {
-      if (client.voipHandler) {
+      const extendedClient = client as unknown as ExtendedMatrixClientForVoIP
+      if (extendedClient.voipHandler) {
         this.setupCallHandlers(client)
         info('[VoIP] VoIP 模块初始化成功')
       } else {
         warn('[VoIP] VoIP 模块不可用')
       }
-    } catch (err) {
-      error(`[VoIP] 初始化失败: ${err}`)
-    }
+    } catch (_err) {}
   }
 
   private setupCallHandlers(client: MatrixClient): void {
-    client.on('Call.incoming', (call: VoIPCall) => {
-      this.handleIncomingCall(call)
-    })
+    // 创建并存储事件处理器引用
+    const incomingHandler = (...args: unknown[]) => {
+      this.handleIncomingCall(args[0] as VoIPCall)
+    }
+    const hangupHandler = (...args: unknown[]) => {
+      this.handleCallHangup(args[0] as VoIPCall)
+    }
+    const replacedHandler = (...args: unknown[]) => {
+      this.handleCallReplaced(args[0] as VoIPCall, args[1] as VoIPCall)
+    }
 
-    client.on('Call.hangup', (call: VoIPCall) => {
-      this.handleCallHangup(call)
-    })
+    this.eventHandlers.set('Call.incoming', incomingHandler)
+    this.eventHandlers.set('Call.hangup', hangupHandler)
+    this.eventHandlers.set('Call.replaced', replacedHandler)
 
-    client.on('Call.replaced', (newCall: VoIPCall, oldCall: VoIPCall) => {
-      this.handleCallReplaced(newCall, oldCall)
-    })
+    client.on('Call.incoming', incomingHandler)
+    client.on('Call.hangup', hangupHandler)
+    client.on('Call.replaced', replacedHandler)
+  }
+
+  /**
+   * 清理 VoIP 服务
+   * 移除所有事件监听器，停止所有媒体流
+   */
+  cleanup(): void {
+    const client = matrixClientService.getClient()
+    if (client) {
+      // 移除所有事件监听器
+      this.eventHandlers.forEach((handler, eventName) => {
+        client.off(eventName, handler)
+        info(`[VoIP] 已移除事件监听器: ${eventName}`)
+      })
+      this.eventHandlers.clear()
+    }
+
+    // 停止所有媒体流
+    if (this.localStream) {
+      this.localStream.getTracks().forEach((track) => track.stop())
+      this.localStream = null
+    }
+
+    if (this.screenStream) {
+      this.screenStream.getTracks().forEach((track) => track.stop())
+      this.screenStream = null
+    }
+
+    // 清理所有通话
+    this.calls.clear()
+    this.callHandlers.clear()
+
+    info('[VoIP] VoIP 服务已清理')
   }
 
   private handleIncomingCall(call: VoIPCall): void {
@@ -143,13 +187,12 @@ class MatrixVoIPService {
     this.handleIncomingCall(newCall)
   }
 
-  async startCall(roomId: string, options: CallOptions): Promise<string> {
-    const client = matrixClientService.getClient() as any
-    if (!client) {
-      throw new Error('[VoIP] 客户端未初始化')
-    }
-
+  async startCall(roomId: string, options: CallOptions, throwOnError = false): Promise<string> {
     try {
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[VoIP] 客户端未初始化')
+      }
       const constraints: MediaStreamConstraints = {
         audio: options.audio,
         video: options.video
@@ -157,10 +200,11 @@ class MatrixVoIPService {
 
       this.localStream = await navigator.mediaDevices.getUserMedia(constraints)
 
-      const call = client.createCall(roomId, undefined, {
+      const extendedClient = client as unknown as ExtendedMatrixClientForVoIP
+      const call = extendedClient.createCall?.(roomId, undefined, {
         audio: options.audio,
         video: options.video
-      })
+      }) as VoIPCall | undefined
 
       if (!call) {
         throw new Error('[VoIP] 无法创建通话')
@@ -185,19 +229,17 @@ class MatrixVoIPService {
 
       info(`[VoIP] 发起通话: ${callId}`)
       return callId
-    } catch (err) {
-      error(`[VoIP] 发起通话失败: ${err}`)
-      throw err
+    } catch (error) {
+      return this.handleError(error, 'startCall', '', throwOnError)
     }
   }
 
-  async answerCall(callId: string, options: CallOptions = { audio: true, video: false }): Promise<void> {
-    const client = matrixClientService.getClient() as any
-    if (!client) {
-      throw new Error('[VoIP] 客户端未初始化')
-    }
-
+  async answerCall(callId: string, options: CallOptions = { audio: true, video: false }, throwOnError = false): Promise<void> {
     try {
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[VoIP] 客户端未初始化')
+      }
       const constraints: MediaStreamConstraints = {
         audio: options.audio,
         video: options.video
@@ -220,19 +262,17 @@ class MatrixVoIPService {
       await call.answer(this.localStream, options.video)
 
       info(`[VoIP] 接听通话: ${callId}`)
-    } catch (err) {
-      error(`[VoIP] 接听通话失败: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'answerCall', undefined, throwOnError)
     }
   }
 
-  async rejectCall(callId: string): Promise<void> {
-    const client = matrixClientService.getClient() as any
-    if (!client) {
-      throw new Error('[VoIP] 客户端未初始化')
-    }
-
+  async rejectCall(callId: string, throwOnError = false): Promise<void> {
     try {
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[VoIP] 客户端未初始化')
+      }
       const call = this.getCallById(callId, client)
       if (call) {
         call.hangup('user_busy')
@@ -240,19 +280,17 @@ class MatrixVoIPService {
 
       this.calls.delete(callId)
       info(`[VoIP] 拒绝通话: ${callId}`)
-    } catch (err) {
-      error(`[VoIP] 拒绝通话失败: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'rejectCall', undefined, throwOnError)
     }
   }
 
-  async hangupCall(callId: string): Promise<void> {
-    const client = matrixClientService.getClient() as any
-    if (!client) {
-      throw new Error('[VoIP] 客户端未初始化')
-    }
-
+  async hangupCall(callId: string, throwOnError = false): Promise<void> {
     try {
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[VoIP] 客户端未初始化')
+      }
       const call = this.getCallById(callId, client)
       if (call) {
         call.hangup('user_hangup')
@@ -260,9 +298,8 @@ class MatrixVoIPService {
 
       this.cleanupCall(callId)
       info(`[VoIP] 挂断通话: ${callId}`)
-    } catch (err) {
-      error(`[VoIP] 挂断通话失败: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'hangupCall', undefined, throwOnError)
     }
   }
 
@@ -282,8 +319,7 @@ class MatrixVoIPService {
     })
 
     call.on('error', (...args: unknown[]) => {
-      const err = args[0] as Error
-      error(`[VoIP] 通话错误: ${err}`)
+      const _err = args[0] as Error
       const callInfo = this.calls.get(callId)
       if (callInfo) {
         callInfo.state = 'error'
@@ -364,14 +400,18 @@ class MatrixVoIPService {
     return false
   }
 
-  async startScreenshare(callId: string): Promise<void> {
+  async startScreenshare(callId: string, throwOnError = false): Promise<void> {
     try {
       this.screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true
       })
 
-      const client = matrixClientService.getClient() as any
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[VoIP] 客户端未初始化')
+      }
+
       const call = this.getCallById(callId, client)
 
       if (call && this.screenStream) {
@@ -379,26 +419,33 @@ class MatrixVoIPService {
       }
 
       info(`[VoIP] 开始屏幕共享: ${callId}`)
-    } catch (err) {
-      error(`[VoIP] 屏幕共享失败: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'startScreenshare', undefined, throwOnError)
     }
   }
 
-  async stopScreenshare(callId: string): Promise<void> {
-    const client = matrixClientService.getClient() as any
-    const call = this.getCallById(callId, client)
+  async stopScreenshare(callId: string, throwOnError = false): Promise<void> {
+    try {
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('[VoIP] 客户端未初始化')
+      }
 
-    if (call) {
-      await call.setScreensharingEnabled(false)
+      const call = this.getCallById(callId, client)
+
+      if (call) {
+        await call.setScreensharingEnabled(false)
+      }
+
+      if (this.screenStream) {
+        this.screenStream.getTracks().forEach((track) => track.stop())
+        this.screenStream = null
+      }
+
+      info(`[VoIP] 停止屏幕共享: ${callId}`)
+    } catch (error) {
+      this.handleError(error, 'stopScreenshare', undefined, throwOnError)
     }
-
-    if (this.screenStream) {
-      this.screenStream.getTracks().forEach((track) => track.stop())
-      this.screenStream = null
-    }
-
-    info(`[VoIP] 停止屏幕共享: ${callId}`)
   }
 
   getCall(callId: string): CallInfo | undefined {
@@ -431,7 +478,7 @@ class MatrixVoIPService {
   }
 
   async getCallStats(callId: string): Promise<CallStats | null> {
-    const client = matrixClientService.getClient() as any
+    const client = matrixClientService.getClient()
     if (!client) return null
 
     const call = this.getCallById(callId, client)
@@ -448,7 +495,7 @@ class MatrixVoIPService {
       let jitter = 0
       let roundTripTime = 0
 
-      stats.forEach((report: any) => {
+      stats.forEach((report: RTCStatsReport) => {
         if (report.type === 'inbound-rtp') {
           bytesReceived += report.bytesReceived || 0
           packetsLost = report.packetsLost || 0

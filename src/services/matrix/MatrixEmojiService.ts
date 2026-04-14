@@ -1,5 +1,7 @@
 import { matrixClientService } from './MatrixClientService'
+import { BaseManager } from './BaseManager'
 import { matrixMediaService } from './MatrixMediaService'
+import type { EmojiUploadResponse, EmojiPackCreateResponse } from '@/types/matrix-api'
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import { Method, ClientPrefix } from '@/types/matrix-js-sdk'
 
@@ -63,7 +65,7 @@ export interface GetEmojiPacksOptions {
  * await service.emojiDelete('emoji_id');
  * ```
  */
-class MatrixEmojiService {
+class MatrixEmojiService extends BaseManager {
   /**
    * 获取客户端实例
    */
@@ -135,14 +137,14 @@ class MatrixEmojiService {
         pack_id: packId || 'default'
       }
 
-      const response = await client.http.request(Method.Put, '/user_emotes/emote', { userId }, emojiData, {
+      const response = (await client.http.request(Method.Put, '/user_emotes/emote', { userId }, emojiData, {
         prefix: ClientPrefix.V3
-      })
+      })) as EmojiUploadResponse
 
       info(`[MatrixEmoji] 上传自定义表情成功: ${name}, URL: ${mxcUrl}`)
 
       return {
-        id: (response as any).id || `emote_${Date.now()}`,
+        id: response.id || `emote_${Date.now()}`,
         name,
         url: matrixMediaService.getMediaUrl(mxcUrl) || mxcUrl,
         mxcUrl
@@ -209,14 +211,14 @@ class MatrixEmojiService {
         packData.icon_url = iconUrl
       }
 
-      const response = await client.http.request(Method.Put, '/user_emotes/pack', { userId }, packData, {
+      const response = (await client.http.request(Method.Put, '/user_emotes/pack', { userId }, packData, {
         prefix: ClientPrefix.V3
-      })
+      })) as EmojiPackCreateResponse
 
       info(`[MatrixEmoji] 创建表情包成功: ${name}`)
 
       return {
-        id: (response as any).pack_id || `pack_${Date.now()}`,
+        id: response.pack_id || `pack_${Date.now()}`,
         name,
         iconUrl,
         items: [],
@@ -317,27 +319,35 @@ class MatrixEmojiService {
     const packs: EmojiPack[] = []
 
     for (const [packId, packData] of Object.entries(response.packs as Record<string, unknown>)) {
+      const typedPackData = packData as {
+        name?: string
+        icon_url?: string
+        created_at?: number
+        updated_at?: number
+        emoticons?: Record<string, unknown>
+      }
       const items: EmojiItem[] = []
 
-      if (packData.emoticons && Array.isArray(packData.emoticons)) {
-        for (const [emojiId, emojiData] of Object.entries(packData.emoticons as Record<string, unknown>)) {
+      if (typedPackData.emoticons && typeof typedPackData.emoticons === 'object') {
+        for (const [emojiId, emojiData] of Object.entries(typedPackData.emoticons)) {
+          const typedEmojiData = emojiData as { name?: string; url?: string; created_at?: number }
           items.push({
             id: emojiId,
-            name: emojiData.name || emojiId,
-            url: emojiData.url || '',
+            name: typedEmojiData.name || emojiId,
+            url: typedEmojiData.url || '',
             type: 'emoji',
-            createdTs: emojiData.created_at || Date.now()
+            createdTs: typedEmojiData.created_at || Date.now()
           })
         }
       }
 
       packs.push({
         id: packId,
-        name: packData.name || packId,
-        iconUrl: packData.icon_url,
+        name: typedPackData.name || packId,
+        iconUrl: typedPackData.icon_url,
         items,
-        createdTs: packData.created_at || Date.now(),
-        updatedTs: packData.updated_at || Date.now()
+        createdTs: typedPackData.created_at || Date.now(),
+        updatedTs: typedPackData.updated_at || Date.now()
       })
     }
 

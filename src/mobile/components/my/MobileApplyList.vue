@@ -241,6 +241,7 @@ const applyMsg = computed(() => (item: any) => {
     } else if (item.eventType === NoticeType.GROUP_RECALL_ADMIN) {
       return t('mobile_mymessage.group.removed_as_admin', { group: groupDetail.name })
     }
+    return ''
   }
 })
 
@@ -279,6 +280,8 @@ const getUserInfo = (item: any) => {
     case NoticeType.GROUP_INVITE_ME:
     case NoticeType.GROUP_APPLY:
       return groupStore.getUserInfo(item.senderId)
+    default:
+      return undefined
   }
 }
 

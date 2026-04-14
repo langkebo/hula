@@ -3,6 +3,7 @@
  * 提供统一的错误处理、日志记录和用户提示
  */
 import { logger } from '@/utils/Logger'
+import { reportError } from '@/services/ErrorReporter'
 
 export interface ErrorHandlerOptions {
   /** 是否显示用户提示 */
@@ -67,8 +68,7 @@ export function useErrorHandler(defaultOptions?: ErrorHandlerOptions) {
 
     // 3. 上报错误（可选）
     if (opts.reportError) {
-      // TODO: 接入错误上报服务
-      // reportError(error, { context, ...opts })
+      reportError(error, context, { prefix: _prefix, errorText })
     }
   }
 

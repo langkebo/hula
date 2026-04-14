@@ -10,6 +10,13 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('GroupStore')
 
+const EventType = {
+  RoomCreate: 'm.room.create',
+  RoomTopic: 'm.room.topic',
+  RoomJoinRules: 'm.room.join_rules',
+  RoomPowerLevels: 'm.room.power_levels'
+} as const
+
 export interface MatrixRoomMember {
   userId: string
   displayName: string | null
@@ -255,24 +262,27 @@ export const useGroupStore = defineStore(
           return null
         }
 
-        const state = room.getLiveTimeline().getState('f' as any)
-        const createEvent = state?.getStateEvents('m.room.create' as any, '')
+        const state = room.getLiveTimeline().getState('f')
+        const createEvent = state?.getStateEvents(EventType.RoomCreate, '')
         const creator = createEvent?.getSender() || null
+
+        const topicEvent = room.currentState.getStateEvents(EventType.RoomTopic, '')
+        const topic = (topicEvent?.getContent()?.topic as string | null) ?? null
+
+        const joinRulesEvent = room.currentState.getStateEvents(EventType.RoomJoinRules, '')
+        const isPublic = joinRulesEvent?.getContent()?.join_rule === 'public'
 
         const groupInfo: MatrixGroupInfo = {
           roomId,
           name: room.name || roomId,
           avatarUrl: room.getMxcAvatarUrl?.() || null,
           avatar: room.getMxcAvatarUrl?.() || '',
-          topic:
-            ((room.currentState.getStateEvents('m.room.topic' as any, '')?.getContent() as any)?.topic as string) ||
-            null,
+          topic,
           memberCount: room.getJoinedMembers().length,
           memberNum: room.getJoinedMembers().length,
           onlineNum: room.getJoinedMembers().length,
           isEncrypted: client.isRoomEncrypted(roomId),
-          isPublic:
-            room.currentState.getStateEvents('m.room.join_rules' as any, '')?.getContent()?.join_rule === 'public',
+          isPublic,
           creator,
           groupName: room.name || roomId,
           roleId: 0,
@@ -385,13 +395,14 @@ export const useGroupStore = defineStore(
         const room = client.getRoom(roomId)
         if (!room) return false
 
-        const powerLevelsEvent = room.currentState.getStateEvents('m.room.power_levels' as any, '')
-        const powerLevels: { users?: Record<string, number>; [key: string]: any } = powerLevelsEvent?.getContent() || {}
+        const powerLevelsEvent = room.currentState.getStateEvents(EventType.RoomPowerLevels, '')
+        const powerLevels: { users?: Record<string, number>; [key: string]: unknown } =
+          powerLevelsEvent?.getContent() || {}
 
         powerLevels.users = powerLevels.users || {}
         powerLevels.users[userId] = powerLevel
 
-        await client.sendStateEvent(roomId, 'm.room.power_levels' as any, powerLevels, '')
+        await client.sendStateEvent(roomId, EventType.RoomPowerLevels, powerLevels, '')
         await loadRoomMembers(roomId, true)
         info(`[GroupStore] 设置用户权限成功: ${userId} -> ${powerLevel}`)
         return true

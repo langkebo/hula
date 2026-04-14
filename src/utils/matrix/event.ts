@@ -35,7 +35,7 @@ export function getEventId(event: MatrixEventLike | null | undefined): string {
   }
 
   // 兼容旧版或原始事件对象
-  return (event as any).event_id || ''
+  return event.event_id || ''
 }
 
 /**
@@ -48,7 +48,7 @@ export function getEventRoomId(event: MatrixEventLike | null | undefined): strin
     return event.getRoomId() || ''
   }
 
-  return (event as any).room_id || ''
+  return event.room_id || ''
 }
 
 /**
@@ -61,7 +61,7 @@ export function getEventSender(event: MatrixEventLike | null | undefined): strin
     return event.getSender() || ''
   }
 
-  return (event as any).sender || ''
+  return event.sender || ''
 }
 
 /**
@@ -74,7 +74,7 @@ export function getEventType(event: MatrixEventLike | null | undefined): string 
     return event.getType() || ''
   }
 
-  return (event as any).type || ''
+  return event.type || ''
 }
 
 /**
@@ -87,7 +87,7 @@ export function getEventTs(event: MatrixEventLike | null | undefined): number {
     return event.getTs() || 0
   }
 
-  return (event as any).origin_server_ts || 0
+  return event.origin_server_ts || 0
 }
 
 /**
@@ -100,7 +100,7 @@ export function getEventContent(event: MatrixEventLike | null | undefined): Reco
     return (event.getContent() as Record<string, unknown>) || {}
   }
 
-  return (event as any).content || {}
+  return (event.content as Record<string, unknown>) || {}
 }
 
 /**
@@ -117,7 +117,7 @@ export function getRoomId(room: Room | string | { roomId?: string; getRoomId?: (
     return room.getRoomId() || ''
   }
 
-  return (room as any).roomId || ''
+  return room.roomId || ''
 }
 
 /**
@@ -130,7 +130,7 @@ export function getRoomName(room: Room | { name?: string; getName?: () => string
     return room.getName() || ''
   }
 
-  return (room as any).name || ''
+  return room.name || ''
 }
 
 /**

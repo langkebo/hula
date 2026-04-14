@@ -80,7 +80,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
 
       const announcements: Announcement[] = []
 
-      const topic = room.currentState.getStateEvents('m.room.topic' as any, '')
+      const topic = room.currentState.getStateEvents('m.room.topic', '')
       if (topic) {
         const content = topic.getContent()
         announcements.push({
@@ -92,7 +92,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
         })
       }
 
-      const pinnedEvents = room.currentState.getStateEvents('m.room.pinned_events' as any, '')
+      const pinnedEvents = room.currentState.getStateEvents('m.room.pinned_events', '')
       if (pinnedEvents) {
         const content = pinnedEvents.getContent()
         if (content.pinned && Array.isArray(content.pinned)) {

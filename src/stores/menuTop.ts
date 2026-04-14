@@ -27,6 +27,26 @@ export const useMenuTopStore = defineStore(
         dot: false,
         progress: 0,
         miniShow: false
+      },
+      {
+        url: 'roomList',
+        icon: 'chat',
+        iconAction: 'chat-action',
+        state: PluginEnum.BUILTIN,
+        isAdd: true,
+        dot: false,
+        progress: 0,
+        miniShow: false
+      },
+      {
+        url: 'spaceList',
+        icon: 'folder-multiple',
+        iconAction: 'folder-multiple-action',
+        state: PluginEnum.BUILTIN,
+        isAdd: true,
+        dot: false,
+        progress: 0,
+        miniShow: false
       }
     ]
 
@@ -40,6 +60,16 @@ export const useMenuTopStore = defineStore(
         ...baseMenuTop[1],
         title: t('home.action.contact'),
         shortTitle: t('home.action.contact_short_title')
+      },
+      {
+        ...baseMenuTop[2],
+        title: t('home.action.room'),
+        shortTitle: t('home.action.room_short_title')
+      },
+      {
+        ...baseMenuTop[3],
+        title: t('home.action.space'),
+        shortTitle: t('home.action.space_short_title')
       }
     ])
 

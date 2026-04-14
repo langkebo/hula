@@ -44,7 +44,7 @@ export const useThumbnailCacheStore = defineStore(
       }
     }
 
-    const buildUpdatedBody = (task: Task, currentBody: any, abs: string) => {
+    const buildUpdatedBody = (task: Task, currentBody: Record<string, unknown>, abs: string) => {
       if (task.kind === 'emoji') {
         return { ...currentBody, localPath: abs }
       }
@@ -54,14 +54,14 @@ export const useThumbnailCacheStore = defineStore(
     const persistMessage = async (task: Task, abs: string) => {
       const msg = chatStore.getMessage(task.msgId)
       if (!msg) return
-      const nextBody = buildUpdatedBody(task, msg.message.body || {}, abs)
+      const nextBody = buildUpdatedBody(task, (msg.message.body as Record<string, unknown>) || {}, abs)
       chatStore.updateMsg({
         msgId: task.msgId,
         status: msg.message.status ?? MessageStatusEnum.SUCCESS,
         body: nextBody
       })
       const updated = { ...msg, message: { ...msg.message, body: nextBody } }
-      await invokeSilently(TauriCommand.SAVE_MSG, { data: updated as any })
+      await invokeSilently(TauriCommand.SAVE_MSG, { data: updated })
     }
 
     const ensureCacheDir = async (kind: TaskKind) => {
@@ -121,14 +121,14 @@ export const useThumbnailCacheStore = defineStore(
         }
 
         const buffer: ArrayBuffer = await new Promise((resolve, reject) => {
-          const handler = (e: MessageEvent<any>) => {
+          const handler = (e: MessageEvent) => {
             const data = e.data
             if (data?.url !== task.url) return
-            worker.removeEventListener('message', handler as any)
+            worker.removeEventListener('message', handler)
             if (data.success) resolve(data.buffer as ArrayBuffer)
             else reject(new Error(data.error || 'download failed'))
           }
-          worker.addEventListener('message', handler as any)
+          worker.addEventListener('message', handler)
           worker.postMessage({ url: task.url })
         })
 

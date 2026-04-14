@@ -50,7 +50,7 @@
             <n-select
               v-if="aiProvider === 'openclaw' && openClawModels.length > 0"
               v-model:value="openClawCurrentModel"
-              :options="openClawModels.map((m) => ({ label: m, value: m }))"
+              :options="openClawModels.map((m: string) => ({ label: m, value: m }))"
               size="tiny"
               style="width: 180px"
               placeholder="选择模型" />
@@ -1100,7 +1100,7 @@ const markdownCodeBlockProps = computed(() => ({
 // 同时监听 isDarkTheme 的变化，确保在主题切换时组件能正确更新
 watch(
   isDarkTheme,
-  (newVal) => {
+  (newVal: boolean) => {
     // 主题切换时，确保 CSS 类正确应用
     nextTick(() => {
       // 查找所有 code-block-wrapper 元素，确保它们有正确的类
@@ -1176,7 +1176,7 @@ const estimateMessageTokens = (m: Message) => {
   return base + reasoning
 }
 const conversationTokens = computed(() => {
-  return messageList.value.reduce((sum, m) => sum + estimateMessageTokens(m), 0)
+  return messageList.value.reduce((sum: number, m: Message) => sum + estimateMessageTokens(m), 0)
 })
 const serverTokenUsage = ref<number | null>(null)
 
@@ -1520,7 +1520,7 @@ const supportsReasoning = computed(() => Boolean(selectedModel.value?.supportsRe
 
 watch(
   selectedModel,
-  (model) => {
+  (model: any) => {
     remainingUsage.value = null
     const m = model as any
     if (m && m.id) {
@@ -1546,7 +1546,7 @@ const filteredModels = computed(() => {
   const search = modelSearch.value?.toLowerCase() || ''
   const filtered = search
     ? list.filter(
-        (model) =>
+        (model: any) =>
           model.name?.toLowerCase().includes(search) ||
           model.description?.toLowerCase().includes(search) ||
           model.platform?.toLowerCase().includes(search)
@@ -1625,12 +1625,10 @@ const loadAudioVoices = async (model: any) => {
 
     if (voices && voices.length > 0) {
       // 将声音列表转换为选项格式
-      audioVoiceOptions.value = voices.map((voice: string) => {
-        // 提取声音名称 (例如: "fnlp/MOSS-TTSD-v0.5:anna" -> "anna")
-        const voiceName = voice.includes(':') ? voice.split(':')[1] : voice
+      audioVoiceOptions.value = voices.map((voice) => {
         return {
-          label: voiceName.charAt(0).toUpperCase() + voiceName.slice(1),
-          value: voice
+          label: voice.name.charAt(0).toUpperCase() + voice.name.slice(1),
+          value: voice.id
         }
       })
 
@@ -2192,7 +2190,7 @@ const pollImageStatus = async (
       const image = imageList[0]
 
       // 状态: 10=进行中, 20=成功, 30=失败
-      if (image.status === 20) {
+      if (image.status === 20 && image.picUrl) {
         messageList.value[messageIndex] = {
           type: 'assistant',
           content: image.picUrl,
@@ -2364,7 +2362,7 @@ const pollVideoStatus = async (
       const video = videoList[0]
 
       // 状态: 10=进行中, 20=成功, 30=失败
-      if (video.status === 20) {
+      if (video.status === 20 && video.videoUrl) {
         messageList.value[messageIndex] = {
           type: 'assistant',
           content: video.videoUrl,
@@ -2509,7 +2507,7 @@ const pollAudioStatus = async (audioId: number, messageIndex: number, prompt: st
       const audio = audioList[0]
 
       // 20 代表成功
-      if (audio.status === 20) {
+      if (audio.status === 20 && audio.audioUrl) {
         messageList.value[messageIndex] = {
           type: 'assistant',
           content: audio.audioUrl,
@@ -2576,7 +2574,9 @@ const features = ref([
 ])
 
 // 其他功能
-const otherFeatures = computed(() => features.value.filter((item) => item.icon !== 'model'))
+const otherFeatures = computed(() =>
+  features.value.filter((item: { icon: string; label: string }) => item.icon !== 'model')
+)
 
 // 获取默认头像
 const getDefaultAvatar = () => {
@@ -2847,7 +2847,7 @@ const loadMessages = async (conversationId: string) => {
 
       if (userStore.userInfo?.uid && currentChat.value.id) {
         void Promise.all(
-          messageList.value.map((msg, index) => {
+          messageList.value.map((msg: Message, index: number) => {
             if (msg.type !== 'assistant') return Promise.resolve()
             if (msg.msgType === AiMsgContentTypeEnum.IMAGE) {
               const remoteUrl = msg.imageUrl || msg.content
@@ -3214,7 +3214,7 @@ onUnmounted(() => {
 // 监听会话切换，停止旧会话的轮询任务
 watch(
   () => currentChat.value.id,
-  (newId, oldId) => {
+  (newId: string | undefined, oldId: string | undefined) => {
     if (oldId && oldId !== newId) {
       stopConversationPolling(oldId)
       if (isAIStreaming.value) {

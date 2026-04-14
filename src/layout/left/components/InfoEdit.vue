@@ -1,10 +1,10 @@
 <template>
-  <n-modal v-model:show="editInfo.show" :mask-closable="false" class="rounded-8px" transform-origin="center">
+  <n-modal v-model:show="editInfoStore.show" :mask-closable="false" class="rounded-8px" transform-origin="center">
     <div class="bg-[--bg-edit] w-480px h-fit box-border flex flex-col">
       <n-flex :size="6" vertical>
         <div
           v-if="isMac()"
-          @click="editInfo.show = false"
+          @click="editInfoStore.show = false"
           class="mac-close size-13px shadow-inner bg-#ed6a5eff rounded-50% mt-6px select-none absolute left-6px">
           <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
             <use href="#close"></use>
@@ -18,7 +18,7 @@
         <svg
           v-if="isWindows()"
           class="size-14px cursor-pointer pt-6px select-none absolute right-6px"
-          @click="editInfo.show = false">
+          @click="editInfoStore.show = false">
           <use href="#close"></use>
         </svg>
         <span class="h-1px w-full bg-[--line-color]"></span>
@@ -29,7 +29,7 @@
           <n-popover trigger="hover" :delay="300" :duration="300" placement="bottom">
             <template #trigger>
               <div class="avatar-wrapper relative" @click="openAvatarCropper">
-                <n-avatar :size="80" :src="AvatarUtils.getAvatarUrl(editInfo.content.avatar!)" round />
+                <n-avatar :size="80" :src="AvatarUtils.getAvatarUrl(editInfoStore.content.avatar!)" round />
                 <div class="avatar-hover absolute size-full rounded-50% flex-center">
                   <span class="text-12px color-#606060">{{ t('home.profile_edit.avatar.change') }}</span>
                 </div>
@@ -41,13 +41,13 @@
           </n-popover>
         </n-flex>
         <!-- 当前佩戴的徽章 -->
-        <n-flex v-if="currentBadge" align="center" justify="center">
+        <n-flex v-if="editInfoStore.currentBadge" align="center" justify="center">
           <span class="text-(14px #707070)">{{ t('home.profile_edit.badge.current') }}</span>
           <n-popover trigger="hover">
             <template #trigger>
-              <img :src="currentBadge?.img" alt="" class="size-22px" />
+              <img :src="editInfoStore.currentBadge?.img" alt="" class="size-22px" />
             </template>
-            <span>{{ currentBadge?.describe }}</span>
+            <span>{{ editInfoStore.currentBadge?.describe }}</span>
           </n-popover>
         </n-flex>
 
@@ -77,13 +77,13 @@
             </n-input>
           </template>
           <span>
-            {{ t('home.profile_edit.form.nickname.remaining', { count: editInfo.content.modifyNameChance || 0 }) }}
+            {{ t('home.profile_edit.form.nickname.remaining', { count: editInfoStore.content.modifyNameChance || 0 }) }}
           </span>
         </n-popover>
 
         <!-- 徽章列表  -->
         <n-flex :size="[56, 20]" align="center">
-          <template v-for="item in editInfo.badgeList" :key="item.id">
+          <template v-for="item in editInfoStore.badgeList" :key="item.id">
             <div class="badge-item">
               <n-image
                 :class="{ 'grayscale-0': item.obtain === IsYesEnum.YES }"
@@ -120,7 +120,7 @@
       <n-flex class="p-12px" align="center" justify="center">
         <n-button
           style="color: #fff"
-          :disabled="editInfo.content.name === localUserInfo.name"
+          :disabled="editInfoStore.content.name === localUserInfo.name"
           color="#13987f"
           @click="saveEditInfo(localUserInfo as ModifyUserInfoType)">
           {{ t('home.profile_edit.actions.save') }}
@@ -150,8 +150,8 @@ import { leftHook } from '@/layout/left/hook.ts'
 import type { ModifyUserInfoType } from '@/services/types'
 import { useLoginHistoriesStore } from '@/stores/loginHistory'
 import { useUserStore } from '@/stores/user.ts'
+import { useEditInfoStore } from '@/stores/editInfo'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { getBadgeList } from '@/utils/ImRequestUtils'
 import { matrixAccountService } from '@/services/matrix'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
@@ -161,7 +161,8 @@ const localUserInfo = ref<Partial<ModifyUserInfoType>>({})
 const userStore = useUserStore()
 const { addListener } = useTauriListener()
 const loginHistoriesStore = useLoginHistoriesStore()
-const { editInfo, currentBadge, updateCurrentUserCache, saveEditInfo, toggleWarningBadge } = leftHook()
+const editInfoStore = useEditInfoStore()
+const { updateCurrentUserCache, saveEditInfo, toggleWarningBadge } = leftHook()
 const { countGraphemes } = useCommon()
 // 使用自定义hook处理头像上传
 const {
@@ -175,15 +176,10 @@ const {
 } = useAvatarUpload({
   onSuccess: async (downloadUrl) => {
     await matrixAccountService.updateAvatar(downloadUrl)
-    // 更新编辑信息
-    editInfo.value.content.avatar = downloadUrl
-    // 更新用户信息
+    editInfoStore.content.avatar = downloadUrl
     userStore.userInfo!.avatar = downloadUrl
-    // 更新头像更新时间
     userStore.userInfo!.avatarUpdateTime = Date.now()
-    // 更新登录历史记录
     loginHistoriesStore.loginHistories.filter((item) => item.uid === userStore.userInfo!.uid)[0].avatar = downloadUrl
-    // 更新缓存里面的用户信息
     updateCurrentUserCache('avatar', downloadUrl)
     window.$message.success(t('home.profile_edit.toast.avatar_update_success'))
   }
@@ -198,12 +194,12 @@ const handleCrop = async (cropBlob: Blob) => {
 const noSideSpace = (value: string) => !value.startsWith(' ') && !value.endsWith(' ')
 
 const openEditInfo = () => {
-  editInfo.value.show = true
-  editInfo.value.content = userStore.userInfo!
+  editInfoStore.openEditInfo(userStore.userInfo!)
   localUserInfo.value = { ...userStore.userInfo! }
-  /** 获取徽章列表 */
-  getBadgeList().then((res: any) => {
-    editInfo.value.badgeList = res
+  matrixAccountService.getAccountData('m.badge_list').then((res: any) => {
+    editInfoStore.setBadgeList(res?.badges || [])
+  }).catch(() => {
+    editInfoStore.setBadgeList([])
   })
 }
 

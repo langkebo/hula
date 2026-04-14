@@ -3,14 +3,13 @@
     <ChatHeaderInfo
       :name="roomName"
       :avatar="currentUserAvatar"
-      :is-channel="isChannel"
-      :is-bot-user="isBotUser"
-      :is-group="isGroup"
+      :type="roomTypeValue"
       :member-count="memberCount"
       :is-online="isOnline"
       :status-icon="statusIcon"
       :status-title="statusTitle"
-      :has-custom-state="hasCustomState"
+      :is-bot-user="isBotUser"
+      :hot-flag="hotFlag"
       @click="handleInfoClick" />
 
     <ChatHeaderToolbar
@@ -86,6 +85,7 @@ import { storeToRefs } from 'pinia'
 import { useGlobalStore } from '@/stores/global'
 import { useGroupStore } from '@/stores/group'
 import { useChatStore } from '@/stores/chat'
+import { useUserStore } from '@/stores/user'
 import { RoomActEnum, RoomTypeEnum, NotificationTypeEnum } from '@/enums'
 import { matrixRoomService } from '@/services/matrix/MatrixRoomService'
 import { matrixGroupService } from '@/services/matrix/MatrixGroupService'
@@ -96,13 +96,14 @@ import { createLogger } from '@/utils/Logger'
 import ChatHeaderInfo from './ChatHeaderInfo.vue'
 import ChatHeaderToolbar from './ChatHeaderToolbar.vue'
 import ChatHeaderSidebar from './ChatHeaderSidebar.vue'
-import ManageGroupMember from '@/components/rightBox/chatBox/ManageGroupMember.vue'
+import ManageGroupMember from '@/views/ManageGroupMember.vue'
 
 const logger = createLogger('ChatHeader')
 const { t } = useI18n()
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
+const userStore = useUserStore()
 
 const { currentSession: activeItem, currentSessionRoomId } = storeToRefs(globalStore)
 
@@ -124,14 +125,16 @@ const isGroup = computed(() => activeItem.value?.type === RoomTypeEnum.GROUP)
 const isChannel = computed(() => activeItem.value?.hotFlag === 1 || currentSessionRoomId.value === '1')
 const isBotUser = computed(() => activeItem.value?.account === 'BOT')
 const roomType = computed(() => activeItem.value?.type)
+const roomTypeValue = computed(() => activeItem.value?.type ?? RoomTypeEnum.SINGLE)
+const hotFlag = computed(() => activeItem.value?.hotFlag)
 const roomName = computed(() => activeItem.value?.name || '')
 const memberCount = computed(() => groupStore.userList.length || 0)
 const currentUserAvatar = computed(() => activeItem.value?.avatar || '')
-const isPinned = computed(() => activeItem.value?.isPinned || false)
+const isPinned = computed(() => activeItem.value?.top || false)
 
 const isGroupOwner = computed(() => {
   if (!activeItem.value || currentSessionRoomId.value === '1') return false
-  const currentUser = groupStore.userList.find((u) => u.uid === globalStore.userInfo?.uid)
+  const currentUser = groupStore.userList.find((u) => u.uid === userStore.userInfo?.uid)
   return currentUser?.roleId === 1
 })
 
@@ -197,8 +200,8 @@ const handleDeleteRoom = async () => {
   if (!currentSessionRoomId.value) return
   try {
     await matrixRoomService.deleteRoomFromStore(currentSessionRoomId.value)
-    chatStore.deleteChat(currentSessionRoomId.value)
-    globalStore.setCurrentSession(null)
+    chatStore.removeSession(currentSessionRoomId.value)
+    globalStore.updateCurrentSessionRoomId('')
   } catch (error) {
     logger.error('删除会话失败:', error)
   }
@@ -291,7 +294,7 @@ const handleClearMessages = async () => {
 
   const confirmed = await showConfirmDialog({
     title: t('home.chat_header.clear_messages_confirm_title'),
-    message: t('home.chat_header.clear_messages_confirm_message')
+    content: t('home.chat_header.clear_messages_confirm_message')
   })
 
   if (confirmed) {
@@ -309,7 +312,15 @@ const handleShowQRCode = async () => {
 
   if (qrCanvasRef.value && currentSessionRoomId.value) {
     const qrData = `matrix:room/${currentSessionRoomId.value}`
-    await generateQRCode(qrCanvasRef.value, qrData)
+    const dataUrl = await generateQRCode(qrData)
+    const ctx = qrCanvasRef.value.getContext('2d')
+    if (ctx) {
+      const img = new Image()
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, qrCanvasRef.value!.width, qrCanvasRef.value!.height)
+      }
+      img.src = dataUrl
+    }
   }
 }
 
@@ -327,6 +338,15 @@ const handleStartVideoCall = async () => {
     await matrixSyncService.startVideoCall(currentSessionRoomId.value)
   } catch (error) {
     logger.error('发起视频通话失败:', error)
+  }
+}
+
+const handleStartVoiceCall = async () => {
+  if (!currentSessionRoomId.value) return
+  try {
+    await matrixSyncService.startVoiceCall(currentSessionRoomId.value)
+  } catch (error) {
+    logger.error('发起语音通话失败:', error)
   }
 }
 

@@ -1,6 +1,7 @@
 import type { MatrixEvent, EventType } from 'matrix-js-sdk'
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 
 export interface MessageEdit {
   eventId: string
@@ -59,7 +60,7 @@ export interface ThreadInfo {
   }
 }
 
-class MatrixMessageRelationService {
+class MatrixMessageRelationService extends BaseManager {
   async editMessage(
     roomId: string,
     originalEventId: string,
@@ -69,51 +70,45 @@ class MatrixMessageRelationService {
     if (!client) {
       throw new Error('[MessageRelation] 客户端未初始化')
     }
-
-    try {
-      const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
-      }
-
-      const originalEvent = room.findEventById(originalEventId)
-      if (!originalEvent) {
-        throw new Error(`[MessageRelation] 原始消息不存在: ${originalEventId}`)
-      }
-
-      const myUserId = client.getUserId()
-      if (originalEvent.getSender() !== myUserId) {
-        throw new Error('[MessageRelation] 只能编辑自己发送的消息')
-      }
-
-      const content: Record<string, unknown> = {
-        ...originalEvent.getContent(),
-        msgtype: newContent.msgtype || 'm.text',
-        body: `* ${newContent.body}`,
-        'm.new_content': {
-          msgtype: newContent.msgtype || 'm.text',
-          body: newContent.body
-        },
-        'm.relates_to': {
-          rel_type: 'm.replace',
-          event_id: originalEventId
-        }
-      }
-
-      if (newContent.html) {
-        ;(content['m.new_content'] as Record<string, unknown>).format = 'org.matrix.custom.html'
-        ;(content['m.new_content'] as Record<string, unknown>).formatted_body = newContent.html
-        content.format = 'org.matrix.custom.html'
-        content.formatted_body = `* ${newContent.html}`
-      }
-
-      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content as Record<string, unknown>)
-      info(`[MessageRelation] 编辑消息成功: ${originalEventId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[MessageRelation] 编辑消息失败: ${err}`)
-      throw err
+    const room = client.getRoom(roomId)
+    if (!room) {
+      throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
     }
+
+    const originalEvent = room.findEventById(originalEventId)
+    if (!originalEvent) {
+      throw new Error(`[MessageRelation] 原始消息不存在: ${originalEventId}`)
+    }
+
+    const myUserId = client.getUserId()
+    if (originalEvent.getSender() !== myUserId) {
+      throw new Error('[MessageRelation] 只能编辑自己发送的消息')
+    }
+
+    const content: Record<string, unknown> = {
+      ...originalEvent.getContent(),
+      msgtype: newContent.msgtype || 'm.text',
+      body: `* ${newContent.body}`,
+      'm.new_content': {
+        msgtype: newContent.msgtype || 'm.text',
+        body: newContent.body
+      },
+      'm.relates_to': {
+        rel_type: 'm.replace',
+        event_id: originalEventId
+      }
+    }
+
+    if (newContent.html) {
+      ;(content['m.new_content'] as Record<string, unknown>).format = 'org.matrix.custom.html'
+      ;(content['m.new_content'] as Record<string, unknown>).formatted_body = newContent.html
+      content.format = 'org.matrix.custom.html'
+      content.formatted_body = `* ${newContent.html}`
+    }
+
+    const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content as Record<string, unknown>)
+    info(`[MessageRelation] 编辑消息成功: ${originalEventId}`)
+    return response.event_id
   }
 
   async editMediaMessage(roomId: string, originalEventId: string, newCaption?: string): Promise<string> {
@@ -121,46 +116,40 @@ class MatrixMessageRelationService {
     if (!client) {
       throw new Error('[MessageRelation] 客户端未初始化')
     }
-
-    try {
-      const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
-      }
-
-      const originalEvent = room.findEventById(originalEventId)
-      if (!originalEvent) {
-        throw new Error(`[MessageRelation] 原始消息不存在: ${originalEventId}`)
-      }
-
-      const myUserId = client.getUserId()
-      if (originalEvent.getSender() !== myUserId) {
-        throw new Error('[MessageRelation] 只能编辑自己发送的消息')
-      }
-
-      const originalContent = originalEvent.getContent()
-      const newBody = newCaption || (originalContent.body as string) || ''
-
-      const content: Record<string, unknown> = {
-        ...originalContent,
-        body: `* ${newBody}`,
-        'm.new_content': {
-          ...originalContent,
-          body: newBody
-        },
-        'm.relates_to': {
-          rel_type: 'm.replace',
-          event_id: originalEventId
-        }
-      }
-
-      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content as Record<string, unknown>)
-      info(`[MessageRelation] 编辑媒体消息成功: ${originalEventId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[MessageRelation] 编辑媒体消息失败: ${err}`)
-      throw err
+    const room = client.getRoom(roomId)
+    if (!room) {
+      throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
     }
+
+    const originalEvent = room.findEventById(originalEventId)
+    if (!originalEvent) {
+      throw new Error(`[MessageRelation] 原始消息不存在: ${originalEventId}`)
+    }
+
+    const myUserId = client.getUserId()
+    if (originalEvent.getSender() !== myUserId) {
+      throw new Error('[MessageRelation] 只能编辑自己发送的消息')
+    }
+
+    const originalContent = originalEvent.getContent()
+    const newBody = newCaption || (originalContent.body as string) || ''
+
+    const content: Record<string, unknown> = {
+      ...originalContent,
+      body: `* ${newBody}`,
+      'm.new_content': {
+        ...originalContent,
+        body: newBody
+      },
+      'm.relates_to': {
+        rel_type: 'm.replace',
+        event_id: originalEventId
+      }
+    }
+
+    const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content as Record<string, unknown>)
+    info(`[MessageRelation] 编辑媒体消息成功: ${originalEventId}`)
+    return response.event_id
   }
 
   getEditHistory(roomId: string, eventId: string): MessageEdit[] {
@@ -230,44 +219,38 @@ class MatrixMessageRelationService {
     if (!client) {
       throw new Error('[MessageRelation] 客户端未初始化')
     }
+    const room = client.getRoom(roomId)
+    if (!room) {
+      throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
+    }
 
-    try {
-      const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
-      }
+    const replyToEvent = room.findEventById(replyToEventId)
+    if (!replyToEvent) {
+      throw new Error(`[MessageRelation] 回复的消息不存在: ${replyToEventId}`)
+    }
 
-      const replyToEvent = room.findEventById(replyToEventId)
-      if (!replyToEvent) {
-        throw new Error(`[MessageRelation] 回复的消息不存在: ${replyToEventId}`)
-      }
-
-      const messageContent: Record<string, unknown> = {
-        msgtype: content.msgtype || 'm.text',
-        body: content.body,
-        'm.relates_to': {
-          'm.in_reply_to': {
-            event_id: replyToEventId
-          }
+    const messageContent: Record<string, unknown> = {
+      msgtype: content.msgtype || 'm.text',
+      body: content.body,
+      'm.relates_to': {
+        'm.in_reply_to': {
+          event_id: replyToEventId
         }
       }
-
-      if (content.html) {
-        messageContent.format = 'org.matrix.custom.html'
-        messageContent.formatted_body = content.html
-      }
-
-      const response = await client.sendEvent(
-        roomId,
-        'm.room.message' as EventType,
-        messageContent as Record<string, unknown>
-      )
-      info(`[MessageRelation] 回复消息成功: ${replyToEventId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[MessageRelation] 回复消息失败: ${err}`)
-      throw err
     }
+
+    if (content.html) {
+      messageContent.format = 'org.matrix.custom.html'
+      messageContent.formatted_body = content.html
+    }
+
+    const response = await client.sendEvent(
+      roomId,
+      'm.room.message' as EventType,
+      messageContent as Record<string, unknown>
+    )
+    info(`[MessageRelation] 回复消息成功: ${replyToEventId}`)
+    return response.event_id
   }
 
   async replyInThread(
@@ -279,36 +262,30 @@ class MatrixMessageRelationService {
     if (!client) {
       throw new Error('[MessageRelation] 客户端未初始化')
     }
-
-    try {
-      const messageContent: Record<string, unknown> = {
-        msgtype: content.msgtype || 'm.text',
-        body: content.body,
-        'm.relates_to': {
-          rel_type: 'm.thread',
-          event_id: threadRootId,
-          'm.in_reply_to': {
-            event_id: threadRootId
-          }
+    const messageContent: Record<string, unknown> = {
+      msgtype: content.msgtype || 'm.text',
+      body: content.body,
+      'm.relates_to': {
+        rel_type: 'm.thread',
+        event_id: threadRootId,
+        'm.in_reply_to': {
+          event_id: threadRootId
         }
       }
-
-      if (content.html) {
-        messageContent.format = 'org.matrix.custom.html'
-        messageContent.formatted_body = content.html
-      }
-
-      const response = await client.sendEvent(
-        roomId,
-        'm.room.message' as EventType,
-        messageContent as Record<string, unknown>
-      )
-      info(`[MessageRelation] 线程回复成功: ${threadRootId}`)
-      return response.event_id
-    } catch (err) {
-      error(`[MessageRelation] 线程回复失败: ${err}`)
-      throw err
     }
+
+    if (content.html) {
+      messageContent.format = 'org.matrix.custom.html'
+      messageContent.formatted_body = content.html
+    }
+
+    const response = await client.sendEvent(
+      roomId,
+      'm.room.message' as EventType,
+      messageContent as Record<string, unknown>
+    )
+    info(`[MessageRelation] 线程回复成功: ${threadRootId}`)
+    return response.event_id
   }
 
   getReplyChain(roomId: string, eventId: string, maxDepth: number = 10): ReplyChain[] {
@@ -456,29 +433,23 @@ class MatrixMessageRelationService {
     if (!client) {
       throw new Error('[MessageRelation] 客户端未初始化')
     }
-
-    try {
-      const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
-      }
-
-      const event = room.findEventById(eventId)
-      if (!event) {
-        throw new Error(`[MessageRelation] 消息不存在: ${eventId}`)
-      }
-
-      const myUserId = client.getUserId()
-      if (event.getSender() !== myUserId) {
-        throw new Error('[MessageRelation] 只能删除自己发送的消息')
-      }
-
-      await client.redactEvent(roomId, eventId, undefined, reason ? { reason } : undefined)
-      info(`[MessageRelation] 删除消息成功: ${eventId}`)
-    } catch (err) {
-      error(`[MessageRelation] 删除消息失败: ${err}`)
-      throw err
+    const room = client.getRoom(roomId)
+    if (!room) {
+      throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
     }
+
+    const event = room.findEventById(eventId)
+    if (!event) {
+      throw new Error(`[MessageRelation] 消息不存在: ${eventId}`)
+    }
+
+    const myUserId = client.getUserId()
+    if (event.getSender() !== myUserId) {
+      throw new Error('[MessageRelation] 只能删除自己发送的消息')
+    }
+
+    await client.redactEvent(roomId, eventId, undefined, reason ? { reason } : undefined)
+    info(`[MessageRelation] 删除消息成功: ${eventId}`)
   }
 }
 

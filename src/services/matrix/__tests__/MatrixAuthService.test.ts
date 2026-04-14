@@ -1,13 +1,25 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { MatrixAuthService, matrixLogin, matrixRegister } from '../MatrixAuthService'
+/**
+ * MatrixAuthService 单元测试
+ */
 
-vi.mock('@tauri-apps/api/core', () => ({
-  invoke: vi.fn()
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { MatrixAuthService } from '../MatrixAuthService'
+import matrixClientService from '../MatrixClientService'
+
+vi.mock('../MatrixClientService', () => ({
+  default: {
+    getClient: vi.fn(),
+    login: vi.fn(),
+    register: vi.fn(),
+    getConfig: vi.fn()
+  }
 }))
 
-import { invoke } from '@tauri-apps/api/core'
-
-const mockInvoke = invoke as ReturnType<typeof vi.fn>
+vi.mock('@tauri-apps/plugin-log', () => ({
+  info: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn()
+}))
 
 describe('MatrixAuthService', () => {
   beforeEach(() => {
@@ -18,228 +30,119 @@ describe('MatrixAuthService', () => {
     vi.resetAllMocks()
   })
 
-  describe('matrixLogin', () => {
-    it('should call invoke with correct parameters', async () => {
-      const mockResult = {
-        user_id: '@test:matrix.org',
-        access_token: 'token123',
-        device_id: 'device123'
+  describe('login', () => {
+    it('应该使用 SDK Manager 登录成功', async () => {
+      const mockClient = {
+        getAccountManager: vi.fn().mockReturnValue({
+          loginRequest: vi.fn().mockResolvedValue({
+            user_id: '@test:example.com',
+            access_token: 'test_token',
+            device_id: 'test_device',
+            home_server: 'example.com',
+            refresh_token: 'refresh_token',
+            expires_in_ms: 3600000
+          })
+        })
       }
-      mockInvoke.mockResolvedValueOnce(mockResult)
 
-      const result = await matrixLogin('testuser', 'password123')
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
 
-      expect(mockInvoke).toHaveBeenCalledWith('matrix_login', {
-        username: 'testuser',
-        password: 'password123',
-        deviceId: undefined,
-        deviceName: undefined
-      })
-      expect(result).toEqual(mockResult)
+      const result = await MatrixAuthService.login('testuser', 'password123')
+
+      expect(result.user_id).toBe('@test:example.com')
+      expect(result.access_token).toBe('test_token')
+      expect(result.device_id).toBe('test_device')
+      expect(mockClient.getAccountManager).toHaveBeenCalled()
     })
 
-    it('should pass optional parameters', async () => {
-      const mockResult = {
-        user_id: '@test:matrix.org',
-        access_token: 'token123',
-        device_id: 'custom-device'
+    it('应该在 SDK Manager 失败时降级到 MatrixClientService', async () => {
+      const mockClient = {
+        getAccountManager: vi.fn().mockReturnValue({
+          loginRequest: vi.fn().mockRejectedValue(new Error('SDK error'))
+        })
       }
-      mockInvoke.mockResolvedValueOnce(mockResult)
 
-      const result = await matrixLogin('testuser', 'password123', 'custom-device', 'My Device')
-
-      expect(mockInvoke).toHaveBeenCalledWith('matrix_login', {
-        username: 'testuser',
-        password: 'password123',
-        deviceId: 'custom-device',
-        deviceName: 'My Device'
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+      vi.mocked(matrixClientService.login).mockResolvedValue({
+        success: true,
+        userId: '@test:example.com',
+        accessToken: 'fallback_token',
+        deviceId: 'fallback_device'
       })
-      expect(result.device_id).toBe('custom-device')
+
+      const result = await MatrixAuthService.login('testuser', 'password123')
+
+      expect(result.user_id).toBe('@test:example.com')
+      expect(result.access_token).toBe('fallback_token')
     })
 
-    it('should throw error on login failure', async () => {
-      mockInvoke.mockRejectedValueOnce(new Error('Invalid password'))
+    it('应该在所有登录方式失败时抛出错误', async () => {
+      const mockClient = {
+        getAccountManager: vi.fn().mockReturnValue({
+          loginRequest: vi.fn().mockRejectedValue(new Error('SDK error'))
+        })
+      }
 
-      await expect(matrixLogin('testuser', 'wrongpassword')).rejects.toThrow('Invalid password')
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+      vi.mocked(matrixClientService.login).mockResolvedValue({
+        success: false,
+        error: 'Login failed'
+      })
+
+      await expect(MatrixAuthService.login('testuser', 'password123')).rejects.toThrow()
     })
   })
 
-  describe('matrixRegister', () => {
-    it('should call invoke with correct parameters', async () => {
-      const mockResult = {
-        user_id: '@newuser:matrix.org',
-        access_token: 'token123',
-        device_id: 'device123'
+  describe('register', () => {
+    it('应该使用 SDK Manager 注册成功', async () => {
+      const mockClient = {
+        register: vi.fn().mockResolvedValue({
+          user_id: '@newuser:example.com',
+          access_token: 'new_token',
+          device_id: 'new_device'
+        })
       }
-      mockInvoke.mockResolvedValueOnce(mockResult)
 
-      const result = await matrixRegister('newuser', 'password123')
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
 
-      expect(mockInvoke).toHaveBeenCalledWith('matrix_register', {
-        username: 'newuser',
-        password: 'password123',
-        session: undefined,
-        authType: undefined,
-        authToken: undefined
-      })
-      expect(result).toEqual(mockResult)
-    })
+      const result = await MatrixAuthService.register('newuser', 'password123')
 
-    it('should pass auth parameters for captcha flow', async () => {
-      const mockResult = {
-        user_id: '@newuser:matrix.org'
-      }
-      mockInvoke.mockResolvedValueOnce(mockResult)
-
-      await matrixRegister('newuser', 'password123', 'session123', 'm.login.recaptcha', 'captcha-token')
-
-      expect(mockInvoke).toHaveBeenCalledWith('matrix_register', {
-        username: 'newuser',
-        password: 'password123',
-        session: 'session123',
-        authType: 'm.login.recaptcha',
-        authToken: 'captcha-token'
-      })
+      expect(result.user_id).toBe('@newuser:example.com')
+      expect(result.access_token).toBe('new_token')
     })
   })
 
-  describe('MatrixAuthService class', () => {
-    describe('generateClientSecret', () => {
-      it('should generate 43 character string', () => {
-        const secret1 = (MatrixAuthService as any).generateClientSecret()
-        const secret2 = (MatrixAuthService as any).generateClientSecret()
-
-        expect(secret1.length).toBe(43)
-        expect(secret2.length).toBe(43)
-        expect(secret1).not.toBe(secret2)
-      })
-    })
-
-    describe('login', () => {
-      it('should call matrixLogin with correct parameters', async () => {
-        const mockResult = {
-          user_id: '@test:matrix.org',
-          access_token: 'token123',
-          device_id: 'device123'
-        }
-        mockInvoke.mockResolvedValueOnce(mockResult)
-
-        const result = await MatrixAuthService.login('testuser', 'password123', 'device-id', 'Device Name')
-
-        expect(result).toEqual(mockResult)
-      })
-    })
-
-    describe('register', () => {
-      it('should call matrixRegister with correct parameters', async () => {
-        const mockResult = {
-          user_id: '@newuser:matrix.org'
-        }
-        mockInvoke.mockResolvedValueOnce(mockResult)
-
-        const result = await MatrixAuthService.register('newuser', 'password123')
-
-        expect(result).toEqual(mockResult)
-      })
-    })
-
-    describe('requestEmailToken', () => {
-      it('should call invoke with generated client secret', async () => {
-        const mockResult = {
-          sid: 'session-id-123',
-          submit_url: 'https://matrix.org/submit',
-          expires_in: 3600
-        }
-        mockInvoke.mockResolvedValueOnce(mockResult)
-
-        const result = await MatrixAuthService.requestEmailToken('test@example.com')
-
-        expect(mockInvoke).toHaveBeenCalledWith('matrix_request_email_token', {
-          email: 'test@example.com',
-          clientSecret: expect.stringMatching(/^[A-Za-z0-9]{43}$/),
-          sendAttempt: 1
+  describe('logout', () => {
+    it('应该使用 SDK Manager 登出成功', async () => {
+      const mockClient = {
+        getAccountManager: vi.fn().mockReturnValue({
+          logout: vi.fn().mockResolvedValue(undefined)
         })
-        expect(result).toEqual(mockResult)
-      })
+      }
 
-      it('should accept custom sendAttempt', async () => {
-        const mockResult = {
-          sid: 'session-id-123'
-        }
-        mockInvoke.mockResolvedValueOnce(mockResult)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
 
-        await MatrixAuthService.requestEmailToken('test@example.com', 3)
+      await MatrixAuthService.logout()
 
-        expect(mockInvoke).toHaveBeenCalledWith('matrix_request_email_token', {
-          email: 'test@example.com',
-          clientSecret: expect.any(String),
-          sendAttempt: 3
-        })
-      })
+      expect(mockClient.getAccountManager).toHaveBeenCalled()
     })
+  })
 
-    describe('getCaptcha', () => {
-      it('should call invoke and return captcha result', async () => {
-        const mockResult = {
-          session: 'session-123',
-          api_path: '/api/captcha',
-          mxc_url: 'mxc://matrix.org/captcha/123'
-        }
-        mockInvoke.mockResolvedValueOnce(mockResult)
+  describe('getSupportedLoginFlows', () => {
+    it('应该获取支持的登录流程', async () => {
+      const mockFlows = [{ type: 'm.login.password' }, { type: 'm.login.sso' }]
 
-        const result = await MatrixAuthService.getCaptcha()
-
-        expect(mockInvoke).toHaveBeenCalledWith('matrix_get_captcha')
-        expect(result).toEqual(mockResult)
-      })
-    })
-
-    describe('forgetPassword', () => {
-      it('should call invoke with email', async () => {
-        mockInvoke.mockResolvedValueOnce({})
-
-        await MatrixAuthService.forgetPassword('test@example.com')
-
-        expect(mockInvoke).toHaveBeenCalledWith('matrix_forget_password', {
-          email: 'test@example.com'
+      const mockClient = {
+        getAuthManager: vi.fn().mockReturnValue({
+          getSupportedLoginFlows: vi.fn().mockResolvedValue(mockFlows)
         })
-      })
-    })
+      }
 
-    describe('resetPassword', () => {
-      it('should call invoke with correct parameters', async () => {
-        mockInvoke.mockResolvedValueOnce({})
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
 
-        await MatrixAuthService.resetPassword(
-          'newPassword123',
-          'oldPassword123',
-          'session123',
-          'm.login.password',
-          'token123'
-        )
+      const result = await MatrixAuthService.getSupportedLoginFlows()
 
-        expect(mockInvoke).toHaveBeenCalledWith('matrix_reset_password', {
-          oldPassword: 'oldPassword123',
-          newPassword: 'newPassword123',
-          authSession: 'session123',
-          authType: 'm.login.password',
-          authToken: 'token123'
-        })
-      })
-
-      it('should work without oldPassword', async () => {
-        mockInvoke.mockResolvedValueOnce({})
-
-        await MatrixAuthService.resetPassword('newPassword123')
-
-        expect(mockInvoke).toHaveBeenCalledWith('matrix_reset_password', {
-          oldPassword: undefined,
-          newPassword: 'newPassword123',
-          authSession: undefined,
-          authType: undefined,
-          authToken: undefined
-        })
-      })
+      expect(result).toEqual(mockFlows)
     })
   })
 })

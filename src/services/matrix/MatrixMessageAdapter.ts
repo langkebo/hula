@@ -1,4 +1,5 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
+import type { ExtendedEventSender } from '@/types/matrix-api'
 import { MsgEnum, MessageStatusEnum } from '@/enums'
 import type { MessageType } from '@/stores/chat'
 import type { MsgType, TextBody, ImageBody, VideoBody, FileBody, VoiceBody } from '@/services/types'
@@ -12,7 +13,7 @@ export interface MatrixMessageAdapter {
 export const matrixMessageAdapter: MatrixMessageAdapter = {
   convertMatrixEventToMessageType(event: MatrixEvent, _roomId: string): MessageType {
     const sender = event.getSender() ?? ''
-    const senderMember = event.sender as any
+    const senderMember = event.sender as unknown as ExtendedEventSender
     const content = event.getContent()
     const msgType = this.getMsgTypeFromMatrixEvent(event)
 

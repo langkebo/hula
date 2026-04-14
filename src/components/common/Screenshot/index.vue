@@ -236,7 +236,9 @@ const drawImgCanvas = (type: DrawToolType) => {
     }
 
     try {
-      drawTools.draw(type)
+      if (type) {
+        drawTools.draw(type)
+      }
     } catch (error) {
       logger.error(`绘图工具激活失败: ${type}`, error)
       currentDrawTool.value = null

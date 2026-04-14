@@ -1,28 +1,47 @@
 import matrixClientService from './MatrixClientService'
+import { BaseManager } from './BaseManager'
 import { useRoomStore } from '@/stores/room'
-import { info, error } from '@tauri-apps/plugin-log'
+import { info } from '@tauri-apps/plugin-log'
 
-export class MatrixSlidingSyncService {
+export class MatrixSlidingSyncService extends BaseManager {
   private slidingSync: any = null
+  private _isInitialized = false
+  // 存储事件处理器引用，用于清理
+  private eventHandlers: Map<string, (...args: any[]) => void> = new Map()
+
+  get isInitialized(): boolean {
+    return this._isInitialized
+  }
 
   /**
    * 初始化 Sliding Sync 服务
    */
-  async initialize(): Promise<void> {
-    const syncInstance = matrixClientService.getSlidingSync()
-    if (!syncInstance) {
-      throw new Error('SlidingSync not initialized in MatrixClientService')
+  async initialize(throwOnError = true): Promise<void> {
+    try {
+      const syncInstance = matrixClientService.getSlidingSync()
+      if (!syncInstance) {
+        throw new Error('SlidingSync not initialized in MatrixClientService')
+      }
+
+      this.slidingSync = syncInstance
+      this._isInitialized = true
+
+      const lifecycleHandler = this.onLifecycle.bind(this)
+      const roomDataHandler = this.onRoomData.bind(this)
+      const listUpdateHandler = this.onListUpdate.bind(this)
+
+      this.eventHandlers.set('sync', lifecycleHandler)
+      this.eventHandlers.set('Room.data', roomDataHandler)
+      this.eventHandlers.set('Lists.default', listUpdateHandler)
+
+      this.slidingSync.on('sync', lifecycleHandler)
+      this.slidingSync.on('Room.data', roomDataHandler)
+      this.slidingSync.on('Lists.default', listUpdateHandler)
+
+      info('[SlidingSync] Service initialized')
+    } catch (error) {
+      this.handleError(error, 'initialize', undefined as unknown as void, throwOnError)
     }
-
-    this.slidingSync = syncInstance
-    this.isInitialized = true
-
-    // 绑定事件监听
-    this.slidingSync.on('sync', this.onLifecycle.bind(this))
-    this.slidingSync.on('Room.data', this.onRoomData.bind(this))
-    this.slidingSync.on('Lists.default', this.onListUpdate.bind(this))
-
-    info('[SlidingSync] Service initialized')
   }
 
   /**
@@ -30,7 +49,6 @@ export class MatrixSlidingSyncService {
    */
   private onLifecycle(state: string, resp: any, err: any) {
     if (err) {
-      error(`[SlidingSync] Lifecycle error: ${err.message}`)
       return
     }
 
@@ -77,7 +95,7 @@ export class MatrixSlidingSyncService {
 
         // 处理房间增量更新
         if (roomData.timeline && roomData.timeline.length > 0) {
-          roomStore.updateRoom(roomId)
+          roomStore.updateRoom(roomId, {})
         }
       }
     }
@@ -91,7 +109,7 @@ export class MatrixSlidingSyncService {
 
     // 更新房间信息
     if (roomData.summary) {
-      roomStore.updateRoom(roomId)
+      roomStore.updateRoom(roomId, {})
     }
 
     // 更新未读计数
@@ -125,15 +143,14 @@ export class MatrixSlidingSyncService {
    * @param startIndex 起始索引
    * @param endIndex 结束索引
    */
-  updateVisibleRange(startIndex: number, endIndex: number): void {
+  updateVisibleRange(startIndex: number, endIndex: number, throwOnError = false): void {
     if (!this.slidingSync) return
 
     try {
-      // 设置可见范围，只加载可见区域的完整数据
       this.slidingSync.setListRanges('default', [[startIndex, endIndex]])
       info(`[SlidingSync] Updated visible range: ${startIndex}-${endIndex}`)
-    } catch (err) {
-      error(`[SlidingSync] Failed to update visible range: ${err}`)
+    } catch (error) {
+      this.handleError(error, 'updateVisibleRange', undefined as unknown as void, throwOnError)
     }
   }
 
@@ -143,7 +160,7 @@ export class MatrixSlidingSyncService {
    * @param listName 列表名称
    * @param sort 排序方式数组
    */
-  setListSort(listName: string, sort: string[]): void {
+  setListSort(listName: string, sort: string[], throwOnError = false): void {
     if (!this.slidingSync) return
 
     try {
@@ -152,18 +169,12 @@ export class MatrixSlidingSyncService {
         list.setSort(sort)
         info(`[SlidingSync] Set sort for ${listName}: ${sort.join(', ')}`)
       }
-    } catch (err) {
-      error(`[SlidingSync] Failed to set sort: ${err}`)
+    } catch (error) {
+      this.handleError(error, 'setListSort', undefined as unknown as void, throwOnError)
     }
   }
 
-  /**
-   * 设置列表过滤器
-   *
-   * @param listName 列表名称
-   * @param filters 过滤条件
-   */
-  setListFilters(listName: string, filters: any): void {
+  setListFilters(listName: string, filters: any, throwOnError = false): void {
     if (!this.slidingSync) return
 
     try {
@@ -172,18 +183,12 @@ export class MatrixSlidingSyncService {
         list.setFilters(filters)
         info(`[SlidingSync] Set filters for ${listName}`)
       }
-    } catch (err) {
-      error(`[SlidingSync] Failed to set filters: ${err}`)
+    } catch (error) {
+      this.handleError(error, 'setListFilters', undefined as unknown as void, throwOnError)
     }
   }
 
-  /**
-   * 订阅/取消订阅房间
-   *
-   * @param roomId 房间 ID
-   * @param subscribe 是否订阅
-   */
-  subscribeRoom(roomId: string, subscribe: boolean = true): void {
+  subscribeRoom(roomId: string, subscribe: boolean = true, throwOnError = false): void {
     if (!this.slidingSync) return
 
     try {
@@ -197,8 +202,8 @@ export class MatrixSlidingSyncService {
         this.slidingSync.unsubscribeFromRoom(roomId)
         info(`[SlidingSync] Unsubscribed from room: ${roomId}`)
       }
-    } catch (err) {
-      error(`[SlidingSync] Failed to ${subscribe ? 'subscribe' : 'unsubscribe'}: ${err}`)
+    } catch (error) {
+      this.handleError(error, 'subscribeRoom', undefined as unknown as void, throwOnError)
     }
   }
 
@@ -220,6 +225,7 @@ export class MatrixSlidingSyncService {
       const list = this.slidingSync.getList(listName)
       return list?.rooms?.length ?? 0
     } catch {
+      // getList 可能抛出异常，返回 0 表示列表不存在或获取失败
       return 0
     }
   }
@@ -227,14 +233,13 @@ export class MatrixSlidingSyncService {
   /**
    * 获取增量更新
    */
-  async getIncrementalUpdate(roomId: string): Promise<any | null> {
+  async getIncrementalUpdate(roomId: string, throwOnError = true): Promise<any | null> {
     if (!this.slidingSync) return null
 
     try {
       const room = this.slidingSync.getRoom(roomId)
       if (!room) return null
 
-      // 获取增量数据
       return {
         roomId,
         timeline: room.timeline ?? [],
@@ -242,9 +247,8 @@ export class MatrixSlidingSyncService {
         notificationCount: room.notification_count ?? 0,
         highlightCount: room.highlight_count ?? 0
       }
-    } catch (err) {
-      error(`[SlidingSync] Failed to get incremental update: ${err}`)
-      return null
+    } catch (error) {
+      return this.handleError(error, 'getIncrementalUpdate', null, throwOnError)
     }
   }
 
@@ -254,9 +258,17 @@ export class MatrixSlidingSyncService {
   destroy(): void {
     if (!this.slidingSync) return
 
-    this.slidingSync.removeAllListeners()
+    // 使用存储的引用移除事件监听器
+    this.eventHandlers.forEach((handler, eventName) => {
+      this.slidingSync.off(eventName, handler)
+      info(`[SlidingSync] 已移除事件监听器: ${eventName}`)
+    })
+
+    // 清空监听器引用
+    this.eventHandlers.clear()
+
     this.slidingSync = null
-    this.isInitialized = false
+    this._isInitialized = false
     info('[SlidingSync] Service destroyed')
   }
 }

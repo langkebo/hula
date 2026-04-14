@@ -162,9 +162,9 @@ function encodeToMp3(samples: Int16Array, config: Required<AudioCompressionConfi
     if (config.channels === 1) {
       // 单声道
       sampleChunk = samples.subarray(i, i + sampleBlockSize)
-      const mp3buf = mp3encoder.encodeBuffer(sampleChunk)
+      const mp3buf = mp3encoder.encodeBuffer(sampleChunk) as unknown as Int8Array
       if (mp3buf.length > 0) {
-        mp3Data.push(mp3buf as any)
+        mp3Data.push(mp3buf)
       }
     } else {
       // 立体声
@@ -176,17 +176,17 @@ function encodeToMp3(samples: Int16Array, config: Required<AudioCompressionConfi
         rightChunk[j] = samples[i + j * 2 + 1]
       }
 
-      const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk)
+      const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk) as unknown as Int8Array
       if (mp3buf.length > 0) {
-        mp3Data.push(mp3buf as any)
+        mp3Data.push(mp3buf)
       }
     }
   }
 
   // 完成编码
-  const mp3buf = mp3encoder.flush()
+  const mp3buf = mp3encoder.flush() as unknown as Int8Array
   if (mp3buf.length > 0) {
-    mp3Data.push(mp3buf as any)
+    mp3Data.push(mp3buf)
   }
 
   return mp3Data

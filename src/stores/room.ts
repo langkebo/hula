@@ -1,14 +1,21 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
-import type { Room, MatrixEvent, RoomMember } from 'matrix-js-sdk'
+import { Room, MatrixEvent, RoomMember, NotificationCountType } from 'matrix-js-sdk'
 import { info, error } from '@tauri-apps/plugin-log'
-import { StoresEnum, MsgEnum } from '@/enums'
+import { StoresEnum, MsgEnum, MessageStatusEnum } from '@/enums'
 import { useMatrixStore } from './matrix'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import matrixRoomService from '@/services/matrix/MatrixRoomService'
 import { LRUCache } from '@/utils/LRUCache'
 import type { MessageType } from '@/services/types'
+
+const RoomEvent = {
+  Timeline: 'Room.timeline',
+  Name: 'Room.name',
+  Avatar: 'Room.avatar',
+  Member: 'Room.member'
+} as const
 
 type TimelineEvent = {
   event_id: string
@@ -248,9 +255,23 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     const dmInviter =
       typeof roomAsRecord.getDMInviter === 'function' ? (roomAsRecord.getDMInviter() as string | undefined) : undefined
 
-    const unreadNotificationCount = room.getUnreadNotificationCount?.() ?? 0
-    const highlightNotificationCount = room.getUnreadNotificationCount?.('highlight' as any) ?? 0
-    const notificationNotificationCount = room.getUnreadNotificationCount?.('notification' as any) ?? 0
+    // 优先使用后端返回的未读计数，降级使用本地计算
+    let unreadNotificationCount = 0
+    let highlightNotificationCount = 0
+    let notificationNotificationCount = 0
+
+    // 尝试从 sync 响应中获取未读计数
+    const syncData = (room as any).syncData
+    if (syncData?.unread_notifications) {
+      unreadNotificationCount = syncData.unread_notifications.notification_count ?? 0
+      highlightNotificationCount = syncData.unread_notifications.highlight_count ?? 0
+      notificationNotificationCount = unreadNotificationCount
+    } else {
+      // 降级使用本地计算
+      unreadNotificationCount = room.getUnreadNotificationCount?.() ?? 0
+      highlightNotificationCount = room.getUnreadNotificationCount?.(NotificationCountType.Highlight) ?? 0
+      notificationNotificationCount = room.getUnreadNotificationCount?.(NotificationCountType.Total) ?? 0
+    }
 
     return {
       roomId: room.roomId,
@@ -281,12 +302,22 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   function convertMessage(event: MatrixEvent): MessageType {
     const content = event.getContent()
     return {
-      id: event.getId() ?? '',
-      type: MsgEnum.TEXT,
-      content: content.body as string,
-      senderId: event.getSender() ?? '',
-      timestamp: event.getTs(),
-      roomId: event.getRoomId() ?? ''
+      fromUser: {
+        uid: event.getSender() ?? '',
+        username: event.getSender() ?? '',
+        avatar: '',
+        locPlace: ''
+      },
+      message: {
+        id: event.getId() ?? '',
+        roomId: event.getRoomId() ?? '',
+        type: MsgEnum.TEXT,
+        body: content.body as string,
+        sendTime: event.getTs(),
+        messageMarks: {},
+        status: MessageStatusEnum.SUCCESS
+      },
+      sendTime: event.getTs()
     }
   }
 
@@ -370,14 +401,25 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
         existingRoom.lastMessageTime = latestEvent.origin_server_ts ?? null
       }
 
-      // 将新消息添加到消息列表
+      // 将新消息添加到消息列表（转换为 MessageType 格式）
       const existingMessages = messages.value.get(roomId) ?? []
-      const newMessages = roomData.timeline.map((event) => ({
-        eventId: event.event_id,
-        type: event.type,
-        sender: event.sender,
-        content: event.content,
-        originServerTs: event.origin_server_ts
+      const newMessages: MessageType[] = roomData.timeline.map((event) => ({
+        fromUser: {
+          uid: event.sender,
+          username: event.sender,
+          avatar: '',
+          locPlace: ''
+        },
+        message: {
+          id: event.event_id,
+          roomId: roomId,
+          type: MsgEnum.TEXT,
+          body: event.content?.body ?? '',
+          sendTime: event.origin_server_ts,
+          messageMarks: {},
+          status: MessageStatusEnum.SUCCESS
+        },
+        sendTime: event.origin_server_ts
       }))
       messages.value.set(roomId, [...existingMessages, ...newMessages])
     }
@@ -431,9 +473,21 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
           : undefined
       })
 
-      const roomInfo = convertRoom(room)
-      rooms.value.set(room.roomId, roomInfo)
-      info(`[RoomStore] 创建房间成功: ${room.roomId}`)
+      const roomInfo: RoomInfo = {
+        roomId: room.room_id,
+        name: options.name || '',
+        avatarUrl: null,
+        isDirect: options.isDirect || false,
+        isEncrypted: options.isEncrypted || false,
+        unreadCount: 0,
+        notificationCount: 0,
+        highlightCount: 0,
+        lastMessage: null,
+        lastMessageTime: null,
+        members: []
+      }
+      rooms.value.set(room.room_id, roomInfo)
+      info(`[RoomStore] 创建房间成功: ${room.room_id}`)
       return roomInfo
     } catch (err) {
       error(`[RoomStore] 创建房间失败: ${err}`)
@@ -686,7 +740,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     const client = matrixStore.getClient()
     if (!client) return
 
-    client.on('Room.timeline' as any, (event: MatrixEvent, room: Room | undefined) => {
+    client.on(RoomEvent.Timeline, (event: MatrixEvent, room: Room | undefined) => {
       if (!room) return
 
       if (event.getType() === 'm.room.message' || event.getType() === 'm.room.encrypted') {
@@ -698,15 +752,15 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       rooms.value.set(room.roomId, roomInfo)
     })
 
-    client.on('Room.name' as any, (room: Room) => {
+    client.on(RoomEvent.Name, (room: Room) => {
       updateRoom(room.roomId, { name: room.name })
     })
 
-    client.on('Room.avatar' as any, (room: Room) => {
+    client.on(RoomEvent.Avatar, (room: Room) => {
       updateRoom(room.roomId, { avatarUrl: room.getMxcAvatarUrl() ?? null })
     })
 
-    client.on('Room.member' as any, (_event: MatrixEvent, member: RoomMember) => {
+    client.on(RoomEvent.Member, (_event: MatrixEvent, member: RoomMember) => {
       const roomId = member.roomId
       const room = client.getRoom(roomId)
       if (room) {
@@ -740,11 +794,13 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
         topic: summary.topic,
         memberCount: summary.memberCount,
         joinedCount: summary.joinedCount,
-        ownerId: null, // 需要从 room state 中获取
-        joinRule: null, // 需要从 room state 中获取
+        ownerId: null,
+        joinRule: (['public', 'invite', 'knock', 'private'].includes(summary.joinRule)
+          ? summary.joinRule as 'public' | 'invite' | 'knock' | 'private'
+          : null),
         canonicalAlias: summary.canonicalAlias,
         avatarUrl: summary.avatarUrl,
-        createdTs: null, // 需要从 room 获取
+        createdTs: null,
         isPublic: summary.isPublic
       }
 

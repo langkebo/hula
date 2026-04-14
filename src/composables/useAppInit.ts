@@ -18,6 +18,7 @@ import { useGroupStore } from '@/stores/group'
 import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import { useAnnouncementStore } from '@/stores/announcement'
+import type { MatrixRoomMember } from '@/stores/group'
 import { useMitt } from '@/hooks/useMitt'
 import { MittEnum } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
@@ -128,17 +129,23 @@ export function useAppInit() {
   // 处理其他成员加入群聊
   const handleOtherMemberAdd = async (user: UserItem, roomId: string) => {
     info('群成员加入群聊，添加群成员数据')
-    const matrixMember: Record<string, unknown> = {
-      ...user,
+    const matrixMember: MatrixRoomMember = {
       userId: user.uid,
       displayName: user.name,
       avatarUrl: user.avatar,
       membership: 'join',
       powerLevel: 0,
       isModerator: false,
-      isCreator: false
+      isCreator: false,
+      name: user.name,
+      uid: user.uid,
+      account: user.uid,
+      avatar: user.avatar,
+      activeStatus: OnlineEnum.ONLINE,
+      roleId: 0,
+      lastOptTime: Date.now()
     }
-    groupStore.addUserItem(matrixMember as any, roomId)
+    groupStore.addUserItem(matrixMember, roomId)
   }
 
   // 处理自己加入群聊

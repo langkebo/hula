@@ -2,10 +2,9 @@
  * 事件举报服务
  * 举报违规消息/事件
  */
+import type { EventReportResponse, EventReportCreateResponse, EventReportListResponse } from '@/types/matrix-api'
 import { matrixClientService } from './MatrixClientService'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('EventReport')
+import { BaseManager } from './BaseManager'
 
 export interface EventReport {
   reportId: number
@@ -26,7 +25,7 @@ export interface CreateReportParams {
   reasonCode?: string
 }
 
-class MatrixEventReportService {
+class MatrixEventReportService extends BaseManager {
   private get client() {
     const c = matrixClientService.getClient()
     if (!c) throw new Error('Matrix client not initialized')
@@ -50,10 +49,9 @@ class MatrixEventReportService {
             reason_code: params.reasonCode
           })
         }
-      )) as any
+      )) as EventReportCreateResponse
       return response.report_id
-    } catch (error) {
-      logger.error('举报失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -64,14 +62,14 @@ class MatrixEventReportService {
   async get(reportId: number): Promise<EventReport | null> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         `/admin/1.0/room_event_reports/${reportId}`,
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as EventReportResponse
       return this.mapReport(response)
-    } catch (error) {
-      logger.error('获取详情失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -84,11 +82,12 @@ class MatrixEventReportService {
       let path = `/_matrix/client/v1/admin/room_event_reports?room_id=${encodeURIComponent(roomId)}&limit=${limit}`
       if (from) path += `&from=${from}`
 
-      const response = (await this.client.http.authedRequest({}, 'GET', path, undefined)) as any
+      const response = (await this.client.http.authedRequest('GET', path, undefined, undefined, {
+        prefix: ''
+      })) as EventReportListResponse
 
       return (response.event_reports || []).map(this.mapReport)
-    } catch (error) {
-      logger.error('获取房间举报失败:', error)
+    } catch (_error) {
       return []
     }
   }
@@ -99,15 +98,15 @@ class MatrixEventReportService {
   async listByUser(userId: string, limit = 100): Promise<EventReport[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         `/_matrix/client/v1/admin/user_event_reports?user_id=${encodeURIComponent(userId)}&limit=${limit}`,
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as EventReportListResponse
 
       return (response.event_reports || []).map(this.mapReport)
-    } catch (error) {
-      logger.error('获取用户举报失败:', error)
+    } catch (_error) {
       return []
     }
   }
@@ -117,17 +116,20 @@ class MatrixEventReportService {
    */
   async resolve(reportId: number, action: 'actioned' | 'ignored'): Promise<boolean> {
     try {
-      await this.client.http.authedRequest({}, 'PUT', `/admin/1.0/room_event_reports/${reportId}`, undefined, {
-        body: JSON.stringify({ status: action })
-      })
+      await this.client.http.authedRequest(
+        'PUT',
+        `/admin/1.0/room_event_reports/${reportId}`,
+        undefined,
+        JSON.stringify({ status: action }),
+        { prefix: '' }
+      )
       return true
-    } catch (error) {
-      logger.error('处理失败:', error)
+    } catch (_error) {
       return false
     }
   }
 
-  private mapReport(data: any): EventReport {
+  private mapReport(data: EventReportResponse): EventReport {
     return {
       reportId: data.report_id,
       roomId: data.room_id,

@@ -3,10 +3,7 @@
  * 允许在不使用密钥的情况下创建和恢复设备
  */
 import { matrixClientService } from './MatrixClientService'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('DehydratedDevice')
-
+import { BaseManager } from './BaseManager'
 export interface DehydratedDevice {
   deviceId: string
   userId: string
@@ -26,7 +23,7 @@ export interface ClaimDehydratedDeviceParams {
   accessToken: string
 }
 
-class MatrixDehydratedDeviceService {
+class MatrixDehydratedDeviceService extends BaseManager {
   private get client() {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -44,16 +41,14 @@ class MatrixDehydratedDeviceService {
 
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'POST',
         '/_matrix/client/v1/dehydrated_device',
         undefined,
-        {
-          body: JSON.stringify({
-            device_data: deviceData || {},
-            initial_device_display_name: initialDeviceDisplayName
-          })
-        }
+        JSON.stringify({
+          device_data: deviceData || {},
+          initial_device_display_name: initialDeviceDisplayName
+        }),
+        { prefix: '' }
       )) as { device_id: string; device_data?: Record<string, unknown>; expires_at?: number }
 
       return {
@@ -64,8 +59,7 @@ class MatrixDehydratedDeviceService {
         createdAt: Date.now(),
         expiresAt: response.expires_at
       }
-    } catch (error) {
-      logger.error('创建失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -76,10 +70,11 @@ class MatrixDehydratedDeviceService {
   async getDevice(deviceId: string): Promise<DehydratedDevice | null> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         `/_matrix/client/v1/dehydrated_device/${deviceId}`,
-        undefined
+        undefined,
+        undefined,
+        { prefix: '' }
       )) as {
         device_id: string
         initial_device_display_name?: string
@@ -96,8 +91,7 @@ class MatrixDehydratedDeviceService {
         createdAt: response.created_at,
         expiresAt: response.expires_at
       }
-    } catch (error) {
-      logger.error('获取设备失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -108,10 +102,11 @@ class MatrixDehydratedDeviceService {
   async getDevices(): Promise<DehydratedDevice[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         '/_matrix/client/v1/dehydrated_device',
-        undefined
+        undefined,
+        undefined,
+        { prefix: '' }
       )) as {
         devices: Array<{
           device_id: string
@@ -121,6 +116,7 @@ class MatrixDehydratedDeviceService {
           expires_at?: number
         }>
       }
+      const devices: DehydratedDevice[] = []
       for (const device of response.devices || []) {
         devices.push({
           deviceId: device.device_id,
@@ -133,8 +129,7 @@ class MatrixDehydratedDeviceService {
       }
 
       return devices
-    } catch (error) {
-      logger.error('获取设备列表失败:', error)
+    } catch (_error) {
       return []
     }
   }
@@ -164,8 +159,7 @@ class MatrixDehydratedDeviceService {
         accessToken: response.access_token,
         deviceId: response.device_id
       }
-    } catch (error) {
-      logger.error('认领设备失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -175,15 +169,18 @@ class MatrixDehydratedDeviceService {
    */
   async updateDeviceData(deviceId: string, deviceData: Record<string, unknown>): Promise<boolean> {
     try {
-      await this.client.http.authedRequest({}, 'PUT', `/_matrix/client/v1/dehydrated_device/${deviceId}`, undefined, {
-        body: JSON.stringify({
+      await this.client.http.authedRequest(
+        'PUT',
+        `/_matrix/client/v1/dehydrated_device/${deviceId}`,
+        undefined,
+        JSON.stringify({
           device_data: deviceData
-        })
-      })
+        }),
+        { prefix: '' }
+      )
 
       return true
-    } catch (error) {
-      logger.error('更新设备数据失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -193,11 +190,16 @@ class MatrixDehydratedDeviceService {
    */
   async deleteDevice(deviceId: string): Promise<boolean> {
     try {
-      await this.client.http.authedRequest({}, 'DELETE', `/_matrix/client/v1/dehydrated_device/${deviceId}`, undefined)
+      await this.client.http.authedRequest(
+        'DELETE',
+        `/_matrix/client/v1/dehydrated_device/${deviceId}`,
+        undefined,
+        undefined,
+        { prefix: '' }
+      )
 
       return true
-    } catch (error) {
-      logger.error('删除设备失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -206,18 +208,18 @@ class MatrixDehydratedDeviceService {
    * 获取设备事件
    * 用于获取脱水设备的初始状态
    */
-  async getDeviceEvent(deviceId: string): Promise<any | null> {
+  async getDeviceEvent(deviceId: string): Promise<Record<string, unknown> | null> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         `/_matrix/client/v1/dehydrated_device/${deviceId}/initial_device`,
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as Record<string, unknown>
 
       return response
-    } catch (error) {
-      logger.error('获取设备事件失败:', error)
+    } catch (_error) {
       return null
     }
   }

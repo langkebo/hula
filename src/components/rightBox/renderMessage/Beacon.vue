@@ -90,7 +90,7 @@ const props = withDefaults(
  */
 const now = ref(Date.now())
 const timerManager = useTimerManager()
-let timer: ReturnType<typeof setInterval> | undefined
+let timer: number | undefined
 
 const isActive = computed(() => {
   if (!props.body || !props.body.isLive) return false

@@ -9,11 +9,9 @@ import { useUserStore } from '@/stores/user'
 import { matrixRoomService } from '@/services/matrix/MatrixRoomService'
 import { matrixGroupService } from '@/services/matrix/MatrixGroupService'
 import { matrixUserService } from '@/services/matrix/MatrixUserService'
-import { matrixMessageService } from '@/services/matrix/MatrixMessageService'
 import { matrixSyncService } from '@/services/matrix/MatrixSyncService'
 import { matrixFriendService } from '@/services/matrix/MatrixFriendService'
-import { RoomActEnum, NotificationTypeEnum, RoleEnum } from '@/enums'
-import { IsAllUserEnum } from '@/services/types'
+import { RoomActEnum, NotificationTypeEnum, RoleEnum, IsAllUserEnum } from '@/enums'
 import { showConfirmDialog } from '@/utils/DialogUtils'
 import { createLogger } from '@/utils/Logger'
 import type { Ref } from 'vue'
@@ -44,7 +42,7 @@ export function useChatHeaderActions(
 
   const isGroupOwner = computed(() => {
     const session = activeItem.value
-    if (!session || currentSessionRoomId.value === '1' || session.hotFlag === IsAllUserEnum.Yes) {
+    if (!session || currentSessionRoomId.value === '1' || session.hotFlag === IsAllUserEnum.YES) {
       return false
     }
     const currentUser = groupStore.userList.find((user) => user.uid === userStore.userInfo!.uid)
@@ -95,8 +93,8 @@ export function useChatHeaderActions(
 
     try {
       await matrixRoomService.deleteRoomFromStore(currentSessionRoomId.value)
-      chatStore.deleteChat(currentSessionRoomId.value)
-      globalStore.setCurrentSession(null)
+      chatStore.removeSession(currentSessionRoomId.value)
+      globalStore.updateCurrentSessionRoomId('')
       router.push('/')
     } catch (error) {
       logger.error('删除会话失败:', error)
@@ -131,7 +129,7 @@ export function useChatHeaderActions(
 
     try {
       await matrixFriendService.removeFriend(targetUid)
-      contactStore.removeContact(targetUid)
+      contactStore.deleteContact(targetUid)
       await handleDeleteRoom()
     } catch (error) {
       logger.error('删除好友失败:', error)
@@ -208,12 +206,11 @@ export function useChatHeaderActions(
 
     const confirmed = await showConfirmDialog({
       title: t('home.chat_header.clear_messages_confirm_title'),
-      message: t('home.chat_header.clear_messages_confirm_message')
+      content: t('home.chat_header.clear_messages_confirm_message')
     })
 
     if (confirmed) {
       try {
-        await matrixMessageService.clearRoomMessages(currentSessionRoomId.value)
         chatStore.clearRoomMessages(currentSessionRoomId.value)
       } catch (error) {
         logger.error('清空消息失败:', error)

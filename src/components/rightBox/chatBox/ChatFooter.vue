@@ -26,157 +26,22 @@
         justify="space-between"
         class="p-[10px_22px_5px] select-none flex-shrink-0">
         <n-flex align="center" :size="0" class="input-options">
-          <!-- emoji表情 -->
-          <n-popover
-            v-model:show="emojiShow"
-            trigger="click"
-            :show-arrow="false"
-            placement="top-start"
+          <ChatEmojiPicker
             :disabled="chatStore.isMsgMultiChoose"
-            style="
-              padding: 0;
-              background: var(--bg-emoji);
-              backdrop-filter: blur(10px);
-              -webkit-backdrop-filter: blur(10px);
-              box-shadow: 2px 2px 12px 2px var(--box-shadow-color);
-              border: 1px solid var(--box-shadow-color);
-              width: auto;
-            ">
-            <template #trigger>
-              <n-popover
-                v-model:show="recentlyTip"
-                trigger="hover"
-                :delay="800"
-                :duration="100"
-                :show-arrow="false"
-                :disabled="emojiShow || recentEmojis.length < 4"
-                placement="top">
-                <template #trigger>
-                  <svg class="mr-18px">
-                    <use href="#smiling-face"></use>
-                  </svg>
-                </template>
-                <div v-if="recentEmojis.length > 0" class="p-4px">
-                  <div class="text-xs text-gray-500 mb-4px">最近使用</div>
-                  <div class="flex flex-wrap gap-8px max-w-212px">
-                    <div
-                      v-for="(emoji, index) in recentEmojis"
-                      :key="index"
-                      class="emoji-item cursor-pointer flex-center"
-                      @click="
-                        emojiHandle(
-                          checkIsUrl(emoji) ? { renderUrl: resolveRecentRenderUrl(emoji), serverUrl: emoji } : emoji,
-                          checkIsUrl(emoji) ? 'emoji-url' : 'emoji'
-                        )
-                      ">
-                      <img v-if="checkIsUrl(emoji)" :src="resolveRecentRenderUrl(emoji)" class="size-24px" />
-                      <span v-else class="text-18px">{{ emoji }}</span>
-                    </div>
-                  </div>
-                </div>
-              </n-popover>
-            </template>
-            <Emoticon @emojiHandle="emojiHandle" :all="false" />
-          </n-popover>
+            @emojiSelect="handleEmojiSelect"
+            @emojiUrlSelect="handleEmojiUrlSelect" />
 
-          <div class="flex-center gap-2px mr-12px">
-            <svg @click="handleScreenshot()">
-              <use href="#screenshot"></use>
-            </svg>
-            <n-popover
-              style="
-                padding: 0;
-                background: var(--bg-emoji);
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px);
-                box-shadow: 2px 2px 12px 2px var(--box-shadow-color);
-                border: 1px solid var(--box-shadow-color);
-              "
-              trigger="hover"
-              :show-arrow="false"
-              placement="top">
-              <template #trigger>
-                <svg class="dropdown-arrow" style="width: 14px; height: 14px">
-                  <use href="#down"></use>
-                </svg>
-              </template>
-
-              <div class="footer-item">
-                <n-flex
-                  @click="handleScreenshot()"
-                  class="text-12px cursor-pointer group"
-                  align="center"
-                  justify="space-between">
-                  <n-flex align="center" :size="6">
-                    <svg class="size-14px">
-                      <use href="#screenshot"></use>
-                    </svg>
-                    <p>{{ t('editor.screenshot') }}</p>
-                  </n-flex>
-                  <p class="text-(12px #909090)">{{ settingStore.shortcuts.screenshot }}</p>
-                </n-flex>
-
-                <n-flex
-                  class="text-12px cursor-pointer group"
-                  align="center"
-                  justify="space-between"
-                  @click="isConceal = !isConceal">
-                  <n-checkbox v-model:checked="isConceal" @click.stop />
-                  <p class="text-(12px --chat-text-color)">{{ t('editor.screenshot_hide_curr_window') }}</p>
-                </n-flex>
-              </div>
-            </n-popover>
-          </div>
-
-          <n-popover trigger="hover" :show-arrow="false" placement="bottom">
-            <template #trigger>
-              <div class="flex-center gap-2px mr-12px">
-                <svg @click="handleFileOpen">
-                  <use href="#file2"></use>
-                </svg>
-                <svg style="width: 14px; height: 14px">
-                  <use href="#down"></use>
-                </svg>
-              </div>
-            </template>
-            <span>{{ t('editor.file') }}</span>
-          </n-popover>
-          <n-popover trigger="hover" :show-arrow="false" placement="bottom">
-            <template #trigger>
-              <svg @click="handleImageOpen" class="mr-18px">
-                <use href="#photo"></use>
-              </svg>
-            </template>
-            <span>{{ t('editor.image') }}</span>
-          </n-popover>
-          <n-popover trigger="hover" :show-arrow="false" placement="bottom">
-            <template #trigger>
-              <svg @click="handleVoiceRecord" class="mr-18px">
-                <use href="#voice"></use>
-              </svg>
-            </template>
-            <span>{{ t('editor.voice') }}</span>
-          </n-popover>
-          <n-popover trigger="hover" :show-arrow="false" placement="bottom">
-            <template #trigger>
-              <svg @click="showLocationModal = true" class="mr-18px">
-                <use href="#local"></use>
-              </svg>
-            </template>
-            <span>{{ t('editor.location') }}</span>
-          </n-popover>
-
-          <n-popover trigger="hover" :show-arrow="false" placement="bottom">
-            <template #trigger>
-              <svg
-                :class="{ 'text-[--primary-color]': isBurnAfterRead }"
-                @click="toggleBurnAfterRead"
-                class="mr-18px cursor-pointer">
-                <use href="#timer"></use>
-              </svg>
-            </template>
-            <span>{{ t('editor.burn_after_read') }}</span>
-          </n-popover>
+          <ChatFooterToolbar
+            :is-conceal="isConceal"
+            :is-burn-after-read="isBurnAfterRead"
+            :shortcut="settingStore.shortcuts.screenshot"
+            @screenshot="handleScreenshot()"
+            @toggle-conceal="isConceal = !isConceal"
+            @open-file="handleFileOpen"
+            @open-image="handleImageOpen"
+            @voice-record="handleVoiceRecord"
+            @open-location="showLocationModal = true"
+            @toggle-burn-after-read="toggleBurnAfterRead" />
         </n-flex>
 
         <n-popover trigger="hover" :show-arrow="false" placement="bottom">
@@ -231,19 +96,20 @@ import { open } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
 import { FOOTER_HEIGHT, MAX_FOOTER_HEIGHT, MIN_FOOTER_HEIGHT } from '@/common/constants'
 import LocationModal from '@/components/rightBox/location/LocationModal.vue'
-import { MittEnum, MobilePanelStateEnum, MsgEnum, RoomTypeEnum } from '@/enums'
+import ChatEmojiPicker from './ChatEmojiPicker.vue'
+import ChatFooterToolbar from './ChatFooterToolbar.vue'
+import { MittEnum, MobilePanelStateEnum, MsgEnum } from '@/enums'
 import { useChatLayoutGlobal } from '@/hooks/useChatLayout'
 import { type SelectionRange, useCommon } from '@/hooks/useCommon.ts'
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
-import type { FriendItem, SessionItem } from '@/services/types'
+import { useChatFooter } from '@/hooks/useChatFooter'
+import type { SessionItem } from '@/services/types'
 import { useChatStore } from '@/stores/chat'
-import { useContactStore } from '@/stores/contacts'
 import { useGlobalStore } from '@/stores/global.ts'
 import { useHistoryStore } from '@/stores/history'
 import { useSettingStore } from '@/stores/setting'
-import { useEmojiStore } from '@/stores/emoji'
 import FileUtil from '@/utils/FileUtil'
 import { extractFileName, getMimeTypeFromExtension } from '@/utils/Formatting'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
@@ -253,7 +119,6 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ChatFooter')
 const { t } = useI18n()
-// 移动端组件条件导入
 const More = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/chat-room/panel/More.vue')) : void 0
 const VoicePanel = isMobile()
   ? defineAsyncComponent(() => import('@/mobile/components/chat-room/panel/VoicePanel.vue'))
@@ -269,25 +134,21 @@ const props = withDefaults(
 )
 const detailId = computed(() => props.detailId || '')
 const globalStore = useGlobalStore()
-const contactStore = useContactStore()
 const historyStore = useHistoryStore()
 const chatStore = useChatStore()
 const settingStore = useSettingStore()
-const emojiStore = useEmojiStore()
 const { handleScreenshot } = useGlobalShortcut()
 const MsgInputRef = ref()
 const msgInputDom = ref<HTMLInputElement | null>(null)
-const emojiShow = ref(false)
-const recentlyTip = ref(false)
 const showLocationModal = ref(false)
-const isBurnAfterRead = ref(false)
+
+const { isBurnAfterRead, isSingleChat, isFriend, toggleBurnAfterRead } = useChatFooter()
+
+const emojiShow = ref(false)
 
 const isConceal = computed({
   get: () => settingStore.screenshot.isConceal,
   set: (value: boolean) => settingStore.setScreenshotConceal(value)
-})
-const recentEmojis = computed(() => {
-  return historyStore.emoji.slice(0, 15)
 })
 const { insertNodeAtRange, triggerInputEvent, processFiles, imgPaste } = useCommon()
 
@@ -343,57 +204,15 @@ watch(
 const observeContainerResize = () => {
   const chatContainer = document.querySelector('.h-full') || document.querySelector('[data-chat-container]')
   if (!chatContainer) return
-  // 设置初始高度
   containerHeight.value = (chatContainer as HTMLElement).clientHeight
 }
 
-/**
- * 检查字符串是否为URL
- */
-const checkIsUrl = (str: string) => {
-  try {
-    new URL(str)
-    return true
-  } catch {
-    return false
-  }
-}
-
-// 最近使用的表情包在顶层快捷栏也优先使用本地渲染
-const resolveRecentRenderUrl = (url: string) => {
-  const matched = emojiStore.emojiList.find((item) => item.expressionUrl === url)
-  return matched?.localUrl || url
-}
-
-// 判断是否为单聊
-const isSingleChat = computed(() => {
-  return globalStore.currentSession?.type === RoomTypeEnum.SINGLE
-})
-
-/** 是否是好友关系 */
-const isFriend = computed(() => {
-  if (!isSingleChat.value) return true
-  const target = detailId.value
-  if (!target) return false
-  return contactStore.contactsList.some((contact: FriendItem) => contact.uid === target)
-})
-
-// 监听emojiShow的变化，当emojiShow为true时关闭recentlyTip
-watch(emojiShow, (newValue) => {
-  if (newValue === true) {
-    recentlyTip.value = false
-  }
-})
-
-// 文件选择（不限制类型）
 const handleFileOpen = async () => {
   const filesData = await FileUtil.openAndCopyFile()
   if (!filesData) return
-  // 使用processFiles方法进行文件类型验证
   await processFiles(filesData.files, MsgInputRef.value.messageInputDom, MsgInputRef.value?.showFileModal)
 }
 
-// 图片选择（只能选择图片类型）
 const handleImageOpen = async () => {
   const selected = await open({
     multiple: true,
@@ -406,7 +225,6 @@ const handleImageOpen = async () => {
   })
 
   if (selected && Array.isArray(selected)) {
-    // 并行处理所有图片文件
     const imagePromises = selected.map(async (path) => {
       const fileData = await readFile(path)
       const fileName = extractFileName(path)
@@ -418,25 +236,60 @@ const handleImageOpen = async () => {
 
     const files = await Promise.all(imagePromises)
 
-    // 将所有图片插入到输入框
     for (const file of files) {
       await imgPaste(file, MsgInputRef.value.messageInputDom)
     }
   }
 }
 
-// 使用 VueUse 的防抖函数处理表情包发送（300ms 防抖）
 type EmojiUrlPayload = { renderUrl: string; serverUrl: string }
+
+const handleEmojiSelect = (emoji: string) => {
+  updateRecentEmojis(emoji)
+  MsgInputRef.value?.focus()
+  const inp = msgInputDom.value
+  if (inp) {
+    insertNodeAtRange(MsgEnum.TEXT, emoji, inp, MsgInputRef.value?.getLastEditRange())
+    triggerInputEvent(inp)
+  }
+}
+
+const handleEmojiUrlSelect = (payload: EmojiUrlPayload) => {
+  updateRecentEmojis(payload.serverUrl)
+  MsgInputRef.value?.focus()
+  const inp = msgInputDom.value
+  if (!inp) return
+
+  const lastEditRange = MsgInputRef.value?.getLastEditRange()
+  if (!lastEditRange) return
+
+  const imgElement = document.createElement('img')
+  imgElement.src = payload.renderUrl
+  imgElement.style.maxWidth = '80px'
+  imgElement.style.maxHeight = '80px'
+  imgElement.dataset.type = 'emoji'
+  imgElement.dataset.serverUrl = payload.serverUrl
+
+  lastEditRange.range.insertNode(imgElement)
+
+  const range = document.createRange()
+  range.setStartAfter(imgElement)
+  range.collapse(true)
+  const selection = window.getSelection()
+  selection?.removeAllRanges()
+  selection?.addRange(range)
+
+  MsgInputRef.value?.updateSelectionRange()
+  triggerInputEvent(inp)
+}
 
 const sendEmojiWithDebounce = useDebounceFn((payload: EmojiUrlPayload) => {
   try {
-    // 不等待发送完成，立即返回（避免卡顿）
     MsgInputRef.value?.sendEmojiDirect(payload.serverUrl).catch((error: unknown) => {
       logger.error('发送表情包失败:', error)
       window.$message?.error?.('发送表情包失败')
     })
 
-    // 添加到最近使用表情列表
     updateRecentEmojis(payload.serverUrl)
   } catch (error) {
     logger.error('发送表情包失败:', error)
@@ -444,11 +297,6 @@ const sendEmojiWithDebounce = useDebounceFn((payload: EmojiUrlPayload) => {
   }
 }, 200)
 
-/**
- * 选择表情，并把表情插入输入框
- * @param item 选择的表情
- * @param type 表情类型，'emoji' 为普通表情，'emoji-url' 为表情包URL
- */
 const emojiHandle = async (item: string | EmojiUrlPayload, type: 'emoji' | 'emoji-url' = 'emoji') => {
   emojiShow.value = false
 
@@ -457,10 +305,9 @@ const emojiHandle = async (item: string | EmojiUrlPayload, type: 'emoji' | 'emoj
     return
   }
 
-  const isEmojiUrlPayload = (value: any): value is EmojiUrlPayload =>
-    value && typeof value === 'object' && typeof value.serverUrl === 'string'
+  const isEmojiUrlPayload = (value: unknown): value is EmojiUrlPayload =>
+    value !== null && typeof value === 'object' && typeof (value as EmojiUrlPayload).serverUrl === 'string'
 
-  // 移动端且是表情包URL时，使用防抖发送（发送服务端URL）
   if (isMobile() && type === 'emoji-url') {
     const payload: EmojiUrlPayload = isEmojiUrlPayload(item)
       ? item
@@ -469,14 +316,10 @@ const emojiHandle = async (item: string | EmojiUrlPayload, type: 'emoji' | 'emoj
     return
   }
 
-  // 桌面端或普通emoji，插入到输入框
-  // 确保输入框有焦点
   MsgInputRef.value?.focus()
 
-  // 尝试获取最后的编辑范围
   let lastEditRange: SelectionRange | null = MsgInputRef.value?.getLastEditRange()
 
-  // 验证选区是否在输入框内
   const isRangeInInput = (range: Range | null): boolean => {
     if (!range || !inp) return false
     try {
@@ -486,17 +329,14 @@ const emojiHandle = async (item: string | EmojiUrlPayload, type: 'emoji' | 'emoj
     }
   }
 
-  // 如果没有有效的编辑范围，或选区不在输入框内，创建一个新的范围
   if (!lastEditRange || !isRangeInInput(lastEditRange.range)) {
     const selection = window.getSelection()
     if (selection && selection.rangeCount > 0 && isRangeInInput(selection.getRangeAt(0))) {
-      // 只有当前选区在输入框内时才使用
       lastEditRange = {
         range: selection.getRangeAt(0),
         selection
       }
     } else {
-      // 创建一个新的范围到输入框末尾
       const range = document.createRange()
       range.selectNodeContents(inp)
       range.collapse(false)
@@ -507,7 +347,6 @@ const emojiHandle = async (item: string | EmojiUrlPayload, type: 'emoji' | 'emoj
     }
   }
 
-  // 清空上下文选区并设置新的选区
   const selection = window.getSelection()
   if (selection) {
     selection.removeAllRanges()
@@ -582,12 +421,10 @@ const updateRecentEmojis = (emoji: string) => {
 }
 
 const handleVoiceRecord = () => {
-  // 触发录音模式切换事件
   useMitt.emit(MittEnum.VOICE_RECORD_TOGGLE)
 }
 
-// 处理位置选择
-const handleLocationSelected = async (locationData: any) => {
+const handleLocationSelected = async (locationData: unknown) => {
   try {
     await MsgInputRef.value.handleLocationSelected(locationData)
     showLocationModal.value = false
@@ -596,17 +433,6 @@ const handleLocationSelected = async (locationData: any) => {
   }
 }
 
-// 切换阅后即焚状态
-const toggleBurnAfterRead = () => {
-  isBurnAfterRead.value = !isBurnAfterRead.value
-  if (isBurnAfterRead.value) {
-    window.$message.success(t('editor.burn_after_read_enabled'))
-  } else {
-    window.$message.info(t('editor.burn_after_read_disabled'))
-  }
-}
-
-// 打开聊天记录窗口
 const openChatHistory = async () => {
   const currentRoomId = globalStore.currentSessionRoomId
 
@@ -761,58 +587,6 @@ onUnmounted(() => {
 
     &:hover {
       transform: rotate(180deg);
-    }
-  }
-}
-
-.resize-indicator {
-  width: 40px;
-  height: 3px;
-  background: #909090;
-  border-radius: 2px;
-  opacity: 0.3;
-  transition: all 0.2s ease;
-  position: relative;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 20px;
-    height: 1px;
-    background: var(--icon-color, #666);
-    border-radius: 1px;
-    opacity: 0.5;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 20px;
-    height: 1px;
-    background: var(--icon-color, #666);
-    border-radius: 1px;
-    opacity: 0.5;
-  }
-}
-
-.footer-item {
-  @apply flex-col-y-center gap-4px px-6px py-8px min-w-160px box-border size-fit select-none;
-
-  .group {
-    @apply px-4px py-6px rounded-4px;
-
-    &:hover {
-      background-color: var(--emoji-hover);
-
-      svg {
-        animation: twinkle 0.3s ease-in-out;
-      }
     }
   }
 }

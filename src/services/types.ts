@@ -898,10 +898,15 @@ export type RightMouseMessageItem = {
   _index: number
 }
 
-export type DetailsContent = {
-  type: 'apply'
-  applyType: 'friend' | 'group'
-}
+export type DetailsContent =
+  | {
+      type: 'apply'
+      applyType: 'friend' | 'group'
+    }
+  | {
+      type: RoomTypeEnum
+      uid: string
+    }
 
 /**
  * 媒体类型枚举

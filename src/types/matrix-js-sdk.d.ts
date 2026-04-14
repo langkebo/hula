@@ -306,36 +306,44 @@ declare module 'matrix-js-sdk' {
   }
 
   export interface VoiceConvertParams {
-    inputUrl: string
+    messageId: string
     outputFormat?: string
+    quality?: number
     bitrate?: number
   }
 
   export interface VoiceConvertResult {
-    message_id?: string
-    event_id?: string
-    url: string
-    duration?: number
+    status: string
+    message: string
+    messageId: string
+    targetFormat: string
+    quality: number
+    bitrate: number
+    convertedContent: string | null
   }
 
   export interface VoiceOptimizeParams {
-    inputUrl: string
-    quality?: number
-    targetSize?: number
+    messageId: string
+    targetSizeKb?: number
+    preserveQuality?: boolean
+    removeSilence?: boolean
+    normalizeVolume?: boolean
   }
 
   export interface VoiceOptimizeResult {
-    message_id?: string
-    event_id?: string
-    url: string
-    duration?: number
-    size?: number
+    status: string
+    message: string
+    messageId: string
+    targetSizeKb: number
+    preserveQuality: boolean
+    removeSilence: boolean
+    normalizeVolume: boolean
+    optimizedContent: string | null
   }
 
   export interface VoiceTranscriptionParams {
-    roomId: string
-    eventId: string
-    lang?: string
+    eventId?: string
+    mxc?: string
   }
 
   export interface VoiceTranscriptionResult {
@@ -409,6 +417,121 @@ declare module 'matrix-js-sdk' {
     getSyncState(): string | null
     getRoomsNav(): unknown
     generateTxnId(): string
+    // cross-signing
+    checkCrossSigningStatus(): Promise<unknown>
+    getCrossSigningKeys(): Promise<unknown>
+    isCrossSigningReady(): Promise<boolean>
+    getUserCrossSigningKeys(userId: string): Promise<unknown>
+    checkAndTrustCrossSigning(): Promise<unknown>
+    // crypto-algorithms
+    getCryptoAlgorithm(): unknown
+    setCryptoAlgorithm(algorithm: unknown): void
+    hasCrypto(): boolean
+    initCrypto(): Promise<void>
+    stopCrypto(): void
+    // crypto-backup
+    isCryptoBackupEnabled(): Promise<boolean>
+    enableCryptoBackup(): Promise<void>
+    disableCryptoBackup(): Promise<void>
+    getCryptoBackup(): Promise<unknown>
+    restoreCryptoBackup(
+      recoveryKey: string,
+      roomId?: string,
+      sessionId?: string,
+      backupInfo?: unknown
+    ): Promise<unknown>
+    // crypto-store
+    cryptoStore: unknown
+    deleteCryptoStore(): Promise<void>
+    isCryptoStoreReady(): Promise<boolean>
+    // encryption-rotation
+    rotateEncryptionKeys(): Promise<unknown>
+    isRotationNeeded(): Promise<boolean>
+    getRotationPeriod(): number
+    setRotationPeriod(period: number): void
+    getLastRotationTime(): number
+    // filtering
+    getRoomWithHighestUnread(): Room | null
+    getRoomsWithUnreadNotifications(): Room[]
+    rooms: Room[]
+    getRoomByAlias(alias: string): Room | null
+    sortRoomsByLastMessage(rooms: Room[]): Room[]
+    // key-claim
+    claimKeys(keys: unknown): Promise<unknown>
+    claimedKeys: Map<string, unknown>
+    // media-quota
+    getUserStorageUsage(userId: string): Promise<unknown>
+    // notifications-legacy
+    getNotificationCount(): number
+    getHighlightCount(): number
+    hasUnreadNotifications(): boolean
+    hasUnreadHighlights(): boolean
+    notificationCallback: unknown
+    getTotalNotificationCount(): number
+    getTotalHighlightCount(): number
+    // pending-actions
+    getPendingEvents(): MatrixEvent[]
+    hasPendingEvents(): boolean
+    getUnsentEvents(): MatrixEvent[]
+    // reactions
+    reactToMessage(roomId: string, eventId: string, emoji: string): Promise<ISendEventResponse>
+    redactReaction(roomId: string, eventId: string, reactionEventId: string): Promise<void>
+    getReactionUsers(roomId: string, eventId: string, emoji: string): Promise<RoomMember[]>
+    hasReaction(roomId: string, eventId: string, emoji: string): Promise<boolean>
+    // retention
+    getRoomRetention(roomId: string): Promise<unknown>
+    setRoomRetention(roomId: string, retention: unknown): Promise<void>
+    getServerRetention(): Promise<unknown>
+    // room-key-sharing
+    shareRoomKey(roomId: string, userIds: string[], options?: unknown): Promise<unknown>
+    getSharedWithUsers(roomId: string): Promise<unknown>
+    hasSharedKeyWithUser(roomId: string, userId: string): Promise<boolean>
+    exportRoomKeys(): Promise<unknown[]>
+    importRoomKeys(keys: unknown[], options?: unknown): Promise<unknown[]>
+    // room-settings
+    getRoomName(roomId: string): Promise<string>
+    getRoomTopic(roomId: string): Promise<string>
+    getRoomAvatarUrl(roomId: string): Promise<string | null>
+    setRoomAvatar(roomId: string, avatarUrl: string): Promise<void>
+    getRoomHistoryVisibility(roomId: string): Promise<string>
+    setRoomHistoryVisibility(roomId: string, visibility: string): Promise<void>
+    getRoomGuestAccess(roomId: string): Promise<string>
+    setRoomGuestAccess(roomId: string, access: string): Promise<void>
+    getRoomJoinRule(roomId: string): Promise<string>
+    setRoomJoinRule(roomId: string, rule: string): Promise<void>
+    // secret-storage
+    isSecretStorageReady(): Promise<boolean>
+    getSecretStorageKey(keyId: string): Promise<unknown>
+    storeSecret(name: string, secret: unknown, keys?: unknown): Promise<void>
+    getSecret(name: string): Promise<unknown>
+    hasSecret(name: string): Promise<boolean>
+    getSecretStorageKeys(): Promise<unknown[]>
+    // server-capabilities
+    getServerCapabilities(): Promise<unknown>
+    hasServerSupport(feature: string): Promise<boolean>
+    getServerVersion(): Promise<string>
+    supportsLocation(): Promise<boolean>
+    // server-time
+    serverClockDiff: number
+    getLocalTimestampForServerTime(serverTs: number): number
+    getServerTimestamp(): number
+    updateServerTimeInfo(): Promise<void>
+    // settled
+    waitForPendingRequests(): Promise<void>
+    hasStartedSync(): boolean
+    isSyncing(): boolean
+    waitForSync(): Promise<void>
+    // sync-management
+    syncToken: string | null
+    syncing: boolean
+    // turn-server
+    getTurnServerURIs(): Promise<string[]>
+    // widgets
+    getUserWidgets(): Promise<unknown[]>
+    getRoomWidgets(roomId: string): Promise<unknown[]>
+    setUserWidgets(widgets: unknown[]): Promise<void>
+    setRoomWidgets(roomId: string, widgets: unknown[]): Promise<void>
+    getAllWidgetEvents(roomId: string): Promise<unknown[]>
   }
 
   // MatrixEvent 方法扩展

@@ -71,9 +71,9 @@ const ssoDisabled = computed(
 
 const getHomeserverUrl = (): string => {
   try {
-    const client = matrixClientService.getClient()
-    if (client) {
-      return client.getHomeserverUrl()
+    const url = matrixClientService.getHomeserverUrl()
+    if (url) {
+      return url
     }
   } catch (e) {
     logger.warn('Failed to get homeserver URL:', e)

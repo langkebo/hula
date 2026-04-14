@@ -1,5 +1,5 @@
 <template>
-  <n-drawer v-model:show="visible" :width="320" placement="right" :mask-closable="true">
+  <n-drawer :show="visible" :width="320" placement="right" :mask-closable="true" @update:show="(val: boolean) => emit('update:visible', val)">
     <n-drawer-content :title="drawerTitle" closable>
       <div class="sidebar-content">
         <div v-if="isGroup" class="group-info-section">
@@ -30,9 +30,10 @@
             <span class="label">{{ t('home.chat_header.my_name_in_group') }}</span>
             <div class="value-row">
               <n-input
-                v-model:value="localMyName"
+                :value="localMyName"
                 size="small"
                 :placeholder="t('home.chat_header.input_my_name')"
+                @update:value="(val: string) => emit('update:localMyName', val)"
                 @blur="handleUpdateMyName"
                 @keyup.enter="handleUpdateMyName" />
             </div>
@@ -64,9 +65,10 @@
             <span class="label">{{ t('home.chat_header.remark') }}</span>
             <div class="value-row">
               <n-input
-                v-model:value="localRemark"
+                :value="localRemark"
                 size="small"
                 :placeholder="t('home.chat_header.input_remark')"
+                @update:value="(val: string) => emit('update:localRemark', val)"
                 @blur="handleUpdateRemark"
                 @keyup.enter="handleUpdateRemark" />
             </div>

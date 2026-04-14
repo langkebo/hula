@@ -5,7 +5,8 @@
  */
 
 import type { MatrixClient } from 'matrix-js-sdk'
-import { info, error } from '@tauri-apps/plugin-log'
+import type { ExtendedMatrixClientForReport } from '@/types/matrix-api'
+import { info } from '@tauri-apps/plugin-log'
 
 /**
  * 举报原因
@@ -46,7 +47,7 @@ export interface ReportRequest {
 /**
  * 举报服务
  */
-class ReportService {
+class ReportService extends BaseManager {
   private client: MatrixClient | null = null
 
   /**
@@ -66,14 +67,9 @@ class ReportService {
     }
 
     const { roomId, eventId, reason, explanation } = request
-
-    try {
-      await (this.client as any).reportEvent(roomId, eventId, reason, explanation || '')
-      info(`[Report] 举报成功: ${roomId}/${eventId}`)
-    } catch (err) {
-      error(`[Report] 举报失败: ${err}`)
-      throw err
-    }
+    const extendedClient = this.client as unknown as ExtendedMatrixClientForReport
+    await extendedClient.reportEvent(roomId, eventId, reason, explanation || '')
+    info(`[Report] 举报成功: ${roomId}/${eventId}`)
   }
 
   /**
@@ -83,15 +79,9 @@ class ReportService {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
-
-    try {
-      // 通过举报房间消息来举报用户
-      // Matrix API 没有直接的举报用户接口
-      info(`[Report] 举报用户功能需要通过房间事件举报实现: ${userId}`)
-    } catch (err) {
-      error(`[Report] 举报用户失败: ${err}`)
-      throw err
-    }
+    // 通过举报房间消息来举报用户
+    // Matrix API 没有直接的举报用户接口
+    info(`[Report] 举报用户功能需要通过房间事件举报实现: ${userId}`)
   }
 
   /**
@@ -101,22 +91,16 @@ class ReportService {
     if (!this.client) {
       throw new Error('Client 未初始化')
     }
-
-    try {
-      // 获取房间的第一个事件进行举报
-      const room = this.client.getRoom(roomId)
-      if (room && room.timeline.length > 0) {
-        const event = room.timeline[0]
-        await this.reportEvent({
-          roomId,
-          eventId: event.getId() || '',
-          reason,
-          explanation
-        })
-      }
-    } catch (err) {
-      error(`[Report] 举报房间失败: ${err}`)
-      throw err
+    // 获取房间的第一个事件进行举报
+    const room = this.client.getRoom(roomId)
+    if (room && room.timeline.length > 0) {
+      const event = room.timeline[0]
+      await this.reportEvent({
+        roomId,
+        eventId: event.getId() || '',
+        reason,
+        explanation
+      })
     }
   }
 }
@@ -130,6 +114,7 @@ export const reportService = new ReportService()
  * Vue Composable
  */
 import { ref } from 'vue'
+import { BaseManager } from './BaseManager'
 
 export function useReport() {
   const isLoading = ref(false)

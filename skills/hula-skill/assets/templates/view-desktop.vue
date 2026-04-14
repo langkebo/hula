@@ -43,9 +43,7 @@ function handleAction(): void {
   store.fetchItems()
 }
 
-function handleItemClick(item: ExampleItem): void {
-  console.log('Item clicked:', item.id)
-}
+function handleItemClick(_item: ExampleItem): void {}
 
 onMounted(() => {
   store.fetchItems()

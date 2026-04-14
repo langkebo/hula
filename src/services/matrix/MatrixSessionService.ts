@@ -1,30 +1,9 @@
-/**
- * Matrix 会话服务
- *
- * 提供会话/对话管理功能，包括获取会话列表、设置置顶、删除会话等操作。
- *
- * @example
- * ```typescript
- * import { matrixSessionService } from '@/services/matrix'
- *
- * // 获取所有会话
- * const sessions = await matrixSessionService.getSessionList()
- *
- * // 获取会话详情
- * const detail = await matrixSessionService.getSessionDetailWithFriends('!roomId:example.org')
- *
- * // 设置会话置顶
- * await matrixSessionService.setSessionTop('!roomId:example.org', true)
- *
- * // 删除会话
- * await matrixSessionService.deleteSession('!roomId:example.org')
- * ```
- */
-
 import type { Room, MatrixEvent, RoomMember } from 'matrix-js-sdk'
+import type { ExtendedRoom, RoomAvatarContent, ExtendedRoomMember, FriendSyncState } from '@/types/matrix-api'
 import { matrixClientService } from './MatrixClientService'
 import { matrixDirectMessageService, type DmRoomInfo } from './MatrixDirectMessageService'
 import { matrixFriendService, type Friend } from './MatrixFriendService'
+import { BaseManager } from './BaseManager'
 import { info, error as logError } from '@tauri-apps/plugin-log'
 
 export interface SessionInfo {
@@ -56,29 +35,25 @@ export interface SessionDetail extends SessionInfo {
   isArchived: boolean
 }
 
-class MatrixSessionService {
+class MatrixSessionService extends BaseManager {
   private pinnedRoomsCache: Set<string> = new Set()
 
-  /**
-   * 获取所有 DM 会话列表
-   *
-   * @returns 会话信息列表
-   * @throws {Error} 如果客户端未初始化
-   */
-  async getSessionList(): Promise<SessionInfo[]> {
+  async getSessionList(throwOnError = true): Promise<SessionInfo[]> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixSession] 客户端未初始化')
     }
 
     try {
-      const dmRooms = await matrixDirectMessageService.getDMRooms()
+      const dmRooms = await matrixDirectMessageService.getDMRooms(throwOnError)
+      const dmRoomIdSet = new Set(dmRooms.map((dm) => dm.roomId))
       const rooms = client.getRooms()
       const sessionList: SessionInfo[] = []
 
       for (const room of rooms) {
-        if ((room as any).isDirect?.() || this.isDirectRoom(room, dmRooms)) {
-          const session = await this.buildSessionInfo(room, dmRooms)
+        const extendedRoom = room as unknown as ExtendedRoom
+        if (extendedRoom.isDirect?.() || dmRoomIdSet.has(room.roomId)) {
+          const session = await this.buildSessionInfo(room, dmRooms, dmRoomIdSet)
           if (session) {
             sessionList.push(session)
           }
@@ -94,20 +69,13 @@ class MatrixSessionService {
       info(`[MatrixSession] 获取会话列表成功: ${sessionList.length} 个会话`)
       return sessionList
     } catch (err) {
-      logError(`[MatrixSession] 获取会话列表失败: ${err}`)
-      throw err
+      return this.handleError(err, 'getSessionList', [] as SessionInfo[], throwOnError)
     }
   }
 
-  /**
-   * 获取会话详情，包含好友信息
-   *
-   * @param roomIdOrParams - 房间 ID 或包含 id 和 roomType 的对象
-   * @returns 会话详情
-   * @throws {Error} 如果客户端未初始化或房间不存在
-   */
   async getSessionDetailWithFriends(
-    roomIdOrParams: string | { id: string; roomType: number }
+    roomIdOrParams: string | { id: string; roomType: number },
+    throwOnError = true
   ): Promise<SessionDetail | null> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -122,7 +90,7 @@ class MatrixSessionService {
         if (_roomType === 1) {
           roomId = userId
         } else {
-          const dmRoomId = await matrixDirectMessageService.getDmForUser(userId)
+          const dmRoomId = await matrixDirectMessageService.getDmForUser(userId, throwOnError)
           if (!dmRoomId) {
             logError(`[MatrixSession] 用户 ${userId} 的私聊房间不存在`)
             return null
@@ -139,7 +107,7 @@ class MatrixSessionService {
         return null
       }
 
-      const dmRooms = await matrixDirectMessageService.getDMRooms()
+      const dmRooms = await matrixDirectMessageService.getDMRooms(throwOnError)
       const sessionInfo = await this.buildSessionInfo(room, dmRooms)
       if (!sessionInfo) {
         return null
@@ -161,19 +129,11 @@ class MatrixSessionService {
       info(`[MatrixSession] 获取会话详情成功: ${roomId}`)
       return detail
     } catch (err) {
-      logError(`[MatrixSession] 获取会话详情失败: ${err}`)
-      throw err
+      return this.handleError(err, 'getSessionDetailWithFriends', null as SessionDetail | null, throwOnError)
     }
   }
 
-  /**
-   * 设置会话置顶/取消置顶
-   *
-   * @param roomId - 房间 ID
-   * @param isTop - 是否置顶
-   * @throws {Error} 如果客户端未初始化或操作失败
-   */
-  async setSessionTop(roomId: string, isTop: boolean): Promise<void> {
+  async setSessionTop(roomId: string, isTop: boolean, throwOnError = false): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixSession] 客户端未初始化')
@@ -182,31 +142,23 @@ class MatrixSessionService {
     try {
       if (isTop) {
         this.pinnedRoomsCache.add(roomId)
-        await client.setRoomAccountData(roomId, 'hula.pinned_rooms' as any, {
+        await client.setRoomAccountData(roomId, 'hula.pinned_rooms', {
           pinned: Array.from(this.pinnedRoomsCache)
         })
         info(`[MatrixSession] 会话已置顶: ${roomId}`)
       } else {
         this.pinnedRoomsCache.delete(roomId)
-        await client.setRoomAccountData(roomId, 'hula.pinned_rooms' as any, {
+        await client.setRoomAccountData(roomId, 'hula.pinned_rooms', {
           pinned: Array.from(this.pinnedRoomsCache)
         })
         info(`[MatrixSession] 会话已取消置顶: ${roomId}`)
       }
     } catch (err) {
-      logError(`[MatrixSession] 设置会话置顶失败: ${err}`)
-      throw err
+      this.handleError(err, 'setSessionTop', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 删除会话 (忘记/离开房间)
-   *
-   * @param roomId - 房间 ID
-   * @param ignoreLeft - 是否忽略已离开的房间 (默认: false)
-   * @throws {Error} 如果客户端未初始化或操作失败
-   */
-  async deleteSession(roomId: string, ignoreLeft = false): Promise<void> {
+  async deleteSession(roomId: string, ignoreLeft = false, throwOnError = false): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixSession] 客户端未初始化')
@@ -234,17 +186,11 @@ class MatrixSessionService {
         info(`[MatrixSession] 已忘记房间: ${roomId}`)
       }
     } catch (err) {
-      logError(`[MatrixSession] 删除会话失败: ${err}`)
-      throw err
+      this.handleError(err, 'deleteSession', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 加载已置顶的房间列表
-   *
-   * @throws {Error} 如果客户端未初始化
-   */
-  async loadPinnedRooms(): Promise<void> {
+  async loadPinnedRooms(throwOnError = true): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixSession] 客户端未初始化')
@@ -256,7 +202,7 @@ class MatrixSessionService {
         return
       }
 
-      const accountData = client.getAccountData('hula.pinned_rooms' as any)
+      const accountData = client.getAccountData('hula.pinned_rooms')
       if (accountData) {
         const content = accountData.getContent()
         if (content?.pinned && Array.isArray(content.pinned)) {
@@ -265,31 +211,16 @@ class MatrixSessionService {
         }
       }
     } catch (err) {
-      logError(`[MatrixSession] 加载置顶列表失败: ${err}`)
+      this.handleError(err, 'loadPinnedRooms', undefined as void, throwOnError)
     }
   }
 
-  /**
-   * 获取所有已置顶的房间 ID
-   *
-   * @returns 置顶房间 ID 列表
-   */
   getPinnedRooms(): string[] {
     return Array.from(this.pinnedRoomsCache)
   }
 
-  /**
-   * 检查房间是否已置顶
-   *
-   * @param roomId - 房间 ID
-   * @returns 是否已置顶
-   */
   isRoomPinned(roomId: string): boolean {
     return this.pinnedRoomsCache.has(roomId)
-  }
-
-  private isDirectRoom(room: Room, dmRooms: DmRoomInfo[]): boolean {
-    return dmRooms.some((dm) => dm.roomId === room.roomId)
   }
 
   private checkIsArchived(room: Room, userId: string): boolean {
@@ -297,7 +228,11 @@ class MatrixSessionService {
     return member?.membership === 'leave'
   }
 
-  private async buildSessionInfo(room: Room, dmRooms: DmRoomInfo[]): Promise<SessionInfo | null> {
+  private async buildSessionInfo(
+    room: Room,
+    dmRooms: DmRoomInfo[],
+    dmRoomIdSet?: Set<string>
+  ): Promise<SessionInfo | null> {
     const client = matrixClientService.getClient()
     if (!client) {
       return null
@@ -308,17 +243,19 @@ class MatrixSessionService {
     const isPinned = this.pinnedRoomsCache.has(room.roomId)
     const isEncrypted = client.isRoomEncrypted(room.roomId)
     const memberCount = room.getJoinedMemberCount()
-    const isDirect = (room as any).isDirect?.() || this.isDirectRoom(room, dmRooms)
+    const extendedRoom = room as unknown as ExtendedRoom
+    const roomIdSet = dmRoomIdSet ?? new Set(dmRooms.map((dm) => dm.roomId))
+    const isDirect = extendedRoom.isDirect?.() || roomIdSet.has(room.roomId)
 
     let avatarUrl: string | undefined
     const avatarEvent = room.currentState.getStateEvents('m.room.avatar')[0]
     if (avatarEvent) {
-      avatarUrl = (avatarEvent.getContent() as any).url
+      const avatarContent = avatarEvent.getContent() as RoomAvatarContent
+      avatarUrl = avatarContent.url
     }
 
     const name = room.name || this.getDmPartnerName(room) || 'Unknown'
-    const directData = room.getAccountData('m.direct')?.getContent() as any
-    const lastActiveTime = lastMessage?.timestamp || directData?.[room.roomId]?.lastActiveTime
+    const lastActiveTime = lastMessage?.timestamp
 
     return {
       roomId: room.roomId,
@@ -397,12 +334,10 @@ class MatrixSessionService {
         return undefined
       }
 
-      const syncState = (matrixFriendService as any).syncState as {
-        friends: Friend[]
-      }
+      const syncState = (matrixFriendService as unknown as { syncState: FriendSyncState }).syncState
 
       if (syncState?.friends) {
-        return syncState.friends.find((f) => f.userId === userId)
+        return syncState.friends.find((f) => f.user_id === userId)
       }
 
       return undefined
@@ -418,12 +353,15 @@ class MatrixSessionService {
     isOnline: boolean
   }> {
     const members = room.getJoinedMembers()
-    return members.map((member: RoomMember) => ({
-      userId: member.userId,
-      displayName: member.rawDisplayName,
-      avatarUrl: member.getAvatarUrl(),
-      isOnline: (member as any).presence !== 'offline'
-    }))
+    return members.map((member: RoomMember) => {
+      const extendedMember = member as unknown as ExtendedRoomMember
+      return {
+        userId: member.userId,
+        displayName: member.rawDisplayName,
+        avatarUrl: member.getAvatarUrl(),
+        isOnline: extendedMember.presence !== 'offline'
+      }
+    })
   }
 
   private getLatestEvents(room: Room, limit = 20): MatrixEvent[] {

@@ -1,7 +1,9 @@
 import { matrixClientService } from './MatrixClientService'
-import { info, error as logError } from '@tauri-apps/plugin-log'
+import { BaseManager, NotFoundError } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 import { MatrixEvent } from 'matrix-js-sdk'
 import type { ISendEventResponse } from 'matrix-js-sdk'
+import type { ExtendedRoomForMessage } from '@/types/matrix-api'
 
 export interface MessageSearchOptions {
   roomId?: string
@@ -48,8 +50,8 @@ const MESSAGE_SEND_MAX_RETRIES = 3
 const MESSAGE_SEND_RETRY_DELAY_MS = 1000
 const MESSAGE_SEND_RETRY_BACKOFF = 2
 
-class MatrixMessageService {
-  private async sendWithRetry<T>(sendFn: () => Promise<T>, operationName: string): Promise<T> {
+class MatrixMessageService extends BaseManager {
+  private async sendWithRetry<T>(sendFn: () => Promise<T>, operationName: string, throwOnError = true): Promise<T> {
     let lastError: Error | null = null
     let delay = MESSAGE_SEND_RETRY_DELAY_MS
 
@@ -60,90 +62,126 @@ class MatrixMessageService {
         lastError = err instanceof Error ? err : new Error(String(err))
 
         if (attempt < MESSAGE_SEND_MAX_RETRIES) {
-          logError(
-            `[MatrixMessage] ${operationName} failed (attempt ${attempt}/${MESSAGE_SEND_MAX_RETRIES}): ${lastError.message}, retrying in ${delay}ms...`
-          )
           await new Promise((resolve) => setTimeout(resolve, delay))
           delay *= MESSAGE_SEND_RETRY_BACKOFF
-        } else {
-          logError(
-            `[MatrixMessage] ${operationName} failed after ${MESSAGE_SEND_MAX_RETRIES} attempts: ${lastError.message}`
-          )
         }
       }
     }
 
-    throw lastError
+    return this.handleError(lastError, operationName, null as unknown as T, throwOnError)
   }
 
-  async sendMessageStream(roomId: string, content: string, txId?: string): Promise<ISendEventResponse> {
-    return this.sendTextMessage(roomId, content, txId)
+  async sendMessageStream(
+    roomId: string,
+    content: string,
+    txId?: string,
+    throwOnError = true
+  ): Promise<ISendEventResponse | null> {
+    return this.sendTextMessage(roomId, content, txId, throwOnError)
   }
 
-  async sendTextMessage(roomId: string, content: string, txId?: string): Promise<ISendEventResponse> {
-    return this.sendWithRetry(async () => {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+  async sendTextMessage(
+    roomId: string,
+    content: string,
+    txId?: string,
+    throwOnError = true
+  ): Promise<ISendEventResponse | null> {
+    return this.sendWithRetry(
+      async () => {
+        const client = matrixClientService.getClient()
+        if (!client) throw new Error('Matrix client not initialized')
 
-      const txnId = txId || `m${Date.now()}`
-      const response = await client.sendTextMessage(roomId, content, txnId)
-      info(`[MatrixMessage] Text message sent to ${roomId}: ${txnId}`)
-      return response
-    }, 'sendTextMessage')
+        const txnId = txId || `m${Date.now()}`
+        const response = await client.sendTextMessage(roomId, content, txnId)
+        info(`[MatrixMessage] Text message sent to ${roomId}: ${txnId}`)
+        return response
+      },
+      'sendTextMessage',
+      throwOnError
+    )
   }
 
-  async sendHtmlMessage(roomId: string, body: string, html: string, txId?: string): Promise<ISendEventResponse> {
-    return this.sendWithRetry(async () => {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+  async sendHtmlMessage(
+    roomId: string,
+    body: string,
+    html: string,
+    txId?: string,
+    throwOnError = true
+  ): Promise<ISendEventResponse | null> {
+    return this.sendWithRetry(
+      async () => {
+        const client = matrixClientService.getClient()
+        if (!client) throw new Error('Matrix client not initialized')
 
-      const txnId = txId || `m${Date.now()}`
-      const response = await client.sendHtmlMessage(roomId, txnId, body, html)
-      info(`[MatrixMessage] HTML message sent to ${roomId}: ${txnId}`)
-      return response
-    }, 'sendHtmlMessage')
+        const txnId = txId || `m${Date.now()}`
+        const response = await client.sendHtmlMessage(roomId, txnId, body, html)
+        info(`[MatrixMessage] HTML message sent to ${roomId}: ${txnId}`)
+        return response
+      },
+      'sendHtmlMessage',
+      throwOnError
+    )
   }
 
-  async sendEmoteMessage(roomId: string, content: string, txId?: string): Promise<ISendEventResponse> {
-    return this.sendWithRetry(async () => {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+  async sendEmoteMessage(
+    roomId: string,
+    content: string,
+    txId?: string,
+    throwOnError = true
+  ): Promise<ISendEventResponse | null> {
+    return this.sendWithRetry(
+      async () => {
+        const client = matrixClientService.getClient()
+        if (!client) throw new Error('Matrix client not initialized')
 
-      const txnId = txId || `m${Date.now()}`
-      const response = await client.sendEmote(roomId, txnId, content)
-      info(`[MatrixMessage] Emote message sent to ${roomId}: ${txnId}`)
-      return response
-    }, 'sendEmoteMessage')
+        const txnId = txId || `m${Date.now()}`
+        const response = await client.sendEmote(roomId, txnId, content)
+        info(`[MatrixMessage] Emote message sent to ${roomId}: ${txnId}`)
+        return response
+      },
+      'sendEmoteMessage',
+      throwOnError
+    )
   }
 
-  async recallMessage(roomId: string, eventId: string, txId?: string): Promise<void> {
+  async sendEvent(
+    roomId: string,
+    eventType: string,
+    content: Record<string, unknown>,
+    throwOnError = true
+  ): Promise<string> {
+    return this.sendWithRetry(
+      async () => {
+        const client = matrixClientService.getClient()
+        if (!client) throw new Error('Matrix client not initialized')
+
+        const txnId = `m${Date.now()}`
+        const response = await client.sendEvent(roomId, eventType, content, txnId)
+        info(`[MatrixMessage] Event sent to ${roomId}: ${eventType} ${txnId}`)
+        return response.event_id
+      },
+      'sendEvent',
+      throwOnError
+    )
+  }
+
+  async recallMessage(roomId: string, eventId: string, txId?: string, throwOnError = true): Promise<void> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       const txnId = txId || `m${Date.now()}`
       await client.redactEvent(roomId, eventId, txnId)
       info(`[MatrixMessage] Message redacted in ${roomId}: ${eventId}`)
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to recall message: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'recallMessage', undefined, throwOnError)
     }
   }
 
-  async getMessageEvents(roomId: string, options?: MessageSearchOptions): Promise<MatrixEvent[]> {
+  async getMessageEvents(roomId: string, options?: MessageSearchOptions, throwOnError = true): Promise<MatrixEvent[]> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       const { limit = 20, before, after, type, sender } = options || {}
 
@@ -172,18 +210,15 @@ class MatrixMessageService {
       }
 
       return events.slice(0, limit)
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to get message events: ${err}`)
-      throw err
+    } catch (error) {
+      return this.handleError(error, 'getMessageEvents', [] as MatrixEvent[], throwOnError)
     }
   }
 
-  async addReaction(roomId: string, eventId: string, reaction: string): Promise<void> {
+  async addReaction(roomId: string, eventId: string, reaction: string, throwOnError = true): Promise<void> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       const txnId = `m${Date.now()}`
       const reactionEvent = {
@@ -199,33 +234,38 @@ class MatrixMessageService {
 
       await client.sendEvent(roomId, txnId, reactionEvent)
       info(`[MatrixMessage] Reaction added to ${eventId} in ${roomId}`)
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to add reaction: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'addReaction', undefined, throwOnError)
     }
   }
 
-  async removeReaction(roomId: string, eventId: string, _reaction: string, reactionEventId: string): Promise<void> {
+  async removeReaction(
+    roomId: string,
+    eventId: string,
+    _reaction: string,
+    reactionEventId: string,
+    throwOnError = true
+  ): Promise<void> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       await client.redactEvent(roomId, reactionEventId)
       info(`[MatrixMessage] Reaction removed from ${eventId} in ${roomId}`)
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to remove reaction: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'removeReaction', undefined, throwOnError)
     }
   }
 
-  async editMessage(roomId: string, eventId: string, newContent: string): Promise<ISendEventResponse> {
+  async editMessage(
+    roomId: string,
+    eventId: string,
+    newContent: string,
+    throwOnError = true
+  ): Promise<ISendEventResponse | null> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       const txnId = `m${Date.now()}`
       const response = await client.sendEvent(roomId, txnId, {
@@ -246,86 +286,69 @@ class MatrixMessageService {
 
       info(`[MatrixMessage] Message edited in ${roomId}: ${eventId}`)
       return response
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to edit message: ${err}`)
-      throw err
+    } catch (error) {
+      return this.handleError(error, 'editMessage', null, throwOnError)
     }
   }
 
-  async getRoomMessage(roomId: string, eventId: string): Promise<MatrixEvent | null> {
+  async getRoomMessage(roomId: string, eventId: string, throwOnError = true): Promise<MatrixEvent | null> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       const room = client.getRoom(roomId)
+      if (!room && throwOnError) throw new NotFoundError(`房间不存在: ${roomId}`)
       return room?.findEventById(eventId) || null
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to get room message: ${err}`)
-      throw err
+    } catch (error) {
+      return this.handleError(error, 'getRoomMessage', null, throwOnError)
     }
   }
 
-  async getReadReceipt(roomId: string, eventId: string): Promise<{ hasRead: boolean }> {
+  async getReadReceipt(roomId: string, eventId: string, throwOnError = true): Promise<{ hasRead: boolean }> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       const room = client.getRoom(roomId)
-      if (!room) {
-        return { hasRead: false }
-      }
+      if (!room) return { hasRead: false }
 
       const event = room.findEventById(eventId)
       if (!event) return { hasRead: false }
       const myUserId = client.getUserId()
       if (!myUserId) return { hasRead: false }
-      const hasRead = (
-        room as unknown as { hasUserReadEvent: (userId: string, eventId: string) => boolean }
-      ).hasUserReadEvent(myUserId, eventId)
-      return { hasRead }
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to get read receipt: ${err}`)
-      throw err
+      const hasRead = (room as unknown as ExtendedRoomForMessage).hasUserReadEvent?.(myUserId, eventId)
+      return { hasRead: !!hasRead }
+    } catch (error) {
+      return this.handleError(error, 'getReadReceipt', { hasRead: false }, throwOnError)
     }
   }
 
-  async markMessagesRead(roomId: string, eventId: string): Promise<void> {
+  async markMessagesRead(roomId: string, eventId: string, throwOnError = true): Promise<void> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       await client.sendReadReceipt(roomId, eventId)
       info(`[MatrixMessage] Messages marked as read in ${roomId} up to ${eventId}`)
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to mark messages read: ${err}`)
-      throw err
+    } catch (error) {
+      this.handleError(error, 'markMessagesRead', undefined, throwOnError)
     }
   }
 
-  async getUnreadMessages(roomId: string): Promise<MatrixEvent[]> {
+  async getUnreadMessages(roomId: string, throwOnError = true): Promise<MatrixEvent[]> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       const room = client.getRoom(roomId)
-      if (!room) {
-        return []
-      }
+      if (!room) return []
 
       const myUserId = client.getUserId()
       const events = room.timeline
       const unreadEvents: MatrixEvent[] = []
 
       for (const event of events) {
-        const hasRead = (room as any).hasUserReadEvent(myUserId!, event.getId()!)
+        const hasRead = (room as unknown as ExtendedRoomForMessage).hasUserReadEvent?.(myUserId!, event.getId()!)
         if (!hasRead) {
           if (event.sender?.userId !== myUserId && event.getType() === 'm.room.message') {
             unreadEvents.push(event)
@@ -334,38 +357,20 @@ class MatrixMessageService {
       }
 
       return unreadEvents
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to get unread messages: ${err}`)
-      throw err
+    } catch (error) {
+      return this.handleError(error, 'getUnreadMessages', [] as MatrixEvent[], throwOnError)
     }
   }
 
-  /**
-   * 获取消息列表（支持分页和过滤）
-   *
-   * @param options - 查询选项
-   * @param options.roomId - 房间 ID
-   * @param options.limit - 返回消息数量限制
-   * @param options.before - 获取此事件之前的消息
-   * @param options.after - 获取此事件之后的消息
-   * @param options.type - 按消息类型过滤
-   * @param options.sender - 按发送者过滤
-   * @param options.threadId - 线程 ID
-   * @returns 消息列表结果
-   */
-  async getMessageList(options: MessageListOptions): Promise<MessageListResult> {
+  async getMessageList(options: MessageListOptions, throwOnError = true): Promise<MessageListResult> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       const { roomId, limit = 20, before, after, type, sender, threadId } = options
 
       const room = client.getRoom(roomId)
-      if (!room) {
-        return { events: [], hasMore: false }
-      }
+      if (!room) return { events: [], hasMore: false }
 
       const timeline = room.timeline
       let events = [...timeline]
@@ -409,37 +414,23 @@ class MatrixMessageService {
         events: resultEvents,
         hasMore
       }
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to get message list: ${err}`)
-      throw err
+    } catch (error) {
+      return this.handleError(error, 'getMessageList', { events: [], hasMore: false }, throwOnError)
     }
   }
 
-  /**
-   * 获取房间消息列表
-   *
-   * @param roomId - 房间 ID
-   * @param limit - 返回消息数量限制
-   * @param options - 可选参数
-   * @param options.type - 按消息类型过滤
-   * @param options.sender - 按发送者过滤
-   * @returns 消息列表
-   */
   async getMsgList(
     roomId: string,
     limit: number = 20,
-    options?: { type?: string; sender?: string }
+    options?: { type?: string; sender?: string },
+    throwOnError = true
   ): Promise<MatrixEvent[]> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       const room = client.getRoom(roomId)
-      if (!room) {
-        return []
-      }
+      if (!room) return []
 
       const { type, sender } = options || {}
       let events = [...room.timeline]
@@ -453,29 +444,20 @@ class MatrixMessageService {
       }
 
       return events.slice(0, limit)
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to get message list: ${err}`)
-      throw err
+    } catch (error) {
+      return this.handleError(error, 'getMsgList', [] as MatrixEvent[], throwOnError)
     }
   }
 
-  /**
-   * 获取消息列表 (兼容旧 API)
-   *
-   * @param params - 包含 msgIds 的对象或房间 ID
-   * @param limit - 消息数量限制
-   * @returns 消息列表
-   */
   async getMsgListByIds(
     params: { msgIds?: string[]; async?: boolean } | string,
-    limit?: number
+    limit?: number,
+    throwOnError = true
   ): Promise<MatrixEvent[]> {
     if (typeof params === 'object' && 'msgIds' in params) {
       try {
         const client = matrixClientService.getClient()
-        if (!client) {
-          throw new Error('Matrix client not initialized')
-        }
+        if (!client) throw new Error('Matrix client not initialized')
 
         const messages: MatrixEvent[] = []
         for (const msgId of params.msgIds || []) {
@@ -487,55 +469,35 @@ class MatrixMessageService {
                 messages.push(event)
               }
             }
-          } catch (e) {
-            logError(`[MatrixMessage] Failed to get message ${msgId}: ${e}`)
+          } catch {
+            // skip individual failures
           }
         }
         return messages
-      } catch (err) {
-        logError(`[MatrixMessage] Failed to get messages by IDs: ${err}`)
-        return []
+      } catch (error) {
+        return this.handleError(error, 'getMsgListByIds', [] as MatrixEvent[], throwOnError)
       }
     }
-    return this.getMsgList(params as string, limit)
+    return this.getMsgList(params as string, limit, undefined, throwOnError)
   }
 
-  /**
-   * 标记单条消息为已读
-   *
-   * @param roomId - 房间 ID
-   * @param eventId - 事件 ID
-   * @returns 是否成功
-   */
-  async markMsg(roomId: string, eventId: string): Promise<boolean> {
+  async markMsg(roomId: string, eventId: string, throwOnError = false): Promise<boolean> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       await client.sendReadReceipt(roomId, eventId)
       info(`[MatrixMessage] Message marked as read: ${eventId} in ${roomId}`)
       return true
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to mark message as read: ${err}`)
-      return false
+    } catch (error) {
+      return this.handleError(error, 'markMsg', false, throwOnError)
     }
   }
 
-  /**
-   * 批量标记消息为已读
-   *
-   * @param roomId - 房间 ID
-   * @param eventIds - 事件 ID 列表
-   * @returns 成功标记的数量
-   */
-  async markMsgs(roomId: string, eventIds: string[]): Promise<number> {
+  async markMsgs(roomId: string, eventIds: string[], throwOnError = true): Promise<number> {
     try {
       const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+      if (!client) throw new Error('Matrix client not initialized')
 
       let successCount = 0
       for (const eventId of eventIds) {
@@ -543,38 +505,36 @@ class MatrixMessageService {
           await client.sendReadReceipt(roomId, eventId)
           successCount++
         } catch {
-          logError(`[MatrixMessage] Failed to mark message ${eventId} as read`)
+          // skip individual failures
         }
       }
 
       info(`[MatrixMessage] Marked ${successCount}/${eventIds.length} messages as read in ${roomId}`)
       return successCount
-    } catch (err) {
-      logError(`[MatrixMessage] Failed to mark messages as read: ${err}`)
-      throw err
+    } catch (error) {
+      return this.handleError(error, 'markMsgs', 0, throwOnError)
     }
   }
 
-  /**
-   * 流式发送消息（用于 AI 消息等场景）
-   *
-   * @param roomId - 房间 ID
-   * @param content - 消息内容
-   * @param txId - 事务 ID
-   * @returns 发送响应
-   */
-  async messageSendStream(roomId: string, content: string, txId?: string): Promise<ISendEventResponse> {
-    return this.sendWithRetry(async () => {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
+  async messageSendStream(
+    roomId: string,
+    content: string,
+    txId?: string,
+    throwOnError = true
+  ): Promise<ISendEventResponse | null> {
+    return this.sendWithRetry(
+      async () => {
+        const client = matrixClientService.getClient()
+        if (!client) throw new Error('Matrix client not initialized')
 
-      const txnId = txId || `m${Date.now()}`
-      const response = await client.sendTextMessage(roomId, content, txnId)
-      info(`[MatrixMessage] Stream message sent to ${roomId}: ${txnId}`)
-      return response
-    }, 'messageSendStream')
+        const txnId = txId || `m${Date.now()}`
+        const response = await client.sendTextMessage(roomId, content, txnId)
+        info(`[MatrixMessage] Stream message sent to ${roomId}: ${txnId}`)
+        return response
+      },
+      'messageSendStream',
+      throwOnError
+    )
   }
 }
 

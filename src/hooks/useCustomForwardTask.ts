@@ -1,5 +1,5 @@
 import { MsgEnum } from '@/enums'
-import { UploadProviderEnum } from '@/hooks/useUpload'
+import { UploadProviderEnum, type QiniuCredential, type UploadOptions } from '@/hooks/useUpload'
 import { useChatStore } from '@/stores/chat'
 import { messageStrategyMap } from '@/strategy/MessageStrategy'
 import { removeTempFile } from '@/utils/TempFileManager'
@@ -73,11 +73,12 @@ export const useCustomForwardTask = () => {
       const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
         provider: UploadProviderEnum.QINIU
       })
-      const doUploadResult = await messageStrategy.doUpload(msg.path as string, uploadUrl, config as any)
+      const doUploadResult = await messageStrategy.doUpload(msg.path as string, uploadUrl, config as UploadOptions)
 
       const uploadResult = doUploadResult as { qiniuUrl?: string } | undefined
+      const qiniuConfig = config as QiniuCredential & { provider?: UploadProviderEnum }
       messageBody.url =
-        (config as any)?.provider && (config as any)?.provider === UploadProviderEnum.QINIU
+        qiniuConfig?.provider && qiniuConfig.provider === UploadProviderEnum.QINIU
           ? uploadResult?.qiniuUrl
           : downloadUrl
       delete messageBody.path

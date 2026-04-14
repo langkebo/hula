@@ -1,6 +1,8 @@
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
+import type { ExtendedMatrixEvent } from '@/types/matrix-api'
 import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { BaseManager } from './BaseManager'
+import { info } from '@tauri-apps/plugin-log'
 import { invoke } from '@tauri-apps/api/core'
 
 const ANNOUNCEMENT_EVENT_TYPE = 'im.announcement' as const
@@ -69,7 +71,7 @@ interface AnnouncementUpdateOptions {
   isPinned?: boolean
 }
 
-class MatrixAnnouncementService {
+class MatrixAnnouncementService extends BaseManager {
   async pushAnnouncement(roomId: string, options: AnnouncementCreateOptions): Promise<Announcement> {
     const client = this.getClient()
     const userId = client.getUserId()
@@ -104,8 +106,7 @@ class MatrixAnnouncementService {
         eventId: response.event_id
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '发布公告失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '发布公告失败'
       throw err
     }
   }
@@ -144,8 +145,7 @@ class MatrixAnnouncementService {
         isPinned: content.is_pinned
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '编辑公告失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '编辑公告失败'
       throw err
     }
   }
@@ -154,12 +154,11 @@ class MatrixAnnouncementService {
     const client = this.getClient()
 
     try {
-      await client.sendStateEvent(roomId, ANNOUNCEMENT_EVENT_TYPE, null as any, announcementId)
+      await client.sendStateEvent(roomId, ANNOUNCEMENT_EVENT_TYPE, {} as Record<string, never>, announcementId)
 
       info(`[MatrixAnnouncement] 删除公告成功: ${roomId}, id: ${announcementId}`)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '删除公告失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '删除公告失败'
       throw err
     }
   }
@@ -180,12 +179,15 @@ class MatrixAnnouncementService {
 
       const pinnedAnnouncements = stateEvents
         .filter((event: MatrixEvent) => {
-          const content = (event.getContent?.() || (event as any).event?.content) as unknown as AnnouncementContent
+          const extendedEvent = event as unknown as ExtendedMatrixEvent
+          const content = (event.getContent?.() || extendedEvent.event?.content) as unknown as AnnouncementContent
           return content && content.is_pinned === true
         })
         .sort((a: MatrixEvent, b: MatrixEvent) => {
-          const contentA = (a.getContent?.() || (a as any).event?.content) as unknown as AnnouncementContent
-          const contentB = (b.getContent?.() || (b as any).event?.content) as unknown as AnnouncementContent
+          const extendedA = a as unknown as ExtendedMatrixEvent
+          const extendedB = b as unknown as ExtendedMatrixEvent
+          const contentA = (a.getContent?.() || extendedA.event?.content) as unknown as AnnouncementContent
+          const contentB = (b.getContent?.() || extendedB.event?.content) as unknown as AnnouncementContent
           return (contentB.updated_ts || 0) - (contentA.updated_ts || 0)
         })
 
@@ -196,8 +198,7 @@ class MatrixAnnouncementService {
       const latestEvent = pinnedAnnouncements[0]
       return this.parseAnnouncementEvent(latestEvent)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '获取公告失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '获取公告失败'
       throw err
     }
   }
@@ -220,8 +221,7 @@ class MatrixAnnouncementService {
 
       return announcements
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '获取公告列表失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '获取公告列表失败'
       throw err
     }
   }
@@ -242,8 +242,7 @@ class MatrixAnnouncementService {
 
       return this.parseAnnouncementEvent(event)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '获取公告失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '获取公告失败'
       throw err
     }
   }
@@ -276,8 +275,7 @@ class MatrixAnnouncementService {
         updatedAt: content.updated_ts
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '置顶公告失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '置顶公告失败'
       throw err
     }
   }
@@ -293,8 +291,7 @@ class MatrixAnnouncementService {
       info(`[MatrixAnnouncement] 创建服务器通知成功: ${result.id}`)
       return result
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '创建服务器通知失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '创建服务器通知失败'
       throw err
     }
   }
@@ -325,8 +322,7 @@ class MatrixAnnouncementService {
 
       return result
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '获取服务器通知列表失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '获取服务器通知列表失败'
       throw err
     }
   }
@@ -341,8 +337,7 @@ class MatrixAnnouncementService {
 
       return result
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '获取服务器通知失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '获取服务器通知失败'
       throw err
     }
   }
@@ -358,8 +353,7 @@ class MatrixAnnouncementService {
       info(`[MatrixAnnouncement] 更新服务器通知成功: ${id}`)
       return result
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '更新服务器通知失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '更新服务器通知失败'
       throw err
     }
   }
@@ -374,8 +368,7 @@ class MatrixAnnouncementService {
 
       info(`[MatrixAnnouncement] 删除服务器通知成功: ${id}`)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '删除服务器通知失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '删除服务器通知失败'
       throw err
     }
   }
@@ -391,8 +384,7 @@ class MatrixAnnouncementService {
       info(`[MatrixAnnouncement] 停用服务器通知成功: ${id}`)
       return result
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '停用服务器通知失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '停用服务器通知失败'
       throw err
     }
   }
@@ -407,15 +399,15 @@ class MatrixAnnouncementService {
 
       return result.notifications
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '获取活跃服务器通知失败'
-      error(`[MatrixAnnouncement] ${errorMessage}`)
+      const _errorMessage = err instanceof Error ? err.message : '获取活跃服务器通知失败'
       throw err
     }
   }
 
   private parseAnnouncementEvent(event: MatrixEvent): Announcement | null {
     try {
-      const content = (event.getContent?.() || (event as any).event?.content) as unknown as AnnouncementContent
+      const extendedEvent = event as unknown as ExtendedMatrixEvent
+      const content = (event.getContent?.() || extendedEvent.event?.content) as unknown as AnnouncementContent
       if (!content || !content.id) {
         return null
       }

@@ -234,6 +234,10 @@
   "security_privacy": {
     "title": "Security & Privacy",
     "online_status": "Online Status",
+    "presence_status": "Presence Status",
+    "presence_status_desc": "Set your presence status, others will see this",
+    "presence_updated": "Presence updated",
+    "presence_update_failed": "Failed to update presence",
     "show_online_status": "Show Online Status",
     "show_online_status_desc": "Allow others to see your online status",
     "show_typing_status": "Show Typing Status",

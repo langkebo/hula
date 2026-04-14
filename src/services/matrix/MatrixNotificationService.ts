@@ -1,4 +1,11 @@
+import type {
+  ExtendedMatrixClientForNotification,
+  PusherConfig,
+  PushRuleRaw,
+  ExtendedNotification
+} from '@/types/matrix-api'
 import matrixClientService from './MatrixClientService'
+import { BaseManager } from './BaseManager'
 import { info, error } from '@tauri-apps/plugin-log'
 
 export interface NotificationConfig {
@@ -31,7 +38,7 @@ export interface NotificationAction {
   threadId?: string
 }
 
-class MatrixNotificationService {
+class MatrixNotificationService extends BaseManager {
   private config: NotificationConfig = {
     enableDesktop: true,
     enableSound: true,
@@ -43,7 +50,7 @@ class MatrixNotificationService {
 
   private pushRules: Map<string, PushRule> = new Map()
 
-  async initialize(): Promise<void> {
+  async initialize(throwOnError = false): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Notification] 客户端未初始化')
@@ -53,61 +60,61 @@ class MatrixNotificationService {
       const rules = await client.getPushRules()
       const rulesArray = Object.values(rules || {})
       for (const rule of rulesArray) {
-        if (rule && (rule as any).rule_id) {
-          this.pushRules.set((rule as any).rule_id, rule as PushRule)
+        const rawRule = rule as PushRuleRaw
+        if (rawRule && rawRule.rule_id) {
+          this.pushRules.set(rawRule.rule_id, rawRule as unknown as PushRule)
         }
       }
       info('[Notification] 通知服务初始化成功')
     } catch (err) {
-      error(`[Notification] 初始化失败: ${err}`)
-      throw err
+      this.handleError(err, 'initialize', undefined as void, throwOnError)
     }
   }
 
-  async setPushRule(rule: PushRule): Promise<void> {
-    const client = matrixClientService.getClient() as any
+  async setPushRule(rule: PushRule, throwOnError = false): Promise<void> {
+    const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Notification] 客户端未初始化')
     }
 
     try {
-      await client.setPushRule(rule.ruleId, rule)
+      const extendedClient = client as unknown as ExtendedMatrixClientForNotification
+      await extendedClient.setPushRule?.(rule.ruleId, rule)
       this.pushRules.set(rule.ruleId, rule)
       info(`[Notification] 设置推送规则: ${rule.ruleId}`)
     } catch (err) {
-      error(`[Notification] 设置推送规则失败: ${err}`)
-      throw err
+      this.handleError(err, 'setPushRule', undefined as void, throwOnError)
     }
   }
 
-  async deletePushRule(ruleId: string): Promise<void> {
-    const client = matrixClientService.getClient() as any
+  async deletePushRule(ruleId: string, throwOnError = false): Promise<void> {
+    const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Notification] 客户端未初始化')
     }
 
     try {
-      await client.deletePushRule(ruleId)
+      const extendedClient = client as unknown as ExtendedMatrixClientForNotification
+      await extendedClient.deletePushRule?.(ruleId)
       this.pushRules.delete(ruleId)
       info(`[Notification] 删除推送规则: ${ruleId}`)
     } catch (err) {
-      error(`[Notification] 删除推送规则失败: ${err}`)
-      throw err
+      this.handleError(err, 'deletePushRule', undefined as void, throwOnError)
     }
   }
 
-  async setPusher(pusher: any): Promise<void> {
-    const client = matrixClientService.getClient() as any
+  async setPusher(pusher: PusherConfig, throwOnError = false): Promise<void> {
+    const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[Notification] 客户端未初始化')
     }
 
     try {
-      await client.setPusher(pusher)
+      const extendedClient = client as unknown as ExtendedMatrixClientForNotification
+      await extendedClient.setPusher?.(pusher)
       info('[Notification] 设置 Pusher 成功')
     } catch (err) {
-      error(`[Notification] 设置 Pusher 失败: ${err}`)
-      throw err
+      this.handleError(err, 'setPusher', undefined as void, throwOnError)
     }
   }
 
@@ -174,7 +181,8 @@ class MatrixNotificationService {
     if (!('Notification' in window)) return
 
     try {
-      const notifications = await (window.Notification as any).getNotifications?.()
+      const extendedNotification = window.Notification as unknown as ExtendedNotification
+      const notifications = await extendedNotification.getNotifications?.()
       if (notifications) {
         for (const notification of notifications) {
           notification.close()

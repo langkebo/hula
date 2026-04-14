@@ -3,10 +3,8 @@
  * 图形验证码功能
  */
 import { matrixClientService } from './MatrixClientService'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('Captcha')
-
+import { BaseManager } from './BaseManager'
+import type { CaptchaResponse, CaptchaVerifyResponse, CaptchaRequiredResponse } from '@/types/matrix-api'
 export interface Captcha {
   captchaId: string
   type: 'image' | 'audio'
@@ -19,7 +17,7 @@ export interface VerifyCaptchaParams {
   solution: string
 }
 
-class MatrixCaptchaService {
+class MatrixCaptchaService extends BaseManager {
   private get client() {
     const c = matrixClientService.getClient()
     if (!c) throw new Error('Matrix client not initialized')
@@ -31,7 +29,13 @@ class MatrixCaptchaService {
    */
   async getCaptcha(): Promise<Captcha | null> {
     try {
-      const response = (await this.client.http.authedRequest({}, 'GET', '/_matrix/client/v1/captcha', undefined)) as any
+      const response = (await this.client.http.authedRequest(
+        'GET',
+        '/_matrix/client/v1/captcha',
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as CaptchaResponse
 
       return {
         captchaId: response.captcha_id,
@@ -39,8 +43,7 @@ class MatrixCaptchaService {
         data: response.data,
         expiresAt: Date.now() + (response.expires_in || 300) * 1000
       }
-    } catch (error) {
-      logger.error('获取验证码失败:', error)
+    } catch (_error) {
       return null
     }
   }
@@ -50,12 +53,15 @@ class MatrixCaptchaService {
    */
   async sendCaptcha(destination: string, type: 'email' | 'phone'): Promise<boolean> {
     try {
-      await this.client.http.authedRequest({}, 'POST', '/_matrix/client/v1/captcha/send', undefined, {
-        body: JSON.stringify({ destination, type })
-      })
+      await this.client.http.authedRequest(
+        'POST',
+        '/_matrix/client/v1/captcha/send',
+        undefined,
+        JSON.stringify({ destination, type }),
+        { prefix: '' }
+      )
       return true
-    } catch (error) {
-      logger.error('发送验证码失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -66,18 +72,15 @@ class MatrixCaptchaService {
   async verify(params: VerifyCaptchaParams): Promise<boolean> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'POST',
         '/_matrix/client/v1/captcha/verify',
         undefined,
-        {
-          body: JSON.stringify(params)
-        }
-      )) as any
+        JSON.stringify(params),
+        { prefix: '' }
+      )) as CaptchaVerifyResponse
 
       return response.valid || false
-    } catch (error) {
-      logger.error('验证失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -87,10 +90,11 @@ class MatrixCaptchaService {
    */
   async invalidate(captchaId: string): Promise<boolean> {
     try {
-      await this.client.http.authedRequest({}, 'DELETE', `/_matrix/client/v1/captcha/${captchaId}`, undefined)
+      await this.client.http.authedRequest('DELETE', `/_matrix/client/v1/captcha/${captchaId}`, undefined, undefined, {
+        prefix: ''
+      })
       return true
-    } catch (error) {
-      logger.error('使失效失败:', error)
+    } catch (_error) {
       return false
     }
   }
@@ -101,11 +105,12 @@ class MatrixCaptchaService {
   async isRequired(): Promise<boolean> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         '/_matrix/client/v1/captcha/required',
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as CaptchaRequiredResponse
       return response.required || false
     } catch {
       return false

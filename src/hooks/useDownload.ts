@@ -13,7 +13,7 @@ export const useDownload = () => {
     url: string,
     savePath: string,
     baseDir: BaseDirectory = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
-  ) => {
+  ): Promise<void> => {
     try {
       isDownloading.value = true
       process.value = 0
@@ -29,12 +29,14 @@ export const useDownload = () => {
 
       const response = await fetch(url)
       if (!response.ok) {
-        return window.$message.error('下载失败')
+        window.$message.error('下载失败')
+        return
       }
 
       const reader = response.body?.getReader()
       if (!reader) {
-        return window.$message.error('无法读取响应内容')
+        window.$message.error('无法读取响应内容')
+        return
       }
 
       const contentLength = Number(response.headers.get('Content-Length')) || 0

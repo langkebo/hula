@@ -5,12 +5,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, type Ref } from 'vue'
-import type { ScreenConfig, MagnifierConfig } from '../types'
+import { ref, computed } from 'vue'
+import type { ScreenConfig, MagnifierConfig } from './types'
 
 const props = defineProps<{
-  imgCanvas: Ref<HTMLCanvasElement | null>
-  screenConfig: Ref<ScreenConfig>
+  imgCanvas: HTMLCanvasElement | null
+  screenConfig: ScreenConfig
   isDragging: boolean
   isResizing: boolean
   showButtonGroup: boolean
@@ -60,7 +60,7 @@ const showMagnifier = () => {
 }
 
 const handleMouseMove = (event: MouseEvent) => {
-  if (!magnifierRef.value || !props.imgCanvas.value) return
+  if (!magnifierRef.value || !props.imgCanvas) return
 
   if (props.isDragging) {
     hideMagnifier()
@@ -89,7 +89,7 @@ const handleMouseMove = (event: MouseEvent) => {
 
   const clientX = event.clientX
   const clientY = event.clientY
-  const rect = props.imgCanvas.value.getBoundingClientRect()
+  const rect = props.imgCanvas.getBoundingClientRect()
   const mouseX = clientX - rect.left
   const mouseY = clientY - rect.top
 
@@ -106,17 +106,15 @@ const handleMouseMove = (event: MouseEvent) => {
   magnifierRef.value.style.top = `${magnifierTop}px`
   magnifierRef.value.style.left = `${magnifierLeft}px`
 
-  const sourceX =
-    mouseX * props.screenConfig.value.scaleX - mergedConfig.value.width / mergedConfig.value.zoomFactor / 2
-  const sourceY =
-    mouseY * props.screenConfig.value.scaleY - mergedConfig.value.height / mergedConfig.value.zoomFactor / 2
+  const sourceX = mouseX * props.screenConfig.scaleX - mergedConfig.value.width / mergedConfig.value.zoomFactor / 2
+  const sourceY = mouseY * props.screenConfig.scaleY - mergedConfig.value.height / mergedConfig.value.zoomFactor / 2
   const sourceWidth = mergedConfig.value.width / mergedConfig.value.zoomFactor
   const sourceHeight = mergedConfig.value.height / mergedConfig.value.zoomFactor
 
   magnifierCtx.value.clearRect(0, 0, mergedConfig.value.width, mergedConfig.value.height)
 
   magnifierCtx.value.drawImage(
-    props.imgCanvas.value,
+    props.imgCanvas,
     sourceX,
     sourceY,
     sourceWidth,

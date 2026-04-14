@@ -2,20 +2,58 @@
  * Message Store 辅助函数
  * 消息转换、格式化等工具函数
  */
-import type { MatrixEvent } from 'matrix-js-sdk'
-import { MsgEnum } from '@/enums'
+import type { MatrixEvent, Room, RoomMember } from 'matrix-js-sdk'
+import { MsgEnum, MessageStatusEnum } from '@/enums'
 import type { MessageType } from './types'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MessageUtils')
 
+interface MessageContent {
+  msgtype?: MsgEnum | string
+  body?: string
+  url?: string
+  thumbnailUrl?: string
+  filename?: string
+  info?: {
+    w?: number
+    h?: number
+    size?: number
+    mimetype?: string
+    duration?: number
+  }
+  'm.relates_to'?: {
+    'm.in_reply_to'?: {
+      event_id?: string
+    }
+    reply_text?: string
+  }
+  burn_after_read?: boolean
+  [key: string]: unknown
+}
+
+interface SenderInfo {
+  userId: string
+  name?: string
+  avatarUrl?: string
+}
+
+function getSenderInfo(event: MatrixEvent): SenderInfo {
+  const sender = event.sender as RoomMember | null
+  return {
+    userId: sender?.userId ?? event.getSender() ?? '',
+    name: sender?.name ?? event.getSender()?.split(':')[0],
+    avatarUrl: sender?.getMxcAvatarUrl?.() ?? undefined
+  }
+}
+
 /**
  * 将 Matrix 事件转换为消息类型
  */
-export function convertEventToMessage(event: MatrixEvent, _room: any): MessageType | null {
+export function convertEventToMessage(event: MatrixEvent, _room: Room | undefined): MessageType | null {
   try {
-    const content = event.getContent() as any
-    const sender = event.sender as any
+    const content = event.getContent() as MessageContent
+    const sender = getSenderInfo(event)
     const eventId = event.getId()
 
     if (!eventId) return null
@@ -30,13 +68,13 @@ export function convertEventToMessage(event: MatrixEvent, _room: any): MessageTy
         sendTime: event.getOriginServerTs() || Date.now(),
         type: msgType || MsgEnum.TEXT,
         body,
-        status: 'sent' as any,
+        status: MessageStatusEnum.SUCCESS,
         burnAfterRead: !!content['burn_after_read']
       },
       fromUser: {
-        uid: sender?.userId || '',
-        username: sender?.name,
-        avatar: sender?.avatarUrl
+        uid: sender.userId,
+        username: sender.name,
+        avatar: sender.avatarUrl
       }
     }
 

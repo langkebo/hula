@@ -1,7 +1,20 @@
 import { createSharedComposable } from '@vueuse/core'
 import { ref, readonly } from 'vue'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('FileSystemPermission')
+
+interface WindowWithFileSystem extends Window {
+  showOpenFilePicker?: (options?: {
+    multiple?: boolean
+    types?: { description: string; accept: Record<string, string[]> }[]
+  }) => Promise<FileSystemFileHandle[]>
+  showSaveFilePicker?: (options?: {
+    suggestedName?: string
+    types?: { description: string; accept: Record<string, string[]> }[]
+  }) => Promise<FileSystemFileHandle>
+  showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle>
+}
 
 const useSharedFileSystemPermission = createSharedComposable(() => {
   const isSupported = ref(false)
@@ -16,7 +29,7 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
       return
     }
 
-    const win = window as any
+    const win = window as WindowWithFileSystem
 
     if ('showOpenFilePicker' in win) {
       isReadSupported.value = true
@@ -43,8 +56,8 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
     }
 
     try {
-      const win = window as any
-      const handles = await win.showOpenFilePicker({
+      const win = window as WindowWithFileSystem
+      const handles = await win.showOpenFilePicker?.({
         multiple: options?.multiple ?? true,
         types: options?.types ?? [
           {
@@ -53,6 +66,7 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
           }
         ]
       })
+      if (!handles) return null
       const files: File[] = []
       for (const handle of handles) {
         const file = await handle.getFile()
@@ -77,8 +91,8 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
     }
 
     try {
-      const win = window as any
-      const handle = await win.showSaveFilePicker({
+      const win = window as WindowWithFileSystem
+      const handle = await win.showSaveFilePicker?.({
         suggestedName: options?.suggestedName,
         types: options?.types ?? [
           {
@@ -87,7 +101,7 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
           }
         ]
       })
-      return handle
+      return handle ?? null
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         logger.warn('保存文件失败:', err)
@@ -103,9 +117,9 @@ const useSharedFileSystemPermission = createSharedComposable(() => {
     }
 
     try {
-      const win = window as any
-      const handle = await win.showDirectoryPicker()
-      return handle
+      const win = window as WindowWithFileSystem
+      const handle = await win.showDirectoryPicker?.()
+      return handle ?? null
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         logger.warn('打开目录失败:', err)

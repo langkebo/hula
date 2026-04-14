@@ -1,5 +1,5 @@
 <template>
-  <n-modal v-model:show="visible" preset="card" title="恢复密钥备份" style="width: 500px" :mask-closable="false">
+  <n-modal :show="show" @update:show="emit('update:show', $event)" preset="card" title="恢复密钥备份" style="width: 500px" :mask-closable="false">
     <n-spin :show="loading">
       <div class="restore-content">
         <div class="intro-text">

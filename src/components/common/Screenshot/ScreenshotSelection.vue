@@ -24,12 +24,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { SelectionAreaStyle, DrawToolType, ScreenConfig } from '../types'
+import type { SelectionAreaStyle, DrawToolType, ScreenConfig } from './types'
 
 const props = defineProps<{
   visible: boolean
   selectionAreaStyle: SelectionAreaStyle
-  currentDrawTool: DrawToolType
+  currentDrawTool: DrawToolType | null
   borderRadius: number
   screenConfig: ScreenConfig
 }>()

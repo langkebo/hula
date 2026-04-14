@@ -7,6 +7,9 @@
         :msg-count="globalUnreadCount"
         :is-official="globalStore.currentSessionRoomId === '1'"
         @room-name-click="handleRoomNameClick" />
+      <div v-if="isBurnAfterRead" class="mobile-burn-bar">
+        <MobileBurnIndicator status="waiting" />
+      </div>
     </template>
     <template #container>
       <div v-if="isBotSession" class="mobile-assistant-container">
@@ -29,6 +32,10 @@
         <HuLaAssistant :active="true" :custom-model="customModelPath" class="mobile-assistant-view" />
       </div>
       <div v-else @click="handleChatMainClick" class="h-full overflow-y-auto">
+        <MobilePinnedEventsBar
+          v-if="globalStore.currentSessionRoomId"
+          :room-id="globalStore.currentSessionRoomId"
+          @jump-to-message="handleJumpToMessage" />
         <ChatMain @scroll="handleScroll" />
       </div>
     </template>
@@ -36,6 +43,12 @@
       <FooterBar v-if="!isBotSession" ref="footerBar"></FooterBar>
     </template>
   </AutoFixHeightPage>
+
+  <MobileForwardDialog
+    v-model:visible="showForwardDialog"
+    :event-id="forwardEventId"
+    :room-id="forwardRoomId"
+    @forwarded="handleForwardComplete" />
 </template>
 
 <script setup lang="ts">
@@ -43,10 +56,15 @@ import { createLogger } from '@/utils/Logger'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/global'
 import { storeToRefs } from 'pinia'
-import { UserType } from '@/enums'
+import { UserType, MittEnum } from '@/enums'
 import { open } from '@tauri-apps/plugin-dialog'
 import HuLaAssistant from '@/components/rightBox/chatBox/HuLaAssistant.vue'
 import { useAssistantModelPresets, type AssistantModelPreset } from '@/hooks/useAssistantModelPresets'
+import { useMitt } from '@/hooks/useMitt'
+import MobileForwardDialog from '@/mobile/components/chat-room/MobileForwardDialog.vue'
+import MobilePinnedEventsBar from '@/mobile/views/room/components/MobilePinnedEventsBar.vue'
+import MobileBurnIndicator from '@/mobile/views/room/components/MobileBurnIndicator.vue'
+import { useChatFooter } from '@/hooks/useChatFooter'
 
 const logger = createLogger('MobileChatMain')
 
@@ -57,6 +75,7 @@ defineOptions({
 const globalStore = useGlobalStore()
 const { currentSession } = storeToRefs(globalStore)
 const globalUnreadCount = computed(() => globalStore.unReadMark.newMsgUnreadCount ?? 0)
+const { isBurnAfterRead } = useChatFooter()
 
 const props = defineProps<{
   uid?: ''
@@ -65,6 +84,22 @@ const props = defineProps<{
 const isBotSession = computed(() => globalStore.currentSession?.account === UserType.BOT)
 const selectedModelKey = ref<string | null>(null)
 const customModelPath = ref<string | null>(null)
+
+const showForwardDialog = ref(false)
+const forwardEventId = ref('')
+const forwardRoomId = ref('')
+
+useMitt.on(MittEnum.MOBILE_FORWARD, (data: { eventId: string; roomId: string }) => {
+  forwardEventId.value = data.eventId
+  forwardRoomId.value = data.roomId
+  showForwardDialog.value = true
+})
+
+function handleForwardComplete() {
+  showForwardDialog.value = false
+  forwardEventId.value = ''
+  forwardRoomId.value = ''
+}
 
 const { presets: assistantModelPresets, fetchAssistantModelPresets } = useAssistantModelPresets()
 void fetchAssistantModelPresets()
@@ -104,6 +139,11 @@ const selectedModelLabel = computed(() => {
 const handleChatMainClick = () => {
   // 移动端点击聊天区域不再自动关闭面板
   // 用户需要手动点击按钮来关闭面板
+}
+
+const handleJumpToMessage = (_eventId: string) => {
+  // TODO: 实现消息跳转定位
+  logger.info('跳转到消息:', _eventId)
 }
 
 const handleScroll = () => {
@@ -274,5 +314,13 @@ const handleAssistantImport = async () => {
 .mobile-assistant-view {
   flex: 1;
   display: flex;
+}
+
+.mobile-burn-bar {
+  display: flex;
+  justify-content: center;
+  padding: 4px 12px;
+  background: var(--van-background-2, #f7f8fa);
+  border-bottom: 1px solid var(--van-border-color, #ebedf0);
 }
 </style>

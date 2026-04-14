@@ -1,11 +1,11 @@
-/**
- * 联邦黑名单服务
- * 管理 federation 级别的服务器黑名单
- */
+import type {
+  FederationBlacklistEntryResponse,
+  FederationBlacklistListResponse,
+  FederationBlacklistCheckResponse,
+  FederationBlacklistImportResponse
+} from '@/types/matrix-api'
 import { matrixClientService } from './MatrixClientService'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('FederationBlacklist')
+import { BaseManager } from './BaseManager'
 
 export interface FederationBlacklistEntry {
   domain: string
@@ -21,119 +21,104 @@ export interface AddToBlacklistParams {
   expiresAt?: number
 }
 
-class MatrixFederationBlacklistService {
+class MatrixFederationBlacklistService extends BaseManager {
   private get client() {
     const c = matrixClientService.getClient()
     if (!c) throw new Error('Matrix client not initialized')
     return c
   }
 
-  /**
-   * 添加到黑名单
-   */
-  async add(params: AddToBlacklistParams): Promise<boolean> {
-    try {
-      await this.client.http.authedRequest({}, 'POST', '/_matrix/client/v1/admin/federation/blacklist', undefined, {
-        body: JSON.stringify(params)
-      })
-      return true
-    } catch (error) {
-      logger.error('添加失败:', error)
-      return false
-    }
-  }
-
-  /**
-   * 从黑名单移除
-   */
-  async remove(domain: string): Promise<boolean> {
+  async add(params: AddToBlacklistParams, throwOnError = false): Promise<boolean> {
     try {
       await this.client.http.authedRequest(
-        {},
-        'DELETE',
-        `/_matrix/client/v1/admin/federation/blacklist/${encodeURIComponent(domain)}`,
-        undefined
+        'POST',
+        '/_matrix/client/v1/admin/federation/blacklist',
+        undefined,
+        JSON.stringify(params),
+        { prefix: '' }
       )
       return true
     } catch (error) {
-      logger.error('移除失败:', error)
-      return false
+      return this.handleError(error, 'add', false, throwOnError)
     }
   }
 
-  /**
-   * 获取黑名单列表
-   */
-  async list(): Promise<FederationBlacklistEntry[]> {
+  async remove(domain: string, throwOnError = false): Promise<boolean> {
+    try {
+      await this.client.http.authedRequest(
+        'DELETE',
+        `/_matrix/client/v1/admin/federation/blacklist/${encodeURIComponent(domain)}`,
+        undefined,
+        undefined,
+        { prefix: '' }
+      )
+      return true
+    } catch (error) {
+      return this.handleError(error, 'remove', false, throwOnError)
+    }
+  }
+
+  async list(throwOnError = true): Promise<FederationBlacklistEntry[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         '/_matrix/client/v1/admin/federation/blacklist',
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as FederationBlacklistListResponse
       return (response.entries || []).map(this.mapEntry)
     } catch (error) {
-      logger.error('列表失败:', error)
-      return []
+      return this.handleError(error, 'list', [] as FederationBlacklistEntry[], throwOnError)
     }
   }
 
-  /**
-   * 检查域名是否在黑名单中
-   */
-  async check(domain: string): Promise<boolean> {
+  async check(domain: string, throwOnError = true): Promise<boolean> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         `/_matrix/client/v1/admin/federation/blacklist/${encodeURIComponent(domain)}/check`,
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as FederationBlacklistCheckResponse
       return response.blacklisted || false
-    } catch {
-      return false
+    } catch (error) {
+      return this.handleError(error, 'check', false, throwOnError)
     }
   }
 
-  /**
-   * 批量导入黑名单
-   */
-  async importBatch(entries: AddToBlacklistParams[]): Promise<number> {
+  async importBatch(entries: AddToBlacklistParams[], throwOnError = false): Promise<number> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'POST',
         '/_matrix/client/v1/admin/federation/blacklist/import',
         undefined,
-        { body: JSON.stringify({ entries }) }
-      )) as any
+        JSON.stringify({ entries }),
+        { prefix: '' }
+      )) as FederationBlacklistImportResponse
       return response.imported || 0
     } catch (error) {
-      logger.error('批量导入失败:', error)
-      return 0
+      return this.handleError(error, 'importBatch', 0, throwOnError)
     }
   }
 
-  /**
-   * 导出黑名单
-   */
-  async export(): Promise<AddToBlacklistParams[]> {
+  async export(throwOnError = true): Promise<AddToBlacklistParams[]> {
     try {
       const response = (await this.client.http.authedRequest(
-        {},
         'GET',
         '/_matrix/client/v1/admin/federation/blacklist/export',
-        undefined
-      )) as any
+        undefined,
+        undefined,
+        { prefix: '' }
+      )) as FederationBlacklistListResponse
       return response.entries || []
     } catch (error) {
-      logger.error('导出失败:', error)
-      return []
+      return this.handleError(error, 'export', [] as AddToBlacklistParams[], throwOnError)
     }
   }
 
-  private mapEntry(data: any): FederationBlacklistEntry {
+  private mapEntry(data: FederationBlacklistEntryResponse): FederationBlacklistEntry {
     return {
       domain: data.domain,
       reason: data.reason,

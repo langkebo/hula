@@ -75,6 +75,8 @@
       </n-flex>
     </n-flex>
 
+    <ThreePidManagement />
+
     <n-flex vertical class="text-(14px [--text-color])" :size="16">
       <span class="pl-10px">{{ t('setting.account.danger_zone') }}</span>
 
@@ -131,6 +133,7 @@
 import { NAvatar, NInput, NButton, NModal, NForm, NFormItem, useMessage, useDialog, NFlex } from 'naive-ui'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
+import ThreePidManagement from '@/components/settings/ThreePidManagement.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()
