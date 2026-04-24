@@ -648,9 +648,42 @@ _顶层体积_
 - 已填充域子目录：**11 个**（原 7 个 + ai/sync/friends/notifications）
 - core 保留顶层：`MatrixClientService` · `MatrixEventService` · `MatrixCacheManager` · `MatrixRequestDeduper` · `MatrixRequestHelper` · `SynapseRustExtensionsService` · `index.ts`
 
+**第八批产出（P2-6 续簇收官：matrix 顶层业务服务全量归档）**
+
+_策略_：延续第七批思路，把剩余 14 个 flat 业务服务按域继续合并到既有 subdir 或归档入新域，顶层仅保留 6 个 **core** 基础设施服务 + 2 个标准库级业务服务（`search` / `appservice`）。分 3 个 commit 推进，每个 cluster 单独 commit + 单独验收，避免单个改动过大。
+
+_Commit 1：`7e901024 refactor(matrix): cluster admin-family services into admin/`_
+- 合并入既有 `admin/`：`MatrixAdminService` · `MatrixFederationBlacklistService` · `MatrixModerationService` · `MatrixQuotaService` · `MatrixReportService` · `MatrixRetentionService`（6 服务 + 7 测试，含 `MatrixAdminExtendedService`）
+- 修正 `RegistrationTokensService` 的 `../MatrixAdminService` → `./MatrixAdminService` 自反引用
+
+_Commit 2：`9084b4bc refactor(matrix): cluster user-domain services into user/`_
+- 新建 `user/`：`MatrixAccountService` · `MatrixProfileService` · `MatrixPresenceService` · `MatrixDeviceService` · `MatrixUserDirectoryService` · `MatrixContactService`（6 服务 + 7 测试，含 `MatrixAccount3PidService`）
+- `MatrixContactService` 跨簇引用：`../friends/MatrixFriendService`、`../room/MatrixDirectMessageService`、`../room/MatrixRoomService`
+- 修正测试 mock 路径（同域深度 `../../` + 跨簇 `../../friends/` 等）
+
+_Commit 3：`193a4f92 refactor(matrix): cluster room/ and messaging/ services`_
+- 合并入既有 `room/`：`MatrixRoomService` · `MatrixRoomStoreAdapter` · `MatrixRoomSummaryService` · `MatrixSpaceService` · `MatrixDirectMessageService` · `MatrixAnnouncementService` · `MatrixGroupService`（7 服务 + 测试）
+- 合并入既有 `messaging/`：`MatrixReceiptService` · `MatrixTypingService`（2 服务 + 测试）
+- `MatrixRoomService` 自反修正：`./room/TagsService` 等 16 处子服务 import → `./TagsService`（现已在同目录）
+- `MatrixAnnouncementService` / `MatrixRoomStoreAdapter`：`./messaging/X` → `../messaging/X`
+- `MatrixEventService`（顶层 core）：`./MatrixRoomService` → `./room/MatrixRoomService`、`./MatrixReceiptService` → `./messaging/MatrixReceiptService`
+- 跨簇（`auth/user/admin/friends/notifications/sync/crypto/widget/media`）相对引用批量修正：`../MatrixRoomService` → `../room/MatrixRoomService`、`../MatrixReceiptService` → `../messaging/MatrixReceiptService` 等
+- 测试 mock：`MatrixAnnouncementService.test` 的 `../messaging/MatrixMessageService` 因测试文件下沉需改为 `../../messaging/MatrixMessageService`（从 `room/__tests__/` 出发）
+
+**验收（第八批，3 个 commit 独立 verify）**
+- 每个 commit 后 `pnpm exec vue-tsc --noEmit`：**0 error**
+- 每个 commit 后 `pnpm test:run`：172 files / **2021 tests passed**（中间 4 次 mock 路径失配均一次定位修复）
+- facade `services/matrix/index.ts` 对外导出名 **零变更**，所有修改都发生在 import specifier 层
+
+_最终顶层体积_
+- `src/services/matrix/` 扁平 `*.ts`：**28 → 8（-20 文件，-71%）**
+- 已填充域子目录：**13 个**（`crypto` · `widget` · `media` · `messaging` · `auth` · `room` · `admin` · `ai` · `sync` · `friends` · `notifications` · `user` + barrel）
+- core 保留顶层（6）：`MatrixClientService` · `MatrixEventService` · `MatrixCacheManager` · `MatrixRequestDeduper` · `MatrixRequestHelper` · `SynapseRustExtensionsService`
+- 标准库级业务服务保留顶层（2）：`MatrixSearchService`（搜索跨域，不属单一 domain） · `MatrixApplicationService`（appservice 协议适配层）
+
 **Step 10 续作（后续轮次）**
 - **P2-3**：git status 中其余 `D` 项（`.trae/specs/**`、`cli-anything-hula/**/__pycache__/*.pyc`、`docs/` 归档等，约 240 项） —— 需用户确认后分批提交
 - **P2-4 收尾**：`deleteRetentionPolicy` 仍保留 no-op（UI 调用路径仍在），未来 UI 移除后可一并删除
-- **P2-6 续簇（续）**：剩余 14 个扁平业务服务（account/presence/device/contact/room/space/announcement/admin/moderation/quota 等）可按耦合度继续切簇（候选：`profile/` / `user/` / `room/`（合并现有 subdir） / `admin/`（合并现有 subdir）），或保留至 core-adjacent 层
+- **P2-6 完成**：matrix 顶层归档工作收官，后续若拆分 `MatrixSearchService` 或 `MatrixApplicationService` 可再起新域，但当前规模下保留顶层更清晰
 - **既存 noExplicitAny warning**：`pnpm check` 报告的 23+ 个 `noExplicitAny` 均为迁移前遗留，未来可单独批次清理（不在本轮范围）
 - **TODO 清理** 已完成（可清理项 2/4，剩余 2 项为合法活占位符/WHY 注解）
