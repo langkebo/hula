@@ -1018,3 +1018,85 @@ _Commit: `d8154b9b chore(lint): clear all noExplicitAny warnings`（105 文件�
 - 下一轮可选：
   - useChatMain 续作：`useChatFileDownload`（跨菜单闭包，风险较高，需抽公共工具 `performDownloadOrReveal`）或 6 menu 数组按类型分裂
   - useMsgInput：本身已到合理规模，进一步瘦身收益递减，保留
+
+### 步骤 20：P0-6 useChatMain 续作（第四批）+ P0-4 Chat.vue 续作（首批）+ TempMessageLike 类型收口 · 状态：🟢 本轮完成（2026-04-24）
+
+**背景**：Step 19 后 useChatMain 1228 LOC 仍超 1000 门槛，Chat.vue 3796 LOC 为全仓最大文件。本轮同步推进三条线：
+1. useMsgInputSend.ts 的 `TempMessageLike` 冗余类型修复（`MessageType` 已含 `uploadProgress`）
+2. useChatMain 续作：抽取 `useChatFileDownload` + `emojiMenuData`，使 useChatMain 降至 <1000
+3. Chat.vue 续作：抽取 `useAiMediaCache` + `useAiProviderConfig`，启动 god component 拆分
+
+**产出**
+
+_TempMessageLike 类型收口_
+- `src/hooks/msgInput/useMsgInputSend.ts`：
+  - 删除冗余 `type TempMessageLike = MessageType & { uploadProgress?: number }`（`MessageType` 已含此字段）
+  - 5 处 `as TempMessageLike` 改为直接使用 `MessageType`（无需 cast，`buildMessageType` 返回 `MessageType`）
+  - `sendVoiceDirect` 中 `tempMsg` 添加显式 `MessageType` 类型注解
+  - 净变更：+2 / −4
+
+_useChatMain 续作_
+- 新增 `src/hooks/chatMain/useChatFileDownload.ts`（199 LOC）
+  - `revealInDirSafely(targetPath)` — 安全调用 `revealItemInDir` + 错误提示
+  - `downloadAndRevealFile(params)` — 统一 file/image/special 三处重复的"检查本地→下载→显示"流程，参数化 i18n keys
+  - `downloadAndRevealVideo(videoUrl)` — 视频专用下载+显示
+  - `previewFile(item)` — 文件预览逻辑（本地检测 → payload 构建 → fallback 远程）
+  - 通过 `UseChatFileDownloadOptions` 注入 `t` / `downloadFile` / `getLocalVideoPath` / `checkVideoDownloaded` / `createWebviewWindow` / `sendWindowPayload`
+  - 内部创建 `fileDownloadStore` / `globalStore` / `userStore` 实例（Pinia 单例）
+- 新增 `src/hooks/chatMain/emojiMenuData.ts`（71 LOC）
+  - `createEmojiList(t)` — 14 项 emoji 菜单数据工厂，从 useChatMain 内联 computed 抽出
+  - 导出 `EmojiMenuItem` 接口
+- `src/hooks/useChatMain.ts`：1228 → **933 LOC**（−295，**-24%**）
+  - 移除内联 `revealInDirSafely`（12 LOC）
+  - 3 处 `fileMenuList` / `imageMenuList` / `specialMenuList` 的"在文件夹中显示"handler 改为调用 `downloadAndRevealFile`
+  - `videoMenuList` 的"在文件夹中显示"handler 改为调用 `downloadAndRevealVideo`
+  - `fileMenuList` 的"预览"handler 改为调用 `previewFile`
+  - `emojiList` 改为 `computed(() => createEmojiList(t))`
+  - 移除不再直接使用的 imports：`revealItemInDir` / `appDataDir` / `join` / `resourceDir` / `BaseDirectory` / `FileTypeResult` / `FilesMeta` / `FileDownloadStatus` / `useFileDownloadStore` / `detectRemoteFileType` / `getFilesMeta`
+- 新增 `src/hooks/chatMain/__tests__/useChatFileDownload.test.ts`（12 用例）
+  - `revealInDirSafely`：有效路径 / null 路径 / 异常捕获（3）
+  - `downloadAndRevealVideo`：未下载时下载 / 已下载跳过 / 错误静默（3）
+  - `downloadAndRevealFile`：不存在时下载 / 下载失败报错 / 已存在直接显示（3）
+  - `previewFile`：本地存在 / 远程 fallback / sendWindowPayload 错误 fallback（3）
+
+_Chat.vue 续作_
+- 新增 `src/plugins/robot/composables/useAiMediaCache.ts`（213 LOC）
+  - `convertHttpDataToArrayBuffer` — 多种二进制格式统一转 ArrayBuffer
+  - `requestAiMediaBuffer` — 同 URL 复用 Promise + LRU 淘汰
+  - `buildAiMediaFileName` — MD5 哈希 + 扩展名
+  - `ensureLocalAiImage` / `ensureLocalAiVideo` / `ensureLocalAiAudio` — 统一参数化的 `ensureLocalAiMedia` 内部实现
+  - 通过 `UseAiMediaCacheOptions` 注入 `messageList` / `currentChat` / `userUid`
+- 新增 `src/plugins/robot/composables/useAiProviderConfig.ts`（152 LOC）
+  - `aiProvider` / `openClawConfig` / `siliconFlowConfig` / `trendRadarConfig` 四个配置 ref
+  - `loadSavedConfig` / `saveAiProvider` / `saveOpenClawConfig` / `saveTrendRadarConfig` — localStorage 持久化
+  - `handleProviderChange` — provider 切换 + 自动连接
+  - 内部创建 `useOpenClaw` / `useSiliconFlow` / `useTrendRadar` 实例
+  - 通过 `UseAiProviderConfigOptions` 注入 `fetchModelList` / `modelList`
+- `src/plugins/robot/views/Chat.vue`：3796 → **3458 LOC**（−338，**-8.9%**）
+  - 移除内联 `aiMediaDownloadTasks` / `MAX_MEDIA_CACHE_SIZE` / `convertHttpDataToArrayBuffer` / `requestAiMediaBuffer` / `buildAiMediaFileName` / `ensureLocalAiImage` / `ensureLocalAiVideo` / `ensureLocalAiAudio`（~236 LOC）
+  - 移除内联 `STORAGE_KEYS` / `openClawConfig` / `siliconFlowConfig` / `trendRadarConfig` / `loadSavedConfig` / `saveAiProvider` / `saveOpenClawConfig` / `saveTrendRadarConfig` / `handleProviderChange` + 3 个 composable 实例化（~215 LOC）
+  - 移除不再直接使用的 imports：`convertFileSrc` / `nativeFetch` / `getAiMediaExtension` / `persistAiImageFile` / `resolveAiImagePath` / `md5FromString` / `useOpenClaw` / `useSiliconFlow` / `useTrendRadar`
+  - 新增 imports：`useAiProviderConfig` / `useAiMediaCache`
+
+**验收**
+- `pnpm test:run`：**2139 passed**（+12 新增 useChatFileDownload 测试，+6 前序批次增量）
+- `pnpm exec vue-tsc --noEmit`：**0 error**
+- `pnpm check`：**0 warning / 0 error**
+- useChatMain.ts：1228 → 933 LOC ✅（首次跌破 1000 门槛）
+- Chat.vue：3796 → 3458 LOC（首轮 -338）
+- useMsgInputSend.ts：TempMessageLike 冗余消除，类型系统更精确
+
+**Step 20 状态**
+- P0-6 useChatMain 续作第四批 ✅ 完成（useChatMain 已 <1000 LOC）
+- P0-4 Chat.vue 续作首批 ✅ 完成（两个 composable 抽出）
+- TempMessageLike 类型收口 ✅ 完成
+- 单文件 >1000 LOC 清单更新：
+  - Chat.vue：3458（续作中）
+  - augmentations.d.ts：1464
+  - message.ts：1171
+  - Bot.vue：1134
+  - emoticon/index.vue：1056
+  - useChatMain.ts：933 ✅（已退出清单）
+- 下一轮推荐：
+  - Chat.vue 续作：`useAiMediaGeneration`（~470 LOC，最大块）→ `useAiStreaming`（~285 LOC）
+  - P0-5 AdminFacadeService 续作：UserService domain 抽取

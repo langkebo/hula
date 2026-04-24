@@ -1,8 +1,4 @@
-import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { save } from '@tauri-apps/plugin-dialog'
-import { BaseDirectory } from '@tauri-apps/plugin-fs'
-import { revealItemInDir } from '@tauri-apps/plugin-opener'
-import type { FileTypeResult } from 'file-type'
 import { computed, onUnmounted, type InjectionKey } from 'vue'
 import { ErrorType } from '@/common/exception'
 import {
@@ -19,7 +15,7 @@ import { useCommon } from '@/hooks/useCommon.ts'
 import { useDownload } from '@/hooks/useDownload'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
-import type { FilesMeta, RightMouseMessageItem } from '@/services/types.ts'
+import type { RightMouseMessageItem } from '@/services/types.ts'
 import { createLogger } from '@/utils/Logger'
 import {
   extractMsgIdFromDataKey,
@@ -30,15 +26,15 @@ import {
 } from './chatMain/selectionUtils'
 import { useGroupNicknameModal, type GroupNicknameModalPayload } from './chatMain/useGroupNicknameModal'
 import { useChatCopy } from './chatMain/useChatCopy'
+import { useChatFileDownload } from './chatMain/useChatFileDownload'
+import { createEmojiList } from './chatMain/emojiMenuData'
 const logger = createLogger('ChatMain')
 
-/** 上下文菜单项目类型 - 支持从 fromUser.uid 或直接 uid 获取用户ID */
 type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<string, unknown>
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
-import { type FileDownloadStatus, useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -47,7 +43,6 @@ import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentS
 import { isDiffNow } from '@/utils/ComputedTime.ts'
 import { extractFileName } from '@/utils/Formatting'
 import { matrixMessageService, matrixGroupService, reportService } from '@/services/matrix'
-import { detectRemoteFileType, getFilesMeta } from '@/utils/PathUtil'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useWindow } from './useWindow'
@@ -64,7 +59,6 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   const { openMsgSession, userUid } = useCommon()
   const { createWebviewWindow, sendWindowPayload, startRtcCall } = useWindow()
   const { getLocalVideoPath, checkVideoDownloaded } = useVideoViewer()
-  const fileDownloadStore = useFileDownloadStore()
   const settingStore = useSettingStore()
   const { chat } = storeToRefs(settingStore)
   const globalStore = useGlobalStore()
@@ -75,6 +69,15 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   const { downloadFile } = useDownload()
   const enableGroupNicknameModal = options.enableGroupNicknameModal ?? false
   const disableHistoryActions = options.disableHistoryActions ?? false
+
+  const { downloadAndRevealFile, downloadAndRevealVideo, previewFile } = useChatFileDownload({
+    t,
+    downloadFile,
+    getLocalVideoPath,
+    checkVideoDownloaded,
+    createWebviewWindow,
+    sendWindowPayload
+  })
   /** 滚动条位置 */
   const scrollTop = ref(-1)
   /** 提醒框标题 */
@@ -97,7 +100,6 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     groupNicknameValue,
     groupNicknameError,
     groupNicknameSubmitting,
-    groupNicknameContext,
     handleGroupNicknameConfirm
   } = useGroupNicknameModal({
     userUid,
@@ -128,18 +130,6 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   // 不能回复的消息类型
   const shouldHideCopy = (item: MessageType) => copyDisabledTypes.includes(item.message.type)
   const isNoticeMessage = (item: MessageType) => item.message.type === MsgEnum.NOTICE
-  const revealInDirSafely = async (targetPath?: string | null) => {
-    if (!targetPath) {
-      window.$message?.error(t('home.chat_main.file.missing_local'))
-      return
-    }
-    try {
-      await revealItemInDir(targetPath)
-    } catch (error) {
-      logger.error('在文件夹中显示文件失败:', error)
-      window.$message?.error(t('home.chat_main.file.show_failed'))
-    }
-  }
 
   const commonMenuList = ref<OPT.RightMenu[]>([
     {
@@ -278,28 +268,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       label: () => (isMac() ? t('menu.show_in_finder') : t('menu.show_in_folder')),
       icon: 'file2',
       click: async (item: MessageType) => {
-        try {
-          const videoUrl = item.message.body.url || ''
-          const localPath = await getLocalVideoPath(videoUrl)
-
-          // 检查视频是否已下载
-          const isDownloaded = await checkVideoDownloaded(videoUrl)
-
-          if (!isDownloaded) {
-            // 如果未下载，先下载视频
-            const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
-            await downloadFile(videoUrl, localPath, baseDir)
-            // 通知相关组件更新视频下载状态
-            useMitt.emit(MittEnum.VIDEO_DOWNLOAD_STATUS_UPDATED, { url: videoUrl, downloaded: true })
-          }
-
-          // 获取视频的绝对路径
-          const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
-          const absolutePath = await join(baseDirPath, localPath)
-          await revealInDirSafely(absolutePath)
-        } catch (error) {
-          logger.error('Failed to show video in folder:', error)
-        }
+        await downloadAndRevealVideo(item.message.body.url || '')
       }
     }
   ])
@@ -425,50 +394,17 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
               label: () => (isMac() ? t('menu.show_in_finder') : t('menu.show_in_folder')),
               icon: 'file2',
               click: async (item: RightMouseMessageItem) => {
-                logger.debug('打开文件夹的item项：', item)
-
                 const fileUrl = item.message.body.url
                 const fileName = item.message.body.fileName || extractFileName(fileUrl)
-
-                // 检查文件是否已下载
-                const fileStatus = fileDownloadStore.getFileStatus(fileUrl)
-
-                logger.debug('找到的文件状态:', fileStatus)
-                const currentChatRoomId = globalStore.currentSessionRoomId // 这个id可能为群id可能为用户uid，所以不能只用用户uid
-                const currentUserUid = userStore.userInfo!.uid as string
-
-                const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
-                let absolutePath = await join(resourceDirPath, fileName)
-
-                const [fileMeta] = await getFilesMeta<FilesMeta>([fileStatus?.absolutePath || absolutePath || fileUrl])
-
-                // 最后判断文件不存在本地，那就下载它
-                if (!fileMeta.exists) {
-                  // 文件不存在本地
-                  const downloadMessage = window.$message.info(t('home.chat_main.file.download_prompt'))
-                  const _absolutePath = await fileDownloadStore.downloadFile(fileUrl, fileName)
-
-                  if (_absolutePath) {
-                    absolutePath = _absolutePath
-                    downloadMessage.destroy()
-                    window.$message.success(t('home.chat_main.file.download_success'))
-                    await revealInDirSafely(_absolutePath)
-                    await fileDownloadStore.refreshFileDownloadStatus({
-                      fileUrl: item.message.body.url,
-                      roomId: currentChatRoomId,
-                      userId: currentUserUid,
-                      fileName: item.message.body.fileName,
-                      exists: true
-                    })
-                    return
-                  } else {
-                    absolutePath = ''
-                    window.$message.error(t('home.chat_main.file.download_failed'))
-                    return
+                await downloadAndRevealFile({
+                  fileUrl,
+                  fileName,
+                  i18nKeys: {
+                    downloadPrompt: 'home.chat_main.file.download_prompt',
+                    success: 'home.chat_main.file.download_success',
+                    failed: 'home.chat_main.file.download_failed'
                   }
-                }
-
-                await revealInDirSafely(absolutePath)
+                })
               }
             }
           ]
@@ -499,108 +435,8 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       label: () => t('menu.preview'),
       icon: 'preview-open',
       click: (item: RightMouseMessageItem) => {
-        logger.debug('预览文件的参数:', item)
         nextTick(async () => {
-          const path = 'previewFile'
-          const LABEL = 'previewFile'
-
-          const fileStatus: FileDownloadStatus = fileDownloadStore.getFileStatus(item.message.body.url)
-
-          const currentChatRoomId = globalStore.currentSessionRoomId // 这个id可能为群id可能为用户uid，所以不能只用用户uid
-          const currentUserUid = userStore.userInfo!.uid as string
-
-          /**
-           * 构建窗口所需的 payload 数据，用于传递文件预览相关的信息。
-           *
-           * 包括用户 ID、房间 ID、消息 ID、文件路径、类型、是否存在本地等。
-           * 若本地存在文件，则 url 使用本地路径，否则使用远程 URL。
-           *
-           * @param item - 右键点击的消息项，包含文件的消息结构和用户信息。
-           * @param type - 文件类型信息（扩展名和 MIME 类型），可为空。
-           * @param localExists - 文件是否存在于本地，用于决定路径选择。
-           * @returns 构建后的 payload 对象。
-           */
-          const buildPayload = (
-            item: RightMouseMessageItem,
-            type: FileTypeResult | undefined,
-            localExists: boolean
-          ) => {
-            const payload = {
-              userId: currentUserUid,
-              roomId: currentChatRoomId,
-              messageId: item.message.id,
-              resourceFile: {
-                fileName: item.message.body.fileName,
-                absolutePath: fileStatus?.absolutePath,
-                nativePath: fileStatus?.nativePath,
-                url: item.message.body.url,
-                type,
-                localExists
-              }
-            }
-            return payload
-          }
-
-          /**
-           * 当本地文件不存在或获取元数据失败时，执行远程文件类型检测，并构建 fallback payload。
-           *
-           * 构建完成后通过窗口通信接口发送该 payload，供目标窗口使用。
-           *
-           * @returns Promise<void>
-           */
-          const fallbackToRemotePayload = async () => {
-            const remoteType = await detectRemoteFileType({
-              url: item.message.body.url,
-              fileSize: Number(item.message.body.size)
-            })
-            const fallbackPayload = buildPayload(item, remoteType, false)
-            await sendWindowPayload(LABEL, fallbackPayload)
-          }
-
-          // 这里不用状态中的absolute，是因为不能完全相信状态的绝对路径是否存在，有时不存在
-          const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
-          const absolutePath = await join(resourceDirPath, item.message.body.fileName)
-
-          // 获取文件元信息（判断文件是否已下载/存在）
-          const result = await getFilesMeta<FilesMeta>([
-            fileStatus?.absolutePath || absolutePath || item.message.body.url
-          ])
-          const fileMeta = result[0]
-
-          try {
-            // 如果本地不存在该文件，清空旧的下载状态，准备读取远程链接作为兜底
-            if (!fileMeta.exists) {
-              await fallbackToRemotePayload()
-            } else {
-              // 本地存在文件，构造 payload 使用本地路径和已知类型
-              const payload = buildPayload(
-                item,
-                {
-                  ext: fileMeta.file_type,
-                  mime: fileMeta.mime_type
-                },
-                fileMeta.exists
-              )
-
-              await sendWindowPayload(LABEL, payload)
-            }
-          } catch (error) {
-            // 本地信息获取失败，可能是路径非法或 RPC 异常，兜底走远程解析
-            await fallbackToRemotePayload()
-            logger.error('检查文件出错:', error)
-          }
-
-          logger.debug('预览时刷新下载状态')
-          await fileDownloadStore.refreshFileDownloadStatus({
-            fileUrl: item.message.body.url,
-            roomId: currentChatRoomId,
-            userId: currentUserUid,
-            fileName: item.message.body.fileName,
-            exists: fileMeta.exists
-          })
-
-          // 最后创建用于预览文件的 WebView 窗口
-          await createWebviewWindow('预览文件', path, 860, 720, '', true)
+          await previewFile(item)
         })
       }
     },
@@ -625,50 +461,17 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       label: () => (isMac() ? t('menu.show_in_finder') : t('menu.show_in_folder')),
       icon: 'file2',
       click: async (item: RightMouseMessageItem) => {
-        logger.debug('打开文件夹的item项:', item)
-
         const fileUrl = item.message.body.url
         const fileName = item.message.body.fileName || extractFileName(fileUrl)
-
-        // 检查文件是否已下载
-        const fileStatus = fileDownloadStore.getFileStatus(fileUrl)
-
-        logger.debug('找到的文件状态:', fileStatus)
-        const currentChatRoomId = globalStore.currentSessionRoomId // 这个id可能为群id可能为用户uid，所以不能只用用户uid
-        const currentUserUid = userStore.userInfo!.uid as string
-
-        const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
-        let absolutePath = await join(resourceDirPath, fileName)
-
-        const [fileMeta] = await getFilesMeta<FilesMeta>([fileStatus?.absolutePath || absolutePath || fileUrl])
-
-        // 最后判断文件不存在本地，那就下载它
-        if (!fileMeta.exists) {
-          // 文件不存在本地
-          const downloadMessage = window.$message.info(t('home.chat_main.file.download_prompt'))
-          const _absolutePath = await fileDownloadStore.downloadFile(fileUrl, fileName)
-
-          if (_absolutePath) {
-            absolutePath = _absolutePath
-            downloadMessage.destroy()
-            window.$message.success(t('home.chat_main.file.save_success'))
-            await revealInDirSafely(_absolutePath)
-            await fileDownloadStore.refreshFileDownloadStatus({
-              fileUrl: item.message.body.url,
-              roomId: currentChatRoomId,
-              userId: currentUserUid,
-              fileName: item.message.body.fileName,
-              exists: true
-            })
-            return
-          } else {
-            absolutePath = ''
-            window.$message.error(t('home.chat_main.file.download_failed'))
-            return
+        await downloadAndRevealFile({
+          fileUrl,
+          fileName,
+          i18nKeys: {
+            downloadPrompt: 'home.chat_main.file.download_prompt',
+            success: 'home.chat_main.file.save_success',
+            failed: 'home.chat_main.file.download_failed'
           }
-        }
-
-        await revealInDirSafely(absolutePath)
+        })
       }
     }
   ])
@@ -731,41 +534,15 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           window.$message.warning(t('home.chat_main.image.locate_failed'))
           return
         }
-
-        const fileStatus = fileDownloadStore.getFileStatus(fileUrl)
-        const currentChatRoomId = globalStore.currentSessionRoomId
-        const currentUserUid = userStore.userInfo!.uid as string
-
-        const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
-        let absolutePath = await join(resourceDirPath, fileName)
-
-        const [fileMeta] = await getFilesMeta<FilesMeta>([fileStatus?.absolutePath || absolutePath || fileUrl])
-
-        if (!fileMeta.exists) {
-          const downloadMessage = window.$message.info(t('home.chat_main.image.download_prompt'))
-          const _absolutePath = await fileDownloadStore.downloadFile(fileUrl, fileName)
-
-          if (_absolutePath) {
-            absolutePath = _absolutePath
-            downloadMessage.destroy()
-            window.$message.success(t('home.chat_main.image.save_success'))
-            await revealInDirSafely(_absolutePath)
-            await fileDownloadStore.refreshFileDownloadStatus({
-              fileUrl,
-              roomId: currentChatRoomId,
-              userId: currentUserUid,
-              fileName,
-              exists: true
-            })
-            return
-          } else {
-            absolutePath = ''
-            window.$message.error(t('home.chat_main.image.download_failed'))
-            return
+        await downloadAndRevealFile({
+          fileUrl,
+          fileName,
+          i18nKeys: {
+            downloadPrompt: 'home.chat_main.image.download_prompt',
+            success: 'home.chat_main.image.save_success',
+            failed: 'home.chat_main.image.download_failed'
           }
-        }
-
-        await revealInDirSafely(absolutePath)
+        })
       }
     }
   ])
@@ -1002,79 +779,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       }
     }
   ])
-  /** emoji表情菜单 */
-  const emojiList = computed(() => [
-    {
-      url: '/msgAction/like.png',
-      value: 1,
-      title: t('home.chat_reaction.like')
-    },
-    {
-      url: '/msgAction/slightly-frowning-face.png',
-      value: 2,
-      title: t('home.chat_reaction.unsatisfied')
-    },
-    {
-      url: '/msgAction/heart-on-fire.png',
-      value: 3,
-      title: t('home.chat_reaction.heart')
-    },
-    {
-      url: '/msgAction/enraged-face.png',
-      value: 4,
-      title: t('home.chat_reaction.angry')
-    },
-    {
-      url: '/emoji/party-popper.webp',
-      value: 5,
-      title: t('home.chat_reaction.party')
-    },
-    {
-      url: '/emoji/rocket.webp',
-      value: 6,
-      title: t('home.chat_reaction.rocket')
-    },
-    {
-      url: '/msgAction/face-with-tears-of-joy.png',
-      value: 7,
-      title: t('home.chat_reaction.lol')
-    },
-    {
-      url: '/msgAction/clapping.png',
-      value: 8,
-      title: t('home.chat_reaction.clap')
-    },
-    {
-      url: '/msgAction/rose.png',
-      value: 9,
-      title: t('home.chat_reaction.flower')
-    },
-    {
-      url: '/msgAction/bomb.png',
-      value: 10,
-      title: t('home.chat_reaction.bomb')
-    },
-    {
-      url: '/msgAction/exploding-head.png',
-      value: 11,
-      title: t('home.chat_reaction.question')
-    },
-    {
-      url: '/msgAction/victory-hand.png',
-      value: 12,
-      title: t('home.chat_reaction.victory')
-    },
-    {
-      url: '/msgAction/flashlight.png',
-      value: 13,
-      title: t('home.chat_reaction.light')
-    },
-    {
-      url: '/msgAction/pocket-money.png',
-      value: 14,
-      title: t('home.chat_reaction.red_envelope')
-    }
-  ])
+  const emojiList = computed(() => createEmojiList(t))
 
   /**
    * 检查用户关系
