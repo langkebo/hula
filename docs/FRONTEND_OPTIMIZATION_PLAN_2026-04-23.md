@@ -620,9 +620,37 @@ _修复范围（19 文件，79 → 0 error）_
 - grep `: any` / `as any` 新增：**0**（所有拓宽均为精确接口或 `as unknown as { 具体形状 }` bridge）
 - Commit `245755f0 refactor(stores): domain-layer stores + fix 79 preexisting type errors` 打包 P2-7 + 第六批 + in-flight consumer edits 一次落盘
 
+**第七批产出（P2-6 续簇：services/matrix 顶层 4 域归档）**
+
+_策略_：将顶层 `services/matrix/*.ts` 中按语义可自然成簇的 4 个域切出，遗留的 `MatrixClientService` / `MatrixEventService` / `MatrixCacheManager` / `MatrixRequestDeduper` / `MatrixRequestHelper` / `SynapseRustExtensionsService` 作为 **core** 保留在顶层（客户端/事件/请求基础设施，被所有 domain 引用）。其余仍扁平的业务服务（profile/account/presence/device/contact/room/room-summary/room-store-adapter/space/announcement/application/direct-message/receipt/search/typing/user-directory/admin/federation/moderation/quota/report/retention）未进入本批，留待后续轮次或按实际耦合度评估。
+
+_归档目录结构（新增 4 域）_
+- `services/matrix/ai/`：`AIService.ts` · `ApiKeyService.ts` · `ChatRoleService.ts` · `ConversationService.ts` · `ModelService.ts`（5 文件 + 2 测试：`AIService.test.ts` / `AIServices.test.ts`）
+- `services/matrix/sync/`：`MatrixSyncService.ts` · `MatrixSlidingSyncService.ts` · `SlidingSyncReconnectManager.ts`（3 文件 + 3 测试）
+- `services/matrix/friends/`：`MatrixFriendService.ts` · `MatrixSpecialFriendService.ts`（2 文件 + 3 测试：含 `MatrixFriendGroupService.test.ts`）
+- `services/matrix/notifications/`：`MatrixNotificationService.ts` · `MatrixPushService.ts` · `MatrixRoomNotificationService.ts` · `MatrixServerNotificationService.ts`（4 文件 + 5 测试：含 `MatrixPushExtendedService.test.ts`）
+
+_消费侧改写_
+- **10 处 `@/services/matrix/X` 路径更新**：`types/matrix-api.ts`、`plugins/robot/components/ModelManagement.vue`、`plugins/robot/views/Chat.vue`、`stores/domains/chat/{room,chat/session,contacts}.ts`、`components/friend/{FriendListView,FriendGroupView}.vue`、`components/room/RoomVirtualList.vue`、`components/rightBox/chatBox/ChatHeader/ChatHeaderRoot.vue`
+- **1 处 matrix 子树相对路径**：`services/matrix/room/RealtimeService.ts` → `../sync/MatrixSlidingSyncService`
+- **moved 文件内部 `./MatrixClientService` → `../MatrixClientService`**（14 个服务 + 同域内部引用保持 `./`）
+- **barrel `services/matrix/index.ts`**：19 处 `./X` 重写为 `./{cluster}/X`，对外 API 签名零变更
+- **2 处测试 mock 路径**：`MatrixContactService.test.ts` 改 `vi.mock('../friends/MatrixFriendService')`、`RealtimeService.test.ts` 改 `vi.mock('../../sync/MatrixSlidingSyncService')`
+
+**验收（第七批）**
+- `pnpm exec vue-tsc --noEmit`：**0 error**
+- `pnpm test:run`：172 files / **2021 tests passed**（零回归，初次运行命中 2 处 mock 路径失配，修复后全绿）
+- facade `services/matrix/index.ts` 导出名不变，外部消费侧仅改 import 路径
+- Commit `cc06c0f3 refactor(matrix): cluster 14 services into ai/ sync/ friends/ notifications/`
+
+_顶层体积_
+- `src/services/matrix/` 扁平 `*.ts`（非 core）：**28 → 14（-14 文件，-50%）**
+- 已填充域子目录：**11 个**（原 7 个 + ai/sync/friends/notifications）
+- core 保留顶层：`MatrixClientService` · `MatrixEventService` · `MatrixCacheManager` · `MatrixRequestDeduper` · `MatrixRequestHelper` · `SynapseRustExtensionsService` · `index.ts`
+
 **Step 10 续作（后续轮次）**
 - **P2-3**：git status 中其余 `D` 项（`.trae/specs/**`、`cli-anything-hula/**/__pycache__/*.pyc`、`docs/` 归档等，约 240 项） —— 需用户确认后分批提交
 - **P2-4 收尾**：`deleteRetentionPolicy` 仍保留 no-op（UI 调用路径仍在），未来 UI 移除后可一并删除
-- **P2-6 续簇**（可选）：剩余 44 个顶层 `services/matrix/*.ts` 可进一步按域归档（`sync/` / `friends/` / `notifications/` / `ai/`），或保留为 "core"（`MatrixClientService` / `MatrixEventService` 等）
-- **TODO 清理** 已完成（可清理项 2/4，剩余 2 项为合法活占位符/WHY 注解）
+- **P2-6 续簇（续）**：剩余 14 个扁平业务服务（account/presence/device/contact/room/space/announcement/admin/moderation/quota 等）可按耦合度继续切簇（候选：`profile/` / `user/` / `room/`（合并现有 subdir） / `admin/`（合并现有 subdir）），或保留至 core-adjacent 层
 - **既存 noExplicitAny warning**：`pnpm check` 报告的 23+ 个 `noExplicitAny` 均为迁移前遗留，未来可单独批次清理（不在本轮范围）
+- **TODO 清理** 已完成（可清理项 2/4，剩余 2 项为合法活占位符/WHY 注解）
