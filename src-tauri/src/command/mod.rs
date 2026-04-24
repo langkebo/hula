@@ -2,6 +2,7 @@ use tauri::{AppHandle, State};
 
 use crate::AppData;
 
+pub mod admin_command;
 pub mod ai_command;
 pub mod app_state_command;
 pub mod chat_history_command;
@@ -12,10 +13,8 @@ pub mod markdown_command;
 pub mod message_command;
 pub mod message_mark_command;
 pub mod oauth_command;
-pub mod request_command;
 pub mod room_member_command;
 pub mod setting_command;
-pub mod token_helper;
 pub mod upload_command;
 pub mod user_command;
 

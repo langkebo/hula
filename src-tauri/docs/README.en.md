@@ -239,7 +239,7 @@ HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScr
 | 🎥 | Video Calling | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 | ⌨️ | Global Shortcut Control | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 | 📺 | Dedicated Media Viewer | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
-| 📁 | File Upload (Qiniu Cloud) | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
+| 📁 | File Upload | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 | 🔄 | Auto-update System | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 
 ### 🌐 Cross-platform Support
