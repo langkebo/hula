@@ -14,6 +14,7 @@ import { useCallTimer } from './webRtc/useCallTimer'
 import { useCallBell } from './webRtc/useCallBell'
 import { useMediaDevices } from './webRtc/useMediaDevices'
 import { useScreenShare } from './webRtc/useScreenShare'
+import { useCameraSwitch } from './webRtc/useCameraSwitch'
 export { SignalTypeEnum, type WSRtcCallMsg } from './webRtc/types'
 const logger = createLogger('WebRtc')
 
@@ -634,131 +635,16 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
     }
   }
 
-  // 切换音频设备
-  const switchAudioDevice = async (deviceId: string) => {
-    try {
-      selectedAudioDevice.value = deviceId
-      if (localStream.value) {
-        const newStream = await navigator?.mediaDevices?.getUserMedia({
-          audio: { deviceId: { exact: deviceId } },
-          video:
-            rtcMsg.value.callType === CallTypeEnum.VIDEO
-              ? selectedVideoDevice.value
-                ? { deviceId: { exact: selectedVideoDevice.value || undefined } }
-                : false
-              : false
-        })
-        // 替换现有轨道
-        const newAudioTrack = newStream.getAudioTracks()[0]
-        const oldAudioTrack = localStream.value.getAudioTracks()[0]
-
-        if (newAudioTrack) {
-          if (!oldAudioTrack) {
-            localStream.value.addTrack(newAudioTrack)
-            peerConnection.value?.addTrack(newAudioTrack, localStream.value)
-            return
-          }
-          peerConnection.value?.getSenders().forEach((sender) => {
-            if (sender.track && sender.track.kind === 'audio') {
-              sender?.replaceTrack?.(newAudioTrack)
-            }
-          })
-          oldAudioTrack && localStream.value.removeTrack(oldAudioTrack)
-          localStream.value.addTrack(newAudioTrack)
-        } else {
-          window.$message.error('切换设备不存在或不支持，请重新选择！')
-        }
-      }
-    } catch (error) {
-      window.$message.error('切换音频设备失败！')
-      logger.error('切换音频设备失败:', error)
-    }
-  }
-
-  // 获取前置和后置摄像头设备
-  const getFrontAndBackCameras = () => {
-    const frontCamera = videoDevices.value.find(
-      (device) =>
-        device.label.toLowerCase().includes('front') ||
-        device.label.toLowerCase().includes('前置') ||
-        device.label.toLowerCase().includes('user')
-    )
-
-    const backCamera = videoDevices.value.find(
-      (device) =>
-        device.label.toLowerCase().includes('back') ||
-        device.label.toLowerCase().includes('后置') ||
-        device.label.toLowerCase().includes('environment') ||
-        device.label.toLowerCase().includes('rear')
-    )
-
-    return { frontCamera, backCamera }
-  }
-
-  // 切换前置/后置摄像头（移动端专用）
-  const switchCameraFacing = async () => {
-    if (!isMobile) {
-      logger.warn('摄像头翻转功能仅在移动端可用')
-      return
-    }
-
-    try {
-      const { frontCamera, backCamera } = getFrontAndBackCameras()
-
-      if (!frontCamera || !backCamera) {
-        // 如果无法通过设备名称识别，则使用 facingMode 约束
-        await switchVideoDevice('user')
-        return
-      }
-
-      // 如果能识别前置和后置摄像头，直接切换
-      const currentDevice = selectedVideoDevice.value
-      const targetDevice = currentDevice === frontCamera.deviceId ? backCamera : frontCamera
-      await switchVideoDevice(targetDevice.deviceId)
-    } catch (error) {
-      window.$message.error('摄像头翻转失败！')
-      logger.error('摄像头翻转失败:', error)
-    }
-  }
-
-  // 切换视频设备
-  const switchVideoDevice = async (deviceId: string) => {
-    try {
-      // 前置校验
-      selectedVideoDevice.value = deviceId
-      if (localStream.value && localStream.value.getVideoTracks().length > 0) {
-        const newStream = await navigator.mediaDevices.getUserMedia({
-          audio: selectedAudioDevice.value ? { deviceId: { exact: selectedAudioDevice.value || undefined } } : false,
-          video: { deviceId: { exact: deviceId } }
-        })
-
-        // 替换现有轨道
-        const newVideoTrack = newStream.getVideoTracks()[0]
-        const oldVideoTrack = localStream.value.getVideoTracks()[0]
-        // console.log(oldVideoTrack, newVideoTrack);
-
-        if (newVideoTrack) {
-          if (!oldVideoTrack) {
-            localStream.value.addTrack(newVideoTrack)
-            peerConnection.value?.addTrack(newVideoTrack, localStream.value)
-            return
-          }
-          peerConnection.value?.getSenders().forEach((sender) => {
-            if (sender.track && sender.track.kind === 'video') {
-              sender.replaceTrack(newVideoTrack)
-            }
-          })
-          oldVideoTrack && localStream.value.removeTrack(oldVideoTrack)
-          localStream.value.addTrack(newVideoTrack)
-        } else {
-          window.$message.error('切换设备不存在或不支持，请重新选择！')
-        }
-      }
-    } catch (error) {
-      window.$message.error('切换视频设备失败！')
-      logger.error('切换视频设备失败:', error)
-    }
-  }
+  // 设备切换（抽离到 useCameraSwitch）
+  const { switchAudioDevice, switchVideoDevice, switchCameraFacing } = useCameraSwitch({
+    localStream,
+    peerConnection,
+    selectedAudioDevice,
+    selectedVideoDevice,
+    videoDevices,
+    isVideoCall: () => rtcMsg.value.callType === CallTypeEnum.VIDEO,
+    isMobile
+  })
 
   // 桌面共享（抽离到 useScreenShare）
   const { isScreenSharing, startScreenShare, stopScreenShare } = useScreenShare({

@@ -1165,3 +1165,32 @@ _Chat.vue 续作_
 - 下一轮推荐：
   - `useCallSignaling`（sendOffer/handleOffer/sendAnswer/handleAnswer/handleCandidate/lisendCandidate/handleSignalMessage）
   - `useCameraSwitch`（switchAudioDevice/switchVideoDevice/switchCameraFacing/getFrontAndBackCameras，~120 LOC）
+
+---
+
+## Step 23 — useWebRtc 续作：useCameraSwitch 抽离（2026-04-25）
+
+**目标**
+- 继续 P0-6 useWebRtc 续作表，将音视频设备切换 + 移动端摄像头翻转抽出为独立 hook
+
+**新增**
+- `src/hooks/webRtc/useCameraSwitch.ts`（163 LOC）
+  - `switchAudioDevice` / `switchVideoDevice` / `switchCameraFacing` / `getFrontAndBackCameras`
+  - 通过 `UseCameraSwitchOptions` 注入共享 ref（`localStream` / `peerConnection` / `selectedAudioDevice` / `selectedVideoDevice` / `videoDevices`）+ 回调（`isVideoCall` / `isMobile`）+ 可选 `notify`
+  - 抽出 `replaceTrack(pc, kind, newTrack)` 内部小工具，消除 audio/video 两份 forEach 模板代码
+- `src/hooks/webRtc/__tests__/useCameraSwitch.test.ts`（12 用例）
+  - switchAudioDevice：成功替换 / 无新轨道报错 / getUserMedia 拒绝（共 3）
+  - switchVideoDevice：成功替换 / 无视频轨道时跳过 / 无旧轨道时 addTrack（共 3）
+  - switchCameraFacing：桌面端 no-op / 无法识别时 fallback "user" / 前→后切换 / 中文标签后→前切换（共 4）
+  - getFrontAndBackCameras：英中混合关键词识别 / 无匹配返回 undefined（共 2）
+
+**变更**
+- `src/hooks/useWebRtc.ts`：927 → **813 LOC**（−114，**-12.3%**）
+  - 移除内联 `switchAudioDevice` / `switchVideoDevice` / `switchCameraFacing` / `getFrontAndBackCameras`（约 126 LOC）
+  - 新增 `useCameraSwitch(...)` 装配（10 LOC），保持公共 API 不变
+  - useScreenShare 装配现继续复用 hook 暴露的 `switchVideoDevice`（共享 ref 引用一致）
+
+**验收**
+- 新增 12 测试全通过；`pnpm exec vue-tsc --noEmit` 0 error
+- useWebRtc.ts 累计：1097 → 813（-284，**-25.9%**）；剩余主体集中在 PC 创建 / 信令 / clear / event listener
+- 下一轮推荐：`useCallSignaling`（offer/answer/candidate handlers，~150 LOC，最后大块）
