@@ -131,6 +131,14 @@ class MatrixFriendService {
     return request.user_id ?? ''
   }
 
+  private toUserId(value: unknown): string | null {
+    return typeof value === 'string' ? value : null
+  }
+
+  private toFriendRequest(value: unknown): FriendRequest | null {
+    return value && typeof value === 'object' ? (value as FriendRequest) : null
+  }
+
   private setupEventListeners(): void {
     if (!this.friendManager) return
 
@@ -144,37 +152,50 @@ class MatrixFriendService {
     // FriendAdded/FriendUpdated don't exist in SDK directly, we rely on ListUpdated
     // But we can listen to other specific events:
 
-    this.friendManager.on(FriendEvent.Removed, (userId: string) => {
+    this.friendManager.on(FriendEvent.Removed, (...args: unknown[]) => {
+      const userId = this.toUserId(args[0])
+      if (!userId) return
       this.updateSyncState()
       this.emit('friendRemoved', userId)
       info(`[MatrixFriend] 好友移除: ${userId}`)
     })
 
-    this.friendManager.on(FriendEvent.RequestReceived, (request: FriendRequest) => {
+    this.friendManager.on(FriendEvent.RequestReceived, (...args: unknown[]) => {
+      const request = this.toFriendRequest(args[0])
+      if (!request) return
       this.updateSyncState()
       this.emit('requestReceived', request)
       info(`[MatrixFriend] 收到好友请求: ${this.getRequestUserId(request)}`)
     })
 
-    this.friendManager.on(FriendEvent.Invited, (userId: string, request: FriendRequest) => {
+    this.friendManager.on(FriendEvent.Invited, (...args: unknown[]) => {
+      const userId = this.toUserId(args[0])
+      const request = this.toFriendRequest(args[1])
+      if (!userId || !request) return
       this.updateSyncState()
       this.emit('requestSent', request)
       info(`[MatrixFriend] 发送好友请求: ${userId}`)
     })
 
-    this.friendManager.on(FriendEvent.Accepted, (userId: string) => {
+    this.friendManager.on(FriendEvent.Accepted, (...args: unknown[]) => {
+      const userId = this.toUserId(args[0])
+      if (!userId) return
       this.updateSyncState()
       this.emit('requestAccepted', userId)
       info(`[MatrixFriend] 好友请求已接受: ${userId}`)
     })
 
-    this.friendManager.on(FriendEvent.Rejected, (userId: string) => {
+    this.friendManager.on(FriendEvent.Rejected, (...args: unknown[]) => {
+      const userId = this.toUserId(args[0])
+      if (!userId) return
       this.updateSyncState()
       this.emit('requestRejected', userId)
       info(`[MatrixFriend] 好友请求已拒绝: ${userId}`)
     })
 
-    this.friendManager.on(FriendEvent.Cancelled, (userId: string) => {
+    this.friendManager.on(FriendEvent.Cancelled, (...args: unknown[]) => {
+      const userId = this.toUserId(args[0])
+      if (!userId) return
       this.updateSyncState()
       this.emit('requestCancelled', userId)
       info(`[MatrixFriend] 好友请求已取消: ${userId}`)
