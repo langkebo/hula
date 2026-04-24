@@ -159,7 +159,7 @@ const fontOptions = useFontOptions()
 
 const showText = computed({
   get: () => showMode.value === ShowModeEnum.TEXT,
-  set: async (v: any) => {
+  set: async (v: boolean) => {
     settingStore.setShowMode(v ? ShowModeEnum.TEXT : ShowModeEnum.ICON)
     await setHomeHeight()
     await emitTo(appWindow.label, 'startResize')

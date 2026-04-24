@@ -282,19 +282,19 @@ function loadSavedSettings() {
   if (savedAutoGain) autoGainControl.value = savedAutoGain === 'true'
 }
 
-function onAudioInputConfirm({ selectedOptions }: any) {
+function onAudioInputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
   audioInputId.value = selectedOptions[0].value
   localStorage.setItem('hula-audio-input', audioInputId.value!)
   showAudioInputPicker.value = false
 }
 
-function onAudioOutputConfirm({ selectedOptions }: any) {
+function onAudioOutputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
   audioOutputId.value = selectedOptions[0].value
   localStorage.setItem('hula-audio-output', audioOutputId.value!)
   showAudioOutputPicker.value = false
 }
 
-function onVideoInputConfirm({ selectedOptions }: any) {
+function onVideoInputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
   videoInputId.value = selectedOptions[0].value
   localStorage.setItem('hula-video-input', videoInputId.value!)
   showVideoInputPicker.value = false

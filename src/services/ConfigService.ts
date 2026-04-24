@@ -9,7 +9,7 @@ export interface IceServerConfig {
 
 export interface AppConfig {
   iceServer?: IceServerConfig
-  [key: string]: any
+  [key: string]: unknown
 }
 
 /**

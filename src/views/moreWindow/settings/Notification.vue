@@ -331,12 +331,12 @@ const batchSetNotification = async (type: NotificationChangeKey) => {
             name: session.name,
             success: true
           })
-        } catch (error: any) {
+        } catch (error) {
           processingResults.value.push({
             roomId,
             name: session.name,
             success: false,
-            error: error.message || t('setting.notice.setup_fail')
+            error: error instanceof Error ? error.message : t('setting.notice.setup_fail')
           })
         }
       }

@@ -184,8 +184,8 @@ onMounted(async () => {
 
     await Promise.all(
       groupSessions
-        .filter((session: any) => session.roomId !== globalStore.currentSessionRoomId)
-        .map((session: any) => groupStore.getGroupUserList(session.roomId))
+        .filter((session) => session.roomId !== globalStore.currentSessionRoomId)
+        .map((session) => groupStore.getGroupUserList(session.roomId))
     )
   } catch (error) {
     logger.error('加载用户信息失败:', error)

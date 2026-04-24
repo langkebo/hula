@@ -29,7 +29,7 @@ const timerManager = useTimerManager()
 
 interface ScanData {
   type: string // 必须有
-  [key: string]: any // 允许有其他任意字段
+  [key: string]: unknown // 允许有其他任意字段
 }
 
 const handleScanLogin = async (data: ScanData) => {
@@ -53,7 +53,7 @@ const handleScanLogin = async (data: ScanData) => {
       expireTime: qrResult?.expireTime || '',
       deviceType: qrResult?.deviceType || '',
       locPlace: qrResult?.locPlace || '',
-      qrId
+      qrId: qrId as string
     }
   })
 }

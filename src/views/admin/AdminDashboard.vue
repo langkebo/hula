@@ -70,12 +70,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  adminService,
-  type ServerStats,
-  type ServerHealth,
-  type ServerVersion
-} from '@/services/matrix/admin/MatrixAdminService'
+import { adminService, type ServerStats, type ServerHealth, type ServerVersion } from '@/services/matrix'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
 

@@ -170,7 +170,7 @@ export const renderLabel = (({ option }: { option: SelectOption }) => {
       <div style={{ display: 'flex', marginLeft: '12px', alignSelf: 'center', fontSize: '14px' }}>{option.label}</div>
     </div>
   )
-}) as any as TransferRenderTargetLabel
+}) as unknown as TransferRenderTargetLabel
 
 // 创建自定义的目标列表渲染函数
 export const renderTargetList = (
@@ -188,7 +188,7 @@ export const renderTargetList = (
     return (
       <div>
         {placeholder && <div class="text-(12px [--chat-text-color]) pb-6px">{placeholder}</div>}
-        {(displayOptions as SelectOption[]).map((option: any) => {
+        {(displayOptions as SelectOption[]).map((option) => {
           const isPreSelected = enablePreSelection && option.value === preSelectedFriendId
 
           return (
@@ -226,8 +226,8 @@ export const renderTargetList = (
                     color: '#909090'
                   }}
                   onClick={() => {
-                    const newCheckedOptions = checkedOptions.filter((o: any) => o.value !== option.value)
-                    onCheck(newCheckedOptions.map((o: any) => o.value))
+                    const newCheckedOptions = checkedOptions.filter((o) => o.value !== option.value)
+                    onCheck(newCheckedOptions.map((o) => o.value))
                   }}>
                   <use href="#close"></use>
                 </svg>

@@ -206,8 +206,8 @@ const openEditInfo = () => {
   editInfo.value.content = userStore.userInfo!
   localUserInfo.value = { ...userStore.userInfo! }
   /** 获取徽章列表 */
-  badgeService.getBadgeList().then((res: any) => {
-    editInfo.value.badgeList = res
+  badgeService.getBadgeList().then((res) => {
+    editInfo.value.badgeList = res as unknown as typeof editInfo.value.badgeList
   })
 }
 

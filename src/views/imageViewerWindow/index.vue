@@ -378,7 +378,7 @@ onMounted(async () => {
   await getCurrentWebviewWindow().show()
 
   await addListener(
-    appWindow.listen('update-image', (event: any) => {
+    appWindow.listen<{ index: number }>('update-image', (event) => {
       const { index } = event.payload
       imageList.value = imageViewerStore.imageList
       syncCurrentIndex(index)

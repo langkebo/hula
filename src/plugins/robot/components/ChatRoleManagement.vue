@@ -267,8 +267,10 @@ const formData = ref({
   status: 0
 })
 
+type SelectOption = { label: string; value: string | number }
+
 // 类别选项（默认选项）
-const categoryOptions = ref<any[]>([
+const categoryOptions = ref<SelectOption[]>([
   { label: 'AI助手', value: 'AI助手' },
   { label: '写作', value: '写作' },
   { label: '编程开发', value: '编程开发' },
@@ -282,7 +284,7 @@ const categoryOptions = ref<any[]>([
 ])
 
 // 模型选项
-const modelOptions = ref<any[]>([])
+const modelOptions = ref<SelectOption[]>([])
 
 // 状态选项
 const statusOptions = [
@@ -470,7 +472,7 @@ const handleSubmit = async () => {
     // 通知左侧刷新角色状态
     useMitt.emit('refresh-roles')
   } catch (error) {
-    if ((error as any)?.errors) {
+    if ((error as { errors?: unknown })?.errors) {
       return
     }
     logger.error('保存角色失败:', error)

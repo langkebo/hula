@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import type { ComponentPublicInstance } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import NotificationSettings from '../NotificationSettings.vue'
 
@@ -6,6 +7,36 @@ const messageSuccessMock = vi.fn()
 const messageWarningMock = vi.fn()
 const setMessageSoundEnabledMock = vi.fn()
 const setNotificationVolumeMock = vi.fn()
+
+type NotificationSettingsVm = ComponentPublicInstance & {
+  desktopNotification: boolean
+  showMessageContent: boolean
+  showSenderName: boolean
+  keywords: string[]
+  keywordNotification: boolean
+  newKeyword: string
+  threadReplyNotify: boolean
+  threadParticipateNotify: boolean
+  threadMentionNotify: boolean
+  spaceNewRoomNotify: boolean
+  spaceMemberChangeNotify: boolean
+  friendRequestNotify: boolean
+  friendAcceptNotify: boolean
+  addKeyword: () => void
+  removeKeyword: (keyword: string) => void
+  handleContentChange: (value: boolean) => void
+  handleSenderChange: (value: boolean) => void
+  handleKeywordToggle: (value: boolean) => void
+  handleSoundChange: (value: boolean) => void
+  handleVolumeChange: (value: number) => void
+  handleThreadReplyNotify: (value: boolean) => void
+  handleThreadParticipateNotify: (value: boolean) => void
+  handleThreadMentionNotify: (value: boolean) => void
+  handleSpaceNewRoomNotify: (value: boolean) => void
+  handleSpaceMemberChangeNotify: (value: boolean) => void
+  handleFriendRequestNotify: (value: boolean) => void
+  handleFriendAcceptNotify: (value: boolean) => void
+}
 
 vi.mock('naive-ui', () => ({
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
@@ -26,12 +57,14 @@ vi.mock('pinia', () => ({
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({
     notification: { messageSound: true, volume: 80 },
-    setMessageSoundEnabled: (...args: any[]) => setMessageSoundEnabledMock(...args),
-    setNotificationVolume: (...args: any[]) => setNotificationVolumeMock(...args)
+    setMessageSoundEnabled: (value: boolean) => setMessageSoundEnabledMock(value),
+    setNotificationVolume: (value: number) => setNotificationVolumeMock(value)
   })
 }))
 
 describe('NotificationSettings', () => {
+  const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as NotificationSettingsVm
+
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
@@ -45,70 +78,70 @@ describe('NotificationSettings', () => {
 
   it('has desktop notification enabled by default', () => {
     const wrapper = mount(NotificationSettings)
-    expect((wrapper.vm as any).desktopNotification).toBe(true)
+    expect(getVm(wrapper).desktopNotification).toBe(true)
   })
 
   it('loads desktop notification from localStorage', () => {
     localStorage.setItem('hula-desktop-notification', 'false')
     const wrapper = mount(NotificationSettings)
-    expect((wrapper.vm as any).desktopNotification).toBe(false)
+    expect(getVm(wrapper).desktopNotification).toBe(false)
   })
 
   it('loads message content setting from localStorage', () => {
     localStorage.setItem('hula-show-content', 'false')
     const wrapper = mount(NotificationSettings)
-    expect((wrapper.vm as any).showMessageContent).toBe(false)
+    expect(getVm(wrapper).showMessageContent).toBe(false)
   })
 
   it('loads sender name setting from localStorage', () => {
     localStorage.setItem('hula-show-sender', 'false')
     const wrapper = mount(NotificationSettings)
-    expect((wrapper.vm as any).showSenderName).toBe(false)
+    expect(getVm(wrapper).showSenderName).toBe(false)
   })
 
   it('loads keywords from localStorage', () => {
     localStorage.setItem('hula-keywords', JSON.stringify(['urgent', 'important']))
     const wrapper = mount(NotificationSettings)
-    expect((wrapper.vm as any).keywords).toEqual(['urgent', 'important'])
+    expect(getVm(wrapper).keywords).toEqual(['urgent', 'important'])
   })
 
   it('loads keyword notification from localStorage', () => {
     localStorage.setItem('hula-keyword-notification', 'true')
     const wrapper = mount(NotificationSettings)
-    expect((wrapper.vm as any).keywordNotification).toBe(true)
+    expect(getVm(wrapper).keywordNotification).toBe(true)
   })
 
   it('adds keyword and saves to localStorage', () => {
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.newKeyword = 'test-keyword'
     vm.addKeyword()
-    expect((wrapper.vm as any).keywords).toContain('test-keyword')
+    expect(vm.keywords).toContain('test-keyword')
     expect(JSON.parse(localStorage.getItem('hula-keywords')!)).toContain('test-keyword')
-    expect((wrapper.vm as any).newKeyword).toBe('')
+    expect(vm.newKeyword).toBe('')
   })
 
   it('does not add duplicate keyword', () => {
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.keywords = ['existing']
     vm.newKeyword = 'existing'
     vm.addKeyword()
-    expect((wrapper.vm as any).keywords).toHaveLength(1)
+    expect(vm.keywords).toHaveLength(1)
   })
 
   it('removes keyword and saves to localStorage', () => {
     localStorage.setItem('hula-keywords', JSON.stringify(['a', 'b', 'c']))
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.removeKeyword('b')
-    expect((wrapper.vm as any).keywords).not.toContain('b')
-    expect((wrapper.vm as any).keywords).toHaveLength(2)
+    expect(vm.keywords).not.toContain('b')
+    expect(vm.keywords).toHaveLength(2)
   })
 
   it('saves content visibility to localStorage', () => {
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleContentChange(false)
     expect(localStorage.getItem('hula-show-content')).toBe('false')
     expect(messageSuccessMock).toHaveBeenCalled()
@@ -116,28 +149,28 @@ describe('NotificationSettings', () => {
 
   it('saves sender visibility to localStorage', () => {
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleSenderChange(false)
     expect(localStorage.getItem('hula-show-sender')).toBe('false')
   })
 
   it('saves keyword toggle to localStorage', () => {
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleKeywordToggle(true)
     expect(localStorage.getItem('hula-keyword-notification')).toBe('true')
   })
 
   it('calls settingStore on sound change', () => {
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleSoundChange(false)
     expect(setMessageSoundEnabledMock).toHaveBeenCalledWith(false)
   })
 
   it('calls settingStore on volume change', () => {
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleVolumeChange(50)
     expect(setNotificationVolumeMock).toHaveBeenCalledWith(50)
   })
@@ -147,14 +180,15 @@ describe('NotificationSettings', () => {
     localStorage.setItem('hula-thread-participate-notify', 'false')
     localStorage.setItem('hula-thread-mention-notify', 'false')
     const wrapper = mount(NotificationSettings)
-    expect((wrapper.vm as any).threadReplyNotify).toBe(false)
-    expect((wrapper.vm as any).threadParticipateNotify).toBe(false)
-    expect((wrapper.vm as any).threadMentionNotify).toBe(false)
+    const vm = getVm(wrapper)
+    expect(vm.threadReplyNotify).toBe(false)
+    expect(vm.threadParticipateNotify).toBe(false)
+    expect(vm.threadMentionNotify).toBe(false)
   })
 
   it('saves thread notification settings to localStorage', () => {
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleThreadReplyNotify(false)
     expect(localStorage.getItem('hula-thread-reply-notify')).toBe('false')
     vm.handleThreadParticipateNotify(false)
@@ -167,13 +201,14 @@ describe('NotificationSettings', () => {
     localStorage.setItem('hula-space-new-room-notify', 'false')
     localStorage.setItem('hula-space-member-change-notify', 'true')
     const wrapper = mount(NotificationSettings)
-    expect((wrapper.vm as any).spaceNewRoomNotify).toBe(false)
-    expect((wrapper.vm as any).spaceMemberChangeNotify).toBe(true)
+    const vm = getVm(wrapper)
+    expect(vm.spaceNewRoomNotify).toBe(false)
+    expect(vm.spaceMemberChangeNotify).toBe(true)
   })
 
   it('saves space notification settings to localStorage', () => {
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleSpaceNewRoomNotify(false)
     expect(localStorage.getItem('hula-space-new-room-notify')).toBe('false')
     vm.handleSpaceMemberChangeNotify(true)
@@ -184,13 +219,14 @@ describe('NotificationSettings', () => {
     localStorage.setItem('hula-friend-request-notify', 'false')
     localStorage.setItem('hula-friend-accept-notify', 'false')
     const wrapper = mount(NotificationSettings)
-    expect((wrapper.vm as any).friendRequestNotify).toBe(false)
-    expect((wrapper.vm as any).friendAcceptNotify).toBe(false)
+    const vm = getVm(wrapper)
+    expect(vm.friendRequestNotify).toBe(false)
+    expect(vm.friendAcceptNotify).toBe(false)
   })
 
   it('saves friend notification settings to localStorage', () => {
     const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleFriendRequestNotify(false)
     expect(localStorage.getItem('hula-friend-request-notify')).toBe('false')
     vm.handleFriendAcceptNotify(false)

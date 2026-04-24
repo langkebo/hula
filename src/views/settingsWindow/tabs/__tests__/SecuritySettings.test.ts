@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import type { ComponentPublicInstance } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SecuritySettings from '../SecuritySettings.vue'
 
@@ -15,6 +16,30 @@ const getKeyBackupInfoMock = vi.fn().mockResolvedValue(null)
 const isSecretChatConfiguredMock = vi.fn().mockReturnValue(false)
 const setSecretChatPasswordMock = vi.fn()
 const clearSecretChatPasswordMock = vi.fn()
+
+type SecuritySettingsVm = ComponentPublicInstance & {
+  encryptionEnabled: boolean
+  blockedUsers: string[]
+  inviteBlocklist: string[]
+  inviteAllowlist: string[]
+  showOnlineStatus: boolean
+  showTypingStatus: boolean
+  sendReadReceipts: boolean
+  newBlockedUser: string
+  newBlocklistUser: string
+  secretChatForm: {
+    password: string
+    confirmPassword: string
+  }
+  handleOnlineStatusChange: (value: boolean) => void
+  handleTypingStatusChange: (value: boolean) => void
+  handleAddBlocked: () => void
+  handleUnblock: (userId: string) => void
+  handleAddInviteBlocklist: () => void
+  handleRemoveInviteAllowlist: (userId: string) => void
+  handleClearSecretChat: () => void
+  handleSaveSecretChat: () => Promise<void>
+}
 
 vi.mock('naive-ui', () => ({
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['size', 'type', 'loading'] },
@@ -38,7 +63,7 @@ vi.mock('@iconify/vue', () => ({
 vi.mock('@/services/matrix', () => ({
   matrixAccountService: {
     getIgnoredUsers: () => getIgnoredUsersMock(),
-    setIgnoredUsers: (...args: any[]) => setIgnoredUsersMock(...args)
+    setIgnoredUsers: (userIds: string[]) => setIgnoredUsersMock(userIds)
   },
   matrixEncryptionService: {
     isEncryptionAvailable: () => isEncryptionAvailableMock(),
@@ -50,7 +75,7 @@ vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({
     secretChat: { password: null },
     isSecretChatConfigured: () => isSecretChatConfiguredMock(),
-    setSecretChatPassword: (...args: any[]) => setSecretChatPasswordMock(...args),
+    setSecretChatPassword: (password: string) => setSecretChatPasswordMock(password),
     clearSecretChatPassword: () => clearSecretChatPasswordMock()
   })
 }))
@@ -64,6 +89,8 @@ vi.mock('@/utils/Logger', () => ({
 }))
 
 describe('SecuritySettings', () => {
+  const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as SecuritySettingsVm
+
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
@@ -83,7 +110,7 @@ describe('SecuritySettings', () => {
   it('shows encryption disabled state by default', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).encryptionEnabled).toBe(false)
+    expect(getVm(wrapper).encryptionEnabled).toBe(false)
     expect(wrapper.text()).toContain('端到端加密未启用')
   })
 
@@ -91,12 +118,12 @@ describe('SecuritySettings', () => {
     isEncryptionAvailableMock.mockResolvedValue(true)
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).encryptionEnabled).toBe(true)
+    expect(getVm(wrapper).encryptionEnabled).toBe(true)
   })
 
   it('loads ignored users on mount', async () => {
     getIgnoredUsersMock.mockResolvedValue(['@user1:test.com', '@user2:test.com'])
-    const _wrapper = mount(SecuritySettings)
+    mount(SecuritySettings)
     await vi.dynamicImportSettled()
     expect(getIgnoredUsersMock).toHaveBeenCalled()
   })
@@ -105,7 +132,7 @@ describe('SecuritySettings', () => {
     localStorage.setItem('hula-blocked-users', JSON.stringify(['@blocked:test.com']))
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).blockedUsers).toContain('@blocked:test.com')
+    expect(getVm(wrapper).blockedUsers).toContain('@blocked:test.com')
   })
 
   it('loads invite lists from localStorage', async () => {
@@ -113,8 +140,9 @@ describe('SecuritySettings', () => {
     localStorage.setItem('hula-invite-allowlist', JSON.stringify(['@allow:test.com']))
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).inviteBlocklist).toContain('@block:test.com')
-    expect((wrapper.vm as any).inviteAllowlist).toContain('@allow:test.com')
+    const vm = getVm(wrapper)
+    expect(vm.inviteBlocklist).toContain('@block:test.com')
+    expect(vm.inviteAllowlist).toContain('@allow:test.com')
   })
 
   it('loads privacy settings from localStorage', async () => {
@@ -123,15 +151,16 @@ describe('SecuritySettings', () => {
     localStorage.setItem('hula-send-receipts', 'false')
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).showOnlineStatus).toBe(false)
-    expect((wrapper.vm as any).showTypingStatus).toBe(false)
-    expect((wrapper.vm as any).sendReadReceipts).toBe(false)
+    const vm = getVm(wrapper)
+    expect(vm.showOnlineStatus).toBe(false)
+    expect(vm.showTypingStatus).toBe(false)
+    expect(vm.sendReadReceipts).toBe(false)
   })
 
   it('saves online status to localStorage', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleOnlineStatusChange(false)
     expect(localStorage.getItem('hula-show-online')).toBe('false')
     expect(messageSuccessMock).toHaveBeenCalled()
@@ -140,7 +169,7 @@ describe('SecuritySettings', () => {
   it('saves typing status to localStorage', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleTypingStatusChange(false)
     expect(localStorage.getItem('hula-show-typing')).toBe('false')
   })
@@ -148,7 +177,7 @@ describe('SecuritySettings', () => {
   it('adds blocked user and saves to localStorage', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.newBlockedUser = '@newblocked:test.com'
     vm.handleAddBlocked()
     expect(vm.blockedUsers).toContain('@newblocked:test.com')
@@ -160,7 +189,7 @@ describe('SecuritySettings', () => {
     localStorage.setItem('hula-blocked-users', JSON.stringify(['@dup:test.com']))
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.newBlockedUser = '@dup:test.com'
     vm.handleAddBlocked()
     expect(messageWarningMock).toHaveBeenCalledWith('该用户已在屏蔽列表中')
@@ -170,7 +199,7 @@ describe('SecuritySettings', () => {
     localStorage.setItem('hula-blocked-users', JSON.stringify(['@rm:test.com', '@keep:test.com']))
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleUnblock('@rm:test.com')
     expect(vm.blockedUsers).not.toContain('@rm:test.com')
     expect(vm.blockedUsers).toContain('@keep:test.com')
@@ -179,7 +208,7 @@ describe('SecuritySettings', () => {
   it('adds user to invite blocklist', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.newBlocklistUser = '@blockuser:test.com'
     vm.handleAddInviteBlocklist()
     expect(vm.inviteBlocklist).toContain('@blockuser:test.com')
@@ -190,7 +219,7 @@ describe('SecuritySettings', () => {
     localStorage.setItem('hula-invite-allowlist', JSON.stringify(['@rm:test.com', '@keep:test.com']))
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleRemoveInviteAllowlist('@rm:test.com')
     expect(vm.inviteAllowlist).not.toContain('@rm:test.com')
   })
@@ -198,7 +227,7 @@ describe('SecuritySettings', () => {
   it('clears secret chat triggers dialog', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleClearSecretChat()
     expect(dialogWarningMock).toHaveBeenCalledWith(expect.objectContaining({ title: '确认清除' }))
   })
@@ -207,7 +236,7 @@ describe('SecuritySettings', () => {
     isSecretChatConfiguredMock.mockReturnValue(true)
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.secretChatForm.password = '1234'
     vm.secretChatForm.confirmPassword = '1234'
     await vm.handleSaveSecretChat()
@@ -217,7 +246,7 @@ describe('SecuritySettings', () => {
   it('rejects mismatched secret chat passwords', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.secretChatForm.password = '1234'
     vm.secretChatForm.confirmPassword = '5678'
     await vm.handleSaveSecretChat()
@@ -227,7 +256,7 @@ describe('SecuritySettings', () => {
   it('rejects short secret chat password', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.secretChatForm.password = '12'
     vm.secretChatForm.confirmPassword = '12'
     await vm.handleSaveSecretChat()

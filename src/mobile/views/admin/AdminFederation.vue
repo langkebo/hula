@@ -30,7 +30,11 @@
             <van-swipe-cell v-for="item in admin.blacklist.value" :key="item.domain">
               <van-cell :title="item.domain" :label="item.reason" />
               <template #right>
-                <van-button square type="danger" :text="t('admin.remove')" @click="handleRemoveBlacklist(item.domain)" />
+                <van-button
+                  square
+                  type="danger"
+                  :text="t('admin.remove')"
+                  @click="handleRemoveBlacklist(item.domain)" />
               </template>
             </van-swipe-cell>
           </van-cell-group>
@@ -44,10 +48,18 @@
           <van-cell-group>
             <van-cell
               :title="t('admin.last_failure')"
-              :value="admin.selectedDestination.value.failureTs ? new Date(admin.selectedDestination.value.failureTs).toLocaleString() : '-'" />
+              :value="
+                admin.selectedDestination.value.failureTs
+                  ? new Date(admin.selectedDestination.value.failureTs).toLocaleString()
+                  : '-'
+              " />
             <van-cell
               :title="t('admin.retry_interval')"
-              :value="admin.selectedDestination.value.retryInterval ? `${admin.selectedDestination.value.retryInterval}ms` : '-'" />
+              :value="
+                admin.selectedDestination.value.retryInterval
+                  ? `${admin.selectedDestination.value.retryInterval}ms`
+                  : '-'
+              " />
           </van-cell-group>
           <div class="dest-actions">
             <van-button type="primary" block @click="handleReset">{{ t('admin.reset_connection') }}</van-button>
@@ -74,7 +86,7 @@ import { useI18n } from 'vue-i18n'
 import { showToast } from 'vant'
 import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminFederation } from '@/composables/admin'
-import type { FederationDestination } from '@/services/matrix/admin/MatrixAdminService'
+import type { FederationDestination } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminFederation')

@@ -9,6 +9,17 @@ export interface ReactionInfo {
   users: string[]
 }
 
+type ReactionRelatesTo = {
+  rel_type?: string
+  event_id?: string
+  key?: string
+}
+
+type ReactionContent = {
+  'm.relates_to'?: ReactionRelatesTo
+  [key: string]: unknown
+}
+
 class MatrixReactionService {
   async addReaction(roomId: string, eventId: string, emoji: string): Promise<string> {
     const client = matrixClientService.getClient()
@@ -93,7 +104,7 @@ class MatrixReactionService {
 
     for (const event of events) {
       if (event.getType() === 'm.reaction') {
-        const content = event.getContent() as Record<string, any>
+        const content = event.getContent() as ReactionContent
         const relatesTo = content['m.relates_to']
         if (
           relatesTo?.rel_type === 'm.annotation' &&
@@ -124,7 +135,7 @@ class MatrixReactionService {
 
     for (const event of events) {
       if (event.getType() === 'm.reaction') {
-        const content = event.getContent() as Record<string, any>
+        const content = event.getContent() as ReactionContent
         const relatesTo = content['m.relates_to']
         if (relatesTo?.rel_type === 'm.annotation' && relatesTo.event_id === eventId) {
           const key = relatesTo.key
@@ -171,7 +182,7 @@ class MatrixReactionService {
 
     for (const event of events) {
       if (event.getType() === 'm.reaction') {
-        const content = event.getContent() as Record<string, any>
+        const content = event.getContent() as ReactionContent
         const relatesTo = content['m.relates_to']
         if (relatesTo?.rel_type === 'm.annotation' && relatesTo.event_id === eventId) {
           reactions.push(event)

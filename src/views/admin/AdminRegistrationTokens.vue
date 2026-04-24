@@ -23,7 +23,11 @@
           <n-input v-model:value="createForm.token" :placeholder="t('admin.registration_tokens.token_auto')" />
         </n-form-item>
         <n-form-item :label="t('admin.registration_tokens.uses_allowed')">
-          <n-input-number v-model:value="createForm.usesAllowed" :min="0" :placeholder="t('admin.registration_tokens.unlimited')" style="width: 100%" />
+          <n-input-number
+            v-model:value="createForm.usesAllowed"
+            :min="0"
+            :placeholder="t('admin.registration_tokens.unlimited')"
+            style="width: 100%" />
         </n-form-item>
         <n-form-item :label="t('admin.registration_tokens.expiry_time')">
           <n-date-picker v-model:value="createForm.expiryTime" type="datetime" clearable style="width: 100%" />
@@ -45,7 +49,7 @@
 import { ref, h, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMessage, NButton, NSpace, NTag } from 'naive-ui'
-import type { RegistrationToken } from '@/services/matrix/admin/MatrixAdminService'
+import type { RegistrationToken } from '@/services/matrix'
 import { useAdminRegistrationTokens } from '@/composables/admin'
 
 const { t } = useI18n()

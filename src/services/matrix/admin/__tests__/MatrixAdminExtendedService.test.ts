@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { adminService } from '../MatrixAdminService'
+import { adminService } from '..'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -7,7 +7,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-describe('MatrixAdminService Extended', () => {
+describe('adminService facade fallbacks', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -18,7 +18,7 @@ describe('MatrixAdminService Extended', () => {
       // `AdminManager.listSpaces`. Under this spy harness the private
       // `sdkAdmin()` gate fails (no real Matrix client), so the service falls
       // through its catch arm and returns the empty sentinel. The full-path
-      // behavior is exercised in `MatrixAdminService.test.ts`.
+      // behavior is exercised in the primary facade test file.
       const result = await adminService.adminGetSpaces(20, 'from_token')
       expect(result.spaces).toEqual([])
     })
@@ -79,8 +79,8 @@ describe('MatrixAdminService Extended', () => {
       // `AdminManager.listAuditEvents`. Under this spy harness the private
       // `sdkAdmin()` gate fails (no real Matrix client), so the service falls
       // through its catch arm and returns the empty sentinel. That is the
-      // contract we want to lock in here — the full-path parsing behavior is
-      // covered in `MatrixAdminService.test.ts` where the SDK manager is
+      // contract we want to lock in here; the full-path parsing behavior is
+      // covered in the primary facade test file where the SDK manager is
       // fully mocked.
       const result = await adminService.getAuditLog()
       expect(result.logs).toEqual([])

@@ -397,7 +397,7 @@ const translateStateTitle = (title?: string) => {
   return translated === key ? title : translated
 }
 
-appWindow.listen('announcementUpdated', async (event: any) => {
+appWindow.listen<{ hasAnnouncements?: boolean }>('announcementUpdated', async (event) => {
   if (event.payload) {
     const { hasAnnouncements } = event.payload
     if (hasAnnouncements) {
@@ -412,7 +412,7 @@ onMounted(async () => {
   // 通知父级：Sidebar 已挂载，可移除占位
   emit('ready')
 
-  useMitt.on(`${MittEnum.INFO_POPOVER}-Sidebar`, (event: any) => {
+  useMitt.on(`${MittEnum.INFO_POPOVER}-Sidebar`, (event: { uid: string }) => {
     selectKey.value = event.uid
     infoPopoverRefs.value[event.uid]?.setShow(true)
     handlePopoverUpdate(event.uid)
@@ -452,7 +452,7 @@ onMounted(async () => {
       groupStore.updateMemberCache(currentRoom, matrixMembers)
     }
     const handleAnnounInitOnEvent = (shouldReload: boolean) => {
-      return async (event: any) => {
+      return async (event: unknown) => {
         if (shouldReload || event) {
           await announcementStore.loadGroupAnnouncements()
         }

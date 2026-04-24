@@ -233,7 +233,7 @@ const userDetailInfo = ref<UserItem | UserInfoType | undefined>({
   resume: ''
 })
 
-const friendUserState = ref<any>({
+const friendUserState = ref<{ title: string; url: string; id?: string }>({
   title: '',
   url: ''
 })

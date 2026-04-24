@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
-import { adminService } from '../MatrixAdminService'
+import { adminService } from '..'
 import { invoke } from '@tauri-apps/api/core'
 
 vi.mock('../../MatrixClientService', () => ({
@@ -19,7 +19,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-describe('MatrixAdminService', () => {
+describe('adminService facade', () => {
   let mockAdminManager: Record<string, ReturnType<typeof vi.fn>>
 
   beforeEach(() => {

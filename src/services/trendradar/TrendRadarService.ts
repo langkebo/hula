@@ -161,10 +161,13 @@ class TrendRadarService {
 
   async getLatestNews(platforms?: string[], limit: number = 10): Promise<TrendRadarSearchResult> {
     try {
-      const result = await this.callTool<{ news?: TrendRadarNews[]; total?: number } | TrendRadarNews[]>('get_latest_news', {
-        platforms: platforms || ['知乎', '今日头条', '百度热搜'],
-        limit
-      })
+      const result = await this.callTool<{ news?: TrendRadarNews[]; total?: number } | TrendRadarNews[]>(
+        'get_latest_news',
+        {
+          platforms: platforms || ['知乎', '今日头条', '百度热搜'],
+          limit
+        }
+      )
       const news = getArrayField<TrendRadarNews>(result, 'news') ?? (Array.isArray(result) ? result : [])
       return {
         news,
@@ -178,10 +181,13 @@ class TrendRadarService {
 
   async searchNews(keyword: string, limit: number = 10): Promise<TrendRadarSearchResult> {
     try {
-      const result = await this.callTool<{ news?: TrendRadarNews[]; total?: number } | TrendRadarNews[]>('search_news', {
-        keyword,
-        limit
-      })
+      const result = await this.callTool<{ news?: TrendRadarNews[]; total?: number } | TrendRadarNews[]>(
+        'search_news',
+        {
+          keyword,
+          limit
+        }
+      )
       const news = getArrayField<TrendRadarNews>(result, 'news') ?? (Array.isArray(result) ? result : [])
       return {
         news,
@@ -195,7 +201,9 @@ class TrendRadarService {
 
   async getTrendingTopics(limit: number = 10): Promise<TrendRadarTopic[]> {
     try {
-      const result = await this.callTool<{ topics?: TrendRadarTopic[] } | TrendRadarTopic[]>('get_trending_topics', { limit })
+      const result = await this.callTool<{ topics?: TrendRadarTopic[] } | TrendRadarTopic[]>('get_trending_topics', {
+        limit
+      })
       return getArrayField<TrendRadarTopic>(result, 'topics') ?? (Array.isArray(result) ? result : [])
     } catch (err) {
       error(`[TrendRadar] Failed to get trending topics: ${err}`)
@@ -205,10 +213,13 @@ class TrendRadarService {
 
   async getLatestRss(feeds?: string[], limit: number = 10): Promise<TrendRadarRssArticle[]> {
     try {
-      const result = await this.callTool<{ articles?: TrendRadarRssArticle[] } | TrendRadarRssArticle[]>('get_latest_rss', {
-        feeds: feeds || [],
-        limit
-      })
+      const result = await this.callTool<{ articles?: TrendRadarRssArticle[] } | TrendRadarRssArticle[]>(
+        'get_latest_rss',
+        {
+          feeds: feeds || [],
+          limit
+        }
+      )
       return getArrayField<TrendRadarRssArticle>(result, 'articles') ?? (Array.isArray(result) ? result : [])
     } catch (err) {
       error(`[TrendRadar] Failed to get RSS updates: ${err}`)

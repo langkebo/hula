@@ -1,5 +1,7 @@
 import { mount } from '@vue/test-utils'
+import type { ComponentPublicInstance } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { DeviceInfo } from '@/services/matrix/user/MatrixAccountService'
 import SessionSettings from '../SessionSettings.vue'
 
 const messageSuccessMock = vi.fn()
@@ -11,6 +13,30 @@ const getDevicesMock = vi.fn().mockResolvedValue([])
 const setDeviceNameMock = vi.fn().mockResolvedValue(undefined)
 const deleteDeviceMock = vi.fn().mockResolvedValue(undefined)
 const deleteDevicesMock = vi.fn().mockResolvedValue(undefined)
+
+type SessionSettingsVm = ComponentPublicInstance & {
+  currentDevice?: DeviceInfo
+  otherDevices: DeviceInfo[]
+  renameDialogVisible: boolean
+  newDeviceName: string
+  editingDevice: DeviceInfo | null
+  showRenameDialog: (device?: DeviceInfo) => void
+  handleRenameDevice: () => Promise<void>
+  handleDeleteDevice: (device: DeviceInfo) => void
+  handleLogoutAllDevices: () => void
+  getDeviceIcon: (device: Partial<DeviceInfo>) => string
+  formatDate: (timestamp: number) => string
+}
+
+const createDevice = (overrides: Partial<DeviceInfo> = {}): DeviceInfo => ({
+  deviceId: 'DEV1',
+  userId: '@user:example.com',
+  displayName: 'Device 1',
+  lastSeenIp: '',
+  lastSeenTs: 0,
+  lastSeenUserAgent: '',
+  ...overrides
+})
 
 vi.mock('naive-ui', () => ({
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['size', 'type', 'loading', 'disabled'] },
@@ -32,9 +58,9 @@ vi.mock('@iconify/vue', () => ({
 vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   matrixAccountService: {
     getDevices: () => getDevicesMock(),
-    setDeviceName: (...args: any[]) => setDeviceNameMock(...args),
-    deleteDevice: (...args: any[]) => deleteDeviceMock(...args),
-    deleteDevices: (...args: any[]) => deleteDevicesMock(...args)
+    setDeviceName: (deviceId: string, displayName: string) => setDeviceNameMock(deviceId, displayName),
+    deleteDevice: (deviceId: string) => deleteDeviceMock(deviceId),
+    deleteDevices: (deviceIds: string[]) => deleteDevicesMock(deviceIds)
   }
 }))
 
@@ -45,6 +71,8 @@ vi.mock('@/stores/domains/chat/matrix', () => ({
 }))
 
 describe('SessionSettings', () => {
+  const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as SessionSettingsVm
+
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
@@ -59,14 +87,14 @@ describe('SessionSettings', () => {
   })
 
   it('loads devices on mount', async () => {
-    const _wrapper = mount(SessionSettings)
+    mount(SessionSettings)
     await vi.dynamicImportSettled()
     expect(getDevicesMock).toHaveBeenCalled()
   })
 
   it('shows error when loading devices fails', async () => {
     getDevicesMock.mockRejectedValue(new Error('fail'))
-    const _wrapper = mount(SessionSettings)
+    mount(SessionSettings)
     await vi.dynamicImportSettled()
     expect(messageErrorMock).toHaveBeenCalledWith('获取设备列表失败')
   })
@@ -78,35 +106,36 @@ describe('SessionSettings', () => {
     ])
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).currentDevice?.deviceId).toBe('CURRENT_DEVICE')
-    expect((wrapper.vm as any).otherDevices).toHaveLength(1)
-    expect((wrapper.vm as any).otherDevices[0].deviceId).toBe('OTHER_DEVICE')
+    const vm = getVm(wrapper)
+    expect(vm.currentDevice?.deviceId).toBe('CURRENT_DEVICE')
+    expect(vm.otherDevices).toHaveLength(1)
+    expect(vm.otherDevices[0].deviceId).toBe('OTHER_DEVICE')
   })
 
   it('shows rename dialog', async () => {
-    const device = { deviceId: 'DEV1', displayName: 'Device 1' }
+    const device = createDevice()
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.showRenameDialog(device)
-    expect((wrapper.vm as any).renameDialogVisible).toBe(true)
-    expect((wrapper.vm as any).newDeviceName).toBe('Device 1')
-    expect((wrapper.vm as any).editingDevice).toEqual(device)
+    expect(vm.renameDialogVisible).toBe(true)
+    expect(vm.newDeviceName).toBe('Device 1')
+    expect(vm.editingDevice).toEqual(device)
   })
 
   it('does not show rename dialog for undefined device', async () => {
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.showRenameDialog(undefined)
-    expect((wrapper.vm as any).renameDialogVisible).toBe(false)
+    expect(vm.renameDialogVisible).toBe(false)
   })
 
   it('warns when renaming with empty name', async () => {
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    vm.editingDevice = { deviceId: 'DEV1', displayName: 'Device 1' }
+    const vm = getVm(wrapper)
+    vm.editingDevice = createDevice()
     vm.newDeviceName = '  '
     await vm.handleRenameDevice()
     expect(messageWarningMock).toHaveBeenCalledWith('请输入设备名称')
@@ -116,8 +145,8 @@ describe('SessionSettings', () => {
     setDeviceNameMock.mockResolvedValue(undefined)
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    vm.editingDevice = { deviceId: 'DEV1', displayName: 'Device 1' }
+    const vm = getVm(wrapper)
+    vm.editingDevice = createDevice()
     vm.newDeviceName = 'New Name'
     await vm.handleRenameDevice()
     expect(setDeviceNameMock).toHaveBeenCalledWith('DEV1', 'New Name')
@@ -127,8 +156,8 @@ describe('SessionSettings', () => {
     setDeviceNameMock.mockRejectedValue(new Error('fail'))
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    vm.editingDevice = { deviceId: 'DEV1', displayName: 'Device 1' }
+    const vm = getVm(wrapper)
+    vm.editingDevice = createDevice()
     vm.newDeviceName = 'New Name'
     await vm.handleRenameDevice()
     expect(messageErrorMock).toHaveBeenCalledWith('重命名失败')
@@ -137,8 +166,8 @@ describe('SessionSettings', () => {
   it('shows delete device dialog', async () => {
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    vm.handleDeleteDevice({ deviceId: 'DEV1', displayName: 'Device 1' })
+    const vm = getVm(wrapper)
+    vm.handleDeleteDevice(createDevice())
     expect(dialogWarningMock).toHaveBeenCalledWith(expect.objectContaining({ title: '登出设备' }))
   })
 
@@ -150,7 +179,7 @@ describe('SessionSettings', () => {
     ])
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleLogoutAllDevices()
     expect(dialogWarningMock).toHaveBeenCalledWith(expect.objectContaining({ title: '登出所有其他设备' }))
   })
@@ -159,7 +188,7 @@ describe('SessionSettings', () => {
     getDevicesMock.mockResolvedValue([{ deviceId: 'CURRENT_DEVICE', displayName: 'Current' }])
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.handleLogoutAllDevices()
     expect(dialogWarningMock).not.toHaveBeenCalled()
   })
@@ -167,27 +196,28 @@ describe('SessionSettings', () => {
   it('getDeviceIcon returns mobile for mobile UA', async () => {
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).getDeviceIcon({ lastSeenUserAgent: 'Android Mobile' })).toBe('mdi:cellphone')
-    expect((wrapper.vm as any).getDeviceIcon({ lastSeenUserAgent: 'iPhone Safari' })).toBe('mdi:cellphone')
+    const vm = getVm(wrapper)
+    expect(vm.getDeviceIcon({ lastSeenUserAgent: 'Android Mobile' })).toBe('mdi:cellphone')
+    expect(vm.getDeviceIcon({ lastSeenUserAgent: 'iPhone Safari' })).toBe('mdi:cellphone')
   })
 
   it('getDeviceIcon returns tablet for tablet UA', async () => {
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).getDeviceIcon({ lastSeenUserAgent: 'iPad Safari' })).toBe('mdi:tablet')
+    expect(getVm(wrapper).getDeviceIcon({ lastSeenUserAgent: 'iPad Safari' })).toBe('mdi:tablet')
   })
 
   it('getDeviceIcon returns laptop for desktop UA', async () => {
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).getDeviceIcon({ lastSeenUserAgent: 'Mozilla/5.0 Windows' })).toBe('mdi:laptop')
+    expect(getVm(wrapper).getDeviceIcon({ lastSeenUserAgent: 'Mozilla/5.0 Windows' })).toBe('mdi:laptop')
   })
 
   it('formatDate returns formatted date', async () => {
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
     const ts = new Date('2025-01-15T10:30:00').getTime()
-    const result = (wrapper.vm as any).formatDate(ts)
+    const result = getVm(wrapper).formatDate(ts)
     expect(result).toBeTruthy()
     expect(typeof result).toBe('string')
   })
@@ -195,6 +225,6 @@ describe('SessionSettings', () => {
   it('formatDate returns unknown for zero timestamp', async () => {
     const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).formatDate(0)).toBe('未知')
+    expect(getVm(wrapper).formatDate(0)).toBe('未知')
   })
 })

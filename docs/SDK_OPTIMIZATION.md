@@ -124,7 +124,7 @@ const room = (client as any).getRoom(roomId)
 
 | 服务 | 优先级 | 功能 | 依据 |
 |------|---------|------|------|
-| MatrixAdminService | 高 | 管理后台操作 | MATRIX_BACKEND_SDK_BOUNDARY.md (保留独立服务) |
+| AdminFacadeService | 高 | 管理后台操作 | MATRIX_BACKEND_SDK_BOUNDARY.md (保留独立 facade) |
 | MatrixOidcService | 高 | OIDC 认证 | MATRIX_SDK_CAPABILITY_INVENTORY.md (SDK 已封装) |
 | MatrixCasService | 中 | CAS 认证 | synapse-rust 扩展认证 |
 | MatrixSamlService | 中 | SAML 认证 | synapse-rust 扩展认证 |

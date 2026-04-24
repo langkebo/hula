@@ -20,8 +20,7 @@
       :pagination="pagination"
       :row-key="(row: ServerNoticeInfo) => row.userId + (row.sentTs ?? 0)"
       striped
-      class="mt-16px"
-    />
+      class="mt-16px" />
 
     <n-modal v-model:show="showSendDialog" preset="dialog" :title="t('admin.notices.send_title')">
       <n-form :model="sendForm" label-placement="left" label-width="100px">
@@ -33,8 +32,7 @@
             v-model:value="sendForm.body"
             type="textarea"
             :rows="4"
-            :placeholder="t('admin.notices.content_placeholder')"
-          />
+            :placeholder="t('admin.notices.content_placeholder')" />
         </n-form-item>
       </n-form>
       <template #action>
@@ -60,7 +58,7 @@ import {
   type DataTableColumns
 } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import type { ServerNoticeInfo } from '@/services/matrix/admin/MatrixAdminService'
+import type { ServerNoticeInfo } from '@/services/matrix'
 import { useAdminNotices } from '@/composables/admin'
 import { createLogger } from '@/utils/Logger'
 

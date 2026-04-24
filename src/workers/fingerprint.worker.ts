@@ -54,9 +54,10 @@ const detectBrowserFeatures = async (): Promise<Record<string, boolean>> => {
 type FingerprintDeviceInfo = Record<string, unknown>
 
 // 生成设备指纹
-const generateFingerprint = async (
-  data: { deviceInfo: FingerprintDeviceInfo; browserFingerprint: string }
-): Promise<string> => {
+const generateFingerprint = async (data: {
+  deviceInfo: FingerprintDeviceInfo
+  browserFingerprint: string
+}): Promise<string> => {
   try {
     const totalStart = performance.now()
 

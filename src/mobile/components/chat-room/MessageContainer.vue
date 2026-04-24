@@ -54,7 +54,7 @@ const { t } = useI18n()
 interface MessageItem {
   id?: string
   message?: { id?: string }
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const props = withDefaults(

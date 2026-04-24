@@ -190,7 +190,9 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       const specialFriends = await matrixFriendService.getSpecialFriends()
 
       const contacts: MatrixContact[] = friends.map((friend: Friend) => {
-        const dmRoom = dmRoomInfos.find((r: DmRoomInfo) => r.invitees.includes(friend.user_id) || r.inviter === friend.user_id)
+        const dmRoom = dmRoomInfos.find(
+          (r: DmRoomInfo) => r.invitees.includes(friend.user_id) || r.inviter === friend.user_id
+        )
         const isSpecial = specialFriends.includes(friend.user_id)
         return {
           ...friendToContact(friend),

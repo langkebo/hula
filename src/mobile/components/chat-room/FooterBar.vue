@@ -45,7 +45,7 @@ const emit = defineEmits(['focus', 'blur', 'updateHeight'])
 
 const showVoicePanel = ref(false)
 
-const handleVoiceSend = async (_voiceData: any) => {
+const handleVoiceSend = async (_voiceData: unknown) => {
   showVoicePanel.value = false
 }
 

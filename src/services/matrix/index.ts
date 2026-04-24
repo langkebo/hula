@@ -14,7 +14,12 @@ export type {
 } from './auth/MatrixAuthService'
 
 export { matrixMessageService } from './messaging/MatrixMessageService'
-export type { MessageSearchOptions, MessageReaction, MarkedMessage, SendMessagePayload } from './messaging/MatrixMessageService'
+export type {
+  MessageSearchOptions,
+  MessageReaction,
+  MarkedMessage,
+  SendMessagePayload
+} from './messaging/MatrixMessageService'
 
 export { matrixContactService } from './user/MatrixContactService'
 export type { UserProfile, DirectChatResult } from './user/MatrixContactService'
@@ -190,7 +195,26 @@ export type { RequestOptions } from './MatrixRequestHelper'
 export { MatrixCacheManager, createCachedFetcher } from './MatrixCacheManager'
 export { MatrixRequestDeduper, createDedupedFetcher } from './MatrixRequestDeduper'
 
-export { adminService } from './admin/MatrixAdminService'
+export { adminService, useAdmin } from './admin'
+export type {
+  ServerStats,
+  ServerStatus,
+  ServerHealth,
+  ServerInfo,
+  ServerVersion,
+  UserInfo,
+  UserDevice,
+  RateLimit,
+  ShadowBanStatus,
+  RoomInfo,
+  RoomState,
+  ShutdownRoomResult,
+  FederationDestination,
+  FederationBlacklistEntry,
+  ServerNoticeResult,
+  ServerNoticeInfo,
+  RegistrationToken
+} from './admin'
 export { matrixApplicationService } from './MatrixApplicationService'
 export { matrixDehydratedDeviceService } from './crypto/MatrixDehydratedDeviceService'
 export { matrixDirectMessageService } from './room/MatrixDirectMessageService'

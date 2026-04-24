@@ -43,7 +43,7 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const logger = createLogger('RtcCallFloatCell')
 
-const sendMatrixVoipSignal = async (type: string, data: any) => {
+const sendMatrixVoipSignal = async (type: string, data: unknown) => {
   logger.warn('Matrix VoIP Signal:', type, data)
 }
 

@@ -52,7 +52,7 @@ import { useImageViewer } from '@/hooks/useImageViewer'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import { useWindow } from '@/hooks/useWindow'
 import type { MessageType } from '@/stores/domains/chat/message'
-import type { UserItem } from '@/services/types'
+import type { UserItem } from '@/services/matrix/user/MatrixContactService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -75,8 +75,8 @@ const { openVideoViewer } = useVideoViewer()
 const { specialMenuList } = useChatMain(true, { disableHistoryActions: true })
 
 const choosedMsgs = ref<Msg[]>([])
-const msgs = ref<any[]>([])
-const users = ref<any[]>([])
+const msgs = ref<MessageType[]>([])
+const users = ref<UserItem[]>([])
 const route = useRoute()
 
 const userUid = computed(() => userStore.userInfo?.uid)
@@ -150,7 +150,7 @@ const handleVideoClick = async (videoUrl: string) => {
 
 const getAllMsg = async () => {
   const msgIds = choosedMsgs.value.map((msg) => msg.msgId)
-  msgs.value = await matrixMessageService.getMsgListByIds({ msgIds })
+  msgs.value = (await matrixMessageService.getMsgListByIds({ msgIds })) as unknown as MessageType[]
 }
 
 const getAllUserInfo = async () => {

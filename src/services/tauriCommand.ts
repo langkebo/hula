@@ -68,11 +68,53 @@ export type FileQueryParam = {
   pageSize: number
 }
 
-export const queryFiles = async (param: FileQueryParam) => {
+export type FileManagerFileItem = {
+  id: string
+  fileName?: string
+  name?: string
+  originalName?: string
+  title?: string
+  fileType?: string
+  fileSize?: number
+  downloadUrl?: string
+  url?: string
+  uploadTime: string
+  sender?: {
+    id: string
+    name?: string
+  }
+}
+
+export type FileManagerTimeGroup = {
+  date: string
+  displayDate: string
+  files: FileManagerFileItem[]
+}
+
+export type FileManagerUser = {
+  id: string
+  name: string
+  [key: string]: unknown
+}
+
+export type FileManagerNavigationItem = {
+  key: string
+  label?: string
+  icon?: string
+  active?: boolean
+  [key: string]: unknown
+}
+
+export type FileManagerQueryResponse = {
+  timeGroupedFiles: FileManagerTimeGroup[]
+  userList: FileManagerUser[]
+}
+
+export const queryFiles = async (param: FileQueryParam): Promise<FileManagerQueryResponse> => {
   return await invoke('query_files', { param })
 }
 
-export const getNavigationItems = async () => {
+export const getNavigationItems = async (): Promise<FileManagerNavigationItem[]> => {
   return await invoke('get_navigation_items')
 }
 

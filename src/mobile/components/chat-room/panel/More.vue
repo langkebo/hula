@@ -6,7 +6,7 @@
           <div
             @click="handleClickIcon(item)"
             v-for="item in page"
-            :key="item.id"
+            :key="item.label"
             class="flex flex-col gap-8px items-center justify-center rounded-2">
             <svg
               v-if="item.label !== '文件' && item.label !== '图片' && item.isShow()"
@@ -102,17 +102,19 @@ const options = ref([
   }
 ])
 
+type PanelOption = (typeof options.value)[number]
+
 // 将数据分页，每页8个（2行4列）
 const pages = computed(() => {
   const pageSize = 8
-  const result: any[][] = []
+  const result: PanelOption[][] = []
   for (let i = 0; i < options.value.length; i += pageSize) {
     result.push(options.value.slice(i, i + pageSize))
   }
   return result
 })
 
-const handleClickIcon = (item: any) => {
+const handleClickIcon = (item: PanelOption) => {
   item.onClick()
 }
 

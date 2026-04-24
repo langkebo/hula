@@ -131,6 +131,7 @@ import type { FriendRequestItem } from '@/stores/domains/chat/contacts'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { matrixGroupService } from '@/services/matrix'
 import { useTimerManager } from '@/utils/TimerManager'
 import { useI18n } from 'vue-i18n'
@@ -151,10 +152,10 @@ const props = defineProps<{
   closeHeader?: boolean
 }>()
 
-const groupDetailsMap = ref<Record<string, any>>({})
+const groupDetailsMap = ref<Record<string, MatrixGroupInfo>>({})
 const loadingGroups = ref<Set<string>>(new Set())
 
-const isAccepted = (item: any) => {
+const isAccepted = (item: FriendRequestItem) => {
   return item.status !== RequestNoticeAgreeStatus.UNTREATED
 }
 
@@ -195,7 +196,7 @@ const getGroupDetail = async (roomId: string) => {
   return null
 }
 
-const applyMsg = computed(() => (item: any) => {
+const applyMsg = computed(() => (item: FriendRequestItem) => {
   if (props.type === 'friend') {
     return isCurrentUser(item.senderId)
       ? isAccepted(item)
@@ -203,7 +204,7 @@ const applyMsg = computed(() => (item: any) => {
         : t('mobile_mymessage.friend_request_status.verifying')
       : t('mobile_mymessage.friend_request_status.sent')
   } else {
-    const groupDetail = groupDetailsMap.value[item.roomId]
+    const groupDetail = item.roomId ? groupDetailsMap.value[item.roomId] : undefined
     if (!groupDetail) {
       if (item.roomId && !loadingGroups.value.has(item.roomId)) {
         getGroupDetail(item.roomId)
@@ -214,14 +215,14 @@ const applyMsg = computed(() => (item: any) => {
     if (item.eventType === NoticeType.GROUP_APPLY) {
       return t('mobile_mymessage.group.apply_to_join', { name: groupDetail.name })
     } else if (item.eventType === NoticeType.GROUP_INVITE) {
-      const inviter = groupStore.getUserInfo(item.operateId)?.name || t('mobile_mymessage.unknown_user')
+      const inviter = groupStore.getUserInfo(item.operateId ?? '')?.name || t('mobile_mymessage.unknown_user')
       return t('mobile_mymessage.group.invited_to_join', { inviter, group: groupDetail.name })
     } else if (isFriendApplyOrGroupInvite(item)) {
       return isCurrentUser(item.senderId)
         ? t('mobile_mymessage.group.joined_group', { group: groupDetail.name })
         : t('mobile_mymessage.group.invited_curr_to_join', { group: groupDetail.name })
     } else if (item.eventType === NoticeType.GROUP_MEMBER_DELETE) {
-      const operator = groupStore.getUserInfo(item.senderId)?.name || t('mobile_mymessage.unknown_user')
+      const operator = groupStore.getUserInfo(item.senderId ?? '')?.name || t('mobile_mymessage.unknown_user')
       return t('mobile_mymessage.group.kicked_out', { operator, group: groupDetail.name })
     } else if (item.eventType === NoticeType.GROUP_SET_ADMIN) {
       return t('mobile_mymessage.group.set_as_admin', { group: groupDetail.name })
@@ -238,26 +239,26 @@ const popoverActions = [
 
 const avatarSrc = (url: string) => AvatarUtils.getAvatarUrl(url)
 
-const isCurrentUser = (uid: string) => {
+const isCurrentUser = (uid: string | undefined) => {
   return uid === userStore.userInfo!.uid
 }
 
-const getUserInfo = (item: any) => {
+const getUserInfo = (item: FriendRequestItem) => {
   switch (item.eventType) {
     case NoticeType.FRIEND_APPLY:
     case NoticeType.GROUP_MEMBER_DELETE:
     case NoticeType.GROUP_SET_ADMIN:
     case NoticeType.GROUP_RECALL_ADMIN:
-      return groupStore.getUserInfo(item.operateId)
+      return groupStore.getUserInfo(item.operateId ?? '')
     case NoticeType.ADD_ME:
     case NoticeType.GROUP_INVITE:
     case NoticeType.GROUP_INVITE_ME:
     case NoticeType.GROUP_APPLY:
-      return groupStore.getUserInfo(item.senderId)
+      return groupStore.getUserInfo(item.senderId ?? '')
   }
 }
 
-const isFriendApplyOrGroupInvite = (item: any) => {
+const isFriendApplyOrGroupInvite = (item: FriendRequestItem) => {
   return (
     item.eventType === NoticeType.FRIEND_APPLY ||
     item.eventType === NoticeType.GROUP_APPLY ||

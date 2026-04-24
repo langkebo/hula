@@ -1,10 +1,7 @@
 <template>
   <mobile-layout :title="t('admin.rooms')" show-back>
     <div class="mobile-admin-rooms">
-      <van-search
-        v-model="admin.searchQuery.value"
-        :placeholder="t('admin.search_rooms')"
-        @search="onRefresh" />
+      <van-search v-model="admin.searchQuery.value" :placeholder="t('admin.search_rooms')" @search="onRefresh" />
 
       <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
         <van-list v-model:loading="admin.loading.value" :finished="true" :finished-text="t('common.no_more')">
@@ -49,7 +46,7 @@ import { useI18n } from 'vue-i18n'
 import { showToast, showConfirmDialog } from 'vant'
 import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminRooms } from '@/composables/admin'
-import type { RoomInfo } from '@/services/matrix/admin/MatrixAdminService'
+import type { RoomInfo } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminRooms')

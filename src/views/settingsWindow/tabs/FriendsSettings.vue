@@ -87,7 +87,13 @@
       </n-spin>
     </div>
 
-    <n-modal v-model:show="showCreateGroup" preset="dialog" title="创建好友分组" positive-text="创建" negative-text="取消" @positive-click="handleCreateGroup">
+    <n-modal
+      v-model:show="showCreateGroup"
+      preset="dialog"
+      title="创建好友分组"
+      positive-text="创建"
+      negative-text="取消"
+      @positive-click="handleCreateGroup">
       <n-form>
         <n-form-item label="分组名称">
           <n-input v-model:value="newGroupName" placeholder="输入分组名称" />
@@ -95,7 +101,13 @@
       </n-form>
     </n-modal>
 
-    <n-modal v-model:show="showEditGroup" preset="dialog" title="编辑分组名称" positive-text="保存" negative-text="取消" @positive-click="handleSaveGroup">
+    <n-modal
+      v-model:show="showEditGroup"
+      preset="dialog"
+      title="编辑分组名称"
+      positive-text="保存"
+      negative-text="取消"
+      @positive-click="handleSaveGroup">
       <n-form>
         <n-form-item label="分组名称">
           <n-input v-model:value="editGroupName" placeholder="输入新的分组名称" />
@@ -184,10 +196,10 @@ async function loadFriendGroups() {
   loadingGroups.value = true
   try {
     const groups = await matrixFriendService.getFriendGroups()
-    friendGroups.value = (groups || []).map((g: any) => ({
+    friendGroups.value = (groups || []).map((g) => ({
       group_id: g.group_id,
       name: g.name,
-      member_count: g.member_count || g.members?.length || 0
+      member_count: g.member_count || 0
     }))
   } catch {
     logger.error('Failed to load friend groups')
@@ -203,12 +215,12 @@ async function loadFriendRequests() {
       matrixFriendService.getIncomingRequests(),
       matrixFriendService.getOutgoingRequests()
     ])
-    incomingRequests.value = (incoming || []).map((r: any) => ({
-      user_id: r.user_id || r.from || r.sender,
-      message: r.message || r.body
+    incomingRequests.value = (incoming || []).map((r) => ({
+      user_id: r.user_id,
+      message: r.message
     }))
-    outgoingRequests.value = (outgoing || []).map((r: any) => ({
-      user_id: r.user_id || r.to
+    outgoingRequests.value = (outgoing || []).map((r) => ({
+      user_id: r.user_id
     }))
   } catch {
     logger.error('Failed to load friend requests')

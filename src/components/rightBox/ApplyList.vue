@@ -136,6 +136,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { matrixGroupService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -155,11 +156,11 @@ const props = defineProps<{
 }>()
 
 // 新增：存储群组信息的响应式对象
-const groupDetailsMap = ref<Record<string, any>>({})
+const groupDetailsMap = ref<Record<string, MatrixGroupInfo>>({})
 const loadingGroups = ref<Set<string>>(new Set())
 
 // 检查好友申请是否已被接受
-const isAccepted = (item: any) => {
+const isAccepted = (item: NoticeItem) => {
   return item.status !== RequestNoticeAgreeStatus.UNTREATED
 }
 
@@ -277,13 +278,13 @@ const isCurrentUser = (uid: string) => {
  * 获取当前用户查询视角
  * @param item 通知消息
  */
-const getUserInfo = (item: any) => {
+const getUserInfo = (item: NoticeItem) => {
   switch (item.eventType) {
     case NoticeType.FRIEND_APPLY:
     case NoticeType.GROUP_MEMBER_DELETE:
     case NoticeType.GROUP_SET_ADMIN:
     case NoticeType.GROUP_RECALL_ADMIN:
-      return groupStore.getUserInfo(item.operateId)
+      return groupStore.getUserInfo(item.operateId ?? '')
     case NoticeType.ADD_ME:
     case NoticeType.GROUP_INVITE:
     case NoticeType.GROUP_INVITE_ME:
@@ -293,7 +294,7 @@ const getUserInfo = (item: any) => {
 }
 
 // 判断是否为好友申请或者群申请、群邀请
-const isFriendApplyOrGroupInvite = (item: any) => {
+const isFriendApplyOrGroupInvite = (item: NoticeItem) => {
   return (
     item.eventType === NoticeType.FRIEND_APPLY ||
     item.eventType === NoticeType.GROUP_APPLY ||

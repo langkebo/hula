@@ -500,7 +500,7 @@ function saveMessages(conversationId: string) {
   localStorage.setItem(`ai_messages_${conversationId}`, JSON.stringify(messages.value))
 }
 
-function handleProviderChange({ selectedOptions }: any) {
+function handleProviderChange({ selectedOptions }: { selectedOptions: Array<{ value: AIProvider }> }) {
   selectedProvider.value = selectedOptions[0].value
   selectedModel.value = filteredModels.value[0] || null
   saveProviderSettings()

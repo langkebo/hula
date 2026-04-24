@@ -176,7 +176,7 @@
 import { ref, computed, onMounted, h } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NButton, NSpace, NTag, useMessage, useDialog } from 'naive-ui'
-import type { UserInfo, UserDevice } from '@/services/matrix/admin/MatrixAdminService'
+import type { UserInfo, UserDevice } from '@/services/matrix'
 import { useAdminUsers } from '@/composables/admin'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
