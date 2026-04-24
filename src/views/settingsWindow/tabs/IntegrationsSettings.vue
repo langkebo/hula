@@ -309,7 +309,7 @@ function handlePermissionChange() {
 
 .section-desc {
   font-size: 13px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin: 0;
 }
 
@@ -338,7 +338,7 @@ function handlePermissionChange() {
 .setting-desc {
   display: block;
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 
@@ -399,7 +399,7 @@ function handlePermissionChange() {
 
 .integration-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 2px;
 }
 
@@ -411,7 +411,7 @@ function handlePermissionChange() {
 
 .integration-version {
   font-size: 11px;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 
 .integration-status {
@@ -421,13 +421,13 @@ function handlePermissionChange() {
 }
 
 .integration-status.enabled {
-  background-color: rgba(82, 196, 26, 0.1);
-  color: #52c41a;
+  background-color: var(--color-success-light);
+  color: var(--color-success);
 }
 
 .integration-status.disabled {
   background-color: rgba(0, 0, 0, 0.05);
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 
 :deep(.dark) .integration-status.disabled {
@@ -452,7 +452,7 @@ function handlePermissionChange() {
 
 .available-title {
   font-size: 13px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-bottom: 8px;
 }
 
@@ -499,6 +499,6 @@ function handlePermissionChange() {
 
 .available-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 </style>

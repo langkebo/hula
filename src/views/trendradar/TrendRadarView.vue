@@ -148,7 +148,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useTrendRadar } from '@/services/trendradar'
-import type { TrendRadarNews } from '@/services/trendradar'
+import type { TrendRadarNews, TrendRadarTopic, TrendRadarRssArticle } from '@/services/trendradar'
 import NewsCard from '@/components/trendradar/NewsCard.vue'
 import TrendingPanel from '@/components/trendradar/TrendingPanel.vue'
 import SearchPanel from '@/components/trendradar/SearchPanel.vue'
@@ -170,8 +170,8 @@ const analyzeLoading = ref(false)
 
 const newsList = ref<TrendRadarNews[]>([])
 const searchResults = ref<TrendRadarNews[]>([])
-const trendingTopics = ref<any[]>([])
-const rssList = ref<TrendRadarNews[]>([])
+const trendingTopics = ref<TrendRadarTopic[]>([])
+const rssList = ref<TrendRadarRssArticle[]>([])
 
 const inputKeyword = ref('')
 const analyzeKeyword = ref('')
@@ -203,7 +203,7 @@ const handleNewsClick = (news: TrendRadarNews) => {
   }
 }
 
-const handleTopicClick = (topic: any) => {
+const handleTopicClick = (topic: TrendRadarTopic) => {
   analyzeKeyword.value = topic.name || topic.topic || topic.title || ''
   activeTab.value = 'analyze'
 }

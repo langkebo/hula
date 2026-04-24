@@ -1,7 +1,7 @@
 <template>
   <n-modal
     :trap-focus="false"
-    :show="show" @update:show="emit('update:show', $event)"
+    v-model:show="visible"
     :mask-closable="false"
     class="rounded-8px"
     transform-origin="center">
@@ -51,7 +51,7 @@
             </div>
 
             <div @click="removeFile(index)" class="flex-shrink-0 pl-20px cursor-pointer">
-              <svg class="size-20px hover:color-#909090 transition-colors duration-200 ease-in-out">
+              <svg class="size-20px hover:color-[--color-text-tertiary] transition-colors duration-200 ease-in-out">
                 <use href="#squareClose"></use>
               </svg>
             </div>

@@ -6,9 +6,9 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { matrixReceiptService } from '@/services/matrix/MatrixReceiptService'
+import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
-import matrixRoomService from '@/services/matrix/MatrixRoomService'
+import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SessionStore')

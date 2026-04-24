@@ -1,27 +1,35 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const { mockLogger } = vi.hoisted(() => ({
+  mockLogger: {
+    error: vi.fn()
+  }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: vi.fn(() => mockLogger)
+}))
+
 import { globalErrorHandler, createValidationError, createNetworkError } from '../errorHandler'
 import { ErrorType } from '../exception'
 
 describe('errorHandler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubGlobal('$message', { error: vi.fn() })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('globalErrorHandler', () => {
     it('should handle Error instances', () => {
       const error = new Error('test error')
-      expect(() => globalErrorHandler.handleError(error)).not.toThrow()
+      globalErrorHandler.handleError(error)
+      expect(mockLogger.error).toHaveBeenCalled()
     })
 
     it('should handle non-Error objects', () => {
-      expect(() => globalErrorHandler.handleError('string error')).not.toThrow()
-      expect(() => globalErrorHandler.handleError(123)).not.toThrow()
-      expect(() => globalErrorHandler.handleError(null)).not.toThrow()
+      globalErrorHandler.handleError('string error')
+      globalErrorHandler.handleError(123)
+      globalErrorHandler.handleError(null)
+      expect(mockLogger.error).toHaveBeenCalledTimes(3)
     })
 
     it('should call registered callbacks', () => {
@@ -38,9 +46,15 @@ describe('errorHandler', () => {
     })
 
     it('should create Validation errors', () => {
+      // Mock window.$message
+      const mockMessage = { error: vi.fn() }
+      vi.stubGlobal('$message', mockMessage)
+
       const error = createValidationError('Invalid input', { field: 'username' })
       expect(error.message).toBe('Invalid input')
       expect(error.type).toBe(ErrorType.Validation)
+
+      vi.unstubAllGlobals()
     })
 
     it('should create Network errors', () => {

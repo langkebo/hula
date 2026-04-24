@@ -5,9 +5,9 @@
       <!-- 录音状态文字 -->
       <div class="voice-status">
         <div v-if="!isRecording && !audioBlob && !isProcessing">
-          <span class="text-#909090 flex-y-center gap-6px select-none">
+          <span class="text-[--color-text-tertiary] flex-y-center gap-6px select-none">
             {{ t('message.voice_recorder.tap_prefix') }}
-            <svg class="size-14px color-#13987f"><use href="#voice"></use></svg>
+            <svg class="size-14px color-[--color-primary]"><use href="#voice"></use></svg>
             {{ t('message.voice_recorder.tap_suffix') }}
           </span>
         </div>
@@ -101,13 +101,21 @@ import { useVoiceRecordRust } from '@/hooks/useVoiceRecordRust'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
+export type VoiceRecordPayload = {
+  localPath: string
+  size: number
+  duration: number
+  filename: string
+  type?: string
+}
+
 const logger = createLogger('VoiceRecorder')
 const { t } = useI18n()
 
 // 事件定义
 const emit = defineEmits<{
   cancel: []
-  send: [voiceData: any]
+  send: [voiceData: VoiceRecordPayload]
 }>()
 
 // 录音状态
@@ -228,7 +236,7 @@ const handleSend = async () => {
 
     // 直接使用本地路径，不需要重新上传文件
     // 这样和其他文件发送逻辑保持一致，都是先缓存到本地再处理
-    const voiceData = {
+    const voiceData: VoiceRecordPayload = {
       localPath: localAudioPath.value,
       size: audioBlob.value.size,
       duration: recordingDuration.value,
@@ -289,12 +297,12 @@ onUnmounted(() => {
   @apply text-(14px [--text-color] center) max-h-24px;
 
   .status-recording {
-    @apply flex-y-center gap-8px text-#13987f select-none;
+    @apply flex-y-center gap-8px text-[--color-primary] select-none;
 
     .recording-animation {
       position: relative;
       .pulse-dot {
-        @apply size-8px bg-#13987f rounded-full;
+        @apply size-8px bg-[--color-primary] rounded-full;
         animation: pulse 1.5s infinite;
       }
     }
@@ -319,7 +327,7 @@ onUnmounted(() => {
       @apply flex-y-center gap-8px;
 
       .play-btn {
-        @apply flex-center size-30px bg-inherit border-none cursor-pointer text-#13987f;
+        @apply flex-center size-30px bg-inherit border-none cursor-pointer text-[--color-primary];
 
         svg {
           @apply size-16px;
@@ -353,7 +361,7 @@ onUnmounted(() => {
   }
 
   .record-btn {
-    @include base-control-button(#13987f80, #13987f);
+    @include base-control-button(var(--color-primary)/80, #13987f);
   }
 
   .stop-btn {
@@ -365,7 +373,7 @@ onUnmounted(() => {
   }
 
   .send-btn {
-    @include base-control-button(#13987f80, #13987f);
+    @include base-control-button(var(--color-primary)/80, #13987f);
 
     .loading-spinner {
       @apply size-16px rounded-full;

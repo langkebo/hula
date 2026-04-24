@@ -13,7 +13,7 @@
           class="float-block"
           :data-index="index"
           :style="{ height: `${itemHeight}px` }"
-          @mouseenter="handleItemMouseEnter(index)">
+          @mouseenter="handleItemMouseEnter(index, $event)">
           <slot name="item" :item="item" :index="index">
             <!-- 默认渲染内容 -->
             <div class="p-[8px_10px] rounded-lg">{{ item }}</div>
@@ -35,48 +35,39 @@
 </template>
 
 <script setup lang="ts">
+type FloatBlockListItem = Record<string, unknown>
+type VirtualListRef = {
+  $el: HTMLElement
+  getOffset?: () => number
+  scrollTo: (options: { top: number; behavior?: ScrollBehavior }) => void
+}
+
 // 定义组件的属性
-const props = defineProps({
-  // 数据源
-  dataSource: {
-    type: Array as () => any[],
-    required: true
-  },
-  // 数据项唯一标识字段名
-  itemKey: {
-    type: String,
-    default: ''
-  },
-  // 项目高度
-  itemHeight: {
-    type: Number,
-    default: 64
-  },
-  // 最大高度
-  maxHeight: {
-    type: String,
-    default: 'calc(100vh / var(--page-scale, 1) - 132px)'
-  },
-  // 悬浮项的透明度
-  hoverOpacity: {
-    type: Number,
-    default: 0.06
-  }
-})
+const props = defineProps<{
+  dataSource: FloatBlockListItem[]
+  itemKey?: string
+  itemHeight?: number
+  maxHeight?: string
+  hoverOpacity?: number
+}>()
 
 // 引用和状态
 const containerRef = ref<HTMLElement | null>(null)
-const virtualListRef = ref<any>(null)
+const virtualListRef = ref<VirtualListRef | null>(null)
 const hoverPosition = ref<number | null>(null)
 const currentHoverIndex = ref<number | null>(null)
 const containerHeight = ref<number>(0)
+
+const itemHeight = computed(() => props.itemHeight ?? 64)
+const maxHeight = computed(() => props.maxHeight ?? 'calc(100vh / var(--page-scale, 1) - 132px)')
+const hoverOpacity = computed(() => props.hoverOpacity ?? 0.06)
 
 // 计算属性：判断悬浮位置是否有效（是否在容器范围内）
 const isHoverPositionValid = computed(() => {
   if (hoverPosition.value === null) return false
 
   // 确保悬浮位置 + 项目高度不超过容器高度
-  return hoverPosition.value >= 0 && hoverPosition.value + props.itemHeight <= containerHeight.value
+  return hoverPosition.value >= 0 && hoverPosition.value + itemHeight.value <= containerHeight.value
 })
 
 // 更新容器高度
@@ -99,13 +90,15 @@ const handleScroll = () => {
 }
 
 // 处理列表项的鼠标进入事件
-const handleItemMouseEnter = (index: number) => {
+const handleItemMouseEnter = (index: number, event?: MouseEvent) => {
   // 设置当前悬停的索引
   currentHoverIndex.value = index
 
   // 获取当前悬停项的DOM元素
-  const item =
-    (event?.target as HTMLElement)?.closest('.float-block') || document.activeElement?.closest('.float-block')
+  const eventTarget = event?.target
+  const hoveredElement = eventTarget instanceof HTMLElement ? eventTarget.closest('.float-block') : null
+  const activeElement = document.activeElement instanceof HTMLElement ? document.activeElement.closest('.float-block') : null
+  const item = hoveredElement ?? activeElement
 
   if (item) {
     // 获取元素相对于列表容器的位置

@@ -1,0 +1,210 @@
+<template>
+  <AutoFixHeightPage :show-footer="false">
+    <template #header>
+      <HeaderBar border :isOfficial="false" :hidden-right="true" :room-name="t('mobile_burn.title')" />
+    </template>
+
+    <template #container>
+      <div class="flex flex-col overflow-auto h-full">
+        <div class="flex flex-col p-16px gap-12px">
+          <div class="text-14px text-gray-500 mb-8px">{{ t('mobile_burn.global_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell :title="t('mobile_burn.global_enable')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:timer-outline" :width="20" color="#fa8c16" />
+                </div>
+              </template>
+              <template #right-icon>
+                <van-switch v-model="globalEnabled" size="22px" @change="handleGlobalToggle" />
+              </template>
+            </van-cell>
+
+            <van-cell
+              v-if="globalEnabled"
+              :title="t('mobile_burn.default_duration')"
+              :value="currentDurationLabel"
+              is-link
+              @click="showDurationPicker = true">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:clock-outline" :width="20" color="#1890ff" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell v-if="globalEnabled" :title="t('mobile_burn.show_countdown')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-green-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:countdown" :width="20" color="#52c41a" />
+                </div>
+              </template>
+              <template #right-icon>
+                <van-switch v-model="showCountdown" size="22px" @change="handleCountdownToggle" />
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div v-if="globalEnabled" class="text-14px text-gray-500 mt-16px mb-8px">
+            {{ t('mobile_burn.room_section') }}
+          </div>
+
+          <van-cell-group v-if="globalEnabled" inset>
+            <div v-if="loadingRooms" class="flex justify-center py-20px">
+              <van-loading size="24px" />
+            </div>
+            <template v-else-if="burnRooms.length > 0">
+              <van-cell
+                v-for="room in burnRooms"
+                :key="room.roomId"
+                :title="room.name || room.roomId"
+                :label="formatDuration(room.duration)">
+                <template #icon>
+                  <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
+                    <Icon icon="mdi:fire" :width="20" color="#ff4d4f" />
+                  </div>
+                </template>
+                <template #right-icon>
+                  <van-switch
+                    :model-value="room.enabled"
+                    size="22px"
+                    @change="(val: boolean) => handleRoomToggle(room, val)" />
+                </template>
+              </van-cell>
+            </template>
+            <van-cell v-else :title="t('mobile_burn.no_rooms')" />
+          </van-cell-group>
+
+          <div v-if="globalEnabled" class="text-14px text-gray-500 mt-16px mb-8px">
+            {{ t('mobile_burn.stats_section') }}
+          </div>
+
+          <van-cell-group v-if="globalEnabled" inset>
+            <van-cell :title="t('mobile_burn.total_burned')" :value="burnStats.totalBurned.toString()" />
+            <van-cell :title="t('mobile_burn.active_rooms')" :value="burnStats.activeRooms.toString()" />
+          </van-cell-group>
+
+          <div v-if="globalEnabled" class="flex items-start gap-8px p-12px bg-orange-50 rounded-8px mt-8px">
+            <Icon icon="mdi:alert-circle" :width="16" color="#fa8c16" class="flex-shrink-0 mt-2px" />
+            <span class="text-12px text-orange-700">{{ t('mobile_burn.warning') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <van-popup v-model:show="showDurationPicker" position="bottom" round>
+        <van-picker
+          :columns="durationColumns"
+          @confirm="handleDurationConfirm"
+          @cancel="showDurationPicker = false" />
+      </van-popup>
+    </template>
+  </AutoFixHeightPage>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { Icon } from '@iconify/vue'
+import { showToast } from 'vant'
+
+const { t } = useI18n()
+
+const globalEnabled = ref(false)
+const defaultDuration = ref(60)
+const showCountdown = ref(true)
+const showDurationPicker = ref(false)
+const loadingRooms = ref(false)
+
+const burnRooms = ref<{ roomId: string; name: string; duration: number; enabled: boolean }[]>([])
+
+const burnStats = ref({ totalBurned: 0, activeRooms: 0 })
+
+const durationOptions = [
+  { label: '30秒', value: 30 },
+  { label: '1分钟', value: 60 },
+  { label: '5分钟', value: 300 },
+  { label: '1小时', value: 3600 },
+  { label: '24小时', value: 86400 }
+]
+
+const durationColumns = durationOptions.map((o) => ({ text: o.label, value: o.value }))
+
+const currentDurationLabel = computed(() => {
+  return durationOptions.find((o) => o.value === defaultDuration.value)?.label || '1分钟'
+})
+
+onMounted(() => {
+  const savedEnabled = localStorage.getItem('hula-burn-default-enabled')
+  if (savedEnabled !== null) globalEnabled.value = savedEnabled === 'true'
+
+  const savedDuration = localStorage.getItem('hula-burn-default-duration')
+  if (savedDuration) defaultDuration.value = parseInt(savedDuration, 10)
+
+  const savedCountdown = localStorage.getItem('hula-burn-show-countdown')
+  if (savedCountdown !== null) showCountdown.value = savedCountdown === 'true'
+
+  loadBurnRooms()
+  loadBurnStats()
+})
+
+function loadBurnRooms() {
+  loadingRooms.value = true
+  try {
+    const saved = localStorage.getItem('hula-burn-rooms')
+    if (saved) {
+      burnRooms.value = JSON.parse(saved)
+    }
+  } catch {
+    // ignore
+  } finally {
+    loadingRooms.value = false
+  }
+}
+
+function loadBurnStats() {
+  try {
+    const saved = localStorage.getItem('hula-burn-stats')
+    if (saved) {
+      burnStats.value = JSON.parse(saved)
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function saveBurnRooms() {
+  localStorage.setItem('hula-burn-rooms', JSON.stringify(burnRooms.value))
+}
+
+function handleGlobalToggle(val: boolean) {
+  localStorage.setItem('hula-burn-default-enabled', val.toString())
+  showToast(val ? t('mobile_burn.enabled') : t('mobile_burn.disabled'))
+}
+
+function handleCountdownToggle(val: boolean) {
+  localStorage.setItem('hula-burn-show-countdown', val.toString())
+}
+
+function handleDurationConfirm({ selectedValues }: { selectedValues: number[] }) {
+  const val = selectedValues[0]
+  if (val) {
+    defaultDuration.value = val
+    localStorage.setItem('hula-burn-default-duration', val.toString())
+  }
+  showDurationPicker.value = false
+}
+
+function handleRoomToggle(room: { roomId: string; name: string; duration: number; enabled: boolean }, val: boolean) {
+  room.enabled = val
+  saveBurnRooms()
+  showToast(val ? t('mobile_burn.room_enabled') : t('mobile_burn.room_disabled'))
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}秒`
+  if (seconds < 3600) return `${seconds / 60}分钟`
+  if (seconds < 86400) return `${seconds / 3600}小时`
+  return `${seconds / 86400}天`
+}
+</script>

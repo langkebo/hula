@@ -70,11 +70,22 @@ defineOptions({
 
 const route = useRoute()
 const router = useRouter()
-const announList = ref<any[]>([])
+const announList = ref<GroupAnnouncementListItem[]>([])
 const groupStore = useGroupStore()
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const announcementStore = useAnnouncementStore()
+
+type GroupAnnouncementListResponse = Awaited<ReturnType<typeof announcementStore.getGroupAnnouncementList>>
+type GroupAnnouncementListItem = GroupAnnouncementListResponse['records'][number]
+
+const sortAnnouncements = (list: GroupAnnouncementListItem[]) => {
+  const topAnnouncement = list.find((item) => item.top)
+  if (!topAnnouncement) {
+    return list
+  }
+  return [topAnnouncement, ...list.filter((item) => !item.top)]
+}
 
 const canAddAnnouncement = computed(() => {
   if (!userStore.userInfo?.uid) return false
@@ -102,13 +113,7 @@ const loadAnnouncementList = async () => {
 
     const data = await announcementStore.getGroupAnnouncementList(roomId, 1, 10)
     if (data && data.records) {
-      announList.value = data.records
-      if (announList.value && announList.value.length > 0) {
-        const topAnnouncement = announList.value.find((item: any) => item.top)
-        if (topAnnouncement) {
-          announList.value = [topAnnouncement, ...announList.value.filter((item: any) => !item.top)]
-        }
-      }
+      announList.value = sortAnnouncements(data.records)
     }
   } catch (error) {
     logger.error('加载群公告失败:', error)
@@ -127,7 +132,7 @@ const goToAddNotice = () => {
 
 onMounted(() => {
   if (route.query.announList) {
-    announList.value = JSON.parse(route.query.announList as string)
+    announList.value = sortAnnouncements(JSON.parse(route.query.announList as string) as GroupAnnouncementListItem[])
   } else {
     loadAnnouncementList()
   }

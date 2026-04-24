@@ -70,34 +70,34 @@ const handleReload = async () => {
   justify-content: center;
   min-height: 100vh;
   padding: 24px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+  background: var(--bg-page, linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%));
 }
 
 .error-content {
   max-width: 480px;
   padding: 32px;
   text-align: center;
-  background: white;
+  background: var(--bg-card, white);
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 }
 
 .error-icon {
   margin-bottom: 24px;
-  color: #f56c6c;
+  color: var(--color-danger, #f56c6c);
 }
 
 .error-title {
   margin: 0 0 12px;
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-color, #303133);
 }
 
 .error-message {
   margin: 0 0 24px;
   font-size: 14px;
-  color: #606266;
+  color: var(--text-color-secondary, #606266);
   line-height: 1.6;
 }
 
@@ -114,7 +114,7 @@ const handleReload = async () => {
   summary {
     cursor: pointer;
     font-size: 13px;
-    color: #909399;
+    color: var(--text-color-tertiary, #909399);
   }
 
   pre {
@@ -122,7 +122,7 @@ const handleReload = async () => {
     padding: 12px;
     overflow: auto;
     font-size: 12px;
-    background: #f5f7fa;
+    background: var(--bg-hover, #f5f7fa);
     border-radius: 8px;
     max-height: 200px;
   }

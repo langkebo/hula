@@ -42,7 +42,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NAvatar, NTag } from 'naive-ui'
-import { RoomTypeEnum, IsAllUserEnum } from '@/enums'
+import { RoomTypeEnum } from '@/enums'
+import { IsAllUserEnum } from '@/services/types'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const props = defineProps<{
@@ -60,7 +61,7 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const isGroup = computed(() => props.type === RoomTypeEnum.GROUP)
-const isChannel = computed(() => props.hotFlag === IsAllUserEnum.YES)
+const isChannel = computed(() => props.hotFlag === IsAllUserEnum.Yes)
 
 const nameInitial = computed(() => {
   return props.name?.charAt(0)?.toUpperCase() || '?'

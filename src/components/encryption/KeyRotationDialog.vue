@@ -29,11 +29,6 @@
           <span class="label">{{ t('encryption.key_rotation.last_rotation') }}:</span>
           <span class="value">{{ formatDate(lastRotationTime) }}</span>
         </div>
-
-        <div v-if="devicesPending > 0" class="devices-pending">
-          <span class="label">{{ t('encryption.key_rotation.devices_pending') }}:</span>
-          <span class="value">{{ devicesPending }}</span>
-        </div>
       </div>
 
       <n-divider />
@@ -70,10 +65,9 @@
         <div v-if="showHistory && rotationHistory.length > 0" class="history-list">
           <div v-for="(record, index) in rotationHistory" :key="index" class="history-item">
             <div class="history-info">
-              <span class="history-key">{{ formatKeyId(record.new_version || record.old_version) }}</span>
-              <span class="history-time">{{ formatDate(record.rotation_ts) }}</span>
+              <span class="history-key">{{ formatKeyId(record.keyId) }}</span>
+              <span class="history-time">{{ formatDate(record.rotatedAt) }}</span>
             </div>
-            <div v-if="record.reason" class="history-reason">{{ record.reason }}</div>
           </div>
         </div>
 
@@ -121,8 +115,7 @@ import { ref, computed, watch } from 'vue'
 import { NModal, NButton, NSwitch, NSelect, NDivider, NSpin, NEmpty, NFlex, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import matrixKeyRotationService, { type KeyRotationHistory } from '@/services/matrix/MatrixKeyRotationService'
-import { matrixClientService } from '@/services/matrix'
+import { matrixEncryptionService, type KeyRotationRecord } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('KeyRotation')
 
@@ -135,12 +128,10 @@ const loading = ref(false)
 const rotating = ref(false)
 const needsRotation = ref(false)
 const lastRotationTime = ref<number | null>(null)
-const currentVersion = ref('')
-const devicesPending = ref(0)
 const autoRotate = ref(true)
 const rotationInterval = ref(7)
 const showHistory = ref(false)
-const rotationHistory = ref<KeyRotationHistory[]>([])
+const rotationHistory = ref<KeyRotationRecord[]>([])
 
 const intervalOptions = [
   { label: '7 ' + t('common.days'), value: 7 },
@@ -172,15 +163,11 @@ const formatKeyId = (keyId: string): string => {
 const loadRotationStatus = async () => {
   loading.value = true
   try {
-    const status = await matrixKeyRotationService.getRotationStatus()
-    needsRotation.value = status.needs_rotation
-    lastRotationTime.value = status.last_rotation_ts || null
-    currentVersion.value = status.current_version
-    devicesPending.value = status.devices_pending
-
-    const config = await matrixKeyRotationService.getRotationConfig()
-    autoRotate.value = config.auto_rotate
-    rotationInterval.value = Math.round(config.rotation_interval_ms / (24 * 60 * 60 * 1000)) || 7
+    const status = await matrixEncryptionService.getKeyRotationStatus()
+    needsRotation.value = status.needsRotation
+    lastRotationTime.value = status.lastRotation ?? null
+    autoRotate.value = status.enabled
+    rotationInterval.value = Math.round(status.intervalMs / (24 * 60 * 60 * 1000)) || 7
   } catch (err) {
     logger.error('加载状态失败:', err)
   } finally {
@@ -190,9 +177,9 @@ const loadRotationStatus = async () => {
 
 const loadRotationHistory = async () => {
   try {
-    const deviceId = matrixEncryptionService.getDeviceId()
+    const deviceId = matrixEncryptionService.getCurrentDeviceId()
     if (deviceId) {
-      rotationHistory.value = await matrixKeyRotationService.getRotationHistory(deviceId)
+      rotationHistory.value = await matrixEncryptionService.getRotationHistory(deviceId)
     }
   } catch (err) {
     logger.error('加载历史失败:', err)
@@ -202,11 +189,11 @@ const loadRotationHistory = async () => {
 const handleRotate = async () => {
   rotating.value = true
   try {
-    const success = await matrixKeyRotationService.rotateKeys()
-    if (success) {
+    const result = await matrixEncryptionService.rotateKeys()
+    if (result.success) {
       message.success(t('encryption.key_rotation.rotation_success'))
       needsRotation.value = false
-      lastRotationTime.value = Date.now()
+      lastRotationTime.value = result.rotatedAt
       await loadRotationHistory()
     } else {
       message.error(t('encryption.key_rotation.rotation_failed'))
@@ -221,15 +208,8 @@ const handleRotate = async () => {
 
 const handleConfigChange = async () => {
   try {
-    const success = await matrixKeyRotationService.updateRotationConfig({
-      auto_rotate: autoRotate.value,
-      rotation_interval_ms: rotationInterval.value * 24 * 60 * 60 * 1000
-    })
-    if (success) {
-      message.success(t('encryption.key_rotation.config_success'))
-    } else {
-      message.error(t('encryption.key_rotation.config_failed'))
-    }
+    await matrixEncryptionService.configureKeyRotation(autoRotate.value, rotationInterval.value)
+    message.success(t('encryption.key_rotation.config_success'))
   } catch (err) {
     logger.error('配置失败:', err)
     message.error(t('encryption.key_rotation.config_failed'))
@@ -277,11 +257,11 @@ watch(visible, (val) => {
 }
 
 .status-warning {
-  color: #faad14;
+  color: var(--color-warning);
 }
 
 .status-ok {
-  color: #52c41a;
+  color: var(--color-success);
 }
 
 .status-info {
@@ -300,8 +280,7 @@ watch(visible, (val) => {
   margin-top: 2px;
 }
 
-.last-rotation,
-.devices-pending {
+.last-rotation {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--border-color);
@@ -380,12 +359,6 @@ watch(visible, (val) => {
 
 .history-time {
   color: var(--text-color-secondary);
-}
-
-.history-reason {
-  font-size: 11px;
-  color: var(--text-color-secondary);
-  margin-top: 4px;
 }
 
 .rotation-config {

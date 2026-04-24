@@ -56,7 +56,7 @@
                     <span class="result-name">{{ result.name }}</span>
                     <span class="result-room">{{ result.roomName }}</span>
                   </div>
-                  <div class="result-preview" v-html="result.content?.body" />
+                  <div class="result-preview" v-html="result.previewHtml" />
                 </div>
                 <div class="result-time">
                   {{ formatTime(result.timestamp) }}
@@ -79,11 +79,7 @@
                 </div>
                 <div class="result-info">
                   <span class="result-name">{{ result.name }}</span>
-                  <span v-if="result.isEncrypted" class="encrypted-badge">
-                    <svg class="size-12px">
-                      <use href="#lock"></use>
-                    </svg>
-                  </span>
+                  <span class="result-room">{{ result.memberCount }}</span>
                 </div>
               </div>
             </div>
@@ -141,13 +137,33 @@
 </template>
 
 <script setup lang="ts">
+import type { InputInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { matrixSearchService } from '@/services/matrix'
+import {
+  matrixSearchService,
+  type SearchResult as MatrixSearchResult,
+  type RoomSearchResult,
+  type UserSearchResult
+} from '@/services/matrix/MatrixSearchService'
 import { useSpotlightStore } from '@/stores/domains/widget/spotlight'
 import { formatTimestamp } from '@/utils/ComputedTime'
 import { useDebounceFn } from '@vueuse/core'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('SpotlightDialog')
+
+type SpotlightMessageResult = MatrixSearchResult & {
+  name: string
+  avatarUrl?: string
+  previewHtml: string
+}
+
+type SpotlightRoomResult = RoomSearchResult & {
+  name: string
+}
+
+type SpotlightUserResult = UserSearchResult & {
+  name: string
+}
 
 const props = defineProps<{
   visible: boolean
@@ -162,13 +178,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const spotlightStore = useSpotlightStore()
-const searchInputRef = ref()
+const searchInputRef = ref<InputInst | null>(null)
 const searchQuery = ref('')
 const searchType = ref<'all' | 'messages' | 'rooms' | 'users'>('all')
 const isSearching = ref(false)
-const messageResults = ref<any[]>([])
-const roomResults = ref<any[]>([])
-const userResults = ref<any[]>([])
+const messageResults = ref<SpotlightMessageResult[]>([])
+const roomResults = ref<SpotlightRoomResult[]>([])
+const userResults = ref<SpotlightUserResult[]>([])
 const defaultAvatar = '/logoD.png'
 
 const recentSearches = computed(() => spotlightStore.recentSearches)
@@ -180,6 +196,11 @@ const hasResults = computed(() => {
 const formatTime = (timestamp?: number) => {
   if (!timestamp) return ''
   return formatTimestamp(timestamp, true)
+}
+
+const getMessagePreviewHtml = (result: MatrixSearchResult) => {
+  const body = result.content.body
+  return typeof body === 'string' ? body : ''
 }
 
 const handleSearch = useDebounceFn(async () => {
@@ -205,9 +226,19 @@ const handleSearch = useDebounceFn(async () => {
         : Promise.resolve([])
     ])
 
-    messageResults.value = messages
-    roomResults.value = rooms
-    userResults.value = users
+    messageResults.value = messages.map((result) => ({
+      ...result,
+      name: result.sender,
+      previewHtml: getMessagePreviewHtml(result)
+    }))
+    roomResults.value = rooms.map((result) => ({
+      ...result,
+      name: result.roomName
+    }))
+    userResults.value = users.map((result) => ({
+      ...result,
+      name: result.displayName || result.userId
+    }))
 
     spotlightStore.addRecentSearch(query)
   } catch (error) {
@@ -217,17 +248,17 @@ const handleSearch = useDebounceFn(async () => {
   }
 }, 300)
 
-const handleMessageClick = (result: any) => {
+const handleMessageClick = (result: SpotlightMessageResult) => {
   emit('message-selected', result.roomId, result.eventId)
   emit('update:visible', false)
 }
 
-const handleRoomClick = (result: any) => {
+const handleRoomClick = (result: SpotlightRoomResult) => {
   emit('room-selected', result.roomId)
   emit('update:visible', false)
 }
 
-const handleUserClick = (result: any) => {
+const handleUserClick = (result: SpotlightUserResult) => {
   emit('user-selected', result.userId)
   emit('update:visible', false)
 }

@@ -20,7 +20,7 @@ import { ref, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useSpaceStore } from '@/stores/domains/widget/space'
-import { matrixSpaceService } from '@/services/matrix/MatrixSpaceService'
+import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
 import { createLogger } from '@/utils/Logger'
 import type { FormInst } from 'naive-ui'
 

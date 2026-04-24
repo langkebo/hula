@@ -10,7 +10,7 @@ import { initializeDeviceService } from '@/services/matrix/user/MatrixDeviceServ
 import { initializeKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { initializePresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { initializeVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
-import { initializeRoomSummaryService } from '@/services/matrix/MatrixRoomSummaryService'
+import { initializeRoomSummaryService } from '@/services/matrix/room/MatrixRoomSummaryService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixStore')

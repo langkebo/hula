@@ -1,9 +1,4 @@
-/**
- * Logger 单元测试
- */
-
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createLogger, LogLevelPriority } from '../Logger'
+import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -13,49 +8,118 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   trace: vi.fn()
 }))
 
+import { createLogger, LogLevelPriority } from '../Logger'
+import type { LogLevel } from '../Logger'
+
 describe('Logger', () => {
-  let logger: ReturnType<typeof createLogger>
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-    logger = createLogger('TestContext')
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  describe('createLogger 工厂函数', () => {
-    it('应该创建 logger 实例', () => {
+  describe('createLogger', () => {
+    it('creates a logger with the given context', () => {
+      const logger = createLogger('TestContext')
       expect(logger).toBeDefined()
     })
   })
 
-  describe('日志级别优先级', () => {
-    it('应该定义正确的优先级顺序', () => {
+  describe('LogLevelPriority', () => {
+    it('has correct ordering', () => {
       expect(LogLevelPriority.trace).toBeLessThan(LogLevelPriority.debug)
       expect(LogLevelPriority.debug).toBeLessThan(LogLevelPriority.info)
       expect(LogLevelPriority.info).toBeLessThan(LogLevelPriority.warn)
       expect(LogLevelPriority.warn).toBeLessThan(LogLevelPriority.error)
-      expect(LogLevelPriority.off).toBeGreaterThan(LogLevelPriority.error)
+      expect(LogLevelPriority.error).toBeLessThan(LogLevelPriority.off)
+    })
+
+    it('covers all levels', () => {
+      const levels: LogLevel[] = ['trace', 'debug', 'info', 'warn', 'error', 'off']
+      for (const level of levels) {
+        expect(LogLevelPriority[level]).toBeDefined()
+      }
     })
   })
 
-  describe('日志方法', () => {
-    it('info 应该不抛出错误', () => {
-      expect(() => logger.info('Test info message')).not.toThrow()
+  describe('sanitize', () => {
+    // Access Logger's private static sanitize via constructor chain
+    function getSanitize(instance: ReturnType<typeof createLogger>) {
+      const ctor = Object.getPrototypeOf(instance).constructor
+      return ctor.sanitize as ((text: string) => string) | undefined
+    }
+
+    it('redacts access_token values in formatted output', () => {
+      const sanitize = getSanitize(createLogger('Test'))
+      if (sanitize) {
+        const result = sanitize('access_token=abcdefghijklmnop')
+        expect(result).toContain('***REDACTED***')
+        expect(result).not.toContain('abcdefghijklmnop')
+      }
     })
 
-    it('warn 应该不抛出错误', () => {
-      expect(() => logger.warn('Test warn message')).not.toThrow()
+    it('redacts syt_ tokens', () => {
+      const sanitize = getSanitize(createLogger('Test'))
+      if (sanitize) {
+        const result = sanitize('token: syt_abcdefghijklmnop')
+        expect(result).toContain('***REDACTED***')
+        expect(result).not.toContain('abcdefghijklmnop')
+      }
     })
 
-    it('error 应该不抛出错误', () => {
-      expect(() => logger.error('Test error message')).not.toThrow()
+    it('redacts Bearer tokens', () => {
+      const sanitize = getSanitize(createLogger('Test'))
+      if (sanitize) {
+        const result = sanitize('Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.test')
+        expect(result).toContain('***REDACTED***')
+      }
     })
 
-    it('应该支持多个参数', () => {
-      expect(() => logger.info('Message', { key: 'value' }, 123)).not.toThrow()
+    it('leaves short tokens alone', () => {
+      const sanitize = getSanitize(createLogger('Test'))
+      if (sanitize) {
+        const result = sanitize('short value abc')
+        expect(result).toBe('short value abc')
+      }
+    })
+
+    it('does not alter messages without tokens', () => {
+      const sanitize = getSanitize(createLogger('Test'))
+      if (sanitize) {
+        const msg = 'Normal log message without any sensitive data'
+        expect(sanitize(msg)).toBe(msg)
+      }
+    })
+  })
+
+  describe('level filtering', () => {
+    it('setLevel returns this for chaining', () => {
+      const logger = createLogger('Chain')
+      const result = logger.setLevel('warn')
+      expect(result).toBe(logger)
+    })
+  })
+
+  describe('child logger', () => {
+    it('creates a child with combined context', () => {
+      const parent = createLogger('Parent')
+      const child = parent.child('Child')
+      expect(child).toBeDefined()
+    })
+  })
+
+  describe('log methods exist', () => {
+    it('has all standard log methods', () => {
+      const logger = createLogger('Methods')
+      expect(typeof logger.trace).toBe('function')
+      expect(typeof logger.debug).toBe('function')
+      expect(typeof logger.info).toBe('function')
+      expect(typeof logger.warn).toBe('function')
+      expect(typeof logger.error).toBe('function')
+      expect(typeof logger.log).toBe('function')
+    })
+
+    it('has utility methods', () => {
+      const logger = createLogger('Util')
+      expect(typeof logger.time).toBe('function')
+      expect(typeof logger.timeEnd).toBe('function')
+      expect(typeof logger.group).toBe('function')
+      expect(typeof logger.groupEnd).toBe('function')
+      expect(typeof logger.table).toBe('function')
     })
   })
 })

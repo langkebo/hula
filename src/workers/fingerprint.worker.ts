@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noConsole: Worker performance logging is intentionally kept in this worker.
 /// <reference lib="webworker" />
 
 // 检测浏览器特征
@@ -10,7 +11,6 @@ const detectBrowserFeatures = async (): Promise<Record<string, boolean>> => {
         const canvas = new OffscreenCanvas(1, 1)
         return !!canvas.getContext('webgl')
       } catch {
-        // WebGL 不可用时返回 false
         return false
       }
     },
@@ -19,19 +19,15 @@ const detectBrowserFeatures = async (): Promise<Record<string, boolean>> => {
         const canvas = new OffscreenCanvas(1, 1)
         return !!canvas.getContext('2d')
       } catch {
-        // Canvas 不可用时返回 false
         return false
       }
     },
     audio: async () => {
       try {
-        const workerGlobalScope = self as unknown as {
-          AudioContext?: typeof AudioContext
-          webkitAudioContext?: typeof AudioContext
-        }
-        return !!(workerGlobalScope.AudioContext || workerGlobalScope.webkitAudioContext)
+        return !!(
+          self.AudioContext || (self as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+        )
       } catch {
-        // Audio API 不可用时返回 false
         return false
       }
     }
@@ -43,7 +39,6 @@ const detectBrowserFeatures = async (): Promise<Record<string, boolean>> => {
         const result = await check()
         return [key, result]
       } catch {
-        // 特征检测失败时返回 false
         return [key, false]
       }
     })
@@ -56,15 +51,20 @@ const detectBrowserFeatures = async (): Promise<Record<string, boolean>> => {
   return features
 }
 
+type FingerprintDeviceInfo = Record<string, unknown>
+
 // 生成设备指纹
-const generateFingerprint = async (data: { deviceInfo: any; browserFingerprint: string }): Promise<string> => {
+const generateFingerprint = async (
+  data: { deviceInfo: FingerprintDeviceInfo; browserFingerprint: string }
+): Promise<string> => {
   try {
     const totalStart = performance.now()
 
     // 2. 浏览器特征检测
     const featureStart = performance.now()
     const browserFeatures = await detectBrowserFeatures()
-    const _featureTime = performance.now() - featureStart
+    const featureTime = performance.now() - featureStart
+    console.log(`Worker: 特征检测耗时: ${featureTime.toFixed(2)}ms`)
 
     // 3. 组合所有特征
     const hashStart = performance.now()
@@ -81,12 +81,15 @@ const generateFingerprint = async (data: { deviceInfo: any; browserFingerprint: 
     const fingerprint = Array.from(new Uint8Array(fingerprintBuffer))
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('')
-    const _hashTime = performance.now() - hashStart
+    const hashTime = performance.now() - hashStart
+    console.log(`Worker: SHA-256计算耗时: ${hashTime.toFixed(2)}ms`)
 
-    const _totalTime = performance.now() - totalStart
+    const totalTime = performance.now() - totalStart
+    console.log(`Worker: 指纹生成总耗时: ${totalTime.toFixed(2)}ms`)
 
     return fingerprint
-  } catch (_error) {
+  } catch (error) {
+    console.error('Worker: ❌ 生成设备指纹失败:', error)
     return ''
   }
 }

@@ -1,11 +1,8 @@
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { MittEnum, ModalEnum, PluginEnum } from '@/enums'
-import { useLogin } from '@/hooks/useLogin.ts'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
-import { useSettingStore } from '@/stores/setting'
-import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LeftConfig')
@@ -61,9 +58,7 @@ const useItemsBottom = () =>
 const useMoreList = () => {
   const { t } = useI18n()
   const { createWebviewWindow } = useWindow()
-  const settingStore = useSettingStore()
-  const { login } = storeToRefs(settingStore)
-  const { logout, resetLoginState } = useLogin()
+  const { logout } = useLoginFlow()
   const showHomeserverDialog = ref(false)
 
   const openHomeserverDialog = () => {
@@ -121,8 +116,6 @@ const useMoreList = () => {
         icon: 'power',
         click: async () => {
           try {
-            await MatrixAuthService.logout()
-            await resetLoginState()
             await logout()
           } catch (error) {
             logger.error('退出登录失败:', error)
@@ -137,18 +130,18 @@ const useMoreList = () => {
 /** 插件列表 */
 const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle'>> = [
   {
-    url: 'space',
-    icon: 'folder-multiple',
-    iconAction: 'folder-multiple',
+    url: 'dynamic',
+    icon: 'fire',
+    iconAction: 'fire-action',
     state: PluginEnum.BUILTIN,
     isAdd: true,
     dot: false,
     progress: 0,
     size: {
-      width: 800,
-      height: 600,
+      width: 600,
+      height: 800,
       minWidth: 600,
-      minHeight: 400
+      minHeight: 550
     },
     window: {
       resizable: true
@@ -173,6 +166,69 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
     },
     miniShow: false
   }
+  // {
+  //   icon: 'Music',
+  //   url: 'music',
+  //   title: 'HuLa云音乐',
+  //   shortTitle: '云音乐',
+  //   tip: 'HuLa云音乐开发中，敬请期待',
+  //   state: PluginEnum.NOT_INSTALLED,
+  //   version: 'v1.0.0-Alpha',
+  //   isAdd: false,
+  //   dot: true,
+  //   progress: 0,
+  //   size: {
+  //     minWidth: 780,
+  //     width: 980,
+  //     height: 800
+  //   },
+  //   window: {
+  //     resizable: true
+  //   },
+  //   miniShow: false
+  // },
+  // {
+  //   icon: 'UimSlack',
+  //   url: 'collaboration',
+  //   title: 'HuLa协作',
+  //   shortTitle: '协作',
+  //   tip: 'HuLa协作开发中，敬请期待',
+  //   state: PluginEnum.NOT_INSTALLED,
+  //   version: 'v1.0.0-Alpha',
+  //   isAdd: false,
+  //   dot: true,
+  //   progress: 0,
+  //   size: {
+  //     minWidth: 780,
+  //     width: 980,
+  //     height: 800
+  //   },
+  //   window: {
+  //     resizable: true
+  //   },
+  //   miniShow: false
+  // },
+  // {
+  //   icon: 'vigo',
+  //   url: 'collaboration',
+  //   title: 'HuLa短视频',
+  //   shortTitle: '短视频',
+  //   tip: 'HuLa短视频开发中，敬请期待',
+  //   state: PluginEnum.NOT_INSTALLED,
+  //   version: 'v1.0.0-Alpha',
+  //   isAdd: false,
+  //   dot: true,
+  //   progress: 0,
+  //   size: {
+  //     minWidth: 780,
+  //     width: 980,
+  //     height: 800
+  //   },
+  //   window: {
+  //     resizable: true
+  //   },
+  //   miniShow: false
+  // }
 ]
 
 const usePluginsList = () =>
@@ -181,8 +237,8 @@ const usePluginsList = () =>
     return computed<STO.Plugins<PluginEnum>[]>(() => [
       {
         ...basePluginsList[0],
-        title: t('home.plugins.space'),
-        shortTitle: t('home.plugins.space_short_title')
+        title: t('home.plugins.dynamic'),
+        shortTitle: t('home.plugins.dynamic_short_title')
       },
       {
         ...basePluginsList[1],

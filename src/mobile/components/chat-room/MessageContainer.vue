@@ -45,6 +45,7 @@
 </template>
 
 <script setup lang="ts">
+import { useThrottleFn } from '@vueuse/core'
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -85,6 +86,7 @@ const emit = defineEmits<{
 }>()
 
 const scrollContainerRef = ref<HTMLElement | null>(null)
+let visibilityObserver: IntersectionObserver | null = null
 
 const newMessageCount = ref(0)
 const showNewMessageTip = ref(false)
@@ -103,7 +105,7 @@ function getMessageId(item: MessageItem): string | undefined {
   return item.id || item.message?.id
 }
 
-function handleScroll(event: Event) {
+const handleScroll = useThrottleFn((event: Event) => {
   emit('scroll', event)
 
   if (!scrollContainerRef.value) return
@@ -121,7 +123,7 @@ function handleScroll(event: Event) {
     showNewMessageTip.value = false
     newMessageCount.value = 0
   }
-}
+}, 16)
 
 function scrollToBottom(behavior: ScrollBehavior = props.scrollBehavior) {
   if (!scrollContainerRef.value) return
@@ -163,11 +165,9 @@ watch(
   }
 )
 
-let scrollTimeout: number | null = null
-
 onMounted(() => {
   if (scrollContainerRef.value) {
-    const observer = new IntersectionObserver(
+    visibilityObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           emit('visibleChange', entry.isIntersecting)
@@ -176,13 +176,14 @@ onMounted(() => {
       { threshold: 0.1 }
     )
 
-    observer.observe(scrollContainerRef.value)
+    visibilityObserver.observe(scrollContainerRef.value)
   }
 })
 
 onUnmounted(() => {
-  if (scrollTimeout) {
-    clearTimeout(scrollTimeout)
+  if (visibilityObserver) {
+    visibilityObserver.disconnect()
+    visibilityObserver = null
   }
 })
 

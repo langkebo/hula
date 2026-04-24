@@ -24,13 +24,14 @@ export interface ResizeStartPosition {
   top: number
 }
 
-export interface SelectionAreaStyle extends Record<string, string> {
+export interface SelectionAreaStyle {
   left: string
   top: string
   width: string
   height: string
   borderRadius: string
   border: string
+  [key: `--${string}`]: string | number | undefined
 }
 
 export type DrawToolType = 'rect' | 'circle' | 'arrow' | 'mosaic' | null

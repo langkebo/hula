@@ -212,7 +212,6 @@ export const isVideoUrl = (url: string): boolean => {
     new URL(url)
     return checkFileType(url, SUPPORTED_VIDEO_EXTENSIONS, 'video/')
   } catch {
-    // URL 解析失败时返回 false
     return false
   }
 }

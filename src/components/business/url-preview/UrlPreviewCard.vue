@@ -5,7 +5,7 @@ import {
   type UrlPreview,
   simplifyUrl,
   getDomain
-} from '@/services/matrix/MatrixUrlPreviewService'
+} from '@/services/matrix/media/MatrixUrlPreviewService'
 
 interface Props {
   url: string

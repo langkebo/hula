@@ -4,10 +4,6 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Fingerprint')
 
-interface NavigatorWithDeviceMemory extends Navigator {
-  deviceMemory?: number
-}
-
 const CACHE_DURATION = 24 * 60 * 60 * 1000
 
 const worker = new Worker(new URL('../workers/fingerprint.worker.ts', import.meta.url), {
@@ -39,14 +35,13 @@ export const getEnhancedFingerprint = async (): Promise<string> => {
       }
 
       const deviceInfoStart = performance.now()
-      const nav = navigator as NavigatorWithDeviceMemory
       const deviceInfo = {
         platform: getOSType(),
         screenSize: `${window.screen.width}x${window.screen.height}`,
         pixelRatio: window.devicePixelRatio,
         colorDepth: window.screen.colorDepth,
         hardwareConcurrency: navigator.hardwareConcurrency || undefined,
-        deviceMemory: nav.deviceMemory,
+        deviceMemory: (navigator as unknown as { deviceMemory?: number }).deviceMemory,
         language: navigator.language,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       }

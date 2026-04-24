@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useRoomStore } from '@/stores/domains/chat/room'
-import matrixRoomService from '@/services/matrix/MatrixRoomService'
+import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
 import matrixEventService from '@/services/matrix/MatrixEventService'
-import matrixRoomSummaryService from '@/services/matrix/MatrixRoomSummaryService'
+import matrixRoomSummaryService from '@/services/matrix/room/MatrixRoomSummaryService'
 import { MsgEnum, MessageStatusEnum } from '@/enums'
 
 const { mockRoomService, mockEventService, mockRoomSummaryService, mockMatrixClientService } = vi.hoisted(() => ({
@@ -105,7 +105,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('@/services/matrix/MatrixRoomService', () => ({
+vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
   default: mockRoomService
 }))
 
@@ -113,7 +113,7 @@ vi.mock('@/services/matrix/MatrixEventService', () => ({
   default: mockEventService
 }))
 
-vi.mock('@/services/matrix/MatrixRoomSummaryService', () => ({
+vi.mock('@/services/matrix/room/MatrixRoomSummaryService', () => ({
   default: mockRoomSummaryService
 }))
 

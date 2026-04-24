@@ -9,7 +9,7 @@
         </div>
         <n-flex vertical align="center" :size="8">
           <span class="text-20px font-bold">HuLa</span>
-          <span class="text-(14px #666)">{{ t('setting.help_about.version') }}: {{ appVersion }}</span>
+          <span class="text-(14px [--color-text-secondary])">{{ t('setting.help_about.version') }}: {{ appVersion }}</span>
           <n-tag size="small" type="success">stable</n-tag>
         </n-flex>
 
@@ -35,7 +35,7 @@
               <svg class="size-18px"><use :href="link.icon"></use></svg>
               <span>{{ link.name }}</span>
             </n-flex>
-            <svg class="size-14px text-#999"><use href="#open-in-new"></use></svg>
+            <svg class="size-14px text-[--color-text-quaternary]"><use href="#open-in-new"></use></svg>
           </n-flex>
           <span v-if="index < links.length - 1" class="w-full h-1px bg-[--line-color] block"></span>
         </template>
@@ -56,7 +56,7 @@
               <svg class="size-18px"><use :href="item.icon"></use></svg>
               <span>{{ item.name }}</span>
             </n-flex>
-            <svg class="size-14px text-#999"><use href="#open-in-new"></use></svg>
+            <svg class="size-14px text-[--color-text-quaternary]"><use href="#open-in-new"></use></svg>
           </n-flex>
           <span v-if="index < supportItems.length - 1" class="w-full h-1px bg-[--line-color] block"></span>
         </template>
@@ -68,20 +68,20 @@
 
       <n-flex class="item p-12px" :size="8" vertical>
         <n-flex justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.help_about.platform') }}</span>
-          <span class="text-(12px #666)">Tauri Desktop v{{ tauriVersion }}</span>
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.help_about.platform') }}</span>
+          <span class="text-(12px [--color-text-secondary])">Tauri Desktop v{{ tauriVersion }}</span>
         </n-flex>
         <n-flex justify="space-between">
-          <span class="text-(12px #666)">Rust</span>
-          <span class="text-(12px #666)">v{{ rustVersion }}</span>
+          <span class="text-(12px [--color-text-secondary])">Rust</span>
+          <span class="text-(12px [--color-text-secondary])">v{{ rustVersion }}</span>
         </n-flex>
         <n-flex justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.help_about.vue_version') }}</span>
-          <span class="text-(12px #666)">v{{ vueVersion }}</span>
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.help_about.vue_version') }}</span>
+          <span class="text-(12px [--color-text-secondary])">v{{ vueVersion }}</span>
         </n-flex>
         <n-flex justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.help_about.build_number') }}</span>
-          <span class="text-(12px #666)">#{{ buildNumber }}</span>
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.help_about.build_number') }}</span>
+          <span class="text-(12px [--color-text-secondary])">#{{ buildNumber }}</span>
         </n-flex>
       </n-flex>
     </n-flex>
@@ -94,7 +94,7 @@
           <n-button text @click="openLink('/legal/terms.html')">
             {{ t('setting.help_about.terms_of_service') }}
           </n-button>
-          <span class="text-#999">|</span>
+          <span class="text-[--color-text-quaternary]">|</span>
           <n-button text @click="openLink('/legal/privacy.html')">
             {{ t('setting.help_about.privacy_policy') }}
           </n-button>

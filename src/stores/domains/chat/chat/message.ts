@@ -9,7 +9,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useSessionStore, type SessionItem } from './session'
-import { matrixRoomService } from '@/services/matrix/MatrixRoomService'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import {
   pageSize,

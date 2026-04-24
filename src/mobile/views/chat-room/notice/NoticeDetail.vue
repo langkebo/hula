@@ -62,6 +62,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStore } from '@/stores/domains/user/user'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { matrixAnnouncementService } from '@/services/matrix'
+import type { Announcement as MatrixAnnouncement } from '@/services/matrix/room/MatrixAnnouncementService'
 
 const logger = createLogger('NoticeDetail')
 
@@ -75,7 +76,13 @@ const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
 const userStore = useUserStore()
 
-const announcement = ref<any>(null)
+type NoticeDetailAnnouncement = MatrixAnnouncement & {
+  uid: string
+  createTime: number
+  readCount?: number
+}
+
+const announcement = ref<NoticeDetailAnnouncement | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 

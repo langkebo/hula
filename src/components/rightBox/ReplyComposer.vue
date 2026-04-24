@@ -92,7 +92,7 @@ const handleCancel = () => {
 }
 
 .reply-line {
-  @apply w-3px h-full min-h-40px rounded-2px bg-#13987f;
+  @apply w-3px h-full min-h-40px rounded-2px bg-[--color-primary];
 }
 
 .reply-content {
@@ -104,11 +104,11 @@ const handleCancel = () => {
 }
 
 .reply-sender {
-  @apply text-12px color-#13987f font-medium flex-1 truncate;
+  @apply text-12px color-[--color-primary] font-medium flex-1 truncate;
 }
 
 .reply-body {
-  @apply text-12px color-#909090 truncate;
+  @apply text-12px color-[--color-text-tertiary] truncate;
 }
 
 .reply-text {
@@ -129,6 +129,6 @@ const handleCancel = () => {
 }
 
 .reply-type-label {
-  @apply text-12px color-#909090;
+  @apply text-12px color-[--color-text-tertiary];
 }
 </style>

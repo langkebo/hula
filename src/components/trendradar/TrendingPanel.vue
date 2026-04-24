@@ -40,21 +40,14 @@
 </template>
 
 <script setup lang="ts">
-interface TrendingTopic {
-  name?: string
-  topic?: string
-  title?: string
-  hotValue?: number | string
-  category?: string
-  trend?: 'up' | 'down' | 'stable'
-}
+import type { TrendRadarTopic } from '@/services/trendradar'
 
 defineProps<{
-  topics: TrendingTopic[]
+  topics: TrendRadarTopic[]
   loading?: boolean
 }>()
 
-const emit = defineEmits<(event: 'topicClick', topic: TrendingTopic) => void>()
+const emit = defineEmits<(event: 'topicClick', topic: TrendRadarTopic) => void>()
 
 const formatHotValue = (value: number | string) => {
   const num = typeof value === 'string' ? parseFloat(value) : value
@@ -64,7 +57,7 @@ const formatHotValue = (value: number | string) => {
   return String(num)
 }
 
-const handleTopicClick = (topic: TrendingTopic) => {
+const handleTopicClick = (topic: TrendRadarTopic) => {
   emit('topicClick', topic)
 }
 </script>

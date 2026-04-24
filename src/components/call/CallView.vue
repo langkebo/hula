@@ -181,7 +181,7 @@ onUnmounted(() => {
   @apply flex flex-col h-full bg-[--bg-color];
 
   &.is-video {
-    background: #000;
+    background: var(--call-video-bg, #000);
   }
 }
 
@@ -198,32 +198,32 @@ onUnmounted(() => {
 }
 
 .call-duration {
-  @apply text-14px color-#909090;
+  @apply text-14px color-[--color-text-tertiary];
 }
 
 .call-status {
   @apply flex items-center gap-6px;
 
   &.ringing .status-indicator {
-    @apply w-8px h-8px rounded-full bg-#faad14 animate-pulse;
+    @apply w-8px h-8px rounded-full bg-[--color-warning] animate-pulse;
   }
 
   &.connecting .status-indicator {
-    @apply w-8px h-8px rounded-full bg-#1890ff animate-pulse;
+    @apply w-8px h-8px rounded-full bg-[--color-info] animate-pulse;
   }
 
   &.connected .status-indicator {
-    @apply w-8px h-8px rounded-full bg-#52c41a;
+    @apply w-8px h-8px rounded-full bg-[--color-success];
   }
 
   &.ended .status-indicator,
   &.error .status-indicator {
-    @apply w-8px h-8px rounded-full bg-#ff4d4f;
+    @apply w-8px h-8px rounded-full bg-[--color-danger];
   }
 }
 
 .status-text {
-  @apply text-12px color-#909090;
+  @apply text-12px color-[--color-text-tertiary];
 }
 
 .call-content {

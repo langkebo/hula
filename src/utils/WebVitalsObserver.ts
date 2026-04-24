@@ -1,46 +1,83 @@
+/**
+ * Web Vitals 性能监控观察器
+ * 集成 PerformanceReporter 实现 Prometheus + Grafana 上报
+ */
+
 import type { Metric } from 'web-vitals'
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals'
+import { performanceReporter } from '@/utils/PerformanceReporter'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WebVitalsObserver')
 
-type WebVitalMetric =
-  | (Metric & { type: 'web-vital' })
-  | {
-      type: 'longtask'
-      name: string
-      startTime: number
-      duration: number
-      attribution?: Record<string, unknown>
-    }
+type Reporter = (metric: PerformanceMetric) => void
 
-type Reporter = (metric: WebVitalMetric) => void
-
-// 扩展 PerformanceObserver 类型以包含 supportedEntryTypes
-interface ExtendedPerformanceObserver extends PerformanceObserver {
-  supportedEntryTypes?: string[]
-}
-
-// 扩展 PerformanceEntry 类型以包含 attribution
-interface ExtendedPerformanceEntry extends PerformanceEntry {
+interface PerformanceMetric {
+  type: 'web-vital' | 'longtask'
+  name: string
+  startTime?: number
+  value: number
+  delta?: number
+  id?: string
+  rating?: 'good' | 'needs-improvement' | 'poor'
+  entries?: PerformanceEntry[]
   attribution?: Record<string, unknown>
+  duration?: number
 }
 
 const defaultReporter: Reporter = (metric) => {
-  const label = metric.type === 'web-vital' ? metric.name : 'longtask'
-  logger.info(label, metric)
+  if (metric.type === 'web-vital') {
+    logger.info(`[WebVitals] ${metric.name}: ${metric.value?.toFixed(2)}`)
+  } else {
+    logger.info(`[WebVitals] longtask: ${metric.duration?.toFixed(2)}ms`)
+  }
 }
 
 let hasStarted = false
+let currentReporter: Reporter = defaultReporter
 
-export const startWebVitalObserver = (reporter: Reporter = defaultReporter) => {
+export const startWebVitalObserver = (
+  options: { reporter?: Reporter; prometheusEndpoint?: string; debug?: boolean } = {}
+): void => {
   if (hasStarted || typeof window === 'undefined') return
   hasStarted = true
 
+  const { prometheusEndpoint, debug = false } = options
+
+  if (prometheusEndpoint) {
+    performanceReporter.initialize({
+      endpoint: prometheusEndpoint,
+      debug,
+      batchSize: 10,
+      flushInterval: 5000,
+      enabled: true
+    })
+    currentReporter = (metric) => {
+      if (metric.type === 'web-vital' && metric.delta !== undefined && metric.id !== undefined) {
+        performanceReporter.reportWebVital({
+          name: metric.name,
+          value: metric.value,
+          delta: metric.delta,
+          id: metric.id,
+          entries: metric.entries || []
+        })
+      } else if (metric.type === 'longtask' && metric.startTime !== undefined && metric.duration !== undefined) {
+        performanceReporter.reportLongtask(metric.startTime, metric.duration, metric.attribution)
+      }
+    }
+  } else {
+    currentReporter = options.reporter || defaultReporter
+  }
+
   const report = (metric: Metric) => {
-    reporter({
-      ...metric,
-      type: 'web-vital'
+    currentReporter({
+      type: 'web-vital',
+      name: metric.name,
+      value: metric.value,
+      delta: metric.delta,
+      id: metric.id,
+      rating: (metric as Metric & { rating?: string }).rating as 'good' | 'needs-improvement' | 'poor' | undefined,
+      entries: metric.entries
     })
   }
 
@@ -52,18 +89,19 @@ export const startWebVitalObserver = (reporter: Reporter = defaultReporter) => {
 
   if (
     'PerformanceObserver' in window &&
-    Array.isArray((PerformanceObserver as unknown as ExtendedPerformanceObserver).supportedEntryTypes) &&
-    (PerformanceObserver as unknown as ExtendedPerformanceObserver).supportedEntryTypes?.includes('longtask')
+    Array.isArray((PerformanceObserver as unknown as { supportedEntryTypes?: string[] }).supportedEntryTypes) &&
+    (PerformanceObserver as unknown as { supportedEntryTypes?: string[] }).supportedEntryTypes?.includes('longtask')
   ) {
     const observer = new PerformanceObserver((entryList) => {
       for (const entry of entryList.getEntries()) {
-        const extendedEntry = entry as ExtendedPerformanceEntry
-        reporter({
+        const perfEntry = entry as PerformanceEntry & { attribution?: Record<string, unknown> }
+        currentReporter({
           type: 'longtask',
-          name: entry.name || 'longtask',
+          name: 'longtask',
           startTime: entry.startTime,
+          value: entry.duration,
           duration: entry.duration,
-          attribution: extendedEntry.attribution
+          attribution: perfEntry.attribution
         })
       }
     })
@@ -74,4 +112,13 @@ export const startWebVitalObserver = (reporter: Reporter = defaultReporter) => {
       logger.warn('longtask observer failed:', error)
     }
   }
+
+  logger.info('[WebVitals] 性能监控已启动')
 }
+
+export const stopWebVitalObserver = (): void => {
+  hasStarted = false
+  performanceReporter.terminate()
+}
+
+export { performanceReporter }

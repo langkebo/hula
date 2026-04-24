@@ -22,15 +22,38 @@
 </template>
 
 <script setup lang="ts">
+import type { MatrixContact } from '@/stores/domains/chat/contacts'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { useI18n } from 'vue-i18n'
 
-type Emits = (e: 'click', item: any) => void
+type FileManagerListItem = Partial<MatrixContact & MatrixGroupInfo> & {
+  id?: string
+  roomName?: string
+  roomAvatar?: string
+  groupName?: string
+  nickname?: string
+  userName?: string
+  isOnline?: boolean
+  memberCount?: number
+  unreadCount?: number
+  lastMessage?: string
+}
+
+type DisplayFileManagerItem = FileManagerListItem & {
+  name: string
+  avatar: string
+  isOnline: boolean
+  subtitle: string
+  count?: number
+}
+
+type Emits = (e: 'click', item: DisplayFileManagerItem) => void
 
 const props = withDefaults(
   defineProps<{
-    user?: any
-    room?: any
-    contact?: any
+    user?: FileManagerListItem
+    room?: FileManagerListItem
+    contact?: FileManagerListItem
     isSelected?: boolean
   }>(),
   {
@@ -42,7 +65,7 @@ const emit = defineEmits<Emits>()
 const { t } = useI18n()
 
 // 统一的数据格式
-const itemData = computed(() => {
+const itemData = computed<DisplayFileManagerItem>(() => {
   const item = props.user || props.room || props.contact || {}
 
   return {
@@ -62,7 +85,7 @@ const itemData = computed(() => {
   }
 })
 
-const getSubtitle = (item: any) => {
+const getSubtitle = (item: FileManagerListItem) => {
   if (item.roomName) {
     // 群聊显示成员数量
     return item.memberCount ? t('fileManager.userList.memberCount', { count: item.memberCount }) : ''
@@ -107,12 +130,12 @@ const handleAvatarError = (event: Event) => {
   user-select: none;
 
   &:hover:not(&--selected) {
-    background-color: #f5f5f5;
+    background-color: var(--bg-msg-hover);
   }
 
   &--selected {
     background-color: #e8f4f1;
-    box-shadow: inset 0 0 0 1px #13987f;
+    box-shadow: inset 0 0 0 1px var(--color-primary);
   }
 }
 
@@ -136,7 +159,7 @@ const handleAvatarError = (event: Event) => {
   right: 2px;
   width: 8px;
   height: 8px;
-  background-color: #13987f;
+  background-color: var(--color-primary);
   border-radius: 50%;
   border: 2px solid var(--center-bg-color);
 }
@@ -169,12 +192,12 @@ const handleAvatarError = (event: Event) => {
 html[data-theme='dark'] {
   .user-item {
     &:hover:not(&--selected) {
-      background-color: #2d2d2d;
+      background-color: var(--bg-msg-hover);
     }
 
     &--selected {
-      background-color: rgba(19, 152, 127, 0.2);
-      border-color: #13987f;
+      background-color: var(--color-primary-hover);
+      border-color: var(--color-primary);
     }
   }
 }

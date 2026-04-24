@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noConsole: Worker download logging is intentionally kept in this worker.
 /// <reference lib="webworker" />
 
 type DownloadRequest = {
@@ -19,7 +20,7 @@ self.addEventListener('message', async (event: MessageEvent<DownloadRequest>) =>
     }
 
     const buffer = await response.arrayBuffer()
-
+    console.log(`[ImageWorker] 文件下载成功: ${url}`)
     self.postMessage({ success: true, url, buffer }, [buffer])
   } catch (error) {
     self.postMessage({ success: false, url, error: error instanceof Error ? error.message : String(error) })

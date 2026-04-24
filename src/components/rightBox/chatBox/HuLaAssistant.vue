@@ -6,8 +6,8 @@
         :show-indicator="false"
         :height="6"
         :stroke-width="10"
-        :color="'#13987f'"
-        :rail-color="'#13987f30'"
+        :color="'var(--color-primary)'"
+        :rail-color="'var(--color-primary)/30'"
         class="assistant-view__progress"
         type="line" />
       <span class="assistant-view__placeholder-text">
@@ -525,8 +525,8 @@ onUnmounted(() => {
   justify-content: center;
   margin: 16px;
   border-radius: 16px;
-  background: radial-gradient(ellipse at center, rgba(19, 152, 127, 0.24), rgba(19, 152, 127, 0));
-  box-shadow: inset 0 0 0 1px rgba(19, 152, 127, 0.1);
+  background: radial-gradient(ellipse at center, var(--color-primary)/24, rgba(19, 152, 127, 0));
+  box-shadow: inset 0 0 0 1px var(--color-primary-light);
   overflow: hidden;
 
   canvas {
@@ -545,7 +545,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 12px;
   font-size: 14px;
-  color: #13987f;
+  color: var(--color-primary);
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(8px);
 }

@@ -1,5 +1,5 @@
 <template>
-  <n-drawer :show="visible" :width="320" placement="right" :mask-closable="true" @update:show="(val: boolean) => emit('update:visible', val)">
+  <n-drawer :show="visible" :width="320" placement="right" :mask-closable="true" @update:show="(v) => emit('update:visible', v)">
     <n-drawer-content :title="drawerTitle" closable>
       <div class="sidebar-content">
         <div v-if="isGroup" class="group-info-section">
@@ -30,10 +30,10 @@
             <span class="label">{{ t('home.chat_header.my_name_in_group') }}</span>
             <div class="value-row">
               <n-input
-                :value="localMyName"
+                :value="localMyNameDraft"
                 size="small"
                 :placeholder="t('home.chat_header.input_my_name')"
-                @update:value="(val: string) => emit('update:localMyName', val)"
+                @update:value="handleLocalMyNameInput"
                 @blur="handleUpdateMyName"
                 @keyup.enter="handleUpdateMyName" />
             </div>
@@ -65,10 +65,10 @@
             <span class="label">{{ t('home.chat_header.remark') }}</span>
             <div class="value-row">
               <n-input
-                :value="localRemark"
+                :value="localRemarkDraft"
                 size="small"
                 :placeholder="t('home.chat_header.input_remark')"
-                @update:value="(val: string) => emit('update:localRemark', val)"
+                @update:value="handleLocalRemarkInput"
                 @blur="handleUpdateRemark"
                 @keyup.enter="handleUpdateRemark" />
             </div>
@@ -163,6 +163,8 @@ const { t } = useI18n()
 const isEditingName = ref(false)
 const editingName = ref('')
 const messageSettingValue = ref('notification')
+const localMyNameDraft = ref('')
+const localRemarkDraft = ref('')
 
 const drawerTitle = computed(() => (props.isGroup ? t('home.chat_header.group_info') : t('home.chat_header.chat_info')))
 
@@ -171,7 +173,23 @@ watch(
   (val) => {
     if (val) {
       editingName.value = props.groupName
+      localMyNameDraft.value = props.localMyName
+      localRemarkDraft.value = props.localRemark
     }
+  }
+)
+
+watch(
+  () => props.localMyName,
+  (val) => {
+    localMyNameDraft.value = val
+  }
+)
+
+watch(
+  () => props.localRemark,
+  (val) => {
+    localRemarkDraft.value = val
   }
 )
 
@@ -188,11 +206,21 @@ const handleUpdateName = () => {
 }
 
 const handleUpdateMyName = () => {
-  emit('update-my-name', props.localMyName.trim())
+  emit('update-my-name', localMyNameDraft.value.trim())
 }
 
 const handleUpdateRemark = () => {
-  emit('update-remark', props.localRemark.trim())
+  emit('update-remark', localRemarkDraft.value.trim())
+}
+
+const handleLocalMyNameInput = (value: string) => {
+  localMyNameDraft.value = value
+  emit('update:localMyName', value)
+}
+
+const handleLocalRemarkInput = (value: string) => {
+  localRemarkDraft.value = value
+  emit('update:localRemark', value)
 }
 
 const handlePinRoom = () => emit('pin-room')

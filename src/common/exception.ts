@@ -15,12 +15,12 @@ export enum ErrorType {
 export interface ErrorDetails {
   type: ErrorType
   code?: number
-  details?: Record<string, any>
+  details?: Record<string, unknown>
   showError?: boolean
   isRetryError?: boolean
 }
 
-const logRetryError = (message: string, details?: Record<string, any>) => {
+const logRetryError = (message: string, details?: Record<string, unknown>) => {
   import('@/utils/Logger').then(({ createLogger }) => {
     const logger = createLogger('AppException')
     logger.info('重试错误:', message, details)
@@ -30,8 +30,7 @@ const logRetryError = (message: string, details?: Record<string, any>) => {
 export class AppException extends Error {
   public readonly type: ErrorType
   public readonly code?: number
-  public readonly details?: Record<string, any>
-  // 使用静态标志位来追踪是否已经显示过错误消息
+  public readonly details?: Record<string, unknown>
   private static hasShownError = false
 
   constructor(message: string, errorDetails?: Partial<ErrorDetails>) {

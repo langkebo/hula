@@ -7,6 +7,11 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
+          <div class="flex items-start gap-8px p-12px bg-amber-50 rounded-8px mb-4px">
+            <Icon icon="mdi:alert-circle-outline" :width="16" color="#d48806" class="flex-shrink-0 mt-2px" />
+            <span class="text-12px text-amber-700">{{ t('mobile_integrations.beta_warning') }}</span>
+          </div>
+
           <div class="text-14px text-gray-500 mb-8px">{{ t('mobile_integrations.description') }}</div>
 
           <van-cell-group inset>

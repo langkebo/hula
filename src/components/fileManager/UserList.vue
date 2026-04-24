@@ -42,11 +42,7 @@
           <component
             :is="getItemComponent()"
             v-for="item in filteredList"
-            :key="
-              (item as Record<string, string>).id ||
-              (item as Record<string, string>).roomId ||
-              (item as Record<string, string>).uid
-            "
+            :key="getItemKey(item)"
             :user="item"
             :room="item"
             :contact="item"
@@ -76,6 +72,8 @@
 </template>
 
 <script setup lang="ts">
+import type { MatrixContact } from '@/stores/domains/chat/contacts'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -84,9 +82,31 @@ import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('UserList')
 
+type FileManagerContactItem = MatrixContact & {
+  avatar: string
+}
+
+type FileManagerGroupItem = MatrixGroupInfo & {
+  avatar: string
+}
+
+type FileManagerOptionItem = {
+  id?: string
+  uid?: string
+  roomId?: string
+  directRoomId?: string
+  name?: string
+  roomName?: string
+  groupName?: string
+  nickname?: string
+  avatar: string
+}
+
+type FileManagerListItem = Partial<FileManagerContactItem & FileManagerGroupItem> & FileManagerOptionItem
+
 type FileManagerState = {
   activeNavigation: Ref<string>
-  userList: Ref<any[]>
+  userList: Ref<FileManagerListItem[]>
   selectedUser: Ref<string>
   selectedRoom: Ref<string>
   setSearchKeyword: (keyword: string) => void
@@ -105,7 +125,7 @@ const groupStore = useGroupStore()
 // 本地状态
 const searchKeyword = ref('')
 const loading = ref(false)
-const sessionList = ref<any[]>([])
+const sessionList = ref<FileManagerContactItem[]>([])
 
 // 是否显示用户列表
 const shouldShowUserList = computed(() => {
@@ -125,6 +145,22 @@ const currentList = computed(() => {
       return []
   }
 })
+
+const getItemLabel = (item: FileManagerListItem) => {
+  return item.name || item.roomName || item.groupName || item.nickname || ''
+}
+
+const getUserSelectionId = (item: FileManagerListItem) => {
+  return item.uid || item.id || ''
+}
+
+const getRoomSelectionId = (item: FileManagerListItem) => {
+  return item.roomId || item.directRoomId || item.id || ''
+}
+
+const getItemKey = (item: FileManagerListItem) => {
+  return getRoomSelectionId(item) || getUserSelectionId(item)
+}
 
 // 丰富好友数据
 const enrichedContactsList = computed(() => {
@@ -160,9 +196,8 @@ const filteredList = computed(() => {
     return currentList.value
   }
 
-  return currentList.value.filter((item: any) => {
-    const name = item.name || item.roomName || item.groupName || item.nickname || ''
-    return name.toLowerCase().includes(searchKeyword.value.toLowerCase())
+  return currentList.value.filter((item) => {
+    return getItemLabel(item).toLowerCase().includes(searchKeyword.value.toLowerCase())
   })
 })
 
@@ -196,7 +231,7 @@ const getSectionTitle = () => {
 }
 
 // 获取全部选项
-const getAllOption = () => {
+const getAllOption = (): FileManagerOptionItem => {
   switch (activeNavigation.value) {
     case 'senders':
       return { id: '', name: t('fileManager.userList.allOptions.senders'), avatar: '' }
@@ -216,13 +251,13 @@ const getItemComponent = () => {
 }
 
 // 判断项目是否被选中
-const isItemSelected = (item: any) => {
+const isItemSelected = (item: FileManagerListItem) => {
   switch (activeNavigation.value) {
     case 'senders':
-      return selectedUser.value === (item.id || item.uid)
+      return selectedUser.value === getUserSelectionId(item)
     case 'sessions':
     case 'groups':
-      return selectedRoom.value === (item.roomId || item.id)
+      return selectedRoom.value === getRoomSelectionId(item)
     default:
       return false
   }
@@ -243,14 +278,14 @@ const getEmptyMessage = () => {
 }
 
 // 处理项目点击
-const handleItemClick = (item: any) => {
+const handleItemClick = (item: FileManagerListItem) => {
   switch (activeNavigation.value) {
     case 'senders':
-      setSelectedUser(item.uid || item.id || '')
+      setSelectedUser(getUserSelectionId(item))
       break
     case 'sessions':
     case 'groups':
-      setSelectedRoom(item.roomId || item.id || '')
+      setSelectedRoom(getRoomSelectionId(item))
       break
   }
 }

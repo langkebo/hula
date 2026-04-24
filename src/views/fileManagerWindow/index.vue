@@ -17,11 +17,11 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import FileContent from '@/components/fileManager/FileContent.vue'
 import SideNavigation from '@/components/fileManager/SideNavigation.vue'
 import UserList from '@/components/fileManager/UserList.vue'
+import { queryFiles, getNavigationItems, type FileQueryParam } from '@/services/tauriCommand'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('FileManager')
@@ -36,40 +36,32 @@ const userList = ref<any[]>([])
 const loading = ref(false)
 const navigationItems = ref<any[]>([])
 
-// 查询文件
-const queryFiles = async () => {
+const queryFilesAction = async () => {
   try {
     loading.value = true
 
-    // 根据导航类型确定查询参数
-    const queryParam = {
+    const queryParam: FileQueryParam = {
       navigationType: activeNavigation.value,
       selectedUser: undefined,
       searchKeyword: searchKeyword.value || undefined,
       roomId: undefined,
       page: 1,
       pageSize: 50
-    } as any
+    }
 
-    // 根据不同的导航类型设置查询参数
     switch (activeNavigation.value) {
       case 'myFiles':
-        // 我的文件：查询所有文件，不过滤用户或房间
         break
       case 'senders':
-        // 发送人：按用户过滤
         queryParam.selectedUser = selectedUser.value || undefined
         break
       case 'sessions':
       case 'groups':
-        // 会话/群聊：按房间过滤
         queryParam.roomId = selectedRoom.value || undefined
         break
     }
 
-    const response = (await invoke('query_files', {
-      param: queryParam
-    })) as any
+    const response = (await queryFiles(queryParam)) as any
 
     timeGroupedFiles.value = response.timeGroupedFiles
     userList.value = response.userList
@@ -80,10 +72,9 @@ const queryFiles = async () => {
   }
 }
 
-// 获取导航菜单项
-const getNavigationItems = async () => {
+const getNavigationItemsAction = async () => {
   try {
-    const items = (await invoke('get_navigation_items')) as any[]
+    const items = (await getNavigationItems()) as any[]
     navigationItems.value = items
   } catch (error) {
     logger.error('获取导航菜单失败:', error)
@@ -101,25 +92,22 @@ const setActiveNavigation = (key: string) => {
   selectedUser.value = ''
   selectedRoom.value = ''
 
-  queryFiles() // 重新查询文件
+  queryFilesAction()
 }
 
-// 设置选中的用户
 const setSelectedUser = (userId: string) => {
   selectedUser.value = userId
-  queryFiles() // 重新查询文件
+  queryFilesAction()
 }
 
-// 设置选中的房间
 const setSelectedRoom = (roomId: string) => {
   selectedRoom.value = roomId
-  queryFiles() // 重新查询文件
+  queryFilesAction()
 }
 
-// 设置搜索关键词
 const setSearchKeyword = (keyword: string) => {
   searchKeyword.value = keyword
-  queryFiles() // 重新查询文件
+  queryFilesAction()
 }
 
 // 提供给子组件使用的方法和状态
@@ -140,9 +128,8 @@ provide('fileManagerState', {
 
 onMounted(async () => {
   await getCurrentWebviewWindow().show()
-  // 加载导航菜单和文件数据
-  await getNavigationItems()
-  await queryFiles()
+  await getNavigationItemsAction()
+  await queryFilesAction()
 })
 </script>
 

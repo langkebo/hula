@@ -130,7 +130,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionService } from '@/services/matrix/MatrixEncryptionService'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeTextFile } from '@tauri-apps/plugin-fs'
 

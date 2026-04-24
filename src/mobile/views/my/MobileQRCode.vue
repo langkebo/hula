@@ -46,7 +46,7 @@ const startScan = async () => {
       }, 300)
     })
 
-    const res = (await Promise.race([scanTask, cancelTask])) as any
+    const res = (await Promise.race([scanTask, cancelTask])) as { content?: string } | string | null
 
     // 为空或已取消
     if (!res) {
@@ -81,10 +81,10 @@ const startScan = async () => {
     } else {
       result.value = '扫码失败或已取消'
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error('扫码出错:', err)
 
-    if (err && typeof err === 'object' && 'message' in err && /permission/i.test(err.message)) {
+    if (err && typeof err === 'object' && 'message' in err && /permission/i.test((err as Error).message)) {
       alert('没有相机权限，请在系统设置中开启权限')
       router.back() // 用户点 OK 后会执行这里
       result.value = '缺少权限'

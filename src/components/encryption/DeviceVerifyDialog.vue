@@ -1,5 +1,5 @@
 <template>
-  <n-modal :show="show" @update:show="emit('update:show', $event)" preset="card" title="设备验证" style="width: 450px" :mask-closable="false">
+  <n-modal v-model:show="visible" preset="card" title="设备验证" style="width: 450px" :mask-closable="false">
     <n-spin :show="loading">
       <div v-if="step === 'intro'" class="step-content">
         <div class="intro-icon">
@@ -82,7 +82,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { NModal, NButton, NSpin, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
-import { matrixEncryptionService, matrixAccountService, matrixClientService } from '@/services/matrix'
+import { matrixEncryptionContextService, matrixEncryptionService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('DeviceVerify')
 
@@ -120,7 +120,7 @@ const fingerprintChunks = computed(() => {
 })
 
 onMounted(async () => {
-  userId.value = matrixAccountService.getCurrentUserId() || ''
+  userId.value = matrixEncryptionContextService.getCurrentSessionContext().userId ?? ''
 })
 
 function handleCancel() {
@@ -143,22 +143,17 @@ async function startVerification() {
   loading.value = true
 
   try {
-    if (!matrixEncryptionService.isEncryptionEnabled()) {
-      throw new Error('加密模块不可用')
+    const sessionContext = matrixEncryptionContextService.getCurrentSessionContext()
+    const targetUserId = sessionContext.userId
+    const targetDeviceId = props.deviceId || sessionContext.deviceId
+
+    if (!targetUserId || !targetDeviceId) {
+      throw new Error('设备上下文不可用')
     }
 
-    const targetDeviceId = props.deviceId || matrixEncryptionService.getDeviceId()
-    const keys = await matrixEncryptionService.getOwnDeviceKeys()
-
-    if (keys?.ed25519) {
-      fingerprint.value = keys.ed25519
-    } else if (targetDeviceId) {
-      const deviceKeys = await matrixEncryptionService.getStoredDevice(userId.value, targetDeviceId)
-      if (deviceKeys) {
-        fingerprint.value = deviceKeys.getFingerprint?.() || '无法获取指纹'
-      }
-    }
-
+    userId.value = targetUserId
+    fingerprint.value =
+      (await matrixEncryptionContextService.getDeviceFingerprint(targetUserId, targetDeviceId)) || '无法获取指纹'
     step.value = 'showKey'
   } catch (error) {
     logger.error('获取设备密钥失败:', error)
@@ -172,12 +167,15 @@ async function handleConfirm() {
   loading.value = true
 
   try {
-    const targetDeviceId = props.deviceId || matrixEncryptionService.getDeviceId()
-    if (!targetDeviceId) {
-      throw new Error('设备 ID 不可用')
+    const sessionContext = matrixEncryptionContextService.getCurrentSessionContext()
+    const targetUserId = userId.value || sessionContext.userId
+    const targetDeviceId = props.deviceId || sessionContext.deviceId
+
+    if (!targetUserId || !targetDeviceId) {
+      throw new Error('设备上下文不可用')
     }
 
-    await matrixEncryptionService.trustDevice(userId.value, targetDeviceId)
+    await matrixEncryptionService.trustDevice(targetUserId, targetDeviceId)
 
     step.value = 'success'
     message.success('设备验证成功')
@@ -242,7 +240,7 @@ function handleReject() {
 }
 
 .info-label {
-  color: #999;
+  color: var(--color-text-quaternary);
   font-size: 14px;
 }
 
@@ -258,7 +256,7 @@ function handleReject() {
 
 .key-label {
   font-size: 14px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-bottom: 12px;
 }
 
@@ -289,7 +287,7 @@ function handleReject() {
   justify-content: center;
   gap: 8px;
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 
 .verification-question {
@@ -316,11 +314,11 @@ function handleReject() {
 }
 
 .success-color {
-  color: #52c41a;
+  color: var(--color-success);
 }
 
 .error-color {
-  color: #ff4d4f;
+  color: var(--color-danger);
 }
 
 .success-text,
@@ -336,11 +334,11 @@ function handleReject() {
 .success-text p,
 .error-text p {
   margin: 0;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 
 .warning-text {
-  color: #faad14 !important;
+  color: var(--color-warning) !important;
   margin-top: 8px !important;
 }
 </style>

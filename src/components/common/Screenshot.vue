@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ScreenshotComponent from './Screenshot/index.vue'
+import ScreenshotComponent from './Screenshot/ScreenshotRoot.vue'
 
 defineOptions({
   name: 'Screenshot',

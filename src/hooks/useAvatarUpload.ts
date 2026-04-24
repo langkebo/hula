@@ -77,12 +77,10 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
         return
       }
 
-      // 使用useUpload中的七牛云上传功能
       const { uploadFile, fileInfo } = useUpload()
 
-      // 执行上传，使用七牛云上传方式
       await uploadFile(file, {
-        provider: UploadProviderEnum.QINIU,
+        provider: UploadProviderEnum.DEFAULT,
         enableDeduplication: true,
         scene: scene
       })

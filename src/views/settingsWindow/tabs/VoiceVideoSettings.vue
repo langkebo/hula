@@ -460,7 +460,7 @@ function stopPreview() {
 .setting-desc {
   display: block;
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 
@@ -472,7 +472,7 @@ function stopPreview() {
 
 .volume-value {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   min-width: 40px;
 }
 
@@ -500,7 +500,7 @@ function stopPreview() {
 
 .level-fill {
   height: 100%;
-  background-color: #52c41a;
+  background-color: var(--color-success);
   border-radius: 4px;
   transition: width 0.1s ease;
 }
@@ -508,7 +508,7 @@ function stopPreview() {
 .level-text {
   display: block;
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 8px;
   text-align: center;
 }

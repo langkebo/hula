@@ -1,7 +1,6 @@
 import 'uno.css'
 import '@unocss/reset/eric-meyer.css'
 import '@/styles/css/design-tokens.css'
-import TlbsMap from 'tlbs-map-vue'
 import { setupI18n } from '@/services/i18n'
 import { AppException } from '@/common/exception.ts'
 import vResize from '@/directives/v-resize'
@@ -12,15 +11,16 @@ import { initializePlatform, isIOS, isMobile } from '@/utils/PlatformConstants'
 import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
 import { invoke } from '@tauri-apps/api/core'
 import App from '@/App.vue'
-import VueVirtualScroller from 'vue-virtual-scroller'
-import type { Plugin } from 'vue'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Main')
 
 initializePlatform()
-startWebVitalObserver()
+startWebVitalObserver({
+  prometheusEndpoint: import.meta.env.VITE_PROMETHEUS_ENDPOINT,
+  debug: import.meta.env.DEV
+})
 
 if (isIOS()) {
   invoke('request_ios_badge_authorization').catch((error) => {
@@ -65,15 +65,7 @@ async function setup() {
 }
 
 const app = createApp(App)
-app
-  .use(router)
-  .use(pinia)
-  .use(TlbsMap)
-  .use(setupI18n)
-  .use(VueVirtualScroller as unknown as Plugin)
-  .directive('resize', vResize)
-  .directive('slide', vSlide)
-  .mount('#app')
+app.use(router).use(pinia).use(setupI18n).directive('resize', vResize).directive('slide', vSlide).mount('#app')
 app.config.errorHandler = (err) => {
   if (err instanceof AppException) {
     window.$message.error(err.message)

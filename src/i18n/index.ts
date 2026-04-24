@@ -1,47 +1,34 @@
 /**
- * 国际化配置
- * 参考文档: HuLa前端方案规划文档2026.md 第九章
+ * 兼容旧入口，统一复用实际运行时的 i18n 实例。
+ * 新代码请直接从 `@/services/i18n` 导入。
  */
-import { createI18n } from 'vue-i18n'
-import zhCN from './locales/zh-CN'
-import enUS from './locales/en-US'
+import { i18n, loadLanguage } from '@/services/i18n'
 
-export const i18n = createI18n({
-  legacy: false, // 使用组合式 API
-  locale: 'zh-CN', // 默认语言
-  fallbackLocale: 'en-US', // 回退语言
-  messages: {
-    'zh-CN': zhCN,
-    'en-US': enUS
-  },
-  missingWarn: false,
-  fallbackWarn: false
-})
-
-type I18nGlobal = typeof i18n.global
+export { i18n }
 
 /**
  * 切换语言
  */
-export function setLocale(locale: 'zh-CN' | 'en-US') {
-  ;(i18n.global.locale as I18nGlobal['locale']).value = locale
-  localStorage.setItem('hula-locale', locale)
+export async function setLocale(locale: 'zh-CN' | 'en-US' | 'en') {
+  const normalizedLocale = locale === 'en-US' ? 'en' : locale
+  localStorage.setItem('hula-locale', normalizedLocale)
+  await loadLanguage(normalizedLocale)
 }
 
 /**
  * 获取当前语言
  */
-export function getLocale(): 'zh-CN' | 'en-US' {
-  return i18n.global.locale.value as 'zh-CN' | 'en-US'
+export function getLocale(): 'zh-CN' | 'en-US' | 'en' {
+  return i18n.global.locale.value as 'zh-CN' | 'en-US' | 'en'
 }
 
 /**
  * 初始化语言设置
  */
-export function initLocale() {
+export async function initLocale() {
   const saved = localStorage.getItem('hula-locale')
-  if (saved && ['zh-CN', 'en-US'].includes(saved)) {
-    ;(i18n.global.locale as I18nGlobal['locale']).value = saved as 'zh-CN' | 'en-US'
+  if (saved && ['zh-CN', 'en-US', 'en'].includes(saved)) {
+    await loadLanguage((saved === 'en-US' ? 'en' : saved) as 'zh-CN' | 'en')
   }
 }
 

@@ -29,7 +29,7 @@ import type { SelectionAreaStyle, DrawToolType, ScreenConfig } from './types'
 const props = defineProps<{
   visible: boolean
   selectionAreaStyle: SelectionAreaStyle
-  currentDrawTool: DrawToolType | null
+  currentDrawTool: DrawToolType
   borderRadius: number
   screenConfig: ScreenConfig
 }>()

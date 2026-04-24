@@ -4,7 +4,7 @@
     <div
       v-if="showUrl"
       class="text-14px color-[--chat-text-color] mb-8px break-words whitespace-pre-wrap leading-relaxed">
-      <a :href="body?.url" target="_blank" class="color-#13987f hover:underline" @click.stop>{{ body?.url }}</a>
+      <a :href="body?.url" target="_blank" class="color-[--color-primary] hover:underline" @click.stop>{{ body?.url }}</a>
     </div>
 
     <!-- 预览卡片 -->
@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { LinkPreviewBody } from '@/services/types'
-import { matrixMediaService } from '@/services/matrix/MatrixMediaService'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 
 defineOptions({
   inheritAttrs: false

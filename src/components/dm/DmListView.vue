@@ -76,7 +76,7 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
-import { matrixDirectMessageService, type DmRoomInfo } from '@/services/matrix/MatrixDirectMessageService'
+import { matrixDirectMessageService, type DmRoomInfo } from '@/services/matrix/room/MatrixDirectMessageService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'

@@ -133,6 +133,13 @@ type VideoCallRequestPayload = {
   [key: string]: unknown
 }
 
+type WebsocketConnectionStatePayload = {
+  type?: string
+  state?: string
+  isReconnection?: boolean
+  is_reconnection?: boolean
+}
+
 useMitt.on<VideoCallRequestPayload>(WsResponseMessageType.VideoCallRequest, (event) => {
   info(`收到通话请求：${JSON.stringify(event)}`)
   const remoteUid = event.callerUid
@@ -514,7 +521,7 @@ const refreshActiveGroupMembers = async () => {
 let lastWsConnectionState: string | null = null
 let isReconnectInFlight = false
 
-const handleWebsocketEvent = async (event: { payload: any }) => {
+const handleWebsocketEvent = async (event: { payload: WebsocketConnectionStatePayload | null | undefined }) => {
   const payload = event.payload
   if (!payload || payload.type !== 'connectionStateChanged') return
 

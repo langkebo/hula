@@ -24,13 +24,13 @@
           data-tauri-drag-region
           v-for="(it, i) in list"
           :key="i"
-          class="whitespace-nowrap align-middle text-(12px ellipsis) max-w-full box-border color-#909090"
+          class="whitespace-nowrap align-middle text-(12px ellipsis) max-w-full box-border color-[--color-text-tertiary]"
           :title="it">
           {{ it }}
         </NCarouselItem>
       </NCarousel>
 
-      <p class="cursor-default color-#13987f text-center text-sm mt-4" data-tauri-drag-region>
+      <p class="cursor-default color-[--color-primary] text-center text-sm mt-4" data-tauri-drag-region>
         {{ t('message.update_window.updating') }} {{ percentage }}%
       </p>
     </div>

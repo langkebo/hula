@@ -156,11 +156,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('HelpFeedback')
 
 const { t } = useI18n()
 const router = useRouter()
@@ -180,6 +183,26 @@ const featureRequest = ref({
   title: '',
   description: ''
 })
+
+onMounted(() => {
+  loadVersion()
+})
+
+function loadVersion() {
+  try {
+    const pkgVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : null
+    if (pkgVersion) {
+      versionInfo.value = `v${pkgVersion}`
+    } else {
+      const stored = localStorage.getItem('hula-app-version')
+      if (stored) {
+        versionInfo.value = stored
+      }
+    }
+  } catch {
+    versionInfo.value = 'v1.0.0'
+  }
+}
 
 function openLink(url: string) {
   window.open(url, '_blank')
@@ -201,13 +224,29 @@ async function submitBugReport() {
     return
   }
 
-  showToast({
-    type: 'success',
-    message: t('mobile_help.submit_success')
-  })
+  try {
+    const reports = JSON.parse(localStorage.getItem('hula-bug-reports') || '[]')
+    reports.push({
+      ...bugReport.value,
+      timestamp: Date.now(),
+      type: 'bug'
+    })
+    localStorage.setItem('hula-bug-reports', JSON.stringify(reports))
 
-  bugReport.value = { title: '', description: '' }
-  showBugReport.value = false
+    showToast({
+      type: 'success',
+      message: t('mobile_help.submit_success')
+    })
+
+    bugReport.value = { title: '', description: '' }
+    showBugReport.value = false
+  } catch (error) {
+    logger.error('提交 Bug 报告失败:', error)
+    showToast({
+      type: 'fail',
+      message: t('mobile_help.submit_failed')
+    })
+  }
 }
 
 async function submitFeatureRequest() {
@@ -219,13 +258,29 @@ async function submitFeatureRequest() {
     return
   }
 
-  showToast({
-    type: 'success',
-    message: t('mobile_help.submit_success')
-  })
+  try {
+    const requests = JSON.parse(localStorage.getItem('hula-feature-requests') || '[]')
+    requests.push({
+      ...featureRequest.value,
+      timestamp: Date.now(),
+      type: 'feature'
+    })
+    localStorage.setItem('hula-feature-requests', JSON.stringify(requests))
 
-  featureRequest.value = { title: '', description: '' }
-  showFeatureRequest.value = false
+    showToast({
+      type: 'success',
+      message: t('mobile_help.submit_success')
+    })
+
+    featureRequest.value = { title: '', description: '' }
+    showFeatureRequest.value = false
+  } catch (error) {
+    logger.error('提交功能请求失败:', error)
+    showToast({
+      type: 'fail',
+      message: t('mobile_help.submit_failed')
+    })
+  }
 }
 </script>
 

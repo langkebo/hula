@@ -118,19 +118,14 @@
 
 <script setup lang="ts">
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { matrixMapService } from '@/services/matrix/MatrixMapService'
+import { reverseGeocode } from '@/services/mapApi'
 import StaticProxyMap from './StaticProxyMap.vue'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
-const logger = createLogger('LocationModal')
+import type { LocationData } from '@/types/common'
 
-type LocationData = {
-  latitude: number
-  longitude: number
-  address?: string
-  timestamp: number
-}
+const logger = createLogger('LocationModal')
 
 type LocationModalProps = {
   visible: boolean
@@ -189,7 +184,7 @@ const getLocation = async () => {
     ])
 
     // 获取地址信息
-    const geocodeResult = await matrixMapService.reverseGeocode(result.transformed.lat, result.transformed.lng).catch((error: any) => {
+    const geocodeResult = await reverseGeocode(result.transformed.lat, result.transformed.lng).catch((error) => {
       logger.warn('逆地理编码失败:', error)
       return null
     })
@@ -240,7 +235,7 @@ const handleLocationChange = async (newLocation: { lat: number; lng: number }) =
   if (!selectedLocation.value) return
 
   // 获取新位置的地址
-  const geocodeResult = await matrixMapService.reverseGeocode(newLocation.lat, newLocation.lng).catch((error: any) => {
+  const geocodeResult = await reverseGeocode(newLocation.lat, newLocation.lng).catch((error) => {
     logger.warn('逆地理编码失败:', error)
     return null
   })

@@ -34,6 +34,12 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NModal, NInput, NButton } from 'naive-ui'
+import {
+  isValidHttpUrl,
+  normalizeHttpUrl,
+  resolveMatrixEndpointConfig,
+  saveMatrixHomeserverUrl
+} from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('HomeserverDialog')
 
@@ -50,8 +56,7 @@ watch(
   () => showModal.value,
   (val) => {
     if (val) {
-      const saved = localStorage.getItem('hula-homeserver-url')
-      homeserverUrl.value = saved || import.meta.env.VITE_HOMESERVER_URL || 'http://localhost:8008'
+      homeserverUrl.value = resolveMatrixEndpointConfig().homeserverUrl
     }
   }
 )
@@ -66,14 +71,9 @@ async function handleSave() {
     return
   }
 
-  let url = homeserverUrl.value.trim()
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'http://' + url
-  }
+  const url = normalizeHttpUrl(homeserverUrl.value)
 
-  try {
-    new URL(url)
-  } catch {
+  if (!isValidHttpUrl(url)) {
     window.$message.error(t('menu.homeserver_invalid'))
     return
   }
@@ -81,7 +81,7 @@ async function handleSave() {
   saving.value = true
 
   try {
-    localStorage.setItem('hula-homeserver-url', url)
+    homeserverUrl.value = saveMatrixHomeserverUrl(url)
     emit('save', url)
     window.$message.success(t('menu.homeserver_saved'))
     showModal.value = false
@@ -111,13 +111,13 @@ async function handleSave() {
 
 .config-hint {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   line-height: 1.6;
 }
 
 .config-hint .example {
   margin-top: 4px;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .modal-footer {

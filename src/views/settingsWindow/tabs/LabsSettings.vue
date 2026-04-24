@@ -260,7 +260,7 @@ function handleResetLabs() {
 
 .section-desc {
   font-size: 13px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin: 0;
 }
 
@@ -308,12 +308,12 @@ function handleResetLabs() {
 
 .lab-desc {
   font-size: 13px;
-  color: #666;
+  color: var(--color-text-secondary);
   line-height: 1.5;
 }
 
 :deep(.dark) .lab-desc {
-  color: #aaa;
+  color: var(--color-text-tertiary);
 }
 
 .lab-warning {
@@ -325,7 +325,7 @@ function handleResetLabs() {
   background-color: rgba(250, 173, 20, 0.1);
   border-radius: 4px;
   font-size: 12px;
-  color: #faad14;
+  color: var(--color-warning);
 }
 
 .setting-item {
@@ -353,7 +353,7 @@ function handleResetLabs() {
 .setting-desc {
   display: block;
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 </style>

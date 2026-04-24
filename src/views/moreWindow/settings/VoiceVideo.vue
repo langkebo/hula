@@ -77,18 +77,8 @@
             <span>{{ t('setting.voice_video.volume') }}</span>
           </n-flex>
           <n-flex align="center" :size="12">
-            <n-slider
-              class="flex-1 min-w-160px"
-              v-model:value="volume"
-              :step="1"
-              :max="100"
-              :min="0" />
-            <n-input-number
-              v-model:value="volume"
-              size="small"
-              class="w-80px"
-              :min="0"
-              :max="100" />
+            <n-slider class="flex-1 min-w-160px" v-model:value="volume" :step="1" :max="100" :min="0" />
+            <n-input-number v-model:value="volume" size="small" class="w-80px" :min="0" :max="100" />
           </n-flex>
         </n-flex>
       </n-flex>

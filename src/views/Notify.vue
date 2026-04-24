@@ -87,6 +87,15 @@ type GroupedMessage = {
   roomType: number // 房间类型：1=群聊，2=单聊
 }
 
+type NotifyEnterPayload = {
+  position: {
+    Physical: {
+      x: number
+      y: number
+    }
+  }
+}
+
 const appWindow = WebviewWindow.getCurrent()
 const { checkWinExist, resizeWindow } = useWindow()
 // const { addListener } = useTauriListener()
@@ -119,7 +128,7 @@ const division = () => {
 }
 
 // 处理点击消息的逻辑
-const handleClickMsg = async (group: any) => {
+const handleClickMsg = async (group: GroupedMessage) => {
   // 打开消息页面
   await checkWinExist('home')
   // 找到对应的会话 - 根据roomId而不是消息ID
@@ -158,7 +167,7 @@ const handleTip = async () => {
 const debouncedHandleTip = useDebounceFn(handleTip, 100)
 
 // 处理窗口显示和隐藏的逻辑
-const showWindow = async (event: Event<any>) => {
+const showWindow = async (event: Event<NotifyEnterPayload>) => {
   if (tipVisible.value) {
     const notifyWindow = WebviewWindow.getCurrent()
     const outerSize = await notifyWindow?.outerSize()
@@ -219,7 +228,7 @@ onMounted(async () => {
   resizeWindow('notify', 280, 140)
 
   if (isWindows()) {
-    appWindow.listen('notify_enter', async (event: Event<any>) => {
+    appWindow.listen<NotifyEnterPayload>('notify_enter', async (event) => {
       info('监听到enter事件，打开notify窗口')
       await showWindow(event)
     })

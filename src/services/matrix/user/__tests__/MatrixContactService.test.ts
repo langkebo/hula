@@ -33,7 +33,7 @@ vi.mock('../../MatrixClientService', () => ({
   matrixClientService: mockClientService
 }))
 
-vi.mock('../../MatrixDirectMessageService', () => ({
+vi.mock('../../room/MatrixDirectMessageService', () => ({
   matrixDirectMessageService: mockDirectMessageService
 }))
 
@@ -41,7 +41,7 @@ vi.mock('../../friends/MatrixFriendService', () => ({
   matrixFriendService: mockFriendService
 }))
 
-vi.mock('../../MatrixRoomService', () => ({
+vi.mock('../../room/MatrixRoomService', () => ({
   matrixRoomService: mockRoomService
 }))
 

@@ -50,11 +50,28 @@ class Logger {
     return messagePriority >= Math.max(currentPriority, globalPriority)
   }
 
+  private static sanitizePatterns: RegExp[] = [
+    /(?:access_token|Authorization:\s*Bearer\s+)([a-zA-Z0-9_\-.~+/=]{8,})/gi,
+    /(?:syt_)[a-zA-Z0-9_\-.]{10,}/g
+  ]
+
+  private static sanitize(text: string): string {
+    let result = text
+    for (const pattern of Logger.sanitizePatterns) {
+      result = result.replace(pattern, (match) => {
+        if (match.length <= 12) return match
+        return match.slice(0, 8) + '***REDACTED***'
+      })
+    }
+    return result
+  }
+
   private formatMessage(level: LogLevel, message: string, ...args: unknown[]): string {
     const timestamp = new Date().toISOString()
     const formattedArgs =
       args.length > 0 ? ` ${args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')}` : ''
-    return `[${timestamp}] [${level.toUpperCase()}] [${this.context}] ${message}${formattedArgs}`
+    const raw = `[${timestamp}] [${level.toUpperCase()}] [${this.context}] ${message}${formattedArgs}`
+    return Logger.sanitize(raw)
   }
 
   private formatConsoleMessage(level: LogLevel, message: string, ...args: unknown[]): [string, ...unknown[]] {

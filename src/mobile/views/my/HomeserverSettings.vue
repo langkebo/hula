@@ -32,6 +32,12 @@
 </template>
 
 <script setup lang="ts">
+import {
+  isValidHttpUrl,
+  normalizeHttpUrl,
+  resolveMatrixEndpointConfig,
+  saveMatrixHomeserverUrl
+} from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
 import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
@@ -45,8 +51,7 @@ const homeserverUrl = ref('')
 const saving = ref(false)
 
 onMounted(() => {
-  const saved = localStorage.getItem('hula-homeserver-url')
-  homeserverUrl.value = saved || import.meta.env.VITE_HOMESERVER_URL || 'http://localhost:8008'
+  homeserverUrl.value = resolveMatrixEndpointConfig().homeserverUrl
 })
 
 async function handleSave() {
@@ -58,14 +63,9 @@ async function handleSave() {
     return
   }
 
-  let url = homeserverUrl.value.trim()
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'http://' + url
-  }
+  const url = normalizeHttpUrl(homeserverUrl.value)
 
-  try {
-    new URL(url)
-  } catch {
+  if (!isValidHttpUrl(url)) {
     showToast({
       type: 'fail',
       message: t('mobile_setting.homeserver_invalid')
@@ -76,7 +76,7 @@ async function handleSave() {
   saving.value = true
 
   try {
-    localStorage.setItem('hula-homeserver-url', url)
+    homeserverUrl.value = saveMatrixHomeserverUrl(url)
     showToast({
       type: 'success',
       message: t('mobile_setting.homeserver_saved')

@@ -2,7 +2,7 @@
   <div class="oidc-callback size-full flex-center flex-col gap-24px bg-[--bg-popover]">
     <div v-if="status === 'loading'" class="flex-col-center gap-16px">
       <n-spin size="large" />
-      <span class="text-14px text-#666">{{ t('login.oidc.processing') }}</span>
+      <span class="text-14px text-[--color-text-secondary]">{{ t('login.oidc.processing') }}</span>
     </div>
 
     <div v-else-if="status === 'error'" class="flex-col-center gap-16px">
@@ -32,9 +32,8 @@
 import { NResult, NButton, NSpin, NSpace, useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { matrixOidcService } from '@/services/matrix/MatrixOidcService'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { useLogin } from '@/hooks/useLogin'
+import { matrixRuntimeSessionService } from '@/services/matrix'
+import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('OidcCallback')
 
@@ -100,15 +99,17 @@ const handleOidcCallback = async () => {
       return
     }
 
-    logger.debug('OIDC login successful, initializing Matrix client...')
-    await matrixClientService.startWithToken(matrixTokens.access_token, matrixTokens.device_id)
+    logger.debug('OIDC login successful, restoring Matrix runtime session...')
 
-    const { completeLogin } = useLogin()
-    await completeLogin({
-      userId: matrixTokens.user_id,
+    await matrixRuntimeSessionService.restoreWithAccessToken({
+      uid: matrixTokens.user_id,
       accessToken: matrixTokens.access_token,
-      deviceId: matrixTokens.device_id
+      refreshToken: matrixTokens.refresh_token,
+      persistTokens: true,
+      client: 'PC',
+      bootstrapAfterRestore: true
     })
+    await matrixRuntimeSessionService.applyDesktopLoginState()
 
     status.value = 'success'
     message.success(t('login.oidc.login_success'))

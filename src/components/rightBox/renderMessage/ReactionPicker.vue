@@ -113,7 +113,7 @@ const handleEmojiSelect = async (
   }
 
   &.active {
-    background: rgba(19, 152, 127, 0.2);
+    background: var(--color-primary-hover);
   }
 }
 

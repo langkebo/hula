@@ -87,6 +87,7 @@ import { showConfirmDialog, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('LabsSettings')
 
 const { t } = useI18n()

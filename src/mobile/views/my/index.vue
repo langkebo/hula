@@ -8,23 +8,20 @@
         :ref="(el) => (scrollContainer = el as HTMLElement)"
         :style="{ height: tabHeight + 'px' }"
         class="z-1 overflow-hidden mt-2 absolute z-3 w-full">
-        <n-card class="custom-rounded" content-class="flex flex-col gap-4 z-1 p-10px mt-4 p-15px!">
-          <n-scrollbar
+        <div class="custom-rounded bg-white dark:bg-dark-card flex flex-col gap-4 z-1 p-10px mt-4 p-15px!">
+          <div
             ref="scrollbarRef"
-            :style="{ height: tabHeight + 'px' }"
-            :content-style="{ overflowX: 'hidden' }"
+            :style="{ height: tabHeight + 'px', overflowX: 'hidden', overflowY: 'auto' }"
             class="overflow-x-hidden">
             <div class="py-12px text-center">
-              <n-empty description="暂无动态内容">
-                <template #extra>
-                  <n-text depth="3" class="text-12px">
-                    Matrix 协议暂不支持朋友圈功能
-                  </n-text>
+              <van-empty description="暂无动态内容">
+                <template #description>
+                  <span class="text-12px text-gray-400">Matrix 协议暂不支持朋友圈功能</span>
                 </template>
-              </n-empty>
+              </van-empty>
             </div>
-          </n-scrollbar>
-        </n-card>
+          </div>
+        </div>
       </div>
     </div>
   </div>
