@@ -10,6 +10,8 @@ import { createLogger } from '@/utils/Logger'
 import { TimerManager } from '@/utils/TimerManager'
 import { SignalTypeEnum, type WSRtcCallMsg, type RtcMsgVO } from './webRtc/types'
 import { getIceConfiguration, loadIceServers } from './webRtc/iceServers'
+import { useCallTimer } from './webRtc/useCallTimer'
+import { useCallBell } from './webRtc/useCallBell'
 export { SignalTypeEnum, type WSRtcCallMsg } from './webRtc/types'
 const logger = createLogger('WebRtc')
 
@@ -63,8 +65,8 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   const channelStatus = ref<RTCDataChannelState | undefined>(undefined)
   // 待发送ice列表
   const pendingCandidates = ref<RTCIceCandidate[]>([])
-  // 添加铃声相关状态
-  const bellAudio = ref<HTMLAudioElement | null>(null)
+  // 铃声（抽离到 useCallBell）
+  const { startBell, stopBell, pauseBell, playBell } = useCallBell(rtcCallBellUrl)
 
   // TimerManager 实例
   const timerManager = new TimerManager()
@@ -72,10 +74,8 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   // 添加计时器引用
   const callTimer = ref<number | null>(null)
 
-  // 添加计时相关的变量
-  const callDuration = ref(0)
-  const animationFrameId = ref<number | null>(null)
-  const startTime = ref<number>(0)
+  // 通话时长计时（抽离到 useCallTimer）
+  const { callDuration, startCallTimer, stopCallTimer } = useCallTimer()
 
   // 添加桌面共享相关状态
   const isScreenSharing = ref(false)
@@ -99,44 +99,6 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
     }
   }
 
-  // 开始计时
-  const startCallTimer = () => {
-    // 获取高精度时间戳
-    startTime.value = performance.now()
-    const animate = (currentTime: number) => {
-      // 计算已经过去的秒数
-      const elapsed = Math.floor((currentTime - startTime.value) / 1000)
-      callDuration.value = elapsed
-      // 递归调用，形成动画循环
-      animationFrameId.value = requestAnimationFrame(animate)
-    }
-    animationFrameId.value = requestAnimationFrame(animate) // 启动动画循环
-  }
-
-  // 停止计时
-  const stopCallTimer = () => {
-    if (animationFrameId.value) {
-      cancelAnimationFrame(animationFrameId.value)
-      animationFrameId.value = null
-    }
-    callDuration.value = 0
-    startTime.value = 0
-  }
-
-  /**
-   * 打开铃声
-   */
-  const startBell = () => {
-    if (!rtcCallBellUrl) {
-      logger.debug('rtc通话已经静音')
-      bellAudio.value = null
-      return
-    }
-    bellAudio.value = new Audio(rtcCallBellUrl)
-    bellAudio.value!.loop = true
-    bellAudio.value?.play?.()
-  }
-
   /**
    * 发送通话请求
    */
@@ -150,22 +112,6 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
     } catch (error) {
       logger.error('发送通话请求失败:', error)
     }
-  }
-
-  /**
-   * 关闭铃声
-   */
-  const stopBell = () => {
-    bellAudio.value?.pause?.()
-    bellAudio.value = null
-  }
-
-  const pauseBell = () => {
-    bellAudio.value?.pause?.()
-  }
-
-  const playBell = () => {
-    bellAudio.value?.play?.()
   }
 
   /**
