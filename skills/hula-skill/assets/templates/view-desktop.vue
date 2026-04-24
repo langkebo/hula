@@ -22,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+// biome-ignore-all lint/suspicious/noConsole: Template code intentionally includes simple console-based examples.
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
@@ -43,7 +44,9 @@ function handleAction(): void {
   store.fetchItems()
 }
 
-function handleItemClick(_item: ExampleItem): void {}
+function handleItemClick(item: ExampleItem): void {
+  console.log('Item clicked:', item.id)
+}
 
 onMounted(() => {
   store.fetchItems()
