@@ -771,3 +771,38 @@ _Commit: `d8154b9b chore(lint): clear all noExplicitAny warnings`（105 文件�
 - **约束达成**：未引入任何新 `any`；保留的 `any` 均有 biome-ignore 理由
 - **仓库健康度**：vue-tsc 0 error · biome 0 warning · 2021 tests pass
 - **剩余候选任务**：`deleteRetentionPolicy` UI 调用路径移除（runtime-level，仍阻塞）
+
+### 步骤 12：P0-6 `useMsgInput.ts` 状态抽离（Step 3b）· 状态：🟢 本轮完成（2026-04-24）
+
+**本轮范围**：承接 Step 3 的纯函数抽取，按原计划续作表推进 `@提及状态` / `剪贴板处理` / `语音输入` 三条独立子 hook。上层 API 完全保留，消费者 `MsgInput.vue` 零改动。
+
+**产出**
+- 新增 `src/hooks/msgInput/useMentionState.ts`
+  - 把 `ait` / `aitKey` / `personList` / `selectedAitKey` 从 `useMsgInput.ts` 抽离为独立 hook。
+  - 依赖注入：`userList: Ref<UserItem[]> | ComputedRef<UserItem[]>`、`currentUserId: Ref<...>`、`isChinese: Ref<boolean>`。
+  - 内置 `watchEffect` 保证弹窗关闭后 `selectedAitKey` 自动回落首项（与原 `useMsgInput` watchEffect 同语义）。
+- 新增 `src/hooks/msgInput/useClipboardPaste.ts`
+  - 封装原 `menuList` 定义 + `paste` 点击处理。
+  - 暴露 `menuList`（5 项：cut / copy / paste / save_as / select_all）+ `handlePaste`。
+  - 粘贴优先级：`readImage` → `processClipboardImage → imgPaste`；无图片走 `readText → insertNode(MsgEnum.TEXT)`；两者皆空走 `alert` 提示。
+- 新增 `src/hooks/msgInput/useVoiceInput.ts`
+  - 把 `uploadVoiceToMatrix` 抽离（`readFile → matrixVoiceService.uploadVoice`）。
+  - 返回类型用 `Awaited<ReturnType<...>>` 自动导出，免改 service 主模块的 public exports。
+- `useMsgInput.ts` 改造
+  - 把内联 `ait` / `aitKey` / `personList` / `selectedAitKey` / `menuList` / `uploadVoiceToMatrix` 全部替换为新 hook 调用；移除相关重复 `watchEffect`、`readImage/readText/readFile/processClipboardImage/matrixVoiceService` 的直接导入；删除未使用的 `useI18n()` 调用。
+  - LOC：1416 → **1347**（-69）。
+- 新增单测（合计 18 用例）
+  - `msgInput/__tests__/useMentionState.test.ts`（8 用例）：排除当前用户 / aitKey 前缀匹配 / `myName` 优先 / IME 组字时忽略 aitKey / `selectedAitKey` 初始化 / 弹窗关闭后回落首项 / 支持 `ComputedRef` 源 / `ait` 独立 toggle。
+  - `msgInput/__tests__/useClipboardPaste.test.ts`（6 用例）：5 项菜单结构 / 图片分支 / 文本分支 / 两路全空 alert / `processClipboardImage` 失败降级到 readText / `messageInputDom=null` 早退。
+  - `msgInput/__tests__/useVoiceInput.test.ts`（4 用例）：readFile + uploadVoice 组合 / readFile 错误透传 / uploadVoice 错误透传 / File 构造的 name + type 透传。
+
+**验收**
+- `pnpm test:run` → 178 files / **2063 passed**（+42 相对上一次基线 2021；本批 +18，前序批次 +24）
+- `pnpm exec vue-tsc --noEmit`：**0 error**
+- `pnpm check`：**0 warning / 0 error**
+- `useMsgInput.ts` 对外返回对象签名（包含 `ait` / `aitKey` / `personList` / `selectedAitKey` / `menuList`）保持不变；`MsgInput.vue` 消费者零改动。
+- commit: `99cc0c56 refactor(hooks): extract useMentionState / useClipboardPaste / useVoiceInput from useMsgInput`
+
+**Step 12 状态**
+- Step 3 续作表覆盖 3/5：`useMentionState` ✅ / `useClipboardPaste` ✅ / `useVoiceInput` ✅
+- 剩余 2 条独立 hook：`useDraftBuffer`（草稿 store 包装）/ `useInputShortcuts`（`chatKey` / `sendKey` 绑定 + `handleInput` debounce）——均涉及更多 DOM 交互与 store 耦合，留待后续轮次评估。
