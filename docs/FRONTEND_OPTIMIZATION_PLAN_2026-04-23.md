@@ -1194,3 +1194,40 @@ _Chat.vue 续作_
 - 新增 12 测试全通过；`pnpm exec vue-tsc --noEmit` 0 error
 - useWebRtc.ts 累计：1097 → 813（-284，**-25.9%**）；剩余主体集中在 PC 创建 / 信令 / clear / event listener
 - 下一轮推荐：`useCallSignaling`（offer/answer/candidate handlers，~150 LOC，最后大块）
+
+---
+
+## Step 24 — useCommon 续作：useEditorPaste 抽离（2026-04-25）
+
+**目标**
+- 将 useCommon 中粘贴/文件处理这一独立子域抽出为 hook，降低 useCommon 体积、收窄共享职责
+
+**新增**
+- `src/hooks/common/useEditorPaste.ts`（224 LOC）
+  - `saveCacheFile` / `imgPaste` / `FileOrVideoPaste` / `handleConfirmFiles` / `processFiles` / `handlePaste`
+  - 通过 `UseEditorPasteOptions` 注入 `userUid` Ref + `triggerInputEvent` + `insertNode` + 可选 `notify`
+  - 提取 `insertImgAtRange` / `buildPreviewImg` 内部小工具，消除两份"插入图片到光标位置"模板代码
+  - 默认 `notify` 走 `window.$message`，测试可注入 stub
+- `src/hooks/common/__tests__/useEditorPaste.test.ts`（13 用例）
+  - saveCacheFile：desktop AppCache / mobile AppData / 目录不存在时 mkdir（共 3）
+  - FileOrVideoPaste：>50MB 拒绝 / 正常缓存到 video 子目录（共 2）
+  - handleConfirmFiles：顺序遍历调用 FileOrVideoPaste（共 1）
+  - processFiles：超过 COM_COUNT 中止 / 单文件 >500MB 警告 / 非图片走 showFileModal / resetCallback / files 为空提前返回（共 5）
+  - handlePaste：纯文本走 insertNode + triggerInputEvent / clipboardData null 早返回（共 2）
+
+**变更**
+- `src/hooks/useCommon.ts`：976 → **734 LOC**（−242，**-24.8%**）
+  - 移除 `saveCacheFile`（~40 LOC）+ `imgPaste`/`FileOrVideoPaste`/`handleConfirmFiles`/`handlePaste`（~140 LOC）+ `processFiles`（~60 LOC）
+  - 新增 `useEditorPaste(...)` 装配（5 LOC），保持公共 API 不变（导出 6 个方法仍然可用）
+  - 移除不再直接使用的 imports：`BaseDirectory` / `create` / `exists` / `mkdir` / `readFile` / `getImageCache` / `isPathUploadFile` / `UploadFile` / `SUPPORTED_IMAGE_EXTENSIONS` / `getFileExtension`
+
+**验收**
+- `pnpm test:run src/hooks/common/__tests__/useEditorPaste.test.ts` — 13/13 通过
+- `pnpm exec vue-tsc --noEmit` — 0 新增 error（基线 36 个 admin/ 仓库其它文件预存 error 不变）
+- useCommon.ts 跌至 ~730 LOC，剩余主要是 DOM 编辑器工具 / `createReplyDom`(~180 LOC) / `openMsgSession`，下一轮可考虑抽 `useEditorDom` 把 `insertNode`/`getEditorRange`/`triggerInputEvent`/`createReplyDom` 拆出去
+
+**Step 24 状态**
+- useCommon 续作（粘贴域）✅ 完成
+- 下一轮推荐：
+  - `useEditorDom`（getEditorRange / insertNode / insertNodeAtRange / triggerInputEvent / createReplyDom，~500 LOC，最大块）
+  - useWebRtc 信令部分维持原状（PC/signaling/clear 高度耦合，进一步抽离 ROI 不佳）

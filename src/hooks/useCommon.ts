@@ -1,9 +1,8 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import { info } from '@tauri-apps/plugin-log'
 import GraphemeSplitter from 'grapheme-splitter'
 import type { Ref } from 'vue'
-import { LimitEnum, MittEnum, MsgEnum } from '@/enums'
+import { MittEnum, MsgEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
@@ -12,14 +11,12 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { removeTag } from '@/utils/Formatting'
-import { SUPPORTED_IMAGE_EXTENSIONS, getFileExtension } from '@/utils/FileType'
 import { matrixSessionService } from '@/services/matrix'
-import { getImageCache } from '@/utils/PathUtil.ts'
-import { isPathUploadFile, type UploadFile } from '@/utils/FileType'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
 import { createLogger } from '@/utils/Logger'
 import type { SessionItem } from '@/stores/domains/chat/chat/session'
+import { useEditorPaste } from './common/useEditorPaste'
 
 interface AitMentionData {
   name?: string
@@ -36,7 +33,7 @@ interface ReplyData {
 }
 
 type InsertNodeData = AitMentionData | ReplyData | string
-const logger = createLogger('Common')
+const _logger = createLogger('Common')
 
 export interface SelectionRange {
   range: Range
@@ -72,47 +69,6 @@ export const useCommon = () => {
     key: '' as string | number,
     imgCount: 0
   })
-
-  const saveCacheFile = async (file: File, subFolder: string): Promise<string> => {
-    const fileName = file.name ?? 'test.png'
-    const tempPath = getImageCache(subFolder, userUid.value!)
-    const fullPath = `${tempPath}${fileName}`
-
-    logger.debug(`cache file start: ${fullPath}, size: ${file.size} bytes`)
-
-    return new Promise((resolve, reject) => {
-      const cacheReader = new FileReader()
-      cacheReader.onload = async (e: Event) => {
-        try {
-          const target = e.target as FileReader | null
-          if (!target) {
-            reject(new Error('FileReader failed'))
-            return
-          }
-          const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
-          const isExists = await exists(tempPath, { baseDir })
-          if (!isExists) {
-            await mkdir(tempPath, { baseDir, recursive: true })
-          }
-          const tempFile = await create(fullPath, { baseDir })
-          await tempFile.write(new Uint8Array(target.result as ArrayBuffer))
-          await tempFile.close()
-
-          logger.debug(`cache file saved: ${fullPath}, written: ${(target.result as ArrayBuffer).byteLength} bytes`)
-          resolve(fullPath)
-        } catch (error) {
-          reject(error)
-        }
-      }
-
-      cacheReader.onerror = (error) => {
-        reject(error)
-      }
-
-      cacheReader.readAsArrayBuffer(file)
-    })
-  }
-
   /**
    * 判断 URL 是否安全
    * @param url URL 字符串
@@ -704,147 +660,12 @@ export const useCommon = () => {
     return replyNode
   }
 
-  /**
-   * 处理图片粘贴事件
-   * @param file 图片文件
-   * @param dom 输入框dom
-   */
-  const imgPaste = async (file: File | string, dom: HTMLElement) => {
-    const fileStr = file as string
-    // 如果file是blob URL格式
-    if (typeof file === 'string' && fileStr.startsWith('blob:')) {
-      const url = fileStr.replace('blob:', '') // 移除blob:前缀
-      logger.debug('blob URL:', url)
-
-      const img = document.createElement('img')
-      img.src = url
-      img.style.maxHeight = '88px'
-      img.style.maxWidth = '140px'
-      img.style.marginRight = '6px'
-
-      // 获取MsgInput组件暴露的lastEditRange
-      const lastEditRange = (dom as { getLastEditRange?: () => Range | null }).getLastEditRange?.()
-
-      // 确保dom获得焦点
-      dom.focus()
-
-      let range: Range
-      if (!lastEditRange) {
-        range = document.createRange()
-        range.selectNodeContents(dom)
-        range.collapse(false)
-      } else {
-        range = lastEditRange
-      }
-
-      const selection = window.getSelection()
-      if (selection) {
-        range.deleteContents()
-        range.insertNode(img)
-        range.setStartAfter(img)
-        range.setEndAfter(img)
-        selection.removeAllRanges()
-        selection.addRange(range)
-      }
-
-      triggerInputEvent(dom)
-      return
-    }
-
-    //缓存文件
-    const cachePath = await saveCacheFile(file as File, 'img')
-
-    // 原有的File对象处理逻辑
-    const reader = new FileReader()
-    reader.onload = (e: Event) => {
-      const target = e.target as FileReader | null
-      if (!target) return
-      const img = document.createElement('img')
-      img.src = target.result as string
-      img.style.maxHeight = '88px'
-      img.style.maxWidth = '140px'
-      img.style.marginRight = '6px'
-      // 设置ID，使用缓存路径作为ID，这样parseInnerText可以找到它
-      img.id = 'temp-image'
-      img.setAttribute('data-path', cachePath)
-
-      // 获取MsgInput组件暴露的lastEditRange
-      const lastEditRange = (dom as { getLastEditRange?: () => Range | null }).getLastEditRange?.()
-
-      // 确保dom获得焦点
-      dom.focus()
-
-      let range: Range
-      if (!lastEditRange) {
-        range = document.createRange()
-        range.selectNodeContents(dom)
-        range.collapse(false)
-      } else {
-        range = lastEditRange
-      }
-
-      const selection = window.getSelection()
-      if (selection) {
-        range.deleteContents()
-        range.insertNode(img)
-        range.setStartAfter(img)
-        range.setEndAfter(img)
-        selection.removeAllRanges()
-        selection.addRange(range)
-      }
-
-      triggerInputEvent(dom)
-    }
-    // 读取文件
-    reader.readAsDataURL(file as File)
-  }
-
-  /**
-   * 处理视频或者文件粘贴事件
-   * @param file 文件
-   * @param type 类型
-   * @param dom 输入框dom
-   */
-  const FileOrVideoPaste = async (file: File) => {
-    const reader = new FileReader()
-    if (file.size > 1024 * 1024 * 50) {
-      window.$message.warning('文件大小不能超过50M，请重新选择')
-      return
-    }
-    await saveCacheFile(file, 'video')
-    reader.readAsDataURL(file)
-  }
-
-  /**
-   * 处理确认的文件列表（来自弹窗）
-   * @param files 文件列表
-   * @param dom 输入框dom
-   */
-  const handleConfirmFiles = async (files: File[]) => {
-    for (const file of files) {
-      await FileOrVideoPaste(file)
-    }
-  }
-
-  /**
-   * 处理粘贴事件
-   * @param e 事件对象
-   * @param dom 输入框dom
-   * @param showFileModal 显示文件弹窗的回调函数
-   */
-  const handlePaste = async (e: ClipboardEvent, dom: HTMLElement, showFileModal?: (files: UploadFile[]) => void) => {
-    e.preventDefault()
-    const clipboardData = e.clipboardData
-    if (!clipboardData) return
-    if (clipboardData.files.length > 0) {
-      await processFiles(Array.from(clipboardData.files), dom, showFileModal)
-    } else {
-      const plainText = clipboardData.getData('text/plain')
-      insertNode(MsgEnum.TEXT, plainText, dom)
-      triggerInputEvent(dom)
-    }
-  }
-
+  // 粘贴/文件处理（抽离到 useEditorPaste）
+  const { saveCacheFile, imgPaste, FileOrVideoPaste, handleConfirmFiles, processFiles, handlePaste } = useEditorPaste({
+    userUid,
+    triggerInputEvent,
+    insertNode
+  })
   /** 计算字符长度 */
   const countGraphemes = (value: string) => {
     const splitter = new GraphemeSplitter()
@@ -890,70 +711,6 @@ export const useCommon = () => {
     useMitt.emit(MittEnum.LOCATE_SESSION, { roomId: res.roomId })
     handleMsgClick(res as unknown as SessionItem)
     useMitt.emit(MittEnum.TO_SEND_MSG, { url: 'message' })
-  }
-
-  /**
-   * 通用文件处理函数
-   * @param files 文件列表
-   * @param dom 输入框DOM元素
-   * @param showFileModal 显示文件弹窗的回调函数
-   * @param resetCallback 重置回调函数（可选）
-   */
-  const processFiles = async (
-    files: UploadFile[],
-    dom: HTMLElement,
-    showFileModal?: (files: UploadFile[]) => void,
-    resetCallback?: () => void
-  ) => {
-    if (!files) return
-
-    // 检查文件数量
-    if (files.length > LimitEnum.COM_COUNT) {
-      window.$message.warning(`一次性只能上传${LimitEnum.COM_COUNT}个文件或图片`)
-      return
-    }
-
-    // 分类文件：图片 or 其他文件
-    const imageFiles: UploadFile[] = []
-    const otherFiles: UploadFile[] = []
-
-    for (const file of files) {
-      // 检查文件大小
-      const fileSizeInMB = file.size / 1024 / 1024
-      if (fileSizeInMB > 500) {
-        window.$message.warning(`文件 ${file.name} 超过500MB`)
-        continue
-      }
-
-      const mimeType = file.type || ''
-      const extension = getFileExtension(file.name)
-      const isImage =
-        (mimeType.startsWith('image/') || (SUPPORTED_IMAGE_EXTENSIONS as readonly string[]).includes(extension)) &&
-        extension !== 'svg' &&
-        !mimeType.includes('svg')
-
-      if (isImage) imageFiles.push(file)
-      else otherFiles.push(file)
-    }
-
-    // 处理图片文件（直接插入输入框）
-    for (const file of imageFiles) {
-      if (isPathUploadFile(file)) {
-        const fileData = await readFile(file.path)
-        const fileObj = new File([fileData], file.name, { type: file.type })
-        await imgPaste(fileObj, dom)
-      } else {
-        await imgPaste(file, dom)
-      }
-    }
-
-    // 处理其他文件（显示弹窗）
-    if (otherFiles.length > 0 && showFileModal) {
-      showFileModal(otherFiles)
-    }
-
-    // 执行重置回调
-    resetCallback?.()
   }
 
   return {
