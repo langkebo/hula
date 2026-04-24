@@ -960,3 +960,26 @@ _Commit: `d8154b9b chore(lint): clear all noExplicitAny warnings`（105 文件�
 - 下一轮续作表：
   - useWebRtc：`usePeerConnection`（createPeerConnection + 状态机；含 startCallTimer/endCall 依赖注入，~100 LOC，中等风险）
   - useChatMain：`useChatFileDownload`（~150 LOC）或按菜单数组逐块抽 `useChatMessageMenus`
+
+### 步骤 18：P0-6 useChatMain 续作（第三批）— useChatCopy 抽离 · 状态：🟢 本轮完成（2026-04-24）
+
+**背景**：Step 17 后 useChatMain 1281 LOC，下一个可收割的低风险块是 `handleCopy`（~50 LOC）。该函数无 store / i18n 依赖，仅用 `getSelectedText`（已独立）+ tauri clipboard + ImageUtils + removeTag，抽出后 useChatMain 可同时移除 5 个 import。
+
+**产出**
+- `src/hooks/chatMain/useChatCopy.ts`（新增 67 LOC）：暴露单个 `handleCopy(content, prioritizeSelection?, messageId?)`
+- `src/hooks/useChatMain.ts`：1281 → 1228 LOC（−53）
+  - 移除内联 `handleCopy`（46 行）
+  - 移除仅供 handleCopy 用的 imports：`writeImage` / `writeText` / `detectImageFormat` / `imageUrlToUint8Array` / `isImageUrl` / `removeTag`
+- 单测 `useChatCopy.test.ts`（6 tests）：空内容 warning / 选中优先 / 回退路径 / PNG 直接复制 / GIF/WEBP 转换提示 / 图片异常吞掉不崩
+
+**验收**
+- `pnpm exec vitest run src/hooks/chatMain/__tests__/useChatCopy.test.ts`：6/6 pass
+- `pnpm exec vue-tsc --noEmit`：robot/ 之外 0 error
+- 返回 API 不变：`useChatMain()` 依旧暴露 `handleCopy` 同签名
+
+**Step 18 状态**
+- useChatMain 续作第三批 ✅ 完成
+- useChatMain.ts 进度：1330 → 1281 → 1228 LOC（本轮 −53）
+- 下一轮续作表：
+  - `useChatFileDownload`：抽 `revealInDirSafely` + 三处 fileDownloadStore 复用路径（~150 LOC），注意菜单数组中的 click handler 闭包要一并内联或以参数形式穿透
+  - `useChatMessageMenus`：6 个 menu 数组按类型分裂（风险较高，留至 hook 接近 1000 LOC 再开）
