@@ -19,7 +19,7 @@
       class="contraction transition-all duration-600 ease-in-out absolute top-35% left--14px cursor-pointer opacity-0 bg-#c8c8c833 h-60px w-14px">
       <svg
         :class="isCollapsed ? 'rotate-0' : 'rotate-180'"
-        class="size-16px color-#909090 dark:color-#303030 absolute top-38%">
+        class="size-16px color-[--color-text-tertiary] dark:color-#303030 absolute top-38%">
         <use href="#left-arrow"></use>
       </svg>
     </div>
@@ -44,7 +44,9 @@
         <!-- 公告加载失败提示 -->
         <n-flex v-if="announError" class="h-74px" align="center" justify="center">
           <div class="text-center">
-            <p class="text-(12px #909090) mb-8px">{{ t('home.chat_sidebar.announcement.load_failed') }}</p>
+            <p class="text-(12px --color-text-tertiary) mb-8px">
+              {{ t('home.chat_sidebar.announcement.load_failed') }}
+            </p>
             <n-button size="tiny" @click="announcementStore.loadGroupAnnouncements()">
               {{ t('home.chat_sidebar.actions.retry') }}
             </n-button>
@@ -53,18 +55,18 @@
 
         <!-- 公告内容 -->
         <n-scrollbar v-else class="h-74px">
-          <p class="text-(12px #909090) leading-6 line-clamp-4 max-w-99%" v-if="announNum === 0">
+          <p class="text-(12px --color-text-tertiary) leading-6 line-clamp-4 max-w-99%" v-if="announNum === 0">
             {{ t('home.chat_sidebar.announcement.default') }}
           </p>
           <p
             v-else
             style="user-select: text"
-            class="announcement-text text-(12px #909090) leading-6 line-clamp-4 max-w-99% break-words">
+            class="announcement-text text-(12px --color-text-tertiary) leading-6 line-clamp-4 max-w-99% break-words">
             <template v-if="announcementSegments.length > 0">
               <template v-for="(segment, index) in announcementSegments" :key="index">
                 <span
                   v-if="segment.isLink"
-                  class="cursor-pointer hover:underline hover:opacity-80 text-#13987f"
+                  class="cursor-pointer hover:underline hover:opacity-80 text-[--color-primary]"
                   @click.stop="openAnnouncementLink(segment.text)">
                   {{ segment.text }}
                 </span>
@@ -169,13 +171,13 @@
 
                   <div
                     v-if="item.roleId === RoleEnum.LORD"
-                    class="flex px-4px bg-#d5304f30 py-3px rounded-4px size-fit select-none">
-                    <p class="text-(10px #d5304f)">{{ t('home.chat_sidebar.roles.owner') }}</p>
+                    class="flex px-4px bg-[--color-danger]30 py-3px rounded-4px size-fit select-none">
+                    <p class="text-(10px [--color-danger])">{{ t('home.chat_sidebar.roles.owner') }}</p>
                   </div>
                   <div
                     v-if="item.roleId === RoleEnum.ADMIN"
-                    class="flex px-4px bg-#1a7d6b30 py-3px rounded-4px size-fit select-none">
-                    <p class="text-(10px #008080)">{{ t('home.chat_sidebar.roles.admin') }}</p>
+                    class="flex px-4px bg-[--color-primary-light] py-3px rounded-4px size-fit select-none">
+                    <p class="text-(10px [--color-primary])">{{ t('home.chat_sidebar.roles.admin') }}</p>
                   </div>
                 </n-flex>
               </ContextMenu>
@@ -202,13 +204,13 @@ import { useWindow } from '@/hooks/useWindow.ts'
 import { useLinkSegments } from '@/hooks/useLinkSegments'
 import type { UserItem } from '@/services/types'
 import { WsResponseMessageType } from '@/enums'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useGroupStore } from '@/stores/group.ts'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStatusStore } from '@/stores/userStatus'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixContactService } from '@/services/matrix'
-import { useAnnouncementStore } from '@/stores/announcement'
+import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('ChatSidebar')
@@ -242,7 +244,7 @@ const isSearch = ref(false)
 const searchRef = ref('')
 const searchRequestId = ref(0)
 /** List中的Popover组件实例 */
-const infoPopoverRefs = ref<Record<string, any>>([])
+const infoPopoverRefs = ref<Record<string, { setShow: (show: boolean) => void } | null>>({})
 const inputInstRef = ref<InputInst | null>(null)
 const isCollapsed = ref(false)
 const { optionsList, report, selectKey } = useChatMain()
@@ -250,7 +252,7 @@ const { handlePopoverUpdate, enableScroll } = usePopover(selectKey, 'image-chat-
 provide('popoverControls', { enableScroll })
 
 // 用于稳定展示的用户列表
-const displayedUserList = ref<any[]>([])
+const displayedUserList = ref<UserItem[]>([])
 /** 用户信息加载状态 */
 const userLoadedMap = ref<Record<string, boolean>>({})
 
@@ -412,7 +414,7 @@ onMounted(async () => {
 
   useMitt.on(`${MittEnum.INFO_POPOVER}-Sidebar`, (event: any) => {
     selectKey.value = event.uid
-    infoPopoverRefs.value[event.uid].setShow(true)
+    infoPopoverRefs.value[event.uid]?.setShow(true)
     handlePopoverUpdate(event.uid)
   })
 
@@ -426,7 +428,28 @@ onMounted(async () => {
     displayedUserList.value = [...groupStore.userList]
     const currentRoom = globalStore.currentSessionRoomId
     if (currentRoom) {
-      groupStore.updateMemberCache(currentRoom, displayedUserList.value)
+      const matrixMembers = displayedUserList.value.map((u) => ({
+        userId: u.uid,
+        displayName: u.name ?? null,
+        avatarUrl: u.avatar ?? null,
+        membership: 'join' as const,
+        powerLevel: 0,
+        isModerator: false,
+        isCreator: false,
+        name: u.name,
+        uid: u.uid,
+        account: u.account,
+        avatar: u.avatar,
+        activeStatus: u.activeStatus,
+        roleId: u.roleId ?? 0,
+        lastOptTime: u.lastOptTime,
+        myName: u.myName,
+        locPlace: u.locPlace,
+        userStateId: u.userStateId,
+        wearingItemId: u.wearingItemId,
+        itemIds: u.itemIds
+      }))
+      groupStore.updateMemberCache(currentRoom, matrixMembers)
     }
     const handleAnnounInitOnEvent = (shouldReload: boolean) => {
       return async (event: any) => {

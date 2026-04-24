@@ -25,7 +25,7 @@
         {{ remoteUserInfo?.name || t('message.call_window.unknown_user') }}
       </div>
       <div class="text-12px text-gray-500 dark:text-gray-400 flex items-center">
-        <div class="w-6px h-6px rounded-full bg-#13987f mr-6px animate-pulse"></div>
+        <div class="w-6px h-6px rounded-full bg-[--color-primary] mr-6px animate-pulse"></div>
         {{ t('message.call_window.incoming') }} ·
         {{
           callType === CallTypeEnum.VIDEO ? t('message.call_window.video_call') : t('message.call_window.voice_call')
@@ -38,7 +38,7 @@
       <!-- 拒绝按钮 -->
       <div
         @click="hangUp(CallResponseStatus.REJECTED)"
-        class="size-40px rounded-full bg-#d5304f hover:bg-#d5304f flex-center cursor-pointer shadow-lg">
+        class="size-40px rounded-full bg-[--color-danger] hover:bg-[--color-danger] flex-center cursor-pointer shadow-lg">
         <svg class="color-#fff size-20px">
           <use href="#PhoneHangup"></use>
         </svg>
@@ -46,7 +46,7 @@
       <!-- 接听按钮 -->
       <div
         @click="acceptCall"
-        class="size-40px rounded-full bg-#13987f hover:bg-#13987f flex-center cursor-pointer shadow-lg">
+        class="size-40px rounded-full bg-[--color-primary] hover:bg-[--color-primary] flex-center cursor-pointer shadow-lg">
         <svg class="color-#fff size-20px">
           <use href="#phone-telephone-entity"></use>
         </svg>
@@ -143,7 +143,9 @@
               <div
                 @click="toggleMute"
                 class="size-44px rounded-full flex-center cursor-pointer"
-                :class="!isMuted ? 'bg-gray-600 hover:bg-gray-500' : 'bg-#d5304f60 hover:bg-#d5304f80'">
+                :class="
+                  !isMuted ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+                ">
                 <svg class="size-16px color-#fff">
                   <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
                 </svg>
@@ -155,7 +157,9 @@
               <div
                 @click="toggleSpeaker"
                 class="size-44px rounded-full flex-center cursor-pointer"
-                :class="isSpeakerOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-#d5304f60 hover:bg-#d5304f80'">
+                :class="
+                  isSpeakerOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+                ">
                 <svg class="size-16px color-#fff">
                   <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
                 </svg>
@@ -178,7 +182,9 @@
               <div
                 @click="toggleVideo"
                 class="size-44px rounded-full flex-center cursor-pointer"
-                :class="isVideoEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-#d5304f60 hover:bg-#d5304f80'">
+                :class="
+                  isVideoEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+                ">
                 <svg class="size-16px color-#fff">
                   <use :href="isVideoEnabled ? '#video-one' : '#monitor-off'"></use>
                 </svg>
@@ -189,7 +195,7 @@
             <div class="flex-center">
               <div
                 @click="hangUp()"
-                class="size-44px rounded-full bg-#d5304f60 hover:bg-#d5304f80 flex-center cursor-pointer">
+                class="size-44px rounded-full bg-[--color-danger]60 hover:bg-[--color-danger]80 flex-center cursor-pointer">
                 <svg class="size-16px color-#fff">
                   <use href="#PhoneHangup"></use>
                 </svg>
@@ -237,7 +243,7 @@
           <div
             @click="toggleMute"
             class="size-44px rounded-full flex-center cursor-pointer"
-            :class="!isMuted ? 'bg-gray-600 hover:bg-gray-500' : 'bg-#d5304f60 hover:bg-#d5304f80'">
+            :class="!isMuted ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'">
             <svg class="size-16px color-#fff">
               <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
             </svg>
@@ -252,7 +258,9 @@
           <div
             @click="toggleSpeaker"
             class="size-44px rounded-full flex-center cursor-pointer"
-            :class="isSpeakerOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-#d5304f60 hover:bg-#d5304f80'">
+            :class="
+              isSpeakerOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+            ">
             <svg class="size-16px color-#fff">
               <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
             </svg>
@@ -267,7 +275,9 @@
           <div
             @click="toggleVideo"
             class="size-44px rounded-full flex-center cursor-pointer"
-            :class="isVideoEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-#d5304f60 hover:bg-#d5304f80'">
+            :class="
+              isVideoEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+            ">
             <svg class="size-16px color-#fff">
               <use :href="isVideoEnabled ? '#video-one' : '#monitor-off'"></use>
             </svg>
@@ -281,7 +291,7 @@
         <div class="flex-col-x-center gap-8px w-80px">
           <div
             @click="hangUp()"
-            class="size-44px rounded-full bg-#d5304f60 hover:bg-#d5304f80 flex-center cursor-pointer">
+            class="size-44px rounded-full bg-[--color-danger]60 hover:bg-[--color-danger]80 flex-center cursor-pointer">
             <svg class="size-16px color-#fff">
               <use href="#PhoneHangup"></use>
             </svg>
@@ -301,7 +311,7 @@
             <div
               @click="toggleMute"
               class="size-44px rounded-full flex-center cursor-pointer"
-              :class="!isMuted ? 'bg-gray-600 hover:bg-gray-500' : 'bg-#d5304f60 hover:bg-#d5304f80'">
+              :class="!isMuted ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'">
               <svg class="size-16px color-#fff">
                 <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
               </svg>
@@ -316,7 +326,9 @@
             <div
               @click="toggleSpeaker"
               class="size-44px rounded-full flex-center cursor-pointer"
-              :class="isSpeakerOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-#d5304f60 hover:bg-#d5304f80'">
+              :class="
+                isSpeakerOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+              ">
               <svg class="size-16px color-#fff">
                 <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
               </svg>
@@ -331,7 +343,7 @@
         <div class="flex-x-center">
           <div
             @click="hangUp()"
-            class="size-66px rounded-full bg-#d5304f60 hover:bg-#d5304f80 flex-center cursor-pointer">
+            class="size-66px rounded-full bg-[--color-danger]60 hover:bg-[--color-danger]80 flex-center cursor-pointer">
             <svg class="size-24px color-#fff">
               <use href="#PhoneHangup"></use>
             </svg>
@@ -354,12 +366,12 @@ import { useRoute } from 'vue-router'
 import type ActionBar from '@/components/windows/ActionBar.vue'
 import { CallTypeEnum, RTCCallStatus, ThemeEnum } from '@/enums'
 import { useWebRtc } from '@/hooks/useWebRtc'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isDesktop, isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import router from '@/router'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { CallResponseStatus } from '../../services/wsType'
 import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'

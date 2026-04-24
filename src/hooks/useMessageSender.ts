@@ -1,6 +1,8 @@
 import { MessageStatusEnum, MittEnum } from '@/enums'
-import { sendMessageWithChannel, type SendMessagePayload } from '@/utils/MessageSender'
-import { useChatStore } from '@/stores/chat'
+import { matrixMessageService } from '@/services/matrix'
+import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { useMitt } from '@/hooks/useMitt'
 
 export type SendWithTrackingOptions = {
@@ -10,7 +12,7 @@ export type SendWithTrackingOptions = {
   updateSessionActive?: boolean
   /** 是否在状态变更时滚动至底部，默认 true */
   scrollOnUpdate?: boolean
-  onSuccess?: (payload: any) => void
+  onSuccess?: (payload: { oldMsgId: string; message: { id: string; body: unknown }; timeBlock: number }) => void
   onError?: (msgId?: string) => void
 }
 
@@ -20,32 +22,49 @@ export const useMessageSender = () => {
   const sendWithTracking = async (options: SendWithTrackingOptions) => {
     const { tempMsgId, payload, updateSessionActive = true, scrollOnUpdate = true, onSuccess, onError } = options
 
-    await sendMessageWithChannel({
-      data: payload,
-      onSuccess: (response) => {
-        chatStore.updateMsg({
-          msgId: response?.oldMsgId ?? tempMsgId,
-          status: MessageStatusEnum.SUCCESS,
-          newMsgId: response?.message?.id,
-          body: response?.message?.body,
-          timeBlock: response?.timeBlock
-        })
-        if (scrollOnUpdate) {
-          useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
-        }
-        onSuccess?.(response)
-      },
-      onError: (msgId) => {
-        chatStore.updateMsg({
-          msgId: msgId || tempMsgId,
-          status: MessageStatusEnum.FAILED
-        })
-        if (scrollOnUpdate) {
-          useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
-        }
-        onError?.(msgId)
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('message', payload.roomId, {
+        tempMsgId,
+        payload,
+        updateSessionActive,
+        scrollOnUpdate
+      })
+      chatStore.updateMsg({ msgId: tempMsgId, status: MessageStatusEnum.SENDING })
+      return
+    }
+
+    try {
+      const response = await matrixMessageService.sendStructuredMessage(payload)
+      const result = {
+        oldMsgId: tempMsgId,
+        message: {
+          id: response.event_id,
+          body: payload.body
+        },
+        timeBlock: Date.now()
       }
-    })
+
+      chatStore.updateMsg({
+        msgId: tempMsgId,
+        status: MessageStatusEnum.SUCCESS,
+        newMsgId: response.event_id,
+        body: payload.body as Record<string, unknown>,
+        timeBlock: result.timeBlock
+      })
+      if (scrollOnUpdate) {
+        useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
+      }
+      onSuccess?.(result)
+    } catch {
+      chatStore.updateMsg({
+        msgId: tempMsgId,
+        status: MessageStatusEnum.FAILED
+      })
+      if (scrollOnUpdate) {
+        useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
+      }
+      onError?.(tempMsgId)
+    }
 
     if (updateSessionActive) {
       chatStore.updateSessionLastActiveTime(payload.roomId)

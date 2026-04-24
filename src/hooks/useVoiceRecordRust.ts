@@ -1,6 +1,6 @@
 import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import { startRecording, stopRecording } from 'tauri-plugin-mic-recorder-api'
-import { useUserStore } from '@/stores/user'
+import { useUserStore } from '@/stores/domains/user/user'
 import { calculateCompressionRatio, compressAudioToMp3, getAudioInfo } from '@/utils/AudioCompression'
 import { getImageCache } from '@/utils/PathUtil.ts'
 import { isMobile } from '@/utils/PlatformConstants'

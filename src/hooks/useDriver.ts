@@ -1,5 +1,5 @@
 import { type Config, type Driver, type DriveStep, driver } from 'driver.js'
-import { useGuideStore } from '@/stores/guide'
+import { useGuideStore } from '@/stores/domains/settings/guide'
 import 'driver.js/dist/driver.css'
 import '@/styles/scss/global/driver.scss'
 

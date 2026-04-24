@@ -27,7 +27,7 @@
     <!-- 信息时间(单聊) -->
     <div
       v-if="!isGroup"
-      class="text-(12px #909090) h-12px flex select-none"
+      class="text-(12px --color-text-tertiary) h-12px flex select-none"
       :class="{
         'pr-48px justify-end': isMe,
         'pl-42px justify-start': !isMe
@@ -49,13 +49,13 @@
         <!-- 回复消息提示的箭头 -->
         <svg
           v-if="activeReply === message.message.id"
-          class="size-16px pt-4px color-#909090"
+          class="size-16px pt-4px color-[--color-text-tertiary]"
           :class="isMe ? 'ml-8px' : 'mr-8px'">
           <use :href="isMe ? `#corner-down-left` : `#corner-down-right`"></use>
         </svg>
         <!-- 头像 -->
         <n-popover
-          :ref="(el: any) => el && (infoPopoverRefs[message.message.id] = el)"
+          :ref="(el) => setInfoPopoverRef(message.message.id, el)"
           @update:show="handlePopoverUpdate(message.message.id, $event)"
           trigger="click"
           placement="right"
@@ -118,31 +118,33 @@
                 <!-- 用户名 -->
                 <span
                   :class="[
-                    'text-12px select-none color-#909090 inline-block align-top',
-                    !isMe ? 'cursor-pointer hover:color-#13987f transition-colors' : ''
+                    'text-12px select-none color-[--color-text-tertiary] inline-block align-top',
+                    !isMe ? 'cursor-pointer hover:color-[--color-primary] transition-colors' : ''
                   ]"
                   @click.stop="handleMentionUser">
                   {{ senderDisplayName }}
                 </span>
                 <!-- 消息归属地 -->
-                <span v-if="senderLocPlace" class="text-(12px #909090)">({{ senderLocPlace }})</span>
+                <span v-if="senderLocPlace" class="text-(12px --color-text-tertiary)">({{ senderLocPlace }})</span>
               </n-flex>
             </ContextMenu>
             <!-- 群主 -->
             <div
               v-if="groupStore.isCurrentLord(fromUser.uid)"
-              class="flex px-4px py-3px rounded-4px bg-#d5304f30 size-fit select-none">
-              <span class="text-(9px #d5304f)">{{ t('home.chat_sidebar.roles.owner') }}</span>
+              class="flex px-4px py-3px rounded-4px bg-[--color-danger]30 size-fit select-none">
+              <span class="text-(9px [--color-danger])">{{ t('home.chat_sidebar.roles.owner') }}</span>
             </div>
             <!-- 管理员 -->
             <div
               v-if="groupStore.isAdmin(fromUser.uid)"
-              class="flex px-4px py-3px rounded-4px bg-#1a7d6b30 size-fit select-none">
-              <span class="text-(9px #008080)">{{ t('home.chat_sidebar.roles.admin') }}</span>
+              class="flex px-4px py-3px rounded-4px bg-[--color-primary-light] size-fit select-none">
+              <span class="text-(9px [--color-primary])">{{ t('home.chat_sidebar.roles.admin') }}</span>
             </div>
             <!-- 信息时间(群聊) -->
             <Transition name="fade-group">
-              <span v-if="isGroup && hoverMsgId === message.message.id" class="text-(12px #909090) select-none">
+              <span
+                v-if="isGroup && hoverMsgId === message.message.id"
+                class="text-(12px --color-text-tertiary) select-none">
                 {{ formatTimestamp(message.message.sendTime, true) }}
               </span>
             </Transition>
@@ -169,10 +171,12 @@
               v-if="message.message.burnAfterRead"
               :msg-id="message.message.id"
               :burn-after-read="message.message.burnAfterRead"
-              :burn-duration="30"
+              :burn-duration="message.message.burnRemainingSeconds || 60"
               :remaining-seconds="message.message.burnRemainingSeconds"
               :is-burning="message.message.isBurning"
-              :is-burned="message.message.isBurned">
+              :is-burned="message.message.isBurned"
+              :room-id="message.message.roomId"
+              :event-id="message.message.id">
               <component
                 v-memo="[
                   message.message.id,
@@ -242,10 +246,12 @@
 
             <!-- 显示翻译文本 -->
             <Transition name="fade-translate" appear mode="out-in">
-              <div v-if="messageBody.value.translatedText" class="translated-text cursor-default flex flex-col">
+              <div v-if="messageBody.translatedText" class="translated-text cursor-default flex flex-col">
                 <n-flex align="center" justify="space-between" class="mb-6px">
                   <n-flex align="center" :size="4">
-                    <span class="text-(12px #909090)">{{ messageBody.value.translatedText.provider }}</span>
+                    <span class="text-(12px --color-text-tertiary)">
+                      {{ messageBody.translatedText.provider }}
+                    </span>
                     <svg class="size-12px">
                       <use href="#success"></use>
                     </svg>
@@ -253,19 +259,19 @@
                     <n-tooltip trigger="hover">
                       <template #trigger>
                         <svg
-                          class="pl-6px size-10px cursor-pointer hover:color-#909090 hover:transition-colors"
-                          @click="handleCopyTranslation(messageBody.value.translatedText.text)">
+                          class="pl-6px size-10px cursor-pointer hover:color-[--color-text-tertiary] hover:transition-colors"
+                          @click="handleCopyTranslation(messageBody.translatedText.text)">
                           <use href="#copy"></use>
                         </svg>
                       </template>
                       <span>复制翻译</span>
                     </n-tooltip>
                   </n-flex>
-                  <svg class="size-10px cursor-pointer" @click="messageBody.value.translatedText = null">
+                  <svg class="size-10px cursor-pointer" @click="messageBody.translatedText = null">
                     <use href="#close"></use>
                   </svg>
                 </n-flex>
-                <p class="select-text cursor-text">{{ messageBody.value.translatedText.text }}</p>
+                <p class="select-text cursor-text">{{ messageBody.translatedText.text }}</p>
               </div>
             </Transition>
 
@@ -276,7 +282,7 @@
               </n-icon>
               <n-icon
                 v-if="message.message.status === MessageStatusEnum.FAILED"
-                class="text-#d5304f cursor-pointer"
+                class="text-[--color-danger] cursor-pointer"
                 @click.stop="handleRetry(message)">
                 <svg class="size-16px">
                   <use href="#cloudError"></use>
@@ -289,9 +295,9 @@
           <n-flex
             align="center"
             :size="6"
-            v-if="messageBody.value.reply"
-            @click="emit('jump2Reply', messageBody.value.reply.id)"
-            :class="isMobile() ? 'bg-#fafafa text-13px' : 'bg-[--right-chat-reply-color] text-12px'"
+            v-if="messageBody.reply"
+            @click="emit('jump2Reply', messageBody.reply.id)"
+            :class="isMobile() ? 'bg-[--app-bg-color] text-13px' : 'bg-[--right-chat-reply-color] text-12px'"
             class="reply-bubble relative w-fit custom-shadow select-none chat-message-max-width"
             :style="{ 'max-width': bubbleMaxWidth }">
             <svg class="size-14px">
@@ -303,13 +309,13 @@
               :size="20"
               :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
               :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-              :src="getAvatarSrc(messageBody.value.reply.uid)" />
-            <span>{{ `${messageBody.value.reply.username}: ` }}</span>
+              :src="getAvatarSrc(messageBody.reply.uid ?? '')" />
+            <span>{{ `${messageBody.reply.username}: ` }}</span>
             <span class="content-span">
-              {{ messageBody.value.reply.body }}
+              {{ messageBody.reply.body }}
             </span>
-            <div v-if="messageBody.value.reply.imgCount" class="reply-img-sub">
-              {{ messageBody.value.reply.imgCount }}
+            <div v-if="messageBody.reply.imgCount" class="reply-img-sub">
+              {{ messageBody.reply.imgCount }}
             </div>
           </n-flex>
 
@@ -333,6 +339,14 @@
               </div>
             </template>
           </div>
+
+          <!-- 线程指示器 -->
+          <component
+            :is="ThreadIndicator"
+            v-if="!historyMode && !isThreadReply"
+            :room-id="message.message.roomId"
+            :event-id="message.message.id"
+            @open-thread="handleOpenThread" />
         </n-flex>
       </div>
     </div>
@@ -345,16 +359,16 @@ import { MessageStatusEnum, MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain'
 import { useMitt } from '@/hooks/useMitt'
 import { usePopover } from '@/hooks/usePopover'
-import type { MessageType } from '@/stores/chat'
-import { useBadgeStore } from '@/stores/badge'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
-import { useSettingStore } from '@/stores/setting'
+import type { MessageType, MessageBody } from '@/stores/domains/chat/chat'
+import { useBadgeStore } from '@/stores/domains/chat/badge'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
-import { useChatStore } from '@/stores/chat'
-import { useUserStore } from '@/stores/user'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useUserStore } from '@/stores/domains/user/user'
 import { matrixMessageService, matrixContactService, matrixReactionService } from '@/services/matrix'
 import { createMacContextSelectionGuard } from '@/utils/MacSelectionGuard'
 import { isMobile } from '@/utils/PlatformConstants'
@@ -387,6 +401,20 @@ import Voice from './Voice.vue'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 import { vOnLongPress } from '@vueuse/components'
 import BurnMessage from '@/components/burn/BurnMessage.vue'
+import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
+import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
+import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
+import router from '@/router'
+
+type ShowablePopover = {
+  setShow: (show: boolean) => void
+}
+
+const isShowablePopover = (value: unknown): value is ShowablePopover => {
+  return typeof value === 'object' && value !== null && 'setShow' in value && typeof value.setShow === 'function'
+}
+
+const ThreadIndicator = computed(() => (isMobile() ? ThreadIndicatorMobile : ThreadIndicatorDesktop))
 
 const props = withDefaults(
   defineProps<{
@@ -411,17 +439,20 @@ const { t } = useI18n()
 const globalStore = useGlobalStore()
 
 // 安全获取消息 body - 直接返回 MessageBody 类型
-const messageBody = computed(() => {
+const messageBody = computed((): MessageBody => {
   const body = props.message?.message?.body
   if (typeof body === 'object' && body !== null) {
-    return body
+    return body as MessageBody
   }
-  return { content: String(body || '') } as any
+  return { content: String(body || '') }
 })
 
 const selectKey = ref(props.fromUser!.uid)
-const infoPopoverRefs = reactive<Record<string, any>>({})
+const infoPopoverRefs = reactive<Record<string, ShowablePopover | null>>({})
 const { handlePopoverUpdate } = usePopover(selectKey, 'image-chat-main')
+const setInfoPopoverRef = (messageId: string, el: unknown) => {
+  infoPopoverRefs[messageId] = isShowablePopover(el) ? el : null
+}
 
 const userStore = useUserStore()
 // 响应式状态变量
@@ -443,6 +474,23 @@ const bubbleMaxWidth = computed(() => {
   }
   return props.isGroup ? '32vw' : '50vw'
 })
+
+const isThreadReply = computed(() => {
+  const msg = props.message?.message
+  if (!msg) return false
+  return matrixThreadService.isBodyInThread(msg.body)
+})
+
+const handleOpenThread = (eventId: string) => {
+  if (isMobile()) {
+    const roomId = props.message?.message?.roomId || globalStore.currentSessionRoomId
+    router.push(`/mobile/chatRoom/thread/${roomId}/${eventId}`)
+  } else {
+    useMitt.emit(MittEnum.OPEN_THREAD, { eventId, roomId: props.message?.message?.roomId })
+  }
+}
+
+defineExpose({ isThreadReply, handleOpenThread })
 
 const { recordSelectionBeforeContext, handleContextMenuSelection } = createMacContextSelectionGuard({
   lockSelector: '.chat-message-max-width'
@@ -737,8 +785,8 @@ const isMe = computed(() => {
 })
 
 // 解决mac右键会选中文本的问题
-const closeMenu = (event: any) => {
-  if (!event.target.matches('.bubble', 'bubble-oneself')) {
+const closeMenu = (event: MouseEvent) => {
+  if (event.target instanceof HTMLElement && !event.target.matches('.bubble, .bubble-oneself')) {
     activeBubble.value = ''
   }
 }
@@ -768,15 +816,16 @@ const handleEmojiSelect = async (
   }
 }
 
-useMitt.on(`${MittEnum.INFO_POPOVER}-Main`, (event: any) => {
+useMitt.on(`${MittEnum.INFO_POPOVER}-Main`, (event: { uid: string }) => {
   const messageId = event.uid
 
   // 首先设置 selectKey 以显示 InfoPopover 组件
   selectKey.value = messageId
 
   // 如果有对应的 popover 引用，则显示 popover
-  if (infoPopoverRefs[messageId]) {
-    infoPopoverRefs[messageId].setShow(true)
+  const popover = infoPopoverRefs[messageId]
+  if (popover) {
+    popover.setShow(true)
     handlePopoverUpdate(messageId)
   }
 })
@@ -807,7 +856,7 @@ const longPressOption = computed(() => ({
   updateTiming: 'sync'
 }))
 
-const handleLongPress = (e: PointerEvent, _menu: any) => {
+const handleLongPress = (e: PointerEvent, _menu: unknown) => {
   if (!isMobile()) return
 
   // 1. 阻止默认行为（防止系统菜单出现）

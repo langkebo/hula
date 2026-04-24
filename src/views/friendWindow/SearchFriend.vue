@@ -89,7 +89,7 @@
                         <n-tooltip trigger="hover">
                           <template #trigger>
                             <svg
-                              class="size-12px hover:color-#909090 hover:transition-colors"
+                              class="size-12px hover:color-[--color-text-tertiary] hover:transition-colors"
                               @click="handleCopy(item.account)">
                               <use href="#copy"></use>
                             </svg>
@@ -159,14 +159,16 @@ import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
 import { useWindow } from '@/hooks/useWindow'
 import type { FriendItem } from '@/services/types'
-import { useBadgeStore } from '@/stores/badge'
-import { useContactStore } from '@/stores/contacts'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStore } from '@/stores/user'
+import type { UserProfile } from '@/services/matrix/MatrixContactService'
+import { useBadgeStore } from '@/stores/domains/chat/badge'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixContactService, matrixGroupService, matrixFriendService } from '@/services/matrix'
+import { matrixContactService, matrixFriendService } from '@/services/matrix'
+import { matrixGroupService, type GroupSearchResult } from '@/services/matrix/MatrixGroupService'
 
 const { createWebviewWindow } = useWindow()
 const contactStore = useContactStore()
@@ -178,13 +180,37 @@ const { themes } = storeToRefs(settingStore)
 
 // 定义标签页
 const { t } = useI18n()
+type SearchType = 'recommend' | 'user' | 'group'
+
+type BaseSearchResult = {
+  account: string
+  name: string
+  avatar: string
+  itemIds?: string[] | null
+  isFavorite?: boolean
+}
+
+type UserSearchResult = BaseSearchResult & {
+  uid: string
+  roomId?: string
+}
+
+type GroupSearchViewItem = BaseSearchResult & {
+  roomId: string
+  uid?: string
+  deleteStatus?: number
+  extJson?: string
+}
+
+type SearchResultItem = UserSearchResult | GroupSearchViewItem
+
 const tabs = computed(() => [
   { name: 'recommend', label: t('home.search_window.tabs.recommend') },
   { name: 'user', label: t('home.search_window.tabs.user') },
   { name: 'group', label: t('home.search_window.tabs.group') }
 ])
 // 搜索类型
-const searchType = ref<'recommend' | 'user' | 'group'>('recommend')
+const searchType = ref<SearchType>('recommend')
 // 搜索类型对应的placeholder映射
 const searchPlaceholder = computed(() => ({
   recommend: t('home.search_window.placeholder.recommend'),
@@ -194,7 +220,7 @@ const searchPlaceholder = computed(() => ({
 // 搜索值
 const searchValue = ref('')
 // 搜索结果
-const searchResults = ref<any[]>([])
+const searchResults = ref<SearchResultItem[]>([])
 // 是否已经搜索过
 const hasSearched = ref(false)
 // 加载状态
@@ -203,23 +229,25 @@ const loading = ref(false)
 const initialLoading = ref(true)
 
 // 从缓存存储中获取用户数据
-const getCachedUsers = () => {
+const getCachedUsers = (): SearchResultItem[] => {
   const users = groupStore.allUserInfo
   logger.debug('getCachedUsers', users)
 
   return sortSearchResults(
     users
       .filter((user) => {
-        const uid = user.uid as string
+        const uid = String(user.uid)
         return uid >= '20016' && uid <= '20030'
       })
-      .map((user) => ({
-        uid: user.uid,
-        account: user.account,
-        name: user.name,
-        avatar: user.avatar,
-        itemIds: user.itemIds || null
-      })),
+      .map(
+        (user): UserSearchResult => ({
+          uid: user.uid,
+          account: user.account,
+          name: user.name,
+          avatar: user.avatar,
+          itemIds: user.itemIds || null
+        })
+      ),
     'recommend'
   )
 }
@@ -264,26 +292,30 @@ const handleSearch = useDebounceFn(async () => {
     if (searchType.value === 'group') {
       // 调用群聊搜索接口
       const res = await matrixGroupService.searchGroup(searchValue.value)
-      searchResults.value = res.map((group: any) => ({
-        account: group.account,
-        name: group.name,
-        avatar: group.avatar,
-        deleteStatus: group.deleteStatus,
-        extJson: group.extJson,
-        roomId: group.roomId
-      }))
+      searchResults.value = res.map(
+        (group: GroupSearchResult): GroupSearchViewItem => ({
+          account: group.account,
+          name: group.name,
+          avatar: group.avatar || '',
+          deleteStatus: group.deleteStatus ? 1 : 0,
+          extJson: group.extJson,
+          roomId: group.roomId
+        })
+      )
     } else if (searchType.value === 'user') {
       // 调用好友搜索接口
       const res = await matrixContactService.searchFriend(searchValue.value)
       const specialFriends = await matrixFriendService.getSpecialFriends()
-      searchResults.value = res.map((user: any) => ({
-        uid: user.uid,
-        name: user.name,
-        avatar: user.avatar,
-        account: user.account,
-        isFavorite: specialFriends.includes(user.uid)
-      }))
-    } else {
+      searchResults.value = res.map(
+        (user: UserProfile): UserSearchResult => ({
+          uid: user.userId,
+          name: user.displayName || user.userId,
+          avatar: user.avatarUrl || '',
+          account: user.userId,
+          isFavorite: specialFriends.includes(user.userId)
+        })
+      )
+    } else if (searchType.value === 'recommend') {
       // 推荐标签搜索结果
       const cachedUsers = getCachedUsers()
       searchResults.value = cachedUsers.filter(
@@ -316,12 +348,12 @@ const isInGroup = (roomId: string) => {
 }
 
 // 通用排序函数
-const sortSearchResults = (items: any[], type: 'user' | 'group' | 'recommend') => {
+const sortSearchResults = (items: SearchResultItem[], type: SearchType) => {
   if (type === 'group') {
     // 群聊排序逻辑：已加入的群聊排在前面
     return items.sort((a, b) => {
-      const aInGroup = isInGroup(a.roomId)
-      const bInGroup = isInGroup(b.roomId)
+      const aInGroup = isInGroup(a.roomId || '')
+      const bInGroup = isInGroup(b.roomId || '')
       if (aInGroup && !bInGroup) return -1
       if (!aInGroup && bInGroup) return 1
       return 0
@@ -383,9 +415,12 @@ const getButtonType = (uid: string, roomId: string) => {
 }
 
 // 处理按钮点击
-const handleButtonClick = (item: any) => {
+const handleButtonClick = (item: SearchResultItem) => {
+  const uid = String(item.uid || '')
+  const roomId = item.roomId || ''
+
   if (searchType.value === 'group') {
-    if (isInGroup(item.roomId)) {
+    if (isInGroup(roomId)) {
       handleSendGroupMessage(item)
     } else {
       handleAddFriend(item)
@@ -394,9 +429,9 @@ const handleButtonClick = (item: any) => {
   }
 
   // 用户逻辑保持不变
-  if (isCurrentUser(item.uid)) {
+  if (isCurrentUser(uid)) {
     handleEditProfile()
-  } else if (isFriend(item.uid)) {
+  } else if (isFriend(uid)) {
     handleSendMessage(item)
   } else {
     handleAddFriend(item)
@@ -404,7 +439,7 @@ const handleButtonClick = (item: any) => {
 }
 
 // 处理添加好友或群聊
-const handleAddFriend = async (item: any) => {
+const handleAddFriend = async (item: SearchResultItem) => {
   if (searchType.value === 'user' || searchType.value === 'recommend') {
     await createWebviewWindow(
       t('home.search_window.modal.add_friend'),
@@ -438,12 +473,13 @@ const handleEditProfile = async () => {
 }
 
 // 处理发送消息
-const handleSendMessage = async (item: any) => {
-  emitTo('home', 'search_to_msg', { uid: item.uid, roomType: RoomTypeEnum.SINGLE })
+const handleSendMessage = async (item: SearchResultItem) => {
+  const uid = String(item.uid || '')
+  emitTo('home', 'search_to_msg', { uid, roomType: RoomTypeEnum.SINGLE })
 }
 
 // 处理发送群消息
-const handleSendGroupMessage = async (item: any) => {
+const handleSendGroupMessage = async (item: SearchResultItem) => {
   emitTo('home', 'search_to_msg', {
     uid: item.roomId,
     roomType: RoomTypeEnum.GROUP

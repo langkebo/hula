@@ -23,7 +23,7 @@
       :show-indicator="false"
       :height="6"
       :border-radius="3"
-      :color="'#13987f'"
+      :color="'var(--color-primary)'"
       :rail-color="themes.content === ThemeEnum.DARK ? '#404040' : '#90909040'" />
   </div>
 </template>
@@ -32,7 +32,7 @@
 import { storeToRefs } from 'pinia'
 import { ThemeEnum } from '@/enums'
 import { globalFileUploadQueue } from '@/hooks/useFileUploadQueue'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

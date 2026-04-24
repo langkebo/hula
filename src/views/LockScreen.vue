@@ -38,7 +38,7 @@
         <n-flex vertical align="center" justify="center" :size="30" class="mt--75px">
           <n-avatar
             round
-            style="border: 2px solid #f1f1f1"
+            style="border: 2px solid var(--lock-border-color, #f1f1f1)"
             :size="120"
             :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)" />
           <p class="text-(24px [--chat-text-color]) font-500">{{ userStore.userInfo!.name }}</p>
@@ -51,8 +51,8 @@
               width: 320px;
               border: 2px solid rgba(255, 255, 255, 0.1);
               border-bottom-color: rgba(19, 152, 127, 1);
-              background-color: #404040;
-              color: #fff;
+              background-color: var(--lock-input-bg, #404040);
+              color: var(--lock-input-color, #fff);
             "
             spellCheck="false"
             autoComplete="off"
@@ -68,7 +68,7 @@
                 <template #trigger>
                   <svg
                     @click.stop="unlock"
-                    class="size-16px color-#e3e3e3 mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-all duration-300 ease-in-out hover:bg-#13987fe6">
+                    class="size-16px color-#e3e3e3 mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-all duration-300 ease-in-out hover:bg-[--color-primary]e6">
                     <use href="#arrow-right"></use>
                   </svg>
                 </template>
@@ -114,9 +114,9 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { onKeyStroke } from '@vueuse/core'
 import dayjs from 'dayjs'
 import { type InputInst } from 'naive-ui'
-import { useLogin } from '@/hooks/useLogin.ts'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStore } from '@/stores/user.ts'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { getWeekday } from '@/utils/ComputedTime'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -126,7 +126,7 @@ const appWindow = WebviewWindow.getCurrent()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
 const { lockScreen } = storeToRefs(settingStore)
-const { logout } = useLogin()
+const { logout } = useLoginFlow()
 const { t } = useI18n()
 const timerManager = useTimerManager()
 /** 解锁密码 */
@@ -265,23 +265,25 @@ onUnmounted(() => {
 .tips {
   @apply cursor-pointer w-240px p-12px rounded-8px transition-all duration-300 ease-in-out;
   svg {
-    @apply size-24px color-#f1f1f1 p-4px bg-#80808080 rounded-8px;
+    @apply size-24px p-4px rounded-8px;
+    color: var(--lock-icon-color, #f1f1f1);
+    background-color: var(--lock-icon-bg, rgba(128, 128, 128, 0.5));
   }
 }
 
 :deep(.hover-box),
 :deep(.action-close) {
   svg {
-    color: #fff;
+    color: var(--lock-action-color, #fff);
   }
 }
 :deep(.hover-box) {
   &:hover {
-    background-color: #464646;
+    background-color: var(--lock-hover-bg, #464646);
   }
 }
 :deep(.n-input .n-input__input-el, .n-input .n-input__textarea-el) {
-  color: #fff;
+  color: var(--lock-input-color, #fff);
 }
 
 /*

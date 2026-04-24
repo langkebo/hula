@@ -1,5 +1,5 @@
 import { NAvatar, NButton } from 'naive-ui'
-import { useNoticeStore } from '@/stores/notice.ts'
+import { useNoticeStore } from '@/stores/domains/chat/notice'
 import { handRelativeTime } from '@/utils/ComputedTime'
 
 const { systemNotice } = storeToRefs(useNoticeStore())

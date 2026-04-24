@@ -10,7 +10,7 @@
     <div v-show="!shrinkStatus" class="resize-handle transition-all duration-600 ease-in-out" @mousedown="initDrag">
       <div :class="{ 'opacity-100': isDragging }" class="transition-all duration-600 ease-in-out opacity-0 drag-icon">
         <div style="border-radius: 8px 0 0 8px" class="bg-#c8c8c833 h-60px w-14px absolute top-40% right-0 drag-icon">
-          <svg class="size-16px absolute top-1/2 right--2px transform -translate-y-1/2 color-#909090">
+          <svg class="size-16px absolute top-1/2 right--2px transform -translate-y-1/2 color-[--color-text-tertiary]">
             <use href="#sliding"></use>
           </svg>
         </div>
@@ -127,7 +127,7 @@
             :render-target-label="renderLabel" />
 
           <n-flex align="center" justify="center" class="p-16px">
-            <n-button :disabled="selectedValue.length < 2" color="#13987f" @click="handleCreateGroup">
+            <n-button :disabled="selectedValue.length < 2" color="var(--color-primary)" @click="handleCreateGroup">
               {{ t('home.create_group.action') }}
             </n-button>
           </n-flex>
@@ -138,17 +138,18 @@
 </template>
 
 <script setup lang="ts">
+import { Preset } from '@/services/matrix'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useWindowSize } from '@vueuse/core'
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow'
 import router from '@/router'
-import { useChatStore } from '@/stores/chat'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useGroupStore } from '@/stores/group'
-import { useSettingStore } from '@/stores/setting.ts'
-import { matrixRoomService } from '@/services/matrix'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { matrixGroupService } from '@/services/matrix/MatrixGroupService'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
 import { options, renderLabel, renderSourceList, renderTargetList } from './model.tsx'
@@ -340,25 +341,20 @@ const resetCreateGroupState = () => {
 const handleCreateGroup = async () => {
   if (selectedValue.value.length < 2) return
   try {
-    const result: any = await matrixRoomService.createRoom({
-      visibility: 'private',
+    // 使用 MatrixGroupService 创建群组
+    const room = await matrixGroupService.createGroup({
       invite: selectedValue.value,
-      is_direct: false
+      is_direct: false,
+      preset: Preset.PrivateChat
     })
 
     // 创建成功后刷新会话列表以显示新群聊
     await chatStore.getSessionList(true)
 
-    const resultRoomId = result?.roomId != null ? String(result.roomId) : undefined
-    const resultId = result?.id != null ? String(result.id) : undefined
+    const roomId = room.roomId
 
     const matchedSession = chatStore.sessionList.find((session) => {
-      const sessionRoomId = String(session.roomId)
-      const sessionDetailId = session.detailId != null ? String(session.detailId) : undefined
-      return (
-        (resultRoomId !== undefined && sessionRoomId === resultRoomId) ||
-        (resultId !== undefined && (sessionDetailId === resultId || sessionRoomId === resultId))
-      )
+      return session.roomId === roomId
     })
 
     if (matchedSession?.roomId) {

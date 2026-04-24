@@ -16,7 +16,7 @@
     <span class="text-(20px [--text-color])">{{ item.name }}</span>
 
     <template v-if="!isBotUser">
-      <span class="text-(14px #909090)">{{ t('home.chat_details.single.empty_signature') }}</span>
+      <span class="text-(12px --color-text-tertiary)">{{ t('home.chat_details.single.empty_signature') }}</span>
 
       <n-flex align="center" justify="space-between" :size="30" class="text-#606060 select-none cursor-default">
         <span>
@@ -49,7 +49,7 @@
           @click="opt.onClick">
           <n-tooltip>
             <template #trigger>
-              <n-icon v-if="opt.icon" :size="24" :component="opt.icon" />
+              <n-icon :size="24" :component="opt.icon" />
             </template>
             {{ opt.label }}
           </n-tooltip>
@@ -108,8 +108,8 @@
 import { ref, computed, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NIcon } from 'naive-ui'
-import { useGroupStore } from '@/stores/group'
-import { useBadgeStore } from '@/stores/badge'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useBadgeStore } from '@/stores/domains/chat/badge'
 import { RoomTypeEnum, UserType } from '@/enums'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createWebviewWindow } from '@/hooks/useWindow'
@@ -154,11 +154,9 @@ const handleOpenAnnouncement = async () => {
   )
 }
 
-const displayNickname = computed(async () => {
-  const roomId = item.value?.roomId
-  if (!roomId) return item.value?.myName || ''
-  return (await resolveMyRoomNickname(roomId)) || item.value?.myName || ''
-})
+const displayNickname = computed(() =>
+  resolveMyRoomNickname({ roomId: item.value?.roomId, myName: item.value?.myName })
+)
 
 const isBotUser = computed(() => {
   if (props.content.type !== RoomTypeEnum.SINGLE || !item.value?.uid) return false
@@ -194,7 +192,7 @@ const openImageViewer = () => {
 
 const footerOptions = computed(() => [
   {
-    icon: null,
+    icon: undefined,
     label: t('home.chat_details.single.send_message'),
     onClick: () => handleSendMessage()
   }

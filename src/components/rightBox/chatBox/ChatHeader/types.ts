@@ -1,5 +1,5 @@
 import type { UserItem } from '@/services/types'
-import type { MessageType } from '@/stores/chat'
+import type { MessageType } from '@/stores/domains/chat/chat'
 
 export interface ChatHeaderState {
   sidebarShow: boolean

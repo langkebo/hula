@@ -1,4 +1,4 @@
-import type { SettingsTabType } from '@/stores/settingsDialog'
+import type { SettingsTabType } from '@/stores/domains/settings/settingsDialog'
 import { useRouter } from 'vue-router'
 import { useDialog, useMessage } from 'naive-ui'
 import { createLogger } from '@/utils/Logger'
@@ -108,7 +108,7 @@ async function handleRemoveFriend(): Promise<void> {
           router.push('/friend')
         }
         message.info('请在好友列表中选择要删除的好友')
-      } catch (_error) {
+      } catch {
         message.error('操作失败')
       }
     }

@@ -67,8 +67,8 @@
                     fallback-src="/default-avatar.png" />
 
                   <div class="flex-y-center gap-12px h-fit">
-                    <p class="text-(14px #909090)">{{ getUserDisplayName(item.fromUser.uid) }}</p>
-                    <p class="text-(12px #909090)">{{ formatTime(item.message.sendTime) }}</p>
+                    <p class="text-(12px --color-text-tertiary)">{{ getUserDisplayName(item.fromUser.uid) }}</p>
+                    <p class="text-(12px --color-text-tertiary)">{{ formatTime(item.message.sendTime) }}</p>
                   </div>
                 </div>
 
@@ -105,10 +105,10 @@ import { MsgEnum, TauriCommand } from '@/enums'
 import { useChatMain } from '@/hooks/useChatMain'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
-import type { MessageType } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user'
+import type { MessageType } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatDateGroupLabel } from '@/utils/ComputedTime'
 import { useI18n } from 'vue-i18n'
@@ -197,7 +197,7 @@ const handleSearch = useDebounceFn(() => {
 }, 300)
 
 // 处理日期筛选变化
-const handleDateChange = useDebounceFn((value) => {
+const handleDateChange = useDebounceFn((value: [number, number] | null) => {
   if (Array.isArray(value) && value.length === 2 && value[0] && value[1]) {
     // 修复日期边界问题：如果选择同一天，结束时间应该是当天的23:59:59.999
     let startTime = value[0]
@@ -402,15 +402,15 @@ onMounted(async () => {
 </style>
 <style lang="scss">
 .n-date-panel .n-date-panel-dates .n-date-panel-date.n-date-panel-date--selected::after {
-  background-color: #13987f;
+  background-color: var(--color-primary);
 }
 .n-date-panel.n-date-panel--daterange {
   border-radius: 14px;
 }
 
 .n-date-panel-actions .n-button {
-  background-color: rgba(19, 152, 127, 0.1) !important;
+  background-color: var(--color-primary-light) !important;
   border: none !important;
-  color: #13987f !important;
+  color: var(--color-primary) !important;
 }
 </style>

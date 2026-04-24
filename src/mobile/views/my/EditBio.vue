@@ -7,23 +7,23 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col flex-1 gap-20px py-15px px-20px">
-          <n-form class="rounded-15px p-10px shadow" label-placement="left" label-width="100px">
-            <n-form-item>
-              <n-input
-                v-model:value="localBio"
-                type="textarea"
-                :placeholder="t('mobile_edit_bio.placeholder')"
-                class="w-full"
-                :autosize="bioAutosize"
-                :maxlength="300"
-                :show-count="true" />
-            </n-form-item>
-          </n-form>
+          <van-form class="rounded-15px p-10px shadow">
+            <van-field
+              v-model="localBio"
+              type="textarea"
+              :placeholder="t('mobile_edit_bio.placeholder')"
+              class="w-full"
+              rows="5"
+              autosize
+              :maxlength="300"
+              show-word-limit
+              :spellcheck="false" />
+          </van-form>
 
           <div class="flex justify-center">
-            <n-button @click="handleSave" block type="primary" strong secondary>
+            <van-button @click="handleSave" block type="primary" round>
               {{ t('mobile_edit_bio.save_btn') }}
-            </n-button>
+            </van-button>
           </div>
         </div>
       </div>
@@ -33,17 +33,15 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user.ts'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const userStore = useUserStore()
-const bioAutosize = { minRows: 5, maxRows: 20 }
 
 const router = useRouter()
 const localBio = ref(userStore.userInfo?.resume || '')
 
-// 保存个人简介
 const handleSave = () => {
   userStore.userInfo!.resume = localBio.value
 

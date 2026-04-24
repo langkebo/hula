@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import type { SettingsTab, SettingsTabType } from '@/stores/settingsDialog'
+import type { SettingsTab, SettingsTabType } from '@/stores/domains/settings/settingsDialog'
 
 defineOptions({
   name: 'SettingsTabNav'
@@ -39,8 +39,15 @@ const iconMap: Record<string, string> = {
   'bell-ring': 'mdi:bell-ring',
   settings: 'mdi:cog',
   keyboard: 'mdi:keyboard',
+  sidebar: 'mdi:view-sidebar',
   shield: 'mdi:shield',
   key: 'mdi:key',
+  flask: 'mdi:flask',
+  'block-helper': 'mdi:block-helper',
+  'account-group': 'mdi:account-group',
+  'timer-outline': 'mdi:timer-outline',
+  microphone: 'mdi:microphone',
+  puzzle: 'mdi:puzzle',
   'help-circle': 'mdi:help-circle'
 }
 
@@ -74,8 +81,8 @@ function getIcon(iconName: string): string {
 }
 
 .tab-item-active {
-  background-color: rgba(24, 144, 255, 0.1);
-  color: #1890ff;
+  background-color: var(--color-info-light);
+  color: var(--color-info);
 }
 
 :deep(.dark) .tab-item-active {

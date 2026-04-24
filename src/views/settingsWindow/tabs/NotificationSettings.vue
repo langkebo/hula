@@ -77,6 +77,73 @@
         </div>
       </div>
     </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">线程通知</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">线程回复通知</span>
+          <span class="setting-desc">线程中有新回复时发送通知</span>
+        </div>
+        <n-switch v-model:value="threadReplyNotify" @update:value="handleThreadReplyNotify" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">参与的线程新消息通知</span>
+          <span class="setting-desc">你参与的线程有新消息时通知</span>
+        </div>
+        <n-switch v-model:value="threadParticipateNotify" @update:value="handleThreadParticipateNotify" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">线程中被 @提及时通知</span>
+          <span class="setting-desc">在线程中被他人提及时发送通知</span>
+        </div>
+        <n-switch v-model:value="threadMentionNotify" @update:value="handleThreadMentionNotify" />
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">空间通知</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">空间新增房间时通知</span>
+          <span class="setting-desc">你加入的空间有新房间时通知</span>
+        </div>
+        <n-switch v-model:value="spaceNewRoomNotify" @update:value="handleSpaceNewRoomNotify" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">空间成员变更时通知</span>
+          <span class="setting-desc">空间成员加入或离开时通知</span>
+        </div>
+        <n-switch v-model:value="spaceMemberChangeNotify" @update:value="handleSpaceMemberChangeNotify" />
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">好友请求通知</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">收到好友请求时通知</span>
+          <span class="setting-desc">有新的好友请求时发送通知</span>
+        </div>
+        <n-switch v-model:value="friendRequestNotify" @update:value="handleFriendRequestNotify" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">好友请求被接受时通知</span>
+          <span class="setting-desc">你发出的好友请求被接受时通知</span>
+        </div>
+        <n-switch v-model:value="friendAcceptNotify" @update:value="handleFriendAcceptNotify" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -84,7 +151,7 @@
 import { ref, onMounted } from 'vue'
 import { NSwitch, NSlider, NDivider, NInput, NButton, NTag, useMessage } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 
 defineOptions({
   name: 'NotificationSettings'
@@ -102,6 +169,16 @@ const showSenderName = ref(true)
 const keywordNotification = ref(false)
 const newKeyword = ref('')
 const keywords = ref<string[]>([])
+
+const threadReplyNotify = ref(true)
+const threadParticipateNotify = ref(true)
+const threadMentionNotify = ref(true)
+
+const spaceNewRoomNotify = ref(true)
+const spaceMemberChangeNotify = ref(false)
+
+const friendRequestNotify = ref(true)
+const friendAcceptNotify = ref(true)
 
 onMounted(() => {
   const savedDesktopNotification = localStorage.getItem('hula-desktop-notification')
@@ -128,6 +205,23 @@ onMounted(() => {
   if (savedKeywordNotification !== null) {
     keywordNotification.value = savedKeywordNotification === 'true'
   }
+
+  const savedThreadReply = localStorage.getItem('hula-thread-reply-notify')
+  if (savedThreadReply !== null) threadReplyNotify.value = savedThreadReply === 'true'
+  const savedThreadParticipate = localStorage.getItem('hula-thread-participate-notify')
+  if (savedThreadParticipate !== null) threadParticipateNotify.value = savedThreadParticipate === 'true'
+  const savedThreadMention = localStorage.getItem('hula-thread-mention-notify')
+  if (savedThreadMention !== null) threadMentionNotify.value = savedThreadMention === 'true'
+
+  const savedSpaceNewRoom = localStorage.getItem('hula-space-new-room-notify')
+  if (savedSpaceNewRoom !== null) spaceNewRoomNotify.value = savedSpaceNewRoom === 'true'
+  const savedSpaceMember = localStorage.getItem('hula-space-member-change-notify')
+  if (savedSpaceMember !== null) spaceMemberChangeNotify.value = savedSpaceMember === 'true'
+
+  const savedFriendRequest = localStorage.getItem('hula-friend-request-notify')
+  if (savedFriendRequest !== null) friendRequestNotify.value = savedFriendRequest === 'true'
+  const savedFriendAccept = localStorage.getItem('hula-friend-accept-notify')
+  if (savedFriendAccept !== null) friendAcceptNotify.value = savedFriendAccept === 'true'
 })
 
 async function handleNotificationChange(value: boolean) {
@@ -182,6 +276,41 @@ function removeKeyword(keyword: string) {
   localStorage.setItem('hula-keywords', JSON.stringify(keywords.value))
   message.success(`已移除关键词: ${keyword}`)
 }
+
+function handleThreadReplyNotify(value: boolean) {
+  localStorage.setItem('hula-thread-reply-notify', value.toString())
+  message.success(value ? '已启用线程回复通知' : '已禁用线程回复通知')
+}
+
+function handleThreadParticipateNotify(value: boolean) {
+  localStorage.setItem('hula-thread-participate-notify', value.toString())
+  message.success(value ? '已启用线程参与通知' : '已禁用线程参与通知')
+}
+
+function handleThreadMentionNotify(value: boolean) {
+  localStorage.setItem('hula-thread-mention-notify', value.toString())
+  message.success(value ? '已启用线程提及通知' : '已禁用线程提及通知')
+}
+
+function handleSpaceNewRoomNotify(value: boolean) {
+  localStorage.setItem('hula-space-new-room-notify', value.toString())
+  message.success(value ? '已启用空间新房间通知' : '已禁用空间新房间通知')
+}
+
+function handleSpaceMemberChangeNotify(value: boolean) {
+  localStorage.setItem('hula-space-member-change-notify', value.toString())
+  message.success(value ? '已启用空间成员变更通知' : '已禁用空间成员变更通知')
+}
+
+function handleFriendRequestNotify(value: boolean) {
+  localStorage.setItem('hula-friend-request-notify', value.toString())
+  message.success(value ? '已启用好友请求通知' : '已禁用好友请求通知')
+}
+
+function handleFriendAcceptNotify(value: boolean) {
+  localStorage.setItem('hula-friend-accept-notify', value.toString())
+  message.success(value ? '已启用好友接受通知' : '已禁用好友接受通知')
+}
 </script>
 
 <style scoped>
@@ -222,7 +351,7 @@ function removeKeyword(keyword: string) {
 
 .setting-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 
@@ -234,7 +363,7 @@ function removeKeyword(keyword: string) {
 
 .volume-value {
   font-size: 12px;
-  color: #666;
+  color: var(--color-text-secondary);
   min-width: 36px;
 }
 

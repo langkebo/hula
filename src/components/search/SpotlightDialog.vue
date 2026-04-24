@@ -1,6 +1,6 @@
 <template>
   <n-modal
-    :show="visible" @update:show="emit('update:visible', $event)"
+    v-model:show="visible"
     :style="{ width: '600px', maxWidth: '90vw' }"
     :bordered="false"
     :mask-closable="true"
@@ -109,7 +109,7 @@
             </div>
 
             <div v-if="!hasResults" class="empty-state">
-              <svg class="size-48px color-#909090">
+              <svg class="size-48px color-[--color-text-tertiary]">
                 <use href="#search"></use>
               </svg>
               <span class="empty-text">{{ t('search.no_results') }}</span>
@@ -143,7 +143,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { matrixSearchService } from '@/services/matrix'
-import { useSpotlightStore } from '@/stores/spotlight'
+import { useSpotlightStore } from '@/stores/domains/widget/spotlight'
 import { formatTimestamp } from '@/utils/ComputedTime'
 import { useDebounceFn } from '@vueuse/core'
 import { createLogger } from '@/utils/Logger'
@@ -284,11 +284,11 @@ watch(
 }
 
 .section-title {
-  @apply text-12px font-medium color-#909090;
+  @apply text-12px font-medium color-[--color-text-tertiary];
 }
 
 .section-count {
-  @apply text-12px color-#909090;
+  @apply text-12px color-[--color-text-tertiary];
 }
 
 .result-item {
@@ -316,28 +316,28 @@ watch(
 }
 
 .result-room {
-  @apply text-12px color-#909090 truncate;
+  @apply text-12px color-[--color-text-tertiary] truncate;
 }
 
 .result-preview {
-  @apply text-12px color-#909090 truncate;
+  @apply text-12px color-[--color-text-tertiary] truncate;
 
   :deep(mark) {
-    background: rgba(19, 152, 127, 0.3);
+    background: var(--color-primary-active);
     color: inherit;
   }
 }
 
 .result-time {
-  @apply text-12px color-#909090 flex-shrink-0;
+  @apply text-12px color-[--color-text-tertiary] flex-shrink-0;
 }
 
 .encrypted-badge {
-  @apply flex-center color-#13987f;
+  @apply flex-center color-[--color-primary];
 }
 
 .result-userId {
-  @apply text-12px color-#909090;
+  @apply text-12px color-[--color-text-tertiary];
 }
 
 .empty-state {
@@ -345,7 +345,7 @@ watch(
 }
 
 .empty-text {
-  @apply text-14px color-#909090;
+  @apply text-14px color-[--color-text-tertiary];
 }
 
 .recent-searches {

@@ -83,13 +83,13 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import { NAvatar, NButton, NForm, NFormItem, NInput, NDivider, useMessage, useDialog } from 'naive-ui'
-import { useUserStore } from '@/stores/user'
-import { useMatrixStore } from '@/stores/matrix'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AccountSettings')
 import { matrixAccountService } from '@/services/matrix'
-import { matrixMediaService } from '@/services/matrix/MatrixMediaService'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import type { AvatarCropperInstance } from '@/components/common/AvatarCropper.vue'
 import defaultAvatarImg from '@/assets/img/win.png'
@@ -278,6 +278,6 @@ function handleDeactivateAccount() {
   padding: 16px;
   border: 1px solid #ff4d4f;
   border-radius: 8px;
-  background-color: rgba(255, 77, 79, 0.05);
+  background-color: var(--color-danger-light);
 }
 </style>

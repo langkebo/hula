@@ -70,7 +70,7 @@
               :menu="menuList"
               :special-menu="specialMenuList"
               class="msg-box w-full h-75px mb-5px"
-              @select="$event.click(item)">
+              @select="(menuItem) => menuItem.click?.(item as any)">
               <div class="absolute flex flex-col gap-14px w-full p-[8px_14px] box-border">
                 <n-flex justify="space-between" align="center" :size="0" class="leading-22px">
                   <n-ellipsis
@@ -203,9 +203,9 @@ import { type InputInst, type VirtualListInst } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
-import { useUserStore } from '@/stores/user.ts'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixConversationService, matrixChatRoleService } from '@/services/matrix'
+import { conversationService, chatRoleService, type Conversation, type ChatRole } from '@/services/matrix'
 import { formatTimestamp } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -258,13 +258,13 @@ const fetchConversationList = async (isLoadMore = false) => {
   }
 
   try {
-    const data = await matrixConversationService.page({
+    const data = await conversationService.page({
       pageNo: pageNo.value,
       pageSize: pageSize.value
     })
 
     if (data && data.list) {
-      const newChats = data.list.map((item: any) => {
+      const newChats = data.list.map((item: Conversation) => {
         const parsedCreateTime = Number(item.createTime)
         return {
           id: item.id,
@@ -400,9 +400,9 @@ const handleActive = (item: ChatItem) => {
 // 检查是否有可用角色
 const checkHasRoles = async () => {
   try {
-    const data = await matrixChatRoleService.page({ pageNo: 1, pageSize: 100 })
+    const data = await chatRoleService.page({ pageNo: 1, pageSize: 100 })
     // 检查是否有可用的角色（status === 0）
-    const availableRoles = (data.list || []).filter((item: any) => item.status === 0)
+    const availableRoles = (data.list || []).filter((item: ChatRole) => item.status === 0)
     hasRoles.value = availableRoles.length > 0
     // 保存第一个可用角色的ID
     firstAvailableRoleId.value = availableRoles.length > 0 ? availableRoles[0].id : null
@@ -438,7 +438,7 @@ const add = async () => {
   }
 
   try {
-    const data = await matrixConversationService.create({
+    const data = await conversationService.create({
       roleId: firstAvailableRoleId.value,
       knowledgeId: undefined,
       title: '新的会话'
@@ -478,7 +478,7 @@ const add = async () => {
 /** 删除单个会话 */
 const deleteChat = async (item: ChatItem) => {
   try {
-    await matrixConversationService.delete({ conversationIdList: [item.id] })
+    await conversationService.delete({ conversationIdList: [item.id] })
 
     const index = chatList.value.findIndex((chat) => chat.id === item.id)
     if (index !== -1) {
@@ -518,7 +518,7 @@ const deleteAllChats = async () => {
     }
 
     const allChatIds = chatList.value.map((chat) => chat.id)
-    await matrixConversationService.delete({ conversationIdList: allChatIds })
+    await conversationService.delete({ conversationIdList: allChatIds })
 
     // 清空本地列表
     chatList.value = []
@@ -564,7 +564,7 @@ const handleBlur = async (item: ChatItem, index: number) => {
   }
 
   try {
-    await matrixConversationService.update({
+    await conversationService.update({
       id: item.id,
       title: nextTitle
     })
@@ -596,8 +596,8 @@ onMounted(async () => {
     router.push('/welcome')
   }
 
-  useMitt.on('update-chat-title', (e: any) => {
-    chatList.value.filter((item) => {
+  useMitt.on('update-chat-title', (e: { id: string; title: string }) => {
+    chatList.value.forEach((item) => {
       if (item.id === e.id) {
         item.title = e.title
       }
@@ -621,7 +621,7 @@ onMounted(async () => {
   })
 
   // ✅ 监听添加会话事件
-  useMitt.on('add-conversation', (newChat: any) => {
+  useMitt.on('add-conversation', (newChat: Conversation) => {
     if (newChat && newChat.id) {
       // 检查是否已存在
       const exists = chatList.value.some((chat) => chat.id === newChat.id)
@@ -650,7 +650,7 @@ onMounted(async () => {
     }
   })
 
-  useMitt.on('update-chat-meta', (payload: any) => {
+  useMitt.on('update-chat-meta', (payload: { id: string; messageCount?: number; createTime?: number }) => {
     if (!payload?.id) return
     const target = chatList.value.find((chat) => chat.id === payload.id)
     if (target) {

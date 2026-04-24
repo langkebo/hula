@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import { NButton, NRadio, NRadioGroup, NFlex, useMessage } from 'naive-ui'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

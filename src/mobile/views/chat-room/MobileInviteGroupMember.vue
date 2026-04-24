@@ -12,83 +12,79 @@
     <template #container>
       <!-- 顶部搜索框 -->
       <div class="px-16px mt-10px flex gap-3">
-        <n-input
-          round
-          v-model:value="keyword"
-          class="rounded-10px relative text-14px flex-1 shrink-0"
-          placeholder="搜索联系人~"
-          clearable
-          spellCheck="false"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off">
-          <template #prefix>
-            <svg class="w-12px h-12px"><use href="#search"></use></svg>
-          </template>
-        </n-input>
-        <n-button strong secondary round class="py-5px" @click="doSearch">搜索</n-button>
+        <div class="flex-1 shrink-0">
+          <van-field
+            v-model="keyword"
+            placeholder="搜索联系人~"
+            clearable
+            autocomplete="off"
+            :spellcheck="false"
+            autocorrect="off"
+            autocapitalize="off">
+            <template #left-icon>
+              <svg class="w-12px h-12px"><use href="#search"></use></svg>
+            </template>
+          </van-field>
+        </div>
+        <div class="flex justify-end items-center">
+          <van-button size="small" type="primary" plain round @click="doSearch">搜索</van-button>
+        </div>
       </div>
 
       <!-- 好友列表 -->
       <div ref="scrollArea" class="flex-1 overflow-y-auto px-16px mt-10px" :style="{ height: scrollHeight + 'px' }">
-        <n-scrollbar style="max-height: calc(100vh - 150px)">
-          <n-checkbox-group v-model:value="selectedList" class="flex flex-col gap-2">
+        <div style="max-height: calc(100vh - 150px); overflow-y: auto">
+          <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
             <div
               v-for="item in filteredContacts"
               :key="item.uid"
               class="rounded-10px border border-gray-200 overflow-hidden">
-              <n-checkbox
-                :value="item.uid"
-                size="large"
+              <van-checkbox
+                :name="item.uid"
+                shape="square"
                 class="w-full flex items-center px-5px"
                 :class="[
                   'cursor-pointer select-none transition-colors duration-150',
                   selectedList.includes(item.uid)
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
-                    : 'data-[active=true]:hover:bg-blue-100 dark:data-[active=true]:hover:bg-blue-500/20'
+                    : 'hover:bg-blue-100 dark:hover:bg-blue-500/20'
                 ]">
                 <template #default>
                   <div class="flex items-center gap-10px px-8px py-10px">
-                    <!-- 头像 -->
-                    <n-avatar
-                      round
-                      :size="44"
+                    <img
                       :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                      fallback-src="/logo.png"
-                      style="border: 1px solid var(--avatar-border-color)" />
-                    <!-- 文字信息 -->
+                      class="size-44px rounded-full object-cover"
+                      style="border: 1px solid var(--avatar-border-color)"
+                      @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <div class="flex flex-col leading-tight truncate">
                       <span class="text-14px font-medium truncate">
                         {{ groupStore.getUserInfo(item.uid)?.name }}
                       </span>
                       <div class="text-12px text-gray-500 flex items-center gap-4px truncate">
-                        <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
+                        <span
+                          class="inline-block size-8px rounded-full"
+                          :style="{
+                            backgroundColor: item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'
+                          }"></span>
                         {{ item.activeStatus === OnlineEnum.ONLINE ? '在线' : '离线' }}
                       </div>
                     </div>
                   </div>
                 </template>
-              </n-checkbox>
+              </van-checkbox>
             </div>
-          </n-checkbox-group>
-        </n-scrollbar>
+          </van-checkbox-group>
+        </div>
       </div>
     </template>
 
     <template #footer>
       <!-- 底部操作栏 -->
       <div class="px-16px py-10px border-t border-gray-200 flex justify-between items-center">
-        <n-text class="text-14px">已选择 {{ selectedList.length }} 人</n-text>
-        <n-button
-          strong
-          secondary
-          round
-          type="primary"
-          :disabled="selectedList.length === 0"
-          :loading="isLoading"
-          @click="handleInvite">
+        <span class="text-14px">已选择 {{ selectedList.length }} 人</span>
+        <van-button type="primary" :disabled="selectedList.length === 0" :loading="isLoading" @click="handleInvite">
           邀请
-        </n-button>
+        </van-button>
       </div>
     </template>
   </AutoFixHeightPage>
@@ -97,10 +93,10 @@
 <script setup lang="ts">
 import { createLogger } from '@/utils/Logger'
 import { OnlineEnum } from '@/enums'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
-import { useChatStore } from '@/stores/chat'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixGroupService } from '@/services/matrix'
 import router from '@/router'
@@ -121,21 +117,16 @@ const isLoading = ref(false)
 const scrollHeight = ref(0)
 const scrollArea = ref<HTMLElement>()
 
-// 获取所有好友列表（排除已在群中的成员和机器人）
 const allContacts = computed(() => {
   return contactStore.contactsList.filter((item) => {
-    // 排除机器人（uid === '1'）
     if (item.uid === '1') {
       return false
     }
-
-    // 排除已在群中的成员
     const isInGroup = groupStore.memberList.some((member) => member.uid === item.uid)
     return !isInGroup
   })
 })
 
-// 搜索过滤
 const filteredContacts = computed(() => {
   if (!keyword.value.trim()) {
     return allContacts.value
@@ -149,12 +140,8 @@ const filteredContacts = computed(() => {
   })
 })
 
-// 搜索功能
-const doSearch = () => {
-  // 搜索逻辑已在 filteredContacts 中实现
-}
+const doSearch = () => {}
 
-// 处理邀请
 const handleInvite = async () => {
   if (selectedList.value.length === 0) {
     window.$message.warning('请选择要邀请的好友')
@@ -170,7 +157,6 @@ const handleInvite = async () => {
     )
 
     window.$message.success(`成功邀请 ${selectedList.value.length} 位好友`)
-    // 返回群设置页面
     router.back()
   } catch (error) {
     logger.error('邀请失败:', error)
@@ -180,7 +166,6 @@ const handleInvite = async () => {
   }
 }
 
-// 计算滚动区域高度
 const calculateScrollHeight = () => {
   if (scrollArea.value) {
     const rect = scrollArea.value.getBoundingClientRect()
@@ -188,19 +173,15 @@ const calculateScrollHeight = () => {
   }
 }
 
-// 初始化时获取群成员列表和所有用户信息
 onMounted(async () => {
   try {
-    // 先加载所有群的成员数据，确保 groupStore.allUserInfo 有数据
     const chatStore = useChatStore()
     const groupSessions = chatStore.getGroupSessions()
 
-    // 加载当前群的成员列表
     if (globalStore.currentSessionRoomId) {
       await groupStore.getGroupUserList(globalStore.currentSessionRoomId)
     }
 
-    // 加载其他群的成员列表以获取所有用户信息
     await Promise.all(
       groupSessions
         .filter((session: any) => session.roomId !== globalStore.currentSessionRoomId)
@@ -219,4 +200,18 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+:deep(.van-cell.van-field) {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+:deep(.van-cell.van-field::after) {
+  display: none;
+}
+
+:deep(.van-checkbox__label) {
+  flex: 1;
+}
+</style>

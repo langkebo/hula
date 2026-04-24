@@ -5,41 +5,62 @@ import { AppException } from '@/common/exception.ts'
 import { MessageStatusEnum, MsgEnum, UploadSceneEnum } from '@/enums'
 import { parseInnerText } from '@/hooks/useCommon.ts'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/hooks/useUpload'
-import type { MessageType } from '@/stores/chat/message'
+import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { fixFileMimeType, isVideoUrl } from '@/utils/FileType'
 import { getMimeTypeFromExtension, removeTag } from '@/utils/Formatting'
 import { getImageDimensions } from '@/utils/ImageUtils'
 import { isMobile } from '@/utils/PlatformConstants'
 import { generateVideoThumbnail } from '@/utils/VideoThumbnail'
-import { useGroupStore } from '../stores/group'
+import { useGroupStore } from '../stores/domains/chat/group'
 import { removeTempFile } from '@/utils/TempFileManager'
 import { createLogger } from '@/utils/Logger'
-import type { MessageBody, UploadResult, UploadProgress, GlobalStore } from '@/types/message-strategy'
 
 const logger = createLogger('MessageStrategy')
+
+interface ReplyRef {
+  content: string
+  key: string
+}
+
+interface ImageInfo {
+  width: number
+  height: number
+  size: number
+}
+
+interface CallInfo {
+  duration: number
+  reason: string
+  startTime: number
+  endTime: number
+  creator: string
+  isGroup: boolean
+}
 
 export interface MessageStrategy {
   getMsg: (
     msgInputValue: string,
     replyValue: MessageType | null,
     fileList?: File[]
-  ) => MessageBody | Promise<MessageBody>
-  buildMessageBody: (msg: MessageBody, reply: MessageType | null) => MessageBody
+  ) => Record<string, unknown> | Promise<Record<string, unknown>>
+  buildMessageBody: (msg: Record<string, unknown>, reply: MessageType | null) => Record<string, unknown>
   buildMessageType: (
     messageId: string,
-    messageBody: MessageBody,
-    globalStore: GlobalStore,
+    messageBody: Record<string, unknown>,
+    globalStore: { currentSessionRoomId: string },
     userUid: Ref<string>
   ) => MessageType
-  uploadFile: (path: string, options?: { provider?: UploadProviderEnum }) => Promise<UploadResult>
-  doUpload: (path: string, uploadUrl: string, options?: UploadOptions) => Promise<{ qiniuUrl?: string } | void>
-  uploadThumbnail?: (thumbnailFile: File, options?: { provider?: UploadProviderEnum }) => Promise<UploadResult>
-  doUploadThumbnail?: (
+  uploadFile: (
+    path: string,
+    options?: { provider?: UploadProviderEnum }
+  ) => Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }>
+  doUpload: (path: string, uploadUrl: string, options?: UploadOptions) => Promise<string | void>
+  uploadThumbnail?: (
     thumbnailFile: File,
-    uploadUrl: string,
-    options?: UploadOptions
-  ) => Promise<{ qiniuUrl?: string } | void>
-  getUploadProgress?: () => UploadProgress
+    options?: { provider?: UploadProviderEnum }
+  ) => Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }>
+  doUploadThumbnail?: (thumbnailFile: File, uploadUrl: string, options?: UploadOptions) => Promise<string | void>
+  getUploadProgress?: () => { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void }
 }
 
 /**
@@ -54,8 +75,8 @@ abstract class AbstractMessageStrategy implements MessageStrategy {
 
   buildMessageType(
     messageId: string,
-    messageBody: MessageBody,
-    globalStore: GlobalStore,
+    messageBody: Record<string, unknown>,
+    globalStore: { currentSessionRoomId: string },
     userUid: Ref<string>
   ): MessageType {
     const currentTime = new Date().getTime()
@@ -81,20 +102,23 @@ abstract class AbstractMessageStrategy implements MessageStrategy {
     }
   }
 
-  abstract buildMessageBody(msg: MessageBody, reply: MessageType | null): MessageBody
+  abstract buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown>
 
   abstract getMsg(
     msgInputValue: string,
     replyValue: MessageType | null,
     fileList?: File[]
-  ): MessageBody | Promise<MessageBody>
+  ): Record<string, unknown> | Promise<Record<string, unknown>>
 
-  uploadFile(path: string, options?: { provider?: UploadProviderEnum }): Promise<UploadResult> {
+  uploadFile(
+    path: string,
+    options?: { provider?: UploadProviderEnum }
+  ): Promise<{ uploadUrl: string; downloadUrl: string }> {
     logger.debug('Base uploadFile method called with:', path, options)
     throw new AppException('该消息类型不支持文件上传')
   }
 
-  doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
+  doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<string | void> {
     logger.debug('Base doUpload method called with:', path, uploadUrl, options)
     throw new AppException('该消息类型不支持文件上传')
   }
@@ -108,7 +132,7 @@ class BeaconMessageStrategyImpl extends AbstractMessageStrategy {
     super(MsgEnum.BEACON)
   }
 
-  getMsg(msgInputValue: string, replyValue: MessageType | null): MessageBody {
+  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
     try {
       const beaconData = JSON.parse(msgInputValue)
 
@@ -117,16 +141,14 @@ class BeaconMessageStrategyImpl extends AbstractMessageStrategy {
       }
 
       return {
-        msgtype: 'm.beacon_info',
-        body: beaconData.description,
+        type: this.msgType,
         description: beaconData.description,
         timeout: beaconData.timeout,
         isLive: beaconData.isLive,
-        'm.relates_to': replyValue?.message?.body?.body
+        reply: replyValue?.message?.body?.content
           ? {
-              'm.in_reply_to': {
-                event_id: replyValue.message.id
-              }
+              content: replyValue.message.body.content,
+              key: replyValue.message.id
             }
           : undefined
       }
@@ -138,47 +160,58 @@ class BeaconMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: MessageBody, reply: MessageType | null): MessageBody {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
-      msgtype: 'm.beacon_info',
-      body: `开启了位置共享: ${msg.description || ''}`,
       description: msg.description,
       timeout: msg.timeout,
       live: msg.isLive,
+      // Matrix 规定的信标资产类型，通常是 'm.self' (自己的位置) 或 'm.pin' (放置的图钉)
       'org.matrix.msc3488.asset': {
         type: 'm.self'
       },
+      // 必须包含一个初始的位置点以便向后兼容
       'org.matrix.msc3488.ts': Date.now(),
-      'm.relates_to': reply?.message?.id
+      msgtype: 'm.beacon_info',
+      body: `开启了位置共享: ${msg.description}`,
+      replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            'm.in_reply_to': {
-              event_id: reply.message.id
-            }
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
+            type: msg.type as string
           }
-        : undefined
+        : void 0
     }
   }
 }
 
-/**
- * 处理文本消息
- */
 class TextMessageStrategyImpl extends AbstractMessageStrategy {
   constructor() {
     super(MsgEnum.TEXT)
   }
 
-  getMsg(msgInputValue: string, replyValue: MessageType | null): MessageBody {
+  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
     // 处理&nbsp;为空格
     let content = removeTag(msgInputValue)
     if (content && typeof content === 'string') {
       content = content.replace(/&nbsp;/g, ' ')
     }
 
+    const msg: Record<string, unknown> = {
+      type: this.msgType,
+      content: content,
+      reply: replyValue?.message?.body?.content
+        ? {
+            content: replyValue.message.body.content,
+            key: replyValue.message.id
+          }
+        : undefined
+    }
     // 处理回复内容
-    if (replyValue?.message?.body?.body) {
+    if (replyValue?.message?.body?.content) {
       const tempDiv = document.createElement('div')
-      tempDiv.innerHTML = DOMPurify.sanitize(content)
+      tempDiv.innerHTML = DOMPurify.sanitize(msg.content as string)
       const replyDiv = tempDiv.querySelector('#replyDiv')
       if (replyDiv) {
         replyDiv.parentNode?.removeChild(replyDiv)
@@ -186,46 +219,36 @@ class TextMessageStrategyImpl extends AbstractMessageStrategy {
       tempDiv.innerHTML = DOMPurify.sanitize(removeTag(tempDiv.innerHTML), { RETURN_DOM: false })
 
       // 确保所有的&nbsp;都被替换为空格
-      content = tempDiv.innerHTML
+      msg.content = tempDiv.innerHTML
         .replace(/&nbsp;/g, ' ')
         .replace(/\n+/g, '\n')
         .trim()
     }
-
     // 验证消息长度
-    if (content.length > 500) {
+    if ((msg.content as string).length > 500) {
       throw new AppException('消息内容超过限制500，请分段发送')
     }
-
-    return {
-      msgtype: 'm.text',
-      body: content,
-      'm.relates_to': replyValue?.message?.id
-        ? {
-            'm.in_reply_to': {
-              event_id: replyValue.message.id
-            }
-          }
-        : undefined
-    }
+    return msg
   }
 
-  buildMessageBody(msg: MessageBody, reply: MessageType | null): MessageBody {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
+      content: msg.content,
       msgtype: 'm.text',
-      body: msg.body || '',
-      'm.relates_to': reply?.message?.id
+      body: msg.content,
+      replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            'm.in_reply_to': {
-              event_id: reply.message.id
-            }
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
+            type: msg.type as string
           }
-        : undefined
+        : void 0
     }
   }
 }
 
-/** 处理图片消息 */
 class ImageMessageStrategyImpl extends AbstractMessageStrategy {
   // 最大上传图片大小 2MB
   private readonly MAX_UPLOAD_SIZE = 2 * 1024 * 1024
@@ -279,7 +302,7 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
         height: result.height,
         previewUrl: result.previewUrl!
       }
-    } catch (_error) {
+    } catch {
       throw new AppException('图片加载失败')
     }
   }
@@ -313,7 +336,7 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
         height: result.height,
         size: result.size || 0
       }
-    } catch (_error) {
+    } catch {
       throw new AppException('图片加载失败')
     }
   }
@@ -325,7 +348,11 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
    * @param fileList 附件文件列表
    * @returns 处理后的消息
    */
-  async getMsg(msgInputValue: string, replyValue: MessageType | null, fileList?: File[]): Promise<MessageBody> {
+  async getMsg(
+    msgInputValue: string,
+    replyValue: MessageType | null,
+    fileList?: File[]
+  ): Promise<Record<string, unknown>> {
     // 优先处理fileList中的文件
     if (fileList && fileList.length > 0) {
       const file = fileList[0]
@@ -342,21 +369,18 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
       await writeFile(tempPath, file.stream(), { baseDir })
 
       return {
-        msgtype: 'm.image',
-        body: file.name,
-        url: previewUrl,
-        info: {
-          w: width,
-          h: height,
-          size: file.size,
-          mimetype: file.type
+        type: this.msgType,
+        path: tempPath, // 用于上传
+        url: previewUrl, // 用于预览显示
+        imageInfo: {
+          width, // 原始图片宽度
+          height, // 原始图片高度
+          size: file.size // 原始文件大小
         },
-        path: tempPath,
-        'm.relates_to': replyValue?.message?.id
+        reply: replyValue?.message?.body?.content
           ? {
-              'm.in_reply_to': {
-                event_id: replyValue.message.id
-              }
+              content: replyValue.message.body.content,
+              key: replyValue.message.id
             }
           : undefined
       }
@@ -369,21 +393,18 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
         const { width, height, size } = await this.getRemoteImageInfo(msgInputValue)
 
         return {
-          msgtype: 'm.image',
-          body: 'image',
-          url: msgInputValue,
-          info: {
-            w: width,
-            h: height,
-            size,
-            mimetype: 'image/jpeg'
+          type: this.msgType,
+          url: msgInputValue, // 直接使用原始URL
+          path: msgInputValue, // 为了保持一致性，也设置path
+          imageInfo: {
+            width,
+            height,
+            size
           },
-          path: msgInputValue,
-          'm.relates_to': replyValue?.message?.id
+          reply: replyValue?.message?.body?.content
             ? {
-                'm.in_reply_to': {
-                  event_id: replyValue.message.id
-                }
+                content: replyValue.message.body.content,
+                key: replyValue.message.id
               }
             : undefined
         }
@@ -431,21 +452,18 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
       const { width, height, previewUrl } = await this.getImageInfo(originalFile)
 
       return {
-        msgtype: 'm.image',
-        body: fileName,
-        url: previewUrl,
-        info: {
-          w: width,
-          h: height,
-          size: originalFile.size,
-          mimetype: originalFile.type
+        type: this.msgType,
+        path: normalizedPath, // 用于上传
+        url: previewUrl, // 用于预览显示
+        imageInfo: {
+          width, // 原始图片宽度
+          height, // 原始图片高度
+          size: originalFile.size // 原始文件大小
         },
-        path: normalizedPath,
-        'm.relates_to': replyValue?.message?.id
+        reply: replyValue?.message?.body?.content
           ? {
-              'm.in_reply_to': {
-                event_id: replyValue.message.id
-              }
+              content: replyValue.message.body.content,
+              key: replyValue.message.id
             }
           : undefined
       }
@@ -464,7 +482,10 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
    * @param options 上传选项
    * @returns 上传结果
    */
-  async uploadFile(path: string, options?: { provider?: UploadProviderEnum }): Promise<UploadResult> {
+  async uploadFile(
+    path: string,
+    options?: { provider?: UploadProviderEnum }
+  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }> {
     // 如果是URL，直接返回相同的URL作为下载链接
     if (this.isImageUrl(path)) {
       return {
@@ -476,7 +497,7 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
     logger.debug('开始上传图片:', path)
     try {
       const uploadOptions: UploadOptions = {
-        provider: options?.provider || UploadProviderEnum.QINIU,
+        provider: options?.provider || UploadProviderEnum.DEFAULT,
         scene: UploadSceneEnum.CHAT
       }
 
@@ -495,20 +516,14 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
    * @param options 上传选项
    * @returns 上传结果
    */
-  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
+  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<string | void> {
     // 如果是URL，跳过上传
     if (this.isImageUrl(path)) {
       return
     }
 
     try {
-      // enableDeduplication启用文件去重
-      const uploadOptions: UploadOptions = { ...options, enableDeduplication: true }
-      const result = await this.uploadHook.doUpload(path, uploadUrl, uploadOptions)
-      // 如果是七牛云上传，返回qiniuUrl
-      if (options?.provider === UploadProviderEnum.QINIU) {
-        return { qiniuUrl: result as string }
-      }
+      return await this.uploadHook.doUpload(path, uploadUrl, { ...options, enableDeduplication: true })
     } catch (error) {
       logger.error('文件上传失败:', error)
       if (error instanceof AppException) {
@@ -518,28 +533,22 @@ class ImageMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: MessageBody, reply: MessageType | null): MessageBody {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
-      msgtype: 'm.image',
-      body: msg.body || 'image',
-      url: msg.url,
-      info: msg.info,
-      'm.relates_to': reply?.message?.id
+      url: msg.url as string,
+      path: msg.path as string,
+      width: (msg.imageInfo as ImageInfo).width,
+      height: (msg.imageInfo as ImageInfo).height,
+      size: (msg.imageInfo as ImageInfo).size,
+      replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            'm.in_reply_to': {
-              event_id: reply.message.id
-            }
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
+            type: msg.type
           }
-        : undefined
-    }
-  }
-
-  getUploadProgress(): UploadProgress {
-    return {
-      progress: this.uploadHook.progress,
-      onChange: (callback: (progress: number) => void) => {
-        this.uploadHook.onChange(() => callback(this.uploadHook.progress.value))
-      }
+        : void 0
     }
   }
 }
@@ -558,7 +567,7 @@ class LocationMessageStrategyImpl extends AbstractMessageStrategy {
    * @param replyValue 回复信息
    * @returns 位置消息对象
    */
-  getMsg(msgInputValue: string, replyValue: MessageType | null): MessageBody {
+  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
     try {
       // 解析位置数据
       const locationData = JSON.parse(msgInputValue)
@@ -568,22 +577,17 @@ class LocationMessageStrategyImpl extends AbstractMessageStrategy {
         throw new AppException('无效的位置数据，缺少必要字段')
       }
 
-      const precision = locationData.precision || '高精度'
-      const geoUri = `geo:${locationData.latitude},${locationData.longitude};u=${precision === '高精度' ? 10 : 100}`
-
       return {
-        msgtype: 'm.location',
-        body: `位置: ${locationData.address}`,
-        geo_uri: geoUri,
-        info: {
-          address: locationData.address,
-          timestamp: locationData.timestamp || Date.now()
-        },
-        'm.relates_to': replyValue?.message?.id
+        type: this.msgType,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        address: locationData.address,
+        precision: locationData.precision || '高精度',
+        timestamp: locationData.timestamp || Date.now(),
+        reply: replyValue?.message?.body?.content
           ? {
-              'm.in_reply_to': {
-                event_id: replyValue.message.id
-              }
+              content: replyValue.message.body.content,
+              key: replyValue.message.id
             }
           : undefined
       }
@@ -601,19 +605,54 @@ class LocationMessageStrategyImpl extends AbstractMessageStrategy {
    * @param reply 回复信息
    * @returns 消息体
    */
-  buildMessageBody(msg: MessageBody, reply: MessageType | null): MessageBody {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
+      geo_uri: `geo:${msg.latitude},${msg.longitude};u=${msg.precision === '高精度' ? 10 : 100}`,
       msgtype: 'm.location',
-      body: msg.body || '位置',
-      geo_uri: msg.geo_uri,
-      info: msg.info,
-      'm.relates_to': reply?.message?.id
+      body: `位置: ${msg.address}`,
+      info: {
+        address: msg.address,
+        timestamp: msg.timestamp
+      },
+      replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            'm.in_reply_to': {
-              event_id: reply.message.id
-            }
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
+            type: msg.type as string
           }
-        : undefined
+        : void 0
+    }
+  }
+
+  buildMessageType(
+    messageId: string,
+    messageBody: Record<string, unknown>,
+    globalStore: { currentSessionRoomId: string },
+    userUid: Ref<string>
+  ): MessageType {
+    const groupStore = useGroupStore()
+    const userInfo = groupStore.getUserInfo(userUid.value)
+
+    return {
+      fromUser: {
+        uid: userUid.value || '',
+        username: userInfo?.name || '',
+        avatar: userInfo?.avatar || '',
+        locPlace: userInfo?.locPlace || ''
+      },
+      message: {
+        id: messageId,
+        roomId: globalStore.currentSessionRoomId,
+        sendTime: Date.now(),
+        status: MessageStatusEnum.PENDING,
+        type: this.msgType,
+        body: messageBody,
+        messageMarks: {}
+      },
+      sendTime: Date.now(),
+      loading: false
     }
   }
 }
@@ -671,7 +710,11 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  async getMsg(msgInputValue: string, replyValue: MessageType | null, fileList?: File[]): Promise<MessageBody> {
+  async getMsg(
+    msgInputValue: string,
+    replyValue: MessageType | null,
+    fileList?: File[]
+  ): Promise<Record<string, unknown>> {
     logger.debug('开始处理文件消息:', msgInputValue, replyValue, fileList?.length ? '有附件文件' : '无附件文件')
 
     let file: File | null = null
@@ -699,36 +742,34 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
     await writeFile(tempPath, validatedFile.stream(), { baseDir })
 
     return {
-      msgtype: 'm.file',
-      body: validatedFile.name,
-      filename: validatedFile.name,
-      info: {
-        size: validatedFile.size,
-        mimetype: validatedFile.type
-      },
+      type: this.msgType,
       path: tempPath,
-      'm.relates_to': replyValue?.message?.id
+      fileName: validatedFile.name,
+      size: validatedFile.size,
+      mimeType: validatedFile.type,
+      reply: replyValue?.message?.body?.content
         ? {
-            'm.in_reply_to': {
-              event_id: replyValue.message.id
-            }
+            content: replyValue.message.body.content,
+            key: replyValue.message.id
           }
         : undefined
     }
   }
 
-  buildMessageBody(msg: MessageBody, reply: MessageType | null): MessageBody {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
-      msgtype: 'm.file',
-      body: msg.body || (msg.filename as string) || 'file',
-      filename: msg.filename as string,
-      url: (msg.url as string) || '',
-      info: msg.info,
-      'm.relates_to': reply?.message?.id
+      url: '', // 上传后会被设置
+      path: msg.path as string,
+      fileName: msg.fileName as string,
+      size: msg.size as number,
+      mimeType: msg.mimeType as string,
+      replyMsgId: (msg.reply as ReplyRef | undefined)?.key || undefined,
+      reply: reply?.message?.body?.content
         ? {
-            'm.in_reply_to': {
-              event_id: reply.message.id
-            }
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
+            type: msg.type
           }
         : undefined
     }
@@ -740,10 +781,13 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
    * @param options 上传选项
    * @returns 上传结果
    */
-  async uploadFile(path: string, options?: { provider?: UploadProviderEnum }): Promise<UploadResult> {
+  async uploadFile(
+    path: string,
+    options?: { provider?: UploadProviderEnum }
+  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }> {
     try {
       const uploadOptions: UploadOptions = {
-        provider: options?.provider || UploadProviderEnum.QINIU,
+        provider: options?.provider || UploadProviderEnum.DEFAULT,
         scene: UploadSceneEnum.CHAT
       }
 
@@ -762,16 +806,9 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
    * @param options 上传选项
    * @returns 上传结果
    */
-  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
+  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<string | void> {
     try {
-      // enableDeduplication启用文件去重
-      const uploadOptions: UploadOptions = { ...options, enableDeduplication: true }
-      const result = await this.uploadHook.doUpload(path, uploadUrl, uploadOptions)
-
-      // 如果是七牛云上传，返回qiniuUrl
-      if (options?.provider === UploadProviderEnum.QINIU) {
-        return { qiniuUrl: result as string }
-      }
+      return await this.uploadHook.doUpload(path, uploadUrl, { ...options, enableDeduplication: true })
     } catch (error) {
       logger.error('文件上传失败:', error)
       if (error instanceof AppException) {
@@ -781,19 +818,16 @@ class FileMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  getUploadProgress(): UploadProgress {
+  getUploadProgress(): { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void } {
     return {
       progress: this.uploadHook.progress,
       onChange: (callback: (progress: number) => void) => {
-        this.uploadHook.onChange(() => callback(this.uploadHook.progress.value))
+        this.uploadHook.onChange((p: number) => callback(Number(p)))
       }
     }
   }
 }
 
-/**
- * 处理表情包消息
- */
 class EmojiMessageStrategyImpl extends AbstractMessageStrategy {
   constructor() {
     super(MsgEnum.EMOJI)
@@ -809,42 +843,44 @@ class EmojiMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  getMsg(msgInputValue: string, replyValue: MessageType | null): MessageBody {
+  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
     // 检查是否是URL
     if (!this.isValidEmojiUrl(msgInputValue)) {
       throw new AppException('无效的表情包URL')
     }
 
     return {
-      msgtype: 'm.sticker',
-      body: 'sticker',
+      type: this.msgType,
       url: msgInputValue,
-      'm.relates_to': replyValue?.message?.id
+      path: msgInputValue,
+      reply: replyValue?.message?.body?.content
         ? {
-            'm.in_reply_to': {
-              event_id: replyValue.message.id
-            }
+            content: replyValue.message.body.content,
+            key: replyValue.message.id
           }
         : undefined
     }
   }
 
-  buildMessageBody(msg: MessageBody, reply: MessageType | null): MessageBody {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
-      msgtype: 'm.sticker',
-      body: msg.body || 'sticker',
-      url: msg.url,
-      'm.relates_to': reply?.message?.id
+      url: msg.url as string,
+      replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            'm.in_reply_to': {
-              event_id: reply.message.id
-            }
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
+            type: msg.type as string
           }
-        : undefined
+        : void 0
     }
   }
 
-  async uploadFile(path: string, options?: { provider?: UploadProviderEnum }): Promise<UploadResult> {
+  async uploadFile(
+    path: string,
+    options?: { provider?: UploadProviderEnum }
+  ): Promise<{ uploadUrl: string; downloadUrl: string }> {
     logger.debug('表情包使用原始URL:', path, options)
     return {
       uploadUrl: '',
@@ -880,11 +916,11 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
   }
 
   // 暴露上传进度监听
-  getUploadProgress(): UploadProgress {
+  getUploadProgress(): { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void } {
     return {
       progress: this.uploadHook.progress,
       onChange: (callback: (progress: number) => void) => {
-        this.uploadHook.onChange(() => callback(this.uploadHook.progress.value))
+        this.uploadHook.onChange((p: number) => callback(Number(p)))
       }
     }
   }
@@ -905,17 +941,18 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
     return file
   }
 
-  async getMsg(msgInputValue: string, replyValue: MessageType | null, fileList?: File[]): Promise<MessageBody> {
+  async getMsg(
+    msgInputValue: string,
+    replyValue: MessageType | null,
+    fileList?: File[]
+  ): Promise<Record<string, unknown>> {
     // 1. 优先处理fileList中的文件
     if (fileList && fileList.length > 0) {
       const file = fileList[0]
 
       // 验证视频文件
       const validatedFile = await this.validateVideo(file)
-      const thumbnailFile = await generateVideoThumbnail(validatedFile)
-
-      // 创建预览 URL
-      const thumbnailUrl = URL.createObjectURL(thumbnailFile)
+      const thumbnail = await generateVideoThumbnail(validatedFile)
 
       // 将文件保存到缓存目录
       const tempPath = `temp-video-${Date.now()}-${file.name}`
@@ -923,27 +960,14 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
       await writeFile(tempPath, validatedFile.stream(), { baseDir })
 
       return {
-        msgtype: 'm.video',
-        body: validatedFile.name,
-        url: '',
-        info: {
-          size: validatedFile.size,
-          mimetype: validatedFile.type,
-          duration: 0,
-          thumbnail_url: thumbnailUrl,
-          thumbnail_info: {
-            mimetype: 'image/jpeg',
-            size: thumbnailFile.size
-          }
-        },
+        type: this.msgType,
         path: tempPath,
-        thumbnailFile,
-        'm.relates_to': replyValue?.message?.id
-          ? {
-              'm.in_reply_to': {
-                event_id: replyValue.message.id
-              }
-            }
+        url: '', // 上传后会更新
+        thumbnail: thumbnail || '',
+        size: validatedFile.size,
+        duration: 0, // 实际项目中可解析视频时长
+        reply: replyValue?.message?.body?.content
+          ? { content: replyValue.message.body.content, key: replyValue.message.id }
           : undefined
       }
     }
@@ -951,55 +975,33 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
     // 2. 处理远程视频URL的情况
     if (isVideoUrl(msgInputValue)) {
       return {
-        msgtype: 'm.video',
-        body: 'video',
+        type: this.msgType,
         url: msgInputValue,
         path: msgInputValue,
-        'm.relates_to': replyValue?.message?.id
-          ? {
-              'm.in_reply_to': {
-                event_id: replyValue.message.id
-              }
-            }
+        reply: replyValue?.message?.body?.content
+          ? { content: replyValue.message.body.content, key: replyValue.message.id }
           : undefined
       }
     }
-
-    // 3. 处理本地视频文件
     const actualFile = await this.convertToVideoFile(msgInputValue)
 
     // 4. 验证视频文件
     const validatedFile = await this.validateVideo(actualFile)
-    const thumbnailFile = await generateVideoThumbnail(validatedFile)
-    const thumbnailUrl = URL.createObjectURL(thumbnailFile)
-
+    const thumbnail = await generateVideoThumbnail(validatedFile)
     const path = parseInnerText(msgInputValue, 'temp-video')
     if (!path) {
       throw new AppException('文件不存在')
     }
     const normalizedPath = path.replace(/\\/g, '/')
     return {
-      msgtype: 'm.video',
-      body: validatedFile.name,
-      url: '',
-      info: {
-        size: validatedFile.size,
-        mimetype: validatedFile.type,
-        duration: 0,
-        thumbnail_url: thumbnailUrl,
-        thumbnail_info: {
-          mimetype: 'image/jpeg',
-          size: thumbnailFile.size
-        }
-      },
+      type: this.msgType,
       path: normalizedPath,
-      thumbnailFile,
-      'm.relates_to': replyValue?.message?.id
-        ? {
-            'm.in_reply_to': {
-              event_id: replyValue.message.id
-            }
-          }
+      url: '', // 上传后会更新
+      thumbnail: thumbnail || '',
+      size: validatedFile.size,
+      duration: 0, // 实际项目中可解析视频时长
+      reply: replyValue?.message?.body?.content
+        ? { content: replyValue.message.body.content, key: replyValue.message.id }
         : undefined
     }
   }
@@ -1073,17 +1075,21 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
    * @param options 上传选项
    * @returns 上传结果
    */
-  async uploadThumbnail(thumbnailFile: File, options?: { provider?: UploadProviderEnum }): Promise<UploadResult> {
+  async uploadThumbnail(
+    thumbnailFile: File,
+    options?: { provider?: UploadProviderEnum }
+  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }> {
     try {
       // 创建临时文件路径用于上传
       const tempPath = `temp-thumbnail-${Date.now()}-${thumbnailFile.name}`
 
       const uploadOptions: UploadOptions = {
-        provider: options?.provider || UploadProviderEnum.QINIU,
+        provider: options?.provider || UploadProviderEnum.DEFAULT,
         scene: UploadSceneEnum.CHAT,
-        enableDeduplication: true
+        enableDeduplication: true // 启用去重，使用哈希值计算
       }
 
+      // 使用现有的getUploadAndDownloadUrl方法
       const result = await this.uploadHook.getUploadAndDownloadUrl(tempPath, uploadOptions)
       return result
     } catch (error) {
@@ -1099,11 +1105,7 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
    * @param options 上传选项
    * @returns 上传结果
    */
-  async doUploadThumbnail(
-    thumbnailFile: File,
-    uploadUrl: string,
-    options?: UploadOptions
-  ): Promise<{ qiniuUrl?: string } | void> {
+  async doUploadThumbnail(thumbnailFile: File, uploadUrl: string, options?: UploadOptions): Promise<string | void> {
     try {
       // 将File对象写入临时文件，然后使用现有的doUpload方法
       const tempPath = `temp-thumbnail-${Date.now()}-${thumbnailFile.name}`
@@ -1112,16 +1114,12 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
       const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
       await writeFile(tempPath, thumbnailFile.stream(), { baseDir })
 
-      const uploadOptions: UploadOptions = { ...options, enableDeduplication: true }
-      const result = await this.uploadHook.doUpload(tempPath, uploadUrl, uploadOptions)
+      const result = await this.uploadHook.doUpload(tempPath, uploadUrl, { ...options, enableDeduplication: true })
 
       // 清理临时文件
       await removeTempFile(tempPath, { baseDir })
 
-      // 如果是七牛云上传，返回qiniuUrl
-      if (options?.provider === UploadProviderEnum.QINIU) {
-        return { qiniuUrl: result as string }
-      }
+      return result
     } catch (error) {
       logger.error('缩略图上传失败:', error)
       if (error instanceof AppException) {
@@ -1131,50 +1129,60 @@ class VideoMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: MessageBody, reply: MessageType | null): MessageBody {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+    // 为缩略图创建本地预览URL
+    let thumbUrl = ''
+    if (msg.thumbnail instanceof File) {
+      thumbUrl = URL.createObjectURL(msg.thumbnail)
+    }
+
     return {
-      msgtype: 'm.video',
-      body: msg.body || 'video',
-      url: msg.url,
-      info: msg.info,
-      'm.relates_to': reply?.message?.id
+      url: msg.url as string,
+      path: msg.path as string,
+      thumbnail: msg.thumbnail,
+      thumbUrl: thumbUrl, // 本地预览URL，上传完成后会被替换为服务器URL
+      thumbSize: (msg.thumbnail as File | undefined)?.size || 0,
+      thumbWidth: 300,
+      thumbHeight: 150,
+      size: msg.size as number,
+      duration: msg.duration as number,
+      replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            'm.in_reply_to': {
-              event_id: reply.message.id
-            }
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
+            type: msg.type as string
           }
-        : undefined
+        : void 0
     }
   }
 
-  async uploadFile(path: string, options?: { provider?: UploadProviderEnum }): Promise<UploadResult> {
-    // 远程视频直接返回URL
+  async uploadFile(
+    path: string,
+    options?: { provider?: UploadProviderEnum }
+  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }> {
     if (isVideoUrl(path)) {
       return { uploadUrl: '', downloadUrl: path }
     }
 
     try {
       const result = await this.uploadHook.getUploadAndDownloadUrl(path, {
-        provider: options?.provider || UploadProviderEnum.QINIU,
+        provider: options?.provider || UploadProviderEnum.DEFAULT,
         scene: UploadSceneEnum.CHAT
       })
       return result
-    } catch (_error) {
+    } catch {
       throw new AppException('获取视频上传链接失败')
     }
   }
-
-  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
+  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<string | void> {
     if (isVideoUrl(path)) {
-      return
+      throw new AppException('检查是否是有效的视频URL')
     }
 
     try {
-      const uploadOptions: UploadOptions = { ...options, enableDeduplication: true }
-      const result = await this.uploadHook.doUpload(path, uploadUrl, uploadOptions)
-      if (options?.provider === UploadProviderEnum.QINIU) {
-        return { qiniuUrl: result as string }
-      }
+      return await this.uploadHook.doUpload(path, uploadUrl, { ...options, enableDeduplication: true })
     } catch (error) {
       logger.error('文件上传失败:', error)
       if (error instanceof AppException) {
@@ -1190,20 +1198,20 @@ class UnsupportedMessageStrategyImpl extends AbstractMessageStrategy {
     super(MsgEnum.UNKNOWN)
   }
 
-  getMsg(_msgInputValue: string, _replyValue: MessageType | null, _fileList?: File[]): never {
+  getMsg(_msgInputValue: string, _replyValue: MessageType | null, _fileList?: File[]): Record<string, unknown> {
     throw new AppException('暂不支持该类型消息')
   }
 
-  buildMessageBody(_msg: MessageBody, _reply: MessageType | null): never {
+  buildMessageBody(_msg: Record<string, unknown>, _reply: MessageType | null): Record<string, unknown> {
     throw new AppException('方法暂未实现')
   }
 
   buildMessageType(
     _messageId: string,
-    _messageBody: MessageBody,
-    _globalStore: GlobalStore,
+    _messageBody: Record<string, unknown>,
+    _globalStore: { currentSessionRoomId: string },
     _userUid: Ref<string>
-  ): never {
+  ): MessageType {
     throw new AppException('方法暂未实现')
   }
 }
@@ -1213,62 +1221,82 @@ class VoiceMessageStrategyImpl extends AbstractMessageStrategy {
     super(MsgEnum.VOICE)
   }
 
-  getMsg(): MessageBody {
+  getMsg(): Record<string, unknown> {
     const voiceMessageDivs = document.querySelectorAll('.voice-message-placeholder')
     const lastVoiceDiv = voiceMessageDivs[voiceMessageDivs.length - 1] as HTMLElement
 
-    // 将相对路径转换为 Tauri 资源路径
-    const localPath = lastVoiceDiv.dataset.url
+    const localPath = lastVoiceDiv.dataset.url || ''
     const assetUrl = `asset://${localPath}`
 
     return {
-      msgtype: 'm.audio',
-      body: lastVoiceDiv.dataset.filename || 'voice.mp3',
+      type: MsgEnum.VOICE,
+      localPath,
       url: assetUrl,
-      info: {
-        size: parseInt(lastVoiceDiv.dataset.size || '0', 10),
-        duration: parseFloat(lastVoiceDiv.dataset.duration || '0'),
-        mimetype: 'audio/mpeg'
+      size: parseInt(lastVoiceDiv.dataset.size || '0', 10),
+      duration: parseFloat(lastVoiceDiv.dataset.duration || '0'),
+      filename: lastVoiceDiv.dataset.filename || 'voice.mp3',
+      mimeType: lastVoiceDiv.dataset.mimeType || 'audio/mpeg'
+    }
+  }
+
+  buildMessageBody(msg: Record<string, unknown>): Record<string, unknown> {
+    return {
+      url: msg.url,
+      size: msg.size,
+      second: Math.round(msg.duration as number),
+      fileName: msg.filename,
+      mimeType: msg.mimeType
+    }
+  }
+
+  buildMessageType(
+    messageId: string,
+    messageBody: Record<string, unknown>,
+    globalStore: { currentSessionRoomId: string },
+    userUid: Ref<string>
+  ): MessageType {
+    const baseMessage = super.buildMessageType(messageId, messageBody, globalStore, userUid)
+    return {
+      ...baseMessage,
+      message: {
+        ...baseMessage.message,
+        type: MsgEnum.VOICE,
+        body: {
+          url: messageBody.url as string,
+          size: messageBody.size as number,
+          second: messageBody.second as number,
+          fileName: messageBody.fileName as string,
+          mimeType: messageBody.mimeType as string
+        }
       }
     }
   }
 
-  buildMessageBody(msg: MessageBody): MessageBody {
-    return {
-      msgtype: 'm.audio',
-      body: msg.body || 'voice',
-      url: msg.url,
-      info: msg.info
-    }
-  }
-
-  async uploadFile(path: string, options?: { provider?: UploadProviderEnum }): Promise<UploadResult> {
+  async uploadFile(
+    path: string,
+    options?: { provider?: UploadProviderEnum }
+  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }> {
     const uploadHook = useUpload()
 
     try {
       const uploadOptions: UploadOptions = {
-        provider: options?.provider || UploadProviderEnum.QINIU,
+        provider: options?.provider || UploadProviderEnum.DEFAULT,
         scene: UploadSceneEnum.CHAT
       }
 
       const result = await uploadHook.getUploadAndDownloadUrl(path, uploadOptions)
       return result
-    } catch (_error) {
+    } catch {
       throw new AppException('获取语音上传链接失败，请重试')
     }
   }
 
-  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<{ qiniuUrl?: string } | void> {
+  async doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<string | void> {
     const uploadHook = useUpload()
 
     try {
-      const uploadOptions: UploadOptions = { ...options, enableDeduplication: true }
-      const result = await uploadHook.doUpload(path, uploadUrl, uploadOptions)
-
-      if (options?.provider === UploadProviderEnum.QINIU) {
-        return { qiniuUrl: result as string }
-      }
-    } catch (_error) {
+      return await uploadHook.doUpload(path, uploadUrl, { ...options, enableDeduplication: true })
+    } catch {
       throw new AppException('语音文件上传失败，请重试')
     }
   }
@@ -1276,37 +1304,28 @@ class VoiceMessageStrategyImpl extends AbstractMessageStrategy {
 
 /**
  * 处理视频通话系统消息
+ * 消息结构
  */
 class VideoCallMessageStrategyImpl extends AbstractMessageStrategy {
   constructor() {
     super(MsgEnum.VIDEO_CALL)
   }
 
-  getMsg(_msgInputValue: string, callInfo: MessageType | null): MessageBody {
-    const info = callInfo as unknown as {
-      duration: number
-      reason: string
-      startTime: number
-      endTime: number
-      creator: string
-      isGroup: boolean
-    }
+  getMsg(_msgInputValue: string, _replyValue: MessageType | null, _fileList?: File[]): Record<string, unknown> {
+    const callInfo = _replyValue as unknown as CallInfo
     return {
-      msgtype: 'm.call.hangup',
-      body: '视频通话',
-      duration: info.duration,
-      reason: info.reason,
-      startTime: info.startTime,
-      endTime: info.endTime,
-      creator: info.creator,
-      isGroup: info.isGroup
+      type: this.msgType,
+      duration: callInfo.duration,
+      reason: callInfo.reason,
+      startTime: callInfo.startTime,
+      endTime: callInfo.endTime,
+      creator: callInfo.creator,
+      isGroup: callInfo.isGroup
     }
   }
 
-  buildMessageBody(msg: MessageBody): MessageBody {
+  buildMessageBody(msg: Record<string, unknown>): Record<string, unknown> {
     return {
-      msgtype: 'm.call.hangup',
-      body: '视频通话',
       duration: msg.duration,
       reason: msg.reason,
       startTime: msg.startTime,
@@ -1316,46 +1335,33 @@ class VideoCallMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  async uploadFile(): Promise<UploadResult> {
+  async uploadFile(): Promise<{ uploadUrl: string; downloadUrl: string }> {
     return { uploadUrl: '', downloadUrl: '' }
   }
 
-  async doUpload() {}
+  async doUpload(): Promise<void> {}
 }
 
-/**
- * 处理音频通话系统消息
- */
 class AudioCallMessageStrategyImpl extends AbstractMessageStrategy {
   constructor() {
     super(MsgEnum.AUDIO_CALL)
   }
 
-  getMsg(_msgInputValue: string, callInfo: MessageType | null): MessageBody {
-    const info = callInfo as unknown as {
-      duration: number
-      reason: string
-      startTime: number
-      endTime: number
-      creator: string
-      isGroup: boolean
-    }
+  getMsg(_msgInputValue: string, _replyValue: MessageType | null, _fileList?: File[]): Record<string, unknown> {
+    const callInfo = _replyValue as unknown as CallInfo
     return {
-      msgtype: 'm.call.hangup',
-      body: '语音通话',
-      duration: info.duration,
-      reason: info.reason,
-      startTime: info.startTime,
-      endTime: info.endTime,
-      creator: info.creator,
-      isGroup: info.isGroup
+      type: this.msgType,
+      duration: callInfo.duration,
+      reason: callInfo.reason,
+      startTime: callInfo.startTime,
+      endTime: callInfo.endTime,
+      creator: callInfo.creator,
+      isGroup: callInfo.isGroup
     }
   }
 
-  buildMessageBody(msg: MessageBody): MessageBody {
+  buildMessageBody(msg: Record<string, unknown>): Record<string, unknown> {
     return {
-      msgtype: 'm.call.hangup',
-      body: '语音通话',
       duration: msg.duration,
       reason: msg.reason,
       startTime: msg.startTime,
@@ -1365,7 +1371,7 @@ class AudioCallMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  async uploadFile(): Promise<UploadResult> {
+  async uploadFile(): Promise<{ uploadUrl: string; downloadUrl: string }> {
     return {
       uploadUrl: '',
       downloadUrl: ''
@@ -1385,7 +1391,7 @@ class LinkPreviewMessageStrategyImpl extends AbstractMessageStrategy {
     super(MsgEnum.LINK_PREVIEW)
   }
 
-  getMsg(msgInputValue: string, replyValue: MessageType | null): MessageBody {
+  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
     try {
       const linkData = JSON.parse(msgInputValue)
 
@@ -1394,22 +1400,16 @@ class LinkPreviewMessageStrategyImpl extends AbstractMessageStrategy {
       }
 
       return {
-        msgtype: 'm.text',
-        body: linkData.url,
-        format: 'org.matrix.custom.html',
-        formatted_body: `<a href="${linkData.url}">${linkData.title}</a>`,
-        'org.matrix.msc2788.room.message': {
-          url: linkData.url,
-          title: linkData.title,
-          description: linkData.description || '',
-          image_url: linkData.imageUrl || '',
-          site_name: linkData.siteName || ''
-        },
-        'm.relates_to': replyValue?.message?.id
+        type: this.msgType,
+        url: linkData.url,
+        title: linkData.title,
+        description: linkData.description || '',
+        imageUrl: linkData.imageUrl || '',
+        siteName: linkData.siteName || '',
+        reply: replyValue?.message?.body?.content
           ? {
-              'm.in_reply_to': {
-                event_id: replyValue.message.id
-              }
+              content: replyValue.message.body.content,
+              key: replyValue.message.id
             }
           : undefined
       }
@@ -1421,20 +1421,28 @@ class LinkPreviewMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: MessageBody, reply: MessageType | null): MessageBody {
+  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
     return {
       msgtype: 'm.text',
-      body: msg.body || '',
-      format: msg.format,
-      formatted_body: msg.formatted_body,
-      'org.matrix.msc2788.room.message': msg['org.matrix.msc2788.room.message'],
-      'm.relates_to': reply?.message?.id
+      body: msg.url as string,
+      format: 'org.matrix.custom.html',
+      formatted_body: `<a href="${msg.url}">${msg.title}</a>`,
+      'org.matrix.msc2788.room.message': {
+        url: msg.url,
+        title: msg.title,
+        description: msg.description,
+        image_url: msg.imageUrl,
+        site_name: msg.siteName
+      },
+      replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
+      reply: reply?.message?.body?.content
         ? {
-            'm.in_reply_to': {
-              event_id: reply.message.id
-            }
+            body: reply.message.body.content,
+            id: reply.message.id,
+            username: reply.fromUser.username,
+            type: msg.type as string
           }
-        : undefined
+        : void 0
     }
   }
 }

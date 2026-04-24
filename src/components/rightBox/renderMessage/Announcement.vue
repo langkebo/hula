@@ -26,7 +26,7 @@
           padding: '2px 4px',
           borderRadius: '6px',
           color: '#000',
-          background: '#13987f'
+          background: 'var(--color-primary)'
         }" />
       <template v-else>{{ body.content }}</template>
     </p>
@@ -50,7 +50,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWindow } from '@/hooks/useWindow'
 import type { AnnouncementBody } from '@/services/types'
-import { useGlobalStore } from '@/stores/global'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { isMobile } from '@/utils/PlatformConstants'
 

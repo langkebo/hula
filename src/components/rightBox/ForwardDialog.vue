@@ -1,6 +1,6 @@
 <template>
   <n-modal
-    :show="visible" @update:show="emit('update:visible', $event)"
+    v-model:show="visible"
     preset="card"
     :title="t('message.forward.title')"
     :style="{ width: '400px' }"
@@ -50,8 +50,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixForwardService, matrixClientService } from '@/services/matrix'
-import { useRoomStore } from '@/stores/room'
+import { matrixForwardService, matrixMessageService } from '@/services/matrix'
+import { useRoomStore } from '@/stores/domains/chat/room'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('ForwardDialog')
@@ -110,10 +110,7 @@ const handleForward = async () => {
 
   forwarding.value = true
   try {
-    const room = matrixClientService.getRoom(props.roomId)
-    if (!room) return
-
-    const event = room.findEventById(props.eventId)
+    const event = await matrixMessageService.getRoomMessage(props.roomId, props.eventId)
     if (!event) return
 
     const results = await matrixForwardService.forwardEventToMultipleRooms(event, selectedRooms.value)
@@ -163,7 +160,7 @@ watch(
   }
 
   &.selected {
-    background: rgba(19, 152, 127, 0.1);
+    background: var(--color-primary-light);
   }
 }
 
@@ -176,7 +173,7 @@ watch(
 }
 
 .encrypted-badge {
-  @apply flex-center color-#13987f;
+  @apply flex-center color-[--color-primary];
 }
 
 .dialog-footer {

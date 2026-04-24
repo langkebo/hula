@@ -1,73 +1,38 @@
 import { readImage, readText } from '@tauri-apps/plugin-clipboard-manager'
+import { readFile } from '@tauri-apps/plugin-fs'
 import { useDebounceFn } from '@vueuse/core'
 import pLimit from 'p-limit'
 import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 import { LimitEnum, MessageStatusEnum, MittEnum, MsgEnum, UploadSceneEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { AIModel, UserItem, MsgType } from '@/services/types.ts'
-import type { MessageType } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useGroupStore } from '@/stores/group.ts'
-import { useSettingStore } from '@/stores/setting.ts'
+import type { AIModel, UserItem, VoiceBody } from '@/services/types.ts'
+import type { MessageType } from '@/stores/domains/chat/chat'
+import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
+import type { MessageStrategy } from '@/strategy/MessageStrategy'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useMessageSender } from '@/hooks/useMessageSender'
+import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
+import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
 import { messageStrategyMap } from '@/strategy/MessageStrategy.ts'
 import { processClipboardImage } from '@/utils/ImageUtils.ts'
 import { getReplyContent } from '@/utils/MessageReply.ts'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
 import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
-import type { SelectionRange } from './useCommon.ts'
 import { useCommon } from './useCommon.ts'
 import { globalFileUploadQueue } from './useFileUploadQueue.ts'
 import { useTrigger } from './useTrigger'
-import { UploadProviderEnum, useUpload, type QiniuCredential, type UploadOptions } from './useUpload.ts'
+import { UploadProviderEnum, useUpload } from './useUpload.ts'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
-import type { ImageBody, VideoBody } from '@/services/types'
+import { extractAtUserIds, parseHtmlSafely } from './msgInput/mentionParser'
+import { useCursorManager } from './msgInput/useCursorManager'
+export { useCursorManager } from './msgInput/useCursorManager'
 const logger = createLogger('MsgInput')
-
-/**
- * 光标管理器
- */
-export function useCursorManager() {
-  /**
-   * 记录当前光标范围
-   */
-  let cursorSelectionRange: SelectionRange | null = null
-  /**
-   * 记录当前编辑器的选取范围
-   */
-  const updateSelectionRange = (sr: SelectionRange | null) => {
-    cursorSelectionRange = sr
-  }
-
-  const getCursorSelectionRange = () => {
-    return cursorSelectionRange
-  }
-
-  /**
-   * 聚焦指定的编辑器元素
-   * @param editor 可聚焦的编辑器元素
-   */
-  const focusOn = (editor: HTMLElement) => {
-    editor.focus()
-
-    const selection = window.getSelection()
-    if (!selection) return
-    const selectionRange = getCursorSelectionRange()
-    if (!selectionRange) return
-
-    const range = document.createRange()
-    range.selectNodeContents(editor)
-    range.collapse(false)
-    selection?.removeAllRanges()
-    selection?.addRange(selectionRange.range)
-  }
-
-  return { getCursorSelectionRange, updateSelectionRange, focusOn }
-}
 
 export const useMsgInput = (messageInputDom: Ref) => {
   const { t } = useI18n()
@@ -300,89 +265,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
     chat.value.sendKey = v
   })
 
-  /**
-   * 从HTML内容中提取 @ 用户的uid
-   * @param content HTML格式的消息内容
-   * @param userList 用户列表
-   * @returns 被 @ 用户的uid数组
-   */
-  const extractAtUserIds = (content: string, userList: (UserItem & Partial<{ myName: string }>)[]): string[] => {
-    const atUserIds: string[] = []
-
-    const resolveUidByName = (rawName?: string | null) => {
-      const normalized = rawName?.trim()
-      if (!normalized) return undefined
-
-      const matches = userList.filter((user) => {
-        const groupName = user.myName?.trim()
-        const originName = user.name?.trim()
-        return groupName === normalized || originName === normalized
-      })
-
-      if (matches.length === 1) {
-        return matches[0].uid
-      }
-
-      return undefined
-    }
-
-    // 创建临时DOM元素来解析HTML
-    const tempDiv = document.createElement('div')
-    tempDiv.innerHTML = content
-
-    // 优先通过@标签节点提取
-    // 优先读取带有uid的@节点，确保只统计真正选择过的成员
-    const mentionNodes = tempDiv.querySelectorAll<HTMLElement>('#aitSpan, [data-ait-uid]')
-    mentionNodes.forEach((node) => {
-      const uid = node.dataset.aitUid
-      if (uid) {
-        atUserIds.push(uid)
-        return
-      }
-      const name = node.textContent?.replace(/^@/, '')?.trim()
-      if (!name) return
-      const resolvedUid = resolveUidByName(name)
-      if (resolvedUid) {
-        atUserIds.push(resolvedUid)
-      }
-    })
-
-    if (atUserIds.length > 0) {
-      return [...new Set(atUserIds)]
-    }
-
-    // 获取纯文本内容
-    const textContent = tempDiv.textContent || ''
-
-    // 使用更精确的正则表达式匹配@用户
-    // 匹配@后面的非空白字符，直到遇到空白字符或字符串结束
-    const regex = /@([^\s]+)/g
-    const matches = textContent.match(regex)
-
-    if (matches) {
-      matches.forEach((match) => {
-        const username = match.slice(1) // 移除@符号
-        const resolvedUid = resolveUidByName(username)
-        if (resolvedUid) {
-          atUserIds.push(resolvedUid)
-        }
-      })
-    }
-
-    // 去重并返回
-    return [...new Set(atUserIds)]
-  }
-
-  // 在 HTML 字符串中安全解析为 Document 对象
-  const parseHtmlSafely = (html: string) => {
-    if (!html) return null
-
-    if (typeof DOMParser !== 'undefined') {
-      return new DOMParser().parseFromString(html, 'text/html')
-    }
-
-    return null
-  }
+  // `extractAtUserIds` and `parseHtmlSafely` are imported from
+  // ./msgInput/mentionParser.ts and used directly below.
 
   /** 去除html标签(用于鉴别回复时是否有输入内容) */
   const stripHtml = (html: string) => {
@@ -457,6 +341,13 @@ export const useMsgInput = (messageInputDom: Ref) => {
   /** 处理发送信息事件 */
   // 输入框内容草稿功能：通过 globalStore.setDraftMessage/getDraftMessage 实现
   const { sendWithTracking } = useMessageSender()
+  const burnAfterRead = useBurnAfterRead()
+  const isBurnAfterRead = computed(() => burnAfterRead.isRoomBurnEnabled())
+  const burnDuration = computed(() => burnAfterRead.getRoomBurnDuration())
+  const uploadVoiceToMatrix = async (roomId: string, localPath: string, filename: string, mimeType: string) => {
+    const fileBytes = await readFile(localPath)
+    return await matrixVoiceService.uploadVoice(roomId, new File([fileBytes], filename, { type: mimeType }))
+  }
 
   const send = async () => {
     const targetRoomId = globalStore.currentSessionRoomId
@@ -465,7 +356,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
       window.$message.warning(`一次性只能上传${LimitEnum.COM_COUNT}个文件或图片`)
       return
     }
-    const contentType = getMessageContentType(messageInputDom)
+    const contentType = getMessageContentType(messageInputDom) as MsgEnum
     //根据消息类型获取消息处理策略
     const messageStrategy = messageStrategyMap[contentType]
     if (!messageStrategy) {
@@ -480,16 +371,12 @@ export const useMsgInput = (messageInputDom: Ref) => {
       if (!retainRawContent(contentType))
         msgInput.value = messageInputDom.value.innerHTML.replace(replyDiv.outerHTML, '')
     }
-    const msg = await messageStrategy.getMsg(
-      msgInput.value,
-      reply.value.content ? (reply.value as unknown as MessageType) : null
-    )
+    const msg = await messageStrategy.getMsg(msgInput.value, reply.value as unknown as MessageType)
     const atUidList = extractAtUserIds(msgInput.value, groupStore.userList)
     const tempMsgId = 'T' + Date.now().toString()
 
-    // 根据消息类型创建消息体
     const messageBody = {
-      ...messageStrategy.buildMessageBody(msg, reply.value.content ? (reply.value as unknown as MessageType) : null),
+      ...messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType),
       atUidList
     }
 
@@ -515,22 +402,19 @@ export const useMsgInput = (messageInputDom: Ref) => {
     }
 
     try {
+      let voiceHandledByMatrixService = false
       // 如果是图片或表情消息,需要先上传文件
       if (msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) {
-        // 七牛云上传方式需要调用 doUpload 方法后才能获取下载链接，默认上传方式直接返回
         const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
-          provider: UploadProviderEnum.QINIU
+          provider: UploadProviderEnum.DEFAULT
         })
-        const qiniuConfig = config as QiniuCredential & { provider?: UploadProviderEnum }
-        const doUploadResult = await messageStrategy.doUpload(msg.path as string, uploadUrl, qiniuConfig)
-        const uploadResult = doUploadResult as { qiniuUrl?: string } | undefined
-        // 更新消息体中的URL为服务器URL(判断使用的是七牛云还是默认上传方式),如果没有provider就默认赋值downloadUrl
-        const imageBody = messageBody as unknown as ImageBody & { path?: string }
-        imageBody.url =
-          qiniuConfig?.provider && qiniuConfig.provider === UploadProviderEnum.QINIU
-            ? uploadResult?.qiniuUrl || ''
-            : downloadUrl
-        delete imageBody.path // 删除临时路径
+        const uploadedUrl = await messageStrategy.doUpload(
+          msg.path as string,
+          uploadUrl,
+          config as Record<string, unknown>
+        )
+        ;(messageBody as Record<string, unknown>).url = uploadedUrl || downloadUrl
+        delete (messageBody as Record<string, unknown>).path
 
         // 更新临时消息的URL
         chatStore.updateMsg({
@@ -545,44 +429,40 @@ export const useMsgInput = (messageInputDom: Ref) => {
         let uploadResult: string
         if (messageStrategy.uploadThumbnail && messageStrategy.doUploadThumbnail) {
           const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(msg.thumbnail as File, {
-            provider: UploadProviderEnum.QINIU
+            provider: UploadProviderEnum.DEFAULT
           })
-          const thumbnailQiniuConfig = thumbnailUploadInfo.config as QiniuCredential & { provider?: UploadProviderEnum }
-          const thumbnailUploadResult = (await messageStrategy.doUploadThumbnail(
+          const thumbnailUploadResult = await messageStrategy.doUploadThumbnail(
             msg.thumbnail as File,
             thumbnailUploadInfo.uploadUrl,
-            thumbnailQiniuConfig
-          )) as { qiniuUrl?: string } | undefined
-          uploadResult =
-            thumbnailQiniuConfig?.provider === UploadProviderEnum.QINIU
-              ? thumbnailUploadResult?.qiniuUrl || thumbnailUploadInfo.downloadUrl
-              : thumbnailUploadInfo.downloadUrl
+            thumbnailUploadInfo.config as Record<string, unknown>
+          )
+          uploadResult = thumbnailUploadResult || thumbnailUploadInfo.downloadUrl
         } else {
-          const uploadFileResult = await useUpload().uploadFile(msg.thumbnail as File, {
-            provider: UploadProviderEnum.QINIU,
-            scene: UploadSceneEnum.CHAT
-          })
-          uploadResult = uploadFileResult?.downloadUrl || ''
+          uploadResult = await useUpload()
+            .uploadFile(msg.thumbnail as File, {
+              provider: UploadProviderEnum.DEFAULT,
+              scene: UploadSceneEnum.CHAT
+            })
+            .then((uploadResult) => {
+              return uploadResult?.downloadUrl || ''
+            })
         }
 
         // 再上传视频文件
         const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
-          provider: UploadProviderEnum.QINIU
+          provider: UploadProviderEnum.DEFAULT
         })
-        const videoQiniuConfig = config as QiniuCredential & { provider?: UploadProviderEnum }
-        const doUploadResult = (await messageStrategy.doUpload(msg.path as string, uploadUrl, videoQiniuConfig)) as
-          | { qiniuUrl?: string }
-          | undefined
-        const videoBody = messageBody as unknown as VideoBody & { path?: string }
-        videoBody.url =
-          videoQiniuConfig?.provider && videoQiniuConfig.provider === UploadProviderEnum.QINIU
-            ? doUploadResult?.qiniuUrl || ''
-            : downloadUrl
-        delete videoBody.path // 删除临时路径
-        videoBody.thumbUrl = uploadResult
-        videoBody.thumbSize = (msg.thumbnail as File).size
-        videoBody.thumbWidth = 300
-        videoBody.thumbHeight = 150
+        const uploadedUrl = await messageStrategy.doUpload(
+          msg.path as string,
+          uploadUrl,
+          config as Record<string, unknown>
+        )
+        ;(messageBody as Record<string, unknown>).url = uploadedUrl || downloadUrl
+        delete (messageBody as Record<string, unknown>).path
+        ;(messageBody as Record<string, unknown>).thumbUrl = uploadResult
+        ;(messageBody as Record<string, unknown>).thumbSize = (msg.thumbnail as File).size
+        ;(messageBody as Record<string, unknown>).thumbWidth = 300
+        ;(messageBody as Record<string, unknown>).thumbHeight = 150
 
         // 更新临时消息的URL
         chatStore.updateMsg({
@@ -592,31 +472,66 @@ export const useMsgInput = (messageInputDom: Ref) => {
           },
           status: MessageStatusEnum.SENDING
         })
+      } else if (msg.type === MsgEnum.VOICE) {
+        const voiceBody = messageBody as unknown as VoiceBody
+        const uploadResult = await uploadVoiceToMatrix(
+          targetRoomId,
+          msg.localPath as string,
+          (voiceBody.fileName || msg.filename || 'voice.webm') as string,
+          (voiceBody.mimeType || msg.mimeType || 'audio/mpeg') as string
+        )
+
+        voiceBody.url = uploadResult.httpUrl || uploadResult.mxcUrl || voiceBody.url
+        voiceBody.mxcUrl = uploadResult.mxcUrl || undefined
+        voiceBody.fileName = voiceBody.fileName || uploadResult.filename
+
+        chatStore.updateMsg({
+          msgId: tempMsgId,
+          body: {
+            ...voiceBody
+          },
+          status: MessageStatusEnum.SUCCESS,
+          newMsgId: uploadResult.eventId,
+          timeBlock: Date.now()
+        })
+        useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
+        chatStore.updateSessionLastActiveTime(targetRoomId)
+        voiceHandledByMatrixService = true
       }
-      await sendWithTracking({
-        tempMsgId,
-        payload: {
+
+      if (!voiceHandledByMatrixService) {
+        const burnPayload: SendMessagePayload = {
           id: tempMsgId,
           roomId: targetRoomId,
           msgType: msg.type as MsgEnum,
           body: messageBody
         }
-      })
-
-      // 消息发送成功后释放预览URL
-      const msgWithUrl = msg as { url?: string }
-      if ((msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) && msgWithUrl.url?.startsWith('blob:')) {
-        URL.revokeObjectURL(msgWithUrl.url)
+        if (isBurnAfterRead.value) {
+          burnPayload.burnAfterRead = true
+          burnPayload.burnExpiresInMs = burnDuration.value * 1000
+        }
+        await sendWithTracking({
+          tempMsgId,
+          payload: burnPayload
+        })
       }
 
-      // 释放视频缩略图的本地预览URL
-      const videoBodyForCleanup = messageBody as unknown as VideoBody
+      // 消息发送成功后释放预览URL
+      if (
+        (msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) &&
+        typeof (msg as Record<string, unknown>).url === 'string' &&
+        ((msg as Record<string, unknown>).url as string).startsWith('blob:')
+      ) {
+        URL.revokeObjectURL((msg as Record<string, unknown>).url as string)
+      }
+
       if (
         msg.type === MsgEnum.VIDEO &&
-        videoBodyForCleanup.thumbUrl &&
-        videoBodyForCleanup.thumbUrl.startsWith('blob:')
+        (messageBody as Record<string, unknown>).thumbUrl &&
+        typeof (messageBody as Record<string, unknown>).thumbUrl === 'string' &&
+        ((messageBody as Record<string, unknown>).thumbUrl as string).startsWith('blob:')
       ) {
-        URL.revokeObjectURL(videoBodyForCleanup.thumbUrl)
+        URL.revokeObjectURL((messageBody as Record<string, unknown>).thumbUrl as string)
       }
     } catch (error) {
       logger.error('消息发送失败:', error)
@@ -625,20 +540,21 @@ export const useMsgInput = (messageInputDom: Ref) => {
         status: MessageStatusEnum.FAILED
       })
 
-      // 释放预览URL
-      const msgWithUrl = msg as { url?: string }
-      if ((msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) && msgWithUrl.url?.startsWith('blob:')) {
-        URL.revokeObjectURL(msgWithUrl.url)
+      if (
+        (msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) &&
+        typeof (msg as Record<string, unknown>).url === 'string' &&
+        ((msg as Record<string, unknown>).url as string).startsWith('blob:')
+      ) {
+        URL.revokeObjectURL((msg as Record<string, unknown>).url as string)
       }
 
-      // 释放视频缩略图的本地预览URL
-      const videoBodyWithThumb = messageBody as unknown as VideoBody
       if (
         msg.type === MsgEnum.VIDEO &&
-        videoBodyWithThumb.thumbUrl &&
-        videoBodyWithThumb.thumbUrl.startsWith('blob:')
+        (messageBody as Record<string, unknown>).thumbUrl &&
+        typeof (messageBody as Record<string, unknown>).thumbUrl === 'string' &&
+        ((messageBody as Record<string, unknown>).thumbUrl as string).startsWith('blob:')
       ) {
-        URL.revokeObjectURL(videoBodyWithThumb.thumbUrl)
+        URL.revokeObjectURL((messageBody as Record<string, unknown>).thumbUrl as string)
       }
     }
   }
@@ -843,11 +759,11 @@ export const useMsgInput = (messageInputDom: Ref) => {
   const processGenericFile = async (
     file: File,
     tempMsgId: string,
-    messageStrategy: any,
+    messageStrategy: MessageStrategy,
     targetRoomId: string
   ): Promise<void> => {
-    const msg = await messageStrategy.getMsg('', reply, [file])
-    const messageBody = messageStrategy.buildMessageBody(msg, reply)
+    const msg = await messageStrategy.getMsg('', reply.value as unknown as MessageType, [file])
+    const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
 
     const tempMsg = messageStrategy.buildMessageType(tempMsgId, { ...messageBody, url: '' }, globalStore, userUid)
     tempMsg.message.roomId = targetRoomId
@@ -861,21 +777,24 @@ export const useMsgInput = (messageInputDom: Ref) => {
 
     try {
       const updateProgress = createRafProgressUpdater(tempMsgId)
-      const progressCallback = (pct: number) => {
+      const _progressCallback = (pct: number) => {
         if (!isProgressActive) return
         updateProgress(pct)
       }
 
-      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
-        provider: UploadProviderEnum.QINIU
+      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
+        provider: UploadProviderEnum.DEFAULT
       })
-      const doUploadResult = await messageStrategy.doUpload(msg.path, uploadUrl, { ...config, progressCallback })
+      const uploadedUrl = await messageStrategy.doUpload(
+        msg.path as string,
+        uploadUrl,
+        config as Record<string, unknown>
+      )
 
       cleanup()
 
-      messageBody.url = config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
-      const fileBody = messageBody as { path?: string }
-      delete fileBody.path
+      messageBody.url = uploadedUrl || downloadUrl
+      delete (messageBody as Record<string, unknown>).path
 
       chatStore.updateMsg({
         msgId: tempMsgId,
@@ -901,7 +820,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
   const processGenericPathFile = async (
     file: PathUploadFile,
     tempMsgId: string,
-    messageStrategy: any,
+    messageStrategy: MessageStrategy,
     targetRoomId: string
   ): Promise<void> => {
     const MAX_UPLOAD_SIZE = 500 * 1024 * 1024
@@ -923,7 +842,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         : undefined
     }
 
-    const messageBody = messageStrategy.buildMessageBody(msg, reply)
+    const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
 
     const tempMsg = messageStrategy.buildMessageType(tempMsgId, { ...messageBody, url: '' }, globalStore, userUid)
     tempMsg.message.roomId = targetRoomId
@@ -937,21 +856,20 @@ export const useMsgInput = (messageInputDom: Ref) => {
 
     try {
       const updateProgress = createRafProgressUpdater(tempMsgId)
-      const progressCallback = (pct: number) => {
+      const _progressCallback = (pct: number) => {
         if (!isProgressActive) return
         updateProgress(pct)
       }
 
       const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
-        provider: UploadProviderEnum.QINIU
+        provider: UploadProviderEnum.DEFAULT
       })
-      const doUploadResult = await messageStrategy.doUpload(msg.path, uploadUrl, { ...config, progressCallback })
+      const uploadedUrl = await messageStrategy.doUpload(msg.path, uploadUrl, config as Record<string, unknown>)
 
       cleanup()
 
-      messageBody.url = config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
-      const fileBody = messageBody as { path?: string }
-      delete fileBody.path
+      messageBody.url = uploadedUrl || downloadUrl
+      delete (messageBody as Record<string, unknown>).path
 
       chatStore.updateMsg({
         msgId: tempMsgId,
@@ -1028,7 +946,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
         reply.value = { avatar: '', imgCount: 0, accountName: '', content: '', key: 0 }
 
         // 步骤3: 处理回复内容
-        const content = getReplyContent(event.message as MsgType)
+        const content = getReplyContent(event.message)
 
         // 步骤4: 设置新的回复内容
         reply.value = {
@@ -1036,7 +954,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
           avatar: avatar,
           accountName: accountName,
           content: content,
-          key: event.message.id as string | number
+          key: event.message.id
         }
 
         // 步骤5: 在DOM更新后插入回复框
@@ -1198,26 +1116,28 @@ export const useMsgInput = (messageInputDom: Ref) => {
     size: number
     duration: number
     filename: string
+    type?: string
   }) => {
     const targetRoomId = globalStore.currentSessionRoomId
     try {
       // 创建语音消息数据
       const msg = {
         type: MsgEnum.VOICE,
-        path: voiceData.localPath, // 本地路径用于上传
         url: `asset://${voiceData.localPath}`, // 本地预览URL
         size: voiceData.size,
         duration: voiceData.duration,
-        filename: voiceData.filename
+        filename: voiceData.filename,
+        mimeType: voiceData.type || 'audio/mpeg'
       }
       const tempMsgId = 'T' + Date.now().toString()
 
-      // 创建消息体（初始使用本地路径）
-      const messageBody = {
+      // 创建消息体（初始使用本地预览 URL，上传完成后切到 Matrix 媒体 URL）
+      const messageBody: VoiceBody = {
         url: msg.url,
-        path: msg.path,
         size: msg.size,
-        second: Math.round(msg.duration)
+        second: Math.round(msg.duration),
+        fileName: msg.filename,
+        mimeType: msg.mimeType
       }
 
       // 创建临时消息对象
@@ -1252,41 +1172,21 @@ export const useMsgInput = (messageInputDom: Ref) => {
       })
 
       try {
-        // 获取语音消息策略
-        const messageStrategy = messageStrategyMap[MsgEnum.VOICE]
-        // 上传语音文件到七牛云
-        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
-          provider: UploadProviderEnum.QINIU
-        })
-        const doUploadResult = (await messageStrategy.doUpload(msg.path, uploadUrl, config as UploadOptions)) as
-          | { qiniuUrl?: string }
-          | undefined
+        const uploadResult = await uploadVoiceToMatrix(targetRoomId, voiceData.localPath, msg.filename, msg.mimeType)
+        messageBody.url = uploadResult.httpUrl || uploadResult.mxcUrl || msg.url
+        messageBody.mxcUrl = uploadResult.mxcUrl || undefined
 
-        // 更新消息体中的URL为服务器URL
-        const finalUrl =
-          config?.provider && config?.provider === UploadProviderEnum.QINIU ? doUploadResult?.qiniuUrl : downloadUrl
-        messageBody.url = finalUrl || ''
-        const voiceBody = messageBody as { path?: string }
-        delete voiceBody.path // 删除临时路径
-
-        // 更新临时消息的URL
         chatStore.updateMsg({
           msgId: tempMsgId,
           body: {
             ...messageBody
           },
-          status: MessageStatusEnum.SENDING
+          status: MessageStatusEnum.SUCCESS,
+          newMsgId: uploadResult.eventId,
+          timeBlock: Date.now()
         })
-
-        await sendWithTracking({
-          tempMsgId,
-          payload: {
-            id: tempMsgId,
-            roomId: targetRoomId,
-            msgType: MsgEnum.VOICE,
-            body: messageBody
-          }
-        })
+        useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
+        chatStore.updateSessionLastActiveTime(targetRoomId)
 
         // 释放本地预览URL
         if (msg.url.startsWith('asset://')) {
@@ -1314,14 +1214,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
       const content = JSON.stringify(beaconData)
 
       // 构建位置消息
-      const msg = messageStrategy.getMsg(
-        content,
-        reply.value.content ? (reply.value as unknown as MessageType) : null
-      ) as Record<string, unknown>
-      const messageBody = messageStrategy.buildMessageBody(
-        msg,
-        reply.value.content ? (reply.value as unknown as MessageType) : null
-      )
+      const msg = messageStrategy.getMsg(content, reply.value as unknown as MessageType) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
 
       // 创建临时消息对象
       const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
@@ -1363,14 +1257,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
       const content = JSON.stringify(linkData)
 
       // 构建链接预览消息
-      const msg = messageStrategy.getMsg(
-        content,
-        reply.value.content ? (reply.value as unknown as MessageType) : null
-      ) as Record<string, unknown>
-      const messageBody = messageStrategy.buildMessageBody(
-        msg,
-        reply.value.content ? (reply.value as unknown as MessageType) : null
-      )
+      const msg = messageStrategy.getMsg(content, reply.value as unknown as MessageType) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
 
       // 创建临时消息对象
       const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
@@ -1416,14 +1304,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
       const content = JSON.stringify(locationData)
 
       // 构建位置消息
-      const msg = messageStrategy.getMsg(
-        content,
-        reply.value.content ? (reply.value as unknown as MessageType) : null
-      ) as Record<string, unknown>
-      const messageBody = messageStrategy.buildMessageBody(
-        msg,
-        reply.value.content ? (reply.value as unknown as MessageType) : null
-      )
+      const msg = messageStrategy.getMsg(content, reply.value as unknown as MessageType) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
 
       // 创建临时消息对象
       const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
@@ -1465,14 +1347,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
       const messageStrategy = messageStrategyMap[MsgEnum.EMOJI]
 
       // 构建表情包消息
-      const msg = messageStrategy.getMsg(
-        emojiUrl,
-        reply.value.content ? (reply.value as unknown as MessageType) : null
-      ) as Record<string, unknown>
-      const messageBody = messageStrategy.buildMessageBody(
-        msg,
-        reply.value.content ? (reply.value as unknown as MessageType) : null
-      )
+      const msg = messageStrategy.getMsg(emojiUrl, reply.value as unknown as MessageType) as Record<string, unknown>
+      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
 
       // 创建临时消息对象
       const tempMsg = messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)

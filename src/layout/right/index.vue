@@ -28,12 +28,12 @@
 </template>
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { MittEnum, ThemeEnum } from '@/enums'
+import { MittEnum, ThemeEnum, RoomTypeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
 import type { DetailsContent } from '@/services/types'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useGlobalStore } from '@/stores/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 
 const appWindow = WebviewWindow.getCurrent()
 const settingStore = useSettingStore()
@@ -72,9 +72,9 @@ onMounted(() => {
     useMitt.on(MittEnum.APPLY_SHOW, (event: { context: DetailsContent }) => {
       detailsContent.value = event.context
     })
-    useMitt.on(MittEnum.DETAILS_SHOW, (event: any) => {
+    useMitt.on(MittEnum.DETAILS_SHOW, (event: { context: DetailsContent; detailsShow: boolean }) => {
       detailsContent.value = event.context
-      detailsShow.value = event.detailsShow as boolean
+      detailsShow.value = event.detailsShow
     })
   }
 })

@@ -26,7 +26,7 @@
           target="_blank"
           rel="noopener noreferrer"
           href="https://gitee.com/llangkebo/hula/"
-          class="text-(12px #13987f) cursor-pointer no-underline">
+          class="text-(12px --color-primary) cursor-pointer no-underline">
           {{ t('setting.common.provider_name') }}
         </a>
       </div>
@@ -61,8 +61,8 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import router from '@/router'
-import { useScannerStore } from '@/stores/scanner.ts'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useScannerStore } from '@/stores/domains/widget/scanner'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import Foot from '@/views/moreWindow/settings/Foot.vue'
 import { useSideOptions } from './config.ts'
 import { useI18n } from 'vue-i18n'

@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { ThemeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 
 const props = defineProps<{
   value: string

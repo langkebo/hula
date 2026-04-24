@@ -22,31 +22,37 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import type { FilesMeta, RightMouseMessageItem } from '@/services/types.ts'
 import { createLogger } from '@/utils/Logger'
+import {
+  extractMsgIdFromDataKey,
+  resolveSelectionMessageId,
+  getSelectedText,
+  hasSelectedText,
+  clearSelection
+} from './chatMain/selectionUtils'
 const logger = createLogger('ChatMain')
 
 /** 上下文菜单项目类型 - 支持从 fromUser.uid 或直接 uid 获取用户ID */
 type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<string, unknown>
-import type { MessageType } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useContactStore } from '@/stores/contacts'
-import { useEmojiStore } from '@/stores/emoji'
-import { type FileDownloadStatus, useFileDownloadStore } from '@/stores/fileDownload'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useGroupStore } from '@/stores/group'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStore } from '@/stores/user'
+import type { MessageType } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useEmojiStore } from '@/stores/domains/chat/emoji'
+import { type FileDownloadStatus, useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import { isDiffNow } from '@/utils/ComputedTime.ts'
 import { extractFileName, removeTag } from '@/utils/Formatting'
 import { detectImageFormat, imageUrlToUint8Array, isImageUrl } from '@/utils/ImageUtils'
-import { matrixMessageService, matrixGroupService } from '@/services/matrix'
+import { matrixMessageService, matrixGroupService, reportService } from '@/services/matrix'
 import { detectRemoteFileType, getFilesMeta } from '@/utils/PathUtil'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useWindow } from './useWindow'
 import { useI18n } from 'vue-i18n'
 import { matrixRoomService } from '@/services/matrix'
-import { useReportDialog } from '@/composables/useReportDialog'
 
 type UseChatMainOptions = {
   enableGroupNicknameModal?: boolean
@@ -152,19 +158,10 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   /** 通用右键菜单 */
   const handleForward = async (item: MessageType) => {
     if (!item?.message?.id) return
-    const target = chatStore.chatMessageList.find((msg) => msg.message.id === item.message.id)
+    const target = chatStore.getMessage(item.message.id)
     if (!target) {
       return
     }
-
-    if (isMobile()) {
-      useMitt.emit(MittEnum.MOBILE_FORWARD, {
-        eventId: item.message.id,
-        roomId: item.message.roomId
-      })
-      return
-    }
-
     chatStore.clearMsgCheck()
     target.isCheck = true
     chatStore.setMsgMultiChoose(true, 'forward')
@@ -222,6 +219,10 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       label: () => t('menu.forward'),
       icon: 'share',
       click: (item: MessageType) => {
+        if (isMobile()) {
+          window.$message.warning(t('home.chat_main.feature.coming_soon'))
+          return
+        }
         handleForward(item)
       },
       visible: (item: MessageType) => !isNoticeMessage(item)
@@ -839,9 +840,10 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     {
       label: () => t('menu.get_user_info'),
       icon: 'notes',
-      click: (item: ContextMenuItem & { message?: { id: string } }, type: string) => {
+      click: (item: ContextMenuItem & { message?: { id: string }; type?: string }) => {
         // 如果是聊天框内的资料就使用的是消息的key，如果是群聊成员的资料就使用的是uid
         const uid = (item.uid || item.message?.id) as string
+        const type = item.type ?? 'Main'
         useMitt.emit(`${MittEnum.INFO_POPOVER}-${type}`, { uid: uid, type: type })
       }
     },
@@ -890,7 +892,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         try {
           await groupStore.addAdmin([targetUid])
           window.$message.success(t('menu.set_admin_success'))
-        } catch (_error) {
+        } catch {
           window.$message.error(t('menu.set_admin_fail'))
         }
       },
@@ -935,7 +937,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         try {
           await groupStore.revokeAdmin([targetUid])
           window.$message.success(t('menu.revoke_admin_success'))
-        } catch (_error) {
+        } catch {
           window.$message.error(t('menu.revoke_admin_fail'))
         }
       },
@@ -985,7 +987,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           // 从群成员列表中移除该用户
           groupStore.removeUserItem(targetUid, roomId)
           window.$message.success(t('menu.remove_from_group_success'))
-        } catch (_error) {
+        } catch {
           window.$message.error(t('menu.remove_from_group_fail'))
         }
       },
@@ -1035,8 +1037,18 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           window.$message.warning('无法获取消息信息')
           return
         }
-        const { showReportDialog } = useReportDialog()
-        showReportDialog({ roomId, eventId })
+        try {
+          await reportService.reportEvent({
+            roomId,
+            eventId,
+            reason: 'user_report',
+            explanation: ''
+          })
+          window.$message.success('举报已提交')
+        } catch (err) {
+          logger.error('举报失败:', err)
+          window.$message.error('举报失败，请稍后重试')
+        }
       }
     }
   ])
@@ -1127,79 +1139,13 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     return type === 'friend' ? isFriend && uid !== myUid : isFriend || uid === myUid
   }
 
-  const extractMsgIdFromDataKey = (dataKey?: string | null) => {
-    if (!dataKey) return ''
-    return dataKey.replace(/^[A-Za-z]/, '')
-  }
-
-  const resolveSelectionMessageId = (selection: Selection): string => {
-    const resolveElement = (node: Node | null) => {
-      if (!node) return null
-      return node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement
-    }
-
-    const anchorElement = resolveElement(selection.anchorNode)
-    const focusElement = resolveElement(selection.focusNode)
-
-    if (!anchorElement || !focusElement) return ''
-
-    const anchorKey = anchorElement.closest('[data-key]')?.getAttribute('data-key')
-    const focusKey = focusElement.closest('[data-key]')?.getAttribute('data-key')
-
-    if (!anchorKey || !focusKey || anchorKey !== focusKey) {
-      return ''
-    }
-
-    const chatMainElement = document.getElementById('image-chat-main')
-    if (chatMainElement && (!chatMainElement.contains(anchorElement) || !chatMainElement.contains(focusElement))) {
-      return ''
-    }
-
-    return extractMsgIdFromDataKey(anchorKey)
-  }
-
-  /**
-   * 获取用户选中的文本（仅返回聊天气泡内的选择，并可校验消息ID）
-   */
-  const getSelectedText = (messageId?: string): string => {
-    const selection = window.getSelection()
-    if (!selection || selection.rangeCount === 0) {
-      return ''
-    }
-
-    const text = selection.toString().trim()
-    if (!text) {
-      return ''
-    }
-
-    const selectedMessageId = resolveSelectionMessageId(selection)
-    if (!selectedMessageId) {
-      return ''
-    }
-
-    if (messageId && selectedMessageId !== messageId) {
-      return ''
-    }
-
-    return text
-  }
-
-  /**
-   * 检查是否有文本被选中
-   */
-  const hasSelectedText = (messageId?: string): boolean => {
-    return getSelectedText(messageId).length > 0
-  }
-
-  /**
-   * 清除文本选择
-   */
-  const clearSelection = (): void => {
-    const selection = window.getSelection()
-    if (selection) {
-      selection.removeAllRanges()
-    }
-  }
+  // Selection utilities moved to ./chatMain/selectionUtils.ts
+  // `extractMsgIdFromDataKey` / `resolveSelectionMessageId` / `getSelectedText`
+  // / `hasSelectedText` / `clearSelection` are imported at the top of the file.
+  void extractMsgIdFromDataKey
+  void resolveSelectionMessageId
+  void hasSelectedText
+  void clearSelection
 
   /**
    * 处理复制事件

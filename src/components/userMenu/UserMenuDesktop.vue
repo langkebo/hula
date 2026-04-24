@@ -20,8 +20,8 @@
 import { computed } from 'vue'
 import { NAvatar } from 'naive-ui'
 import { useUserMenu } from './useUserMenu'
-import { useUserStore } from '@/stores/user'
-import { useSettingStore } from '@/stores/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import UserMenuDropdown from './UserMenuDropdown.vue'
 import defaultAvatarImg from '@/assets/img/win.png'
 
@@ -78,7 +78,7 @@ const onlineClass = computed(() => {
 }
 
 .online-indicator.online {
-  background-color: #52c41a;
+  background-color: var(--color-success);
 }
 
 .online-indicator.offline {
@@ -86,10 +86,10 @@ const onlineClass = computed(() => {
 }
 
 .online-indicator.busy {
-  background-color: #faad14;
+  background-color: var(--color-warning);
 }
 
 .online-indicator.away {
-  background-color: #1890ff;
+  background-color: var(--color-info);
 }
 </style>

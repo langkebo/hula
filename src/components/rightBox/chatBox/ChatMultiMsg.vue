@@ -18,10 +18,10 @@
 import { MSG_REPLY_TEXT_MAP } from '@/common/message'
 import { EventEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
-import { useChatStore } from '@/stores/chat'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
 import type { MsgId } from '@/typings/global'
 import { getBodyContent } from '@/utils/messageBody'
 
@@ -105,7 +105,7 @@ const openMultiMsgWindow = async () => {
     })
 
     // 向窗口发送消息数据
-    await sendWindowPayload(label, msgIds)
+    await sendWindowPayload(label, { msgIds })
   } catch (e) {
     logger.error('创建聊天记录窗口失败:', e)
     window.$message?.error('打开聊天记录失败')

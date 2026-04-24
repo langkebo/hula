@@ -12,7 +12,7 @@
             </div>
           </div>
           <n-flex vertical :size="8">
-            <span class="text-(12px #909090)">{{ t('setting.account.change_avatar_hint') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.account.change_avatar_hint') }}</span>
           </n-flex>
         </n-flex>
 
@@ -66,7 +66,7 @@
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
             <span>{{ t('setting.account.change_password') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.account.change_password_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.account.change_password_desc') }}</span>
           </n-flex>
           <n-button size="small" type="primary" @click="showPasswordModal = true">
             {{ t('setting.account.change_password') }}
@@ -75,8 +75,6 @@
       </n-flex>
     </n-flex>
 
-    <ThreePidManagement />
-
     <n-flex vertical class="text-(14px [--text-color])" :size="16">
       <span class="pl-10px">{{ t('setting.account.danger_zone') }}</span>
 
@@ -84,7 +82,7 @@
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
             <span class="text-(14px #d03050)">{{ t('setting.account.deactivate_account') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.account.deactivate_account_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.account.deactivate_account_desc') }}</span>
           </n-flex>
           <n-button size="small" type="error" @click="handleDeactivate">
             {{ t('setting.account.deactivate_account') }}
@@ -94,7 +92,11 @@
     </n-flex>
   </n-flex>
 
-  <n-modal v-model:show="showPasswordModal" preset="card" :title="t('setting.account.change_password')" style="width: 400px">
+  <n-modal
+    v-model:show="showPasswordModal"
+    preset="card"
+    :title="t('setting.account.change_password')"
+    style="width: 400px">
     <n-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-placement="top">
       <n-form-item :label="t('setting.account.current_password')" path="currentPassword">
         <n-input
@@ -130,10 +132,20 @@
 </template>
 
 <script setup lang="ts">
-import { NAvatar, NInput, NButton, NModal, NForm, NFormItem, useMessage, useDialog, NFlex } from 'naive-ui'
-import { useUserStore } from '@/stores/user'
+import {
+  NAvatar,
+  NInput,
+  NButton,
+  NModal,
+  NForm,
+  NFormItem,
+  useMessage,
+  useDialog,
+  NFlex,
+  type FormItemRule
+} from 'naive-ui'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useI18n } from 'vue-i18n'
-import ThreePidManagement from '@/components/settings/ThreePidManagement.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -162,7 +174,7 @@ const passwordRules = {
   confirmPassword: [
     { required: true, message: t('setting.account.confirm_password_required'), trigger: 'blur' },
     {
-      validator: (_rule: any, value: string) => value === passwordForm.newPassword,
+      validator: (_rule: FormItemRule, value: string) => value === passwordForm.newPassword,
       message: t('setting.account.password_mismatch'),
       trigger: 'blur'
     }

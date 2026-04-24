@@ -13,10 +13,10 @@
               :size="8"
               :class="{ 'filter-shadow': page.shadow }"
               class="box bg-[--plugin-bg-color]">
-              <svg class="size-38px color-#999">
+              <svg class="size-38px color-[--color-text-quaternary]">
                 <use :href="`#${plugin.icon}`"></use>
               </svg>
-              <p class="text-(12px #666)">{{ plugin.title }}</p>
+              <p class="text-(12px [--color-text-secondary])">{{ plugin.title }}</p>
 
               <!-- 在下载中进度条 -->
               <n-flex
@@ -35,10 +35,10 @@
                   ]"
                   v-if="plugin.state === PluginEnum.DOWNLOADING"
                   class="bg-#8CA9F4">
-                  <p class="absolute-center text-(12px #4C77BD)">{{ plugin?.progress }}%</p>
+                  <p class="absolute-center text-(12px [--color-info])">{{ plugin?.progress }}%</p>
                 </div>
 
-                <p v-else class="text-(12px #4C77BD center)">{{ t('home.plugins.actions.install') }}</p>
+                <p v-else class="text-(12px [--color-info] center)">{{ t('home.plugins.actions.install') }}</p>
               </n-flex>
 
               <!-- 闪光效果 -->
@@ -63,27 +63,27 @@
                   'filter-shadow': page.shadow
                 }
               ]">
-              <svg class="size-38px color-#555">
+              <svg class="size-38px color-[--color-text-secondary]">
                 <use :href="`#${plugin.iconAction || plugin.icon}`"></use>
               </svg>
-              <p class="text-(12px #666)">{{ plugin.title }}</p>
+              <p class="text-(12px [--color-text-secondary])">{{ plugin.title }}</p>
 
               <n-flex
                 v-if="plugin.state === PluginEnum.UNINSTALLING"
                 class="relative rounded-22px border-(1px solid #c14053) bg-#f6dfe3 p-[4px_8px]">
-                <p class="text-(12px #c14053 center)">{{ t('home.plugins.status.uninstalling') }}</p>
+                <p class="text-(12px [--color-danger] center)">{{ t('home.plugins.status.uninstalling') }}</p>
               </n-flex>
 
               <n-flex
                 v-if="plugin.state === PluginEnum.BUILTIN"
                 class="relative rounded-22px border-(1px solid #777) bg-#e3e3e3 size-fit p-[4px_8px]">
-                <p class="text-(12px #777 center)">{{ t('home.plugins.status.builtin') }}</p>
+                <p class="text-(12px [--color-text-tertiary] center)">{{ t('home.plugins.status.builtin') }}</p>
               </n-flex>
 
               <n-flex
                 v-if="plugin.state === PluginEnum.INSTALLED"
                 class="relative rounded-22px border-(1px solid #4C77BD) bg-#e0e9fc p-[4px_8px]">
-                <p class="text-(12px #4C77BD center)">{{ plugin.version }}</p>
+                <p class="text-(12px [--color-info] center)">{{ plugin.version }}</p>
               </n-flex>
 
               <!-- 闪光效果 -->
@@ -92,7 +92,7 @@
               <Transition>
                 <svg
                   v-if="plugin.isAdd && plugin.state !== PluginEnum.BUILTIN"
-                  class="absolute color-#666 left-2px top-2px size-14px">
+                  class="absolute color-[--color-text-secondary] left-2px top-2px size-14px">
                   <use href="#notOnTop"></use>
                 </svg>
               </Transition>
@@ -106,7 +106,9 @@
                 trigger="click"
                 placement="bottom">
                 <template #trigger>
-                  <svg @click.stop="isCurrently = index" class="absolute color-#666 right-0 top-0 size-18px rotate-90">
+                  <svg
+                    @click.stop="isCurrently = index"
+                    class="absolute color-[--color-text-secondary] right-0 top-0 size-18px rotate-90">
                     <use href="#more"></use>
                   </svg>
                 </template>
@@ -114,16 +116,16 @@
                 <div class="action-item">
                   <div class="menu-list">
                     <div v-if="!plugin.isAdd" @click="handleAdd(plugin)" class="menu-item">
-                      <svg class="color-#4C77BD">
+                      <svg class="color-[--color-info]">
                         <use href="#add"></use>
                       </svg>
-                      <p class="text-#4C77BD">{{ t('home.plugins.actions.pin') }}</p>
+                      <p class="text-[--color-info]">{{ t('home.plugins.actions.pin') }}</p>
                     </div>
                     <div v-else @click="handleDelete(plugin)" class="menu-item">
-                      <svg class="color-#c14053">
+                      <svg class="color-[--color-danger]">
                         <use href="#reduce"></use>
                       </svg>
-                      <p class="text-#c14053">{{ t('home.plugins.actions.unpin') }}</p>
+                      <p class="text-[--color-danger]">{{ t('home.plugins.actions.unpin') }}</p>
                     </div>
                     <div @click="handleUnload(plugin)" class="menu-item">
                       <svg>
@@ -149,8 +151,8 @@ import { cloneDeep } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import { PluginEnum } from '@/enums'
 import { usePluginsList } from '@/layout/left/config.tsx'
-import { usePluginsStore } from '@/stores/plugins.ts'
-import { useSettingStore } from '@/stores/setting.ts'
+import { usePluginsStore } from '@/stores/domains/settings/plugins'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()

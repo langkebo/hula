@@ -1,17 +1,18 @@
 import { Channel, invoke } from '@tauri-apps/api/core'
-import { BaseDirectory, writeFile } from '@tauri-apps/plugin-fs'
+import { BaseDirectory, stat, writeFile } from '@tauri-apps/plugin-fs'
 import { createEventHook } from '@vueuse/core'
-import { TauriCommand } from '@/enums'
-import { useConfigStore } from '@/stores/config'
-import { useUserStore } from '@/stores/user'
+import { TauriCommand, UploadSceneEnum } from '@/enums'
+import { useUserStore } from '@/stores/domains/user/user'
+import { extractFileName } from '@/utils/Formatting'
 import { getImageDimensions } from '@/utils/ImageUtils'
+import { uploadService } from '@/services/UploadService'
 import { isAndroid, isMobile } from '@/utils/PlatformConstants'
 import { getWasmMd5 } from '@/utils/Md5Util'
 import { removeTempFile } from '@/utils/TempFileManager'
 import { createLogger } from '@/utils/Logger'
-import { matrixClientService } from '@/services/matrix'
 const logger = createLogger('Upload')
 
+/** 文件信息类型 */
 export type FileInfoType = {
   name: string
   type: string
@@ -26,42 +27,54 @@ export type FileInfoType = {
   thumbUrl?: string
 }
 
+/** 上传方式 */
 export enum UploadProviderEnum {
-  DEFAULT = 'default'
+  /** 默认上传方式 */
+  DEFAULT = 'default',
+  /** MinIO 上传 */
+  MINIO = 'minio'
 }
 
+/** 上传配置 */
 export interface UploadOptions {
+  /** 上传方式 */
   provider?: UploadProviderEnum
-  scene?: string
+  /** 上传场景 */
+  scene?: UploadSceneEnum
+  /** 是否启用文件去重（使用文件哈希作为文件名） */
   enableDeduplication?: boolean
 }
 
-const Max = 500
-const MAX_FILE_SIZE = Max * 1024 * 1024
+const Max = 500 // 单位M
+const MAX_FILE_SIZE = Max * 1024 * 1024 // 最大上传限制
 
-let cryptoJS: any | null = null
+let cryptoJS: {
+  lib: { WordArray: { create: (arr: ArrayBuffer | Uint8Array) => { words: number[]; sigBytes: number } } }
+  MD5: (wordArray: string | { words: number[]; sigBytes: number }) => { toString: () => string }
+} | null = null
 
-const _isAbsolutePath = (path: string): boolean => {
+const isAbsolutePath = (path: string): boolean => {
   return /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(path)
 }
 
 const loadCryptoJS = async () => {
   if (!cryptoJS) {
     const module = await import('crypto-js')
-    cryptoJS = module.default ?? module
+    const loaded = module.default ?? module
+    cryptoJS = loaded as unknown as NonNullable<typeof cryptoJS>
   }
-  return cryptoJS as {
-    lib: { WordArray: { create: (arr: ArrayBuffer | Uint8Array) => any } }
-    MD5: (wordArray: any) => { toString: () => string }
-  }
+  return cryptoJS
 }
 
+/**
+ * 文件上传Hook
+ */
 export const useUpload = () => {
-  const _configStore = useConfigStore()
   const userStore = useUserStore()
-  const isUploading = ref(false)
-  const progress = ref(0)
-  const fileInfo = ref<FileInfoType | null>(null)
+  const isUploading = ref(false) // 是否正在上传
+  const progress = ref(0) // 进度
+  const fileInfo = ref<FileInfoType | null>(null) // 文件信息
+  const currentProvider = ref<UploadProviderEnum>(UploadProviderEnum.DEFAULT) // 当前上传方式
 
   const { on: onChange, trigger } = createEventHook()
   const onStart = createEventHook()
@@ -98,6 +111,11 @@ export const useUpload = () => {
     }
   }
 
+  /**
+   * 计算文件的MD5哈希值
+   * @param file 文件
+   * @returns MD5哈希值
+   */
   const calculateFileHash = async (file: File): Promise<string> => {
     const startTime = performance.now()
     try {
@@ -122,29 +140,67 @@ export const useUpload = () => {
       const endTime = performance.now()
       const duration = (endTime - startTime).toFixed(2)
       logger.error(`计算文件哈希值失败，耗时: ${duration}ms:`, error)
+      // 如果计算失败，返回时间戳作为备用方案
       return Date.now().toString()
     }
   }
 
+  /**
+   * 生成文件哈希
+   * @param options 上传配置
+   * @param fileObj 文件对象
+   * @param fileName 文件名
+   * @returns 文件哈希
+   */
   const generateHashKey = async (
-    options: { scene: string; enableDeduplication: boolean },
+    options: { scene: UploadSceneEnum; enableDeduplication: boolean },
     fileObj: File,
     fileName: string
   ) => {
     let key: string
 
     if (options.enableDeduplication) {
+      // 使用文件哈希作为文件名的一部分，实现去重
       const fileHash = await calculateFileHash(fileObj)
       const fileSuffix = fileName.split('.').pop() || ''
+      // 获取当前登录用户的account
       const account = userStore.userInfo!.account
       key = `${options.scene}/${account}/${fileHash}.${fileSuffix}`
       logger.debug('使用文件去重模式，文件哈希:', fileHash)
     } else {
+      // 使用时间戳生成唯一的文件名
       key = `${options.scene}/${Date.now()}_${fileName}`
     }
     return key
   }
 
+  const resolveProvider = async (provider?: UploadProviderEnum): Promise<UploadProviderEnum> => {
+    if (provider) {
+      currentProvider.value = provider
+      return currentProvider.value
+    }
+
+    try {
+      const res = await uploadService.getUploadProvider()
+      currentProvider.value = res?.provider === 'minio' ? UploadProviderEnum.MINIO : UploadProviderEnum.DEFAULT
+    } catch {
+      currentProvider.value = UploadProviderEnum.DEFAULT
+    }
+
+    return currentProvider.value
+  }
+
+  const getUploadCredential = async (fileName: string, scene?: UploadSceneEnum) => {
+    const credential = await uploadService.getOssToken({ scene, fileName })
+    if (!credential?.uploadUrl || !credential?.downloadUrl) {
+      throw new Error('获取上传凭证失败，请重试')
+    }
+    return credential
+  }
+
+  /**
+   * 获取图片宽高
+   */
   const getImgWH = async (file: File) => {
     try {
       const result = await getImageDimensions(file, { includePreviewUrl: true })
@@ -153,21 +209,28 @@ export const useUpload = () => {
         height: result.height,
         tempUrl: result.previewUrl!
       }
-    } catch (_error) {
+    } catch {
       return { width: 0, height: 0, url: null }
     }
   }
 
+  /**
+   * 获取音频时长
+   */
   const getAudioDuration = (file: File) => {
     return new Promise((resolve, reject) => {
       const audio = new Audio()
       const tempUrl = URL.createObjectURL(file)
       audio.src = tempUrl
+      // 计算音频的时长
       const countAudioTime = async () => {
         while (isNaN(audio.duration) || audio.duration === Infinity) {
+          // 防止浏览器卡死
           await new Promise((resolve) => setTimeout(resolve, 100))
+          // 随机进度条位置
           audio.currentTime = 100000 * Math.random()
         }
+        // 取整
         const second = Math.round(audio.duration || 0)
         resolve({ second, tempUrl })
       }
@@ -178,20 +241,28 @@ export const useUpload = () => {
     })
   }
 
+  /**
+   * 解析文件
+   * @param file 文件
+   * @param addParams 参数
+   * @returns 文件大小、文件类型、文件名、文件后缀...
+   */
   const parseFile = async (file: File, addParams: Record<string, any> = {}) => {
     const { name, size, type } = file
     const suffix = name.split('.').pop()?.trim().toLowerCase() || ''
     const baseInfo = { name, size, type, suffix, ...addParams }
 
+    // 根据文件类型获取额外的元数据（图片需要宽高，音频需要时长）
     if (type.includes('image')) {
-      const result = (await getImgWH(file)) as { width: number; height: number; tempUrl: string }
-      return { ...baseInfo, width: result.width, height: result.height, tempUrl: result.tempUrl }
+      const { width, height, tempUrl } = (await getImgWH(file)) as { width: number; height: number; tempUrl: string }
+      return { ...baseInfo, width, height, tempUrl }
     }
 
     if (type.includes('audio')) {
-      const result = (await getAudioDuration(file)) as { second: number; tempUrl: string }
-      return { second: result.second, tempUrl: result.tempUrl, ...baseInfo }
+      const { second, tempUrl } = (await getAudioDuration(file)) as { second: number; tempUrl: string }
+      return { second, tempUrl, ...baseInfo }
     }
+    // 如果是视频
     if (type.includes('video')) {
       return { ...baseInfo }
     }
@@ -199,80 +270,145 @@ export const useUpload = () => {
     return baseInfo
   }
 
-  const uploadFile = async (file: File, options?: UploadOptions): Promise<{ downloadUrl: string } | undefined> => {
-    if (isUploading.value || !file) return undefined
+  /**
+   * 上传文件
+   * @param file 文件
+   * @param options 上传选项
+   */
+  const uploadFile = async (file: File, options?: UploadOptions) => {
+    if (isUploading.value || !file) return
+
+    await resolveProvider(options?.provider)
 
     const info = await parseFile(file, options)
 
+    // 限制文件大小
     if (info.size > MAX_FILE_SIZE) {
       window.$message.error(`文件大小不能超过 ${Max}MB`)
-      return undefined
+      return
     }
 
     try {
+      const credential = await getUploadCredential(file.name, options?.scene)
       fileInfo.value = { ...info }
       await onStart.trigger(fileInfo)
 
+      const contentType = file.type || 'application/octet-stream'
       isUploading.value = true
       progress.value = 0
 
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      const result = await client.uploadContent(file, { type: file.type || 'application/octet-stream' })
-      const contentUri = typeof result === 'string' ? result : result.content_uri
+      await uploadFileWithTauriPut(credential.uploadUrl, file, contentType)
 
       isUploading.value = false
       progress.value = 100
-
-      const downloadUrl = client.mxcUrlToHttp(contentUri) || contentUri
-      fileInfo.value = { ...fileInfo.value!, downloadUrl }
+      fileInfo.value = { ...fileInfo.value!, downloadUrl: credential.downloadUrl }
       trigger('success')
-      return { downloadUrl }
+      return { downloadUrl: credential.downloadUrl }
     } catch (error) {
       isUploading.value = false
       logger.error('文件上传失败:', error)
       await trigger('fail')
-      return undefined
     }
   }
 
+  /**
+   * 获取上传和下载URL
+   * 获取当前后端支持的上传凭证与下载地址
+   * @param path 文件路径
+   * @param options 上传选项
+   */
   const getUploadAndDownloadUrl = async (
     _path: string,
-    _options?: UploadOptions
-  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: any }> => {
-    return { uploadUrl: '', downloadUrl: '' }
+    options?: UploadOptions
+  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }> => {
+    const provider = await resolveProvider(options?.provider)
+    const credential = await getUploadCredential(extractFileName(_path), options?.scene)
+    return {
+      uploadUrl: credential.uploadUrl,
+      downloadUrl: credential.downloadUrl,
+      config: { objectKey: credential.objectKey, provider }
+    }
   }
 
-  const doUpload = async (_path: string, _uploadUrl: string, _options?: any): Promise<{ mxcUrl: string } | string> => {
-    return ''
-  }
+  /**
+   * 执行实际的文件上传
+   * @param path 文件路径
+   * @param uploadUrl 上传URL
+   * @param options 上传选项
+   */
+  const doUpload = async (
+    path: string,
+    uploadUrl: string,
+    options?: {
+      progressCallback?: (pct: number) => void
+      objectKey?: string
+      provider?: string
+      downloadUrl?: string
+      [key: string]: unknown
+    }
+  ): Promise<string> => {
+    const absolutePath = isAbsolutePath(path)
+    logger.debug('执行文件上传:', path)
+    try {
+      if (!uploadUrl) {
+        throw new Error('获取上传链接失败，请重试')
+      }
 
-  const cancelUpload = () => {
-    isUploading.value = false
-    progress.value = 0
-  }
+      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+      const baseDirName = isMobile() ? 'AppData' : 'AppCache'
+      const fileStat = absolutePath ? await stat(path) : await stat(path, { baseDir })
 
-  const clearFileInfo = () => {
-    fileInfo.value = null
+      if (fileStat.size > MAX_FILE_SIZE) {
+        throw new Error(`文件大小不能超过${Max}MB`)
+      }
+
+      isUploading.value = true
+      progress.value = 0
+
+      const onProgress = new Channel<{ progressTotal: number; total: number }>()
+      let lastProgress = -1
+      onProgress.onmessage = ({ progressTotal, total }) => {
+        const pct = total > 0 ? Math.floor((progressTotal / total) * 100) : 0
+        if (pct !== lastProgress) {
+          lastProgress = pct
+          progress.value = pct
+          trigger('progress')
+          options?.progressCallback?.(pct)
+        }
+      }
+
+      await invoke(TauriCommand.UPLOAD_FILE_PUT, {
+        url: uploadUrl,
+        path,
+        ...(absolutePath ? {} : { baseDir: baseDirName }),
+        headers: { 'Content-Type': 'application/octet-stream' },
+        onProgress
+      })
+
+      isUploading.value = false
+      progress.value = 100
+      logger.debug('文件上传成功')
+      trigger('success')
+      return options?.downloadUrl || ''
+    } catch (error) {
+      isUploading.value = false
+      trigger('fail')
+      logger.error('文件上传失败:', error)
+      throw new Error('文件上传失败，请重试')
+    }
   }
 
   return {
+    fileInfo,
     isUploading,
     progress,
-    fileInfo,
+    onStart: onStart.on,
     onChange,
-    onStart,
     uploadFile,
-    uploadFileWithTauriPut,
+    parseFile,
     getUploadAndDownloadUrl,
     doUpload,
-    cancelUpload,
-    clearFileInfo,
-    parseFile,
-    calculateFileHash,
+    UploadProviderEnum,
     generateHashKey
   }
 }

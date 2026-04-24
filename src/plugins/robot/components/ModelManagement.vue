@@ -317,12 +317,40 @@ import { Icon } from '@iconify/vue'
 import type { FormRules, FormInst } from 'naive-ui'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
-import { useUserStore } from '@/stores/user'
-import { matrixApiKeyService, matrixModelService } from '@/services/matrix'
+import type { ApiKey, Platform } from '@/services/matrix/ApiKeyService'
+import type { AIModel } from '@/services/matrix/ModelService'
+import { useUserStore } from '@/stores/domains/user/user'
+import { apiKeyService, modelService } from '@/services/matrix'
 import ApiKeyManagement from './ApiKeyManagement.vue'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 import { useI18n } from 'vue-i18n'
+
+type SelectOption = {
+  label: string
+  value: string
+}
+
+type FormModel = {
+  keyId: string
+  name: string
+  model: string
+  platform: string
+  avatar: string
+  type: number
+  sort: number
+  status: number
+  temperature: number
+  maxTokens: number
+  maxContexts: number
+  publicStatus: number
+}
+
+type ModelSubmitPayload = FormModel & {
+  id?: string
+}
+
+type ValidationValue = number | null | undefined | ''
 
 const logger = createLogger('ModelManagement')
 const timerManager = useTimerManager()
@@ -335,13 +363,13 @@ const emit = defineEmits<{
 const userStore = useUserStore()
 
 // 检查当前用户是否是模型创建人
-const isModelCreator = (model: any) => {
+const isModelCreator = (model: AIModel) => {
   return userStore.userInfo?.uid === model.userId
 }
 
 // 模型列表
 const loading = ref(false)
-const modelList = ref<any[]>([])
+const modelList = ref<AIModel[]>([])
 const pagination = ref({
   pageNo: 1,
   pageSize: 10,
@@ -350,17 +378,17 @@ const pagination = ref({
 
 // API 密钥管理
 const showApiKeyManagement = ref(false)
-const apiKeyOptions = ref<any[]>([])
-const apiKeyMap = ref<Map<string, any>>(new Map())
+const apiKeyOptions = ref<SelectOption[]>([])
+const apiKeyMap = ref<Map<string, ApiKey>>(new Map())
 
 // 编辑相关
 const showEditModal = ref(false)
-const editingModel = ref<any>(null)
+const editingModel = ref<AIModel | null>(null)
 const submitting = ref(false)
 const formRef = ref<FormInst>()
 
 // 表单数据
-const formData = ref({
+const formData = ref<FormModel>({
   keyId: '',
   name: '',
   model: '',
@@ -376,22 +404,22 @@ const formData = ref({
 })
 
 // 平台选项和模型信息
-const platformOptions = ref<Array<{ label: string; value: string }>>([])
+const platformOptions = ref<SelectOption[]>([])
 const platformModelInfo = ref<Record<string, { examples: string; docs: string; hint: string }>>({})
 
 // 加载平台列表
 const loadPlatformList = async () => {
   try {
-    const data = await matrixApiKeyService.platformList()
+    const data = await apiKeyService.platformList()
     if (data && Array.isArray(data)) {
-      platformOptions.value = data.map((item: any) => ({
+      platformOptions.value = data.map((item: Platform) => ({
         label: item.label,
         value: item.platform
       }))
 
       // 构建平台模型信息映射
       const infoMap: Record<string, { examples: string; docs: string; hint: string }> = {}
-      data.forEach((item: any) => {
+      data.forEach((item: Platform) => {
         infoMap[item.platform] = {
           examples: item.examples || '',
           docs: item.docs || '',
@@ -499,7 +527,7 @@ watch(
     // 防抖：用户停止输入 1 秒后再保存
     saveModelTimeout = timerManager.setTimeout(async () => {
       try {
-        await matrixApiKeyService.addPlatformModel(formData.value.platform, newModel)
+        await apiKeyService.addPlatformModel(formData.value.platform, newModel)
         // 重新加载平台列表，更新示例
         await loadPlatformList()
         window.$message?.success('模型已添加到示例列表')
@@ -529,7 +557,7 @@ const formRules: FormRules = {
       type: 'number',
       message: '请选择模型类型',
       trigger: 'change',
-      validator: (_rule: any, value: any) => {
+      validator: (_rule: unknown, value: ValidationValue) => {
         return value !== undefined && value !== null && value !== ''
       }
     }
@@ -540,7 +568,7 @@ const formRules: FormRules = {
       type: 'number',
       message: '请输入排序值',
       trigger: 'blur',
-      validator: (_rule: any, value: any) => {
+      validator: (_rule: unknown, value: ValidationValue) => {
         return value !== undefined && value !== null && value !== ''
       }
     }
@@ -551,7 +579,7 @@ const formRules: FormRules = {
       type: 'number',
       message: '请选择状态',
       trigger: 'change',
-      validator: (_rule: any, value: any) => {
+      validator: (_rule: unknown, value: ValidationValue) => {
         return value !== undefined && value !== null && value !== ''
       }
     }
@@ -564,7 +592,7 @@ const getDefaultAvatar = () => {
 }
 
 // 获取模型头像
-const getModelAvatar = (model: any) => {
+const getModelAvatar = (model: AIModel | null) => {
   if (!model) return getDefaultAvatar()
   if (model.avatar) return model.avatar
   return getDefaultAvatar()
@@ -573,12 +601,12 @@ const getModelAvatar = (model: any) => {
 // 加载 API 密钥选项
 const loadApiKeyOptions = async () => {
   try {
-    const data = await matrixApiKeyService.simpleList()
-    apiKeyOptions.value = (data || []).map((item: any) => ({
+    const data = await apiKeyService.simpleList()
+    apiKeyOptions.value = (data || []).map((item: ApiKey) => ({
       label: item.platform ? `${item.name} (${item.platform})` : item.name,
       value: item.id
     }))
-    apiKeyMap.value = new Map((data || []).map((item: any) => [item.id, item]))
+    apiKeyMap.value = new Map((data || []).map((item: ApiKey) => [item.id, item]))
   } catch (error) {
     logger.error('加载 API 密钥列表失败:', error)
   }
@@ -588,7 +616,7 @@ const loadApiKeyOptions = async () => {
 const loadModelList = async () => {
   loading.value = true
   try {
-    const data = await matrixModelService.page({
+    const data = await modelService.page({
       pageNo: pagination.value.pageNo,
       pageSize: pagination.value.pageSize
     })
@@ -675,7 +703,7 @@ const handleCrop = async (cropBlob: Blob) => {
 }
 
 // 编辑模型
-const handleEdit = (model: any) => {
+const handleEdit = (model: AIModel) => {
   editingModel.value = model
   formData.value = {
     keyId: model.keyId || '',
@@ -700,7 +728,7 @@ const handleSubmit = async () => {
     await formRef.value?.validate()
     submitting.value = true
 
-    const submitData: any = {
+    const submitData: ModelSubmitPayload = {
       keyId: formData.value.keyId,
       name: formData.value.name,
       model: formData.value.model,
@@ -716,10 +744,10 @@ const handleSubmit = async () => {
     }
     if (editingModel.value) {
       submitData.id = editingModel.value.id
-      await matrixModelService.update(submitData)
+      await modelService.update(submitData)
       window.$message.success('模型更新成功')
     } else {
-      await matrixModelService.update(submitData)
+      await modelService.update(submitData)
       window.$message.success('模型创建成功')
     }
 
@@ -727,8 +755,8 @@ const handleSubmit = async () => {
     loadModelList()
     // 通知父组件刷新
     emit('refresh')
-  } catch (error: any) {
-    if (error?.errors) {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'errors' in error) {
       // 表单验证错误
       return
     }
@@ -742,7 +770,7 @@ const handleSubmit = async () => {
 // 删除模型
 const handleDelete = async (id: string) => {
   try {
-    await matrixModelService.delete({ id })
+    await modelService.delete({ id })
     window.$message.success('模型删除成功')
     loadModelList()
     // 通知父组件刷新

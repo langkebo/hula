@@ -38,7 +38,7 @@
                 "
                 class="z-30 absolute top-72px left-72px border-(6px solid [--avatar-border-color]) rounded-full size-18px"
                 :class="[
-                  displayActiveStatus === OnlineEnum.ONLINE ? 'bg-#1ab292' : 'bg-#909090',
+                  displayActiveStatus === OnlineEnum.ONLINE ? 'bg-[--color-primary]' : 'bg-[--color-text-tertiary]',
                   isCurrentUserUid ? 'cursor-pointer' : 'cursor-default'
                 ]"></div>
             </template>
@@ -108,7 +108,9 @@
 
             <n-tooltip trigger="hover">
               <template #trigger>
-                <svg class="size-12px cursor-pointer hover:color-#909090 hover:transition-colors" @click="handleCopy">
+                <svg
+                  class="size-12px cursor-pointer hover:color-[--color-text-tertiary] hover:transition-colors"
+                  @click="handleCopy">
                   <use href="#copy"></use>
                 </svg>
               </template>
@@ -118,19 +120,19 @@
             <!-- Gitee/GitHub/GitCode 标识 -->
             <n-tooltip v-if="linkedGitee">
               <template #trigger>
-                <svg class="size-18px color-#d5304f"><use href="#gitee-login"></use></svg>
+                <svg class="size-18px color-[--color-danger]"><use href="#gitee-login"></use></svg>
               </template>
               <span>{{ t('home.profile_card.tooltip.bound_gitee') }}</span>
             </n-tooltip>
             <n-tooltip v-if="linkedGithub">
               <template #trigger>
-                <svg class="size-18px color-#303030 dark:color-#fefefe"><use href="#github-login"></use></svg>
+                <svg class="size-18px color-[--text-color]"><use href="#github-login"></use></svg>
               </template>
               <span>{{ t('home.profile_card.tooltip.bound_github') }}</span>
             </n-tooltip>
             <n-tooltip v-if="linkedGitcode">
               <template #trigger>
-                <svg class="size-18px color-#d5304f"><use href="#gitcode-login"></use></svg>
+                <svg class="size-18px color-[--color-danger]"><use href="#gitcode-login"></use></svg>
               </template>
               <span>{{ t('home.profile_card.tooltip.bound_gitcode') }}</span>
             </n-tooltip>
@@ -213,14 +215,14 @@ import { useCommon } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import { leftHook } from '@/layout/left/hook'
-import { useBadgeStore } from '@/stores/badge'
-import { useChatStore } from '@/stores/chat'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStatusStore } from '@/stores/userStatus'
-import { useUserStore } from '@/stores/user'
+import { useBadgeStore } from '@/stores/domains/chat/badge'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const { t } = useI18n()
@@ -384,7 +386,7 @@ onMounted(() => {
 
 .text-underline {
   &:hover {
-    @apply cursor-pointer underline underline-offset-3 decoration-2 decoration-[#606060];
+    @apply cursor-pointer underline underline-offset-3 decoration-2 decoration-[--color-text-secondary];
   }
 }
 </style>

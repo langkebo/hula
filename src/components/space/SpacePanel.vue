@@ -15,11 +15,11 @@
       <n-scrollbar>
         <div
           v-for="space in spaces"
-          :key="space.roomId"
+          :key="space.spaceId"
           class="space-item"
-          :class="{ active: activeSpaceId === space.roomId }"
+          :class="{ active: activeSpaceId === space.spaceId }"
           @click="handleSpaceClick(space)">
-          <n-avatar round :size="40" :src="space.avatarUrl ?? undefined" :fallback-src="defaultAvatar" />
+          <n-avatar round :size="40" :src="space.avatarUrl" />
           <div class="space-info">
             <span class="space-name">{{ space.name }}</span>
             <span class="space-meta">{{ space.memberCount }} {{ t('space.members') }}</span>
@@ -34,8 +34,8 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { useMatrixStore } from '@/stores/matrix'
-import { useSpaceStore } from '@/stores/space'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { useSpaceStore } from '@/stores/domains/widget/space'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SpacePanel')
@@ -43,7 +43,6 @@ const { t } = useI18n()
 const router = useRouter()
 const matrixStore = useMatrixStore()
 const spaceStore = useSpaceStore()
-const defaultAvatar = '/images/default-avatar.png'
 
 const spaces = computed(() => spaceStore.spaces)
 const activeSpaceId = computed(() => spaceStore.activeSpaceId)

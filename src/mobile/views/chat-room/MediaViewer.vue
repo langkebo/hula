@@ -1,21 +1,15 @@
 <template>
   <div class="flex flex-col h-full">
-    <!-- 头部 -->
-    <div class="flex justify-between items-center p-4">
+    <div class="flex justify-between items-center p-16px">
       <div @click="() => router.back()">
         <svg class="iconpark-icon w-24px h-24px"><use href="#fanhui"></use></svg>
       </div>
-      <div>
-        <n-dropdown trigger="click" :options="options" :show-arrow="true">
-          <n-button>选择类型</n-button>
-        </n-dropdown>
-      </div>
-      <n-button text type="primary">选择</n-button>
+      <van-dropdown-menu>
+        <van-dropdown-item v-model="mediaType" :options="typeOptions" />
+      </van-dropdown-menu>
     </div>
-    <!-- 内容 -->
-    <div class="flex-1 p-4 overflow-auto">
-      <!-- 图片网格 -->
-      <div class="grid grid-cols-4 gap-1">
+    <div class="flex-1 p-16px overflow-auto">
+      <div class="grid grid-cols-4 gap-4px">
         <div
           v-for="(image, index) in imageList"
           :key="index"
@@ -31,7 +25,6 @@
       </div>
     </div>
 
-    <!-- 图片预览组件 -->
     <component
       :is="ImagePreview"
       v-if="ImagePreview"
@@ -41,8 +34,10 @@
 </template>
 
 <script setup lang="ts">
-import { useFileStore } from '@/stores/file'
-import { useGlobalStore } from '@/stores/global'
+import { ref, onMounted, defineAsyncComponent } from 'vue'
+import { useRouter } from 'vue-router'
+import { useFileStore } from '@/stores/domains/widget/file'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isMobile } from '@/utils/PlatformConstants'
 
 const ImagePreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/ImagePreview.vue')) : void 0
@@ -51,38 +46,26 @@ const router = useRouter()
 const fileStore = useFileStore()
 const globalStore = useGlobalStore()
 
-// 图片预览状态
 const showImagePreviewRef = ref(false)
 const activeImage = ref<{ url: string }>()
+const mediaType = ref(0)
 
-const options = [
-  {
-    label: '图片与视频',
-    key: 'image_video',
-    disabled: false
-  },
-  {
-    label: '图片',
-    key: 'image',
-    disabled: false
-  },
-  {
-    label: '视频',
-    key: 'video',
-    disabled: false
-  }
+const typeOptions = [
+  { text: '图片与视频', value: 0 },
+  { text: '图片', value: 1 },
+  { text: '视频', value: 2 }
 ]
 
-// 从 fileDownload store 获取图片数据
-const imageList = ref<
-  {
-    url: string
-  }[]
->([])
+const imageList = ref<{ url: string }[]>([])
 
 const getImageList = async () => {
   const data = await fileStore.getRoomFilesForDisplay(globalStore.currentSessionRoomId)
-  const filteredImages = data.filter((item) => item.type === 'image')
+  const filteredImages = data.filter((item) => {
+    if (mediaType.value === 0) return item.type === 'image' || item.type === 'video'
+    if (mediaType.value === 1) return item.type === 'image'
+    if (mediaType.value === 2) return item.type === 'video'
+    return true
+  })
   imageList.value = filteredImages.map((item) => ({ url: item.displayUrl }))
 }
 

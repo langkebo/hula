@@ -30,19 +30,12 @@
               </div>
             </n-flex>
             <div class="flex-shrink-0 w-60px select-none" @click="handleViewAnnouncement">
-              <p class="text-(12px #13987f) cursor-pointer">{{ t('home.chat_main.announcement.view_all') }}</p>
+              <p class="text-(12px --color-primary) cursor-pointer">{{ t('home.chat_main.announcement.view_all') }}</p>
             </div>
           </n-flex>
         </div>
       </div>
     </Transition>
-
-    <!-- 置顶消息栏 -->
-    <PinnedEventsBar
-      v-if="currentRoomId"
-      :room-id="currentRoomId"
-      v-model:show="showPinnedBar"
-      @jump-to-message="handleJumpToMessage" />
 
     <!-- 聊天内容 -->
     <div class="flex flex-col flex-1 min-h-0">
@@ -61,7 +54,7 @@
           <div
             v-show="chatStore.shouldShowNoMoreMessage"
             class="flex-center gap-6px h-32px flex-shrink-0 cursor-default select-none">
-            <p class="text-(12px #909090)">{{ t('home.chat_main.no_more') }}</p>
+            <p class="text-(12px --color-text-tertiary)">{{ t('home.chat_main.no_more') }}</p>
           </div>
           <DynamicScroller
             class="scroller flex-1"
@@ -80,7 +73,7 @@
                 :data-message-id="item.message.id"
                 :data-message-index="index">
                 <!-- 信息间隔时间 -->
-                <span class="text-(12px #909090) select-none p-4px" v-if="item.timeBlock" @click.stop>
+                <span class="text-(12px --color-text-tertiary) select-none p-4px" v-if="item.timeBlock" @click.stop>
                   {{ timeToStr(item.message.sendTime) }}
                 </span>
                 <!-- 消息内容容器 -->
@@ -91,7 +84,7 @@
                     item.message.type === MsgEnum.RECALL ? 'min-h-22px' : 'min-h-62px',
                     isGroup ? 'p-[14px_10px_14px_20px]' : 'chat-single p-[4px_10px_10px_20px]',
                     { 'active-reply': activeReply === item.message.id },
-                    { 'bg-#90909020': computeMsgHover(item) }
+                    { 'bg-[--color-text-tertiary]20': computeMsgHover(item) }
                   ]"
                   @click="
                     () => {
@@ -121,7 +114,7 @@
       :style="{ bottom: '24px', right: '50px' }">
       <div class="float-box" :class="{ max: currentNewMsgCount?.count > 99 }" @click="handleFloatButtonClick">
         <n-flex justify="space-between" align="center">
-          <n-icon :color="currentNewMsgCount?.count > 99 ? '#ce304f' : '#13987f'">
+          <n-icon :color="currentNewMsgCount?.count > 99 ? 'var(--color-danger)' : 'var(--color-primary)'">
             <svg>
               <use href="#double-down"></use>
             </svg>
@@ -129,7 +122,7 @@
           <span
             v-if="currentNewMsgCount?.count && currentNewMsgCount.count > 0"
             class="text-12px"
-            :class="{ 'color-#ce304f': currentNewMsgCount?.count > 99 }">
+            :class="{ 'color-[--color-danger]': currentNewMsgCount?.count > 99 }">
             {{ t('home.chat_main.new_messages', { count: newMsgCountLabel }) }}
           </span>
         </n-flex>
@@ -159,7 +152,9 @@
         <span class="text-14px">{{ tips }}</span>
 
         <n-flex justify="end">
-          <n-button @click="handleConfirm" class="w-78px" color="#13987f">{{ t('home.chat_main.confirm') }}</n-button>
+          <n-button @click="handleConfirm" class="w-78px" color="var(--color-primary)">
+            {{ t('home.chat_main.confirm') }}
+          </n-button>
           <n-button @click="modalShow = false" class="w-78px" secondary>{{ t('home.chat_main.cancel') }}</n-button>
         </n-flex>
       </div>
@@ -189,22 +184,28 @@
           v-model:value="groupNicknameValue"
           :placeholder="t('home.chat_main.group_nickname.placeholder')"
           :maxlength="12"
-          class="border-(1px solid #90909080)"
+          class="border-(1px solid var(--color-text-tertiary)/80)"
           :disabled="groupNicknameSubmitting"
           clearable
           @keydown.enter.prevent="handleGroupNicknameConfirm" />
-        <p v-if="groupNicknameError" class="text-(12px #d03553)">{{ groupNicknameError }}</p>
+        <p v-if="groupNicknameError" class="text-(12px [--color-danger])">{{ groupNicknameError }}</p>
         <n-flex justify="end" :size="12">
           <n-button @click="groupNicknameModalVisible = false" :disabled="groupNicknameSubmitting" secondary>
             {{ t('home.chat_main.cancel') }}
           </n-button>
-          <n-button color="#13987f" :loading="groupNicknameSubmitting" @click="handleGroupNicknameConfirm">
+          <n-button color="var(--color-primary)" :loading="groupNicknameSubmitting" @click="handleGroupNicknameConfirm">
             {{ t('home.chat_main.confirm') }}
           </n-button>
         </n-flex>
       </div>
     </div>
   </n-modal>
+
+  <!-- 线程面板 -->
+  <ThreadPanel
+    v-model:show="threadPanelVisible"
+    :original-message="threadOriginalMessage ?? undefined"
+    :thread-id="activeThreadId" />
 </template>
 
 <script setup lang="ts">
@@ -213,6 +214,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { useDebounceFn, useEventListener, useResizeObserver, useTimeoutFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import { MittEnum, MsgEnum, ScrollIntentEnum } from '@/enums'
 import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain.ts'
 import { useAutoScrollGuard } from '@/hooks/useAutoScrollGuard'
@@ -220,19 +222,21 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { usePopover } from '@/hooks/usePopover.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
-import type { MessageType } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useGlobalStore } from '@/stores/global'
-import { useUserStore } from '@/stores/user.ts'
+import type { MessageType } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useUserStore } from '@/stores/domains/user/user'
 import { audioManager } from '@/utils/AudioManager'
 import { timeToStr } from '@/utils/ComputedTime'
-import { useAnnouncementStore } from '@/stores/announcement'
+import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
 import FileUploadProgress from '@/components/rightBox/FileUploadProgress.vue'
-import PinnedEventsBar from '@/components/pinned/PinnedEventsBar.vue'
+import ThreadPanel from '@/components/thread/ThreadPanel.vue'
 import { createLogger } from '@/utils/Logger'
+import type { Announcement } from '@/stores/domains/chat/announcement'
+import type { UnlistenFn } from '@tauri-apps/api/event'
 
 const logger = createLogger('ChatMain')
 const timerManager = useTimerManager()
@@ -273,6 +277,41 @@ const {
   handleGroupNicknameConfirm
 } = chatMainContext
 const { enableScroll } = usePopover(selectKey, 'image-chat-main')
+
+const threadPanelVisible = ref(false)
+const activeThreadId = ref('')
+const threadOriginalMessage = ref<{
+  id: string
+  senderId: string
+  senderName: string
+  senderAvatar: string
+  content: string
+  timestamp: number
+} | null>(null)
+
+defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId })
+
+const handleOpenThread = ({ eventId }: { eventId: string; roomId?: string }) => {
+  activeThreadId.value = eventId
+  const msg = chatStore.chatMessageList.find((m) => m.message.id === eventId)
+  if (msg) {
+    const bodyContent =
+      typeof msg.message.body === 'object' && msg.message.body !== null
+        ? (msg.message.body as { content?: string }).content
+        : msg.message.body
+    threadOriginalMessage.value = {
+      id: msg.message.id,
+      senderId: msg.fromUser.uid,
+      senderName: msg.fromUser.username ?? '',
+      senderAvatar: msg.fromUser.avatar ?? '',
+      content: typeof bodyContent === 'string' ? bodyContent : '',
+      timestamp: msg.message.sendTime
+    }
+  }
+  threadPanelVisible.value = true
+}
+
+useMitt.on(MittEnum.OPEN_THREAD, handleOpenThread)
 
 const isMobileRef = ref(isMobile())
 
@@ -356,7 +395,6 @@ const showScrollbar = ref<boolean>(true)
 const isAnnouncementHover = ref<boolean>(false)
 const topAnnouncement = ref<AnnouncementData | null>(null)
 const hoverId = ref('')
-const showPinnedBar = ref(true)
 // 添加标记，用于识别是否正在加载历史消息
 const isLoadingMore = ref(false)
 // 避免初始化自动触发顶部加载
@@ -422,8 +460,8 @@ const handleWheel = (event: WheelEvent) => {
 const stopWheelListener = useEventListener(scrollContainerRef, 'wheel', handleWheel, { passive: false })
 
 // 监听公告更新和清空事件的变量
-let announcementUpdatedListener: any = null
-let announcementClearListener: any = null
+let announcementUpdatedListener: UnlistenFn | null = null
+let announcementClearListener: UnlistenFn | null = null
 // 获取置顶公告
 const loadTopAnnouncement = async (roomId?: string): Promise<void> => {
   const targetRoomId = roomId ?? currentRoomId.value
@@ -440,9 +478,9 @@ const loadTopAnnouncement = async (roomId?: string): Promise<void> => {
     }
 
     if (data && data.records.length > 0) {
-      const topNotice = data.records.find((item: any) => item.top)
+      const topNotice = data.records.find((item: Announcement) => item.top)
       const oldAnnouncement = topAnnouncement.value
-      topAnnouncement.value = topNotice || null
+      topAnnouncement.value = (topNotice as unknown as AnnouncementData) || null
 
       if (oldAnnouncement !== topAnnouncement.value) {
         const container = scrollContainerRef.value
@@ -513,7 +551,7 @@ watchPostEffect(() => {
 // 跳转到回复消息
 const jumpToReplyMsg = async (key: string): Promise<void> => {
   // 先在当前列表中尝试查找
-  let messageIndex = chatStore.chatMessageList.findIndex((msg: any) => msg.message.id === String(key))
+  let messageIndex = chatStore.getMsgIndex(String(key))
 
   // 如果找到了，直接滚动到该消息
   if (messageIndex !== -1) {
@@ -540,7 +578,7 @@ const jumpToReplyMsg = async (key: string): Promise<void> => {
     await chatStore.loadMore()
 
     // 在新加载的消息中查找
-    messageIndex = chatStore.chatMessageList.findIndex((msg) => msg.message.id === key)
+    messageIndex = chatStore.getMsgIndex(key)
 
     if (messageIndex !== -1) {
       foundMessage = true
@@ -573,9 +611,7 @@ const scrollToIndex = (index: number, behavior: ScrollBehavior = 'auto'): void =
   const container = scrollContainerRef.value
   if (!container || index < 0) return
 
-  // 查找对应的消息元素
-  const messageElements = container.querySelectorAll('[data-message-index]')
-  const targetElement = messageElements[index] as HTMLElement
+  const targetElement = container.querySelector(`[data-message-index="${index}"]`) as HTMLElement | null
 
   if (targetElement) {
     targetElement.scrollIntoView({ behavior, block: 'center', inline: 'nearest' })
@@ -821,11 +857,6 @@ const handleViewAnnouncement = (): void => {
   })
 }
 
-const handleJumpToMessage = async (eventId: string): Promise<void> => {
-  if (!eventId) return
-  await jumpToReplyMsg(`Q${eventId}`)
-}
-
 // 监听滚动到底部的事件
 let scrollBottomScheduled = false
 useMitt.on(MittEnum.CHAT_SCROLL_BOTTOM, () => {
@@ -846,28 +877,17 @@ onMounted(() => {
   // 初始化监听器
   const initListeners = async () => {
     try {
-      // 监听公告清空事件
-      announcementClearListener = await appWindow.listen('announcementClear', () => {
-        topAnnouncement.value = null
+      // 监听公告更新
+      announcementUpdatedListener = await appWindow.listen<{ roomId: string }>('announcementUpdated', async (event) => {
+        if (event.payload.roomId === currentRoomId.value) {
+          await loadTopAnnouncement()
+        }
       })
 
-      // 监听公告更新事件
-      announcementUpdatedListener = await appWindow.listen('announcementUpdated', async (event: any) => {
-        info(`公告更新事件: ${event.payload}`)
-        if (event.payload) {
-          const { hasAnnouncements, topAnnouncement: newTopAnnouncement } = event.payload
-          if (hasAnnouncements && newTopAnnouncement) {
-            // 只有置顶公告才更新顶部提示
-            if (newTopAnnouncement.top) {
-              topAnnouncement.value = newTopAnnouncement
-            } else if (topAnnouncement.value) {
-              // 如果当前有显示置顶公告，但新公告不是置顶的，保持不变
-              await loadTopAnnouncement()
-            }
-          } else {
-            // 如果没有公告，清空显示
-            topAnnouncement.value = null
-          }
+      // 监听公告清空
+      announcementClearListener = await appWindow.listen<{ roomId: string }>('announcementClear', async (event) => {
+        if (event.payload.roomId === currentRoomId.value) {
+          topAnnouncement.value = null
         }
       })
     } catch (error) {
@@ -902,7 +922,7 @@ onUnmounted(() => {
   z-index: 10;
   width: fit-content;
   user-select: none;
-  color: #13987f;
+  color: var(--color-primary);
   cursor: pointer;
 }
 

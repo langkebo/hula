@@ -24,21 +24,18 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends { id?: string | number; [key: string]: any }">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 
-interface ListItem {
-  id?: string | number
-  [key: string]: any
-}
+type ListItem = { id?: string | number; [key: string]: any }
 
-interface VisibleItem extends ListItem {
+type VisibleItem<TItem extends ListItem> = TItem & {
   _index: number
 }
 
 const props = withDefaults(
   defineProps<{
-    items: ListItem[]
+    items: T[]
     itemHeight?: number
     buffer?: number
     loading?: boolean
@@ -112,18 +109,18 @@ const endIndex = computed(() => {
   return Math.min(props.items.length - 1, startIndex.value + visibleCount.value)
 })
 
-const visibleItems = computed<VisibleItem[]>(() => {
+const visibleItems = computed<VisibleItem<T>[]>(() => {
   return props.items.slice(startIndex.value, endIndex.value + 1).map((item, idx) => ({
     ...item,
     _index: startIndex.value + idx
   }))
 })
 
-function getKey(item: ListItem): string | number {
+function getKey(item: T): string | number {
   return item[props.keyField] ?? item.id ?? JSON.stringify(item)
 }
 
-function getId(item: ListItem): string | number {
+function getId(item: T): string | number {
   return item[props.keyField] ?? item.id ?? JSON.stringify(item)
 }
 

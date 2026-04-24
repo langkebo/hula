@@ -113,10 +113,10 @@ import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener'
 import { MessageStatusEnum, TauriCommand } from '@/enums'
 import { useDownload } from '@/hooks/useDownload'
 import type { FileBody, FilesMeta, MsgType } from '@/services/types'
-import { useFileDownloadStore } from '@/stores/fileDownload'
-import { useGlobalStore } from '@/stores/global'
-import { useUserStore } from '@/stores/user'
-import { useChatStore } from '@/stores/chat'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { formatBytes, getFileSuffix } from '@/utils/Formatting'
 import { getFilesMeta } from '@/utils/PathUtil'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
@@ -180,7 +180,7 @@ const persistFileLocalPath = async (absolutePath: string) => {
     body: nextBody
   })
   const updated = { ...target, message: { ...target.message, body: nextBody } }
-  await invokeSilently(TauriCommand.SAVE_MSG, { data: updated as any })
+  await invokeSilently(TauriCommand.SAVE_MSG, { data: updated })
 }
 
 const revealInDirSafely = async (targetPath?: string | null) => {

@@ -3,7 +3,7 @@ import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isMac } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('GlobalShortcut')
@@ -202,7 +202,7 @@ export const useGlobalShortcut = () => {
         try {
           await unregister(shortcut)
           logger.debug(`预清理快捷键 [${config.key}]: ${shortcut}`)
-        } catch (_e) {
+        } catch {
           logger.debug(`快捷键 [${config.key}] 未注册: ${shortcut}`)
         }
       }
@@ -238,7 +238,7 @@ export const useGlobalShortcut = () => {
     for (const shortcut of shortcuts) {
       try {
         await unregister(shortcut)
-      } catch (_e) {
+      } catch {
         logger.debug(`强制清理 ${shortcut} (可能未注册)`)
       }
     }
@@ -334,8 +334,7 @@ export const useGlobalShortcut = () => {
 
     // 监听全局快捷键开关变化
     listen('global-shortcut-enabled-changed', (event) => {
-      const payload = event.payload as { enabled?: boolean }
-      const enabled = payload?.enabled
+      const enabled = (event.payload as Record<string, unknown>)?.enabled
       if (typeof enabled === 'boolean') {
         handleGlobalShortcutToggle(enabled)
       } else {
@@ -346,8 +345,7 @@ export const useGlobalShortcut = () => {
     // 监听每个快捷键的更新事件
     for (const config of shortcutConfigs) {
       listen(config.updateEventName, (event) => {
-        const payload = event.payload as { shortcut?: string }
-        const newShortcut = payload?.shortcut
+        const newShortcut = (event.payload as Record<string, unknown>)?.shortcut as string | undefined
         if (newShortcut) {
           // 只有全局快捷键开启时才处理更新
           const globalEnabled = settingStore.shortcuts?.globalEnabled ?? false

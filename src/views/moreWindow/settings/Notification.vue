@@ -9,7 +9,7 @@
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="8">
             <span>{{ t('setting.notice.message_sound') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.notice.message_sound_descript') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.notice.message_sound_descript') }}</span>
           </n-flex>
 
           <n-switch size="small" v-model:value="messageSound" />
@@ -20,7 +20,7 @@
         <n-flex align="center" justify="space-between" class="gap-12px flex-wrap">
           <n-flex vertical :size="8" class="min-w-160px flex-1">
             <span>{{ t('setting.notice.message_volume') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.notice.message_volume_descript') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.notice.message_volume_descript') }}</span>
           </n-flex>
 
           <n-flex align="center" :size="12">
@@ -60,7 +60,7 @@
       </n-flex>
 
       <n-flex class="item" :size="0" vertical>
-        <div v-if="filteredGroupSessions.length === 0" class="text-(12px #909090) text-center py-20px">
+        <div v-if="filteredGroupSessions.length === 0" class="text-(12px --color-text-tertiary) text-center py-20px">
           {{ searchKeyword ? '未找到匹配的群聊' : '暂无群聊' }}
         </div>
 
@@ -76,7 +76,7 @@
           </n-flex>
 
           <n-flex v-if="selectedSessions.length > 0" align="center" :size="8">
-            <span class="text-(12px #909090)">{{ t('setting.notice.batch_set') }}:</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.notice.batch_set') }}:</span>
             <n-button
               size="small"
               type="primary"
@@ -102,13 +102,13 @@
         <!-- 进度条显示 -->
         <n-flex v-if="isProcessing" vertical :size="12" class="p-12px">
           <n-flex align="center" justify="space-between">
-            <span class="text-(12px #909090)">正在处理：{{ processedCount }}/{{ totalCount }}</span>
-            <span class="text-(12px #909090)">{{ progress }}%</span>
+            <span class="text-(12px --color-text-tertiary)">正在处理：{{ processedCount }}/{{ totalCount }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ progress }}%</span>
           </n-flex>
           <n-progress
             type="line"
-            :color="'#13987f'"
-            :rail-color="'#13987f30'"
+            :color="'var(--color-primary)'"
+            :rail-color="'var(--color-primary)/30'"
             :percentage="progress"
             :show-indicator="false" />
         </n-flex>
@@ -139,7 +139,7 @@
                 trigger="click"
                 :scrollable="false"
                 @update:show="(show: boolean) => (isDropdownShow = show)">
-                <n-button size="small" :color="'#13987f'" text class="text-(12px [--text-color])">
+                <n-button size="small" :color="'var(--color-primary)'" text class="text-(12px [--text-color])">
                   {{ getNotificationStatusText(session) }}
                 </n-button>
               </n-dropdown>
@@ -155,12 +155,11 @@
 
 <script setup lang="ts">
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
-import type { SessionItem } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useSettingStore } from '@/stores/setting'
+import { matrixRoomNotificationService } from '@/services/matrix'
+import type { SessionItem } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixPushService } from '@/services/matrix'
-import { PushRuleKind } from 'matrix-js-sdk'
 import { assign } from 'es-toolkit/compat'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
@@ -258,7 +257,7 @@ const getNotificationOptions = (session: SessionItem) => {
       key: 'allow',
       icon:
         !session.shield && session.muteNotification === NotificationTypeEnum.RECEPTION
-          ? () => h('svg', { class: 'size-14px text-#13987f' }, [h('use', { href: '#check-small' })])
+          ? () => h('svg', { class: 'size-14px text-[--color-primary]' }, [h('use', { href: '#check-small' })])
           : undefined
     },
     {
@@ -266,14 +265,14 @@ const getNotificationOptions = (session: SessionItem) => {
       key: 'mute',
       icon:
         !session.shield && session.muteNotification === NotificationTypeEnum.NOT_DISTURB
-          ? () => h('svg', { class: 'size-14px text-#13987f' }, [h('use', { href: '#check-small' })])
+          ? () => h('svg', { class: 'size-14px text-[--color-primary]' }, [h('use', { href: '#check-small' })])
           : undefined
     },
     {
       label: t('setting.notice.group_notic_type.block'),
       key: 'shield',
       icon: session.shield
-        ? () => h('svg', { class: 'size-14px text-#13987f' }, [h('use', { href: '#check-small' })])
+        ? () => h('svg', { class: 'size-14px text-[--color-primary]' }, [h('use', { href: '#check-small' })])
         : undefined
     }
   ]
@@ -392,12 +391,13 @@ const handleNotificationChange = async (
   try {
     switch (key) {
       case 'allow':
+        // 如果当前是屏蔽状态，需要先取消屏蔽
         if (session.shield) {
-          await matrixPushService.unmuteRoom(session.roomId)
+          await matrixRoomNotificationService.setRoomShield(session.roomId, false)
           applySessionUpdate(session, { shield: false })
         }
 
-        await matrixPushService.deletePushRule(PushRuleKind.Override, session.roomId)
+        await matrixRoomNotificationService.setRoomNotification(session.roomId, NotificationTypeEnum.RECEPTION)
 
         applySessionUpdate(session, {
           muteNotification: NotificationTypeEnum.RECEPTION
@@ -409,17 +409,19 @@ const handleNotificationChange = async (
         break
 
       case 'mute':
+        // 如果当前是屏蔽状态，需要先取消屏蔽
         if (session.shield) {
-          await matrixPushService.unmuteRoom(session.roomId)
+          await matrixRoomNotificationService.setRoomShield(session.roomId, false)
           applySessionUpdate(session, { shield: false })
         }
 
-        await matrixPushService.muteRoom(session.roomId)
+        await matrixRoomNotificationService.setRoomNotification(session.roomId, NotificationTypeEnum.NOT_DISTURB)
 
         applySessionUpdate(session, {
           muteNotification: NotificationTypeEnum.NOT_DISTURB
         })
 
+        // 设置免打扰时更新全局未读数
         chatStore.updateTotalUnreadCount()
         if (!silent) {
           window.$message?.success(t('setting.notice.message_reminder_silent'))
@@ -427,7 +429,7 @@ const handleNotificationChange = async (
         break
 
       case 'shield':
-        await matrixPushService.muteRoom(session.roomId)
+        await matrixRoomNotificationService.setRoomShield(session.roomId, true)
 
         applySessionUpdate(session, {
           shield: true

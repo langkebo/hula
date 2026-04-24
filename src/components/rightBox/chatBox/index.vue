@@ -32,7 +32,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { useGlobalStore } from '@/stores/global'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { storeToRefs } from 'pinia'
 import { UserType } from '@/enums'
 
@@ -103,14 +103,14 @@ const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
     &::before {
       opacity: 1;
       transform: scaleY(1.2);
-      background: #13987f80;
+      background: var(--color-primary) / 80;
     }
 
     &::after {
       opacity: 1;
       box-shadow:
-        0 -3px 0 0 #13987f80,
-        0 3px 0 0 #13987f80;
+        0 -3px 0 0 var(--color-primary) / 80,
+        0 3px 0 0 var(--color-primary) / 80;
     }
   }
 }

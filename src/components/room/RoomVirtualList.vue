@@ -35,8 +35,9 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import VirtualList from '@/components/common/VirtualList.vue'
 import RoomListItem from './RoomListItem.vue'
-import { useRoomStore, type RoomInfo } from '@/stores/room'
-import { useMatrixStore } from '@/stores/matrix'
+import { useRoomStore } from '@/stores/domains/chat/room'
+import type { RoomInfo } from '@/services/types'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import matrixSlidingSyncService from '@/services/matrix/MatrixSlidingSyncService'
 import { info } from '@tauri-apps/plugin-log'
 import { roomPerformanceMonitor } from '@/utils/RoomPerformance'
@@ -89,8 +90,8 @@ const handleScroll = (_event: Event) => {
 }
 
 // 处理可见项变化
-const handleVisibleItemsChange = (visibleIds: string[]) => {
-  visibleRoomIds.value = visibleIds
+const handleVisibleItemsChange = (ids: string[]) => {
+  visibleRoomIds.value = ids
 }
 
 // 处理加载更多
@@ -100,6 +101,7 @@ const handleLoadMore = async () => {
   isLoadingMore.value = true
   try {
     await roomStore.loadRooms()
+    hasMore.value = false
   } catch (error) {
     logger.error('加载更多房间失败:', error)
   } finally {

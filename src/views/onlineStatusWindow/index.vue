@@ -1,5 +1,5 @@
 <template>
-  <main class="size-full bg-#fff select-none">
+  <main class="size-full bg-[--center-bg-color] select-none">
     <ActionBar class="absolute right-0 w-full" :shrink="false" :max-w="false" :min-w="false" />
 
     <n-flex
@@ -15,11 +15,14 @@
       </n-flex>
 
       <!-- 状态 -->
-      <n-flex vertical class="w-full h-100vh bg-#f1f1f1 rounded-6px box-border p-13px" data-tauri-drag-region>
+      <n-flex
+        vertical
+        class="w-full h-100vh bg-[--right-bg-color] rounded-6px box-border p-13px"
+        data-tauri-drag-region>
         <n-scrollbar style="max-height: 215px">
           <n-flex align="center" :size="10">
             <n-flex @click="handleResetState" vertical justify="center" align="center" :size="8" class="status-item">
-              <svg class="size-24px color-#d03553">
+              <svg class="size-24px color-[--color-danger]">
                 <use href="#forbid"></use>
               </svg>
               <span class="text-11px" :title="t('auth.onlineStatus.reset_title')">
@@ -55,13 +58,10 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OnlineStatusWindow')
 import type { UserState } from '@/services/types'
-import { useUserStore } from '@/stores/user'
-import { useUserStatusStore } from '@/stores/userStatus'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts'
-import { matrixPresenceService } from '@/services/matrix'
 
 const userStatusStore = useUserStatusStore()
-const userStore = useUserStore()
 const { stateList, stateId } = storeToRefs(userStatusStore)
 const { currentState, statusIcon, statusTitle, statusBgColor, hasCustomState } = useOnlineStatus()
 const { t } = useI18n()
@@ -91,18 +91,7 @@ watchEffect(() => {
  */
 const handleActive = async (item: UserState) => {
   try {
-    const presenceMap: Record<string, 'online' | 'offline' | 'unavailable' | 'busy'> = {
-      '1': 'online',
-      '2': 'busy',
-      '3': 'unavailable',
-      '4': 'offline'
-    }
-    const presence = presenceMap[item.id] || 'online'
-    await matrixPresenceService.setPresence(presence)
-
-    stateId.value = item.id
-    userStore.userInfo!.userStateId = item.id
-
+    await userStatusStore.changeCurrentUserState(item)
     window.$message?.success(t('auth.onlineStatus.messages.success'))
   } catch (error) {
     logger.error('更新状态失败:', error)
@@ -136,12 +125,11 @@ onMounted(async () => {
     overflow: hidden;
     text-overflow: ellipsis;
     -webkit-line-clamp: 2;
-    line-clamp: 2;
     -webkit-box-orient: vertical;
     white-space: normal;
   }
   &:not(.active):hover {
-    background: #ccc;
+    background: var(--disabled-color);
     cursor: pointer;
   }
 }
@@ -157,7 +145,7 @@ onMounted(async () => {
 
 :deep(.action-close) {
   svg {
-    color: #404040;
+    color: var(--action-bar-icon-color);
   }
 }
 /** 隐藏naive UI的滚动条 */

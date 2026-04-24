@@ -11,13 +11,13 @@
 import { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { Locale } from 'vue-i18n'
-import { useSettingStore } from '../stores/setting'
+import { useSettingStore } from '../stores/domains/settings/setting'
 import { setDayjsLocale } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('I18n')
 
-const i18n = createI18n({
+export const i18n = createI18n({
   legacy: false,
   locale: ''
 })

@@ -78,6 +78,119 @@
         <n-select v-model:value="emojiSize" :options="emojiSizeOptions" style="width: 120px" />
       </div>
     </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">阅后即焚默认</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">新私聊默认开启阅后即焚</span>
+          <span class="setting-desc">创建新私聊时自动开启阅后即焚</span>
+        </div>
+        <n-switch v-model:value="burnDefaultEnabled" @update:value="handleBurnDefaultToggle" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">默认焚毁时间</span>
+          <span class="setting-desc">阅后即焚消息的默认焚毁时间</span>
+        </div>
+        <n-select
+          v-model:value="burnDefaultDuration"
+          :options="burnDurationOptions"
+          style="width: 130px"
+          @update:value="handleBurnDurationChange" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">显示焚毁倒计时</span>
+          <span class="setting-desc">在消息上显示焚毁倒计时进度</span>
+        </div>
+        <n-switch v-model:value="burnShowCountdown" @update:value="handleBurnCountdownToggle" />
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">线程偏好</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">参与线程时自动订阅</span>
+          <span class="setting-desc">在线程中发送消息后自动订阅该线程</span>
+        </div>
+        <n-switch v-model:value="threadAutoSubscribe" @update:value="handleThreadAutoSubscribe" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">在房间内显示线程入口</span>
+          <span class="setting-desc">在消息列表中显示线程入口图标</span>
+        </div>
+        <n-switch v-model:value="threadShowInRoom" @update:value="handleThreadShowInRoom" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">线程通知级别</span>
+          <span class="setting-desc">控制线程消息的通知行为</span>
+        </div>
+        <n-select
+          v-model:value="threadNotificationLevel"
+          :options="threadNotificationOptions"
+          style="width: 130px"
+          @update:value="handleThreadNotificationChange" />
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">空间偏好</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">加入空间时自动加入其房间</span>
+          <span class="setting-desc">加入空间后自动加入其中的所有房间</span>
+        </div>
+        <n-switch v-model:value="spaceAutoJoinRooms" @update:value="handleSpaceAutoJoin" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">显示子空间</span>
+          <span class="setting-desc">在空间列表中显示嵌套的子空间</span>
+        </div>
+        <n-switch v-model:value="spaceShowSubspaces" @update:value="handleSpaceShowSubspaces" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">空间默认通知</span>
+          <span class="setting-desc">新加入空间的默认通知级别</span>
+        </div>
+        <n-select
+          v-model:value="spaceDefaultNotification"
+          :options="spaceNotificationOptions"
+          style="width: 130px"
+          @update:value="handleSpaceNotificationChange" />
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">隐私偏好</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">发送已读回执</span>
+          <span class="setting-desc">让对方知道你已读消息</span>
+        </div>
+        <n-switch v-model:value="sendReadReceipts" @update:value="handleReadReceiptsToggle" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">发送输入状态</span>
+          <span class="setting-desc">让对方看到你正在输入</span>
+        </div>
+        <n-switch v-model:value="sendTypingNotifications" @update:value="handleTypingToggle" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -85,7 +198,7 @@
 import { ref, onMounted } from 'vue'
 import { NSelect, NSwitch, NDivider, useMessage } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useI18n } from 'vue-i18n'
 
 defineOptions({
@@ -131,6 +244,41 @@ const linkPreview = ref(true)
 const emojiConvert = ref(true)
 const emojiSize = ref('medium')
 
+const burnDefaultEnabled = ref(false)
+const burnDefaultDuration = ref(60)
+const burnShowCountdown = ref(true)
+
+const threadAutoSubscribe = ref(true)
+const threadShowInRoom = ref(true)
+const threadNotificationLevel = ref('participate')
+
+const spaceAutoJoinRooms = ref(false)
+const spaceShowSubspaces = ref(true)
+const spaceDefaultNotification = ref('all_messages')
+
+const sendReadReceipts = ref(true)
+const sendTypingNotifications = ref(true)
+
+const burnDurationOptions = [
+  { label: '30秒', value: 30 },
+  { label: '1分钟', value: 60 },
+  { label: '5分钟', value: 300 },
+  { label: '1小时', value: 3600 },
+  { label: '24小时', value: 86400 }
+]
+
+const threadNotificationOptions = [
+  { label: '所有消息', value: 'all' },
+  { label: '仅参与的', value: 'participate' },
+  { label: '无通知', value: 'none' }
+]
+
+const spaceNotificationOptions = [
+  { label: '所有消息', value: 'all_messages' },
+  { label: '仅提及', value: 'mentions_only' },
+  { label: '无通知', value: 'none' }
+]
+
 onMounted(() => {
   const savedConfirm = localStorage.getItem('hula-message-confirm')
   if (savedConfirm !== null) {
@@ -150,6 +298,54 @@ onMounted(() => {
   const savedEmojiSize = localStorage.getItem('hula-emoji-size')
   if (savedEmojiSize) {
     emojiSize.value = savedEmojiSize
+  }
+
+  const savedBurnDefault = localStorage.getItem('hula-burn-default-enabled')
+  if (savedBurnDefault !== null) {
+    burnDefaultEnabled.value = savedBurnDefault === 'true'
+  }
+  const savedBurnDuration = localStorage.getItem('hula-burn-default-duration')
+  if (savedBurnDuration) {
+    burnDefaultDuration.value = parseInt(savedBurnDuration, 10)
+  }
+  const savedBurnCountdown = localStorage.getItem('hula-burn-show-countdown')
+  if (savedBurnCountdown !== null) {
+    burnShowCountdown.value = savedBurnCountdown === 'true'
+  }
+
+  const savedThreadAuto = localStorage.getItem('hula-thread-auto-subscribe')
+  if (savedThreadAuto !== null) {
+    threadAutoSubscribe.value = savedThreadAuto === 'true'
+  }
+  const savedThreadShow = localStorage.getItem('hula-thread-show-in-room')
+  if (savedThreadShow !== null) {
+    threadShowInRoom.value = savedThreadShow === 'true'
+  }
+  const savedThreadNotif = localStorage.getItem('hula-thread-notification-level')
+  if (savedThreadNotif) {
+    threadNotificationLevel.value = savedThreadNotif
+  }
+
+  const savedSpaceAutoJoin = localStorage.getItem('hula-space-auto-join')
+  if (savedSpaceAutoJoin !== null) {
+    spaceAutoJoinRooms.value = savedSpaceAutoJoin === 'true'
+  }
+  const savedSpaceShowSub = localStorage.getItem('hula-space-show-subspaces')
+  if (savedSpaceShowSub !== null) {
+    spaceShowSubspaces.value = savedSpaceShowSub === 'true'
+  }
+  const savedSpaceNotif = localStorage.getItem('hula-space-default-notification')
+  if (savedSpaceNotif) {
+    spaceDefaultNotification.value = savedSpaceNotif
+  }
+
+  const savedReadReceipts = localStorage.getItem('hula-send-read-receipts')
+  if (savedReadReceipts !== null) {
+    sendReadReceipts.value = savedReadReceipts === 'true'
+  }
+  const savedTyping = localStorage.getItem('hula-send-typing-notifications')
+  if (savedTyping !== null) {
+    sendTypingNotifications.value = savedTyping === 'true'
   }
 })
 
@@ -179,6 +375,64 @@ function handleLinkPreviewChange(value: boolean) {
 function handleEmojiChange(value: boolean) {
   localStorage.setItem('hula-emoji-convert', value.toString())
   message.success(value ? '已启用表情转换' : '已禁用表情转换')
+}
+
+function handleBurnDefaultToggle(value: boolean) {
+  localStorage.setItem('hula-burn-default-enabled', value.toString())
+  message.success(value ? '已启用新私聊默认阅后即焚' : '已禁用新私聊默认阅后即焚')
+}
+
+function handleBurnDurationChange(value: number) {
+  localStorage.setItem('hula-burn-default-duration', value.toString())
+  const label = burnDurationOptions.find((o) => o.value === value)?.label
+  message.success(`默认焚毁时间已设置为${label}`)
+}
+
+function handleBurnCountdownToggle(value: boolean) {
+  localStorage.setItem('hula-burn-show-countdown', value.toString())
+  message.success(value ? '已启用焚毁倒计时' : '已禁用焚毁倒计时')
+}
+
+function handleThreadAutoSubscribe(value: boolean) {
+  localStorage.setItem('hula-thread-auto-subscribe', value.toString())
+  message.success(value ? '已启用线程自动订阅' : '已禁用线程自动订阅')
+}
+
+function handleThreadShowInRoom(value: boolean) {
+  localStorage.setItem('hula-thread-show-in-room', value.toString())
+  message.success(value ? '已启用房间内线程入口' : '已禁用房间内线程入口')
+}
+
+function handleThreadNotificationChange(value: string) {
+  localStorage.setItem('hula-thread-notification-level', value)
+  const label = threadNotificationOptions.find((o) => o.value === value)?.label
+  message.success(`线程通知级别已设置为${label}`)
+}
+
+function handleSpaceAutoJoin(value: boolean) {
+  localStorage.setItem('hula-space-auto-join', value.toString())
+  message.success(value ? '已启用空间自动加入房间' : '已禁用空间自动加入房间')
+}
+
+function handleSpaceShowSubspaces(value: boolean) {
+  localStorage.setItem('hula-space-show-subspaces', value.toString())
+  message.success(value ? '已启用显示子空间' : '已禁用显示子空间')
+}
+
+function handleSpaceNotificationChange(value: string) {
+  localStorage.setItem('hula-space-default-notification', value)
+  const label = spaceNotificationOptions.find((o) => o.value === value)?.label
+  message.success(`空间默认通知已设置为${label}`)
+}
+
+function handleReadReceiptsToggle(value: boolean) {
+  localStorage.setItem('hula-send-read-receipts', value.toString())
+  message.success(value ? '已启用发送已读回执' : '已禁用发送已读回执')
+}
+
+function handleTypingToggle(value: boolean) {
+  localStorage.setItem('hula-send-typing-notifications', value.toString())
+  message.success(value ? '已启用发送输入状态' : '已禁用发送输入状态')
 }
 </script>
 
@@ -220,7 +474,7 @@ function handleEmojiChange(value: boolean) {
 
 .setting-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 </style>

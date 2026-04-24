@@ -59,7 +59,7 @@
                 <div class="file-meta-info">
                   <div class="flex-center gap-4px">
                     <p>{{ t('fileManager.list.meta.from') }}</p>
-                    <p class="file-sender">{{ getUserDisplayName(file.sender?.id) }}</p>
+                    <p class="file-sender">{{ file.sender?.id ? getUserDisplayName(file.sender.id) : '' }}</p>
                   </div>
                   <p class="opacity-80">{{ file.uploadTime }}</p>
                 </div>
@@ -76,7 +76,7 @@
             {{ t('fileManager.search.clear') }}
           </n-button>
 
-          <n-button v-if="selectedUser" @click="clearUserFilter" ghost color="#13987f" size="small">
+          <n-button v-if="selectedUser" @click="clearUserFilter" ghost color="var(--color-primary)" size="small">
             {{ t('fileManager.search.showAllUsers') }}
           </n-button>
         </template>
@@ -91,16 +91,33 @@ import { useI18n } from 'vue-i18n'
 import ContextMenu from '@/components/common/ContextMenu.vue'
 import { useDownload } from '@/hooks/useDownload'
 import type { FileBody } from '@/services/types'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import EmptyState from './EmptyState.vue'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('FileContent')
 
+type FileItem = {
+  id: string
+  fileName?: string
+  name?: string
+  originalName?: string
+  title?: string
+  fileType?: string
+  fileSize?: number
+  downloadUrl?: string
+  url?: string
+  uploadTime: string
+  sender?: {
+    id: string
+    name?: string
+  }
+}
+
 type TimeGroup = {
   date: string
   displayDate: string
-  files: any[]
+  files: FileItem[]
 }
 
 type User = {
@@ -139,7 +156,7 @@ const normalizedFileSearchKeyword = computed(() => fileSearchKeyword.value.trim(
 const hasActiveSearch = computed(() => normalizedFileSearchKeyword.value.length > 0)
 
 // 检查文件是否匹配搜索关键词
-const matchesFileByKeyword = (file: any, keyword: string) => {
+const matchesFileByKeyword = (file: FileItem, keyword: string) => {
   if (!keyword) {
     return true
   }
@@ -172,7 +189,7 @@ const displayedTimeGroupedFiles = computed(() => {
 
   return timeGroupedFiles.value
     .map((group) => {
-      const matchedFiles = group.files.filter((file: any) => matchesFileByKeyword(file, keyword))
+      const matchedFiles = group.files.filter((file: FileItem) => matchesFileByKeyword(file, keyword))
       if (matchedFiles.length === 0) {
         return null
       }
@@ -192,11 +209,11 @@ const totalDisplayedFiles = computed(() => sumBy(displayedTimeGroupedFiles.value
 
 const { downloadFile } = useDownload()
 
-const fileContextMenu = computed<OPT.RightMenu[]>(() => [
+const fileContextMenu = computed<OPT.RightMenu<FileItem>[]>(() => [
   {
     label: t('menu.save_as'),
     icon: 'Importing',
-    click: async (targetFile: any) => {
+    click: async (targetFile: FileItem) => {
       const downloadUrl = targetFile.downloadUrl || targetFile.url
       const defaultName = targetFile.fileName ? String(targetFile.fileName) : undefined
       const isVideo = targetFile.fileType === 'video'
@@ -224,8 +241,8 @@ const fileContextMenu = computed<OPT.RightMenu[]>(() => [
   }
 ])
 
-const handleFileMenuSelect = async (menuItem: OPT.RightMenu | null, file: any) => {
-  if (!menuItem || typeof menuItem.click !== 'function') {
+const handleFileMenuSelect = async (menuItem: OPT.RightMenu<FileItem>, file: FileItem) => {
+  if (typeof menuItem.click !== 'function') {
     return
   }
 
@@ -338,7 +355,7 @@ const clearUserFilter = () => {
 }
 
 // 转换文件数据为 FileBody 格式
-const convertToFileBody = (file: any): FileBody => {
+const convertToFileBody = (file: FileItem): FileBody => {
   return {
     fileName: file.fileName || '',
     size: file.fileSize || 0,
@@ -358,11 +375,11 @@ const convertToFileBody = (file: any): FileBody => {
   align-items: center;
   padding: 0 4px;
   font-size: 12px;
-  color: #909090;
+  color: var(--color-text-tertiary);
 }
 
 .file-sender {
-  color: #13987f;
+  color: var(--color-primary);
   cursor: pointer;
 
   &:hover {

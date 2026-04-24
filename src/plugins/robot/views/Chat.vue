@@ -50,7 +50,7 @@
             <n-select
               v-if="aiProvider === 'openclaw' && openClawModels.length > 0"
               v-model:value="openClawCurrentModel"
-              :options="openClawModels.map((m: string) => ({ label: m, value: m }))"
+              :options="openClawModels.map((m) => ({ label: m, value: m }))"
               size="tiny"
               style="width: 180px"
               placeholder="选择模型" />
@@ -323,6 +323,7 @@
                                 :content="message.reasoningContent"
                                 :custom-id="markdownCustomId"
                                 :is-dark="isDarkTheme"
+                                :enable-monaco="false"
                                 :viewportPriority="false"
                                 :themes="markdownThemes"
                                 :code-block-props="markdownCodeBlockProps" />
@@ -335,6 +336,7 @@
                               :content="message.content"
                               :custom-id="markdownCustomId"
                               :is-dark="isDarkTheme"
+                              :enable-monaco="false"
                               :viewportPriority="false"
                               :themes="markdownThemes"
                               :code-block-props="markdownCodeBlockProps" />
@@ -693,15 +695,15 @@
                   <img :src="videoImagePreview" style="max-width: 100%; border-radius: 4px" />
                 </div>
                 <div style="font-size: 12px; color: #666">
-                  <div v-if="isUploadingVideoImage" style="color: #18a058">⏳ 正在上传到七牛云...</div>
+                  <div v-if="isUploadingVideoImage" style="color: #18a058">⏳ 正在上传参考图片...</div>
                   <div v-else>
-                    {{ videoImagePreview ? '已上传到七牛云，点击按钮可重新上传' : '上传参考图片用于图生视频' }}
+                    {{ videoImagePreview ? '参考图片已上传，点击按钮可重新上传' : '上传参考图片用于图生视频' }}
                     <br />
                     支持格式: JPG、PNG、WEBP
                     <br />
                     最大大小: 10MB
                     <br />
-                    <span style="color: #999; font-size: 11px">图片将上传到七牛云存储</span>
+                    <span style="color: #999; font-size: 11px">图片将上传到服务端对象存储</span>
                   </div>
                 </div>
               </div>
@@ -900,18 +902,21 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
 import { type InputInst, UploadFileInfo } from 'naive-ui'
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import { Icon } from '@iconify/vue'
 import MsgInput from '@/components/rightBox/MsgInput.vue'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStore } from '@/stores/user.ts'
-import MarkdownRender from 'markstream-vue'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { ROBOT_MARKDOWN_CUSTOM_ID } from '@/plugins/robot/utils/markdown'
+import { estimateTokens, estimateMessageTokens } from '@/plugins/robot/utils/tokenEstimator'
+import { getAiMediaExtension } from '@/plugins/robot/utils/aiMediaUrl'
 import { useResizeObserver } from '@vueuse/core'
 import { ThemeEnum, AiMsgContentTypeEnum } from '@/enums'
-import 'markstream-vue/index.css'
-import { matrixMessageService, matrixAIService, matrixConversationService } from '@/services/matrix'
+import type { AIModel, ChatRole } from '@/services/matrix'
+import { matrixMessageService, aiService, conversationService, modelService } from '@/services/matrix'
+import type { AIAsyncGenerationResponse, AIConversation } from '@/services/matrix/AIService'
+import type { AIAudio, AIChatRole, AIImage, AIVideo, AIVoice } from '@/types/matrix-api'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { persistAiImageFile, resolveAiImagePath } from '@/utils/PathUtil'
 import { md5FromString } from '@/utils/Md5Util'
@@ -923,6 +928,14 @@ import { matrixMessageRelationService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RobotChat')
+
+const MarkdownRender = defineAsyncComponent(async () => {
+  const { initMarkdownRenderer } = await import('@/plugins/robot/utils/markdown')
+  await initMarkdownRenderer()
+  await import('markstream-vue/index.css')
+  const mod = await import('markstream-vue')
+  return mod.default
+})
 
 // OpenClaw 服务
 import { useOpenClaw } from '@/services/openclaw'
@@ -1009,7 +1022,105 @@ const { page, themes } = storeToRefs(settingStore)
 const SHIKI_LIGHT_THEME = 'vitesse-light'
 const SHIKI_DARK_THEME = 'vitesse-dark'
 const markdownCustomId = ROBOT_MARKDOWN_CUSTOM_ID
-const markdownThemes = [SHIKI_LIGHT_THEME, SHIKI_DARK_THEME] as const as any
+const markdownThemes = [SHIKI_LIGHT_THEME, SHIKI_DARK_THEME]
+
+interface ConversationMeta {
+  id: string
+  title: string
+  messageCount: number
+  createTime: number
+}
+
+interface ConversationUsage extends AIConversation {
+  tokenUsage?: number
+}
+
+interface AIConversationMessage {
+  id?: string
+  type?: 'user' | 'assistant'
+  role?: 'user' | 'assistant' | 'system'
+  content?: string
+  reasoningContent?: string
+  msgType?: AiMsgContentTypeEnum
+  createTime?: number
+  createdAt?: number
+  replyId?: string | null
+  model?: string
+  imageUrl?: string
+  videoUrl?: string
+  audioUrl?: string
+}
+
+type HistoryItem = (AIImage | AIVideo | AIAudio) & {
+  prompt?: string
+  picUrl?: string
+  audioUrl?: string
+  videoUrl?: string
+  width?: number
+  height?: number
+}
+
+type PreviewItem = Partial<HistoryItem> & {
+  picUrl?: string
+}
+
+type LeftChatTitlePayload = {
+  title?: string
+  id: string
+  messageCount?: number
+  createTime?: number
+}
+
+type ChatActivePayload = LeftChatTitlePayload & {
+  roleId?: string
+  modelId?: string
+}
+
+type NativeFetchResponseLike = {
+  status?: number
+  statusText?: string
+  ok?: boolean
+  arrayBuffer?: () => Promise<ArrayBuffer>
+  bytes?: () => Promise<unknown>
+  data?: unknown
+}
+
+type GeneratedVideoRequest = {
+  modelId: string
+  prompt: string
+  width: number
+  height: number
+  duration: number
+  conversationId: string
+  options?: {
+    image: string
+  }
+}
+
+const extractGenerationTaskId = (result: AIAsyncGenerationResponse): number => {
+  if (typeof result === 'number') return result
+  if (typeof result === 'string') return Number(result)
+  return Number(result.id)
+}
+
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+  return '未知错误'
+}
+
+const toAiMsgContentType = (value: unknown): AiMsgContentTypeEnum | undefined => {
+  if (typeof value === 'number' && Object.values(AiMsgContentTypeEnum).includes(value)) {
+    return value as AiMsgContentTypeEnum
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    if (Number.isInteger(parsed) && Object.values(AiMsgContentTypeEnum).includes(parsed)) {
+      return parsed as AiMsgContentTypeEnum
+    }
+  }
+  return undefined
+}
 
 const MsgInputRef = ref()
 /** 是否是编辑模式 */
@@ -1052,7 +1163,7 @@ const inputInstRef = ref<InputInst | null>(null)
 /** 原始标题 */
 const originalTitle = ref('')
 /** 当前聊天的标题、id 以及元信息 */
-const currentChat = ref({
+const currentChat = ref<ConversationMeta>({
   id: '0',
   title: '',
   messageCount: 0,
@@ -1075,7 +1186,7 @@ const remainingUsageTagType = computed(() => {
 /** 加载模型剩余使用次数 */
 const loadRemainingUsage = async (modelId: string) => {
   if (!modelId) return
-  remainingUsage.value = await matrixAIService.getModelRemainingUsage({ modelId })
+  remainingUsage.value = await aiService.getModelRemainingUsage({ modelId })
 }
 
 // 计算是否是暗色主题，处理空值和未初始化的情况
@@ -1100,7 +1211,7 @@ const markdownCodeBlockProps = computed(() => ({
 // 同时监听 isDarkTheme 的变化，确保在主题切换时组件能正确更新
 watch(
   isDarkTheme,
-  (newVal: boolean) => {
+  (newVal) => {
     // 主题切换时，确保 CSS 类正确应用
     nextTick(() => {
       // 查找所有 code-block-wrapper 元素，确保它们有正确的类
@@ -1159,24 +1270,8 @@ const messageContentRef = ref<HTMLElement | null>(null)
 const shouldAutoStickBottom = ref(true)
 const showScrollbar = ref(true)
 const loadingMessages = ref(false) // 消息加载状态
-const estimateTokens = (text: string) => {
-  if (!text) return 0
-  const chars = Array.from(text)
-  const asciiChars = chars.filter((ch) => (ch.codePointAt(0) as number) <= 0x7f)
-  const ascii = asciiChars.join('')
-  const nonAsciiCount = chars.length - asciiChars.length
-  const asciiWords = ascii.trim().split(/\s+/).filter(Boolean)
-  const asciiTokens = asciiWords.reduce((acc, w) => acc + Math.ceil(w.length / 4), 0)
-  const nonAsciiTokens = nonAsciiCount
-  return asciiTokens + nonAsciiTokens
-}
-const estimateMessageTokens = (m: Message) => {
-  const base = estimateTokens(m.content || '')
-  const reasoning = estimateTokens(m.reasoningContent || '')
-  return base + reasoning
-}
 const conversationTokens = computed(() => {
-  return messageList.value.reduce((sum: number, m: Message) => sum + estimateMessageTokens(m), 0)
+  return messageList.value.reduce((sum, m) => sum + estimateMessageTokens(m), 0)
 })
 const serverTokenUsage = ref<number | null>(null)
 
@@ -1253,7 +1348,7 @@ const requestAiMediaBuffer = (url: string) => {
       method: 'GET'
     })
 
-    const anyResponse = response as any
+    const anyResponse = response as NativeFetchResponseLike
     const status = typeof anyResponse.status === 'number' ? anyResponse.status : 200
     const statusText = typeof anyResponse.statusText === 'string' ? anyResponse.statusText : ''
     const ok = 'ok' in anyResponse ? Boolean(anyResponse.ok) : status >= 200 && status < 400
@@ -1291,12 +1386,7 @@ const requestAiMediaBuffer = (url: string) => {
 }
 
 // 解析媒体扩展名，默认回退为指定后缀
-const getAiMediaExtension = (url: string, fallback = 'png') => {
-  const cleanUrl = url.split(/[?#]/)[0] || ''
-  const ext = cleanUrl.split('.').pop() || ''
-  if (!ext || ext.length > 5 || ext.includes('/')) return fallback
-  return ext
-}
+// `getAiMediaExtension` imported from '@/plugins/robot/utils/aiMediaUrl'
 
 const buildAiMediaFileName = async (url: string, fallbackExt: string, prefix: string) => {
   const ext = getAiMediaExtension(url, fallbackExt)
@@ -1432,8 +1522,8 @@ const getMessageBubbleClass = (message: Message) => {
 const showDeleteChatConfirm = ref(false) // 删除会话确认框显示状态
 const deleteWithMessages = ref(false) // 是否同时删除消息
 const showRolePopover = ref(false) // 角色选择弹窗显示状态
-const selectedRole = ref<any>(null) // 当前选中的角色
-const roleList = ref<any[]>([]) // 角色列表
+const selectedRole = ref<ChatRole | null>(null) // 当前选中的角色
+const roleList = ref<ChatRole[]>([]) // 角色列表
 const roleLoading = ref(false) // 角色加载状态
 
 // 滚动到底部
@@ -1514,17 +1604,16 @@ const notifyConversationMetaChange = (payload: { messageCount?: number; createTi
 const showModelPopover = ref(false)
 const modelLoading = ref(false)
 const modelSearch = ref('')
-const selectedModel = ref<any>(null)
+const selectedModel = ref<AIModel | null>(null)
 const reasoningEnabled = ref(false)
 const supportsReasoning = computed(() => Boolean(selectedModel.value?.supportsReasoning))
 
 watch(
   selectedModel,
-  (model: any) => {
+  (model) => {
     remainingUsage.value = null
-    const m = model as any
-    if (m && m.id) {
-      void loadRemainingUsage(m.id)
+    if (model?.id) {
+      void loadRemainingUsage(model.id)
     }
   },
   { immediate: true }
@@ -1538,7 +1627,7 @@ const modelPagination = ref({
 })
 
 // 模型列表
-const modelList = ref<any[]>([])
+const modelList = ref<AIModel[]>([])
 
 // 过滤后的模型列表
 const filteredModels = computed(() => {
@@ -1546,13 +1635,13 @@ const filteredModels = computed(() => {
   const search = modelSearch.value?.toLowerCase() || ''
   const filtered = search
     ? list.filter(
-        (model: any) =>
+        (model) =>
           model.name?.toLowerCase().includes(search) ||
           model.description?.toLowerCase().includes(search) ||
           model.platform?.toLowerCase().includes(search)
       )
     : list
-  return filtered.sort((a: any, b: any) => {
+  return filtered.sort((a, b) => {
     const ao = a.publicStatus === 0
     const bo = b.publicStatus === 0
     if (ao !== bo) return ao ? -1 : 1
@@ -1563,8 +1652,8 @@ const filteredModels = computed(() => {
   })
 })
 
-const officialModels = computed(() => filteredModels.value.filter((m: any) => m.publicStatus === 0))
-const userModels = computed(() => filteredModels.value.filter((m: any) => m.publicStatus !== 0))
+const officialModels = computed(() => filteredModels.value.filter((m) => m.publicStatus === 0))
+const userModels = computed(() => filteredModels.value.filter((m) => m.publicStatus !== 0))
 
 // 图片生成参数
 const imageParams = ref({
@@ -1582,7 +1671,7 @@ const imageSizeOptions = [
 const videoParams = ref({
   size: '1280x720',
   duration: 5, // 视频时长(秒)
-  image: null as string | null // 用于I2V模型的参考图片 (七牛云URL)
+  image: null as string | null // 用于I2V模型的参考图片 URL
 })
 
 // 视频尺寸选项
@@ -1615,20 +1704,23 @@ const audioVoiceOptions = ref([
 ])
 
 // 加载指定模型支持的声音列表
-const loadAudioVoices = async (model: any) => {
+const loadAudioVoices = async (model: AIModel) => {
   try {
     if (!model || !model.model) {
       return
     }
 
-    const voices = await matrixAIService.audioGetVoices({ model: model.model })
+    const voices = await aiService.audioGetVoices({ model: model.model })
 
     if (voices && voices.length > 0) {
       // 将声音列表转换为选项格式
-      audioVoiceOptions.value = voices.map((voice) => {
+      audioVoiceOptions.value = voices.map((voice: AIVoice | string) => {
+        const rawVoice = typeof voice === 'string' ? voice : voice.name
+        // 提取声音名称 (例如: "fnlp/MOSS-TTSD-v0.5:anna" -> "anna")
+        const voiceName = rawVoice.includes(':') ? rawVoice.split(':')[1] : rawVoice
         return {
-          label: voice.name.charAt(0).toUpperCase() + voice.name.slice(1),
-          value: voice.id
+          label: voiceName.charAt(0).toUpperCase() + voiceName.slice(1),
+          value: rawVoice
         }
       })
 
@@ -1658,12 +1750,12 @@ const audioSpeedOptions = [
 ]
 
 // 视频参考图片上传
-const videoImageFileRef = ref<any>(null)
+const videoImageFileRef = ref<{ clear?: () => void } | null>(null)
 const videoImagePreview = ref<string | null>(null)
 const isUploadingVideoImage = ref(false)
 
 // 初始化上传hook
-const { uploadFile: uploadToQiniu, fileInfo } = useUpload()
+const { uploadFile: uploadReferenceImage, fileInfo } = useUpload()
 
 // 处理视频参考图片上传
 const handleVideoImageUpload = async (options: { file: UploadFileInfo; onFinish: () => void; onError: () => void }) => {
@@ -1692,19 +1784,17 @@ const handleVideoImageUpload = async (options: { file: UploadFileInfo; onFinish:
   try {
     isUploadingVideoImage.value = true
 
-    // 上传到七牛云
-    await uploadToQiniu(file, {
-      provider: UploadProviderEnum.QINIU,
+    await uploadReferenceImage(file, {
+      provider: UploadProviderEnum.DEFAULT,
       scene: UploadSceneEnum.CHAT,
       enableDeduplication: true
     })
 
-    // 获取七牛云URL
-    const qiniuUrl = fileInfo.value?.downloadUrl
-    if (qiniuUrl) {
-      videoParams.value.image = qiniuUrl
-      videoImagePreview.value = qiniuUrl
-      logger.debug('视频参考图片上传成功，七牛云URL:', qiniuUrl)
+    const uploadedUrl = fileInfo.value?.downloadUrl
+    if (uploadedUrl) {
+      videoParams.value.image = uploadedUrl
+      videoImagePreview.value = uploadedUrl
+      logger.debug('视频参考图片上传成功，URL:', uploadedUrl)
       options.onFinish()
     } else {
       throw new Error('未获取到图片URL')
@@ -1722,7 +1812,7 @@ const clearVideoImage = () => {
   videoParams.value.image = null
   videoImagePreview.value = null
   if (videoImageFileRef.value) {
-    videoImageFileRef.value.clear()
+    videoImageFileRef.value.clear?.()
   }
 }
 
@@ -1756,7 +1846,7 @@ const stopConversationPolling = (conversationId: string) => {
 const showHistoryModal = ref(false)
 const historyType = ref<'image' | 'video' | 'audio'>('image')
 const historyLoading = ref(false)
-const historyList = ref<any[]>([])
+const historyList = ref<HistoryItem[]>([])
 const historyPagination = ref({
   pageNo: 1,
   pageSize: 12,
@@ -1766,7 +1856,7 @@ const historyPagination = ref({
 // 预览相关
 const showImagePreview = ref(false)
 const showVideoPreview = ref(false)
-const previewItem = ref<any>(null)
+const previewItem = ref<PreviewItem | null>(null)
 const AI_THINKING_PLACEHOLDER = '正在思考中...'
 
 const isLikelyImageUrl = (value?: string) => {
@@ -1890,7 +1980,7 @@ const handleSendAI = (data: { content: string }) => {
 }
 
 // AI消息发送实现
-const sendAIMessage = async (content: string, model: any) => {
+const sendAIMessage = async (content: string, model: AIModel) => {
   try {
     lastAiPrompt.value = content
     currentAiAccumulatedContent.value = ''
@@ -1939,7 +2029,7 @@ const sendAIMessage = async (content: string, model: any) => {
     })
 
     isAIStreaming.value = true
-    await matrixAIService.messageSendStream(
+    await aiService.messageSendStream(
       currentChat.value.id,
       content,
       {
@@ -1998,10 +2088,10 @@ const sendAIMessage = async (content: string, model: any) => {
             createTime: latestTimestamp
           })
           if (currentChat.value.id && currentChat.value.id !== '0') {
-            matrixAIService
+            aiService
               .conversationGetMy({ id: currentChat.value.id })
-              .then((convList: any) => {
-                const conv: any = Array.isArray(convList) ? convList[0] : convList
+              .then((convList) => {
+                const conv = Array.isArray(convList) ? (convList[0] as ConversationUsage | undefined) : undefined
                 if (conv && typeof conv.tokenUsage === 'number') {
                   serverTokenUsage.value = conv.tokenUsage
                 }
@@ -2013,12 +2103,17 @@ const sendAIMessage = async (content: string, model: any) => {
             }
 
             if (!messageList.value[aiMessageIndex].reasoningContent) {
-              matrixAIService
+              aiService
                 .messageListByConversationId({ conversationId: currentChat.value.id, pageNo: 1, pageSize: 100 })
-                .then((list: any[]) => {
+                .then((list) => {
                   if (Array.isArray(list) && list.length > 0) {
                     const last = list[list.length - 1]
-                    if (last && last.type === 'assistant' && last.reasoningContent) {
+                    if (
+                      last &&
+                      (last.type === 'assistant' || last.role === 'assistant') &&
+                      'reasoningContent' in last &&
+                      typeof last.reasoningContent === 'string'
+                    ) {
                       messageList.value[aiMessageIndex].reasoningContent = last.reasoningContent
                     }
                   }
@@ -2057,7 +2152,7 @@ const handleStopAIStream = async () => {
   if (!isAIStreaming.value || !currentAiRequestId.value) return
   try {
     window.$message.destroyAll()
-    await matrixAIService.messageCancelStream(currentAiRequestId.value)
+    await aiService.messageCancelStream(currentAiRequestId.value)
     await new Promise((resolve) => setTimeout(resolve, 180))
     const lastMsg = messageList.value[messageList.value.length - 1]
     if (lastMsg && lastMsg.type === 'assistant' && lastMsg.content === AI_THINKING_PLACEHOLDER) {
@@ -2068,7 +2163,7 @@ const handleStopAIStream = async () => {
         ? lastMsg.content
         : currentAiAccumulatedContent.value
     if (latest && latest.trim()) {
-      await matrixAIService.messageSaveGeneratedContent({
+      await aiService.messageSaveGeneratedContent({
         conversationId: currentChat.value.id,
         prompt: lastAiPrompt.value,
         generatedContent: latest
@@ -2085,7 +2180,7 @@ const handleStopAIStream = async () => {
 }
 
 // 图片生成实现
-const generateImage = async (prompt: string, model: any) => {
+const generateImage = async (prompt: string, model: AIModel) => {
   try {
     const tokenBudget = Number(model?.maxTokens || 0)
     if (tokenBudget > 0 && conversationTokens.value >= tokenBudget) {
@@ -2120,27 +2215,28 @@ const generateImage = async (prompt: string, model: any) => {
     // 解析尺寸
     const [width, height] = imageParams.value.size.split('x').map(Number)
 
-    const imageId = await matrixAIService.generateImage({
+    const imageResult = await aiService.generateImage({
       modelId: String(model.id),
       prompt: prompt,
       width: width,
       height: height,
       conversationId: currentChat.value.id
     })
+    const imageId = extractGenerationTaskId(imageResult)
 
     // 开始轮询查询生成状态
-    pollImageStatus(imageId as unknown as number, aiMessageIndex, prompt, width, height, model.name)
+    pollImageStatus(imageId, aiMessageIndex, prompt, width, height, model.name)
 
     // 清空输入框
     if (MsgInputRef.value?.clearInput) {
       MsgInputRef.value.clearInput()
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('图片生成失败:', error)
     // 更新为错误消息
     const lastMessage = messageList.value[messageList.value.length - 1]
     if (lastMessage && lastMessage.isGenerating) {
-      lastMessage.content = `图片生成失败: ${error.message || '未知错误'}`
+      lastMessage.content = `图片生成失败: ${getErrorMessage(error)}`
       lastMessage.isGenerating = false
     }
     window.$message.error('图片生成失败，请检查网络连接')
@@ -2178,7 +2274,7 @@ const pollImageStatus = async (
         return
       }
 
-      const imageList = await matrixAIService.imageMyListByIds({ ids: imageId.toString() })
+      const imageList = await aiService.imageMyListByIds({ ids: imageId.toString() })
 
       if (!imageList || !Array.isArray(imageList) || imageList.length === 0) {
         messageList.value[messageIndex].content = '图片生成失败: 记录不存在'
@@ -2190,14 +2286,14 @@ const pollImageStatus = async (
       const image = imageList[0]
 
       // 状态: 10=进行中, 20=成功, 30=失败
-      if (image.status === 20 && image.picUrl) {
+      if (image.status === 20) {
         messageList.value[messageIndex] = {
           type: 'assistant',
-          content: image.picUrl,
+          content: image.picUrl || image.url,
           msgType: AiMsgContentTypeEnum.IMAGE,
           createTime: Date.now(),
           isGenerating: false,
-          imageUrl: image.picUrl,
+          imageUrl: image.picUrl || image.url,
           imageInfo: {
             prompt: prompt,
             width: width,
@@ -2206,7 +2302,7 @@ const pollImageStatus = async (
           }
         }
 
-        void ensureLocalAiImage(image.picUrl, messageIndex)
+        void ensureLocalAiImage(image.picUrl || image.url, messageIndex)
 
         window.$message.success('图片生成成功')
 
@@ -2224,9 +2320,9 @@ const pollImageStatus = async (
 
       // 状态=10 (进行中), 继续轮询
       logger.debug('图片生成中，继续轮询...')
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('轮询图片状态失败:', error)
-      messageList.value[messageIndex].content = `查询状态失败: ${error.message || '未知错误'}`
+      messageList.value[messageIndex].content = `查询状态失败: ${getErrorMessage(error)}`
       messageList.value[messageIndex].isGenerating = false
       pollingTasks.delete(imageId)
     }
@@ -2241,7 +2337,7 @@ const pollImageStatus = async (
 }
 
 // 视频生成实现
-const generateVideo = async (prompt: string, model: any) => {
+const generateVideo = async (prompt: string, model: AIModel) => {
   try {
     const tokenBudget = Number(model?.maxTokens || 0)
     if (tokenBudget > 0 && conversationTokens.value >= tokenBudget) {
@@ -2278,7 +2374,7 @@ const generateVideo = async (prompt: string, model: any) => {
     const [width, height] = videoParams.value.size.split('x').map(Number)
 
     // 构建请求参数
-    const requestBody: any = {
+    const requestBody: GeneratedVideoRequest = {
       modelId: String(model.id),
       prompt: prompt,
       width: width,
@@ -2295,7 +2391,8 @@ const generateVideo = async (prompt: string, model: any) => {
     }
 
     // 调用视频生成API，返回视频ID
-    const videoId = await matrixAIService.videoGenerate(requestBody)
+    const videoResult = await aiService.videoGenerate(requestBody)
+    const videoId = extractGenerationTaskId(videoResult)
 
     // 开始轮询查询生成状态
     pollVideoStatus(videoId, aiMessageIndex, prompt, width, height, model.name)
@@ -2305,12 +2402,12 @@ const generateVideo = async (prompt: string, model: any) => {
       MsgInputRef.value.clearInput()
     }
     clearVideoImage()
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('视频生成失败:', error)
     // 更新为错误消息
     const lastMessage = messageList.value[messageList.value.length - 1]
     if (lastMessage && lastMessage.isGenerating) {
-      lastMessage.content = `视频生成失败: ${error.message || '未知错误'}`
+      lastMessage.content = `视频生成失败: ${getErrorMessage(error)}`
       lastMessage.isGenerating = false
     }
     window.$message.error('视频生成失败，请检查网络连接')
@@ -2350,7 +2447,7 @@ const pollVideoStatus = async (
       }
 
       // 后端返回的是数组 List<AiVideoRespVO>
-      const videoList = await matrixAIService.videoMyListByIds({ ids: videoId.toString() })
+      const videoList = await aiService.videoMyListByIds({ ids: videoId.toString() })
 
       if (!videoList || !Array.isArray(videoList) || videoList.length === 0) {
         messageList.value[messageIndex].content = '视频生成失败: 记录不存在'
@@ -2362,14 +2459,14 @@ const pollVideoStatus = async (
       const video = videoList[0]
 
       // 状态: 10=进行中, 20=成功, 30=失败
-      if (video.status === 20 && video.videoUrl) {
+      if (video.status === 20) {
         messageList.value[messageIndex] = {
           type: 'assistant',
-          content: video.videoUrl,
+          content: video.videoUrl || video.url,
           msgType: AiMsgContentTypeEnum.VIDEO,
           createTime: Date.now(),
           isGenerating: false,
-          videoUrl: video.videoUrl,
+          videoUrl: video.videoUrl || video.url,
           videoInfo: {
             prompt: prompt,
             width: width,
@@ -2378,7 +2475,7 @@ const pollVideoStatus = async (
           }
         }
 
-        void ensureLocalAiVideo(video.videoUrl, messageIndex)
+        void ensureLocalAiVideo(video.videoUrl || video.url, messageIndex)
 
         window.$message.success('视频生成成功')
 
@@ -2395,9 +2492,9 @@ const pollVideoStatus = async (
       }
 
       // 状态=10 (进行中), 继续轮询
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('轮询视频状态失败:', error)
-      messageList.value[messageIndex].content = `查询状态失败: ${error.message || '未知错误'}`
+      messageList.value[messageIndex].content = `查询状态失败: ${getErrorMessage(error)}`
       messageList.value[messageIndex].isGenerating = false
       pollingTasks.delete(videoId)
     }
@@ -2412,7 +2509,7 @@ const pollVideoStatus = async (
 }
 
 // 音频生成实现：添加用户消息
-const generateAudio = async (prompt: string, model: any) => {
+const generateAudio = async (prompt: string, model: AIModel) => {
   try {
     const tokenBudget = Number(model?.maxTokens || 0)
     if (tokenBudget > 0 && conversationTokens.value >= tokenBudget) {
@@ -2445,7 +2542,7 @@ const generateAudio = async (prompt: string, model: any) => {
       速度: audioParams.value.speed
     })
 
-    const audioId = await matrixAIService.audioGenerate({
+    const audioResult = await aiService.audioGenerate({
       modelId: model.id,
       prompt: prompt,
       conversationId: currentChat.value.id,
@@ -2454,17 +2551,18 @@ const generateAudio = async (prompt: string, model: any) => {
         speed: String(audioParams.value.speed)
       }
     })
+    const audioId = extractGenerationTaskId(audioResult)
 
     pollAudioStatus(audioId, aiMessageIndex, prompt, model.name)
 
     if (MsgInputRef.value?.clearInput) {
       MsgInputRef.value.clearInput()
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('音频生成失败:', error)
     const lastMessage = messageList.value[messageList.value.length - 1]
     if (lastMessage && lastMessage.isGenerating) {
-      lastMessage.content = `音频生成失败: ${error.message || '未知错误'}`
+      lastMessage.content = `音频生成失败: ${getErrorMessage(error)}`
       lastMessage.isGenerating = false
     }
     window.$message.error('音频生成失败，请检查网络连接')
@@ -2495,7 +2593,7 @@ const pollAudioStatus = async (audioId: number, messageIndex: number, prompt: st
         return
       }
 
-      const audioList = await matrixAIService.audioMyListByIds({ ids: audioId.toString() })
+      const audioList = await aiService.audioMyListByIds({ ids: audioId.toString() })
 
       if (!audioList || !Array.isArray(audioList) || audioList.length === 0) {
         messageList.value[messageIndex].content = '音频生成失败: 记录不存在'
@@ -2507,14 +2605,14 @@ const pollAudioStatus = async (audioId: number, messageIndex: number, prompt: st
       const audio = audioList[0]
 
       // 20 代表成功
-      if (audio.status === 20 && audio.audioUrl) {
+      if (audio.status === 20) {
         messageList.value[messageIndex] = {
           type: 'assistant',
-          content: audio.audioUrl,
+          content: audio.audioUrl || audio.url,
           msgType: AiMsgContentTypeEnum.AUDIO,
           createTime: Date.now(),
           isGenerating: false,
-          audioUrl: audio.audioUrl,
+          audioUrl: audio.audioUrl || audio.url,
           audioInfo: {
             prompt: prompt,
             model: modelName,
@@ -2523,7 +2621,7 @@ const pollAudioStatus = async (audioId: number, messageIndex: number, prompt: st
           }
         }
 
-        void ensureLocalAiAudio(audio.audioUrl, messageIndex)
+        void ensureLocalAiAudio(audio.audioUrl || audio.url, messageIndex)
 
         window.$message.success('音频生成成功')
 
@@ -2537,9 +2635,9 @@ const pollAudioStatus = async (audioId: number, messageIndex: number, prompt: st
         pollingTasks.delete(audioId)
         return
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 轮询失败
-      messageList.value[messageIndex].content = `查询状态失败: ${error.message || '未知错误'}`
+      messageList.value[messageIndex].content = `查询状态失败: ${getErrorMessage(error)}`
       messageList.value[messageIndex].isGenerating = false
       pollingTasks.delete(audioId)
     }
@@ -2574,9 +2672,7 @@ const features = ref([
 ])
 
 // 其他功能
-const otherFeatures = computed(() =>
-  features.value.filter((item: { icon: string; label: string }) => item.icon !== 'model')
-)
+const otherFeatures = computed(() => features.value.filter((item) => item.icon !== 'model'))
 
 // 获取默认头像
 const getDefaultAvatar = () => {
@@ -2584,7 +2680,7 @@ const getDefaultAvatar = () => {
 }
 
 // 获取模型头像
-const getModelAvatar = (model: any) => {
+const getModelAvatar = (model: AIModel | null) => {
   if (!model) {
     return getDefaultAvatar()
   }
@@ -2617,7 +2713,7 @@ const getModelAvatar = (model: any) => {
 const fetchModelList = async () => {
   modelLoading.value = true
   try {
-    const data = await matrixAIService.modelPage({
+    const data = await modelService.page({
       pageNo: modelPagination.value.pageNo,
       pageSize: modelPagination.value.pageSize
     })
@@ -2670,7 +2766,7 @@ const handleModelClick = () => {
 }
 
 // 选择模型
-const selectModel = async (model: any) => {
+const selectModel = async (model: AIModel) => {
   selectedModel.value = model ? { ...model } : null
   showModelPopover.value = false
 
@@ -2687,7 +2783,7 @@ const selectModel = async (model: any) => {
   // 如果当前有会话，则调用后端API更新会话的模型
   if (currentChat.value.id && currentChat.value.id !== '0') {
     try {
-      await matrixConversationService.update({
+      await conversationService.update({
         id: currentChat.value.id,
         modelId: String(model.id)
       })
@@ -2724,8 +2820,8 @@ const handleOpenModelManagement = () => {
 const loadRoleList = async () => {
   roleLoading.value = true
   try {
-    const data = await matrixAIService.chatRolePage({ pageNo: 1, pageSize: 100 })
-    roleList.value = (data.list || []).filter((item: any) => item.status === 0) // 只显示可用的角色
+    const data = await aiService.chatRolePage({ pageNo: 1, pageSize: 100 })
+    roleList.value = ((data.list || []) as ChatRole[]).filter((item) => item.status === 0) // 只显示可用的角色
 
     // 如果没有选中角色，默认选中第一个
     if (!selectedRole.value && roleList.value.length > 0) {
@@ -2740,13 +2836,13 @@ const loadRoleList = async () => {
 }
 
 // 选择角色
-const handleSelectRole = async (role: any) => {
+const handleSelectRole = async (role: ChatRole) => {
   selectedRole.value = role ? { ...role } : null
   showRolePopover.value = false
 
   try {
     if (currentChat.value.id && currentChat.value.id !== '0') {
-      await matrixConversationService.update({
+      await conversationService.update({
         id: currentChat.value.id,
         roleId: role.id,
         modelId: role.modelId ? role.modelId : undefined
@@ -2778,7 +2874,7 @@ const handleBlur = async () => {
   }
 
   try {
-    await matrixConversationService.update({
+    await conversationService.update({
       id: currentChat.value.id,
       title: currentChat.value.title
     })
@@ -2808,7 +2904,7 @@ const loadMessages = async (conversationId: string) => {
 
   try {
     loadingMessages.value = true
-    const data = await matrixAIService.messageListByConversationId({
+    const data = await aiService.messageListByConversationId({
       conversationId: conversationId,
       pageNo: 1,
       pageSize: 100
@@ -2821,13 +2917,14 @@ const loadMessages = async (conversationId: string) => {
       // 限制消息数量，只保留最近的 MAX_MESSAGE_COUNT 条
       const limitedData = data.slice(-MAX_MESSAGE_COUNT)
 
-      limitedData.forEach((msg: any) => {
+      limitedData.forEach((msg) => {
+        const messageType = msg.type === 'assistant' || msg.role === 'assistant' ? 'assistant' : 'user'
         const nextMessage: Message = {
-          type: msg.type,
+          type: messageType,
           content: msg.content || '',
           reasoningContent: msg.reasoningContent, // 推理思考内容
-          msgType: msg.msgType, // 消息内容类型枚举
-          createTime: msg.createTime ?? Date.now(),
+          msgType: toAiMsgContentType(msg.msgType), // 消息内容类型枚举
+          createTime: msg.createTime ?? msg.createdAt ?? Date.now(),
           id: msg.id,
           replyId: msg.replyId,
           model: msg.model
@@ -2847,7 +2944,7 @@ const loadMessages = async (conversationId: string) => {
 
       if (userStore.userInfo?.uid && currentChat.value.id) {
         void Promise.all(
-          messageList.value.map((msg: Message, index: number) => {
+          messageList.value.map((msg, index) => {
             if (msg.type !== 'assistant') return Promise.resolve()
             if (msg.msgType === AiMsgContentTypeEnum.IMAGE) {
               const remoteUrl = msg.imageUrl || msg.content
@@ -2870,8 +2967,8 @@ const loadMessages = async (conversationId: string) => {
         scrollToBottom()
       })
       try {
-        const convList = await matrixAIService.conversationGetMy({ id: conversationId })
-        const conv: any = Array.isArray(convList) ? convList[0] : convList
+        const convList = await aiService.conversationGetMy({ id: conversationId })
+        const conv = Array.isArray(convList) ? (convList[0] as ConversationUsage | undefined) : undefined
         if (conv && typeof conv.tokenUsage === 'number') {
           serverTokenUsage.value = conv.tokenUsage
         }
@@ -2890,11 +2987,19 @@ const loadMessages = async (conversationId: string) => {
 
 // 新增会话
 const handleCreateNewChat = async () => {
+  if (!selectedRole.value?.id) {
+    window.$message.warning('请先选择角色')
+    return
+  }
+
+  const roleId = selectedRole.value.id
+  const roleName = selectedRole.value.name || '新的会话'
+
   try {
-    const data = await matrixConversationService.create({
-      roleId: selectedRole.value?.id,
+    const data = await conversationService.create({
+      roleId,
       knowledgeId: undefined,
-      title: selectedRole.value?.name || '新的会话'
+      title: roleName
     })
 
     if (data) {
@@ -2904,11 +3009,11 @@ const handleCreateNewChat = async () => {
       const rawCreateTime = Number(data.createTime)
       const newChat = {
         id: data.id || data,
-        title: data.title || selectedRole.value?.name || '新的会话',
+        title: data.title || roleName,
         createTime: Number.isFinite(rawCreateTime) ? rawCreateTime : Date.now(),
         messageCount: data.messageCount || 0,
         isPinned: data.pinned || false,
-        roleId: selectedRole.value?.id,
+        roleId,
         modelId: data.modelId
       }
 
@@ -2933,7 +3038,7 @@ const handleDeleteMessage = async (messageId: string, index: number) => {
   }
 
   try {
-    await matrixAIService.messageDelete({ id: messageId })
+    await aiService.messageDelete({ id: messageId })
 
     // 从消息列表中移除
     messageList.value.splice(index, 1)
@@ -2964,14 +3069,14 @@ const handleDeleteChat = async () => {
   try {
     if (deleteWithMessages.value) {
       try {
-        await matrixAIService.messageDeleteByConversationId({ conversationIdList: [currentChat.value.id] })
+        await aiService.messageDeleteByConversationId({ conversationIdList: [currentChat.value.id] })
       } catch (error) {
         logger.error('删除会话消息失败:', error)
       }
     }
 
     // 删除会话
-    await matrixConversationService.delete({ conversationIdList: [currentChat.value.id] })
+    await conversationService.delete({ conversationIdList: [currentChat.value.id] })
     window.$message.success(deleteWithMessages.value ? '会话及消息已删除' : '会话删除成功')
 
     // 关闭确认框
@@ -2999,7 +3104,7 @@ const handleDeleteChat = async () => {
 }
 
 // 提前监听会话切换事件
-useMitt.on('chat-active', async (e) => {
+useMitt.on('chat-active', async (e: ChatActivePayload) => {
   const { title, id, messageCount, roleId, modelId, createTime } = e
 
   currentChat.value.title = title || `新的聊天${currentChat.value.id}`
@@ -3020,14 +3125,14 @@ useMitt.on('chat-active', async (e) => {
   }
 
   if (roleId) {
-    const role = roleList.value.find((r: any) => String(r.id) === String(roleId))
+    const role = roleList.value.find((r) => String(r.id) === String(roleId))
     if (role) {
       selectedRole.value = role
     }
   }
 
   if (modelId) {
-    const model = modelList.value.find((m: any) => String(m.id) === String(modelId))
+    const model = modelList.value.find((m) => String(m.id) === String(modelId))
     if (model) {
       selectedModel.value = model
       // 加载剩余次数
@@ -3070,19 +3175,19 @@ const handleOpenHistory = () => {
 const loadHistory = async () => {
   historyLoading.value = true
   try {
-    let data
+    let data: { list: HistoryItem[]; total: number }
     if (historyType.value === 'image') {
-      data = await matrixAIService.imageMyPage({
+      data = await aiService.imageMyPage({
         pageNo: historyPagination.value.pageNo,
         pageSize: historyPagination.value.pageSize
       })
     } else if (historyType.value === 'audio') {
-      data = await matrixAIService.audioMyPage({
+      data = await aiService.audioMyPage({
         pageNo: historyPagination.value.pageNo,
         pageSize: historyPagination.value.pageSize
       })
     } else {
-      data = await matrixAIService.videoMyPage({
+      data = await aiService.videoMyPage({
         pageNo: historyPagination.value.pageNo,
         pageSize: historyPagination.value.pageSize
       })
@@ -3111,13 +3216,13 @@ const handleHistoryPageChange = (page: number) => {
 }
 
 // 预览图片
-const handlePreviewImage = (item: any) => {
+const handlePreviewImage = (item: HistoryItem) => {
   previewItem.value = item
   showImagePreview.value = true
 }
 
 // 预览视频
-const handlePreviewVideo = (item: any) => {
+const handlePreviewVideo = (item: HistoryItem) => {
   previewItem.value = item
   showVideoPreview.value = true
 }
@@ -3133,7 +3238,8 @@ const handleRefreshModelList = async () => {
 
   // 如果当前有选中的模型，需要更新 selectedModel 对象
   if (selectedModel.value && selectedModel.value.id) {
-    const updatedModel = modelList.value.find((m: any) => m.id === selectedModel.value.id)
+    const selectedModelId = selectedModel.value.id
+    const updatedModel = modelList.value.find((m) => m.id === selectedModelId)
     if (updatedModel) {
       // 记录旧的模型类型
       const oldType = selectedModel.value.type
@@ -3151,7 +3257,7 @@ const handleRefreshModelList = async () => {
   }
 }
 
-const handleLeftChatTitle = (e: any) => {
+const handleLeftChatTitle = (e: LeftChatTitlePayload) => {
   const { title, id, messageCount, createTime } = e
   if (id === currentChat.value.id) {
     currentChat.value.title = title ?? ''
@@ -3214,7 +3320,7 @@ onUnmounted(() => {
 // 监听会话切换，停止旧会话的轮询任务
 watch(
   () => currentChat.value.id,
-  (newId: string | undefined, oldId: string | undefined) => {
+  (newId, oldId) => {
     if (oldId && oldId !== newId) {
       stopConversationPolling(oldId)
       if (isAIStreaming.value) {
@@ -3243,12 +3349,12 @@ watch(
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--line-color);
-  background: var(--bg-color);
+  border-right: 1px solid var(--line-color;
+  background: var(--bg-color;
 
   .role-sidebar-header {
     padding: 16px;
-    border-bottom: 1px solid var(--line-color);
+    border-bottom: 1px solid var(--line-color;
   }
 
   .role-sidebar-content {
@@ -3295,7 +3401,7 @@ watch(
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   will-change: scroll-position;
-  transform: translateZ(0);
+  transform: translateZ(0;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -3303,7 +3409,7 @@ watch(
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(144, 144, 144, 0.3);
+    background-color: rgba(144, 144, 144, 0.3;
     border-radius: 3px;
     transition:
       opacity 0.3s ease,
@@ -3311,7 +3417,7 @@ watch(
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(144, 144, 144, 0.5);
+    background-color: rgba(144, 144, 144, 0.5;
   }
 
   &::-webkit-scrollbar-track {
@@ -3332,7 +3438,7 @@ watch(
 /* 输入框容器固定在底部 */
 .chat-input-container {
   flex-shrink: 0;
-  background: var(--bg-color);
+  background: var(--bg-color;
 }
 
 .right-btn {
@@ -3382,7 +3488,7 @@ watch(
 
 /* 模型选择器样式 */
 .model-selector {
-  background: var(--chat-bt-color);
+  background: var(--chat-bt-color;
   border-radius: 8px;
   padding: 12px;
   max-height: 400px;
@@ -3398,7 +3504,7 @@ watch(
     .model-title {
       font-size: 14px;
       font-weight: 500;
-      color: var(--chat-text-color);
+      color: var(--chat-text-color;
     }
   }
 
@@ -3435,7 +3541,7 @@ watch(
       }
       .model-divider {
         height: 1px;
-        background: var(--line-color);
+        background: var(--line-color;
         margin: 6px 0;
       }
       .model-item {
@@ -3449,12 +3555,12 @@ watch(
         border: 1px solid transparent;
 
         &:hover {
-          background: var(--chat-hover-color);
+          background: var(--chat-hover-color;
         }
 
         &.model-item-active {
           border-color: #13987f;
-          background: rgba(19, 152, 127, 0.1);
+          background: rgba(19, 152, 127, 0.1;
         }
 
         .model-info {
@@ -3464,7 +3570,7 @@ watch(
           .model-name {
             font-size: 13px;
             font-weight: 500;
-            color: var(--chat-text-color);
+            color: var(--chat-text-color;
             margin-bottom: 2px;
           }
 
@@ -3485,7 +3591,7 @@ watch(
             .model-version {
               font-size: 10px;
               color: #707070;
-              background: rgba(0, 0, 0, 0.05);
+              background: rgba(0, 0, 0, 0.05;
               padding: 1px 4px;
               border-radius: 3px;
             }
@@ -3503,13 +3609,13 @@ watch(
     display: flex;
     justify-content: center;
     padding-top: 8px;
-    border-top: 1px solid var(--line-color);
+    border-top: 1px solid var(--line-color;
   }
 }
 
 /* 角色选择器样式 */
 .role-selector {
-  background: var(--chat-bt-color);
+  background: var(--chat-bt-color;
   border-radius: 8px;
   padding: 12px;
   max-height: 400px;
@@ -3525,7 +3631,7 @@ watch(
     .role-title {
       font-size: 14px;
       font-weight: 500;
-      color: var(--chat-text-color);
+      color: var(--chat-text-color;
     }
   }
 
@@ -3566,18 +3672,18 @@ watch(
         gap: 12px;
 
         &:hover {
-          background: var(--chat-hover-color);
+          background: var(--chat-hover-color;
         }
 
         &.active {
           border-color: #13987f;
-          background: rgba(19, 152, 127, 0.1);
+          background: rgba(19, 152, 127, 0.1;
         }
 
         .role-name {
           font-size: 13px;
           font-weight: 500;
-          color: var(--chat-text-color);
+          color: var(--chat-text-color;
         }
 
         .role-desc {
@@ -3598,18 +3704,18 @@ watch(
 
 .history-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)
   gap: 16px;
 }
 
 .history-item {
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--line-color;
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s;
 
   &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1;
   }
 }
 
@@ -3641,7 +3747,7 @@ watch(
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%;
   }
 
   .preview-placeholder {
@@ -3663,7 +3769,7 @@ watch(
 
   .prompt {
     font-size: 13px;
-    color: var(--text-color);
+    color: var(--text-color;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -3683,7 +3789,7 @@ watch(
 
   .preview-info {
     padding: 16px;
-    background: var(--bg-color);
+    background: var(--bg-color;
     border-radius: 8px;
   }
 }

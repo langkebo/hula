@@ -24,7 +24,7 @@
             <span class="max-w-150px truncate text-(12px [--text-color])">
               <template v-if="group.isAtMe">
                 <span class="text flex-1 leading-tight text-12px truncate">
-                  <span class="text-#d5304f mr-4px">{{ t('message.message_list.mention_tag') }}</span>
+                  <span class="text-[--color-danger] mr-4px">{{ t('message.message_list.mention_tag') }}</span>
                   <span>{{ group.latestContent.replace(':', '：') }}</span>
                 </span>
               </template>
@@ -36,7 +36,7 @@
             </span>
 
             <!-- 有多少条消息 -->
-            <div class="text-(10px #fff) rounded-full px-6px py-2px flex-center bg-#d5304f">
+            <div class="text-(10px #fff) rounded-full px-6px py-2px flex-center bg-[--color-danger]">
               {{ group.messageCount > 99 ? '99+' : group.messageCount }}
             </div>
           </n-flex>
@@ -44,7 +44,7 @@
       </n-flex>
     </n-scrollbar>
     <component :is="division" />
-    <p @click="handleTip" class="pt-4px pl-6px text-(12px #13987f) cursor-pointer">
+    <p @click="handleTip" class="pt-4px pl-6px text-(12px --color-primary) cursor-pointer">
       {{ t('message.notify.ignore_all') }}
     </p>
   </n-flex>
@@ -59,9 +59,9 @@ import { sumBy } from 'es-toolkit'
 import { RoomTypeEnum } from '@/enums'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
-import type { MessageType } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useGlobalStore } from '@/stores/global.ts'
+import type { MessageType } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isWindows } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'

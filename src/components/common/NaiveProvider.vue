@@ -26,6 +26,7 @@ import {
   dateEnUS,
   dateZhCN,
   enUS,
+  type GlobalTheme,
   type GlobalThemeOverrides,
   type NDateLocale,
   type NLocale,
@@ -34,7 +35,7 @@ import {
 } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('NaiveProvider')
 
@@ -64,7 +65,7 @@ const resolveNaiveLocale = (lang: string): NaiveLocalePack => naiveLocaleMap[lan
 const currentNaiveLocale = computed(() => resolveNaiveLocale(locale.value).locale)
 const currentNaiveDateLocale = computed(() => resolveNaiveLocale(locale.value).dateLocale)
 /**监听深色主题颜色变化*/
-const globalTheme = ref<any>(themes.value.content === ThemeEnum.DARK ? darkTheme : lightTheme)
+const globalTheme = ref<GlobalTheme | null>(themes.value.content === ThemeEnum.DARK ? darkTheme : lightTheme)
 const prefers = matchMedia('(prefers-color-scheme: dark)')
 // 定义不需要显示消息提示的窗口
 const noMessageWindows = ['tray', 'notify', 'capture', 'update', 'checkupdate']
@@ -74,7 +75,7 @@ const isValidContent = (theme?: string): theme is ThemeEnum => theme === ThemeEn
 const applyThemeContent = (theme: ThemeEnum) => {
   globalTheme.value = theme === ThemeEnum.DARK ? darkTheme : lightTheme
   document.documentElement.dataset.theme = theme
-  logger.debug(globalTheme.value)
+  logger.debug('Applied theme content', globalTheme.value)
 }
 
 const syncOsTheme = () => {
@@ -136,8 +137,6 @@ const commonTheme: GlobalThemeOverrides = {
   Input: {
     borderRadius: '10px',
     borderHover: '0',
-    // TODO: 不清楚为什么去掉边框
-    // border: '0',
     borderDisabled: '0',
     borderFocus: '0',
     boxShadowFocus: '0'
@@ -146,7 +145,7 @@ const commonTheme: GlobalThemeOverrides = {
     colorChecked: '#13987f',
     borderChecked: '1px solid #13987f',
     borderFocus: '1px solid #13987f',
-    boxShadowFocus: '0 0 0 2px rgba(19, 152, 127, 0.3)'
+    boxShadowFocus: '0 0 0 2px var(--color-primary-active)'
   },
   Tag: {
     borderRadius: '4px'
@@ -178,11 +177,11 @@ const commonTheme: GlobalThemeOverrides = {
   Switch: {
     railColorActive: '#13987f',
     loadingColor: '#13987f',
-    boxShadowFocus: '0 0 0 2px rgba(19, 152, 127, 0.3)'
+    boxShadowFocus: '0 0 0 2px var(--color-primary-active)'
   },
   Radio: {
     boxShadowActive: 'inset 0 0 0 1px #13987f',
-    boxShadowFocus: 'inset 0 0 0 1px #13987f,0 0 0 2px rgba(19, 152, 127, 0.3)',
+    boxShadowFocus: 'inset 0 0 0 1px #13987f,0 0 0 2px var(--color-primary-active)',
     boxShadowHover: 'inset 0 0 0 1px #13987f',
     dotColorActive: '#13987f'
   },

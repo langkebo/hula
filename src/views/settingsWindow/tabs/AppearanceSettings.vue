@@ -93,7 +93,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { NSlider, NSwitch, NDivider, NSelect, useMessage } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 
 defineOptions({
   name: 'AppearanceSettings'
@@ -208,11 +208,11 @@ function handleBubbleStyleChange(value: boolean) {
 }
 
 .theme-option:hover {
-  border-color: rgba(24, 144, 255, 0.3);
+  border-color: var(--color-info) / 30;
 }
 
 .theme-option-active {
-  border-color: #1890ff;
+  border-color: var(--color-info);
 }
 
 .theme-preview {
@@ -265,7 +265,7 @@ function handleBubbleStyleChange(value: boolean) {
 
 .theme-label {
   font-size: 12px;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 :deep(.dark) .theme-label {
@@ -295,7 +295,7 @@ function handleBubbleStyleChange(value: boolean) {
 
 .setting-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 
@@ -307,7 +307,7 @@ function handleBubbleStyleChange(value: boolean) {
 
 .font-value {
   font-size: 12px;
-  color: #666;
+  color: var(--color-text-secondary);
   min-width: 36px;
 }
 </style>

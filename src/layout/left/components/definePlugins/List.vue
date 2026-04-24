@@ -13,11 +13,11 @@
               <Transition mode="out-in">
                 <svg
                   v-if="plugin.state === PluginEnum.NOT_INSTALLED || plugin.state === PluginEnum.DOWNLOADING"
-                  class="size-34px color-#999">
+                  class="size-34px color-[--color-text-quaternary]">
                   <use :href="`#${plugin.icon}`"></use>
                 </svg>
                 <template v-else>
-                  <svg class="size-34px color-#555">
+                  <svg class="size-34px color-[--color-text-secondary]">
                     <use :href="`#${plugin.iconAction || plugin.icon}`"></use>
                   </svg>
                 </template>
@@ -26,10 +26,12 @@
 
             <n-flex vertical :size="10">
               <n-flex align="center" :size="6">
-                <p class="text-(14px #666) pl-4px">{{ plugin.title }}</p>
+                <p class="text-(14px [--color-text-secondary]) pl-4px">{{ plugin.title }}</p>
 
                 <Transition>
-                  <svg v-if="plugin.isAdd && plugin.state !== PluginEnum.BUILTIN" class="color-#666 size-14px">
+                  <svg
+                    v-if="plugin.isAdd && plugin.state !== PluginEnum.BUILTIN"
+                    class="color-[--color-text-secondary] size-14px">
                     <use href="#notOnTop"></use>
                   </svg>
                 </Transition>
@@ -39,17 +41,17 @@
                 <n-flex
                   v-if="plugin.state === PluginEnum.UNINSTALLING"
                   class="relative rounded-22px bg-#f6dfe3 size-fit p-[4px_8px]">
-                  <p class="text-(12px #c14053 center)">{{ t('home.plugins.status.uninstalling') }}</p>
+                  <p class="text-(12px [--color-danger] center)">{{ t('home.plugins.status.uninstalling') }}</p>
                 </n-flex>
 
                 <n-flex
                   v-else-if="plugin.state === PluginEnum.BUILTIN"
                   class="relative rounded-22px bg-#e3e3e3 size-fit p-[4px_8px]">
-                  <p class="text-(12px #777 center)">{{ t('home.plugins.status.builtin') }}</p>
+                  <p class="text-(12px [--color-text-tertiary] center)">{{ t('home.plugins.status.builtin') }}</p>
                 </n-flex>
 
                 <n-flex v-else class="relative rounded-22px bg-#e0e9fc size-fit p-[4px_8px]">
-                  <p class="text-(12px #4C77BD center)">{{ plugin.version }}</p>
+                  <p class="text-(12px [--color-info] center)">{{ plugin.version }}</p>
                 </n-flex>
               </Transition>
             </n-flex>
@@ -137,7 +139,7 @@ import { storeToRefs } from 'pinia'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { PluginEnum } from '@/enums'
 import { usePluginsList } from '@/layout/left/config.tsx'
-import { usePluginsStore } from '@/stores/plugins.ts'
+import { usePluginsStore } from '@/stores/domains/settings/plugins'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()

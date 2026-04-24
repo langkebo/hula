@@ -11,7 +11,7 @@
       <!-- 注册菜单 -->
       <n-flex class="ma text-center w-full max-w-320px pointer-events-auto" vertical :size="16">
         <n-flex justify="center" align="center" :size="12">
-          <span class="text-(24px #70938c) textFont">{{ t('auth.register.title') }}</span>
+          <span class="text-(24px [--color-primary]) textFont">{{ t('auth.register.title') }}</span>
           <img class="w-100px h-40px" src="/hula.png" alt="" />
         </n-flex>
 
@@ -37,7 +37,7 @@
                     clearable></n-input>
                   <div
                     v-if="showNamePrefix || info.nickName"
-                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
                     :class="{ 'top-8px transform-none text-10px': showNamePrefix }">
                     {{ t('auth.register.labels.nickname') }}
                   </div>
@@ -63,7 +63,7 @@
                     clearable></n-input>
                   <div
                     v-if="showPasswordPrefix || info.password"
-                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
                     :class="{ 'top-8px transform-none text-10px': showPasswordPrefix }">
                     {{ t('auth.register.labels.password') }}
                   </div>
@@ -89,7 +89,7 @@
                     clearable></n-input>
                   <div
                     v-if="showConfirmPasswordPrefix || confirmPassword"
-                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
                     :class="{ 'top-8px transform-none text-10px': showConfirmPasswordPrefix }">
                     {{ t('auth.register.labels.confirm') }}
                   </div>
@@ -114,7 +114,7 @@
                     autoCapitalize="off"></n-auto-complete>
                   <div
                     v-if="showemailPrefix || info.email"
-                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
                     :class="{ 'top-8px transform-none text-10px': showemailPrefix }">
                     {{ t('auth.register.labels.email') }}
                   </div>
@@ -142,13 +142,13 @@
               <!-- 协议 -->
               <n-flex align="center" justify="center" :size="6" class="mt-10px">
                 <n-checkbox v-model:checked="protocol" />
-                <div class="text-12px color-#909090 cursor-default lh-14px">
+                <div class="text-12px color-[--color-text-tertiary] cursor-default lh-14px">
                   <span>{{ t('login.term.checkout.text1') }}</span>
-                  <span class="color-#13987f cursor-pointer" @click.stop="openServiceAgreement">
+                  <span class="color-[--color-primary] cursor-pointer" @click.stop="openServiceAgreement">
                     {{ t('login.term.checkout.text2') }}
                   </span>
                   <span>{{ t('login.term.checkout.text3') }}</span>
-                  <span class="color-#13987f cursor-pointer" @click.stop="openPrivacyAgreement">
+                  <span class="color-[--color-primary] cursor-pointer" @click.stop="openPrivacyAgreement">
                     {{ t('login.term.checkout.text4') }}
                   </span>
                 </div>
@@ -165,7 +165,7 @@
           @click="handleStepAction">
           {{ btnText }}
         </n-button>
-        <p v-if="sendCodeCooldown > 0" class="text-(12px #13987f) mt-6px whitespace-nowrap">
+        <p v-if="sendCodeCooldown > 0" class="text-(12px --color-primary) mt-6px whitespace-nowrap">
           {{ t('auth.register.tips.reopen_code') }}
         </p>
       </n-flex>
@@ -173,7 +173,7 @@
 
     <!-- 底部栏 -->
     <n-flex
-      class="text-(12px #909090) w-full absolute bottom-20px left-1/2 transform -translate-x-1/2"
+      class="text-(12px --color-text-tertiary) w-full absolute bottom-20px left-1/2 transform -translate-x-1/2"
       :size="8"
       justify="center">
       <span>Copyright {{ currentYear - 1 }}-{{ currentYear }} HuLaSpark All Rights Reserved.</span>
@@ -185,8 +185,8 @@
         <n-flex vertical class="w-full h-fit">
           <video class="w-full h-240px rounded-t-8px object-cover" src="@/assets/video/star.mp4" autoplay loop />
           <n-flex vertical :size="10" class="p-14px">
-            <p class="text-(16px #303030)">{{ t('auth.register.modal.title') }}</p>
-            <p class="text-(12px #808080) leading-5">{{ t('auth.register.modal.desc') }}</p>
+            <p class="text-(16px [--text-color])">{{ t('auth.register.modal.title') }}</p>
+            <p class="text-(12px [--color-text-tertiary]) leading-5">{{ t('auth.register.modal.desc') }}</p>
 
             <n-flex :size="10" class="ml-auto">
               <a
@@ -224,7 +224,7 @@
         <n-flex vertical class="w-full h-fit">
           <n-flex vertical :size="10" class="p-24px">
             <p class="text-(16px [--text-color]) mb-10px">{{ t('auth.register.email_modal.title') }}</p>
-            <p class="text-(12px #808080) leading-5 mb-10px">
+            <p class="text-(12px [--color-text-tertiary]) leading-5 mb-10px">
               {{ t('auth.register.email_modal.desc', { email: info.email }) }}
             </p>
 
@@ -262,8 +262,8 @@ import PinInput from '@/components/atomic/PinInput.vue'
 import Validation from '@/components/common/Validation.vue'
 import { useWindow } from '@/hooks/useWindow'
 import type { RegisterUserReq } from '@/services/types.ts'
-import { useSettingStore } from '@/stores/setting'
-import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 
@@ -495,9 +495,9 @@ const handleStepAction = async () => {
   try {
     const email = info.email.trim()
     info.email = email
-    emailClientSecret.value = generateClientSecret()
     const result = await MatrixAuthService.requestEmailToken(email, 1)
     emailSessionId.value = result.sid
+    emailClientSecret.value = result.client_secret
     startSendCodeCountdown()
     window.$message.success(t('auth.register.messages.code_sent'))
     emailCodeModal.value = true
@@ -507,18 +507,14 @@ const handleStepAction = async () => {
     })
   } catch (error) {
     logger.error('发送验证码失败', error)
+    window.$message.error(getErrorMessage(error, t('auth.register.messages.register_fail')))
   } finally {
     loading.value = false
   }
 }
 
-const generateClientSecret = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let result = ''
-  for (let i = 0; i < 43; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
+const getErrorMessage = (error: unknown, fallback: string) => {
+  return error instanceof Error && error.message ? error.message : fallback
 }
 
 const startSendCodeCountdown = () => {
@@ -558,7 +554,7 @@ const handleDirectRegister = async () => {
 
     starTipsModal.value = localStorage.getItem('star') !== '1'
   } catch (error) {
-    window.$message.error(t('auth.register.messages.register_fail'))
+    window.$message.error(getErrorMessage(error, t('auth.register.messages.register_fail')))
   } finally {
     registerLoading.value = false
   }
@@ -577,20 +573,26 @@ const register = async () => {
     info.avatar = avatarId
 
     info.confirmPassword = confirmPassword.value
+    info.code = emailCode.value.trim()
+
+    if (emailSessionId.value && emailClientSecret.value && info.code) {
+      await MatrixAuthService.submitEmailToken(info.code, emailClientSecret.value, emailSessionId.value)
+    }
 
     await MatrixAuthService.register(
       info.nickName,
       info.password,
       emailSessionId.value || undefined,
       emailSessionId.value ? 'm.login.email.identity' : undefined,
-      emailCode.value || undefined
+      undefined,
+      emailClientSecret.value || undefined
     )
     window.$message.success(t('auth.register.messages.register_success'))
 
     emailCodeModal.value = false
     starTipsModal.value = localStorage.getItem('star') !== '1'
   } catch (error) {
-    window.$message.error(t('auth.register.messages.register_fail'))
+    window.$message.error(getErrorMessage(error, t('auth.register.messages.register_fail')))
   } finally {
     registerLoading.value = false
   }

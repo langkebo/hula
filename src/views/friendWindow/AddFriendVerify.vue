@@ -40,7 +40,7 @@
           type="textarea"
           :placeholder="t('message.friend_verify.placeholder')" />
 
-        <n-button class="mt-30px" color="#13987f" @click="addFriend">
+        <n-button class="mt-30px" color="var(--color-primary)" @click="addFriend">
           {{ t('message.friend_verify.send_btn') }}
         </n-button>
       </n-flex>
@@ -50,11 +50,11 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useCommon } from '@/hooks/useCommon.ts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useUserStore } from '@/stores/user.ts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixContactService } from '@/services/matrix'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
