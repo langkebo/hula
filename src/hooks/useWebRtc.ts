@@ -12,6 +12,7 @@ import { SignalTypeEnum, type WSRtcCallMsg, type RtcMsgVO } from './webRtc/types
 import { getIceConfiguration, loadIceServers } from './webRtc/iceServers'
 import { useCallTimer } from './webRtc/useCallTimer'
 import { useCallBell } from './webRtc/useCallBell'
+import { useMediaDevices } from './webRtc/useMediaDevices'
 export { SignalTypeEnum, type WSRtcCallMsg } from './webRtc/types'
 const logger = createLogger('WebRtc')
 
@@ -42,15 +43,12 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   })
   const userStore = useUserStore()
 
-  // 设备相关状态
-  const audioDevices = ref<MediaDeviceInfo[]>([])
-  const videoDevices = ref<MediaDeviceInfo[]>([])
-  const selectedAudioDevice = ref<string | null | undefined>(null)
-  const selectedVideoDevice = ref<string | null | undefined>(null)
+  // 媒体设备（抽离到 useMediaDevices）
+  const { audioDevices, videoDevices, selectedAudioDevice, selectedVideoDevice, getDevices, resetDevices } =
+    useMediaDevices()
 
   // 状态
   const connectionStatus = ref<RTCCallStatus | undefined>(undefined)
-  const isDeviceLoad = ref(false)
   const isLinker = ref(false) // 判断是否是 webrtc 连接的参与者
 
   // rtc状态
@@ -157,47 +155,6 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       })
     } catch (error) {
       logger.error('发送通话响应失败:', error)
-    }
-  }
-
-  // 获取设备列表
-  const getDevices = async () => {
-    try {
-      info('start getDevices')
-      isDeviceLoad.value = true
-
-      // 先请求权限以获取完整的设备信息
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
-        stream.getTracks().forEach((track) => track.stop()) // 立即停止流
-      } catch {
-        error('Permission denied, will get limited device info')
-      }
-
-      const devices = (await navigator.mediaDevices.enumerateDevices()) || []
-      info(`getDevices, devices: ${JSON.stringify(devices)}`)
-      if (devices.length === 0) {
-        return false
-      }
-      audioDevices.value = devices.filter((device) => device.kind === 'audioinput')
-      videoDevices.value = devices.filter((device) => device.kind === 'videoinput')
-      // 默认选择 “default” | "第一个" 设备
-      selectedAudioDevice.value =
-        audioDevices.value.find((device) => device.deviceId === 'default')?.deviceId ||
-        audioDevices.value?.[0]?.deviceId
-      selectedVideoDevice.value =
-        videoDevices.value.find((device) => device.deviceId === 'default')?.deviceId ||
-        videoDevices.value?.[0]?.deviceId
-      isDeviceLoad.value = false
-      return true
-    } catch (err) {
-      window.$message.error('获取设备失败!')
-      error(`获取设备失败: ${err}`)
-      // 默认没有设备
-      selectedAudioDevice.value = selectedAudioDevice.value || null
-      selectedVideoDevice.value = selectedVideoDevice.value || null
-      isDeviceLoad.value = false
-      return false
     }
   }
 
@@ -471,10 +428,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         senderId: undefined
       }
       pendingCandidates.value = []
-      audioDevices.value = []
-      videoDevices.value = []
-      selectedAudioDevice.value = null
-      selectedVideoDevice.value = null
+      resetDevices()
       localStream.value = null
       remoteStream.value = null
       connectionStatus.value = undefined

@@ -926,3 +926,37 @@ _Commit: `d8154b9b chore(lint): clear all noExplicitAny warnings`（105 文件�
 - P0-6 useWebRtc 续作首批 ✅ 完成
 - useWebRtc.ts 仍 >1000 LOC（1043），下一轮续作表：`useMediaDevices`（audioDevices / videoDevices / selectedXxx + getDevices，~60 LOC）→ `usePeerConnection`（createPeerConnection + 事件绑定）→ `useScreenShare`
 - 同期 useChatMain.ts 续作表仍待启动：建议下一轮先抽 `useGroupNicknameModal`（最低耦合 5 ref + open/close）再动菜单数组
+
+### 步骤 17：P0-6 useWebRtc / useChatMain 续作（第二批）· 状态：🟢 本轮完成（2026-04-24）
+
+**背景**：Step 16 后 useWebRtc 1043 LOC、useChatMain 1330 LOC 均仍 >1000。本轮按各自续作表的「最低耦合」条目同步推进：
+- useWebRtc：抽 `useMediaDevices`（5 个 ref + getDevices + resetDevices，原 getDevices 内的 `window.$message.error('获取设备失败!')` 已在 caller `startCall` 中重复打过一遍，hook 内不再弹 toast，职责更纯）
+- useChatMain：抽 `useGroupNicknameModal`（5 个 ref + handleGroupNicknameConfirm + 条件 mitt 订阅）
+
+**产出**
+- `src/hooks/webRtc/useMediaDevices.ts`（新增 75 LOC）
+  - 暴露 audioDevices / videoDevices / selectedAudioDevice / selectedVideoDevice / isDeviceLoad
+  - `getDevices()` 先试探性 `getUserMedia({audio,video})` 以拿到完整 label，再 enumerate，再按 `default` / 首个回填选择
+  - `resetDevices()` 提供给 `clear()` 的统一重置入口
+- `src/hooks/useWebRtc.ts`：1043 → 997 LOC（−46），返回 API 不变；`clear()` 的设备重置段改为一行 `resetDevices()`
+- `src/hooks/chatMain/useGroupNicknameModal.ts`（新增 100 LOC）
+  - 暴露 5 ref + `openGroupNicknameModal(payload)` + `handleGroupNicknameConfirm()`
+  - `enableMitt=true` 时订阅 `MittEnum.OPEN_GROUP_NICKNAME_MODAL`，保持与老行为（未显式 off）一致
+- `src/hooks/useChatMain.ts`：1330 → 1281 LOC（−49），返回 API 不变；老的 `GroupNicknameModalPayload` 类型从 hook 内搬到模块内重导出
+- 单测：
+  - `useMediaDevices.test.ts`（7）：初始值 / default 优先 / 首个回退 / 权限拒绝仍继续 / 空 enumerate / 抛错回退 / resetDevices
+  - `useGroupNicknameModal.test.ts`（9）：初始值 / open 填充 / enableMitt 订阅 / default 不订阅 / 空白名报错 / 同名关闭 / 无 roomId 报错 / 成功路径 / SDK 失败保留弹窗
+
+**验收**
+- `pnpm exec vitest run src/hooks/webRtc/__tests__/useMediaDevices.test.ts src/hooks/chatMain/__tests__/useGroupNicknameModal.test.ts`：16/16 pass
+- 叠加 Step 16 的 useCallTimer / useCallBell：本批次相关 4 个文件共 25/25 pass
+- `pnpm exec vue-tsc --noEmit` 去除 robot/ in-flight error 后 0 error
+- 公共 API：`useWebRtc()` / `useChatMain()` 返回对象同形同语义
+- 文件状态：useWebRtc.ts 已跌破 1000 LOC 门槛 ✅；useChatMain.ts 仍 1281 LOC，续作剩 6 个菜单数组 + 文件下载/拷贝/emoji 反应
+
+**Step 17 状态**
+- P0-6 useWebRtc 续作第二批 ✅ 完成（useWebRtc 已 <1000 LOC）
+- P0-6 useChatMain 续作第二批 ✅ 完成（最低耦合项）
+- 下一轮续作表：
+  - useWebRtc：`usePeerConnection`（createPeerConnection + 状态机；含 startCallTimer/endCall 依赖注入，~100 LOC，中等风险）
+  - useChatMain：`useChatFileDownload`（~150 LOC）或按菜单数组逐块抽 `useChatMessageMenus`
