@@ -707,12 +707,39 @@ _Commit 3：`5197d5f5 chore: remove 215 legacy source files superseded by matrix
 - `git status` 中 `D` 项：**249 → 0**
 - 剩余 noise：144 `??`（earlier session 的未跟踪新增文件，如 `AdminNotices.vue` / `AdminRegistrationTokens.vue` / admin composables 等） + 238 `M`（earlier session 的在途修改，本轮未触及）
 
-**Step 10 续作（后续轮次）**
-- **P2-3 完成**：249 个 `D` 项已全部清零
-- **P2-4 收尾**：`deleteRetentionPolicy` 仍保留 no-op（UI 调用路径仍在），未来 UI 移除后可一并删除
-- **P2-6 完成**：matrix 顶层归档工作收官（见第七/八批）
-- **剩余 worktree noise**：144 `??` + 238 `M` 属 earlier session 的 in-flight 工作（admin 新增 views/composables、多处文件修改），本轮刻意未碰。清理路径：
-  - 若为有效在途工作：需运行者本人 review 后决定 commit 或 discard
-  - 若为废弃实验：可 `git clean -f` + `git checkout --` 一次性清理（**危险，需用户确认**）
-- **既存 noExplicitAny warning**：`pnpm check` 报告的 23+ 个 `noExplicitAny` 均为迁移前遗留，未来可单独批次清理（不在本轮范围）
-- **TODO 清理** 已完成（可清理项 2/4，剩余 2 项为合法活占位符/WHY 注解）
+**第十批产出（工作树 noise 归零：earlier-session in-flight 工作落盘）**
+
+_背景_：第九批清完 249 个 `D` 之后，`git status` 仍有 144 `??` + 238 `M`（+ 4 根目录零碎），为 earlier session 的成片在途工作（admin 多功能页、settings 扩展、services 子目录新增、i18n 补全、Rust 后端指令、worker、类型扩展等）。因 `vue-tsc --noEmit` 0 error 与 2021 tests 全绿，整体自洽，按 **assets / Rust / frontend / root** 四批 checkpoint 一次性落盘。
+
+_Commit 1：`6389a695 chore: checkpoint in-flight config/locales/scripts/docs`（70 文件：31 A + 39 M）_
+- `locales/` 36：zh-CN/en 补全 burn/connection/encryption/error/mobile_*/space/friend/home/setting 等键
+- `scripts/` 9：probe-admin-features、report-bundle-metrics、check-sdk-augmentations、run-vitest 等构建/审计脚本
+- `build/config/` 4 · `.github/` 2（dependabot + security-performance workflow）· 根 docs 4 · 根元文件 12（`.env`/tsconfig/vite/vitest/biome/package/pnpm-lock/CHANGELOG/README 等）
+
+_Commit 2：`b90b526b chore: checkpoint in-flight Rust backend changes`（15 文件：1 A + 14 M）_
+- 新增 `src-tauri/src/command/admin_command.rs`
+- 修改 `ai/contact/message/room_member/setting/upload/user_command.rs`、`command/mod.rs`、`lib.rs`、`vo/vo.rs`、`Cargo.{toml,lock}`、`src-tauri/docs/README`
+- Rust 侧独立验证在 earlier session 已完成
+
+_Commit 3：`92556842 chore: checkpoint in-flight frontend feature work`（374 文件：193 A + 181 M）_
+- `components/` 75 · `services/` 69 · `mobile/` 50 · `views/` 47 · `composables/` 36 · `utils/` 21 · `hooks/` 19 · `stores/` 11 · `plugins/` 8 · `common/` 7 · `router/` 6 · `workers/` 5 · `types/` 5 · `typings/` 4 · `styles/` 4 · `layout/` 3 + `App.vue` / `main.ts` / `i18n/` / `scripts/`
+- 亮点新增：admin 全功能页（Audit / Federation / Maintenance / Notices / RegistrationTokens / Retention / Saml / Security / ServerLogs / Forbidden）、settings 扩展（BurnAfterRead / Friends / Mjolnir / Sidebar）、Encryption / ThreePidSettings / SpaceView / NotFound、admin composables（useAdminFederation / Notices / RegistrationTokens / Rooms / Users）、`HttpClient` / `PerformanceReporter` / `inputValidation` 工具、`matrixSdk.worker.ts` + `matrixWorkerTypes.ts`、`matrix-extensions.d.ts` + `matrix-js-sdk-augmentations.d.ts` 类型增强
+- services 子目录新增：`auth/` · `crypto/` · `media/` · `widget/` + 对应 `__tests__/`
+
+_Commit 4：`904e9f97 chore: checkpoint remaining in-flight root + skill template edits`（4 文件：M）_
+- `index.html` · `playwright.config.ts` · `skills/hula-skill/assets/templates/{pinia-store.ts,view-desktop.vue}`
+
+**验收（第十批）**
+- 4 个 checkpoint commit 顺序落盘，按 assets / Rust / frontend / root 四层分离
+- `pnpm exec vue-tsc --noEmit`：**0 error**（`FriendsList.vue` 在途修正已随 frontend checkpoint 一并生效，全仓零 type error）
+- `pnpm test:run`：172 files / **2021 tests passed**
+- `git status`：**working tree clean**（从 249 D + 144 ?? + 238 M 清零）
+
+**Step 10 最终状态**
+- **P2-3** ✅ 已完成（第九批 3 commit 清 249 `D`）
+- **P2-6** ✅ 已完成（第七/八批完成 matrix 归档）
+- **P2-7** ✅ 已完成（第五批 stores 分层）
+- **P2-4** — 仍阻塞于 UI 调用路径移除（runtime-level dependency）
+- **工作树** ✅ 全清：所有 earlier-session in-flight 工作已以 checkpoint commit 落盘
+- **仓库健康度**：vue-tsc 0 error · 2021 tests pass · services/matrix 顶层 28 → 8（-71%）· stores 38 flat → domains/5 域
+- **剩余候选任务**：`noExplicitAny` warning 批次清理（23+ 个）、`deleteRetentionPolicy` UI 调用移除后收尾
