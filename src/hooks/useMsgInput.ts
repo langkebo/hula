@@ -1,4 +1,3 @@
-import { useDebounceFn } from '@vueuse/core'
 import pLimit from 'p-limit'
 import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
@@ -18,7 +17,7 @@ import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { messageStrategyMap } from '@/strategy/MessageStrategy.ts'
 import { getReplyContent } from '@/utils/MessageReply.ts'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
-import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
+import { isMobile } from '@/utils/PlatformConstants'
 import { useCommon } from './useCommon.ts'
 import { globalFileUploadQueue } from './useFileUploadQueue.ts'
 import { useTrigger } from './useTrigger'
@@ -29,6 +28,7 @@ import { useCursorManager } from './msgInput/useCursorManager'
 import { useMentionState } from './msgInput/useMentionState'
 import { useClipboardPaste } from './msgInput/useClipboardPaste'
 import { useVoiceInput } from './msgInput/useVoiceInput'
+import { useInputShortcuts } from './msgInput/useInputShortcuts'
 export { useCursorManager } from './msgInput/useCursorManager'
 const logger = createLogger('MsgInput')
 
@@ -75,8 +75,6 @@ export const useMsgInput = (messageInputDom: Ref) => {
   }
   const settingStore = useSettingStore()
   const { chat } = storeToRefs(settingStore)
-  /** 艾特选项的key  */
-  const chatKey = ref(chat.value.sendKey)
   /** 输入框内容  */
   const msgInput = ref('')
   /** 发送按钮是否禁用 */
@@ -181,7 +179,6 @@ export const useMsgInput = (messageInputDom: Ref) => {
   )
 
   watchEffect(() => {
-    chatKey.value = chat.value.sendKey
     if (groupedAIModels.value.length === 0) {
       // 没有可选模型时关闭弹层并清空游标，避免 Enter 键误触发
       selectedAIKey.value = null
@@ -193,10 +190,6 @@ export const useMsgInput = (messageInputDom: Ref) => {
     if (msgInput.value === '') {
       reply.value = { avatar: '', imgCount: 0, accountName: '', content: '', key: 0 }
     }
-  })
-
-  watch(chatKey, (v) => {
-    chat.value.sendKey = v
   })
 
   // `extractAtUserIds` and `parseHtmlSafely` are imported from
@@ -270,10 +263,26 @@ export const useMsgInput = (messageInputDom: Ref) => {
     }
   }
 
+  /** 输入框快捷键 / 发送键 / 防抖输入（抽离至 useInputShortcuts） */
+  const { chatKey, handleInput, inputKeyDown } = useInputShortcuts({
+    messageInputDom,
+    msgInput,
+    chat,
+    ait,
+    aiDialogVisible,
+    isChinese,
+    disabledSend,
+    getEditorRange,
+    handleTrigger,
+    resetAllStates,
+    resetInput,
+    insertNode,
+    triggerInputEvent
+  })
+
   const retainRawContent = (type: MsgEnum) => [MsgEnum.EMOJI, MsgEnum.IMAGE].includes(type)
 
   /** 处理发送信息事件 */
-  // 输入框内容草稿功能：通过 globalStore.setDraftMessage/getDraftMessage 实现
   const { sendWithTracking } = useMessageSender()
   const burnAfterRead = useBurnAfterRead()
   const isBurnAfterRead = computed(() => burnAfterRead.isRoomBurnEnabled())
@@ -487,110 +496,6 @@ export const useMsgInput = (messageInputDom: Ref) => {
       ) {
         URL.revokeObjectURL((messageBody as Record<string, unknown>).thumbUrl as string)
       }
-    }
-  }
-
-  /** 当输入框手动输入值的时候触发input事件(使用vueUse的防抖) */
-  const handleInput = useDebounceFn(async (e: Event) => {
-    const inputElement = e.target as HTMLInputElement
-
-    // 检查输入框内容，如果只有空白字符、br标签或空元素则清空
-    const textContent = inputElement.textContent || ''
-    const innerHTML = inputElement.innerHTML || ''
-
-    // 检查是否有实际内容（图片、视频、表情等）
-    const hasMediaContent =
-      innerHTML.includes('<img') || innerHTML.includes('<video') || innerHTML.includes('data-type=')
-
-    // 清理各种空白字符和空标签
-    const cleanText = textContent.replace(/[\u00A0\u0020\u2000-\u200B\u2028\u2029]/g, '').trim()
-    const hasOnlyEmptyElements =
-      innerHTML === '<br>' ||
-      innerHTML === '<div><br></div>' ||
-      innerHTML.match(/^(<br>|<div><br><\/div>|<p><br><\/p>|\s)*$/)
-
-    // 只有在没有媒体内容且没有有效文本时才清空
-    if (!hasMediaContent && (cleanText === '' || hasOnlyEmptyElements)) {
-      inputElement.innerHTML = ''
-      inputElement.textContent = ''
-      msgInput.value = ''
-      // 输入框为空时重置所有状态
-      resetAllStates()
-      return
-    }
-    msgInput.value = inputElement.innerHTML || ''
-
-    /** 获取当前光标所在的节点和文本内容 */
-    const { range, selection } = getEditorRange()!
-    if (!range || !selection) {
-      resetAllStates()
-      return
-    }
-
-    /** 获取当前节点 */
-    const curNode = range.endContainer
-    /** 判断当前节点是否是文本节点 */
-    if (!curNode || !curNode.textContent || curNode.nodeName !== '#text') {
-      resetAllStates()
-      return
-    }
-
-    /** 获取当前光标位置和文本内容 */
-    const cursorPosition = selection.focusOffset
-    const text = curNode.textContent
-
-    await handleTrigger(text, cursorPosition, { range, selection, keyword: '' })
-  }, 0)
-
-  /** input的keydown事件 */
-  const inputKeyDown = async (e: KeyboardEvent) => {
-    if (disabledSend.value) {
-      e.preventDefault()
-      e.stopPropagation()
-      resetInput()
-      return
-    }
-
-    // 当 ait 或 aiDialogVisible 为 true 时，阻止默认行为
-    if (ait.value || aiDialogVisible.value) {
-      e?.preventDefault()
-      return
-    }
-
-    // 正在输入拼音，并且是macos系统
-    if (isChinese.value && isMac()) {
-      return
-    }
-    const isWindowsPlatform = isWindows()
-    const isEnterKey = e.key === 'Enter'
-    const isCtrlOrMetaKey = isWindowsPlatform ? e.ctrlKey : e.metaKey
-
-    const sendKeyIsEnter = chat.value.sendKey === 'Enter'
-    const sendKeyIsCtrlEnter = chat.value.sendKey === `${isWindowsPlatform ? 'Ctrl' : '⌘'}+Enter`
-
-    // 如果当前的系统是mac，我需要判断当前的chat.value.sendKey是否是Enter，再判断当前是否是按下⌘+Enter
-    if (!isWindowsPlatform && chat.value.sendKey === 'Enter' && e.metaKey && e.key === 'Enter') {
-      // 就进行换行操作
-      e.preventDefault()
-      insertNode(MsgEnum.TEXT, '\n', {} as HTMLElement)
-      triggerInputEvent(messageInputDom.value)
-    }
-    if (msgInput.value === '' || msgInput.value.trim() === '' || ait.value) {
-      e?.preventDefault()
-      return
-    }
-    if (!isWindowsPlatform && e.ctrlKey && isEnterKey && sendKeyIsEnter) {
-      e?.preventDefault()
-      return
-    }
-    if ((sendKeyIsEnter && isEnterKey && !isCtrlOrMetaKey) || (sendKeyIsCtrlEnter && isCtrlOrMetaKey && isEnterKey)) {
-      e?.preventDefault()
-      // 触发form提交而不是直接调用send
-      const form = document.getElementById('message-form') as HTMLFormElement
-      if (form) {
-        form.requestSubmit()
-      }
-      resetAllStates()
     }
   }
 
