@@ -6,7 +6,7 @@ import { StoresEnum, MsgEnum, MessageStatusEnum } from '@/enums'
 import matrixClientService from '@/services/matrix/MatrixClientService'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import matrixRoomService from '@/services/matrix/MatrixRoomService'
-import matrixSlidingSyncService from '@/services/matrix/MatrixSlidingSyncService'
+import matrixSlidingSyncService, { type SlidingSyncUnreadUpdate } from '@/services/matrix/sync/MatrixSlidingSyncService'
 import { LRUCache } from '@/utils/LRUCache'
 import type { RoomInfo, RoomDetail } from '@/services/types'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
@@ -588,7 +588,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     })
 
     matrixSlidingSyncService.registerCallbacks({
-      onUnreadCountsUpdate: (updates) => {
+      onUnreadCountsUpdate: (updates: SlidingSyncUnreadUpdate[]) => {
         for (const update of updates) {
           const roomInfo = rooms.value.get(update.roomId)
           if (roomInfo) {
@@ -599,7 +599,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
           }
         }
       },
-      onRoomUpdate: (roomId) => {
+      onRoomUpdate: (roomId: string) => {
         updateRoom(roomId, {})
       },
       onRoomListRefresh: () => {

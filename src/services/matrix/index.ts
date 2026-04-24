@@ -1,7 +1,7 @@
-import { MatrixAuthService } from './MatrixAuthService'
+import { MatrixAuthService } from './auth/MatrixAuthService'
 export { matrixClientService } from './MatrixClientService'
 export type { ConnectionState, MatrixClientConfig } from './MatrixClientService'
-export { MatrixAuthService } from './MatrixAuthService'
+export { MatrixAuthService } from './auth/MatrixAuthService'
 export const matrixAuthService = new MatrixAuthService()
 export { matrixAccountService } from './MatrixAccountService'
 export { matrixRoomService } from './MatrixRoomService'
@@ -10,84 +10,79 @@ export type {
   MatrixLoginResult,
   MatrixRegisterResult,
   MatrixEmailTokenResult,
-  MatrixCaptchaResult,
-  MatrixLoginRequest,
-  MatrixRegisterRequest,
-  MatrixEmailTokenRequest,
-  MatrixSubmitTokenRequest,
-  MatrixForgetPasswordRequest,
-  MatrixResetPasswordRequest
-} from './MatrixAuthService'
+  MatrixCaptchaResult
+} from './auth/MatrixAuthService'
 
-export { matrixMessageService } from './MatrixMessageService'
-export type { MessageSearchOptions, MessageReaction, MarkedMessage } from './MatrixMessageService'
+export { matrixMessageService } from './messaging/MatrixMessageService'
+export type { MessageSearchOptions, MessageReaction, MarkedMessage, SendMessagePayload } from './messaging/MatrixMessageService'
 
 export { matrixContactService } from './MatrixContactService'
 export type { UserProfile, DirectChatResult } from './MatrixContactService'
 
-export { matrixUserService } from './MatrixUserService'
-
-export { matrixFriendService } from './MatrixFriendService'
+export { matrixFriendService } from './friends/MatrixFriendService'
 
 export { matrixGroupService } from './MatrixGroupService'
 export type { CreateRoomOptions, RoomPowerLevels } from './MatrixGroupService'
 
-export { matrixMessageRelationService } from './MatrixMessageRelationService'
-export { matrixReactionService } from './MatrixReactionService'
-export { matrixMediaService } from './MatrixMediaService'
-export { matrixCryptoService } from './MatrixCryptoService'
-export { matrixEncryptionService } from './MatrixEncryptionService'
+export { matrixMessageRelationService } from './messaging/MatrixMessageRelationService'
+export { matrixReactionService } from './messaging/MatrixReactionService'
+export { matrixMediaService } from './media/MatrixMediaService'
+export { matrixCryptoService } from './crypto/MatrixCryptoService'
+export { matrixEncryptionService } from './crypto/MatrixEncryptionService'
+export { matrixEncryptionContextService } from './crypto/MatrixEncryptionContextService'
+export type { MatrixEncryptionSessionContext, PreparedKeyBackupVersion } from './crypto/MatrixEncryptionContextService'
 export { matrixSearchService } from './MatrixSearchService'
-export { matrixSpaceService, type SpaceInfo, type SpaceOptions } from './MatrixSpaceService'
-export { matrixPushService } from './MatrixPushService'
-export type { IPushRule, IPusher, IPushRules } from './MatrixPushService'
-export { matrixVoIPService } from './MatrixVoIPService'
-export { matrixForwardService } from './MatrixForwardService'
+export { matrixSpaceService, type SpaceOptions, type SpaceInfo } from './MatrixSpaceService'
+export { matrixPushService } from './notifications/MatrixPushService'
+export type { IPusher, IPushRules, IPushRule } from './notifications/MatrixPushService'
+export { matrixRoomNotificationService } from './notifications/MatrixRoomNotificationService'
+export { matrixVoIPService } from './media/MatrixVoIPService'
+export { matrixForwardService } from './messaging/MatrixForwardService'
 
-export { matrixSessionService } from './MatrixSessionService'
-export type { SessionInfo, SessionDetail } from './MatrixSessionService'
+export { matrixSessionService } from './auth/MatrixSessionService'
+export type { SessionInfo, SessionDetail } from './auth/MatrixSessionService'
+export { matrixRuntimeSessionService } from './auth/MatrixRuntimeSessionService'
+export type {
+  RestoreMatrixRuntimeSessionOptions,
+  StoredMatrixTokens,
+  MatrixPostLoginBootstrapOptions,
+  MatrixPasswordLoginOptions
+} from './auth/MatrixRuntimeSessionService'
 
-export { matrixOidcService } from './MatrixOidcService'
+export { matrixOidcService } from './auth/MatrixOidcService'
 export type {
   OidcDiscoveryDocument,
   OidcUserInfo,
   OidcAuthorizationUrlParams,
   OidcTokenResponse
-} from './MatrixOidcService'
+} from './auth/MatrixOidcService'
 
-export { matrixAIService } from './MatrixAIService'
+export { aiService } from './ai/AIService'
 export type {
   AIConversation,
   AIMessage,
+  AIAsyncGenerationResponse,
+  AIModelRemainingUsageResponse,
+  AudioGenerationRequest,
   ImageGenerationRequest,
   ImageGenerationResult,
+  VideoGenerationRequest,
   StreamCallbacks
-} from './MatrixAIService'
+} from './ai/AIService'
 
-export { matrixAIConnectionService } from './MatrixAIConnectionService'
-export type {
-  AIConnection,
-  CreateConnectionOptions,
-  UpdateConnectionOptions,
-  McpToolCallOptions
-} from './MatrixAIConnectionService'
+export { apiKeyService } from './ai/ApiKeyService'
+export type { ApiKey, ApiKeyBalance, ApiKeyBalanceInfo, Platform } from './ai/ApiKeyService'
 
-export { matrixApiKeyService } from './MatrixApiKeyService'
-export type { ApiKey, Platform } from './MatrixApiKeyService'
+export { chatRoleService } from './ai/ChatRoleService'
+export type { ChatRole } from './ai/ChatRoleService'
 
-export { matrixChatRoleService } from './MatrixChatRoleService'
-export type { ChatRole } from './MatrixChatRoleService'
+export { conversationService } from './ai/ConversationService'
+export type { Conversation, Message } from './ai/ConversationService'
 
-export { matrixMapService } from './MatrixMapService'
-export type { TransformedCoordinate, AddressComponent, ReverseGeocodeResult } from './MatrixMapService'
+export { modelService } from './ai/ModelService'
+export type { AIModel } from './ai/ModelService'
 
-export { matrixConversationService } from './MatrixConversationService'
-export type { Conversation, Message } from './MatrixConversationService'
-
-export { matrixModelService } from './MatrixModelService'
-export type { AIModel } from './MatrixModelService'
-
-export * from './MatrixQrLoginService'
+export * from './auth/MatrixQrLoginService'
 export { matrixAnnouncementService } from './MatrixAnnouncementService'
 export type {
   Announcement,
@@ -96,32 +91,19 @@ export type {
   AnnouncementUpdateOptions
 } from './MatrixAnnouncementService'
 
-export { matrixEmojiService } from './MatrixEmojiService'
-export type { EmojiPack, EmojiItem } from './MatrixEmojiService'
+export { matrixEmojiService } from './messaging/MatrixEmojiService'
+export type { EmojiPack, EmojiItem } from './messaging/MatrixEmojiService'
 
 export { matrixReceiptService } from './MatrixReceiptService'
 export { matrixModerationService } from './MatrixModerationService'
 export { matrixQuotaService } from './MatrixQuotaService'
 export type { QuotaStatus, QuotaStats, QuotaAlert } from './MatrixQuotaService'
 
-export { matrixSpecialFriendService } from './MatrixSpecialFriendService'
+export { matrixSpecialFriendService } from './friends/MatrixSpecialFriendService'
 
 export { synapseRustExtensionsService } from './SynapseRustExtensionsService'
-
-export { syncService, matrixSyncService } from './MatrixSyncService'
-export type { SyncOptions, SyncState } from './MatrixSyncService'
-
-// P0 SDK Manager 封装服务
-export { matrixPresenceService } from './MatrixPresenceService'
-export { matrixKeyBackupService } from './MatrixKeyBackupService'
-export { matrixVerificationService } from './MatrixVerificationService'
-
-// P1 SDK Manager 封装服务
-export { matrixSecureBackupService } from './MatrixSecureBackupService'
-export { matrixAccountDataService } from './MatrixAccountDataService'
-export { matrixRendezvousService } from './MatrixRendezvousService'
-
 export type {
+  BurnStats,
   InviteBlocklist,
   InviteAllowlist,
   StickyEvent,
@@ -130,44 +112,108 @@ export type {
   RoomSummaryStats
 } from './SynapseRustExtensionsService'
 
+export { matrixBurnAfterReadService } from './messaging/MatrixBurnAfterReadService'
+export type { BurnSettings, BurnPendingEvent, BurnMessageResponse } from './messaging/MatrixBurnAfterReadService'
+
 // Beacon 服务
-export { matrixBeaconService } from './MatrixBeaconService'
+export { matrixBeaconService } from './media/MatrixBeaconService'
 export type {
   BeaconInfo,
   BeaconLocation,
   CreateBeaconParams,
   UpdateBeaconLocationParams
-} from './MatrixBeaconService'
+} from './media/MatrixBeaconService'
 
 // Location 服务
-export { matrixLocationService } from './MatrixLocationService'
-export type { LocationData, ParsedLocation } from './MatrixLocationService'
-
-// Thread 服务
-export { default as matrixThreadService } from './MatrixThreadService'
-export type { ThreadInfo, ThreadReply } from './MatrixThreadService'
-
-// KeyRotation 服务
-export { default as matrixKeyRotationService } from './MatrixKeyRotationService'
-export type { KeyRotationStatus, KeyRotationConfig, KeyRotationHistory } from './MatrixKeyRotationService'
-
-// BurnAfterRead 服务
-export { default as matrixBurnAfterReadService } from './MatrixBurnAfterReadService'
-export type { BurnConfig, BurnStats, BurnPendingMessage } from './MatrixBurnAfterReadService'
-
-// PinnedEvents 服务
-export { default as matrixPinnedEventsService } from './MatrixPinnedEventsService'
-export type { PinnedEvent } from './MatrixPinnedEventsService'
+export { matrixLocationService } from './media/MatrixLocationService'
+export type { LocationData, LiveLocationShare } from './media/MatrixLocationService'
 
 // URL 预览服务
-export { matrixUrlPreviewService } from './MatrixUrlPreviewService'
-export type { UrlPreview, UrlPreviewParams } from './MatrixUrlPreviewService'
-export { simplifyUrl, getDomain } from './MatrixUrlPreviewService'
+export { matrixUrlPreviewService } from './media/MatrixUrlPreviewService'
+export type { UrlPreview, UrlPreviewParams } from './media/MatrixUrlPreviewService'
+export { simplifyUrl, getDomain } from './media/MatrixUrlPreviewService'
 
-// Widget 服务
-export { matrixWidgetService } from './MatrixWidgetService'
-export type { Widget, WidgetSession, JitsiConfig } from './MatrixWidgetService'
+// Device 服务
+export { matrixDeviceService, initializeDeviceService } from './MatrixDeviceService'
+export type {
+  Device,
+  DevicesResponse,
+  DeviceDetailResponse,
+  DeviceUpdateResponse,
+  DeviceListUpdatesResponse,
+  DeviceListUpdatesRequest
+} from './MatrixDeviceService'
 
-// Guest 服务
-export { matrixGuestService } from './MatrixGuestService'
-export type { GuestInfo, ServerGuestInfo, GuestRegisterResponse, UpgradeGuestRequest } from './MatrixGuestService'
+// Key Backup 服务
+export { matrixKeyBackupService, initializeKeyBackupService } from './crypto/MatrixKeyBackupService'
+export type {
+  BackupVersionInfo,
+  BackupVersion,
+  RoomKeyBackup,
+  RecoveryProgress,
+  BatchRecoverResult,
+  ExportResult,
+  ImportResult,
+  VerifyResult
+} from './crypto/MatrixKeyBackupService'
+
+// Presence 服务
+export { matrixPresenceService, initializePresenceService } from './MatrixPresenceService'
+export type { PresenceState, PresenceInfo, PresenceListResponse } from './MatrixPresenceService'
+
+// Verification 服务
+export { matrixVerificationService, initializeVerificationService } from './crypto/MatrixVerificationService'
+export type {
+  VerificationMethod,
+  VerificationRequest,
+  SasVerification,
+  VerificationState,
+  VerificationCancelReason
+} from './crypto/MatrixVerificationService'
+
+// Room Summary 服务
+export { matrixRoomSummaryService, initializeRoomSummaryService } from './MatrixRoomSummaryService'
+export type {
+  MatrixRoomSummaryInfo,
+  MatrixRoomStats,
+  MatrixRoomMemberInfo
+} from './MatrixRoomSummaryService'
+
+export { matrixThreadService } from './messaging/MatrixThreadService'
+export type { Thread, ThreadMessage } from './messaging/MatrixThreadService'
+
+export { matrixWidgetService } from './widget/MatrixWidgetService'
+export type { Widget } from './widget/MatrixWidgetService'
+
+export { MatrixRequestHelper } from './MatrixRequestHelper'
+export type { RequestOptions } from './MatrixRequestHelper'
+export { MatrixCacheManager, createCachedFetcher } from './MatrixCacheManager'
+export { MatrixRequestDeduper, createDedupedFetcher } from './MatrixRequestDeduper'
+
+export { adminService } from './MatrixAdminService'
+export { matrixApplicationService } from './MatrixApplicationService'
+export { matrixDehydratedDeviceService } from './crypto/MatrixDehydratedDeviceService'
+export { matrixDirectMessageService } from './MatrixDirectMessageService'
+export type { CreateDmOptions, DmRoomInfo, IDirectRoomsMap } from './MatrixDirectMessageService'
+export { matrixFederationBlacklistService } from './MatrixFederationBlacklistService'
+export { matrixMessageAdapter } from './messaging/MatrixMessageAdapter'
+export { matrixMultimediaService } from './media/MatrixMultimediaService'
+export { matrixNotificationService } from './notifications/MatrixNotificationService'
+export { profileService } from './MatrixProfileService'
+export { reportService } from './MatrixReportService'
+export { retentionService } from './MatrixRetentionService'
+export { matrixRoomStoreAdapter } from './MatrixRoomStoreAdapter'
+export { matrixServerNotificationService } from './notifications/MatrixServerNotificationService'
+export { MatrixSlidingSyncService } from './sync/MatrixSlidingSyncService'
+export { syncService } from './sync/MatrixSyncService'
+export { matrixTypingService } from './MatrixTypingService'
+export { userDirectoryService } from './MatrixUserDirectoryService'
+export { matrixVoiceService } from './media/MatrixVoiceService'
+
+// ============================================================
+// SDK re-exports: single choke-point for components and stores.
+// Components/stores MUST NOT import from 'matrix-js-sdk' directly;
+// import from '@/services/matrix' instead.
+// ============================================================
+export { EventType, Preset, Direction } from 'matrix-js-sdk'
+export type { RoomMember, PushRuleKind } from 'matrix-js-sdk'

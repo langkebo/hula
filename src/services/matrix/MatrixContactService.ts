@@ -1,8 +1,9 @@
 import { matrixClientService } from './MatrixClientService'
-import { BaseManager } from './BaseManager'
-import { info } from '@tauri-apps/plugin-log'
+import { matrixDirectMessageService } from './MatrixDirectMessageService'
+import { matrixFriendService } from './friends/MatrixFriendService'
+import { matrixRoomService } from './MatrixRoomService'
+import { info, error as logError } from '@tauri-apps/plugin-log'
 import { User, RoomMember, MatrixEvent } from 'matrix-js-sdk'
-import { getGlobalCache } from '@/composables/useCache'
 
 export interface UserProfile {
   userId: string
@@ -22,14 +23,22 @@ export interface DirectChatResult {
   roomId: string
 }
 
-class MatrixContactService extends BaseManager {
-  private profileCache = getGlobalCache<UserProfile>('contact-profile', { maxSize: 200, ttl: 60_000 })
-
-  async searchFriend(query: string, limit = 10, throwOnError = true): Promise<UserProfile[]> {
-    return this.searchUsers(query, limit, throwOnError)
+class MatrixContactService {
+  private toUserItem(user: Partial<User> & { userId?: string }, fallbackUserId: string): UserItem {
+    return {
+      uid: user.userId || fallbackUserId,
+      name: user.displayName || '',
+      avatar: user.avatarUrl || '',
+      activeStatus: 0,
+      lastOptTime: 0
+    }
   }
 
-  async searchUsers(query: string, limit = 10, throwOnError = true): Promise<UserProfile[]> {
+  async searchFriend(query: string, limit = 10): Promise<UserProfile[]> {
+    return this.searchUsers(query, limit)
+  }
+
+  async searchUsers(query: string, limit = 10): Promise<UserProfile[]> {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
@@ -41,20 +50,18 @@ class MatrixContactService extends BaseManager {
         limit
       })
 
-      return response.results.map((user: User) => ({
-        userId: user.userId,
-        displayName: user.displayName,
-        avatarUrl: user.avatarUrl
+      return response.results.map((user: { user_id: string; display_name?: string; avatar_url?: string }) => ({
+        userId: user.user_id,
+        displayName: user.display_name ?? undefined,
+        avatarUrl: user.avatar_url ?? undefined
       }))
     } catch (err) {
-      return this.handleError(err, 'searchUsers', [] as UserProfile[], throwOnError)
+      logError(`[MatrixContact] Failed to search users: ${err}`)
+      throw err
     }
   }
 
-  async getUserProfile(userId: string, throwOnError = true): Promise<UserProfile | null> {
-    const cached = this.profileCache.get(userId)
-    if (cached) return cached
-
+  async getUserProfile(userId: string): Promise<UserProfile | null> {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
@@ -62,170 +69,102 @@ class MatrixContactService extends BaseManager {
       }
 
       const profile = await client.getUserProfile(userId)
-      const result: UserProfile = {
+      return {
         userId,
         displayName: profile.displayname,
         avatarUrl: profile.avatar_url
       }
-      this.profileCache.set(userId, result)
-      return result
     } catch (err) {
-      return this.handleError(err, 'getUserProfile', null as UserProfile | null, throwOnError)
+      logError(`[MatrixContact] Failed to get user profile: ${err}`)
+      return null
     }
   }
 
-  async getOrCreateDirectChat(userId: string, throwOnError = true): Promise<DirectChatResult> {
+  async getOrCreateDirectChat(userId: string): Promise<DirectChatResult> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      const room = await client.createDirectRoom(userId)
-      info(`[MatrixContact] Direct chat created/accessed: ${room.room_id}`)
-      return { roomId: room.room_id }
+      const roomId = await matrixDirectMessageService.getOrCreateDmRoom(userId)
+      info(`[MatrixContact] Direct chat created/accessed: ${roomId}`)
+      return { roomId }
     } catch (err) {
-      return this.handleError(err, 'getOrCreateDirectChat', { roomId: '' } as DirectChatResult, throwOnError)
+      logError(`[MatrixContact] Failed to create direct chat: ${err}`)
+      throw err
     }
   }
 
-  async getDMRooms(throwOnError = true): Promise<string[]> {
+  async getDMRooms(): Promise<string[]> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      const rooms = client.getRooms()
-      return rooms.filter((room) => room.isDirect()).map((room) => room.roomId)
+      const rooms = await matrixDirectMessageService.getDMRooms(false)
+      return rooms.map((room) => room.roomId)
     } catch (err) {
-      return this.handleError(err, 'getDMRooms', [] as string[], throwOnError)
+      logError(`[MatrixContact] Failed to get DM rooms: ${err}`)
+      throw err
     }
   }
 
-  async getJoinedUsers(throwOnError = true): Promise<User[]> {
+  async inviteUser(roomId: string, userId: string): Promise<void> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      const users = client.getUsers()
-      const myUserId = client.getUserId()
-
-      return users.filter((user: any) => user.userId !== myUserId)
-    } catch (err) {
-      return this.handleError(err, 'getJoinedUsers', [] as User[], throwOnError)
-    }
-  }
-
-  async inviteUser(roomId: string, userId: string, throwOnError = false): Promise<void> {
-    try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      await client.invite(roomId, userId)
+      await matrixRoomService.inviteUser(roomId, userId)
       info(`[MatrixContact] Invited user ${userId} to room ${roomId}`)
     } catch (err) {
-      this.handleError(err, 'inviteUser', undefined as void, throwOnError)
+      logError(`[MatrixContact] Failed to invite user: ${err}`)
+      throw err
     }
   }
 
-  async kickUser(roomId: string, userId: string, reason?: string, throwOnError = false): Promise<void> {
+  async kickUser(roomId: string, userId: string, reason?: string): Promise<void> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      await client.kick(roomId, userId, reason)
+      await matrixRoomService.kickUser(roomId, userId, reason)
       info(`[MatrixContact] Kicked user ${userId} from room ${roomId}`)
     } catch (err) {
-      this.handleError(err, 'kickUser', undefined as void, throwOnError)
+      logError(`[MatrixContact] Failed to kick user: ${err}`)
+      throw err
     }
   }
 
-  async banUser(roomId: string, userId: string, reason?: string, throwOnError = false): Promise<void> {
+  async banUser(roomId: string, userId: string, reason?: string): Promise<void> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      await client.ban(roomId, userId, reason)
+      await matrixRoomService.banUser(roomId, userId, reason)
       info(`[MatrixContact] Banned user ${userId} from room ${roomId}`)
     } catch (err) {
-      this.handleError(err, 'banUser', undefined as void, throwOnError)
+      logError(`[MatrixContact] Failed to ban user: ${err}`)
+      throw err
     }
   }
 
-  async unbanUser(roomId: string, userId: string, throwOnError = true): Promise<void> {
+  async unbanUser(roomId: string, userId: string): Promise<void> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      await client.unban(roomId, userId)
+      await matrixRoomService.unbanUser(roomId, userId)
       info(`[MatrixContact] Unbanned user ${userId} from room ${roomId}`)
     } catch (err) {
-      this.handleError(err, 'unbanUser', undefined as void, throwOnError)
+      logError(`[MatrixContact] Failed to unban user: ${err}`)
+      throw err
     }
   }
 
-  async getRoomMembers(roomId: string, throwOnError = true): Promise<RoomMember[]> {
+  async getRoomMembers(roomId: string): Promise<RoomMember[]> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      const room = client.getRoom(roomId)
-      if (!room) {
-        return []
-      }
-
-      return room.getMembers()
+      return await matrixRoomService.getMembers(roomId)
     } catch (err) {
-      return this.handleError(err, 'getRoomMembers', [] as RoomMember[], throwOnError)
+      logError(`[MatrixContact] Failed to get room members: ${err}`)
+      throw err
     }
   }
 
-  async setUserAlias(roomId: string, alias: string, throwOnError = false): Promise<void> {
+  async getRoomState(roomId: string, eventType: string): Promise<MatrixEvent[]> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
+      const stateEvents = await matrixRoomService.getRoomState(roomId)
+      if (eventType === '*') {
+        return stateEvents as MatrixEvent[]
       }
 
-      await client.setRoomAlias(roomId, alias)
-      info(`[MatrixContact] Set alias ${alias} for room ${roomId}`)
+      return (stateEvents as MatrixEvent[]).filter((event) => event.getType?.() === eventType)
     } catch (err) {
-      this.handleError(err, 'setUserAlias', undefined as void, throwOnError)
+      logError(`[MatrixContact] Failed to get room state: ${err}`)
+      throw err
     }
   }
 
-  async getRoomState(roomId: string, eventType: string, throwOnError = true): Promise<MatrixEvent[]> {
-    try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      const room = client.getRoom(roomId)
-      if (!room) {
-        return []
-      }
-
-      return room.currentState.getStateEvents(eventType)
-    } catch (err) {
-      return this.handleError(err, 'getRoomState', [] as MatrixEvent[], throwOnError)
-    }
-  }
-
-  async getUserByIds(uidList: string[], throwOnError = true): Promise<UserItem[]> {
+  async getUserByIds(uidList: string[]): Promise<UserItem[]> {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
@@ -236,44 +175,43 @@ class MatrixContactService extends BaseManager {
       for (const uid of uidList) {
         const user = client.getUser(uid)
         if (user) {
-          users.push({
-            uid: user.userId || uid,
-            name: user.displayName || '',
-            avatar: user.avatarUrl || '',
-            activeStatus: 0,
-            lastOptTime: 0
-          })
+          users.push(this.toUserItem(user, uid))
+          continue
+        }
+
+        const profile = await this.getUserProfile(uid)
+        if (profile) {
+          users.push(
+            this.toUserItem(
+              {
+                userId: profile.userId,
+                displayName: profile.displayName,
+                avatarUrl: profile.avatarUrl
+              },
+              uid
+            )
+          )
         }
       }
       return users
     } catch (err) {
-      return this.handleError(err, 'getUserByIds', [] as UserItem[], throwOnError)
+      logError(`[MatrixContact] Failed to get users by ids: ${err}`)
+      throw err
     }
   }
 
-  async addFriend(userId: string, throwOnError = false): Promise<DirectChatResult> {
-    return this.getOrCreateDirectChat(userId, throwOnError)
+  async addFriend(userId: string): Promise<DirectChatResult> {
+    return this.getOrCreateDirectChat(userId)
   }
 
-  async sendAddFriendRequest(userId: string, reason?: string, throwOnError = false): Promise<DirectChatResult> {
+  async sendAddFriendRequest(userId: string, reason?: string): Promise<DirectChatResult> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix client not initialized')
-      }
-
-      const result = await this.getOrCreateDirectChat(userId, throwOnError)
-      const room = client.getRoom(result.roomId)
-      if (room) {
-        const myUserId = client.getUserId()
-        const myDisplayName = myUserId ? client.getUser(myUserId)?.displayName : 'User'
-        const content = reason || `Friend request from ${myDisplayName}`
-        const txnId = `m${Date.now()}`
-        await client.sendTextMessage(result.roomId, content, txnId)
-      }
-      return result
+      await matrixFriendService.sendFriendRequest(userId, reason)
+      const roomId = (await matrixDirectMessageService.getDmForUser(userId, false)) ?? ''
+      return { roomId }
     } catch (err) {
-      return this.handleError(err, 'sendAddFriendRequest', { roomId: '' } as DirectChatResult, throwOnError)
+      logError(`[MatrixContact] Failed to send friend request: ${err}`)
+      throw err
     }
   }
 }

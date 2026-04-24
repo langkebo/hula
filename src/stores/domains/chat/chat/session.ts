@@ -7,7 +7,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { matrixReceiptService } from '@/services/matrix/MatrixReceiptService'
-import { matrixFriendService } from '@/services/matrix/MatrixFriendService'
+import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import matrixRoomService from '@/services/matrix/MatrixRoomService'
 import { createLogger } from '@/utils/Logger'
 

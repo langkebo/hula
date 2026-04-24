@@ -915,7 +915,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { ThemeEnum, AiMsgContentTypeEnum } from '@/enums'
 import type { AIModel, ChatRole } from '@/services/matrix'
 import { matrixMessageService, aiService, conversationService, modelService } from '@/services/matrix'
-import type { AIAsyncGenerationResponse, AIConversation } from '@/services/matrix/AIService'
+import type { AIAsyncGenerationResponse, AIConversation } from '@/services/matrix/ai/AIService'
 import type { AIAudio, AIChatRole, AIImage, AIVideo, AIVoice } from '@/types/matrix-api'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { persistAiImageFile, resolveAiImagePath } from '@/utils/PathUtil'
@@ -1635,13 +1635,13 @@ const filteredModels = computed(() => {
   const search = modelSearch.value?.toLowerCase() || ''
   const filtered = search
     ? list.filter(
-        (model) =>
+        (model: AIModel) =>
           model.name?.toLowerCase().includes(search) ||
           model.description?.toLowerCase().includes(search) ||
           model.platform?.toLowerCase().includes(search)
       )
     : list
-  return filtered.sort((a, b) => {
+  return filtered.sort((a: AIModel, b: AIModel) => {
     const ao = a.publicStatus === 0
     const bo = b.publicStatus === 0
     if (ao !== bo) return ao ? -1 : 1
@@ -1652,8 +1652,8 @@ const filteredModels = computed(() => {
   })
 })
 
-const officialModels = computed(() => filteredModels.value.filter((m) => m.publicStatus === 0))
-const userModels = computed(() => filteredModels.value.filter((m) => m.publicStatus !== 0))
+const officialModels = computed(() => filteredModels.value.filter((m: AIModel) => m.publicStatus === 0))
+const userModels = computed(() => filteredModels.value.filter((m: AIModel) => m.publicStatus !== 0))
 
 // 图片生成参数
 const imageParams = ref({
@@ -2090,7 +2090,7 @@ const sendAIMessage = async (content: string, model: AIModel) => {
           if (currentChat.value.id && currentChat.value.id !== '0') {
             aiService
               .conversationGetMy({ id: currentChat.value.id })
-              .then((convList) => {
+              .then((convList: any) => {
                 const conv = Array.isArray(convList) ? (convList[0] as ConversationUsage | undefined) : undefined
                 if (conv && typeof conv.tokenUsage === 'number') {
                   serverTokenUsage.value = conv.tokenUsage
@@ -2105,7 +2105,7 @@ const sendAIMessage = async (content: string, model: AIModel) => {
             if (!messageList.value[aiMessageIndex].reasoningContent) {
               aiService
                 .messageListByConversationId({ conversationId: currentChat.value.id, pageNo: 1, pageSize: 100 })
-                .then((list) => {
+                .then((list: any) => {
                   if (Array.isArray(list) && list.length > 0) {
                     const last = list[list.length - 1]
                     if (
@@ -3125,14 +3125,14 @@ useMitt.on('chat-active', async (e: ChatActivePayload) => {
   }
 
   if (roleId) {
-    const role = roleList.value.find((r) => String(r.id) === String(roleId))
+    const role = roleList.value.find((r: ChatRole) => String(r.id) === String(roleId))
     if (role) {
       selectedRole.value = role
     }
   }
 
   if (modelId) {
-    const model = modelList.value.find((m) => String(m.id) === String(modelId))
+    const model = modelList.value.find((m: AIModel) => String(m.id) === String(modelId))
     if (model) {
       selectedModel.value = model
       // 加载剩余次数
@@ -3239,7 +3239,7 @@ const handleRefreshModelList = async () => {
   // 如果当前有选中的模型，需要更新 selectedModel 对象
   if (selectedModel.value && selectedModel.value.id) {
     const selectedModelId = selectedModel.value.id
-    const updatedModel = modelList.value.find((m) => m.id === selectedModelId)
+    const updatedModel = modelList.value.find((m: AIModel) => m.id === selectedModelId)
     if (updatedModel) {
       // 记录旧的模型类型
       const oldType = selectedModel.value.type
