@@ -53,8 +53,6 @@ pub mod command;
 pub mod common;
 pub mod configuration;
 pub mod error;
-mod im_request_client;
-pub mod matrix_auth;
 pub mod pojo;
 pub mod repository;
 pub mod timeout_config;
@@ -64,11 +62,7 @@ mod vo;
 mod webview_helper;
 
 use crate::command::app_state_command::is_app_state_ready;
-use crate::command::request_command::im_request_command;
-use crate::command::request_command::login_command;
 use crate::command::room_member_command::cursor_page_room_members;
-use crate::command::room_member_command::get_room_members;
-use crate::command::room_member_command::page_room;
 use crate::command::room_member_command::update_my_room_info;
 use crate::command::setting_command::get_settings;
 use crate::command::setting_command::update_settings;
@@ -76,10 +70,6 @@ use crate::command::user_command::remove_tokens;
 use crate::configuration::Settings;
 use crate::configuration::get_configuration;
 use crate::error::CommonError;
-use crate::matrix_auth::{
-    matrix_forget_password, matrix_get_captcha, matrix_login, matrix_register,
-    matrix_request_email_token, matrix_reset_password, matrix_submit_email_token,
-};
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use serde::Serialize;
@@ -100,13 +90,10 @@ use mobiles::splash;
 pub struct AppData {
     db_conn: Arc<RwLock<DatabaseConnection>>,
     user_info: Arc<Mutex<UserInfo>>,
-    pub rc: Arc<Mutex<im_request_client::ImRequestClient>>,
     pub config: Arc<Mutex<Settings>>,
     frontend_task: Mutex<bool>,
     backend_task: Mutex<bool>,
-    /// 限制对 SQLite 的写入并发，避免 database is locked
     pub write_lock: Arc<Mutex<()>>,
-    /// 记录正在进行的 AI 流式任务
     pub stream_tasks: Arc<Mutex<std::collections::HashMap<String, tokio::task::JoinHandle<()>>>>,
 }
 
@@ -124,7 +111,6 @@ use crate::command::message_command::delete_room_messages;
 use crate::command::message_command::page_msg;
 use crate::command::message_command::save_msg;
 use crate::command::message_command::send_msg;
-use crate::command::message_command::sync_messages;
 use crate::command::message_command::update_message_recall_status;
 use crate::command::message_mark_command::save_message_mark;
 use crate::command::oauth_command::OauthServerState;
@@ -191,7 +177,6 @@ async fn initialize_app_data(
     (
         Arc<RwLock<DatabaseConnection>>,
         Arc<Mutex<UserInfo>>,
-        Arc<Mutex<im_request_client::ImRequestClient>>,
         Arc<Mutex<Settings>>,
     ),
     CommonError,
@@ -226,11 +211,6 @@ async fn initialize_app_data(
         }
     }
 
-    let rc: im_request_client::ImRequestClient = im_request_client::ImRequestClient::new(
-        configuration.lock().await.backend.base_url.clone(),
-    )
-    .map_err(|e| anyhow::anyhow!("Failed to create request client: {}", e))?;
-
     // 创建用户信息
     let user_info = UserInfo {
         token: Default::default(),
@@ -239,7 +219,7 @@ async fn initialize_app_data(
     };
     let user_info = Arc::new(Mutex::new(user_info));
 
-    Ok((db, user_info, Arc::new(Mutex::new(rc)), configuration))
+    Ok((db, user_info, configuration))
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -256,6 +236,8 @@ pub async fn build_request_client() -> Result<reqwest::Client, CommonError> {
         .map_err(|e| anyhow::anyhow!("Reqwest client error: {}", e))?;
     Ok(client)
 }
+
+#[allow(dead_code)]
 
 /// 处理退出登录时的窗口管理逻辑
 ///
@@ -397,12 +379,11 @@ fn common_setup(app_handle: AppHandle) -> Result<(), Box<dyn std::error::Error>>
 
     // 异步初始化应用数据，避免阻塞主线程
     match tauri::async_runtime::block_on(initialize_app_data(app_handle.clone())) {
-        Ok((db, user_info, rc, settings)) => {
+        Ok((db, user_info, settings)) => {
             // 使用 manage 方法在运行时添加状态
             app_handle.manage(AppData {
                 db_conn: db.clone(),
                 user_info: user_info.clone(),
-                rc: rc,
                 config: settings,
                 frontend_task: Mutex::new(false),
                 // 后端任务默认完成
@@ -430,13 +411,12 @@ fn common_setup(app_handle: AppHandle) -> Result<(), Box<dyn std::error::Error>>
 // 公共的命令处理器函数
 fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static
 {
+    use crate::command::admin_command::check_admin_status;
     use crate::command::ai_command::ai_message_cancel_stream;
-    use crate::command::ai_command::ai_message_send_stream;
     use crate::command::markdown_command::get_readme_html;
     use crate::command::markdown_command::parse_markdown;
     #[cfg(mobile)]
     use crate::command::set_complete;
-    use crate::command::upload_command::qiniu_upload_resumable;
     use crate::command::upload_command::upload_file_put;
     use crate::command::user_command::get_user_tokens;
     use crate::command::user_command::save_user_info;
@@ -486,14 +466,11 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         update_token,
         remove_tokens,
         update_user_last_opt_time,
-        page_room,
-        get_room_members,
         update_my_room_info,
         cursor_page_room_members,
         list_contacts_command,
         hide_contact_command,
         page_msg,
-        sync_messages,
         send_msg,
         save_msg,
         delete_message,
@@ -506,20 +483,9 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         query_files,
         get_navigation_items,
         debug_message_stats,
-        login_command,
-        im_request_command,
-        // Matrix Auth commands
-        matrix_login,
-        matrix_register,
-        matrix_request_email_token,
-        matrix_submit_email_token,
-        matrix_get_captcha,
-        matrix_forget_password,
-        matrix_reset_password,
         get_settings,
         update_settings,
         // AI 相关命令
-        ai_message_send_stream,
         ai_message_cancel_stream,
         // OAuth
         start_oauth_server,
@@ -527,7 +493,6 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         parse_markdown,
         get_readme_html,
         upload_file_put,
-        qiniu_upload_resumable,
         #[cfg(mobile)]
         set_complete,
         #[cfg(mobile)]
@@ -542,5 +507,6 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         set_webview_keyboard_adjustment,
         is_app_state_ready,
         switch_user_database,
+        check_admin_status,
     ]
 }

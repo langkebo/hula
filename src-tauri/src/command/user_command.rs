@@ -37,7 +37,7 @@ pub struct TokenResponse {
 pub struct UpdateUserTokenRequest {
     uid: String,
     token: String,
-    refresh_token: String,
+    refresh_token: Option<String>,
 }
 
 #[tauri::command]
@@ -47,7 +47,6 @@ pub async fn save_user_info(
 ) -> Result<(), String> {
     let db = state.db_conn.read().await;
 
-    // 检查用户是否存在
     let exists = ImUserEntity::find()
         .filter(im_user::Column::Id.eq(&user_info.uid))
         .one(&*db)
@@ -59,7 +58,6 @@ pub async fn save_user_info(
 
         let user = im_user::ActiveModel {
             id: Set(user_info.uid.clone()),
-            // TODO 这里先设置为 true，后续需要根据配置调整
             is_init: Set(true),
             ..Default::default()
         };
@@ -81,7 +79,6 @@ pub async fn update_user_last_opt_time(state: State<'_, AppData>) -> Result<(), 
 
     let uid = state.user_info.lock().await.uid.clone();
 
-    // 检查用户是否存在
     let user = ImUserEntity::find()
         .filter(im_user::Column::Id.eq(uid.clone()))
         .one(&*db)
@@ -101,7 +98,6 @@ pub async fn update_user_last_opt_time(state: State<'_, AppData>) -> Result<(), 
     Ok(())
 }
 
-/// 获取用户的 token 和 refreshToken
 #[tauri::command]
 pub async fn get_user_tokens(state: State<'_, AppData>) -> Result<TokenResponse, String> {
     info!("Getting user token info");
@@ -109,8 +105,16 @@ pub async fn get_user_tokens(state: State<'_, AppData>) -> Result<TokenResponse,
     let user_info = state.user_info.lock().await;
 
     let response = TokenResponse {
-        token: user_info.token.clone().into(),
-        refresh_token: user_info.refresh_token.clone().into(),
+        token: if user_info.token.is_empty() {
+            None
+        } else {
+            Some(user_info.token.clone())
+        },
+        refresh_token: if user_info.refresh_token.is_empty() {
+            None
+        } else {
+            Some(user_info.refresh_token.clone())
+        },
     };
 
     info!("Successfully retrieved user token info: {:?}", response);
@@ -121,10 +125,11 @@ pub async fn get_user_tokens(state: State<'_, AppData>) -> Result<TokenResponse,
 pub async fn remove_tokens(state: State<'_, AppData>) -> Result<(), String> {
     info!("Removing user token info");
 
-    let mut rc = state.rc.lock().await;
-
-    rc.token = None;
-    rc.refresh_token = None;
+    {
+        let mut user_info = state.user_info.lock().await;
+        user_info.token.clear();
+        user_info.refresh_token.clear();
+    }
 
     info!("Successfully removed user token info");
     Ok(())
@@ -136,7 +141,8 @@ pub async fn update_token(
     state: State<'_, AppData>,
 ) -> Result<(), String> {
     info!("Updating user token");
-    let refresh_token = if req.refresh_token.is_empty() {
+    let requested_refresh = req.refresh_token.unwrap_or_default();
+    let refresh_token = if requested_refresh.is_empty() {
         let current_refresh = state.user_info.lock().await.refresh_token.clone();
         if current_refresh.is_empty() {
             "".to_string()
@@ -144,20 +150,13 @@ pub async fn update_token(
             current_refresh
         }
     } else {
-        req.refresh_token.clone()
+        requested_refresh
     };
     {
         let mut user_info = state.user_info.lock().await;
         user_info.uid = req.uid.clone();
         user_info.token = req.token.clone();
         user_info.refresh_token = refresh_token.clone();
-    }
-    {
-        let mut rc = state.rc.lock().await;
-        rc.token = Some(req.token.clone());
-        if !refresh_token.is_empty() {
-            rc.refresh_token = Some(refresh_token.clone());
-        }
     }
     im_user_repository::save_user_tokens(
         &*state.db_conn.read().await,
