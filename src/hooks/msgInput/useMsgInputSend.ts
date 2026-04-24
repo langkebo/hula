@@ -62,10 +62,6 @@ interface VoiceUploadResult {
   eventId?: string
 }
 
-type TempMessageLike = MessageType & {
-  uploadProgress?: number
-}
-
 export interface UseMsgInputSendOptions {
   messageInputDom: Ref<HTMLElement>
   msgInput: Ref<string>
@@ -149,9 +145,9 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     const msg = await messageStrategy.getMsg('', reply.value as unknown as MessageType, [file])
     const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
 
-    const tempMsg = (await Promise.resolve(
+    const tempMsg = await Promise.resolve(
       messageStrategy.buildMessageType(tempMsgId, { ...messageBody, url: '' }, globalStore, userUid)
-    )) as TempMessageLike
+    )
     tempMsg.message.roomId = targetRoomId
     tempMsg.message.status = MessageStatusEnum.SENDING
     chatStore.pushMsg(tempMsg)
@@ -231,9 +227,9 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
 
     const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
 
-    const tempMsg = (await Promise.resolve(
+    const tempMsg = await Promise.resolve(
       messageStrategy.buildMessageType(tempMsgId, { ...messageBody, url: '' }, globalStore, userUid)
-    )) as TempMessageLike
+    )
     tempMsg.message.roomId = targetRoomId
     tempMsg.message.status = MessageStatusEnum.SENDING
     chatStore.pushMsg(tempMsg)
@@ -313,9 +309,9 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       atUidList
     }
 
-    const tempMsg = (await Promise.resolve(
+    const tempMsg = await Promise.resolve(
       messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
-    )) as TempMessageLike
+    )
     resetInput()
 
     tempMsg.message.status = MessageStatusEnum.SENDING
@@ -499,7 +495,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       : undefined
 
     for (const job of jobs) {
-      const tempMsg = (await Promise.resolve(
+      const tempMsg = await Promise.resolve(
         fileStrategy.buildMessageType(
           job.tempMsgId,
           {
@@ -513,7 +509,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
           globalStore,
           userUid
         )
-      )) as TempMessageLike
+      )
       tempMsg.message.roomId = targetRoomId
       tempMsg.message.status = MessageStatusEnum.SENDING
       tempMsg.uploadProgress = 0
@@ -609,7 +605,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       }
 
       const userInfo = groupStore.getUserInfo(userUid.value)
-      const tempMsg = {
+      const tempMsg: MessageType = {
         fromUser: {
           uid: String(userUid.value || 0),
           username: userInfo?.name || '',
@@ -673,9 +669,9 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       )) as Record<string, unknown>
       const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
 
-      const tempMsg = (await Promise.resolve(
+      const tempMsg = await Promise.resolve(
         messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
-      )) as TempMessageLike
+      )
       tempMsg.message.status = MessageStatusEnum.SENDING
 
       chatStore.pushMsg(tempMsg)
