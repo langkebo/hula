@@ -1,5 +1,3 @@
-import { readImage, readText } from '@tauri-apps/plugin-clipboard-manager'
-import { readFile } from '@tauri-apps/plugin-fs'
 import { useDebounceFn } from '@vueuse/core'
 import pLimit from 'p-limit'
 import { storeToRefs } from 'pinia'
@@ -17,9 +15,7 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useMessageSender } from '@/hooks/useMessageSender'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
-import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
 import { messageStrategyMap } from '@/strategy/MessageStrategy.ts'
-import { processClipboardImage } from '@/utils/ImageUtils.ts'
 import { getReplyContent } from '@/utils/MessageReply.ts'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
 import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
@@ -27,15 +23,16 @@ import { useCommon } from './useCommon.ts'
 import { globalFileUploadQueue } from './useFileUploadQueue.ts'
 import { useTrigger } from './useTrigger'
 import { UploadProviderEnum, useUpload } from './useUpload.ts'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 import { extractAtUserIds, parseHtmlSafely } from './msgInput/mentionParser'
 import { useCursorManager } from './msgInput/useCursorManager'
+import { useMentionState } from './msgInput/useMentionState'
+import { useClipboardPaste } from './msgInput/useClipboardPaste'
+import { useVoiceInput } from './msgInput/useVoiceInput'
 export { useCursorManager } from './msgInput/useCursorManager'
 const logger = createLogger('MsgInput')
 
 export const useMsgInput = (messageInputDom: Ref) => {
-  const { t } = useI18n()
   const groupStore = useGroupStore()
   const chatStore = useChatStore()
   const globalStore = useGlobalStore()
@@ -94,8 +91,10 @@ export const useMsgInput = (messageInputDom: Ref) => {
     )
   })
   // @艾特弹出框
-  const ait = ref(false)
-  const aitKey = ref('')
+  /** 是否正在输入拼音 */
+  const isChinese = ref(false)
+  const groupUserList = computed<UserItem[]>(() => groupStore.userList as UserItem[])
+  const { ait, aitKey, personList, selectedAitKey } = useMentionState(groupUserList, userUid, isChinese)
   // AI弹出框
   const aiDialogVisible = ref(false)
   const aiKeyword = ref('')
@@ -158,77 +157,15 @@ export const useMsgInput = (messageInputDom: Ref) => {
   ])
 
   /** 是否正在输入拼音 */
-  const isChinese = ref(false)
   // 记录编辑器光标的位置
   const editorRange = ref<{ range: Range; selection: Selection } | null>(null)
-  /** @ 候选人列表 */
-  const personList = computed(() => {
-    if (aitKey.value && !isChinese.value) {
-      return groupStore.userList.filter((user) => {
-        // 同时匹配群昵称（myName）和原名称（name）
-        const displayName = user.myName || user.name
-        return displayName?.startsWith(aitKey.value) && user.uid !== userUid.value
-      })
-    } else {
-      // 过滤当前登录的用户
-      return groupStore.userList.filter((user) => user.uid !== userUid.value)
-    }
+  /** 右键菜单列表（粘贴逻辑抽离至 useClipboardPaste） */
+  const { menuList } = useClipboardPaste({
+    messageInputDom,
+    imgPaste,
+    insertNode,
+    triggerInputEvent
   })
-  /** 记录当前选中的提及项 key */
-  const selectedAitKey = ref(personList.value[0]?.uid ?? null)
-  /** 右键菜单列表 */
-  const menuList = ref([
-    { label: () => t('editor.menu.cut'), icon: 'screenshot', disabled: true },
-    { label: () => t('editor.menu.copy'), icon: 'copy', disabled: true },
-    {
-      label: () => t('editor.menu.paste'),
-      icon: 'intersection',
-      click: async () => {
-        try {
-          let imageProcessed = false
-
-          // 使用Tauri的readImage API获取剪贴板图片
-          const clipboardImage = await readImage().catch(() => null)
-          if (clipboardImage) {
-            try {
-              // 使用工具函数处理剪贴板图片数据
-              const file = await processClipboardImage(clipboardImage)
-
-              messageInputDom.value.focus()
-              nextTick(() => {
-                // 使用File对象触发缓存机制
-                imgPaste(file, messageInputDom.value)
-              })
-
-              imageProcessed = true
-            } catch (error) {
-              logger.error('Tauri处理图片数据失败:', error)
-            }
-          }
-
-          // 如果没有图片，尝试读取文本
-          if (!imageProcessed) {
-            const content = await readText().catch(() => null)
-            if (content) {
-              messageInputDom.value.focus()
-              nextTick(() => {
-                insertNode(MsgEnum.TEXT, content, {} as HTMLElement)
-                triggerInputEvent(messageInputDom.value)
-              })
-              return
-            } else {
-              // 当既没有图片也没有文本时，显示提示信息
-              alert('无法获取当前剪贴板中对于的类型的内容，请使用 ctrl/command + v')
-            }
-          }
-        } catch (error) {
-          logger.error('粘贴失败:', error)
-        }
-      }
-    },
-    { label: () => t('editor.menu.save_as'), icon: 'Importing', disabled: true },
-    { label: () => t('editor.menu.select_all'), icon: 'check-one' }
-  ])
 
   // 将 useTrigger 的初始化移到这里
   const { handleTrigger, resetAllStates } = useTrigger(
@@ -245,9 +182,6 @@ export const useMsgInput = (messageInputDom: Ref) => {
 
   watchEffect(() => {
     chatKey.value = chat.value.sendKey
-    if (!ait.value && personList.value.length > 0) {
-      selectedAitKey.value = personList.value[0]?.uid
-    }
     if (groupedAIModels.value.length === 0) {
       // 没有可选模型时关闭弹层并清空游标，避免 Enter 键误触发
       selectedAIKey.value = null
@@ -344,10 +278,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
   const burnAfterRead = useBurnAfterRead()
   const isBurnAfterRead = computed(() => burnAfterRead.isRoomBurnEnabled())
   const burnDuration = computed(() => burnAfterRead.getRoomBurnDuration())
-  const uploadVoiceToMatrix = async (roomId: string, localPath: string, filename: string, mimeType: string) => {
-    const fileBytes = await readFile(localPath)
-    return await matrixVoiceService.uploadVoice(roomId, new File([fileBytes], filename, { type: mimeType }))
-  }
+  const { uploadVoiceToMatrix } = useVoiceInput()
 
   const send = async () => {
     const targetRoomId = globalStore.currentSessionRoomId
