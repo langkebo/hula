@@ -879,3 +879,26 @@ _Commit: `d8154b9b chore(lint): clear all noExplicitAny warnings`（105 文件�
 - P1-2 计划项 ✅ 完成
 - 单文件 >1000 LOC 剩余 8 个：`Chat.vue` 2151 · `augmentations.d.ts` 1464 · `useChatMain` 1330 · `useMsgInput` 1254 · `stores/chat/chat/message` 1171 · `Bot.vue` 1134 · `useWebRtc` 1097 · `emoticon/index.vue` 1056
 - 后续推荐优先级：**P0-4 续作**（Chat.vue 拆 composable + 子组件） → **P2-1**（一行级 MatrixWidgetService legacy 清理） → **P0-6 续作**（useChatMain / useWebRtc）
+
+### 步骤 15：P2-1 MatrixWidgetService 单数 legacy 分支清理 · 状态：🟢 完成（2026-04-24）
+
+**背景**：`src/services/matrix/widget/MatrixWidgetService.ts` 的 `getManager()` 采用 4 路 probe，兼容 SDK 可能的 4 种形态：`getWidgetsManager()`（复数方法）/ `widgetsManager`（复数属性）/ `getWidgetManager()`（单数方法）/ `widgetManager`（单数属性）。单数是 SDK 对齐前的过渡 shim，canonical 只保留复数。
+
+**产出**
+- `MatrixWidgetService.ts:67-86`：`getManager()` 探测链瘦身
+  - 移除 `getWidgetManager()` 单数方法 + `widgetManager` 单数属性两路分支
+  - 保留 `getWidgetsManager()` → `widgetsManager` 两路复数分支
+- `src/types/matrix.d.ts:65-66`：同步移除 augmentation 中的 `getWidgetManager()?: unknown` / `widgetManager?: unknown` 两键
+- `widget/__tests__/MatrixWidgetService.test.ts`：删除专门测试 legacy fallback 的 `falls back to the legacy getWidgetManager()...` 用例（测试对象已不存在）
+- 净变更：+1 / −28 行，单文件最多减少 12 LOC
+
+**验收**
+- `pnpm exec vitest run src/services/matrix/widget/`：16/16（−1 legacy case 删除）
+- `pnpm exec vue-tsc --noEmit`：widget / types 子树 0 error
+- `pnpm exec biome check src/services/matrix/widget`：0 warning / 0 error
+- 全仓 grep `\bgetWidgetManager\b|\bwidgetManager\b`（排除复数）零命中
+- commit: `5495f7ec refactor(widget): drop singular legacy fallback in getManager`
+
+**Step 15 状态**
+- P2-1 计划项 ✅ 完成
+- 下一轮推荐：**P0-4 续作** Chat.vue god component 抽 composable + 子组件拆分
