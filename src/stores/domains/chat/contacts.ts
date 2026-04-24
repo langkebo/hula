@@ -9,7 +9,7 @@ import {
   type FriendStatus,
   type FriendServiceEventHandler
 } from '@/services/matrix/friends/MatrixFriendService'
-import { matrixDirectMessageService, type DmRoomInfo } from '@/services/matrix/MatrixDirectMessageService'
+import { matrixDirectMessageService, type DmRoomInfo } from '@/services/matrix/room/MatrixDirectMessageService'
 import { matrixClientService, EventType } from '@/services/matrix'
 import { info, error } from '@tauri-apps/plugin-log'
 

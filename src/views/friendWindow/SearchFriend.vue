@@ -168,7 +168,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixContactService, matrixFriendService } from '@/services/matrix'
-import { matrixGroupService, type GroupSearchResult } from '@/services/matrix/MatrixGroupService'
+import { matrixGroupService, type GroupSearchResult } from '@/services/matrix/room/MatrixGroupService'
 
 const { createWebviewWindow } = useWindow()
 const contactStore = useContactStore()

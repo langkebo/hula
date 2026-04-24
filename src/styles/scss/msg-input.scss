@@ -5,7 +5,7 @@
   cursor: text; /** 文本输入光标 */
   resize: none; /** 不允许调整尺寸 */
   background: none; /** 无背景 */
-  border: none;
+  border: none; /** 边框样式，可根据需求修改 */
   border-radius: 0; /** 边框圆角 */
   line-height: 20px; /** 行高 */
   overflow-y: visible; /** 由 n-scrollbar 组件处理滚动 */

@@ -4,7 +4,8 @@ import {
   createWebHistory,
   type NavigationGuardNext,
   type RouteLocationNormalized,
-  type RouteRecordRaw
+  type RouteRecordRaw,
+  type Router
 } from 'vue-router'
 
 import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
@@ -29,7 +30,7 @@ const getAllRoutes = (): Array<RouteRecordRaw> => {
   }
 }
 
-const router: any = createRouter({
+const router: Router = createRouter({
   history: createWebHistory(BASE_URL),
   routes: getAllRoutes()
 })

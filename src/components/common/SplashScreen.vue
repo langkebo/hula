@@ -7,7 +7,13 @@
           <div v-else class="minimal-logo">
             <svg class="w-48px h-48px" viewBox="0 0 100 100" fill="none">
               <circle cx="50" cy="50" r="45" stroke="#13987f" stroke-width="4" fill="none" />
-              <path d="M30 50 L45 65 L70 35" stroke="#13987f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+              <path
+                d="M30 50 L45 65 L70 35"
+                stroke="#13987f"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                fill="none" />
             </svg>
           </div>
         </div>
@@ -16,11 +22,11 @@
           <n-progress
             type="line"
             :show-indicator="false"
-            :color="'#13987f'"
-            :rail-color="'#13987f30'"
+            :color="'var(--color-primary)'"
+            :rail-color="'var(--color-primary)/30'"
             :percentage="percentage" />
           <n-flex justify="center" align="center" :gap="12">
-            <n-spin :size="12" :color="'#13987f'" />
+            <n-spin :size="12" :color="'var(--color-primary)'" />
             <span class="loading-text">{{ loadingText }}</span>
           </n-flex>
         </div>
@@ -29,9 +35,7 @@
           <n-alert type="error" :show-icon="true">
             {{ errorMessage }}
           </n-alert>
-          <n-button v-if="retryable" type="primary" size="small" @click="$emit('retry')">
-            重试
-          </n-button>
+          <n-button v-if="retryable" type="primary" size="small" @click="$emit('retry')">重试</n-button>
         </div>
       </div>
     </div>
@@ -107,7 +111,7 @@ defineEmits<{
 
 .loading-text {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .error-section {

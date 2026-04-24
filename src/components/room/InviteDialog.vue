@@ -1,6 +1,6 @@
 <template>
   <n-modal
-    :show="visible" @update:show="emit('update:visible', $event)"
+    v-model:show="visible"
     preset="card"
     :title="t('room.invite.title')"
     :style="{ width: '400px' }"
@@ -66,7 +66,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixSearchService, matrixGroupService } from '@/services/matrix'
+import { matrixRoomService, matrixSearchService } from '@/services/matrix'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('InviteDialog')
@@ -138,7 +138,7 @@ const handleInvite = async () => {
   inviting.value = true
   try {
     for (const userId of selectedUsers.value) {
-      await matrixGroupService.inviteToRoom(props.roomId, userId)
+      await matrixRoomService.inviteUser(props.roomId, userId)
     }
 
     window.$message?.success(t('room.invite.success', { count: selectedUsers.value.length }))
@@ -187,7 +187,7 @@ watch(
   }
 
   &.selected {
-    background: rgba(19, 152, 127, 0.1);
+    background: var(--color-primary-light);
   }
 }
 
@@ -200,7 +200,7 @@ watch(
 }
 
 .user-id {
-  @apply text-12px color-#909090 truncate;
+  @apply text-12px color-[--color-text-tertiary] truncate;
 }
 
 .manual-invite {

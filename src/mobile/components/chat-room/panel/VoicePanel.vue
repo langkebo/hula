@@ -5,7 +5,12 @@
 </template>
 
 <script setup lang="ts">
-const emit = defineEmits(['cancel', 'send'])
+import type { VoiceRecordPayload } from '@/components/rightBox/VoiceRecorder.vue'
+
+const emit = defineEmits<{
+  cancel: []
+  send: [voiceData: VoiceRecordPayload]
+}>()
 
 const isVoiceMode = ref(true)
 
@@ -13,7 +18,7 @@ const handleVoiceCancel = () => {
   emit('cancel')
 }
 
-const handleVoiceSend = async (voiceData: any) => {
+const handleVoiceSend = async (voiceData: VoiceRecordPayload) => {
   emit('send', voiceData)
 }
 </script>

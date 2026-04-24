@@ -107,23 +107,31 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import type { CSSProperties } from 'vue'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import 'vue-cropper/dist/index.css'
 import { VueCropper } from 'vue-cropper'
 
 const { t } = useI18n()
 const localImageUrl = ref('')
-const cropperRef = ref()
+
+type CropPreview = {
+  url: string
+  img: CSSProperties | null
+  w: number
+  h: number
+}
+
+type VueCropperInstance = InstanceType<typeof VueCropper> & {
+  getCropBlob: (callback: (blob: Blob) => void) => void
+}
+
+const cropperRef = ref<VueCropperInstance | null>(null)
 const loading = ref(false)
 const loadingText = computed(() =>
   loading.value ? t('components.avatarCropper.uploading') : t('components.common.confirm')
 )
-const previewUrl = ref<{
-  url: string
-  img: any
-  w: number
-  h: number
-}>()
+const previewUrl = ref<CropPreview | null>(null)
 
 const emit = defineEmits<{
   'update:show': [value: boolean]
@@ -143,7 +151,7 @@ watch(
   { immediate: true }
 )
 
-const handleRealTime = (data: { url: string; img: any; w: number; h: number }) => {
+const handleRealTime = (data: CropPreview) => {
   previewUrl.value = data
 }
 

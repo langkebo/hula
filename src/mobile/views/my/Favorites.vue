@@ -19,7 +19,7 @@
                   :key="msg.id"
                   class="bg-white rounded-12px p-12px border border-gray-100">
                   <div class="flex items-center gap-8px mb-8px">
-                    <n-avatar :size="32" :src="msg.avatar" round />
+                    <van-image round width="32" height="32" :src="msg.avatar" />
                     <div class="flex-1">
                       <div class="text-14px font-medium">{{ msg.username }}</div>
                       <div class="text-12px text-gray-400">{{ formatTime(msg.time) }}</div>

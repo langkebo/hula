@@ -1,5 +1,5 @@
 <template>
-  <div class="burn-message" :class="{ 'burn-message--burning': isBurning, 'burn-message--burned': isBurned }">
+  <div class="burn-message" :class="{ 'burn-message--burning': internalIsBurning, 'burn-message--burned': internalIsBurned }">
     <div class="burn-message__content">
       <slot></slot>
     </div>
@@ -7,11 +7,11 @@
       <BurnIndicator
         v-if="showIndicator"
         :status="indicatorStatus"
-        :remaining-seconds="remainingSeconds"
-        :total-seconds="burnDuration" />
+        :remaining-seconds="internalRemainingSeconds"
+        :total-seconds="burnDuration || 60" />
     </div>
     <Transition name="burn-fade">
-      <div v-if="isBurned" class="burn-message__overlay">
+      <div v-if="internalIsBurned" class="burn-message__overlay">
         <svg class="burn-message__burned-icon">
           <use href="#burned"></use>
         </svg>
@@ -22,8 +22,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import BurnIndicator from './BurnIndicator.vue'
+import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 
 const props = defineProps<{
   msgId: string
@@ -32,15 +33,97 @@ const props = defineProps<{
   remainingSeconds?: number
   isBurning?: boolean
   isBurned?: boolean
+  roomId?: string
+  eventId?: string
 }>()
 
+const burnAfterReadApi = useBurnAfterRead()
+
+const internalIsBurning = ref(props.isBurning || false)
+const internalIsBurned = ref(props.isBurned || false)
+const internalRemainingSeconds = ref(props.remainingSeconds || props.burnDuration || 60)
+
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+
+watch(
+  () => props.isBurning,
+  (val) => {
+    if (val && !internalIsBurned.value) {
+      internalIsBurning.value = true
+      startCountdown()
+    }
+  }
+)
+
+watch(
+  () => props.isBurned,
+  (val) => {
+    if (val) {
+      internalIsBurned.value = true
+      internalIsBurning.value = false
+      clearCountdown()
+    }
+  }
+)
+
+watch(
+  () => props.remainingSeconds,
+  (val) => {
+    if (val !== undefined) {
+      internalRemainingSeconds.value = val
+    }
+  }
+)
+
+function startCountdown() {
+  clearCountdown()
+  const duration = props.burnDuration || 60
+  const startTime = Date.now()
+
+  countdownTimer = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000)
+    const remaining = Math.max(0, duration - elapsed)
+    internalRemainingSeconds.value = remaining
+
+    if (remaining <= 0) {
+      clearCountdown()
+      completeBurn()
+    }
+  }, 1000)
+}
+
+async function completeBurn() {
+  internalIsBurning.value = false
+  internalIsBurned.value = true
+  internalRemainingSeconds.value = 0
+
+  if (props.roomId && props.eventId) {
+    try {
+      await burnAfterReadApi.markMessageRead(props.roomId, props.eventId)
+    } catch {
+      // silent
+    }
+  }
+}
+
+function clearCountdown() {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+}
+
+onUnmounted(() => {
+  clearCountdown()
+})
+
 const showIndicator = computed(() => {
-  return props.burnAfterRead && (props.isBurning || props.isBurned)
+  return props.burnAfterRead && (internalIsBurning.value || internalIsBurned.value || props.burnAfterRead)
 })
 
 const indicatorStatus = computed(() => {
-  if (props.isBurned) return 'burned'
-  if (props.isBurning) return 'burning'
+  if (internalIsBurned.value) return 'burned'
+  if (internalIsBurning.value) return 'burning'
   return 'waiting'
 })
 </script>
@@ -92,13 +175,13 @@ const indicatorStatus = computed(() => {
 .burn-message__burned-icon {
   width: 32px;
   height: 32px;
-  color: #909090;
+  color: var(--color-text-tertiary);
   margin-bottom: 8px;
 }
 
 .burn-message__burned-text {
   font-size: 12px;
-  color: #909090;
+  color: var(--color-text-tertiary);
 }
 
 .burn-fade-enter-active,

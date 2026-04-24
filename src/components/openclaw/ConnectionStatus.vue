@@ -56,14 +56,14 @@ const handleRetry = () => {
 
 .connection-status--connected,
 .connection-status--success {
-  background: rgba(19, 152, 127, 0.1);
-  color: #13987f;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .connection-status--connecting,
 .connection-status--reconnecting {
-  background: rgba(250, 173, 20, 0.1);
-  color: #faad14;
+  background: var(--color-warning-light);
+  color: var(--color-warning);
 }
 
 .connection-status--disconnected,

@@ -83,9 +83,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { NSpin, NEmpty, NButton, NSwitch, NDivider, NTimePicker, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import { matrixPushService, PushRuleKind } from '@/services/matrix'
-import { matrixClientService } from '@/services/matrix'
-import type { IPusher, IPushRules } from '@/services/matrix'
+import { matrixPushService, type IPusher, type IPushRules, type PushRuleKind, type IPushRule } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PushSettings')
@@ -108,16 +106,17 @@ const invitePushEnabled = ref(true)
 const dndEnabled = ref(false)
 const dndStartTime = ref<number | null>(null)
 const dndEndTime = ref<number | null>(null)
+let unsubscribePushRules: (() => void) | null = null
 
 onMounted(async () => {
   await Promise.all([fetchPushers(), fetchPushRules()])
   loadDndSettings()
-
-  matrixClientService.on('pushRules', handlePushRulesUpdate)
+  unsubscribePushRules = matrixPushService.subscribePushRules(handlePushRulesUpdate)
 })
 
 onUnmounted(() => {
-  matrixClientService.off('pushRules', handlePushRulesUpdate)
+  unsubscribePushRules?.()
+  unsubscribePushRules = null
 })
 
 function handlePushRulesUpdate(rules: IPushRules) {
@@ -139,7 +138,7 @@ async function fetchPushers() {
 async function fetchPushRules() {
   rulesLoading.value = true
   try {
-    const rules = await matrixPushService.getRawPushRules()
+    const rules = await matrixPushService.getPushRules()
     pushRules.value = rules
     updateUIFromRules(rules)
   } catch (error) {
@@ -152,13 +151,13 @@ async function fetchPushRules() {
 
 function updateUIFromRules(rules: IPushRules) {
   if (rules.global) {
-    const masterRule = rules.global.override?.find((r) => r.rule_id === '.m.rule.master')
+    const masterRule = rules.global.override?.find((r: IPushRule) => r.rule_id === '.m.rule.master')
     masterEnabled.value = !masterRule?.enabled
 
-    const messageRule = rules.global.content?.find((r) => r.rule_id === '.m.rule.contains_user_name')
+    const messageRule = rules.global.content?.find((r: IPushRule) => r.rule_id === '.m.rule.contains_user_name')
     messagePushEnabled.value = messageRule?.enabled !== false
 
-    const inviteRule = rules.global.override?.find((r) => r.rule_id === '.m.rule.invite_for_me')
+    const inviteRule = rules.global.override?.find((r: IPushRule) => r.rule_id === '.m.rule.invite_for_me')
     invitePushEnabled.value = inviteRule?.enabled !== false
   }
 }
@@ -206,7 +205,7 @@ function handleDeletePusher(pusher: IPusher) {
     onPositiveClick: async () => {
       try {
         await matrixPushService.unregisterPusher(pusher.pushkey, pusher.app_id)
-        pushers.value = pushers.value.filter((p) => p.pushkey !== pusher.pushkey)
+        pushers.value = pushers.value.filter((p: IPusher) => p.pushkey !== pusher.pushkey)
         message.success(t('setting.push.delete.success'))
       } catch (error) {
         message.error(t('setting.push.delete.failed'))
@@ -217,7 +216,7 @@ function handleDeletePusher(pusher: IPusher) {
 
 async function handleMasterToggle(enabled: boolean) {
   try {
-    await matrixPushService.setPushRuleEnabled('global', PushRuleKind.Override, '.m.rule.master', !enabled)
+    await matrixPushService.setPushRuleEnabled('global', 'override', '.m.rule.master', !enabled)
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
     logger.error('设置主规则失败:', error)
@@ -229,12 +228,12 @@ async function handleMasterToggle(enabled: boolean) {
 async function handleMessagePushToggle(enabled: boolean) {
   try {
     const rules = pushRules.value?.global?.content || []
-    const messageRule = rules.find((r) => r.rule_id === '.m.rule.contains_user_name')
+    const messageRule = rules.find((r: { rule_id?: string }) => r.rule_id === '.m.rule.contains_user_name')
 
     if (messageRule) {
       await matrixPushService.setPushRuleEnabled(
         'global',
-        PushRuleKind.ContentSpecific,
+        'content' as PushRuleKind,
         '.m.rule.contains_user_name',
         enabled
       )
@@ -249,7 +248,7 @@ async function handleMessagePushToggle(enabled: boolean) {
 
 async function handleInvitePushToggle(enabled: boolean) {
   try {
-    await matrixPushService.setPushRuleEnabled('global', PushRuleKind.Override, '.m.rule.invite_for_me', enabled)
+    await matrixPushService.setPushRuleEnabled('global', 'override' as PushRuleKind, '.m.rule.invite_for_me', enabled)
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
     logger.error('设置邀请规则失败:', error)
@@ -327,7 +326,7 @@ function handleDndTimeChange() {
   display: flex;
   gap: 12px;
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 
 .device-actions {
@@ -358,7 +357,7 @@ function handleDndTimeChange() {
 
 .setting-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 
@@ -383,7 +382,7 @@ function handleDndTimeChange() {
 
 .time-label {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 :deep(.dark) .time-label {

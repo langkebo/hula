@@ -21,13 +21,8 @@
 
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import VueOfficeDocx from '@vue-office/docx/lib/v3/vue-office-docx.mjs'
-import VueOfficeExcel from '@vue-office/excel/lib/v3/vue-office-excel.mjs'
-import VueOfficePdf from '@vue-office/pdf/lib/v3/vue-office-pdf.mjs'
-import VueOfficePptx from '@vue-office/pptx/lib/v3/vue-office-pptx.mjs'
+import { defineAsyncComponent } from 'vue'
 import type { FileTypeResult } from 'file-type'
-import '@vue-office/docx/lib/v3/index.css'
-import '@vue-office/excel/lib/v3/index.css'
 import { listen } from '@tauri-apps/api/event'
 import { merge } from 'es-toolkit'
 import { useTauriListener } from '@/hooks/useTauriListener'
@@ -36,6 +31,19 @@ import { getFile } from '@/utils/PathUtil'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PreviewFile')
+
+const VueOfficeDocx = defineAsyncComponent(async () => {
+  await import('@vue-office/docx/lib/v3/index.css')
+  return import('@vue-office/docx/lib/v3/vue-office-docx.mjs')
+})
+
+const VueOfficeExcel = defineAsyncComponent(async () => {
+  await import('@vue-office/excel/lib/v3/index.css')
+  return import('@vue-office/excel/lib/v3/vue-office-excel.mjs')
+})
+
+const VueOfficePdf = defineAsyncComponent(async () => import('@vue-office/pdf/lib/v3/vue-office-pdf.mjs'))
+const VueOfficePptx = defineAsyncComponent(async () => import('@vue-office/pptx/lib/v3/vue-office-pptx.mjs'))
 
 type PayloadData = {
   userId: string

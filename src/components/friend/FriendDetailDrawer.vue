@@ -1,2 +1,1 @@
-    pending: 'info',
-    rejected: 'warning',
+pending: 'info', rejected: 'warning',

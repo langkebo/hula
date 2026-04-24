@@ -24,6 +24,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import TlbsMap from 'tlbs-map-vue'
+import { MultiMarker as TlbsMultiMarker } from 'tlbs-map-vue'
 type LocationData = {
   latitude: number
   longitude: number

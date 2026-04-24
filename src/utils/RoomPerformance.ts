@@ -13,15 +13,6 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RoomPerformance')
 
-// 扩展 Performance 类型以包含 memory 属性
-interface PerformanceWithMemory extends Performance {
-  memory?: {
-    usedJSHeapSize: number
-    totalJSHeapSize: number
-    jsHeapSizeLimit: number
-  }
-}
-
 export interface RoomPerformanceMetrics {
   // 列表渲染
   listRenderTime: number // 列表首次渲染时间 (ms)
@@ -38,6 +29,14 @@ export interface RoomPerformanceMetrics {
   // 内存
   memoryUsage: number // 内存使用 (MB)
   cachedItems: number // 缓存项数量
+}
+
+interface PerformanceMemory {
+  usedJSHeapSize: number
+}
+
+interface PerformanceWithMemory extends Performance {
+  memory?: PerformanceMemory
 }
 
 class RoomPerformanceMonitor {
@@ -142,7 +141,6 @@ class RoomPerformanceMonitor {
       }
 
       this.lastFrameTime = timestamp
-      this.frameCount++
 
       this.fpsRafId = requestAnimationFrame(measureFrame)
     }
@@ -166,7 +164,6 @@ class RoomPerformanceMonitor {
       }
 
       this.fpsHistory = []
-      this.frameCount = 0
     }
   }
 
@@ -181,11 +178,10 @@ class RoomPerformanceMonitor {
    * 尝试获取内存使用情况
    */
   updateMemoryUsage(): void {
-    if ('memory' in performance) {
-      const memory = (performance as PerformanceWithMemory).memory
-      if (memory) {
-        this.metrics.memoryUsage = Math.round(memory.usedJSHeapSize / 1024 / 1024)
-      }
+    const performanceWithMemory = performance as PerformanceWithMemory
+    const memory = performanceWithMemory.memory
+    if (memory) {
+      this.metrics.memoryUsage = Math.round(memory.usedJSHeapSize / 1024 / 1024)
     }
   }
 

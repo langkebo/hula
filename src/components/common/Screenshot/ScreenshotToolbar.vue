@@ -177,11 +177,11 @@ defineExpose({
     }
 
     &:hover svg {
-      color: #13987f;
+      color: var(--color-primary);
     }
 
     &.active svg {
-      color: #13987f;
+      color: var(--color-primary);
     }
 
     &.disabled {

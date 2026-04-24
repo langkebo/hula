@@ -6,20 +6,10 @@
       <n-flex class="item p-12px" :size="12" vertical>
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
-            <span>{{ t('setting.security_privacy.presence_status') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.security_privacy.presence_status_desc') }}</span>
-          </n-flex>
-          <PresenceSelector v-model:presence="currentPresence" @change="handlePresenceChange" />
-        </n-flex>
-
-        <span class="w-full h-1px bg-[--line-color]"></span>
-
-        <n-flex align="center" justify="space-between">
-          <n-flex vertical :size="4">
             <span>{{ t('setting.security_privacy.show_online_status') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.security_privacy.show_online_status_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.security_privacy.show_online_status_desc') }}</span>
           </n-flex>
-          <n-switch size="small" v-model:value="showOnlineStatus" @update:value="handleOnlineStatusChange" />
+          <n-switch size="small" v-model:value="showOnlineStatus" />
         </n-flex>
 
         <span class="w-full h-1px bg-[--line-color]"></span>
@@ -27,7 +17,7 @@
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
             <span>{{ t('setting.security_privacy.show_typing_status') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.security_privacy.show_typing_status_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.security_privacy.show_typing_status_desc') }}</span>
           </n-flex>
           <n-switch size="small" v-model:value="showTypingStatus" />
         </n-flex>
@@ -37,7 +27,7 @@
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
             <span>{{ t('setting.security_privacy.share_read_receipts') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.security_privacy.share_read_receipts_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.security_privacy.share_read_receipts_desc') }}</span>
           </n-flex>
           <n-switch size="small" v-model:value="shareReadReceipts" />
         </n-flex>
@@ -47,7 +37,7 @@
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
             <span>{{ t('setting.security_privacy.hide_presence_strangers') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.security_privacy.hide_presence_strangers_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.security_privacy.hide_presence_strangers_desc') }}</span>
           </n-flex>
           <n-switch size="small" v-model:value="hidePresenceStrangers" />
         </n-flex>
@@ -74,7 +64,7 @@
           </n-button>
         </n-flex>
 
-        <div v-if="filteredBlockedUsers.length === 0" class="text-(12px #909090) text-center py-20px">
+        <div v-if="filteredBlockedUsers.length === 0" class="text-(12px --color-text-tertiary) text-center py-20px">
           {{ t('setting.security_privacy.no_blocked_users') }}
         </div>
 
@@ -85,7 +75,7 @@
                 <img :src="user.avatar" class="w-32px h-32px rounded-full" :alt="user.name" />
                 <n-flex vertical :size="2">
                   <span class="text-14px">{{ user.name }}</span>
-                  <span class="text-(12px #909090)">{{ user.user_id }}</span>
+                  <span class="text-(12px --color-text-tertiary)">{{ user.user_id }}</span>
                 </n-flex>
               </n-flex>
               <n-button size="small" type="error" secondary @click="handleUnblockUser(user)">
@@ -99,11 +89,12 @@
     </n-flex>
   </n-flex>
 
-  <n-modal v-model:show="showAddModal" preset="card" :title="t('setting.security_privacy.add_user')" style="width: 400px">
-    <n-input
-      v-model:value="newUserId"
-      :placeholder="t('setting.security_privacy.enter_user_id')"
-      clearable />
+  <n-modal
+    v-model:show="showAddModal"
+    preset="card"
+    :title="t('setting.security_privacy.add_user')"
+    style="width: 400px">
+    <n-input v-model:value="newUserId" :placeholder="t('setting.security_privacy.enter_user_id')" clearable />
     <template #footer>
       <n-flex justify="flex-end" :size="12">
         <n-button @click="showAddModal = false">{{ t('common.cancel') }}</n-button>
@@ -116,9 +107,6 @@
 <script setup lang="ts">
 import { NButton, NSwitch, NInput, NModal, NScrollbar, useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { PresenceSelector } from '@/components/presence'
-import matrixPresenceService from '@/services/matrix/MatrixPresenceService'
-import type { PresenceStatus } from '@/services/matrix/MatrixPresenceService'
 
 interface BlockedUser {
   user_id: string
@@ -129,7 +117,6 @@ interface BlockedUser {
 const { t } = useI18n()
 const message = useMessage()
 
-const currentPresence = ref<PresenceStatus>('online')
 const showOnlineStatus = ref(true)
 const showTypingStatus = ref(true)
 const shareReadReceipts = ref(true)
@@ -149,30 +136,6 @@ const filteredBlockedUsers = computed(() => {
       user.user_id.toLowerCase().includes(searchKeyword.value.toLowerCase())
   )
 })
-
-const handlePresenceChange = async (status: PresenceStatus) => {
-  try {
-    await matrixPresenceService.setPresence(status)
-    message.success(t('setting.security_privacy.presence_updated', '在线状态已更新'))
-  } catch {
-    message.error(t('setting.security_privacy.presence_update_failed', '在线状态更新失败'))
-  }
-}
-
-const handleOnlineStatusChange = async (value: boolean) => {
-  try {
-    if (value) {
-      await matrixPresenceService.setPresence('online')
-      currentPresence.value = 'online'
-    } else {
-      await matrixPresenceService.setPresence('offline')
-      currentPresence.value = 'offline'
-    }
-  } catch {
-    showOnlineStatus.value = !value
-    message.error(t('setting.security_privacy.presence_update_failed', '在线状态更新失败'))
-  }
-}
 
 const handleUnblockUser = (user: BlockedUser) => {
   const index = blockedUsers.value.findIndex((u) => u.user_id === user.user_id)

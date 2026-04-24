@@ -23,7 +23,7 @@
         <span class="text-(15px #707070)">
           {{ t('home.about.device', { type: osType || '', version: osVersion || '' }) }}
         </span>
-        <n-flex vertical class="text-(12px #909090)" :size="8" align="center">
+        <n-flex vertical class="text-(12px --color-text-tertiary)" :size="8" align="center">
           <span>
             {{ t('home.about.copyright', { start: currentYear - 1, end: currentYear }) }}
           </span>

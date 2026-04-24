@@ -9,7 +9,15 @@ interface ScreenConfig {
   endY: number
 }
 
-export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screenConfig: Ref<ScreenConfig>) {
+export function useCanvasTool(
+  drawCanvasRef: Ref<HTMLCanvasElement | null>,
+  drawCtxRef: Ref<CanvasRenderingContext2D | null>,
+  imgCtxRef: Ref<CanvasRenderingContext2D | null>,
+  screenConfig: Ref<ScreenConfig>
+) {
+  const drawCanvas = computed(() => drawCanvasRef.value!)
+  const drawCtx = computed(() => drawCtxRef.value!)
+  const imgCtx = computed(() => imgCtxRef.value!)
   const drawConfig = ref({
     startX: 0,
     startY: 0,
@@ -30,8 +38,8 @@ export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screen
   const canUndo = computed(() => drawConfig.value.actions.length > 0)
 
   const draw = (type: string) => {
-    if (!drawCanvas) return
-    const { clientWidth: containerWidth, clientHeight: containerHeight } = drawCanvas
+    if (!drawCanvasRef.value) return
+    const { clientWidth: containerWidth, clientHeight: containerHeight } = drawCanvas.value
     drawConfig.value.scaleX = (screen.width * window.devicePixelRatio) / containerWidth
     drawConfig.value.scaleY = (screen.height * window.devicePixelRatio) / containerHeight
     currentTool.value = type
@@ -311,8 +319,10 @@ export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screen
     closeListen()
     if (drawConfig.value.undoStack.length > 0) {
       const imageData = drawConfig.value.undoStack.pop()
-      drawConfig.value.actions.push(imageData as never)
-      drawCtx.value.putImageData(imageData, 0, 0)
+      if (imageData) {
+        drawConfig.value.actions.push(imageData as never)
+        drawCtx.value.putImageData(imageData, 0, 0)
+      }
     }
   }
 
@@ -321,7 +331,7 @@ export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screen
     closeListen()
     drawConfig.value.actions = []
     drawConfig.value.undoStack = []
-    if (drawCtx.value && drawCanvas.value) {
+    if (drawCtxRef.value && drawCanvasRef.value) {
       drawCtx.value.clearRect(0, 0, drawCanvas.value.width, drawCanvas.value.height)
     }
   }
@@ -350,7 +360,7 @@ export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screen
   }
 
   const startListen = () => {
-    const el = drawCanvas.value
+    const el = drawCanvasRef.value
     if (!el) return
     // 仅在绘图画布上监听按下与移动，避免点击工具栏也触发绘图流程
     el.addEventListener('mousedown', handleMouseDown)
@@ -360,7 +370,7 @@ export function useCanvasTool(drawCanvas: any, drawCtx: any, imgCtx: any, screen
   }
 
   const closeListen = () => {
-    const el = drawCanvas.value
+    const el = drawCanvasRef.value
     if (el) {
       el.removeEventListener('mousedown', handleMouseDown)
       el.removeEventListener('mousemove', handleMouseMove)

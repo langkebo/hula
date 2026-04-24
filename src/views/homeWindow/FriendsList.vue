@@ -245,7 +245,7 @@ import { useI18n } from 'vue-i18n'
 import { MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import type { DetailsContent, FriendItem } from '@/services/types'
-import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useContactStore, type MatrixContact } from '@/stores/domains/chat/contacts'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -287,12 +287,12 @@ const groupChatList = computed(() => {
 
 /** 统计在线用户人数 */
 const onlineCount = computed(() => {
-  return contactStore.contactsList.filter((item) => item.activeStatus === OnlineEnum.ONLINE).length
+  return contactStore.contactsList.filter((item: MatrixContact) => item.activeStatus === OnlineEnum.ONLINE).length
 })
 
 /** 特殊关心好友列表 */
 const specialContacts = computed(() => {
-  return contactStore.favoriteContacts.sort((a, b) => {
+  return contactStore.favoriteContacts.sort((a: MatrixContact, b: MatrixContact) => {
     if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
     if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
     return 0
@@ -301,18 +301,18 @@ const specialContacts = computed(() => {
 
 /** 屏蔽好友列表 */
 const blockedContacts = computed(() => {
-  return contactStore.blockedContacts.sort((a, b) => {
+  return contactStore.blockedContacts.sort((a: MatrixContact, b: MatrixContact) => {
     return (b.lastOptTime || 0) - (a.lastOptTime || 0)
   })
 })
 
 /** 普通好友列表（排除特殊关心和屏蔽的） */
 const normalContacts = computed(() => {
-  const specialIds = new Set(specialContacts.value.map((c) => c.uid))
-  const blockedIds = new Set(blockedContacts.value.map((c) => c.uid))
+  const specialIds = new Set(specialContacts.value.map((c: MatrixContact) => c.uid))
+  const blockedIds = new Set(blockedContacts.value.map((c: MatrixContact) => c.uid))
   return contactStore.contactsList
-    .filter((c) => !specialIds.has(c.uid) && !blockedIds.has(c.uid))
-    .sort((a, b) => {
+    .filter((c: MatrixContact) => !specialIds.has(c.uid) && !blockedIds.has(c.uid))
+    .sort((a: MatrixContact, b: MatrixContact) => {
       const aIsBot = isBotUser(a.uid)
       const bIsBot = isBotUser(b.uid)
       if (aIsBot && !bIsBot) return -1

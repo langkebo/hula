@@ -190,13 +190,13 @@
     h1 {
       font-size: 24px;
       font-weight: bold;
-      color: #333;
+      color: var(--text-color);
       margin-bottom: 10px;
     }
 
     .update-time {
       font-size: 14px;
-      color: #666;
+      color: var(--color-text-secondary);
     }
   }
 
@@ -211,7 +211,7 @@
       h2 {
         font-size: 18px;
         font-weight: bold;
-        color: #333;
+        color: var(--text-color);
         width: fit-content;
         margin-bottom: 15px;
         border-bottom: 2px solid #13987f90;
@@ -221,13 +221,13 @@
       h3 {
         font-size: 16px;
         font-weight: bold;
-        color: #444;
+        color: var(--text-color);
         margin: 15px 0 10px 0;
       }
 
       p {
         font-size: 14px;
-        color: #555;
+        color: var(--color-text-secondary);
         margin-bottom: 10px;
         text-indent: 2em;
       }
@@ -241,22 +241,22 @@
 }
 
 .agreement-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--right-bg-color);
   border-radius: 3px;
 }
 
 .agreement-content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--disabled-color);
   border-radius: 3px;
 }
 
 .agreement-content::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--color-text-tertiary);
 }
 
 :deep(.action-close) {
   svg {
-    color: #303030;
+    color: var(--text-color);
   }
 }
 </style>

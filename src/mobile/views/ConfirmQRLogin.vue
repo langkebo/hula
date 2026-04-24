@@ -32,12 +32,13 @@
         <div class="w-80% h-1px bg-gray-100 mt-10px"></div>
 
         <!-- 登录按钮，带倒计时 -->
-        <n-button
+        <van-button
           :disabled="countdown <= 0"
           @click="handleConfirmLogin"
-          class="px-50px bg-#6B9C89 text-white absolute bottom-20%">
+          type="primary"
+          class="px-50px absolute bottom-20%">
           {{ countdown > 0 ? `登录 (${countdown}s)` : '二维码已过期' }}
-        </n-button>
+        </van-button>
       </div>
     </div>
   </div>
@@ -73,7 +74,7 @@ const qrCodeIcon = ref('/logo.png')
 
 const handleConfirmLogin = async () => {
   try {
-    await matrixQrLoginService.handleConfirm()
+    await matrixQrLoginService.handleConfirm(props.qrId)
 
     router.push('/mobile/message')
   } catch (error) {

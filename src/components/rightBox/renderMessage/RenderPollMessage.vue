@@ -105,7 +105,7 @@ const handleVote = (index: number) => {
   }
 
   &.selected {
-    background: rgba(19, 152, 127, 0.1);
+    background: var(--color-primary-light);
   }
 }
 
@@ -118,18 +118,18 @@ const handleVote = (index: number) => {
 }
 
 .option-count {
-  @apply text-12px color-#909090;
+  @apply text-12px color-[--color-text-tertiary];
 }
 
 .option-progress {
-  @apply absolute inset-y-0 left-0 bg-#13987f20 rounded-6px transition-all;
+  @apply absolute inset-y-0 left-0 bg-[--color-primary]20 rounded-6px transition-all;
 }
 
 .poll-footer {
-  @apply flex items-center justify-between text-12px color-#909090;
+  @apply flex items-center justify-between text-12px color-[--color-text-tertiary];
 }
 
 .ended-badge {
-  @apply px-6px py-2px bg-#90909020 rounded-4px;
+  @apply px-6px py-2px bg-[--color-text-tertiary]20 rounded-4px;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <n-modal :show="show" @update:show="emit('update:show', $event)" preset="card" title="恢复密钥备份" style="width: 500px" :mask-closable="false">
+  <n-modal v-model:show="visible" preset="card" title="恢复密钥备份" style="width: 500px" :mask-closable="false">
     <n-spin :show="loading">
       <div class="restore-content">
         <div class="intro-text">
@@ -100,9 +100,10 @@ async function handleRestore() {
   loading.value = true
   restoreProgress.value = 0
   restoreResult.value = null
+  let progressInterval: number | null = null
 
   try {
-    const progressInterval = timerManager.setInterval(() => {
+    progressInterval = timerManager.setInterval(() => {
       if (restoreProgress.value !== null && restoreProgress.value < 90) {
         restoreProgress.value += 10
       }
@@ -134,6 +135,9 @@ async function handleRestore() {
     }
     message.error('恢复失败')
   } finally {
+    if (progressInterval !== null) {
+      timerManager.clearInterval(progressInterval)
+    }
     loading.value = false
   }
 }
@@ -153,7 +157,7 @@ async function handleRestore() {
 }
 
 .hint-text {
-  color: #999;
+  color: var(--color-text-quaternary);
   font-size: 13px;
 }
 
@@ -172,7 +176,7 @@ async function handleRestore() {
   text-align: center;
   margin-top: 8px;
   font-size: 13px;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 
 .result-section {
@@ -185,13 +189,13 @@ async function handleRestore() {
 }
 
 .result-section.success {
-  background-color: rgba(82, 196, 26, 0.1);
-  color: #52c41a;
+  background-color: var(--color-success-light);
+  color: var(--color-success);
 }
 
 .result-section.error {
-  background-color: rgba(255, 77, 79, 0.1);
-  color: #ff4d4f;
+  background-color: var(--color-danger-hover);
+  color: var(--color-danger);
 }
 
 .dialog-footer {

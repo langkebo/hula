@@ -6,263 +6,203 @@
       :enable-default-background="false"
       :enable-shadow="false"
       :room-name="t('mobile_forget_code.title')" />
-    <n-flex vertical class="w-full size-full">
+    <div class="w-full size-full flex flex-col">
       <!-- 步骤条 -->
-      <n-steps size="small" class="w-full px-40px mt-20px" :current="currentStep" :status="stepStatus">
-        <n-step :title="t('mobile_forget_code.steps.verify_email')" description="" />
-        <n-step :title="t('mobile_forget_code.steps.set_new_password')" description="" />
-        <n-step :title="t('mobile_forget_code.steps.done')" description="" />
-      </n-steps>
+      <van-steps :active="currentStep - 1" class="w-full px-40px mt-20px">
+        <van-step>{{ t('mobile_forget_code.steps.verify_email') }}</van-step>
+        <van-step>{{ t('mobile_forget_code.steps.set_new_password') }}</van-step>
+        <van-step>{{ t('mobile_forget_code.steps.done') }}</van-step>
+      </van-steps>
 
       <!-- 第一步：验证邮箱 -->
       <div v-if="currentStep === 1" class="w-full max-w-300px mx-auto mt-30px">
-        <n-form ref="formRef" :model="formData" :rules="emailRules">
-          <!-- 邮箱输入 -->
-          <n-form-item path="email" :label="t('mobile_forget_code.input.label.email')">
-            <n-input
-              :allow-input="noSideSpace"
-              class="border-(1px solid #90909080)"
-              v-model:value="formData.email"
-              :placeholder="t('mobile_forget_code.input.email')"
-              spellCheck="false"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              clearable />
-          </n-form-item>
+        <!-- 邮箱输入 -->
+        <van-field
+          v-model="formData.email"
+          :placeholder="t('mobile_forget_code.input.email')"
+          :formatter="filterNoSideSpace"
+          format-trigger="onChange"
+          clearable
+          autocomplete="off"
+          :spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+          :label="t('mobile_forget_code.input.label.email')" />
 
-          <!-- 邮箱验证码 -->
-          <n-form-item path="emailCode" :label="t('mobile_forget_code.input.label.email_verification_code')">
-            <n-flex :size="8">
-              <n-input
-                :allow-input="noSideSpace"
-                class="border-(1px solid #90909080)"
-                v-model:value="formData.emailCode"
-                :placeholder="t('mobile_forget_code.input.email_code')"
-                spellCheck="false"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                maxlength="6" />
-              <n-button
-                color="#13987f"
-                ghost
-                :disabled="sendBtnDisabled"
-                :loading="sendingEmailCode"
-                @click="sendEmailCode"
-                class="min-w-100px w-fit h-34px">
-                {{ emailCodeBtnText }}
-              </n-button>
-            </n-flex>
-          </n-form-item>
+        <!-- 邮箱验证码 -->
+        <van-field
+          v-model="formData.emailCode"
+          :placeholder="t('mobile_forget_code.input.email_code')"
+          :formatter="filterNoSideSpace"
+          format-trigger="onChange"
+          maxlength="6"
+          clearable
+          autocomplete="off"
+          :spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+          :label="t('mobile_forget_code.input.label.email_verification_code')">
+          <template #button>
+            <van-button
+              size="small"
+              type="primary"
+              :disabled="sendBtnDisabled"
+              :loading="sendingEmailCode"
+              @click="sendEmailCode">
+              {{ emailCodeBtnText }}
+            </van-button>
+          </template>
+        </van-field>
 
-          <n-button
-            :loading="verifyLoading"
-            :disabled="nextDisabled"
-            tertiary
-            style="color: #fff"
-            @click="verifyEmail"
-            class="mt-10px w-full gradient-button">
-            {{ t('mobile_forget_code.button.next') }}
-          </n-button>
-        </n-form>
+        <van-button
+          :loading="verifyLoading"
+          :disabled="nextDisabled"
+          block
+          class="mt-10px gradient-button"
+          @click="verifyEmail">
+          {{ t('mobile_forget_code.button.next') }}
+        </van-button>
       </div>
 
       <!-- 第二步：设置新密码 -->
       <div v-if="currentStep === 2" class="w-full max-w-300px mx-auto mt-30px">
-        <n-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules">
-          <!-- 新密码 -->
-          <n-form-item path="password" :label="t('mobile_forget_code.input.label.new_pass')">
-            <n-flex vertical :size="8" class="w-full">
-              <n-input
-                :allow-input="noSideSpace"
-                class="border-(1px solid #90909080) w-full"
-                v-model:value="passwordForm.password"
-                type="password"
-                show-password-on="click"
-                :placeholder="t('mobile_forget_code.input.new_pass', { len: '6-16' })"
-                maxlength="16"
-                spellCheck="false"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                minlength="6" />
-              <n-flex vertical :size="4" class="space-y-4px">
-                <Validation
-                  :value="passwordForm.password"
-                  :message="t('mobile_forget_code.validation.minlength', { len: '6-16' })"
-                  :validator="validateMinLength" />
-                <Validation
-                  :value="passwordForm.password"
-                  :message="t('mobile_forget_code.validation.valid_characters')"
-                  :validator="validateAlphaNumeric" />
-                <Validation
-                  :value="passwordForm.password"
-                  :message="t('mobile_forget_code.validation.must_special_char')"
-                  :validator="validateSpecialChar" />
-              </n-flex>
-            </n-flex>
-          </n-form-item>
+        <!-- 新密码 -->
+        <van-field
+          v-model="passwordForm.password"
+          :type="showNewPassword ? 'text' : 'password'"
+          :placeholder="t('mobile_forget_code.input.new_pass', { len: '6-16' })"
+          :formatter="filterNoSideSpace"
+          format-trigger="onChange"
+          maxlength="16"
+          clearable
+          autocomplete="off"
+          :spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+          :right-icon="showNewPassword ? 'eye-o' : 'closed-eye'"
+          @click-right-icon="showNewPassword = !showNewPassword"
+          :label="t('mobile_forget_code.input.label.new_pass')" />
 
-          <!-- 确认密码 -->
-          <n-form-item path="confirmPassword" :label="t('mobile_forget_code.input.label.confirm_password')">
-            <n-flex vertical :size="8" class="w-full">
-              <n-input
-                :allow-input="noSideSpace"
-                class="border-(1px solid #90909080) w-full"
-                v-model:value="passwordForm.confirmPassword"
-                type="password"
-                show-password-on="click"
-                :placeholder="t('mobile_forget_code.input.confirm_password')"
-                spellCheck="false"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                maxlength="16"
-                minlength="6" />
-              <n-flex vertical :size="4">
-                <Validation
-                  :value="passwordForm.confirmPassword"
-                  :message="t('mobile_forget_code.validation.passwords_match')"
-                  :validator="(value: string) => value === passwordForm.password && value !== ''" />
-              </n-flex>
-            </n-flex>
-          </n-form-item>
+        <div class="flex flex-col gap-4px px-16px mt-4px">
+          <Validation
+            :value="passwordForm.password"
+            :message="t('mobile_forget_code.validation.minlength', { len: '6-16' })"
+            :validator="validateMinLength" />
+          <Validation
+            :value="passwordForm.password"
+            :message="t('mobile_forget_code.validation.valid_characters')"
+            :validator="validateAlphaNumeric" />
+          <Validation
+            :value="passwordForm.password"
+            :message="t('mobile_forget_code.validation.must_special_char')"
+            :validator="validateSpecialChar" />
+        </div>
 
-          <n-flex :size="16" class="mt-30px">
-            <n-button @click="goBack" class="flex-1">{{ t('mobile_forget_code.button.go_back_setp') }}</n-button>
-            <n-button
-              :loading="submitLoading"
-              tertiary
-              style="color: #fff"
-              @click="submitNewPassword"
-              class="flex-1 gradient-button">
-              {{ t('mobile_forget_code.button.submit') }}
-            </n-button>
-          </n-flex>
-        </n-form>
+        <!-- 确认密码 -->
+        <van-field
+          v-model="passwordForm.confirmPassword"
+          :type="showConfirmPassword ? 'text' : 'password'"
+          :placeholder="t('mobile_forget_code.input.confirm_password')"
+          :formatter="filterNoSideSpace"
+          format-trigger="onChange"
+          maxlength="16"
+          clearable
+          autocomplete="off"
+          :spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+          :right-icon="showConfirmPassword ? 'eye-o' : 'closed-eye'"
+          @click-right-icon="showConfirmPassword = !showConfirmPassword"
+          :label="t('mobile_forget_code.input.label.confirm_password')" />
+
+        <div class="flex flex-col gap-4px px-16px mt-4px">
+          <Validation
+            :value="passwordForm.confirmPassword"
+            :message="t('mobile_forget_code.validation.passwords_match')"
+            :validator="(value: string) => value === passwordForm.password && value !== ''" />
+        </div>
+
+        <div class="flex gap-16px mt-30px px-16px">
+          <van-button block @click="goBack">{{ t('mobile_forget_code.button.go_back_setp') }}</van-button>
+          <van-button
+            :loading="submitLoading"
+            block
+            class="gradient-button"
+            @click="submitNewPassword">
+            {{ t('mobile_forget_code.button.submit') }}
+          </van-button>
+        </div>
       </div>
 
       <!-- 第三步：完成 -->
       <div v-if="currentStep === 3" class="w-full max-w-300px mx-auto mt-100px text-center">
-        <!-- <n-icon size="64" class="text-#13987f">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path fill="currentColor" d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" />
-        </svg>
-      </n-icon> -->
         <img class="size-98px" src="/emoji/party-popper.webp" alt="" />
-
         <div class="mt-16px text-18px">{{ t('mobile_forget_code.password_reset_success') }}</div>
         <div class="mt-16px text-14px text-#666">{{ t('mobile_forget_code.password_reset_success_desc') }}</div>
       </div>
-    </n-flex>
+    </div>
   </MobileLayout>
 </template>
 
 <script setup lang="ts">
 import { createLogger } from '@/utils/Logger'
 import Validation from '@/components/common/Validation.vue'
-import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
+import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
-import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('MobileForgetPassword')
-const timerManager = useTimerManager()
 
-// 导入Web Worker
 const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url))
 
 const { t } = useI18n()
 
-// 步骤状态
 const currentStep = ref(1)
-const stepStatus = ref<'error' | 'finish' | 'process' | 'wait' | undefined>('process')
 
-// 第一步表单数据
-const formRef = ref(null)
 const formData = ref({
   email: '',
   emailCode: '',
-  uuid: '' // 图片验证码uuid
+  uuid: ''
 })
 
-// 图片验证码相关
 const captchaImage = ref('')
 const sendBtnDisabled = ref(false)
 const emailCodeBtnText = ref(t('mobile_forget_code.button.send_email_code'))
 const countDown = ref(60)
 const verifyLoading = ref(false)
-// 发送验证码loading状态
 const sendingEmailCode = ref(false)
-// 上次获取图片验证码的时间
+const emailSessionId = ref('')
+const emailClientSecret = ref('')
+const emailSendAttempt = ref(1)
+const emailVerified = ref(false)
 const lastCaptchaTime = ref(0)
-// 图片验证码获取间隔时间(毫秒)
 const captchaInterval = 10000
-// 图片验证码是否在冷却中
 const captchaInCooldown = ref(false)
-// 图片验证码冷却剩余时间
 const captchaCooldownRemaining = ref(0)
-// 验证码计时器的唯一ID
 const EMAIL_TIMER_ID = 'email_verification_timer'
-// 图片验证码限制计时器ID
 const CAPTCHA_TIMER_ID = 'captcha_cooldown_timer'
 
-// 邮箱校验规则
-const emailRules = {
-  email: [
-    { required: true, message: t('mobile_forget_code.rules.email_require'), trigger: 'blur' },
-    {
-      pattern: /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/,
-      message: t('mobile_forget_code.rules.email_invalid'),
-      trigger: 'blur'
-    }
-  ],
-  emailCode: [
-    { required: true, message: t('mobile_forget_code.rules.email_code_require'), trigger: 'input' },
-    { min: 6, max: 6, message: t('mobile_forget_code.rules.code_length', { len: 6 }), trigger: 'blur' }
-  ]
-}
-
-// 第二步密码表单
-const passwordFormRef = ref(null)
 const passwordForm = ref({
   password: '',
   confirmPassword: ''
 })
 const submitLoading = ref(false)
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
 
-// 密码校验规则
-const passwordRules = {
-  password: [
-    { required: true, message: t('mobile_forget_code.rules.new_pass_require'), trigger: 'blur' },
-    { min: 6, max: 16, message: t('mobile_forget_code.rules.new_pass_length', { len: '6-16' }), trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { required: true, message: t('mobile_forget_code.rules.confirm_pass_require'), trigger: 'blur' },
-    {
-      validator: (_: any, value: string) => {
-        return value === passwordForm.value.password
-      },
-      message: 'mobile_forget_code.rules.pass_not_matcht',
-      trigger: 'blur'
-    }
-  ]
-}
-
-// 下一步按钮禁用状态
 const nextDisabled = computed(() => {
   return !(formData.value.email && formData.value.emailCode)
 })
 
-/** 不允许输入空格 */
-const noSideSpace = (value: string) => !value.startsWith(' ') && !value.endsWith(' ')
+const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
 
-/** 密码验证函数 */
 const validateMinLength = (value: string) => value.length >= 6
 
-// 获取图片验证码
+const getErrorMessage = (error: unknown, fallback: string) => {
+  return error instanceof Error && error.message ? error.message : fallback
+}
+
 const getCaptchaImage = async () => {
   if (captchaInCooldown.value) {
     window.$message.warning(t('mobile_forget_code.too_many_requests', { s: captchaCooldownRemaining.value }))
@@ -284,11 +224,11 @@ const getCaptchaImage = async () => {
     })
   } catch (error) {
     logger.error('获取验证码失败', error)
+    window.$message.error(getErrorMessage(error, '获取验证码失败，请稍后重试'))
     captchaInCooldown.value = false
   }
 }
 
-// 发送邮箱验证码
 const sendEmailCode = async () => {
   if (!formData.value.email) {
     window.$message.warning(t('mobile_forget_code.rules.email_require'))
@@ -303,7 +243,14 @@ const sendEmailCode = async () => {
   sendingEmailCode.value = true
 
   try {
-    await MatrixAuthService.requestEmailToken(formData.value.email, 1)
+    const email = formData.value.email.trim()
+    formData.value.email = email
+
+    const result = await MatrixAuthService.requestPasswordEmailToken(email, emailSendAttempt.value)
+    emailSessionId.value = result.sid
+    emailClientSecret.value = result.client_secret
+    emailVerified.value = false
+    emailSendAttempt.value += 1
 
     window.$message.success(t('mobile_forget_code.code_sent_email'))
 
@@ -318,119 +265,166 @@ const sendEmailCode = async () => {
     })
   } catch (error) {
     logger.error('发送验证码失败', error)
+    window.$message.error(getErrorMessage(error, '发送验证码失败，请稍后重试'))
     getCaptchaImage()
   } finally {
     sendingEmailCode.value = false
   }
 }
 
-// 验证邮箱
 const verifyEmail = async () => {
-  if (!formRef.value) return
+  if (!formData.value.email || !formData.value.emailCode) {
+    window.$message.warning(t('mobile_forget_code.rules.email_require'))
+    return
+  }
 
   try {
-    await (formRef.value as any).validate()
     verifyLoading.value = true
+    if (!emailSessionId.value || !emailClientSecret.value) {
+      throw new Error('请先发送邮箱验证码')
+    }
 
-    // 这里只是验证表单，实际上不需要调用后端接口，直接进入下一步
-    timerManager.setTimeout(() => {
-      currentStep.value = 2
-      verifyLoading.value = false
-    }, 500)
+    formData.value.emailCode = formData.value.emailCode.trim()
+    await MatrixAuthService.submitEmailToken(
+      formData.value.emailCode,
+      emailClientSecret.value,
+      emailSessionId.value,
+      'password_reset'
+    )
+
+    emailVerified.value = true
+    currentStep.value = 2
   } catch (error) {
     logger.error('表单验证失败', error)
+    window.$message.error(getErrorMessage(error, '邮箱验证码校验失败，请稍后重试'))
+  } finally {
+    verifyLoading.value = false
   }
 }
 
-// 返回上一步
 const goBack = () => {
+  emailVerified.value = false
   currentStep.value = 1
 }
 
-// 提交新密码
 const submitNewPassword = async () => {
-  if (!passwordFormRef.value) return
+  if (!passwordForm.value.password || !passwordForm.value.confirmPassword) {
+    window.$message.warning(t('mobile_forget_code.rules.new_pass_require'))
+    return
+  }
+
+  if (passwordForm.value.password !== passwordForm.value.confirmPassword) {
+    window.$message.warning(t('mobile_forget_code.rules.pass_not_match'))
+    return
+  }
 
   try {
-    await (passwordFormRef.value as any).validate()
     submitLoading.value = true
 
-    await MatrixAuthService.forgetPassword(formData.value.email)
+    if (!emailVerified.value || !emailSessionId.value || !emailClientSecret.value) {
+      throw new Error('请先完成邮箱验证码校验')
+    }
+
+    await MatrixAuthService.resetPassword(
+      passwordForm.value.password,
+      emailSessionId.value,
+      'm.login.email.identity',
+      undefined,
+      emailClientSecret.value
+    )
 
     currentStep.value = 3
-    stepStatus.value = 'finish'
-    submitLoading.value = false
 
     setTimeout(() => {
       router.push('/mobile/login')
     }, 2000)
   } catch (error) {
     logger.error('重置密码失败', error)
+    window.$message.error(getErrorMessage(error, '重置密码失败，请稍后重试'))
+  } finally {
     submitLoading.value = false
   }
 }
 
-// 监听 Worker 消息
 timerWorker.onmessage = (e) => {
   const { type, msgId, remainingTime } = e.data
 
   if (msgId === EMAIL_TIMER_ID) {
-    // 邮箱验证码计时器消息处理
     if (type === 'debug') {
-      // 更新倒计时显示
       const secondsRemaining = Math.ceil(remainingTime / 1000)
       countDown.value = secondsRemaining
       emailCodeBtnText.value = t('mobile_forget_code.email_resend_in', { seconds: secondsRemaining })
     } else if (type === 'timeout') {
-      // 计时结束
       sendBtnDisabled.value = false
       emailCodeBtnText.value = t('mobile_forget_code.button.send_email_code')
     }
   } else if (msgId === CAPTCHA_TIMER_ID) {
-    // 图片验证码冷却计时器消息处理
     if (type === 'debug') {
-      // 更新剩余冷却时间，供用户点击时显示
       captchaCooldownRemaining.value = Math.ceil(remainingTime / 1000)
     } else if (type === 'timeout') {
-      // 冷却结束
       captchaInCooldown.value = false
       captchaCooldownRemaining.value = 0
     }
   }
 }
 
-// Worker 错误处理
 timerWorker.onerror = (error) => {
   logger.error('Timer Worker Error', error)
-  // 发生错误时恢复按钮状态
   sendBtnDisabled.value = false
   emailCodeBtnText.value = t('mobile_forget_code.button.send_email_code')
 }
 
-// 页面加载时获取验证码
 onMounted(async () => {
   getCaptchaImage()
 })
 
-// 组件销毁时清除定时器
 onBeforeUnmount(() => {
-  // 清除Web Worker计时器
   timerWorker.postMessage({
     type: 'clearTimer',
     msgId: EMAIL_TIMER_ID
   })
 
-  // 清除图片验证码冷却计时器
   timerWorker.postMessage({
     type: 'clearTimer',
     msgId: CAPTCHA_TIMER_ID
   })
 
-  // 可选：终止Worker (如果不需要在其他地方使用)
   timerWorker.terminate()
 })
 </script>
 
 <style scoped lang="scss">
 @use '@/styles/scss/login';
+
+:deep(.van-cell.van-field) {
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+:deep(.van-cell.van-field::after) {
+  display: none;
+}
+
+:deep(.van-field__control) {
+  font-size: 16px;
+}
+
+:deep(.van-field__right-icon) {
+  color: #505050;
+  cursor: pointer;
+}
+
+:deep(.van-field__clear) {
+  color: #909090;
+}
+
+:deep(.van-steps) {
+  background: transparent;
+}
+
+:deep(.van-step__title) {
+  font-size: 12px;
+}
 </style>

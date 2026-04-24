@@ -129,7 +129,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixContactService, type UserProfile } from '@/services/matrix'
-import { matrixGroupService, type GroupSearchResult } from '@/services/matrix/MatrixGroupService'
+import { matrixGroupService, type GroupSearchResult } from '@/services/matrix/room/MatrixGroupService'
 import { isMobile } from '@/utils/PlatformConstants'
 import router from '@/router'
 

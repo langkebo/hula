@@ -83,7 +83,7 @@ defineExpose({
   font-size: 12px;
 
   &.can-recall {
-    color: #13987f;
+    color: var(--color-primary);
 
     .time {
       font-weight: 500;
@@ -91,7 +91,7 @@ defineExpose({
   }
 
   &.expired {
-    color: #909090;
+    color: var(--color-text-tertiary);
   }
 
   .icon {

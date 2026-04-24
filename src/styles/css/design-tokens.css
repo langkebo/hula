@@ -127,13 +127,19 @@
 
 /* 暗色主题 */
 html[data-theme='dark'] {
+  /* 功能色 - 暗色模式调整 */
+  --color-success: #73d13d;
+  --color-warning: #ffa940;
+  --color-danger: #ff7875;
+  --color-info: #40a9ff;
+
   /* 中性色 - 文字 */
   --color-text-primary: #ffffff;
   --color-text-secondary: #bfbfbf;
   --color-text-tertiary: #8c8c8c;
   --color-text-quaternary: #595959;
   --color-text-disabled: #434343;
-  
+
   /* 中性色 - 背景 */
   --color-bg-primary: #1b1b1b;
   --color-bg-secondary: #262626;
@@ -141,12 +147,18 @@ html[data-theme='dark'] {
   --color-bg-quaternary: #3a3a3a;
   --color-bg-hover: rgba(255, 255, 255, 0.08);
   --color-bg-active: rgba(255, 255, 255, 0.12);
-  
+
   /* 中性色 - 边框 */
   --color-border-primary: #434343;
   --color-border-secondary: #303030;
   --color-border-tertiary: #262626;
-  
+
+  /* 状态色 - 暗色模式 */
+  --color-online: #73d13d;
+  --color-offline: #595959;
+  --color-busy: #ff7875;
+  --color-away: #ffa940;
+
   /* 阴影 */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);

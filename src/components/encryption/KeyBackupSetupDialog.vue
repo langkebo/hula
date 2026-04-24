@@ -1,5 +1,5 @@
 <template>
-  <n-modal :show="show" @update:show="emit('update:show', $event)" preset="card" :title="dialogTitle" style="width: 500px" :mask-closable="false">
+  <n-modal v-model:show="visible" preset="card" :title="dialogTitle" style="width: 500px" :mask-closable="false">
     <n-spin :show="loading">
       <div v-if="step === 'intro'" class="step-content">
         <div class="intro-icon">
@@ -239,7 +239,7 @@ async function verifyKeyInput() {
 }
 
 .warning-text {
-  color: #faad14 !important;
+  color: var(--color-warning) !important;
   font-weight: 500;
 }
 
@@ -270,7 +270,7 @@ async function verifyKeyInput() {
 
 .key-label {
   font-size: 14px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-bottom: 8px;
 }
 
@@ -300,10 +300,10 @@ async function verifyKeyInput() {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background-color: rgba(250, 173, 20, 0.1);
+  background-color: var(--color-warning-light);
   border-radius: 8px;
   margin-bottom: 16px;
-  color: #faad14;
+  color: var(--color-warning);
 }
 
 .key-checkbox {
@@ -332,7 +332,7 @@ async function verifyKeyInput() {
 }
 
 .success-color {
-  color: #52c41a;
+  color: var(--color-success);
 }
 
 .success-text {
@@ -345,6 +345,6 @@ async function verifyKeyInput() {
 
 .success-text p {
   margin: 0;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 </style>

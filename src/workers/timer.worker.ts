@@ -1,10 +1,11 @@
+// biome-ignore-all lint/suspicious/noConsole: Worker debug logging is intentionally gated and kept in this worker.
 /// <reference lib="webworker" />
 
 /** 修改类型定义以支持字符串和数字类型的key */
 type TimerId = number | string
 type TimerInfo = {
-  timerId: ReturnType<typeof setTimeout>
-  debugId: ReturnType<typeof setInterval> | null
+  timerId: NodeJS.Timeout
+  debugId: NodeJS.Timeout | null
 }
 
 /** 存储定时器ID和调试定时器ID */
@@ -43,6 +44,7 @@ const logDebugInfo = (msgId: TimerId, remainingTime: number) => {
 
   // 只在关键时间点打印日志（最后5秒或每10秒）
   if (remainingTime <= 5000 || remainingTime % 10000 < 1000) {
+    console.log(`[Worker Debug] 消息ID: ${msgId}, 剩余时间: ${(remainingTime / 1000).toFixed(1)}秒`)
   }
 }
 
@@ -51,8 +53,9 @@ const logDebugInfo = (msgId: TimerId, remainingTime: number) => {
  * @description 如何开启日志打印
  * @example timerWorker.postMessage({ type: 'setLogging', logging: true })
  */
-const safeLog = (_message: string, ..._args: any[]) => {
+const safeLog = (message: string, ...args: unknown[]) => {
   if (ENABLE_LOGGING) {
+    console.log(message, ...args)
   }
 }
 
@@ -68,6 +71,8 @@ self.onmessage = (e) => {
 
   switch (type) {
     case 'startReconnectTimer': {
+      // 主线程发送重启timer事件, 延时后返回reconnectTimeout事件给主线程
+      console.log('[Timer Worker] 启动重连定时器.....')
       const timerId = setTimeout(() => {
         self.postMessage({
           type: 'reconnectTimeout',
@@ -104,7 +109,7 @@ self.onmessage = (e) => {
       }
 
       // 只在开启日志时才创建调试定时器，避免不必要的性能开销
-      let debugId: ReturnType<typeof setInterval> | null = null
+      let debugId: NodeJS.Timeout | null = null
 
       if (ENABLE_LOGGING) {
         const startTime = Date.now()

@@ -246,6 +246,7 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { matrixRoomNotificationService, matrixRoomService, matrixSessionService } from '@/services/matrix'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -271,6 +272,9 @@ const contactStore = useContactStore()
 const { currentSessionRoomId } = storeToRefs(globalStore)
 const { persistMyRoomInfo } = useMyRoomInfoUpdater()
 
+type GroupAnnouncementListResponse = Awaited<ReturnType<typeof announcementStore.getGroupAnnouncementList>>
+type GroupAnnouncementListItem = GroupAnnouncementListResponse['records'][number]
+
 const title = computed(() =>
   isGroup.value ? t('mobile_chat_setting.type.group') : t('mobile_chat_setting.type.single_chat')
 )
@@ -295,9 +299,9 @@ const avatarSrc = (url: string) => AvatarUtils.getAvatarUrl(url)
 const announError = ref(false)
 const announNum = ref(0)
 const isAddAnnoun = ref(false)
-const announList = ref<any[]>([])
+const announList = ref<GroupAnnouncementListItem[]>([])
 const remarkValue = ref('')
-const item = ref<any>(null)
+const groupInfo = ref<MatrixGroupInfo | null>(null)
 const nameValue = ref('')
 const avatarValue = ref('')
 const nicknameValue = ref('')
@@ -444,9 +448,9 @@ const handleLoadGroupAnnoun = async () => {
     if (data) {
       announList.value = data.records
       if (announList.value && announList.value.length > 0) {
-        const topAnnouncement = announList.value.find((item: any) => item.top)
+        const topAnnouncement = announList.value.find((item) => item.top)
         if (topAnnouncement) {
-          announList.value = [topAnnouncement, ...announList.value.filter((item: any) => !item.top)]
+          announList.value = [topAnnouncement, ...announList.value.filter((item) => !item.top)]
         }
       }
       announNum.value = data.total
@@ -623,7 +627,7 @@ onMounted(async () => {
       await groupStore.loadRoomMembers(roomId, true)
 
       if (response) {
-        item.value = response
+        groupInfo.value = response
         nameValue.value = response.groupName || response.name || ''
         avatarValue.value = response.avatar || response.avatarUrl || ''
         nicknameValue.value = response.myName || ''
@@ -634,7 +638,7 @@ onMounted(async () => {
         initialRemarkValue.value = remarkValue.value
         await fetchGroupMembers(roomId)
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.error('获取群组详情失败:', e)
     }
   } else {

@@ -7,40 +7,38 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col flex-1 gap-20px py-15px px-20px">
-          <n-date-picker panel type="date" block class="m-auto rounded-16px" />
+          <van-date-picker
+            v-model="selectedDate"
+            title="选择日期"
+            class="m-auto rounded-16px" />
 
-          <n-list class="px-15px flex flex-col w-full box-border rounded-16px">
-            <n-list-item>
-              <div class="flex w-full justify-between items-center">
-                <n-text class="text-14px shrink-0">{{ t('mobile_edit_brithday.options.display_birthday_tag') }}</n-text>
-                <n-switch class="shrink-0" />
-              </div>
-            </n-list-item>
-          </n-list>
+          <div class="px-15px flex flex-col w-full box-border rounded-16px bg-white dark:bg-dark-card">
+            <div class="flex w-full justify-between items-center py-15px">
+              <span class="text-14px shrink-0">{{ t('mobile_edit_brithday.options.display_birthday_tag') }}</span>
+              <van-switch class="shrink-0" v-model="showBirthdayTag" />
+            </div>
+          </div>
 
-          <n-list class="px-15px flex flex-col w-full box-border rounded-10px">
-            <n-list-item>
-              <div class="flex w-full justify-between items-center">
-                <n-text class="text-14px shrink-0">{{ t('mobile_edit_brithday.options.displsy_age') }}</n-text>
-                <n-switch class="shrink-0" />
-              </div>
-            </n-list-item>
+          <div class="px-15px flex flex-col w-full box-border rounded-10px bg-white dark:bg-dark-card">
+            <div class="flex w-full justify-between items-center py-15px">
+              <span class="text-14px shrink-0">{{ t('mobile_edit_brithday.options.displsy_age') }}</span>
+              <van-switch class="shrink-0" v-model="showAge" />
+            </div>
 
-            <n-divider class="m-0! p-0!" />
-            <n-list-item>
-              <div class="flex w-full justify-between items-center">
-                <n-text class="text-14px shrink-0">
-                  {{ t('mobile_edit_brithday.options.display_constellation') }}
-                </n-text>
-                <n-switch class="shrink-0" />
-              </div>
-            </n-list-item>
-          </n-list>
+            <div class="h-1px bg-gray-200 dark:bg-gray-700"></div>
+
+            <div class="flex w-full justify-between items-center py-15px">
+              <span class="text-14px shrink-0">
+                {{ t('mobile_edit_brithday.options.display_constellation') }}
+              </span>
+              <van-switch class="shrink-0" v-model="showConstellation" />
+            </div>
+          </div>
 
           <div class="flex justify-center mt-20px">
-            <n-button strong secondary round type="primary" block>
+            <van-button type="primary" round block>
               {{ t('mobile_edit_brithday.save_btn') }}
-            </n-button>
+            </van-button>
           </div>
         </div>
       </div>
@@ -52,6 +50,11 @@
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+
+const selectedDate = ref(['2024', '01', '01'])
+const showBirthdayTag = ref(false)
+const showAge = ref(false)
+const showConstellation = ref(false)
 </script>
 
 <style lang="scss" scoped></style>

@@ -56,28 +56,29 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { matrixChatRoleService } from '@/services/matrix'
+import { chatRoleService, type ChatRole } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('ChatRoleSelector')
 
 const props = defineProps<{
-  modelValue?: any
+  modelValue?: ChatRole
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [role: any]
+  'update:modelValue': [role: ChatRole]
   'open-management': []
 }>()
 
 const showRoleList = ref(false)
-const roleList = ref<any[]>([])
-const currentRole = ref<any>(props.modelValue)
+const roleList = ref<ChatRole[]>([])
+const currentRole = ref<ChatRole | undefined>(props.modelValue)
 
 // 加载角色列表
 const loadRoleList = async () => {
   try {
-    const data = await matrixChatRoleService.page({ pageNo: 1, pageSize: 100 })
-    roleList.value = (data.list || []).filter((item: any) => item.status === 0) // 只显示可用的角色
+    const data = await chatRoleService.page({ pageNo: 1, pageSize: 100 })
+    roleList.value = (data.list || []).filter((item: ChatRole) => item.status === 0) // 只显示可用的角色
 
     // 如果没有选中角色，默认选中第一个
     if (!currentRole.value && roleList.value.length > 0) {
@@ -89,7 +90,7 @@ const loadRoleList = async () => {
 }
 
 // 选择角色
-const handleSelectRole = (role: any) => {
+const handleSelectRole = (role: ChatRole) => {
   currentRole.value = role
   emit('update:modelValue', role)
   showRoleList.value = false

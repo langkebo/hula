@@ -12,7 +12,7 @@
       <div class="flex-y-center gap-4px">
         <span v-if="isActive" class="status-dot active"></span>
         <span v-else class="status-dot inactive"></span>
-        <p class="text-10px" :class="isActive ? 'color-#13987f' : 'color-#999'">
+        <p class="text-10px" :class="isActive ? 'color-[--color-primary]' : 'color-[--color-text-quaternary]'">
           {{ isActive ? '共享中' : '已结束' }}
         </p>
       </div>
@@ -192,13 +192,13 @@ onUnmounted(() => {
   display: inline-block;
 
   &.active {
-    background-color: #13987f;
-    box-shadow: 0 0 4px #13987f;
+    background-color: var(--color-primary);
+    box-shadow: 0 0 4px var(--color-primary);
     animation: pulse 2s infinite;
   }
 
   &.inactive {
-    background-color: #999;
+    background-color: var(--color-text-quaternary);
   }
 }
 

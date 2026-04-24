@@ -14,15 +14,15 @@ export const usePopover = (selectKey: Ref<string>, id: string) => {
     window.removeEventListener('wheel', preventDefault)
   }
 
-  const close = (event: any) => {
-    if (!event.target.matches('.n-popover, .n-popover *')) {
+  const close = (event: MouseEvent) => {
+    if (!(event.target as HTMLElement | null)?.matches('.n-popover, .n-popover *')) {
       enableScroll()
     }
   }
 
-  const handlePopoverUpdate = (key: string, show?: boolean): boolean => {
+  const handlePopoverUpdate = (key: string, show?: boolean) => {
     const scrollbar = document.querySelector(`#${id}`) as HTMLElement
-    if (!scrollbar) return false
+    if (!scrollbar) return
 
     if (selectKey.value === key) {
       if (show) {
@@ -35,7 +35,6 @@ export const usePopover = (selectKey: Ref<string>, id: string) => {
       }
       return true
     }
-    return false
   }
 
   onMounted(() => {

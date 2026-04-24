@@ -48,7 +48,7 @@ vi.mock('@/services/matrix/crypto/MatrixVerificationService', () => ({
   initializeVerificationService: vi.fn()
 }))
 
-vi.mock('@/services/matrix/MatrixRoomSummaryService', () => ({
+vi.mock('@/services/matrix/room/MatrixRoomSummaryService', () => ({
   initializeRoomSummaryService: vi.fn()
 }))
 
@@ -131,7 +131,7 @@ describe('MatrixStore', () => {
       const { initializeKeyBackupService } = await import('@/services/matrix/crypto/MatrixKeyBackupService')
       const { initializePresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
       const { initializeVerificationService } = await import('@/services/matrix/crypto/MatrixVerificationService')
-      const { initializeRoomSummaryService } = await import('@/services/matrix/MatrixRoomSummaryService')
+      const { initializeRoomSummaryService } = await import('@/services/matrix/room/MatrixRoomSummaryService')
 
       store.isInitialized = true
       vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)

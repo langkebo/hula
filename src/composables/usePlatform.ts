@@ -10,10 +10,6 @@ export interface PlatformInfo {
   isWeb: boolean
 }
 
-interface WindowWithTauri extends Window {
-  __TAURI__?: unknown
-}
-
 const platformCache = ref<PlatformInfo | null>(null)
 
 function detectPlatform(): PlatformInfo {
@@ -21,7 +17,7 @@ function detectPlatform(): PlatformInfo {
     return platformCache.value
   }
 
-  const isTauri = typeof window !== 'undefined' && !!(window as WindowWithTauri).__TAURI__
+  const isTauri = typeof window !== 'undefined' && '__TAURI__' in window
   const isDesktop = isTauri
   const isMobile =
     !isDesktop && typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)

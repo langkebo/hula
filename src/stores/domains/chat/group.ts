@@ -3,7 +3,7 @@ import { shallowRef, computed, reactive, shallowReactive, triggerRef } from 'vue
 import { StoresEnum, OnlineEnum } from '@/enums'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
-import { matrixRoomService } from '@/services/matrix/MatrixRoomService'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 import { createLogger } from '@/utils/Logger'

@@ -98,8 +98,18 @@ export type EventListener<T = unknown> = (data: T) => void
 export type EventEmitter<T = unknown> = {
   on(event: string, listener: EventListener<T>): void
   off(event: string, listener: EventListener<T>): void
-  emit(event: string, data: T): void
+  emit(event: string, data?: T): void
   once(event: string, listener: EventListener<T>): void
+}
+
+// ==================== 业务特定类型 ====================
+
+/** 位置信息数据 */
+export type LocationData = {
+  latitude: number
+  longitude: number
+  address?: string
+  timestamp: number
 }
 
 // ==================== 存储 ====================

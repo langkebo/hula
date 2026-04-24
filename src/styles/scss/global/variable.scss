@@ -1,20 +1,27 @@
 @use 'fonts';
 * {
   font-family: var(--font-family), sans-serif !important;
-  caret-color: #13987f !important; /* 改变输入框光标的颜色 */
+  caret-color: var(--color-primary) !important;
 }
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 html,
 body,
 svg {
   &::selection {
-    background: rgba(19, 152, 127, 0.3); /** 输入框选中文本背景色 */
+    background: var(--color-primary-active);
   }
   outline: none;
-  overscroll-behavior: none; // 禁止mac的"触底反弹"效果
+  overscroll-behavior: none;
 }
 
 ::selection {
-  background: rgba(19, 152, 127, 0.3); /** 输入框选中文本背景色 */
+  background: var(--color-primary-active);
 }
 /**! 主题变量 */
 /* todo: 这里只需要定义单个颜色的变量即可无需重复定义组件的颜色 */
@@ -25,7 +32,24 @@ svg {
   --font-family: 'PingFang';
   // 是否启用透明高斯模糊
   --blur-enabled: 1;
-    // 应用背景色
+  // 语义化颜色
+  --color-primary: #13987f;
+  --color-primary-light: rgba(19, 152, 127, 0.1);
+  --color-primary-hover: rgba(19, 152, 127, 0.2);
+  --color-primary-active: rgba(19, 152, 127, 0.3);
+  --color-success: #52c41a;
+  --color-success-light: rgba(82, 196, 26, 0.1);
+  --color-warning: #faad14;
+  --color-warning-light: rgba(250, 173, 20, 0.1);
+  --color-danger: #ff4d4f;
+  --color-danger-light: rgba(255, 77, 79, 0.05);
+  --color-danger-hover: rgba(255, 77, 79, 0.1);
+  --color-info: #1890ff;
+  --color-info-light: rgba(24, 144, 255, 0.1);
+  --color-text-tertiary: #909090;
+  --color-text-quaternary: #999;
+  --color-text-secondary: #666;
+  // 应用背景色
   --app-bg-color: #FAFAFA;
 
   --center-bg-color: #fff;
@@ -43,7 +67,7 @@ svg {
   // 消息列表样式
   --bg-msg-first-child: #eeeeee;
   --bg-msg-hover: #f3f3f3;
-  --bg-active-msg: #13987f;
+  --bg-active-msg: var(--color-primary);
   // 聊天框整体样式
   --bg-chat-drawer: #f0f0f0;
   --bg-setting-item: #fdfdfd;
@@ -80,9 +104,9 @@ svg {
   // 表情框样式
   --bg-emoji: rgba(255, 255, 255, 0.6);
   --emoji-hover: #e3e3e3;
-  --emoji-active-color: #13987f;
+  --emoji-active-color: var(--color-primary);
   // 回复消息样式
-  --reply-color: #909090;
+  --reply-color: var(--color-text-tertiary);
   --reply-hover: #505050;
   --bg-reply-img-count: #e3e3e3;
   // 编辑资料背景颜色
@@ -101,17 +125,17 @@ svg {
   --bate-color: #a789d9;
   --bate-bg: #d9ccf7;
   // 卡片hover样式
-  --card-bg: #13987f60;
+  --card-bg: var(--color-primary-active);
   // 安装进度条样式
   --progress-bg: #e0e9fc;
   // 回复消息框背景
   --reply-bg: rgba(204, 204, 204, 0.4);
   // 危险样式
-  --danger-text: #c14053;
-  --danger-bg: #f6dfe3;
+  --danger-text: var(--color-danger);
+  --danger-bg: var(--color-danger-light);
   // 警告样式
-  --warning-text: #f7b668ff;
-  --warning-bg: #fdeeddff;
+  --warning-text: var(--color-warning);
+  --warning-bg: var(--color-warning-light);
   // 头像边框颜色
   --avatar-border-color: #fff;
   // hover头像样式
@@ -132,9 +156,33 @@ svg {
   // --safe-area-inset-bottom: 16px;
   // --safe-area-inset-left: 0px;
   --van-dialog-confirm-button-text-color: #169b80;
+  // 管理后台
+  --admin-sidebar-bg: #1a1a2e;
+  --admin-sidebar-text: rgba(255, 255, 255, 0.65);
+  --admin-sidebar-border: rgba(255, 255, 255, 0.08);
+  --admin-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --admin-bg: #f0f2f5;
+  --admin-card-bg: #fff;
+  --admin-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --admin-card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --admin-header-border: #e8e8e8;
+  --admin-title-color: #333;
+  --admin-stat-value-color: #333;
+  --admin-health-ok-bg: #e8f5e9;
+  --admin-health-ok-text: #2e7d32;
+  --admin-health-err-bg: #ffebee;
+  --admin-health-err-text: #c62828;
 }
 
 html[data-theme='dark'] {
+  --color-primary-light: rgba(19, 152, 127, 0.15);
+  --color-primary-hover: rgba(19, 152, 127, 0.25);
+  --color-primary-active: rgba(19, 152, 127, 0.35);
+  --color-danger-light: rgba(255, 77, 79, 0.08);
+  --color-danger-hover: rgba(255, 77, 79, 0.15);
+  --color-info-light: rgba(24, 144, 255, 0.15);
+  --color-success-light: rgba(82, 196, 26, 0.15);
+  --color-warning-light: rgba(250, 173, 20, 0.15);
   --center-bg-color: #1b1b1b;
   --right-bg-color: #161616;
   // 阴影样式的颜色
@@ -150,7 +198,7 @@ html[data-theme='dark'] {
   // 消息列表样式
   --bg-msg-first-child: #282828;
   --bg-msg-hover: #2d2d2d;
-  --bg-active-msg: rgba(19, 152, 127, 0.6);
+  --bg-active-msg: var(--color-primary-hover);
   // 聊天框整体样式
   --bg-chat-drawer: #1b1b1b;
   --bg-setting-item: #262626;
@@ -187,9 +235,9 @@ html[data-theme='dark'] {
   // 表情框样式
   --bg-emoji: rgba(27, 27, 27, 0.8);
   --emoji-hover: #3b3b3b;
-  --emoji-active-color: #13987f;
+  --emoji-active-color: var(--color-primary);
   // 回复消息样式
-  --reply-color: #e3e3e3;
+  --reply-color: var(--color-text-tertiary);
   --reply-hover: #b1b1b1;
   --bg-reply-img-count: #505050;
   // 编辑资料背景颜色
@@ -208,17 +256,17 @@ html[data-theme='dark'] {
   --bate-color: #a789d9;
   --bate-bg: #403555;
   // 卡片hover样式
-  --card-bg: #13987f20;
+  --card-bg: var(--color-primary-light);
   // 安装进度条样式
   --progress-bg: transparent;
   // 回复消息框背景
   --reply-bg: rgba(30, 30, 30, 0.6);
   // 危险样式
-  --danger-text: #da8583;
-  --danger-bg: #37292c;
+  --danger-text: var(--color-danger);
+  --danger-bg: var(--color-danger-light);
   // 警告样式
-  --warning-text: #f4c375ff;
-  --warning-bg: #402f1dff;
+  --warning-text: var(--color-warning);
+  --warning-bg: var(--color-warning-light);
   // 头像边框颜色
   --avatar-border-color: #1b1b1b;
   // hover头像样式
@@ -233,6 +281,22 @@ html[data-theme='dark'] {
   --group-notice-list-bg: #262626;
   // 文件文本的背景颜色
   --file-bg-color: #222;
+  // 管理后台
+  --admin-sidebar-bg: #141422;
+  --admin-sidebar-text: rgba(255, 255, 255, 0.55);
+  --admin-sidebar-border: rgba(255, 255, 255, 0.06);
+  --admin-sidebar-hover: rgba(255, 255, 255, 0.1);
+  --admin-bg: #111;
+  --admin-card-bg: #1e1e1e;
+  --admin-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --admin-card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --admin-header-border: #333;
+  --admin-title-color: #e0e0e0;
+  --admin-stat-value-color: #e0e0e0;
+  --admin-health-ok-bg: rgba(46, 125, 50, 0.15);
+  --admin-health-ok-text: #66bb6a;
+  --admin-health-err-bg: rgba(198, 40, 40, 0.15);
+  --admin-health-err-text: #ef5350;
 }
 /**! end */
 // 线性动画
@@ -309,10 +373,10 @@ html[data-blur='1'] {
 
 /**! 修改naive-ui Popselect选中的样式 */
 .n-base-select-menu .n-base-select-option.n-base-select-option--selected {
-  color: #13987f;
+  color: var(--color-primary);
 }
 .n-base-select-menu .n-base-select-option .n-base-select-option__check {
-  color: #13987f;
+  color: var(--color-primary);
 }
 
 /**! 通用菜单项目样式 */
@@ -368,7 +432,7 @@ html[data-blur='1'] {
 
 /** 修改默认的naive-ui的选择器样式 */
 :deep(.n-base-selection) {
-  --n-box-shadow-active: 0 0 0 2px rgba(19, 152, 127, 0.2) !important;
-  --n-border-active: 1px solid #13987f !important;
-  --n-border-hover: 1px solid #13987f !important;
+  --n-box-shadow-active: 0 0 0 2px var(--color-primary-hover) !important;
+  --n-border-active: 1px solid var(--color-primary) !important;
+  --n-border-hover: 1px solid var(--color-primary) !important;
 }

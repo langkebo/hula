@@ -280,7 +280,7 @@ export async function detectRemoteFileType(options: {
             ext: meta.file_type,
             mime: meta.mime_type
           }
-        } catch (_error) {
+        } catch {
           logger.warn(`该资源无法识别类型：${url}`)
           return void 0
         }

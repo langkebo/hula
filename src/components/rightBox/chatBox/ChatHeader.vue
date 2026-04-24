@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ChatHeaderComponent from './ChatHeader/index.vue'
+import ChatHeaderComponent from './ChatHeader/ChatHeaderRoot.vue'
 
 defineOptions({
   name: 'ChatHeader',

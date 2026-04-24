@@ -159,6 +159,11 @@ type ShortcutConfig = {
   displayName: string
 }
 
+type ShortcutRegistrationPayload = {
+  shortcut: string
+  registered: boolean
+}
+
 const settingStore = useSettingStore()
 const { getDefaultShortcuts } = useGlobalShortcut()
 const isMacPlatform = isMac()
@@ -493,7 +498,7 @@ const saveSendMessageShortcut = async () => {
 
 // 通用的事件监听器创建
 const createRegistrationListener = (config: ShortcutConfig) => {
-  return listen(config.registrationEventName, (event: any) => {
+  return listen<ShortcutRegistrationPayload>(config.registrationEventName, (event) => {
     const { shortcut, registered } = event.payload
     logger.debug(`收到${config.displayName}状态更新: ${shortcut} -> ${registered ? '已绑定' : '未绑定'}`)
 

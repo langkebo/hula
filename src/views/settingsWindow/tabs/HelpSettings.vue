@@ -280,7 +280,7 @@ async function handleOpenLogs() {
 
 .app-version {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
   margin-top: 4px;
 }
 
@@ -290,7 +290,7 @@ async function handleOpenLogs() {
 
 .sdk-version {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 2px;
 }
 
@@ -317,7 +317,7 @@ async function handleOpenLogs() {
 
 .setting-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 
@@ -336,14 +336,14 @@ async function handleOpenLogs() {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #1890ff;
+  color: var(--color-info);
 }
 
 .update-latest {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #52c41a;
+  color: var(--color-success);
 }
 
 .link-list {
@@ -377,7 +377,7 @@ async function handleOpenLogs() {
 
 .link-arrow {
   margin-left: auto;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 
 .tech-info {
@@ -400,7 +400,7 @@ async function handleOpenLogs() {
 
 .tech-label {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 :deep(.dark) .tech-label {

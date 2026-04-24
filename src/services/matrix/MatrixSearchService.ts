@@ -1,25 +1,11 @@
 import matrixClientService from './MatrixClientService'
-import { BaseManager } from './BaseManager'
-import type { SearchResponse } from '@/types/matrix-api'
-import { info } from '@tauri-apps/plugin-log'
+import { info, error } from '@tauri-apps/plugin-log'
+import type { SearchEventContext } from '@/types/matrix-api'
 
-export interface SearchEventContext {
-  eventsBefore: Array<{
-    eventId: string
-    sender: string
-    content: Record<string, unknown>
-    timestamp: number
-  }>
-  eventsAfter: Array<{
-    eventId: string
-    sender: string
-    content: Record<string, unknown>
-    timestamp: number
-  }>
-  profileInfo?: {
-    displayName?: string
-    avatarUrl?: string
-  }
+export interface UserSearchResult {
+  userId: string
+  displayName?: string
+  avatarUrl?: string
 }
 
 export interface SearchResult {
@@ -38,27 +24,54 @@ export interface RoomSearchResult {
   avatarUrl?: string
   memberCount: number
   isJoined: boolean
-  roomType?: string
-  isSpace?: boolean
-  isEncrypted?: boolean
-  canonicalAlias?: string
-  joinRule?: string
 }
 
-export interface UserSearchResultItem {
-  userId: string
-  displayName?: string
-  avatarUrl?: string
+interface MatrixSearchEventResult {
+  result: {
+    room_id: string
+    event_id: string
+    sender: string
+    content: Record<string, unknown>
+    origin_server_ts: number
+  }
+  context?: {
+    profile_info?: Record<string, { displayname?: string }>
+    events_before?: unknown[]
+    events_after?: unknown[]
+  }
 }
 
-export interface PublicRoomsResponse {
-  rooms: RoomSearchResult[]
-  nextBatch?: string
-  prevBatch?: string
-  totalRooms: number
+interface MatrixSearchResponse {
+  search_categories?: {
+    room_events?: {
+      results?: MatrixSearchEventResult[]
+    }
+  }
 }
 
-class MatrixSearchService extends BaseManager {
+class MatrixSearchService {
+  private toUserSearchResults(
+    results: Array<{ user_id: string; display_name?: string; avatar_url?: string }>
+  ): UserSearchResult[] {
+    return results.map((user) => ({
+      userId: user.user_id,
+      displayName: user.display_name,
+      avatarUrl: user.avatar_url
+    }))
+  }
+
+  private toRoomSearchResults(
+    rooms: Array<{ room_id: string; name?: string; avatar_url?: string; joined_members: number }>
+  ): RoomSearchResult[] {
+    return rooms.map((room) => ({
+      roomId: room.room_id,
+      roomName: room.name || room.room_id,
+      avatarUrl: room.avatar_url,
+      memberCount: room.joined_members,
+      isJoined: false
+    }))
+  }
+
   async searchMessages(
     query: string,
     options?: {
@@ -66,8 +79,7 @@ class MatrixSearchService extends BaseManager {
       limit?: number
       beforeLimit?: number
       afterLimit?: number
-    },
-    throwOnError = true
+    }
   ): Promise<SearchResult[]> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -75,7 +87,7 @@ class MatrixSearchService extends BaseManager {
     }
 
     try {
-      const searchParams: any = {
+      const searchParams: Record<string, unknown> = {
         search_categories: {
           room_events: {
             search_term: query,
@@ -94,16 +106,17 @@ class MatrixSearchService extends BaseManager {
       }
 
       const response = await client.search(searchParams)
-      const results = this.parseSearchResults(response as SearchResponse)
+      const results = this.parseSearchResults(response)
 
       info(`[MatrixSearch] 搜索完成: "${query}" 找到 ${results.length} 条结果`)
       return results
     } catch (err) {
-      return this.handleError(err, 'searchMessages', [] as SearchResult[], throwOnError)
+      error(`[MatrixSearch] 搜索失败: ${err}`)
+      throw err
     }
   }
 
-  private parseSearchResults(response: SearchResponse): SearchResult[] {
+  private parseSearchResults(response: MatrixSearchResponse): SearchResult[] {
     const results: SearchResult[] = []
     const roomEvents = response.search_categories?.room_events
 
@@ -122,18 +135,8 @@ class MatrixSearchService extends BaseManager {
         roomName: context?.profile_info?.[event.room_id]?.displayname,
         context: context
           ? {
-              eventsBefore: (context.events_before || []).map((e: any) => ({
-                eventId: e.event_id || '',
-                sender: e.sender || '',
-                content: e.content || {},
-                timestamp: e.origin_server_ts || 0
-              })),
-              eventsAfter: (context.events_after || []).map((e: any) => ({
-                eventId: e.event_id || '',
-                sender: e.sender || '',
-                content: e.content || {},
-                timestamp: e.origin_server_ts || 0
-              }))
+              eventsBefore: (context.events_before || []) as SearchEventContext['eventsBefore'],
+              eventsAfter: (context.events_after || []) as SearchEventContext['eventsAfter']
             }
           : undefined
       })
@@ -142,20 +145,16 @@ class MatrixSearchService extends BaseManager {
     return results
   }
 
-  async searchInRoom(roomId: string, query: string, limit: number = 20, throwOnError = true): Promise<SearchResult[]> {
-    return this.searchMessages(
-      query,
-      {
-        roomId,
-        limit,
-        beforeLimit: 5,
-        afterLimit: 5
-      },
-      throwOnError
-    )
+  async searchInRoom(roomId: string, query: string, limit: number = 20): Promise<SearchResult[]> {
+    return this.searchMessages(query, {
+      roomId,
+      limit,
+      beforeLimit: 5,
+      afterLimit: 5
+    })
   }
 
-  async searchUsers(query: string, limit: number = 10, throwOnError = true): Promise<UserSearchResultItem[]> {
+  async searchUsers(query: string, limit: number = 10): Promise<UserSearchResult[]> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixSearch] 客户端未初始化')
@@ -167,18 +166,13 @@ class MatrixSearchService extends BaseManager {
         limit
       })
 
-      const results: UserSearchResultItem[] = (response.results || []).map(
-        (user: { user_id: string; display_name?: string; avatar_url?: string }) => ({
-          userId: user.user_id,
-          displayName: user.display_name,
-          avatarUrl: user.avatar_url
-        })
-      )
+      const results = this.toUserSearchResults(response.results || [])
 
       info(`[MatrixSearch] 用户搜索完成: "${query}" 找到 ${results.length} 个用户`)
       return results
     } catch (err) {
-      return this.handleError(err, 'searchUsers', [] as UserSearchResultItem[], throwOnError)
+      error(`[MatrixSearch] 用户搜索失败: ${err}`)
+      throw err
     }
   }
 
@@ -212,65 +206,26 @@ class MatrixSearchService extends BaseManager {
   async getPublicRooms(
     server?: string,
     limit: number = 20,
-    since?: string,
-    throwOnError = true
-  ): Promise<PublicRoomsResponse> {
+    since?: string
+  ): Promise<{
+    rooms: RoomSearchResult[]
+    nextBatch?: string
+    prevBatch?: string
+    totalRooms: number
+  }> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixSearch] 客户端未初始化')
     }
 
     try {
-      const manager = (client as any).getRoomSummaryManager?.() as any
-      if (manager?.getPublicRooms) {
-        const response = await manager.getPublicRooms(server ?? '', {
-          limit,
-          since
-        })
-
-        if (!response) {
-          return { rooms: [], totalRooms: 0 }
-        }
-
-        const rooms: RoomSearchResult[] = (response.chunk || []).map((room: any) => ({
-          roomId: room.room_id,
-          roomName: room.name || room.room_id,
-          avatarUrl: room.avatar_url,
-          memberCount: room.num_joined_members ?? 0,
-          isJoined: false,
-          roomType: room.room_type,
-          isSpace: room.room_type === 'm.space',
-          canonicalAlias: room.canonical_alias,
-          joinRule: room.join_rule
-        }))
-
-        info(`[MatrixSearch] 获取公开房间成功: ${rooms.length} 个房间`)
-
-        return {
-          rooms,
-          nextBatch: response.next_batch,
-          prevBatch: response.prev_batch,
-          totalRooms: response.total_room_count_estimate || 0
-        }
-      }
-
       const response = await client.publicRooms({
         server,
         limit,
         since
       })
 
-      const rooms: RoomSearchResult[] = (response.chunk || []).map((room: any) => ({
-        roomId: room.room_id,
-        roomName: room.name || room.room_id,
-        avatarUrl: room.avatar_url,
-        memberCount: room.num_joined_members ?? 0,
-        isJoined: false,
-        roomType: room.room_type,
-        isSpace: room.room_type === 'm.space',
-        canonicalAlias: room.canonical_alias,
-        joinRule: room.join_rule
-      }))
+      const rooms = this.toRoomSearchResults(response.chunk || [])
 
       info(`[MatrixSearch] 获取公开房间成功: ${rooms.length} 个房间`)
 
@@ -281,39 +236,18 @@ class MatrixSearchService extends BaseManager {
         totalRooms: response.total_room_count_estimate || 0
       }
     } catch (err) {
-      return this.handleError(err, 'getPublicRooms', { rooms: [], totalRooms: 0 } as PublicRoomsResponse, throwOnError)
+      error(`[MatrixSearch] 获取公开房间失败: ${err}`)
+      throw err
     }
   }
 
-  async searchPublicRooms(
-    query: string,
-    server?: string,
-    limit: number = 20,
-    throwOnError = true
-  ): Promise<RoomSearchResult[]> {
+  async searchPublicRooms(query: string, server?: string): Promise<RoomSearchResult[]> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixSearch] 客户端未初始化')
     }
 
     try {
-      const manager = (client as any).getRoomSummaryManager?.() as any
-      if (manager?.searchPublicRooms) {
-        const rooms = await manager.searchPublicRooms(query, server ?? '', limit)
-
-        return (rooms || []).map((room: any) => ({
-          roomId: room.room_id,
-          roomName: room.name || room.room_id,
-          avatarUrl: room.avatar_url,
-          memberCount: room.num_joined_members ?? 0,
-          isJoined: false,
-          roomType: room.room_type,
-          isSpace: room.room_type === 'm.space',
-          canonicalAlias: room.canonical_alias,
-          joinRule: room.join_rule
-        }))
-      }
-
       const response = await client.publicRooms({
         server,
         filter: {
@@ -321,26 +255,17 @@ class MatrixSearchService extends BaseManager {
         }
       })
 
-      const rooms: RoomSearchResult[] = (response.chunk || []).map((room: any) => ({
-        roomId: room.room_id,
-        roomName: room.name || room.room_id,
-        avatarUrl: room.avatar_url,
-        memberCount: room.num_joined_members ?? 0,
-        isJoined: false,
-        roomType: room.room_type,
-        isSpace: room.room_type === 'm.space',
-        canonicalAlias: room.canonical_alias,
-        joinRule: room.join_rule
-      }))
+      const rooms = this.toRoomSearchResults(response.chunk || [])
 
       info(`[MatrixSearch] 搜索公开房间成功: "${query}" 找到 ${rooms.length} 个房间`)
       return rooms
     } catch (err) {
-      return this.handleError(err, 'searchPublicRooms', [] as RoomSearchResult[], throwOnError)
+      error(`[MatrixSearch] 搜索公开房间失败: ${err}`)
+      throw err
     }
   }
 
-  async getRoomDirectoryVisibility(roomId: string, throwOnError = true): Promise<'public' | 'private'> {
+  async getRoomDirectoryVisibility(roomId: string): Promise<'public' | 'private'> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixSearch] 客户端未初始化')
@@ -350,15 +275,12 @@ class MatrixSearchService extends BaseManager {
       const response = await client.getRoomDirectoryVisibility(roomId)
       return response.visibility as 'public' | 'private'
     } catch (err) {
-      return this.handleError(err, 'getRoomDirectoryVisibility', 'private' as 'public' | 'private', throwOnError)
+      error(`[MatrixSearch] 获取房间可见性失败: ${err}`)
+      throw err
     }
   }
 
-  async setRoomDirectoryVisibility(
-    roomId: string,
-    visibility: 'public' | 'private',
-    throwOnError = false
-  ): Promise<void> {
+  async setRoomDirectoryVisibility(roomId: string, visibility: 'public' | 'private'): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixSearch] 客户端未初始化')
@@ -368,7 +290,8 @@ class MatrixSearchService extends BaseManager {
       await client.setRoomDirectoryVisibility(roomId, visibility)
       info(`[MatrixSearch] 设置房间可见性成功: ${roomId} -> ${visibility}`)
     } catch (err) {
-      this.handleError(err, 'setRoomDirectoryVisibility', undefined as void, throwOnError)
+      error(`[MatrixSearch] 设置房间可见性失败: ${err}`)
+      throw err
     }
   }
 }

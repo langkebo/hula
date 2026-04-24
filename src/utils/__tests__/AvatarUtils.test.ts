@@ -1,0 +1,77 @@
+import { describe, it, expect } from 'vitest'
+import { AvatarUtils } from '../AvatarUtils'
+
+describe('AvatarUtils', () => {
+  describe('isDefaultAvatar', () => {
+    it('returns true for valid default avatars (001-022)', () => {
+      expect(AvatarUtils.isDefaultAvatar('001')).toBe(true)
+      expect(AvatarUtils.isDefaultAvatar('010')).toBe(true)
+      expect(AvatarUtils.isDefaultAvatar('022')).toBe(true)
+    })
+
+    it('returns false for out-of-range numbers', () => {
+      expect(AvatarUtils.isDefaultAvatar('000')).toBe(false)
+      expect(AvatarUtils.isDefaultAvatar('023')).toBe(false)
+      expect(AvatarUtils.isDefaultAvatar('100')).toBe(false)
+    })
+
+    it('returns false for empty string', () => {
+      expect(AvatarUtils.isDefaultAvatar('')).toBe(false)
+    })
+
+    it('returns false for non-3-digit strings', () => {
+      expect(AvatarUtils.isDefaultAvatar('01')).toBe(false)
+      expect(AvatarUtils.isDefaultAvatar('0001')).toBe(false)
+      expect(AvatarUtils.isDefaultAvatar('a')).toBe(false)
+    })
+
+    it('returns false for non-numeric strings', () => {
+      expect(AvatarUtils.isDefaultAvatar('abc')).toBe(false)
+      expect(AvatarUtils.isDefaultAvatar('00a')).toBe(false)
+    })
+  })
+
+  describe('getAvatarUrl', () => {
+    it('returns default for null/undefined', () => {
+      expect(AvatarUtils.getAvatarUrl(null)).toBe('/logoD.png')
+      expect(AvatarUtils.getAvatarUrl(undefined)).toBe('/logoD.png')
+    })
+
+    it('returns default for empty string', () => {
+      expect(AvatarUtils.getAvatarUrl('')).toBe('/logoD.png')
+    })
+
+    it('returns avatar path for default avatars', () => {
+      expect(AvatarUtils.getAvatarUrl('005')).toBe('/avatar/005.webp')
+      expect(AvatarUtils.getAvatarUrl('015')).toBe('/avatar/015.webp')
+    })
+
+    it('returns full URL for http URLs', () => {
+      expect(AvatarUtils.getAvatarUrl('https://example.com/avatar.png')).toBe('https://example.com/avatar.png')
+      expect(AvatarUtils.getAvatarUrl('http://example.com/pic.jpg')).toBe('http://example.com/pic.jpg')
+    })
+
+    it('returns avatar path for valid filenames', () => {
+      expect(AvatarUtils.getAvatarUrl('custom_avatar')).toBe('/avatar/custom_avatar.webp')
+      expect(AvatarUtils.getAvatarUrl('my-pic-123')).toBe('/avatar/my-pic-123.webp')
+    })
+
+    it('returns default for invalid strings', () => {
+      expect(AvatarUtils.getAvatarUrl('has spaces')).toBe('/logoD.png')
+      expect(AvatarUtils.getAvatarUrl('has/slashes')).toBe('/logoD.png')
+    })
+
+    it('trims whitespace', () => {
+      expect(AvatarUtils.getAvatarUrl('  005  ')).toBe('/avatar/005.webp')
+    })
+
+    it('handles URLs with query params and fragments', () => {
+      const url = 'https://cdn.example.com/avatar.png?size=128&v=2#hash'
+      expect(AvatarUtils.getAvatarUrl(url)).toBe(url)
+    })
+
+    it('rejects ftp and other protocols', () => {
+      expect(AvatarUtils.getAvatarUrl('ftp://example.com/file')).toBe('/logoD.png')
+    })
+  })
+})
