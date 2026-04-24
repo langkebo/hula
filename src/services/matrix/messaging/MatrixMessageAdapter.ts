@@ -28,7 +28,7 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
         id: event.getId() || '',
         roomId,
         type: msgType,
-        body: this.convertMatrixContent(content, msgType),
+        body: this.convertMatrixContent(content, msgType) as MessageType['message']['body'],
         sendTime: event.getTs(),
         messageMarks: {}, // Matrix SDK handles marks differently, initializing empty
         status: MessageStatusEnum.SUCCESS // Assuming success for received events
@@ -86,7 +86,16 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
   },
 
   convertMatrixContent(content: Record<string, unknown>, msgType: MsgEnum): MessageBody {
-    const info = (content.info || {}) as Record<string, any>
+    const info = (content.info || {}) as {
+      size?: number
+      w?: number
+      h?: number
+      mimetype?: string
+      duration?: number
+      thumbnail_info?: { w?: number; h?: number }
+      thumbnail_url?: string
+      [key: string]: unknown
+    }
 
     switch (msgType) {
       case MsgEnum.TEXT:

@@ -1,5 +1,5 @@
 import { info, error } from '@tauri-apps/plugin-log'
-import type { RegistrationToken } from './MatrixAdminService'
+import type { RegistrationToken } from './AdminTypes'
 
 type SdkAdminManager = {
   getRegistrationTokens(): Promise<
@@ -27,10 +27,9 @@ export type SdkAdminGetter = () => Promise<SdkAdminManager>
 /**
  * Admin Registration Tokens domain service.
  *
- * Extracted from the monolithic `MatrixAdminService` as part of the P0-5
- * domain-split migration. `MatrixAdminService` keeps the singleton-friendly
- * facade (same methods, same signatures) and forwards here; new callers can
- * target this class directly.
+ * Extracted during the P0-5 admin domain split. The top-level admin facade
+ * keeps the singleton-friendly surface area (same methods, same signatures)
+ * and forwards here; new callers can target this class directly.
  */
 export class AdminRegistrationTokensService {
   constructor(private readonly sdkAdmin: SdkAdminGetter) {}

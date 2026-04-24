@@ -4,9 +4,7 @@
       <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
         <van-cell-group>
           <van-swipe-cell v-for="t_ in admin.tokens.value" :key="t_.token">
-            <van-cell
-              :title="t_.token"
-              :label="formatToken(t_)" />
+            <van-cell :title="t_.token" :label="formatToken(t_)" />
             <template #right>
               <van-button square type="danger" :text="t('admin.delete')" @click="handleDelete(t_.token)" />
             </template>
@@ -27,7 +25,11 @@
         @confirm="handleCreate">
         <van-field v-model="newToken" :label="t('admin.token')" :placeholder="t('admin.token_placeholder')" />
         <van-field v-model="newUses" :label="t('admin.uses_allowed')" type="digit" />
-        <van-field v-model="newExpiryDate" :label="t('admin.expiry_ms')" type="digit" :placeholder="t('admin.expiry_placeholder')" />
+        <van-field
+          v-model="newExpiryDate"
+          :label="t('admin.expiry_ms')"
+          type="digit"
+          :placeholder="t('admin.expiry_placeholder')" />
       </van-dialog>
     </div>
   </mobile-layout>
@@ -39,7 +41,7 @@ import { useI18n } from 'vue-i18n'
 import { showToast } from 'vant'
 import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminRegistrationTokens } from '@/composables/admin'
-import type { RegistrationToken } from '@/services/matrix/admin/MatrixAdminService'
+import type { RegistrationToken } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminRegistrationTokens')

@@ -31,6 +31,7 @@ import { useDebounceFn } from '@vueuse/core'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const props = defineProps<{
+  // biome-ignore lint/suspicious/noExplicitAny: generic list receives heterogeneous items from callers with their own types
   items: any[]
   estimatedItemHeight?: number
   buffer?: number

@@ -86,15 +86,30 @@ const searchQuery = ref('')
 const selectedUsers = ref<string[]>([])
 const manualUserId = ref('')
 const inviting = ref(false)
-const searchResults = ref<any[]>([])
+type SearchUserResult = {
+  user_id?: string
+  userId?: string
+  display_name?: string
+  displayName?: string
+  avatar_url?: string
+  avatarUrl?: string
+}
+
+const searchResults = ref<SearchUserResult[]>([])
 const defaultAvatar = '/logoD.png'
 
 const filteredUsers = computed(() => {
-  return searchResults.value.map((user) => ({
-    userId: user.user_id || user.userId,
-    displayName: user.display_name || user.displayName,
-    avatarUrl: AvatarUtils.getAvatarUrl(user.avatar_url || user.avatarUrl || '')
-  }))
+  return searchResults.value
+    .map((user) => {
+      const userId = user.user_id || user.userId
+      if (!userId) return null
+      return {
+        userId,
+        displayName: user.display_name || user.displayName || userId,
+        avatarUrl: AvatarUtils.getAvatarUrl(user.avatar_url || user.avatarUrl || '')
+      }
+    })
+    .filter((u): u is { userId: string; displayName: string; avatarUrl: string } => u !== null)
 })
 
 const searchUsers = async (query: string) => {

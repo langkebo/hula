@@ -481,17 +481,17 @@ class MatrixVoIPService {
       let jitter = 0
       let roundTripTime = 0
 
-      stats.forEach((report: any) => {
+      stats.forEach((report: RTCStats & Record<string, unknown>) => {
         if (report.type === 'inbound-rtp') {
-          bytesReceived += report.bytesReceived || 0
-          packetsLost = report.packetsLost || 0
-          jitter = report.jitter || 0
+          bytesReceived += (report.bytesReceived as number) || 0
+          packetsLost = (report.packetsLost as number) || 0
+          jitter = (report.jitter as number) || 0
         }
         if (report.type === 'outbound-rtp') {
-          bytesSent += report.bytesSent || 0
+          bytesSent += (report.bytesSent as number) || 0
         }
         if (report.type === 'candidate-pair' && report.state === 'succeeded') {
-          roundTripTime = report.currentRoundTripTime || 0
+          roundTripTime = (report.currentRoundTripTime as number) || 0
         }
       })
 

@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { adminService } from '@/services/matrix'
-import type { RegistrationToken } from '@/services/matrix/admin/MatrixAdminService'
+import type { RegistrationToken } from '@/services/matrix/admin/AdminTypes'
 
 export interface UseAdminRegistrationTokensResult {
   tokens: Ref<RegistrationToken[]>

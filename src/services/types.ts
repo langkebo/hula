@@ -523,6 +523,7 @@ export type MessageBody =
   | LocationBody
   | BeaconBody
   | LinkPreviewBody
+  // biome-ignore lint/suspicious/noExplicitAny: union must allow arbitrary message body shapes for forward compatibility
   | any
 export type MsgType = {
   /** 消息ID */

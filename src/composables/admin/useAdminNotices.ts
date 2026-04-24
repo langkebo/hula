@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { adminService } from '@/services/matrix'
-import type { ServerNoticeInfo } from '@/services/matrix/admin/MatrixAdminService'
+import type { ServerNoticeInfo } from '@/services/matrix/admin/AdminTypes'
 
 export interface UseAdminNoticesResult {
   notices: Ref<ServerNoticeInfo[]>

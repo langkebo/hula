@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import matrixClientService from '../../MatrixClientService'
+import matrixSlidingSyncService from '../MatrixSlidingSyncService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -8,12 +10,10 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getSlidingSync: vi.fn(() => null)
+    getSlidingSync: vi.fn(() => null),
+    getClient: vi.fn(() => null)
   }
 }))
-
-const { default: matrixClientService } = await import('../../MatrixClientService')
-const { default: matrixSlidingSyncService } = await import('../MatrixSlidingSyncService')
 
 describe('MatrixSlidingSyncService', () => {
   beforeEach(() => {

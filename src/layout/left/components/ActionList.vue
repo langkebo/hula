@@ -303,7 +303,7 @@ const miniShowPlugins = computed(() => {
 })
 const { activeUrl, openWindowsList, settingShow, tipShow, pageJumps } = leftHook()
 
-const handleTipShow = (item: any) => {
+const handleTipShow = (item: { dot?: boolean }) => {
   tipShow.value = false
   item.dot = false
 }

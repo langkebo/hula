@@ -27,8 +27,8 @@ type MarkdownCodeBlockNodeProps = {
   showExpandButton?: boolean
   showPreviewButton?: boolean
   showFontSizeButtons?: boolean
-  onCopy?: (...args: any[]) => void
-  onPreviewCode?: (...args: any[]) => void
+  onCopy?: (...args: unknown[]) => void
+  onPreviewCode?: (...args: unknown[]) => void
   [key: string]: unknown
 }
 

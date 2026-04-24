@@ -52,13 +52,13 @@ export const SETTINGS_TABS: SettingsTab[] = [
 export const useSettingsDialogStore = defineStore(StoresEnum.SETTINGS_DIALOG, () => {
   const isOpen = ref(false)
   const activeTab = ref<SettingsTabType>('account')
-  const initialData = ref<Record<string, any> | undefined>(undefined)
+  const initialData = ref<Record<string, unknown> | undefined>(undefined)
 
   const currentTab = computed(() => {
     return SETTINGS_TABS.find((tab) => tab.id === activeTab.value)
   })
 
-  function openDialog(tab?: SettingsTabType, data?: Record<string, any>): void {
+  function openDialog(tab?: SettingsTabType, data?: Record<string, unknown>): void {
     if (tab) {
       activeTab.value = tab
     }

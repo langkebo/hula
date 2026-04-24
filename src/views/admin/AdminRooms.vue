@@ -138,7 +138,7 @@
 import { ref, computed, onMounted, h } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NButton, NSpace, NTag, useMessage, useDialog } from 'naive-ui'
-import { adminService, type RoomInfo } from '@/services/matrix/admin/MatrixAdminService'
+import { adminService, type RoomInfo } from '@/services/matrix'
 import { useAdminRooms } from '@/composables/admin'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
@@ -347,8 +347,8 @@ async function handleDeleteRoom() {
   })
 }
 
-// Kick / ban still go through the raw admin service — SDK exposes these via
-// client methods already used inside MatrixAdminService.
+// Kick / ban still go through the raw admin service because the SDK exposes
+// them via client methods already used by the admin facade.
 async function handleKickUser(userId: string) {
   if (!selectedRoom.value) return
   const target = selectedRoom.value

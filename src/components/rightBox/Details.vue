@@ -109,6 +109,7 @@ import { ref, computed, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NIcon } from 'naive-ui'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { useBadgeStore } from '@/stores/domains/chat/badge'
 import { RoomTypeEnum, UserType } from '@/enums'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -130,7 +131,16 @@ const props = defineProps({
   }
 })
 
-const item = ref<any>({})
+const item = ref<
+  Partial<MatrixGroupInfo> & {
+    myName?: string
+    account?: string
+    uid?: string
+    locPlace?: string
+    itemIds?: string[]
+    [key: string]: unknown
+  }
+>({})
 const announcementContent = ref('')
 const remarkSnapshot = ref('')
 const nicknameSnapshot = ref('')
@@ -172,7 +182,7 @@ watchEffect(async () => {
   } else {
     try {
       const response = await groupStore.loadGroupInfo(props.content.uid)
-      item.value = response || {}
+      item.value = (response as typeof item.value) || {}
     } catch (e) {
       logger.error('获取群组详情失败:', e)
     }
@@ -182,8 +192,8 @@ watchEffect(async () => {
 const memberCount = computed(() => groupStore.userList.length || 0)
 const displayMembers = computed(() => groupStore.userList.slice(0, 8))
 
-const handleMemberClick = (member: any) => {
-  logger.debug('点击成员:', member.uid)
+const handleMemberClick = (member: { uid?: string; userId?: string }) => {
+  logger.debug('点击成员:', member.uid ?? member.userId)
 }
 
 const openImageViewer = () => {

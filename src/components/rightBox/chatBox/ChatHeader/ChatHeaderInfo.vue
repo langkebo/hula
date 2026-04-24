@@ -52,7 +52,7 @@ const props = defineProps<{
   type: RoomTypeEnum
   memberCount: number
   isOnline: boolean
-  statusIcon: any
+  statusIcon: string | null
   statusTitle: string
   isBotUser: boolean
   hotFlag?: IsAllUserEnum

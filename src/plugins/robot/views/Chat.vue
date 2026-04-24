@@ -2090,7 +2090,7 @@ const sendAIMessage = async (content: string, model: AIModel) => {
           if (currentChat.value.id && currentChat.value.id !== '0') {
             aiService
               .conversationGetMy({ id: currentChat.value.id })
-              .then((convList: any) => {
+              .then((convList) => {
                 const conv = Array.isArray(convList) ? (convList[0] as ConversationUsage | undefined) : undefined
                 if (conv && typeof conv.tokenUsage === 'number') {
                   serverTokenUsage.value = conv.tokenUsage
@@ -2105,9 +2105,9 @@ const sendAIMessage = async (content: string, model: AIModel) => {
             if (!messageList.value[aiMessageIndex].reasoningContent) {
               aiService
                 .messageListByConversationId({ conversationId: currentChat.value.id, pageNo: 1, pageSize: 100 })
-                .then((list: any) => {
+                .then((list) => {
                   if (Array.isArray(list) && list.length > 0) {
-                    const last = list[list.length - 1]
+                    const last = list[list.length - 1] as unknown as Record<string, unknown> | undefined
                     if (
                       last &&
                       (last.type === 'assistant' || last.role === 'assistant') &&

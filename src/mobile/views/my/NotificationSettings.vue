@@ -78,7 +78,10 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch v-model="emailNotifications" :disabled="!notificationsEnabled" @change="handleEmailToggle" />
+                <van-switch
+                  v-model="emailNotifications"
+                  :disabled="!notificationsEnabled"
+                  @change="handleEmailToggle" />
               </template>
             </van-cell>
 
@@ -89,7 +92,10 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch v-model="encryptedRoomNotifications" :disabled="!notificationsEnabled" @change="handleEncryptedRoomToggle" />
+                <van-switch
+                  v-model="encryptedRoomNotifications"
+                  :disabled="!notificationsEnabled"
+                  @change="handleEncryptedRoomToggle" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -141,16 +147,16 @@ async function loadPushRules() {
     if (masterRule && !masterRule.enabled) {
       notificationsEnabled.value = true
     }
-  
+
     const dmRule = roomRules?.find((r: IPushRule) => r.rule_id === '.m.rule.room_one_to_one')
     if (dmRule) {
       roomNotifyMode.value = dmRule.enabled ? 'all' : 'none'
     }
-  
+
     const messageRule = roomRules?.find((r: IPushRule) => r.rule_id === '.m.rule.message')
     if (messageRule) {
       if (
-        messageRule.actions?.some((a: any) => {
+        messageRule.actions?.some((a) => {
           const action = a as { set_tweak?: string } | string
           return typeof action === 'string' ? action === 'notify' : action.set_tweak === 'highlight'
         })

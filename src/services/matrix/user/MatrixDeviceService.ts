@@ -6,9 +6,9 @@
  */
 
 import { info, error } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { MatrixClientExtended } from '@/types/matrix-extensions'
+import type { MatrixClientExtended, AuthDict } from '@/types/matrix-extensions'
+import matrixClientService from '../MatrixClientService'
 
 /**
  * 设备信息接口
@@ -195,7 +195,7 @@ class MatrixDeviceService {
    * @param deviceId 设备 ID
    * @param auth 可选的认证信息（用于 UIA）
    */
-  async deleteDevice(deviceId: string, auth?: any): Promise<void> {
+  async deleteDevice(deviceId: string, auth?: AuthDict): Promise<void> {
     try {
       const client = this.getClient()
       const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
@@ -226,7 +226,7 @@ class MatrixDeviceService {
    * @param deviceIds 设备 ID 列表
    * @param auth 可选的认证信息（用于 UIA）
    */
-  async deleteDevices(deviceIds: string[], auth?: any): Promise<void> {
+  async deleteDevices(deviceIds: string[], auth?: AuthDict): Promise<void> {
     try {
       const client = this.getClient()
       const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()

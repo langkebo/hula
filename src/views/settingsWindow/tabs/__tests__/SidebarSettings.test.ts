@@ -1,8 +1,23 @@
 import { mount } from '@vue/test-utils'
+import type { ComponentPublicInstance } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SidebarSettings from '../SidebarSettings.vue'
 
 const messageSuccessMock = vi.fn()
+
+type SidebarSettingsVm = ComponentPublicInstance & {
+  showFavourites: boolean
+  showSpaces: boolean
+  showRooms: boolean
+  showDirectMessages: boolean
+  showFriends: boolean
+  showThreads: boolean
+  sortBy: string
+  itemSize: string
+  saveSettings: () => void
+}
+
+const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as SidebarSettingsVm
 
 vi.mock('naive-ui', () => ({
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
@@ -50,16 +65,17 @@ describe('SidebarSettings', () => {
       })
     )
     const wrapper = mount(SidebarSettings)
-    expect((wrapper.vm as any).showFavourites).toBe(false)
-    expect((wrapper.vm as any).showDirectMessages).toBe(false)
-    expect((wrapper.vm as any).showThreads).toBe(false)
-    expect((wrapper.vm as any).sortBy).toBe('alphabetical')
-    expect((wrapper.vm as any).itemSize).toBe('large')
+    const vm = getVm(wrapper)
+    expect(vm.showFavourites).toBe(false)
+    expect(vm.showDirectMessages).toBe(false)
+    expect(vm.showThreads).toBe(false)
+    expect(vm.sortBy).toBe('alphabetical')
+    expect(vm.itemSize).toBe('large')
   })
 
   it('saves settings to localStorage on toggle', () => {
     const wrapper = mount(SidebarSettings)
-    const vm = wrapper.vm as any
+    const vm = getVm(wrapper)
     vm.showFavourites = false
     vm.saveSettings()
     const saved = JSON.parse(localStorage.getItem('hula-sidebar-settings')!)
@@ -68,21 +84,22 @@ describe('SidebarSettings', () => {
 
   it('defaults all display toggles to true', () => {
     const wrapper = mount(SidebarSettings)
-    expect((wrapper.vm as any).showFavourites).toBe(true)
-    expect((wrapper.vm as any).showSpaces).toBe(true)
-    expect((wrapper.vm as any).showRooms).toBe(true)
-    expect((wrapper.vm as any).showDirectMessages).toBe(true)
-    expect((wrapper.vm as any).showFriends).toBe(true)
-    expect((wrapper.vm as any).showThreads).toBe(true)
+    const vm = getVm(wrapper)
+    expect(vm.showFavourites).toBe(true)
+    expect(vm.showSpaces).toBe(true)
+    expect(vm.showRooms).toBe(true)
+    expect(vm.showDirectMessages).toBe(true)
+    expect(vm.showFriends).toBe(true)
+    expect(vm.showThreads).toBe(true)
   })
 
   it('defaults sortBy to activity', () => {
     const wrapper = mount(SidebarSettings)
-    expect((wrapper.vm as any).sortBy).toBe('activity')
+    expect(getVm(wrapper).sortBy).toBe('activity')
   })
 
   it('defaults itemSize to medium', () => {
     const wrapper = mount(SidebarSettings)
-    expect((wrapper.vm as any).itemSize).toBe('medium')
+    expect(getVm(wrapper).itemSize).toBe('medium')
   })
 })

@@ -207,6 +207,7 @@ declare module 'matrix-js-sdk/friend' {
     updateFriendStatus(userId: string, status: string): Promise<void>
     getFriendInfo(userId: string, throwOnError?: boolean): Promise<Friend | null>
     getCachedFriends(): Friend[]
+    // biome-ignore lint/suspicious/noExplicitAny: generic event emitter signature requires `any[]` to allow narrowly-typed handler callbacks (contravariance)
     on(event: string, handler: (...args: any[]) => void): void
     removeAllListeners(event?: string): void
     start(): Promise<void>

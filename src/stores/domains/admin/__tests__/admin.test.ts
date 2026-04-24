@@ -13,7 +13,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   trace: vi.fn()
 }))
 
-vi.mock('@/services/matrix/admin/MatrixAdminService', () => ({
+vi.mock('@/services/matrix', () => ({
   adminService: {
     getUser: vi.fn()
   }
@@ -38,7 +38,7 @@ vi.mock('../../chat/matrix', () => ({
 
 import { useAdminStore } from '../admin'
 import { invoke } from '@tauri-apps/api/core'
-import { adminService } from '@/services/matrix/admin/MatrixAdminService'
+import { adminService } from '@/services/matrix'
 
 describe('AdminStore', () => {
   beforeEach(() => {

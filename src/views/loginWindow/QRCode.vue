@@ -90,7 +90,7 @@ import { loginCommand } from '@/services/tauriCommand'
 import { TauriCommand } from '@/enums'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { matrixQrLoginService } from '@/services/matrix'
+import { matrixQrLoginService, type QRLoginResult } from '@/services/matrix'
 import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
 import { useTimerManager } from '@/utils/TimerManager'
 
@@ -175,13 +175,16 @@ const clearPolling = () => {
   pollStartAt.value = null
 }
 
-const handleConfirmed = async (res: any) => {
+const handleConfirmed = async (res: QRLoginResult) => {
   if (confirmedHandled.value) {
     return
   }
   confirmedHandled.value = true
   clearPolling()
   try {
+    if (!res.data) {
+      throw new Error('missing data in QR login result')
+    }
     await invoke(TauriCommand.UPDATE_TOKEN, {
       req: {
         uid: res.data.uid,
@@ -223,7 +226,10 @@ const startPolling = () => {
     }
     pollingRequesting.value = true
     try {
-      const res: any = await matrixQrLoginService.checkStatus()
+      const res = await matrixQrLoginService.checkStatus()
+      if (!res) {
+        return
+      }
       switch (res.status) {
         case 'PENDING':
           break

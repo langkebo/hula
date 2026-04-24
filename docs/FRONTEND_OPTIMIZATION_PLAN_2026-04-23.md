@@ -34,7 +34,7 @@
 ### 事实清单（> 1000 LOC）
 ```
 3696  src/plugins/robot/views/Chat.vue       ← god component
-2758  src/services/matrix/MatrixAdminService.ts
+2758  src/services/matrix/admin/AdminFacadeService.ts
 1740  src/services/matrix/MatrixRoomService.ts
 1536  src/hooks/useMsgInput.ts
 1486  src/strategy/MessageStrategy.ts
@@ -53,12 +53,12 @@
 - 目标：Chat.vue ≤ 500 LOC，其余每个子组件 ≤ 400 LOC
 - 预计：3-4 天
 
-**P0-5 `MatrixAdminService.ts` 按域切分**
+**P0-5 `AdminFacadeService.ts` 按域切分（保留历史兼容 shim）**
 参考已有 `MatrixAdminExtendedService.ts` 先例：
 - `MatrixAdminUserService.ts`（用户管理方法）
 - `MatrixAdminRoomService.ts`（房间管理方法）
 - `MatrixAdminSecurityService.ts`（SAML / Security / Logs 域）
-- 现有 `MatrixAdminService.ts` 保留为 facade 聚合导出，兼容现有 import
+- 现有历史 shim 保留为兼容转发层，`AdminFacadeService.ts` 作为 facade 聚合导出，兼容现有 import
 - 单文件从 2758 → ≤ 800 LOC；单测随之拆分
 
 **P0-6 `useMsgInput.ts` / `useChatMain.ts` 拆解**
@@ -166,7 +166,7 @@ UX-gated 横幅（SAML / Security / ServerLogs）拆除条件 = `pnpm probe:admi
 | 1 | **P0-2** AI 服务族补基线测试 | 1-2 天 | 测试覆盖 +5 文件，回归网成型 |
 | 2 | **P1-6** Space composable 化 + 3 TODO 落地 | 2 天 | 桌/移同源，3 个悬挂功能落地 |
 | 3 | **P0-6** `useMsgInput` 拆解 | 3 天 | 1536 LOC → 5 个小 hook，单测可行 |
-| 4 | **P0-5** `MatrixAdminService` 域切分 | 2 天 | 2758 → 3 个 ≤ 800 LOC 文件 |
+| 4 | **P0-5** `AdminFacadeService` 域切分 | 2 天 | 2758 → 3 个 ≤ 800 LOC 文件 |
 | 5 | **P0-4** robot `Chat.vue` god component 拆解 | 3-4 天 | 3696 → 5 组件 + 1 composable |
 | 6 | **P0-6** `useChatMain` 拆解 + 单测 | 3 天 | 1388 → 3 hook + 回归网 |
 | 7 | **P1-3** augmentation 同步检查脚本 | 0.5 天 | 避免再次阻塞 |
@@ -276,7 +276,7 @@ UX-gated 横幅（SAML / Security / ServerLogs）拆除条件 = `pnpm probe:admi
 - 抽 `useVoiceInput`（`uploadVoiceToMatrix` + `matrixVoiceService` 调度）
 
 这些都涉及 store 状态与 DOM 交互，风险比纯函数抽取高。分多轮推进，每轮保证测试先行。
-### 步骤 4：P0-5 MatrixAdminService 域切分 · 状态：🟡 部分完成（2026-04-23）— 首轮域抽取
+### 步骤 4：P0-5 AdminFacadeService 域切分 · 状态：🟡 部分完成（2026-04-23）— 首轮域抽取
 
 **本轮范围**：建立 `admin/` 子服务目录与 facade 委托模式，先完成 Registration Tokens 一个域，验证模式、保留消费者兼容性，后续域按相同模板推进。
 
@@ -285,7 +285,7 @@ UX-gated 横幅（SAML / Security / ServerLogs）拆除条件 = `pnpm probe:admi
 - 新增 `src/services/matrix/admin/RegistrationTokensService.ts`
   - class `AdminRegistrationTokensService` 接受 `sdkAdmin: () => Promise<SdkAdminManager>` 注入
   - 方法：`list` / `get` / `create` / `update` / `delete`（命名去掉 `RegistrationToken(s)` 前缀，子服务语义天然带上下文）
-- 改造 `MatrixAdminService.ts`
+- 改造 admin facade（现实现文件为 `AdminFacadeService.ts`，并保留历史兼容层）
   - 增字段 `readonly registrationTokens = new AdminRegistrationTokensService(() => this.sdkAdmin())`
   - 原 6 个 `getRegistrationTokens*` / `createRegistrationToken` / `updateRegistrationToken` / `deleteRegistrationToken` 方法变为一行 delegator，保证 `adminService.xxx()` 消费者零改动
   - 单文件 LOC：2758 → 2706（-52 净减，含新增 delegator/import 开销）
@@ -509,10 +509,10 @@ _SDK augmentation drift 清零（8 errors → 0）_
 
 - 全仓 `@deprecated` 盘点（`grep -rn "@deprecated" src/services/matrix/`）：3 处命中
   - `MatrixWidgetService.getWidget` → alias for `getWidgetById`，全仓 0 调用者 → **删除**
-  - `MatrixAdminService.disconnectFederation` → alias for `resetFederationConnection`，全仓 0 调用者 → **删除**
-  - `MatrixAdminService.deleteRetentionPolicy` → 后端无对应端点，方法体已是 no-op 加 warn 日志；仍有 3 处调用者（`composables/admin/useAdminRetention.ts` + 对应 test + `MatrixAdminService.test.ts`）**保留**，保持 UI 调用路径的"语义完整"
+- `adminService.disconnectFederation` → alias for `resetFederationConnection`，全仓 0 调用者 → **删除**
+- `adminService.deleteRetentionPolicy` → 后端无对应端点，方法体已是 no-op 加 warn 日志；仍有 3 处调用者（`composables/admin/useAdminRetention.ts` + 对应 test + `AdminFacadeService.test.ts`）**保留**，保持 UI 调用路径的"语义完整"
 - `MatrixWidgetService.ts`：移除 `getWidget` 方法（4 行含注释）
-- `MatrixAdminService.ts`：移除 `disconnectFederation` 方法（6 行含注释）
+- `AdminFacadeService.ts`：移除 `disconnectFederation` 方法（6 行含注释）
 
 **验收（本批次累计）**
 - `pnpm test:run`：172 files / **2021 passed**（第二批后数量不变）
@@ -653,8 +653,8 @@ _顶层体积_
 _策略_：延续第七批思路，把剩余 14 个 flat 业务服务按域继续合并到既有 subdir 或归档入新域，顶层仅保留 6 个 **core** 基础设施服务 + 2 个标准库级业务服务（`search` / `appservice`）。分 3 个 commit 推进，每个 cluster 单独 commit + 单独验收，避免单个改动过大。
 
 _Commit 1：`7e901024 refactor(matrix): cluster admin-family services into admin/`_
-- 合并入既有 `admin/`：`MatrixAdminService` · `MatrixFederationBlacklistService` · `MatrixModerationService` · `MatrixQuotaService` · `MatrixReportService` · `MatrixRetentionService`（6 服务 + 7 测试，含 `MatrixAdminExtendedService`）
-- 修正 `RegistrationTokensService` 的 `../MatrixAdminService` → `./MatrixAdminService` 自反引用
+- 合并入既有 `admin/`：admin facade · `MatrixFederationBlacklistService` · `MatrixModerationService` · `MatrixQuotaService` · `MatrixReportService` · `MatrixRetentionService`（6 服务 + 7 测试，含 `MatrixAdminExtendedService`）
+- 修正 `RegistrationTokensService` 的旧 admin facade 引用路径为当前子目录结构
 
 _Commit 2：`9084b4bc refactor(matrix): cluster user-domain services into user/`_
 - 新建 `user/`：`MatrixAccountService` · `MatrixProfileService` · `MatrixPresenceService` · `MatrixDeviceService` · `MatrixUserDirectoryService` · `MatrixContactService`（6 服务 + 7 测试，含 `MatrixAccount3PidService`）

@@ -103,6 +103,13 @@ const logger = createLogger('VideoViewer')
 const { addListener } = useTauriListener()
 const videoViewerStore = useVideoViewer()
 const appWindow = WebviewWindow.getCurrent()
+
+type VideoUpdatedPayload = {
+  list: string[]
+  index: number
+  currentVideoPath?: string
+}
+
 // 支持的视频文件扩展名
 const supportedVideoExtensions = ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm', '.m4v']
 
@@ -373,7 +380,7 @@ onMounted(async () => {
 
   // 修改事件名称与发送端保持一致
   await addListener(
-    appWindow.listen('video-updated', (event: any) => {
+    appWindow.listen<VideoUpdatedPayload>('video-updated', (event) => {
       const { list, index } = event.payload
       videoList.value = list
       currentIndex.value = index

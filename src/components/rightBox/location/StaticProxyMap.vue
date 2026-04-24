@@ -68,8 +68,8 @@ const fetchImage = async () => {
     const next = await getStaticMap(lat, lng, w, h, zoom.value)
     imgSrc.value = next || prev
     emit('map-ready')
-  } catch (e: any) {
-    emit('map-error', String(e?.message || e))
+  } catch (e) {
+    emit('map-error', e instanceof Error ? e.message : String(e))
   }
 }
 

@@ -2,10 +2,7 @@
   <mobile-layout :title="t('admin.users')" show-back>
     <div class="mobile-admin-users">
       <!-- 搜索栏 -->
-      <van-search
-        v-model="searchQuery"
-        :placeholder="t('admin.search_users')"
-        @search="onRefresh" />
+      <van-search v-model="searchQuery" :placeholder="t('admin.search_users')" @search="onRefresh" />
 
       <!-- 用户列表 -->
       <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
@@ -18,12 +15,7 @@
             is-link
             @click="handleUserClick(user)">
             <template #icon>
-              <van-image
-                :src="user.avatarUrl"
-                round
-                width="40"
-                height="40"
-                fit="cover" />
+              <van-image :src="user.avatarUrl" round width="40" height="40" fit="cover" />
             </template>
             <template #value>
               <van-tag v-if="user.isAdmin" type="danger">{{ t('admin.admin') }}</van-tag>
@@ -38,12 +30,7 @@
       <van-popup v-model:show="showUserDetail" position="bottom" :style="{ height: '70%' }">
         <div v-if="selectedDisplayUser" class="user-detail">
           <div class="user-header">
-            <van-image
-              :src="selectedDisplayUser.avatarUrl"
-              round
-              width="60"
-              height="60"
-              fit="cover" />
+            <van-image :src="selectedDisplayUser.avatarUrl" round width="60" height="60" fit="cover" />
             <div class="user-info">
               <h3>{{ selectedDisplayUser.displayName || selectedDisplayUser.userId }}</h3>
               <p>{{ selectedDisplayUser.userId }}</p>
@@ -51,22 +38,18 @@
           </div>
           <van-divider />
           <van-cell-group>
-            <van-cell :title="t('admin.user_status')" :value="selectedDisplayUser.isActive ? t('admin.active') : t('admin.inactive')" />
-            <van-cell :title="t('admin.user_role')" :value="selectedDisplayUser.isAdmin ? t('admin.admin') : t('admin.user')" />
+            <van-cell
+              :title="t('admin.user_status')"
+              :value="selectedDisplayUser.isActive ? t('admin.active') : t('admin.inactive')" />
+            <van-cell
+              :title="t('admin.user_role')"
+              :value="selectedDisplayUser.isAdmin ? t('admin.admin') : t('admin.user')" />
           </van-cell-group>
           <div class="user-actions">
-            <van-button
-              v-if="!selectedDisplayUser.isAdmin"
-              type="warning"
-              block
-              @click="handleDeactivateUser">
+            <van-button v-if="!selectedDisplayUser.isAdmin" type="warning" block @click="handleDeactivateUser">
               {{ selectedDisplayUser.isActive ? t('admin.deactivate') : t('admin.activate') }}
             </van-button>
-            <van-button
-              v-if="!selectedDisplayUser.isAdmin"
-              type="danger"
-              block
-              @click="handleDeactivateUser">
+            <van-button v-if="!selectedDisplayUser.isAdmin" type="danger" block @click="handleDeactivateUser">
               {{ t('admin.delete_user') }}
             </van-button>
           </div>
@@ -82,7 +65,7 @@ import { useI18n } from 'vue-i18n'
 import { showToast, showConfirmDialog } from 'vant'
 import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminUsers } from '@/composables/admin'
-import type { UserInfo } from '@/services/matrix/admin/MatrixAdminService'
+import type { UserInfo } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminUsers')

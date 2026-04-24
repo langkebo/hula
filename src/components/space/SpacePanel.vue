@@ -47,9 +47,9 @@ const spaceStore = useSpaceStore()
 const spaces = computed(() => spaceStore.spaces)
 const activeSpaceId = computed(() => spaceStore.activeSpaceId)
 
-const handleSpaceClick = (space: any) => {
-  spaceStore.setActiveSpace(space.roomId)
-  router.push({ name: 'space', params: { roomId: space.roomId } })
+const handleSpaceClick = (space: { spaceId: string }) => {
+  spaceStore.setActiveSpace(space.spaceId)
+  router.push({ name: 'space', params: { roomId: space.spaceId } })
 }
 
 const showCreateDialog = () => {

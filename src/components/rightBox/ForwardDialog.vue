@@ -81,9 +81,9 @@ const filteredRooms = computed(() => {
   const query = searchQuery.value.toLowerCase()
 
   return rooms
-    .filter((room: any) => room.roomId !== props.roomId)
-    .filter((room: any) => !query || room.name?.toLowerCase().includes(query))
-    .map((room: any) => ({
+    .filter((room) => room.roomId !== props.roomId)
+    .filter((room) => !query || room.name?.toLowerCase().includes(query))
+    .map((room) => ({
       roomId: room.roomId,
       name: room.name || room.roomId,
       avatar: AvatarUtils.getAvatarUrl(room.avatarUrl || ''),

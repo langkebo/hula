@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent, type Component } from 'vue'
 import { NButton, NIcon } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import SettingsTabNav from './SettingsTabNav.vue'
@@ -46,7 +46,7 @@ const filteredTabs = computed(() => {
   })
 })
 
-const tabComponentMap: Record<SettingsTabType, () => Promise<any>> = {
+const tabComponentMap: Record<SettingsTabType, () => Promise<Component>> = {
   account: () => import('./tabs/AccountSettings.vue'),
   sessions: () => import('./tabs/SessionSettings.vue'),
   appearance: () => import('./tabs/AppearanceSettings.vue'),

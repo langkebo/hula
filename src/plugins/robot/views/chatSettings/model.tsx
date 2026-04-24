@@ -59,7 +59,7 @@ export const Button = defineComponent(
 )
 
 export const Select = defineComponent(
-  (props: { content: any[] }) => {
+  (props: { content: Array<{ label: string; value: string | number }> }) => {
     const v = ref(props.content[0].value)
     return () => (
       <NSelect

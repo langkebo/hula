@@ -247,7 +247,7 @@ export const useUpload = () => {
    * @param addParams 参数
    * @returns 文件大小、文件类型、文件名、文件后缀...
    */
-  const parseFile = async (file: File, addParams: Record<string, any> = {}) => {
+  const parseFile = async (file: File, addParams: Partial<UploadOptions> | Record<string, unknown> = {}) => {
     const { name, size, type } = file
     const suffix = name.split('.').pop()?.trim().toLowerCase() || ''
     const baseInfo = { name, size, type, suffix, ...addParams }

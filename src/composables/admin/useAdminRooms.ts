@@ -1,6 +1,6 @@
 import { ref, computed, type Ref } from 'vue'
 import { adminService } from '@/services/matrix'
-import type { RoomInfo, RoomState } from '@/services/matrix/admin/MatrixAdminService'
+import type { RoomInfo, RoomState } from '@/services/matrix/admin/AdminTypes'
 
 export interface UseAdminRoomsResult {
   rooms: Ref<RoomInfo[]>

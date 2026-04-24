@@ -21,7 +21,14 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import FileContent from '@/components/fileManager/FileContent.vue'
 import SideNavigation from '@/components/fileManager/SideNavigation.vue'
 import UserList from '@/components/fileManager/UserList.vue'
-import { queryFiles, getNavigationItems, type FileQueryParam } from '@/services/tauriCommand'
+import {
+  queryFiles,
+  getNavigationItems,
+  type FileQueryParam,
+  type FileManagerTimeGroup,
+  type FileManagerUser,
+  type FileManagerNavigationItem
+} from '@/services/tauriCommand'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('FileManager')
@@ -31,10 +38,10 @@ const activeNavigation = ref('myFiles')
 const selectedUser = ref('')
 const selectedRoom = ref('')
 const searchKeyword = ref('')
-const timeGroupedFiles = ref<any[]>([])
-const userList = ref<any[]>([])
+const timeGroupedFiles = ref<FileManagerTimeGroup[]>([])
+const userList = ref<FileManagerUser[]>([])
 const loading = ref(false)
-const navigationItems = ref<any[]>([])
+const navigationItems = ref<FileManagerNavigationItem[]>([])
 
 const queryFilesAction = async () => {
   try {
@@ -61,7 +68,7 @@ const queryFilesAction = async () => {
         break
     }
 
-    const response = (await queryFiles(queryParam)) as any
+    const response = await queryFiles(queryParam)
 
     timeGroupedFiles.value = response.timeGroupedFiles
     userList.value = response.userList
@@ -74,7 +81,7 @@ const queryFilesAction = async () => {
 
 const getNavigationItemsAction = async () => {
   try {
-    const items = (await getNavigationItems()) as any[]
+    const items = await getNavigationItems()
     navigationItems.value = items
   } catch (error) {
     logger.error('获取导航菜单失败:', error)

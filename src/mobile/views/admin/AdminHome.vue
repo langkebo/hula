@@ -3,74 +3,30 @@
     <div class="mobile-admin">
       <!-- 管理功能列表 -->
       <van-cell-group :title="t('admin.management')">
-        <van-cell
-          :title="t('admin.users')"
-          icon="friends-o"
-          is-link
-          @click="handleNavigate('users')">
+        <van-cell :title="t('admin.users')" icon="friends-o" is-link @click="handleNavigate('users')">
           <template #value>
             <van-tag type="primary">{{ userCount }}</van-tag>
           </template>
         </van-cell>
-        <van-cell
-          :title="t('admin.rooms')"
-          icon="chat-o"
-          is-link
-          @click="handleNavigate('rooms')">
+        <van-cell :title="t('admin.rooms')" icon="chat-o" is-link @click="handleNavigate('rooms')">
           <template #value>
             <van-tag type="success">{{ roomCount }}</van-tag>
           </template>
         </van-cell>
-        <van-cell
-          :title="t('admin.federation')"
-          icon="exchange"
-          is-link
-          @click="handleNavigate('federation')" />
-        <van-cell
-          :title="t('admin.notices')"
-          icon="volume-o"
-          is-link
-          @click="handleNavigate('notices')" />
-        <van-cell
-          :title="t('admin.audit')"
-          icon="records"
-          is-link
-          @click="handleNavigate('audit')" />
-        <van-cell
-          :title="t('admin.retention')"
-          icon="clock-o"
-          is-link
-          @click="handleNavigate('retention')" />
+        <van-cell :title="t('admin.federation')" icon="exchange" is-link @click="handleNavigate('federation')" />
+        <van-cell :title="t('admin.notices')" icon="volume-o" is-link @click="handleNavigate('notices')" />
+        <van-cell :title="t('admin.audit')" icon="records" is-link @click="handleNavigate('audit')" />
+        <van-cell :title="t('admin.retention')" icon="clock-o" is-link @click="handleNavigate('retention')" />
         <van-cell
           :title="t('admin.registration_tokens')"
           icon="peer-pay"
           is-link
           @click="handleNavigate('registration-tokens')" />
-        <van-cell
-          :title="t('admin.maintenance')"
-          icon="setting"
-          is-link
-          @click="handleNavigate('maintenance')" />
-        <van-cell
-          :title="t('admin.saml.title')"
-          icon="lock"
-          is-link
-          @click="handleNavigate('saml')" />
-        <van-cell
-          :title="t('admin.security.title')"
-          icon="shield-o"
-          is-link
-          @click="handleNavigate('security')" />
-        <van-cell
-          :title="t('admin.server_logs.title')"
-          icon="records"
-          is-link
-          @click="handleNavigate('server-logs')" />
-        <van-cell
-          :title="t('admin.moderation')"
-          icon="shield-o"
-          is-link
-          @click="handleNavigate('moderation')">
+        <van-cell :title="t('admin.maintenance')" icon="setting" is-link @click="handleNavigate('maintenance')" />
+        <van-cell :title="t('admin.saml.title')" icon="lock" is-link @click="handleNavigate('saml')" />
+        <van-cell :title="t('admin.security.title')" icon="shield-o" is-link @click="handleNavigate('security')" />
+        <van-cell :title="t('admin.server_logs.title')" icon="records" is-link @click="handleNavigate('server-logs')" />
+        <van-cell :title="t('admin.moderation')" icon="shield-o" is-link @click="handleNavigate('moderation')">
           <template #value>
             <van-tag v-if="reportCount > 0" type="danger">{{ reportCount }}</van-tag>
           </template>
@@ -79,16 +35,8 @@
 
       <!-- 快速操作 -->
       <van-cell-group :title="t('admin.quick_actions')">
-        <van-cell
-          :title="t('admin.server_stats')"
-          icon="bar-chart-o"
-          is-link
-          @click="showStatsDialog = true" />
-        <van-cell
-          :title="t('admin.settings')"
-          icon="setting-o"
-          is-link
-          @click="handleNavigate('settings')" />
+        <van-cell :title="t('admin.server_stats')" icon="bar-chart-o" is-link @click="showStatsDialog = true" />
+        <van-cell :title="t('admin.settings')" icon="setting-o" is-link @click="handleNavigate('settings')" />
       </van-cell-group>
 
       <!-- 服务器统计对话框 -->
@@ -129,7 +77,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import MobileLayout from '@/mobile/layout/index.vue'
-import { adminService, type ServerStats } from '@/services/matrix/admin/MatrixAdminService'
+import { adminService, type ServerStats } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdmin')
