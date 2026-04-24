@@ -8,8 +8,8 @@ import {
   type FriendRequest,
   type FriendStatus,
   type FriendServiceEventHandler
-} from '@/services/matrix/MatrixFriendService'
-import { matrixDirectMessageService } from '@/services/matrix/MatrixDirectMessageService'
+} from '@/services/matrix/friends/MatrixFriendService'
+import { matrixDirectMessageService, type DmRoomInfo } from '@/services/matrix/MatrixDirectMessageService'
 import { matrixClientService, EventType } from '@/services/matrix'
 import { info, error } from '@tauri-apps/plugin-log'
 
@@ -189,8 +189,8 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
       const specialFriends = await matrixFriendService.getSpecialFriends()
 
-      const contacts: MatrixContact[] = friends.map((friend) => {
-        const dmRoom = dmRoomInfos.find((r) => r.invitees.includes(friend.user_id) || r.inviter === friend.user_id)
+      const contacts: MatrixContact[] = friends.map((friend: Friend) => {
+        const dmRoom = dmRoomInfos.find((r: DmRoomInfo) => r.invitees.includes(friend.user_id) || r.inviter === friend.user_id)
         const isSpecial = specialFriends.includes(friend.user_id)
         return {
           ...friendToContact(friend),
@@ -239,7 +239,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       const outgoing = await matrixFriendService.getOutgoingRequests()
 
       requestFriendsList.value = [
-        ...incoming.map((r) => ({
+        ...incoming.map((r: FriendRequest) => ({
           userId: r.user_id,
           displayName: r.display_name,
           avatarUrl: r.avatar_url,
@@ -248,7 +248,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
           direction: 'incoming' as const,
           applyId: r.user_id
         })),
-        ...outgoing.map((r) => ({
+        ...outgoing.map((r: FriendRequest) => ({
           userId: r.user_id,
           displayName: r.display_name,
           avatarUrl: r.avatar_url,

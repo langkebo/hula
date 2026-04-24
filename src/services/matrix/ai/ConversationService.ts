@@ -1,6 +1,5 @@
-import { Method } from 'matrix-js-sdk'
-import { matrixClientService } from './MatrixClientService'
-import { BaseManager } from './BaseManager'
+import { matrixExtensionEndpoints } from '@/services/backend'
+import { httpClient } from '@/utils/HttpClient'
 import { info, error as logError } from '@tauri-apps/plugin-log'
 
 export interface Conversation {
@@ -25,34 +24,18 @@ export interface Message {
   createdAt?: number
 }
 
-class MatrixConversationService extends BaseManager {
-  private get client() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('Matrix client not initialized')
-    return client
-  }
-
-  private httpRequest<T>(
-    method: Method,
-    path: string,
-    queryParams?: Record<string, unknown>,
-    body?: Record<string, unknown>
-  ): Promise<T> {
-    return (this.client.http as any).authedRequest(method, path, queryParams ?? {}, body ?? {})
-  }
-
+class MatrixConversationService {
   async page(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: Conversation[]; total: number }> {
     try {
-      const result = await this.httpRequest<{ list: Conversation[]; total: number }>(
-        Method.Get,
-        '/_matrix/client/v1/ai/conversation/page',
+      const result = await httpClient.request<{ list: Conversation[]; total: number }>({
+        url: matrixExtensionEndpoints.CONVERSATION_PAGE,
         params
-      )
+      })
       info(`[MatrixConversation] 获取会话列表成功`)
       return result
     } catch (err) {
       logError(`[MatrixConversation] 获取会话列表失败: ${err}`)
-      throw this.handleError(err, 'page', null)
+      throw err
     }
   }
 
@@ -63,17 +46,15 @@ class MatrixConversationService extends BaseManager {
     modelId?: string
   }): Promise<Conversation> {
     try {
-      const result = await this.httpRequest<Conversation>(
-        Method.Post,
-        '/_matrix/client/v1/ai/conversation/create',
-        undefined,
-        params
-      )
+      const result = await httpClient.request<Conversation>({
+        url: matrixExtensionEndpoints.CONVERSATION_CREATE_MY,
+        body: params
+      })
       info(`[MatrixConversation] 创建会话成功: ${result.id}`)
       return result
     } catch (err) {
       logError(`[MatrixConversation] 创建会话失败: ${err}`)
-      throw this.handleError(err, 'create', null)
+      throw err
     }
   }
 
@@ -86,63 +67,73 @@ class MatrixConversationService extends BaseManager {
     knowledgeId?: string
   }): Promise<Conversation> {
     try {
-      const result = await this.httpRequest<Conversation>(
-        Method.Post,
-        '/_matrix/client/v1/ai/conversation/update',
-        undefined,
-        params
-      )
+      const result = await httpClient.request<Conversation>({
+        url: matrixExtensionEndpoints.CONVERSATION_UPDATE_MY,
+        body: params
+      })
       info(`[MatrixConversation] 更新会话成功: ${params.id}`)
       return result
     } catch (err) {
       logError(`[MatrixConversation] 更新会话失败: ${err}`)
-      throw this.handleError(err, 'update', null)
+      throw err
     }
   }
 
   async delete(params: { conversationIdList: string[] }): Promise<boolean> {
     try {
-      await this.httpRequest(Method.Post, '/_matrix/client/v1/ai/conversation/delete', undefined, params)
+      await httpClient.request({
+        url: matrixExtensionEndpoints.CONVERSATION_DELETE_MY,
+        body: params
+      })
       info(`[MatrixConversation] 删除会话成功`)
       return true
     } catch (err) {
       logError(`[MatrixConversation] 删除会话失败: ${err}`)
-      throw this.handleError(err, 'delete', false)
+      throw err
     }
   }
 
   async messageListByConversationId(params: { conversationId: string }): Promise<Message[]> {
     try {
-      const result = await this.httpRequest<Message[]>(Method.Get, '/_matrix/client/v1/ai/message/list', params)
+      const result = await httpClient.request<Message[]>({
+        url: matrixExtensionEndpoints.MESSAGE_LIST_BY_CONVERSATION_ID,
+        params
+      })
       info(`[MatrixConversation] 获取会话消息列表成功`)
       return result
     } catch (err) {
       logError(`[MatrixConversation] 获取会话消息列表失败: ${err}`)
-      throw this.handleError(err, 'messageListByConversationId', [])
+      throw err
     }
   }
 
   async messageDelete(params: { id: string }): Promise<boolean> {
     try {
-      await this.httpRequest(Method.Post, '/_matrix/client/v1/ai/message/delete', undefined, params)
+      await httpClient.request({
+        url: matrixExtensionEndpoints.MESSAGE_DELETE,
+        params
+      })
       info(`[MatrixConversation] 删除消息成功: ${params.id}`)
       return true
     } catch (err) {
       logError(`[MatrixConversation] 删除消息失败: ${err}`)
-      throw this.handleError(err, 'messageDelete', false)
+      throw err
     }
   }
 
   async messageDeleteByConversationId(params: { conversationId: string }): Promise<boolean> {
     try {
-      await this.httpRequest(Method.Post, '/_matrix/client/v1/ai/message/delete_by_conversation', undefined, params)
+      await httpClient.request({
+        url: matrixExtensionEndpoints.MESSAGE_DELETE_BY_CONVERSATION_ID,
+        params
+      })
       info(`[MatrixConversation] 删除会话所有消息成功`)
       return true
     } catch (err) {
       logError(`[MatrixConversation] 删除会话所有消息失败: ${err}`)
-      throw this.handleError(err, 'messageDeleteByConversationId', false)
+      throw err
     }
   }
 }
 
-export const matrixConversationService = new MatrixConversationService()
+export const conversationService = new MatrixConversationService()

@@ -1,7 +1,6 @@
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
-import matrixClientService from './MatrixClientService'
-import { BaseManager } from './BaseManager'
-import { info } from '@tauri-apps/plugin-log'
+import matrixClientService from '../MatrixClientService'
+import { info, error } from '@tauri-apps/plugin-log'
 
 const SPECIAL_FRIENDS_EVENT_TYPE = 'm.special_friends' as const
 
@@ -9,27 +8,43 @@ interface SpecialFriendsContent {
   special_friends?: string[]
 }
 
-class MatrixSpecialFriendService extends BaseManager {
+class MatrixSpecialFriendService {
   private listeners: Set<() => void> = new Set()
+  private cache: Set<string> | null = null
+  private observedClient: MatrixClient | null = null
 
   constructor() {
-    super()
-    this.setupSyncListener()
+    this.ensureSyncListener()
   }
 
-  private setupSyncListener(): void {
-    const client = matrixClientService.getClient()
-    if (client) {
-      client.on('accountData', (event: MatrixEvent) => {
-        if (event.getType() === SPECIAL_FRIENDS_EVENT_TYPE) {
-          this.cache = null
-          this.notifyListeners()
-        }
-      })
+  private readonly accountDataListener = (event: MatrixEvent): void => {
+    if (event.getType() === SPECIAL_FRIENDS_EVENT_TYPE) {
+      this.cache = null
+      this.notifyListeners()
     }
   }
 
+  private ensureSyncListener(): void {
+    const client = matrixClientService.getClient()
+    if (this.observedClient === client) {
+      return
+    }
+
+    if (this.observedClient) {
+      this.observedClient.off('accountData', this.accountDataListener)
+    }
+
+    this.cache = null
+    this.observedClient = client
+    if (!client) {
+      return
+    }
+
+    client.on('accountData', this.accountDataListener)
+  }
+
   private getClient(): MatrixClient {
+    this.ensureSyncListener()
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('客户端未初始化')
@@ -41,16 +56,33 @@ class MatrixSpecialFriendService extends BaseManager {
     this.listeners.forEach((listener) => listener())
   }
 
+  private readSpecialFriendsContent(event: MatrixEvent | null | undefined): string[] {
+    if (!event) {
+      return []
+    }
+
+    const content = event.getContent() as SpecialFriendsContent
+    if (!Array.isArray(content.special_friends)) {
+      return []
+    }
+
+    return content.special_friends.filter((userId): userId is string => typeof userId === 'string')
+  }
+
   async getSpecialFriends(): Promise<string[]> {
     try {
       const client = this.getClient()
-      const content = client.getAccountData(SPECIAL_FRIENDS_EVENT_TYPE) as SpecialFriendsContent | undefined
-
-      if (content && content.special_friends) {
-        return content.special_friends
+      if (this.cache) {
+        return [...this.cache]
       }
-      return []
-    } catch (_err) {
+
+      const accountDataEvent = client.getAccountData(SPECIAL_FRIENDS_EVENT_TYPE)
+      const specialFriends = this.readSpecialFriendsContent(accountDataEvent)
+      this.cache = new Set(specialFriends)
+
+      return specialFriends
+    } catch (err) {
+      error(`[SpecialFriend] 获取特别关注好友失败: ${err}`)
       return []
     }
   }
@@ -68,12 +100,13 @@ class MatrixSpecialFriendService extends BaseManager {
       const newList = [...currentList, userId]
       await client.setAccountData(SPECIAL_FRIENDS_EVENT_TYPE, {
         special_friends: newList
-      } as SpecialFriendsContent)
+      } satisfies SpecialFriendsContent)
 
       this.cache = new Set(newList)
       info(`[SpecialFriend] 添加特别关注好友成功: ${userId}`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '添加特别关注好友失败'
+      error(`[SpecialFriend] ${errorMessage}`)
       throw new Error(errorMessage)
     }
   }
@@ -91,12 +124,13 @@ class MatrixSpecialFriendService extends BaseManager {
       const newList = currentList.filter((id) => id !== userId)
       await client.setAccountData(SPECIAL_FRIENDS_EVENT_TYPE, {
         special_friends: newList
-      } as SpecialFriendsContent)
+      } satisfies SpecialFriendsContent)
 
       this.cache = new Set(newList)
       info(`[SpecialFriend] 移除特别关注好友成功: ${userId}`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '移除特别关注好友失败'
+      error(`[SpecialFriend] ${errorMessage}`)
       throw new Error(errorMessage)
     }
   }

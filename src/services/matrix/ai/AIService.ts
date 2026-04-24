@@ -1,6 +1,6 @@
 import { matrixExtensionEndpoints } from '@/services/backend'
 import { httpClient } from '@/utils/HttpClient'
-import { matrixClientService } from './MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import type {
   AIModelListResponse,

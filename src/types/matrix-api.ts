@@ -5,7 +5,7 @@
 
 // ==================== AI 服务相关类型 ====================
 
-import type { AIModel } from '@/services/matrix/ModelService'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
 
 export type { AIModel }
 

@@ -1,7 +1,7 @@
 import type { Room, RoomMember, MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 import matrixEventServiceLocal from '../MatrixEventService'
-import matrixSlidingSyncService from '../MatrixSlidingSyncService'
+import matrixSlidingSyncService from '../sync/MatrixSlidingSyncService'
 import { matrixReceiptService } from '../MatrixReceiptService'
 import { matrixRoomCreationService } from './CreationService'
 import type { RoomInfo } from '@/services/types'
