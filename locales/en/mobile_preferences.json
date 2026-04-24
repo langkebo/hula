@@ -1,0 +1,18 @@
+{
+  "title": "General Preferences",
+  "message_section": "Messages",
+  "send_key": "Send Shortcut",
+  "message_confirm": "Confirm Before Send",
+  "link_preview": "Link Preview",
+  "emoji_convert": "Emoji Conversion",
+  "burn_section": "Burn After Read",
+  "burn_default": "Enable Burn After Read by Default",
+  "burn_duration": "Default Burn Duration",
+  "burn_countdown": "Show Countdown",
+  "thread_section": "Threads",
+  "thread_auto_subscribe": "Auto Subscribe to Threads",
+  "thread_show_in_room": "Show Threads in Room",
+  "privacy_section": "Privacy",
+  "send_read_receipts": "Send Read Receipts",
+  "send_typing": "Send Typing Status"
+}

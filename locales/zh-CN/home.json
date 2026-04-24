@@ -149,6 +149,8 @@
   "chat_header": {
     "bot_tag": "助手",
     "status_abnormal": "好友状态异常",
+    "start_meeting": "发起会议",
+    "meeting_widget_name": "房间会议",
     "toolbar": {
       "audio_call": "语音通话",
       "video_call": "视频通话",

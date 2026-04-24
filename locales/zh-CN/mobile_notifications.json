@@ -10,7 +10,7 @@
   "notify": "通知",
   "mention_only": "仅@提及",
   "mute": "静音",
-  "desktop_notifications": "桌面通知",
+  "push_notifications": "移动推送通知",
   "email_notifications": "邮件通知",
   "encrypted_rooms": "加密房间通知",
   "save": "保存设置",

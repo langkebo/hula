@@ -1,4 +1,6 @@
-# HuLa Project Context
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Overview
 HuLa is a modern, cross-platform Instant Messaging (IM) system. It leverages **Tauri v2** for the application container, **Vite 7** for fast frontend tooling, **Vue 3** for the user interface, and **TypeScript** for type safety. The backend logic is implemented in **Rust**.
@@ -27,6 +29,13 @@ The project supports:
 - **WebSocket:** tokio-tungstenite
 - **Audio:** Rodio
 
+### Matrix Protocol Integration
+- **SDK:** Local `matrix-js-sdk` (linked via `link:../matrix-js-sdk`)
+- **Backend:** [synapse-rust](https://github.com/langkebo/synapse-rust) - Rust-based Matrix Homeserver
+- **API Contract:** All SDK calls follow the [matrix-js-sdk API contract](./matrix-js-sdk/docs/api-contract/)
+- **Error Handling:** Uses `throwOnError` mode - read operations throw exceptions by default for error observability
+- **Extensions:** Includes synapse-rust specific extensions (friend relationships, widgets, voice messages)
+
 ## Development Workflow
 
 ### Prerequisites
@@ -35,31 +44,64 @@ The project supports:
 - Rust (latest stable)
 - Android Studio / Xcode (for mobile development)
 
+### Local Development Setup
+1. Clone the repository and the sibling `matrix-js-sdk` repository
+2. The project uses `link:../matrix-js-sdk` for local SDK integration
+3. Run `pnpm install` to install dependencies and link the SDK
+4. Ensure you have access to a synapse-rust backend instance (see [synapse-rust](https://github.com/langkebo/synapse-rust))
+5. Configure backend URL in `.env.local` (never commit this file)
+
+### Testing Strategy
+- **Unit Tests:** Vitest for service layer and utilities (`src/**/__tests__/*.test.ts`)
+- **E2E Tests:** Playwright for end-to-end flows (`e2e/*.spec.ts`)
+- **Coverage:** Run `pnpm coverage` to generate coverage reports
+- **Type Safety:** Always run `vue-tsc --noEmit` before committing
+
 ### Key Commands
 
 | Action | Command | Description |
 | :--- | :--- | :--- |
 | **Install Dependencies** | `pnpm install` | Installs Node.js dependencies. |
-| **Start Desktop Dev** | `pnpm tauri:dev` | Starts the Tauri development server for desktop. |
-| **Build Desktop** | `pnpm tauri:build` | Builds the production application for desktop (interactive). |
+| **Start Desktop Dev** | `pnpm tauri:dev` or `pnpm td` | Starts the Tauri development server for desktop. |
+| **Build Desktop** | `pnpm tauri:build` or `pnpm tb` | Builds the production application for desktop (interactive). |
+| **Start Android Dev** | `pnpm adev` | Starts Android development (requires Android Studio). |
+| **Start iOS Dev** | `pnpm idev` | Starts iOS development (requires Xcode, macOS only). |
+| **Android Frontend Only (Windows)** | `pnpm adev:win` | Starts Android frontend without Tauri (Windows). |
+| **iOS Frontend Only (macOS)** | `pnpm idev:mac` | Starts iOS frontend without Tauri (macOS). |
 | **Commit Changes** | `pnpm commit` | Interactive git commit using Commitizen. |
-| **Lint/Format** | `pnpm check` | Checks code using Biome. |
+| **Lint/Format** | `pnpm check` | Checks code using Biome (read-only). |
+| **Fix Lint/Format** | `pnpm check:write` | Fixes code issues using Biome. |
+| **Format Vue Templates** | `pnpm format:vue` | Formats Vue templates with Prettier. |
+| **Format All** | `pnpm format:all` | Runs Biome + Prettier on all files. |
 | **Run Tests** | `pnpm test:run` | Runs unit tests with Vitest. |
+| **Test with UI** | `pnpm test:ui` | Opens Vitest UI with coverage. |
+| **Test Coverage** | `pnpm coverage` | Generates test coverage report. |
+| **E2E Tests** | `pnpm test:e2e` | Runs Playwright end-to-end tests. |
+| **Type Check** | `vue-tsc --noEmit` | Runs TypeScript type checking. |
+| **Link HuLa Skill** | `pnpm skill` | Links the custom HuLa skill for development. |
 
 ### Directory Structure
 
 - **`src/`**: Frontend source code.
     - **`views/`**: Page components.
     - **`stores/`**: Pinia stores.
-    - **`services/`**: API and service layers (e.g., WebSocket adapter).
+    - **`services/`**: API and service layers.
+        - **`matrix/`**: Matrix protocol service wrappers (auth, rooms, messages, media, etc.).
+        - **`backend/`**: Backend configuration and API clients.
+        - **`offline/`**: Offline message handling and network services.
+        - **`performance/`**: Performance optimization services (chunk uploads, etc.).
     - **`components/`**: Reusable Vue components.
     - **`layout/`**: App layout structures.
 - **`src-tauri/`**: Rust backend source code.
-    - **`src/`**: Main Rust application logic.
+    - **`src/command/`**: Tauri command handlers (exposed to frontend via `invoke`).
+    - **`src/repository/`**: Database repository layer (SeaORM).
+    - **`src/common/`**: Shared utilities and helpers.
     - **`entity/`**: SeaORM entity definitions.
     - **`migration/`**: Database migrations.
     - **`tauri.conf.json`**: Tauri configuration.
 - **`tauri-plugin-hula/`**: Custom local Tauri plugin.
+- **`matrix-js-sdk/`**: Local Matrix SDK (sibling directory, linked via pnpm).
+- **`skills/hula-skill/`**: Custom development skill templates.
 
 ## Coding Style & Naming Conventions
 
@@ -71,11 +113,38 @@ The project supports:
 - **Styling:** Use UnoCSS utility classes where possible.
 - **State:** Use Pinia for global state; prefer Composition API `<script setup>`.
 - **Database:** Use SeaORM entities for database interactions.
+- **Services:** Matrix operations must go through service classes in `src/services/matrix/`, never call SDK directly from components.
+- **Tauri Commands:** Add new Rust commands in `src-tauri/src/command/` and register in `lib.rs`.
 
 ## Architecture Notes
-- **Communication:** Real-time messaging uses WebSockets (`tokio-tungstenite` on Rust side).
-- **Security:** SQLCipher is used for encrypted local storage.
-- **Plugins:** Extensive use of Tauri plugins (both official and custom) for native capabilities.
+
+### Three-Layer Architecture
+HuLa follows a three-layer architecture:
+1. **Frontend Application** (Tauri + Vue 3 + TypeScript): Cross-platform desktop/mobile UI
+2. **SDK Layer** (matrix-js-sdk): Matrix protocol encapsulation and extensions
+3. **Backend Service** (synapse-rust): Rust-based Matrix Homeserver
+
+### Communication Patterns
+- **Real-time Messaging:** WebSockets (`tokio-tungstenite` on Rust side, matrix-js-sdk on frontend)
+- **Frontend ↔ Rust:** Tauri commands (via `invoke`) defined in `src-tauri/src/command/`
+- **Frontend ↔ Backend:** Matrix Client API through local matrix-js-sdk
+- **Service Layer:** All Matrix operations go through service classes in `src/services/matrix/`
+
+### Key Architectural Patterns
+- **Service Layer Pattern:** Matrix SDK is wrapped in service classes (e.g., `MatrixAuthService`, `MatrixRoomService`, `MatrixMessageService`)
+- **Repository Pattern:** Database access is abstracted through repositories in `src-tauri/src/repository/`
+- **Command Pattern:** Tauri commands expose Rust functionality to frontend
+- **Manager Extensions:** matrix-js-sdk includes custom manager extensions for synapse-rust specific features
+
+### Security
+- **SQLCipher:** Encrypted local storage for sensitive data
+- **Token Management:** Access tokens managed securely through Tauri backend
+- **Error Handling:** throwOnError mode ensures all errors are caught and logged
+
+### Platform-Specific Code
+- Desktop-specific code: `#[cfg(desktop)]` in Rust, platform checks in TypeScript
+- Mobile-specific code: `#[cfg(mobile)]` in Rust, `TAURI_ENV_PLATFORM` checks in frontend
+- Vite config adjusts ports and components based on platform (desktop: 6130, mobile: 5210)
 
 ## Security & Configuration
 
@@ -122,6 +191,30 @@ Theme tokens live in `src/styles/scss/global/variable.scss`, but prefer inline U
 
 ### language
 - The language of the reply is determined based on the language of the user's question. For example, if a user asks a question in simplified Chinese, reply in simplified Chinese.
+
+## Working with Matrix SDK
+
+### SDK Integration
+- The project uses a **local** matrix-js-sdk located at `../matrix-js-sdk` (sibling directory)
+- Linked via `"matrix-js-sdk": "link:../matrix-js-sdk"` in package.json
+- Never modify SDK code directly; propose changes to the SDK repository instead
+
+### Service Layer Pattern
+- All Matrix SDK calls must go through service classes in `src/services/matrix/`
+- Service classes wrap SDK functionality and handle error translation
+- Example services: `MatrixAuthService`, `MatrixRoomService`, `MatrixMessageService`, `MatrixMediaService`
+- Components should never import or call matrix-js-sdk directly
+
+### Error Handling
+- SDK uses `throwOnError` mode: read operations throw exceptions by default
+- Always wrap SDK calls in try-catch blocks within service methods
+- Log errors using `@tauri-apps/plugin-log` (info, error, warn functions)
+- Translate SDK errors to user-friendly messages in the service layer
+
+### API Contract
+- Follow the [matrix-js-sdk API contract](./matrix-js-sdk/docs/api-contract/) for all SDK interactions
+- Respect the contract's error handling patterns and return types
+- When adding new SDK features, ensure they follow the established contract patterns
 
 
 

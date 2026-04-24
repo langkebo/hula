@@ -77,16 +77,12 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         // 配置移动端路径别名#
         '#': fileURLToPath(new URL('./src/mobile', import.meta.url)),
         // 配置路径别名~(根路径)
-        '~': fileURLToPath(new URL('.', import.meta.url))
+        '~': fileURLToPath(new URL('.', import.meta.url)),
+        // stream-monaco / monaco-editor 空壳替换（项目未使用 monaco 编辑功能）
+        'stream-monaco': fileURLToPath(new URL('./build/empty-module.js', import.meta.url)),
+        'monaco-editor': fileURLToPath(new URL('./build/empty-module.js', import.meta.url))
       }
     },
-    // 依赖预构建优化
-    optimizeDeps: {
-      include: ['vue', 'vue-router', 'pinia', '@vueuse/core', 'matrix-js-sdk', 'naive-ui', '@varlet/ui', 'axios'],
-      exclude: ['vue-demi']
-    },
-    // 缓存目录
-    cacheDir: 'node_modules/.vite',
     css: {
       preprocessorOptions: {
         scss: {
@@ -191,7 +187,11 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         'X-Frame-Options': 'DENY',
         'X-XSS-Protection': '1; mode=block',
         'Referrer-Policy': 'strict-origin-when-cross-origin',
-        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Resource-Policy': 'same-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()'
       }
     }
   }

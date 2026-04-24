@@ -13,9 +13,9 @@ export const isMobilePlatform = (platform?: string) => {
 /** 根据平台返回自动导入插件需要扫描的组件目录 */
 export const getComponentsDirs = (platform?: string) => {
   if (isMobilePlatform(platform)) {
-    return ['src/components/**', 'src/mobile/components/**']
+    return ['src/components', 'src/mobile/components']
   }
-  return ['src/components/**']
+  return ['src/components']
 }
 
 /** 按平台选择对应的组件类型声明文件路径 */

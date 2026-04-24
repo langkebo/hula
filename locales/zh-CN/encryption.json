@@ -1,0 +1,10 @@
+{
+  "health": {
+    "cross_signing_incomplete": "交叉签名未完成设置，其他设备无法验证此设备",
+    "unverified_devices": "存在未验证的设备，建议进行设备验证以确保消息安全",
+    "backup_not_synced": "密钥备份未同步，丢失此设备可能导致无法解密历史消息",
+    "undecryptable": "有 {count} 条消息无法解密，正在尝试恢复密钥",
+    "all_good": "加密状态正常，所有安全检查已通过",
+    "recheck": "重新检查"
+  }
+}

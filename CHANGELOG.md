@@ -732,7 +732,7 @@
 
 ### ✨ Features | 新功能
 
-* **component:** :sparkles: 增加兼容七牛云上传功能 ([eca26a9](https://gitee.com/llangkebo/hula/commit/eca26a977d315da23dec8c178b96b7db3b8a804f))
+* **component:** :sparkles: 增加兼容对象存储上传功能 ([eca26a9](https://gitee.com/llangkebo/hula/commit/eca26a977d315da23dec8c178b96b7db3b8a804f))
 * **component:** :sparkles: 增加邮箱登录、PIN输入框 ([4be6db7](https://gitee.com/llangkebo/hula/commit/4be6db7d31e77efd93cef9c4108ae0a8cc7ef2e0))
 
 

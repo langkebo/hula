@@ -10,7 +10,7 @@
   "notify": "Notify",
   "mention_only": "Mentions Only",
   "mute": "Mute",
-  "desktop_notifications": "Desktop Notifications",
+  "push_notifications": "Push Notifications",
   "email_notifications": "Email Notifications",
   "encrypted_rooms": "Encrypted Room Notifications",
   "save": "Save Settings",

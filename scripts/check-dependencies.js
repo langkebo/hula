@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noConsole: This CLI script intentionally writes diagnostics to the terminal.
 import chalk from 'chalk'
 import { execSync } from 'child_process'
 import { existsSync } from 'fs'
@@ -13,7 +14,8 @@ const INSTALL_GUIDES = {
 
 // 更新指南
 const UPDATE_GUIDES = {
-  Rust: '请运行 `rustup update` 命令更新 Rust 版本'
+  Rust: '请运行 `rustup update` 命令更新 Rust 版本',
+  'Node.js': '请切换到 Node.js 20 LTS、22 LTS 或 24.x，暂时不要使用 25.x 及以上版本'
 }
 
 // Windows 特定的检查路径（只检查默认安装路径）
@@ -37,6 +39,8 @@ const checks = [
     command: 'node --version',
     versionExtractor: (output) => output.replace('v', ''),
     minVersion: '^20.19.0 || >=22.12.0',
+    displayVersion: '^20.19.0 || >=22.12.0 <25',
+    maxMajorExclusive: 25,
     isRequired: true
   },
   {
@@ -111,6 +115,15 @@ const compareVersions = (version1, version2) => {
 }
 
 /**
+ * 获取主版本号
+ * @param {string} version 当前版本
+ * @returns {number}
+ */
+const getMajorVersion = (version) => {
+  return Number.parseInt(version.replace(/[^0-9.]/g, '').split('.')[0] || '0', 10)
+}
+
+/**
  * 检查版本是否满足 ^ 范围（主版本相同，次版本和补丁版本可以更高）
  * @param {string} version 当前版本
  * @param {string} requiredVersion 要求的版本
@@ -159,6 +172,7 @@ function checkDependency(check) {
   try {
     const output = execSync(check.command).toString().trim()
     const version = check.versionExtractor(output)
+    const displayVersion = check.displayVersion || check.minVersion
 
     // 判断版本是否有效
     let isVersionValid
@@ -170,16 +184,23 @@ function checkDependency(check) {
       isVersionValid = compareVersions(version, check.minVersion) >= 0
     }
 
+    const isUnsupportedMajor =
+      typeof check.maxMajorExclusive === 'number' && getMajorVersion(version) >= check.maxMajorExclusive
+
+    if (isUnsupportedMajor) {
+      isVersionValid = false
+    }
+
     if (isVersionValid) {
       console.log(chalk.green(`✅ ${check.name} 版本 ${output} 已安装\n`))
       return true
     } else {
-      console.log(chalk.yellow(`⚠️ ${check.name} 版本过低`))
+      console.log(chalk.yellow(`⚠️ ${check.name}${isUnsupportedMajor ? ' 当前主版本暂不支持' : ' 版本过低'}`))
       console.log(chalk.yellow(`  当前版本: ${output}`))
-      console.log(chalk.yellow(`  需要版本: ${check.minVersion}`))
+      console.log(chalk.yellow(`  支持版本: ${displayVersion}`))
 
-      // 对 Rust 进行特殊处理，提示使用 rustup update
-      if (check.name === 'Rust') {
+      // 对存在升级/切换建议的依赖进行提示
+      if (UPDATE_GUIDES[check.name]) {
         console.log(chalk.yellow(`  ${UPDATE_GUIDES[check.name]}`))
       }
 

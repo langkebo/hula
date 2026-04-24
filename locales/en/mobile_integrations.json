@@ -20,5 +20,6 @@
   "integration_github": "Receive GitHub notifications and issue updates",
   "integration_giphy": "Search and send GIF animations",
   "integration_jira": "Receive Jira task updates",
-  "integration_calendar": "Sync calendar events and reminders"
+  "integration_calendar": "Sync calendar events and reminders",
+  "beta_warning": "Integrations are currently in beta. Some features may not be fully implemented. Installed integrations are stored locally and will not sync with the server."
 }

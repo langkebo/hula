@@ -1,5 +1,8 @@
 # HuLa SDK 项目优化方案
 
+> 更新日期: 2026-04-15
+> 依据: MATRIX_SDK_CAPABILITY_INVENTORY.md / MATRIX_BACKEND_SDK_BOUNDARY.md / MATRIX_SDK_REDUNDANCY_MAPPING.md
+
 ## 一、项目现状
 
 ### 1.1 服务统计
@@ -10,7 +13,15 @@
 | 新增服务 | 5 个 |
 | 总计 | 34 个 |
 
-### 1.2 新增服务
+### 1.2 SDK 接入原则
+
+基于 `MATRIX_BACKEND_SDK_BOUNDARY.md`，所有服务遵循以下接入原则：
+
+1. **完整优先接入** - SDK 已有明确方法或 Manager，一律通过本地 SDK 集成
+2. **部分优先接入** - SDK 已覆盖核心链路，主链路走 SDK，缺口单点补扩展
+3. **保留独立服务** - 管理端或 synapse-rust 专有扩展才允许保留独立 service
+
+### 1.3 新增服务
 
 | 服务 | 功能 |
 |------|------|
@@ -111,12 +122,12 @@ const room = (client as any).getRoom(roomId)
 
 ### 4.2 建议后续添加
 
-| 服务 | 优先级 | 功能 |
-|------|---------|------|
-| MatrixAdminService | 高 | 管理后台操作 |
-| MatrixCasService | 中 | CAS 认证 |
-| MatrixSamlService | 中 | SAML 认证 |
-| MatrixOidcService | 中 | OIDC 认证 |
+| 服务 | 优先级 | 功能 | 依据 |
+|------|---------|------|------|
+| MatrixAdminService | 高 | 管理后台操作 | MATRIX_BACKEND_SDK_BOUNDARY.md (保留独立服务) |
+| MatrixOidcService | 高 | OIDC 认证 | MATRIX_SDK_CAPABILITY_INVENTORY.md (SDK 已封装) |
+| MatrixCasService | 中 | CAS 认证 | synapse-rust 扩展认证 |
+| MatrixSamlService | 中 | SAML 认证 | synapse-rust 扩展认证 |
 
 ---
 
@@ -167,10 +178,23 @@ await report({
 
 ## 六、下一步计划
 
-1. **修复 TypeScript 错误** - 优先修复核心服务
+### 6.1 短期 (P0)
+
+1. **修复认证与会话断点** - 旧后端入口已删除，需修复所有断点
+2. **修复 TypeScript 错误** - 优先修复核心服务
+3. **修复 Rust 编译错误** - 消除 ImRequestClient/ImUrl 依赖
+
+### 6.2 中期 (P1)
+
+1. **继续收敛 SDK 服务层** - 基于 MATRIX_SDK_CAPABILITY_INVENTORY.md 的优先级
 2. **测试新服务** - 验证新增功能
 3. **完善文档** - 添加使用示例
-4. **性能优化** - 提升响应速度
+
+### 6.3 长期 (P2)
+
+1. **性能优化** - 提升响应速度
+2. **Push/Space/Account Data 收敛** - 统一走 SDK 适配层
+3. **完善 OIDC 集成** - 基于 SDK OidcManager
 
 ---
 
