@@ -743,3 +743,31 @@ _Commit 4：`904e9f97 chore: checkpoint remaining in-flight root + skill templat
 - **工作树** ✅ 全清：所有 earlier-session in-flight 工作已以 checkpoint commit 落盘
 - **仓库健康度**：vue-tsc 0 error · 2021 tests pass · services/matrix 顶层 28 → 8（-71%）· stores 38 flat → domains/5 域
 - **剩余候选任务**：`noExplicitAny` warning 批次清理（23+ 个）、`deleteRetentionPolicy` UI 调用移除后收尾
+
+**第十一批产出（`noExplicitAny` warning 全面清零）**
+
+_背景_：Step 10 末态 Biome 仍有 1019 个 `lint/suspicious/noExplicitAny` warning（含 tests/stories 等非生产代码）。按生产代码优先原则分两批落盘。
+
+_Commit: `d8154b9b chore(lint): clear all noExplicitAny warnings`（105 文件）_
+
+**典型改造手法**
+- **服务响应类型化**：`tauriCommand.ts` 为 FileManager 相关 invoke 响应定义 `FileManagerFileItem / TimeGroup / User / NavigationItem / QueryResponse`；`admin/MediaService.ts` / `NotificationService.ts` 将 `() => Promise<any>` SDK getter 替换为结构化 `MediaAdminSdk` / `NotificationAdminSdk` 类型，移除所有内部 `as unknown as { ... }` 重铸。
+- **SDK 类型 bridging**：`MatrixDeviceService` 从 `@/types/matrix-extensions` 引入 `AuthDict`（非 `matrix-js-sdk` 主入口）；`MatrixReactionService` 新增 `ReactionRelatesTo` / `ReactionContent` 替代 `Record<string, any>`。
+- **兩個同名類型消歧**：`multiMsgWindow/index.vue` 将 `UserItem` 改从 `MatrixContactService` 导入（原 `@/services/types` 版本签名不匹配）；`MessageBody` 两个版本仍以 `as MessageType['message']['body']` 桥接。
+- **真正需要 any 的情形**：`VirtualList.vue` 的泛型列表、`MessageBody` union、`matrix.d.ts` 的 `on(event, (...args: any[]) => void)`（contravariance 必需）均改为 `biome-ignore lint/suspicious/noExplicitAny` 并附原因注释。
+- **回调窄化**：`ChatSidebar.vue` 三个 listen/mitt/inner event 回调、`AiAssistant` picker confirm、`robot/utils/markdown.ts` toolbar handler、`MatrixVoIPService` RTC stats mapper 等全部改为 `unknown` / 具体联合类型。
+- **Storybook**：`Header.stories.ts` / `Page.stories.ts` 的 `args: any` / `canvasElement: any` 直接删除（Storybook 类型可自动推导）。
+- **Store state**：`settingsDialog.ts` 的 `Record<string, any>` → `Record<string, unknown>`。
+- **QRCode 登录轮询**：引入 `QRLoginResult` 类型并处理 `null` 分支，`handleConfirmed` 参数从 `res: any` 改为类型化。
+
+**验收（第十一批）**
+- `pnpm check`：**0 error / 0 warning**（`lint/suspicious/noExplicitAny` 从 1019 → 0）
+- `pnpm exec vue-tsc --noEmit`：**0 error**
+- 生产代码与 test/stories 均已覆盖；所有保留的 `any` 均有 `biome-ignore` + 理由注释
+- commit: `d8154b9b chore(lint): clear all noExplicitAny warnings - typed admin SDK shapes + narrowed callbacks`
+
+**Step 11 最终状态**
+- **`noExplicitAny`** ✅ 全仓归零（1019 → 0，含生产 + 测试 + storybook）
+- **约束达成**：未引入任何新 `any`；保留的 `any` 均有 biome-ignore 理由
+- **仓库健康度**：vue-tsc 0 error · biome 0 warning · 2021 tests pass
+- **剩余候选任务**：`deleteRetentionPolicy` UI 调用路径移除（runtime-level，仍阻塞）
