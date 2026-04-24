@@ -29,7 +29,7 @@ vi.mock('@iconify/vue', () => ({
   Icon: { name: 'Icon', template: '<i />', props: ['icon', 'width'] }
 }))
 
-vi.mock('@/services/matrix/MatrixAccountService', () => ({
+vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   matrixAccountService: {
     getDevices: () => getDevicesMock(),
     setDeviceName: (...args: any[]) => setDeviceNameMock(...args),

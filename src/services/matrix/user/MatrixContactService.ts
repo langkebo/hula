@@ -1,7 +1,7 @@
-import { matrixClientService } from './MatrixClientService'
-import { matrixDirectMessageService } from './MatrixDirectMessageService'
-import { matrixFriendService } from './friends/MatrixFriendService'
-import { matrixRoomService } from './MatrixRoomService'
+import { matrixClientService } from '../MatrixClientService'
+import { matrixDirectMessageService } from '../MatrixDirectMessageService'
+import { matrixFriendService } from '../friends/MatrixFriendService'
+import { matrixRoomService } from '../MatrixRoomService'
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import { User, RoomMember, MatrixEvent } from 'matrix-js-sdk'
 

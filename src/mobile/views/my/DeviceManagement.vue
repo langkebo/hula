@@ -16,11 +16,9 @@
           <van-cell-group inset>
             <van-cell
               v-for="device in devices"
-              :key="device.deviceId"
-              :title="device.displayName || t('mobile_devices.unnamed_device')"
-              :label="formatDeviceLabel(device)"
-              is-link
-              @click="handleRenameDevice(device)">
+              :key="device.device_id"
+              :title="device.display_name || t('mobile_devices.unnamed_device')"
+              :label="formatDeviceLabel(device)">
               <template #icon>
                 <div class="w-40px h-40px rounded-full bg-gray-100 mr-12px flex items-center justify-center">
                   <Icon :icon="getDeviceIcon(device)" :width="20" color="#666" />
@@ -28,7 +26,7 @@
               </template>
               <template #right-icon>
                 <van-button
-                  v-if="!isCurrentDevice(device.deviceId)"
+                  v-if="!isCurrentDevice(device.device_id)"
                   size="small"
                   type="danger"
                   plain
@@ -46,20 +44,6 @@
             </van-button>
           </div>
         </div>
-
-        <van-popup v-model:show="showRenamePopup" position="bottom" round :style="{ height: 'auto' }">
-          <div class="p-16px">
-            <div class="text-16px font-medium mb-16px">{{ t('mobile_devices.rename.title') }}</div>
-            <van-field
-              v-model="renameDeviceName"
-              :placeholder="t('mobile_devices.rename.placeholder')"
-              class="mb-16px"
-            />
-            <van-button type="primary" block @click="confirmRenameDevice">
-              {{ t('mobile_devices.rename.confirm') }}
-            </van-button>
-          </div>
-        </van-popup>
       </div>
     </template>
   </AutoFixHeightPage>
@@ -70,19 +54,17 @@ import { createLogger } from '@/utils/Logger'
 import { ref, onMounted } from 'vue'
 import { showConfirmDialog, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
-import { matrixAccountService, type DeviceInfo } from '@/services/matrix/MatrixAccountService'
+import { matrixDeviceService } from '@/services/matrix'
+import type { Device } from '@/services/matrix/user/MatrixDeviceService'
 import { useI18n } from 'vue-i18n'
 
 const logger = createLogger('DeviceManagement')
 
 const { t } = useI18n()
 
-const devices = ref<DeviceInfo[]>([])
+const devices = ref<Device[]>([])
 const loading = ref(false)
 const currentDeviceId = ref<string>('')
-const showRenamePopup = ref(false)
-const renameDeviceName = ref('')
-const renamingDevice = ref<DeviceInfo | null>(null)
 
 onMounted(async () => {
   await loadDevices()
@@ -91,8 +73,8 @@ onMounted(async () => {
 async function loadDevices() {
   loading.value = true
   try {
-    currentDeviceId.value = matrixAccountService.getCurrentDeviceId() || ''
-    devices.value = await matrixAccountService.getDevices()
+    currentDeviceId.value = matrixDeviceService.getCurrentDeviceId() || ''
+    devices.value = await matrixDeviceService.getDevices()
   } catch (error) {
     logger.error('获取设备列表失败:', error)
     showToast({
@@ -108,8 +90,8 @@ function isCurrentDevice(deviceId: string): boolean {
   return deviceId === currentDeviceId.value
 }
 
-function getDeviceIcon(device: DeviceInfo): string {
-  const ua = device.lastSeenUserAgent?.toLowerCase() || ''
+function getDeviceIcon(device: Device): string {
+  const ua = device.last_seen_user_agent?.toLowerCase() || ''
   if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
     return 'mdi:cellphone'
   }
@@ -119,62 +101,30 @@ function getDeviceIcon(device: DeviceInfo): string {
   return 'mdi:laptop'
 }
 
-function formatDeviceLabel(device: DeviceInfo): string {
+function formatDeviceLabel(device: Device): string {
   const parts: string[] = []
-  if (device.lastSeenIp) {
-    parts.push(device.lastSeenIp)
+  if (device.last_seen_ip) {
+    parts.push(device.last_seen_ip)
   }
-  if (device.lastSeenTs) {
-    const date = new Date(device.lastSeenTs)
+  if (device.last_seen_ts) {
+    const date = new Date(device.last_seen_ts)
     parts.push(date.toLocaleDateString())
   }
   return parts.join(' · ') || t('mobile_devices.no_info')
 }
 
-async function handleRenameDevice(device: DeviceInfo) {
-  renamingDevice.value = device
-  renameDeviceName.value = device.displayName || ''
-  showRenamePopup.value = true
-}
-
-async function confirmRenameDevice() {
-  if (!renamingDevice.value || !renameDeviceName.value.trim()) {
-    showToast({
-      type: 'fail',
-      message: t('mobile_devices.rename_empty')
-    })
-    return
-  }
-
-  try {
-    await matrixAccountService.setDeviceName(renamingDevice.value.deviceId, renameDeviceName.value.trim())
-    showRenamePopup.value = false
-    showToast({
-      type: 'success',
-      message: t('mobile_devices.rename_success')
-    })
-    await loadDevices()
-  } catch (error) {
-    logger.error('重命名设备失败:', error)
-    showToast({
-      type: 'fail',
-      message: t('mobile_devices.rename_failed')
-    })
-  }
-}
-
-async function handleDeleteDevice(device: DeviceInfo) {
+async function handleDeleteDevice(device: Device) {
   try {
     await showConfirmDialog({
       title: t('mobile_devices.delete_confirm.title'),
       message: t('mobile_devices.delete_confirm.message', {
-        name: device.displayName || t('mobile_devices.unnamed_device')
+        name: device.display_name || t('mobile_devices.unnamed_device')
       }),
       confirmButtonText: t('mobile_devices.delete_confirm.confirm'),
       cancelButtonText: t('mobile_devices.delete_confirm.cancel')
     })
 
-    await matrixAccountService.deleteDevice(device.deviceId)
+    await matrixDeviceService.deleteDevice(device.device_id)
     showToast({
       type: 'success',
       message: t('mobile_devices.delete_success')
@@ -192,7 +142,7 @@ async function handleDeleteDevice(device: DeviceInfo) {
 }
 
 async function handleDeleteOtherDevices() {
-  const otherDevices = devices.value.filter((d) => !isCurrentDevice(d.deviceId))
+  const otherDevices = devices.value.filter((d) => !isCurrentDevice(d.device_id))
   if (otherDevices.length === 0) {
     showToast(t('mobile_devices.no_other_devices'))
     return
@@ -206,8 +156,8 @@ async function handleDeleteOtherDevices() {
       cancelButtonText: t('mobile_devices.delete_other_confirm.cancel')
     })
 
-    const deviceIds = otherDevices.map((d) => d.deviceId)
-    await matrixAccountService.deleteDevices(deviceIds)
+    const deviceIds = otherDevices.map((d) => d.device_id)
+    await matrixDeviceService.deleteDevices(deviceIds)
     showToast({
       type: 'success',
       message: t('mobile_devices.delete_success')
