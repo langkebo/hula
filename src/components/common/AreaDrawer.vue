@@ -42,9 +42,13 @@ interface AreaProps {
 }
 
 interface Events {
+  // biome-ignore lint/suspicious/noExplicitAny: Vant Area event callbacks pass through arbitrary payloads; callers define their own signatures.
   onChange?: ((...args: any[]) => any) | undefined
+  // biome-ignore lint/suspicious/noExplicitAny: see above
   'onUpdate:modelValue'?: ((...args: any[]) => any) | undefined
+  // biome-ignore lint/suspicious/noExplicitAny: see above
   onCancel?: ((...args: any[]) => any) | undefined
+  // biome-ignore lint/suspicious/noExplicitAny: see above
   onConfirm?: ((...args: any[]) => any) | undefined
 }
 

@@ -2,6 +2,17 @@ import type { MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 
+type RelatesTo = {
+  rel_type?: string
+  event_id?: string
+  'm.in_reply_to'?: { event_id: string }
+}
+
+type RelationContent = Record<string, unknown> & {
+  'm.relates_to'?: RelatesTo
+  'm.new_content'?: Record<string, unknown>
+}
+
 export interface MessageEdit {
   eventId: string
   originalContent: Record<string, unknown>
@@ -87,7 +98,7 @@ class MatrixMessageRelationService {
       }
 
       const content: Record<string, unknown> = {
-        ...(originalEvent.getContent() as Record<string, unknown>),
+        ...(originalEvent.getContent() as RelationContent),
         msgtype: newContent.msgtype || 'm.text',
         body: `* ${newContent.body}`,
         'm.new_content': {
@@ -101,7 +112,7 @@ class MatrixMessageRelationService {
       }
 
       if (newContent.html) {
-        const newContentObj = content['m.new_content'] as Record<string, unknown>
+        const newContentObj = content['m.new_content'] as RelationContent
         newContentObj.format = 'org.matrix.custom.html'
         newContentObj.formatted_body = newContent.html
         content.format = 'org.matrix.custom.html'
@@ -139,7 +150,7 @@ class MatrixMessageRelationService {
         throw new Error('[MessageRelation] 只能编辑自己发送的消息')
       }
 
-      const originalContent = originalEvent.getContent() as Record<string, unknown>
+      const originalContent = originalEvent.getContent() as RelationContent
       const newBody = newCaption || (originalContent.body as string) || ''
 
       const content: Record<string, unknown> = {
@@ -176,7 +187,7 @@ class MatrixMessageRelationService {
     const events = timelineSet.getLiveTimeline().getEvents()
 
     for (const event of events) {
-      const content = event.getContent() as Record<string, any>
+      const content = event.getContent() as RelationContent
       const relatesTo = content['m.relates_to']
 
       if (relatesTo?.rel_type === 'm.replace' && relatesTo.event_id === eventId) {
@@ -184,7 +195,7 @@ class MatrixMessageRelationService {
         edits.push({
           eventId: event.getId()!,
           originalContent: content,
-          newContent: newContent,
+          newContent: newContent ?? {},
           timestamp: event.getTs(),
           sender: event.getSender()!
         })
@@ -208,7 +219,7 @@ class MatrixMessageRelationService {
     let latestTimestamp = 0
 
     for (const event of events) {
-      const content = event.getContent() as Record<string, any>
+      const content = event.getContent() as RelationContent
       const relatesTo = content['m.relates_to']
 
       if (relatesTo?.rel_type === 'm.replace' && relatesTo.event_id === eventId) {
@@ -347,7 +358,7 @@ class MatrixMessageRelationService {
     const events = timelineSet.getLiveTimeline().getEvents()
 
     for (const event of events) {
-      const content = event.getContent() as Record<string, any>
+      const content = event.getContent() as RelationContent
       const relatesTo = content['m.relates_to']
 
       if (relatesTo?.rel_type === 'm.thread' && relatesTo.event_id === threadRootId) {
@@ -406,7 +417,7 @@ class MatrixMessageRelationService {
     const events = timelineSet.getLiveTimeline().getEvents()
 
     for (const event of events) {
-      const content = event.getContent() as Record<string, any>
+      const content = event.getContent() as RelationContent
       const relatesTo = content['m.relates_to']
 
       if (relatesTo?.['m.in_reply_to']?.event_id === eventId) {
@@ -418,16 +429,16 @@ class MatrixMessageRelationService {
   }
 
   isEdited(event: MatrixEvent): boolean {
-    const content = event.getContent() as Record<string, any>
+    const content = event.getContent() as RelationContent
     return !!content['m.new_content']
   }
 
   getEditedContent(event: MatrixEvent): Record<string, unknown> {
-    const content = event.getContent() as Record<string, any>
+    const content = event.getContent() as RelationContent
     if (content['m.new_content']) {
-      return content['m.new_content'] as Record<string, unknown>
+      return content['m.new_content'] as RelationContent
     }
-    return content as Record<string, unknown>
+    return content as RelationContent
   }
 
   getReplyToEventId(event: MatrixEvent): string | null {

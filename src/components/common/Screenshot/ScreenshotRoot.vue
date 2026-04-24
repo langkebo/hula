@@ -725,7 +725,7 @@ const initCanvas = async () => {
     height: `${canvasHeight}`
   }
 
-  const screenshotData = await invokeWithErrorHandler('screenshot', config, {
+  const screenshotData = await invokeWithErrorHandler<string>('screenshot', config, {
     customErrorMessage: '截图失败',
     errorType: ErrorType.Client
   })

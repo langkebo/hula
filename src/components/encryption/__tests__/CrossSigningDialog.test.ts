@@ -2,6 +2,17 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CrossSigningDialog from '../CrossSigningDialog.vue'
 
+type CrossSigningDialogVm = {
+  isSetup: boolean
+  masterKeyDisplay: string
+  selfSigningKeyDisplay: string
+  userSigningKeyDisplay: string
+  handleSetup: () => Promise<void>
+  handleReset: () => Promise<void>
+  handleCopyKeys: () => Promise<void>
+  handleClose: () => void
+}
+
 const {
   getCrossSigningInfoMock,
   setupCrossSigningMock,
@@ -127,10 +138,10 @@ describe('CrossSigningDialog', () => {
     await flushPromises()
 
     expect(getCrossSigningInfoMock).toHaveBeenCalled()
-    expect((wrapper.vm as any).isSetup).toBe(true)
-    expect((wrapper.vm as any).masterKeyDisplay).toBe('12345678...90abcdef')
-    expect((wrapper.vm as any).selfSigningKeyDisplay).toBe('self-signing-key')
-    expect((wrapper.vm as any).userSigningKeyDisplay).toBe('user-signing-key')
+    expect((wrapper.vm as unknown as CrossSigningDialogVm).isSetup).toBe(true)
+    expect((wrapper.vm as unknown as CrossSigningDialogVm).masterKeyDisplay).toBe('12345678...90abcdef')
+    expect((wrapper.vm as unknown as CrossSigningDialogVm).selfSigningKeyDisplay).toBe('self-signing-key')
+    expect((wrapper.vm as unknown as CrossSigningDialogVm).userSigningKeyDisplay).toBe('user-signing-key')
     expect(wrapper.text()).toContain('encryption.cross_signing.setup')
   })
 
@@ -158,8 +169,8 @@ describe('CrossSigningDialog', () => {
     const wrapper = mountComponent(true)
 
     await flushPromises()
-    await (wrapper.vm as any).handleSetup()
-    await (wrapper.vm as any).handleReset()
+    await (wrapper.vm as unknown as CrossSigningDialogVm).handleSetup()
+    await (wrapper.vm as unknown as CrossSigningDialogVm).handleReset()
 
     expect(setupCrossSigningMock).toHaveBeenCalled()
     expect(resetCrossSigningMock).toHaveBeenCalled()
@@ -180,8 +191,8 @@ describe('CrossSigningDialog', () => {
     const wrapper = mountComponent(true)
 
     await flushPromises()
-    await (wrapper.vm as any).handleCopyKeys()
-    await (wrapper.vm as any).handleCopyKeys()
+    await (wrapper.vm as unknown as CrossSigningDialogVm).handleCopyKeys()
+    await (wrapper.vm as unknown as CrossSigningDialogVm).handleCopyKeys()
 
     expect(writeTextMock).toHaveBeenCalledWith(
       'Master Key: master-key\nSelf-Signing Key: self-key\nUser-Signing Key: user-key'
@@ -196,13 +207,13 @@ describe('CrossSigningDialog', () => {
     const wrapper = mountComponent(true)
 
     await flushPromises()
-    expect((wrapper.vm as any).isSetup).toBe(false)
+    expect((wrapper.vm as unknown as CrossSigningDialogVm).isSetup).toBe(false)
 
     setupCrossSigningMock.mockRejectedValueOnce(new Error('setup failed'))
     resetCrossSigningMock.mockRejectedValueOnce(new Error('reset failed'))
 
-    await (wrapper.vm as any).handleSetup()
-    await (wrapper.vm as any).handleReset()
+    await (wrapper.vm as unknown as CrossSigningDialogVm).handleSetup()
+    await (wrapper.vm as unknown as CrossSigningDialogVm).handleReset()
 
     expect(messageErrorMock).toHaveBeenCalledWith('encryption.cross_signing.setup_failed')
     expect(messageErrorMock).toHaveBeenCalledWith('encryption.cross_signing.reset_failed')
@@ -212,7 +223,7 @@ describe('CrossSigningDialog', () => {
     const wrapper = mountComponent(true)
 
     await flushPromises()
-    ;(wrapper.vm as any).handleClose()
+    ;(wrapper.vm as unknown as CrossSigningDialogVm).handleClose()
 
     expect(wrapper.emitted('update:show')).toEqual([[false]])
   })

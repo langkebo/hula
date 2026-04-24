@@ -12,9 +12,9 @@ const logger = createLogger('TauriInvokeHandler')
  * @param options 错误处理选项
  * @returns Promise<Result<T, AppException>>
  */
-export async function invokeWithResult<T = any>(
+export async function invokeWithResult<T = unknown>(
   command: string,
-  args?: Record<string, any>,
+  args?: Record<string, unknown>,
   options?: {
     /** 是否显示错误提示，默认为 true */
     showError?: boolean
@@ -65,9 +65,9 @@ export async function invokeWithResult<T = any>(
  * [Deprecated] 遗留的 Tauri invoke 调用包装器，直接抛出异常
  * 建议使用 invokeWithResult 替代
  */
-export async function invokeWithErrorHandler<T = any>(
+export async function invokeWithErrorHandler<T = unknown>(
   command: string,
-  args?: Record<string, any>,
+  args?: Record<string, unknown>,
   options?: {
     /** 是否显示错误提示，默认为 true */
     showError?: boolean
@@ -119,7 +119,7 @@ export async function invokeWithErrorHandler<T = any>(
  * @param args 命令参数
  * @returns Promise<T | null> 成功返回结果，失败返回 null
  */
-export async function invokeSilently<T = any>(command: string, args?: Record<string, any>): Promise<T | null> {
+export async function invokeSilently<T = unknown>(command: string, args?: Record<string, unknown>): Promise<T | null> {
   try {
     return await invokeWithErrorHandler<T>(command, args, { showError: false })
   } catch {
@@ -134,9 +134,9 @@ export async function invokeSilently<T = any>(command: string, args?: Record<str
  * @param options 重试选项
  * @returns Promise<T>
  */
-export async function invokeWithRetry<T = any>(
+export async function invokeWithRetry<T = unknown>(
   command: string,
-  args?: Record<string, any>,
+  args?: Record<string, unknown>,
   options?: {
     /** 最大重试次数，默认为 3 */
     maxRetries?: number

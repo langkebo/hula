@@ -1,9 +1,37 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Beacon 服务 (MSC3489)
  * 位置信标功能
  */
 import { matrixClientService } from '../MatrixClientService'
+
+type BeaconInfoContent = {
+  description?: string
+  timeout?: number
+  live?: boolean
+}
+
+type BeaconLocationContent = {
+  uri?: string
+  description?: string
+  ts?: number
+  timestamp?: number
+  accuracy?: number
+  altitude?: number
+  speed?: number
+  bearing?: number
+}
+
+type BeaconEventContent = {
+  beacon_info?: BeaconInfoContent
+  beacon?: {
+    event_id?: string
+    timestamp?: number
+    location?: BeaconLocationContent
+  }
+  location?: BeaconLocationContent
+  'm.relates_to'?: { event_id?: string }
+  [key: string]: unknown
+}
 
 export interface BeaconInfo {
   event_id: string
@@ -95,7 +123,7 @@ class MatrixBeaconService {
   async getBeaconInfo(roomId: string, eventId: string): Promise<BeaconInfo | null> {
     try {
       const event = await this.client.getRoomEvent(roomId, eventId)
-      const content = event.getContent() as Record<string, any>
+      const content = event.getContent() as BeaconEventContent
 
       if (!content || !content.beacon_info) return null
 
@@ -105,7 +133,7 @@ class MatrixBeaconService {
         user_id: event.sender?.userId || '',
         description: content.beacon_info.description,
         timeout: content.beacon_info.timeout,
-        is_live: content.beacon_info.live,
+        is_live: content.beacon_info.live ?? false,
         last_updated: event.getTs() || Date.now()
       }
     } catch {
@@ -132,7 +160,7 @@ class MatrixBeaconService {
       const results = result?.search_categories?.room_events?.results || []
       for (const item of results) {
         const event = item.result
-        const content = event.content as Record<string, any>
+        const content = event.content as BeaconEventContent
         if (content?.beacon_info?.live) {
           beacons.push({
             event_id: event.event_id,
@@ -212,7 +240,7 @@ class MatrixBeaconService {
       const results = result?.search_categories?.room_events?.results || []
       for (const item of results) {
         const event = item.result
-        const content = event.content as Record<string, any>
+        const content = event.content as BeaconEventContent
         if (content?.beacon?.location) {
           const geo = content.beacon.location
           const geoMatch = (geo.uri as string | undefined)?.match(/geo:([-\d.]+),([-\d.]+)/)
@@ -245,7 +273,7 @@ class MatrixBeaconService {
   async stopBeacon(roomId: string, eventId: string): Promise<boolean> {
     try {
       const event = await this.client.getRoomEvent(roomId, eventId)
-      const content = event.getContent() as Record<string, any>
+      const content = event.getContent() as BeaconEventContent
 
       if (!content || !content.beacon_info) return false
 

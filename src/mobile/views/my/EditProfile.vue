@@ -156,15 +156,17 @@ const pickerColumn = ref({
   ]
 })
 
+type PickerOption = { text: string; value: number }
+
 const pickerConfirm = {
-  gender: (data: { selectedOptions: any }) => {
+  gender: (data: { selectedOptions: PickerOption[] }) => {
     const selected = data.selectedOptions[0].value
     localUserInfo.value.sex = selected
     pickerState.value.gender = false
   },
-  region: (data: { selectedOptions: any }) => {
+  region: (data: { selectedOptions: PickerOption[] }) => {
     const selected = data.selectedOptions
-    region.value = selected.map((item: { text: any }) => item.text).join('/')
+    region.value = selected.map((item) => item.text).join('/')
     pickerState.value.region = false
   }
 }
