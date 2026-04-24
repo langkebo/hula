@@ -1100,3 +1100,36 @@ _Chat.vue 续作_
 - 下一轮推荐：
   - Chat.vue 续作：`useAiMediaGeneration`（~470 LOC，最大块）→ `useAiStreaming`（~285 LOC）
   - P0-5 AdminFacadeService 续作：UserService domain 抽取
+
+---
+
+## Step 21 — P0-3 messageActions 回归测试 + P1-5 Matrix Mock 工厂（2026-04-24）
+
+**目标**
+- P0-3：补 `stores/domains/chat/chat/message.ts` 高价值 action 回归网（pushMsg 副作用 / multi-choose / clearRoomMessages / recall TTL）
+- P1-5：抽出 `matrix-js-sdk` 测试形状统一工厂，替换约 800 处 `as MatrixClient` / `as Room` 硬转换的单点入口
+
+**新增**
+- `src/stores/domains/chat/chat/__tests__/messageActions.test.ts`（16 用例）
+  - pushMsg 副作用：幂等 / session text+activeTime 更新 / 未读累加（3 场景：他人/自己/当前激活）/ @ 通知（命中 + 未命中）
+  - multi-choose：clearMsgCheck / setMsgMultiChoose（带 mode / 关闭 / 默认 normal）
+  - getMessage（命中 + 未命中）/ clearRoomMessages（当前房 + 非当前房）
+  - recall TTL：cleanupExpiredRecalledMessages 清理过期 / clearAllExpirationTimers 投递 clearTimer 并清状态
+  - vi.hoisted 闭包陷阱：sessions 用 `clearSessions()` 删除键而非整体重赋值
+- `src/test-helpers/matrixMocks.ts`（~110 LOC）
+  - `createMockMatrixClient<O>(overrides)` → `MockMatrixClient<MatrixClient & O>`，默认所有 method 是 vi.fn()，manager accessor 默认 null（短路 `?.` 链）
+  - `createMockRoom(roomId, overrides)` → `MockRoom<Room & O>`，默认 `getMyMembership='join'` / `getJoinedMemberCount=2` / `currentState.getStateEvents` mock
+  - `createMockMatrixEvent(content, overrides)` → `MockMatrixEvent<MatrixEvent & O>`，content 同时种入 `getContent()` / `getWireContent()`
+- `src/test-helpers/__tests__/matrixMocks.test.ts`（11 用例）锁定工厂契约
+
+**验收**
+- `pnpm test:run` — 新增 27 测试（16 + 11）全部通过
+- `pnpm exec vue-tsc --noEmit` — 0 error
+- 后续可逐步用 `createMockMatrixClient(...)` 替换散落的 `{ ... } as MatrixClient` 转换点
+
+**Step 21 状态**
+- P0-3 message.ts 回归网 ✅ 完成
+- P1-5 matrix mock 工厂落地 ✅ 完成（迁移现有测试为后续可选 PR）
+- 下一轮推荐：
+  - Chat.vue 续作：`useAiMediaGeneration`（~470 LOC，最大块）→ `useAiStreaming`（~285 LOC）
+  - P2-5 router/index.ts (961 LOC) 按 domain 拆分（机械低风险）
