@@ -1,5 +1,4 @@
 import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
-import { writeImage, writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { save } from '@tauri-apps/plugin-dialog'
 import { BaseDirectory } from '@tauri-apps/plugin-fs'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
@@ -30,6 +29,7 @@ import {
   clearSelection
 } from './chatMain/selectionUtils'
 import { useGroupNicknameModal, type GroupNicknameModalPayload } from './chatMain/useGroupNicknameModal'
+import { useChatCopy } from './chatMain/useChatCopy'
 const logger = createLogger('ChatMain')
 
 /** 上下文菜单项目类型 - 支持从 fromUser.uid 或直接 uid 获取用户ID */
@@ -45,8 +45,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import { isDiffNow } from '@/utils/ComputedTime.ts'
-import { extractFileName, removeTag } from '@/utils/Formatting'
-import { detectImageFormat, imageUrlToUint8Array, isImageUrl } from '@/utils/ImageUtils'
+import { extractFileName } from '@/utils/Formatting'
 import { matrixMessageService, matrixGroupService, reportService } from '@/services/matrix'
 import { detectRemoteFileType, getFilesMeta } from '@/utils/PathUtil'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
@@ -1098,60 +1097,8 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   void hasSelectedText
   void clearSelection
 
-  /**
-   * 处理复制事件
-   * @param content 复制的内容（作为回退）
-   * @param prioritizeSelection 是否优先复制选中的文本
-   */
-  const handleCopy = async (content: string | undefined, prioritizeSelection: boolean = true, messageId?: string) => {
-    try {
-      let textToCopy = content || ''
-      let isSelectedText = false
-
-      // 如果启用了优先选择模式，检查是否有选中的文本
-      if (prioritizeSelection) {
-        const selectedText = getSelectedText(messageId)
-        if (selectedText) {
-          textToCopy = selectedText
-          isSelectedText = true
-        }
-      }
-
-      // 检查内容是否为空
-      if (!textToCopy) {
-        window.$message?.warning('没有可复制的内容')
-        return
-      }
-
-      // 如果是图片
-      if (isImageUrl(textToCopy)) {
-        try {
-          const imageFormat = detectImageFormat(textToCopy)
-
-          // 提示用户正在处理不同格式的图片
-          if (imageFormat === 'GIF' || imageFormat === 'WEBP') {
-            window.$message?.info(`正在将 ${imageFormat} 格式图片转换为 PNG 并复制...`)
-          }
-
-          // 使用 Tauri 的 clipboard API 复制图片（自动转换为 PNG 格式）
-          const imageBytes = await imageUrlToUint8Array(textToCopy)
-          await writeImage(imageBytes)
-
-          const successMessage = imageFormat === 'PNG' ? '图片已复制到剪贴板' : '图片已转换为 PNG 格式并复制到剪贴板'
-          window.$message?.success(successMessage)
-        } catch (imageError) {
-          logger.error('图片复制失败:', imageError)
-        }
-      } else {
-        // 如果是纯文本
-        await writeText(removeTag(textToCopy))
-        const message = isSelectedText ? '选中文本已复制' : '消息内容已复制'
-        window.$message?.success(message)
-      }
-    } catch (error) {
-      logger.error('复制失败:', error)
-    }
-  }
+  /** 消息复制（抽离到 useChatCopy） */
+  const { handleCopy } = useChatCopy()
 
   /**
    * 根据消息类型获取右键菜单列表
