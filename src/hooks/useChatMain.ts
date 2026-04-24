@@ -29,6 +29,7 @@ import {
   hasSelectedText,
   clearSelection
 } from './chatMain/selectionUtils'
+import { useGroupNicknameModal, type GroupNicknameModalPayload } from './chatMain/useGroupNicknameModal'
 const logger = createLogger('ChatMain')
 
 /** 上下文菜单项目类型 - 支持从 fromUser.uid 或直接 uid 获取用户ID */
@@ -57,12 +58,6 @@ import { matrixRoomService } from '@/services/matrix'
 type UseChatMainOptions = {
   enableGroupNicknameModal?: boolean
   disableHistoryActions?: boolean
-}
-
-type GroupNicknameModalPayload = {
-  roomId: string
-  currentUid: string
-  originalNickname: string
 }
 
 export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions = {}) => {
@@ -97,63 +92,19 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   /** 当前点击的用户的key */
   const selectKey = ref()
 
-  /** 修改群昵称的模态框是否显示 */
-  const groupNicknameModalVisible = ref(false)
-  /** 修改群昵称输入的值 */
-  const groupNicknameValue = ref('')
-  /** 修改群昵称错误提示 */
-  const groupNicknameError = ref('')
-  /** 修改群昵称提交状态 */
-  const groupNicknameSubmitting = ref(false)
-  /** 修改群昵称上下文信息 */
-  const groupNicknameContext = ref<{ roomId: string; currentUid: string; originalNickname: string } | null>(null)
-
-  const handleGroupNicknameConfirm = async () => {
-    if (!groupNicknameContext.value) {
-      return
-    }
-
-    const trimmedName = groupNicknameValue.value.trim()
-    if (!trimmedName) {
-      groupNicknameError.value = t('home.chat_main.group_nickname.error.empty')
-      return
-    }
-
-    if (trimmedName === groupNicknameContext.value.originalNickname) {
-      groupNicknameModalVisible.value = false
-      return
-    }
-
-    const { roomId, currentUid } = groupNicknameContext.value
-    if (!roomId) {
-      window.$message?.error(t('home.chat_main.group_nickname.error.invalid_room'))
-      return
-    }
-
-    try {
-      groupNicknameSubmitting.value = true
-      await matrixRoomService.setMemberDisplayName(roomId, trimmedName)
-      groupStore.updateUserItem(currentUid, { myName: trimmedName }, roomId)
-      await groupStore.updateGroupDetail(roomId, { myName: trimmedName })
-      if (currentUid === userUid.value) {
-        groupStore.myNameInCurrentGroup = trimmedName
-      }
-      groupNicknameModalVisible.value = false
-    } catch (error) {
-      logger.error('修改群昵称失败', error)
-      groupNicknameSubmitting.value = false
-    }
-  }
-
-  if (enableGroupNicknameModal) {
-    useMitt.on(MittEnum.OPEN_GROUP_NICKNAME_MODAL, (payload: GroupNicknameModalPayload) => {
-      groupNicknameContext.value = payload
-      groupNicknameValue.value = payload.originalNickname || ''
-      groupNicknameError.value = ''
-      groupNicknameSubmitting.value = false
-      groupNicknameModalVisible.value = true
-    })
-  }
+  /** 修改群昵称弹窗（抽离到 useGroupNicknameModal） */
+  const {
+    groupNicknameModalVisible,
+    groupNicknameValue,
+    groupNicknameError,
+    groupNicknameSubmitting,
+    groupNicknameContext,
+    handleGroupNicknameConfirm
+  } = useGroupNicknameModal({
+    userUid,
+    t,
+    enableMitt: enableGroupNicknameModal
+  })
 
   /** 通用右键菜单 */
   const handleForward = async (item: MessageType) => {
