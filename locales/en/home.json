@@ -350,7 +350,7 @@
   "about": {
     "version": "Version: {version} ({arch})",
     "device": "Device: {type}{version}",
-    "copyright": "Copyright © {start}-{end} HuLaSpark",
+    "copyright": "Copyright © {start}-{end} 龙卷风",
     "rights": "All Rights Reserved."
   },
   "apply_list": {

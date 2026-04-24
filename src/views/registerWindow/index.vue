@@ -176,7 +176,7 @@
       class="text-(12px --color-text-tertiary) w-full absolute bottom-20px left-1/2 transform -translate-x-1/2"
       :size="8"
       justify="center">
-      <span>Copyright {{ currentYear - 1 }}-{{ currentYear }} HuLaSpark All Rights Reserved.</span>
+      <span>Copyright {{ currentYear - 1 }}-{{ currentYear }} 龙卷风 All Rights Reserved.</span>
     </n-flex>
 
     <!-- 星标提示框 -->

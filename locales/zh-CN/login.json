@@ -119,7 +119,7 @@
       "suffix": "后缀"
     },
     "placeholder": {
-      "host": "127.0.0.1或hulaspark.com",
+      "host": "127.0.0.1或cjystx.top",
       "port": "443",
       "api_suffix": "api",
       "ws_suffix": "websocket"

@@ -53,7 +53,7 @@ const total = ref(0)
 const downloaded = ref(0)
 const { t } = useI18n()
 
-// https://gitee.com/api/v5/repos/HuLaSpark/HuLa/releases/tags/v${newVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}
+// https://gitee.com/api/v5/repos/llangkebo/hula/releases/tags/v${newVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}
 
 interface GiteeCommitResultStruct {
   id: number
@@ -68,7 +68,7 @@ interface GiteeCommitResultStruct {
 }
 
 const fetchGiteeReleaseData = async (version: string) => {
-  const apiEndpoint = new URL(`https://gitee.com/api/v5/repos/HuLaSpark/HuLa/releases/tags/v${version}`)
+  const apiEndpoint = new URL(`https://gitee.com/api/v5/repos/llangkebo/hula/releases/tags/v${version}`)
 
   apiEndpoint.search = new URLSearchParams({
     access_token: import.meta.env.VITE_GITEE_TOKEN

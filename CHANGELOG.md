@@ -830,7 +830,7 @@
 
 * 一次性查出多条。添加好友用的是AddFriendsModal.vu页面进行一些修改,
 
-closed https://gitee.com/HuLaSpark/HuLa/issues/IBJYSD
+closed https://gitee.com/llangkebo/hula/issues/IBJYSD
 
 * fix(view): :bug: 修改创建窗体minH的问题
 
