@@ -681,9 +681,38 @@ _最终顶层体积_
 - core 保留顶层（6）：`MatrixClientService` · `MatrixEventService` · `MatrixCacheManager` · `MatrixRequestDeduper` · `MatrixRequestHelper` · `SynapseRustExtensionsService`
 - 标准库级业务服务保留顶层（2）：`MatrixSearchService`（搜索跨域，不属单一 domain） · `MatrixApplicationService`（appservice 协议适配层）
 
+**第九批产出（P2-3 落盘：历史 `D` 项批量提交）**
+
+_背景_：`git status` 长期累积 249 个 `D` 项（早前各轮迁移/重命名/去冗余/SDK 替换的副产物但从未合入 commit），配合 144 个 `??` 与 238 个 `M`，整体 worktree 杂乱导致 `diff`/`status` 噪声大，掩盖真正的 in-flight 变更。本轮分 3 个 commit 清理 249 个 `D`。
+
+_Commit 1：`180d090a chore: remove archived planning docs and one-off cleanup scripts`（30 文件）_
+- `docs/` 归档（20）：被 `FRONTEND_OPTIMIZATION_PLAN_2026-04-23.md` 取代的各代 refactor/optimization 计划 md
+- 根目录一次性脚本（4）：`find_unused.js` · `fix_prefix.py` · `remove_dead_code.{js,ts}` · `test_grep.js`
+- 构建产物（3）：`playwright-report/index.html` · `test-results/.last-run.json` 等
+- 杂项（3）：`MIGRATION_DOCUMENTATION.md` · `e2e/tech-debt-fixes.spec.ts` · `e2e/tsconfig.json`
+
+_Commit 2：`3abb052c chore: remove unused Rust modules`（4 文件）_
+- `src-tauri/src/` 遗留 4 个 Rust 模块：`command/request_command.rs` · `command/token_helper.rs` · `im_request_client.rs` · `matrix_auth.rs`
+- `grep` 确认零引用（均在 matrix-js-sdk 前端迁移后废弃）
+
+_Commit 3：`5197d5f5 chore: remove 215 legacy source files superseded by matrix-js-sdk migration`（215 文件）_
+- `services/` 75 · `components/` 37 · `utils/` 24 · `composables/` 19 · `mobile/` 14 · `plugins/` 13 · `test/` 11 · `views/` 8 · `hooks/` 6 · `types/` 5 · `i18n/` 2 · `strategy/` 1
+- 均为各代 domain-split / SDK 切换 / hooks 合并遗留的老文件
+- 安全性保证：`vue-tsc --noEmit` 0 error + `pnpm test:run` 2021/2021 pass 已隐式验证零引用（若仍被 import 构建即会断）
+
+**验收（第九批）**
+- 3 个 commit 顺序落盘，每个 commit 独立可回滚
+- 最终 `pnpm exec vue-tsc --noEmit`：**0 error**
+- `pnpm test:run`：172 files / **2021 tests passed**
+- `git status` 中 `D` 项：**249 → 0**
+- 剩余 noise：144 `??`（earlier session 的未跟踪新增文件，如 `AdminNotices.vue` / `AdminRegistrationTokens.vue` / admin composables 等） + 238 `M`（earlier session 的在途修改，本轮未触及）
+
 **Step 10 续作（后续轮次）**
-- **P2-3**：git status 中其余 `D` 项（`.trae/specs/**`、`cli-anything-hula/**/__pycache__/*.pyc`、`docs/` 归档等，约 240 项） —— 需用户确认后分批提交
+- **P2-3 完成**：249 个 `D` 项已全部清零
 - **P2-4 收尾**：`deleteRetentionPolicy` 仍保留 no-op（UI 调用路径仍在），未来 UI 移除后可一并删除
-- **P2-6 完成**：matrix 顶层归档工作收官，后续若拆分 `MatrixSearchService` 或 `MatrixApplicationService` 可再起新域，但当前规模下保留顶层更清晰
+- **P2-6 完成**：matrix 顶层归档工作收官（见第七/八批）
+- **剩余 worktree noise**：144 `??` + 238 `M` 属 earlier session 的 in-flight 工作（admin 新增 views/composables、多处文件修改），本轮刻意未碰。清理路径：
+  - 若为有效在途工作：需运行者本人 review 后决定 commit 或 discard
+  - 若为废弃实验：可 `git clean -f` + `git checkout --` 一次性清理（**危险，需用户确认**）
 - **既存 noExplicitAny warning**：`pnpm check` 报告的 23+ 个 `noExplicitAny` 均为迁移前遗留，未来可单独批次清理（不在本轮范围）
 - **TODO 清理** 已完成（可清理项 2/4，剩余 2 项为合法活占位符/WHY 注解）
