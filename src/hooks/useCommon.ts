@@ -1,7 +1,6 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import GraphemeSplitter from 'grapheme-splitter'
-import type { Ref } from 'vue'
 import { MittEnum, MsgEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
@@ -17,6 +16,7 @@ import { invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
 import { createLogger } from '@/utils/Logger'
 import type { SessionItem } from '@/stores/domains/chat/chat/session'
 import { useEditorPaste } from './common/useEditorPaste'
+import { getEditorRange, getMessageContentType, triggerInputEvent } from './common/editorDomBasics'
 
 interface AitMentionData {
   name?: string
@@ -77,99 +77,6 @@ export const useCommon = () => {
   const isSafeUrl = (url: string) => {
     // 只允许 http/https 协议，且不能包含 javascript: 或 data:
     return /^(https?:\/\/|\/)/.test(url) && !/^javascript:/i.test(url) && !/^data:/i.test(url)
-  }
-
-  /**
-   * 获取当前光标选取的信息(需要判断是否为空)
-   */
-  const getEditorRange = () => {
-    if (window.getSelection) {
-      const selection = window.getSelection()
-      // 如果没有 rangeCount，尝试获取输入框的最后一个子节点
-      if (!selection || selection.rangeCount === 0) {
-        const inputElement = document.getElementById('message-input')
-        if (inputElement) {
-          inputElement.focus()
-          const range = document.createRange()
-          // 将光标移动到输入框的最后
-          range.selectNodeContents(inputElement)
-          range.collapse(false) // 折叠到末尾
-          selection?.removeAllRanges()
-          selection?.addRange(range)
-        }
-      }
-
-      // 重新检查
-      if (selection && selection.rangeCount) {
-        const range = selection.getRangeAt(0)
-        return { range, selection }
-      }
-    }
-    return null
-  }
-
-  /**
-   * 获取messageInputDom输入框中的内容类型
-   * @param messageInputDom 输入框dom
-   */
-  const getMessageContentType = (messageInputDom: Ref): MsgEnum => {
-    let hasText = false
-    let hasImage = false
-    let hasVideo = false
-    let hasFile = false
-    let hasEmoji = false
-    let hasVoice = false
-
-    const elements = messageInputDom.value.childNodes
-    for (const element of elements) {
-      if (element.nodeType === Node.TEXT_NODE && element.nodeValue.trim() !== '') {
-        hasText = true
-      } else if (element.tagName === 'IMG') {
-        if (element.dataset.type === 'file-canvas') {
-          hasFile = true
-        } else if (element.dataset.type === 'emoji') {
-          // 检查是否是表情包图片
-          hasEmoji = true
-        } else {
-          hasImage = true
-        }
-      } else if (element.tagName === 'VIDEO' || (element.tagName === 'A' && element.href.match(/\.(mp4|webm)$/i))) {
-        hasVideo = true
-      } else if (element.tagName === 'DIV' && element.className === 'voice-message-placeholder') {
-        hasVoice = true
-      }
-    }
-
-    if (hasVoice) {
-      return MsgEnum.VOICE
-    } else if (hasFile) {
-      return MsgEnum.FILE
-    } else if (hasVideo) {
-      return MsgEnum.VIDEO
-    } else if (hasEmoji && !hasText && !hasImage) {
-      // 如果只有表情包，没有其他文本或图片，则返回EMOJI类型
-      return MsgEnum.EMOJI
-    } else if ((hasText && hasImage) || (hasText && hasEmoji)) {
-      return MsgEnum.MIXED
-    } else if (hasImage) {
-      return MsgEnum.IMAGE
-    } else {
-      return MsgEnum.TEXT
-    }
-  }
-
-  /**
-   * 触发输入框事件(粘贴的时候需要重新触发这个方法)
-   * @param element 输入框dom
-   */
-  const triggerInputEvent = (element: HTMLElement) => {
-    if (element) {
-      const event = new Event('input', {
-        bubbles: true,
-        cancelable: true
-      })
-      element.dispatchEvent(event)
-    }
   }
 
   /**

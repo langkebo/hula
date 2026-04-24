@@ -153,9 +153,15 @@
 
 ---
 
-## 8. Phase F 阻塞与 probe 落地（等运维）
+## 8. Phase F probe 与 Admin 页面收口
 
-UX-gated 横幅（SAML / Security / ServerLogs）拆除条件 = `pnpm probe:admin` 对 staging 实际运行后对照结果。属于等后端 / 运维状态，非前端代码问题。
+- 原先把 `SAML / Security / ServerLogs` 视作"等 probe / 等运维"的前端阻塞项，这个判断已过时。
+- 2026-04-25 已完成收口：3 个页面均改为消费后端**已实现**接口，不再依赖旧的未落地端点。
+- 当前 `pnpm probe:admin` 的角色从"阻塞开发"降为"联调验真"：
+  - `SAML`：验证 IdP / SP metadata 的 staging 返回形状与下载链路
+  - `Security`：验证 audit events 的真实分页与字段覆盖度
+  - `ServerLogs`：验证 server status / health / version / stats 的真实数据完整度
+- 结论：前端实现不再被 Phase F 卡住；probe 仍建议保留为 staging 对照工具，但不是这 3 个页面继续开发的前置条件。
 
 ---
 
@@ -301,7 +307,7 @@ UX-gated 横幅（SAML / Security / ServerLogs）拆除条件 = `pnpm probe:admi
 **Step 4 续作（按相同模板推进）**
 - `admin/UserService.ts`（~30 方法）：`getUsers` / `createUser` / `resetPassword` / `setAdmin` / `deactivate` / 设备管理 / rate limit / shadow ban / whois
 - `admin/RoomService.ts`（~25 方法）：`getRooms` / `getRoom` / `deleteRoom` / `blockRoom` / `shutdownRoom` / `kickUser` / `banUser` / `purgeHistory` / `getRoomStats`
-- `admin/SecurityService.ts`（~25 方法）：SAML 管理 / Security events / IP blocks / ServerLogs / Audit / Federation
+- `admin/SecurityService.ts`（~25 方法）：SAML metadata / Audit / Federation / server panel（status / health / version / stats）等安全域能力；旧 `Security events / IP blocks / ServerLogs` 路径仅保留兼容评估，不再作为前端收口前提
 - `admin/MediaService.ts`（~5 方法）：`getMediaList` / `deleteMedia` / `purgeRemoteMedia` / `purgeMediaCache`
 - `admin/RetentionService.ts`（~6 方法）
 - `admin/NotificationsService.ts`（系统通知 CRUD + pushers）
@@ -1231,3 +1237,85 @@ _Chat.vue 续作_
 - 下一轮推荐：
   - `useEditorDom`（getEditorRange / insertNode / insertNodeAtRange / triggerInputEvent / createReplyDom，~500 LOC，最大块）
   - useWebRtc 信令部分维持原状（PC/signaling/clear 高度耦合，进一步抽离 ROI 不佳）
+
+---
+
+## Step 25 — Admin 页面收口：SAML / Security / ServerLogs 改为消费已实现端点（2026-04-25）
+
+**目标**
+- 把 admin 侧 3 个高风险页面从"等待后端旧端点"切到"直接消费现有可用接口"，避免前端继续被未实现 API 卡住
+- 保持桌面端 / 移动端行为一致，并补齐 composable 测试、类型出口与文案
+
+**变更**
+- `SAML` 页
+  - `src/composables/admin/useAdminSaml.ts`：收敛为 `loadMetadata` / `refreshMetadata` / `downloadSpMetadata`
+  - `src/views/admin/AdminSaml.vue`、`src/mobile/views/admin/AdminSaml.vue`：改为展示 IdP / SP metadata、刷新与下载，不再使用旧配置编辑流
+- `Security` 页
+  - `src/composables/admin/useAdminSecurity.ts`：收敛为 `loadAuditLogs`
+  - `src/views/admin/AdminSecurity.vue`、`src/mobile/views/admin/AdminSecurity.vue`：改为直接消费 audit events，不再依赖旧 security events / IP blocks UX 假实现
+- `ServerLogs` 页
+  - `src/composables/admin/useAdminServerLogs.ts`：旧 `logs + level + limit + loadLogs` 接口替换为 `status + health + version + stats + loadPanel`
+  - `src/views/admin/AdminServerLogs.vue`、`src/mobile/views/admin/AdminServerLogs.vue`：统一改为服务器状态面板，直接消费 `getServerStatus` / `getServerHealth` / `getServerVersion` / `getServerStats`
+- 收口项
+  - `src/composables/admin/index.ts`：移除已不存在的 `LogLevel` 导出
+  - `locales/zh-CN/common.json`、`locales/en/common.json`：补齐 SAML / Security / ServerLogs 新文案
+
+**测试与回归**
+- 更新 `src/composables/admin/__tests__/useAdminSaml.test.ts`
+- 更新 `src/composables/admin/__tests__/useAdminSecurity.test.ts`
+- 更新 `src/composables/admin/__tests__/useAdminServerLogs.test.ts`
+  - `useAdminServerLogs` 测试从 `loadLogs` 场景改为 `loadPanel`
+  - 覆盖 4 个后端资源请求、panel refs 填充、`loading` 状态切换
+
+**验收**
+- `pnpm exec vitest run src/composables/admin/__tests__/useAdminSaml.test.ts src/composables/admin/__tests__/useAdminSecurity.test.ts src/composables/admin/__tests__/useAdminServerLogs.test.ts`
+  - **13 passed**（3 文件）
+- `pnpm exec vue-tsc --noEmit`
+  - **0 error**
+- 本轮结论：
+  - admin 3 个页面已全部切到后端已实现能力
+  - 桌面端 / 移动端共享 composable 继续保持同源
+  - 前端不再需要为这 3 个页面保留"功能未就绪"的旧实现路径
+
+**Step 25 状态**
+- Admin SAML 收口 ✅ 完成
+- Admin Security 收口 ✅ 完成
+- Admin ServerLogs -> Server Status panel ✅ 完成
+- 下一轮推荐：
+  - P0-5 AdminFacadeService 续作：`UserService` domain 抽取
+  - P0-4 Chat.vue 续作：`useAiMediaGeneration` → `useAiStreaming`
+
+---
+
+## Step 25 — useCommon 续作：editorDomBasics 抽离（2026-04-25）
+
+**目标**
+- 把 useCommon 中三个**纯函数** DOM 工具（不依赖任何 reactive state）抽出为独立模块导出，作为后续 `insertNodeAtRange` / `createReplyDom` 大块抽离前的安全网
+
+**新增**
+- `src/hooks/common/editorDomBasics.ts`（88 LOC）
+  - `getEditorRange()` — 选区读取 + #message-input 兜底（光标移到末尾）
+  - `getMessageContentType(messageInputDom)` — 输入框内容类型分类（VOICE > FILE > VIDEO > EMOJI-only > MIXED > IMAGE > TEXT）
+  - `triggerInputEvent(element)` — bubbling input 事件分发
+  - 全部为模块级 `export const`，不需要 hook 包装；从 `useCommon` 重新引入并保持相同 API
+- `src/hooks/common/__tests__/editorDomBasics.test.ts`（18 用例）
+  - getEditorRange：window.getSelection 不可用 / 已有选区 / #message-input 兜底 / 都没有时返回 null（共 4）
+  - getMessageContentType：空 / TEXT / IMAGE / FILE / EMOJI / MIXED(emoji) / MIXED(image) / VIDEO(<video>) / VIDEO(<a .mp4>) / VOICE / VOICE 优先级 / 空白文本节点忽略（共 12）
+  - triggerInputEvent：bubbling input 派发 / null 元素 no-op（共 2）
+
+**变更**
+- `src/hooks/useCommon.ts`：734 → **641 LOC**（−93，**-12.7%**）
+  - 移除 `getEditorRange` / `getMessageContentType` / `triggerInputEvent` 三个内联实现（~93 LOC）
+  - 改为 `import { ... } from './common/editorDomBasics'`，公共 API 不变
+  - useEditorPaste 装配仍然正常（其参数 `triggerInputEvent` / `insertNode` 都是闭包捕获）
+
+**验收**
+- `pnpm test:run src/hooks/common/__tests__/editorDomBasics.test.ts` — 18/18 通过
+- `pnpm exec vue-tsc --noEmit` — 0 error（baseline 已清零）
+- useCommon.ts 累计：976 → 641（−335，**-34.3%**）；剩余 `insertNode` / `insertNodeAtRange`(290 LOC) / `createReplyDom`(180 LOC) 是高耦合 DOM 构造逻辑，需要先补回归测试再抽离
+
+**Step 25 状态**
+- useCommon 续作（纯 DOM 工具）✅ 完成
+- 下一轮推荐：
+  - 给 `insertNodeAtRange` 7 种 MsgEnum 分支补集成测试（AIT/REPLY/IMAGE/EMOJI/VIDEO/FILE/TEXT）作为安全网
+  - 然后再把 `insertNode` / `insertNodeAtRange` / `createReplyDom` 抽到 `useEditorDom` hook（依赖 `reply` ref 注入）
