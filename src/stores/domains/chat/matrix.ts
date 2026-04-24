@@ -6,9 +6,9 @@ import {
   type ConnectionState,
   type MatrixClientConfig
 } from '@/services/matrix/MatrixClientService'
-import { initializeDeviceService } from '@/services/matrix/MatrixDeviceService'
+import { initializeDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 import { initializeKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
-import { initializePresenceService } from '@/services/matrix/MatrixPresenceService'
+import { initializePresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { initializeVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
 import { initializeRoomSummaryService } from '@/services/matrix/MatrixRoomSummaryService'
 import { createLogger } from '@/utils/Logger'

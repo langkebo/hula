@@ -3,7 +3,7 @@ export { matrixClientService } from './MatrixClientService'
 export type { ConnectionState, MatrixClientConfig } from './MatrixClientService'
 export { MatrixAuthService } from './auth/MatrixAuthService'
 export const matrixAuthService = new MatrixAuthService()
-export { matrixAccountService } from './MatrixAccountService'
+export { matrixAccountService } from './user/MatrixAccountService'
 export { matrixRoomService } from './MatrixRoomService'
 export { matrixEventService } from './MatrixEventService'
 export type {
@@ -16,8 +16,8 @@ export type {
 export { matrixMessageService } from './messaging/MatrixMessageService'
 export type { MessageSearchOptions, MessageReaction, MarkedMessage, SendMessagePayload } from './messaging/MatrixMessageService'
 
-export { matrixContactService } from './MatrixContactService'
-export type { UserProfile, DirectChatResult } from './MatrixContactService'
+export { matrixContactService } from './user/MatrixContactService'
+export type { UserProfile, DirectChatResult } from './user/MatrixContactService'
 
 export { matrixFriendService } from './friends/MatrixFriendService'
 
@@ -134,7 +134,7 @@ export type { UrlPreview, UrlPreviewParams } from './media/MatrixUrlPreviewServi
 export { simplifyUrl, getDomain } from './media/MatrixUrlPreviewService'
 
 // Device 服务
-export { matrixDeviceService, initializeDeviceService } from './MatrixDeviceService'
+export { matrixDeviceService, initializeDeviceService } from './user/MatrixDeviceService'
 export type {
   Device,
   DevicesResponse,
@@ -142,7 +142,7 @@ export type {
   DeviceUpdateResponse,
   DeviceListUpdatesResponse,
   DeviceListUpdatesRequest
-} from './MatrixDeviceService'
+} from './user/MatrixDeviceService'
 
 // Key Backup 服务
 export { matrixKeyBackupService, initializeKeyBackupService } from './crypto/MatrixKeyBackupService'
@@ -158,8 +158,8 @@ export type {
 } from './crypto/MatrixKeyBackupService'
 
 // Presence 服务
-export { matrixPresenceService, initializePresenceService } from './MatrixPresenceService'
-export type { PresenceState, PresenceInfo, PresenceListResponse } from './MatrixPresenceService'
+export { matrixPresenceService, initializePresenceService } from './user/MatrixPresenceService'
+export type { PresenceState, PresenceInfo, PresenceListResponse } from './user/MatrixPresenceService'
 
 // Verification 服务
 export { matrixVerificationService, initializeVerificationService } from './crypto/MatrixVerificationService'
@@ -199,7 +199,7 @@ export { matrixFederationBlacklistService } from './admin/MatrixFederationBlackl
 export { matrixMessageAdapter } from './messaging/MatrixMessageAdapter'
 export { matrixMultimediaService } from './media/MatrixMultimediaService'
 export { matrixNotificationService } from './notifications/MatrixNotificationService'
-export { profileService } from './MatrixProfileService'
+export { profileService } from './user/MatrixProfileService'
 export { reportService } from './admin/MatrixReportService'
 export { retentionService } from './admin/MatrixRetentionService'
 export { matrixRoomStoreAdapter } from './MatrixRoomStoreAdapter'
@@ -207,7 +207,7 @@ export { matrixServerNotificationService } from './notifications/MatrixServerNot
 export { MatrixSlidingSyncService } from './sync/MatrixSlidingSyncService'
 export { syncService } from './sync/MatrixSyncService'
 export { matrixTypingService } from './MatrixTypingService'
-export { userDirectoryService } from './MatrixUserDirectoryService'
+export { userDirectoryService } from './user/MatrixUserDirectoryService'
 export { matrixVoiceService } from './media/MatrixVoiceService'
 
 // ============================================================

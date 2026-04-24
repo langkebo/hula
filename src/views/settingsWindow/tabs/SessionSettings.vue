@@ -79,7 +79,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { NButton, NDivider, NSpin, NEmpty, NModal, NForm, NFormItem, NInput, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
-import { matrixAccountService, type DeviceInfo } from '@/services/matrix/MatrixAccountService'
+import { matrixAccountService, type DeviceInfo } from '@/services/matrix/user/MatrixAccountService'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 
 defineOptions({

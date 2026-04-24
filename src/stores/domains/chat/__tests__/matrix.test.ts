@@ -32,7 +32,7 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/MatrixDeviceService', () => ({
+vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
   initializeDeviceService: vi.fn()
 }))
 
@@ -40,7 +40,7 @@ vi.mock('@/services/matrix/crypto/MatrixKeyBackupService', () => ({
   initializeKeyBackupService: vi.fn()
 }))
 
-vi.mock('@/services/matrix/MatrixPresenceService', () => ({
+vi.mock('@/services/matrix/user/MatrixPresenceService', () => ({
   initializePresenceService: vi.fn()
 }))
 
@@ -127,9 +127,9 @@ describe('MatrixStore', () => {
     it('should initialize sub services after client starts', async () => {
       const store = useMatrixStore()
       const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
-      const { initializeDeviceService } = await import('@/services/matrix/MatrixDeviceService')
+      const { initializeDeviceService } = await import('@/services/matrix/user/MatrixDeviceService')
       const { initializeKeyBackupService } = await import('@/services/matrix/crypto/MatrixKeyBackupService')
-      const { initializePresenceService } = await import('@/services/matrix/MatrixPresenceService')
+      const { initializePresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
       const { initializeVerificationService } = await import('@/services/matrix/crypto/MatrixVerificationService')
       const { initializeRoomSummaryService } = await import('@/services/matrix/MatrixRoomSummaryService')
 
