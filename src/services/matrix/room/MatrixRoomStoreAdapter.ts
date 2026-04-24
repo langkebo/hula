@@ -1,7 +1,7 @@
 import { Room, MatrixEvent, NotificationCountType } from 'matrix-js-sdk'
 import { MsgEnum, MessageStatusEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
-import matrixMessageAdapter from './messaging/MatrixMessageAdapter'
+import matrixMessageAdapter from '../messaging/MatrixMessageAdapter'
 
 export interface SlidingSyncUnreadCounts {
   notificationCount?: number

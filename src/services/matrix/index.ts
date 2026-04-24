@@ -4,7 +4,7 @@ export type { ConnectionState, MatrixClientConfig } from './MatrixClientService'
 export { MatrixAuthService } from './auth/MatrixAuthService'
 export const matrixAuthService = new MatrixAuthService()
 export { matrixAccountService } from './user/MatrixAccountService'
-export { matrixRoomService } from './MatrixRoomService'
+export { matrixRoomService } from './room/MatrixRoomService'
 export { matrixEventService } from './MatrixEventService'
 export type {
   MatrixLoginResult,
@@ -21,8 +21,8 @@ export type { UserProfile, DirectChatResult } from './user/MatrixContactService'
 
 export { matrixFriendService } from './friends/MatrixFriendService'
 
-export { matrixGroupService } from './MatrixGroupService'
-export type { CreateRoomOptions, RoomPowerLevels } from './MatrixGroupService'
+export { matrixGroupService } from './room/MatrixGroupService'
+export type { CreateRoomOptions, RoomPowerLevels } from './room/MatrixGroupService'
 
 export { matrixMessageRelationService } from './messaging/MatrixMessageRelationService'
 export { matrixReactionService } from './messaging/MatrixReactionService'
@@ -32,7 +32,7 @@ export { matrixEncryptionService } from './crypto/MatrixEncryptionService'
 export { matrixEncryptionContextService } from './crypto/MatrixEncryptionContextService'
 export type { MatrixEncryptionSessionContext, PreparedKeyBackupVersion } from './crypto/MatrixEncryptionContextService'
 export { matrixSearchService } from './MatrixSearchService'
-export { matrixSpaceService, type SpaceOptions, type SpaceInfo } from './MatrixSpaceService'
+export { matrixSpaceService, type SpaceOptions, type SpaceInfo } from './room/MatrixSpaceService'
 export { matrixPushService } from './notifications/MatrixPushService'
 export type { IPusher, IPushRules, IPushRule } from './notifications/MatrixPushService'
 export { matrixRoomNotificationService } from './notifications/MatrixRoomNotificationService'
@@ -83,18 +83,18 @@ export { modelService } from './ai/ModelService'
 export type { AIModel } from './ai/ModelService'
 
 export * from './auth/MatrixQrLoginService'
-export { matrixAnnouncementService } from './MatrixAnnouncementService'
+export { matrixAnnouncementService } from './room/MatrixAnnouncementService'
 export type {
   Announcement,
   AnnouncementContent,
   AnnouncementCreateOptions,
   AnnouncementUpdateOptions
-} from './MatrixAnnouncementService'
+} from './room/MatrixAnnouncementService'
 
 export { matrixEmojiService } from './messaging/MatrixEmojiService'
 export type { EmojiPack, EmojiItem } from './messaging/MatrixEmojiService'
 
-export { matrixReceiptService } from './MatrixReceiptService'
+export { matrixReceiptService } from './messaging/MatrixReceiptService'
 export { matrixModerationService } from './admin/MatrixModerationService'
 export { matrixQuotaService } from './admin/MatrixQuotaService'
 export type { QuotaStatus, QuotaStats, QuotaAlert } from './admin/MatrixQuotaService'
@@ -172,12 +172,12 @@ export type {
 } from './crypto/MatrixVerificationService'
 
 // Room Summary 服务
-export { matrixRoomSummaryService, initializeRoomSummaryService } from './MatrixRoomSummaryService'
+export { matrixRoomSummaryService, initializeRoomSummaryService } from './room/MatrixRoomSummaryService'
 export type {
   MatrixRoomSummaryInfo,
   MatrixRoomStats,
   MatrixRoomMemberInfo
-} from './MatrixRoomSummaryService'
+} from './room/MatrixRoomSummaryService'
 
 export { matrixThreadService } from './messaging/MatrixThreadService'
 export type { Thread, ThreadMessage } from './messaging/MatrixThreadService'
@@ -193,8 +193,8 @@ export { MatrixRequestDeduper, createDedupedFetcher } from './MatrixRequestDedup
 export { adminService } from './admin/MatrixAdminService'
 export { matrixApplicationService } from './MatrixApplicationService'
 export { matrixDehydratedDeviceService } from './crypto/MatrixDehydratedDeviceService'
-export { matrixDirectMessageService } from './MatrixDirectMessageService'
-export type { CreateDmOptions, DmRoomInfo, IDirectRoomsMap } from './MatrixDirectMessageService'
+export { matrixDirectMessageService } from './room/MatrixDirectMessageService'
+export type { CreateDmOptions, DmRoomInfo, IDirectRoomsMap } from './room/MatrixDirectMessageService'
 export { matrixFederationBlacklistService } from './admin/MatrixFederationBlacklistService'
 export { matrixMessageAdapter } from './messaging/MatrixMessageAdapter'
 export { matrixMultimediaService } from './media/MatrixMultimediaService'
@@ -202,11 +202,11 @@ export { matrixNotificationService } from './notifications/MatrixNotificationSer
 export { profileService } from './user/MatrixProfileService'
 export { reportService } from './admin/MatrixReportService'
 export { retentionService } from './admin/MatrixRetentionService'
-export { matrixRoomStoreAdapter } from './MatrixRoomStoreAdapter'
+export { matrixRoomStoreAdapter } from './room/MatrixRoomStoreAdapter'
 export { matrixServerNotificationService } from './notifications/MatrixServerNotificationService'
 export { MatrixSlidingSyncService } from './sync/MatrixSlidingSyncService'
 export { syncService } from './sync/MatrixSyncService'
-export { matrixTypingService } from './MatrixTypingService'
+export { matrixTypingService } from './messaging/MatrixTypingService'
 export { userDirectoryService } from './user/MatrixUserDirectoryService'
 export { matrixVoiceService } from './media/MatrixVoiceService'
 
