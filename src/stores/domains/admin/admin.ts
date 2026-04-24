@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { adminService } from '@/services/matrix/MatrixAdminService'
+import { adminService } from '@/services/matrix/admin/MatrixAdminService'
 import { useMatrixStore } from '../chat/matrix'
 import { TauriCommand } from '@/enums'
 import { createLogger } from '@/utils/Logger'

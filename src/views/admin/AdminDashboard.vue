@@ -75,7 +75,7 @@ import {
   type ServerStats,
   type ServerHealth,
   type ServerVersion
-} from '@/services/matrix/MatrixAdminService'
+} from '@/services/matrix/admin/MatrixAdminService'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
 

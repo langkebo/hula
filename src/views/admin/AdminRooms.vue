@@ -138,7 +138,7 @@
 import { ref, computed, onMounted, h } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NButton, NSpace, NTag, useMessage, useDialog } from 'naive-ui'
-import { adminService, type RoomInfo } from '@/services/matrix/MatrixAdminService'
+import { adminService, type RoomInfo } from '@/services/matrix/admin/MatrixAdminService'
 import { useAdminRooms } from '@/composables/admin'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
