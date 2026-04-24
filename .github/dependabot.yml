@@ -31,9 +31,9 @@ updates:
       - dependency-name: "@tauri-apps/cli"
         update-types: ["version-update:semver-major"]
     reviewers:
-      - "@HuLaSpark/core"
+      - "@龙卷风/core"
     assignees:
-      - "@HuLaSpark/core"
+      - "@龙卷风/core"
 
   - package-ecosystem: "cargo"
     directory: "/src-tauri"

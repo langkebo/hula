@@ -2,7 +2,7 @@
 name = "hula"
 version = "3.0.9"
 description = "hula"
-authors = ["nongyehong"]
+authors = ["龙卷风 <656042408@qq.com>"]
 license = ""
 repository = ""
 edition = "2024"

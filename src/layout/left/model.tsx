@@ -260,7 +260,7 @@ export const CheckUpdate = defineComponent(() => {
         }
         newVersion.value = e.version
         // 检查版本之间不同的提交信息和提交日期
-        const url = `https://gitee.com/api/v5/repos/HuLaSpark/HuLa/releases/tags/v${newVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
+        const url = `https://gitee.com/api/v5/repos/llangkebo/hula/releases/tags/v${newVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
         getCommitLog(url, true)
         buttonState.value = 'update_now'
         checkLoading.value = false
@@ -278,7 +278,7 @@ export const CheckUpdate = defineComponent(() => {
 
   onMounted(async () => {
     await init()
-    const url = `https://gitee.com/api/v5/repos/HuLaSpark/HuLa/releases/tags/v${currentVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
+    const url = `https://gitee.com/api/v5/repos/llangkebo/hula/releases/tags/v${currentVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
     await getCommitLog(url)
     await checkUpdate()
   })

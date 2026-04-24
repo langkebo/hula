@@ -11,9 +11,8 @@
     "url": "https://gitee.com/llangkebo/hula/.git"
   },
   "author": {
-    "name": "HuLaSpark团队",
-    "email": "2439646234@qq.com",
-    "url": "https://github.com/HuLaSpark"
+    "name": "龙卷风",
+    "email": "656042408@qq.com"
   },
   "scripts": {
     "========= 启动vue(tauri项目会连带执行不需要单独执行) =========": "",
