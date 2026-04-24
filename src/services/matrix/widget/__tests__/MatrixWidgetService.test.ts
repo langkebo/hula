@@ -279,21 +279,4 @@ describe('MatrixWidgetService', () => {
     await expect(matrixWidgetService.getWidgetConfig('widget-1')).resolves.toEqual({ url: 'https://example.com' })
     expect(mockWidgetsManager.getWidgetConfig).toHaveBeenCalledWith('widget-1')
   })
-
-  it('falls back to the legacy getWidgetManager() when the plural manager is absent', async () => {
-    const legacyManager = {
-      ...mockWidgetsManager,
-      listRoomWidgets: vi.fn().mockResolvedValue({ widgets: [sdkWidget({ widget_id: 'legacy-1' })] })
-    }
-    vi.mocked(matrixClientService.getClient).mockReturnValue({
-      getWidgetsManager: undefined,
-      getWidgetManager: () => legacyManager,
-      getRoom: vi.fn(() => null)
-    } as any)
-
-    const result = await matrixWidgetService.getRoomWidgets('!room:example.com')
-
-    expect(result[0]?.id).toBe('legacy-1')
-    expect(legacyManager.listRoomWidgets).toHaveBeenCalledWith('!room:example.com')
-  })
 })

@@ -62,8 +62,6 @@ declare module 'matrix-js-sdk' {
     dmManager?: unknown
     getMediaQuotaManager?(): unknown
     quotaManager?: unknown
-    getWidgetManager?(): unknown
-    widgetManager?: unknown
     getDeviceManager?(): unknown
     getKeyBackupManager?(): unknown
     getPushers?(): Promise<unknown>

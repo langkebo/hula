@@ -68,21 +68,13 @@ class MatrixWidgetService {
   private getManager(): WidgetsManagerLike | null {
     const client = matrixClientService.getClient() as unknown as {
       getWidgetsManager?: () => WidgetsManagerLike
-      getWidgetManager?: () => WidgetsManagerLike
       widgetsManager?: WidgetsManagerLike
-      widgetManager?: WidgetsManagerLike
     } | null
     if (!client) return null
     if (typeof client.getWidgetsManager === 'function') {
       return client.getWidgetsManager()
     }
-    if (client.widgetsManager) {
-      return client.widgetsManager
-    }
-    if (typeof client.getWidgetManager === 'function') {
-      return client.getWidgetManager()
-    }
-    return client.widgetManager ?? null
+    return client.widgetsManager ?? null
   }
 
   private toFacade(widget: SdkWidget): Widget {
