@@ -13,6 +13,7 @@ import { getIceConfiguration, loadIceServers } from './webRtc/iceServers'
 import { useCallTimer } from './webRtc/useCallTimer'
 import { useCallBell } from './webRtc/useCallBell'
 import { useMediaDevices } from './webRtc/useMediaDevices'
+import { useScreenShare } from './webRtc/useScreenShare'
 export { SignalTypeEnum, type WSRtcCallMsg } from './webRtc/types'
 const logger = createLogger('WebRtc')
 
@@ -76,7 +77,6 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   const { callDuration, startCallTimer, stopCallTimer } = useCallTimer()
 
   // 添加桌面共享相关状态
-  const isScreenSharing = ref(false)
   const offer = ref<RTCSessionDescriptionInit>()
 
   // 接通后确保窗口聚焦显示
@@ -760,85 +760,15 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
     }
   }
 
-  // 停止桌面共享
-  const stopScreenShare = () => {
-    if (isScreenSharing.value) {
-      isScreenSharing.value = false
-      // 停止当前的本地流
-      if (localStream.value) {
-        localStream.value.getTracks().forEach((track) => track.stop())
-      }
-      if (!selectedVideoDevice.value || !rtcMsg.value.callType) {
-        return false
-      }
-      // 切换到默认设备
-      getLocalStream(rtcMsg.value.callType)
-      // 切换原来的视频轨道
-      selectedVideoDevice.value && switchVideoDevice(selectedVideoDevice.value)
-      return true
-    }
-    return false
-  }
-
-  // 开始桌面共享
-  const startScreenShare = async () => {
-    try {
-      if (!navigator?.mediaDevices?.getDisplayMedia) {
-        window.$message.warning('当前设备不支持桌面共享功能！')
-        return
-      }
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true // 如果需要共享音频
-      })
-      if (!screenStream) {
-        return
-      }
-
-      // 停止当前的本地流
-      if (localStream.value) {
-        localStream.value.getTracks().forEach((track) => track.stop())
-      }
-
-      // 替换本地流为桌面共享流
-      localStream.value = screenStream
-      // 添加新的视频轨道到连接
-      screenStream.getTracks().forEach((track) => {
-        if (localStream.value) {
-          peerConnection.value?.addTrack(track, localStream.value)
-        }
-      })
-      // 远程替换为桌面共享流
-      const newVideoTrack = screenStream.getVideoTracks()[0]
-      const oldVideoTrack = localStream.value.getVideoTracks()[0]
-      if (!newVideoTrack) {
-        window.$message.error('桌面共享失败，请检查权限设置!')
-        return
-      }
-      newVideoTrack.onended = () => {
-        window.$message.warning('屏幕共享已结束 ~')
-        stopScreenShare()
-      }
-      peerConnection.value?.getSenders().forEach((sender) => {
-        if (sender.track && sender.track.kind === 'video') {
-          sender.replaceTrack(newVideoTrack)
-        }
-      })
-      oldVideoTrack && localStream.value.removeTrack(oldVideoTrack)
-      localStream.value.addTrack(newVideoTrack)
-      isScreenSharing.value = true // 开始桌面共享
-    } catch (err: unknown) {
-      const error = err as Error & { name?: string }
-      logger.error('开始桌面共享失败:', error)
-      isScreenSharing.value = false
-      stopScreenShare()
-      if (error?.name === 'NotAllowedError') {
-        window.$message.warning('已取消屏幕共享...')
-        return
-      }
-      window.$message.error('桌面共享失败，请检查权限设置!')
-    }
-  }
+  // 桌面共享（抽离到 useScreenShare）
+  const { isScreenSharing, startScreenShare, stopScreenShare } = useScreenShare({
+    localStream,
+    peerConnection,
+    selectedVideoDevice,
+    getCurrentCallType: () => rtcMsg.value.callType,
+    getLocalStream,
+    switchVideoDevice
+  })
 
   const lisendCandidate = async () => {
     if (!peerConnection.value) {

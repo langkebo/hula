@@ -1133,3 +1133,35 @@ _Chat.vue 续作_
 - 下一轮推荐：
   - Chat.vue 续作：`useAiMediaGeneration`（~470 LOC，最大块）→ `useAiStreaming`（~285 LOC）
   - P2-5 router/index.ts (961 LOC) 按 domain 拆分（机械低风险）
+
+---
+
+## Step 22 — useWebRtc 续作：useScreenShare 抽离（2026-04-24）
+
+**目标**
+- 继续 P0-6 useWebRtc Step 16/17 续作表，将自包含的桌面共享子状态从 useWebRtc 抽出为独立 hook，配套测试
+
+**新增**
+- `src/hooks/webRtc/useScreenShare.ts`（113 LOC）
+  - `isScreenSharing` 内部 ref + `startScreenShare` / `stopScreenShare`
+  - 通过 `UseScreenShareOptions` 注入共享 ref（`localStream` / `peerConnection` / `selectedVideoDevice`）+ 回调（`getCurrentCallType` / `getLocalStream` / `switchVideoDevice`）+ 可选 `notify`
+  - 默认 `notify` 走 `window.$message`，测试可直接注入 stub
+- `src/hooks/webRtc/__tests__/useScreenShare.test.ts`（9 用例）
+  - stopScreenShare：未在共享时 no-op / 正常停止重启设备 / 缺少视频设备 / 未知 callType（共 4）
+  - startScreenShare：getDisplayMedia 不支持 / 成功替换 sender / NotAllowedError 用户取消 / 通用错误 / screenStream 无视频轨道（共 5）
+
+**变更**
+- `src/hooks/useWebRtc.ts`：997 → **927 LOC**（−70，**-7%**）
+  - 移除内联 `isScreenSharing` ref + `stopScreenShare` + `startScreenShare`（约 80 LOC）
+  - 新增 `useScreenShare(...)` 装配（11 LOC），保持公共 API 不变（仍导出 `isScreenSharing` / `startScreenShare` / `stopScreenShare`）
+  - clear() 中 `isScreenSharing.value = false` 仍直接重置（hook 暴露的 ref 引用一致）
+
+**验收**
+- 新增 9 测试全通过；`pnpm exec vue-tsc --noEmit` 0 error
+- useWebRtc.ts 进一步逼近"编排为主"：剩余主要为 PC 创建/信令/clear/event listener，下一轮可考虑 `useCallSignaling`（offer/answer/candidate handlers，~150 LOC）
+
+**Step 22 状态**
+- P0-6 useWebRtc 续作（屏幕共享）✅ 完成
+- 下一轮推荐：
+  - `useCallSignaling`（sendOffer/handleOffer/sendAnswer/handleAnswer/handleCandidate/lisendCandidate/handleSignalMessage）
+  - `useCameraSwitch`（switchAudioDevice/switchVideoDevice/switchCameraFacing/getFrontAndBackCameras，~120 LOC）
