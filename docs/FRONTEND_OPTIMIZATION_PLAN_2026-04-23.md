@@ -806,3 +806,41 @@ _Commit: `d8154b9b chore(lint): clear all noExplicitAny warnings`（105 文件�
 **Step 12 状态**
 - Step 3 续作表覆盖 3/5：`useMentionState` ✅ / `useClipboardPaste` ✅ / `useVoiceInput` ✅
 - 剩余 2 条独立 hook：`useDraftBuffer`（草稿 store 包装）/ `useInputShortcuts`（`chatKey` / `sendKey` 绑定 + `handleInput` debounce）——均涉及更多 DOM 交互与 store 耦合，留待后续轮次评估。
+
+### 步骤 13：P0-6 `useMsgInput.ts` 状态抽离（Step 3c）· 状态：🟢 本轮完成（2026-04-24）
+
+**本轮范围**：承接 Step 12，继续推进 Step 3 续作表剩余项，完成 `useInputShortcuts` 抽离 + 回归网，并对 `useDraftBuffer` 做判定。
+
+**产出**
+- 新增 `src/hooks/msgInput/useInputShortcuts.ts`
+  - 承接 `chatKey` ↔ `setting.chat.sendKey` 两路 watch（带 `!==` guard 避免回环）
+  - `handleInput = useDebounceFn(..., 0)`：空内容（含 `<br>` / `<div><br></div>` / 各类 Unicode 空白）下清空 `msgInput` + `resetAllStates`；否则写 `innerHTML` 进 `msgInput` 并调 `handleTrigger(text, cursorPosition, { range, selection, keyword: '' })`
+  - `inputKeyDown`：`disabledSend` 拦截、`ait/aiDialog` 拦截、macOS IME 组字让渡、macOS `Enter` 策略下 `⌘+Enter` 插换行、平台化 `sendKey` 解析、`form#message-form.requestSubmit()` 发送
+  - 通过 `InputShortcutsOptions` 注入 13 个依赖（DOM / store refs / hook 方法），保持 hook 对 Vue 组件树与 Pinia 解耦
+- `useMsgInput.ts` 改造
+  - 移除内联 `chatKey` `ref`、两个 watch、`handleInput` 100+ 行、`inputKeyDown` 50+ 行；改成一次 `useInputShortcuts({...})` 聚合调用
+  - 同步清理因抽离而失效的导入：`useDebounceFn` / `isMac` / `isWindows` 不再使用 → 删除；并删除顶部遗留的「草稿注释」——实际并无草稿逻辑在此文件内
+  - LOC：1416 → **1254**（-162，相对 Step 12 末态再 -93）
+- 新增 `src/hooks/msgInput/__tests__/useInputShortcuts.test.ts`（15 用例）
+  - `chatKey` 双向同步：初始镜像 / store→local / local→store（3）
+  - `handleInput`：空内容清空 + `resetAllStates` / 媒体内容保留 + 转发 `handleTrigger` / `getEditorRange` 返回 `null` 时 reset / `handleTrigger` reject 不上抛（4）
+  - `inputKeyDown`：`disabledSend=true` 走 `resetInput` / `ait` 开启时拦截 / macOS 拼音让渡 / macOS `Enter` 下 `⌘+Enter` 插换行 / `sendKey=Enter` 普通 Enter 提交 form / macOS `sendKey=⌘+Enter` + `⌘+Enter` 提交 form / Windows `sendKey=Ctrl+Enter` 仅 `Ctrl+Enter` 提交 / 空白 msgInput 拦截（8）
+
+**`useDraftBuffer` 决议：无抽离必要**
+- 全仓 grep `setDraftMessage` / `getDraftMessage` / `draftMessage*` 结果：`useMsgInput.ts` 仅剩一条**注释**，实际代码 0 处调用；`MsgInput.vue` 也未使用。
+- 结论：`useDraftBuffer` 在当前 `useMsgInput.ts` 中没有 extract target；Step 3 续作表列出的"草稿 store 包装"是当年的前瞻项，今已无计划意义 → 关闭该续作项，不新增空壳 hook。相关残留注释已一并删除。
+
+**副带修复**
+- `src/utils/Console.ts`：早前作者信息统一（移除 `package.json` 顶层 `author.url`）触发 `pkg.author.url` 类型错误，改印 `pkg.author.email`，消除 1 条 TS 报错。
+- `src/plugins/robot/composables/useRobotGenerationDisplay.ts`：未提交在途文件 formatter diff，`biome format --write` 回归，用以解锁 `pnpm check` 0 error。
+
+**验收**
+- `pnpm test:run`：179 files / **2078 passed**（+15 本批）
+- `pnpm check`：0 error / 0 warning
+- `pnpm exec vue-tsc --noEmit`：与 `useInputShortcuts` 相关文件 0 error；仓库他处 `src/plugins/robot/views/Chat.vue:1580` 预存 `AIMessage/AIConversationMessage` 类型分叉为 earlier session 在途工作，与本批无关（stash-clean 对照 HEAD 复现）。
+- `useMsgInput.ts` 对外签名保持不变（`chatKey` / `handleInput` / `inputKeyDown` 仍在 return 对象中），`MsgInput.vue` 消费者零改动。
+
+**Step 13 状态**
+- Step 3 续作表覆盖 4/5：`useMentionState` ✅ / `useClipboardPaste` ✅ / `useVoiceInput` ✅ / `useInputShortcuts` ✅
+- `useDraftBuffer` ❎ 关闭（无 extract target）
+- `useMsgInput.ts` 累计：1536 → **1254** LOC（**-282，-18.4%**），5 个独立可测 hook 已落盘
