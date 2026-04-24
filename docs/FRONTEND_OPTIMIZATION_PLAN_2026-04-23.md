@@ -844,3 +844,38 @@ _Commit: `d8154b9b chore(lint): clear all noExplicitAny warnings`（105 文件�
 - Step 3 续作表覆盖 4/5：`useMentionState` ✅ / `useClipboardPaste` ✅ / `useVoiceInput` ✅ / `useInputShortcuts` ✅
 - `useDraftBuffer` ❎ 关闭（无 extract target）
 - `useMsgInput.ts` 累计：1536 → **1254** LOC（**-282，-18.4%**），5 个独立可测 hook 已落盘
+
+### 步骤 14：P1-2 MessageStrategy 按类型拆文件 · 状态：🟢 完成（2026-04-24）
+
+**本轮范围**：P1-2 计划项 —— 把 `src/strategy/MessageStrategy.ts`（1486 LOC，内含 12 个 strategy class）改造成 `strategies/*.ts` 一类型一文件的目录结构，保留 dispatcher 和对外 API。
+
+**产出**
+- 新建 `src/strategy/strategies/` 子目录
+- `strategies/base.ts`（116 LOC）：
+  - 共享类型 `ReplyRef` / `ImageInfo` / `CallInfo`
+  - 对外接口 `MessageStrategy`
+  - `AbstractMessageStrategy` 抽象类 + 模块级 `strategyLogger`
+- 12 个具体策略一类型一文件（导出 class）
+  - `text.ts` · `image.ts`（314）· `file.ts`（181）· `emoji.ts`
+  - `video.ts`（311）· `voice.ts`
+  - `videoCall.ts` · `audioCall.ts`
+  - `location.ts` · `beacon.ts` · `linkPreview.ts` · `unsupported.ts`
+  - 每个文件只 import 自身真正需要的依赖（文件 → `tauri-fs` + `useUpload` + `FileType` 等；纯 JSON 解析类如 beacon/location/linkPreview → 仅 `AppException`）
+- `strategies/index.ts`（66 LOC）：
+  - 实例化 12 个策略；构建 `messageStrategyMap: Record<MsgEnum, MessageStrategy>`
+  - 重新导出 base 接口与 12 个 class
+- `src/strategy/MessageStrategy.ts`：**1486 → 5 LOC**，仅剩一行 `export * from './strategies'`，保持历史 import 路径 `@/strategy/MessageStrategy` 完全兼容（`useMsgInput.ts` / `useCustomForwardTask.ts` 零改动）
+- 原文件内的 `logger = createLogger('MessageStrategy')` 迁至 `base.ts` 并改名 `strategyLogger`，各 strategy 以 `strategyLogger as logger` 别名导入，保留原有日志前缀
+
+**验收**
+- `pnpm exec vue-tsc --noEmit`：**0 error**（strategy 子树）
+- `pnpm exec biome check src/strategy`：**0 error / 0 warning**
+- `pnpm test:run`：179 files / **2078 passed**（消费侧不变，零回归）
+- LOC：`MessageStrategy.ts` 1486 → **5**（-1481）；拆出文件总计 **1584 LOC**（含类型声明与多余 import 样板，单文件最大 `image.ts` 314，`video.ts` 311，其余全部 ≤ 181）
+- >1000 LOC 单文件计数：**9 → 8**（`MessageStrategy.ts` 退出榜单）
+- commit: `9842e7f6 refactor(strategy): split MessageStrategy into per-type files`
+
+**Step 14 状态**
+- P1-2 计划项 ✅ 完成
+- 单文件 >1000 LOC 剩余 8 个：`Chat.vue` 2151 · `augmentations.d.ts` 1464 · `useChatMain` 1330 · `useMsgInput` 1254 · `stores/chat/chat/message` 1171 · `Bot.vue` 1134 · `useWebRtc` 1097 · `emoticon/index.vue` 1056
+- 后续推荐优先级：**P0-4 续作**（Chat.vue 拆 composable + 子组件） → **P2-1**（一行级 MatrixWidgetService legacy 清理） → **P0-6 续作**（useChatMain / useWebRtc）
