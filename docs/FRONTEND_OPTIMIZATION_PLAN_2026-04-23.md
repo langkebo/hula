@@ -902,3 +902,27 @@ _Commit: `d8154b9b chore(lint): clear all noExplicitAny warnings`（105 文件�
 **Step 15 状态**
 - P2-1 计划项 ✅ 完成
 - 下一轮推荐：**P0-4 续作** Chat.vue god component 抽 composable + 子组件拆分
+
+### 步骤 16：P0-6 useWebRtc 续作 — useCallTimer / useCallBell 抽离 · 状态：🟢 本轮完成（2026-04-24）
+
+**背景**：`src/hooks/useWebRtc.ts` 在 Step 8 完成类型 + ICE 配置抽离后仍有 1097 LOC。续作表首批为「纯状态最低风险」：通话时长计时（startCallTimer / stopCallTimer + callDuration / animationFrameId / startTime，基于 `requestAnimationFrame` + `performance.now`）和铃声封装（bellAudio + start/stop/pause/play）。两者均与 RTCPeerConnection / Matrix signaling 完全解耦，可独立单测。
+
+**产出**
+- `src/hooks/webRtc/useCallTimer.ts`（新增 37 LOC）：暴露 `callDuration` + `startCallTimer` / `stopCallTimer`，内部封装 rAF 循环与秒级取整
+- `src/hooks/webRtc/useCallBell.ts`（新增 49 LOC）：暴露 `bellAudio` + `startBell` / `stopBell` / `pauseBell` / `playBell`，`url` 为空字符串时 `startBell` 为静音 no-op
+- `src/hooks/useWebRtc.ts`：
+  - 移除内联 `bellAudio` ref、`animationFrameId` / `startTime` / `callDuration` 三个 ref、`startCallTimer` / `stopCallTimer` / `startBell` / `stopBell` / `pauseBell` / `playBell` 六个函数（共 −76 行）
+  - 改为 `const { callDuration, startCallTimer, stopCallTimer } = useCallTimer()` + `const { startBell, stopBell, pauseBell, playBell } = useCallBell(rtcCallBellUrl)`
+  - 净变更：1097 → 1043 LOC（−54）
+- `src/hooks/webRtc/__tests__/useCallTimer.test.ts`（新增 4 tests）：初始值 / rAF 推进秒数 / stop 取消并归零 / 空闲状态 stop no-op
+- `src/hooks/webRtc/__tests__/useCallBell.test.ts`（新增 5 tests）：play 循环 / 静音 no-op / pause+clear / pause-play 代理 / 空实例安全
+
+**验收**
+- `pnpm exec vitest run src/hooks/webRtc/__tests__/useCallTimer.test.ts src/hooks/webRtc/__tests__/useCallBell.test.ts`：9/9 pass
+- `pnpm exec vue-tsc --noEmit`：`src/hooks/useWebRtc.ts` + `src/hooks/webRtc/**` 0 error（剩余 error 全部集中在 `src/plugins/robot/`，为另一上游 in-flight 任务，与本 Step 无关）
+- 对外 API 不变：`useWebRtc()` 返回对象同形同语义（`callDuration` / `startCallTimer` / `startBell` / `stopBell` / `pauseBell` / `playBell` 均保留）
+
+**Step 16 状态**
+- P0-6 useWebRtc 续作首批 ✅ 完成
+- useWebRtc.ts 仍 >1000 LOC（1043），下一轮续作表：`useMediaDevices`（audioDevices / videoDevices / selectedXxx + getDevices，~60 LOC）→ `usePeerConnection`（createPeerConnection + 事件绑定）→ `useScreenShare`
+- 同期 useChatMain.ts 续作表仍待启动：建议下一轮先抽 `useGroupNicknameModal`（最低耦合 5 ref + open/close）再动菜单数组
