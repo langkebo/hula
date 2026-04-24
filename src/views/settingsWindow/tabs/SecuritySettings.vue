@@ -82,6 +82,47 @@
       </n-spin>
     </div>
 
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">屏蔽用户</h3>
+      <n-spin :show="loadingBlocked">
+        <div v-if="blockedUsers.length > 0" class="ignored-list">
+          <div v-for="user in blockedUsers" :key="user" class="ignored-item">
+            <span class="user-id">{{ user }}</span>
+            <n-button size="tiny" @click="handleUnblock(user)">取消屏蔽</n-button>
+          </div>
+        </div>
+        <n-empty v-else description="没有屏蔽的用户" />
+      </n-spin>
+      <div style="margin-top: 8px">
+        <n-button size="small" @click="showAddBlocked = true">+ 添加屏蔽用户</n-button>
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">邀请黑白名单</h3>
+      <n-alert type="info" :show-icon="true" style="margin-bottom: 12px; font-size: 12px">
+        邀请黑白名单为房间级别设置，此处为全局默认配置。
+      </n-alert>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">邀请黑名单</span>
+          <span class="setting-desc">阻止这些用户邀请你加入房间</span>
+        </div>
+        <n-button size="small" @click="showInviteBlocklist = true">管理 ({{ inviteBlocklist.length }})</n-button>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">邀请白名单</span>
+          <span class="setting-desc">仅允许这些用户邀请你加入房间</span>
+        </div>
+        <n-button size="small" @click="showInviteAllowlist = true">管理 ({{ inviteAllowlist.length }})</n-button>
+      </div>
+    </div>
+
     <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupSuccess" />
 
     <n-divider />
@@ -130,18 +171,72 @@
         </div>
       </div>
     </n-modal>
+
+    <n-modal
+      v-model:show="showAddBlocked"
+      preset="dialog"
+      title="添加屏蔽用户"
+      positive-text="添加"
+      negative-text="取消"
+      @positive-click="handleAddBlocked">
+      <n-form>
+        <n-form-item label="用户 ID">
+          <n-input v-model:value="newBlockedUser" placeholder="@user:example.com" />
+        </n-form-item>
+      </n-form>
+    </n-modal>
+
+    <n-modal v-model:show="showInviteBlocklist" preset="card" title="邀请黑名单管理" style="width: 450px">
+      <div class="list-management">
+        <div v-for="user in inviteBlocklist" :key="user" class="ignored-item">
+          <span class="user-id">{{ user }}</span>
+          <n-button size="tiny" @click="handleRemoveInviteBlocklist(user)">移除</n-button>
+        </div>
+        <n-empty v-if="inviteBlocklist.length === 0" description="黑名单为空" />
+        <div style="margin-top: 8px; display: flex; gap: 8px">
+          <n-input v-model:value="newBlocklistUser" placeholder="@user:example.com" size="small" style="flex: 1" />
+          <n-button size="small" type="primary" @click="handleAddInviteBlocklist">添加</n-button>
+        </div>
+      </div>
+    </n-modal>
+
+    <n-modal v-model:show="showInviteAllowlist" preset="card" title="邀请白名单管理" style="width: 450px">
+      <div class="list-management">
+        <div v-for="user in inviteAllowlist" :key="user" class="ignored-item">
+          <span class="user-id">{{ user }}</span>
+          <n-button size="tiny" @click="handleRemoveInviteAllowlist(user)">移除</n-button>
+        </div>
+        <n-empty v-if="inviteAllowlist.length === 0" description="白名单为空" />
+        <div style="margin-top: 8px; display: flex; gap: 8px">
+          <n-input v-model:value="newAllowlistUser" placeholder="@user:example.com" size="small" style="flex: 1" />
+          <n-button size="small" type="primary" @click="handleAddInviteAllowlist">添加</n-button>
+        </div>
+      </div>
+    </n-modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { NButton, NDivider, NSpin, NEmpty, NSwitch, useMessage, NModal, NForm, NFormItem, useDialog } from 'naive-ui'
+import {
+  NButton,
+  NDivider,
+  NSpin,
+  NEmpty,
+  NSwitch,
+  useMessage,
+  NModal,
+  NForm,
+  NFormItem,
+  NInput,
+  NAlert,
+  useDialog
+} from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@iconify/vue'
 import { matrixAccountService } from '@/services/matrix'
 import { matrixEncryptionService } from '@/services/matrix'
-import { matrixClientService } from '@/services/matrix'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 import { createLogger } from '@/utils/Logger'
 
@@ -158,11 +253,24 @@ const { secretChat } = storeToRefs(settingStore)
 
 const loadingIgnored = ref(false)
 const ignoredUsers = ref<string[]>([])
+const loadingBlocked = ref(false)
+const blockedUsers = ref<string[]>([])
+const showAddBlocked = ref(false)
+const newBlockedUser = ref('')
+
+const showInviteBlocklist = ref(false)
+const showInviteAllowlist = ref(false)
+const inviteBlocklist = ref<string[]>([])
+const inviteAllowlist = ref<string[]>([])
+const newBlocklistUser = ref('')
+const newAllowlistUser = ref('')
+
 const showBackupDialog = ref(false)
 const backupLoading = ref(false)
 const exportLoading = ref(false)
 const hasBackup = ref(false)
 const backupInfo = ref<{ version: string | null; count: number } | null>(null)
+const encryptionEnabled = ref(false)
 
 const showOnlineStatus = ref(true)
 const showTypingStatus = ref(true)
@@ -231,10 +339,6 @@ function handleClearSecretChat() {
   })
 }
 
-const encryptionEnabled = computed(() => {
-  return matrixEncryptionService.isEncryptionEnabled()
-})
-
 const backupStatusText = computed(() => {
   if (!encryptionEnabled.value) {
     return '加密未启用'
@@ -246,7 +350,10 @@ const backupStatusText = computed(() => {
 })
 
 onMounted(async () => {
+  encryptionEnabled.value = await matrixEncryptionService.isEncryptionAvailable()
   await loadIgnoredUsers()
+  await loadBlockedUsers()
+  loadInviteLists()
   await loadBackupInfo()
   loadPrivacySettings()
 })
@@ -354,6 +461,106 @@ async function handleUnignore(userId: string) {
     message.error('操作失败')
   }
 }
+
+async function loadBlockedUsers() {
+  loadingBlocked.value = true
+  try {
+    const saved = localStorage.getItem('hula-blocked-users')
+    if (saved) {
+      blockedUsers.value = JSON.parse(saved)
+    }
+  } catch {
+    // ignore
+  } finally {
+    loadingBlocked.value = false
+  }
+}
+
+function saveBlockedUsers() {
+  localStorage.setItem('hula-blocked-users', JSON.stringify(blockedUsers.value))
+}
+
+function handleAddBlocked() {
+  if (!newBlockedUser.value.trim()) {
+    message.warning('请输入用户 ID')
+    return false
+  }
+  if (blockedUsers.value.includes(newBlockedUser.value.trim())) {
+    message.warning('该用户已在屏蔽列表中')
+    return false
+  }
+  blockedUsers.value.push(newBlockedUser.value.trim())
+  newBlockedUser.value = ''
+  saveBlockedUsers()
+  message.success('已添加屏蔽用户')
+}
+
+function handleUnblock(userId: string) {
+  blockedUsers.value = blockedUsers.value.filter((u) => u !== userId)
+  saveBlockedUsers()
+  message.success('已取消屏蔽该用户')
+}
+
+function loadInviteLists() {
+  try {
+    const savedBlock = localStorage.getItem('hula-invite-blocklist')
+    if (savedBlock) inviteBlocklist.value = JSON.parse(savedBlock)
+    const savedAllow = localStorage.getItem('hula-invite-allowlist')
+    if (savedAllow) inviteAllowlist.value = JSON.parse(savedAllow)
+  } catch {
+    // ignore
+  }
+}
+
+function saveInviteBlocklist() {
+  localStorage.setItem('hula-invite-blocklist', JSON.stringify(inviteBlocklist.value))
+}
+
+function saveInviteAllowlist() {
+  localStorage.setItem('hula-invite-allowlist', JSON.stringify(inviteAllowlist.value))
+}
+
+function handleAddInviteBlocklist() {
+  if (!newBlocklistUser.value.trim()) {
+    message.warning('请输入用户 ID')
+    return
+  }
+  if (inviteBlocklist.value.includes(newBlocklistUser.value.trim())) {
+    message.warning('该用户已在黑名单中')
+    return
+  }
+  inviteBlocklist.value.push(newBlocklistUser.value.trim())
+  newBlocklistUser.value = ''
+  saveInviteBlocklist()
+  message.success('已添加到邀请黑名单')
+}
+
+function handleRemoveInviteBlocklist(userId: string) {
+  inviteBlocklist.value = inviteBlocklist.value.filter((u) => u !== userId)
+  saveInviteBlocklist()
+  message.success('已从邀请黑名单移除')
+}
+
+function handleAddInviteAllowlist() {
+  if (!newAllowlistUser.value.trim()) {
+    message.warning('请输入用户 ID')
+    return
+  }
+  if (inviteAllowlist.value.includes(newAllowlistUser.value.trim())) {
+    message.warning('该用户已在白名单中')
+    return
+  }
+  inviteAllowlist.value.push(newAllowlistUser.value.trim())
+  newAllowlistUser.value = ''
+  saveInviteAllowlist()
+  message.success('已添加到邀请白名单')
+}
+
+function handleRemoveInviteAllowlist(userId: string) {
+  inviteAllowlist.value = inviteAllowlist.value.filter((u) => u !== userId)
+  saveInviteAllowlist()
+  message.success('已从邀请白名单移除')
+}
 </script>
 
 <style scoped>
@@ -391,11 +598,11 @@ async function handleUnignore(userId: string) {
 }
 
 .status-secure {
-  color: #52c41a;
+  color: var(--color-success);
 }
 
 .status-insecure {
-  color: #faad14;
+  color: var(--color-warning);
 }
 
 .status-info {
@@ -410,7 +617,7 @@ async function handleUnignore(userId: string) {
 
 .status-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 
@@ -437,7 +644,7 @@ async function handleUnignore(userId: string) {
 
 .setting-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 

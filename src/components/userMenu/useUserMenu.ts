@@ -1,20 +1,17 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserMenuStore, type MenuPosition, type MenuTrigger } from '@/stores/userMenu'
-import { useSettingsDialogStore, type SettingsTabType } from '@/stores/settingsDialog'
-import { useMatrixStore } from '@/stores/matrix'
-import { useUserStore } from '@/stores/user'
+import { useUserMenuStore, type MenuPosition, type MenuTrigger } from '@/stores/domains/user/userMenu'
+import { useSettingsDialogStore, type SettingsTabType } from '@/stores/domains/settings/settingsDialog'
 import { isDesktop } from '@/composables/usePlatform'
 import { getFilteredSections, findMenuItemById, setLogoutCallback, setRouterInstance } from './menuConfig'
 import { useDialog, useMessage } from 'naive-ui'
+import { matrixRuntimeSessionService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('UserMenu')
 
 export function useUserMenu() {
   const userMenuStore = useUserMenuStore()
   const settingsDialogStore = useSettingsDialogStore()
-  const matrixStore = useMatrixStore()
-  const userStore = useUserStore()
   const dialog = useDialog()
   const message = useMessage()
   const router = useRouter()
@@ -47,8 +44,7 @@ export function useUserMenu() {
   async function handleLogout() {
     const loading = message.loading('正在退出登录...', { duration: 0 })
     try {
-      await matrixStore.logout()
-      userStore.clearUser()
+      await matrixRuntimeSessionService.logoutCurrentSession()
       message.success('已退出登录')
       window.location.reload()
     } catch (error) {

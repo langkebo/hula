@@ -1,4 +1,4 @@
-import { useSettingStore } from '@/stores/setting.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 
 /**
  * 检查更新

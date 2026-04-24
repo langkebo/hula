@@ -30,36 +30,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSpaceStore, type Space } from '@/stores/space'
+import { useRouter } from 'vue-router'
+import { useSpaceStore } from '@/stores/domains/widget/space'
 import { matrixSpaceService } from '@/services/matrix/MatrixSpaceService'
-import { matrixMediaService } from '@/services/matrix/MatrixMediaService'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { createLogger } from '@/utils/Logger'
-import type { UploadCustomRequestOptions } from 'naive-ui'
-import type { FormInst } from 'naive-ui'
+
+import type { FormInst, UploadCustomRequestOptions } from 'naive-ui'
 
 const logger = createLogger('CreateSpaceDialog')
 const { t } = useI18n()
+const router = useRouter()
 const spaceStore = useSpaceStore()
 
-const props = withDefaults(
-  defineProps<{
-    visible: boolean
-    editMode?: boolean
-    space?: Space | null
-  }>(),
-  {
-    visible: false,
-    editMode: false,
-    space: null
-  }
-)
+const props = defineProps<{
+  visible: boolean
+}>()
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  created: [space: { spaceId: string; name: string; avatarUrl?: string; memberCount: number; topic?: string }]
-  updated: [space: { spaceId: string; name: string; avatarUrl?: string; memberCount: number; topic?: string }]
 }>()
 
 const formRef = ref<FormInst | null>(null)
@@ -78,21 +69,9 @@ const rules = {
   }
 }
 
-watch(
-  () => props.visible,
-  (visible) => {
-    if (visible && props.editMode && props.space) {
-      formData.name = props.space.name || ''
-      formData.topic = props.space.topic || ''
-      formData.avatarUrl = props.space.avatarUrl || ''
-    }
-  }
-)
-
 const handleAvatarUpload = async (options: UploadCustomRequestOptions) => {
   try {
-    const file = options.file.file
-    if (!file) return
+    const file = options.file.file as File
     const result = await matrixMediaService.uploadFile(file)
     formData.avatarUrl = result.contentUri
   } catch (error) {
@@ -104,47 +83,14 @@ const handleSubmit = async () => {
   try {
     loading.value = true
     await formRef.value?.validate()
-
-    if (props.editMode && props.space) {
-      await matrixSpaceService.updateSpace(props.space.roomId, {
-        name: formData.name,
-        topic: formData.topic,
-        avatarUrl: formData.avatarUrl || undefined
-      })
-      emit('updated', {
-        spaceId: props.space.roomId,
-        name: formData.name,
-        avatarUrl: formData.avatarUrl || undefined,
-        memberCount: props.space.memberCount,
-        topic: formData.topic
-      })
-    } else {
-      const newSpace = await matrixSpaceService.createSpace({
-        name: formData.name,
-        topic: formData.topic,
-        avatarUrl: formData.avatarUrl || undefined
-      })
-      if (newSpace) {
-        emit('created', {
-          spaceId: newSpace.spaceId,
-          name: newSpace.name,
-          avatarUrl: newSpace.avatarUrl || undefined,
-          memberCount: newSpace.memberCount,
-          topic: newSpace.topic
-        })
-        spaceStore.addSpace({
-          roomId: newSpace.spaceId,
-          name: newSpace.name,
-          avatarUrl: newSpace.avatarUrl ?? null,
-          memberCount: newSpace.memberCount,
-          isJoined: true,
-          spaceId: newSpace.spaceId
-        })
-      }
-    }
+    await matrixSpaceService.createSpace({
+      name: formData.name,
+      topic: formData.topic,
+      avatarUrl: formData.avatarUrl
+    })
     emit('update:visible', false)
   } catch (error) {
-    logger.error('[CreateSpaceDialog] 操作失败:', error)
+    logger.error('[CreateSpaceDialog] 创建空间失败:', error)
   } finally {
     loading.value = false
   }

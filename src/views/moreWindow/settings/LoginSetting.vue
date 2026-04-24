@@ -18,7 +18,7 @@
     <!--    <n-flex align="center" justify="space-between" class="item-box">-->
     <!--      <n-flex vertical>-->
     <!--        <span>清空密码</span>-->
-    <!--        <span class="text-12px text-#909090">清空后，下次需要使用扫码或者账密进行登录</span>-->
+    <!--        <span class="text-12px text-[--color-text-tertiary]">清空后，下次需要使用扫码或者账密进行登录</span>-->
     <!--      </n-flex>-->
     <!--      <n-button secondary type="primary" @click="clearInfo"> 清空密码 </n-button>-->
     <!--    </n-flex>-->
@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

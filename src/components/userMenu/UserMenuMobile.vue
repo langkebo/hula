@@ -38,8 +38,8 @@
 import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useUserMenu } from './useUserMenu'
-import { useUserStore } from '@/stores/user'
-import { useSettingStore } from '@/stores/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import defaultAvatarImg from '@/assets/img/win.png'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('UserMenuMobile')
@@ -109,7 +109,7 @@ function handleTouchClick() {
 }
 
 .online-indicator.online {
-  background-color: #52c41a;
+  background-color: var(--color-success);
 }
 
 .online-indicator.offline {

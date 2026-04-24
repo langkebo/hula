@@ -123,7 +123,7 @@
                   <template #trigger>
                     <div
                       class="emoji-visibility-wrapper size-full"
-                      :ref="(el: any) => registerEmojiVisibilityTarget(el, item)">
+                      :ref="(el: Element | ComponentPublicInstance | null) => registerEmojiVisibilityTarget(el, item)">
                       <n-image
                         width="60"
                         height="60"
@@ -188,9 +188,9 @@ import HulaEmojis from 'hula-emojis'
 import type { ScrollbarInst, VirtualListInst } from 'naive-ui'
 import pLimit from 'p-limit'
 import type { EmojiItem as EmojiListItem } from '@/services/types'
-import { useEmojiStore } from '@/stores/emoji'
-import { useHistoryStore } from '@/stores/history.ts'
-import { useUserStore } from '@/stores/user'
+import { useEmojiStore } from '@/stores/domains/chat/emoji'
+import { useHistoryStore } from '@/stores/domains/chat/history'
+import { useUserStore } from '@/stores/domains/user/user'
 import { getAllTypeEmojis } from '@/utils/Emoji.ts'
 import { md5FromString } from '@/utils/Md5Util'
 import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
@@ -210,7 +210,7 @@ type TabItem = {
 
 interface EmojiGroupItem {
   name: string
-  value: any[]
+  value: string[]
 }
 
 type EmojiType = {
@@ -219,6 +219,29 @@ type EmojiType = {
   gestureEmojis: EmojiGroupItem
 }
 
+type EmojiUrlPayload = {
+  id?: string
+  renderUrl: string
+  serverUrl: string
+  expressionUrl?: string
+}
+
+type EmojiSelection = string | EmojiUrlPayload
+
+type EmojiWorkerSuccessMessage = {
+  url: string
+  success: true
+  buffer: ArrayBuffer
+}
+
+type EmojiWorkerErrorMessage = {
+  url: string
+  success: false
+  error?: string
+}
+
+type EmojiWorkerMessage = EmojiWorkerSuccessMessage | EmojiWorkerErrorMessage
+
 type EmojiCacheEnvironment = {
   uid: string
   emojiDir: string
@@ -226,17 +249,20 @@ type EmojiCacheEnvironment = {
   baseDirPath: string
 }
 
-const emit = defineEmits(['emojiHandle'])
+const emit = defineEmits<{
+  emojiHandle: [item: string | EmojiUrlPayload, type: 'emoji' | 'emoji-url']
+}>()
 const props = defineProps<{
   all: boolean
 }>()
-const { emoji, setEmoji, lastEmojiTabIndex, setLastEmojiTabIndex } = useHistoryStore()
+const { emoji, lastEmojiTabIndex } = storeToRefs(useHistoryStore())
+const { setEmoji, setLastEmojiTabIndex } = useHistoryStore()
 const emojiStore = useEmojiStore()
 const userStore = useUserStore()
 const { t } = useI18n()
 /** 获取米游社的表情包 */
 const emojisBbs = HulaEmojis.MihoyoBbs
-const activeIndex = ref(lastEmojiTabIndex)
+const activeIndex = ref(lastEmojiTabIndex.value)
 const isFavoritesView = computed(() => activeIndex.value === -1)
 const isSeriesView = computed(() => activeIndex.value > 0)
 const seriesVirtualListRef = ref<VirtualListInst | null>(null)
@@ -352,7 +378,7 @@ const loadMoreSeries = async () => {
 const handlePanelScroll = (event: Event) => {
   activeMenuId.value = ''
   const target =
-    (panelScrollbarRef.value as any)?.containerRef ||
+    (panelScrollbarRef.value as { containerRef?: HTMLElement } | null)?.containerRef ||
     (event.target as HTMLElement | null) ||
     (event.currentTarget as HTMLElement | null)
   if (!target) return
@@ -369,7 +395,7 @@ const handleSeriesScroll = (event?: Event) => {
   const target =
     (event?.target as HTMLElement | null) ||
     (event?.currentTarget as HTMLElement | null) ||
-    (seriesVirtualListRef.value as any)?.listElRef
+    (seriesVirtualListRef.value as { listElRef?: HTMLElement } | null)?.listElRef
   if (!target) return
   if (isNearBottom(target)) {
     void loadMoreSeries()
@@ -400,7 +426,7 @@ const emojiRef = reactive<{
   allEmoji: EmojiType
 }>({
   chooseItem: '',
-  historyList: emoji,
+  historyList: emoji.value,
   allEmoji: emojiObj.value
 })
 
@@ -541,13 +567,13 @@ const downloadEmojiFile = async (url: string) => {
   }
 
   return await new Promise<Uint8Array>((resolve, reject) => {
-    const handleMessage = (event: MessageEvent<any>) => {
+    const handleMessage = (event: MessageEvent<EmojiWorkerMessage>) => {
       const data = event.data
       if (!data || data.url !== url) {
         return
       }
       cleanup()
-      if (data.success && data.buffer) {
+      if (data.success) {
         resolve(new Uint8Array(data.buffer))
       } else {
         reject(new Error(data.error || '下载表情失败'))
@@ -711,7 +737,7 @@ const scheduleHydrateFavorites = () => {
     void hydrateEmojiLocalCache()
   }
   if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-    ;(window as any).requestIdleCallback(runner, { timeout: 800 })
+    window.requestIdleCallback(runner, { timeout: 800 })
   } else {
     setTimeout(runner, 80)
   }
@@ -761,7 +787,7 @@ const checkIsUrl = (str: string) => {
  * @param event 鼠标事件
  * @param item 表情项
  */
-const handleContextMenu = (event: MouseEvent, item: any) => {
+const handleContextMenu = (event: MouseEvent, item: EmojiListItem) => {
   // 阻止原生右键菜单
   event.preventDefault()
   activeMenuId.value = item.id
@@ -789,11 +815,11 @@ const deleteMyEmoji = async (id: string) => {
  * 选择表情
  * @param item
  */
-const chooseEmoji = async (item: any, type: 'emoji' | 'url' = 'emoji') => {
+const chooseEmoji = async (item: EmojiSelection, type: 'emoji' | 'url' = 'emoji') => {
   emojiRef.chooseItem = typeof item === 'string' ? item : item?.renderUrl || item?.expressionUrl || ''
 
   // 只有非URL的表情（emoji）才记录到历史记录中
-  if (type === 'emoji') {
+  if (type === 'emoji' && typeof item === 'string') {
     // 如果已经存在于历史记录中，则先移除
     const index = emojiRef.historyList.indexOf(item)
     if (index !== -1) {

@@ -42,7 +42,11 @@
           <component
             :is="getItemComponent()"
             v-for="item in filteredList"
-            :key="(item as any).id || (item as any).roomId || (item as any).uid"
+            :key="
+              (item as Record<string, string>).id ||
+              (item as Record<string, string>).roomId ||
+              (item as Record<string, string>).uid
+            "
             :user="item"
             :room="item"
             :contact="item"
@@ -72,9 +76,8 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGroupStore } from '@/stores/group'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import UserItem from './UserItem.vue'
 import { useI18n } from 'vue-i18n'
@@ -102,7 +105,6 @@ const groupStore = useGroupStore()
 // 本地状态
 const searchKeyword = ref('')
 const loading = ref(false)
-const contactList = ref<any[]>([])
 const sessionList = ref<any[]>([])
 
 // 是否显示用户列表
@@ -265,25 +267,10 @@ const loadContacts = async () => {
   }
 }
 
-// 加载联系人列表 (恢复原始方式)
-const loadContactsOriginal = async () => {
-  try {
-    loading.value = true
-    const contacts = (await invoke('list_contacts_command')) as any[]
-    contactList.value = contacts
-  } catch (error) {
-    logger.error('加载联系人失败:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-// 加载会话列表 (恢复原始方式)
 const loadSessions = async () => {
   try {
     loading.value = true
-    // 使用联系人作为会话列表，并处理头像
-    sessionList.value = contactList.value.map((item) => ({
+    sessionList.value = contactStore.contactsList.map((item) => ({
       ...item,
       avatar: AvatarUtils.getAvatarUrl(item.avatar)
     }))
@@ -321,8 +308,8 @@ watch(
         }
         break
       case 'sessions':
-        if (contactList.value.length === 0) {
-          await loadContactsOriginal()
+        if (contactStore.contactsList.length === 0) {
+          await loadContacts()
         }
         await loadSessions()
         break

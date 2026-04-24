@@ -36,7 +36,7 @@
                     @click="
                       isCurrentUser(item.senderId) ? (currentUserId = item.operateId) : (currentUserId = item.senderId)
                     "
-                    class="text-(14px #13987f) cursor-pointer shrink-0 max-w-150px truncate">
+                    class="text-(14px --color-primary) cursor-pointer shrink-0 max-w-150px truncate">
                     {{
                       item.eventType === NoticeType.GROUP_MEMBER_DELETE && item.operateId == item.receiverId
                         ? t('home.apply_list.you')
@@ -49,7 +49,9 @@
                       {{ applyMsg(item) }}
                     </p>
 
-                    <p class="text-(10px #909090) shrink-0 whitespace-nowrap">{{ formatTimestamp(item.createTime) }}</p>
+                    <p class="text-(12px --color-text-tertiary) shrink-0 whitespace-nowrap">
+                      {{ formatTimestamp(item.createTime) }}
+                    </p>
                   </div>
                 </n-flex>
                 <p
@@ -88,18 +90,20 @@
                   </n-icon>
                 </n-dropdown>
               </n-flex>
-              <span class="text-(12px #64a29c)" v-else-if="item.status === RequestNoticeAgreeStatus.ACCEPTED">
+              <span class="text-(12px [--color-primary])" v-else-if="item.status === RequestNoticeAgreeStatus.ACCEPTED">
                 {{ t('home.apply_list.status.accepted') }}
               </span>
-              <span class="text-(12px #c14053)" v-else-if="item.status === RequestNoticeAgreeStatus.REJECTED">
+              <span class="text-(12px [--color-danger])" v-else-if="item.status === RequestNoticeAgreeStatus.REJECTED">
                 {{ t('home.apply_list.status.rejected') }}
               </span>
-              <span class="text-(12px #909090)" v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
+              <span
+                class="text-(12px --color-text-tertiary)"
+                v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
                 {{ t('home.apply_list.status.ignored') }}
               </span>
               <span
-                class="text-(12px #64a29c)"
-                :class="{ 'text-(12px #c14053)': item.status === RequestNoticeAgreeStatus.REJECTED }"
+                class="text-(12px [--color-primary])"
+                :class="{ 'text-(12px [--color-danger])': item.status === RequestNoticeAgreeStatus.REJECTED }"
                 v-else-if="isCurrentUser(item.senderId)">
                 {{
                   isAccepted(item)
@@ -127,11 +131,11 @@ import { useI18n } from 'vue-i18n'
 import { uniq } from 'es-toolkit'
 import type { NoticeItem } from '@/services/types.ts'
 import { NoticeType, RequestNoticeAgreeStatus } from '@/services/types.ts'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useUserStore } from '@/stores/user'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { matrixGroupService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -285,8 +289,6 @@ const getUserInfo = (item: any) => {
     case NoticeType.GROUP_INVITE_ME:
     case NoticeType.GROUP_APPLY:
       return groupStore.getUserInfo(item.senderId)
-    default:
-      return undefined
   }
 }
 

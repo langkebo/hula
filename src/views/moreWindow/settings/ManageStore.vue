@@ -25,7 +25,7 @@
             <span class="text-(18px [--text-color] center)">
               {{ showDiskUsage ? scanFilesUsagePercentage.toFixed(2) : scanningProgress.toFixed(0) }}%
             </span>
-            <span class="text-(12px #666 center)">
+            <span class="text-(12px [--color-text-secondary] center)">
               {{ showDiskUsage ? t('setting.storage.usage') : t('setting.storage.file_scan_progress') }}
             </span>
           </n-flex>
@@ -35,70 +35,72 @@
       <!-- 颜色说明 -->
       <n-flex justify="center" :size="8">
         <n-flex align="center" :size="8">
-          <div class="w-12px h-12px rounded-2px bg-#13987f"></div>
-          <span class="text-(11px #666)">{{ t('setting.storage.app_used_space') }}</span>
+          <div class="w-12px h-12px rounded-2px bg-[--color-primary]"></div>
+          <span class="text-(11px [--color-text-secondary])">{{ t('setting.storage.app_used_space') }}</span>
         </n-flex>
         <n-flex align="center" :size="8">
           <div class="w-12px h-12px rounded-2px bg-[--warning-text]"></div>
-          <span class="text-(11px #666)">{{ t('setting.storage.used_space') }}</span>
+          <span class="text-(11px [--color-text-secondary])">{{ t('setting.storage.used_space') }}</span>
         </n-flex>
         <n-flex align="center" :size="8">
           <div class="w-12px h-12px rounded-2px bg-#7db1ac50"></div>
-          <span class="text-(11px #666)">{{ t('setting.storage.free_space') }}</span>
+          <span class="text-(11px [--color-text-secondary])">{{ t('setting.storage.free_space') }}</span>
         </n-flex>
       </n-flex>
 
       <!-- 详细信息 -->
       <n-flex vertical :size="8">
         <n-flex v-if="scanning" justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.storage.current_file') }}:</span>
-          <span class="text-(12px #666) max-w-300px truncate">
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.storage.current_file') }}:</span>
+          <span class="text-(12px [--color-text-secondary]) max-w-300px truncate">
             {{ scanProgress.current_path }}
           </span>
         </n-flex>
 
         <n-flex v-if="scanning" justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.storage.scanning_progress') }}:</span>
-          <span class="text-(12px #666)">{{ scanningProgress.toFixed(2) }}%</span>
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.storage.scanning_progress') }}:</span>
+          <span class="text-(12px [--color-text-secondary])">{{ scanningProgress.toFixed(2) }}%</span>
         </n-flex>
 
         <n-flex justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.storage.processed_files') }}:</span>
-          <span class="text-(12px #666)">
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.storage.processed_files') }}:</span>
+          <span class="text-(12px [--color-text-secondary])">
             {{ t('setting.storage.processed_files_unit', { count: scanProgress.files_processed }) }}
           </span>
         </n-flex>
 
         <n-flex justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.storage.total_size') }}:</span>
-          <span class="text-(12px #666)">{{ formatBytes(scanProgress.total_size) }}</span>
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.storage.total_size') }}:</span>
+          <span class="text-(12px [--color-text-secondary])">{{ formatBytes(scanProgress.total_size) }}</span>
         </n-flex>
 
         <n-flex v-if="diskInfo" justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.storage.mount_point') }}:</span>
-          <span class="text-(12px #666)">{{ diskInfo.disk_mount_point }}</span>
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.storage.mount_point') }}:</span>
+          <span class="text-(12px [--color-text-secondary])">{{ diskInfo.disk_mount_point }}</span>
         </n-flex>
 
         <n-flex v-if="diskInfo" justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.storage.disk_total') }}:</span>
-          <span class="text-(12px #666)">{{ formatBytes(diskInfo.disk_total_space) }}</span>
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.storage.disk_total') }}:</span>
+          <span class="text-(12px [--color-text-secondary])">{{ formatBytes(diskInfo.disk_total_space) }}</span>
         </n-flex>
 
         <n-flex v-if="diskInfo" justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.storage.disk_used') }}:</span>
-          <span class="text-(12px #666)">{{ formatBytes(diskInfo.disk_used_space) }}</span>
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.storage.disk_used') }}:</span>
+          <span class="text-(12px [--color-text-secondary])">{{ formatBytes(diskInfo.disk_used_space) }}</span>
         </n-flex>
 
         <n-flex v-if="diskInfo" justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.storage.disk_usage_percent') }}:</span>
-          <span class="text-(12px #666)" :style="{ color: getUsageColor(diskInfo.disk_usage_percentage) }">
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.storage.disk_usage_percent') }}:</span>
+          <span
+            class="text-(12px [--color-text-secondary])"
+            :style="{ color: getUsageColor(diskInfo.disk_usage_percentage) }">
             {{ diskInfo.disk_usage_percentage.toFixed(2) }}%
           </span>
         </n-flex>
 
         <n-flex justify="space-between">
-          <span class="text-(12px #666)">{{ t('setting.storage.elapsed') }}:</span>
-          <span class="text-(12px #666)">
+          <span class="text-(12px [--color-text-secondary])">{{ t('setting.storage.elapsed') }}:</span>
+          <span class="text-(12px [--color-text-secondary])">
             {{ t('setting.storage.elapsed_unit', { seconds: scanProgress.elapsed_seconds.toFixed(2) }) }}
           </span>
         </n-flex>
@@ -126,7 +128,9 @@
         <n-flex align="center" justify="space-between">
           <span>{{ t('setting.storage.curr_dir') }}</span>
           <n-flex vertical align="end" :size="8">
-            <span :title="currentDirectory" class="text-(12px #666) max-w-300px truncate cursor-default">
+            <span
+              :title="currentDirectory"
+              class="text-(12px [--color-text-secondary]) max-w-300px truncate cursor-default">
               {{ currentDirectory || t('setting.storage.fetching_directory') }}
             </span>
             <n-flex :size="8">
@@ -138,7 +142,11 @@
                 :disabled="scanning">
                 {{ scanning ? t('setting.storage.scanning') : t('setting.storage.select_directory') }}
               </n-button>
-              <n-button size="small" color="#13987f" @click="startScan" :disabled="scanning || !currentDirectory">
+              <n-button
+                size="small"
+                color="var(--color-primary)"
+                @click="startScan"
+                :disabled="scanning || !currentDirectory">
                 {{ scanning ? t('setting.storage.scanning') : t('setting.storage.start_scan') }}
               </n-button>
             </n-flex>
@@ -155,7 +163,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ManageStore')
 import { open } from '@tauri-apps/plugin-dialog'
-import { useScannerStore } from '@/stores/scanner.ts'
+import { useScannerStore } from '@/stores/domains/widget/scanner'
 import { formatBytes } from '@/utils/Formatting.ts'
 
 const { t } = useI18n()

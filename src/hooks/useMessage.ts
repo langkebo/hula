@@ -1,14 +1,15 @@
+import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { SessionItem } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user'
-import { matrixGroupService, matrixSessionService, matrixPushService } from '@/services/matrix'
-import { PushRuleKind } from 'matrix-js-sdk'
+import type { SessionItem } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
+import { matrixGroupService, matrixRoomNotificationService, matrixSessionService } from '@/services/matrix'
 import { invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
 import { useI18n } from 'vue-i18n'
 
@@ -20,7 +21,7 @@ let isShrinkListenerRegistered = false
 const registerShrinkListener = () => {
   if (isShrinkListenerRegistered) return
   isShrinkListenerRegistered = true
-  useMitt.on(MittEnum.SHRINK_WINDOW, async (event: any) => {
+  useMitt.on(MittEnum.SHRINK_WINDOW, async (event: unknown) => {
     shrinkStatus.value = event as boolean
   })
 }
@@ -145,9 +146,9 @@ export const useMessage = () => {
     {
       label: () => t('menu.copy_account'),
       icon: 'copy',
-      click: (item: any) => {
-        navigator.clipboard.writeText(item.account)
-        window.$message.success(t('message.message_menu.copy_success', { account: item.account }))
+      click: (item: SessionItem) => {
+        navigator.clipboard.writeText(item.account ?? '')
+        window.$message.success(t('message.message_menu.copy_success', { account: item.account ?? '' }))
       }
     },
     {
@@ -178,8 +179,9 @@ export const useMessage = () => {
             label: () => t('menu.allow_notifications'),
             icon: !item.shield && item.muteNotification === NotificationTypeEnum.RECEPTION ? 'check-small' : '',
             click: async () => {
+              // 如果当前是屏蔽状态，需要先取消屏蔽
               if (item.shield) {
-                await matrixPushService.unmuteRoom(item.roomId)
+                await matrixRoomNotificationService.setRoomShield(item.roomId, false)
                 chatStore.updateSession(item.roomId, { shield: false })
               }
               await handleNotificationChange(item, NotificationTypeEnum.RECEPTION)
@@ -189,8 +191,9 @@ export const useMessage = () => {
             label: () => t('menu.receive_silently'),
             icon: !item.shield && item.muteNotification === NotificationTypeEnum.NOT_DISTURB ? 'check-small' : '',
             click: async () => {
+              // 如果当前是屏蔽状态，需要先取消屏蔽
               if (item.shield) {
-                await matrixPushService.unmuteRoom(item.roomId)
+                await matrixRoomNotificationService.setRoomShield(item.roomId, false)
                 chatStore.updateSession(item.roomId, { shield: false })
               }
               await handleNotificationChange(item, NotificationTypeEnum.NOT_DISTURB)
@@ -200,12 +203,9 @@ export const useMessage = () => {
             label: () => t('menu.block_group_messages'),
             icon: item.shield ? 'check-small' : '',
             click: async () => {
-              if (!item.shield) {
-                await matrixPushService.muteRoom(item.roomId)
-              } else {
-                await matrixPushService.unmuteRoom(item.roomId)
-              }
+              await matrixRoomNotificationService.setRoomShield(item.roomId, !item.shield)
 
+              // 更新本地会话状态
               chatStore.updateSession(item.roomId, {
                 shield: !item.shield
               })
@@ -235,12 +235,9 @@ export const useMessage = () => {
       label: (item: SessionItem) => (item.shield ? t('menu.unblock_user_messages') : t('menu.block_user_messages')),
       icon: (item: SessionItem) => (item.shield ? 'message-success' : 'people-unknown'),
       click: async (item: SessionItem) => {
-        if (!item.shield) {
-          await matrixPushService.muteRoom(item.roomId)
-        } else {
-          await matrixPushService.unmuteRoom(item.roomId)
-        }
+        await matrixRoomNotificationService.setRoomShield(item.roomId, !item.shield)
 
+        // 更新本地会话状态
         chatStore.updateSession(item.roomId, {
           shield: !item.shield
         })
@@ -329,37 +326,36 @@ export const useMessage = () => {
     }
   ])
 
-  // 添加通知设置变更处理函数
   const handleNotificationChange = async (item: SessionItem, newType: NotificationTypeEnum) => {
-    if (newType === NotificationTypeEnum.RECEPTION) {
-      await matrixPushService.unmuteRoom(item.roomId)
-    } else {
-      await matrixPushService.muteRoom(item.roomId)
-    }
+    try {
+      await matrixRoomNotificationService.setRoomNotification(item.roomId, newType)
 
-    // 更新本地会话状态
-    chatStore.updateSession(item.roomId, {
-      muteNotification: newType
-    })
+      // 更新本地会话状态
+      chatStore.updateSession(item.roomId, {
+        muteNotification: newType
+      })
 
-    // 如果从免打扰切换到允许提醒，需要重新计算全局未读数
-    if (item.muteNotification === NotificationTypeEnum.NOT_DISTURB && newType === NotificationTypeEnum.RECEPTION) {
-      chatStore.updateTotalUnreadCount()
-    }
-
-    // 显示操作成功提示
-    let message = ''
-    switch (newType) {
-      case NotificationTypeEnum.RECEPTION:
-        message = t('message.message_menu.notification_allowed')
-        break
-      case NotificationTypeEnum.NOT_DISTURB:
-        message = t('message.message_menu.notification_silent')
-        // 设置免打扰时也需要更新全局未读数，因为该会话的未读数将不再计入
+      // 如果从免打扰切换到允许提醒，需要重新计算全局未读数
+      if (item.muteNotification === NotificationTypeEnum.NOT_DISTURB && newType === NotificationTypeEnum.RECEPTION) {
         chatStore.updateTotalUnreadCount()
-        break
+      }
+
+      // 显示操作成功提示
+      let message = ''
+      switch (newType) {
+        case NotificationTypeEnum.RECEPTION:
+          message = t('message.message_menu.notification_allowed')
+          break
+        case NotificationTypeEnum.NOT_DISTURB:
+          message = t('message.message_menu.notification_silent')
+          // 设置免打扰时也需要更新全局未读数，因为该会话的未读数将不再计入
+          chatStore.updateTotalUnreadCount()
+          break
+      }
+      window.$message.success(message)
+    } catch (e) {
+      window.$message.error(String(e))
     }
-    window.$message.success(message)
   }
 
   const visibleMenu = (item: SessionItem) => {

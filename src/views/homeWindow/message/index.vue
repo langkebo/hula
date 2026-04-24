@@ -50,7 +50,9 @@
                   <n-popover trigger="hover" v-if="item.hotFlag === IsAllUserEnum.Yes">
                     <template #trigger>
                       <svg
-                        :class="[globalStore.currentSessionRoomId === item.roomId ? 'color-#33ceab' : 'color-#13987f']"
+                        :class="[
+                          globalStore.currentSessionRoomId === item.roomId ? 'color-#33ceab' : 'color-[--color-primary]'
+                        ]"
                         class="size-20px select-none outline-none cursor-pointer">
                         <use href="#auth"></use>
                       </svg>
@@ -60,7 +62,7 @@
 
                   <n-popover trigger="hover" v-if="item.account === UserType.BOT">
                     <template #trigger>
-                      <svg class="size-20px select-none outline-none cursor-pointer color-#13987f">
+                      <svg class="size-20px select-none outline-none cursor-pointer color-[--color-primary]">
                         <use href="#authenticationUser"></use>
                       </svg>
                     </template>
@@ -69,7 +71,9 @@
                 </n-flex>
                 <span
                   v-if="item.account !== UserType.BOT"
-                  :class="{ 'color-#d5304f90!': item.shield && globalStore.currentSessionRoomId === item.roomId }"
+                  :class="{
+                    'color-[--color-danger]90!': item.shield && globalStore.currentSessionRoomId === item.roomId
+                  }"
                   class="text text-10px w-fit truncate text-right">
                   {{ item.lastMsgTime }}
                 </span>
@@ -78,14 +82,18 @@
               <n-flex align="center" justify="space-between">
                 <template v-if="item.isAtMe">
                   <span class="text flex-1 leading-tight text-12px truncate">
-                    <span class="text-#d5304f mr-4px">{{ t('message.message_list.mention_tag') }}</span>
+                    <span class="text-[--color-danger] mr-4px">{{ t('message.message_list.mention_tag') }}</span>
                     <span>{{ String(item.lastMsg || '').replace(':', '：') }}</span>
                   </span>
                 </template>
                 <template v-else-if="item.shield">
                   <span class="text flex-1 leading-tight text-12px truncate">
                     <span
-                      :class="globalStore.currentSessionRoomId === item.roomId ? 'color-#d5304f90' : 'color-#909090'">
+                      :class="
+                        globalStore.currentSessionRoomId === item.roomId
+                          ? 'color-[--color-danger]90'
+                          : 'color-[--color-text-tertiary]'
+                      ">
                       {{
                         item.type === RoomTypeEnum.GROUP
                           ? t('message.message_list.shield_group')
@@ -107,14 +115,22 @@
                 <!-- 消息提示 -->
                 <template v-if="item.shield">
                   <svg
-                    :class="[globalStore.currentSessionRoomId === item.roomId ? 'color-#d5304f90' : 'color-#909090']"
+                    :class="[
+                      globalStore.currentSessionRoomId === item.roomId
+                        ? 'color-[--color-danger]90'
+                        : 'color-[--color-text-tertiary]'
+                    ]"
                     class="size-14px">
                     <use href="#forbid"></use>
                   </svg>
                 </template>
                 <template v-else-if="item.muteNotification === 1 && !item.unreadCount">
                   <svg
-                    :class="[globalStore.currentSessionRoomId === item.roomId ? 'color-#fefefe' : 'color-#909090']"
+                    :class="[
+                      globalStore.currentSessionRoomId === item.roomId
+                        ? 'color-#fefefe'
+                        : 'color-[--color-text-tertiary]'
+                    ]"
                     class="size-14px">
                     <use href="#close-remind"></use>
                   </svg>
@@ -166,6 +182,7 @@
 </template>
 <script lang="ts" setup name="message">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { RecycleScroller } from 'vue-virtual-scroller'
 import { MittEnum, RoomTypeEnum, ThemeEnum, UserType, MsgEnum } from '@/enums'
 import { useCommon } from '@/hooks/useCommon.ts'
 import { useMessage } from '@/hooks/useMessage.ts'
@@ -173,12 +190,12 @@ import { useMitt } from '@/hooks/useMitt'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { IsAllUserEnum } from '@/services/types.ts'
-import type { SessionItem } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useGroupStore } from '@/stores/group.ts'
-import { useSettingStore } from '@/stores/setting'
-import { useBotStore } from '@/stores/bot'
+import type { SessionItem } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useBotStore } from '@/stores/domains/user/bot'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'

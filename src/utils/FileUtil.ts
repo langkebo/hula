@@ -4,7 +4,7 @@ import { copyFile, stat } from '@tauri-apps/plugin-fs'
 import type { FilesMeta } from '@/services/types'
 import type { PathUploadFile } from '@/utils/FileType'
 import { extractFileName } from '@/utils/Formatting'
-import { useUserStore } from '../stores/user'
+import { useUserStore } from '../stores/domains/user/user'
 import { getFilesMeta } from './PathUtil'
 import { createLogger } from '@/utils/Logger'
 

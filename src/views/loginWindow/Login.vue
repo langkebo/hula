@@ -32,10 +32,12 @@
           clearable>
           <template #suffix>
             <n-flex v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
-              <svg v-if="!arrowStatus" class="down w-18px h-18px color-#505050 dark:color-#909090 cursor-pointer">
+              <svg
+                v-if="!arrowStatus"
+                class="down w-18px h-18px color-#505050 dark:color-[--color-text-tertiary] cursor-pointer">
                 <use href="#down"></use>
               </svg>
-              <svg v-else class="down w-18px h-18px color-#505050 dark:color-#909090 cursor-pointer">
+              <svg v-else class="down w-18px h-18px color-#505050 dark:color-[--color-text-tertiary] cursor-pointer">
                 <use href="#up"></use>
               </svg>
             </n-flex>
@@ -53,7 +55,7 @@
               v-for="item in loginHistories"
               :key="item.account"
               @click="giveAccount(item)"
-              class="p-8px cursor-pointer hover:bg-#90909020 dark:hover:bg-#90909030 hover:rounded-6px">
+              class="p-8px cursor-pointer hover:bg-[--color-text-tertiary]20 dark:hover:bg-[--color-text-tertiary]30 hover:rounded-6px">
               <div class="flex-between-center">
                 <n-avatar :src="AvatarUtils.getAvatarUrl(item.avatar)" color="#fff" class="size-28px rounded-50%" />
                 <p class="text-14px color-#505050 dark:color-#fefefe">{{ item.account }}</p>
@@ -85,13 +87,13 @@
         <!-- 协议 -->
         <n-flex align="center" justify="center" :size="6">
           <n-checkbox v-model:checked="protocol" />
-          <div class="text-12px color-#909090 cursor-default lh-14px agreement">
+          <div class="text-12px color-[--color-text-tertiary] cursor-default lh-14px agreement">
             <span>{{ t('login.term.checkout.text1') }}</span>
-            <span class="color-#13987f cursor-pointer" @click.stop="openServiceAgreement">
+            <span class="color-[--color-primary] cursor-pointer" @click.stop="openServiceAgreement">
               {{ t('login.term.checkout.text2') }}
             </span>
             <span>{{ t('login.term.checkout.text3') }}</span>
-            <span class="color-#13987f cursor-pointer" @click.stop="openPrivacyAgreement">
+            <span class="color-[--color-primary] cursor-pointer" @click.stop="openPrivacyAgreement">
               {{ t('login.term.checkout.text4') }}
             </span>
           </div>
@@ -156,14 +158,14 @@
       class="text-14px grid grid-cols-[1fr_auto_1fr] items-center gap-x-12px w-full"
       id="bottomBar">
       <div
-        class="color-#13987f cursor-pointer justify-self-end text-right"
+        class="color-[--color-primary] cursor-pointer justify-self-end text-right"
         :title="cancelLoginTitle"
         @click="cancelAutoLoginAndShowManual">
         {{ cancelLoginLabel }}
       </div>
       <div class="w-1px h-14px bg-#ccc dark:bg-#707070 justify-self-center"></div>
       <div
-        class="color-#13987f cursor-pointer justify-self-start text-left"
+        class="color-[--color-primary] cursor-pointer justify-self-start text-left"
         :title="removeAccountTitle"
         @click="removeStoredAccount">
         {{ removeAccountLabel }}
@@ -171,7 +173,7 @@
     </div>
     <div v-else class="text-14px grid grid-cols-[1fr_auto_1fr] items-center gap-x-12px w-full" id="bottomBar">
       <div
-        class="color-#13987f cursor-pointer justify-self-end text-right"
+        class="color-[--color-primary] cursor-pointer justify-self-end text-right"
         :title="qrCodeTitle"
         @click="router.push('/qrCode')">
         {{ qrCodeLabel }}
@@ -186,16 +188,16 @@
           :show-checkmark="false"
           :show-arrow="false">
           <template #trigger>
-            <div class="color-#13987f cursor-pointer" :title="moreTitle">{{ moreLabel }}</div>
+            <div class="color-[--color-primary] cursor-pointer" :title="moreTitle">{{ moreLabel }}</div>
           </template>
           <n-flex vertical :size="2">
             <div
-              class="register text-14px cursor-pointer hover:bg-#90909030 hover:rounded-6px p-8px"
+              class="register text-14px cursor-pointer hover:bg-[--color-text-tertiary]30 hover:rounded-6px p-8px"
               @click="router.push('/register')">
               {{ t('login.register') }}
             </div>
             <div
-              class="text-14px cursor-pointer hover:bg-#90909030 hover:rounded-6px p-8px"
+              class="text-14px cursor-pointer hover:bg-[--color-text-tertiary]30 hover:rounded-6px p-8px"
               @click="createWebviewWindow('忘记密码', 'forgetPassword', 600, 600)">
               {{ t('login.option.items.forget') }}
             </div>
@@ -203,7 +205,7 @@
               v-if="!isCompatibility()"
               @click="showServerConfig = true"
               :class="{ network: isMac() }"
-              class="text-14px cursor-pointer hover:bg-#90909030 hover:rounded-6px p-8px">
+              class="text-14px cursor-pointer hover:bg-[--color-text-tertiary]30 hover:rounded-6px p-8px">
               {{ t('login.option.items.network_setting') }}
             </div>
           </n-flex>
@@ -235,15 +237,14 @@ import { type DriverStepConfig, useDriver } from '@/hooks/useDriver'
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
 import type { UserInfoType } from '@/services/types.ts'
-import { useGlobalStore } from '@/stores/global'
-import { useGuideStore } from '@/stores/guide'
-import { useLoginHistoriesStore } from '@/stores/loginHistory.ts'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStore } from '@/stores/user.ts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGuideStore } from '@/stores/domains/settings/guide'
+import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isCompatibility, isDesktop, isMac } from '@/utils/PlatformConstants'
-import { clearListener } from '@/utils/ReadCountQueue'
-import { useLogin } from '@/hooks/useLogin'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { formatBottomText } from '@/utils/Formatting'
 import { ThemeEnum } from '@/enums'
 import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
@@ -264,21 +265,29 @@ const { isTrayMenuShow } = storeToRefs(globalStore)
 const { isGuideCompleted } = storeToRefs(guideStore)
 const { isOnline } = useNetwork()
 const loginHistoriesStore = useLoginHistoriesStore()
-const { loginHistories } = loginHistoriesStore
+const { loginHistories } = storeToRefs(loginHistoriesStore)
 const { login } = storeToRefs(settingStore)
 const protocol = ref(true)
 const arrowStatus = ref(false)
 const moreShow = ref(false)
 const showServerConfig = ref(false)
-const homeserverUrl = ref(import.meta.env.VITE_HOMESERVER_URL || 'http://localhost:8008')
-const identityServerUrl = ref('')
 const { createWebviewWindow, createModalWindow, getWindowPayload } = useWindow()
 const { checkUpdate, CHECK_UPDATE_LOGIN_TIME } = useCheckUpdate()
-const { normalLogin, loading, loginText, loginDisabled, info: loginInfo, uiState } = useLogin()
+const {
+  normalLogin,
+  loading,
+  loginText,
+  loginDisabled,
+  info: loginInfo,
+  uiState,
+  homeserverUrl,
+  identityServerUrl
+} = useLoginFlow()
 const loginContext: ThirdPartyLoginContext = {
   giteeLogin: () => {},
   githubLogin: () => {},
   gitcodeLogin: () => {},
+  homeserverUrl,
   loading,
   loginDisabled
 }
@@ -331,7 +340,7 @@ const triggerAutoLogin = () => {
 const cancelAutoLoginAndShowManual = () => {
   cancelAutoLogin()
   uiState.value = 'manual'
-  loginHistories.length > 0 && giveAccount(loginHistories[0])
+  loginHistories.value.length > 0 && giveAccount(loginHistories.value[0])
 }
 
 const driverSteps = computed<DriverStepConfig[]>(() => [
@@ -466,7 +475,7 @@ watch(
       return
     }
 
-    const matchedAccount = loginHistories.find(
+    const matchedAccount = loginHistories.value.find(
       (history) => history.account === newAccount || history.email === newAccount
     )
     if (matchedAccount) {
@@ -513,9 +522,9 @@ const handlePendingRemoteLoginPayload = async () => {
 }
 
 const delAccount = (item: UserInfoType) => {
-  const lengthBeforeDelete = loginHistories.length
+  const lengthBeforeDelete = loginHistories.value.length
   loginHistoriesStore.removeLoginHistory(item)
-  if (lengthBeforeDelete === 1 && loginHistories.length === 0) {
+  if (lengthBeforeDelete === 1 && loginHistories.value.length === 0) {
     arrowStatus.value = false
   }
   loginInfo.value.account = ''
@@ -536,7 +545,7 @@ const giveAccount = (item: UserInfoType) => {
 const removeStoredAccount = () => {
   const storedUserInfo = userStore.userInfo
   if (storedUserInfo) {
-    const matchedHistory = loginHistories.find(
+    const matchedHistory = loginHistories.value.find(
       (item) => item.uid === storedUserInfo.uid || item.account === storedUserInfo.account
     )
     if (matchedHistory) {
@@ -583,7 +592,6 @@ onBeforeMount(async () => {
     uiState.value = 'manual'
     localStorage.removeItem('TOKEN')
     localStorage.removeItem('REFRESH_TOKEN')
-    clearListener()
     return
   }
 })
@@ -602,7 +610,7 @@ onMounted(async () => {
     startAutoLoginCountdown()
   } else {
     uiState.value = 'manual'
-    loginHistories.length > 0 && giveAccount(loginHistories[0])
+    loginHistories.value.length > 0 && giveAccount(loginHistories.value[0])
   }
 
   window.addEventListener('click', closeMenu, true)

@@ -1,9 +1,9 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { OnlineEnum } from '@/enums'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user'
-import { useUserStatusStore } from '@/stores/userStatus'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 
 // 在线状态管理(仅是在线和离线)
 export const useOnlineStatus = (uid?: ComputedRef<string | undefined> | Ref<string | undefined>) => {

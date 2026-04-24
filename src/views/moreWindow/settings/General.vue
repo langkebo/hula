@@ -41,7 +41,7 @@
             <span>{{ t('setting.general.system.close_options.exit_program') }}</span>
           </label>
 
-          <label class="text-(12px #909090) flex gap-6px justify-end items-center">
+          <label class="text-(12px --color-text-tertiary) flex gap-6px justify-end items-center">
             <n-checkbox size="small" v-model:checked="tips.notTips" />
             <span>{{ t('setting.general.system.close_prompt') }}</span>
           </label>
@@ -142,7 +142,7 @@ import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { NSwitch } from 'naive-ui'
 import { CloseBxEnum, ShowModeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isWindows } from '@/utils/PlatformConstants'
 import { useFontOptions, useTranslateOptions, langOptions } from './config.ts'
 import { useTopicsList } from './model.tsx'
@@ -151,9 +151,8 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const appWindow = WebviewWindow.getCurrent()
 const settingStore = useSettingStore()
-const { themes, tips, chat, page } = settingStore
-const { showMode, escClose } = storeToRefs(settingStore)
-const activeItem = ref<string>(themes.pattern)
+const { themes, tips, chat, page, showMode, escClose } = storeToRefs(settingStore)
+const activeItem = ref<string>(themes.value.pattern)
 const topicsList = useTopicsList()
 const translateOptions = useTranslateOptions()
 const fontOptions = useFontOptions()

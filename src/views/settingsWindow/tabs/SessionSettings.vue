@@ -80,7 +80,7 @@ import { ref, computed, onMounted } from 'vue'
 import { NButton, NDivider, NSpin, NEmpty, NModal, NForm, NFormItem, NInput, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { matrixAccountService, type DeviceInfo } from '@/services/matrix/MatrixAccountService'
-import { useMatrixStore } from '@/stores/matrix'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 
 defineOptions({
   name: 'SessionSettings'
@@ -224,7 +224,7 @@ function handleLogoutAllDevices() {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  background-color: rgba(24, 144, 255, 0.1);
+  background-color: var(--color-info-light);
   border-radius: 8px;
 }
 
@@ -266,7 +266,7 @@ function handleLogoutAllDevices() {
 .device-id,
 .device-meta {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 
 .device-meta {
@@ -302,7 +302,7 @@ function handleLogoutAllDevices() {
 
 .setting-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 </style>

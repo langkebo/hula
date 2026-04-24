@@ -49,10 +49,10 @@
 import { computed, ref } from 'vue'
 import { NAvatar, NButton, NPopover, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
-import { useUserStore } from '@/stores/user'
-import { useUserStatusStore } from '@/stores/userStatus'
-import { useSettingStore } from '@/stores/setting'
-import { useMatrixStore } from '@/stores/matrix'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { matrixAccountService } from '@/services/matrix'
 import defaultAvatarImg from '@/assets/img/win.png'
 import { createLogger } from '@/utils/Logger'
@@ -81,10 +81,10 @@ const defaultAvatar = computed(() => defaultAvatarImg)
 const currentStatusId = ref(userStatusStore.stateId || 'online')
 
 const statusOptions = [
-  { id: 'online', label: '在线', icon: 'mdi:circle', color: '#52c41a' },
-  { id: 'away', label: '离开', icon: 'mdi:circle', color: '#faad14' },
-  { id: 'busy', label: '忙碌', icon: 'mdi:circle', color: '#ff4d4f' },
-  { id: 'offline', label: '隐身', icon: 'mdi:circle-outline', color: '#999' }
+  { id: 'online', label: '在线', icon: 'mdi:circle', color: 'var(--color-success)' },
+  { id: 'away', label: '离开', icon: 'mdi:circle', color: 'var(--color-warning)' },
+  { id: 'busy', label: '忙碌', icon: 'mdi:circle', color: 'var(--color-danger)' },
+  { id: 'offline', label: '隐身', icon: 'mdi:circle-outline', color: 'var(--color-text-quaternary)' }
 ]
 
 const statusIcon = computed(() => {
@@ -99,7 +99,7 @@ const statusClass = computed(() => {
 const statusStyle = computed(() => {
   const status = statusOptions.find((s) => s.id === currentStatusId.value)
   return {
-    backgroundColor: status?.color || '#52c41a'
+    backgroundColor: status?.color || 'var(--color-success)'
   }
 })
 
@@ -224,7 +224,7 @@ async function handleStatusChange(statusId: string) {
 .status-menu-title {
   padding: 4px 12px;
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-bottom: 4px;
 }
 
@@ -246,6 +246,6 @@ async function handleStatusChange(statusId: string) {
 }
 
 .status-option.active {
-  background-color: rgba(24, 144, 255, 0.1);
+  background-color: var(--color-info-light);
 }
 </style>

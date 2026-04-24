@@ -34,6 +34,7 @@
         </div>
       </div>
     </transition>
+    <SettingsDialog />
   </div>
 </template>
 
@@ -43,28 +44,27 @@ import { info } from '@tauri-apps/plugin-log'
 import { useI18n } from 'vue-i18n'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
 import { useCheckUpdate } from '@/hooks/useCheckUpdate'
-import { useLogin } from '@/hooks/useLogin'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global.ts'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isMobile, isWindows } from '@/utils/PlatformConstants'
 import { MittEnum, MsgEnum, NotificationTypeEnum, TauriCommand } from '@/enums'
-import { clearListener, initListener, readCountQueue } from '@/utils/ReadCountQueue'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { UserAttentionType } from '@tauri-apps/api/window'
-import type { MessageType } from '@/stores/chat'
+import type { MessageType } from '@/stores/domains/chat/chat'
 import { WsResponseMessageType } from '@/enums'
-import { useChatStore } from '@/stores/chat'
-import { useFileStore } from '@/stores/file'
-import { useUserStore } from '@/stores/user'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useInitialSyncStore } from '@/stores/initialSync.ts'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useFileStore } from '@/stores/domains/widget/file'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useInitialSyncStore } from '@/stores/domains/chat/initialSync'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useRoute } from 'vue-router'
 import { audioManager } from '@/utils/AudioManager'
 import { useOverlayController } from '@/hooks/useOverlayController'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { usePrivacyProtection } from '@/composables/usePrivacyProtection'
 import PrivacyOverlay from '@/components/privacy/PrivacyOverlay.vue'
 import { RoomTypeEnum } from '@/enums'
@@ -72,6 +72,7 @@ import { getFilesMeta } from '@/utils/PathUtil'
 import FileUtil from '@/utils/FileUtil'
 import type { FilesMeta } from '@/services/types'
 import { createLogger } from '@/utils/Logger'
+import SettingsDialog from '@/views/settingsWindow/SettingsDialog.vue'
 
 const logger = createLogger('Layout')
 
@@ -89,7 +90,7 @@ const hasCachedSessions = computed(() => chatStore.sessionList.length > 0)
 const appWindow = WebviewWindow.getCurrent()
 const loadingPercentage = ref(10)
 const loadingText = ref(t('home.loading.app'))
-const { resetLoginState, logout, init } = useLogin()
+const { logout, init } = useLoginFlow()
 // 是否需要阻塞首屏并做初始化同步
 const requiresInitialSync = ref(true)
 const shouldBlockInitialRender = computed(() => requiresInitialSync.value && !hasCachedSessions.value)
@@ -246,10 +247,7 @@ watch(
   () => appWindow.label === 'home',
   (newValue) => {
     if (newValue) {
-      // 初始化监听器
-      initListener()
-      // 读取消息队列
-      readCountQueue()
+      // 窗口就绪
     }
   },
   { immediate: true }
@@ -483,7 +481,6 @@ const setupNativeFileDropListeners = async () => {
 
 listen('relogin', async () => {
   info('收到重新登录事件')
-  await resetLoginState()
   await logout()
 })
 
@@ -518,8 +515,6 @@ onMounted(async () => {
   // 监听home窗口被聚焦的事件，当窗口被聚焦时自动关闭状态栏通知
   const homeWindow = await WebviewWindow.getByLabel('home')
   if (homeWindow) {
-    // Note: Matrix SDK 事件监听器已在 matrixClientService.startClient() 中设置
-
     // 监听窗口聚焦事件，聚焦时停止tray闪烁
     if (isWindows()) {
       homeWindow.listen('tauri://focus', async () => {
@@ -551,7 +546,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cleanupNativeFileDropListeners()
-  clearListener()
   // 清除Web Worker计时器
   timerWorker.postMessage({
     type: 'clearTimer',

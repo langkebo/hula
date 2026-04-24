@@ -1,8 +1,8 @@
 import type { TransferRenderSourceList, TransferRenderTargetLabel } from 'naive-ui'
 import { NAvatar, NCheckbox } from 'naive-ui'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useGroupStore } from '@/stores/group.ts'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { UserType } from '@/enums'
 

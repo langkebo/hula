@@ -1,10 +1,8 @@
 <template>
-  <n-flex vertical class="select-none">
-    <n-flex
+  <div class="select-none flex flex-col">
+    <div
       v-if="props.closeHeader === true ? false : true"
-      align="center"
-      justify="space-between"
-      class="color-[--text-color] px-20px py-10px">
+      class="flex items-center justify-between color-[--text-color] px-20px py-10px">
       <p class="text-16px">
         {{
           props.type === 'friend' ? t('mobile_mymessage.notification.friend') : t('mobile_mymessage.notification.group')
@@ -13,131 +11,126 @@
       <svg class="size-18px cursor-pointer">
         <use href="#delete"></use>
       </svg>
-    </n-flex>
+    </div>
 
-    <n-virtual-list
+    <div
       :style="{
-        maxHeight: props.customHeight
-          ? props.customHeight + 'px'
-          : 'max-height: calc(100vh / var(--page-scale, 1) - 80px)'
+        maxHeight: props.customHeight ? props.customHeight + 'px' : 'calc(100vh / var(--page-scale, 1) - 80px)',
+        overflowY: 'auto'
       }"
-      :items="applyList"
-      :item-size="87"
-      :item-resizable="true"
       @scroll="handleScroll"
-      ref="virtualListRef">
-      <template #default="{ item }">
-        <div class="flex gap-2 w-full text-14px mb-15px">
-          <div class="flex h-full">
-            <n-avatar
-              round
-              size="large"
-              :src="
-                props.type === 'friend'
-                  ? avatarSrc(getUserInfo(item)?.avatar || '')
-                  : avatarSrc(groupDetailsMap[item.roomId]?.avatar || '/default-group-avatar.png')
-              " />
-          </div>
-          <div class="flex-1 flex flex-col gap-10px min-w-0">
-            <div
-              @click="isCurrentUser(item.senderId) ? (currentUserId = item.operateId) : (currentUserId = item.senderId)"
-              class="flex justify-between text-14px text-#2DA38D">
-              {{ getUserInfo(item)?.name || t('mobile_mymessage.unknown_user') }}
-            </div>
-            <div class="flex text-gray-500 text-12px min-w-0">
-              <span class="truncate w-full block">
-                {{ applyMsg(item) }}
-              </span>
-            </div>
-            <div v-if="isFriendApplyOrGroupInvite(item)" class="flex gap-2 flex-1 text-12px text-gray-500 min-w-0">
-              <div class="whitespace-nowrap flex-shrink-0">留言:</div>
-              <n-ellipsis
-                class="flex-1 min-w-0"
-                :tooltip="true"
-                expand-trigger="click"
-                :line-clamp="1"
-                style="max-width: 100%">
-                {{ item.content }}
-              </n-ellipsis>
-            </div>
-            <div v-else class="flex gap-2 flex-1 text-12px text-gray-500 min-w-0">
-              <div class="whitespace-nowrap flex-shrink-0">处理人:</div>
-              <n-ellipsis
-                class="flex-1 min-w-0"
-                :tooltip="true"
-                expand-trigger="click"
-                :line-clamp="1"
-                style="max-width: 100%">
-                {{ groupStore.getUserInfo(item.senderId)?.name || t('mobile_mymessage.unknown_user') }}
-              </n-ellipsis>
-            </div>
-          </div>
+      ref="scrollRef">
+      <div v-for="item in applyList" :key="item.applyId" class="flex gap-2 w-full text-14px mb-15px">
+        <div class="flex h-full">
+          <img
+            class="w-40px h-40px rounded-full object-cover flex-shrink-0"
+            :src="
+              props.type === 'friend'
+                ? avatarSrc(getUserInfo(item)?.avatar || '')
+                : avatarSrc(groupDetailsMap[item.roomId ?? '']?.avatar || '/default-group-avatar.png')
+            " />
+        </div>
+        <div class="flex-1 flex flex-col gap-10px min-w-0">
           <div
-            v-if="isFriendApplyOrGroupInvite(item)"
-            class="flex min-w-70px w-70px max-h-64px flex-col items-center justify-center flex-shrink-0">
-            <n-flex
-              align="center"
-              :size="10"
-              v-if="item.status === RequestNoticeAgreeStatus.UNTREATED && !isCurrentUser(item.senderId)">
-              <n-button size="small" secondary :loading="loadingMap[item.applyId]" @click="handleAgree(item)">
-                {{ t('mobile_mymessage.accept') }}
-              </n-button>
-            </n-flex>
-            <n-dropdown
-              trigger="click"
-              :options="dropdownOptions"
-              @select="(key: string) => handleFriendAction(key, item.applyId)"
-              v-if="item.status === RequestNoticeAgreeStatus.UNTREATED && !isCurrentUser(item.senderId)">
-              <n-icon class="cursor-pointer px-15px py-3px rounded-5px mt-10px bg-gray-300 h-50% items-center flex">
-                <svg class="size-16px color-[--text-color]">
-                  <use href="#more"></use>
-                </svg>
-              </n-icon>
-            </n-dropdown>
-            <span class="text-(12px #64a29c)" v-else-if="item.status === RequestNoticeAgreeStatus.ACCEPTED">
-              {{ t('mobile_mymessage.approved') }}
+            @click="
+              isCurrentUser(item.senderId || '')
+                ? (currentUserId = item.operateId || '')
+                : (currentUserId = item.senderId || '')
+            "
+            class="flex justify-between text-14px text-#2DA38D">
+            {{ getUserInfo(item)?.name || t('mobile_mymessage.unknown_user') }}
+          </div>
+          <div class="flex text-gray-500 text-12px min-w-0">
+            <span class="truncate w-full block">
+              {{ applyMsg(item) }}
             </span>
-            <span class="text-(12px #c14053)" v-else-if="item.status === RequestNoticeAgreeStatus.REJECTED">
-              {{ t('mobile_mymessage.refused') }}
-            </span>
-            <span class="text-(12px #909090)" v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
-              {{ t('mobile_mymessage.ignored') }}
-            </span>
+          </div>
+          <div v-if="isFriendApplyOrGroupInvite(item)" class="flex gap-2 flex-1 text-12px text-gray-500 min-w-0">
+            <div class="whitespace-nowrap flex-shrink-0">留言:</div>
             <span
-              class="text-(12px #64a29c)"
-              :class="{ 'text-(12px #c14053)': item.status === RequestNoticeAgreeStatus.REJECTED }"
-              v-else-if="isCurrentUser(item.senderId)">
-              {{
-                isAccepted(item)
-                  ? t('mobile_mymessage.agreed')
-                  : item.status === RequestNoticeAgreeStatus.REJECTED
-                    ? t('mobile_mymessage.declined')
-                    : t('mobile_mymessage.pending')
-              }}
+              class="flex-1 min-w-0 line-clamp-1"
+              style="max-width: 100%"
+              @click="($event.target as HTMLElement)?.classList?.toggle('line-clamp-1')">
+              {{ item.content }}
+            </span>
+          </div>
+          <div v-else class="flex gap-2 flex-1 text-12px text-gray-500 min-w-0">
+            <div class="whitespace-nowrap flex-shrink-0">处理人:</div>
+            <span
+              class="flex-1 min-w-0 line-clamp-1"
+              style="max-width: 100%"
+              @click="($event.target as HTMLElement)?.classList?.toggle('line-clamp-1')">
+              {{ groupStore.getUserInfo(item.senderId || '')?.name || t('mobile_mymessage.unknown_user') }}
             </span>
           </div>
         </div>
-      </template>
-    </n-virtual-list>
+        <div
+          v-if="isFriendApplyOrGroupInvite(item)"
+          class="flex min-w-70px w-70px max-h-64px flex-col items-center justify-center flex-shrink-0">
+          <div
+            class="flex items-center gap-10px"
+            v-if="item.status === RequestNoticeAgreeStatus.UNTREATED && !isCurrentUser(item.senderId || '')">
+            <van-button size="small" plain :loading="loadingMap[item.applyId]" @click="handleAgree(item)">
+              {{ t('mobile_mymessage.accept') }}
+            </van-button>
+          </div>
+          <van-popover
+            trigger="click"
+            :actions="popoverActions"
+            @select="(action: { value: string }) => handleFriendAction(action.value, item.applyId)"
+            v-if="item.status === RequestNoticeAgreeStatus.UNTREATED && !isCurrentUser(item.senderId || '')">
+            <template #reference>
+              <div
+                class="cursor-pointer px-15px py-3px rounded-5px mt-10px bg-gray-300 h-50% flex items-center justify-center">
+                <svg class="size-16px color-[--text-color]">
+                  <use href="#more"></use>
+                </svg>
+              </div>
+            </template>
+          </van-popover>
+          <span class="text-(12px #64a29c)" v-else-if="item.status === RequestNoticeAgreeStatus.ACCEPTED">
+            {{ t('mobile_mymessage.approved') }}
+          </span>
+          <span class="text-(12px #c14053)" v-else-if="item.status === RequestNoticeAgreeStatus.REJECTED">
+            {{ t('mobile_mymessage.refused') }}
+          </span>
+          <span class="text-(12px #909090)" v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
+            {{ t('mobile_mymessage.ignored') }}
+          </span>
+          <span
+            class="text-(12px #64a29c)"
+            :class="{ 'text-(12px #c14053)': item.status === RequestNoticeAgreeStatus.REJECTED }"
+            v-else-if="isCurrentUser(item.senderId || '')">
+            {{
+              isAccepted(item)
+                ? t('mobile_mymessage.agreed')
+                : item.status === RequestNoticeAgreeStatus.REJECTED
+                  ? t('mobile_mymessage.declined')
+                  : t('mobile_mymessage.pending')
+            }}
+          </span>
+        </div>
+      </div>
+    </div>
 
-    <!-- 空数据提示 -->
-    <n-flex v-if="applyList.length === 0" vertical justify="center" align="center" class="py-40px">
-      <n-empty
+    <div v-if="applyList.length === 0" class="flex flex-col items-center justify-center py-40px">
+      <van-empty
         :description="
           props.type === 'friend' ? t('mobile_mymessage.empty_require') : t('mobile_mymessage.empty_group_require')
         " />
-    </n-flex>
-  </n-flex>
+    </div>
+  </div>
 </template>
 <script setup lang="ts">
 import { createLogger } from '@/utils/Logger'
 import { uniq } from 'es-toolkit'
 import type { NoticeItem } from '@/services/types.ts'
 import { NoticeType, RequestNoticeAgreeStatus } from '@/services/types.ts'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useUserStore } from '@/stores/user'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import type { FriendRequestItem } from '@/stores/domains/chat/contacts'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { matrixGroupService } from '@/services/matrix'
 import { useTimerManager } from '@/utils/TimerManager'
 import { useI18n } from 'vue-i18n'
@@ -151,17 +144,16 @@ const groupStore = useGroupStore()
 const currentUserId = ref('0')
 const loadingMap = ref<Record<string, boolean>>({})
 const isLoadingMore = ref(false)
+const scrollRef = ref<HTMLElement>()
 const props = defineProps<{
   type: 'friend' | 'group'
   customHeight?: number
   closeHeader?: boolean
 }>()
 
-// 存储群组信息的响应式对象
 const groupDetailsMap = ref<Record<string, any>>({})
 const loadingGroups = ref<Set<string>>(new Set())
 
-// 检查好友申请是否已被接受
 const isAccepted = (item: any) => {
   return item.status !== RequestNoticeAgreeStatus.UNTREATED
 }
@@ -176,21 +168,17 @@ const applyList = computed(() => {
   })
 })
 
-// 获取群组信息的函数
 const getGroupDetail = async (roomId: string) => {
   if (!roomId) return null
 
-  // 如果已经在加载中，直接返回
   if (loadingGroups.value.has(roomId)) {
     return null
   }
 
-  // 如果已经有缓存，直接返回
   if (groupDetailsMap.value[roomId]) {
     return groupDetailsMap.value[roomId]
   }
 
-  // 开始加载
   loadingGroups.value.add(roomId)
   try {
     const groupInfo = await groupStore.loadGroupInfo(roomId)
@@ -207,7 +195,6 @@ const getGroupDetail = async (roomId: string) => {
   return null
 }
 
-// 异步获取群组信息的计算属性
 const applyMsg = computed(() => (item: any) => {
   if (props.type === 'friend') {
     return isCurrentUser(item.senderId)
@@ -241,33 +228,20 @@ const applyMsg = computed(() => (item: any) => {
     } else if (item.eventType === NoticeType.GROUP_RECALL_ADMIN) {
       return t('mobile_mymessage.group.removed_as_admin', { group: groupDetail.name })
     }
-    return ''
   }
 })
 
-// 下拉菜单选项
-const dropdownOptions = [
-  {
-    label: t('mobile_mymessage.menu.decline'),
-    key: 'reject'
-  },
-  {
-    label: t('mobile_mymessage.menu.decline'),
-    key: 'ignore'
-  }
+const popoverActions = [
+  { text: t('mobile_mymessage.menu.decline'), value: 'reject' },
+  { text: t('mobile_mymessage.menu.decline'), value: 'ignore' }
 ]
 
 const avatarSrc = (url: string) => AvatarUtils.getAvatarUrl(url)
 
-// 判断是否为当前登录用户
 const isCurrentUser = (uid: string) => {
   return uid === userStore.userInfo!.uid
 }
 
-/**
- * 获取当前用户查询视角
- * @param item 通知消息
- */
 const getUserInfo = (item: any) => {
   switch (item.eventType) {
     case NoticeType.FRIEND_APPLY:
@@ -280,12 +254,9 @@ const getUserInfo = (item: any) => {
     case NoticeType.GROUP_INVITE_ME:
     case NoticeType.GROUP_APPLY:
       return groupStore.getUserInfo(item.senderId)
-    default:
-      return undefined
   }
 }
 
-// 判断是否为好友申请或者群申请、群邀请
 const isFriendApplyOrGroupInvite = (item: any) => {
   return (
     item.eventType === NoticeType.FRIEND_APPLY ||
@@ -296,20 +267,16 @@ const isFriendApplyOrGroupInvite = (item: any) => {
   )
 }
 
-// 处理滚动事件
 const handleScroll = (e: Event) => {
   if (isLoadingMore.value) return
 
   const { scrollTop, scrollHeight, clientHeight } = e.target as HTMLElement
-  // 当滚动到距离底部20px以内时触发加载更多
   if (scrollHeight - scrollTop - clientHeight < 20) {
     loadMoreFriendRequests()
   }
 }
 
-// 加载更多好友申请
 const loadMoreFriendRequests = async () => {
-  // 如果已经是最后一页或正在加载中，则不再加载
   if (contactStore.applyPageOptions.isLast) {
     return
   }
@@ -322,7 +289,7 @@ const loadMoreFriendRequests = async () => {
   }
 }
 
-const handleAgree = async (item: NoticeItem) => {
+const handleAgree = async (item: FriendRequestItem) => {
   const applyId = item.applyId
   loadingMap.value[applyId] = true
   try {
@@ -341,7 +308,6 @@ const handleAgree = async (item: NoticeItem) => {
   }
 }
 
-// 处理好友请求操作
 const handleFriendAction = async (action: string, applyId: string) => {
   loadingMap.value[applyId] = true
   try {
@@ -371,14 +337,12 @@ onMounted(() => {
   contactStore.getApplyPage(props.type, true)
 })
 
-// 监听applyList变化，批量加载群组信息
 watch(
   () => applyList.value,
   (newList) => {
     const roomIds = uniq(newList.filter((item) => item.roomId && Number(item.roomId) > 0).map((item) => item.roomId))
 
     if (roomIds.length > 0) {
-      // 批量加载群组信息
       roomIds.forEach((roomId) => {
         if (roomId && !groupDetailsMap.value[roomId] && !loadingGroups.value.has(roomId)) {
           getGroupDetail(roomId)

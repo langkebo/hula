@@ -60,7 +60,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
-import { useUserStatusStore } from '@/stores/userStatus'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { matrixAccountService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
 

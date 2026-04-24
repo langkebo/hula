@@ -115,13 +115,13 @@
             <n-radio :checked="tipsRef.type === CloseBxEnum.CLOSE" @change="tipsRef.type = CloseBxEnum.CLOSE" />
             <span>{{ t('components.actionBar.close_prompt.exit_app') }}</span>
           </label>
-          <label class="text-(12px #909090) flex gap-6px justify-end items-center">
+          <label class="text-(12px --color-text-tertiary) flex gap-6px justify-end items-center">
             <n-checkbox size="small" v-model:checked="tipsRef.notTips" />
             <span>{{ t('components.actionBar.close_prompt.no_prompt') }}</span>
           </label>
 
           <n-flex justify="end">
-            <n-button @click="handleConfirm" class="w-78px" color="#13987f">
+            <n-button @click="handleConfirm" class="w-78px" color="var(--color-primary)">
               {{ t('components.common.confirm') }}
             </n-button>
             <n-button @click="tipsRef.show = false" class="w-78px" secondary>
@@ -144,8 +144,8 @@ import { CloseBxEnum, EventEnum, MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
-import { useAlwaysOnTopStore } from '@/stores/alwaysOnTop.ts'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useAlwaysOnTopStore } from '@/stores/domains/settings/alwaysOnTop'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isCompatibility, isMac, isWindows } from '@/utils/PlatformConstants'
 
 const { t } = useI18n()

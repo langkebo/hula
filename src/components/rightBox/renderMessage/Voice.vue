@@ -71,9 +71,10 @@ import { useAudioFileManager } from '@/hooks/useAudioFileManager'
 import { useAudioPlayback } from '@/hooks/useAudioPlayback'
 import { useVoiceDragControl } from '@/hooks/useVoiceDragControl'
 import { useWaveformRenderer } from '@/hooks/useWaveformRenderer'
+import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import type { VoiceBody } from '@/services/types'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStore } from '@/stores/user'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('Voice')
@@ -88,7 +89,11 @@ const userStore = useUserStore()
 const { themes } = storeToRefs(settingStore)
 
 // 使用messageId作为音频ID，确保唯一性
-const audioId = props.body.url
+const rawAudioUrl = computed(() => props.body.mxcUrl || props.body.url)
+const playableAudioUrl = computed(() => {
+  return matrixVoiceService.getPlayableUrl(props.body.mxcUrl, props.body.url)
+})
+const audioId = rawAudioUrl.value || props.body.url
 const waveformCanvas = ref<HTMLCanvasElement | null>(null)
 
 // 判断是否为深色模式
@@ -209,11 +214,11 @@ onMounted(async () => {
     waveformRenderer.waveformCanvas.value = waveformCanvas.value
 
     // 加载音频波形数据
-    const audioBuffer = await fileManager.loadAudioWaveform(props.body.url)
+    const audioBuffer = await fileManager.loadAudioWaveform(playableAudioUrl.value)
     await waveformRenderer.generateWaveformData(audioBuffer)
 
     // 创建音频元素
-    const audioUrl = await fileManager.getAudioUrl(props.body.url)
+    const audioUrl = await fileManager.getAudioUrl(playableAudioUrl.value)
     await audioPlayback.createAudioElement(audioUrl, audioId, second.value)
   } catch (error) {
     logger.error('组件初始化失败:', error)

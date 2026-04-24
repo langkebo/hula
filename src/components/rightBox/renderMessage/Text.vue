@@ -44,7 +44,7 @@
                 padding: '2px 4px',
                 borderRadius: '6px',
                 color: '#000',
-                background: '#13987f'
+                background: 'var(--color-primary)'
               }" />
             <p v-else style="margin: 0">{{ item }}</p>
           </div>
@@ -59,7 +59,7 @@
           padding: '2px 4px',
           borderRadius: '6px',
           color: '#000',
-          background: '#13987f'
+          background: 'var(--color-primary)'
         }" />
       <template v-else>{{ item }}</template>
       <div
@@ -82,7 +82,7 @@
 </template>
 <script setup lang="ts">
 import { openExternalUrl } from '@/hooks/useLinkSegments'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import type { TextBody } from '@/services/types'
 import { isMobile } from '@/utils/PlatformConstants'
 

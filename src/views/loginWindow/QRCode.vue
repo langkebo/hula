@@ -84,12 +84,12 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('QRCode')
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
-import { useLogin } from '@/hooks/useLogin'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { getEnhancedFingerprint } from '@/services/fingerprint'
 import { loginCommand } from '@/services/tauriCommand'
 import { TauriCommand } from '@/enums'
-import { useGlobalStore } from '@/stores/global'
-import { useSettingStore } from '@/stores/setting'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { matrixQrLoginService } from '@/services/matrix'
 import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -132,7 +132,7 @@ const scanStatusText = computed(() =>
   scanStatus.value.textKey ? t(`login.qr.overlay.${scanStatus.value.textKey}`) : ''
 )
 
-const { loading: loginLoading, loginDisabled } = useLogin()
+const { loading: loginLoading, loginDisabled } = useLoginFlow()
 const loginContext: ThirdPartyLoginContext = {
   loading: loginLoading,
   loginDisabled
@@ -190,7 +190,7 @@ const handleConfirmed = async (res: any) => {
       }
     })
 
-    await loginCommand({ uid: res.data.uid }, true).then(() => {
+    await loginCommand({ uid: res.data.uid }).then(() => {
       scanStatus.value = {
         status: 'success',
         icon: 'success',

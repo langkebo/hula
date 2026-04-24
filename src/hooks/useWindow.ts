@@ -3,13 +3,13 @@ import { LogicalSize } from '@tauri-apps/api/dpi'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { UserAttentionType, primaryMonitor, type Monitor } from '@tauri-apps/api/window'
 import { info } from '@tauri-apps/plugin-log'
-import { assign } from 'es-toolkit/compat'
-import { CallTypeEnum, EventEnum, RoomTypeEnum } from '@/enums'
-import { useGlobalStore } from '@/stores/global'
-import { isCompatibility, isDesktop, isMac, isWindows, isWindows10 } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useWindow')
+import { assign } from 'es-toolkit/compat'
+import { CallTypeEnum, EventEnum, RoomTypeEnum } from '@/enums'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { isCompatibility, isDesktop, isMac, isWindows, isWindows10 } from '@/utils/PlatformConstants'
 
 /** 判断是兼容的系统 */
 const isCompatibilityMode = computed(() => isCompatibility())
@@ -172,7 +172,7 @@ export const useWindow = () => {
             windowLabel: label,
             spacing: MAC_TRAFFIC_LIGHTS_SPACING
           })
-        } catch (_err) {}
+        } catch {}
       }
       if (wantCloseWindow) {
         const win = await WebviewWindow.getByLabel(wantCloseWindow)
@@ -196,7 +196,7 @@ export const useWindow = () => {
    * @param payload - 要发送的 JSON 数据对象，不限制字段内容。
    * @returns 返回一个 Promise，表示调用 Rust 后端命令的完成情况。
    */
-  const sendWindowPayload = async (windowLabel: string, payload: any) => {
+  const sendWindowPayload = async (windowLabel: string, payload: Record<string, unknown>) => {
     // 移动端不支持窗口管理
     if (!isDesktop()) {
       return Promise.resolve()
@@ -248,7 +248,7 @@ export const useWindow = () => {
    * // 需要时手动取消监听
    * unlisten()
    */
-  // async function getWindowPayloadListener<T>(this: any, windowLabel: string, callback: (event: any) => void) {
+  // async function getWindowPayloadListener<T>(this: unknown, windowLabel: string, callback: (event: unknown) => void) {
   //   const listenLabel = `${windowLabel}:update`
 
   //   return addListener(
@@ -274,7 +274,7 @@ export const useWindow = () => {
     width: number,
     height: number,
     parent: string,
-    payload?: Record<string, any>,
+    payload?: Record<string, unknown>,
     options?: {
       minWidth?: number
       minHeight?: number
@@ -353,7 +353,7 @@ export const useWindow = () => {
             windowLabel: label,
             spacing: MAC_TRAFFIC_LIGHTS_SPACING
           })
-        } catch (_err) {}
+        } catch {}
         attachMacModalOverlay(label)
       }
     })
@@ -522,8 +522,6 @@ export const useWindow = () => {
   }
 }
 
-let _createWebviewWindowInstance: ReturnType<typeof useWindow>['createWebviewWindow'] | null = null
-
 export async function createWebviewWindow(
   title: string,
   label: string,
@@ -537,21 +535,6 @@ export async function createWebviewWindow(
   visible = false,
   queryParams?: Record<string, string | number | boolean>
 ) {
-  if (!_createWebviewWindowInstance) {
-    const windowUtils = useWindow()
-    _createWebviewWindowInstance = windowUtils.createWebviewWindow
-  }
-  return _createWebviewWindowInstance(
-    title,
-    label,
-    width,
-    height,
-    wantCloseWindow,
-    resizable,
-    minW,
-    minH,
-    transparent,
-    visible,
-    queryParams
-  )
+  const { createWebviewWindow: _create } = useWindow()
+  return _create(title, label, width, height, wantCloseWindow, resizable, minW, minH, transparent, visible, queryParams)
 }

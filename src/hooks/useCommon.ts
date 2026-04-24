@@ -7,10 +7,9 @@ import { LimitEnum, MittEnum, MsgEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
-import type { SessionItem } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useUserStore } from '@/stores/user.ts'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { removeTag } from '@/utils/Formatting'
 import { SUPPORTED_IMAGE_EXTENSIONS, getFileExtension } from '@/utils/FileType'
@@ -20,6 +19,23 @@ import { isPathUploadFile, type UploadFile } from '@/utils/FileType'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
 import { createLogger } from '@/utils/Logger'
+import type { SessionItem } from '@/stores/domains/chat/chat/session'
+
+interface AitMentionData {
+  name?: string
+  text?: string
+  label?: string
+  uid?: string
+}
+
+interface ReplyData {
+  accountName: string
+  content: string
+  avatar: string
+  name?: string
+}
+
+type InsertNodeData = AitMentionData | ReplyData | string
 const logger = createLogger('Common')
 
 export interface SelectionRange {
@@ -206,7 +222,7 @@ export const useCommon = () => {
    * @param dom dom节点
    * @param target 目标节点
    */
-  const insertNode = (type: MsgEnum, dom: any, target: HTMLElement) => {
+  const insertNode = (type: MsgEnum, dom: InsertNodeData, target: HTMLElement) => {
     const sr = getEditorRange()!
     if (!sr) return
 
@@ -220,7 +236,7 @@ export const useCommon = () => {
    * @param target 目标节点
    * @param sr 选区
    */
-  const insertNodeAtRange = (type: MsgEnum, dom: any, _target: HTMLElement, sr: SelectionRange) => {
+  const insertNodeAtRange = (type: MsgEnum, dom: InsertNodeData, _target: HTMLElement, sr: SelectionRange) => {
     const { range, selection } = sr
 
     // 删除选中的内容
@@ -228,7 +244,7 @@ export const useCommon = () => {
 
     // 将节点插入范围最前面添加节点
     if (type === MsgEnum.AIT) {
-      const domObj = dom as { name?: string; text?: string; label?: string; uid?: string }
+      const domObj = dom as AitMentionData
       const mentionText =
         typeof dom === 'object' && dom !== null ? domObj.name || domObj.text || domObj.label || '' : dom || ''
       const mentionUid = typeof dom === 'object' && dom !== null ? domObj.uid : undefined
@@ -263,7 +279,7 @@ export const useCommon = () => {
       inputElement.focus()
 
       // 创建回复节点
-      const replyNode = createReplyDom(dom as { accountName: string; content: string; avatar: string })
+      const replyNode = createReplyDom(dom as ReplyData)
 
       // 如果已经存在回复框，则替换它
       const preReplyNode = document.getElementById('replyDiv')
@@ -383,10 +399,10 @@ export const useCommon = () => {
       outline: none; /* 移除focus时的轮廓 */
     `
       // 把dom中的value值作为回复信息的作者，dom中的content作为回复信息的内容
-      const author = dom.name
+      const author = (dom as ReplyData).name
       // 创建一个img标签节点作为头像
       const imgNode = document.createElement('img')
-      const avatarUrl = AvatarUtils.getAvatarUrl(dom.avatar)
+      const avatarUrl = AvatarUtils.getAvatarUrl((dom as ReplyData).avatar)
       if (isSafeUrl(avatarUrl)) {
         imgNode.src = avatarUrl
       } else {
@@ -410,7 +426,7 @@ export const useCommon = () => {
       user-select: none;
       pointer-events: none;
     `
-      headerNode.appendChild(document.createTextNode(author))
+      headerNode.appendChild(document.createTextNode(author || ''))
       // 在回复信息的右边添加一个关闭信息的按钮
       const closeBtn = document.createElement('span')
       closeBtn.id = 'closeBtn'
@@ -494,7 +510,12 @@ export const useCommon = () => {
       range?.insertNode(spaceNode)
       range?.collapse(false)
     } else {
-      range?.insertNode(dom)
+      if (typeof dom === 'string') {
+        const textNode = document.createTextNode(dom)
+        range?.insertNode(textNode)
+      } else {
+        range?.insertNode(dom as unknown as Node)
+      }
       range?.collapse(false)
     }
     // 将光标移到选中范围的最后面
@@ -702,8 +723,7 @@ export const useCommon = () => {
       img.style.marginRight = '6px'
 
       // 获取MsgInput组件暴露的lastEditRange
-      const domWithRange = dom as HTMLElement & { getLastEditRange?: () => Range }
-      const lastEditRange = domWithRange.getLastEditRange?.()
+      const lastEditRange = (dom as { getLastEditRange?: () => Range | null }).getLastEditRange?.()
 
       // 确保dom获得焦点
       dom.focus()
@@ -749,8 +769,7 @@ export const useCommon = () => {
       img.setAttribute('data-path', cachePath)
 
       // 获取MsgInput组件暴露的lastEditRange
-      const domWithRange = dom as HTMLElement & { getLastEditRange?: () => Range }
-      const lastEditRange = domWithRange.getLastEditRange?.()
+      const lastEditRange = (dom as { getLastEditRange?: () => Range | null }).getLastEditRange?.()
 
       // 确保dom获得焦点
       dom.focus()
@@ -853,7 +872,7 @@ export const useCommon = () => {
     // 把隐藏的会话先显示
     try {
       await invokeWithErrorHandler('hide_contact_command', { data: { roomId: res.roomId, hide: false } })
-    } catch (_error) {
+    } catch {
       window.$message.error('显示会话失败')
     }
 
@@ -909,8 +928,7 @@ export const useCommon = () => {
       const mimeType = file.type || ''
       const extension = getFileExtension(file.name)
       const isImage =
-        (mimeType.startsWith('image/') ||
-          SUPPORTED_IMAGE_EXTENSIONS.includes(extension as (typeof SUPPORTED_IMAGE_EXTENSIONS)[number])) &&
+        (mimeType.startsWith('image/') || (SUPPORTED_IMAGE_EXTENSIONS as readonly string[]).includes(extension)) &&
         extension !== 'svg' &&
         !mimeType.includes('svg')
 

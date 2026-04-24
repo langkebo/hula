@@ -104,10 +104,11 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { OnlineEnum, ThemeEnum } from '@/enums'
-import { useContactStore, type MatrixContact } from '@/stores/contacts'
-import { useSettingStore } from '@/stores/setting'
+import { useContactStore, type MatrixContact } from '@/stores/domains/chat/contacts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { FriendStatus } from '@/services/matrix/MatrixFriendService'
+import { matrixSpecialFriendService } from '@/services/matrix/MatrixSpecialFriendService'
 import FriendRequestDialog from './FriendRequestDialog.vue'
 import AddFriendDialog from './AddFriendDialog.vue'
 import FriendDetailDrawer from './FriendDetailDrawer.vue'
@@ -228,9 +229,7 @@ const handleContextMenuSelect = async (item: { label: string }) => {
 
 const handleSetSecretFriend = async (friend: MatrixContact) => {
   try {
-    await window.$invoke('create_secret_friend', {
-      data: { friendId: friend.userId }
-    })
+    await matrixSpecialFriendService.addSpecialFriend(friend.userId)
     window.$message.success(t('friend.secret_chat.success'))
   } catch (e) {
     window.$message.error(String(e))

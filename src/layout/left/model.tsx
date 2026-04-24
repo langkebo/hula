@@ -22,8 +22,8 @@ import { getVersion } from '@tauri-apps/api/app'
 import { confirm } from '@tauri-apps/plugin-dialog'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { check } from '@tauri-apps/plugin-updater'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStore } from '@/stores/user.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isMac } from '@/utils/PlatformConstants'
 import { useI18n } from 'vue-i18n'
@@ -159,13 +159,12 @@ export const CheckUpdate = defineComponent(() => {
     chore: 'hammer-and-wrench'
   }
 
-  const mapCommitType = (commitMessage: string): string => {
+  const mapCommitType = (commitMessage: string) => {
     for (const type in commitTypeMap) {
       if (new RegExp(`^${type}`, 'i').test(commitMessage)) {
         return commitTypeMap[type]
       }
     }
-    return 'commit'
   }
 
   /* 记录检测更新的版本 */
@@ -237,7 +236,7 @@ export const CheckUpdate = defineComponent(() => {
         try {
           await relaunch()
         } catch (e) {
-          logger.debug('relaunch failed:', e)
+          logger.debug(String(e))
           window.$message.error(t('message.check_update.restart_failed'))
         }
       })

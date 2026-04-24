@@ -107,11 +107,11 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import { open } from '@tauri-apps/plugin-dialog'
 import { isDesktop } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
-import { useBotStore } from '@/stores/bot'
+import { useBotStore } from '@/stores/domains/user/bot'
 
 const logger = createLogger('Bot')
 import { useAssistantModelPresets, type AssistantModelPreset } from '@/hooks/useAssistantModelPresets'
-import HuLaAssistant from './HuLaAssistant.vue'
+const HuLaAssistant = defineAsyncComponent(() => import('./HuLaAssistant.vue'))
 
 // 当前语言
 const currentLang = ref<'zh' | 'en'>('zh')
@@ -765,7 +765,7 @@ onUnmounted(() => {
     }
 
     &:hover {
-      @apply bg-[#13987f40] text-[#13987f];
+      @apply bg-[--color-primary]/40 text-[--color-primary];
     }
   }
 
@@ -780,7 +780,7 @@ onUnmounted(() => {
     padding: 0 12px;
     &:hover {
       text-decoration-line: underline;
-      color: #13987f;
+      color: var(--color-primary);
     }
   }
 
@@ -805,7 +805,7 @@ onUnmounted(() => {
     }
 
     &:hover {
-      @apply bg-[#13987f40] text-[#13987f];
+      @apply bg-[--color-primary]/40 text-[--color-primary];
     }
   }
 
@@ -815,19 +815,19 @@ onUnmounted(() => {
     cursor: pointer;
     font-size: 13px;
     color: var(--text-color);
-    background: linear-gradient(135deg, rgba(19, 152, 127, 0.32), rgba(19, 152, 127, 0.1));
+    background: linear-gradient(135deg, var(--color-primary) / 32, var(--color-primary-light));
     transition: all 0.2s ease-in-out;
     user-select: none;
     -webkit-user-select: none;
 
     &:hover {
-      color: #13987f;
+      color: var(--color-primary);
     }
 
     &.active {
       color: #ffffff;
       background: linear-gradient(135deg, #13987f, #1fb39b80);
-      border-color: rgba(19, 152, 127, 0.4);
+      border-color: var(--color-primary) / 40;
     }
   }
 
@@ -847,13 +847,13 @@ onUnmounted(() => {
     -webkit-user-select: none;
 
     &:hover {
-      color: #13987f;
+      color: var(--color-primary);
     }
 
     &.active {
-      color: #13987f;
-      background: rgba(19, 152, 127, 0.18);
-      box-shadow: inset 0 0 0 1px rgba(19, 152, 127, 0.25);
+      color: var(--color-primary);
+      background: var(--color-primary) / 18;
+      box-shadow: inset 0 0 0 1px var(--color-primary) / 25;
     }
   }
 
@@ -877,12 +877,12 @@ onUnmounted(() => {
     -webkit-user-select: none;
 
     &:hover {
-      @apply dark:bg-[#13987f40] bg-[#e8f4f1] text-[#13987f];
+      @apply dark:bg-[--color-primary]/40 bg-[#e8f4f1] text-[--color-primary];
     }
 
     &.active {
-      @apply dark:bg-[#13987f40] bg-[#e8f4f1] text-[#13987f];
-      box-shadow: inset 0 0 0 1px #13987f60;
+      @apply dark:bg-[--color-primary]/40 bg-[#e8f4f1] text-[--color-primary];
+      box-shadow: inset 0 0 0 1px var(--color-primary) / 60;
     }
   }
 
@@ -944,18 +944,18 @@ onUnmounted(() => {
   }
   --fgColor-default: var(--text-color);
   --fgColor-muted: var(--chat-text-color, var(--text-color));
-  --fgColor-accent: #13987f;
-  --fgColor-attention: #13987f;
+  --fgColor-accent: var(--color-primary);
+  --fgColor-attention: var(--color-primary);
   --fgColor-success: var(--success-color, #13987f);
   --fgColor-danger: var(--danger-color, #d1242f);
   --bgColor-default: var(--bg-color);
   --bgColor-muted: var(--bg-msg-hover);
   --bgColor-neutral-muted: rgba(144, 144, 144, 0.15);
-  --bgColor-attention-muted: #13987f16;
+  --bgColor-attention-muted: var(--color-primary)/16;
   --borderColor-default: var(--line-color);
   --borderColor-muted: var(--line-color);
   --borderColor-neutral-muted: rgba(144, 144, 144, 0.2);
-  --borderColor-accent-emphasis: #13987f;
+  --borderColor-accent-emphasis: var(--color-primary);
 
   // 通用表格处理
   :deep(table) {
@@ -1030,7 +1030,7 @@ onUnmounted(() => {
 
   // 长 URL 和文本处理
   :deep(a) {
-    color: #13987f;
+    color: var(--color-primary);
     word-break: break-word;
     overflow-wrap: break-word;
     text-decoration: none;

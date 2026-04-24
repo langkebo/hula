@@ -7,7 +7,11 @@
         <div class="setting-info-box">
           <Icon :icon="secretChatConfigured ? 'mdi:shield-check' : 'mdi:shield-off'" :width="48" />
           <div class="setting-info-text">
-            <span class="setting-title">{{ secretChatConfigured ? t('setting.private_chat.configured') : t('setting.private_chat.not_configured') }}</span>
+            <span class="setting-title">
+              {{
+                secretChatConfigured ? t('setting.private_chat.configured') : t('setting.private_chat.not_configured')
+              }}
+            </span>
             <span class="setting-desc">{{ t('setting.private_chat.description') }}</span>
           </div>
         </div>
@@ -17,7 +21,7 @@
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
             <span>{{ t('setting.private_chat.enable') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.private_chat.enable_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.private_chat.enable_desc') }}</span>
           </n-flex>
           <n-switch size="small" v-model:value="secretChatEnabled" />
         </n-flex>
@@ -27,10 +31,12 @@
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
             <span>{{ t('setting.private_chat.password') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.private_chat.password_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.private_chat.password_desc') }}</span>
           </n-flex>
           <n-button size="small" type="primary" @click="handleSetupPassword">
-            {{ secretChatConfigured ? t('setting.private_chat.change_password') : t('setting.private_chat.set_password') }}
+            {{
+              secretChatConfigured ? t('setting.private_chat.change_password') : t('setting.private_chat.set_password')
+            }}
           </n-button>
         </n-flex>
 
@@ -39,7 +45,7 @@
         <n-flex v-if="secretChatConfigured" align="center" justify="space-between">
           <n-flex vertical :size="4">
             <span>{{ t('setting.private_chat.clear') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.private_chat.clear_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.private_chat.clear_desc') }}</span>
           </n-flex>
           <n-button size="small" type="error" @click="handleClearSecretChat">
             {{ t('setting.private_chat.clear') }}
@@ -55,7 +61,7 @@
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
             <span>{{ t('setting.private_chat.hide_sessions') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.private_chat.hide_sessions_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.private_chat.hide_sessions_desc') }}</span>
           </n-flex>
           <n-switch size="small" v-model:value="hideSessions" />
         </n-flex>
@@ -65,7 +71,7 @@
         <n-flex align="center" justify="space-between">
           <n-flex vertical :size="4">
             <span>{{ t('setting.private_chat.auto_lock') }}</span>
-            <span class="text-(12px #909090)">{{ t('setting.private_chat.auto_lock_desc') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.private_chat.auto_lock_desc') }}</span>
           </n-flex>
           <n-switch size="small" v-model:value="autoLock" />
         </n-flex>
@@ -76,17 +82,17 @@
           <n-flex vertical :size="4">
             <span>{{ t('setting.private_chat.lock_timeout') }}</span>
           </n-flex>
-          <n-select
-            class="w-140px"
-            size="small"
-            v-model:value="lockTimeout"
-            :options="lockTimeoutOptions" />
+          <n-select class="w-140px" size="small" v-model:value="lockTimeout" :options="lockTimeoutOptions" />
         </n-flex>
       </n-flex>
     </n-flex>
   </n-flex>
 
-  <n-modal v-model:show="showPasswordDialog" preset="card" :title="t('setting.private_chat.set_password')" style="width: 400px">
+  <n-modal
+    v-model:show="showPasswordDialog"
+    preset="card"
+    :title="t('setting.private_chat.set_password')"
+    style="width: 400px">
     <div class="password-form">
       <n-form ref="formRef" :model="passwordForm" :rules="formRules">
         <n-form-item path="password" :label="t('setting.private_chat.new_password')">
@@ -116,7 +122,7 @@
 import { Icon } from '@iconify/vue'
 import { NButton, NSwitch, NSelect, NModal, NForm, NFormItem, useMessage, useDialog } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -244,7 +250,7 @@ function handleClearSecretChat() {
 
 .setting-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 

@@ -137,7 +137,7 @@
           </template>
           <div v-if="miniShowPlugins.length">
             <n-flex
-              v-for="(item, index) in miniShowPlugins as any"
+              v-for="(item, index) in miniShowPlugins"
               :key="'excess-' + index"
               @click="pageJumps(item.url, item.title, item.size, item.window)"
               class="p-[6px_5px] rounded-4px cursor-pointer hover:bg-[--setting-item-line]"
@@ -262,10 +262,10 @@ import { invoke } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { PluginEnum, ShowModeEnum } from '@/enums'
 import { useTauriListener } from '@/hooks/useTauriListener.ts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useMenuTopStore } from '@/stores/menuTop.ts'
-import { usePluginsStore } from '@/stores/plugins.ts'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useMenuTopStore } from '@/stores/domains/settings/menuTop'
+import { usePluginsStore } from '@/stores/domains/settings/plugins'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useItemsBottom, useMoreList } from '../config.tsx'
 import { leftHook } from '../hook.ts'
 import DefinePlugins from './definePlugins/index.vue'

@@ -29,7 +29,9 @@
         :disabled-options="disabledOptions" />
 
       <n-flex align="center" justify="end" class="p-16px">
-        <n-button color="#13987f" @click="handleInvite">{{ t('home.chat_header.modal.confirm') }}</n-button>
+        <n-button color="var(--color-primary)" @click="handleInvite">
+          {{ t('home.chat_header.modal.confirm') }}
+        </n-button>
         <n-button secondary @click="handleClose">{{ t('home.chat_header.modal.cancel') }}</n-button>
       </n-flex>
     </div>
@@ -40,7 +42,7 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import { getDisabledOptions, getFilteredOptions, renderLabel, renderSourceList } from '@/layout/center/model.tsx'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { matrixGroupService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'

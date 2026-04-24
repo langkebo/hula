@@ -39,7 +39,7 @@ import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import UserMenuHeader from './UserMenuHeader.vue'
 import { useUserMenu } from './useUserMenu'
-import type { MenuPosition } from '@/stores/userMenu'
+import type { MenuPosition } from '@/stores/domains/user/userMenu'
 
 defineOptions({
   name: 'UserMenuDropdown'

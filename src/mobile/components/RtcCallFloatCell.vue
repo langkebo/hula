@@ -36,9 +36,9 @@ import { createLogger } from '@/utils/Logger'
 import { CallTypeEnum, MittEnum } from '@/enums'
 import { matrixVoIPService } from '@/services/matrix'
 import { useMitt } from '@/hooks/useMitt'
-import { useMobileStore } from '@/stores/mobile'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user'
+import { useMobileStore } from '@/stores/domains/settings/mobile'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const logger = createLogger('RtcCallFloatCell')

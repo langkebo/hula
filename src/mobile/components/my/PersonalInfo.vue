@@ -7,14 +7,17 @@
       <div
         class="self-center h-auto transition-transform duration-300 ease-in-out origin-top"
         :style="{ transform: props.isShow ? 'scale(1) translateY(0)' : 'scale(0.62) translateY(0px)' }">
-        <n-avatar :size="86" :src="AvatarUtils.getAvatarUrl(userDetailInfo!.avatar)" fallback-src="/logo.png" round />
+        <img
+          class="size-86px rounded-full object-cover"
+          :src="AvatarUtils.getAvatarUrl(userDetailInfo!.avatar)"
+          @error="($event.target as HTMLImageElement).src = '/logo.png'" />
       </div>
 
       <!-- 基本信息栏 -->
       <div ref="infoBox" class="pl-2 flex gap-8px flex-col transition-transform duration-300 ease-in-out">
         <!-- 名字与在线状态 -->
         <div class="flex flex-warp gap-4 items-center">
-          <n-text class="font-bold text-20px">{{ userDetailInfo!.name }}</n-text>
+          <span class="font-bold text-20px">{{ userDetailInfo!.name }}</span>
           <div
             v-show="hasUserOnlineState"
             class="bg-#E7EFE6 flex flex-wrap ps-2 px-8px items-center rounded-full gap-1 h-24px">
@@ -76,65 +79,68 @@
       <div class="flex flex-wrap justify-around mt-4">
         <div class="flex flex-warp gap-2 items-center">
           <div class="min-w-10 flex flex-col items-center">
-            <n-text class="fans-number">920.13W</n-text>
+            <span class="fans-number">920.13W</span>
             <div class="fans-title">{{ t('mobile_personal_info.follower') }}</div>
           </div>
-          <n-divider vertical class="h-20px" />
+          <div class="h-20px w-1px bg-gray-300"></div>
           <div class="min-w-10 flex flex-col items-center">
-            <n-text class="fans-number">120</n-text>
+            <span class="fans-number">120</span>
             <div class="fans-title">{{ t('mobile_personal_info.follow') }}</div>
           </div>
-          <n-divider vertical class="h-20px" />
+          <div class="h-20px w-1px bg-gray-300"></div>
           <div class="min-w-10 flex flex-col items-center">
-            <n-text class="fans-number">43.15W</n-text>
+            <span class="fans-number">43.15W</span>
             <div class="fans-title">{{ t('mobile_personal_info.like') }}</div>
           </div>
         </div>
       </div>
       <div class="justify-end flex items-center gap-3 mt-30px">
-        <n-button
+        <van-button
           :disabled="loading"
           @click="toEditProfile"
-          strong
-          secondary
+          plain
           round
+          size="small"
           v-if="props.isMyPage && !isBotUser(uid)"
-          class="font-bold px-4 py-10px rounded-full text-12px">
+          class="font-bold px-4 py-10px text-12px">
           {{ t('mobile_personal_info.edit_profile') }}
-        </n-button>
-        <n-button
+        </van-button>
+        <van-button
           :loading="loading"
           :disabled="loading"
-          strong
-          secondary
+          plain
+          round
+          size="small"
           @click="handleDelete"
-          :color="'#d5304f'"
+          color="#d5304f"
           v-if="!props.isMyPage && isMyFriendState && !isBotUser(uid)"
-          class="px-5 py-10px font-bold text-center rounded-full text-12px">
+          class="px-5 py-10px font-bold text-center text-12px">
           {{ t('mobile_personal_info.remove_user') }}
-        </n-button>
+        </van-button>
 
-        <n-button
+        <van-button
           type="primary"
           :disabled="loading"
-          strong
-          secondary
+          plain
+          round
+          size="small"
           @click="handleAddFriend"
           v-if="!props.isMyPage && !isMyFriendState && !isBotUser(uid)"
-          class="px-5 py-10px font-bold text-center rounded-full text-12px">
+          class="px-5 py-10px font-bold text-center text-12px">
           +&nbsp;
           {{ t('mobile_personal_info.add_friend') }}
-        </n-button>
-        <n-button
+        </van-button>
+        <van-button
           type="primary"
-          strong
-          secondary
+          plain
+          round
+          size="small"
           @click="toChatRoom"
           :disabled="loading"
           v-if="!props.isMyPage && isMyFriendState"
-          class="px-5 py-10px text-center font-bold rounded-full text-12px">
+          class="px-5 py-10px text-center font-bold text-12px">
           {{ isBotUser(uid) ? t('mobile_personal_info.open_bot') : t('mobile_personal_info.chat') }}
-        </n-button>
+        </van-button>
       </div>
     </div>
   </Transition>
@@ -144,17 +150,17 @@
 import { createLogger } from '@/utils/Logger'
 import { showDialog } from 'vant'
 import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { useUserStatusStore } from '@/stores/userStatus'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import 'vant/es/dialog/style'
 import { OnlineEnum, UserType } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import type { UserInfoType, UserItem } from '@/services/types'
-import { useChatStore } from '@/stores/chat'
-import { useContactStore } from '@/stores/contacts'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { matrixSessionService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
 
@@ -183,7 +189,7 @@ const userStore = useUserStore()
 const userStatusStore = useUserStatusStore()
 const groupStore = useGroupStore()
 const route = useRoute()
-const contactStore = useContactStore() // 联系人
+const contactStore = useContactStore()
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
 
@@ -200,12 +206,9 @@ const toChatRoom = async () => {
       logger.error('获取会话详情失败')
       return
     }
-    // 先检查会话是否已存在
     const existingSession = chatStore.getSession(res.roomId)
     if (!existingSession) {
-      // 只有当会话不存在时才更新会话列表顺序
       chatStore.updateSessionLastActiveTime(res.roomId)
-      // 如果会话不存在，需要重新获取会话列表，但保持当前选中的会话
       await chatStore.getSessionList(true)
     }
     await preloadChatRoom(res.roomId)
@@ -220,7 +223,6 @@ const handleAddFriend = async () => {
   router.push('/mobile/mobileFriends/confirmAddFriend')
 }
 
-// 用户详情信息，默认字段只写必要的，不加可能会报错undefined
 const userDetailInfo = ref<UserItem | UserInfoType | undefined>({
   activeStatus: OnlineEnum.ONLINE,
   avatar: '',
@@ -231,13 +233,11 @@ const userDetailInfo = ref<UserItem | UserInfoType | undefined>({
   resume: ''
 })
 
-// 这个值只有在查看好友详细信息时才用
 const friendUserState = ref<any>({
   title: '',
   url: ''
 })
 
-// 是否存在用户在线状态
 const hasUserOnlineState = ref(false)
 
 const { stateList } = storeToRefs(userStatusStore)
@@ -253,7 +253,6 @@ const getUserState = (
   updateTime: null
   url: string
 } => {
-  // 不直接return，不然不好debug
   const foundedState = stateList.value.find((state: { id: string }) => state.id === stateId)
   return foundedState
 }
@@ -272,7 +271,6 @@ onMounted(() => {
     const state = getUserState(foundedUser.userStateId)
     friendUserState.value = state
 
-    // 设置完成状态后最后再显示状态
     hasUserOnlineState.value = true
   }
 
@@ -314,9 +312,7 @@ const handleDelete = () => {
         window.$message.warning(t('mobile_personal_info.not_found'))
       }
     })
-    .catch(() => {
-      // 用户点击取消，不做任何操作
-    })
+    .catch(() => {})
 }
 
 const toEditProfile = () => {
@@ -343,11 +339,10 @@ function enter(el: Element, done: () => void) {
     box.style.transform = 'translateY(0)'
   })
 
-  // 清理动画
   box.addEventListener(
     'transitionend',
     () => {
-      box.style.height = 'auto' // 动画结束后设回 auto，避免影响布局
+      box.style.height = 'auto'
       done()
     },
     { once: true }
@@ -382,7 +377,6 @@ watch(
     box.style.transition = 'all 0.3s ease'
 
     if (show) {
-      // 显示：从缩小恢复到原始高度
       box.style.height = box.scrollHeight + 'px'
       box.style.opacity = '1'
       box.style.transform = 'scale(1) translateY(0)'
@@ -390,16 +384,15 @@ watch(
       box.addEventListener(
         'transitionend',
         () => {
-          box.style.height = 'auto' // 回归自适应高度
+          box.style.height = 'auto'
           box.style.overflow = ''
         },
         { once: true }
       )
     } else {
-      // 隐藏：缩小并收起高度
-      box.style.height = box.scrollHeight + 'px' // 先设置为当前高度
+      box.style.height = box.scrollHeight + 'px'
       requestAnimationFrame(() => {
-        box.style.height = '58px' // 保持略小的高度（你原图是 86px，缩放 0.65 后约为 56px）
+        box.style.height = '58px'
         box.style.transform = 'scale(1) translateY(0)'
       })
     }
@@ -413,13 +406,12 @@ watch(
     const info = infoBox.value
     if (!info) return
 
-    // 添加动画过渡（也可直接写在 class 里）
     info.style.transition = 'transform 0.3s ease'
 
     if (show) {
       info.style.transform = 'translateX(0)'
     } else {
-      info.style.transform = 'translateX(-20px)' // 👈 向左移动一点
+      info.style.transform = 'translateX(-20px)'
     }
   }
 )
@@ -461,7 +453,6 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
 .custom-rounded {
   border-top-left-radius: 20px;
-  /* 左上角 */
   border-top-right-radius: 20px;
   overflow: hidden;
 }
@@ -505,7 +496,7 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 .medal-fade-enter-to {
-  max-height: 24px; // 和你容器展开时的高度一致
+  max-height: 24px;
   opacity: 1;
 }
 

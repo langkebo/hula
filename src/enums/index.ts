@@ -6,7 +6,7 @@
  *  枚举值：全部大写，单词间用下划线分割
  */
 
-/** WebSocket 消息类型 (从旧系统迁移) */
+/** WebSocket 消息类型 */
 export enum WsResponseMessageType {
   NO_INTERNET = 'noInternet',
   LOGIN_SUCCESS = 'loginSuccess',
@@ -45,36 +45,6 @@ export enum WsResponseMessageType {
   WEBRTC_SIGNAL = 'WEBRTC_SIGNAL',
   AllMuted = 'AllMuted',
   CANCEL = 'CANCEL'
-}
-
-/**请求响应码类型*/
-export enum RCodeEnum {
-  /**成功请求*/
-  OK = '200',
-  /**请求错误*/
-  FAIL = '400',
-  /**服务器出现问题*/
-  SERVE_EXCEPTION = '500',
-  /**业务出现问题*/
-  BUSINESS_EXCEPTION = '600'
-}
-
-/**URL*/
-export enum URLEnum {
-  /**用户*/
-  USER = '/im/user',
-  /**Token*/
-  TOKEN = '/oauth',
-  /**聊天*/
-  CHAT = '/im/chat',
-  /**房间*/
-  ROOM = '/im/room',
-  /**系统*/
-  SYSTEM = '/system',
-  /**验证码*/
-  CAPTCHA = '/im/captcha',
-  /**消息推送服务前缀*/
-  WEBSOCKET = '/ws'
 }
 
 /** tauri原生跨窗口通信时传输的类型 */
@@ -157,8 +127,6 @@ export enum MittEnum {
   MOBILE_RTC_CALL_REQUEST = 'mobileRtcCallRequest',
   /** 移动端关闭输入框面板 */
   MOBILE_CLOSE_PANEL = 'mobileClosePanel',
-  /** 移动端消息转发 */
-  MOBILE_FORWARD = 'mobileForward',
   /** 全局文件拖拽 */
   GLOBAL_FILES_DROP = 'globalFilesDrop',
   /** 切换会话 */
@@ -166,7 +134,11 @@ export enum MittEnum {
   /** 会话切换完成*/
   SESSION_CHANGED = 'sessionChanged',
   /** 更新会话最后一条消息 */
-  UPDATE_SESSION_LAST_MSG = 'updateSessionLastMsg'
+  UPDATE_SESSION_LAST_MSG = 'updateSessionLastMsg',
+  /** 打开线程 */
+  OPEN_THREAD = 'openThread',
+  /** AI 停止流式输出 */
+  AI_STOP_STREAMING = 'ai_stop_streaming'
 }
 
 /** 主题类型 */
@@ -444,21 +416,7 @@ export enum RoomActEnum {
   /** 修改群名称 */
   UPDATE_GROUP_NAME,
   /** 修改群信息 */
-  UPDATE_GROUP_INFO,
-  /** 删除 */
-  DELETE,
-  /** 退出 */
-  EXIT,
-  /** 解散 */
-  DISSOLVE
-}
-
-/** 是否全部用户 */
-export enum IsAllUserEnum {
-  /** 否 */
-  NO = 0,
-  /** 是 */
-  YES = 1
+  UPDATE_GROUP_INFO
 }
 
 /** 变更类型 1 加入群组，2： 移除群组 */
@@ -620,11 +578,6 @@ export enum NotificationTypeEnum {
 export enum TauriCommand {
   /** 更新我的群聊信息 */
   UPDATE_MY_ROOM_INFO = 'update_my_room_info',
-  /** 获取房间成员 */
-  GET_ROOM_MEMBERS = 'get_room_members',
-  /** 分页查询所有房间 */
-  PAGE_ROOM = 'page_room',
-  /** 分页查询房间成员 */
   CURSOR_PAGE_ROOM_MEMBERS = 'cursor_page_room_members',
   /** 列出所有会话列表 */
   LIST_CONTACTS = 'list_contacts_command',
@@ -660,8 +613,8 @@ export enum TauriCommand {
   GENERATE_MINIO_PRESIGNED_URL = 'generate_minio_presigned_url',
   /** 通过 Rust 端 PUT 上传本地文件 */
   UPLOAD_FILE_PUT = 'upload_file_put',
-  /** 通过 Rust 端七牛分片上传本地文件 */
-  QINIU_UPLOAD_RESUMABLE = 'qiniu_upload_resumable'
+  /** 检查管理员状态 */
+  CHECK_ADMIN_STATUS = 'check_admin_status'
 }
 
 // 通话状态枚举

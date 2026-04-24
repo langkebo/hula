@@ -1,6 +1,5 @@
 import { MsgEnum } from '@/enums'
-import { UploadProviderEnum, type QiniuCredential, type UploadOptions } from '@/hooks/useUpload'
-import { useChatStore } from '@/stores/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { messageStrategyMap } from '@/strategy/MessageStrategy'
 import { removeTempFile } from '@/utils/TempFileManager'
 
@@ -70,17 +69,13 @@ export const useCustomForwardTask = () => {
       msg = await messageStrategy.getMsg('', replyContext, [file])
       const messageBody = messageStrategy.buildMessageBody(msg, replyContext)
 
-      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
-        provider: UploadProviderEnum.QINIU
-      })
-      const doUploadResult = await messageStrategy.doUpload(msg.path as string, uploadUrl, config as UploadOptions)
-
-      const uploadResult = doUploadResult as { qiniuUrl?: string } | undefined
-      const qiniuConfig = config as QiniuCredential & { provider?: UploadProviderEnum }
-      messageBody.url =
-        qiniuConfig?.provider && qiniuConfig.provider === UploadProviderEnum.QINIU
-          ? uploadResult?.qiniuUrl
-          : downloadUrl
+      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string)
+      const uploadedUrl = await messageStrategy.doUpload(
+        msg.path as string,
+        uploadUrl,
+        config as import('@/hooks/useUpload').UploadOptions
+      )
+      messageBody.url = uploadedUrl || downloadUrl
       delete messageBody.path
 
       if (!messageBody.width) {

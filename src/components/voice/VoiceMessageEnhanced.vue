@@ -65,7 +65,7 @@
     </div>
 
     <div v-if="transcription && showTranscription" class="voice-transcription">
-      <n-icon size="14" color="#13987f">
+      <n-icon size="14" color="var(--color-primary)">
         <svg><use href="#text" /></svg>
       </n-icon>
       <span>{{ transcription }}</span>
@@ -77,10 +77,9 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStore } from '@/stores/user'
-import { matrixVoiceService } from '@/services/matrix/MatrixVoiceService'
-import { matrixMediaService } from '@/services/matrix/MatrixMediaService'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import type { VoiceBody } from '@/services/types'
@@ -182,8 +181,9 @@ const initAudio = async () => {
   loading.value = true
   try {
     const voice = await matrixVoiceService.getVoice(props.roomId, props.messageId)
-    if (voice?.mxc_url) {
-      audioElement.value = new Audio(matrixMediaService.mxcUrlToHttp(voice.mxc_url) || voice.mxc_url)
+    const playableUrl = voice?.httpUrl || voice?.mxcUrl
+    if (playableUrl) {
+      audioElement.value = new Audio(playableUrl)
       audioElement.value.playbackRate = playbackSpeed.value
 
       audioElement.value.addEventListener('timeupdate', () => {
@@ -219,7 +219,13 @@ const handleSpeedChange = (speed: number) => {
 const handleTranscribe = async () => {
   try {
     showTranscription.value = true
-    const result = await matrixVoiceService.transcribeVoice(props.messageId)
+    const result = await matrixVoiceService.transcribeVoice({
+      roomId: props.roomId,
+      eventId: props.messageId
+    })
+    if (!result) {
+      throw new Error('语音转写失败')
+    }
     transcription.value = result.text
     emit('transcribed', result.text)
   } catch (err) {
@@ -230,8 +236,9 @@ const handleTranscribe = async () => {
 const handleDownload = async () => {
   try {
     const voice = await matrixVoiceService.getVoice(props.roomId, props.messageId)
-    if (voice?.mxc_url) {
-      const response = await fetch(matrixMediaService.mxcUrlToHttp(voice.mxc_url) || voice.mxc_url)
+    const downloadableUrl = voice?.httpUrl || voice?.mxcUrl
+    if (downloadableUrl) {
+      const response = await fetch(downloadableUrl)
       const blob = await response.blob()
 
       const filePath = await save({
@@ -277,7 +284,7 @@ onUnmounted(() => {
   min-width: 200px;
 
   &.is-current-user {
-    background: rgba(19, 152, 127, 0.2);
+    background: var(--color-primary-hover);
   }
 }
 

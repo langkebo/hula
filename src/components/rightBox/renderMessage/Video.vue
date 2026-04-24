@@ -143,9 +143,9 @@ import { useIntersectionTaskQueue } from '@/hooks/useIntersectionTaskQueue'
 import { useMitt } from '@/hooks/useMitt'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import type { MsgType, VideoBody } from '@/services/types'
-import { useVideoViewer as useVideoViewerStore } from '@/stores/videoViewer'
-import { useThumbnailCacheStore } from '@/stores/thumbnailCache'
-import { useChatStore } from '@/stores/chat'
+import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
+import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { formatBytes } from '@/utils/Formatting.ts'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
@@ -210,7 +210,7 @@ const persistVideoLocalPath = async (absolutePath: string) => {
     body: nextBody
   })
   const updated = { ...target, message: { ...target.message, body: nextBody } }
-  await invokeSilently(TauriCommand.SAVE_MSG, { data: updated as any })
+  await invokeSilently(TauriCommand.SAVE_MSG, { data: updated })
 }
 const localVideoThumbSrc = ref<string | null>(null)
 

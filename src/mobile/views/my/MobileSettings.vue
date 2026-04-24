@@ -88,6 +88,40 @@
             </van-cell>
           </van-cell-group>
 
+          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.privacy_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell
+              :title="t('mobile_setting.preferences')"
+              is-link
+              @click="router.push('/mobile/mobileMy/preferences')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-cyan-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:tune" :width="20" color="#13c2c2" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('mobile_setting.burn_after_read')"
+              is-link
+              @click="router.push('/mobile/mobileMy/burnAfterRead')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:timer-outline" :width="20" color="#fa8c16" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell :title="t('mobile_setting.mjolnir')" is-link @click="router.push('/mobile/mobileMy/mjolnir')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:block-helper" :width="20" color="#ff4d4f" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
           <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.help_section') }}</div>
 
           <van-cell-group inset>
@@ -165,11 +199,10 @@ import { useRouter } from 'vue-router'
 import { showDialog, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { info } from '@tauri-apps/plugin-log'
-import { useGlobalStore } from '@/stores/global'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStatusStore } from '@/stores/userStatus'
-import { useLogin } from '@/hooks/useLogin'
-import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useI18n } from 'vue-i18n'
 
 const logger = createLogger('MobileSettings')
@@ -211,15 +244,13 @@ const statusLabel = computed(() => currentStatus.value.label)
 const statusIcon = computed(() => currentStatus.value.icon)
 const statusColor = computed(() => currentStatus.value.color)
 
-const { logout, resetLoginState } = useLogin()
+const { logout } = useLoginFlow()
 
 const isLoggingOut = ref(false)
 
 async function handleLogout() {
   if (isLoggingOut.value) return
   isLoggingOut.value = true
-
-  let logoutSuccess = false
 
   showDialog({
     title: t('mobile_setting.logout_confirm.title'),
@@ -230,26 +261,16 @@ async function handleLogout() {
   })
     .then(async () => {
       try {
-        await MatrixAuthService.logout()
-        logoutSuccess = true
-      } catch (error) {
-        logger.error('服务器登出失败：', error)
-      }
-
-      try {
-        await resetLoginState()
         await logout()
 
         settingStore.toggleLogin(false, false)
         info('登出账号')
         isTrayMenuShow.value = false
 
-        if (logoutSuccess) {
-          showToast({
-            type: 'success',
-            message: t('mobile_setting.logout_success')
-          })
-        }
+        showToast({
+          type: 'success',
+          message: t('mobile_setting.logout_success')
+        })
         await router.push('/mobile/login')
       } catch (localError) {
         logger.error('本地登出清理失败：', localError)

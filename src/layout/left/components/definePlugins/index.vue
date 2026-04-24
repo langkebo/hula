@@ -68,7 +68,7 @@
   </n-modal>
 </template>
 <script setup lang="ts">
-import { usePluginsStore } from '@/stores/plugins.ts'
+import { usePluginsStore } from '@/stores/domains/settings/plugins'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import Card from './Card.vue'
 import List from './List.vue'

@@ -150,7 +150,7 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
   function getCurrentUserId(): string {
     try {
-      const userStore = require('@/stores/user').useUserStore()
+      const userStore = require('@/stores/domains/user/user').useUserStore()
       return userStore.userInfo?.uid || 'anonymous'
     } catch {
       return 'anonymous'

@@ -24,7 +24,7 @@ import { computed, defineAsyncComponent } from 'vue'
 import { NButton, NIcon } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import SettingsTabNav from './SettingsTabNav.vue'
-import { useSettingsDialogStore, SETTINGS_TABS, type SettingsTabType } from '@/stores/settingsDialog'
+import { useSettingsDialogStore, SETTINGS_TABS, type SettingsTabType } from '@/stores/domains/settings/settingsDialog'
 import { usePlatform } from '@/composables/usePlatform'
 
 defineOptions({
@@ -56,9 +56,13 @@ const tabComponentMap: Record<SettingsTabType, () => Promise<any>> = {
   integrations: () => import('./tabs/IntegrationsSettings.vue'),
   preferences: () => import('./tabs/PreferencesSettings.vue'),
   keyboard: () => import('./tabs/KeyboardSettings.vue'),
+  sidebar: () => import('./tabs/SidebarSettings.vue'),
   security: () => import('./tabs/SecuritySettings.vue'),
   encryption: () => import('./tabs/EncryptionSettings.vue'),
   labs: () => import('./tabs/LabsSettings.vue'),
+  mjolnir: () => import('./tabs/MjolnirSettings.vue'),
+  friends: () => import('./tabs/FriendsSettings.vue'),
+  burnAfterRead: () => import('./tabs/BurnAfterReadSettings.vue'),
   help: () => import('./tabs/HelpSettings.vue')
 }
 

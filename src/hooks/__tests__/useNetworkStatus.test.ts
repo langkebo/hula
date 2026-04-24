@@ -12,17 +12,10 @@ vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn(() => Promise.resolve(vi.fn()))
 }))
 
-const mockConnectionState = ref('CONNECTED')
-const mockIsInitialized = ref(true)
-
-vi.mock('@/stores/matrix', () => ({
+vi.mock('@/stores/domains/chat/matrix', () => ({
   useMatrixStore: vi.fn(() => ({
-    get connectionState() {
-      return mockConnectionState.value
-    },
-    get isInitialized() {
-      return mockIsInitialized.value
-    }
+    connectionState: 'CONNECTED',
+    isInitialized: true
   }))
 }))
 

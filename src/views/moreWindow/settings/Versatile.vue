@@ -35,7 +35,7 @@
   </n-flex>
 </template>
 <script setup lang="ts">
-import { useSettingStore } from '@/stores/setting.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { versatileModel } from './model.tsx'
 import { useI18n } from 'vue-i18n'
 

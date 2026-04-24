@@ -6,7 +6,7 @@
       <div class="text-(14px [--chat-text-color]) flex-start-center w-95% h-40px">{{ title }}</div>
       <div class="w-95%">
         <n-input
-          class="max-h-480px border-(1px solid #90909080) rounded-6px bg-[--center-bg-color]"
+          class="max-h-480px border-(1px solid var(--color-text-tertiary)/80) rounded-6px bg-[--center-bg-color]"
           v-model:value="announContent"
           type="textarea"
           :placeholder="t('announcement.form.placeholder')"
@@ -91,7 +91,7 @@
                       <div class="text-(12px [--chat-text-color])">
                         {{ groupStore.getUserInfo(announcement.uid)?.name }}
                       </div>
-                      <div class="text-(12px [#909090])">{{ formatTimestamp(announcement?.createTime) }}</div>
+                      <div class="text-(12px [#909090])">{{ formatTimestamp(announcement?.timestamp) }}</div>
                     </n-flex>
                   </n-flex>
                   <div
@@ -109,7 +109,7 @@
                       </svg>
                     </template>
                   </n-button>
-                  <n-popconfirm v-if="isAdmin" v-model:show="announcementStates[announcement.id].showDeleteConfirm">
+                  <n-popconfirm v-if="isAdmin" v-model:show="announcementStates[announcement.id]!.showDeleteConfirm">
                     <template #icon>
                       <svg class="size-22px"><use href="#explosion"></use></svg>
                     </template>
@@ -117,13 +117,13 @@
                       <n-button
                         size="small"
                         tertiary
-                        @click.stop="announcementStates[announcement.id].showDeleteConfirm = false">
+                        @click.stop="announcementStates[announcement.id]!.showDeleteConfirm = false">
                         {{ t('announcement.list.delete.cancel') }}
                       </n-button>
                       <n-button
                         size="small"
                         type="error"
-                        :loading="announcementStates[announcement.id].deleteLoading"
+                        :loading="announcementStates[announcement.id]!.deleteLoading"
                         @click="handleDel(announcement)">
                         {{ t('announcement.list.delete.confirm') }}
                       </n-button>
@@ -189,10 +189,11 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { useRoute } from 'vue-router'
 import { ThemeEnum } from '@/enums'
-import { useAnnouncementStore } from '@/stores/announcement'
-import { useGroupStore } from '@/stores/group.ts'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStore } from '@/stores/user'
+import type { AnnouncementItem } from '@/services/types'
+import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { matrixAnnouncementService } from '@/services/matrix'
@@ -202,17 +203,27 @@ import { useI18n } from 'vue-i18n'
 
 const logger = createLogger('Announcement')
 
+type AnnouncementListResponse = Awaited<ReturnType<typeof announcementStore.getGroupAnnouncementList>>
+type AnnouncementRecord = AnnouncementListResponse['records'][number] & {
+  name?: string
+  expanded?: boolean
+}
+
+type AnnouncementViewItem = AnnouncementRecord & {
+  expanded: boolean
+}
+
 // 定义响应式变量
 const title = ref('')
 const announContent = ref('')
 const roomId = ref('')
 const $route = useRoute()
 const viewType = ref('0')
-const announList = ref<any[]>([])
+const announList = ref<AnnouncementViewItem[]>([])
 const isBack = ref(false)
 const isTop = ref(false)
 const isEdit = ref(false)
-const editAnnoouncement = ref<any>({})
+const editAnnoouncement = ref<Partial<AnnouncementViewItem>>({})
 const announcementAutosize = { minRows: 20 }
 // 分页参数
 const pageSize = 10
@@ -265,9 +276,16 @@ const handleInit = async () => {
     try {
       pageNum.value = 1
       isLast.value = false
-      const data = await announcementStore.getGroupAnnouncementList(roomId.value, pageNum.value, pageSize)
+      const data = (await announcementStore.getGroupAnnouncementList(
+        roomId.value,
+        pageNum.value,
+        pageSize
+      )) as AnnouncementListResponse
       if (data) {
-        announList.value = data.records
+        announList.value = data.records.map((item) => ({
+          ...item,
+          expanded: false
+        }))
         if (announList.value.length === 0) {
           viewType.value = '0'
           return
@@ -279,7 +297,6 @@ const handleInit = async () => {
           const fallbackName = item.userName || item.name || ''
           item.userName = user?.myName || user?.name || fallbackName
           // 添加展开/收起状态控制
-          item.expanded = false
           announcementStates.value[item.id] = {
             showDeleteConfirm: false,
             deleteLoading: false
@@ -318,7 +335,11 @@ const handleLoadMore = async () => {
   if (roomId.value && !isLoading.value && !isLast.value) {
     try {
       isLoading.value = true
-      const data = await announcementStore.getGroupAnnouncementList(roomId.value, pageNum.value, pageSize)
+      const data = (await announcementStore.getGroupAnnouncementList(
+        roomId.value,
+        pageNum.value,
+        pageSize
+      )) as AnnouncementListResponse
       if (data) {
         // 如果没有数据，标记为最后一页
         if (!data.records) {
@@ -328,11 +349,15 @@ const handleLoadMore = async () => {
 
         // 检查重复数据
         const existingIds = new Set(announList.value.map((item) => item.id))
-        const newRecords = data.records.filter((newItem: any) => !existingIds.has(newItem.id))
+        const newRecords = data.records
+          .filter((newItem) => !existingIds.has(newItem.id))
+          .map<AnnouncementViewItem>((item) => ({
+            ...item,
+            expanded: false
+          }))
 
         // 为新加载的公告添加展开/收起状态
-        newRecords.forEach((item: any) => {
-          item.expanded = false
+        newRecords.forEach((item) => {
           announcementStates.value[item.id] = {
             showDeleteConfirm: false,
             deleteLoading: false
@@ -386,9 +411,11 @@ const handleCancel = () => {
 }
 
 // 删除公告
-const handleDel = async (announcement: any) => {
+const handleDel = async (announcement: AnnouncementViewItem) => {
   try {
-    announcementStates.value[announcement.id].deleteLoading = true
+    if (announcementStates.value[announcement.id]) {
+      announcementStates.value[announcement.id]!.deleteLoading = true
+    }
 
     // 同时处理删除请求和最小延迟时间
     await Promise.all([
@@ -397,16 +424,18 @@ const handleDel = async (announcement: any) => {
     ])
 
     // 重置该公告的确认框状态
-    announcementStates.value[announcement.id].showDeleteConfirm = false
-    announcementStates.value[announcement.id].deleteLoading = false
+    if (announcementStates.value[announcement.id]) {
+      announcementStates.value[announcement.id]!.showDeleteConfirm = false
+      announcementStates.value[announcement.id]!.deleteLoading = false
+    }
 
     // 重新获取公告列表
     await handleInit()
 
     // 找出新的置顶公告
-    let newTopAnnouncement = null
+    let newTopAnnouncement: AnnouncementViewItem | null = null
     if (announList.value.length > 0) {
-      newTopAnnouncement = announList.value.find((item: any) => item.top)
+      newTopAnnouncement = announList.value.find((item) => item.top) || null
     }
 
     // 发送刷新消息通知其他组件
@@ -422,12 +451,14 @@ const handleDel = async (announcement: any) => {
     })
   } catch (error) {
     logger.error('删除公告失败:', error)
-    announcementStates.value[announcement.id].deleteLoading = false
+    if (announcementStates.value[announcement.id]) {
+      announcementStates.value[announcement.id]!.deleteLoading = false
+    }
   }
 }
 
 // 编辑公告
-const handleEdit = (announcement: any) => {
+const handleEdit = (announcement: AnnouncementViewItem) => {
   isEdit.value = true
   editAnnoouncement.value = announcement
   announContent.value = announcement.content
@@ -439,7 +470,7 @@ const handleEdit = (announcement: any) => {
 
 // 验证公告内容
 const validateAnnouncement = (content: string) => {
-  if (content.length < 1) {
+  if (!content.trim()) {
     window.$message.error(t('announcement.toast.contentRequired'))
     return false
   }
@@ -459,7 +490,7 @@ const handlePushAnnouncement = async () => {
   const apiCall = isEdit.value
     ? () =>
         matrixAnnouncementService.editAnnouncement(roomId.value, {
-          id: editAnnoouncement.value.id,
+          id: editAnnoouncement.value.id!,
           content: announContent.value,
           isPinned: isTop.value
         })
@@ -480,9 +511,9 @@ const handlePushAnnouncement = async () => {
     await handleInit()
 
     // 找出新的置顶公告
-    let newTopAnnouncement = null
+    let newTopAnnouncement: AnnouncementViewItem | null = null
     if (announList.value.length > 0) {
-      newTopAnnouncement = announList.value.find((item: any) => item.top)
+      newTopAnnouncement = announList.value.find((item) => item.top) || null
     }
 
     info(`发送更新事件通知home: `)
@@ -512,7 +543,7 @@ const needsExpansion = (content: string) => {
 }
 
 // 切换展开/收起状态
-const toggleExpand = (announcement: any) => {
+const toggleExpand = (announcement: AnnouncementViewItem) => {
   announcement.expanded = !announcement.expanded
 }
 
@@ -549,8 +580,8 @@ onMounted(async () => {
 
 .content-collapsed {
   max-height: 100px; // 设置为约200px的显示高度
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0)
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0)
 }
 
 .expand-button {
@@ -558,7 +589,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: flex-end;
   margin-top: 4px;
-  color: #13987f;
+  color: var(--color-primary;
   cursor: pointer;
   font-size: 12px;
 
@@ -568,7 +599,7 @@ onMounted(async () => {
 }
 
 .announcement-link {
-  color: #13987f;
+  color: var(--color-primary;
   cursor: pointer;
   word-break: break-all;
   line-height: 2.1rem;

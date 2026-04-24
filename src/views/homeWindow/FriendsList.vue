@@ -44,7 +44,7 @@
           <n-collapse-item v-if="specialContacts.length > 0" name="special">
             <template #header>
               <n-flex align="center" :size="8">
-                <svg class="size-14px color-#f5a623"><use href="#star-fill"></use></svg>
+                <svg class="size-14px color-[--color-warning]"><use href="#star-fill"></use></svg>
                 <span>{{ t('home.friends_list.group.special') }}</span>
               </n-flex>
             </template>
@@ -105,7 +105,7 @@
           <n-collapse-item name="normal">
             <template #header>
               <n-flex align="center" :size="8">
-                <svg class="size-14px color-#666"><use href="#friends"></use></svg>
+                <svg class="size-14px color-[--color-text-secondary]"><use href="#friends"></use></svg>
                 <span>{{ t('home.friends_list.group.normal') }}</span>
               </n-flex>
             </template>
@@ -166,7 +166,7 @@
           <n-collapse-item v-if="blockedContacts.length > 0" name="blocked">
             <template #header>
               <n-flex align="center" :size="8">
-                <svg class="size-14px color-#999"><use href="#forbidden"></use></svg>
+                <svg class="size-14px color-[--color-text-quaternary]"><use href="#forbidden"></use></svg>
                 <span>{{ t('home.friends_list.group.blocked') }}</span>
               </n-flex>
             </template>
@@ -244,12 +244,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { DetailsContent } from '@/services/types'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useGroupStore } from '@/stores/group'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStatusStore } from '@/stores/userStatus'
+import type { DetailsContent, FriendItem } from '@/services/types'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
 import { createLogger } from '@/utils/Logger'
@@ -333,7 +333,7 @@ const groupExpandedState = ref({
 })
 
 /** 渲染好友项 */
-const renderContactItem = (item: any, extraClass = '') => {
+const renderContactItem = (item: FriendItem, extraClass = '') => {
   return `<div @click="handleClick('${item.uid}', RoomTypeEnum.SINGLE)" :class="['item-box w-full h-75px mb-5px', '${extraClass}', { active: activeItem === '${item.uid}' }]">
     <n-flex align="center" :size="10" class="h-75px pl-6px pr-8px flex-1 truncate">
       <n-avatar round style="border: 1px solid var(--avatar-border-color)" :size="44"

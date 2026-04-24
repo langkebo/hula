@@ -86,8 +86,8 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
-import { useContactStore, type FriendRequestItem } from '@/stores/contacts'
-import { useSettingStore } from '@/stores/setting'
+import { useContactStore, type FriendRequestItem } from '@/stores/domains/chat/contacts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const { t } = useI18n()

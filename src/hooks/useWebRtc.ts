@@ -1,94 +1,24 @@
 import { listen } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { error, info } from '@tauri-apps/plugin-log'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { CallTypeEnum, RTCCallStatus } from '@/enums'
-import { useUserStore } from '@/stores/user'
+import { useUserStore } from '@/stores/domains/user/user'
 import { isMobile } from '../utils/PlatformConstants'
 import { useMitt } from './useMitt'
 import { useTauriListener } from './useTauriListener'
 import { createLogger } from '@/utils/Logger'
 import { TimerManager } from '@/utils/TimerManager'
+import { SignalTypeEnum, type WSRtcCallMsg, type RtcMsgVO } from './webRtc/types'
+import { getIceConfiguration, loadIceServers } from './webRtc/iceServers'
+export { SignalTypeEnum, type WSRtcCallMsg } from './webRtc/types'
 const logger = createLogger('WebRtc')
 
-const sendMatrixVoipSignal = async (type: string, data: any) => {
+const sendMatrixVoipSignal = async (type: string, data: Record<string, unknown>) => {
   info(`[useWebRtc] Matrix VoIP Signal: ${type}`, data)
-}
-
-interface RtcMsgVO {
-  roomId: string
-  callType: CallTypeEnum
-  callerId: string
-  [key: string]: any
-}
-
-// 信令类型枚举
-export enum SignalTypeEnum {
-  JOIN = 'join',
-  OFFER = 'offer',
-  ANSWER = 'answer',
-  CANDIDATE = 'candidate',
-  LEAVE = 'leave'
-}
-
-export interface WSRtcCallMsg {
-  // 房间ID
-  roomId: string
-  // 通话ID
-  callerId: string
-  // 信令类型
-  signalType: SignalTypeEnum
-  // 信令
-  signal: string
-  // 接收者ID列表
-  receiverIds: string[]
-  // 发送者ID
-  senderId?: string
-  // 通话状态
-  status: RTCCallStatus
-  // 是否是视频通话
-  video: boolean
-  // 目标uid
-  targetUid: string
 }
 
 // const TURN_SERVER = import.meta.env.VITE_TURN_SERVER_URL
 const MAX_TIME_OUT_SECONDS = 30
-let configuration: RTCConfiguration = {
-  iceServers: [
-    { urls: 'stun:117.72.67.248:3478' },
-    {
-      urls: ['turn:117.72.67.248:3478?transport=udp', 'turn:117.72.67.248:3478?transport=tcp'],
-      username: 'chr',
-      credential: '123456'
-    }
-  ],
-  iceTransportPolicy: 'all'
-}
-
-const loadIceServers = async () => {
-  try {
-    const client = matrixClientService.getClient()
-    if (client) {
-      const turnServers = await client.getTurnServers()
-      if (turnServers?.uris?.length) {
-        const entry: RTCIceServer = {
-          urls: turnServers.uris,
-          username: turnServers.username,
-          credential: turnServers.password
-        }
-        configuration = { iceServers: [entry], iceTransportPolicy: 'all' }
-        info(`ICE 配置已加载: ${JSON.stringify(configuration)}`)
-      } else {
-        info('TURN 服务器为空，使用内置默认配置')
-      }
-    } else {
-      info('客户端未初始化，使用内置默认配置')
-    }
-  } catch (e) {
-    error(`加载 ICE 配置失败: ${String(e)}`)
-  }
-}
 
 // ICE 服务器通过 loadIceServers() 动态加载，支持从服务器配置获取
 const rtcCallBellUrl = '/sound/hula_bell.mp3'
@@ -294,7 +224,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
         stream.getTracks().forEach((track) => track.stop()) // 立即停止流
-      } catch (_permissionError) {
+      } catch {
         error('Permission denied, will get limited device info')
       }
 
@@ -385,7 +315,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   // 创建 RTCPeerConnection
   const createPeerConnection = (roomId: string) => {
     try {
-      const pc = new RTCPeerConnection(configuration)
+      const pc = new RTCPeerConnection(getIceConfiguration())
 
       // 监听远程流
       pc.ontrack = (event) => {
@@ -453,8 +383,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
             info('RTC 连接状态变化: ', pc.connectionState)
             break
         }
-        // @ts-expect-error
-        rtcStatus.value = (e?.currentTarget?.connectionState || pc.connectionState) as RTCPeerConnectionState
+        rtcStatus.value = (e?.currentTarget as RTCPeerConnection | null)?.connectionState || pc.connectionState
       }
       // 创建信道
       channel.value = pc.createDataChannel('chat')
@@ -489,7 +418,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   }
 
   // 发起通话
-  const startCall = async (roomId: string, type: CallTypeEnum, uidList?: string[]): Promise<boolean> => {
+  const startCall = async (roomId: string, type: CallTypeEnum, uidList?: string[]) => {
     try {
       if (!roomId) {
         return false
@@ -501,7 +430,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         timerManager.setTimeout(async () => {
           await handleCallResponse(0)
         }, 1000)
-        return false
+        return
       }
       // 保存通话信息
       rtcMsg.value = {
@@ -542,7 +471,6 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       // 开始通话
       connectionStatus.value = RTCCallStatus.CALLING
       rtcStatus.value = 'new'
-      return true
     } catch (err) {
       logger.error('开始通话失败:', err)
       window.$message.error('RTC通讯连接失败!')
@@ -633,7 +561,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   }
 
   // 处理收到的 offer - 接听者
-  const handleOffer = async (signal: RTCSessionDescriptionInit, video: boolean, roomId: string): Promise<boolean> => {
+  const handleOffer = async (signal: RTCSessionDescriptionInit, video: boolean, roomId: string) => {
     try {
       logger.debug('处理 offer')
       connectionStatus.value = RTCCallStatus.CALLING
@@ -678,11 +606,9 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       await sendAnswer(answer)
       connectionStatus.value = RTCCallStatus.ACCEPT
       info('处理 offer 结束')
-      return true
     } catch (e) {
       error(`处理 offer 失败: ${e}`)
       await endCall()
-      return false
     }
   }
 
@@ -1001,7 +927,8 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       oldVideoTrack && localStream.value.removeTrack(oldVideoTrack)
       localStream.value.addTrack(newVideoTrack)
       isScreenSharing.value = true // 开始桌面共享
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error & { name?: string }
       logger.error('开始桌面共享失败:', error)
       isScreenSharing.value = false
       stopScreenShare()
@@ -1072,14 +999,14 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   // useMitt.on('WEBRTC_SIGNAL', handleSignalMessage)
   void (async () => {
     await addListener(
-      listen('ws-webrtc-signal', (event: any) => {
+      listen<WSRtcCallMsg>('ws-webrtc-signal', (event) => {
         info(`收到信令消息: ${JSON.stringify(event.payload)}`)
         handleSignalMessage(event.payload)
       }),
       `${roomId}-ws-webrtc-signal`
     )
     await addListener(
-      listen('ws-call-accepted', (event: any) => {
+      listen<Record<string, unknown>>('ws-call-accepted', (event) => {
         info(`通话被接受: ${JSON.stringify(event.payload)}`)
         // // 接受方，发送是否接受
         // info(`收到 CallAccepted'消息 ${isReceiver}`)
@@ -1092,34 +1019,34 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       `${roomId}-ws-call-accepted`
     )
     await addListener(
-      listen('ws-room-closed', (event: any) => {
+      listen<Record<string, unknown>>('ws-room-closed', (event) => {
         info(`房间已关闭: ${JSON.stringify(event.payload)}`)
         endCall()
       }),
       `${roomId}-ws-room-closed`
     )
     await addListener(
-      listen('ws-dropped', (_: any) => {
+      listen<void>('ws-dropped', () => {
         endCall()
       }),
       `${roomId}-ws-dropped`
     )
     await addListener(
-      listen('ws-call-rejected', (event: any) => {
+      listen<Record<string, unknown>>('ws-call-rejected', (event) => {
         info(`通话被拒绝: ${JSON.stringify(event.payload)}`)
         endCall()
       }),
       `${roomId}-ws-call-rejected`
     )
     await addListener(
-      listen('ws-cancel', (event: any) => {
+      listen<Record<string, unknown>>('ws-cancel', (event) => {
         info(`已取消通话: ${JSON.stringify(event.payload)}`)
         endCall()
       }),
       `${roomId}-ws-cancel`
     )
     await addListener(
-      listen('ws-timeout', (event: any) => {
+      listen<Record<string, unknown>>('ws-timeout', (event) => {
         info(`已取消通话: ${JSON.stringify(event.payload)}`)
         endCall()
       }),

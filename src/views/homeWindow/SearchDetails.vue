@@ -1,10 +1,10 @@
 <template>
-  <n-flex :size="14" vertical justify="center" class="p-14px text-(12px #909090)">
+  <n-flex :size="14" vertical justify="center" class="p-14px text-(12px --color-text-tertiary)">
     <!-- 搜索结果为空时显示建议和历史记录 -->
     <template v-if="searchResults.length === 0 && !searchQuery">
       <!-- 搜索建议 -->
-      <p class="text-(12px #909090)">{{ t('home.search_suggestions') }}</p>
-      <n-flex align="center" class="text-(12px #909090)">
+      <p class="text-(12px --color-text-tertiary)">{{ t('home.search_suggestions') }}</p>
+      <n-flex align="center" class="text-(12px --color-text-tertiary)">
         <p class="p-6px bg-[--search-color] rounded-8px cursor-pointer" @click="applySearchTerm('hula')">hula</p>
       </n-flex>
 
@@ -12,8 +12,10 @@
 
       <!-- 历史记录 -->
       <n-flex v-if="historyList.length > 0" align="center" justify="space-between">
-        <p class="text-(12px #909090)">{{ t('home.search_history') }}</p>
-        <p class="cursor-pointer text-(12px #13987f)" @click="clearHistory">{{ t('home.clear_search_history') }}</p>
+        <p class="text-(12px --color-text-tertiary)">{{ t('home.search_history') }}</p>
+        <p class="cursor-pointer text-(12px --color-primary)" @click="clearHistory">
+          {{ t('home.clear_search_history') }}
+        </p>
       </n-flex>
 
       <n-flex
@@ -41,7 +43,7 @@
 
     <!-- 搜索结果 -->
     <template v-else-if="searchResults.length > 0">
-      <p class="text-(12px #909090) mb-6px">{{ t('home.search_result') }}</p>
+      <p class="text-(12px --color-text-tertiary) mb-6px">{{ t('home.search_result') }}</p>
 
       <n-scrollbar style="max-height: calc(100vh / var(--page-scale, 1) - 118px)">
         <template v-for="item in searchResults" :key="item.roomId">
@@ -72,20 +74,16 @@ import { useRouter } from 'vue-router'
 import { MittEnum, RoomTypeEnum } from '@/enums'
 import { useCommon } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt'
-import { useChatStore } from '@/stores/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import type { SessionItem as ChatSessionItem } from '@/stores/domains/chat/chat/session'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
 
 const logger = createLogger('SearchDetails')
 
-type SessionItem = {
-  avatar: string
-  name: string
-  id?: string
+type SessionItem = ChatSessionItem & {
   detailId: string
-  roomId: string
-  type: number
 }
 type HistoryItem = {
   avatar: string
@@ -109,8 +107,12 @@ const searchResults = ref<SessionItem[]>([])
 const HISTORY_STORAGE_KEY = 'HULA_SEARCH_HISTORY'
 const historyList = ref<HistoryItem[]>([])
 
+const isSearchableSession = (session: ChatSessionItem): session is SessionItem => {
+  return typeof session.detailId === 'string' && session.detailId.length > 0
+}
+
 // 监听搜索框输入变化
-useMitt.on('search_input_change', (value) => {
+useMitt.on<string>('search_input_change', (value) => {
   searchQuery.value = value
   handleSearch(value)
 })
@@ -122,11 +124,12 @@ const handleSearch = (value: string) => {
     return
   }
   // 根据名称和最后一条消息内容进行搜索匹配
-  searchResults.value = chatStore.sessionList.filter((session) => {
+  searchResults.value = chatStore.sessionList.filter((session: ChatSessionItem): session is SessionItem => {
     // 在名称中搜索
+    if (!isSearchableSession(session)) return false
     const nameMatch = session.name.toLowerCase().includes(value.toLowerCase())
     return nameMatch
-  }) as any[]
+  })
   // 如果有搜索关键词，这里可以保存到关键词历史记录（当前实现还不保存搜索关键词）
   if (value) {
     saveToHistory(value)
@@ -175,7 +178,7 @@ const saveToHistory = (term: string) => {
 }
 
 // 保存会话到历史记录
-const saveSessionToHistory = (session: SessionItem) => {
+const saveSessionToHistory = (session: SessionItem | HistoryItem) => {
   // 确保会话有足够的数据
   if (!session || !session.roomId) return
 

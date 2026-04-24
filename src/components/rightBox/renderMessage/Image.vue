@@ -72,9 +72,7 @@ import { MsgEnum } from '@/enums'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import type { ImageBody, MsgType } from '@/services/types'
 import { isMobile } from '@/utils/PlatformConstants'
-import { useThumbnailCacheStore } from '@/stores/thumbnailCache'
-import { buildQiniuThumbnailUrl, getPreferredQiniuFormat } from '@/utils/QiniuImageUtils'
-
+import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('Image')
 
@@ -172,17 +170,7 @@ const handleOpenImageViewer = () => {
 const remoteThumbnailSrc = computed(() => {
   const originalUrl = props.body?.url
   if (!originalUrl) return ''
-  const deviceRatio = typeof window !== 'undefined' ? Math.max(window.devicePixelRatio || 1, 1) : 1
-  const thumbnailWidth = Math.ceil(MAX_WIDTH * Math.min(deviceRatio, 2))
-  const format = getPreferredQiniuFormat()
-
-  return (
-    buildQiniuThumbnailUrl(originalUrl, {
-      width: thumbnailWidth,
-      quality: THUMB_QUALITY,
-      format
-    }) ?? originalUrl
-  )
+  return originalUrl
 })
 
 const downloadKey = computed(() => remoteThumbnailSrc.value || props.body?.url || '')

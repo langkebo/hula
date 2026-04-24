@@ -16,8 +16,8 @@
               fallback-src="/default-avatar.png" />
 
             <div class="flex-y-center gap-12px h-fit">
-              <p class="text-(14px #909090)">{{ getUserDisplayName(item.fromUser.uid) }}</p>
-              <p class="text-(12px #909090)">{{ formatTimestamp(item.message.sendTime) }}</p>
+              <p class="text-(12px --color-text-tertiary)">{{ getUserDisplayName(item.fromUser.uid) }}</p>
+              <p class="text-(12px --color-text-tertiary)">{{ formatTimestamp(item.message.sendTime) }}</p>
             </div>
           </div>
 
@@ -51,10 +51,10 @@ import { useChatMain } from '@/hooks/useChatMain'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import { useWindow } from '@/hooks/useWindow'
-import type { MessageType } from '@/stores/message'
+import type { MessageType } from '@/stores/domains/chat/message'
 import type { UserItem } from '@/services/types'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { matrixMessageService, matrixContactService } from '@/services/matrix'

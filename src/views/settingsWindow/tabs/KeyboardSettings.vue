@@ -74,7 +74,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { NButton, NDivider, NSwitch, NInput, NModal, useMessage } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isMac } from '@/utils/PlatformConstants'
 
 defineOptions({
@@ -211,7 +211,7 @@ onUnmounted(() => {
 
 .setting-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 4px;
 }
 
@@ -245,7 +245,7 @@ onUnmounted(() => {
 
 .shortcut-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-top: 2px;
 }
 
@@ -263,15 +263,15 @@ onUnmounted(() => {
   padding: 0 8px;
   font-size: 12px;
   font-family: monospace;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
+  background-color: var(--bg-msg-hover);
+  border: 1px solid var(--line-color);
   border-radius: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 :deep(.dark) .key {
-  background-color: #333;
-  border-color: #555;
+  background-color: var(--bg-setting-item);
+  border-color: var(--line-color);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 

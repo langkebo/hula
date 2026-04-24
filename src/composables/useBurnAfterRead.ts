@@ -1,13 +1,6 @@
-/**
- * 阅后即焚 Composable
- *
- * 管理阅后即焚消息的状态、倒计时和销毁逻辑
- * 集成 MatrixBurnAfterReadService
- */
-
 import { ref, computed, onUnmounted } from 'vue'
-import { useTimerManager } from '@/utils/TimerManager'
-import matrixBurnAfterReadService from '@/services/matrix/MatrixBurnAfterReadService'
+import { matrixBurnAfterReadService } from '@/services/matrix'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useBurnAfterRead')
@@ -29,16 +22,19 @@ export interface UseBurnAfterReadOptions {
   onBurnStart?: (msg: BurnMessage) => void
   onBurnComplete?: (msg: BurnMessage) => void
   onBurnTick?: (msg: BurnMessage, remainingSeconds: number) => void
-  syncWithBackend?: boolean
 }
 
+const DEFAULT_BURN_DURATION_SEC = 60
+
+const roomBurnState = ref<Map<string, boolean>>(new Map())
+const roomBurnDuration = ref<Map<string, number>>(new Map())
+
 export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
-  const defaultDuration = options.defaultDuration || 60
-  const syncWithBackend = options.syncWithBackend ?? true
-  const timerManager = useTimerManager()
+  const defaultDuration = options.defaultDuration || DEFAULT_BURN_DURATION_SEC
+  const globalStore = useGlobalStore()
 
   const burnMessages = ref<Map<string, BurnMessage>>(new Map())
-  const burnTimers = new Map<string, number>()
+  const countdownTimers = ref<Map<string, ReturnType<typeof setInterval>>>(new Map())
 
   const activeBurnMessages = computed(() => {
     return Array.from(burnMessages.value.values()).filter((msg) => msg.isBurning && !msg.isBurned)
@@ -48,7 +44,7 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
     return Array.from(burnMessages.value.values()).filter((msg) => msg.isBurned)
   })
 
-  async function addBurnMessage(
+  function addBurnMessage(
     msgId: string,
     roomId: string,
     eventId: string,
@@ -70,7 +66,7 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
     burnMessages.value.set(msgId, burnMessage)
   }
 
-  async function startBurn(msgId: string) {
+  function startBurn(msgId: string) {
     const msg = burnMessages.value.get(msgId)
     if (!msg || msg.isBurning || msg.isBurned) return
 
@@ -80,15 +76,6 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
 
     options.onBurnStart?.(msg)
 
-    if (syncWithBackend) {
-      try {
-        await matrixBurnAfterReadService.markMessageRead(msg.roomId, msg.eventId)
-        logger.info(`消息已标记为已读: ${msg.eventId}`)
-      } catch (err) {
-        logger.error('标记消息已读失败:', err)
-      }
-    }
-
     startCountdown(msgId)
   }
 
@@ -96,13 +83,16 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
     const msg = burnMessages.value.get(msgId)
     if (!msg) return
 
-    const intervalId = timerManager.setInterval(() => {
+    const existingTimer = countdownTimers.value.get(msgId)
+    if (existingTimer) clearInterval(existingTimer)
+
+    const intervalId = setInterval(() => {
       const currentMsg = burnMessages.value.get(msgId)
       if (!currentMsg || !currentMsg.isBurning || currentMsg.isBurned) {
-        const storedId = burnTimers.get(msgId)
-        if (storedId) {
-          timerManager.clearInterval(storedId)
-          burnTimers.delete(msgId)
+        const timer = countdownTimers.value.get(msgId)
+        if (timer) {
+          clearInterval(timer)
+          countdownTimers.value.delete(msgId)
         }
         return
       }
@@ -113,15 +103,16 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
       options.onBurnTick?.(currentMsg, currentMsg.remainingSeconds)
 
       if (currentMsg.remainingSeconds <= 0) {
-        const storedId = burnTimers.get(msgId)
-        if (storedId) {
-          timerManager.clearInterval(storedId)
-          burnTimers.delete(msgId)
+        const timer = countdownTimers.value.get(msgId)
+        if (timer) {
+          clearInterval(timer)
+          countdownTimers.value.delete(msgId)
         }
         completeBurn(msgId)
       }
     }, 1000)
-    burnTimers.set(msgId, intervalId)
+
+    countdownTimers.value.set(msgId, intervalId)
   }
 
   async function completeBurn(msgId: string) {
@@ -132,29 +123,21 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
     msg.isBurning = false
     msg.remainingSeconds = 0
 
+    try {
+      await matrixBurnAfterReadService.burnMessage(msg.eventId)
+    } catch (error) {
+      logger.error(`焚毁消息失败: ${error}`)
+    }
+
     options.onBurnComplete?.(msg)
   }
 
-  async function cancelBurn(msgId: string) {
-    const msg = burnMessages.value.get(msgId)
-    if (!msg || !msg.isBurning) return
-
-    if (syncWithBackend) {
-      try {
-        await matrixBurnAfterReadService.cancelBurn(msg.roomId, msg.eventId)
-        logger.info(`取消阅后即焚: ${msg.eventId}`)
-      } catch (err) {
-        logger.error('取消阅后即焚失败:', err)
-      }
-    }
-
-    msg.isBurning = false
-    msg.isBurned = false
-    msg.remainingSeconds = msg.burnDuration
-    msg.burnStartTime = undefined
-  }
-
   function removeBurnMessage(msgId: string) {
+    const timer = countdownTimers.value.get(msgId)
+    if (timer) {
+      clearInterval(timer)
+      countdownTimers.value.delete(msgId)
+    }
     burnMessages.value.delete(msgId)
   }
 
@@ -175,51 +158,13 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
   function clearBurnedMessages() {
     for (const [msgId, msg] of burnMessages.value.entries()) {
       if (msg.isBurned) {
+        const timer = countdownTimers.value.get(msgId)
+        if (timer) {
+          clearInterval(timer)
+          countdownTimers.value.delete(msgId)
+        }
         burnMessages.value.delete(msgId)
       }
-    }
-  }
-
-  async function loadRoomBurnConfig(roomId: string) {
-    try {
-      const config = await matrixBurnAfterReadService.getRoomBurnConfig(roomId)
-      return config
-    } catch (err) {
-      logger.error('加载房间阅后即焚配置失败:', err)
-      return null
-    }
-  }
-
-  async function setRoomBurnConfig(roomId: string, enabled: boolean, timeoutMs: number = 60000) {
-    try {
-      const success = await matrixBurnAfterReadService.setRoomBurnConfig(roomId, {
-        enabled,
-        timeout_ms: timeoutMs,
-        auto_delete: true
-      })
-      if (success) {
-        logger.info(`房间阅后即焚配置已更新: ${roomId}`)
-      }
-      return success
-    } catch (err) {
-      logger.error('设置房间阅后即焚配置失败:', err)
-      return false
-    }
-  }
-
-  async function loadPendingBurnMessages(roomId: string) {
-    try {
-      const messages = await matrixBurnAfterReadService.getPendingBurnMessages(roomId)
-      for (const msg of messages) {
-        const existingMsg = burnMessages.value.get(msg.event_id)
-        if (!existingMsg) {
-          addBurnMessage(msg.event_id, msg.room_id, msg.event_id, true, Math.floor((msg.burn_at - Date.now()) / 1000))
-        }
-      }
-      return messages
-    } catch (err) {
-      logger.error('加载待销毁消息失败:', err)
-      return []
     }
   }
 
@@ -236,29 +181,94 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
     return `${hours}h ${remainingMinutes}m`
   }
 
-  onUnmounted(() => {
-    for (const [msgId, timerId] of burnTimers.entries()) {
-      timerManager.clearInterval(timerId)
-      burnTimers.delete(msgId)
+  async function toggleRoomBurn(roomId?: string) {
+    const targetRoomId = roomId || globalStore.currentSessionRoomId
+    if (!targetRoomId) return
+
+    const currentEnabled = roomBurnState.value.get(targetRoomId) || false
+    const newEnabled = !currentEnabled
+
+    try {
+      if (newEnabled) {
+        const burnMs = (roomBurnDuration.value.get(targetRoomId) || defaultDuration) * 1000
+        await matrixBurnAfterReadService.enableBurn(targetRoomId, burnMs)
+      } else {
+        await matrixBurnAfterReadService.disableBurn(targetRoomId)
+      }
+      roomBurnState.value.set(targetRoomId, newEnabled)
+    } catch (error) {
+      logger.error(`切换阅后即焚失败: ${error}`)
+      throw error
     }
+  }
+
+  async function loadRoomBurnState(roomId?: string) {
+    const targetRoomId = roomId || globalStore.currentSessionRoomId
+    if (!targetRoomId) return
+
+    try {
+      const settings = await matrixBurnAfterReadService.getBurnSettings(targetRoomId)
+      if (settings) {
+        roomBurnState.value.set(targetRoomId, settings.enabled)
+        roomBurnDuration.value.set(targetRoomId, Math.round(settings.burnAfterMs / 1000))
+      }
+    } catch {
+      roomBurnState.value.set(targetRoomId, false)
+    }
+  }
+
+  function isRoomBurnEnabled(roomId?: string): boolean {
+    const targetRoomId = roomId || globalStore.currentSessionRoomId
+    if (!targetRoomId) return false
+    return roomBurnState.value.get(targetRoomId) || false
+  }
+
+  function getRoomBurnDuration(roomId?: string): number {
+    const targetRoomId = roomId || globalStore.currentSessionRoomId
+    if (!targetRoomId) return defaultDuration
+    return roomBurnDuration.value.get(targetRoomId) || defaultDuration
+  }
+
+  async function markMessageRead(roomId: string, eventId: string) {
+    try {
+      await matrixBurnAfterReadService.markBurnRead(roomId, eventId)
+    } catch (error) {
+      logger.error(`标记已读失败: ${error}`)
+    }
+  }
+
+  function cleanup() {
+    for (const timer of countdownTimers.value.values()) {
+      clearInterval(timer)
+    }
+    countdownTimers.value.clear()
+    burnMessages.value.clear()
+  }
+
+  onUnmounted(() => {
+    cleanup()
   })
 
   return {
     burnMessages: computed(() => Array.from(burnMessages.value.values())),
     activeBurnMessages,
     burnedMessages,
+    roomBurnState,
+    roomBurnDuration,
     addBurnMessage,
     startBurn,
     completeBurn,
-    cancelBurn,
     removeBurnMessage,
     getBurnMessage,
     isBurnActive,
     isMessageBurned,
     clearBurnedMessages,
-    loadRoomBurnConfig,
-    setRoomBurnConfig,
-    loadPendingBurnMessages,
-    formatRemainingTime
+    formatRemainingTime,
+    toggleRoomBurn,
+    loadRoomBurnState,
+    isRoomBurnEnabled,
+    getRoomBurnDuration,
+    markMessageRead,
+    cleanup
   }
 }

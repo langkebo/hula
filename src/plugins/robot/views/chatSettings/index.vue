@@ -39,7 +39,7 @@
 <script setup lang="tsx">
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { content } from './config.tsx'
 
 const settingStore = useSettingStore()

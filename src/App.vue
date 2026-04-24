@@ -1,6 +1,10 @@
 <template>
   <div class="h-100vh w-100vw">
     <NaiveProvider :message-max="3" :notific-max="3" class="h-full">
+      <ConnectionStatusBanner
+        :state="connectionState"
+        :retry-count="connectionRetryCount"
+        @retry="handleConnectionRetry" />
       <SplashScreen
         v-if="showSplash"
         :visible="showSplash"
@@ -29,11 +33,15 @@ import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
-import { useGlobalStore } from '@/stores/global'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
-import LockScreen from '@/views/LockScreen.vue'
-import MemoryMonitor from '@/components/common/MemoryMonitor.vue'
+import { useConnectionStatus } from '@/composables/useConnectionStatus'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { matrixMessageService } from '@/services/matrix'
+import ConnectionStatusBanner from '@/components/common/ConnectionStatusBanner.vue'
+const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
+const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))
 import SplashScreen from '@/components/common/SplashScreen.vue'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
@@ -43,15 +51,13 @@ import {
   WsResponseMessageType,
   type WsTokenExpire
 } from '@/services/wsType.ts'
-import matrixSlidingSyncService from '@/services/matrix/MatrixSlidingSyncService'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user'
-import { useChatStore } from '@/stores/chat'
-import { useAnnouncementStore } from '@/stores/announcement'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import type { MarkItemType, RevokedMsgType, UserItem } from '@/services/types.ts'
-import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
+import type { MatrixRoomMember } from '@/stores/domains/chat/group/types.ts'
 import { listen } from '@tauri-apps/api/event'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { updateSettings } from '@/services/tauriCommand.ts'
@@ -75,6 +81,8 @@ const {
   bootstrap
 } = useBootstrap()
 
+const { state: connectionState, retryCount: connectionRetryCount, retry: handleConnectionRetry } = useConnectionStatus()
+
 const showSplash = computed(() => bootstrapState.value === 'initializing' || bootstrapState.value === 'idle')
 
 const handleBootstrapRetry = async () => {
@@ -95,7 +103,7 @@ const { addListener } = useTauriListener()
 // 只在桌面端初始化窗口管理功能
 const { createWebviewWindow } = isDesktop() ? useWindow() : { createWebviewWindow: () => {} }
 const settingStore = useSettingStore()
-const { themes, lockScreen, page, login } = storeToRefs(settingStore)
+const { themes, lockScreen, page } = storeToRefs(settingStore)
 // 全局快捷键管理
 const { initializeGlobalShortcut, cleanupGlobalShortcut } = useGlobalShortcut()
 // 提前初始化网络状态监听，确保不错过 WebSocket 状态变化事件
@@ -119,7 +127,13 @@ const preventDrag = (e: MouseEvent) => {
 }
 const preventGlobalContextMenu = (event: MouseEvent) => event.preventDefault()
 
-useMitt.on(WsResponseMessageType.VideoCallRequest, (event) => {
+type VideoCallRequestPayload = {
+  callerUid: string
+  isVideo: boolean
+  [key: string]: unknown
+}
+
+useMitt.on<VideoCallRequestPayload>(WsResponseMessageType.VideoCallRequest, (event) => {
   info(`收到通话请求：${JSON.stringify(event)}`)
   const remoteUid = event.callerUid
   const callType = event.isVideo ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO
@@ -217,15 +231,16 @@ const handleMemberRemove = async (userList: UserItem[], roomId: string) => {
 // 处理其他成员加入群聊
 const handleOtherMemberAdd = async (user: UserItem, roomId: string) => {
   info('群成员加入群聊，添加群成员数据')
-  const matrixMember: any = {
+  const matrixMember: MatrixRoomMember = {
     ...user,
     userId: user.uid,
     displayName: user.name,
     avatarUrl: user.avatar,
-    membership: 'join' as const,
+    membership: 'join',
     powerLevel: 0,
     isModerator: false,
-    isCreator: false
+    isCreator: false,
+    roleId: 2 // 普通成员
   }
   groupStore.addUserItem(matrixMember, roomId)
 }
@@ -318,23 +333,20 @@ useMitt.on(WsResponseMessageType.ROOM_INFO_CHANGE, async (data: { roomId: string
 
 useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExpire) => {
   if (Number(userUid.value) === Number(wsTokenExpire.uid) && userStore.userInfo!.client === wsTokenExpire.client) {
-    const { useLogin } = await import('@/hooks/useLogin')
-    const { resetLoginState, logout } = useLogin()
+    const { useLoginFlow } = await import('@/hooks/useLoginFlow')
+    const { logout } = useLoginFlow()
     if (isMobile()) {
       try {
-        // 1. 先重置登录状态（不请求接口，只清理本地）
-        await resetLoginState()
-        // 2. 调用登出方法
         await logout()
 
         settingStore.toggleLogin(false, false)
         info('账号在其他设备登录')
 
-        // 3. 立即跳转到登录页，使用 replace 替换当前路由
+        // 立即跳转到登录页，使用 replace 替换当前路由
         const router = await import('@/router')
         await router.default.replace('/mobile/login')
 
-        // 4. 跳转后再显示弹窗提示
+        // 跳转后再显示弹窗提示
         const { showDialog } = await import('vant')
         await import('vant/es/dialog/style')
 
@@ -361,8 +373,6 @@ useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExp
           timestamp: Date.now()
         }
       })
-      await MatrixAuthService.logout()
-      await resetLoginState()
       await logout()
     }
   }
@@ -416,10 +426,13 @@ useMitt.on(WsResponseMessageType.USER_STATE_CHANGE, async (data: { uid: string; 
   })
 })
 
-useMitt.on(WsResponseMessageType.GROUP_SET_ADMIN_SUCCESS, (event) => {
-  logger.debug('设置群管理员---> ', event)
-  groupStore.updateAdminStatus(event.roomId, event.uids, event.status)
-})
+useMitt.on<{ roomId: string; uids: string[]; status: number | boolean }>(
+  WsResponseMessageType.GROUP_SET_ADMIN_SUCCESS,
+  (event) => {
+    logger.debug('设置群管理员---> ', event)
+    groupStore.updateAdminStatus(event.roomId, event.uids, Boolean(event.status))
+  }
+)
 
 useMitt.on(WsResponseMessageType.OFFLINE, async (onStatusChangeType: OnStatusChangeType) => {
   logger.debug('收到用户下线通知', onStatusChangeType)
@@ -467,13 +480,12 @@ const handleVideoCall = async (remotedUid: string, callType: CallTypeEnum) => {
 
 const listenMobileReLogin = async () => {
   if (isMobile()) {
-    const { useLogin } = await import('@/hooks/useLogin')
+    const { useLoginFlow } = await import('@/hooks/useLoginFlow')
 
-    const { resetLoginState, logout } = useLogin()
+    const { logout } = useLoginFlow()
     addListener(
       listen('relogin', async () => {
         info('收到重新登录事件')
-        await resetLoginState()
         await logout()
       }),
       'mobile-relogin'
@@ -502,8 +514,8 @@ const refreshActiveGroupMembers = async () => {
 let lastWsConnectionState: string | null = null
 let isReconnectInFlight = false
 
-const handleWebsocketEvent = async (event: any) => {
-  const payload: any = event.payload
+const handleWebsocketEvent = async (event: { payload: any }) => {
+  const payload = event.payload
   if (!payload || payload.type !== 'connectionStateChanged') return
 
   const previousState = (lastWsConnectionState || '').toUpperCase() || null
@@ -523,7 +535,7 @@ const handleWebsocketEvent = async (event: any) => {
   // 开始同步，显示加载状态
   chatStore.syncLoading = true
   try {
-    // Rust 端已通过 schedule_post_reconnect_sync 调用 sync_messages，前端无需重复调用
+    // 消息同步已由前端 MatrixSyncService 通过 SDK 处理
     await chatStore.getSessionList(true)
 
     // 重连后同步当前/首个群聊成员信息，避免展示断网前的旧数据
@@ -563,6 +575,14 @@ const requestNetworkPermissionForIOS = async () => {
 onMounted(async () => {
   await bootstrap()
 
+  offlineQueueService.setReplayFn(async (op) => {
+    if (op.type === 'message') {
+      const payload = op.payload.payload as Record<string, unknown>
+      await matrixMessageService.sendStructuredMessage(payload as never)
+    }
+  })
+  offlineQueueService.startNetworkListener()
+
   if (isIOS()) {
     requestNetworkPermissionForIOS()
   }
@@ -594,27 +614,6 @@ onMounted(async () => {
   if (isDesktop() && appWindow.label === 'home') {
     initializeGlobalShortcut()
   }
-
-  // 移动端初始化 Sliding Sync 服务
-  if (isMobile()) {
-    // 等待客户端就绪后初始化 SlidingSync 事件监听器
-    const initSlidingSync = async () => {
-      if (matrixClientService.isConnected() && !matrixSlidingSyncService.isInitialized) {
-        try {
-          await matrixSlidingSyncService.initialize()
-          info('[App] Mobile SlidingSync initialized')
-        } catch (err) {
-          logger.error('[App] Mobile SlidingSync initialization failed:', err)
-        }
-      } else if (!client) {
-        // 客户端未就绪，延迟重试
-        setTimeout(initSlidingSync, 1000)
-      }
-    }
-    // 延迟启动，等待登录完成
-    setTimeout(initSlidingSync, 2000)
-  }
-
   /** 开发环境不禁止 */
   if (process.env.NODE_ENV !== 'development') {
     /** 禁用浏览器默认的快捷键 */
@@ -632,7 +631,7 @@ onMounted(async () => {
       const checkUpdateWindow = await WebviewWindow.getByLabel('checkupdate')
       await checkUpdateWindow?.show()
     })
-    useMitt.on(MittEnum.DO_UPDATE, async (event) => {
+    useMitt.on<{ close: string }>(MittEnum.DO_UPDATE, async (event) => {
       await createWebviewWindow('更新', 'update', 490, 335, '', false, 490, 335, false, true)
       const closeWindow = await WebviewWindow.getByLabel(event.close)
       closeWindow?.close()

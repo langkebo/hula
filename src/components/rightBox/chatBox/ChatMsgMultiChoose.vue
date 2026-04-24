@@ -54,11 +54,11 @@
 
             <n-scrollbar class="flex-1">
               <template v-for="session in filteredSessionList" :key="session.roomId">
-                <n-flex align="center" :size="8" class="text-12px text-#303030 dark:text-#fefefe py-8px px-4px">
+                <n-flex align="center" :size="8" class="text-12px text-[--text-color] py-8px px-4px">
                   <n-checkbox v-model:checked="session.isCheck" @click.stop />
                   <n-avatar class="rounded-8px" :size="30" :src="AvatarUtils.getAvatarUrl(session.avatar)" />
                   <p>{{ session.remark ? session.remark : session.name }}</p>
-                  <p class="text-(12px #909090)" v-if="session.type === RoomTypeEnum.GROUP">
+                  <p class="text-(12px --color-text-tertiary)" v-if="session.type === RoomTypeEnum.GROUP">
                     ({{ groupStore.getGroupDetailByRoomId(session.roomId)?.memberNum }})
                   </p>
                 </n-flex>
@@ -67,7 +67,7 @@
           </div>
           <!-- 已选择会话 -->
           <div class="flex-1 min-w-0 h-64vh px-12px pt-4px flex flex-col">
-            <p class="text-(12px #909090) pb-10px">{{ t('message.multi_choose.send_to_separately') }}</p>
+            <p class="text-(12px --color-text-tertiary) pb-10px">{{ t('message.multi_choose.send_to_separately') }}</p>
             <n-scrollbar class="flex-1">
               <template v-for="session in selectedSessions" :key="session.roomId">
                 <n-flex align="center" class="p-8px">
@@ -135,7 +135,7 @@
           <n-button class="w-78px" secondary @click="showDeleteConfirm = false">
             {{ t('message.multi_choose.cancel_button') }}
           </n-button>
-          <n-button class="w-78px" color="#13987f" :loading="isDeleting" @click="handleBatchDelete">
+          <n-button class="w-78px" color="var(--color-primary)" :loading="isDeleting" @click="handleBatchDelete">
             {{ t('message.multi_choose.delete_action') }}
           </n-button>
         </n-flex>
@@ -148,22 +148,22 @@
 import { ErrorType } from '@/common/exception'
 import { MergeMessageType, MittEnum, MsgEnum, RoomTypeEnum, TauriCommand } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { useChatStore } from '@/stores/chat'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixForwardService } from '@/services/matrix/MatrixForwardService'
-import { matrixMessageService } from '@/services/matrix/MatrixMessageService'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixForwardService } from '@/services/matrix/messaging/MatrixForwardService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
-import { sendMessageWithChannel } from '@/utils/MessageSender'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useI18n } from 'vue-i18n'
 import type { MsgId } from '@/typings/global'
 import { useCustomForwardTask } from '@/hooks/useCustomForwardTask'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import ChatMultiMsg from './ChatMultiMsg.vue'
+
+import type { MessageBody, MessageType } from '@/stores/domains/chat/chat/types'
 
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('ChatMsgMultiChoose')
@@ -182,12 +182,17 @@ const selectedMsgs = computed(() =>
   chatStore.chatMessageList.filter((msg) => msg.isCheck === true && isMessageMultiSelectEnabled(msg.message.type))
 )
 
-const getMessagePreview = (msg: (typeof selectedMsgs.value)[number]) => {
+const getMessagePreview = (msg: MessageType) => {
   const userInfo = groupStore.getUserInfo(msg.fromUser.uid)
   const nickname = userInfo?.myName || msg.fromUser?.username || ''
-  const body: any = msg.message.body || {}
+  const body = (msg.message.body || {}) as MessageBody
   const preview =
-    body.content || body.fileName || body.name || body.title || body.url || t('message.multi_choose.non_text_message')
+    body.content ||
+    body.fileName ||
+    (body.name as string) ||
+    (body.title as string) ||
+    body.url ||
+    t('message.multi_choose.non_text_message')
   return nickname ? `${nickname}: ${preview}` : preview
 }
 
@@ -280,19 +285,11 @@ const isCustomImageTask = computed(
   () => customForwardTask.value?.type === MsgEnum.IMAGE && Boolean(customForwardTask.value?.previewUrl)
 )
 
-const forwardMessages = async (roomIds: string[], messageIds: MsgId[]) => {
-  const client = matrixClientService.getClient()
-  if (!client) {
-    throw new Error('Matrix client not initialized')
-  }
-
-  for (const roomId of roomIds) {
-    for (const msgIdInfo of messageIds) {
-      const event = await matrixMessageService.getRoomMessage(msgIdInfo.fromUid, msgIdInfo.msgId)
-      if (event) {
-        await matrixForwardService.forwardEvent(event, roomId)
-      }
-    }
+const forwardMessages = async (roomIds: string[], sourceRoomId: string, messageIds: string[]) => {
+  const results = await matrixForwardService.forwardRoomMessages(sourceRoomId, messageIds, roomIds)
+  const hasSuccess = results.some((result) => result.success)
+  if (!hasSuccess) {
+    throw new Error('All message forwards failed')
   }
 }
 
@@ -380,17 +377,13 @@ const sendCustomForwardTask = async (roomIds: string[]) => {
   const messageBody = await buildCustomTaskImageBody()
 
   for (const roomId of roomIds) {
-    const tempMsgId = `CF_${roomId}_${Date.now()}`
-    await sendMessageWithChannel({
-      data: {
-        id: tempMsgId,
-        roomId,
-        msgType: MsgEnum.IMAGE,
-        body: {
-          ...messageBody,
-          reply: undefined,
-          replyMsgId: undefined
-        }
+    await matrixMessageService.sendStructuredMessage({
+      roomId,
+      msgType: MsgEnum.IMAGE,
+      body: {
+        ...messageBody,
+        reply: undefined,
+        replyMsgId: undefined
       }
     })
     chatStore.updateSessionLastActiveTime(roomId)
@@ -412,8 +405,13 @@ const sendMsg = async () => {
     if (hasCustomTask) {
       await sendCustomForwardTask(selectedRoomIds)
     } else {
-      const selectedMsgIds = msgIds.value
-      await forwardMessages(selectedRoomIds, selectedMsgIds)
+      const sourceRoomId = selectedMsgs.value[0]?.message.roomId || globalStore.currentSessionRoomId
+      if (!sourceRoomId) {
+        throw new Error('Source room is missing')
+      }
+
+      const selectedMsgIds = selectedMsgs.value.map((msg) => msg.message.id)
+      await forwardMessages(selectedRoomIds, sourceRoomId, selectedMsgIds)
     }
     window.$message.success(t('message.multi_choose.forward_success'))
   } catch (error) {
@@ -488,7 +486,7 @@ watch(
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #fff;
+  background-color: var(--center-bg-color);
 }
 
 .custom-task-card img {

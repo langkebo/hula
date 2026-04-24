@@ -33,7 +33,7 @@
           <n-button
             style="color: #fff"
             class="w-full"
-            color="#13987f"
+            color="var(--color-primary)"
             size="large"
             @click="handleConfirm"
             :loading="loading"
@@ -54,8 +54,8 @@
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStore } from '@/stores/user'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { isMac } from '@/utils/PlatformConstants'
 import { useI18n } from '@/plugins/i18n'
 import { createLogger } from '@/utils/Logger'

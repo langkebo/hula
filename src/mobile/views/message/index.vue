@@ -18,14 +18,13 @@
 
     <NavBar>
       <template #left>
-        <n-flex @click="toSimpleBio" align="center" :size="6" class="w-full">
-          <n-avatar
-            :size="38"
+        <div @click="toSimpleBio" class="flex items-center gap-6px w-full">
+          <img
+            class="size-38px rounded-full object-cover"
             :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ? userStore.userInfo.avatar : '/logoD.png')"
-            fallback-src="/logo.png"
-            round />
+            @error="($event.target as HTMLImageElement).src = '/logo.png'" />
 
-          <n-flex vertical justify="center" :size="6">
+          <div class="flex flex-col justify-center gap-6px">
             <p
               style="
                 font-weight: bold !important;
@@ -44,53 +43,47 @@
                   : t('mobile_home.china')
               }}
             </p>
-          </n-flex>
-        </n-flex>
+          </div>
+        </div>
       </template>
 
       <template #right>
-        <n-dropdown
-          @on-clickoutside="addIconHandler.clickOutside"
-          @select="addIconHandler.select"
-          trigger="click"
-          :show-arrow="true"
-          :options="uiViewsData.addOptions">
-          <n-button round strong secondary @click="addIconHandler.open">
-            <template #icon>
-              <n-icon>
-                <svg><use href="#plus"></use></svg>
-              </n-icon>
-            </template>
-          </n-button>
-          <!-- <svg @click="addIconHandler.open" class="size-22px p-5px rounded-8px">
-            <use href="#plus"></use>
-          </svg> -->
-        </n-dropdown>
+        <van-popover
+          v-model:show="showAddPopover"
+          :actions="addActions"
+          @select="onAddActionSelect"
+          placement="bottom-end">
+          <template #reference>
+            <van-button round plain size="small">
+              <svg class="w-16px h-16px"><use href="#plus"></use></svg>
+            </van-button>
+          </template>
+        </van-popover>
       </template>
     </NavBar>
 
     <div class="px-16px mt-5px">
       <div class="py-5px shrink-0">
-        <n-input
+        <van-field
           id="search"
           class="rounded-6px w-full relative text-12px"
-          :maxlength="20"
+          maxlength="20"
           clearable
-          spellCheck="false"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
+          autocomplete="off"
+          :spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
           :placeholder="t('mobile_home.input.search')"
           @focus="lockScroll"
           @blur="unlockScroll">
-          <template #prefix>
+          <template #left-icon>
             <svg class="w-12px h-12px">
               <use href="#search"></use>
             </svg>
           </template>
-        </n-input>
+        </van-field>
       </div>
-      <n-divider class="m-0! p-0! mt-10px!" />
+      <div class="m-0 p-0 mt-10px border-b border-gray-200 dark:border-gray-700"></div>
     </div>
 
     <van-pull-refresh
@@ -100,86 +93,95 @@
       v-model="loading"
       @refresh="onRefresh">
       <div class="flex flex-col h-full">
-        <div class="flex-1 overflow-y-auto overflow-x-hidden min-h-0" @scroll="onScroll">
-          <van-swipe-cell
-            @open="handleSwipeOpen"
-            @close="handleSwipeClose"
-            v-for="(item, idx) in sessionList"
-            v-on-long-press="[(e: PointerEvent) => handleLongPress(e, item), longPressOption]"
-            :key="`${item.id}-${idx}`"
-            class="text-black"
-            :class="item.top ? 'w-full bg-#64A29C18' : ''">
-            <!-- 长按项 -->
-            <div
-              @click.stop="intoRoom(item)"
-              class="grid grid-cols-[2.2rem_1fr_max-content] items-start px-4 py-3 gap-1">
-              <div class="flex-shrink-0">
-                <n-badge
-                  :offset="[-6, 6]"
-                  :color="item.muteNotification === NotificationTypeEnum.NOT_DISTURB ? 'grey' : '#c14053'"
-                  :value="item.unreadCount"
-                  :max="99">
-                  <n-avatar :size="52" :src="AvatarUtils.getAvatarUrl(item.avatar)" fallback-src="/logo.png" round />
-                </n-badge>
-              </div>
-              <!-- 中间：两行内容 -->
-              <div class="truncate pl-7 flex pt-5px gap-10px leading-tight flex-col">
-                <n-text class="text-16px font-bold flex-1 truncate">{{ item.name }}</n-text>
-                <div class="text-13px text-gray-600 dark:text-gray-400 truncate">
-                  {{ item.text }}
+        <SmartVirtualList
+          class="mobile-session-list flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+          :items="sessionList"
+          :item-height="82"
+          :buffer="6"
+          key-field="roomId"
+          @scroll="onScroll">
+          <template #default="{ item }">
+            <van-swipe-cell
+              @open="handleSwipeOpen"
+              @close="handleSwipeClose"
+              v-on-long-press="[(e: PointerEvent) => handleLongPress(e, item), longPressOption]"
+              class="text-black"
+              :class="item.top ? 'w-full bg-#64A29C18' : ''">
+              <!-- 长按项 -->
+              <div
+                @click.stop="intoRoom(item)"
+                class="grid grid-cols-[2.2rem_1fr_max-content] items-start px-4 py-3 gap-1">
+                <div class="flex-shrink-0">
+                  <van-badge
+                    :offset="[-6, 6]"
+                    :color="item.muteNotification === NotificationTypeEnum.NOT_DISTURB ? 'grey' : '#c14053'"
+                    :content="item.unreadCount"
+                    :max="99">
+                    <img
+                      class="size-52px rounded-full object-cover"
+                      :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                      @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                  </van-badge>
                 </div>
-              </div>
+                <!-- 中间：两行内容 -->
+                <div class="truncate pl-7 flex pt-5px gap-10px leading-tight flex-col">
+                  <span class="text-16px font-bold flex-1 truncate">{{ item.name }}</span>
+                  <div class="text-13px text-gray-600 dark:text-gray-400 truncate">
+                    {{ item.lastMsg }}
+                  </div>
+                </div>
 
-              <!-- 时间：靠顶 -->
-              <div class="text-12px pt-9px text-right flex flex-col gap-1 items-end justify-center">
-                <div class="flex items-center gap-1">
-                  <span v-if="item.hotFlag === IsAllUserEnum.Yes">
-                    <svg class="size-22px select-none outline-none cursor-pointer color-#13987f">
-                      <use href="#auth"></use>
+                <!-- 时间：靠顶 -->
+                <div class="text-12px pt-9px text-right flex flex-col gap-1 items-end justify-center">
+                  <div class="flex items-center gap-1">
+                    <span v-if="item.hotFlag === IsAllUserEnum.Yes">
+                      <svg class="size-22px select-none outline-none cursor-pointer color-[--color-primary]">
+                        <use href="#auth"></use>
+                      </svg>
+                    </span>
+                    <span v-if="item.isFavorite">
+                      <svg class="size-22px select-none outline-none cursor-pointer color-[--color-warning]">
+                        <use href="#star"></use>
+                      </svg>
+                    </span>
+                    <span class="text-gray-600 whitespace-nowrap">
+                      {{ formatTimestamp(item?.activeTime) }}
+                    </span>
+                  </div>
+                  <div v-if="item.muteNotification === NotificationTypeEnum.NOT_DISTURB">
+                    <svg class="size-14px z-100 color-gray-500/90">
+                      <use href="#close-remind"></use>
                     </svg>
-                  </span>
-                  <span v-if="item.isFavorite">
-                    <svg class="size-22px select-none outline-none cursor-pointer color-#f0a020">
-                      <use href="#star"></use>
-                    </svg>
-                  </span>
-                  <span class="text-gray-600 whitespace-nowrap">
-                    {{ formatTimestamp(item?.activeTime) }}
-                  </span>
-                </div>
-                <div v-if="item.muteNotification === NotificationTypeEnum.NOT_DISTURB">
-                  <svg class="size-14px z-100 color-gray-500/90">
-                    <use href="#close-remind"></use>
-                  </svg>
+                  </div>
                 </div>
               </div>
-            </div>
-            <template #right>
-              <div class="flex w-auto flex-wrap h-full">
-                <div
-                  class="h-full text-14px w-80px bg-#13987f text-white flex items-center justify-center"
-                  @click="handleToggleTop(item)">
-                  {{ item.top ? t('mobile_home.chat.unpin') : t('mobile_home.chat.pintop') }}
+              <template #right>
+                <div class="flex w-auto flex-wrap h-full">
+                  <div
+                    class="h-full text-14px w-80px bg-[--color-primary] text-white flex items-center justify-center"
+                    @click="handleToggleTop(item)">
+                    {{ item.top ? t('mobile_home.chat.unpin') : t('mobile_home.chat.pintop') }}
+                  </div>
+                  <div
+                    :class="(item?.unreadCount ?? 0) > 0 ? 'bg-[--color-text-tertiary]' : 'bg-[--color-warning]'"
+                    class="h-full text-14px w-80px text-white flex items-center justify-center"
+                    @click="handleToggleReadStatus((item?.unreadCount ?? 0) > 0, item)">
+                    {{
+                      (item?.unreadCount ?? 0) > 0
+                        ? t('mobile_home.chat.mark_as_read')
+                        : t('mobile_home.chat.mark_as_unread')
+                    }}
+                  </div>
+                  <div
+                    class="h-full text-14px w-80px bg-[--color-danger] text-white flex items-center justify-center"
+                    @click="handleDelete(item)">
+                    {{ t('mobile_home.chat.delete') }}
+                  </div>
                 </div>
-                <div
-                  :class="(item?.unreadCount ?? 0) > 0 ? 'bg-#909090' : 'bg-#fbb160'"
-                  class="h-full text-14px w-80px text-white flex items-center justify-center"
-                  @click="handleToggleReadStatus((item?.unreadCount ?? 0) > 0, item)">
-                  {{
-                    (item?.unreadCount ?? 0) > 0
-                      ? t('mobile_home.chat.mark_as_read')
-                      : t('mobile_home.chat.mark_as_unread')
-                  }}
-                </div>
-                <div
-                  class="h-full text-14px w-80px bg-#d5304f text-white flex items-center justify-center"
-                  @click="handleDelete(item)">
-                  {{ t('mobile_home.chat.delete') }}
-                </div>
-              </div>
-            </template>
-          </van-swipe-cell>
-        </div>
+              </template>
+            </van-swipe-cell>
+          </template>
+        </SmartVirtualList>
       </div>
     </van-pull-refresh>
 
@@ -212,23 +214,23 @@
 <script setup lang="ts">
 import { useDebounceFn, useThrottleFn } from '@vueuse/core'
 import NavBar from '#/layout/navBar/index.vue'
-import addFriendIcon from '@/assets/mobile/chat-home/add-friend.webp'
-import groupChatIcon from '@/assets/mobile/chat-home/group-chat.webp'
-import { RoomTypeEnum, NotificationTypeEnum } from '@/enums'
+import { RoomTypeEnum, NotificationTypeEnum, MsgEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg'
 import { IsAllUserEnum } from '@/services/types.ts'
-import type { SessionItem } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user.ts'
+import type { SessionItem } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import type { MatrixRoomMember } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { vOnLongPress } from '@vueuse/components'
-import { useContactStore } from '@/stores/contacts'
+import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useI18n } from 'vue-i18n'
-import { matrixClientService, matrixSessionService, matrixMessageService } from '@/services/matrix'
+import { syncService, matrixSessionService, matrixMessageService } from '@/services/matrix'
+import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
@@ -244,12 +246,26 @@ const chatStore = useChatStore()
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const contactStore = useContactStore()
+const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
 
-// 加载更多ui事件处理（开始）
+const showAddPopover = ref(false)
+const addActions = [
+  { text: t('menu.start_group_chat'), value: '/mobile/mobileFriends/startGroupChat' },
+  { text: t('menu.add_contact'), value: '/mobile/mobileFriends/addFriends' }
+]
+
+const onAddActionSelect = (action: { text: string; value: string }) => {
+  router.push(action.value)
+  maskHandler.close()
+}
+
+type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
+
+const sessionMsgCache = reactive<Record<string, SessionMsgCacheItem>>({})
 
 const isEnablePullRefresh = ref(true)
 
-let scrollTop = 0 // 记住当前滑动到哪了
+let scrollTop = 0
 
 const enablePullRefresh = useDebounceFn((top: number) => {
   isEnablePullRefresh.value = top === 0
@@ -259,8 +275,8 @@ const disablePullRefresh = useThrottleFn(() => {
   isEnablePullRefresh.value = false
 }, 80)
 
-const onScroll = (e: any) => {
-  scrollTop = e.target.scrollTop
+const onScroll = (e: Event) => {
+  scrollTop = (e.target as HTMLElement).scrollTop
   if (scrollTop < 200) {
     enablePullRefresh(scrollTop)
   } else {
@@ -268,19 +284,14 @@ const onScroll = (e: any) => {
   }
 }
 
-// 加载更多ui事件处理（结束）
-
 const longPressState = ref({
   showLongPressMenu: false,
   longPressMenuTop: 0,
   longPressActive: false,
-  // 禁用所有事件
   enable: () => {
-    // 设置长按激活状态
     longPressState.value.longPressActive = true
     disablePullRefresh()
   },
-
   disable: () => {
     longPressState.value.showLongPressMenu = false
     longPressState.value.longPressMenuTop = 0
@@ -291,74 +302,95 @@ const longPressState = ref({
 })
 
 const allUserMap = computed(() => {
-  const map = new Map<string, any>() // User 是你定义的用户类型
+  const map = new Map<string, MatrixRoomMember>()
   groupStore.allUserInfo.forEach((user) => {
-    map.set(user.uid, user)
+    map.set(user.uid, user as MatrixRoomMember)
   })
   return map
 })
 
-// 会话列表
 const sessionList = computed(() => {
-  return (
-    chatStore.sessionList
-      .map((item) => {
-        // 获取最新的头像
-        let latestAvatar = item.avatar
-        if (item.type === RoomTypeEnum.SINGLE && item.id) {
-          latestAvatar = groupStore.getUserInfo(item.id)?.avatar || item.avatar
-        }
+  return chatStore.sessionList
+    .map((item) => {
+      let latestAvatar = item.avatar
+      if (item.type === RoomTypeEnum.SINGLE && item.id) {
+        latestAvatar = groupStore.getUserInfo(item.id)?.avatar || item.avatar
+      }
 
-        // 获取群聊备注名称（如果有）
-        let displayName = item.name
-        if (item.type === RoomTypeEnum.GROUP && item.remark) {
-          // 使用群组备注（如果存在）
-          displayName = item.remark
-        }
+      let displayName = item.name
+      if (item.type === RoomTypeEnum.GROUP && item.remark) {
+        displayName = item.remark
+      }
 
-        const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
-        // 获取该会话的所有消息用于检查@我
-        const messages = chatStore.chatMessageListByRoomId(item.roomId)
-        // 检查是否有@我的消息
-        const isAtMe = checkRoomAtMe(
-          item.roomId,
-          item.type,
-          globalStore.currentSessionRoomId!,
-          messages,
-          item.unreadCount
-        )
+      const messages = chatStore.chatMessageListByRoomId(item.roomId)
 
-        // 处理显示消息
-        let displayMsg = ''
+      let displayMsg = ''
+      let isAtMe = false
 
-        const lastMsg = messages[messages.length - 1]
-        if (lastMsg) {
-          const senderName = getMessageSenderName(lastMsg, '', item.roomId, item.type)
+      const lastMsg = messages[messages.length - 1]
+      const cacheKey = item.roomId
+      const cached = sessionMsgCache[cacheKey]
+      const sendTime = lastMsg?.message?.sendTime || 0
+
+      if (lastMsg) {
+        const senderName = getMessageSenderName(lastMsg, '', item.roomId, item.type)
+        const shouldRefreshCache = !cached || cached.time < sendTime || cached.senderName !== senderName
+
+        if (shouldRefreshCache) {
+          isAtMe = checkRoomAtMe(item.roomId, item.type, globalStore.currentSessionRoomId!, messages, item.unreadCount)
           displayMsg = formatMessageContent(lastMsg, item.type, senderName, item.roomId)
-        }
 
-        return {
-          ...item,
-          avatar: latestAvatar,
-          name: displayName, // 使用可能修改过的显示名称
-          lastMsg: displayMsg || '欢迎使用HuLa',
-          lastMsgTime: formatTimestamp(item?.activeTime),
-          isAtMe
-        }
-      })
-      // 添加排序逻辑：先按置顶状态排序，再按活跃时间排序
-      .sort((a, b) => {
-        // 1. 先按置顶状态排序（置顶的排在前面）
-        if (a.top && !b.top) return -1
-        if (!a.top && b.top) return 1
+          if (item.type === RoomTypeEnum.GROUP && lastMsg.message?.type === MsgEnum.SYSTEM && displayMsg) {
+            const separatorIndex = displayMsg.indexOf(':')
+            if (separatorIndex > -1) {
+              displayMsg = displayMsg.slice(separatorIndex + 1)
+            }
+          }
 
-        // 2. 在相同置顶状态下，按最后活跃时间降序排序（最新的排在前面）
-        return b.activeTime - a.activeTime
-      })
-  )
+          sessionMsgCache[cacheKey] = {
+            msg: displayMsg,
+            isAtMe,
+            time: sendTime,
+            senderName
+          }
+        } else {
+          displayMsg = cached.msg
+          isAtMe = item.unreadCount > 0 ? cached.isAtMe : false
+        }
+      } else if (cached) {
+        displayMsg = cached.msg
+        isAtMe = item.unreadCount > 0 ? cached.isAtMe : false
+      }
+
+      return {
+        ...item,
+        avatar: latestAvatar,
+        name: displayName,
+        lastMsg: displayMsg || '欢迎使用HuLa',
+        lastMsgTime: formatTimestamp(item?.activeTime),
+        isAtMe
+      }
+    })
+    .sort((a, b) => {
+      if (a.top && !b.top) return -1
+      if (!a.top && b.top) return 1
+      return b.activeTime - a.activeTime
+    })
 })
 
-// 删除会话
+watch(
+  () => chatStore.sessionList.map((item) => item.roomId),
+  (roomIds) => {
+    const activeRoomIds = new Set(roomIds)
+    for (const roomId of Object.keys(sessionMsgCache)) {
+      if (!activeRoomIds.has(roomId)) {
+        Reflect.deleteProperty(sessionMsgCache, roomId)
+      }
+    }
+  },
+  { immediate: true }
+)
+
 const handleDelete = async (item: SessionItem | null) => {
   if (!item) return
 
@@ -371,7 +403,6 @@ const handleDelete = async (item: SessionItem | null) => {
   }
 }
 
-// 置顶/取消置顶
 const handleToggleTop = async (item: SessionItem | null) => {
   if (!item) return
 
@@ -380,7 +411,6 @@ const handleToggleTop = async (item: SessionItem | null) => {
 
     await matrixSessionService.setSessionTop(item.roomId, newTopState)
 
-    // 更新本地会话状态
     chatStore.updateSession(item.roomId, { top: newTopState })
   } catch (error) {
     logger.error('置顶操作失败:', error)
@@ -389,8 +419,7 @@ const handleToggleTop = async (item: SessionItem | null) => {
   }
 }
 
-// 切换已读/未读状态
-const handleToggleReadStatus = async (markAsRead: boolean, sessionItem?: SessionItem) => {
+const handleToggleReadStatus = async (markAsRead: boolean, sessionItem?: SessionItem | null) => {
   const targetItem = sessionItem || currentLongPressItem.value
   if (!targetItem) return
 
@@ -402,22 +431,17 @@ const handleToggleReadStatus = async (markAsRead: boolean, sessionItem?: Session
 
     const successMsg = markAsRead ? t('mobile_home.marked_as_read') : t('mobile_home.marked_as_unread')
 
-    // 更新未读计数（乐观更新，失败时回滚）
     chatStore.updateSession(item.roomId, {
       unreadCount
     })
     globalStore.updateGlobalUnreadCount()
 
     if (markAsRead) {
-      const room = matrixClientService.getRoom(item.roomId)
-      const lastEvent = room?.timeline[room.timeline.length - 1]
-      const eventId = lastEvent?.getId() || ''
-      await matrixMessageService.markMessagesRead(item.roomId, eventId)
+      await matrixMessageService.markRoomAsRead(item.roomId)
     }
 
     window.$message.success(successMsg)
   } catch (error) {
-    // 回滚未读计数
     chatStore.updateSession(item.roomId, {
       unreadCount: previousUnreadCount
     })
@@ -432,7 +456,6 @@ const handleToggleReadStatus = async (markAsRead: boolean, sessionItem?: Session
 }
 
 const onRefresh = () => {
-  // 如果没到0.5秒就延迟0.5秒，如果接口执行时间超过0.5秒那就以getSessionList时间为准
   loading.value = true
   count.value++
 
@@ -441,7 +464,6 @@ const onRefresh = () => {
 
   Promise.all([apiPromise, delayPromise])
     .then(([res]) => {
-      // 接口和延时都完成后执行
       loading.value = false
       logger.debug('刷新完成', res)
     })
@@ -451,74 +473,31 @@ const onRefresh = () => {
     })
 }
 
-onMounted(async () => {
-  await contactStore.getContactList(true)
-
-  matrixClientService.on('sync', (data: any) => {
-    if (data.state === 'PREPARED') {
-      contactStore.getContactList(true)
-    }
-  })
-
-  matrixClientService.on('timeline', () => {
-    contactStore.getContactList(false)
-  })
-})
-
-/**
- * 渲染图片图标的函数工厂
- * @param {string} src - 图标图片路径
- * @returns {() => import('vue').VNode} 返回一个渲染图片的函数组件
- */
-const renderImgIcon = (src: string) => {
-  return () =>
-    h('img', {
-      src,
-      style: 'display:block; width: 26px; height: 26px; vertical-align: middle;',
-      class: 'dark:invert'
-    })
+const handleSyncEvent = (payload: { state?: string }) => {
+  if (payload?.state === 'PREPARED') {
+    contactStore.getContactList(true)
+  }
 }
 
-/**
- * UI 视图数据，包含菜单选项及其图标
- * @type {import('vue').Ref<{ addOptions: { label: string; key: string; icon: () => import('vue').VNode }[] }>}
- */
-const uiViewsData = ref({
-  addOptions: [
-    {
-      label: t('menu.start_group_chat'),
-      key: '/mobile/mobileFriends/startGroupChat',
-      icon: renderImgIcon(groupChatIcon)
-    },
-    {
-      label: t('menu.add_contact'),
-      key: '/mobile/mobileFriends/addFriends',
-      icon: renderImgIcon(addFriendIcon)
-    }
-  ]
+const handleTimelineEvent = () => {
+  contactStore.getContactList(false)
+}
+
+onMounted(async () => {
+  await contactStore.getContactList(true)
+  syncService.onSync('sync', handleSyncEvent as (...args: unknown[]) => void)
+  syncService.onSync('timeline', handleTimelineEvent as (...args: unknown[]) => void)
 })
 
-// 页面蒙板相关处理（开始）
+onUnmounted(() => {
+  syncService.offSync('sync')
+  syncService.offSync('timeline')
+})
 
-/**
- * 页面蒙板显示状态
- * @type {import('vue').Ref<boolean>}
- */
 const showMask = ref(false)
-
-/**
- * 当前页面滚动的纵向位置，避免打开蒙板时页面跳动
- * @type {number}
- */
 let scrollY = 0
 
-/**
- * 控制页面蒙板的对象，包含打开和关闭方法
- */
 const maskHandler = {
-  /**
-   * 打开蒙板，并锁定滚动位置
-   */
   open: () => {
     scrollY = window.scrollY
     showMask.value = true
@@ -527,10 +506,6 @@ const maskHandler = {
     document.body.style.top = `-${scrollY}px`
     document.body.style.width = '100%'
   },
-
-  /**
-   * 关闭蒙板，恢复滚动状态和位置
-   */
   close: () => {
     const closeModal = () => {
       showMask.value = false
@@ -538,7 +513,7 @@ const maskHandler = {
       document.body.style.position = ''
       document.body.style.top = ''
       document.body.style.width = ''
-      window.scrollTo(0, scrollY) // 恢复滚动位置
+      window.scrollTo(0, scrollY)
     }
 
     timerManager.setTimeout(closeModal, 60)
@@ -547,40 +522,9 @@ const maskHandler = {
   }
 }
 
-// 页面蒙板相关处理（结束）
-
-/**
- * 添加按钮相关事件处理对象
- */
-const addIconHandler = {
-  /**
-   * 选项选择时关闭蒙板
-   */
-  select: (item: string) => {
-    logger.debug('选择的项：', item)
-    router.push(item)
-    maskHandler.close()
-  },
-
-  /**
-   * 点击加号按钮打开蒙板
-   */
-  open: () => {
-    maskHandler.open()
-  },
-
-  /**
-   * 点击下拉菜单外部区域关闭蒙板
-   */
-  clickOutside: () => {
-    maskHandler.close()
-  }
-}
-
 const router = useRouter()
 const { handleMsgClick, handleMsgDelete } = useMessage()
 
-// 阻止消息的点击事件，为false时不阻止
 let preventClick = false
 
 const handleSwipeOpen = () => {
@@ -591,7 +535,7 @@ const handleSwipeClose = () => {
   preventClick = false
 }
 
-const intoRoom = (item: any) => {
+const intoRoom = (item: SessionItem) => {
   if (longPressState.value.longPressActive) {
     return
   }
@@ -601,10 +545,9 @@ const intoRoom = (item: any) => {
   }
 
   handleMsgClick(item)
-  const foundedUser = allUserMap.value.get(item.detailId)
+  const foundedUser = allUserMap.value.get(item.detailId || '')
 
   timerManager.setTimeout(() => {
-    // 如果找到用户，就表示该会话属于好友，那就传入好友的uid;同时排除id为1的hula小管家
     if (foundedUser && foundedUser.uid !== '1') {
       router.push({
         name: 'mobileChatMain',
@@ -620,14 +563,12 @@ const intoRoom = (item: any) => {
   }, 0)
 }
 const toSimpleBio = () => {
-  // 切成你想要的离场动画
   router.push('/mobile/mobileMy/simpleBio')
 }
 
-// 锁滚动（和蒙板一样）
 const lockScroll = () => {
   logger.debug('锁定触发')
-  const scrollEl = document.querySelector('.flex-1.overflow-auto') as HTMLElement
+  const scrollEl = document.querySelector('.mobile-session-list') as HTMLElement
   if (scrollEl) {
     scrollEl.style.overflow = 'hidden'
   }
@@ -635,13 +576,12 @@ const lockScroll = () => {
 
 const unlockScroll = () => {
   logger.debug('锁定解除')
-  const scrollEl = document.querySelector('.flex-1.overflow-auto') as HTMLElement
+  const scrollEl = document.querySelector('.mobile-session-list') as HTMLElement
   if (scrollEl) {
     scrollEl.style.overflow = 'auto'
   }
 }
 
-// 长按事件处理（开始）
 const longPressOption = ref({
   delay: 200,
   modifiers: {
@@ -667,7 +607,6 @@ const handleLongPress = (e: PointerEvent, item: SessionItem) => {
 
   longPressState.value.enable()
 
-  // 设置长按菜单top值
   const setLongPressMenuTop = () => {
     const target = e.target as HTMLElement
 
@@ -675,7 +614,7 @@ const handleLongPress = (e: PointerEvent, item: SessionItem) => {
       return
     }
 
-    const currentTarget = target.closest('.grid') // 向上找父级，找到grid就停止
+    const currentTarget = target.closest('.grid')
 
     if (!currentTarget) {
       return
@@ -688,24 +627,23 @@ const handleLongPress = (e: PointerEvent, item: SessionItem) => {
 
   setLongPressMenuTop()
 
-  longPressState.value.showLongPressMenu = true // 显示长按菜单
+  longPressState.value.showLongPressMenu = true
 }
-
-// 长按事件处理（结束）
 </script>
 
 <style scoped lang="scss">
-.keyboard-mask {
-  position: fixed;
-  inset: 0;
-  background: transparent; // 透明背景
-  z-index: 1400; // 低于 Naive 弹层，高于页面内容
-  pointer-events: auto; // 确保能接收事件
-  touch-action: none; // 禁止滚动
+:deep(.van-cell.van-field) {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+:deep(.van-cell.van-field::after) {
+  display: none;
 }
 
 ::deep(#search) {
   position: relative;
-  z-index: 1500; // 高于键盘蒙层，低于 Naive 弹层
+  z-index: 1500;
 }
 </style>

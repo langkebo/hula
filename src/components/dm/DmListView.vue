@@ -75,10 +75,11 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { ThemeEnum, RoomTypeEnum } from '@/enums'
+import { ThemeEnum } from '@/enums'
 import { matrixDirectMessageService, type DmRoomInfo } from '@/services/matrix/MatrixDirectMessageService'
-import { useSettingStore } from '@/stores/setting'
-import { useChatStore } from '@/stores/chat'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
@@ -89,6 +90,7 @@ import CreateDmDialog from './CreateDmDialog.vue'
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const chatStore = useChatStore()
+const globalStore = useGlobalStore()
 const { themes } = storeToRefs(settingStore)
 
 const searchValue = ref('')
@@ -123,7 +125,7 @@ const formatTime = (timestamp?: number) => {
 const loadDmRooms = async () => {
   loading.value = true
   try {
-    const rooms = await matrixDirectMessageService.getDmRoomInfos()
+    const rooms = await matrixDirectMessageService.getDmRoomInfos(false)
     dmRooms.value = rooms
   } finally {
     loading.value = false
@@ -132,15 +134,7 @@ const loadDmRooms = async () => {
 
 const handleSelectRoom = (room: DmRoomInfo) => {
   activeRoomId.value = room.roomId
-  const partnerId = room.invitees[0] || room.inviter || ''
-
-  // Type assertion bypass for strictly typed pinia store
-  ;(chatStore as any).updateCurrentChat({
-    roomId: room.roomId,
-    context: { type: RoomTypeEnum.SINGLE, uid: partnerId, roomId: room.roomId },
-    isEncrypted: false,
-    members: []
-  })
+  globalStore.updateCurrentSessionRoomId(room.roomId)
 }
 
 const contextMenuItems = computed(() => [
@@ -220,7 +214,7 @@ onMounted(async () => {
 
   &.active {
     background: var(--msg-active-color);
-    color: #fff;
+    color: var(--msg-active-text-color, #fff);
   }
 
   &.pinned {

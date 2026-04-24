@@ -7,7 +7,9 @@
       <n-flex class="item" align="center" justify="space-between">
         <n-flex vertical :size="8">
           <span>{{ t('setting.shortcut.enable_global_shortcuts') }}</span>
-          <span class="text-(12px #909090)">{{ t('setting.shortcut.enable_global_shortcuts_hint') }}</span>
+          <span class="text-(12px --color-text-tertiary)">
+            {{ t('setting.shortcut.enable_global_shortcuts_hint') }}
+          </span>
         </n-flex>
 
         <n-switch v-model:value="globalShortcutEnabled" @update:value="handleGlobalShortcutToggle" size="small" />
@@ -24,7 +26,7 @@
           <n-flex vertical :size="8">
             <span>{{ shortcutConfigs.screenshot.displayName }}</span>
             <!-- <span>{{ t('setting.shortcut.screenshot') }}</span> -->
-            <span class="text-(12px #909090)">{{ t('setting.shortcut.screenshot_hint') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.shortcut.screenshot_hint') }}</span>
           </n-flex>
 
           <n-flex align="center" :size="12">
@@ -35,7 +37,7 @@
               :value="screenshotShortcutDisplay"
               :placeholder="screenshotShortcutDisplay"
               style="width: 130px"
-              class="border-(1px solid #90909080)"
+              class="border-(1px solid var(--color-text-tertiary)/80)"
               readonly
               size="small"
               :disabled="!globalShortcutEnabled"
@@ -66,7 +68,7 @@
           <n-flex vertical :size="8">
             <span>{{ shortcutConfigs.openMainPanel.displayName }}</span>
             <!-- <span>{{ t('setting.shortcut.panel_switch') }}</span> -->
-            <span class="text-(12px #909090)">{{ t('setting.shortcut.panel_switch_hint') }}</span>
+            <span class="text-(12px --color-text-tertiary)">{{ t('setting.shortcut.panel_switch_hint') }}</span>
           </n-flex>
 
           <n-flex align="center" :size="12">
@@ -80,7 +82,7 @@
               :value="openMainPanelShortcutDisplay"
               :placeholder="openMainPanelShortcutDisplay"
               style="width: 130px"
-              class="border-(1px solid #90909080)"
+              class="border-(1px solid var(--color-text-tertiary)/80)"
               readonly
               size="small"
               :disabled="!globalShortcutEnabled"
@@ -113,7 +115,7 @@
       <n-flex class="item" align="center" justify="space-between">
         <n-flex vertical :size="8">
           <span>{{ t('setting.shortcut.send_message_shortcut') }}</span>
-          <span class="text-(12px #909090)">{{ t('setting.shortcut.send_message_shortcut_hint') }}</span>
+          <span class="text-(12px --color-text-tertiary)">{{ t('setting.shortcut.send_message_shortcut_hint') }}</span>
         </n-flex>
 
         <n-flex align="center" :size="12">
@@ -135,7 +137,7 @@ import { emit, listen } from '@tauri-apps/api/event'
 import { isRegistered } from '@tauri-apps/plugin-global-shortcut'
 import { MacOsKeyEnum } from '@/enums'
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isMac } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
 import { useSendOptions } from './config.ts'
@@ -530,6 +532,6 @@ onMounted(async () => {
 
 :deep(.n-input.n-input--focus) {
   border-width: 2px;
-  border-color: #13987f !important;
+  border-color: var(--color-primary) !important;
 }
 </style>

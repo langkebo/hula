@@ -35,10 +35,10 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, reactive, computed } from 'vue'
-import { useChatStore } from '@/stores/chat'
-import { useGroupStore } from '@/stores/group'
-import { useGlobalStore } from '@/stores/global'
+import { ref, onMounted, onUnmounted, nextTick, reactive, computed, watch } from 'vue'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 const logger = createLogger('MemoryMonitor')
@@ -62,6 +62,8 @@ const isDragging = ref(false)
 const suppressClickOnce = ref(false)
 
 let timer: number | null = null
+const ACTIVE_REFRESH_INTERVAL = 3000
+const IDLE_REFRESH_INTERVAL = 15000
 
 const formatBytes = (bytes: number) => {
   if (bytes < 1024) return bytes + ' B'
@@ -69,7 +71,7 @@ const formatBytes = (bytes: number) => {
   return (bytes / 1024 / 1024).toFixed(2) + ' MB'
 }
 
-const estimateSize = (obj: any, depth = 0, seen = new WeakSet()): number => {
+const estimateSize = (obj: unknown, depth = 0, seen = new WeakSet<object>()): number => {
   if (depth > 10) return 0
   if (obj === null || obj === undefined) return 8
   if (typeof obj === 'boolean') return 4
@@ -92,39 +94,42 @@ const estimateSize = (obj: any, depth = 0, seen = new WeakSet()): number => {
       size += estimateSize(k, depth + 1, seen) + estimateSize(v, depth + 1, seen)
     })
   } else {
-    const keys = Object.keys(obj)
+    const record = obj as Record<string, unknown>
+    const keys = Object.keys(record)
     for (const key of keys.slice(0, 50)) {
-      size += key.length * 2 + 40 + estimateSize(obj[key], depth + 1, seen)
+      size += key.length * 2 + 40 + estimateSize(record[key], depth + 1, seen)
     }
     if (keys.length > 50) size += (keys.length - 50) * 500
   }
   return size
 }
 
+const chatStore = useChatStore()
+const groupStore = useGroupStore()
+const globalStore = useGlobalStore()
+
+const shouldCollectDetailedStats = () => !document.hidden && !isMinimized.value && expanded.value
+
 const updateMemory = () => {
   try {
-    const chatStore = useChatStore()
-    const groupStore = useGroupStore()
-    const globalStore = useGlobalStore()
-
     const messageMap = chatStore.messageMap || {}
+    const sortedMessageKeys = chatStore.sortedMessageKeys || {}
     const sessionList = chatStore.sessionList || []
 
     let totalMsgs = 0
     let roomCount = 0
-    const roomMsgCounts: string[] = []
+    const trackedRoomIds = new Set([...Object.keys(sortedMessageKeys), ...Object.keys(messageMap)])
 
-    for (const roomId of Object.keys(messageMap)) {
-      const count = Object.keys(messageMap[roomId] || {}).length
+    for (const roomId of trackedRoomIds) {
+      const count = Array.isArray(sortedMessageKeys[roomId])
+        ? sortedMessageKeys[roomId].length
+        : Object.keys(messageMap[roomId] || {}).length
       totalMsgs += count
       roomCount++
-      if (count > 0) {
-        roomMsgCounts.push(`${count}`)
-      }
     }
 
-    const memberMap = (groupStore as any).memberMap || {}
-    const cachedUserInfo = (groupStore as any).cachedUserInfo || {}
+    const memberMap = groupStore.membersMap || {}
+    const cachedUserInfo = groupStore.allUserInfo || []
 
     let totalMembers = 0
     const memberMapRooms = Object.keys(memberMap).length
@@ -137,27 +142,30 @@ const updateMemory = () => {
       }
     }
 
-    const sessionSize = estimateSize(sessionList)
-    const messageSize = estimateSize(messageMap)
-    const memberSize = estimateSize(memberMap)
-    const userInfoSize = estimateSize(cachedUserInfo)
+    const shouldMeasureSize = shouldCollectDetailedStats()
+    const sessionSize = shouldMeasureSize ? estimateSize(sessionList) : 0
+    const messageSize = shouldMeasureSize ? estimateSize(messageMap) : 0
+    const memberSize = shouldMeasureSize ? estimateSize(memberMap) : 0
+    const userInfoSize = shouldMeasureSize ? estimateSize(cachedUserInfo) : 0
 
     storeInfo.value = {
       '-- Chat Store --': '',
       'sessionList count': sessionList.length,
-      'sessionList size': formatBytes(sessionSize),
+      'sessionList size': shouldMeasureSize ? formatBytes(sessionSize) : 'paused',
       'messageMap rooms': roomCount,
       'messageMap total msgs': totalMsgs,
-      'messageMap size': formatBytes(messageSize),
+      'messageMap size': shouldMeasureSize ? formatBytes(messageSize) : 'paused',
       currentRoomId: globalStore.currentSessionRoomId || 'none',
       '-- Group Store --': '',
       'memberMap rooms': memberMapRooms,
       'memberMap total users': totalMembers,
-      'memberMap size': formatBytes(memberSize),
-      'cachedUserInfo count': Object.keys(cachedUserInfo).length,
-      'cachedUserInfo size': formatBytes(userInfoSize),
+      'memberMap size': shouldMeasureSize ? formatBytes(memberSize) : 'paused',
+      'cachedUserInfo count': Array.isArray(cachedUserInfo)
+        ? cachedUserInfo.length
+        : Object.keys(cachedUserInfo).length,
+      'cachedUserInfo size': shouldMeasureSize ? formatBytes(userInfoSize) : 'paused',
       '-- Total Estimated --': '',
-      'Stores Total': formatBytes(sessionSize + messageSize + memberSize + userInfoSize)
+      'Stores Total': shouldMeasureSize ? formatBytes(sessionSize + messageSize + memberSize + userInfoSize) : 'paused'
     }
   } catch (e) {
     logger.warn('Memory monitor error:', e)
@@ -165,18 +173,43 @@ const updateMemory = () => {
   }
 }
 
+const clearRefreshTimer = () => {
+  if (timer !== null) {
+    timerManager.clearInterval(timer)
+    timer = null
+  }
+}
+
+const restartRefreshTimer = () => {
+  clearRefreshTimer()
+  if (document.hidden) {
+    return
+  }
+  const delay = isMinimized.value ? IDLE_REFRESH_INTERVAL : ACTIVE_REFRESH_INTERVAL
+  timer = timerManager.setInterval(updateMemory, delay)
+}
+
+const handleVisibilityChange = () => {
+  if (!document.hidden) {
+    updateMemory()
+  }
+  restartRefreshTimer()
+}
+
 onMounted(() => {
   updateMemory()
-  timer = timerManager.setInterval(updateMemory, 3000)
+  restartRefreshTimer()
   nextTick(() => {
     setInitialPosition()
     window.addEventListener('resize', handleResize)
   })
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
-  if (timer) timerManager.clearInterval(timer)
+  clearRefreshTimer()
   window.removeEventListener('resize', handleResize)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
   detachDragListeners()
 })
 
@@ -221,6 +254,11 @@ const toggleMinimize = (nextState?: boolean) => {
     }
   })
 }
+
+watch([isMinimized, expanded], () => {
+  updateMemory()
+  restartRefreshTimer()
+})
 
 const handleContainerClick = () => {
   if (suppressClickOnce.value) {
@@ -321,7 +359,7 @@ const detachDragListeners = () => {
 .title {
   font-weight: bold;
   margin-bottom: 8px;
-  color: #13987f;
+  color: var(--color-primary);
   border-bottom: 1px solid #333;
   padding-bottom: 4px;
 }
