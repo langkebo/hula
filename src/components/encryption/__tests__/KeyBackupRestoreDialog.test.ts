@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import type { ComponentPublicInstance } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import KeyBackupRestoreDialog from '../KeyBackupRestoreDialog.vue'
 
@@ -34,6 +35,19 @@ const {
     timeoutCallbackRef
   }
 })
+
+type KeyBackupRestoreDialogVm = ComponentPublicInstance & {
+  formData: {
+    recoveryKey: string
+  }
+  restoreProgress: number | null
+  restoreResult: {
+    success: boolean
+    message: string
+  } | null
+  handleRestore: () => Promise<void>
+  handleCancel: () => void
+}
 
 vi.mock('naive-ui', async () => {
   const { defineComponent } = await import('vue')
@@ -130,10 +144,13 @@ describe('KeyBackupRestoreDialog', () => {
       }
     })
 
+  const getVm = (wrapper: ReturnType<typeof mountComponent>) => wrapper.vm as unknown as KeyBackupRestoreDialogVm
+
   it('在恢复密钥为空时提示用户输入', async () => {
     const wrapper = mountComponent()
+    const vm = getVm(wrapper)
 
-    await (wrapper.vm as any).handleRestore()
+    await vm.handleRestore()
 
     expect(messageWarningMock).toHaveBeenCalledWith('请输入恢复密钥')
     expect(restoreFromBackupMock).not.toHaveBeenCalled()
@@ -141,9 +158,10 @@ describe('KeyBackupRestoreDialog', () => {
 
   it('恢复成功后更新进度并自动关闭弹窗', async () => {
     const wrapper = mountComponent()
-    ;(wrapper.vm as any).formData.recoveryKey = ' secret-key '
+    const vm = getVm(wrapper)
+    vm.formData.recoveryKey = ' secret-key '
 
-    const restorePromise = (wrapper.vm as any).handleRestore()
+    const restorePromise = vm.handleRestore()
     intervalCallbackRef.current?.()
     await restorePromise
     await flushPromises()
@@ -151,8 +169,8 @@ describe('KeyBackupRestoreDialog', () => {
     expect(restoreFromBackupMock).toHaveBeenCalledWith('secret-key')
     expect(setIntervalMock).toHaveBeenCalledWith(expect.any(Function), 200)
     expect(clearIntervalMock).toHaveBeenCalledWith(101)
-    expect((wrapper.vm as any).restoreProgress).toBe(100)
-    expect((wrapper.vm as any).restoreResult).toEqual({
+    expect(vm.restoreProgress).toBe(100)
+    expect(vm.restoreResult).toEqual({
       success: true,
       message: '成功恢复 3 个密钥'
     })
@@ -163,20 +181,21 @@ describe('KeyBackupRestoreDialog', () => {
 
     expect(wrapper.emitted('update:show')).toEqual([[false]])
     expect(wrapper.emitted('success')).toEqual([[]])
-    expect((wrapper.vm as any).formData.recoveryKey).toBe('')
+    expect(vm.formData.recoveryKey).toBe('')
   })
 
   it('恢复失败时清理进度定时器并显示错误结果', async () => {
     restoreFromBackupMock.mockRejectedValueOnce(new Error('restore failed'))
 
     const wrapper = mountComponent()
-    ;(wrapper.vm as any).formData.recoveryKey = 'broken-key'
+    const vm = getVm(wrapper)
+    vm.formData.recoveryKey = 'broken-key'
 
-    await (wrapper.vm as any).handleRestore()
+    await vm.handleRestore()
 
     expect(clearIntervalMock).toHaveBeenCalledWith(101)
-    expect((wrapper.vm as any).restoreProgress).toBeNull()
-    expect((wrapper.vm as any).restoreResult).toEqual({
+    expect(vm.restoreProgress).toBeNull()
+    expect(vm.restoreResult).toEqual({
       success: false,
       message: '恢复失败，请检查密钥是否正确'
     })
@@ -185,18 +204,19 @@ describe('KeyBackupRestoreDialog', () => {
 
   it('取消时重置表单和恢复状态', async () => {
     const wrapper = mountComponent()
-    ;(wrapper.vm as any).formData.recoveryKey = 'secret-key'
-    ;(wrapper.vm as any).restoreProgress = 60
-    ;(wrapper.vm as any).restoreResult = {
+    const vm = getVm(wrapper)
+    vm.formData.recoveryKey = 'secret-key'
+    vm.restoreProgress = 60
+    vm.restoreResult = {
       success: true,
       message: 'ok'
     }
 
-    ;(wrapper.vm as any).handleCancel()
+    vm.handleCancel()
 
     expect(wrapper.emitted('update:show')).toEqual([[false]])
-    expect((wrapper.vm as any).formData.recoveryKey).toBe('')
-    expect((wrapper.vm as any).restoreProgress).toBeNull()
-    expect((wrapper.vm as any).restoreResult).toBeNull()
+    expect(vm.formData.recoveryKey).toBe('')
+    expect(vm.restoreProgress).toBeNull()
+    expect(vm.restoreResult).toBeNull()
   })
 })

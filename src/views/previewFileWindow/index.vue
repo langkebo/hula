@@ -149,7 +149,7 @@ onMounted(async () => {
   const label = webviewWindow.label
 
   await addListener(
-    listen(`${label}:update`, (event: any) => {
+    listen<{ payload: PayloadData }>(`${label}:update`, (event) => {
       const payload: PayloadData = event.payload.payload
       logger.debug('payload更新：', payload)
 

@@ -2,6 +2,21 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import KeyBackupSetupDialog from '../KeyBackupSetupDialog.vue'
 
+type KeyBackupSetupDialogVm = {
+  step: 'intro' | 'showKey' | 'verify' | 'success'
+  recoveryKey: string
+  verifyKey: string
+  keySaved: boolean
+  dialogTitle: string
+  startSetup: () => Promise<void>
+  confirmSetup: () => void
+  verifyKeyInput: () => Promise<void>
+  copyKey: () => Promise<void>
+  downloadKey: () => void
+  handleClose: () => void
+  handleCancel: () => void
+}
+
 const {
   setupKeyBackupMock,
   getKeyBackupInfoMock,
@@ -126,15 +141,19 @@ describe('KeyBackupSetupDialog', () => {
 
     const originalCreateElement = document.createElement.bind(document)
 
-    vi.spyOn(document.body, 'appendChild').mockImplementation(appendChildMock as any)
-    vi.spyOn(document.body, 'removeChild').mockImplementation(removeChildMock as any)
+    vi.spyOn(document.body, 'appendChild').mockImplementation(
+      appendChildMock as unknown as typeof document.body.appendChild
+    )
+    vi.spyOn(document.body, 'removeChild').mockImplementation(
+      removeChildMock as unknown as typeof document.body.removeChild
+    )
     vi.spyOn(document, 'createElement').mockImplementation(((tagName: string) => {
       if (tagName === 'a') {
         return {
           href: '',
           download: '',
           click: clickMock
-        } as any
+        } as unknown as HTMLAnchorElement
       }
       return originalCreateElement(tagName)
     }) as typeof document.createElement)
@@ -150,24 +169,24 @@ describe('KeyBackupSetupDialog', () => {
   it('支持从创建备份到验证成功的完整流程', async () => {
     const wrapper = mountComponent()
 
-    await (wrapper.vm as any).startSetup()
+    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).startSetup()
 
     expect(setupKeyBackupMock).toHaveBeenCalled()
-    expect((wrapper.vm as any).step).toBe('showKey')
-    expect((wrapper.vm as any).recoveryKey).toBe('RECOVERY-KEY-123')
-    expect((wrapper.vm as any).dialogTitle).toBe('保存恢复密钥')
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('showKey')
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey).toBe('RECOVERY-KEY-123')
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).dialogTitle).toBe('保存恢复密钥')
 
-    ;(wrapper.vm as any).keySaved = true
-    ;(wrapper.vm as any).confirmSetup()
-    ;(wrapper.vm as any).verifyKey = 'RECOVERY-KEY-123'
-    await (wrapper.vm as any).verifyKeyInput()
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).keySaved = true
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).confirmSetup()
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'RECOVERY-KEY-123'
+    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKeyInput()
 
     expect(getKeyBackupInfoMock).toHaveBeenCalled()
-    expect((wrapper.vm as any).step).toBe('success')
-    expect((wrapper.vm as any).dialogTitle).toBe('设置完成')
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('success')
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).dialogTitle).toBe('设置完成')
     expect(messageSuccessMock).toHaveBeenCalledWith('安全备份验证成功')
 
-    ;(wrapper.vm as any).handleClose()
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).handleClose()
 
     expect(wrapper.emitted('update:show')).toEqual([[false]])
     expect(wrapper.emitted('success')).toEqual([[]])
@@ -176,10 +195,10 @@ describe('KeyBackupSetupDialog', () => {
   it('支持复制和下载恢复密钥', async () => {
     writeTextMock.mockResolvedValue(undefined)
     const wrapper = mountComponent()
-    ;(wrapper.vm as any).recoveryKey = 'RECOVERY-KEY-123'
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey = 'RECOVERY-KEY-123'
 
-    await (wrapper.vm as any).copyKey()
-    ;(wrapper.vm as any).downloadKey()
+    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).copyKey()
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).downloadKey()
 
     expect(writeTextMock).toHaveBeenCalledWith('RECOVERY-KEY-123')
     expect(messageSuccessMock).toHaveBeenCalledWith('恢复密钥已复制到剪贴板')
@@ -198,19 +217,19 @@ describe('KeyBackupSetupDialog', () => {
 
     const wrapper = mountComponent()
 
-    await (wrapper.vm as any).startSetup()
-    expect((wrapper.vm as any).step).toBe('intro')
+    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).startSetup()
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('intro')
     expect(messageErrorMock).toHaveBeenCalledWith('创建安全备份失败，请稍后重试')
 
-    ;(wrapper.vm as any).recoveryKey = 'RECOVERY-KEY-123'
-    await (wrapper.vm as any).copyKey()
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey = 'RECOVERY-KEY-123'
+    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).copyKey()
     await flushPromises()
     expect(messageErrorMock).toHaveBeenCalledWith('复制失败，请手动复制')
 
-    ;(wrapper.vm as any).step = 'verify'
-    ;(wrapper.vm as any).recoveryKey = 'RECOVERY-KEY-123'
-    ;(wrapper.vm as any).verifyKey = 'RECOVERY-KEY-123'
-    await (wrapper.vm as any).verifyKeyInput()
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).step = 'verify'
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey = 'RECOVERY-KEY-123'
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'RECOVERY-KEY-123'
+    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKeyInput()
 
     expect(messageErrorMock).toHaveBeenCalledWith('验证备份失败')
   })
@@ -219,32 +238,32 @@ describe('KeyBackupSetupDialog', () => {
     getKeyBackupInfoMock.mockResolvedValueOnce(null)
     const wrapper = mountComponent()
 
-    ;(wrapper.vm as any).recoveryKey = 'RECOVERY-KEY-123'
-    ;(wrapper.vm as any).verifyKey = 'WRONG-KEY'
-    await (wrapper.vm as any).verifyKeyInput()
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey = 'RECOVERY-KEY-123'
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'WRONG-KEY'
+    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKeyInput()
 
     expect(messageErrorMock).toHaveBeenCalledWith('密钥不匹配，请重新输入')
 
-    ;(wrapper.vm as any).verifyKey = 'RECOVERY-KEY-123'
-    await (wrapper.vm as any).verifyKeyInput()
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'RECOVERY-KEY-123'
+    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKeyInput()
 
-    expect((wrapper.vm as any).step).toBe('intro')
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('intro')
     expect(messageErrorMock).toHaveBeenCalledWith('备份验证失败，请重试')
   })
 
   it('取消时重置内部状态', async () => {
     const wrapper = mountComponent()
-    ;(wrapper.vm as any).step = 'verify'
-    ;(wrapper.vm as any).recoveryKey = 'RECOVERY-KEY-123'
-    ;(wrapper.vm as any).keySaved = true
-    ;(wrapper.vm as any).verifyKey = 'RECOVERY-KEY-123'
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).step = 'verify'
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey = 'RECOVERY-KEY-123'
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).keySaved = true
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'RECOVERY-KEY-123'
 
-    ;(wrapper.vm as any).handleCancel()
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).handleCancel()
 
     expect(wrapper.emitted('update:show')).toEqual([[false]])
-    expect((wrapper.vm as any).step).toBe('intro')
-    expect((wrapper.vm as any).recoveryKey).toBe('')
-    expect((wrapper.vm as any).keySaved).toBe(false)
-    expect((wrapper.vm as any).verifyKey).toBe('')
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('intro')
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey).toBe('')
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).keySaved).toBe(false)
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey).toBe('')
   })
 })

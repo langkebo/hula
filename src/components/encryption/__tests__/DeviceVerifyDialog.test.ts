@@ -2,6 +2,17 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import DeviceVerifyDialog from '../DeviceVerifyDialog.vue'
 
+type DeviceVerifyDialogVm = {
+  userId: string
+  step: 'intro' | 'showKey' | 'success' | 'rejected'
+  fingerprint: string
+  fingerprintChunks: string[]
+  startVerification: () => Promise<void>
+  handleConfirm: () => Promise<void>
+  handleReject: () => void
+  handleClose: () => void
+}
+
 const {
   getCurrentSessionContextMock,
   getDeviceFingerprintMock,
@@ -108,14 +119,14 @@ describe('DeviceVerifyDialog', () => {
 
     await flushPromises()
 
-    expect((wrapper.vm as any).userId).toBe('@alice:example.com')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).userId).toBe('@alice:example.com')
     expect(wrapper.text()).toContain('Alice iPhone')
-    await (wrapper.vm as any).startVerification()
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).startVerification()
 
     expect(getDeviceFingerprintMock).toHaveBeenCalledWith('@alice:example.com', 'OTHER_DEVICE')
-    expect((wrapper.vm as any).step).toBe('showKey')
-    expect((wrapper.vm as any).fingerprint).toBe('ABCD1234EFGH5678')
-    expect((wrapper.vm as any).fingerprintChunks).toEqual(['ABCD', '1234', 'EFGH', '5678'])
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('showKey')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).fingerprint).toBe('ABCD1234EFGH5678')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).fingerprintChunks).toEqual(['ABCD', '1234', 'EFGH', '5678'])
   })
 
   it('在未传 deviceId 时回退使用当前设备并处理空指纹', async () => {
@@ -124,11 +135,11 @@ describe('DeviceVerifyDialog', () => {
     const wrapper = mountComponent()
 
     await flushPromises()
-    await (wrapper.vm as any).startVerification()
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).startVerification()
 
     expect(getDeviceFingerprintMock).toHaveBeenCalledWith('@alice:example.com', 'CURRENT_DEVICE')
-    expect((wrapper.vm as any).fingerprint).toBe('无法获取指纹')
-    expect((wrapper.vm as any).step).toBe('showKey')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).fingerprint).toBe('无法获取指纹')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('showKey')
   })
 
   it('确认匹配后信任设备并进入成功态', async () => {
@@ -137,10 +148,10 @@ describe('DeviceVerifyDialog', () => {
     })
 
     await flushPromises()
-    await (wrapper.vm as any).handleConfirm()
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).handleConfirm()
 
     expect(trustDeviceMock).toHaveBeenCalledWith('@alice:example.com', 'OTHER_DEVICE')
-    expect((wrapper.vm as any).step).toBe('success')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('success')
     expect(messageSuccessMock).toHaveBeenCalledWith('设备验证成功')
   })
 
@@ -150,15 +161,15 @@ describe('DeviceVerifyDialog', () => {
     })
 
     await flushPromises()
-    await (wrapper.vm as any).startVerification()
-    ;(wrapper.vm as any).handleReject()
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).startVerification()
+    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).handleReject()
 
-    expect((wrapper.vm as any).step).toBe('rejected')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('rejected')
 
-    ;(wrapper.vm as any).handleClose()
+    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).handleClose()
 
-    expect((wrapper.vm as any).step).toBe('intro')
-    expect((wrapper.vm as any).fingerprint).toBe('')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('intro')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).fingerprint).toBe('')
     expect(wrapper.emitted('update:show')).toEqual([[false]])
   })
 
@@ -172,10 +183,10 @@ describe('DeviceVerifyDialog', () => {
     const wrapper = mountComponent()
 
     await flushPromises()
-    await (wrapper.vm as any).startVerification()
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).startVerification()
 
     expect(messageErrorMock).toHaveBeenCalledWith('获取设备密钥失败')
-    expect((wrapper.vm as any).step).toBe('intro')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('intro')
 
     getCurrentSessionContextMock.mockReturnValue({
       userId: '@alice:example.com',
@@ -184,7 +195,7 @@ describe('DeviceVerifyDialog', () => {
     })
     trustDeviceMock.mockRejectedValueOnce(new Error('trust failed'))
 
-    await (wrapper.vm as any).handleConfirm()
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).handleConfirm()
 
     expect(messageErrorMock).toHaveBeenCalledWith('验证失败')
   })
