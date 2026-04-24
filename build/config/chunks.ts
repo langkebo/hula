@@ -5,13 +5,16 @@
 export const manualChunkConfig: Record<string, string> = {
   'src/enums/index.ts': 'enums',
   'src/utils/TauriInvokeHandler.ts': 'tauri-invoke',
-  'src/hooks/useLogin.ts': 'login-hook',
   'src/mobile/components/ImagePreview.vue': 'image-preview',
   'src/router/index.ts': 'router',
   // TD-12: 拆分 vendor-sub (11MB+)
   'node_modules/matrix-js-sdk': 'matrix-sdk',
   'node_modules/@matrix-org/': 'matrix-sdk',
   'node_modules/matrix-widget-api': 'matrix-widget',
+  // Matrix SDK Worker 懒加载
+  'src/workers/matrixSdk.worker': 'matrix-sdk-worker',
+  'src/workers/MatrixSdkWorkerService': 'matrix-sdk-worker',
+  'src/workers/matrixWorkerTypes': 'matrix-sdk-worker',
   'node_modules/axios': 'axios',
   'node_modules/idb': 'idb',
   'node_modules/pinia': 'pinia',
@@ -65,8 +68,21 @@ export function createManualChunks(dependencies: string[]) {
       }
 
       if (id.includes('node_modules/mermaid')) return 'mermaid'
+      if (id.includes('node_modules/@shikijs/langs')) return undefined
+      if (id.includes('node_modules/@shikijs/themes')) return 'shiki-themes'
+      if (id.includes('node_modules/@shikijs/') || id.includes('node_modules/shiki')) return 'shiki-core'
+      if (
+        id.includes('node_modules/cytoscape') ||
+        id.includes('node_modules/katex') ||
+        id.includes('node_modules/@mermaid-js/') ||
+        id.includes('node_modules/dagre') ||
+        id.includes('node_modules/layout-base') ||
+        id.includes('node_modules/cose-base') ||
+        id.includes('node_modules/langium') ||
+        id.includes('node_modules/chevrotain')
+      )
+        return 'mermaid-deps'
       if (id.includes('node_modules/three')) return 'three'
-      if (id.includes('node_modules/monaco-editor') || id.includes('node_modules/stream-monaco')) return 'monaco-editor'
       if (id.includes('node_modules/echarts') || id.includes('node_modules/zrender')) return 'chart-vendor'
       if (id.includes('node_modules/hula-emojis')) return 'hula-emojis'
       if (id.includes('node_modules/lodash-es') || id.includes('node_modules/es-toolkit')) return 'utils-lodash'
@@ -84,7 +100,8 @@ export function createManualChunks(dependencies: string[]) {
         return 'naive-ui'
       if (id.includes('node_modules/vant') || id.includes('node_modules/@vant/')) return 'vant'
       if (id.includes('node_modules/markstream-vue') || id.includes('node_modules/stream-markdown')) return 'markdown'
-      if (id.includes('node_modules/breezystack-lamejs')) return 'audio-encoder'
+      if (id.includes('node_modules/breezystack-lamejs') || id.includes('node_modules/@breezystack/lamejs'))
+        return 'audio-encoder'
       if (
         id.includes('node_modules/vue') ||
         id.includes('node_modules/@vue/') ||
@@ -166,6 +183,24 @@ export function createManualChunks(dependencies: string[]) {
         if (depName.includes('grapheme')) return 'grapheme-splitter'
         if (depName.includes('colorthief')) return 'colorthief'
         if (depName.includes('p-limit') || depName.includes('yocto-queue')) return 'p-limit'
+        if (depName.includes('@shikijs+themes') || depName.includes('shikijs+themes')) return 'shiki-themes'
+        if (
+          depName.includes('shiki') ||
+          depName.includes('oniguruma') ||
+          depName.includes('vscode-') ||
+          depName.includes('langium') ||
+          depName.includes('chevrotain')
+        )
+          return 'shiki-core'
+        if (
+          depName.includes('mermaid') ||
+          depName.includes('cytoscape') ||
+          depName.includes('katex') ||
+          depName.includes('dagre') ||
+          depName.includes('layout-base') ||
+          depName.includes('cose-base')
+        )
+          return 'mermaid-deps'
 
         // 其他子依赖归入 vendor-sub (减少体积)
         return 'vendor-sub'

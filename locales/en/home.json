@@ -152,6 +152,8 @@
   "chat_header": {
     "bot_tag": "Assistant",
     "status_abnormal": "Friend status unavailable",
+    "start_meeting": "Start meeting",
+    "meeting_widget_name": "Room meeting",
     "toolbar": {
       "audio_call": "Voice call",
       "video_call": "Video call",

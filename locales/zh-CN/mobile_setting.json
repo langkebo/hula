@@ -46,5 +46,9 @@
     "cancel": "取消"
   },
   "logout_success": "登出成功",
-  "logout_failed": "本地登出清理失败，请重启应用"
+  "logout_failed": "本地登出清理失败，请重启应用",
+  "privacy_section": "隐私与偏好",
+  "preferences": "通用偏好",
+  "burn_after_read": "阅后即焚",
+  "mjolnir": "屏蔽管理"
 }

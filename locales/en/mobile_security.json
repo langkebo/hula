@@ -43,6 +43,9 @@
     "cancel": "Cancel"
   },
   "export_keys_success": "Keys exported successfully",
+  "export_keys_empty": "No keys available to export",
+  "export_keys_failed": "Failed to export keys",
+  "exporting_keys": "Exporting keys...",
   "deactivate_confirm": {
     "title": "Deactivate Account",
     "message": "This action cannot be undone! All your data will be deleted. Are you sure?",

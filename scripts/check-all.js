@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noConsole: This CLI script intentionally writes progress to the terminal.
 import chalk from 'chalk'
 import { execFileSync } from 'child_process'
 import { dirname, join } from 'path'

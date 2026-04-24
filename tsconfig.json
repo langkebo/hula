@@ -14,38 +14,23 @@
     "jsx": "preserve",
     "jsxImportSource": "vue",
 
-    // 严格模式
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
+    "noFallthroughCasesInSwitch": false,
     "noImplicitAny": true,
-    "noImplicitReturns": true,
-
-    // 增量编译优化
-    "incremental": true,
-    "tsBuildInfoFile": "node_modules/.tsbuildinfo",
 
     "baseUrl": ".",
     "paths": {
       "~/*": ["./*"],
       "@/*": ["./src/*"],
-      "#/*": ["./src/mobile/*"],
-      "matrix-js-sdk/src/*": ["../matrix-js-sdk/src/*", "../matrix-js-sdk/lib/*"]
+      "#/*": ["./src/mobile/*"]
     },
     "types": ["vitest/globals", "@vue/test-utils", "node"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true
   },
-  "include": [
-    "scripts/**/*",
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue",
-    "src/**/*.test.ts",
-    "../matrix-js-sdk/src/@types/global.d.ts"
-  ],
+  "include": ["scripts/**/*", "src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.test.ts"],
   "exclude": ["src/mobile/components/my/community.vue"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

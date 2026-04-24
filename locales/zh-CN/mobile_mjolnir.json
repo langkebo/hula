@@ -1,0 +1,22 @@
+{
+  "title": "屏蔽管理",
+  "room_bans": "房间屏蔽",
+  "user_bans": "用户屏蔽",
+  "server_bans": "服务器屏蔽",
+  "empty": "暂无屏蔽项",
+  "add_room_ban": "添加房间屏蔽",
+  "add_user_ban": "添加用户屏蔽",
+  "add_server_ban": "添加服务器屏蔽",
+  "entity": "目标",
+  "reason": "原因",
+  "reason_placeholder": "请输入屏蔽原因（可选）",
+  "no_reason": "无原因",
+  "remove": "移除",
+  "cancel": "取消",
+  "add": "添加",
+  "entity_required": "请输入屏蔽目标",
+  "added": "已添加",
+  "removed": "已移除",
+  "confirm_remove": "确认移除",
+  "confirm_remove_message": "确定要移除此屏蔽项吗？"
+}

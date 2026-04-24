@@ -20,5 +20,6 @@
   "integration_github": "接收 GitHub 通知和问题更新",
   "integration_giphy": "搜索和发送 GIF 动图",
   "integration_jira": "接收 Jira 任务更新",
-  "integration_calendar": "同步日历事件和提醒"
+  "integration_calendar": "同步日历事件和提醒",
+  "beta_warning": "集成功能目前处于测试阶段，部分功能可能尚未完全实现。安装的集成仅保存在本地，不会与服务器同步。"
 }

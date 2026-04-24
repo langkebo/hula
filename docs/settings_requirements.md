@@ -1,6 +1,6 @@
 # HuLa 设置界面需求文档
 
-> **版本**: v2.1 | **更新日期**: 2026-03-25 | **参考**: Element Web 设计规范
+> **版本**: v3.0 | **更新日期**: 2026-04-18 | **参考**: Element Web 设计规范、功能实现清单 v6.0
 
 ---
 
@@ -68,21 +68,23 @@
 
 ### 2.1 标签页导航
 
-| 序号 | 标签页 | 路由 | 图标 | 优先级 |
-|-----|-------|------|-----|-------|
-| 1 | 账户 | `/account` | `mdi:account` | P0 |
-| 2 | 会话 | `/sessions` | `mdi:devices` | P0 |
-| 3 | 外观 | `/appearance` | `mdi:palette` | P1 |
-| 4 | 通知 | `/notifications` | `mdi:bell` | P0 |
-| 5 | 偏好设置 | `/preferences` | `mdi:tune` | P1 |
-| 6 | 键盘快捷键 | `/keyboard` | `mdi:keyboard` | P2 |
-| 7 | 侧边栏 | `/sidebar` | `mdi:view-sidebar` | P2 |
-| 8 | 语音视频 | `/voice-video` | `mdi:video` | P1 |
-| 9 | 安全隐私 | `/security-privacy` | `mdi:shield` | P0 |
-| 10 | 加密 | `/encryption` | `mdi:lock` | P1 |
-| 11 | 实验室 | `/labs` | `mdi:flask` | P2 |
-| 12 | 屏蔽管理 | `/mjolnir` | `mdi:block-helper` | P2 |
-| 13 | 帮助关于 | `/help-about` | `mdi:help-circle` | P2 |
+| 序号 | 标签页 | 路由 | 图标 | 优先级 | 实现状态 |
+|-----|-------|------|-----|-------|---------|
+| 1 | 账户 | `/account` | `mdi:account` | P0 | ✅ |
+| 2 | 会话 | `/sessions` | `mdi:devices` | P0 | ✅ |
+| 3 | 外观 | `/appearance` | `mdi:palette` | P1 | ✅ |
+| 4 | 通知 | `/notifications` | `mdi:bell` | P0 | ✅ |
+| 5 | 偏好设置 | `/preferences` | `mdi:tune` | P1 | ✅ |
+| 6 | 键盘快捷键 | `/keyboard` | `mdi:keyboard` | P2 | ✅ |
+| 7 | 侧边栏 | `/sidebar` | `mdi:view-sidebar` | P2 | ✅ |
+| 8 | 语音视频 | `/voice-video` | `mdi:video` | P1 | ✅ |
+| 9 | 安全隐私 | `/security-privacy` | `mdi:shield` | P0 | ✅ |
+| 10 | 加密 | `/encryption` | `mdi:lock` | P1 | ✅ |
+| 11 | 实验室 | `/labs` | `mdi:flask` | P2 | ✅ |
+| 12 | 屏蔽管理 | `/mjolnir` | `mdi:block-helper` | P2 | ✅ |
+| 13 | 帮助关于 | `/help-about` | `mdi:help-circle` | P2 | ✅ |
+| 14 | 好友管理 | `/friends` | `mdi:account-group` | P1 | ✅ SDK+前端已实现 |
+| 15 | 阅后即焚 | `/burn-after-read` | `mdi:timer-outline` | P1 | ✅ SDK+前端已实现 |
 
 ### 2.2 布局规范
 
@@ -378,7 +380,43 @@
 | show_sender | boolean | true | 显示发送者 |
 | highlight_words | string[] | [] | 高亮关键词 |
 
-#### 3.4.3 房间通知规则
+#### 3.4.3 线程通知
+
+| 字段 | 类型 | 默认值 | 说明 |
+|-----|------|-------|-----|
+| thread_reply_notify | boolean | true | 线程回复通知 |
+| thread_participate_notify | boolean | true | 参与的线程有新消息时通知 |
+| thread_mention_notify | boolean | true | 线程中被 @提及时通知 |
+
+**API 对接**：
+
+| 操作 | API | 方法 | 说明 |
+|-----|-----|------|------|
+| 获取未读线程 | `/_matrix/client/v1/threads/unread` | GET | 通过 ThreadingManager |
+| 标记线程已读 | `/_matrix/client/v1/rooms/{rid}/threads/{tid}/read` | POST | 通过 ThreadingManager |
+
+#### 3.4.4 空间通知
+
+| 字段 | 类型 | 默认值 | 说明 |
+|-----|------|-------|-----|
+| space_new_room_notify | boolean | true | 空间新增房间时通知 |
+| space_member_change_notify | boolean | false | 空间成员变更时通知 |
+
+#### 3.4.5 好友请求通知
+
+| 字段 | 类型 | 默认值 | 说明 |
+|-----|------|-------|-----|
+| friend_request_notify | boolean | true | 收到好友请求时通知 |
+| friend_accept_notify | boolean | true | 好友请求被接受时通知 |
+
+**API 对接**：
+
+| 操作 | API | 方法 | 说明 |
+|-----|-----|------|------|
+| 获取收到的好友请求 | `/_matrix/client/v1/friends/request/received` | GET | 通过 FriendManager |
+| 获取发出的好友请求 | `/_matrix/client/v1/friends/requests/outgoing` | GET | 通过 FriendManager |
+
+#### 3.4.6 房间通知规则
 
 | 字段 | 类型 | 说明 |
 |-----|------|-----|
@@ -405,7 +443,7 @@
 | `eventMatch` | `key`, `pattern` | 事件匹配关键词 |
 | `profile_tag` | `profile_tag` | 匹配指定 profile tag |
 
-#### 3.4.4 界面设计
+#### 3.4.7 界面设计
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -433,6 +471,31 @@
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │ [张三] [紧急] [+]                                     │   │
 │  │ 输入关键词后按回车添加                                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  线程通知                                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ [✓] 线程回复通知                                     │   │
+│  │ [✓] 参与的线程有新消息时通知                          │   │
+│  │ [✓] 线程中被 @提及时通知                             │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  空间通知                                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ [✓] 空间新增房间时通知                               │   │
+│  │ [ ] 空间成员变更时通知                               │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  好友请求通知                                                │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ [✓] 收到好友请求时通知                               │   │
+│  │ [✓] 好友请求被接受时通知                             │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
 │  ─────────────────────────────────────────────────────────  │
@@ -467,7 +530,47 @@
 | enable_emojis | boolean | true | 自动转换表情 |
 | confirm_messages | boolean | false | 发送前确认 |
 
-#### 3.5.2 隐私偏好
+#### 3.5.2 阅后即焚默认
+
+| 字段 | 类型 | 默认值 | 说明 |
+|-----|------|-------|-----|
+| burn_default_enabled | boolean | false | 新私聊默认开启阅后即焚 |
+| burn_default_duration | number | 60 | 默认焚毁时间（秒），可选 30/60/300/3600/86400 |
+| burn_notification | boolean | true | 消息即将焚毁时通知 |
+| burn_show_countdown | boolean | true | 显示焚毁倒计时 |
+
+**API 对接**：
+
+| 操作 | API | 方法 | 说明 |
+|-----|-----|------|------|
+| 获取阅后即焚设置 | `/_matrix/client/v1/burn/settings` | GET | 通过 BurnAfterReadManager |
+| 更新阅后即焚设置 | `/_matrix/client/v1/burn/settings` | PUT | 通过 BurnAfterReadManager |
+
+#### 3.5.3 线程偏好
+
+| 字段 | 类型 | 默认值 | 说明 |
+|-----|------|-------|-----|
+| thread_auto_subscribe | boolean | true | 参与线程时自动订阅 |
+| thread_show_in_room | boolean | true | 在房间内显示线程入口 |
+| thread_notification_level | string | `participate` | `all`/`participate`/`none` 线程通知级别 |
+
+**API 对接**：
+
+| 操作 | API | 方法 | 说明 |
+|-----|-----|------|------|
+| 订阅线程 | `/_matrix/client/v1/rooms/{rid}/threads/{tid}/subscribe` | POST | 通过 ThreadingManager |
+| 取消订阅线程 | `/_matrix/client/v1/rooms/{rid}/threads/{tid}/unsubscribe` | POST | 通过 ThreadingManager |
+| 静音线程 | `/_matrix/client/v1/rooms/{rid}/threads/{tid}/mute` | POST | 通过 ThreadingManager |
+
+#### 3.5.4 空间偏好
+
+| 字段 | 类型 | 默认值 | 说明 |
+|-----|------|-------|-----|
+| space_auto_join_rooms | boolean | false | 加入空间时自动加入其房间 |
+| space_show_subspaces | boolean | true | 显示子空间 |
+| space_default_notification | string | `all_messages` | `all_messages`/`mentions_only`/`none` 空间默认通知级别 |
+
+#### 3.5.5 隐私偏好
 
 | 字段 | 类型 | 默认值 | 说明 |
 |-----|------|-------|-----|
@@ -476,7 +579,7 @@
 | share_online_presence | boolean | true | 显示在线状态 |
 | hide_presence_for_strangers | boolean | false | 对陌生人隐藏在线状态 |
 
-#### 3.5.3 媒体设置
+#### 3.5.6 媒体设置
 
 | 字段 | 类型 | 默认值 | 说明 |
 |-----|------|-------|-----|
@@ -487,7 +590,7 @@
 | inline_image_previews | boolean | true | 行内图片预览 |
 | link_preview | boolean | true | 链接预览 |
 
-#### 3.5.4 语言和区域设置
+#### 3.5.7 语言和区域设置
 
 | 字段 | 类型 | 默认值 | 可选值 | 说明 |
 |-----|------|-------|-------|-----|
@@ -497,7 +600,7 @@
 | show_weekdays | boolean | true | - | 显示星期 |
 | first_day_of_week | string | `monday` | `sunday`/`monday` | 一周开始日 |
 
-#### 3.5.5 界面设计
+#### 3.5.8 界面设计
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -512,6 +615,34 @@
 │  │ [✓] 启用 Markdown 格式                               │   │
 │  │ [✓] 自动转换表情符号 (:) → 😀                        │   │
 │  │ [ ] 发送前显示确认                                   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  阅后即焚默认                                                │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ [ ] 新私聊默认开启阅后即焚                            │   │
+│  │ 默认焚毁时间  [60秒                        ▼]       │   │
+│  │ [✓] 消息即将焚毁时通知                               │   │
+│  │ [✓] 显示焚毁倒计时                                   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  线程                                                        │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ [✓] 参与线程时自动订阅                               │   │
+│  │ [✓] 在房间内显示线程入口                              │   │
+│  │ 线程通知级别  [仅参与的              ▼]              │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  空间                                                        │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ [ ] 加入空间时自动加入其房间                          │   │
+│  │ [✓] 显示子空间                                       │   │
+│  │ 空间默认通知  [所有消息              ▼]              │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
 │  ─────────────────────────────────────────────────────────  │
@@ -642,6 +773,8 @@
 | show_favourites | boolean | true | 显示收藏 |
 | show_spaces | boolean | true | 显示空间 |
 | show_rooms | boolean | true | 显示房间 |
+| show_friends | boolean | true | 显示好友分组 |
+| show_threads | boolean | true | 显示活跃线程 |
 | sort_by | string | `activity` | `activity`/`alphabetical` |
 
 #### 3.7.2 界面设计
@@ -657,6 +790,8 @@
 │  │ [✓] 显示空间                                          │   │
 │  │ [✓] 显示房间                                          │   │
 │  │ [✓] 显示直接消息                                      │   │
+│  │ [✓] 显示好友分组                                      │   │
+│  │ [✓] 显示活跃线程                                      │   │
 │  │ [✓] 显示社区                                          │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
@@ -678,6 +813,8 @@
 │  │ 🏠 空间    │                                             │
 │  │ 💬 房间    │                                             │
 │  │ 👤 消息    │                                             │
+│  │ 👥 好友    │                                             │
+│  │ 🧵 线程    │                                             │
 │  └───────────┘                                             │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -806,7 +943,25 @@
 | 重新添加 | 可取消忽略 | 可取消屏蔽 |
 | 对方感知 | 不知道被忽略 | 可能感知（取决于实现） |
 
-#### 3.9.3 登录安全
+#### 3.9.3 邀请黑白名单
+
+| 字段 | 类型 | 说明 |
+|-----|------|-----|
+| invite_blocklist | string[] | 邀请黑名单（阻止这些用户邀请我加入房间） |
+| invite_allowlist | string[] | 邀请白名单（仅允许这些用户邀请我） |
+
+**API 对接**：
+
+| 操作 | API | 方法 | 说明 |
+|-----|-----|------|------|
+| 获取邀请黑名单 | `/_matrix/client/v3/rooms/{rid}/invite_blocklist` | GET | 通过 InviteBlocklist 模块 |
+| 设置邀请黑名单 | `/_matrix/client/v3/rooms/{rid}/invite_blocklist` | POST | 通过 InviteBlocklist 模块 |
+| 获取邀请白名单 | `/_matrix/client/v3/rooms/{rid}/invite_allowlist` | GET | 通过 InviteBlocklist 模块 |
+| 设置邀请白名单 | `/_matrix/client/v3/rooms/{rid}/invite_allowlist` | POST | 通过 InviteBlocklist 模块 |
+
+> ⚠️ 邀请黑白名单为房间级别设置，需在房间设置中配置。此处为全局默认配置入口。
+
+#### 3.9.4 登录安全
 
 | 字段 | 类型 | 说明 |
 |-----|------|-----|
@@ -832,7 +987,7 @@
 | 删除设备 | `/_matrix/client/v3/devices/{device_id}` | DELETE |
 | 获取登录历史 | `/_matrix/client/v3/account_data/m.login_types` | GET |
 
-#### 3.9.4 账户注销流程
+#### 3.9.5 账户注销流程
 
 **注销前检查项**：
 
@@ -871,7 +1026,7 @@
 }
 ```
 
-#### 3.9.5 界面设计
+#### 3.9.6 界面设计
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -899,6 +1054,21 @@
 │  │ 屏蔽（完全阻止）:                                    │   │
 │  │ [@blocked:example.com]           [取消屏蔽]         │   │
 │  │ [+ 添加用户]                                          │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  邀请黑白名单                                                │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 邀请黑名单（阻止邀请）:                               │   │
+│  │ [@spammer:example.com]           [移除]             │   │
+│  │ [+ 添加用户]                                          │   │
+│  │                                                      │   │
+│  │ 邀请白名单（仅允许邀请）:                             │   │
+│  │ [@trusted:example.com]            [移除]             │   │
+│  │ [+ 添加用户]                                          │   │
+│  │                                                      │   │
+│  │ ℹ️ 邀请黑白名单为房间级别设置，此处为全局默认值        │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
 │  ─────────────────────────────────────────────────────────  │
@@ -1054,26 +1224,35 @@
 
 #### 3.11.1 实验功能列表
 
-| 功能 ID | 名称 | 描述 | 状态 | 风险 | 依赖要求 |
-|--------|-----|-----|-----|-----|---------|
-| `threads` | 消息线程 | 支持在消息中创建线程讨论，便于组织和跟进对话 | beta | 低 | Matrix RS SDK ≥ 0.6.0 |
-| `spaces` | 空间功能 | 将房间组织到空间中，支持层级结构和权限管理 | beta | 中 | Matrix RS SDK ≥ 0.7.0 |
-| `voip` | 语音视频通话 | 支持一对一和群组音视频通话，采用 WebRTC 协议 | alpha | 中 | Matrix RS SDK ≥ 0.8.0 |
-| `widget` | 小部件支持 | 嵌入第三方应用和服务，如时钟、地图等 | experimental | 高 | 需要 widget API |
-| `custom_status` | 自定义状态 | 设置状态消息和过期时间，支持预设状态 | beta | 低 | 无 |
-| `message_editing` | 消息编辑历史 | 查看和恢复编辑历史记录 | beta | 低 | 无 |
-| `reactions` | 消息反应 | 对消息添加表情反应，支持多种 emoji | beta | 低 | Matrix RS SDK ≥ 0.6.0 |
-| `read_receipts` | 高级已读回执 | 显示详细已读状态和消息接收时间 | alpha | 低 | 无 |
-| `location_sharing` | 位置共享 | 在聊天中分享和查看位置信息 | experimental | 中 | 需要 Geolocation API |
-| `video_rooms` | 视频会议室 | 创建持久的视频会议室 | experimental | 中 | Matrix RS SDK ≥ 0.9.0 |
+| 功能 ID | 名称 | 描述 | 状态 | 风险 | 依赖要求 | 实现进度 |
+|--------|-----|-----|-----|-----|---------|---------|
+| `threads` | 消息线程 | 支持在消息中创建线程讨论，便于组织和跟进对话 | ✅ 已毕业 | 低 | 无 | 21/21 端点已实现 (100%) |
+| `spaces` | 空间功能 | 将房间组织到空间中，支持层级结构和权限管理 | ✅ 已毕业 | 低 | 无 | 19/23 端点已实现 (83%) |
+| `widget` | 小部件支持 | 嵌入第三方应用和服务，如时钟、地图等 | ✅ 已毕业 | 低 | 无 | 17/17 端点已实现 (100%) |
+| `voip` | 语音视频通话 | 支持一对一和群组音视频通话，采用 WebRTC 协议 | ✅ 已毕业 | 低 | 无 | 核心端点已实现 |
+| `location_sharing` | 位置共享 | 在聊天中分享和查看位置信息 | ✅ 已毕业 | 低 | 无 | MatrixBeaconService 已实现 |
+| `burn_after_read` | 阅后即焚 | 消息阅后自动焚毁，支持自定义焚毁时间 | ✅ 已毕业 | 低 | 无 | SDK+前端已完整实现 |
+| `friend_groups` | 好友分组 | 将好友组织到分组中，支持备注和自定义显示名 | ✅ 已毕业 | 低 | 无 | 8/8 端点已实现 (100%) |
+| `custom_emoji` | 自定义表情包 | 上传和管理自定义表情包 | ✅ 已毕业 | 低 | 无 | MatrixEmojiService 已实现 |
+| `custom_status` | 自定义状态 | 设置状态消息和过期时间，支持预设状态 | beta | 低 | 无 | - |
+| `message_editing` | 消息编辑历史 | 查看和恢复编辑历史记录 | beta | 低 | 无 | - |
+| `reactions` | 消息反应 | 对消息添加表情反应，支持多种 emoji | ✅ 已毕业 | 低 | 无 | - |
+| `read_receipts` | 高级已读回执 | 显示详细已读状态和消息接收时间 | alpha | 低 | 无 | - |
+| `polls` | 投票调查 | 在聊天中创建和参与投票 | ⚠️ 占位 | 中 | 需要 Poll API | MatrixPollService 仅占位 |
+| `voice_transcription` | 语音转写 | 将语音消息转写为文字 | ❌ 未实现 | 中 | 需要 Transcription API | 后端也未支持 |
+| `video_rooms` | 视频会议室 | 创建持久的视频会议室 | experimental | 中 | Matrix RS SDK ≥ 0.9.0 | - |
+| `content_scanner` | 内容扫描 | 扫描消息内容安全性 | ❌ 未实现 | 高 | 需要 Scanner API | 前端未封装 |
 
 **功能状态定义**：
 
 | 状态 | 标识颜色 | 定义 |
 |-----|---------|-----|
+| ✅ 已毕业 | 🟢 绿色 | 功能已完整实现，从实验室毕业，可在主设置中配置 |
 | Alpha | 🔴 红色 | 早期开发阶段，可能存在重大问题 |
 | Beta | 🟡 黄色 | 功能基本完成，正在测试优化中 |
 | Experimental | 🔵 蓝色 | 高度实验性，可能随时更改或移除 |
+| ⚠️ 占位 | ⚪ 灰色 | 仅占位实现，未实际调用后端 |
+| ❌ 未实现 | ⚫ 黑色 | 后端/SDK/前端均未实现 |
 
 #### 3.11.2 开发者选项
 
@@ -1120,26 +1299,50 @@
 │                                                             │
 │  ─────────────────────────────────────────────────────────  │
 │                                                             │
-│  🔴 语音视频通话                              [✓] 已启用   │
+│  � 已毕业功能（已稳定，可在主设置中配置）                    │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │ 支持一对一和群组语音视频通话                          │   │
+│  │ ✅ 消息线程 — 21/21 端点已实现                       │   │
+│  │ ✅ 空间功能 — 19/23 端点已实现                       │   │
+│  │ ✅ 小部件支持 — 17/17 端点已实现                     │   │
+│  │ ✅ 语音视频通话 — 核心端点已实现                      │   │
+│  │ ✅ 位置共享 — MatrixBeaconService 已实现             │   │
+│  │ ✅ 阅后即焚 — SDK+前端已完整实现                     │   │
+│  │ ✅ 好友分组 — 8/8 端点已实现                         │   │
+│  │ ✅ 自定义表情包 — MatrixEmojiService 已实现          │   │
+│  │ ✅ 消息反应 — 已实现                                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  🟡 测试中功能                                              │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 自定义状态                                [ ] 已禁用   │   │
+│  │ 设置状态消息和过期时间                                │   │
+│  │                                                      │   │
+│  │ 消息编辑历史                              [ ] 已禁用   │   │
+│  │ 查看和恢复编辑历史记录                                │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  � 实验性功能                                              │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 高级已读回执                              [ ] 已禁用   │   │
+│  │ 显示详细已读状态和消息接收时间                        │   │
 │  │ ⚠️ 此功能仍在早期开发阶段                            │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  🟡 消息线程                                    [ ] 已禁用   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ 支持在消息中创建线程讨论，便于组织对话                 │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  🟡 空间功能                                    [ ] 已禁用   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ 将相关房间组织到空间中，便于管理社区和项目             │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  🔵 位置共享                                  [ ] 已禁用   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ 在聊天中分享和查看位置信息                            │   │
+│  │                                                      │   │
+│  │ 视频会议室                                [ ] 已禁用   │   │
+│  │ 创建持久的视频会议室                                  │   │
 │  │ ⚠️ 高度实验性功能                                   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  ⚪ 未实现功能（不可启用）                                   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 投票调查 — 仅占位，未实际调用后端                     │   │
+│  │ 语音转写 — 后端也未支持                               │   │
+│  │ 内容扫描 — 前端未封装                                 │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
 │  ─────────────────────────────────────────────────────────  │
@@ -1401,6 +1604,239 @@
 
 ---
 
+### 3.14 好友管理设置 (Friends)
+
+**功能描述**：管理好友关系、好友分组和好友请求。好友系统是 synapse-rust 自定义扩展功能，SDK 和前端服务层已完整实现。
+
+> **实现状态**: ✅ SDK FriendManager + 前端 MatrixFriendService 已完整封装（好友 18/24 端点，好友分组 8/8 端点）
+
+#### 3.14.1 好友请求设置
+
+| 字段 | 类型 | 默认值 | 说明 |
+|-----|------|-------|-----|
+| allow_friend_requests | boolean | true | 允许接收好友请求 |
+| auto_accept_friends | boolean | false | 自动接受好友请求 |
+| friend_request_message | boolean | true | 好友请求需要附言 |
+
+**API 对接**：
+
+| 操作 | API | 方法 | 说明 |
+|-----|-----|------|------|
+| 获取收到的好友请求 | `/_matrix/client/v1/friends/request/received` | GET | 通过 FriendManager.getIncomingRequests() |
+| 获取发出的好友请求 | `/_matrix/client/v1/friends/requests/outgoing` | GET | 通过 FriendManager.getOutgoingRequests() |
+| 接受好友请求 | `/_matrix/client/v1/friends/request/{uid}/accept` | POST | 通过 FriendManager.acceptFriendRequest() |
+| 拒绝好友请求 | `/_matrix/client/v1/friends/request/{uid}/reject` | POST | 通过 FriendManager.rejectFriendRequest() |
+| 取消好友请求 | `/_matrix/client/v1/friends/request/{uid}/cancel` | POST | 通过 FriendManager.cancelFriendRequest() |
+
+#### 3.14.2 好友分组管理
+
+| 字段 | 类型 | 说明 |
+|-----|------|-----|
+| groups | FriendGroup[] | 好友分组列表 |
+
+**FriendGroup 数据结构**：
+
+| 字段 | 类型 | 说明 |
+|-----|------|-----|
+| group_id | string | 分组 ID |
+| name | string | 分组名称 |
+| member_count | number | 成员数量 |
+| created_ts | number | 创建时间 |
+
+**API 对接**：
+
+| 操作 | API | 方法 | 说明 |
+|-----|-----|------|------|
+| 获取分组列表 | `/_matrix/client/v1/friends/groups` | GET | 通过 FriendManager |
+| 创建分组 | `/_matrix/client/v1/friends/groups` | POST | 通过 FriendManager |
+| 删除分组 | `/_matrix/client/v1/friends/groups/{gid}` | DELETE | 通过 FriendManager |
+| 重命名分组 | `/_matrix/client/v1/friends/groups/{gid}/name` | PUT | 通过 FriendManager |
+| 添加好友到分组 | `/_matrix/client/v1/friends/groups/{gid}/add/{uid}` | POST | 通过 FriendManager |
+| 从分组移除好友 | `/_matrix/client/v1/friends/groups/{gid}/remove/{uid}` | DELETE | 通过 FriendManager |
+| 获取分组内好友 | `/_matrix/client/v1/friends/groups/{gid}/friends` | GET | 通过 FriendManager |
+| 获取好友所在分组 | `/_matrix/client/v1/friends/{uid}/groups` | GET | 通过 FriendManager |
+
+#### 3.14.3 好友备注与显示名
+
+| 字段 | 类型 | 说明 |
+|-----|------|-----|
+| friend_note | string | 好友备注（仅自己可见） |
+| friend_displayname | string | 好友自定义显示名（仅自己可见） |
+
+**API 对接**：
+
+| 操作 | API | 方法 | 说明 |
+|-----|-----|------|------|
+| 设置好友备注 | `/_matrix/client/v1/friends/{uid}/note` | PUT | 通过 FriendManager.updateFriendNote() |
+| 设置好友显示名 | `/_matrix/client/v1/friends/{uid}/displayname` | PUT | 通过 FriendManager.setFriendDisplayName() |
+| 获取好友信息 | `/_matrix/client/v1/friends/{uid}/info` | GET | 通过 FriendManager.getFriendInfo() |
+| 获取好友状态 | `/_matrix/client/v1/friends/{uid}/status` | GET | 通过 FriendManager.getFriendStatus() |
+
+#### 3.14.4 界面设计
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  好友管理设置                                                │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  好友请求                                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ [✓] 允许接收好友请求                                  │   │
+│  │ [ ] 自动接受好友请求                                  │   │
+│  │ [✓] 好友请求需要附言                                  │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  好友分组                                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 👥 家人 (5人)                          [编辑] [删除] │   │
+│  │ 👥 同事 (12人)                         [编辑] [删除] │   │
+│  │ 👥 朋友 (8人)                          [编辑] [删除] │   │
+│  │                                                      │   │
+│  │ [+ 创建新分组]                                        │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  待处理请求                                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 📥 收到的请求 (3)                                    │   │
+│  │ @alice:example.com  "你好，我是Alice"                │   │
+│  │                                [接受] [拒绝]         │   │
+│  │ @bob:example.com    "同事推荐"                       │   │
+│  │                                [接受] [拒绝]         │   │
+│  │                                                      │   │
+│  │ 📤 发出的请求 (1)                                    │   │
+│  │ @charlie:example.com  等待中                    [取消]│   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**交互规范**：
+- 分组管理：支持拖拽排序，支持批量移动好友
+- 好友请求：显示请求者头像和附言，支持一键接受/拒绝
+- 分组删除：需确认，提示分组内好友不会被删除
+- 好友备注：点击好友名旁的编辑图标进入编辑
+
+---
+
+### 3.15 阅后即焚设置 (Burn After Read)
+
+**功能描述**：配置阅后即焚功能的全局默认行为和房间级别设置。阅后即焚功能已完整实现 SDK 封装和前端集成。
+
+> **实现状态**: ✅ SDK BurnAfterReadManager + 前端 MatrixBurnAfterReadService + useBurnAfterRead composable 已完整实现
+
+#### 3.15.1 全局焚毁设置
+
+| 字段 | 类型 | 默认值 | 说明 |
+|-----|------|-------|-----|
+| global_burn_enabled | boolean | false | 全局默认开启阅后即焚 |
+| global_burn_duration | number | 60 | 默认焚毁时间（秒） |
+| burn_duration_options | number[] | [30,60,300,3600,86400] | 可选焚毁时间列表 |
+| auto_burn_read | boolean | true | 已读消息自动开始倒计时 |
+| burn_notification | boolean | true | 消息即将焚毁时通知 |
+| show_burn_countdown | boolean | true | 显示焚毁倒计时 |
+| burn_sound | boolean | false | 消息焚毁时播放音效 |
+
+**API 对接**：
+
+| 操作 | API | 方法 | 说明 |
+|-----|-----|------|------|
+| 获取焚毁设置 | `/_matrix/client/v1/burn/settings` | GET | 通过 BurnAfterReadManager.getBurnSettings() |
+| 更新焚毁设置 | `/_matrix/client/v1/burn/settings` | PUT | 通过 BurnAfterReadManager.setBurnConfig() |
+| 获取焚毁统计 | `/_matrix/client/v1/burn/stats` | GET | 通过 BurnAfterReadManager.getBurnStats() |
+
+#### 3.15.2 房间级别焚毁设置
+
+| 字段 | 类型 | 说明 |
+|-----|------|-----|
+| room_id | string | 房间 ID |
+| burn_enabled | boolean | 该房间是否开启阅后即焚 |
+| burn_duration | number | 该房间焚毁时间（秒），覆盖全局设置 |
+
+**API 对接**：
+
+| 操作 | API | 方法 | 说明 |
+|-----|-----|------|------|
+| 开启房间阅后即焚 | `/_matrix/client/v1/burn/enable` | POST | 通过 BurnAfterReadManager.enableBurn() |
+| 关闭房间阅后即焚 | `/_matrix/client/v1/burn/disable` | POST | 通过 BurnAfterReadManager.disableBurn() |
+| 获取待焚毁列表 | `/_matrix/client/v1/burn/pending` | GET | 通过 BurnAfterReadManager.getPendingBurns() |
+| 标记已读触发焚毁 | `/_matrix/client/v1/burn/mark-read` | POST | 通过 BurnAfterReadManager.markBurnRead() |
+| 取消焚毁 | `/_matrix/client/v1/burn/cancel` | POST | 通过 BurnAfterReadManager.cancelBurn() |
+| 延长焚毁时间 | `/_matrix/client/v1/burn/extend` | POST | 通过 BurnAfterReadManager.extendBurnTime() |
+
+#### 3.15.3 焚毁统计
+
+| 字段 | 类型 | 说明 |
+|-----|------|-----|
+| total_burned | number | 总焚毁消息数 |
+| pending_burns | number | 待焚毁消息数 |
+| active_rooms | number | 开启阅后即焚的房间数 |
+
+#### 3.15.4 界面设计
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  阅后即焚设置                                                │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  全局设置                                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ [ ] 全局默认开启阅后即焚                              │   │
+│  │                                                      │   │
+│  │ 默认焚毁时间                                          │   │
+│  │ ○ 30秒  ● 1分钟  ○ 5分钟  ○ 1小时  ○ 24小时        │   │
+│  │                                                      │   │
+│  │ [✓] 已读消息自动开始倒计时                            │   │
+│  │ [✓] 消息即将焚毁时通知                               │   │
+│  │ [✓] 显示焚毁倒计时                                   │   │
+│  │ [ ] 消息焚毁时播放音效                                │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  房间级别设置                                                │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 🔒 @alice:example.com (私聊)                         │   │
+│  │    阅后即焚: ✅ 开启  焚毁时间: 60秒     [修改]      │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │ 🔒 @bob:example.com (私聊)                           │   │
+│  │    阅后即焚: ❌ 关闭                   [开启]        │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │ 🔒 @charlie:example.com (私聊)                       │   │
+│  │    阅后即焚: ✅ 开启  焚毁时间: 5分钟    [修改]      │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  焚毁统计                                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 总焚毁消息: 128                                      │   │
+│  │ 待焚毁消息: 3                                        │   │
+│  │ 开启房间数: 2                                        │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  ⚠️ 安全提示                                                │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 阅后即焚不能保证对方未截图或保存消息。                │   │
+│  │ 服务器会在消息到期后删除，但无法控制客户端行为。       │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**交互规范**：
+- 焚毁时间选择：预设选项 + 自定义输入（最小 10 秒，最大 7 天）
+- 房间设置：仅显示私聊房间，群聊不支持阅后即焚
+- 开启确认：首次开启时显示安全提示弹窗
+- 统计刷新：进入页面时自动刷新，支持下拉刷新
+
+---
+
 ## 4. 全局功能需求
 
 ### 4.1 搜索设置
@@ -1425,16 +1861,26 @@
 
 ### 5.1 核心 API 映射
 
-| 设置模块 | API 前缀 | 认证方式 |
-|---------|---------|---------|
-| 账户资料 | `/_matrix/client/v3/profile` | Access Token |
-| 设备管理 | `/_matrix/client/v3/devices` | Access Token |
-| 通知设置 | `/_matrix/client/v3/pushers` | Access Token |
-| 推送规则 | `/_matrix/client/v3/pushrules` | Access Token |
-| 密钥备份 | `/_matrix/client/v3/room_keys` | Access Token |
-| 密钥存储 | `/_matrix/client/v3/secret_storage` | Access Token |
-| 账户数据 | `/_matrix/client/v3/account_data` | Access Token |
-| 媒体上传 | `/_matrix/media/v3/upload` | Access Token |
+| 设置模块 | API 前缀 | 认证方式 | 前端服务层 |
+|---------|---------|---------|----------|
+| 账户资料 | `/_matrix/client/v3/profile` | Access Token | MatrixAccountService |
+| 设备管理 | `/_matrix/client/v3/devices` | Access Token | MatrixDeviceService |
+| 通知设置 | `/_matrix/client/v3/pushers` | Access Token | MatrixPushService |
+| 推送规则 | `/_matrix/client/v3/pushrules` | Access Token | MatrixPushService |
+| 密钥备份 | `/_matrix/client/v3/room_keys` | Access Token | MatrixKeyBackupService |
+| 安全备份 | `/_matrix/client/v3/keys/backup/secure` | Access Token | MatrixKeyBackupService |
+| 密钥存储 | `/_matrix/client/v3/secret_storage` | Access Token | MatrixKeyBackupService |
+| 账户数据 | `/_matrix/client/v3/account_data` | Access Token | MatrixAccountService |
+| 媒体上传 | `/_matrix/media/v3/upload` | Access Token | MatrixMediaService |
+| 好友管理 | `/_matrix/client/v1/friends` | Access Token | MatrixFriendService |
+| 阅后即焚 | `/_matrix/client/v1/burn` | Access Token | MatrixBurnAfterReadService |
+| 线程管理 | `/_matrix/client/v1/threads` | Access Token | MatrixThreadService |
+| 空间管理 | `/_matrix/client/v1/spaces` | Access Token | MatrixSpaceService |
+| DM 管理 | `/_matrix/client/v1/direct` | Access Token | MatrixDirectMessageService |
+| 媒体配额 | `/_matrix/client/v1/media/quota` | Access Token | MatrixQuotaService |
+| 在线状态 | `/_matrix/client/v3/presence` | Access Token | MatrixPresenceService |
+| 设备验证 | `/_matrix/client/v3/keys/device_signing` | Access Token | MatrixVerificationService |
+| 邀请黑白名单 | `/_matrix/client/v3/rooms/{rid}/invite_*list` | Access Token | 待封装 |
 
 ### 5.2 API 调用层设计
 
@@ -1467,6 +1913,27 @@ export class SettingsService {
   static async setPrivacySettings(data: PrivacySettings): Promise<void>
   static async getIgnoredUsers(): Promise<string[]>
   static async setIgnoredUsers(users: string[]): Promise<void>
+
+  // 好友管理
+  static async getFriendGroups(): Promise<FriendGroup[]>
+  static async createFriendGroup(name: string): Promise<FriendGroup>
+  static async deleteFriendGroup(groupId: string): Promise<void>
+  static async getIncomingFriendRequests(): Promise<FriendRequest[]>
+  static async acceptFriendRequest(userId: string): Promise<void>
+  static async rejectFriendRequest(userId: string): Promise<void>
+
+  // 阅后即焚
+  static async getBurnSettings(): Promise<BurnSettings>
+  static async setBurnConfig(config: Partial<BurnConfig>): Promise<void>
+  static async enableRoomBurn(roomId: string, duration: number): Promise<void>
+  static async disableRoomBurn(roomId: string): Promise<void>
+  static async getBurnStats(): Promise<BurnStats>
+
+  // 线程
+  static async getUnreadThreads(): Promise<Thread[]>
+  static async markThreadRead(roomId: string, threadId: string): Promise<void>
+  static async subscribeToThread(roomId: string, threadId: string): Promise<void>
+  static async unsubscribeFromThread(roomId: string, threadId: string): Promise<void>
 }
 ```
 
@@ -1489,6 +1956,8 @@ export class SettingsService {
 | 加密 | 备份创建成功；密钥恢复正确；验证通过 | 1. 无备份时创建应生成新密钥<br>2. 恢复应校验 passphrase<br>3. 交叉签名应建立设备信任 |
 | 实验室 | 实验功能开关正确；风险提示显示 | 1. 高风险功能应有红色警告<br>2. 禁用功能应正确隐藏<br>3. SDK 版本不满足应提示 |
 | Mjolnir | 屏蔽列表同步正常；添加移除操作正确 | 1. 同步失败应有重试机制<br>2. 添加应支持批量操作<br>3. 移除应无需确认 |
+| 好友管理 | 好友请求收发正常；分组管理正确；备注和显示名生效 | 1. 接受/拒绝好友请求应即时生效<br>2. 分组删除不应删除好友关系<br>3. 好友备注仅自己可见 |
+| 阅后即焚 | 全局和房间设置正确；焚毁倒计时正常；统计准确 | 1. 开启阅后即焚后消息应带焚毁元数据<br>2. 倒计时到期后消息应被焚毁<br>3. 关闭房间阅后即焚应停止倒计时<br>4. 统计数据应实时更新 |
 | 帮助关于 | 版本信息正确显示；链接正确打开 | 1. 版本号应与实际一致<br>2. 外部链接应使用默认浏览器<br>3. 诊断应显示网络状态 |
 
 ### 6.2 UI/UX 验收标准
@@ -1572,10 +2041,29 @@ export const useSettingsStore = defineStore('settings', () => {
   const notifications = ref<NotificationSettings>({
     enablePush: true,
     noisyNotification: true,
-    highlightWords: []
+    highlightWords: [],
+    threadReplyNotify: true,
+    friendRequestNotify: true
+  })
+  // 好友管理
+  const friendGroups = ref<FriendGroup[]>([])
+  const incomingRequests = ref<FriendRequest[]>([])
+  const outgoingRequests = ref<FriendRequest[]>([])
+  // 阅后即焚
+  const burnSettings = ref<BurnSettings>({
+    globalBurnEnabled: false,
+    globalBurnDuration: 60,
+    autoBurnRead: true,
+    burnNotification: true,
+    showBurnCountdown: true
+  })
+  const burnStats = ref<BurnStats>({
+    totalBurned: 0,
+    pendingBurns: 0,
+    activeRooms: 0
   })
 
-  return { profile, devices, appearance, notifications }
+  return { profile, devices, appearance, notifications, friendGroups, incomingRequests, outgoingRequests, burnSettings, burnStats }
 })
 ```
 
@@ -1596,7 +2084,9 @@ export const settingsRoutes = [
   { path: '/settings/encryption', component: EncryptionSettings },
   { path: '/settings/labs', component: LabsSettings },
   { path: '/settings/mjolnir', component: MjolnirSettings },
-  { path: '/settings/help-about', component: HelpAboutSettings }
+  { path: '/settings/help-about', component: HelpAboutSettings },
+  { path: '/settings/friends', component: FriendsSettings },
+  { path: '/settings/burn-after-read', component: BurnAfterReadSettings }
 ]
 ```
 
@@ -1619,6 +2109,39 @@ export const settingsRoutes = [
     "all_devices": "所有设备",
     "verify": "验证",
     "remove": "移除"
+  },
+  "friends": {
+    "title": "好友管理",
+    "requests": "好友请求",
+    "groups": "好友分组",
+    "allow_requests": "允许接收好友请求",
+    "auto_accept": "自动接受好友请求",
+    "create_group": "创建分组",
+    "pending_incoming": "收到的请求",
+    "pending_outgoing": "发出的请求",
+    "accept": "接受",
+    "reject": "拒绝",
+    "cancel": "取消"
+  },
+  "burn_after_read": {
+    "title": "阅后即焚",
+    "global_settings": "全局设置",
+    "global_enabled": "全局默认开启阅后即焚",
+    "default_duration": "默认焚毁时间",
+    "auto_burn_read": "已读消息自动开始倒计时",
+    "burn_notification": "消息即将焚毁时通知",
+    "show_countdown": "显示焚毁倒计时",
+    "room_settings": "房间级别设置",
+    "statistics": "焚毁统计",
+    "total_burned": "总焚毁消息",
+    "pending_burns": "待焚毁消息",
+    "active_rooms": "开启房间数",
+    "security_warning": "阅后即焚不能保证对方未截图或保存消息"
+  },
+  "preferences": {
+    "burn_defaults": "阅后即焚默认",
+    "thread_preferences": "线程偏好",
+    "space_preferences": "空间偏好"
   }
   // ...
 }
@@ -1638,6 +2161,13 @@ export const settingsRoutes = [
 | Secure Backup | 安全备份，使用 passphrase 保护的密钥备份 |
 | Push Rules | 推送规则，控制通知行为 |
 | Cross-Signing | 交叉签名，设备间信任验证机制 |
+| Burn After Read | 阅后即焚，消息阅后自动焚毁功能 |
+| FriendManager | SDK 好友管理器，封装好友相关 API |
+| BurnAfterReadManager | SDK 阅后即焚管理器，封装焚毁相关 API |
+| ThreadingManager | SDK 线程管理器，封装线程相关 API |
+| SpaceManager | SDK 空间管理器，封装空间相关 API |
+| Invite Blocklist | 邀请黑名单，阻止特定用户邀请加入房间 |
+| Invite Allowlist | 邀请白名单，仅允许特定用户邀请加入房间 |
 
 ### 8.2 参考资料
 
@@ -1650,6 +2180,7 @@ export const settingsRoutes = [
 
 | 版本 | 日期 | 更新内容 |
 |-----|-----|---------|
+| v3.0 | 2026-04-18 | 基于功能实现清单 v6.0 全面优化：新增好友管理设置(3.14)和阅后即焚设置(3.15)两个标签页；更新实验室功能状态，将线程/空间/小组件/语音视频/位置共享/阅后即焚/好友分组/自定义表情/消息反应标记为已毕业；新增邀请黑白名单、线程通知、空间通知、好友请求通知等设置项；更新偏好设置添加阅后即焚默认、线程偏好、空间偏好；更新侧边栏添加好友分组和线程显示；更新API对接总览添加好友/阅后即焚/线程/空间/DM/媒体配额/在线状态/设备验证等模块映射；更新验收标准、技术实现建议和国际化配置 |
 | v2.1 | 2026-03-25 | 完善通知设置模块 API 对接；增加偏好设置的语言和区域配置；增强实验室功能状态定义和依赖要求；完善安全隐私模块的登录安全和账户注销流程；增强帮助关于的版本信息和更新检测功能；新增 Element Web 设计理念对照章节；新增 UI/UX 验收标准；完善验收标准的测试场景 |
 | v2.0 | 2026-03-25 | 全面重构，新增 13 个标签页完整定义 |
 | v1.0 | 2026-03-25 | 初始版本 |

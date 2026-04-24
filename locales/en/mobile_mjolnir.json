@@ -1,0 +1,22 @@
+{
+  "title": "Moderation",
+  "room_bans": "Room Bans",
+  "user_bans": "User Bans",
+  "server_bans": "Server Bans",
+  "empty": "No bans yet",
+  "add_room_ban": "Add Room Ban",
+  "add_user_ban": "Add User Ban",
+  "add_server_ban": "Add Server Ban",
+  "entity": "Target",
+  "reason": "Reason",
+  "reason_placeholder": "Enter ban reason (optional)",
+  "no_reason": "No reason",
+  "remove": "Remove",
+  "cancel": "Cancel",
+  "add": "Add",
+  "entity_required": "Please enter a ban target",
+  "added": "Added",
+  "removed": "Removed",
+  "confirm_remove": "Confirm Removal",
+  "confirm_remove_message": "Are you sure you want to remove this ban?"
+}

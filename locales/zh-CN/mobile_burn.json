@@ -1,0 +1,17 @@
+{
+  "title": "阅后即焚",
+  "global_section": "全局设置",
+  "global_enable": "启用阅后即焚",
+  "default_duration": "默认焚毁时间",
+  "show_countdown": "显示倒计时",
+  "room_section": "房间级设置",
+  "no_rooms": "暂无阅后即焚房间",
+  "stats_section": "统计",
+  "total_burned": "已焚毁消息数",
+  "active_rooms": "活跃房间数",
+  "warning": "阅后即焚消息到期后将永久删除，无法恢复。请谨慎使用此功能。",
+  "enabled": "阅后即焚已启用",
+  "disabled": "阅后即焚已禁用",
+  "room_enabled": "房间阅后即焚已启用",
+  "room_disabled": "房间阅后即焚已禁用"
+}

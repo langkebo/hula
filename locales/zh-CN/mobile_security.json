@@ -43,6 +43,9 @@
     "cancel": "取消"
   },
   "export_keys_success": "密钥导出成功",
+  "export_keys_empty": "没有可导出的密钥",
+  "export_keys_failed": "密钥导出失败",
+  "exporting_keys": "正在导出密钥...",
   "deactivate_confirm": {
     "title": "注销账户",
     "message": "此操作不可撤销！注销后您的所有数据将被删除，确定要继续吗？",
