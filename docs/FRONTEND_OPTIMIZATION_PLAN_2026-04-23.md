@@ -983,3 +983,38 @@ _Commit: `d8154b9b chore(lint): clear all noExplicitAny warnings`（105 文件�
 - 下一轮续作表：
   - `useChatFileDownload`：抽 `revealInDirSafely` + 三处 fileDownloadStore 复用路径（~150 LOC），注意菜单数组中的 click handler 闭包要一并内联或以参数形式穿透
   - `useChatMessageMenus`：6 个 menu 数组按类型分裂（风险较高，留至 hook 接近 1000 LOC 再开）
+
+### 步骤 19：P0-6 useMsgInput 续作（Step 3d）— 主体瘦身至编排层 · 状态：🟢 本轮完成（2026-04-24）
+
+**背景**：用户在上一次会话末完成了 `useMsgInputSend` 抽离，但主体（useMsgInput.ts）同时保留了 `handleAit` / `handleAI` 的完整 DOM 操作实现（~90 LOC）和 `onMounted` 内的全部事件监听（RE_EDIT / REPLY_MEG / composition，~95 LOC）。目标：把这两块也迁出去，使主体只做「编排 + 移动端补充 + 返回 API」三件事，并补主体级契约测试。
+
+**产出**
+- `src/hooks/msgInput/useMsgInputMentionActions.ts`（新增 108 LOC）
+  - 暴露 `editorRange` / `handleAit(user)` / `handleAI()`
+  - 两个处理器共享 `selectBackToTriggerChar(range, pattern)` 纯函数：把光标范围回退到 `@` 或 `/` 触发字符处，消除原来的重复代码
+- `src/hooks/msgInput/useMsgInputEvents.ts`（新增 138 LOC）
+  - `onMounted` 内统一注册 `MittEnum.RE_EDIT` / `MittEnum.REPLY_MEG` + `compositionstart` / `compositionend`
+  - 把 4 个 handler 函数（onReEdit / onReplyMeg / onCompositionStart / onCompositionEnd）也外露，便于单测
+- `src/hooks/useMsgInput.ts`：504 → 305 LOC（−199）
+  - 移除内联 `handleAit` / `handleAI` / `editorRange` / 整段 `onMounted`
+  - 移除仅它们用到的 imports：`MittEnum` / `useMitt` / `onMounted` / `getReplyContent` / `UserItem`
+  - 主体现在只剩：store 绑定 → 本地状态 → 子 hook 编排 → `send()`（移动端 focus 补充）→ `return { ... }`
+- `src/hooks/msgInput/useMsgInputSend.ts`（补丁）
+  - `ChatStoreLike.updateMsg` 的参数类型从 `Record<string, unknown>` 收紧为具名 `ChatUpdateMsgPayload`，消除 pinia store 赋值时的 TS 契约不匹配错误
+
+**验收**
+- 单测：
+  - `useMsgInputMentionActions.test.ts`（7）：IME 期间短路 / `@` 回退设 range + 群昵称优先 / fallback 到 item.name / 无 range 仍插入 / `/` IME 短路 / `/` 正常路径（info + 删除 + trigger）/ 无 range 提前退出
+  - `useMsgInputEvents.test.ts`（5）：onMounted 注册 `reEdit` + `replyMsg` / onReEdit 设置 innerHTML + focus / composition 10ms 定时器 / onReplyMeg 无用户信息短路 / onReplyMeg 成功路径（reset → 填充 reply → nextTick 插入 REPLY 节点）
+  - `useMsgInput.test.ts`（新增，7）：**主体级契约测试** — 公共 API 形状锁定（33 个 key）/ 每个子 hook 只被调用一次 / 共享 ref（msgInput / reply）通过 identity check / 桌面端 send 只 await sendCore / 移动端 send 仍调用 / disabledSend 对空串为 true / stripHtml 去标签
+- `pnpm exec vitest run src/hooks/msgInput/__tests__ src/hooks/__tests__/useMsgInput.test.ts`：68/68 pass（新增 12 子 hook + 7 主体 = 19 新增）
+- `pnpm exec vue-tsc --noEmit` 去除 robot/ in-flight error 后 0 error
+- 公共 API 完全保持不变（契约测试里的 33 个 key 全部回归校验）
+
+**Step 19 状态**
+- P0-6 useMsgInput 续作（Step 3d）✅ 完成
+- useMsgInput.ts 进度：1416 → 1254 → 504 → 305 LOC（总累计 −1111 行 / −78%）
+- 单文件 >1000 LOC 清单：剩 useChatMain.ts（1228）、还有服务层几条；useMsgInput 已完全不在清单内
+- 下一轮可选：
+  - useChatMain 续作：`useChatFileDownload`（跨菜单闭包，风险较高，需抽公共工具 `performDownloadOrReveal`）或 6 menu 数组按类型分裂
+  - useMsgInput：本身已到合理规模，进一步瘦身收益递减，保留
