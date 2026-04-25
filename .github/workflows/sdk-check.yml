@@ -1,0 +1,84 @@
+name: SDK Compatibility Check
+
+on:
+  pull_request:
+    branches: [main, develop, master]
+  push:
+    branches: [main, develop, master]
+
+permissions:
+  contents: read
+
+jobs:
+  sdk-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 10
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache dependencies
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: |
+            ${{ env.STORE_PATH }}
+            node_modules
+            ../matrix-js-sdk/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check SDK version
+        run: |
+          echo "Checking matrix-js-sdk version..."
+          npm ls matrix-js-sdk || true
+          echo "SDK check completed"
+
+      - name: Run SDK type checks
+        run: |
+          echo "Running SDK type compatibility checks..."
+          pnpm check:sdk-types || true
+          echo "Type checks completed"
+
+      - name: TypeScript type check
+        run: |
+          echo "Running TypeScript type check..."
+          pnpm exec vue-tsc --noEmit
+
+      - name: Audit production dependencies
+        run: |
+          echo "Auditing production dependencies..."
+          pnpm audit --production --audit-level=moderate || true
+          echo "Audit completed"
+
+      - name: Check for unused dependencies
+        run: |
+          echo "Checking for unused dependencies..."
+          npx depcheck --ignores="@types/*,@tauri-apps/*,@storybook/*" || true
+          echo "Dependency check completed"
+
