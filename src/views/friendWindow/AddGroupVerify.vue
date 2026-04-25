@@ -51,7 +51,7 @@
 </template>
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useCommon } from '@/hooks/useCommon.ts'
+import { countGraphemes } from '@/hooks/useCommon.ts'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStore } from '@/stores/domains/user/user'
 import { matrixGroupService } from '@/services/matrix'
@@ -63,7 +63,6 @@ const logger = createLogger('AddGroupVerify')
 const { t } = useI18n()
 const globalStore = useGlobalStore()
 const userStore = useUserStore()
-const { countGraphemes } = useCommon()
 const requestMsgAutosize = { minRows: 3, maxRows: 3 }
 const userInfo = ref(globalStore.addGroupModalInfo)
 const requestMsg = ref()

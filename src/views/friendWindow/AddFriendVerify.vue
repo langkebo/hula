@@ -49,7 +49,7 @@
 </template>
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useCommon } from '@/hooks/useCommon.ts'
+import { countGraphemes } from '@/hooks/useCommon.ts'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -64,7 +64,6 @@ const { t } = useI18n()
 const globalStore = useGlobalStore()
 const userStore = useUserStore()
 const groupStore = useGroupStore()
-const { countGraphemes } = useCommon()
 const requestMsgAutosize = { minRows: 3, maxRows: 3 }
 const userInfo = ref(groupStore.getUserInfo(globalStore.addFriendModalInfo.uid!)!)
 const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(userInfo.value!.avatar as string))

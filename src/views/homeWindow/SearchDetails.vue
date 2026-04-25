@@ -72,7 +72,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { MittEnum, RoomTypeEnum } from '@/enums'
-import { useCommon } from '@/hooks/useCommon.ts'
+import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMitt } from '@/hooks/useMitt'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import type { SessionItem as ChatSessionItem } from '@/stores/domains/chat/chat/session'
@@ -98,7 +98,6 @@ type HistoryItem = {
 const { t } = useI18n()
 const router = useRouter()
 const chatStore = useChatStore()
-const { openMsgSession } = useCommon()
 // 从路由参数或共享状态中获取搜索查询
 const searchQuery = ref('')
 // 搜索结果
