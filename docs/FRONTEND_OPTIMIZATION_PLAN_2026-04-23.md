@@ -6,6 +6,50 @@
 
 ---
 
+## 0. 2026-04-25 实查回写
+
+> 说明：`§11` 的各 Step 保留历史执行轨迹；本节用于回写截至 `2026-04-25` 的**代码实查结果**。本轮以仓库现状比对为主，未重新执行全量 `pnpm test:run` / `vue-tsc --noEmit` / `pnpm check`。
+
+### 当前结论
+- **文档滞后但代码已完成的项**
+  - `P0-4 Chat.vue` 的**页面层目标已达成**：`src/plugins/robot/views/Chat.vue` 当前 **452 LOC**，已下沉到 `useRobotChat.ts`，并拆出 `RobotChatHeader.vue` / `RobotChatMessageList.vue` / `RobotChatInputPanel.vue` 等子组件，子组件均 ≤ 400 LOC。
+  - `P0-6` 已明显推进：`useMsgInput.ts` **305 LOC**、`useChatMain.ts` **933 LOC**、`useWebRtc.ts` **813 LOC**，均已退出 >1000 LOC 清单。
+  - `P0-5` / `P1-1` 已明显推进：`AdminFacadeService.ts` **405 LOC**、`MatrixRoomService.ts` **620 LOC**，facade/域拆分已落盘。
+  - `P1-2` 已完成：`MessageStrategy.ts` 已退化为 barrel 导出，历史超大文件问题实质消除。
+  - `P1-6` 已完成：`SpaceView.vue` 双端已消费 `useSpaces` / `useSpace` / `useSpaceMembers` / `useSpaceRooms`，原 3 个 TODO 代码层面已落地。
+  - `P1-3` 已完成首要目标：`matrix-js-sdk-augmentations.d.ts` 的同步检查脚本与一次真实漂移修复已落地，但文件体量仍大。
+
+### 当前仍未完成
+- **新的大块逻辑已转移但未拆完**
+  - `src/plugins/robot/composables/useRobotChat.ts` 当前 **1668 LOC**，已经取代旧 `Chat.vue` 成为 robot 域新的主耦合点；`useAiMediaGeneration` / `useAiStreaming` 这两个续作目标仍未独立落盘。
+  - `src/stores/domains/chat/chat/message.ts` 当前 **1171 LOC**，仍是 store 域最大文件；虽然已补一批高价值回归测试，但文件拆分尚未启动。
+  - `src/types/matrix-js-sdk-augmentations.d.ts` 当前 **1464 LOC**，同步检查已做，但“手工超大 augmentation 文件”本身仍未治理。
+  - `src/components/rightBox/chatBox/Bot.vue` **1134 LOC**、`src/components/rightBox/emoticon/index.vue` **1056 LOC**，仍未见实质拆分。
+
+### 多端同步复核
+- **已同步完成**
+  - `Space` 模块已经实现 composable 共享，桌面端与移动端均为消费者，属于本轮最完整的“双端同源”样板。
+- **仍需继续统一**
+  - `IntegrationsSettings` 已有桌面/移动双端页面，但当前仍各自维护本地状态、安装/启用/权限逻辑，尚未抽为共享 composable，存在行为继续发散风险。
+  - `Favorites` / `Dynamic` / `Contact` 仍未看到明确的“desktop + mobile + shared composable”闭环；其中部分模块在仓库中的双端映射仍不清晰，需要先补盘点清单，再做迁移。
+
+### 当前 >1000 LOC 清单（实查）
+```
+1668  src/plugins/robot/composables/useRobotChat.ts
+1464  src/types/matrix-js-sdk-augmentations.d.ts
+1171  src/stores/domains/chat/chat/message.ts
+1134  src/components/rightBox/chatBox/Bot.vue
+1056  src/components/rightBox/emoticon/index.vue
+```
+
+### 下一轮建议顺序
+1. **P0-4 续作转向 `useRobotChat.ts`**：优先拆 `useAiMediaGeneration`，再拆 `useAiStreaming`，避免“Vue 页面变薄但 composable 继续膨胀”。
+2. **P1-7 多端同步收口**：先抽 `Integrations` 共享 composable，再补齐 `Favorites / Dynamic / Contact` 的双端盘点清单与迁移顺序。
+3. **P0 store/UI 大文件收尾**：启动 `message.ts` / `Bot.vue` / `emoticon/index.vue` 三个剩余超大文件的拆分。
+4. **P1-3 第二阶段**：评估 `augmentations.d.ts` 改为按域分片，或进一步减少手工 augmentation 面积。
+
+---
+
 ## 1. 测试覆盖度不平衡（P0）
 
 ### 现状数据
@@ -194,7 +238,7 @@
 - [ ] 非测试 `any` 总数不增加
 
 ### 长期指标（6 个月）
-- 单文件 LOC 超 1000 的文件数：当前 **11** → 目标 **≤ 3**（只允许 router/types/strategy 这类本质扁平的）
+- 单文件 LOC 超 1000 的文件数：截至 `2026-04-25` 实查为 **5** → 目标 **≤ 3**（当前剩余：`useRobotChat` / `augmentations.d.ts` / `message.ts` / `Bot.vue` / `emoticon/index.vue`）
 - hook 测试覆盖率：**7% → 50%**
 - store 测试覆盖率：**17% → 60%**
 - 非测试 `any` 数量：**~780 → ≤ 300**
@@ -1490,3 +1534,100 @@ _Chat.vue 续作_
 - useCommon 最终形态：69 LOC（vs Step 0 的 976，**-92.9%** 累计），公共面对内对外都只剩编辑器装配 + 字数统计 + DOM 文本解析
 - `useCommon()` 调用图收敛为：3 个编辑器场景调用方 + 1 个测试套件
 - 后续可选：把 `useMsgInput` 中 `useCommon()` 解构的 `userUid` 也改为本地 computed，则可从 useCommon 返回中移除 `userUid`，进一步缩到纯编辑器 API
+
+---
+
+### 步骤 31：2026-04-25 实查复核回写 · 状态：🟡 文档更新完成（代码未改）
+
+**复核范围**
+- 对照本文既有 P0 / P1 / P2 计划，逐项检查代码真实落地情况，重点关注：
+  - 超大文件清单是否已经变化
+  - `Chat.vue` 续作是否仍停留在历史状态
+  - `Space` / `Integrations` / `Favorites` / `Dynamic` / `Contact` 的双端同步是否真正落地
+
+**复核结论**
+- 历史文档中最明显的滞后项是 `Chat.vue`：页面文件本身已从历史 3000+ LOC 降到 **452 LOC**，但大块逻辑已经迁移到 `src/plugins/robot/composables/useRobotChat.ts`（**1668 LOC**），因此 P0-4 应从“拆页面”切换为“继续拆 composable”。
+- `useMsgInput.ts` / `useChatMain.ts` / `useWebRtc.ts` / `AdminFacadeService.ts` / `MatrixRoomService.ts` / `MessageStrategy.ts` 均已显著收敛，原计划中的“大文件拆分”目标大体达成。
+- `Space` 模块已经完成 composable 化并实现双端消费；`Integrations` 虽有桌面/移动两套 UI，但核心状态与行为仍未共享，`Favorites` / `Dynamic` / `Contact` 迁移队列仍未真正关闭。
+- 当前剩余 >1000 LOC 文件为 **5** 个：`useRobotChat.ts` / `augmentations.d.ts` / `message.ts` / `Bot.vue` / `emoticon/index.vue`。
+
+**需要修正文档认知的点**
+- `P0-4` 不应再以 `Chat.vue` 文件行数作为主指标，而应以 **robot 域总耦合度** 衡量，避免“只把问题从 `.vue` 挪到 composable”。
+- `P1-7` 需要从“盘点迁移队列”升级为“逐模块关闭”，尤其是桌面端与移动端都已存在页面的 `Integrations`，应优先收口以防继续发散。
+- `P0-3` 虽已补一批 message store 回归测试，但 `message.ts` 结构治理尚未开始；测试完成不等于拆分完成。
+
+**建议后续落单**
+1. `useRobotChat.ts`：拆 `useAiMediaGeneration` / `useAiStreaming`，并补 composable 级测试。
+2. `Integrations`：抽共享 composable，统一本地持久化键、安装/启用/权限修改流程，保持桌面端与移动端行为同源。
+3. `message.ts`：按消息索引、会话副作用、回执/撤回等域拆分，避免 store 继续成为下一轮瓶颈。
+4. `Bot.vue` / `emoticon/index.vue`：纳入下一批 >1000 LOC 治理，不再仅停留在候选清单。
+
+---
+
+## Step 31 — 优化方案完成度审计 + useRobotChat 续作首批（useAiHistoryView 抽离）（2026-04-25）
+
+**审计结论（截至本步）**：原方案 §1-§7 P0/P1/P2 任务实际完成情况
+
+| 编号 | 任务 | 状态 | 备注 |
+|---|---|---|---|
+| P0-1 | useMsgInput / useChatMain / useWebRtc 拆解 + 单测 | ✅ | 三个均 <1000 LOC；303 / 933 / 813 |
+| P0-2 | AI 服务族基线测试 | ✅ | AIService.test.ts + AIServices.test.ts 覆盖 ApiKey/ChatRole/Conversation/Model |
+| P0-3 | stores/chat/message.ts 核心 actions 单测 | ✅ | Step 21 落地 |
+| P0-4 | robot/views/Chat.vue 拆解 | ✅ | 3796 → 685 LOC（接近 ≤500 目标） |
+| P0-5 | AdminFacadeService 域切分 | ✅ | 2758 → 405 LOC，域服务全部抽离 |
+| P0-6 | useMsgInput / useChatMain / useWebRtc 拆解 | ✅ | 同 P0-1 |
+| P1-1 | MatrixRoomService 拆分 | ✅ | 1740 → 620 LOC（domains: tags/aliases/membership/state/summary/storeAdapter） |
+| P1-2 | strategy/MessageStrategy 一类型一文件 | ✅ | 主文件已退化为 5 LOC re-export |
+| P1-3 | augmentation 同步检查脚本 | ✅ | `pnpm check:sdk-types` errors 已从 8 → 0 |
+| P1-4 | 非测试 any 清零 | ✅ | 1019 → 0（含生产 + 测试 + storybook） |
+| P1-5 | createMockMatrixClient 工厂 | ✅ | Step 21 落地 |
+| P1-6 | Space composable 化 + 3 TODO 落地 | ✅ | useSpaces / useSpace / useSpaceMembers / useSpaceRooms + 双端重写 |
+| P1-7 | 其余双端模块 composable 化迁移队列 | 🟡 | 已盘点（Dynamic / Favorites / Integrations / Contact），尚未启动 |
+| P2-1 | MatrixWidgetService legacy 回退分支删除 | ✅ | Step 15 |
+| P2-2 | MatrixUploadService 内联 | ✅ | services/matrix 下不再存在 1 行 re-export |
+| P2-3 | git status D 项清理 | ✅ | 249 → 0 |
+| P2-4 | services/matrix 下 @deprecated 方法移除 | 🟢 | 仅剩 `deleteRetentionPolicy` 服务侧 no-op + warn（不阻塞调用） |
+| P2-5 | Router 拆分 | ✅ | Step 10 第三批 |
+| P2-6 | services/matrix 子目录归档 | ✅ | admin/room/messaging/media/widget/crypto 已就位 |
+| P2-7 | Stores 分层 domains/ | ✅ | 38 flat → 5 domains |
+| §7 | TODO/FIXME 清理 | ✅ | 全仓非测试代码仅剩 1 处带日期 WHY 注解（CLAUDE.md 要求保留） |
+
+**剩余可推进项**（按 LOC 门槛 § 10 目标）
+- 单文件 >1000 LOC 清单：5 个，目标 ≤3
+  - **`useRobotChat.ts` 1740 LOC** — Chat.vue 拆解后吸收的"god composable"，是当前最大可拆条目
+  - `augmentations.d.ts` 1464 — 类型扁平，§10 允许保留
+  - `stores/domains/chat/chat/message.ts` 1171 — Pinia store
+  - `Bot.vue` 1134 — UI 组件
+  - `emoticon/index.vue` 1056 — UI 组件
+
+**本步动作**：useRobotChat.ts 续作首批，按"逻辑相关 + 完全自包含"原则抽离历史抽屉与媒体预览两块。
+
+**新增**
+- `src/plugins/robot/composables/useAiHistoryView.ts`（140 LOC）
+  - 8 ref：`showHistoryModal` / `historyType` / `historyLoading` / `historyList` / `historyPagination` / `showImagePreview` / `showVideoPreview` / `previewItem`
+  - 7 函数：`loadHistory`（image / audio / video 三路 dispatch）/ `handleOpenHistory`（按 selectedModel.type 选 tab）/ `switchHistoryType` / `handleHistoryPageChange` / `handleImagePreview` / `handlePreviewImage` / `handlePreviewVideo`
+  - mitt 事件 `open-generation-history` 在 onMounted/onUnmounted 内自管理订阅，调用方无需关心
+  - 通过 `UseAiHistoryViewOptions` 注入 `selectedModel: Ref<AIModel | null>`，类型 import 自 `useRobotChat.ts` 的 `HistoryItem` / `PaginationState` / `PreviewItem`
+- `src/plugins/robot/composables/__tests__/useAiHistoryView.test.ts`（14 用例）
+  - 初始状态 / loadHistory image-audio-video 分支 / loadHistory 错误吐 toast / handleOpenHistory 按 model.type=2/3/4/7/8 选 tab / switchHistoryType 重置页 + 重载 / handleHistoryPageChange 翻页 + 重载 / 三个 preview handler / mitt 订阅注册
+
+**变更**
+- `src/plugins/robot/composables/useRobotChat.ts`：1740 → **1668 LOC**（−72，-4.1%）
+  - 移除内联 history/preview 8 ref（13 LOC）+ 4 history 函数（60 LOC）+ 3 preview 函数（13 LOC）
+  - 移除 `handleOpenHistory` 的 mitt on/off（2 LOC，已在子 composable 内自管理）
+  - 新增 `useAiHistoryView({ selectedModel })` 装配（19 LOC）
+  - 净 −72 LOC，公共 API 完全保持
+
+**验收**
+- `pnpm test:run src/plugins/robot/composables/__tests__/useAiHistoryView.test.ts`：14/14 通过
+- `pnpm test:run` 全量：**2256 / 2256 全绿**（197 文件，+14）
+- `pnpm exec vue-tsc --noEmit`：robot/ 之外 0 error；robot/ 内 6 error 全部为用户在飞 in-flight 工作（Chat.vue / RobotChatHeader.vue），与本步无关（`git stash` 验证：抽离前同样 ≥6 error）
+- 公共 API 保持：useRobotChat 返回对象同形同语义，14 个 history/preview 字段全部还在
+
+**Step 31 状态**
+- 优化方案 §1-§7 P0/P1/P2 实际完成度盘点 ✅
+- useRobotChat 续作首批（useAiHistoryView）✅
+- 下一轮可选续作表：
+  - useRobotChat：抽 `useAiGenerationParams`（image/video/audio 三组 params + options + clearVideoImage + handleVideoImageUpload + loadAudioVoices，~130 LOC）
+  - useRobotChat：抽 `useAiPolling`（pollingTasks Map + stopAllPolling + stopConversationPolling + 异步生成轮询，~150 LOC，中等风险）
+  - useRobotChat：抽 `useAiConversationLifecycle`（loadMessages + handleCreateNewChat + handleDeleteMessage + handleDeleteChat + notifyConversationMetaChange + handleBlur + handleEdit + handleChatActive + handleLeftChatTitle，~250 LOC）
