@@ -1387,3 +1387,47 @@ _Chat.vue 续作_
 - 下一轮推荐：
   - 将 `useCommon` 进一步降级 — `openMsgSession`（~35 LOC，会话路由副作用）和 `countGraphemes`（4 LOC，纯函数）建议拆到 `src/hooks/session/openMsgSession.ts` + 直接用 `grapheme-splitter` 调用，让 `useCommon` 仅作为薄薄的兼容入口或彻底移除
   - 或转向 P0-4 Chat.vue 续作（待用户在飞 robot/ 修改稳定后）
+
+---
+
+## Step 28 — useCommon 终态降级 + admin 测试 mock 修复（2026-04-25）
+
+**目标**
+- 把 useCommon 残余两块各自归位：`openMsgSession`（会话路由副作用，~35 LOC）抽离为独立模块，`countGraphemes`（纯函数，依赖 `grapheme-splitter`）模块顶层内联
+- 修复全会话期间稳定挂着的 admin 测试 7 个 pre-existing 失败，把全量测试拉回首次全绿
+
+**新增**
+- `src/hooks/session/openMsgSession.ts`（67 LOC）
+  - 标准 async 函数：`openMsgSession(uid, type=2)`
+  - 副作用链：路由跳转 `/message`（仅当当前不在 /message 且 label === 'home'）→ 拉取会话详情 → unhide（best-effort，失败提示但继续）→ 新会话则刷新列表 → 更新 globalStore current → 派发 `LOCATE_SESSION` + `TO_SEND_MSG` + `handleMsgClick`
+  - 不再依赖 useCommon 闭包，任意调用方可直接 import
+- `src/hooks/session/__tests__/openMsgSession.test.ts`（106 LOC，**9 用例**）
+  - vi.hoisted 工厂 mock：chatStore / globalStore / mitt / matrixSessionService / invokeWithErrorHandler / router / log / useMessage
+  - 覆盖：路由跳转 / 已在 /message 不跳 / 默认 type=2 / 显式 type 透传 / 详情为 null 提示并 bail / unhide 报错继续 / 新会话刷新列表 / 已存会话不刷 / Mitt 双事件 + handleMsgClick
+
+**变更**
+- `src/hooks/useCommon.ts`：120 → **71 LOC**（−49，**-40.8%**）
+  - 删除内联 `openMsgSession` 实现，改为 `import { openMsgSession } from './session/openMsgSession'` 后再 re-export，保持公共 API 兼容
+  - `countGraphemes` 提到模块顶层（单例 `GraphemeSplitter`），保持已导出名
+  - useCommon 仅剩：`parseInnerText` / `countGraphemes`（顶层）+ `useCommon()`（装配 useEditorDom + useEditorPaste，re-export `openMsgSession`）
+- `src/composables/admin/__tests__/useAdminSaml.test.ts` —— mock 结构修复
+  - 旧：`adminService: { getSamlMetadata, getSpMetadata, refreshIdpMetadata }`（扁平）
+  - 新：`adminService: { security: { getSamlMetadata, getSpMetadata, refreshIdpMetadata } }`（嵌套）
+  - 同步把所有 `vi.mocked(adminService.X)` → `vi.mocked(adminService.security.X)`
+  - 根因：生产代码 `useAdminSaml.ts` 调的是 `adminService.security.X(...)`，扁平 mock 永远命不中
+- `src/composables/admin/__tests__/useAdminSecurity.test.ts` —— 同上 nested security 修复（`getAuditLog`）
+
+**验收**
+- `pnpm test:run src/hooks/session/__tests__/openMsgSession.test.ts` — 9/9 通过
+- `pnpm test:run` 全量 — **2242/2242 全绿**（首次本会话全量绿）
+  - 对比 Step 27 末：2218 通过 / 15 失败 → 本步：2242 通过 / 0 失败
+  - admin 套件：7 失败 → 0 失败（P2-3 通道彻底打通）
+- `pnpm exec vue-tsc --noEmit` — 0 error
+- useCommon.ts 累计：976 → **71 LOC**（**-92.7%**），从单文件巨石退化为薄装配 + 兼容 re-export
+
+**Step 28 状态**
+- useCommon 终态降级 ✅
+- 全量测试套件首次本会话全绿 ✅
+- 下一轮可选方向：
+  - 直接删除 `useCommon` 兼容层（grep 调用方，逐处替换为新 hook 的直接 import）
+  - 或转 P0-4 Chat.vue 续作（待用户的 `src/plugins/robot/` 飞行中修改落地）
