@@ -1347,3 +1347,43 @@ _Chat.vue 续作_
 - 下一轮可以安全推进：
   - 给 `MsgEnum.AI` 补 3-4 个用例（divNode#AIDiv / 删除 "/" 触发字符 / closeBtn 点击回调）
   - 把 `insertNode` / `insertNodeAtRange` / `createReplyDom` 抽到 `useEditorDom` hook（注入 `reply` ref），保持公共 API 不变
+
+---
+
+## Step 27 — useCommon 续作：useEditorDom 抽离 + AI/默认分支测试补齐（2026-04-25）
+
+**目标**
+- 将 useCommon 中编辑器 DOM 构造大块（`isSafeUrl` + `insertNode` + `insertNodeAtRange` + `createReplyDom`，约 480 LOC）抽离为独立 hook，依赖 `reply` ref 注入
+- 抽离前先把 Step 26 的回归网扩展到 AI 分支与默认分支，确保契约完整
+
+**新增**
+- `src/hooks/common/useEditorDom.ts`（441 LOC）
+  - `useEditorDom({ reply })` → `{ isSafeUrl, insertNode, insertNodeAtRange, createReplyDom }`
+  - `reply: Ref<ReplyState>` 注入；AI 分支 closeBtn click 与 createReplyDom closeBtn click 都通过 `reply.value = ...` 重置状态
+  - `isSafeUrl` 内部化（`http(s)://` / `/` 前缀放行；`javascript:` / `data:` 拦截）
+  - 模块导入 `getEditorRange` / `triggerInputEvent` 替代闭包捕获
+  - 三处 ` ` NBSP 字符精确保留（AIT 后追加 NBSP / REPLY span / AI span）
+- 扩展 `src/hooks/__tests__/useCommon.insertNodeAtRange.test.ts`（9 → **15 用例**）
+  - 新增 `MsgEnum.AI`：#AIDiv 卡片 / 删除 "/" 触发字符 / closeBtn click 移除卡片并重置 reply.value / getAvatarUrl 返回空时 fallback `/avatar/001.png`（共 4）
+  - 新增默认分支：未知 type 走字符串 textNode / 未知 type 走 Node 直插（共 2）
+
+**变更**
+- `src/hooks/useCommon.ts`：641 → **120 LOC**（−521，**-81.3%**）
+  - 删除 `isSafeUrl` / `insertNode` / `insertNodeAtRange` / `createReplyDom` 全部内联实现（~497 LOC）
+  - 新增 `useEditorDom({ reply })` 装配（1 LOC），保持 useCommon 公共 API 不变
+  - 同步清理不再使用的 imports：`AvatarUtils` / `removeTag` / `isMobile` / `MsgEnum` / `createLogger`
+  - 移除 `AitMentionData` / `ReplyData` / `InsertNodeData` 接口（已迁入 useEditorDom 内部）
+  - 移除 `REPLY_NODE_ID` 常量（已迁入 useEditorDom 内部）
+
+**验收**
+- `pnpm test:run src/hooks/__tests__/useCommon.insertNodeAtRange.test.ts` — 15/15 通过（抽离前后一致 ✅ 行为契约 100% 保留）
+- `pnpm exec vue-tsc --noEmit` — 0 error
+- `pnpm test:run` 全量 — 仅 admin/ 7 个 pre-existing 失败（与本会话无关），相比 Step 26 后无新增失败
+- useCommon.ts 累计：976 → 120 LOC（**−87.7%**），实质上已退化为"会话切换 + 字数统计 + 子 hook 装配器"
+
+**Step 27 状态**
+- useCommon 大块抽离 ✅ 完成
+- useEditorPaste / editorDomBasics / useEditorDom 三件套到位，编辑器关注点分离落地
+- 下一轮推荐：
+  - 将 `useCommon` 进一步降级 — `openMsgSession`（~35 LOC，会话路由副作用）和 `countGraphemes`（4 LOC，纯函数）建议拆到 `src/hooks/session/openMsgSession.ts` + 直接用 `grapheme-splitter` 调用，让 `useCommon` 仅作为薄薄的兼容入口或彻底移除
+  - 或转向 P0-4 Chat.vue 续作（待用户在飞 robot/ 修改稳定后）

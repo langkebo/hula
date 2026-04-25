@@ -187,3 +187,101 @@ describe('insertNodeAtRange — MsgEnum.REPLY', () => {
     expect(document.getElementById('replyDiv')).toBeNull()
   })
 })
+
+describe('insertNodeAtRange — MsgEnum.AI', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const setupRangeAfterText = (host: HTMLElement, text: string) => {
+    const node = document.createTextNode(text)
+    host.appendChild(node)
+    const range = document.createRange()
+    range.setStart(node, text.length)
+    range.setEnd(node, text.length)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+    return { range, selection }
+  }
+
+  it('inserts #AIDiv as a contentEditable=false card with author label', () => {
+    const { insertNodeAtRange } = useCommon()
+    const input = makeMessageInput()
+    const sr = setupRangeAfterText(input, '/ask')
+
+    insertNodeAtRange(MsgEnum.AI, { name: 'GPT', avatar: 'mxc://a', accountName: '', content: '' }, input, sr)
+
+    const ai = document.getElementById('AIDiv')!
+    expect(ai).toBeTruthy()
+    expect(ai.contentEditable).toBe('false')
+    expect(ai.textContent).toContain('GPT')
+    // Avatar image is present
+    expect(ai.querySelector('img')).toBeTruthy()
+  })
+
+  it('strips the trailing "/" trigger char from the host text node', () => {
+    const { insertNodeAtRange } = useCommon()
+    const input = makeMessageInput()
+    const textNode = document.createTextNode('hello /')
+    input.appendChild(textNode)
+    const range = document.createRange()
+    range.setStart(textNode, 7)
+    range.setEnd(textNode, 7)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+
+    insertNodeAtRange(MsgEnum.AI, { name: 'GPT', avatar: 'a' } as any, input, { range, selection })
+
+    expect(textNode.textContent).toBe('hello ')
+  })
+
+  it('renders a #closeBtn child that, when clicked, removes the AI card and clears reply state', () => {
+    const common = useCommon()
+    const input = makeMessageInput()
+    common.reply.value = { avatar: 'x', imgCount: 3, accountName: 'A', content: 'B', key: 99 }
+
+    common.insertNodeAtRange(MsgEnum.AI, { name: 'GPT', avatar: 'a' } as any, input, setupRangeAfterText(input, '/'))
+
+    const closeBtn = document.getElementById('closeBtn')!
+    expect(closeBtn).toBeTruthy()
+    expect(closeBtn.textContent).toBe('关闭')
+
+    closeBtn.dispatchEvent(new Event('click', { bubbles: true }))
+
+    expect(document.getElementById('AIDiv')).toBeNull()
+    expect(common.reply.value).toEqual({ avatar: '', imgCount: 0, accountName: '', content: '', key: 0 })
+  })
+
+  it('falls back to the default avatar when getAvatarUrl returns empty', () => {
+    const { insertNodeAtRange } = useCommon()
+    const input = makeMessageInput()
+    insertNodeAtRange(MsgEnum.AI, { name: 'X', avatar: '' } as any, input, setupRangeAfterText(input, '/'))
+    const img = document.getElementById('AIDiv')!.querySelector('img')!
+    expect(img.getAttribute('src')).toBe('/avatar/001.png')
+  })
+})
+
+describe('insertNodeAtRange — default branch', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('inserts a string content as a plain text node when type is unknown', () => {
+    const { insertNodeAtRange } = useCommon()
+    const input = makeMessageInput()
+    insertNodeAtRange(999 as MsgEnum, 'fallback-text', input, setupRangeIn(input))
+    expect(input.textContent).toBe('fallback-text')
+  })
+
+  it('inserts a Node directly when content is a DOM node', () => {
+    const { insertNodeAtRange } = useCommon()
+    const input = makeMessageInput()
+    const span = document.createElement('span')
+    span.id = 'custom-node'
+    span.textContent = 'X'
+    insertNodeAtRange(999 as MsgEnum, span as any, input, setupRangeIn(input))
+    expect(input.querySelector('#custom-node')).toBe(span)
+  })
+})
