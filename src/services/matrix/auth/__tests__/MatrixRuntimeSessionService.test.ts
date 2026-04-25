@@ -146,6 +146,7 @@ vi.mock('@/utils/AvatarUtils', () => ({
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
     debug: vi.fn(),
+    info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn()
   })
