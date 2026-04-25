@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createMemoryHistory, createRouter, type RouteRecordRaw, type Router } from 'vue-router'
 import {
   MOBILE_SETTINGS_HELP_ABOUT_PATH,
   MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH,
@@ -16,6 +16,20 @@ function flattenRoutes(routes: RouteRecordRaw[]): RouteRecordRaw[] {
 }
 
 describe('getMobileRoutes', () => {
+  let router: Router | null = null
+
+  beforeEach(() => {
+    // 每个测试前清理路由实例
+    router = null
+  })
+
+  afterEach(async () => {
+    // 每个测试后清理路由实例
+    if (router) {
+      await router.push('/')
+      router = null
+    }
+  })
   it('nests integrations under labs for mobile settings', () => {
     const routes = flattenRoutes(getMobileRoutes())
     const integrationsRoute = routes.find((route) => route.path === 'labs/integrations')
@@ -34,7 +48,7 @@ describe('getMobileRoutes', () => {
   })
 
   it('redirects legacy integrations navigation to the labs subpage', async () => {
-    const router = createRouter({
+    router = createRouter({
       history: createMemoryHistory(),
       routes: getMobileRoutes()
     })
@@ -47,7 +61,7 @@ describe('getMobileRoutes', () => {
   }, 10000)
 
   it('redirects the legacy security path to security-privacy', async () => {
-    const router = createRouter({
+    router = createRouter({
       history: createMemoryHistory(),
       routes: getMobileRoutes()
     })
@@ -60,12 +74,13 @@ describe('getMobileRoutes', () => {
   }, 10000)
 
   it('redirects the legacy help path to help-about', async () => {
-    const router = createRouter({
+    router = createRouter({
       history: createMemoryHistory(),
       routes: getMobileRoutes()
     })
 
     await router.push(MOBILE_SETTINGS_LEGACY_HELP_PATH)
+    await router.isReady()
 
     expect(router.currentRoute.value.fullPath).toBe(MOBILE_SETTINGS_HELP_ABOUT_PATH)
     expect(router.currentRoute.value.name).toBe(MOBILE_SETTINGS_ROUTE_NAMES.helpAbout)
