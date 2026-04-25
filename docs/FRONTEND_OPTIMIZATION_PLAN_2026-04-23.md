@@ -1458,3 +1458,35 @@ _Chat.vue 续作_
 - useCommon 调用方语义清理 ✅
 - useCommon 现在的两条出口职责清晰：纯函数顶层导出（`countGraphemes` / `parseInnerText`）+ 编辑器装配 hook（`useCommon()` 仅供编辑器场景使用）
 - 后续可选：若用户接受，再把 `InfoPopover` / `useChatMain` 的 `userUid` 改为直接读 `useUserStore().userInfo!.uid`，则 useCommon 顶层就只剩纯编辑器装配
+
+---
+
+## Step 30 — useCommon 最后两个混合调用方迁移 + openMsgSession re-export 退役（2026-04-25）
+
+**目标**
+- 完成 Step 29 收尾：把 `InfoPopover.vue` / `useChatMain.ts` 两个同时取 `userUid + openMsgSession` 的调用方拆开（`userUid` 改为本地 `computed(() => userStore.userInfo!.uid)`，`openMsgSession` 直接 import），让 useCommon 仅服务于编辑器场景
+- 在所有调用方迁移完成后，从 `useCommon.ts` 退役 `openMsgSession` re-export 与 import，进一步收敛公共面
+
+**变更**
+- `src/components/common/InfoPopover.vue`
+  - `import { useCommon } from '@/hooks/useCommon.ts'` → `import { openMsgSession } from '@/hooks/session/openMsgSession'`
+  - `const { userUid, openMsgSession } = useCommon()` 移除；新增 `const userUid = computed(() => userStore.userInfo!.uid)`（已存在的 `userStore` 旁边）
+- `src/hooks/useChatMain.ts`
+  - 同上替换 import
+  - `const { openMsgSession, userUid } = useCommon()` 移除；新增同一行 `const userUid = computed(() => userStore.userInfo!.uid)`
+  - 791 行函数内的局部 `useUserStore()` 重声明保留（局部作用域无冲突，超出本步范围）
+- `src/hooks/useCommon.ts`：120 → **69 LOC**
+  - 删除 `import { openMsgSession } from './session/openMsgSession'`
+  - 从 `useCommon()` 返回对象中移除 `openMsgSession` 字段
+  - useCommon 公共面现在仅余编辑器装配 + `parseInnerText` / `countGraphemes` 顶层导出
+
+**验收**
+- `pnpm exec vue-tsc --noEmit` — 0 error
+- `pnpm test:run` 全量 — 2242/2242 全绿
+- `grep -rn "useCommon()" src --include="*.ts" --include="*.vue"` 生产代码仅剩 3 处编辑器调用方：`MsgInput.vue` / `ChatFooter.vue` / `useMsgInput.ts`
+- `grep -rn "openMsgSession" src` 生产调用方全部走 `@/hooks/session/openMsgSession`
+
+**Step 30 状态**
+- useCommon 最终形态：69 LOC（vs Step 0 的 976，**-92.9%** 累计），公共面对内对外都只剩编辑器装配 + 字数统计 + DOM 文本解析
+- `useCommon()` 调用图收敛为：3 个编辑器场景调用方 + 1 个测试套件
+- 后续可选：把 `useMsgInput` 中 `useCommon()` 解构的 `userUid` 也改为本地 computed，则可从 useCommon 返回中移除 `userUid`，进一步缩到纯编辑器 API

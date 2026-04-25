@@ -211,7 +211,7 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { MittEnum, OnlineEnum, ThemeEnum } from '@/enums/index.ts'
-import { useCommon } from '@/hooks/useCommon.ts'
+import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import { leftHook } from '@/layout/left/hook'
@@ -232,7 +232,6 @@ const { uid } = defineProps<{
   activeStatus?: OnlineEnum
 }>()
 const { createWebviewWindow } = useWindow()
-const { userUid, openMsgSession } = useCommon()
 const settingStore = useSettingStore()
 const { themes } = storeToRefs(settingStore)
 const globalStore = useGlobalStore()
@@ -242,6 +241,7 @@ const { openContent } = leftHook()
 const contactStore = useContactStore()
 const userStatusStore = useUserStatusStore()
 const userStore = useUserStore()
+const userUid = computed(() => userStore.userInfo!.uid)
 const badgeStore = useBadgeStore()
 const { stateList } = storeToRefs(userStatusStore)
 

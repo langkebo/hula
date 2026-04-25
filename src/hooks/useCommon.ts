@@ -3,7 +3,6 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useEditorPaste } from './common/useEditorPaste'
 import { getEditorRange, getMessageContentType, triggerInputEvent } from './common/editorDomBasics'
 import { useEditorDom } from './common/useEditorDom'
-import { openMsgSession } from './session/openMsgSession'
 
 const domParser = new DOMParser()
 
@@ -61,7 +60,6 @@ export const useCommon = () => {
     FileOrVideoPaste,
     handleConfirmFiles,
     countGraphemes,
-    openMsgSession,
     insertNodeAtRange,
     reply,
     userUid,
