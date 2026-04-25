@@ -44,6 +44,9 @@ export type AdminFacadeDomainMethods = {
     userId?: string,
     eventType?: string
   ): Promise<{ logs: Array<Record<string, unknown>>; next_batch?: string }>
+  getSamlMetadata(): Promise<Record<string, unknown>>
+  getSpMetadata(): Promise<Blob | string | null>
+  refreshIdpMetadata(): Promise<Record<string, unknown>>
   getSamlConfig(): Promise<Record<string, unknown>>
   updateSamlConfig(config: Record<string, unknown>): Promise<void>
   getUsersV2(
@@ -152,6 +155,9 @@ export function createAdminFacadeDomainMethods(deps: AdminFacadeDomainDeps): Adm
     getRateLimits: (userId) => deps.users.getRateLimits(userId),
     setRateLimits: (userId, limits) => deps.users.setRateLimits(userId, limits),
     getAuditLog: (limit = 50, from, userId, eventType) => deps.security.getAuditLog(limit, from, userId, eventType),
+    getSamlMetadata: () => deps.security.getSamlMetadata(),
+    getSpMetadata: () => deps.security.getSpMetadata(),
+    refreshIdpMetadata: () => deps.security.refreshIdpMetadata(),
     getSamlConfig: () => deps.security.getSamlConfig(),
     updateSamlConfig: (config) => deps.security.updateSamlConfig(config),
     getUsersV2: (limit = 100, from, name, guests = true) => deps.users.getUsersV2(limit, from, name, guests),

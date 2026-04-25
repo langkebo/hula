@@ -3,7 +3,10 @@ import { useAdminServerLogs } from '../useAdminServerLogs'
 
 vi.mock('@/services/matrix', () => ({
   adminService: {
-    getServerLogs: vi.fn().mockResolvedValue([])
+    getServerStatus: vi.fn().mockResolvedValue(null),
+    getServerHealth: vi.fn().mockResolvedValue(null),
+    getServerVersion: vi.fn().mockResolvedValue(null),
+    getServerStats: vi.fn().mockResolvedValue(null)
   }
 }))
 
@@ -14,37 +17,38 @@ describe('useAdminServerLogs', () => {
     vi.clearAllMocks()
   })
 
-  it('loadLogs with default params', async () => {
+  it('loadPanel requests all panel resources', async () => {
     const c = useAdminServerLogs()
-    await c.loadLogs()
-    expect(adminService.getServerLogs).toHaveBeenCalledWith(undefined, 100)
+    await c.loadPanel()
+    expect(adminService.getServerStatus).toHaveBeenCalledTimes(1)
+    expect(adminService.getServerHealth).toHaveBeenCalledTimes(1)
+    expect(adminService.getServerVersion).toHaveBeenCalledTimes(1)
+    expect(adminService.getServerStats).toHaveBeenCalledTimes(1)
   })
 
-  it('forwards level + limit from refs', async () => {
+  it('populates panel refs', async () => {
     const c = useAdminServerLogs()
-    c.level.value = 'error'
-    c.limit.value = 50
-    await c.loadLogs()
-    expect(adminService.getServerLogs).toHaveBeenCalledWith('error', 50)
+    vi.mocked(adminService.getServerStatus).mockResolvedValueOnce({ status: 'online', uptime: 100 })
+    vi.mocked(adminService.getServerHealth).mockResolvedValueOnce({ healthy: true, checks: { db: { status: 'ok' } } })
+    vi.mocked(adminService.getServerVersion).mockResolvedValueOnce({ serverVersion: '1.0.0', pythonVersion: 'Rust' })
+    vi.mocked(adminService.getServerStats).mockResolvedValueOnce({
+      userCount: 1,
+      roomCount: 2,
+      dailyActiveUsers: 3,
+      monthlyActiveUsers: 4,
+      messageCount: 5,
+      startServerTime: 6
+    })
+    await c.loadPanel()
+    expect(c.status.value).toEqual({ status: 'online', uptime: 100 })
+    expect(c.health.value?.healthy).toBe(true)
+    expect(c.version.value?.serverVersion).toBe('1.0.0')
+    expect(c.stats.value?.roomCount).toBe(2)
   })
 
-  it('populates logs ref', async () => {
-    vi.mocked(adminService.getServerLogs).mockResolvedValueOnce([{ msg: 'x' }])
+  it('loading flag toggles around loadPanel', async () => {
     const c = useAdminServerLogs()
-    await c.loadLogs()
-    expect(c.logs.value).toHaveLength(1)
-  })
-
-  it('treats null return as empty array', async () => {
-    vi.mocked(adminService.getServerLogs).mockResolvedValueOnce(null)
-    const c = useAdminServerLogs()
-    await c.loadLogs()
-    expect(c.logs.value).toEqual([])
-  })
-
-  it('loading flag toggles around loadLogs', async () => {
-    const c = useAdminServerLogs()
-    const p = c.loadLogs()
+    const p = c.loadPanel()
     expect(c.loading.value).toBe(true)
     await p
     expect(c.loading.value).toBe(false)

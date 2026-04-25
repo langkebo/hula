@@ -3,91 +3,68 @@
     <n-page-header :title="t('admin.security.title')" :subtitle="t('admin.security.subtitle')">
       <template #extra>
         <n-space>
-          <n-button @click="refresh" :loading="loading">
-            <template #icon><n-icon><RefreshIcon /></n-icon></template>
+          <n-button @click="loadAuditLogs()" :loading="loading">
+            <template #icon>
+              <n-icon><RefreshIcon /></n-icon>
+            </template>
             {{ t('common.refresh') }}
           </n-button>
         </n-space>
       </template>
     </n-page-header>
 
-    <n-alert type="warning" title="功能尚未就绪 / Feature not available" class="my-12px">
-      后端 `/security/*` 端点尚未实现，此页面为占位视图。Backend `/security/*` endpoints are not implemented; this page is a placeholder.
+    <n-alert type="info" class="my-12px">
+      {{ t('admin.security.audit_info') }}
     </n-alert>
 
-    <n-tabs type="line" animated>
-      <n-tab-pane name="events" :tab="t('admin.security.events_tab')">
-        <n-data-table
-          :columns="eventColumns"
-          :data="securityEvents"
-          :loading="loading"
-          :pagination="pagination"
-          :row-key="(row: SecurityEvent) => row.id"
-          striped
-        />
-      </n-tab-pane>
-
-      <n-tab-pane name="ip-blocks" :tab="t('admin.security.ip_blocks_tab')">
-        <n-space vertical :size="16">
-          <n-space>
-            <n-input v-model:value="newBlockIp" :placeholder="t('admin.security.ip_placeholder')" />
-            <n-input v-model:value="newBlockReason" :placeholder="t('admin.security.reason_placeholder')" />
-            <n-button type="warning" @click="blockIp" :loading="blockLoading">
-              {{ t('admin.security.block_ip') }}
-            </n-button>
-          </n-space>
-          <n-data-table
-            :columns="ipBlockColumns"
-            :data="ipBlocks"
-            :loading="loading"
-            :row-key="(row: IpBlock) => row.ip"
-            striped
-          />
-        </n-space>
-      </n-tab-pane>
-    </n-tabs>
+    <n-data-table
+      remote
+      ref="table"
+      :columns="columns"
+      :data="auditLogs"
+      :loading="loading"
+      :pagination="pagination"
+      :row-key="(row: any) => row.id"
+      striped
+      class="mt-16px"
+      @update:page="handlePageChange" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h } from 'vue'
+import { ref, onMounted, h, reactive } from 'vue'
 import {
   NPageHeader,
-  NTabs,
-  NTabPane,
   NDataTable,
   NSpace,
   NButton,
   NAlert,
   NIcon,
-  NInput,
   NTag,
   useMessage,
   type DataTableColumns
 } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { adminService } from '@/services/matrix'
-import { createLogger } from '@/utils/Logger'
+import { useAdminSecurity } from '@/composables/admin/useAdminSecurity'
 
-const logger = createLogger('AdminSecurity')
 const { t } = useI18n()
 const message = useMessage()
+const { auditLogs, loading, nextBatch, loadAuditLogs } = useAdminSecurity()
 
-interface SecurityEvent {
-  id: string
-  type: string
-  user_id?: string
-  ip_address?: string
-  timestamp: number
-  details?: string
-}
-
-interface IpBlock {
-  ip: string
-  reason?: string
-  blocked_at: number
-  blocked_by?: string
-}
+const pagination = reactive({
+  page: 1,
+  pageSize: 50,
+  showSizePicker: true,
+  pageSizes: [20, 50, 100],
+  onChange: (page: number) => {
+    pagination.page = page
+  },
+  onUpdatePageSize: (pageSize: number) => {
+    pagination.pageSize = pageSize
+    pagination.page = 1
+    loadAuditLogs(pageSize)
+  }
+})
 
 const RefreshIcon = {
   render: () =>
@@ -97,107 +74,43 @@ const RefreshIcon = {
     ])
 }
 
-const loading = ref(false)
-const blockLoading = ref(false)
-const securityEvents = ref<SecurityEvent[]>([])
-const ipBlocks = ref<IpBlock[]>([])
-const newBlockIp = ref('')
-const newBlockReason = ref('')
-
-const pagination = {
-  pageSize: 20
-}
-
-const eventColumns: DataTableColumns<SecurityEvent> = [
+const columns: DataTableColumns<any> = [
   {
     title: t('admin.security.col_type'),
-    key: 'type',
+    key: 'action',
     width: 150,
-    render: (row) => h(NTag, { size: 'small', type: row.type.includes('fail') ? 'error' : 'info' }, () => row.type)
+    render: (row) => h(NTag, { size: 'small', type: row.result === 'success' ? 'success' : 'error' }, () => row.action)
   },
-  { title: t('admin.security.col_user'), key: 'user_id', width: 200 },
-  { title: t('admin.security.col_ip'), key: 'ip_address', width: 140 },
+  { title: t('admin.security.col_user'), key: 'actor_id', width: 200 },
+  {
+    title: t('admin.security.col_resource'),
+    key: 'resource_type',
+    width: 150,
+    render: (row) => `${row.resource_type}: ${row.resource_id}`
+  },
   {
     title: t('admin.security.col_time'),
     key: 'timestamp',
     width: 180,
     render: (row) => new Date(row.timestamp).toLocaleString()
   },
-  { title: t('admin.security.col_details'), key: 'details', ellipsis: { tooltip: true } }
-]
-
-const ipBlockColumns: DataTableColumns<IpBlock> = [
-  { title: 'IP', key: 'ip', width: 160 },
-  { title: t('admin.security.col_reason'), key: 'reason', width: 200 },
   {
-    title: t('admin.security.col_blocked_at'),
-    key: 'blocked_at',
-    width: 180,
-    render: (row) => new Date(row.blocked_at).toLocaleString()
-  },
-  { title: t('admin.security.col_blocked_by'), key: 'blocked_by', width: 180 },
-  {
-    title: t('admin.security.col_actions'),
-    key: 'actions',
+    title: t('admin.security.col_result'),
+    key: 'result',
     width: 100,
-    render: (row) =>
-      h(NButton, { size: 'small', type: 'error', onClick: () => unblockIp(row.ip) }, () => t('admin.security.unblock'))
+    render: (row) => h(NTag, { size: 'small', type: row.result === 'success' ? 'success' : 'error' }, () => row.result)
   }
 ]
 
-async function loadData() {
-  loading.value = true
-  try {
-    const [eventsResult, blocksResult] = await Promise.all([
-      adminService.getSecurityEvents(),
-      adminService.getIpBlocks()
-    ])
-    securityEvents.value = (eventsResult?.events ?? []) as unknown as SecurityEvent[]
-    ipBlocks.value = (blocksResult ?? []) as unknown as IpBlock[]
-  } catch (err) {
-    logger.error('加载安全数据失败:', err)
-  } finally {
-    loading.value = false
+async function handlePageChange(page: number) {
+  if (page > pagination.page && nextBatch.value) {
+    await loadAuditLogs(pagination.pageSize, nextBatch.value)
   }
-}
-
-async function blockIp() {
-  if (!newBlockIp.value.trim()) {
-    message.warning(t('admin.security.ip_required'))
-    return
-  }
-  blockLoading.value = true
-  try {
-    await adminService.blockIp(newBlockIp.value.trim(), { reason: newBlockReason.value.trim() })
-    message.success(t('admin.security.ip_blocked'))
-    newBlockIp.value = ''
-    newBlockReason.value = ''
-    await loadData()
-  } catch (err) {
-    logger.error('封禁IP失败:', err)
-    message.error(t('admin.security.block_failed'))
-  } finally {
-    blockLoading.value = false
-  }
-}
-
-async function unblockIp(ip: string) {
-  try {
-    await adminService.unblockIp(ip)
-    message.success(t('admin.security.ip_unblocked'))
-    await loadData()
-  } catch (err) {
-    logger.error('解封IP失败:', err)
-    message.error(t('admin.security.unblock_failed'))
-  }
-}
-
-function refresh() {
-  loadData()
+  pagination.page = page
 }
 
 onMounted(() => {
-  loadData()
+  loadAuditLogs(pagination.pageSize)
 })
 </script>
 

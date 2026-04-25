@@ -21,7 +21,7 @@
 
 ### 当前仍未完成
 - **新的大块逻辑已转移但未拆完**
-  - `src/plugins/robot/composables/useRobotChat.ts` 当前 **1668 LOC**，已经取代旧 `Chat.vue` 成为 robot 域新的主耦合点；`useAiMediaGeneration` / `useAiStreaming` 这两个续作目标仍未独立落盘。
+  - `src/plugins/robot/composables/useRobotChat.ts` 当前 **1182 LOC**，已经取代旧 `Chat.vue` 成为 robot 域新的主耦合点；`useAiMediaGeneration` 已独立落盘，但 `useAiStreaming` 续作仍未完成。
   - `src/stores/domains/chat/chat/message.ts` 当前 **1171 LOC**，仍是 store 域最大文件；虽然已补一批高价值回归测试，但文件拆分尚未启动。
   - `src/types/matrix-js-sdk-augmentations.d.ts` 当前 **1464 LOC**，同步检查已做，但“手工超大 augmentation 文件”本身仍未治理。
   - `src/components/rightBox/chatBox/Bot.vue` **1134 LOC**、`src/components/rightBox/emoticon/index.vue` **1056 LOC**，仍未见实质拆分。
@@ -35,7 +35,7 @@
 
 ### 当前 >1000 LOC 清单（实查）
 ```
-1668  src/plugins/robot/composables/useRobotChat.ts
+1182  src/plugins/robot/composables/useRobotChat.ts
 1464  src/types/matrix-js-sdk-augmentations.d.ts
 1171  src/stores/domains/chat/chat/message.ts
 1134  src/components/rightBox/chatBox/Bot.vue
@@ -43,7 +43,7 @@
 ```
 
 ### 下一轮建议顺序
-1. **P0-4 续作转向 `useRobotChat.ts`**：优先拆 `useAiMediaGeneration`，再拆 `useAiStreaming`，避免“Vue 页面变薄但 composable 继续膨胀”。
+1. **P0-4 续作转向 `useRobotChat.ts`**：`useAiMediaGeneration` 已完成，下一步优先拆 `useAiStreaming`，避免“Vue 页面变薄但 composable 继续膨胀”。
 2. **P1-7 多端同步收口**：先抽 `Integrations` 共享 composable，再补齐 `Favorites / Dynamic / Contact` 的双端盘点清单与迁移顺序。
 3. **P0 store/UI 大文件收尾**：启动 `message.ts` / `Bot.vue` / `emoticon/index.vue` 三个剩余超大文件的拆分。
 4. **P1-3 第二阶段**：评估 `augmentations.d.ts` 改为按域分片，或进一步减少手工 augmentation 面积。
@@ -99,7 +99,7 @@
 ### 实查补充（2026-04-25）
 - 历史清单中的多数目标已经落地，当前剩余 >1000 LOC 文件仅 5 个：
 ```
-1668  src/plugins/robot/composables/useRobotChat.ts
+1182  src/plugins/robot/composables/useRobotChat.ts
 1464  src/types/matrix-js-sdk-augmentations.d.ts
 1171  src/stores/domains/chat/chat/message.ts
 1134  src/components/rightBox/chatBox/Bot.vue
@@ -273,7 +273,7 @@
 ### 当前推荐执行顺序（2026-04-25 实查后）
 | 顺序 | 事项 | 预计工作量 | 产出 |
 |---|---|---|---|
-| 1 | **P0-4 续作**：拆 `useRobotChat.ts` 的 `useAiMediaGeneration` / `useAiStreaming` | 2-3 天 | robot 域主耦合点从 1668 LOC 继续收敛，并补 composable 级测试 |
+| 1 | **P0-4 续作**：拆 `useRobotChat.ts` 的 `useAiStreaming` | 1-2 天 | 延续 `useAiMediaGeneration` 已落地的拆分路径，继续收敛 robot 域主耦合点并补 composable 级测试 |
 | 2 | **P1-7** `Integrations` 共享 composable 化 | 1-2 天 | 桌面端 / 移动端安装、启用、权限逻辑同源 |
 | 3 | **P0-3 续作**：`message.ts` 结构拆分 | 2-3 天 | store 域退出 >1000 LOC 清单，测试与结构治理闭环 |
 | 4 | **P0 UI 大文件治理**：`Bot.vue` / `emoticon/index.vue` | 2-3 天 | UI 大文件退出清单，避免下一个 god component 形成 |
@@ -307,7 +307,7 @@
   - 文档最新记录的全量验证结果为：`pnpm test:run` **2242/2242** 全绿、`vue-tsc --noEmit` **0 error**
   - 本轮实查未重新执行全量 `pnpm test:run` / `vue-tsc --noEmit` / `pnpm check`，因此这里只同步代码现状，不覆盖历史验收记录
 - **新增文件 LOC ≤ 500**
-  - 大多数新增拆分文件符合该目标，但 `useRobotChat.ts` 当前 **1668 LOC**，说明 robot 域发生了“问题转移”而非完全消除
+  - 大多数新增拆分文件符合该目标，但 `useRobotChat.ts` 当前 **1182 LOC**，说明 robot 域耦合已明显收敛但尚未完全退出超大文件清单
 - **非测试 `any`**
   - 本轮未重新统计全仓 `any` 数量；但已可确认热点已从旧 `Chat.vue` 转移，不宜继续沿用“以页面文件为唯一抓手”的治理方式
 
@@ -322,6 +322,10 @@
 ## 11. 执行进度追踪
 
 > 每完成一个步骤在此处附录进度。
+>
+> 阅读提示：
+> - 本节用于保留**历史执行轨迹**与当时的验收结果，不保证自动反映后续代码继续演进后的最新状态。
+> - 如与 `§0`、各章节“实查补充（2026-04-25）”或 `§9 当前推荐执行顺序` 存在差异，默认以后者为当前口径。
 
 ### 步骤 1：P0-2 AI 服务族基线测试 · 状态：✅ 完成（2026-04-23）
 
@@ -1611,7 +1615,7 @@ _Chat.vue 续作_
 
 ---
 
-### 步骤 31：2026-04-25 实查复核回写 · 状态：🟡 文档更新完成（代码未改）
+### 附录：2026-04-25 实查复核回写 · 状态：🟡 文档更新完成（代码未改）
 
 **复核范围**
 - 对照本文既有 P0 / P1 / P2 计划，逐项检查代码真实落地情况，重点关注：
@@ -1637,6 +1641,10 @@ _Chat.vue 续作_
 4. `Bot.vue` / `emoticon/index.vue`：纳入下一批 >1000 LOC 治理，不再仅停留在候选清单。
 
 ---
+
+> 历史记录提示：
+> - 以下 `Step 31 / Step 32` 记录的是当时对 `useRobotChat` 的续作推进与阶段性判断。
+> - 其中涉及的 LOC、优先级和“已完成/未完成”判断，应结合 `§0`、`§2`、`§9`、`§10` 与 `§12` 一并阅读，不应单独视为当前状态。
 
 ## Step 31 — 优化方案完成度审计 + useRobotChat 续作首批（useAiHistoryView 抽离）（2026-04-25）
 
@@ -1747,3 +1755,67 @@ _Chat.vue 续作_
 - 下一轮续作清单（按风险递增）：
   - `useAiPolling`（~150 LOC）：`pollingTasks` Map + `stopAllPolling` / `stopConversationPolling` + 异步生成轮询，需要注入 `messageList` / `currentChat` / `bumpMessageRenderVersion` 等
   - `useAiConversationLifecycle`（~250 LOC）：`loadMessages` + `handleCreateNewChat` + `handleDeleteMessage` + `handleDeleteChat` + `handleBlur` + `handleEdit` + `handleChatActive` + `handleLeftChatTitle`
+
+---
+
+## 12. 阶段总结（截至 2026-04-25 实查）
+
+### 阅读口径
+- **当前代码现状** 以 `§0`、各章节下的“**实查补充（2026-04-25）**”以及 `§9 当前推荐执行顺序` 为准。
+- **历史执行轨迹** 以 `§11` 各 Step 为准；其中尾部 Step 31 / Step 32 记录的是一次续作推进历史，不应直接覆盖当前实查口径。
+- 若两者出现差异，默认以“**实查补充**”为当前判断，因为它直接对应本轮仓库检查结果。
+
+### 已完成主线
+- 大文件治理已完成大半：`Chat.vue` / `useMsgInput.ts` / `useChatMain.ts` / `useWebRtc.ts` / `AdminFacadeService.ts` / `MatrixRoomService.ts` / `router/index.ts` 均已显著收敛。
+- 测试体系已从“关键路径大量裸奔”推进到“AI 服务族、message actions、多个拆出 composable 均有回归网”。
+- 多端同步方面，`Space` 已形成比较完整的共享 composable 样板。
+- 架构整理方面，`services/matrix` 子目录化、`stores/domains` 分层、Router 拆分、Widget legacy 清理、Upload re-export 清理均已完成主体。
+
+### 当前未收尾主线
+- `robot` 域的主要矛盾已从 `Chat.vue` 转移到 `useRobotChat.ts`，后续应继续按 composable 维度拆分，而不是再以页面文件为主指标。
+- `Integrations` 仍是最明确的双端发散点；`Favorites` / `Dynamic` / `Contact` 仍需先完成盘点再迁移。
+- 当前 >1000 LOC 文件仍剩 5 个：`useRobotChat.ts` / `augmentations.d.ts` / `message.ts` / `Bot.vue` / `emoticon/index.vue`。
+
+### 下一阶段入口
+1. `useRobotChat.ts`：延续已完成的 `useAiMediaGeneration` 抽离，优先拆 `useAiStreaming` 或与之等价的高耦合大块。
+
+## Step 33 — useRobotChat 续作第三批：useAiMediaGeneration 抽离（2026-04-25）
+
+**目标**
+- 接 Step 32 之后的续作清单，把 `generateImage` / `generateVideo` / `generateAudio` 三段“消息占位 + 调 service + 调轮询”的公共骨架从 `useRobotChat.ts` 提成独立 composable
+- 同时把测试重点从入口层下沉到新 composable 本身，避免后续继续拆分时只能依赖大文件集成测试
+
+**新增**
+- `src/plugins/robot/composables/useAiMediaGeneration.ts`（234 LOC）
+  - 统一封装三种媒体生成入口：`generateImage` / `generateVideo` / `generateAudio`
+  - 提取共用逻辑：token budget guard、占位消息插入、taskId 提取、失败消息回填、输入框清空
+  - 保留差异逻辑在各自分支内：图片尺寸、视频时长/首帧图、音频 voice/speed、视频成功后的 `clearVideoImage()`
+- `src/plugins/robot/composables/__tests__/useAiMediaGeneration.test.ts`（5 用例）
+  - 图片 happy path：占位消息 + request shape + poll 参数
+  - 视频 happy path：可选 `image` 透传 + `clearVideoImage`
+  - 音频 happy path：`speed` 字符串化 + poll 参数
+  - token 用尽 guard：提前 warning，不发请求
+  - 错误分支：占位消息改写为失败文案，不触发 poll
+
+**变更**
+- `src/plugins/robot/composables/useRobotChat.ts`：1553 → **1182 LOC**（−371，-23.9%）
+  - 删除 3 个媒体生成函数中的重复骨架与错误处理
+  - 改为装配 `useAiMediaGeneration(...)`，`handleSendAI()` 仅保留模型类型分流与入口调用
+- `src/plugins/robot/composables/__tests__/useRobotChat.test.ts`
+  - 从“校验 service request + poll 参数”改为“校验入口正确分流到 `useAiMediaGeneration`”
+  - 入口层职责与媒体生成职责的测试边界更清晰
+
+**验收**
+- `pnpm vitest run src/plugins/robot/composables/__tests__/useAiMediaGeneration.test.ts src/plugins/robot/composables/__tests__/useRobotChat.test.ts src/plugins/robot/composables/__tests__/useAiGenerationRequests.test.ts src/plugins/robot/composables/__tests__/useAiGenerationPolling.test.ts src/plugins/robot/composables/__tests__/usePollingTasks.test.ts`
+  - **26 / 26** 全绿（5 文件）
+- `GetDiagnostics`
+  - `useAiMediaGeneration.ts` / `useRobotChat.ts` / `useAiMediaGeneration.test.ts` / `useRobotChat.test.ts` 均无新增诊断
+
+**Step 33 状态**
+- `useRobotChat` 续作第三批 ✅
+- `useAiMediaGeneration` 已完成独立落盘，P0-4 续作的下一优先级切换为 `useAiStreaming`
+- `useRobotChat.ts` 累计降幅：1740 → 1668 → 1553 → **1182 LOC**（−558，-32.1%）
+
+---
+2. `Integrations`：抽共享 composable，统一桌面端与移动端状态、持久化与交互行为。
+3. `message.ts` / `Bot.vue` / `emoticon/index.vue`：继续压降剩余超大文件数，向 `≤3` 目标收尾。

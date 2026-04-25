@@ -37,4 +37,4 @@ export { useAdminSecurity } from './useAdminSecurity'
 export type { UseAdminSecurityResult } from './useAdminSecurity'
 
 export { useAdminServerLogs } from './useAdminServerLogs'
-export type { UseAdminServerLogsResult, LogLevel } from './useAdminServerLogs'
+export type { UseAdminServerLogsResult } from './useAdminServerLogs'

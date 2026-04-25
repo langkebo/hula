@@ -2,74 +2,44 @@ import { ref, type Ref } from 'vue'
 import { adminService } from '@/services/matrix'
 
 export interface UseAdminSecurityResult {
-  events: Ref<Array<Record<string, unknown>>>
-  eventsLoading: Ref<boolean>
-  ipBlocks: Ref<Array<Record<string, unknown>>>
-  ipBlocksLoading: Ref<boolean>
+  auditLogs: Ref<Array<Record<string, unknown>>>
+  loading: Ref<boolean>
+  nextBatch: Ref<string | undefined>
 
-  loadEvents: (limit?: number, from?: string, filters?: Record<string, unknown>) => Promise<void>
-  loadIpBlocks: () => Promise<void>
-
-  blockIp: (ip: string, options?: { cidr?: number; expireAt?: number; reason?: string }) => Promise<void>
-  unblockIp: (ip: string) => Promise<void>
-  getIpReputation: (ip: string) => Promise<Record<string, unknown> | null>
+  loadAuditLogs: (limit?: number, from?: string, userId?: string, eventType?: string) => Promise<void>
 }
 
 /**
  * Admin security composable.
  *
- * Wraps `adminService.getSecurityEvents` / `getIpBlocks` / `blockIp` /
- * `unblockIp` / `getIpReputation`. Backend feature is UX-gated —
- * `AdminSecurity.vue` currently shows the "not ready" banner.
+ * Modified to focus on direct consumption of audit events,
+ * avoiding unimplemented legacy security event endpoints.
  */
 export function useAdminSecurity(): UseAdminSecurityResult {
-  const events = ref<Array<Record<string, unknown>>>([])
-  const eventsLoading = ref(false)
-  const ipBlocks = ref<Array<Record<string, unknown>>>([])
-  const ipBlocksLoading = ref(false)
+  const auditLogs = ref<Array<Record<string, unknown>>>([])
+  const loading = ref(false)
+  const nextBatch = ref<string | undefined>(undefined)
 
-  async function loadEvents(limit = 100, from?: string, filters?: Record<string, unknown>) {
-    eventsLoading.value = true
+  async function loadAuditLogs(limit = 50, from?: string, userId?: string, eventType?: string) {
+    loading.value = true
     try {
-      const result = await adminService.getSecurityEvents(limit, from, filters)
-      events.value = result?.events ?? []
+      const result = await adminService.security.getAuditLog(limit, from, userId, eventType)
+      if (from) {
+        auditLogs.value = [...auditLogs.value, ...(result?.logs ?? [])]
+      } else {
+        auditLogs.value = result?.logs ?? []
+      }
+      nextBatch.value = result?.next_batch
+    } catch (_e) {
     } finally {
-      eventsLoading.value = false
+      loading.value = false
     }
-  }
-
-  async function loadIpBlocks() {
-    ipBlocksLoading.value = true
-    try {
-      ipBlocks.value = (await adminService.getIpBlocks()) ?? []
-    } finally {
-      ipBlocksLoading.value = false
-    }
-  }
-
-  async function blockIp(ip: string, options?: { cidr?: number; expireAt?: number; reason?: string }) {
-    await adminService.blockIp(ip, options)
-    await loadIpBlocks()
-  }
-
-  async function unblockIp(ip: string) {
-    await adminService.unblockIp(ip)
-    await loadIpBlocks()
-  }
-
-  async function getIpReputation(ip: string) {
-    return await adminService.getIpReputation(ip)
   }
 
   return {
-    events,
-    eventsLoading,
-    ipBlocks,
-    ipBlocksLoading,
-    loadEvents,
-    loadIpBlocks,
-    blockIp,
-    unblockIp,
-    getIpReputation
+    auditLogs,
+    loading,
+    nextBatch,
+    loadAuditLogs
   }
 }

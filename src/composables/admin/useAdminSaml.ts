@@ -2,44 +2,86 @@ import { ref, type Ref } from 'vue'
 import { adminService } from '@/services/matrix'
 
 export interface UseAdminSamlResult {
-  config: Ref<Record<string, unknown>>
+  idpMetadata: Ref<Record<string, unknown>>
+  spMetadata: Ref<string | null>
   loading: Ref<boolean>
-  saving: Ref<boolean>
+  refreshing: Ref<boolean>
 
-  loadConfig: () => Promise<void>
-  updateConfig: (updates: Record<string, unknown>) => Promise<void>
+  loadMetadata: () => Promise<void>
+  refreshMetadata: () => Promise<void>
+  downloadSpMetadata: () => Promise<void>
 }
 
 /**
  * Admin SAML composable.
  *
- * Wraps `adminService.getSamlConfig` + `updateSamlConfig` so desktop / mobile
- * views share the same state. Backend feature is UX-gated — views should
- * still show the "not ready" banner until synapse-rust ships it.
+ * Modified to focus on IdP/SP metadata + refresh functionality,
+ * avoiding unimplemented legacy config endpoints.
  */
 export function useAdminSaml(): UseAdminSamlResult {
-  const config = ref<Record<string, unknown>>({})
+  const idpMetadata = ref<Record<string, unknown>>({})
+  const spMetadata = ref<string | null>(null)
   const loading = ref(false)
-  const saving = ref(false)
+  const refreshing = ref(false)
 
-  async function loadConfig() {
+  async function loadMetadata() {
     loading.value = true
     try {
-      config.value = await adminService.getSamlConfig()
+      // Get IdP Metadata
+      idpMetadata.value = await adminService.security.getSamlMetadata()
+
+      // Try to get SP Metadata if needed, or just let download handle it
+      const sp = await adminService.security.getSpMetadata()
+      if (sp instanceof Blob) {
+        spMetadata.value = await sp.text()
+      } else if (typeof sp === 'string') {
+        spMetadata.value = sp
+      }
+    } catch (_e) {
     } finally {
       loading.value = false
     }
   }
 
-  async function updateConfig(updates: Record<string, unknown>) {
-    saving.value = true
+  async function refreshMetadata() {
+    refreshing.value = true
     try {
-      await adminService.updateSamlConfig(updates)
-      await loadConfig()
+      idpMetadata.value = await adminService.security.refreshIdpMetadata()
     } finally {
-      saving.value = false
+      refreshing.value = false
     }
   }
 
-  return { config, loading, saving, loadConfig, updateConfig }
+  async function downloadSpMetadata() {
+    try {
+      const blobOrString = await adminService.security.getSpMetadata()
+      let blob: Blob
+      if (blobOrString instanceof Blob) {
+        blob = blobOrString
+      } else if (typeof blobOrString === 'string') {
+        blob = new Blob([blobOrString], { type: 'application/xml' })
+      } else {
+        return
+      }
+
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'saml_sp_metadata.xml'
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (_e) {}
+  }
+
+  return {
+    idpMetadata,
+    spMetadata,
+    loading,
+    refreshing,
+    loadMetadata,
+    refreshMetadata,
+    downloadSpMetadata
+  }
 }
