@@ -3,8 +3,11 @@ import { useAdminSaml } from '../useAdminSaml'
 
 vi.mock('@/services/matrix', () => ({
   adminService: {
-    getSamlConfig: vi.fn().mockResolvedValue({}),
-    updateSamlConfig: vi.fn().mockResolvedValue(undefined)
+    security: {
+      getSamlMetadata: vi.fn().mockResolvedValue({}),
+      getSpMetadata: vi.fn().mockResolvedValue(''),
+      refreshIdpMetadata: vi.fn().mockResolvedValue({})
+    }
   }
 }))
 
@@ -15,33 +18,34 @@ describe('useAdminSaml', () => {
     vi.clearAllMocks()
   })
 
-  it('loadConfig populates ref', async () => {
-    vi.mocked(adminService.getSamlConfig).mockResolvedValueOnce({ idp_id: 'saml1' })
+  it('loadMetadata populates refs', async () => {
+    vi.mocked(adminService.security.getSamlMetadata).mockResolvedValueOnce({ entity_id: 'saml1' })
+    vi.mocked(adminService.security.getSpMetadata).mockResolvedValueOnce('<xml />')
     const c = useAdminSaml()
-    await c.loadConfig()
-    expect(c.config.value).toEqual({ idp_id: 'saml1' })
+    await c.loadMetadata()
+    expect(c.idpMetadata.value).toEqual({ entity_id: 'saml1' })
+    expect(c.spMetadata.value).toBe('<xml />')
   })
 
-  it('loading flag toggles around loadConfig', async () => {
+  it('loading flag toggles around loadMetadata', async () => {
     const c = useAdminSaml()
-    const p = c.loadConfig()
+    const p = c.loadMetadata()
     expect(c.loading.value).toBe(true)
     await p
     expect(c.loading.value).toBe(false)
   })
 
-  it('updateConfig calls service and reloads', async () => {
+  it('refreshMetadata calls service and updates idp metadata', async () => {
     const c = useAdminSaml()
-    await c.updateConfig({ sp_entity_id: 'sp1' })
-    expect(adminService.updateSamlConfig).toHaveBeenCalledWith({ sp_entity_id: 'sp1' })
-    expect(adminService.getSamlConfig).toHaveBeenCalledTimes(1)
+    await c.refreshMetadata()
+    expect(adminService.security.refreshIdpMetadata).toHaveBeenCalledTimes(1)
   })
 
-  it('saving flag toggles around updateConfig', async () => {
+  it('refreshing flag toggles around refreshMetadata', async () => {
     const c = useAdminSaml()
-    const p = c.updateConfig({})
-    expect(c.saving.value).toBe(true)
+    const p = c.refreshMetadata()
+    expect(c.refreshing.value).toBe(true)
     await p
-    expect(c.saving.value).toBe(false)
+    expect(c.refreshing.value).toBe(false)
   })
 })
