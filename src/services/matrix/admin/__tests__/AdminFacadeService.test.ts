@@ -235,6 +235,145 @@ describe('adminService facade', () => {
       expect(result.nextToken).toBe('abc')
     })
 
+    it('should get user via legacy facade delegator', async () => {
+      mockAdminManager.getUser.mockResolvedValue({
+        name: '@user:server',
+        displayname: 'User',
+        admin: true,
+        deactivated: false
+      })
+
+      const result = await adminService.getUser('@user:server')
+
+      expect(result).toEqual({
+        userId: '@user:server',
+        name: '@user:server',
+        displayname: 'User',
+        admin: true,
+        deactivated: false
+      })
+      expect(mockAdminManager.getUser).toHaveBeenCalledWith('@user:server', false)
+    })
+
+    it('should create and update users via legacy facade delegators', async () => {
+      mockAdminManager.createUser.mockResolvedValue({ name: '@new:server.com' })
+
+      const created = await adminService.createUser('new', 'pass', {
+        admin: true,
+        displayname: 'New User',
+        deactivated: false
+      })
+
+      expect(created).toEqual({
+        userId: '@new:server.com',
+        name: 'new',
+        admin: true,
+        displayname: 'New User'
+      })
+      expect(mockAdminManager.createUser).toHaveBeenCalledWith('@new:server.com', {
+        password: 'pass',
+        admin: true,
+        displayname: 'New User',
+        deactivated: false
+      })
+
+      await expect(adminService.resetPassword('@user:server.com', 'newpass')).resolves.toBeUndefined()
+      expect(mockAdminManager.resetPassword).toHaveBeenCalledWith('@user:server.com', 'newpass')
+
+      await expect(adminService.setAdmin('@user:server.com', true)).resolves.toBeUndefined()
+      expect(mockAdminManager.setAdmin).toHaveBeenCalledWith('@user:server.com', true)
+
+      await expect(adminService.deactivateUser('@user:server.com')).resolves.toBeUndefined()
+      expect(mockAdminManager.deactivateUser).toHaveBeenCalledWith('@user:server.com')
+    })
+
+    it('should manage user devices via legacy facade delegators', async () => {
+      mockAdminManager.getUserDevices.mockResolvedValue([
+        {
+          device_id: 'dev1',
+          display_name: 'Phone',
+          last_seen_ip: '1.2.3.4',
+          last_seen_ts: 123456
+        }
+      ])
+
+      const devices = await adminService.getUserDevices('@user:server')
+
+      expect(devices).toEqual([
+        {
+          deviceId: 'dev1',
+          displayName: 'Phone',
+          lastSeenIp: '1.2.3.4',
+          lastSeenTs: 123456,
+          userAgent: undefined
+        }
+      ])
+      expect(mockAdminManager.getUserDevices).toHaveBeenCalledWith('@user:server')
+
+      await expect(adminService.deleteUserDevice('@user:server', 'dev1')).resolves.toBeUndefined()
+      expect(mockAdminManager.deleteUserDevice).toHaveBeenCalledWith('@user:server', 'dev1')
+
+      await expect(adminService.deleteUserDevices('@user:server', ['dev1', 'dev2'])).resolves.toBeUndefined()
+      expect(mockAdminManager.deleteUserDevices).toHaveBeenCalledWith('@user:server', ['dev1', 'dev2'])
+    })
+
+    it('should manage legacy rate limit delegators', async () => {
+      mockAdminManager.getRateLimitOverride.mockResolvedValue({
+        messages_per_second: 5,
+        burst_count: 10
+      })
+
+      const rateLimit = await adminService.getRateLimit('@user:server')
+
+      expect(rateLimit).toEqual({
+        messagesPerSecond: 5,
+        burstCount: 10
+      })
+      expect(mockAdminManager.getRateLimitOverride).toHaveBeenCalledWith('@user:server', false)
+
+      await expect(
+        adminService.setRateLimit('@user:server', {
+          messagesPerSecond: 20,
+          burstCount: 40
+        })
+      ).resolves.toBeUndefined()
+      expect(mockAdminManager.overrideRateLimit).toHaveBeenCalledWith('@user:server')
+
+      await expect(adminService.deleteRateLimit('@user:server')).resolves.toBeUndefined()
+      expect(mockAdminManager.deleteRateLimitOverride).toHaveBeenCalledWith('@user:server')
+    })
+
+    it('should manage shadow ban status and whois via legacy facade delegators', async () => {
+      mockAdminManager.getShadowBanStatus.mockResolvedValue({
+        banned: true,
+        banned_at: 123456
+      })
+      mockAdminManager.whois.mockResolvedValue({
+        user_id: '@user:server',
+        devices: { dev1: { sessions: [] } }
+      })
+
+      await expect(adminService.shadowBanUser('@user:server')).resolves.toBeUndefined()
+      expect(mockAdminManager.shadowBanUser).toHaveBeenCalledWith('@user:server')
+
+      await expect(adminService.unshadowBanUser('@user:server')).resolves.toBeUndefined()
+      expect(mockAdminManager.unshadowBanUser).toHaveBeenCalledWith('@user:server')
+
+      const shadowBanStatus = await adminService.getShadowBanStatus('@user:server')
+      expect(shadowBanStatus).toEqual({
+        banned: true,
+        bannedAt: 123456
+      })
+      expect(mockAdminManager.getShadowBanStatus).toHaveBeenCalledWith('@user:server')
+
+      const whois = await adminService.getWhois('@user:server')
+      expect(whois).toEqual({
+        user_id: '@user:server',
+        devices: { dev1: { sessions: [] } }
+      })
+      expect(mockAdminManager.whois).toHaveBeenCalledWith('@user:server')
+    })
+
     it('should get user rooms via SDK', async () => {
       mockAdminManager.getUserRooms.mockResolvedValue({
         rooms: [{ room_id: '!room:server', membership: 'join', is_room_admin: true }]

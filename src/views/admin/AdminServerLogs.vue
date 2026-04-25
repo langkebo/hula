@@ -2,106 +2,120 @@
   <div class="admin-server-logs">
     <n-page-header :title="t('admin.logs.title')" :subtitle="t('admin.logs.subtitle')">
       <template #extra>
-        <n-space>
-          <n-select
-            v-model:value="logLevel"
-            :options="levelOptions"
-            :placeholder="t('admin.logs.filter_level')"
-            clearable
-            style="width: 130px"
-          />
-          <n-button @click="loadLogs" :loading="loading">
-            {{ t('common.refresh') }}
-          </n-button>
-        </n-space>
+        <n-button @click="loadPanel" :loading="loading">
+          {{ t('common.refresh') }}
+        </n-button>
       </template>
     </n-page-header>
 
-    <n-alert type="warning" title="功能尚未就绪 / Feature not available" class="my-12px">
-      后端 `/logs` 端点未实现，页面数据将为空。Backend `/logs` endpoint is not implemented; this page will show no data.
+    <n-alert type="info" class="my-12px">
+      此页已切换为服务器状态面板，直接消费后端已实现的状态、健康、版本与统计接口。
     </n-alert>
 
-    <div class="log-container" ref="logContainerRef">
-      <n-spin :show="loading" class="min-h-200px">
-        <div v-if="logs.length === 0 && !loading" class="flex-center h-200px opacity-50">
-          {{ t('admin.logs.empty') }}
-        </div>
-        <div v-for="(log, index) in logs" :key="index" class="log-entry" :class="`log-entry--${log.level}`">
-          <span class="log-time">{{ formatTime(log.timestamp) }}</span>
-          <n-tag :type="getLevelTagType(log.level)" size="small" class="log-level">{{ log.level }}</n-tag>
-          <span class="log-message">{{ log.message }}</span>
-        </div>
-      </n-spin>
+    <n-spin :show="loading">
+      <div class="panel-grid">
+        <n-card title="运行状态" size="small">
+          <n-descriptions bordered :column="1" label-placement="left">
+            <n-descriptions-item label="状态">
+              <n-tag :type="statusTagType">{{ statusLabel }}</n-tag>
+            </n-descriptions-item>
+            <n-descriptions-item label="运行时长">
+              {{ formatDuration(status?.uptime) }}
+            </n-descriptions-item>
+          </n-descriptions>
+        </n-card>
+
+        <n-card title="健康检查" size="small">
+          <n-descriptions bordered :column="1" label-placement="left">
+            <n-descriptions-item label="健康状态">
+              <n-tag :type="health?.healthy ? 'success' : 'error'">
+                {{ health?.healthy ? 'Healthy' : 'Unhealthy' }}
+              </n-tag>
+            </n-descriptions-item>
+            <n-descriptions-item label="检查项">
+              <pre class="panel-pre">{{ JSON.stringify(health?.checks ?? {}, null, 2) }}</pre>
+            </n-descriptions-item>
+          </n-descriptions>
+        </n-card>
+
+        <n-card title="版本信息" size="small">
+          <n-descriptions bordered :column="1" label-placement="left">
+            <n-descriptions-item label="Server">
+              {{ version?.serverVersion || '-' }}
+            </n-descriptions-item>
+            <n-descriptions-item label="Python">
+              {{ version?.pythonVersion || '-' }}
+            </n-descriptions-item>
+          </n-descriptions>
+        </n-card>
+
+        <n-card title="统计信息" size="small">
+          <n-descriptions bordered :column="1" label-placement="left">
+            <n-descriptions-item :label="t('admin.total_users')">
+              {{ stats?.userCount ?? '-' }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.total_rooms')">
+              {{ stats?.roomCount ?? '-' }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.active_users')">
+              {{ stats?.dailyActiveUsers ?? '-' }}
+            </n-descriptions-item>
+          </n-descriptions>
+        </n-card>
+      </div>
+    </n-spin>
+
+    <div v-if="!loading && !status && !health && !version && !stats" class="empty-state">
+      {{ t('admin.load_failed') }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { NPageHeader, NSpace, NButton, NSelect, NTag, NSpin, NAlert } from 'naive-ui'
+import { computed, onMounted } from 'vue'
+import { NPageHeader, NButton, NTag, NSpin, NAlert, NCard, NDescriptions, NDescriptionsItem } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { adminService } from '@/services/matrix'
-import { createLogger } from '@/utils/Logger'
+import { useAdminServerLogs } from '@/composables/admin'
 
-const logger = createLogger('AdminServerLogs')
 const { t } = useI18n()
+const { loading, status, health, version, stats, loadPanel } = useAdminServerLogs()
 
-interface LogEntry {
-  level: string
-  message: string
-  timestamp: number
-}
-
-const loading = ref(false)
-const logs = ref<LogEntry[]>([])
-const logLevel = ref<string | null>(null)
-const logContainerRef = ref<HTMLElement | null>(null)
-
-const levelOptions = computed(() => [
-  { label: 'DEBUG', value: 'debug' },
-  { label: 'INFO', value: 'info' },
-  { label: 'WARN', value: 'warn' },
-  { label: 'ERROR', value: 'error' }
-])
-
-function getLevelTagType(level: string): 'info' | 'success' | 'warning' | 'error' {
-  switch (level.toLowerCase()) {
-    case 'error':
-      return 'error'
-    case 'warn':
-      return 'warning'
-    case 'info':
-      return 'info'
+const statusLabel = computed(() => {
+  switch (status.value?.status) {
+    case 'online':
+      return 'Online'
+    case 'degraded':
+      return 'Degraded'
+    case 'offline':
+      return 'Offline'
     default:
+      return '-'
+  }
+})
+
+const statusTagType = computed(() => {
+  switch (status.value?.status) {
+    case 'online':
       return 'success'
+    case 'degraded':
+      return 'warning'
+    case 'offline':
+      return 'error'
+    default:
+      return 'default'
   }
+})
+
+function formatDuration(value?: number): string {
+  if (!value) return '-'
+  const seconds = value > 1_000_000 ? Math.floor(value / 1000) : Math.floor(value)
+  const days = Math.floor(seconds / 86400)
+  const hours = Math.floor((seconds % 86400) / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  return `${days}d ${hours}h ${minutes}m`
 }
 
-function formatTime(ts: number): string {
-  if (!ts) return ''
-  return new Date(ts).toLocaleTimeString()
-}
-
-async function loadLogs() {
-  loading.value = true
-  try {
-    const result = await adminService.getServerLogs(
-      logLevel.value as 'debug' | 'info' | 'warn' | 'error' | undefined,
-      200
-    )
-    logs.value = (Array.isArray(result) ? result : []).map((item: Record<string, unknown>) => ({
-      level: (item.level as string) || 'info',
-      message: (item.message as string) || '',
-      timestamp: (item.timestamp as number) || Date.now()
-    }))
-  } catch (err) {
-    logger.error('加载服务器日志失败:', err)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => loadLogs())
+onMounted(() => loadPanel())
 </script>
 
 <style scoped>
@@ -109,44 +123,21 @@ onMounted(() => loadLogs())
   padding: 16px 24px;
 }
 
-.log-container {
-  max-height: calc(100vh - 200px);
-  overflow-y: auto;
-  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-  font-size: 12px;
-  background: var(--bg-card, #fafafa);
-  border-radius: 8px;
-  padding: 12px;
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
-.log-entry {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 4px 0;
-  border-bottom: 1px solid var(--line-color, rgba(0, 0, 0, 0.05));
-  line-height: 1.6;
+.panel-pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.log-entry--error {
-  color: var(--color-danger, #d03050);
-}
-
-.log-entry--warn {
-  color: var(--color-warning, #f0a020);
-}
-
-.log-time {
-  flex-shrink: 0;
-  color: var(--text-color-tertiary, #999);
-  min-width: 80px;
-}
-
-.log-level {
-  flex-shrink: 0;
-}
-
-.log-message {
-  word-break: break-all;
+.empty-state {
+  padding: 48px 0;
+  text-align: center;
+  opacity: 0.6;
 }
 </style>

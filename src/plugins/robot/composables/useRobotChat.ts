@@ -1,12 +1,11 @@
-import { type InputInst } from 'naive-ui'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useUserStore } from '@/stores/domains/user/user'
 import { estimateMessageTokens } from '@/plugins/robot/utils/tokenEstimator'
 import { AiMsgContentTypeEnum } from '@/enums'
 import type { AIModel, ChatRole } from '@/services/matrix'
 import { aiService, conversationService, modelService } from '@/services/matrix'
-import type { AIAsyncGenerationResponse, AIConversation, VideoGenerationRequest } from '@/services/matrix/ai/AIService'
+import type { AIConversation } from '@/services/matrix/ai/AIService'
 import type { AIAudio, AIImage, AIVideo } from '@/types/matrix-api'
 import router from '@/router'
 import { createLogger } from '@/utils/Logger'
@@ -14,11 +13,13 @@ import { useAiProviderConfig } from '@/plugins/robot/composables/useAiProviderCo
 import { useAiMediaCache } from '@/plugins/robot/composables/useAiMediaCache'
 import { useAiHistoryView } from '@/plugins/robot/composables/useAiHistoryView'
 import { useAiGenerationParams } from '@/plugins/robot/composables/useAiGenerationParams'
+import { useAiGenerationPolling } from '@/plugins/robot/composables/useAiGenerationPolling'
+import { useAiMediaGeneration } from '@/plugins/robot/composables/useAiMediaGeneration'
+import { useAiStreaming } from '@/plugins/robot/composables/useAiStreaming'
 
 const logger = createLogger('RobotChat')
 const AI_THINKING_PLACEHOLDER = '正在思考中...'
 const MAX_MESSAGE_COUNT = 40
-const MAX_POLL_DURATION = 5 * 60 * 1000
 
 export interface ConversationMeta {
   id: string
@@ -116,18 +117,6 @@ export interface UseRobotChatOptions {
   msgInputRef: Ref<{ clearInput?: () => void } | undefined>
 }
 
-const extractGenerationTaskId = (result: AIAsyncGenerationResponse): number => {
-  if (typeof result === 'number') return result
-  if (typeof result === 'string') return Number(result)
-  return Number(result.id)
-}
-
-const getErrorMessage = (error: unknown) => {
-  if (error instanceof Error) return error.message
-  if (typeof error === 'string') return error
-  return '未知错误'
-}
-
 const toAiMsgContentType = (value: unknown): AiMsgContentTypeEnum | undefined => {
   if (typeof value === 'number' && Object.values(AiMsgContentTypeEnum).includes(value)) {
     return value as AiMsgContentTypeEnum
@@ -171,14 +160,9 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
   const { msgInputRef } = options
   const userStore = useUserStore()
 
-  const inputInstRef = ref<InputInst | null>(null)
   const isEdit = ref(false)
   const originalTitle = ref('')
 
-  const isAIStreaming = ref(false)
-  const currentAiRequestId = ref<string | null>(null)
-  const currentAiAccumulatedContent = ref('')
-  const lastAiPrompt = ref('')
   const currentChat = ref<ConversationMeta>({
     id: '0',
     title: '',
@@ -202,7 +186,9 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
   const loadingMessages = ref(false)
   const messageRenderVersion = ref(0)
   const serverTokenUsage = ref<number | null>(null)
-  const conversationTokens = computed(() => messageList.value.reduce((sum, item) => sum + estimateMessageTokens(item), 0))
+  const conversationTokens = computed(() =>
+    messageList.value.reduce((sum, item) => sum + estimateMessageTokens(item), 0)
+  )
 
   const showDeleteChatConfirm = ref(false)
   const deleteWithMessages = ref(false)
@@ -265,8 +251,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     handleVideoImageUpload
   } = useAiGenerationParams()
 
-  const pollingTasks = new Map<number, { timerId: number; conversationId: string; startedAt: number }>()
-
   const features = ref([
     { icon: 'model', label: '模型' },
     { icon: 'voice', label: '语音输入' },
@@ -324,8 +308,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     showImagePreview,
     showVideoPreview,
     previewItem,
-    loadHistory,
-    handleOpenHistory,
     switchHistoryType,
     handleHistoryPageChange,
     handleImagePreview,
@@ -337,17 +319,38 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     messageRenderVersion.value += 1
   }
 
+  const { stopAllPolling, stopConversationPolling, pollImageStatus, pollVideoStatus, pollAudioStatus } =
+    useAiGenerationPolling({
+      currentChat,
+      messageList,
+      bumpMessageRenderVersion,
+      ensureLocalAiImage,
+      ensureLocalAiVideo,
+      ensureLocalAiAudio,
+      getCurrentAudioInfo: () => ({
+        voice: audioParams.value.voice,
+        speed: audioParams.value.speed
+      })
+    })
+
+  const { generateImage, generateVideo, generateAudio } = useAiMediaGeneration({
+    currentChat,
+    conversationTokens,
+    messageList,
+    msgInputRef,
+    imageParams,
+    videoParams,
+    audioParams,
+    bumpMessageRenderVersion,
+    clearVideoImage,
+    pollImageStatus,
+    pollVideoStatus,
+    pollAudioStatus
+  })
+
   const loadRemainingUsage = async (modelId: string) => {
     if (!modelId) return
     remainingUsage.value = await aiService.getModelRemainingUsage({ modelId })
-  }
-
-  const getDefaultAvatar = () => 'https://img1.baidu.com/it/u=3613958228,3522035000&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=500'
-
-  const getModelAvatar = (model: AIModel | null) => {
-    if (!model) return getDefaultAvatar()
-    if (model.avatar) return model.avatar
-    return getDefaultAvatar()
   }
 
   const notifyConversationMetaChange = (payload: { messageCount?: number; createTime: number }) => {
@@ -372,20 +375,29 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     })
   }
 
-  const stopAllPolling = () => {
-    pollingTasks.forEach(({ timerId }) => window.clearInterval(timerId))
-    pollingTasks.clear()
-  }
+  const { isAIStreaming, sendAIMessage, handleStopAIStream, handleOpenClawSend } = useAiStreaming({
+    currentChat,
+    messageList,
+    conversationTokens,
+    reasoningEnabled,
+    msgInputRef,
+    isOpenClawConnected,
+    bumpMessageRenderVersion,
+    notifyConversationMetaChange,
+    loadRemainingUsage,
+    sendOpenClawMessage,
+    onTokenUsageUpdate: (usage) => {
+      serverTokenUsage.value = usage
+    }
+  })
 
-  const stopConversationPolling = (conversationId: string) => {
-    const tasksToStop: number[] = []
-    pollingTasks.forEach(({ timerId, conversationId: taskConversationId }, taskId) => {
-      if (taskConversationId === conversationId) {
-        window.clearInterval(timerId)
-        tasksToStop.push(taskId)
-      }
-    })
-    tasksToStop.forEach((taskId) => pollingTasks.delete(taskId))
+  const getDefaultAvatar = () =>
+    'https://img1.baidu.com/it/u=3613958228,3522035000&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=500'
+
+  const getModelAvatar = (model: AIModel | null) => {
+    if (!model) return getDefaultAvatar()
+    if (model.avatar) return model.avatar
+    return getDefaultAvatar()
   }
 
   const getMessageBubbleClass = (message: Message) => {
@@ -404,584 +416,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
   const getAiPlaceholderText = (message: Message) => {
     if (message.content && message.content.trim()) return message.content
     return isAIStreaming.value ? AI_THINKING_PLACEHOLDER : ''
-  }
-
-  const handleOpenClawSend = async (content: string) => {
-    if (!isOpenClawConnected.value) {
-      window.$message.warning('OpenClaw 未连接，请检查 Gateway')
-      return
-    }
-
-    messageList.value.push({
-      type: 'user',
-      msgType: AiMsgContentTypeEnum.TEXT,
-      content,
-      createTime: Date.now()
-    })
-    const aiMessageIndex = messageList.value.length
-    messageList.value.push({
-      type: 'assistant',
-      msgType: AiMsgContentTypeEnum.TEXT,
-      content: '',
-      createTime: Date.now()
-    })
-    bumpMessageRenderVersion()
-    isAIStreaming.value = true
-
-    try {
-      for await (const _ of sendOpenClawMessage(content, (text) => {
-        messageList.value[aiMessageIndex].content = text
-      })) {
-        // noop
-      }
-    } catch (error) {
-      logger.error('OpenClaw 发送失败:', error)
-      messageList.value[aiMessageIndex].content = `发送失败: ${error instanceof Error ? error.message : '未知错误'}`
-    } finally {
-      isAIStreaming.value = false
-    }
-  }
-
-  const sendAIMessage = async (content: string, model: AIModel) => {
-    try {
-      lastAiPrompt.value = content
-      currentAiAccumulatedContent.value = ''
-      const tokenBudget = Number(model?.maxTokens || 0)
-      if (tokenBudget > 0 && conversationTokens.value >= tokenBudget) {
-        window.$message.warning(`本会话 Token 已用完（${tokenBudget}），请新建会话或更换模型`)
-        return
-      }
-
-      window.$message.loading('AI思考中...', { duration: 0 })
-      messageList.value.push({
-        type: 'user',
-        msgType: AiMsgContentTypeEnum.TEXT,
-        content,
-        createTime: Date.now()
-      })
-      const aiMessageIndex = messageList.value.length
-      messageList.value.push({
-        type: 'assistant',
-        msgType: AiMsgContentTypeEnum.TEXT,
-        content: AI_THINKING_PLACEHOLDER,
-        createTime: Date.now()
-      })
-      bumpMessageRenderVersion()
-
-      let accumulatedContent = ''
-      let accumulatedReasoningContent = ''
-
-      currentChat.value.messageCount = (currentChat.value.messageCount || 0) + 2
-      notifyConversationMetaChange({
-        messageCount: currentChat.value.messageCount,
-        createTime: Date.now()
-      })
-
-      isAIStreaming.value = true
-      await aiService.messageSendStream(
-        currentChat.value.id,
-        content,
-        {
-          onStart: (requestId: string) => {
-            currentAiRequestId.value = requestId
-          },
-          onChunk: (chunk: string) => {
-            let handled = false
-            try {
-              const data = JSON.parse(chunk)
-              if (data && data.success && data.data?.receive) {
-                if (data.data.receive.content) {
-                  const incrementalContent = data.data.receive.content
-                  if (messageList.value[aiMessageIndex].content === AI_THINKING_PLACEHOLDER && accumulatedContent === '') {
-                    messageList.value[aiMessageIndex].content = ''
-                  }
-                  accumulatedContent += incrementalContent
-                  messageList.value[aiMessageIndex].content = accumulatedContent
-                  currentAiAccumulatedContent.value = accumulatedContent
-                }
-                if (data.data.receive.reasoningContent) {
-                  const incrementalReasoningContent = data.data.receive.reasoningContent
-                  accumulatedReasoningContent += incrementalReasoningContent
-                  messageList.value[aiMessageIndex].reasoningContent = accumulatedReasoningContent
-                }
-                if (data.data.receive.msgType !== undefined) {
-                  messageList.value[aiMessageIndex].msgType = data.data.receive.msgType
-                }
-                handled = true
-              }
-            } catch {
-              // ignore invalid chunks
-            }
-
-            if (!handled) {
-              const incrementalContent = chunk || ''
-              if (messageList.value[aiMessageIndex].content === AI_THINKING_PLACEHOLDER && accumulatedContent === '') {
-                messageList.value[aiMessageIndex].content = ''
-              }
-              accumulatedContent += incrementalContent
-              messageList.value[aiMessageIndex].content = accumulatedContent
-              currentAiAccumulatedContent.value = accumulatedContent
-            }
-          },
-          onDone: () => {
-            isAIStreaming.value = false
-            currentAiRequestId.value = null
-            const latestEntry = messageList.value[messageList.value.length - 1]
-            const latestTimestamp = latestEntry?.createTime ?? currentChat.value.createTime ?? Date.now()
-            notifyConversationMetaChange({ createTime: latestTimestamp })
-
-            if (currentChat.value.id && currentChat.value.id !== '0') {
-              aiService
-                .conversationGetMy({ id: currentChat.value.id })
-                .then((conversationList) => {
-                  const conversation = Array.isArray(conversationList)
-                    ? (conversationList[0] as ConversationUsage | undefined)
-                    : undefined
-                  if (conversation && typeof conversation.tokenUsage === 'number') {
-                    serverTokenUsage.value = conversation.tokenUsage
-                  }
-                })
-                .catch(() => {})
-
-              if (model.id) {
-                void loadRemainingUsage(model.id)
-              }
-
-              if (!messageList.value[aiMessageIndex].reasoningContent) {
-                aiService
-                  .messageListByConversationId({ conversationId: currentChat.value.id, pageNo: 1, pageSize: 100 })
-                  .then((list) => {
-                    if (!Array.isArray(list) || list.length === 0) return
-                    const last = list[list.length - 1] as AIConversationMessage | undefined
-                    if (
-                      last &&
-                      (last.type === 'assistant' || last.role === 'assistant') &&
-                      typeof last.reasoningContent === 'string'
-                    ) {
-                      messageList.value[aiMessageIndex].reasoningContent = last.reasoningContent
-                    }
-                  })
-                  .catch(() => {})
-              }
-            }
-          },
-          onError: (error: string) => {
-            logger.error('AI流式响应错误:', error)
-            messageList.value[aiMessageIndex].content = `抱歉，发生了错误：${error}`
-            isAIStreaming.value = false
-            currentAiRequestId.value = null
-          }
-        },
-        true,
-        reasoningEnabled.value
-      )
-
-      msgInputRef.value?.clearInput?.()
-    } catch (error) {
-      logger.error('AI消息发送失败:', error)
-      window.$message.error('发送失败，请检查网络连接')
-    } finally {
-      window.$message.destroyAll()
-    }
-  }
-
-  const handleStopAIStream = async () => {
-    if (!isAIStreaming.value || !currentAiRequestId.value) return
-    try {
-      window.$message.destroyAll()
-      await aiService.messageCancelStream(currentAiRequestId.value)
-      await new Promise((resolve) => setTimeout(resolve, 180))
-      const lastMessage = messageList.value[messageList.value.length - 1]
-      if (lastMessage && lastMessage.type === 'assistant' && lastMessage.content === AI_THINKING_PLACEHOLDER) {
-        lastMessage.content = ''
-      }
-      const latest =
-        lastMessage && lastMessage.type === 'assistant' && lastMessage.content && lastMessage.content !== AI_THINKING_PLACEHOLDER
-          ? lastMessage.content
-          : currentAiAccumulatedContent.value
-      if (latest && latest.trim()) {
-        await aiService.messageSaveGeneratedContent({
-          conversationId: currentChat.value.id,
-          prompt: lastAiPrompt.value,
-          generatedContent: latest
-        })
-      }
-      window.$message.success('已停止生成')
-    } catch (error) {
-      logger.error('停止生成失败:', error)
-      window.$message.error('停止生成失败')
-    } finally {
-      isAIStreaming.value = false
-      currentAiRequestId.value = null
-    }
-  }
-
-  const pollImageStatus = async (
-    imageId: number,
-    messageIndex: number,
-    prompt: string,
-    width: number,
-    height: number,
-    modelName: string
-  ) => {
-    const interval = 3000
-    const conversationId = currentChat.value.id
-
-    const poll = async () => {
-      const task = pollingTasks.get(imageId)
-      if (!task) return
-
-      if (Date.now() - task.startedAt > MAX_POLL_DURATION) {
-        window.clearInterval(task.timerId)
-        pollingTasks.delete(imageId)
-        messageList.value[messageIndex].content = '图片生成超时，请重试'
-        messageList.value[messageIndex].isGenerating = false
-        window.$message.warning('图片生成超时，已停止轮询')
-        return
-      }
-
-      try {
-        if (!pollingTasks.has(imageId)) return
-        const imageList = await aiService.imageMyListByIds({ ids: imageId.toString() })
-        if (!Array.isArray(imageList) || imageList.length === 0) {
-          messageList.value[messageIndex].content = '图片生成失败: 记录不存在'
-          messageList.value[messageIndex].isGenerating = false
-          pollingTasks.delete(imageId)
-          return
-        }
-
-        const image = imageList[0]
-        if (image.status === 20) {
-          messageList.value[messageIndex] = {
-            type: 'assistant',
-            content: image.picUrl || image.url,
-            msgType: AiMsgContentTypeEnum.IMAGE,
-            createTime: Date.now(),
-            isGenerating: false,
-            imageUrl: image.picUrl || image.url,
-            imageInfo: {
-              prompt,
-              width,
-              height,
-              model: modelName
-            }
-          }
-          void ensureLocalAiImage(image.picUrl || image.url, messageIndex)
-          window.$message.success('图片生成成功')
-          bumpMessageRenderVersion()
-          pollingTasks.delete(imageId)
-          return
-        }
-
-        if (image.status === 30) {
-          messageList.value[messageIndex].content = `图片生成失败: ${image.errorMessage || '未知错误'}`
-          messageList.value[messageIndex].isGenerating = false
-          window.$message.error('图片生成失败')
-          pollingTasks.delete(imageId)
-        }
-      } catch (error) {
-        logger.error('轮询图片状态失败:', error)
-        messageList.value[messageIndex].content = `查询状态失败: ${getErrorMessage(error)}`
-        messageList.value[messageIndex].isGenerating = false
-        pollingTasks.delete(imageId)
-      }
-    }
-
-    const timerId = window.setInterval(poll, interval)
-    pollingTasks.set(imageId, { timerId, conversationId, startedAt: Date.now() })
-    await poll()
-  }
-
-  const generateImage = async (prompt: string, model: AIModel) => {
-    try {
-      const tokenBudget = Number(model?.maxTokens || 0)
-      if (tokenBudget > 0 && conversationTokens.value >= tokenBudget) {
-        window.$message.warning(`本会话 Token 已用完（${tokenBudget}），请新建会话或更换模型`)
-        return
-      }
-
-      messageList.value.push({
-        type: 'user',
-        content: prompt,
-        msgType: AiMsgContentTypeEnum.IMAGE,
-        createTime: Date.now()
-      })
-      const aiMessageIndex = messageList.value.length
-      messageList.value.push({
-        type: 'assistant',
-        msgType: AiMsgContentTypeEnum.IMAGE,
-        content: AI_THINKING_PLACEHOLDER,
-        createTime: Date.now(),
-        isGenerating: true
-      })
-      bumpMessageRenderVersion()
-
-      const [width, height] = imageParams.value.size.split('x').map(Number)
-      const imageResult = await aiService.generateImage({
-        modelId: String(model.id),
-        prompt,
-        width,
-        height,
-        conversationId: currentChat.value.id
-      })
-      const imageId = extractGenerationTaskId(imageResult)
-      void pollImageStatus(imageId, aiMessageIndex, prompt, width, height, model.name)
-      msgInputRef.value?.clearInput?.()
-    } catch (error) {
-      logger.error('图片生成失败:', error)
-      const lastMessage = messageList.value[messageList.value.length - 1]
-      if (lastMessage?.isGenerating) {
-        lastMessage.content = `图片生成失败: ${getErrorMessage(error)}`
-        lastMessage.isGenerating = false
-      }
-      window.$message.error('图片生成失败，请检查网络连接')
-    }
-  }
-
-  const pollVideoStatus = async (
-    videoId: number,
-    messageIndex: number,
-    prompt: string,
-    width: number,
-    height: number,
-    modelName: string
-  ) => {
-    const interval = 5000
-    const conversationId = currentChat.value.id
-
-    const poll = async () => {
-      const task = pollingTasks.get(videoId)
-      if (!task) return
-
-      if (Date.now() - task.startedAt > MAX_POLL_DURATION) {
-        window.clearInterval(task.timerId)
-        pollingTasks.delete(videoId)
-        messageList.value[messageIndex].content = '视频生成超时，请重试'
-        messageList.value[messageIndex].isGenerating = false
-        window.$message.warning('视频生成超时，已停止轮询')
-        return
-      }
-
-      try {
-        if (!pollingTasks.has(videoId)) return
-        const videoList = await aiService.videoMyListByIds({ ids: videoId.toString() })
-        if (!Array.isArray(videoList) || videoList.length === 0) {
-          messageList.value[messageIndex].content = '视频生成失败: 记录不存在'
-          messageList.value[messageIndex].isGenerating = false
-          pollingTasks.delete(videoId)
-          return
-        }
-
-        const video = videoList[0]
-        if (video.status === 20) {
-          messageList.value[messageIndex] = {
-            type: 'assistant',
-            content: video.videoUrl || video.url,
-            msgType: AiMsgContentTypeEnum.VIDEO,
-            createTime: Date.now(),
-            isGenerating: false,
-            videoUrl: video.videoUrl || video.url,
-            videoInfo: {
-              prompt,
-              width,
-              height,
-              model: modelName
-            }
-          }
-          void ensureLocalAiVideo(video.videoUrl || video.url, messageIndex)
-          window.$message.success('视频生成成功')
-          bumpMessageRenderVersion()
-          pollingTasks.delete(videoId)
-          return
-        }
-
-        if (video.status === 30) {
-          messageList.value[messageIndex].content = `视频生成失败: ${video.errorMessage || '未知错误'}`
-          messageList.value[messageIndex].isGenerating = false
-          window.$message.error('视频生成失败')
-          pollingTasks.delete(videoId)
-        }
-      } catch (error) {
-        logger.error('轮询视频状态失败:', error)
-        messageList.value[messageIndex].content = `查询状态失败: ${getErrorMessage(error)}`
-        messageList.value[messageIndex].isGenerating = false
-        pollingTasks.delete(videoId)
-      }
-    }
-
-    const timerId = window.setInterval(poll, interval)
-    pollingTasks.set(videoId, { timerId, conversationId, startedAt: Date.now() })
-    await poll()
-  }
-
-  const generateVideo = async (prompt: string, model: AIModel) => {
-    try {
-      const tokenBudget = Number(model?.maxTokens || 0)
-      if (tokenBudget > 0 && conversationTokens.value >= tokenBudget) {
-        window.$message.warning(`本会话 Token 已用完（${tokenBudget}），请新建会话或更换模型`)
-        return
-      }
-
-      messageList.value.push({
-        type: 'user',
-        msgType: AiMsgContentTypeEnum.VIDEO,
-        content: prompt,
-        createTime: Date.now()
-      })
-      const aiMessageIndex = messageList.value.length
-      messageList.value.push({
-        type: 'assistant',
-        msgType: AiMsgContentTypeEnum.VIDEO,
-        content: AI_THINKING_PLACEHOLDER,
-        createTime: Date.now(),
-        isGenerating: true
-      })
-      bumpMessageRenderVersion()
-
-      const [width, height] = videoParams.value.size.split('x').map(Number)
-      const requestBody: VideoGenerationRequest = {
-        modelId: String(model.id),
-        prompt,
-        width,
-        height,
-        duration: videoParams.value.duration,
-        conversationId: currentChat.value.id
-      }
-      if (videoParams.value.image) {
-        requestBody.options = {
-          image: videoParams.value.image
-        }
-      }
-
-      const videoResult = await aiService.videoGenerate(requestBody)
-      const videoId = extractGenerationTaskId(videoResult)
-      void pollVideoStatus(videoId, aiMessageIndex, prompt, width, height, model.name)
-      msgInputRef.value?.clearInput?.()
-      clearVideoImage()
-    } catch (error) {
-      logger.error('视频生成失败:', error)
-      const lastMessage = messageList.value[messageList.value.length - 1]
-      if (lastMessage?.isGenerating) {
-        lastMessage.content = `视频生成失败: ${getErrorMessage(error)}`
-        lastMessage.isGenerating = false
-      }
-      window.$message.error('视频生成失败，请检查网络连接')
-    }
-  }
-
-  const pollAudioStatus = async (audioId: number, messageIndex: number, prompt: string, modelName: string) => {
-    const interval = 3000
-    const conversationId = currentChat.value.id
-
-    const poll = async () => {
-      const task = pollingTasks.get(audioId)
-      if (!task) return
-
-      if (Date.now() - task.startedAt > MAX_POLL_DURATION) {
-        window.clearInterval(task.timerId)
-        pollingTasks.delete(audioId)
-        messageList.value[messageIndex].content = '音频生成超时，请重试'
-        messageList.value[messageIndex].isGenerating = false
-        window.$message.warning('音频生成超时，已停止轮询')
-        return
-      }
-
-      try {
-        if (!pollingTasks.has(audioId)) return
-        const audioList = await aiService.audioMyListByIds({ ids: audioId.toString() })
-        if (!Array.isArray(audioList) || audioList.length === 0) {
-          messageList.value[messageIndex].content = '音频生成失败: 记录不存在'
-          messageList.value[messageIndex].isGenerating = false
-          pollingTasks.delete(audioId)
-          return
-        }
-
-        const audio = audioList[0]
-        if (audio.status === 20) {
-          messageList.value[messageIndex] = {
-            type: 'assistant',
-            content: audio.audioUrl || audio.url,
-            msgType: AiMsgContentTypeEnum.AUDIO,
-            createTime: Date.now(),
-            isGenerating: false,
-            audioUrl: audio.audioUrl || audio.url,
-            audioInfo: {
-              prompt,
-              model: modelName,
-              voice: audioParams.value.voice,
-              speed: audioParams.value.speed
-            }
-          }
-          void ensureLocalAiAudio(audio.audioUrl || audio.url, messageIndex)
-          window.$message.success('音频生成成功')
-          bumpMessageRenderVersion()
-          pollingTasks.delete(audioId)
-          return
-        }
-
-        if (audio.status === 30) {
-          messageList.value[messageIndex].content = `音频生成失败: ${audio.errorMessage || '未知错误'}`
-          messageList.value[messageIndex].isGenerating = false
-          window.$message.error('音频生成失败')
-          pollingTasks.delete(audioId)
-        }
-      } catch (error) {
-        messageList.value[messageIndex].content = `查询状态失败: ${getErrorMessage(error)}`
-        messageList.value[messageIndex].isGenerating = false
-        pollingTasks.delete(audioId)
-      }
-    }
-
-    const timerId = window.setInterval(poll, interval)
-    pollingTasks.set(audioId, { timerId, conversationId, startedAt: Date.now() })
-    await poll()
-  }
-
-  const generateAudio = async (prompt: string, model: AIModel) => {
-    try {
-      const tokenBudget = Number(model?.maxTokens || 0)
-      if (tokenBudget > 0 && conversationTokens.value >= tokenBudget) {
-        window.$message.warning(`本会话 Token 已用完（${tokenBudget}），请新建会话或更换模型`)
-        return
-      }
-
-      messageList.value.push({
-        type: 'user',
-        msgType: AiMsgContentTypeEnum.AUDIO,
-        content: prompt,
-        createTime: Date.now()
-      })
-      const aiMessageIndex = messageList.value.length
-      messageList.value.push({
-        type: 'assistant',
-        msgType: AiMsgContentTypeEnum.AUDIO,
-        content: AI_THINKING_PLACEHOLDER,
-        createTime: Date.now(),
-        isGenerating: true
-      })
-      bumpMessageRenderVersion()
-
-      const audioResult = await aiService.audioGenerate({
-        modelId: model.id,
-        prompt,
-        conversationId: currentChat.value.id,
-        options: {
-          voice: audioParams.value.voice,
-          speed: String(audioParams.value.speed)
-        }
-      })
-      const audioId = extractGenerationTaskId(audioResult)
-      void pollAudioStatus(audioId, aiMessageIndex, prompt, model.name)
-      msgInputRef.value?.clearInput?.()
-    } catch (error) {
-      logger.error('音频生成失败:', error)
-      const lastMessage = messageList.value[messageList.value.length - 1]
-      if (lastMessage?.isGenerating) {
-        lastMessage.content = `音频生成失败: ${getErrorMessage(error)}`
-        lastMessage.isGenerating = false
-      }
-      window.$message.error('音频生成失败，请检查网络连接')
-    }
   }
 
   const handleSendAI = (data: { content: string }) => {
@@ -1143,9 +577,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
   const handleEdit = () => {
     originalTitle.value = currentChat.value.title
     isEdit.value = true
-    nextTick(() => {
-      inputInstRef.value?.select()
-    })
   }
 
   const loadMessages = async (conversationId: string) => {
@@ -1469,7 +900,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
   })
 
   return {
-    inputInstRef,
     isEdit,
     currentChat,
     remainingUsage,

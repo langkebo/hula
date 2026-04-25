@@ -1,34 +1,24 @@
 <template>
   <mobile-layout :title="t('admin.saml.title')" show-back>
     <div class="mobile-admin-saml">
-      <van-notice-bar :scrollable="false" mode="closeable" color="#9a5a00" background="#fff8e6">
-        {{ t('admin.feature_not_ready') }}
+      <van-notice-bar :scrollable="false" mode="closeable" color="#2a5f9e" background="#eef6ff">
+        {{ t('admin.saml.metadata_info') }}
       </van-notice-bar>
 
       <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-        <van-cell-group inset :title="t('admin.saml.config_tab')">
-          <van-field
-            v-model="form.idp_url"
-            :label="t('admin.saml.idp_url')"
-            :placeholder="t('admin.saml.idp_url_placeholder')" />
-          <van-field
-            v-model="form.idp_entity_id"
-            :label="t('admin.saml.idp_entity_id')"
-            :placeholder="t('admin.saml.idp_entity_id_placeholder')" />
-          <van-field
-            v-model="form.sp_url"
-            :label="t('admin.saml.sp_url')"
-            :placeholder="t('admin.saml.sp_url_placeholder')" />
-          <van-cell :title="t('admin.saml.enabled')">
-            <template #right-icon>
-              <van-switch v-model="form.enabled" size="20" />
-            </template>
-          </van-cell>
+        <van-cell-group inset :title="t('admin.saml.idp_metadata_tab')">
+          <van-cell :title="t('admin.saml.idp_entity_id')" :value="idpEntityId" />
+          <van-cell :title="t('admin.saml.idp_sso_url')" :value="idpSsoUrl" />
           <div class="action">
-            <van-button type="primary" block :loading="admin.saving.value" @click="onSave">
-              {{ t('common.save') }}
+            <van-button type="primary" block :loading="admin.refreshing.value" @click="onRefreshIdp">
+              {{ t('admin.saml.refresh_idp') }}
             </van-button>
           </div>
+        </van-cell-group>
+
+        <van-cell-group inset :title="t('admin.saml.sp_metadata_tab')">
+          <van-cell :title="t('admin.saml.download_sp_metadata')" is-link @click="admin.downloadSpMetadata()" />
+          <van-cell :label="admin.spMetadata.value || t('admin.saml.no_sp_metadata')" />
         </van-cell-group>
       </van-pull-refresh>
     </div>
@@ -36,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { showToast } from 'vant'
 import MobileLayout from '@/mobile/layout/index.vue'
@@ -48,29 +38,21 @@ const { t } = useI18n()
 
 const admin = useAdminSaml()
 const refreshing = ref(false)
-const form = reactive({
-  idp_url: '',
-  idp_entity_id: '',
-  sp_url: '',
-  enabled: false
+
+const idpEntityId = computed(() => {
+  const metadata = admin.idpMetadata.value
+  return (metadata.entity_id as string) || (metadata.entityId as string) || '-'
 })
 
-watch(
-  () => admin.config.value,
-  (cfg) => {
-    if (!cfg) return
-    form.idp_url = (cfg.idp_url as string) || ''
-    form.idp_entity_id = (cfg.idp_entity_id as string) || ''
-    form.sp_url = (cfg.sp_url as string) || ''
-    form.enabled = Boolean(cfg.enabled)
-  },
-  { immediate: true, deep: true }
-)
+const idpSsoUrl = computed(() => {
+  const metadata = admin.idpMetadata.value
+  return (metadata.sso_url as string) || (metadata.ssoUrl as string) || '-'
+})
 
 const onRefresh = async () => {
   refreshing.value = true
   try {
-    await admin.loadConfig()
+    await admin.loadMetadata()
   } catch (error) {
     logger.error('[MobileAdminSaml] load failed', error)
     showToast(t('admin.load_failed'))
@@ -79,13 +61,13 @@ const onRefresh = async () => {
   }
 }
 
-const onSave = async () => {
+const onRefreshIdp = async () => {
   try {
-    await admin.updateConfig({ ...form })
-    showToast(t('admin.operation_success'))
+    await admin.refreshMetadata()
+    showToast(t('admin.saml.refresh_success'))
   } catch (error) {
-    logger.error('[MobileAdminSaml] save failed', error)
-    showToast(t('admin.saml.save_failed'))
+    logger.error('[MobileAdminSaml] refresh failed', error)
+    showToast(t('admin.saml.refresh_failed'))
   }
 }
 

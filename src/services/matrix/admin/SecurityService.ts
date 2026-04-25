@@ -101,6 +101,30 @@ export class AdminSecurityService {
     }
   }
 
+  async getSamlMetadata(): Promise<Record<string, unknown>> {
+    try {
+      const admin = (await this.sdkAdmin()) as unknown as {
+        getSamlMetadata(): Promise<Record<string, unknown>>
+      }
+      return (await admin.getSamlMetadata()) ?? {}
+    } catch (err) {
+      error(`[MatrixAdmin] 获取 SAML 元数据失败: ${err}`)
+      return {}
+    }
+  }
+
+  async getSpMetadata(): Promise<Blob | string | null> {
+    try {
+      const admin = (await this.sdkAdmin()) as unknown as {
+        getSpMetadata(): Promise<Blob | string>
+      }
+      return (await admin.getSpMetadata()) ?? null
+    } catch (err) {
+      error(`[MatrixAdmin] 获取 SP 元数据失败: ${err}`)
+      return null
+    }
+  }
+
   async updateSamlConfig(config: Record<string, unknown>): Promise<void> {
     try {
       const admin = (await this.sdkAdmin()) as unknown as {
@@ -110,6 +134,20 @@ export class AdminSecurityService {
       info('[MatrixAdmin] 更新 SAML 配置成功')
     } catch (err) {
       error(`[MatrixAdmin] 更新 SAML 配置失败: ${err}`)
+      throw err
+    }
+  }
+
+  async refreshIdpMetadata(): Promise<Record<string, unknown>> {
+    try {
+      const admin = (await this.sdkAdmin()) as unknown as {
+        refreshIdpMetadata(): Promise<Record<string, unknown>>
+      }
+      const metadata = await admin.refreshIdpMetadata()
+      info('[MatrixAdmin] 刷新 SAML IdP 元数据成功')
+      return metadata ?? {}
+    } catch (err) {
+      error(`[MatrixAdmin] 刷新 SAML IdP 元数据失败: ${err}`)
       throw err
     }
   }

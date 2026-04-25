@@ -1,43 +1,20 @@
 <template>
   <mobile-layout :title="t('admin.security.title')" show-back>
     <div class="mobile-admin-security">
-      <van-notice-bar :scrollable="false" mode="closeable" color="#9a5a00" background="#fff8e6">
-        {{ t('admin.feature_not_ready') }}
+      <van-notice-bar :scrollable="false" mode="closeable" color="#2a5f9e" background="#eef6ff">
+        {{ t('admin.security.audit_info') }}
       </van-notice-bar>
 
-      <van-tabs v-model:active="tab">
-        <van-tab :title="t('admin.security.events_tab')" name="events">
-          <van-pull-refresh v-model="refreshingEvents" @refresh="onRefreshEvents">
-            <van-cell-group inset>
-              <van-cell
-                v-for="(ev, idx) in admin.events.value"
-                :key="idx"
-                :title="(ev.type as string) || '-'"
-                :label="(ev.description as string) || (ev.ip as string) || ''" />
-              <van-empty v-if="!admin.events.value.length" :description="t('admin.no_data')" />
-            </van-cell-group>
-          </van-pull-refresh>
-        </van-tab>
-
-        <van-tab :title="t('admin.security.ip_blocks_tab')" name="ips">
-          <van-pull-refresh v-model="refreshingIps" @refresh="onRefreshIps">
-            <van-cell-group inset>
-              <van-cell
-                v-for="(block, idx) in admin.ipBlocks.value"
-                :key="idx"
-                :title="(block.ip as string) || '-'"
-                :label="(block.reason as string) || ''">
-                <template #right-icon>
-                  <van-button size="mini" type="danger" @click="onUnblock(block.ip as string)">
-                    {{ t('admin.security.unblock') }}
-                  </van-button>
-                </template>
-              </van-cell>
-              <van-empty v-if="!admin.ipBlocks.value.length" :description="t('admin.no_data')" />
-            </van-cell-group>
-          </van-pull-refresh>
-        </van-tab>
-      </van-tabs>
+      <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+        <van-cell-group inset :title="t('admin.audit.title')">
+          <van-cell
+            v-for="(log, idx) in admin.auditLogs.value"
+            :key="(log.id as string) || idx"
+            :title="(log.action as string) || '-'"
+            :label="formatAuditLabel(log)" />
+          <van-empty v-if="!admin.auditLogs.value.length" :description="t('admin.logs.empty')" />
+        </van-cell-group>
+      </van-pull-refresh>
     </div>
   </mobile-layout>
 </template>
@@ -54,46 +31,29 @@ const logger = createLogger('MobileAdminSecurity')
 const { t } = useI18n()
 
 const admin = useAdminSecurity()
-const tab = ref<'events' | 'ips'>('events')
-const refreshingEvents = ref(false)
-const refreshingIps = ref(false)
+const refreshing = ref(false)
 
-const onRefreshEvents = async () => {
-  refreshingEvents.value = true
+function formatAuditLabel(log: Record<string, unknown>) {
+  const actor = (log.actor_id as string) || '-'
+  const resourceType = (log.resource_type as string) || '-'
+  const resourceId = (log.resource_id as string) || '-'
+  const result = (log.result as string) || '-'
+  return `${actor} | ${resourceType}:${resourceId} | ${result}`
+}
+
+const onRefresh = async () => {
+  refreshing.value = true
   try {
-    await admin.loadEvents()
+    await admin.loadAuditLogs()
   } catch (error) {
-    logger.error('[MobileAdminSecurity] events load failed', error)
+    logger.error('[MobileAdminSecurity] audit load failed', error)
     showToast(t('admin.load_failed'))
   } finally {
-    refreshingEvents.value = false
+    refreshing.value = false
   }
 }
 
-const onRefreshIps = async () => {
-  refreshingIps.value = true
-  try {
-    await admin.loadIpBlocks()
-  } catch (error) {
-    logger.error('[MobileAdminSecurity] ip blocks load failed', error)
-    showToast(t('admin.load_failed'))
-  } finally {
-    refreshingIps.value = false
-  }
-}
-
-const onUnblock = async (ip: string) => {
-  try {
-    await admin.unblockIp(ip)
-    showToast(t('admin.operation_success'))
-  } catch (error) {
-    logger.error('[MobileAdminSecurity] unblock failed', error)
-    showToast(t('admin.load_failed'))
-  }
-}
-
-onRefreshEvents()
-onRefreshIps()
+onRefresh()
 </script>
 
 <style scoped lang="scss">

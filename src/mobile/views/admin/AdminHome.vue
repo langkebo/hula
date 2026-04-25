@@ -25,7 +25,7 @@
         <van-cell :title="t('admin.maintenance')" icon="setting" is-link @click="handleNavigate('maintenance')" />
         <van-cell :title="t('admin.saml.title')" icon="lock" is-link @click="handleNavigate('saml')" />
         <van-cell :title="t('admin.security.title')" icon="shield-o" is-link @click="handleNavigate('security')" />
-        <van-cell :title="t('admin.server_logs.title')" icon="records" is-link @click="handleNavigate('server-logs')" />
+        <van-cell :title="t('admin.logs.title')" icon="records" is-link @click="handleNavigate('server-logs')" />
         <van-cell :title="t('admin.moderation')" icon="shield-o" is-link @click="handleNavigate('moderation')">
           <template #value>
             <van-tag v-if="reportCount > 0" type="danger">{{ reportCount }}</van-tag>

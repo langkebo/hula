@@ -40,7 +40,13 @@ export class AdminServerService {
       }
       const result = await admin.getServerStatus(false)
       if (!result) return null
-      return { status: result.up ? 'up' : 'down', uptime: result.uptime as number | undefined }
+      const up = Boolean(result.up ?? result.server_ok ?? result.db_ok)
+      const dbOk = Boolean(result.db_ok ?? up)
+      const serverOk = Boolean(result.server_ok ?? up)
+      return {
+        status: up ? (dbOk && serverOk ? 'online' : 'degraded') : 'offline',
+        uptime: result.uptime as number | undefined
+      }
     } catch (err) {
       error(`[AdminServer] 获取服务器状态失败: ${err}`)
       return null
@@ -54,9 +60,18 @@ export class AdminServerService {
       }
       const result = await admin.getServerHealth(false)
       if (!result) return null
+      const serverStatus = String(result.status ?? '').toLowerCase()
+      const databaseStatus = String(result.database ?? '').toLowerCase()
+      const healthy =
+        typeof result.healthy === 'boolean'
+          ? result.healthy
+          : ['ok', 'healthy', 'pass'].includes(serverStatus || databaseStatus)
       return {
-        healthy: (result.healthy as boolean | undefined) ?? true,
-        checks: result.checks as Record<string, unknown> | undefined
+        healthy,
+        checks: (result.checks as Record<string, unknown> | undefined) ?? {
+          server: { status: serverStatus || (healthy ? 'ok' : 'error') },
+          database: { status: databaseStatus || (healthy ? 'ok' : 'error') }
+        }
       }
     } catch (err) {
       error(`[AdminServer] 获取服务器健康状态失败: ${err}`)
