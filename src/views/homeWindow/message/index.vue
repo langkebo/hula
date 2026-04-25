@@ -184,7 +184,7 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { RecycleScroller } from 'vue-virtual-scroller'
 import { MittEnum, RoomTypeEnum, ThemeEnum, UserType, MsgEnum } from '@/enums'
-import { useCommon } from '@/hooks/useCommon.ts'
+import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
@@ -216,7 +216,6 @@ const { themes } = storeToRefs(settingStore)
 const { syncLoading } = storeToRefs(chatStore)
 const botDisplayText = computed(() => botStore.displayText)
 const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
-const { openMsgSession } = useCommon()
 const msgScrollbar = useTemplateRef<HTMLElement>('msg-scrollbar')
 const { handleMsgClick, handleMsgDelete, handleMsgDblclick, visibleMenu, visibleSpecialMenu } = useMessage()
 // 跟踪当前显示右键菜单的会话ID

@@ -147,7 +147,7 @@ import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { IsYesEnum, MittEnum } from '@/enums'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
-import { useCommon } from '@/hooks/useCommon.ts'
+import { countGraphemes } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { leftHook } from '@/layout/left/hook.ts'
@@ -166,7 +166,6 @@ const userStore = useUserStore()
 const { addListener } = useTauriListener()
 const loginHistoriesStore = useLoginHistoriesStore()
 const { editInfo, currentBadge, updateCurrentUserCache, saveEditInfo, toggleWarningBadge } = leftHook()
-const { countGraphemes } = useCommon()
 // 使用自定义hook处理头像上传
 const {
   fileInput: _fileInput,

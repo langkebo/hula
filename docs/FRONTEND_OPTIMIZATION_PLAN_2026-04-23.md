@@ -1431,3 +1431,30 @@ _Chat.vue 续作_
 - 下一轮可选方向：
   - 直接删除 `useCommon` 兼容层（grep 调用方，逐处替换为新 hook 的直接 import）
   - 或转 P0-4 Chat.vue 续作（待用户的 `src/plugins/robot/` 飞行中修改落地）
+
+---
+
+## Step 29 — useCommon 调用方收敛：纯函数 / 独立模块直接 import（2026-04-25）
+
+**目标**
+- 收敛 useCommon 仅作为编辑器装配器的角色，把"碰巧通过 useCommon re-export"取得的 `countGraphemes`（纯函数）/ `openMsgSession`（独立模块）两类调用方迁移为直接 import，彻底消除"为了拿一个纯函数而调一个 hook"的反模式
+
+**变更**（5 处调用方迁移，0 行业务逻辑改动）
+- `src/layout/left/components/InfoEdit.vue`：`const { countGraphemes } = useCommon()` → `import { countGraphemes } from '@/hooks/useCommon.ts'`
+- `src/views/friendWindow/AddFriendVerify.vue`：同上
+- `src/views/friendWindow/AddGroupVerify.vue`：同上
+- `src/views/homeWindow/SearchDetails.vue`：`const { openMsgSession } = useCommon()` → `import { openMsgSession } from '@/hooks/session/openMsgSession'`
+- `src/views/homeWindow/message/index.vue`：同上
+
+**保留**
+- `InfoPopover.vue` / `useChatMain.ts`：解构同时取 `userUid + openMsgSession`，useCommon 装配价值实际存在 → 不迁移
+- `MsgInput.vue` / `ChatFooter.vue` / `useMsgInput.ts`：消费编辑器 cluster（handlePaste / processFiles / insertNodeAtRange / triggerInputEvent / imgPaste），属于 useCommon 的核心装配场景 → 不迁移
+
+**验收**
+- `pnpm exec vue-tsc --noEmit` — 0 error
+- `pnpm test:run` 全量 — 2242/2242 全绿（与 Step 28 一致，无回归）
+
+**Step 29 状态**
+- useCommon 调用方语义清理 ✅
+- useCommon 现在的两条出口职责清晰：纯函数顶层导出（`countGraphemes` / `parseInnerText`）+ 编辑器装配 hook（`useCommon()` 仅供编辑器场景使用）
+- 后续可选：若用户接受，再把 `InfoPopover` / `useChatMain` 的 `userUid` 改为直接读 `useUserStore().userInfo!.uid`，则 useCommon 顶层就只剩纯编辑器装配
