@@ -11,7 +11,7 @@ import {
   RoomTypeEnum,
   TauriCommand
 } from '@/enums'
-import { useCommon } from '@/hooks/useCommon.ts'
+import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useDownload } from '@/hooks/useDownload'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
@@ -56,7 +56,6 @@ type UseChatMainOptions = {
 
 export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions = {}) => {
   const { t } = useI18n()
-  const { openMsgSession, userUid } = useCommon()
   const { createWebviewWindow, sendWindowPayload, startRtcCall } = useWindow()
   const { getLocalVideoPath, checkVideoDownloaded } = useVideoViewer()
   const settingStore = useSettingStore()
@@ -66,6 +65,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   const chatStore = useChatStore()
   const emojiStore = useEmojiStore()
   const userStore = useUserStore()
+  const userUid = computed(() => userStore.userInfo!.uid)
   const { downloadFile } = useDownload()
   const enableGroupNicknameModal = options.enableGroupNicknameModal ?? false
   const disableHistoryActions = options.disableHistoryActions ?? false
