@@ -47,7 +47,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
       return null
     }
     if (!emojiWorker) {
-      emojiWorker = new Worker(new URL('../workers/imageDownloader.ts', import.meta.url), { type: 'module' })
+      emojiWorker = new Worker(new URL('@/workers/imageDownloader.ts', import.meta.url), { type: 'module' })
     }
     return emojiWorker
   }
