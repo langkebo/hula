@@ -1319,3 +1319,31 @@ _Chat.vue 续作_
 - 下一轮推荐：
   - 给 `insertNodeAtRange` 7 种 MsgEnum 分支补集成测试（AIT/REPLY/IMAGE/EMOJI/VIDEO/FILE/TEXT）作为安全网
   - 然后再把 `insertNode` / `insertNodeAtRange` / `createReplyDom` 抽到 `useEditorDom` hook（依赖 `reply` ref 注入）
+
+---
+
+## Step 26 — useCommon 安全网：insertNodeAtRange 回归测试（2026-04-25）
+
+**目标**
+- 在尝试抽离 `insertNodeAtRange`(290 LOC) / `createReplyDom`(180 LOC) 这块编辑器最大单体之前，先把它的可观测 DOM 契约锁进单测网，作为后续重构的安全网
+
+**新增**
+- `src/hooks/__tests__/useCommon.insertNodeAtRange.test.ts`（9 用例）
+  - vi.hoisted 工厂模式 mock 全套 stores（user / global / chat） + matrix service / mitt / router / tauri / AvatarUtils / Formatting / TauriInvokeHandler
+  - `MsgEnum.AIT`：span#aitSpan + 文本 / data-aitUid 属性 / text 后备 / label 后备 / 纯字符串 dom / 缺 uid 不写 dataset（共 4）
+  - `MsgEnum.TEXT`：插入 textNode / 非字符串 String() 强转（共 2）
+  - `MsgEnum.REPLY`：#replyDiv 作为输入框 firstChild 插入 / 已有时整体 replaceWith / #message-input 缺失时不抛错（共 3）
+
+**未覆盖（标注后续补充）**
+- `MsgEnum.AI`（~155 LOC，逻辑和 REPLY 高度相似但带 close 按钮 click handler 与 reply.value 重置）
+- `MsgEnum.IMAGE` / `EMOJI` / `VIDEO` / `FILE` 在当前 useCommon 中不走 insertNodeAtRange（这些在 useEditorPaste 的 imgPaste 路径或其它分支）
+
+**验收**
+- `pnpm test:run src/hooks/__tests__/useCommon.insertNodeAtRange.test.ts` — 9/9 通过
+- 不改任何生产代码，只补回归网
+
+**Step 26 状态**
+- useCommon 抽离前置：AIT/TEXT/REPLY 契约锁定 ✅
+- 下一轮可以安全推进：
+  - 给 `MsgEnum.AI` 补 3-4 个用例（divNode#AIDiv / 删除 "/" 触发字符 / closeBtn 点击回调）
+  - 把 `insertNode` / `insertNodeAtRange` / `createReplyDom` 抽到 `useEditorDom` hook（注入 `reply` ref），保持公共 API 不变
