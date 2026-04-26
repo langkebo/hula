@@ -78,9 +78,7 @@
                 </template>
                 <template #value>
                   <span class="text-(10px [--color-text-secondary])">
-                    {{ specialContacts.filter((c) => c.activeStatus === OnlineEnum.ONLINE).length }}/{{
-                      specialContacts.length
-                    }}
+                    {{ specialOnlineCount }}/{{ specialContacts.length }}
                   </span>
                 </template>
                 <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
@@ -106,7 +104,7 @@
                           <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
                           <template v-else-if="getUserState(item.uid)">
                             <img class="size-12px rounded-50%" :src="getUserState(item.uid)?.url" alt="" />
-                            {{ getUserState(item.uid)?.title }}
+                            {{ translateStateTitle(getUserState(item.uid)?.title) }}
                           </template>
                           <template v-else>
                             <span
@@ -138,9 +136,7 @@
                 </template>
                 <template #value>
                   <span class="text-(10px [--color-text-secondary])">
-                    {{ onlineCount - specialContacts.filter((c) => c.activeStatus === OnlineEnum.ONLINE).length }}/{{
-                      normalContacts.length
-                    }}
+                    {{ normalOnlineCount }}/{{ normalContacts.length }}
                   </span>
                 </template>
                 <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
@@ -166,7 +162,7 @@
                           <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
                           <template v-else-if="getUserState(item.uid)">
                             <img class="size-12px rounded-50%" :src="getUserState(item.uid)?.url" alt="" />
-                            {{ getUserState(item.uid)?.title }}
+                            {{ translateStateTitle(getUserState(item.uid)?.title) }}
                           </template>
                           <template v-else>
                             <span
@@ -286,16 +282,14 @@
 </style>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import NavBar from '#/layout/navBar/index.vue'
-import { MittEnum, OnlineEnum, RoomTypeEnum, UserType } from '@/enums'
+import { useFriends } from '@/composables/useFriends'
+import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
 import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
@@ -326,18 +320,24 @@ const menuList = ref([
   { label: '删除分组', icon: 'delete' }
 ])
 
-const activeItem = ref('')
 const detailsShow = ref(false)
 const shrinkStatus = ref(false)
 const groupStore = useGroupStore()
-const globalStore = useGlobalStore()
 const contactStore = useContactStore()
-const userStatusStore = useUserStatusStore()
-const { stateList } = storeToRefs(userStatusStore)
-
-const contactUnreadCount = computed(
-  () => globalStore.unReadMark.newFriendUnreadCount + globalStore.unReadMark.newGroupUnreadCount
-)
+const {
+  groupChatList,
+  specialContacts,
+  specialOnlineCount,
+  blockedContacts,
+  normalContacts,
+  normalOnlineCount,
+  contactUnreadCount,
+  selectedItem: activeItem,
+  isBotUser,
+  getUserState,
+  setSelectedItem,
+  clearSelectedItem
+} = useFriends()
 
 const toMessage = async () => {
   try {
@@ -351,63 +351,11 @@ const toMessage = async () => {
   }
 }
 
-const groupChatList = computed(() => {
-  return [...groupStore.groupDetails].sort((a, b) => {
-    if (a.roomId === '1' && b.roomId !== '1') return -1
-    if (a.roomId !== '1' && b.roomId === '1') return 1
-    return 0
-  })
-})
-
-const onlineCount = computed(() => {
-  return contactStore.contactsList.filter((item) => item.activeStatus === OnlineEnum.ONLINE).length
-})
-
-const sortedContacts = computed(() => {
-  return [...contactStore.contactsList].sort((a, b) => {
-    if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
-    if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
-    return 0
-  })
-})
-
-const specialContacts = computed(() => {
-  return contactStore.favoriteContacts.sort((a, b) => {
-    if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
-    if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
-    return 0
-  })
-})
-
-const blockedContacts = computed(() => {
-  return contactStore.blockedContacts.sort((a, b) => {
-    return (b.lastOptTime || 0) - (a.lastOptTime || 0)
-  })
-})
-
-const normalContacts = computed(() => {
-  const specialIds = new Set(specialContacts.value.map((c) => c.uid))
-  const blockedIds = new Set(blockedContacts.value.map((c) => c.uid))
-  return contactStore.contactsList
-    .filter((c) => !specialIds.has(c.uid) && !blockedIds.has(c.uid))
-    .sort((a, b) => {
-      const aIsBot = isBotUser(a.uid)
-      const bIsBot = isBotUser(b.uid)
-      if (aIsBot && !bIsBot) return -1
-      if (!aIsBot && bIsBot) return 1
-      if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
-      if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
-      return 0
-    })
-})
-
 const { preloadChatRoom } = useMessage()
-
-const isBotUser = (uid: string) => groupStore.getUserInfo(uid)?.account === UserType.BOT
 
 const handleClick = async (id: string, type: number) => {
   detailsShow.value = true
-  activeItem.value = id
+  setSelectedItem(id)
   const data = {
     context: {
       type: type,
@@ -433,14 +381,11 @@ const showMenu = (_event: MouseEvent) => {}
 
 const handleSelect = (_event: MouseEvent) => {}
 
-const getUserState = (uid: string) => {
-  const userInfo = groupStore.getUserInfo(uid)!
-  const userStateId = userInfo.userStateId
-
-  if (userStateId && userStateId !== '1') {
-    return stateList.value.find((state: { id: string }) => state.id === userStateId)
-  }
-  return null
+const translateStateTitle = (title?: string) => {
+  if (!title) return ''
+  const key = `auth.onlineStatus.states.${title}`
+  const translated = t(key)
+  return translated === key ? title : translated
 }
 
 onMounted(async () => {
@@ -457,6 +402,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   detailsShow.value = false
+  clearSelectedItem()
   useMitt.emit(MittEnum.DETAILS_SHOW, detailsShow.value)
 })
 

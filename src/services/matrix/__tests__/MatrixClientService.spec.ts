@@ -35,6 +35,7 @@ vi.mock('matrix-js-sdk', () => {
 describe('MatrixClientService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllGlobals()
     // Reset service state if possible (may need to cast to any to access private props for testing)
     ;(matrixClientService as any).client = null
     ;(matrixClientService as any).connectionState = 'DISCONNECTED'
@@ -83,6 +84,14 @@ describe('MatrixClientService', () => {
   it('should handle login failure', async () => {
     const mockClient = sdk.createClient({ baseUrl: '' })
     ;(mockClient.login as any).mockRejectedValue(new Error('Invalid password'))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        text: vi.fn().mockResolvedValue('Invalid password')
+      })
+    )
 
     // Pre-initialize
     await matrixClientService.initialize({ homeserverUrl: 'https://test.com' })
@@ -91,5 +100,34 @@ describe('MatrixClientService', () => {
 
     expect(result.success).toBe(false)
     expect(result.error).toContain('Invalid password')
+  })
+
+  it('should fallback to http login when sdk login fails to fetch', async () => {
+    const mockClient = sdk.createClient({ baseUrl: '' })
+    ;(mockClient.login as any).mockRejectedValue(new Error('fetch failed: Load failed'))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          user_id: '@user:example.com',
+          device_id: 'DEV1',
+          access_token: 'token123'
+        })
+      })
+    )
+
+    await matrixClientService.initialize({ homeserverUrl: 'http://localhost:28008' })
+
+    const result = await matrixClientService.login('user', 'password')
+
+    expect(result.success).toBe(true)
+    expect(result.userId).toBe('@user:example.com')
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:28008/_matrix/client/v3/login',
+      expect.objectContaining({
+        method: 'POST'
+      })
+    )
   })
 })

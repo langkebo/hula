@@ -11,7 +11,7 @@ import { NaiveUiResolver, VantResolver } from 'unplugin-vue-components/resolvers
 import Components from 'unplugin-vue-components/vite' //组件注册
 import { type ConfigEnv, defineConfig, loadEnv } from 'vite'
 import VueSetupExtend from 'vite-plugin-vue-setup-extend'
-import { getComponentsDirs, getComponentsDtsPath } from './build/config/components'
+import { getComponentsDirs, getComponentsDtsPath, getComponentsGlobs } from './build/config/components'
 import { createManualChunks } from './build/config/chunks'
 import { atStartup } from './build/config/console'
 import packageJson from './package.json'
@@ -46,11 +46,12 @@ export default defineConfig(({ mode }: ConfigEnv) => {
   const serverPort = isPC ? 6130 : 5210
   const componentsDirs = getComponentsDirs(currentPlatform)
   const componentsDtsPath = getComponentsDtsPath(currentPlatform)
+  const componentsGlobs = getComponentsGlobs(currentPlatform)
 
   // 根据平台决定host地址
   const host = (() => {
     if (isPC) {
-      return '127.0.0.1'
+      return 'localhost'
     }
 
     // 移动端逻辑：检查是否为有效的内网IP地址
@@ -124,6 +125,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       /**自动导入组件，但是不会自动导入jsx和tsx*/
       Components({
         dirs: componentsDirs, // 根据平台加载对应组件目录
+        globs: componentsGlobs,
         resolvers: [NaiveUiResolver(), VantResolver()],
         dts: componentsDtsPath
       }),
@@ -176,6 +178,20 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       host: '0.0.0.0',
       port: serverPort,
       strictPort: true,
+      proxy: {
+        '/_matrix': {
+          target: 'http://localhost:28008',
+          changeOrigin: true
+        },
+        '/_synapse': {
+          target: 'http://localhost:28008',
+          changeOrigin: true
+        },
+        '/.well-known/matrix': {
+          target: 'http://localhost:28008',
+          changeOrigin: true
+        }
+      },
       watch: {
         // 3. tell vite to ignore watching `src-tauri`
         ignored: ['**/src-tauri/**']

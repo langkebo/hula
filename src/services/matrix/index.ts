@@ -29,6 +29,11 @@ export { matrixFriendService } from './friends/MatrixFriendService'
 export { matrixGroupService } from './room/MatrixGroupService'
 export type { CreateRoomOptions, RoomPowerLevels } from './room/MatrixGroupService'
 
+export { matrixRoomCreationService } from './room/CreationService'
+export { matrixRoomDirectMessageService } from './room/DirectMessageService'
+export { matrixRoomPinsService } from './room/PinsService'
+export { matrixRoomTagsService } from './room/TagsService'
+
 export { matrixMessageRelationService } from './messaging/MatrixMessageRelationService'
 export { matrixReactionService } from './messaging/MatrixReactionService'
 export { matrixMediaService } from './media/MatrixMediaService'

@@ -94,6 +94,12 @@ declare namespace STO {
       enabled: boolean
       /** 密码哈希 */
       passwordHash: string
+      /** 是否隐藏私密会话 */
+      hideSessions: boolean
+      /** 是否启用自动锁定 */
+      autoLock: boolean
+      /** 自动锁定超时，单位分钟 */
+      lockTimeout: number
     }
   }
 

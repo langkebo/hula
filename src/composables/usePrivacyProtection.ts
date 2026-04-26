@@ -2,7 +2,7 @@
  * 隐私保护 Composable
  *
  * 管理私密聊天的防截屏功能
- * - 监听 com.hula.privacy 事件
+ * - 监听 com:hula:privacy 事件
  * - 桌面端启用 FLAG_SECURE
  * - Web 端显示动态水印
  */
@@ -11,6 +11,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { isDesktop } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+
+const PRIVACY_EVENT_NAME = 'com:hula:privacy' as const
+
 const logger = createLogger('PrivacyProtection')
 
 export interface PrivacySettings {
@@ -95,7 +98,7 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
     if (!isDesktop()) return
 
     try {
-      unlistenPrivacyEvent = await listen<{ action: string; roomId?: string }>('com.hula.privacy', (event) => {
+      unlistenPrivacyEvent = await listen<{ action: string; roomId?: string }>(PRIVACY_EVENT_NAME, (event) => {
         logger.info('收到隐私事件:', event.payload)
 
         const { action, roomId } = event.payload

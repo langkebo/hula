@@ -1,6 +1,7 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 export interface ReactionInfo {
   key: string
@@ -22,6 +23,12 @@ type ReactionContent = {
 
 class MatrixReactionService {
   async addReaction(roomId: string, eventId: string, emoji: string): Promise<string> {
+    if (!navigator.onLine) {
+      const offlineId = offlineQueueService.enqueue('reaction', roomId, { roomId, eventId, emoji })
+      info(`[MatrixReaction] 离线状态，已将表情回复入队: ${roomId}/${eventId} -> ${emoji}`)
+      return offlineId
+    }
+
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixReaction] 客户端未初始化')
@@ -46,6 +53,12 @@ class MatrixReactionService {
   }
 
   async removeReaction(roomId: string, reactionEventId: string): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('redact', roomId, { roomId, eventId: reactionEventId })
+      info(`[MatrixReaction] 离线状态，已将移除反应操作入队: ${roomId}/${reactionEventId}`)
+      return
+    }
+
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixReaction] 客户端未初始化')

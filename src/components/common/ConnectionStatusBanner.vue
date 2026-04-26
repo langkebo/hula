@@ -4,7 +4,14 @@
       <div class="connection-status-banner__content">
         <div class="connection-status-banner__icon">
           <n-spin v-if="state === 'reconnecting'" :size="14" />
-          <svg v-else-if="state === 'offline'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            v-else-if="state === 'offline'"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
             <line x1="1" y1="1" x2="23" y2="23" />
             <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
             <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
@@ -13,7 +20,14 @@
             <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
             <line x1="12" y1="20" x2="12.01" y2="20" />
           </svg>
-          <svg v-else-if="state === 'error'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            v-else-if="state === 'error'"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
             <circle cx="12" cy="12" r="10" />
             <line x1="15" y1="9" x2="9" y2="15" />
             <line x1="9" y1="9" x2="15" y2="15" />
@@ -32,8 +46,7 @@
 import { computed } from 'vue'
 import { NSpin } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-
-export type ConnectionState = 'online' | 'offline' | 'reconnecting' | 'error'
+import type { ConnectionState } from '@/composables/useConnectionStatus'
 
 const props = withDefaults(
   defineProps<{
@@ -134,7 +147,9 @@ const statusText = computed(() => {
 
 .connection-banner-enter-active,
 .connection-banner-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
 }
 
 .connection-banner-enter-from,

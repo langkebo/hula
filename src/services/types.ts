@@ -216,10 +216,8 @@ export type UserItem = {
   linkedGitee?: boolean
   /** 是否绑定 GitHub */
   linkedGithub?: boolean
-  /** 是否绑定 GitCode */
-  linkedGitcode?: boolean
   /** 已绑定的 OAuth 提供商 */
-  oauthProviders?: ('gitee' | 'github' | 'gitcode')[]
+  oauthProviders?: ('gitee' | 'github')[]
 }
 
 export type GroupStatisticType = {
@@ -288,10 +286,8 @@ export type UserInfoType = {
   linkedGitee?: boolean
   /** 是否绑定 GitHub */
   linkedGithub?: boolean
-  /** 是否绑定 GitCode */
-  linkedGitcode?: boolean
   /** 已绑定的 OAuth 提供商 */
-  oauthProviders?: ('gitee' | 'github' | 'gitcode')[]
+  oauthProviders?: ('gitee' | 'github')[]
 }
 
 export type BadgeType = {

@@ -7,6 +7,7 @@ import { matrixMessageRelationService } from './MatrixMessageRelationService'
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import { MatrixEvent } from 'matrix-js-sdk'
 import type { ISendEventResponse } from 'matrix-js-sdk'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 export interface MessageSearchOptions {
   roomId?: string
@@ -237,6 +238,19 @@ class MatrixMessageService {
   }
 
   async sendTextMessage(roomId: string, content: string, txId?: string): Promise<ISendEventResponse> {
+    if (!navigator.onLine) {
+      const id = offlineQueueService.enqueue('message', roomId, {
+        roomId,
+        eventType: 'm.room.message',
+        content: {
+          msgtype: 'm.text',
+          body: content
+        }
+      })
+      info(`[MatrixMessage] 离线状态，已将文本消息入队: ${roomId} (queueId: ${id})`)
+      return { event_id: `local-${id}` } as ISendEventResponse
+    }
+
     return this.sendWithRetry(async () => {
       const client = matrixClientService.getClient()
       if (!client) {
@@ -251,6 +265,21 @@ class MatrixMessageService {
   }
 
   async sendHtmlMessage(roomId: string, body: string, html: string, txId?: string): Promise<ISendEventResponse> {
+    if (!navigator.onLine) {
+      const id = offlineQueueService.enqueue('message', roomId, {
+        roomId,
+        eventType: 'm.room.message',
+        content: {
+          msgtype: 'm.text',
+          body,
+          format: 'org.matrix.custom.html',
+          formatted_body: html
+        }
+      })
+      info(`[MatrixMessage] 离线状态，已将 HTML 消息入队: ${roomId} (queueId: ${id})`)
+      return { event_id: `local-${id}` } as ISendEventResponse
+    }
+
     return this.sendWithRetry(async () => {
       const client = matrixClientService.getClient()
       if (!client) {
@@ -265,6 +294,19 @@ class MatrixMessageService {
   }
 
   async sendEmoteMessage(roomId: string, content: string, txId?: string): Promise<ISendEventResponse> {
+    if (!navigator.onLine) {
+      const id = offlineQueueService.enqueue('message', roomId, {
+        roomId,
+        eventType: 'm.room.message',
+        content: {
+          msgtype: 'm.emote',
+          body: content
+        }
+      })
+      info(`[MatrixMessage] 离线状态，已将 Emote 消息入队: ${roomId} (queueId: ${id})`)
+      return { event_id: `local-${id}` } as ISendEventResponse
+    }
+
     return this.sendWithRetry(async () => {
       const client = matrixClientService.getClient()
       if (!client) {
@@ -279,6 +321,12 @@ class MatrixMessageService {
   }
 
   async recallMessage(roomId: string, eventId: string, txId?: string): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('redact', roomId, { roomId, eventId })
+      info(`[MatrixMessage] 离线状态，已将撤回消息操作入队: ${roomId}/${eventId}`)
+      return
+    }
+
     try {
       const client = matrixClientService.getClient()
       if (!client) {

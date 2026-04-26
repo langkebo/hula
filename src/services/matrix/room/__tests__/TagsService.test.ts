@@ -11,6 +11,13 @@ vi.mock('../../MatrixClientService', () => ({
   default: { getClient: () => getClientMock() }
 }))
 
+const enqueueMock = vi.fn()
+vi.mock('@/services/offline/OfflineQueueService', () => ({
+  offlineQueueService: {
+    enqueue: (...args: any[]) => enqueueMock(...args)
+  }
+}))
+
 const { MatrixRoomTagsService } = await import('../TagsService')
 
 function makeClient(
@@ -33,6 +40,7 @@ describe('MatrixRoomTagsService', () => {
   beforeEach(() => {
     service = new MatrixRoomTagsService()
     getClientMock.mockReset()
+    enqueueMock.mockReset()
   })
 
   it('getTags throws when client is not initialized', async () => {
@@ -103,6 +111,18 @@ describe('MatrixRoomTagsService', () => {
     await expect(service.setTag('!r', 'x')).rejects.toThrow('403')
   })
 
+  it('setTag enqueues when offline', async () => {
+    vi.stubGlobal('navigator', { onLine: false })
+    await service.setTag('!r', 'm.favourite', 0.5)
+    expect(enqueueMock).toHaveBeenCalledWith('tag', '!r', {
+      roomId: '!r',
+      tag: 'm.favourite',
+      order: 0.5,
+      action: 'set'
+    })
+    vi.stubGlobal('navigator', { onLine: true })
+  })
+
   it('removeTag issues DELETE to the tag url', async () => {
     const client = makeClient('@me:e', () => undefined)
     getClientMock.mockReturnValueOnce(client)
@@ -120,5 +140,16 @@ describe('MatrixRoomTagsService', () => {
       })
     )
     await expect(service.removeTag('!r', 'x')).rejects.toThrow('404')
+  })
+
+  it('removeTag enqueues when offline', async () => {
+    vi.stubGlobal('navigator', { onLine: false })
+    await service.removeTag('!r', 'm.favourite')
+    expect(enqueueMock).toHaveBeenCalledWith('tag', '!r', {
+      roomId: '!r',
+      tag: 'm.favourite',
+      action: 'remove'
+    })
+    vi.stubGlobal('navigator', { onLine: true })
   })
 })

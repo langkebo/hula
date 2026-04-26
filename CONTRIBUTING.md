@@ -91,7 +91,7 @@ Before you start, make sure you have:
 
 1. **Clone the repository** (including matrix-js-sdk):
 ```bash
-git clone https://github.com/HuLaSpark/HuLa.git
+git clone https://github.com/langkebo/HuLa.git
 cd HuLa
 ```
 
@@ -103,7 +103,7 @@ pnpm install
 3. **Setup matrix-js-sdk** (if not already linked):
 ```bash
 cd ..
-git clone https://github.com/HuLaSpark/matrix-js-sdk.git
+git clone https://github.com/langkebo/matrix-js-sdk.git
 cd matrix-js-sdk
 pnpm install
 pnpm build

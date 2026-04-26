@@ -2,10 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixReactionService } from '../MatrixReactionService'
 import type { MatrixClient } from 'matrix-js-sdk'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
     getClient: vi.fn()
+  }
+}))
+
+vi.mock('@/services/offline/OfflineQueueService', () => ({
+  offlineQueueService: {
+    enqueue: vi.fn(() => 'offline_id')
   }
 }))
 
@@ -40,6 +47,34 @@ describe('MatrixReactionService', () => {
         })
       )
       expect(result).toBe('$reaction_event_1')
+    })
+
+    it('should enqueue when offline', async () => {
+      // 模拟离线状态
+      const originalOnLine = navigator.onLine
+      Object.defineProperty(navigator, 'onLine', {
+        value: false,
+        configurable: true
+      })
+
+      const roomId = '!room:example.com'
+      const eventId = '$event_1'
+      const emoji = '👍'
+
+      const result = await matrixReactionService.addReaction(roomId, eventId, emoji)
+
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('reaction', roomId, {
+        roomId,
+        eventId,
+        emoji
+      })
+      expect(result).toBe('offline_id')
+
+      // 恢复在线状态
+      Object.defineProperty(navigator, 'onLine', {
+        value: originalOnLine,
+        configurable: true
+      })
     })
 
     it('should throw when client is not initialized', async () => {

@@ -50,30 +50,23 @@
 <script setup lang="ts">
 import { createLogger } from '@/utils/Logger'
 import router from '@/router'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStore } from '@/stores/domains/user/user'
-import { matrixGroupService } from '@/services/matrix'
 import { useTimerManager } from '@/utils/TimerManager'
+import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 
 const logger = createLogger('ConfirmAddGroup')
 const timerManager = useTimerManager()
 
-const globalStore = useGlobalStore()
 const userStore = useUserStore()
-const userInfo = ref(globalStore.addGroupModalInfo)
-const requestMsg = ref()
+const { userInfo, requestMsg, syncDefaultMessage, submitRequest } = useGroupRequestConfirm(
+  computed(() => `我是${userStore.userInfo!.name}`)
+)
 
 const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
 
-watch(
-  () => globalStore.addGroupModalInfo,
-  (newUid) => {
-    userInfo.value = { ...newUid }
-  }
-)
-
 const addFriend = async () => {
-  await matrixGroupService.applyGroup(String(globalStore.addGroupModalInfo.account))
+  const submitted = await submitRequest()
+  if (!submitted) return
   window.$message.success('已发送群聊申请')
   timerManager.setTimeout(() => {
     router.push('/mobile/message')
@@ -82,7 +75,7 @@ const addFriend = async () => {
 
 onMounted(async () => {
   logger.debug('userInfo:', userInfo.value)
-  requestMsg.value = `我是${userStore.userInfo!.name}`
+  syncDefaultMessage()
 })
 </script>
 

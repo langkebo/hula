@@ -12,6 +12,8 @@ interface ImportMetaEnv {
   readonly VITE_IDENTITY_SERVER_URL?: string
   /** giteeToken */
   readonly VITE_GITEE_TOKEN: string
+  /** Prometheus Pushgateway / ingest endpoint */
+  readonly VITE_PROMETHEUS_ENDPOINT?: string
 }
 
 interface ImportMeta {
@@ -34,4 +36,5 @@ declare interface Window {
   $dialog: ReturnType<typeof useDialog>
   $modal: ReturnType<typeof useModal>
   $invoke: (channel: string, payload?: unknown) => Promise<unknown>
+  __HULA_RENDER_SAMPLES__?: import('@/utils/AppHarness').RenderSampleRecord[]
 }

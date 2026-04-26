@@ -1,6 +1,7 @@
 import { info, error } from '@tauri-apps/plugin-log'
 import type { Room } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 /**
  * Room membership domain service.
@@ -16,6 +17,13 @@ export class MatrixRoomMembershipService {
   }
 
   async joinRoom(roomId: string): Promise<Room> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('membership', roomId, { roomId, type: 'join' })
+      info(`[MatrixRoom] 离线状态，已将加入房间入队: ${roomId}`)
+      // 返回一个模拟的 Room 对象或抛出特定错误供上层处理
+      return { roomId } as Room
+    }
+
     try {
       return await matrixClientService.joinRoom(roomId)
     } catch (err) {
@@ -25,6 +33,12 @@ export class MatrixRoomMembershipService {
   }
 
   async leaveRoom(roomId: string): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('membership', roomId, { roomId, type: 'leave' })
+      info(`[MatrixRoom] 离线状态，已将离开房间入队: ${roomId}`)
+      return
+    }
+
     try {
       await matrixClientService.leaveRoom(roomId)
     } catch (err) {
@@ -34,6 +48,12 @@ export class MatrixRoomMembershipService {
   }
 
   async inviteUser(roomId: string, userId: string): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('membership', roomId, { roomId, userId, type: 'invite' })
+      info(`[MatrixRoom] 离线状态，已将邀请用户入队: ${userId} -> ${roomId}`)
+      return
+    }
+
     const client = this.getClient(false)
     try {
       await client.invite(roomId, userId)
@@ -45,6 +65,12 @@ export class MatrixRoomMembershipService {
   }
 
   async kickUser(roomId: string, userId: string, reason?: string): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('membership', roomId, { roomId, userId, reason, type: 'kick' })
+      info(`[MatrixRoom] 离线状态，已将踢出用户入队: ${userId} <- ${roomId}`)
+      return
+    }
+
     const client = this.getClient(false)
     try {
       await client.kick(roomId, userId, reason)
@@ -56,6 +82,12 @@ export class MatrixRoomMembershipService {
   }
 
   async banUser(roomId: string, userId: string, reason?: string): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('membership', roomId, { roomId, userId, reason, type: 'ban' })
+      info(`[MatrixRoom] 离线状态，已将封禁用户入队: ${userId} <- ${roomId}`)
+      return
+    }
+
     const client = this.getClient(false)
     try {
       await client.ban(roomId, userId, reason)
@@ -67,6 +99,12 @@ export class MatrixRoomMembershipService {
   }
 
   async unbanUser(roomId: string, userId: string): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('membership', roomId, { roomId, userId, type: 'unban' })
+      info(`[MatrixRoom] 离线状态，已将解封用户入队: ${userId} <- ${roomId}`)
+      return
+    }
+
     const client = this.getClient(false)
     try {
       await client.unban(roomId, userId)

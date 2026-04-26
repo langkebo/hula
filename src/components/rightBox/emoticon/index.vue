@@ -180,23 +180,18 @@
 </template>
 
 <script setup lang="ts">
-import type { ComponentPublicInstance } from 'vue'
-import { convertFileSrc } from '@tauri-apps/api/core'
-import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
-import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import HulaEmojis from 'hula-emojis'
 import type { ScrollbarInst, VirtualListInst } from 'naive-ui'
-import pLimit from 'p-limit'
 import type { EmojiItem as EmojiListItem } from '@/services/types'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useHistoryStore } from '@/stores/domains/chat/history'
 import { useUserStore } from '@/stores/domains/user/user'
 import { getAllTypeEmojis } from '@/utils/Emoji.ts'
-import { md5FromString } from '@/utils/Md5Util'
-import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+import { useEmojiLocalCache } from './useEmojiLocalCache'
+import { useEmojiPagination } from './useEmojiPagination'
 
 const logger = createLogger('Emoticon')
 
@@ -228,27 +223,6 @@ type EmojiUrlPayload = {
 
 type EmojiSelection = string | EmojiUrlPayload
 
-type EmojiWorkerSuccessMessage = {
-  url: string
-  success: true
-  buffer: ArrayBuffer
-}
-
-type EmojiWorkerErrorMessage = {
-  url: string
-  success: false
-  error?: string
-}
-
-type EmojiWorkerMessage = EmojiWorkerSuccessMessage | EmojiWorkerErrorMessage
-
-type EmojiCacheEnvironment = {
-  uid: string
-  emojiDir: string
-  baseDir: BaseDirectory
-  baseDirPath: string
-}
-
 const emit = defineEmits<{
   emojiHandle: [item: string | EmojiUrlPayload, type: 'emoji' | 'emoji-url']
 }>()
@@ -260,75 +234,49 @@ const { setEmoji, setLastEmojiTabIndex } = useHistoryStore()
 const emojiStore = useEmojiStore()
 const userStore = useUserStore()
 const { t } = useI18n()
-/** 获取米游社的表情包 */
 const emojisBbs = HulaEmojis.MihoyoBbs
 const activeIndex = ref(lastEmojiTabIndex.value)
 const isFavoritesView = computed(() => activeIndex.value === -1)
 const isSeriesView = computed(() => activeIndex.value > 0)
 const seriesVirtualListRef = ref<VirtualListInst | null>(null)
 const panelScrollbarRef = ref<ScrollbarInst | null>(null)
-// 设置当前右键点击的表情项ID
 const activeMenuId = ref('')
-const emojiLocalPathMap = ref<Record<string, string>>({})
-// 仅在元素可见时调度本地缓存，阈值随端变化
-// 关闭收藏页的 IntersectionObserver，减少滚动开销
-const enableEmojiVisibilityObserver = false
-const observeEmojiVisibility = (_el: Element, _p0: () => void) => {}
-const unobserveEmojiVisibility = (_target: Element) => {}
-const disconnectEmojiObserver = () => {}
-const emojiVisibilityTargetMap = new Map<string, Element>()
-const cachingEmojiIds = new Set<string>()
-const emojiCacheEnv = ref<EmojiCacheEnvironment | null>(null)
-const emojiWorkerUrl = new URL('../../../workers/imageDownloader.ts', import.meta.url)
-let emojiCacheWorker: Worker | null = null
-const emojiExtCache = new Map<string, string>()
-const localUrlCache = new Map<string, string>() // 仅用于最近使用的表情包快速匹配本地链接
-const emojiUrlToLocalMap = new Map<string, string>() // expressionUrl -> localUrl
-const downloadLimit = pLimit(3)
-const downloadingUrls = new Set<string>()
-const clearEmojiLocalPath = (id: string, expressionUrl?: string) => {
-  const next = { ...emojiLocalPathMap.value }
-  delete next[id]
-  emojiLocalPathMap.value = next
-  emojiStore.setLocalUrl(id, null)
-  if (expressionUrl) {
-    emojiUrlToLocalMap.delete(expressionUrl)
-    localUrlCache.delete(expressionUrl)
-  }
-}
 
-// 生成选项卡数组
 const tabList = computed<TabItem[]>(() => {
   const baseItems: TabItem[] = [
     { id: 0, type: 'icon', name: t('emoticon.tabs.emoji'), icon: '#face' },
     { id: -1, type: 'icon', name: t('emoticon.tabs.favorites'), icon: '#heart' }
   ]
-
-  // 添加米游社表情包系列
   const seriesItems: TabItem[] = emojisBbs.series.map((series, index) => ({
     id: index + 1,
     type: 'series',
     name: series.name,
     cover: series.cover
   }))
-
   return [...baseItems, ...seriesItems]
 })
 
 const currentSeries = computed(() => (activeIndex.value > 0 ? emojisBbs.series[activeIndex.value - 1] : null))
-const packColumns = computed(() => (isMobile() ? 4 : 6))
-const SERIES_EMOJI_SIZE = 60
-const SERIES_ROW_VERTICAL_PADDING = 12
-const seriesRowHeight = computed(() => SERIES_EMOJI_SIZE + SERIES_ROW_VERTICAL_PADDING)
-const seriesViewportHeight = computed(() => (isMobile() ? '240px' : '260px'))
-const SERIES_PAGE_SIZE = 30
-const favoritesPage = ref(1)
-const seriesPage = ref(1)
-const favoritesPageSize = computed(() => (isMobile() ? 20 : 25))
 
-// 将"我的表情包"列表倒序显示
-const reversedEmojiList = computed(() => {
-  return [...emojiStore.emojiList].reverse()
+const reversedEmojiList = computed(() => [...emojiStore.emojiList].reverse())
+
+const {
+  favoritesPage,
+  seriesPage,
+  favoritesPageSize,
+  packColumns,
+  seriesRowHeight,
+  seriesViewportHeight,
+  SERIES_PAGE_SIZE,
+  onPanelScroll,
+  onSeriesScroll,
+  resetFavoritesPage,
+  resetSeriesPage
+} = useEmojiPagination({
+  isFavoritesView,
+  reversedEmojiList,
+  currentSeries,
+  getSeriesEmojis: (series) => series.emojis
 })
 
 const displayFavoriteEmojis = computed(() => {
@@ -348,77 +296,35 @@ const displaySeriesRows = computed(() => {
   return rows
 })
 
-const SCROLL_LOAD_MORE_THRESHOLD = 32
-const isNearBottom = (target: HTMLElement) =>
-  target.scrollTop + target.clientHeight >= target.scrollHeight - SCROLL_LOAD_MORE_THRESHOLD
-
-const favoritesLoadMoreLock = ref(false)
-const seriesLoadMoreLock = ref(false)
-const hydrateScheduled = ref(false)
-
-const loadMoreFavorites = async () => {
-  if (favoritesLoadMoreLock.value) return
-  if (displayFavoriteEmojis.value.length >= reversedEmojiList.value.length) return
-  favoritesLoadMoreLock.value = true
-  favoritesPage.value += 1
-  await nextTick()
-  favoritesLoadMoreLock.value = false
-}
-
-const loadMoreSeries = async () => {
-  if (seriesLoadMoreLock.value) return
-  if (!currentSeries.value) return
-  if (seriesPage.value * SERIES_PAGE_SIZE >= currentSeries.value.emojis.length) return
-  seriesLoadMoreLock.value = true
-  seriesPage.value += 1
-  await nextTick()
-  seriesLoadMoreLock.value = false
-}
-
 const handlePanelScroll = (event: Event) => {
   activeMenuId.value = ''
   const target =
     (panelScrollbarRef.value as { containerRef?: HTMLElement } | null)?.containerRef ||
     (event.target as HTMLElement | null) ||
     (event.currentTarget as HTMLElement | null)
-  if (!target) return
-  if (isFavoritesView.value) {
-    if (isNearBottom(target)) {
-      void loadMoreFavorites()
-    }
-    return
-  }
+  onPanelScroll(target ?? null)
 }
 
 const handleSeriesScroll = (event?: Event) => {
-  if (!currentSeries.value) return
   const target =
     (event?.target as HTMLElement | null) ||
     (event?.currentTarget as HTMLElement | null) ||
-    (seriesVirtualListRef.value as { listElRef?: HTMLElement } | null)?.listElRef
-  if (!target) return
-  if (isNearBottom(target)) {
-    void loadMoreSeries()
-  }
+    (seriesVirtualListRef.value as { listElRef?: HTMLElement } | null)?.listElRef ||
+    null
+  onSeriesScroll(target)
 }
 
 const res = getAllTypeEmojis()
 
-const emojiObj = ref<EmojiType>({
-  expressionEmojis: res.expressionEmojis,
-  animalEmojis: res.animalEmojis,
-  gestureEmojis: res.gestureEmojis
-} as EmojiType)
-
-if (props.all) {
-  emojiObj.value = res
-} else {
-  emojiObj.value = {
-    expressionEmojis: res.expressionEmojis,
-    animalEmojis: res.animalEmojis,
-    gestureEmojis: res.gestureEmojis
-  } as EmojiType
-}
+const emojiObj = ref<EmojiType>(
+  props.all
+    ? res
+    : ({
+        expressionEmojis: res.expressionEmojis,
+        animalEmojis: res.animalEmojis,
+        gestureEmojis: res.gestureEmojis
+      } as EmojiType)
+)
 
 const emojiRef = reactive<{
   chooseItem: string
@@ -430,349 +336,19 @@ const emojiRef = reactive<{
   allEmoji: emojiObj.value
 })
 
-// 只在支持 window/Worker 的环境下按需创建 emoji 缓存 Worker，并在全局复用
-const getEmojiWorker = () => {
-  if (!isFavoritesView.value) {
-    return null
-  }
-  if (typeof window === 'undefined') {
-    return null
-  }
-  if (!emojiCacheWorker) {
-    emojiCacheWorker = new Worker(emojiWorkerUrl)
-  }
-  return emojiCacheWorker
-}
+const {
+  getEmojiRenderUrl,
+  resolveCachedRenderUrl,
+  registerEmojiVisibilityTarget,
+  hydrateEmojiLocalCache,
+  scheduleHydrateFavorites,
+  cleanupAllEmojiCaches,
+  disconnectEmojiObserver,
+  terminateWorker,
+  emojiUrlToLocalMap,
+  localUrlCache
+} = useEmojiLocalCache({ isFavoritesView, emojiStore, userStore })
 
-const getEmojiBaseDir = () => (isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource)
-const getEmojiBaseDirPath = async () => (isMobile() ? await appDataDir() : await resourceDir())
-
-// 兜底从 URL 字符串中推断扩展名，避免远端类型识别失败
-const inferExtFromUrl = (url: string) => {
-  try {
-    const { pathname } = new URL(url)
-    const index = pathname.lastIndexOf('.')
-    if (index !== -1) {
-      return pathname.slice(index + 1)
-    }
-  } catch {
-    const clean = url.split('?')[0]
-    const index = clean.lastIndexOf('.')
-    if (index !== -1) {
-      return clean.slice(index + 1)
-    }
-  }
-  return null
-}
-
-// 优先使用 detectRemoteFileType 获取真实扩展名，否则回退到 URL 规则推断并缓存结果
-const resolveEmojiExtension = async (url: string) => {
-  if (emojiExtCache.has(url)) {
-    return emojiExtCache.get(url)!
-  }
-  const inferred = inferExtFromUrl(url)
-  if (inferred) {
-    const ext = inferred.toLowerCase()
-    emojiExtCache.set(url, ext)
-    return ext
-  }
-  let ext = ''
-  try {
-    const info = await detectRemoteFileType({ url, fileSize: null })
-    ext = info?.ext || ''
-  } catch (error) {
-    logger.warn('识别表情类型失败:', error)
-  }
-  if (!ext) {
-    ext = 'png'
-  }
-  emojiExtCache.set(url, ext)
-  return ext
-}
-
-// 使用 Emoji URL 的 md5 + 扩展名生成稳定文件名，避免重复下载
-const buildEmojiFileName = async (url: string) => {
-  const hash = await md5FromString(url)
-  const ext = await resolveEmojiExtension(url)
-  return `${hash}.${ext}`
-}
-
-// 将绝对路径转换为 Tauri 可访问的 file URI，并写入响应式映射
-const setEmojiLocalPath = (id: string, absolutePath: string, expressionUrl?: string) => {
-  const localUrl = convertFileSrc(absolutePath)
-  emojiLocalPathMap.value = {
-    ...emojiLocalPathMap.value,
-    [id]: localUrl
-  }
-  emojiStore.setLocalUrl(id, localUrl)
-  if (expressionUrl) {
-    emojiUrlToLocalMap.set(expressionUrl, localUrl)
-    localUrlCache.set(expressionUrl, localUrl)
-  }
-}
-
-const ensureEmojiCacheEnvironment = async () => {
-  if (!isFavoritesView.value) return null
-  const uid = userStore.userInfo?.uid
-  if (!uid) {
-    return null
-  }
-  if (emojiCacheEnv.value?.uid === uid) {
-    return emojiCacheEnv.value
-  }
-  try {
-    const [emojiDir, baseDirPath] = await Promise.all([getUserEmojiDir(uid), getEmojiBaseDirPath()])
-    const env: EmojiCacheEnvironment = {
-      uid,
-      emojiDir,
-      baseDir: getEmojiBaseDir(),
-      baseDirPath
-    }
-    emojiCacheEnv.value = env
-    return env
-  } catch (error) {
-    logger.error('初始化表情缓存目录失败:', error)
-    return null
-  }
-}
-
-const releaseEmojiObserver = (id: string) => {
-  const target = emojiVisibilityTargetMap.get(id)
-  if (target) {
-    unobserveEmojiVisibility(target)
-    emojiVisibilityTargetMap.delete(id)
-  }
-}
-
-const resolveVisibilityElement = (target: Element | ComponentPublicInstance | null) => {
-  if (!target) {
-    return null
-  }
-  if (target instanceof Element) {
-    return target
-  }
-  const el = target.$el
-  return el instanceof Element ? el : null
-}
-
-// 首选借助 Worker 下载以隔离网络 I/O；若无 Worker（如 SSR）则回退到 fetch
-const downloadEmojiFile = async (url: string) => {
-  const worker = getEmojiWorker()
-  if (!worker) {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`下载表情失败: ${response.status} ${response.statusText}`)
-    }
-    return new Uint8Array(await response.arrayBuffer())
-  }
-
-  return await new Promise<Uint8Array>((resolve, reject) => {
-    const handleMessage = (event: MessageEvent<EmojiWorkerMessage>) => {
-      const data = event.data
-      if (!data || data.url !== url) {
-        return
-      }
-      cleanup()
-      if (data.success) {
-        resolve(new Uint8Array(data.buffer))
-      } else {
-        reject(new Error(data.error || '下载表情失败'))
-      }
-    }
-
-    const handleError = (event: ErrorEvent) => {
-      cleanup()
-      reject(new Error(event.message))
-    }
-
-    const cleanup = () => {
-      worker.removeEventListener('message', handleMessage)
-      worker.removeEventListener('error', handleError)
-    }
-
-    worker.addEventListener('message', handleMessage)
-    worker.addEventListener('error', handleError)
-    worker.postMessage({ url })
-  })
-}
-
-const cleanupLocalEmojiMap = (validIds: string[]) => {
-  const validSet = new Set(validIds)
-  const nextMap = { ...emojiLocalPathMap.value }
-  let changed = false
-  Object.keys(nextMap).forEach((id) => {
-    if (!validSet.has(id)) {
-      delete nextMap[id]
-      changed = true
-    }
-  })
-  if (changed) {
-    emojiLocalPathMap.value = nextMap
-  }
-}
-
-const cleanupEmojiObservers = (validIds: string[]) => {
-  const validSet = new Set(validIds)
-  emojiVisibilityTargetMap.forEach((el, id) => {
-    if (!validSet.has(id)) {
-      unobserveEmojiVisibility(el)
-      emojiVisibilityTargetMap.delete(id)
-    }
-  })
-}
-
-const cleanupAllEmojiCaches = () => {
-  emojiLocalPathMap.value = {}
-  emojiExtCache.clear()
-  localUrlCache.clear()
-  emojiUrlToLocalMap.clear()
-  emojiVisibilityTargetMap.forEach((el) => unobserveEmojiVisibility(el))
-  emojiVisibilityTargetMap.clear()
-  cachingEmojiIds.clear()
-  downloadingUrls.clear()
-  emojiCacheEnv.value = null
-}
-
-// 只有当收藏项真正出现在视口内时才执行缓存下载
-const handleEmojiVisibility = async (emojiItem: EmojiListItem) => {
-  const id = emojiItem.id
-  if (emojiItem.localUrl || emojiLocalPathMap.value[id] || cachingEmojiIds.has(id)) {
-    releaseEmojiObserver(id)
-    return
-  }
-  const env = await ensureEmojiCacheEnvironment()
-  if (!env) {
-    return
-  }
-  cachingEmojiIds.add(id)
-  try {
-    await ensureEmojiCached(emojiItem, env.emojiDir, env.baseDir, env.baseDirPath)
-  } catch (error) {
-    logger.error('缓存表情失败:', emojiItem.expressionUrl, error)
-  } finally {
-    cachingEmojiIds.delete(id)
-    releaseEmojiObserver(id)
-  }
-}
-
-// 绑定 DOM 元素到观察器，等待其进入视口后触发下载
-const registerEmojiVisibilityTarget = (target: Element | ComponentPublicInstance | null, emojiItem: EmojiListItem) => {
-  if (!enableEmojiVisibilityObserver) return
-  releaseEmojiObserver(emojiItem.id)
-  const el = resolveVisibilityElement(target)
-  if (!el || !emojiItem.expressionUrl || emojiItem.localUrl || emojiLocalPathMap.value[emojiItem.id]) {
-    return
-  }
-  emojiVisibilityTargetMap.set(emojiItem.id, el)
-  observeEmojiVisibility(el, () => {
-    void handleEmojiVisibility(emojiItem)
-  })
-}
-
-// 根据用户 UID 的缓存目录落盘单个 Emoji，若文件不存在则下载后写入
-const ensureEmojiCached = async (
-  emojiItem: EmojiListItem,
-  emojiDir: string,
-  baseDir: BaseDirectory,
-  baseDirPath: string
-) => {
-  const fileName = await buildEmojiFileName(emojiItem.expressionUrl)
-  const relativePath = await join(emojiDir, fileName)
-  const hasFile = await exists(relativePath, { baseDir })
-  if (!hasFile) {
-    const bytes = await downloadEmojiFile(emojiItem.expressionUrl)
-    await writeFile(relativePath, bytes, { baseDir })
-  }
-  const absolutePath = await join(baseDirPath, relativePath)
-  setEmojiLocalPath(emojiItem.id, absolutePath, emojiItem.expressionUrl)
-}
-
-// 将 store 中已有表情与本地缓存对齐，优先使用本地链接渲染
-const hydrateEmojiLocalCache = async () => {
-  if (!isFavoritesView.value) return
-  const env = await ensureEmojiCacheEnvironment()
-  if (!env) return
-  const downloadTasks: Promise<unknown>[] = []
-  for (const item of emojiStore.emojiList) {
-    const fileName = await buildEmojiFileName(item.expressionUrl)
-    const relativePath = await join(env.emojiDir, fileName)
-    const hasFile = await exists(relativePath, { baseDir: env.baseDir })
-    const absolutePath = await join(env.baseDirPath, relativePath)
-
-    if (!hasFile) {
-      // 本地文件不存在，先清除失效映射
-      clearEmojiLocalPath(item.id, item.expressionUrl)
-      // 异步下载（使用 worker）
-      if (!downloadingUrls.has(item.expressionUrl)) {
-        downloadingUrls.add(item.expressionUrl)
-        const task = downloadLimit(async () => {
-          try {
-            await ensureEmojiCached(item, env.emojiDir, env.baseDir, env.baseDirPath)
-          } catch (error) {
-            logger.error('重新缓存表情失败:', item.expressionUrl, error)
-          } finally {
-            downloadingUrls.delete(item.expressionUrl)
-          }
-        })
-        downloadTasks.push(task)
-      }
-    } else {
-      // 文件存在但 store 没有记录时，回填本地链接
-      const localUrl = convertFileSrc(absolutePath)
-      setEmojiLocalPath(item.id, absolutePath, item.expressionUrl)
-      localUrlCache.set(item.expressionUrl, localUrl)
-      emojiUrlToLocalMap.set(item.expressionUrl, localUrl)
-    }
-  }
-  if (downloadTasks.length) {
-    await Promise.allSettled(downloadTasks)
-  }
-}
-
-const scheduleHydrateFavorites = () => {
-  if (hydrateScheduled.value || !isFavoritesView.value) return
-  hydrateScheduled.value = true
-  const runner = () => {
-    hydrateScheduled.value = false
-    void hydrateEmojiLocalCache()
-  }
-  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-    window.requestIdleCallback(runner, { timeout: 800 })
-  } else {
-    setTimeout(runner, 80)
-  }
-}
-
-// 监听收藏列表变化，保持本地映射与观察目标同步
-watch(
-  () => emojiStore.emojiList.map((item) => ({ id: item.id, url: item.expressionUrl })),
-  (list) => {
-    if (!isFavoritesView.value) return
-    const ids = list.map((item) => item.id)
-    cleanupLocalEmojiMap(ids)
-    cleanupEmojiObservers(ids)
-    scheduleHydrateFavorites()
-  },
-  { immediate: false, deep: true }
-)
-
-// 用户切换时重置缓存上下文与观察器
-watch(
-  () => userStore.userInfo?.uid,
-  () => {
-    cleanupAllEmojiCaches()
-    disconnectEmojiObserver()
-    // 切换账号后如已有列表，且当前在我的喜欢视图时，再尝试用本地缓存替换链接
-    if (emojiStore.emojiList.length > 0 && userStore.userInfo?.uid && isFavoritesView.value) {
-      scheduleHydrateFavorites()
-    }
-  },
-  { immediate: false }
-)
-
-/**
- * 检查字符串是否为URL
- */
 const checkIsUrl = (str: string) => {
   try {
     new URL(str)
@@ -782,26 +358,15 @@ const checkIsUrl = (str: string) => {
   }
 }
 
-/**
- * 处理右键菜单点击事件
- * @param event 鼠标事件
- * @param item 表情项
- */
 const handleContextMenu = (event: MouseEvent, item: EmojiListItem) => {
-  // 阻止原生右键菜单
   event.preventDefault()
   activeMenuId.value = item.id
 }
 
-/**
- * 删除我的表情包
- * @param id 表情包ID
- */
 const deleteMyEmoji = async (id: string) => {
   try {
     await emojiStore.deleteEmoji(id)
     window.$message.success(t('emoticon.favorites.deleteSuccess'))
-    // 关闭菜单
     activeMenuId.value = ''
     localUrlCache.clear()
     emojiUrlToLocalMap.clear()
@@ -811,29 +376,21 @@ const deleteMyEmoji = async (id: string) => {
   }
 }
 
-/**
- * 选择表情
- * @param item
- */
 const chooseEmoji = async (item: EmojiSelection, type: 'emoji' | 'url' = 'emoji') => {
   emojiRef.chooseItem = typeof item === 'string' ? item : item?.renderUrl || item?.expressionUrl || ''
 
-  // 只有非URL的表情（emoji）才记录到历史记录中
   if (type === 'emoji' && typeof item === 'string') {
-    // 如果已经存在于历史记录中，则先移除
     const index = emojiRef.historyList.indexOf(item)
     if (index !== -1) {
       emojiRef.historyList.splice(index, 1)
     }
     emojiRef.historyList.unshift(item)
     if (emojiRef.historyList.length > 18) {
-      emojiRef.historyList.splice(18) // 保留前18个元素
+      emojiRef.historyList.splice(18)
     }
     setEmoji([...emojiRef.historyList])
   }
 
-  // 传递表情类型信息，URL类型的表情作为EMOJI类型处理
-  // URL 类型时，确保 renderUrl 优先使用本地链接
   if (type === 'url') {
     const payload =
       typeof item === 'object' && item
@@ -847,10 +404,7 @@ const chooseEmoji = async (item: EmojiSelection, type: 'emoji' | 'url' = 'emoji'
       emit('emojiHandle', payload, 'emoji-url')
       return payload
     }
-    // 收藏页：只使用已有缓存，完全不在点击时触发下载，避免阻塞发送
-    const serverKey = payload.serverUrl || payload.renderUrl
-    const cached =
-      (payload.id && emojiLocalPathMap.value[payload.id]) || (serverKey ? emojiUrlToLocalMap.get(serverKey) : undefined)
+    const cached = resolveCachedRenderUrl(payload.id, payload.serverUrl || payload.renderUrl)
     if (cached) {
       payload.renderUrl = cached
     }
@@ -862,68 +416,35 @@ const chooseEmoji = async (item: EmojiSelection, type: 'emoji' | 'url' = 'emoji'
   return item
 }
 
-const getEmojiRenderUrl = (item: EmojiListItem) => {
-  const mapped = emojiUrlToLocalMap.get(item.expressionUrl)
-  if (mapped) return mapped
-  if (item.localUrl) {
-    emojiUrlToLocalMap.set(item.expressionUrl, item.localUrl)
-    localUrlCache.set(item.expressionUrl, item.localUrl)
-    return item.localUrl
-  }
-  const localById = emojiLocalPathMap.value[item.id]
-  if (localById) return localById
-  return item.expressionUrl
-}
-
-/**
- * 切换表情类型标签
- */
 const handleTabChange = (index: number) => {
   activeIndex.value = index
-  if (index === -1) {
-    favoritesPage.value = 1
-  }
-  if (index > 0) {
-    seriesPage.value = 1
-  }
+  if (index === -1) resetFavoritesPage()
+  if (index > 0) resetSeriesPage()
   void nextTick().then(() => {
     panelScrollbarRef.value?.scrollTo({ top: 0 })
   })
-  // 切换到非“我的喜欢”视图时，立即清理缓存相关状态
   if (index !== -1) {
     cleanupAllEmojiCaches()
     disconnectEmojiObserver()
-    if (emojiCacheWorker) {
-      emojiCacheWorker.terminate()
-      emojiCacheWorker = null
-    }
+    terminateWorker()
   } else {
-    // 切回“我的喜欢”时尝试同步本地缓存
     void hydrateEmojiLocalCache()
   }
   setLastEmojiTabIndex(index)
 }
 
-/**
- * 选择表情包系列
- */
 const selectSeries = (index: number) => {
   handleTabChange(index + 1)
 }
 
 onMounted(async () => {
-  // 获取我的表情包列表
   await emojiStore.getEmojiList()
-  // 仅在“我的喜欢”视图时才尝试使用本地缓存，避免系列表情也走缓存逻辑
   scheduleHydrateFavorites()
 })
 
 onBeforeUnmount(() => {
   disconnectEmojiObserver()
-  if (emojiCacheWorker) {
-    emojiCacheWorker.terminate()
-    emojiCacheWorker = null
-  }
+  terminateWorker()
   cleanupAllEmojiCaches()
 })
 </script>

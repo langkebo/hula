@@ -54,6 +54,9 @@ describe('SettingStore', () => {
       const store = useSettingStore()
       expect(store.secretChat.enabled).toBe(false)
       expect(store.secretChat.passwordHash).toBe('')
+      expect(store.secretChat.hideSessions).toBe(false)
+      expect(store.secretChat.autoLock).toBe(false)
+      expect(store.secretChat.lockTimeout).toBe(5)
     })
   })
 
@@ -201,9 +204,15 @@ describe('SettingStore', () => {
     it('clearSecretChatPassword resets state', () => {
       const store = useSettingStore()
       store.setSecretChatPassword('secret')
+      store.setSecretChatHideSessions(true)
+      store.setSecretChatAutoLock(true)
+      store.setSecretChatLockTimeout(15)
       store.clearSecretChatPassword()
       expect(store.secretChat.enabled).toBe(false)
       expect(store.secretChat.passwordHash).toBe('')
+      expect(store.secretChat.hideSessions).toBe(false)
+      expect(store.secretChat.autoLock).toBe(false)
+      expect(store.secretChat.lockTimeout).toBe(5)
     })
 
     it('isSecretChatConfigured reflects state', () => {
@@ -211,6 +220,29 @@ describe('SettingStore', () => {
       expect(store.isSecretChatConfigured()).toBe(false)
       store.setSecretChatPassword('pass')
       expect(store.isSecretChatConfigured()).toBe(true)
+    })
+
+    it('updates secret chat privacy settings', () => {
+      const store = useSettingStore()
+      store.setSecretChatEnabled(true)
+      store.setSecretChatHideSessions(true)
+      store.setSecretChatAutoLock(true)
+      store.setSecretChatLockTimeout(30)
+      expect(store.secretChat.enabled).toBe(true)
+      expect(store.secretChat.hideSessions).toBe(true)
+      expect(store.secretChat.autoLock).toBe(true)
+      expect(store.secretChat.lockTimeout).toBe(30)
+    })
+
+    it('disabling secret chat clears lock and hide flags', () => {
+      const store = useSettingStore()
+      store.setSecretChatPassword('pass')
+      store.setSecretChatHideSessions(true)
+      store.setSecretChatAutoLock(true)
+      store.setSecretChatEnabled(false)
+      expect(store.secretChat.enabled).toBe(false)
+      expect(store.secretChat.hideSessions).toBe(false)
+      expect(store.secretChat.autoLock).toBe(false)
     })
   })
 })

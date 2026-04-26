@@ -38,11 +38,18 @@ vi.mock('../MatrixMessageRelationService', () => ({
   }
 }))
 
+vi.mock('@/services/offline/OfflineQueueService', () => ({
+  offlineQueueService: {
+    enqueue: vi.fn()
+  }
+}))
+
 import { matrixReceiptService } from '../MatrixReceiptService'
 import { matrixEventService } from '../../MatrixEventService'
 import { matrixReactionService } from '../MatrixReactionService'
 import { matrixMessageRelationService } from '../MatrixMessageRelationService'
 import { matrixClientService } from '../../MatrixClientService'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { MsgEnum } from '@/enums'
 
 describe('MatrixMessageService', () => {
@@ -96,6 +103,29 @@ describe('MatrixMessageService', () => {
     await matrixMessageService.addReaction('!room:id', '$event', '👍')
 
     expect(matrixReactionService.addReaction).toHaveBeenCalledWith('!room:id', '$event', '👍')
+  })
+
+  it('recallMessage 在离线时应将操作入队', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    vi.mocked(offlineQueueService.enqueue).mockReturnValue('q-1')
+
+    await matrixMessageService.recallMessage('!room:id', '$event:id')
+
+    expect(offlineQueueService.enqueue).toHaveBeenCalledWith('redact', '!room:id', {
+      roomId: '!room:id',
+      eventId: '$event:id'
+    })
+
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+  })
+
+  it('recallMessage 正常在线时调用 client.redactEvent', async () => {
+    const mockClient = { redactEvent: vi.fn().mockResolvedValue({}) }
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+
+    await matrixMessageService.recallMessage('!room:id', '$event', 'txn-123')
+
+    expect(mockClient.redactEvent).toHaveBeenCalledWith('!room:id', '$event', 'txn-123')
   })
 
   it('removeReaction 通过 MatrixReactionService 移除反应', async () => {
@@ -182,5 +212,64 @@ describe('MatrixMessageService', () => {
       msgtype: 'm.notice',
       body: 'system message'
     })
+  })
+
+  it('sendTextMessage 在离线时应将操作入队', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    vi.mocked(offlineQueueService.enqueue).mockReturnValue('q-2')
+
+    const response = await matrixMessageService.sendTextMessage('!room:id', 'hello')
+
+    expect(offlineQueueService.enqueue).toHaveBeenCalledWith('message', '!room:id', {
+      roomId: '!room:id',
+      eventType: 'm.room.message',
+      content: {
+        msgtype: 'm.text',
+        body: 'hello'
+      }
+    })
+    expect(response.event_id).toBe('local-q-2')
+
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+  })
+
+  it('sendHtmlMessage 在离线时应将操作入队', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    vi.mocked(offlineQueueService.enqueue).mockReturnValue('q-3')
+
+    const response = await matrixMessageService.sendHtmlMessage('!room:id', 'hello', '<b>hello</b>')
+
+    expect(offlineQueueService.enqueue).toHaveBeenCalledWith('message', '!room:id', {
+      roomId: '!room:id',
+      eventType: 'm.room.message',
+      content: {
+        msgtype: 'm.text',
+        body: 'hello',
+        format: 'org.matrix.custom.html',
+        formatted_body: '<b>hello</b>'
+      }
+    })
+    expect(response.event_id).toBe('local-q-3')
+
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+  })
+
+  it('sendEmoteMessage 在离线时应将操作入队', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    vi.mocked(offlineQueueService.enqueue).mockReturnValue('q-4')
+
+    const response = await matrixMessageService.sendEmoteMessage('!room:id', 'dances')
+
+    expect(offlineQueueService.enqueue).toHaveBeenCalledWith('message', '!room:id', {
+      roomId: '!room:id',
+      eventType: 'm.room.message',
+      content: {
+        msgtype: 'm.emote',
+        body: 'dances'
+      }
+    })
+    expect(response.event_id).toBe('local-q-4')
+
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
   })
 })

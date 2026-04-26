@@ -28,7 +28,18 @@ export interface WebVitalMetric {
   entries: PerformanceEntry[]
 }
 
-export type PerformanceMetric = LongtaskMetric | WebVitalMetric
+export interface PageRenderMetric {
+  type: 'page-render'
+  name: 'page-render'
+  page: string
+  route: string
+  value: number
+  threshold: number
+  rating: MetricRating
+  meta?: Record<string, string>
+}
+
+export type PerformanceMetric = LongtaskMetric | WebVitalMetric | PageRenderMetric
 
 export interface ReporterConfig {
   endpoint: string
@@ -132,6 +143,26 @@ class PerformanceReporter {
     })
   }
 
+  reportPageRender(
+    page: string,
+    value: number,
+    threshold = 800,
+    route = 'unknown',
+    meta?: Record<string, string>
+  ): void {
+    const rating = this.getPageRenderRating(value, threshold)
+    this.report({
+      type: 'page-render',
+      name: 'page-render',
+      page,
+      route,
+      value,
+      threshold,
+      rating,
+      meta
+    })
+  }
+
   private getRating(name: string, value: number): MetricRating {
     const threshold = SLA_THRESHOLDS[name]
     if (!threshold) return 'needs-improvement'
@@ -141,11 +172,34 @@ class PerformanceReporter {
     return 'poor'
   }
 
+  private getPageRenderRating(value: number, threshold: number): MetricRating {
+    if (value <= threshold) return 'good'
+    if (value <= threshold * 1.5) return 'needs-improvement'
+    return 'poor'
+  }
+
   private checkThreshold(metric: PerformanceMetric): void {
     if (metric.type === 'longtask') {
       if (metric.duration > 50) {
         logger.warn('[PerformanceReporter] longtask 超过 50ms 阈值', {
           duration: metric.duration
+        })
+      }
+      return
+    }
+
+    if (metric.type === 'page-render') {
+      if (metric.rating === 'poor') {
+        logger.error(`[PerformanceReporter] ${metric.page} 页面渲染超出阈值: ${metric.value}`, {
+          rating: metric.rating,
+          route: metric.route,
+          threshold: metric.threshold
+        })
+      } else if (metric.rating === 'needs-improvement') {
+        logger.warn(`[PerformanceReporter] ${metric.page} 页面渲染接近阈值: ${metric.value}`, {
+          rating: metric.rating,
+          route: metric.route,
+          threshold: metric.threshold
         })
       }
       return
@@ -171,6 +225,8 @@ class PerformanceReporter {
   private logMetric(metric: PerformanceMetric): void {
     if (metric.type === 'longtask') {
       logger.info(`[PerformanceReporter] longtask: ${metric.duration.toFixed(2)}ms`)
+    } else if (metric.type === 'page-render') {
+      logger.info(`[PerformanceReporter] ${metric.page} render: ${metric.value.toFixed(2)}ms (${metric.rating})`)
     } else {
       logger.info(`[PerformanceReporter] ${metric.name}: ${metric.value.toFixed(2)} (${metric.rating})`)
     }
@@ -219,6 +275,10 @@ class PerformanceReporter {
         lines.push(
           `hula_longtask_duration_seconds${labelStr ? `{${labelStr}}` : ''} ${metric.duration / 1000} ${timestamp}`
         )
+      } else if (metric.type === 'page-render') {
+        lines.push(
+          `hula_page_render_duration_seconds${labelStr ? `{${labelStr}}` : ''} ${metric.value / 1000} ${timestamp}`
+        )
       } else {
         lines.push(
           `hula_webvital_${metric.name.toLowerCase()}_seconds${labelStr ? `{${labelStr}}` : ''} ${metric.value / 1000} ${timestamp}`
@@ -232,11 +292,20 @@ class PerformanceReporter {
   private buildLabels(metric: PerformanceMetric): Record<string, string> {
     const labels: Record<string, string> = {
       app: 'hula',
-      version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown'
+      version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown'
     }
 
     if (metric.type === 'web-vital') {
       labels.rating = metric.rating
+    } else if (metric.type === 'page-render') {
+      labels.page = metric.page
+      labels.route = metric.route
+      labels.rating = metric.rating
+      labels.threshold_ms = String(metric.threshold)
+
+      if (metric.meta) {
+        Object.assign(labels, metric.meta)
+      }
     }
 
     return labels

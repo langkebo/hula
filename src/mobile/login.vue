@@ -325,6 +325,7 @@ const isJumpDirectly = ref(false)
 const activeTab = ref<'login' | 'register'>('login')
 
 const currentStep = ref(1)
+const GENERAL_USER_SYSTEM_TYPE = 2
 
 const registerInfo = ref<LocalRegisterInfo>({
   nickName: '',
@@ -335,7 +336,7 @@ const registerInfo = ref<LocalRegisterInfo>({
   uuid: '',
   avatar: '',
   key: 'REGISTER_EMAIL',
-  systemType: 2
+  systemType: GENERAL_USER_SYSTEM_TYPE
 })
 
 const accountPH = ref(t('login.mobile.input.account_placeholder'))
@@ -526,7 +527,7 @@ const resetRegisterForm = () => {
     code: '',
     uuid: '',
     avatar: '',
-    systemType: 2,
+    systemType: GENERAL_USER_SYSTEM_TYPE,
     key: 'REGISTER_EMAIL'
   } as LocalRegisterInfo
   currentStep.value = 1
@@ -589,6 +590,7 @@ const handleRegisterComplete = async () => {
     registerLoading.value = true
     registerInfo.value.email = registerInfo.value.email.trim()
     registerInfo.value.code = registerInfo.value.code.trim()
+    registerInfo.value.systemType = GENERAL_USER_SYSTEM_TYPE
     const avatarNum = Math.floor(Math.random() * 21) + 1
     const avatarId = avatarNum.toString().padStart(3, '0')
     registerInfo.value.avatar = avatarId

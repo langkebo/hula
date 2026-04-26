@@ -81,6 +81,7 @@
       </n-flex>
 
       <n-flex :size="40" align="center" justify="center">
+        <n-button secondary @click="openContent('收藏', 'favorites', 860, 640)">收藏</n-button>
         <n-button secondary @click="handleEditing">{{ t('home.profile_card.buttons.edit') }}</n-button>
       </n-flex>
     </n-flex>

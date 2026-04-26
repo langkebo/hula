@@ -1,3 +1,29 @@
+export const isLikelyImageUrl = (value?: string): boolean => {
+  if (!value) return false
+  const lower = value.toLowerCase()
+  return (
+    /^https?:\/\//.test(value) ||
+    lower.startsWith('data:image/') ||
+    lower.startsWith('asset:') ||
+    lower.startsWith('file:') ||
+    lower.startsWith('tauri://') ||
+    lower.startsWith('blob:')
+  )
+}
+
+export const isLikelyMediaUrl = (value?: string): boolean => {
+  if (!value) return false
+  const lower = value.toLowerCase()
+  return (
+    /^https?:\/\//.test(value) ||
+    lower.startsWith('data:') ||
+    lower.startsWith('asset:') ||
+    lower.startsWith('file:') ||
+    lower.startsWith('tauri://') ||
+    lower.startsWith('blob:')
+  )
+}
+
 /**
  * Extract a file extension from a remote AI-generated media URL.
  *

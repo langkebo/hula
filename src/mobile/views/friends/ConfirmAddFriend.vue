@@ -48,36 +48,25 @@
 </template>
 
 <script setup lang="ts">
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixContactService } from '@/services/matrix'
 import router from '@/router'
 import { useTimerManager } from '@/utils/TimerManager'
+import { useFriends } from '@/composables/useFriends'
 
 const logger = createLogger('ConfirmAddFriend')
 const timerManager = useTimerManager()
 
-const globalStore = useGlobalStore()
 const userStore = useUserStore()
-const groupStore = useGroupStore()
-const userInfo = ref(groupStore.getUserInfo(globalStore.addFriendModalInfo.uid!)!)
-const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(userInfo.value!.avatar as string))
-const requestMsg = ref()
+const { userInfo, avatarSrc, requestMsg, syncDefaultMessage, submitRequest } = useFriends({
+  defaultRequestMessage: computed(() => `我是${userStore.userInfo!.name}`)
+})
 
 const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
 
-watch(
-  () => globalStore.addFriendModalInfo.uid,
-  (newUid) => {
-    userInfo.value = groupStore.getUserInfo(newUid!)!
-  }
-)
-
 const addFriend = async () => {
-  await matrixContactService.sendAddFriendRequest(globalStore.addFriendModalInfo.uid as string, requestMsg.value)
+  const submitted = await submitRequest()
+  if (!submitted) return
   window.$message.success('已发送好友申请')
   timerManager.setTimeout(() => {
     router.push('/mobile/message')
@@ -86,7 +75,7 @@ const addFriend = async () => {
 
 onMounted(async () => {
   logger.debug('userInfo:', String(userInfo.value))
-  requestMsg.value = `我是${userStore.userInfo!.name}`
+  syncDefaultMessage()
 })
 </script>
 

@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
 
 const { aiServiceMock, uploadMock, fileInfoRef, errorMock } = vi.hoisted(() => ({
   aiServiceMock: {
@@ -79,10 +78,7 @@ describe('useAiGenerationParams', () => {
   })
 
   it('loadAudioVoices populates from API response', async () => {
-    aiServiceMock.audioGetVoices.mockResolvedValueOnce([
-      { name: 'tts-1:alice' },
-      { name: 'bob' }
-    ])
+    aiServiceMock.audioGetVoices.mockResolvedValueOnce([{ name: 'tts-1:alice' }, { name: 'bob' }])
     const c = mountWith(() => useAiGenerationParams())
     await c.loadAudioVoices({ model: 'tts-1' } as any)
     expect(c.audioVoiceOptions.value).toEqual([

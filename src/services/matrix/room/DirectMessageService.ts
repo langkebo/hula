@@ -1,6 +1,7 @@
 import { info, error } from '@tauri-apps/plugin-log'
 import { Preset, Visibility } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 interface DirectRoomsContent {
   [userId: string]: unknown
@@ -35,6 +36,12 @@ export class MatrixRoomDirectMessageService {
   }
 
   async createDirectRoom(userId: string): Promise<string> {
+    if (!navigator.onLine) {
+      const tempRoomId = `!pending-dm-${Date.now()}`
+      offlineQueueService.enqueue('dm_creation', tempRoomId, { userId })
+      info(`[MatrixRoom] 离线状态，已将创建直接消息房间入队: ${userId}`)
+      return tempRoomId
+    }
     const client = this.getClient()
     try {
       const room = await client.createRoom({

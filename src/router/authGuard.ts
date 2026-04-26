@@ -2,6 +2,8 @@ import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 
 export const PUBLIC_ROUTE_PREFIXES = [
   '/login',
+  '/capture',
+  '/checkupdate',
   '/register',
   '/forgetPassword',
   '/mobile/login',
@@ -22,6 +24,7 @@ export interface CreateAuthGuardOptions {
   hasAuthenticatedSession: () => Promise<boolean>
   verifyAdminAccess: () => Promise<boolean>
   logger: AuthGuardLogger
+  shouldBypassAuth?: (to: RouteLocationNormalized) => boolean
 }
 
 export const isPublicRoute = (path: string): boolean => {
@@ -32,10 +35,16 @@ export const createAuthGuard = ({
   isMobile,
   hasAuthenticatedSession,
   verifyAdminAccess,
-  logger
+  logger,
+  shouldBypassAuth
 }: CreateAuthGuardOptions) => {
   return async (to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
     if (isPublicRoute(to.path)) {
+      return next()
+    }
+
+    if (shouldBypassAuth?.(to)) {
+      logger.warn(`[E2E] 已绕过认证检查: ${to.fullPath || to.path}`)
       return next()
     }
 

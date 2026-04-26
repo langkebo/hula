@@ -523,6 +523,24 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     return contactsList.value.find((c) => c.userId === userId || c.uid === userId)
   }
 
+  function updateContactPresence(
+    userId: string,
+    updates: Pick<MatrixContact, 'activeStatus' | 'lastOptTime'> &
+      Partial<Pick<MatrixContact, 'presence' | 'statusMessage'>>
+  ): boolean {
+    const index = contactsList.value.findIndex((c) => c.userId === userId || c.uid === userId)
+    if (index === -1) {
+      return false
+    }
+
+    contactsList.value[index] = {
+      ...contactsList.value[index],
+      ...updates
+    }
+    triggerRef(contactsList)
+    return true
+  }
+
   function isFriend(userId: string): Promise<boolean> {
     return matrixFriendService.isFriend(userId)
   }
@@ -590,6 +608,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     acceptInvite,
     rejectInvite,
     getContactByUserId,
+    updateContactPresence,
     isFriend,
     setFriendFilter,
     clearContacts,

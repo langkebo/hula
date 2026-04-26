@@ -4,6 +4,8 @@ import { isDesktop, isMac } from '@/utils/PlatformConstants'
 import { setTheme } from '@tauri-apps/api/app'
 import type { Theme } from '@tauri-apps/api/window'
 
+const DESKTOP_THEME_VARIANT = 'simple'
+
 // 获取平台对应的默认快捷键
 const getDefaultShortcuts = () => {
   return {
@@ -42,13 +44,13 @@ const hashPassword = (password: string): string => {
 // 缓存方案：使用 Pinia + localStorage 分账号存储
 // 后续可迁移到 IndexedDB 以支持更大的数据量
 // 每个账号的配置通过 userId 进行隔离存储
-const isDesktopComputed = computed(() => isDesktop())
+const _isDesktopComputed = computed(() => isDesktop())
 export const useSettingStore = defineStore(StoresEnum.SETTING, {
   state: (): STO.Setting => ({
     themes: {
       content: '',
       pattern: ThemeEnum.OS,
-      versatile: isDesktopComputed.value ? 'default' : 'simple'
+      versatile: DESKTOP_THEME_VARIANT
     },
     escClose: true,
     showMode: ShowModeEnum.ICON,
@@ -88,7 +90,10 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     },
     secretChat: {
       enabled: false,
-      passwordHash: ''
+      passwordHash: '',
+      hideSessions: false,
+      autoLock: false,
+      lockTimeout: 5
     }
   }),
   actions: {
@@ -99,6 +104,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.$patch((state) => {
         state.themes.pattern = nextPattern
         state.themes.content = nextContent
+        state.themes.versatile = DESKTOP_THEME_VARIANT
       })
       setDocumentTheme(nextContent)
       setTheme(Object.is(theme, 'os') ? null : (theme as Theme))
@@ -111,6 +117,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
         this.$patch((state) => {
           state.themes.pattern = ThemeEnum.OS
           state.themes.content = os
+          state.themes.versatile = DESKTOP_THEME_VARIANT
         })
         setDocumentTheme(os)
         return
@@ -119,6 +126,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.$patch((state) => {
         state.themes.pattern = nextTheme
         state.themes.content = nextTheme
+        state.themes.versatile = DESKTOP_THEME_VARIANT
       })
       setDocumentTheme(nextTheme)
     },
@@ -136,14 +144,22 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     /** 兜底修正主题状态 */
     normalizeThemeState() {
       if (this.themes.pattern === ThemeEnum.OS) {
+        if (this.themes.versatile !== DESKTOP_THEME_VARIANT) {
+          this.themes.versatile = DESKTOP_THEME_VARIANT
+        }
         this.syncOsTheme()
         return
       }
       const nextTheme = normalizeTheme(this.themes.pattern || this.themes.content)
-      if (this.themes.pattern !== nextTheme || this.themes.content !== nextTheme) {
+      if (
+        this.themes.pattern !== nextTheme ||
+        this.themes.content !== nextTheme ||
+        this.themes.versatile !== DESKTOP_THEME_VARIANT
+      ) {
         this.$patch((state) => {
           state.themes.pattern = nextTheme
           state.themes.content = nextTheme
+          state.themes.versatile = DESKTOP_THEME_VARIANT
         })
       }
       setDocumentTheme(nextTheme)
@@ -156,6 +172,9 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
 
     setAutoLogin(autoLogin: boolean) {
       this.login.autoLogin = autoLogin
+    },
+    setAutoStartup(autoStartup: boolean) {
+      this.login.autoStartup = autoStartup
     },
     /** 设置菜单显示模式 */
     setShowMode(showMode: ShowModeEnum) {
@@ -221,6 +240,25 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.secretChat.enabled = true
       this.secretChat.passwordHash = hashPassword(password)
     },
+    setSecretChatEnabled(enabled: boolean) {
+      this.secretChat.enabled = enabled
+      if (!enabled) {
+        this.secretChat.hideSessions = false
+        this.secretChat.autoLock = false
+      }
+    },
+    setSecretChatHideSessions(enabled: boolean) {
+      this.secretChat.hideSessions = enabled
+    },
+    setSecretChatAutoLock(enabled: boolean) {
+      this.secretChat.autoLock = enabled
+      if (!enabled) {
+        this.secretChat.lockTimeout = 5
+      }
+    },
+    setSecretChatLockTimeout(minutes: number) {
+      this.secretChat.lockTimeout = Math.max(1, Math.round(minutes))
+    },
     /** 验证私密聊天密码 */
     verifySecretChatPassword(password: string): boolean {
       if (!this.secretChat.enabled) {
@@ -232,6 +270,9 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     clearSecretChatPassword() {
       this.secretChat.enabled = false
       this.secretChat.passwordHash = ''
+      this.secretChat.hideSessions = false
+      this.secretChat.autoLock = false
+      this.secretChat.lockTimeout = 5
     },
     /** 检查私密聊天是否已设置 */
     isSecretChatConfigured(): boolean {

@@ -1,9 +1,10 @@
 import type { Room, RoomMember, ICreateRoomOpts } from 'matrix-js-sdk'
 import { NotificationCountType, Preset, Visibility } from 'matrix-js-sdk'
-import { error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
 import { matrixRoomMembershipService } from './MembershipService'
 import type { RoomInfo, RoomMemberInfo } from '@/services/types'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 export interface CreateGroupRoomOptions {
   name: string
@@ -25,6 +26,17 @@ export interface CreateGroupRoomOptions {
  */
 export class MatrixRoomCreationService {
   async createRoom(options: ICreateRoomOpts): Promise<Room> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('creation', 'pending', { options })
+      info('[MatrixRoom] 离线状态，已将创建房间请求入队')
+      // 返回一个伪造的 Room 对象，包含必要的字段以避免前端崩溃
+      return {
+        roomId: `!pending-${Date.now()}`,
+        getLiveTimeline: () => ({ getEvents: () => [] }),
+        getMember: () => null,
+        getJoinedMembers: () => []
+      } as unknown as Room
+    }
     try {
       return await matrixClientService.createRoom(options)
     } catch (err) {

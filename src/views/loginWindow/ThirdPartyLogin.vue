@@ -40,7 +40,6 @@ import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
 export type ThirdPartyLoginContext = Pick<ReturnType<typeof useLoginFlow>, 'loading' | 'loginDisabled'> & {
   giteeLogin?: () => void
   githubLogin?: () => void
-  gitcodeLogin?: () => void
   homeserverUrl?: Ref<string>
 }
 
@@ -158,13 +157,6 @@ const ssoOptions = computed(() => [
     icon: '#github-login',
     style: 'color-#303030 dark:color-#fefefe90',
     action: resolvedContext.githubLogin || noop
-  },
-  {
-    key: 'gitcode',
-    label: t('login.third_party.gitcode'),
-    icon: '#gitcode-login',
-    style: 'color-[--color-danger] dark:color-[--color-danger]80',
-    action: resolvedContext.gitcodeLogin || noop
   }
 ])
 </script>

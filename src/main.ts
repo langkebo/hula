@@ -7,6 +7,7 @@ import vResize from '@/directives/v-resize'
 import vSlide from '@/directives/v-slide.ts'
 import router from '@/router'
 import { pinia } from '@/stores'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { initializePlatform, isIOS, isMobile } from '@/utils/PlatformConstants'
 import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
 import { invoke } from '@tauri-apps/api/core'
@@ -22,7 +23,7 @@ startWebVitalObserver({
   debug: import.meta.env.DEV
 })
 
-if (isIOS()) {
+if (isIOS() && hasTauriRuntime()) {
   invoke('request_ios_badge_authorization').catch((error) => {
     logger.warn('请求 iOS 角标权限失败', error)
   })
@@ -61,6 +62,7 @@ if (isMobile()) {
 }
 
 async function setup() {
+  if (!hasTauriRuntime()) return
   await invoke('set_complete', { task: 'frontend' })
 }
 

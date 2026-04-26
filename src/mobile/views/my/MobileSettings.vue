@@ -32,7 +32,10 @@
               </template>
             </van-cell>
 
-            <van-cell :title="t('mobile_setting.security')" is-link @click="router.push('/mobile/mobileMy/security')">
+            <van-cell
+              :title="t('mobile_setting.security')"
+              is-link
+              @click="router.push(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)">
               <template #icon>
                 <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
                   <Icon icon="mdi:shield-lock" :width="20" color="#ff4d4f" />
@@ -125,7 +128,10 @@
           <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.help_section') }}</div>
 
           <van-cell-group inset>
-            <van-cell :title="t('mobile_setting.help_feedback')" is-link @click="router.push('/mobile/mobileMy/help')">
+            <van-cell
+              :title="t('mobile_setting.help_feedback')"
+              is-link
+              @click="router.push(MOBILE_SETTINGS_HELP_ABOUT_PATH)">
               <template #icon>
                 <div class="w-40px h-40px rounded-full bg-indigo-50 mr-12px flex items-center justify-center">
                   <Icon icon="mdi:help-circle" :width="20" color="#597ef7" />
@@ -138,42 +144,16 @@
 
           <van-cell-group inset>
             <van-cell
-              :title="t('mobile_setting.voice_video')"
+              v-for="item in advancedSettingsItems"
+              :key="item.path"
+              :title="t(item.titleKey)"
               is-link
-              @click="router.push('/mobile/mobileMy/voiceVideo')">
+              @click="router.push(item.path)">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-teal-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:video" :width="20" color="#20c997" />
-                </div>
-              </template>
-            </van-cell>
-
-            <van-cell :title="t('mobile_setting.labs')" is-link @click="router.push('/mobile/mobileMy/labs')">
-              <template #icon>
-                <div class="w-40px h-40px rounded-full bg-pink-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:flask" :width="20" color="#eb2f96" />
-                </div>
-              </template>
-            </van-cell>
-
-            <van-cell
-              :title="t('mobile_setting.integrations')"
-              is-link
-              @click="router.push('/mobile/mobileMy/integrations')">
-              <template #icon>
-                <div class="w-40px h-40px rounded-full bg-amber-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:puzzle" :width="20" color="#fa8c16" />
-                </div>
-              </template>
-            </van-cell>
-
-            <van-cell
-              :title="t('mobile_setting.homeserver')"
-              is-link
-              @click="router.push('/mobile/mobileMy/homeserver')">
-              <template #icon>
-                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:server" :width="20" color="#1890ff" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="{ backgroundColor: item.iconBackgroundColor }">
+                  <Icon :icon="item.icon" :width="20" :color="item.iconColor" />
                 </div>
               </template>
             </van-cell>
@@ -204,6 +184,8 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useI18n } from 'vue-i18n'
+import { MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
+import { MOBILE_SETTINGS_HELP_ABOUT_PATH, MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from './settingsRoutes'
 
 const logger = createLogger('MobileSettings')
 
@@ -213,6 +195,7 @@ const globalStore = useGlobalStore()
 const { isTrayMenuShow } = storeToRefs(globalStore)
 const settingStore = useSettingStore()
 const userStatusStore = useUserStatusStore()
+const advancedSettingsItems = MOBILE_ADVANCED_SETTINGS_ITEMS
 
 const themeValue = computed({
   get: () => settingStore.themes.content,

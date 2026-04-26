@@ -1,5 +1,6 @@
 import { info, error } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 /**
  * Room tags domain service.
@@ -31,6 +32,11 @@ export class MatrixRoomTagsService {
   }
 
   async setTag(roomId: string, tag: string, order?: number): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('tag', roomId, { roomId, tag, order, action: 'set' })
+      info(`[MatrixRoom] 离线状态，已将设置标签入队: ${roomId}/${tag}`)
+      return
+    }
     const client = this.getClient()
     try {
       const userId = client.getUserId()
@@ -51,6 +57,11 @@ export class MatrixRoomTagsService {
   }
 
   async removeTag(roomId: string, tag: string): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('tag', roomId, { roomId, tag, action: 'remove' })
+      info(`[MatrixRoom] 离线状态，已将移除标签入队: ${roomId}/${tag}`)
+      return
+    }
     const client = this.getClient()
     try {
       const userId = client.getUserId()

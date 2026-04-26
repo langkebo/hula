@@ -11,6 +11,13 @@ vi.mock('../../MatrixClientService', () => ({
   default: { getClient: () => getClientMock() }
 }))
 
+vi.mock('@/services/offline/OfflineQueueService', () => ({
+  offlineQueueService: {
+    enqueue: vi.fn()
+  }
+}))
+
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 const { MatrixRoomStateService } = await import('../StateService')
 
 describe('MatrixRoomStateService', () => {
@@ -32,6 +39,29 @@ describe('MatrixRoomStateService', () => {
       getClientMock.mockReturnValueOnce({ setRoomName })
       await service.setRoomName('!r', 'New')
       expect(setRoomName).toHaveBeenCalledWith('!r', 'New')
+    })
+
+    it('enqueues when offline', async () => {
+      // 模拟离线状态
+      const originalOnLine = navigator.onLine
+      Object.defineProperty(navigator, 'onLine', {
+        value: false,
+        configurable: true
+      })
+
+      await service.setRoomName('!r', 'Offline Name')
+
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('state', '!r', {
+        roomId: '!r',
+        type: 'name',
+        content: 'Offline Name'
+      })
+
+      // 恢复在线状态
+      Object.defineProperty(navigator, 'onLine', {
+        value: originalOnLine,
+        configurable: true
+      })
     })
 
     it('re-throws backend errors', async () => {
@@ -123,6 +153,28 @@ describe('MatrixRoomStateService', () => {
         addPushRule: vi.fn()
       })
       await expect(service.setPushRule('!r', true)).rejects.toThrow('500')
+    })
+
+    it('enqueues when offline', async () => {
+      // 模拟离线状态
+      const originalOnLine = navigator.onLine
+      Object.defineProperty(navigator, 'onLine', {
+        value: false,
+        configurable: true
+      })
+
+      await service.setPushRule('!r', true)
+
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('push_rule', '!r', {
+        roomId: '!r',
+        enabled: true
+      })
+
+      // 恢复在线状态
+      Object.defineProperty(navigator, 'onLine', {
+        value: originalOnLine,
+        configurable: true
+      })
     })
   })
 })

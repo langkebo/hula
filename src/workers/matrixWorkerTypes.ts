@@ -8,6 +8,7 @@ export interface MatrixClientConfig {
   deviceId?: string
   accessToken?: string
   userId?: string
+  allowInsecureHttp?: boolean
 }
 
 export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'ERROR'

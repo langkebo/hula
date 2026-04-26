@@ -34,8 +34,7 @@ export interface MatrixRoomMember {
   itemIds?: string[]
   linkedGitee?: boolean
   linkedGithub?: boolean
-  linkedGitcode?: boolean
-  oauthProviders?: ('gitee' | 'github' | 'gitcode')[]
+  oauthProviders?: ('gitee' | 'github')[]
   hideMyPosts?: boolean
   hideTheirPosts?: boolean
 }
@@ -432,6 +431,42 @@ export const useGroupStore = defineStore(
       return true
     }
 
+    function updateUserPresence(uid: string, updates: Pick<MatrixRoomMember, 'activeStatus' | 'lastOptTime'>): boolean {
+      let hasUpdated = false
+
+      Object.keys(membersMap).forEach((roomId) => {
+        const members = membersMap[roomId]
+        if (!members?.length) {
+          return
+        }
+
+        let roomUpdated = false
+        membersMap[roomId] = members.map((member) => {
+          if (member.userId !== uid && member.uid !== uid) {
+            return member
+          }
+
+          roomUpdated = true
+          return {
+            ...member,
+            ...updates
+          }
+        })
+
+        if (roomUpdated) {
+          hasUpdated = true
+          if (groupInfoMap[roomId]) {
+            groupInfoMap[roomId] = {
+              ...groupInfoMap[roomId],
+              onlineNum: membersMap[roomId].filter((member) => member.activeStatus === OnlineEnum.ONLINE).length
+            }
+          }
+        }
+      })
+
+      return hasUpdated
+    }
+
     function updateMemberCache(roomId: string, members: MatrixRoomMember[]): void {
       membersMap[roomId] = members
     }
@@ -648,6 +683,7 @@ export const useGroupStore = defineStore(
       getUserListByRoomId,
       getUser,
       updateUserItem,
+      updateUserPresence,
       updateMemberCache,
       updateGroupDetail,
       updateOnlineNum,

@@ -62,8 +62,7 @@
     "tooltip": {
       "copy_account": "Copy account",
       "bound_gitee": "Gitee linked",
-      "bound_github": "GitHub linked",
-      "bound_gitcode": "Gitcode linked"
+      "bound_github": "GitHub linked"
     },
     "empty": {
       "no_result": "No matching result",
@@ -285,8 +284,7 @@
     "tooltip": {
       "copy_account": "Copy account",
       "bound_gitee": "Gitee linked",
-      "bound_github": "GitHub linked",
-      "bound_gitcode": "Gitcode linked"
+      "bound_github": "GitHub linked"
     },
     "buttons": {
       "edit": "Edit profile",

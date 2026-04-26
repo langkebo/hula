@@ -11,6 +11,13 @@ vi.mock('../../MatrixClientService', () => ({
   default: { getClient: () => getClientMock() }
 }))
 
+const enqueueMock = vi.fn()
+vi.mock('@/services/offline/OfflineQueueService', () => ({
+  offlineQueueService: {
+    enqueue: (...args: any[]) => enqueueMock(...args)
+  }
+}))
+
 const { MatrixRoomPinsService } = await import('../PinsService')
 
 describe('MatrixRoomPinsService', () => {
@@ -19,6 +26,7 @@ describe('MatrixRoomPinsService', () => {
   beforeEach(() => {
     service = new MatrixRoomPinsService()
     getClientMock.mockReset()
+    enqueueMock.mockReset()
   })
 
   describe('getPinnedEvents', () => {
@@ -79,6 +87,13 @@ describe('MatrixRoomPinsService', () => {
       })
       await expect(service.setPinnedEvents('!r', [])).rejects.toThrow('403')
     })
+
+    it('enqueues pinned events when offline', async () => {
+      vi.stubGlobal('navigator', { onLine: false })
+      await service.setPinnedEvents('!r', ['$e1'])
+      expect(enqueueMock).toHaveBeenCalledWith('pin', '!r', { roomId: '!r', type: 'pinned', eventIds: ['$e1'] })
+      vi.stubGlobal('navigator', { onLine: true })
+    })
   })
 
   describe('getStickyEvents', () => {
@@ -120,6 +135,13 @@ describe('MatrixRoomPinsService', () => {
         http: { authedRequest: vi.fn().mockRejectedValue(new Error('403')) }
       })
       await expect(service.setStickyEvents('!r', {})).rejects.toThrow('403')
+    })
+
+    it('enqueues sticky events when offline', async () => {
+      vi.stubGlobal('navigator', { onLine: false })
+      await service.setStickyEvents('!r', { x: 1 })
+      expect(enqueueMock).toHaveBeenCalledWith('pin', '!r', { roomId: '!r', type: 'sticky', events: { x: 1 } })
+      vi.stubGlobal('navigator', { onLine: true })
     })
   })
 })

@@ -2,7 +2,19 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OfflineQueue')
 
-export type OperationType = 'message' | 'receipt' | 'reaction' | 'typing' | 'state'
+export type OperationType =
+  | 'message'
+  | 'receipt'
+  | 'reaction'
+  | 'typing'
+  | 'state'
+  | 'redact'
+  | 'push_rule'
+  | 'membership'
+  | 'creation'
+  | 'dm_creation'
+  | 'tag'
+  | 'pin'
 
 export interface QueuedOperation {
   id: string

@@ -3,12 +3,10 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useUserStore } from '@/stores/domains/user/user'
 import { estimateMessageTokens } from '@/plugins/robot/utils/tokenEstimator'
 import { AiMsgContentTypeEnum } from '@/enums'
-import type { AIModel, ChatRole } from '@/services/matrix'
-import { aiService, conversationService, modelService } from '@/services/matrix'
-import type { AIConversation } from '@/services/matrix/ai/AIService'
+import { aiService } from '@/services/matrix'
 import type { AIAudio, AIImage, AIVideo } from '@/types/matrix-api'
-import router from '@/router'
 import { createLogger } from '@/utils/Logger'
+import { isLikelyMediaUrl } from '@/plugins/robot/utils/aiMediaUrl'
 import { useAiProviderConfig } from '@/plugins/robot/composables/useAiProviderConfig'
 import { useAiMediaCache } from '@/plugins/robot/composables/useAiMediaCache'
 import { useAiHistoryView } from '@/plugins/robot/composables/useAiHistoryView'
@@ -16,20 +14,20 @@ import { useAiGenerationParams } from '@/plugins/robot/composables/useAiGenerati
 import { useAiGenerationPolling } from '@/plugins/robot/composables/useAiGenerationPolling'
 import { useAiMediaGeneration } from '@/plugins/robot/composables/useAiMediaGeneration'
 import { useAiStreaming } from '@/plugins/robot/composables/useAiStreaming'
+import { useAiModelManagement } from '@/plugins/robot/composables/useAiModelManagement'
+import { useAiRoleManagement } from '@/plugins/robot/composables/useAiRoleManagement'
+import { useAiConversationMessages } from '@/plugins/robot/composables/useAiConversationMessages'
+import { useAiConversationLifecycle } from '@/plugins/robot/composables/useAiConversationLifecycle'
+import { useAiTitleEdit } from '@/plugins/robot/composables/useAiTitleEdit'
+import { useAiMessageDisplay } from '@/plugins/robot/composables/useAiMessageDisplay'
 
 const logger = createLogger('RobotChat')
-const AI_THINKING_PLACEHOLDER = '正在思考中...'
-const MAX_MESSAGE_COUNT = 40
 
 export interface ConversationMeta {
   id: string
   title: string
   messageCount: number
   createTime: number
-}
-
-interface ConversationUsage extends AIConversation {
-  tokenUsage?: number
 }
 
 export interface Message {
@@ -66,22 +64,6 @@ export interface Message {
   }
 }
 
-interface AIConversationMessage {
-  id?: string
-  type?: 'user' | 'assistant'
-  role?: 'user' | 'assistant' | 'system'
-  content?: string
-  reasoningContent?: string
-  msgType?: AiMsgContentTypeEnum
-  createTime?: number
-  createdAt?: number
-  replyId?: string | null
-  model?: string
-  imageUrl?: string
-  videoUrl?: string
-  audioUrl?: string
-}
-
 export type HistoryItem = (AIImage | AIVideo | AIAudio) & {
   prompt?: string
   picUrl?: string
@@ -95,18 +77,6 @@ export type PreviewItem = Partial<HistoryItem> & {
   picUrl?: string
 }
 
-interface LeftChatTitlePayload {
-  title?: string
-  id: string
-  messageCount?: number
-  createTime?: number
-}
-
-interface ChatActivePayload extends LeftChatTitlePayload {
-  roleId?: string
-  modelId?: string
-}
-
 export interface PaginationState {
   pageNo: number
   pageSize: number
@@ -117,51 +87,9 @@ export interface UseRobotChatOptions {
   msgInputRef: Ref<{ clearInput?: () => void } | undefined>
 }
 
-const toAiMsgContentType = (value: unknown): AiMsgContentTypeEnum | undefined => {
-  if (typeof value === 'number' && Object.values(AiMsgContentTypeEnum).includes(value)) {
-    return value as AiMsgContentTypeEnum
-  }
-  if (typeof value === 'string') {
-    const parsed = Number(value)
-    if (Number.isInteger(parsed) && Object.values(AiMsgContentTypeEnum).includes(parsed)) {
-      return parsed as AiMsgContentTypeEnum
-    }
-  }
-  return undefined
-}
-
-const isLikelyImageUrl = (value?: string) => {
-  if (!value) return false
-  const lower = value.toLowerCase()
-  return (
-    /^https?:\/\//.test(value) ||
-    lower.startsWith('data:image/') ||
-    lower.startsWith('asset:') ||
-    lower.startsWith('file:') ||
-    lower.startsWith('tauri://') ||
-    lower.startsWith('blob:')
-  )
-}
-
-const isLikelyMediaUrl = (value?: string) => {
-  if (!value) return false
-  const lower = value.toLowerCase()
-  return (
-    /^https?:\/\//.test(value) ||
-    lower.startsWith('data:') ||
-    lower.startsWith('asset:') ||
-    lower.startsWith('file:') ||
-    lower.startsWith('tauri://') ||
-    lower.startsWith('blob:')
-  )
-}
-
 export const useRobotChat = (options: UseRobotChatOptions) => {
   const { msgInputRef } = options
   const userStore = useUserStore()
-
-  const isEdit = ref(false)
-  const originalTitle = ref('')
 
   const currentChat = ref<ConversationMeta>({
     id: '0',
@@ -183,7 +111,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
   })
 
   const messageList = ref<Message[]>([])
-  const loadingMessages = ref(false)
   const messageRenderVersion = ref(0)
   const serverTokenUsage = ref<number | null>(null)
   const conversationTokens = computed(() =>
@@ -192,47 +119,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
 
   const showDeleteChatConfirm = ref(false)
   const deleteWithMessages = ref(false)
-
-  const showRolePopover = ref(false)
-  const selectedRole = ref<ChatRole | null>(null)
-  const roleList = ref<ChatRole[]>([])
-  const roleLoading = ref(false)
-
-  const showModelPopover = ref(false)
-  const modelLoading = ref(false)
-  const modelSearch = ref('')
-  const selectedModel = ref<AIModel | null>(null)
-  const reasoningEnabled = ref(false)
-  const supportsReasoning = computed(() => Boolean(selectedModel.value?.supportsReasoning))
-  const modelPagination = ref<PaginationState>({
-    pageNo: 1,
-    pageSize: 10,
-    total: 0
-  })
-  const modelList = ref<AIModel[]>([])
-  const filteredModels = computed(() => {
-    const search = modelSearch.value?.toLowerCase() || ''
-    const filtered = search
-      ? modelList.value.filter(
-          (model) =>
-            model.name?.toLowerCase().includes(search) ||
-            model.description?.toLowerCase().includes(search) ||
-            model.platform?.toLowerCase().includes(search)
-        )
-      : modelList.value.slice()
-
-    return filtered.sort((a, b) => {
-      const aOfficial = a.publicStatus === 0
-      const bOfficial = b.publicStatus === 0
-      if (aOfficial !== bOfficial) return aOfficial ? -1 : 1
-      const aSort = a.sort ?? 0
-      const bSort = b.sort ?? 0
-      if (aSort !== bSort) return aSort - bSort
-      return String(a.name || '').localeCompare(String(b.name || ''))
-    })
-  })
-  const officialModels = computed(() => filteredModels.value.filter((item) => item.publicStatus === 0))
-  const userModels = computed(() => filteredModels.value.filter((item) => item.publicStatus !== 0))
 
   const {
     imageParams,
@@ -261,22 +147,36 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
   const userUid = computed(() => userStore.userInfo?.uid)
   const userAvatar = computed(() => userStore.userInfo?.avatar || '')
 
-  const fetchModelList = async () => {
-    modelLoading.value = true
-    try {
-      const data = await modelService.page({
-        pageNo: modelPagination.value.pageNo,
-        pageSize: modelPagination.value.pageSize
-      })
-      modelList.value = data.list || []
-      modelPagination.value.total = data.total || 0
-    } catch (error) {
-      logger.error('获取模型列表失败:', error)
-      window.$message.error('获取模型列表失败')
-    } finally {
-      modelLoading.value = false
-    }
+  const loadRemainingUsage = async (modelId: string) => {
+    if (!modelId) return
+    remainingUsage.value = await aiService.getModelRemainingUsage({ modelId })
   }
+
+  const {
+    showModelPopover,
+    modelLoading,
+    modelSearch,
+    selectedModel,
+    reasoningEnabled,
+    supportsReasoning,
+    modelPagination,
+    modelList,
+    filteredModels,
+    officialModels,
+    userModels,
+    fetchModelList,
+    handleModelClick,
+    handleModelPopoverShowChange,
+    selectModel,
+    handleModelPageChange,
+    handleOpenModelManagement,
+    handleRefreshModelList
+  } = useAiModelManagement({
+    currentChat,
+    clearVideoImage,
+    loadAudioVoices,
+    loadRemainingUsage
+  })
 
   const {
     aiProvider,
@@ -292,6 +192,17 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     fetchModelList,
     modelList
   })
+
+  const {
+    showRolePopover,
+    selectedRole,
+    roleList,
+    roleLoading,
+    loadRoleList,
+    handleSelectRole,
+    handleOpenRoleManagement,
+    handleRefreshRoleList
+  } = useAiRoleManagement({ currentChat })
 
   const { ensureLocalAiImage, ensureLocalAiVideo, ensureLocalAiAudio } = useAiMediaCache({
     messageList,
@@ -348,32 +259,16 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     pollAudioStatus
   })
 
-  const loadRemainingUsage = async (modelId: string) => {
-    if (!modelId) return
-    remainingUsage.value = await aiService.getModelRemainingUsage({ modelId })
-  }
-
-  const notifyConversationMetaChange = (payload: { messageCount?: number; createTime: number }) => {
-    if (!currentChat.value.id || currentChat.value.id === '0') {
-      return
-    }
-
-    if (payload.messageCount !== undefined) {
-      currentChat.value.messageCount = payload.messageCount
-    }
-
-    const resolvedCreateTime =
-      typeof payload.createTime === 'number' && Number.isFinite(payload.createTime)
-        ? payload.createTime
-        : currentChat.value.createTime || Date.now()
-    currentChat.value.createTime = resolvedCreateTime
-
-    useMitt.emit('update-chat-meta', {
-      id: currentChat.value.id,
-      messageCount: currentChat.value.messageCount,
-      createTime: resolvedCreateTime
+  const { loadingMessages, loadMessages, handleDeleteMessage, notifyConversationMetaChange } =
+    useAiConversationMessages({
+      currentChat,
+      messageList,
+      serverTokenUsage,
+      bumpMessageRenderVersion,
+      ensureLocalAiImage,
+      ensureLocalAiVideo,
+      ensureLocalAiAudio
     })
-  }
 
   const { isAIStreaming, sendAIMessage, handleStopAIStream, handleOpenClawSend } = useAiStreaming({
     currentChat,
@@ -391,32 +286,28 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     }
   })
 
-  const getDefaultAvatar = () =>
-    'https://img1.baidu.com/it/u=3613958228,3522035000&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=500'
+  const { handleCreateNewChat, handleDeleteChat, handleLeftChatTitle, handleChatActive } = useAiConversationLifecycle({
+    currentChat,
+    messageList,
+    serverTokenUsage,
+    showDeleteChatConfirm,
+    deleteWithMessages,
+    selectedRole,
+    selectedModel,
+    modelList,
+    roleList,
+    bumpMessageRenderVersion,
+    fetchModelList,
+    loadRoleList,
+    loadRemainingUsage,
+    loadAudioVoices,
+    loadMessages
+  })
 
-  const getModelAvatar = (model: AIModel | null) => {
-    if (!model) return getDefaultAvatar()
-    if (model.avatar) return model.avatar
-    return getDefaultAvatar()
-  }
+  const { getDefaultAvatar, getModelAvatar, isRenderableAiImage, getMessageBubbleClass, getAiPlaceholderText } =
+    useAiMessageDisplay({ isAIStreaming })
 
-  const getMessageBubbleClass = (message: Message) => {
-    if (message.type === 'assistant' && isRenderableAiImage(message)) {
-      return []
-    }
-    return ['bubble', message.type === 'user' ? 'bubble-oneself' : 'bubble-ai']
-  }
-
-  const isRenderableAiImage = (message: Message) => {
-    if (message.type !== 'assistant') return false
-    if (!isLikelyImageUrl(message.content)) return false
-    return message.msgType === AiMsgContentTypeEnum.IMAGE || message.msgType === undefined || message.msgType === null
-  }
-
-  const getAiPlaceholderText = (message: Message) => {
-    if (message.content && message.content.trim()) return message.content
-    return isAIStreaming.value ? AI_THINKING_PLACEHOLDER : ''
-  }
+  const { isEdit, originalTitle, handleBlur, handleEdit } = useAiTitleEdit({ currentChat })
 
   const handleSendAI = (data: { content: string }) => {
     if (!data.content.trim()) {
@@ -452,391 +343,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     }
 
     window.$message.warning('不支持的模型类型')
-  }
-
-  const handleModelClick = () => {
-    showModelPopover.value = !showModelPopover.value
-    if (showModelPopover.value && modelList.value.length === 0) {
-      void fetchModelList()
-    }
-  }
-
-  const handleModelPopoverShowChange = (show: boolean) => {
-    showModelPopover.value = show
-    if (show && modelList.value.length === 0) {
-      void fetchModelList()
-    }
-  }
-
-  const selectModel = async (model: AIModel) => {
-    selectedModel.value = model ? { ...model } : null
-    showModelPopover.value = false
-
-    if (model.type !== 8) {
-      clearVideoImage()
-    }
-    if (model.type === 3) {
-      await loadAudioVoices(model)
-    }
-
-    if (currentChat.value.id && currentChat.value.id !== '0') {
-      try {
-        await conversationService.update({
-          id: currentChat.value.id,
-          modelId: String(model.id)
-        })
-      } catch (error) {
-        logger.error('切换模型失败:', error)
-        window.$message.destroyAll()
-        window.$message.error('切换模型失败')
-      }
-    } else {
-      window.$message.success(`已选择模型: ${model.name}`)
-    }
-
-    useMitt.emit('model-selected', model)
-    if (model.id) {
-      void loadRemainingUsage(model.id)
-    }
-  }
-
-  const handleModelPageChange = (page: number) => {
-    modelPagination.value.pageNo = page
-    void fetchModelList()
-  }
-
-  const handleOpenModelManagement = () => {
-    showModelPopover.value = false
-    useMitt.emit('open-model-management')
-  }
-
-  const loadRoleList = async () => {
-    roleLoading.value = true
-    try {
-      const data = await aiService.chatRolePage({ pageNo: 1, pageSize: 100 })
-      roleList.value = ((data.list || []) as ChatRole[]).filter((item) => item.status === 0)
-      if (!selectedRole.value && roleList.value.length > 0) {
-        selectedRole.value = roleList.value[0]
-      }
-    } catch (error) {
-      logger.error('加载角色列表失败:', error)
-      window.$message.error('加载角色列表失败')
-    } finally {
-      roleLoading.value = false
-    }
-  }
-
-  const handleSelectRole = async (role: ChatRole) => {
-    selectedRole.value = role ? { ...role } : null
-    showRolePopover.value = false
-
-    try {
-      if (currentChat.value.id && currentChat.value.id !== '0') {
-        await conversationService.update({
-          id: currentChat.value.id,
-          roleId: role.id,
-          modelId: role.modelId || undefined
-        })
-      } else {
-        window.$message.success(`已选择角色: ${role.name}`)
-      }
-    } catch (error) {
-      logger.error('切换角色失败:', error)
-      window.$message.destroyAll()
-      window.$message.error('切换角色失败')
-    }
-  }
-
-  const handleOpenRoleManagement = () => {
-    showRolePopover.value = false
-    useMitt.emit('open-role-management')
-  }
-
-  const handleBlur = async () => {
-    isEdit.value = false
-    if (originalTitle.value === currentChat.value.title) {
-      return
-    }
-    if (currentChat.value.title === '') {
-      currentChat.value.title = `新的聊天${currentChat.value.id}`
-    }
-
-    try {
-      await conversationService.update({
-        id: currentChat.value.id,
-        title: currentChat.value.title
-      })
-      useMitt.emit('update-chat-title', { title: currentChat.value.title, id: currentChat.value.id })
-    } catch (error) {
-      logger.error('更新会话标题失败:', error)
-      window.$message.error('重命名失败')
-      currentChat.value.title = originalTitle.value
-    }
-  }
-
-  const handleEdit = () => {
-    originalTitle.value = currentChat.value.title
-    isEdit.value = true
-  }
-
-  const loadMessages = async (conversationId: string) => {
-    if (!conversationId || conversationId === '0') {
-      return
-    }
-
-    try {
-      loadingMessages.value = true
-      const data = (await aiService.messageListByConversationId({
-        conversationId,
-        pageNo: 1,
-        pageSize: 100
-      })) as AIConversationMessage[]
-
-      if (Array.isArray(data) && data.length > 0) {
-        messageList.value = []
-        const limitedData = data.slice(-MAX_MESSAGE_COUNT)
-        limitedData.forEach((msg) => {
-          const messageType = msg.type === 'assistant' || msg.role === 'assistant' ? 'assistant' : 'user'
-          const nextMessage: Message = {
-            type: messageType,
-            content: msg.content || '',
-            reasoningContent: msg.reasoningContent,
-            msgType: toAiMsgContentType(msg.msgType),
-            createTime: msg.createTime ?? msg.createdAt ?? Date.now(),
-            id: msg.id,
-            replyId: msg.replyId,
-            model: msg.model
-          }
-          if (
-            nextMessage.type === 'assistant' &&
-            (nextMessage.msgType === undefined || nextMessage.msgType === null) &&
-            isLikelyImageUrl(nextMessage.content)
-          ) {
-            nextMessage.msgType = AiMsgContentTypeEnum.IMAGE
-          }
-          if (nextMessage.msgType === AiMsgContentTypeEnum.IMAGE && isLikelyImageUrl(nextMessage.content)) {
-            nextMessage.imageUrl = msg.imageUrl || nextMessage.content
-          }
-          if (nextMessage.msgType === AiMsgContentTypeEnum.VIDEO && isLikelyMediaUrl(nextMessage.content)) {
-            nextMessage.videoUrl = msg.videoUrl || nextMessage.content
-          }
-          if (nextMessage.msgType === AiMsgContentTypeEnum.AUDIO && isLikelyMediaUrl(nextMessage.content)) {
-            nextMessage.audioUrl = msg.audioUrl || nextMessage.content
-          }
-          messageList.value.push(nextMessage)
-        })
-        bumpMessageRenderVersion()
-
-        if (userStore.userInfo?.uid && currentChat.value.id) {
-          void Promise.all(
-            messageList.value.map((msg, index) => {
-              if (msg.type !== 'assistant') return Promise.resolve()
-              if (msg.msgType === AiMsgContentTypeEnum.IMAGE) {
-                return ensureLocalAiImage(msg.imageUrl || msg.content, index)
-              }
-              if (msg.msgType === AiMsgContentTypeEnum.VIDEO) {
-                return ensureLocalAiVideo(msg.videoUrl || msg.content, index)
-              }
-              if (msg.msgType === AiMsgContentTypeEnum.AUDIO) {
-                return ensureLocalAiAudio(msg.audioUrl || msg.content, index)
-              }
-              return Promise.resolve()
-            })
-          )
-        }
-
-        try {
-          const conversationList = await aiService.conversationGetMy({ id: conversationId })
-          const conversation = Array.isArray(conversationList)
-            ? (conversationList[0] as ConversationUsage | undefined)
-            : undefined
-          if (conversation && typeof conversation.tokenUsage === 'number') {
-            serverTokenUsage.value = conversation.tokenUsage
-          }
-        } catch {
-          // noop
-        }
-      } else {
-        messageList.value = []
-        bumpMessageRenderVersion()
-      }
-    } catch (error) {
-      logger.error('加载消息失败:', error)
-      window.$message.error('加载消息失败')
-      messageList.value = []
-      bumpMessageRenderVersion()
-    } finally {
-      loadingMessages.value = false
-    }
-  }
-
-  const handleCreateNewChat = async () => {
-    if (!selectedRole.value?.id) {
-      window.$message.warning('请先选择角色')
-      return
-    }
-
-    const roleId = selectedRole.value.id
-    const roleName = selectedRole.value.name || '新的会话'
-
-    try {
-      const data = await conversationService.create({
-        roleId,
-        knowledgeId: undefined,
-        title: roleName
-      })
-
-      if (data) {
-        window.$message.success('会话创建成功')
-        const rawCreateTime = Number(data.createTime)
-        useMitt.emit('add-conversation', {
-          id: data.id || data,
-          title: data.title || roleName,
-          createTime: Number.isFinite(rawCreateTime) ? rawCreateTime : Date.now(),
-          messageCount: data.messageCount || 0,
-          isPinned: data.pinned || false,
-          roleId,
-          modelId: data.modelId
-        })
-
-        serverTokenUsage.value = null
-        messageList.value = []
-        bumpMessageRenderVersion()
-        await router.push('/chat')
-      }
-    } catch (error) {
-      logger.error('创建会话失败:', error)
-      window.$message.error('创建会话失败')
-    }
-  }
-
-  const handleDeleteMessage = async (messageId: string, index: number) => {
-    if (!messageId) {
-      window.$message.warning('消息ID无效')
-      return
-    }
-
-    try {
-      await aiService.messageDelete({ id: messageId })
-      messageList.value.splice(index, 1)
-      bumpMessageRenderVersion()
-      window.$message.success('消息已删除')
-
-      currentChat.value.messageCount = Math.max((currentChat.value.messageCount || 0) - 1, 0)
-      const latestEntry = messageList.value[messageList.value.length - 1]
-      const latestTimestamp = latestEntry?.createTime ?? currentChat.value.createTime ?? Date.now()
-      notifyConversationMetaChange({
-        messageCount: currentChat.value.messageCount,
-        createTime: latestTimestamp
-      })
-    } catch (error) {
-      logger.error('删除消息失败:', error)
-      window.$message.error('删除消息失败')
-    }
-  }
-
-  const handleDeleteChat = async () => {
-    if (!currentChat.value.id || currentChat.value.id === '0') {
-      window.$message.warning('请先选择一个会话')
-      showDeleteChatConfirm.value = false
-      return
-    }
-
-    try {
-      if (deleteWithMessages.value) {
-        try {
-          await aiService.messageDeleteByConversationId({ conversationIdList: [currentChat.value.id] })
-        } catch (error) {
-          logger.error('删除会话消息失败:', error)
-        }
-      }
-
-      await conversationService.delete({ conversationIdList: [currentChat.value.id] })
-      window.$message.success(deleteWithMessages.value ? '会话及消息已删除' : '会话删除成功')
-      showDeleteChatConfirm.value = false
-      deleteWithMessages.value = false
-      currentChat.value = {
-        id: '0',
-        title: '',
-        messageCount: 0,
-        createTime: 0
-      }
-      messageList.value = []
-      serverTokenUsage.value = null
-      bumpMessageRenderVersion()
-      await router.push('/welcome')
-      useMitt.emit('refresh-conversations')
-    } catch (error) {
-      logger.error('删除会话失败:', error)
-      window.$message.error('删除会话失败')
-      showDeleteChatConfirm.value = false
-    }
-  }
-
-  const handleRefreshRoleList = () => {
-    void loadRoleList()
-  }
-
-  const handleRefreshModelList = async () => {
-    await fetchModelList()
-    if (selectedModel.value?.id) {
-      const selectedModelId = selectedModel.value.id
-      const updatedModel = modelList.value.find((item) => item.id === selectedModelId)
-      if (updatedModel) {
-        const oldType = selectedModel.value.type
-        selectedModel.value = { ...updatedModel }
-        void loadRemainingUsage(updatedModel.id)
-        if (oldType === 8 && updatedModel.type !== 8) {
-          clearVideoImage()
-        }
-      }
-    }
-  }
-
-  const handleLeftChatTitle = (event: LeftChatTitlePayload) => {
-    if (event.id === currentChat.value.id) {
-      currentChat.value.title = event.title ?? ''
-      currentChat.value.messageCount = event.messageCount ?? 0
-      currentChat.value.createTime = event.createTime ?? currentChat.value.createTime ?? Date.now()
-    }
-  }
-
-  const handleChatActive = async (event: ChatActivePayload) => {
-    const { title, id, messageCount, roleId, modelId, createTime } = event
-    currentChat.value.title = title || `新的聊天${currentChat.value.id}`
-    currentChat.value.id = id
-    currentChat.value.messageCount = messageCount ?? 0
-    currentChat.value.createTime = createTime ?? currentChat.value.createTime ?? Date.now()
-    serverTokenUsage.value = null
-    messageList.value = []
-    bumpMessageRenderVersion()
-
-    if (modelList.value.length === 0) {
-      await fetchModelList()
-    }
-    if (roleList.value.length === 0) {
-      await loadRoleList()
-    }
-
-    if (roleId) {
-      const role = roleList.value.find((item) => String(item.id) === String(roleId))
-      if (role) {
-        selectedRole.value = role
-      }
-    }
-
-    if (modelId) {
-      const model = modelList.value.find((item) => String(item.id) === String(modelId))
-      if (model) {
-        selectedModel.value = model
-        void loadRemainingUsage(model.id)
-        if (model.type === 3) {
-          await loadAudioVoices(model)
-        }
-      }
-    }
-
-    await loadMessages(id)
   }
 
   watch(

@@ -94,7 +94,12 @@ const useSharedBootstrap = createSharedComposable(() => {
   }
 
   function preloadCriticalRoutes() {
-    requestIdleCallback(() => {
+    const scheduleIdleWork =
+      typeof window !== 'undefined' && 'requestIdleCallback' in window
+        ? window.requestIdleCallback.bind(window)
+        : (callback: IdleRequestCallback) => window.setTimeout(() => callback({} as IdleDeadline), 1)
+
+    scheduleIdleWork(() => {
       if (isDesktop()) {
         import('@/views/homeWindow/message/index.vue')
         import('@/layout/index.vue')

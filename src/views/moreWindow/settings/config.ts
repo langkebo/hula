@@ -48,7 +48,7 @@ const useSideOptions = () => {
       icon: 'mdi:video'
     },
     {
-      url: '/securityPrivacy',
+      url: '/security-privacy',
       label: t('setting.security_privacy.title'),
       icon: 'mdi:shield'
     },
@@ -73,7 +73,7 @@ const useSideOptions = () => {
       icon: 'platte'
     },
     {
-      url: '/helpAbout',
+      url: '/help-about',
       label: t('setting.help_about.title'),
       icon: 'mdi:help-circle'
     }

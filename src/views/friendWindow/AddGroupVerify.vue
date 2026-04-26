@@ -52,30 +52,23 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { countGraphemes } from '@/hooks/useCommon.ts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStore } from '@/stores/domains/user/user'
-import { matrixGroupService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 
 const logger = createLogger('AddGroupVerify')
 
 const { t } = useI18n()
-const globalStore = useGlobalStore()
 const userStore = useUserStore()
 const requestMsgAutosize = { minRows: 3, maxRows: 3 }
-const userInfo = ref(globalStore.addGroupModalInfo)
-const requestMsg = ref()
-
-watch(
-  () => globalStore.addGroupModalInfo,
-  (newUid) => {
-    userInfo.value = { ...newUid }
-  }
+const { userInfo, requestMsg, syncDefaultMessage, submitRequest } = useGroupRequestConfirm(
+  computed(() => t('message.group_verify.default_msg', { name: userStore.userInfo!.name }))
 )
 
 const addFriend = async () => {
-  await matrixGroupService.applyGroup(String(globalStore.addGroupModalInfo.account))
+  const submitted = await submitRequest()
+  if (!submitted) return
   window.$message.success(t('message.group_verify.toast_success'))
   setTimeout(async () => {
     await getCurrentWebviewWindow().close()
@@ -86,7 +79,7 @@ onMounted(async () => {
   logger.debug('userInfo', userInfo.value)
 
   await getCurrentWebviewWindow().show()
-  requestMsg.value = t('message.group_verify.default_msg', { name: userStore.userInfo!.name })
+  syncDefaultMessage()
 })
 </script>
 

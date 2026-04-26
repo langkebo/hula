@@ -13,7 +13,7 @@ import { useRoomStore } from '@/stores/domains/chat/room'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
-import { resolveMatrixEndpointConfig } from '@/services/backend/config'
+import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { isDesktop, isMac } from '@/utils/PlatformConstants'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -68,6 +68,44 @@ export interface LogoutMatrixRuntimeSessionOptions extends ResetMatrixRuntimeSes
 }
 
 class MatrixRuntimeSessionService {
+  private async ensureClientReadyForBootstrap(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
+    const matrixStore = useMatrixStore()
+    const userStore = useUserStore()
+
+    if (matrixStore.getClient()) {
+      return
+    }
+
+    const uid = matrixStore.userId ?? userStore.userInfo?.uid ?? ''
+    if (!uid) {
+      return
+    }
+
+    const tokens = await this.getStoredTokens()
+    if (!tokens.token) {
+      throw new Error('缺少访问令牌，无法恢复登录会话')
+    }
+
+    const restoredClient =
+      options.client ||
+      (userStore.userInfo?.client === 'PC' || userStore.userInfo?.client === 'MOBILE'
+        ? userStore.userInfo.client
+        : undefined)
+
+    await this.restoreWithAccessToken({
+      uid,
+      accessToken: tokens.token,
+      refreshToken: tokens.refreshToken ?? undefined,
+      displayName: options.displayName || userStore.userInfo?.name,
+      account: options.account || userStore.userInfo?.account || userStore.userInfo?.email,
+      avatar: options.avatar || userStore.userInfo?.avatar,
+      client: restoredClient,
+      persistTokens: false,
+      persistUserInfo: false,
+      bootstrapAfterRestore: false
+    })
+  }
+
   private resolveDisplayName(uid: string, displayName?: string, account?: string): string {
     return displayName || account || uid.split(':')[0] || uid
   }
@@ -143,7 +181,7 @@ class MatrixRuntimeSessionService {
 
       const matrixStore = useMatrixStore()
       const userStore = useUserStore()
-      const { homeserverUrl, identityServerUrl } = resolveMatrixEndpointConfig()
+      const { homeserverUrl, identityServerUrl } = resolveMatrixRuntimeEndpointConfig()
 
       await ensureAppStateReady()
 
@@ -153,9 +191,11 @@ class MatrixRuntimeSessionService {
 
       if (persistTokens) {
         await invoke(TauriCommand.UPDATE_TOKEN, {
-          uid,
-          token: accessToken,
-          refreshToken: refreshToken ?? ''
+          req: {
+            uid,
+            token: accessToken,
+            refreshToken: refreshToken ?? ''
+          }
         })
       }
 
@@ -163,7 +203,8 @@ class MatrixRuntimeSessionService {
         homeserverUrl,
         identityServerUrl,
         accessToken,
-        userId: uid
+        userId: uid,
+        allowInsecureHttp: homeserverUrl.startsWith('http://')
       })
 
       const success = await matrixStore.loginWithToken(accessToken, uid)
@@ -218,7 +259,8 @@ class MatrixRuntimeSessionService {
       await ensureAppStateReady()
       await matrixStore.initialize({
         homeserverUrl,
-        identityServerUrl
+        identityServerUrl,
+        allowInsecureHttp: homeserverUrl.startsWith('http://')
       })
 
       const success = await matrixStore.login(username, password, deviceName)
@@ -238,9 +280,11 @@ class MatrixRuntimeSessionService {
 
       if (persistTokens) {
         await invoke(TauriCommand.UPDATE_TOKEN, {
-          uid,
-          token: accessToken,
-          refreshToken: ''
+          req: {
+            uid,
+            token: accessToken,
+            refreshToken: ''
+          }
         })
       }
 
@@ -284,10 +328,12 @@ class MatrixRuntimeSessionService {
         throw new Error('缺少用户ID，无法初始化登录状态')
       }
 
+      await this.ensureClientReadyForBootstrap(options)
+
       this.clearUserLocalStorage()
       this.clearMessageCache()
 
-      roomStore.rooms.clear()
+      roomStore.resetState()
       groupStore.groupDetails.length = 0
       await roomStore.loadRooms()
 

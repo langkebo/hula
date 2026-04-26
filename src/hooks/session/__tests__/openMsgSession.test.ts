@@ -1,23 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { chatStoreMock, globalStoreMock, mittMock, sessionServiceMock, invokeMock, routerMock, infoMock, handleMsgClickMock } =
-  vi.hoisted(() => ({
-    chatStoreMock: {
-      getSession: vi.fn(),
-      updateSessionLastActiveTime: vi.fn(),
-      getSessionList: vi.fn(async () => [])
-    },
-    globalStoreMock: { updateCurrentSessionRoomId: vi.fn() },
-    mittMock: { emit: vi.fn() },
-    sessionServiceMock: { getSessionDetailWithFriends: vi.fn() },
-    invokeMock: vi.fn(async () => undefined),
-    routerMock: {
-      currentRoute: { value: { name: '/message' } },
-      push: vi.fn()
-    },
-    infoMock: vi.fn(),
-    handleMsgClickMock: vi.fn()
-  }))
+const {
+  chatStoreMock,
+  globalStoreMock,
+  mittMock,
+  sessionServiceMock,
+  invokeMock,
+  routerMock,
+  infoMock,
+  handleMsgClickMock
+} = vi.hoisted(() => ({
+  chatStoreMock: {
+    getSession: vi.fn(),
+    updateSessionLastActiveTime: vi.fn(),
+    getSessionList: vi.fn(async () => [])
+  },
+  globalStoreMock: { updateCurrentSessionRoomId: vi.fn() },
+  mittMock: { emit: vi.fn() },
+  sessionServiceMock: { getSessionDetailWithFriends: vi.fn() },
+  invokeMock: vi.fn(async () => undefined),
+  routerMock: {
+    currentRoute: { value: { name: '/message' } },
+    push: vi.fn()
+  },
+  infoMock: vi.fn(),
+  handleMsgClickMock: vi.fn()
+}))
 
 vi.mock('@/stores/domains/chat/chat', () => ({ useChatStore: () => chatStoreMock }))
 vi.mock('@/stores/domains/widget/global', () => ({ useGlobalStore: () => globalStoreMock }))

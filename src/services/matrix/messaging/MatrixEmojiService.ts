@@ -1,7 +1,6 @@
 import { matrixClientService } from '../MatrixClientService'
 import { matrixMediaService } from '../media/MatrixMediaService'
 import { info, error as logError } from '@tauri-apps/plugin-log'
-import { Method, ClientPrefix } from '@/types/matrix-js-sdk'
 
 /**
  * 表情包/贴纸包项
@@ -44,14 +43,6 @@ export interface GetEmojiPacksOptions {
   packId?: string
 }
 
-interface EmojiUploadResponse {
-  id: string
-}
-
-interface EmojiPackCreateResponse {
-  pack_id: string
-}
-
 interface RawEmojiData {
   name?: string
   url?: string
@@ -69,6 +60,9 @@ interface RawEmojiPackData {
 interface RawEmojiResponse {
   packs?: Record<string, RawEmojiPackData>
 }
+
+const EMOJI_ACCOUNT_DATA_TYPE = 'im.hula.user_emotes'
+const DEFAULT_PACK_ID = 'default'
 
 /**
  * Matrix 表情包服务
@@ -111,19 +105,11 @@ class MatrixEmojiService {
    */
   async emojiList(options?: GetEmojiPacksOptions): Promise<EmojiPack[]> {
     try {
-      const client = this.getClient()
-      const userId = options?.userId || client.getUserId()
-
-      if (!userId) {
-        throw new Error('用户未登录')
-      }
-
-      const response = await client.http.request(Method.Get, '/user_emotes', { userId }, undefined, {
-        prefix: ClientPrefix.V3
-      })
+      const userId = this.assertSupportedUser(options?.userId)
+      const response = await this.loadEmojiResponse(userId)
 
       info(`[MatrixEmoji] 获取表情包列表成功，用户: ${userId}`)
-      return this.parseEmojiResponse(response as RawEmojiResponse)
+      return this.parseEmojiResponse(response)
     } catch (err) {
       logError(`[MatrixEmoji] 获取表情包列表失败: ${err}`)
       throw err
@@ -140,12 +126,7 @@ class MatrixEmojiService {
    */
   async emojiUpload(file: File, name: string, packId?: string): Promise<EmojiUploadResult> {
     try {
-      const client = this.getClient()
-      const userId = client.getUserId()
-
-      if (!userId) {
-        throw new Error('用户未登录')
-      }
+      this.assertSupportedUser()
 
       const supportedTypes = ['image/png', 'image/gif', 'image/webp']
       if (!supportedTypes.includes(file.type)) {
@@ -154,23 +135,25 @@ class MatrixEmojiService {
 
       const uploadResult = await matrixMediaService.uploadFile(file)
       const mxcUrl = uploadResult.contentUri
-
-      const emojiData = {
+      const response = await this.loadEmojiResponse()
+      const targetPackId = packId || DEFAULT_PACK_ID
+      const now = Date.now()
+      const emojiId = this.createId('emote')
+      const pack = this.ensurePack(response, targetPackId, now)
+      pack.emoticons ??= {}
+      pack.emoticons[emojiId] = {
+        name,
         url: mxcUrl,
-        name: name,
-        pack_id: packId || 'default'
+        created_at: now
       }
+      pack.updated_at = now
 
-      const response = await client.http.request(Method.Put, '/user_emotes/emote', { userId }, emojiData, {
-        prefix: ClientPrefix.V3
-      })
+      await this.saveEmojiResponse(response)
 
       info(`[MatrixEmoji] 上传自定义表情成功: ${name}, URL: ${mxcUrl}`)
 
-      const uploadResponse = response as EmojiUploadResponse
-
       return {
-        id: uploadResponse.id || `emote_${Date.now()}`,
+        id: emojiId,
         name,
         url: matrixMediaService.getMediaUrl(mxcUrl) || mxcUrl,
         mxcUrl
@@ -189,16 +172,32 @@ class MatrixEmojiService {
    */
   async emojiDelete(emojiId: string, packId?: string): Promise<void> {
     try {
-      const client = this.getClient()
-      const userId = client.getUserId()
+      this.assertSupportedUser()
+      const response = await this.loadEmojiResponse()
+      const now = Date.now()
+      let changed = false
 
-      if (!userId) {
-        throw new Error('用户未登录')
+      if (packId) {
+        const targetPack = response.packs?.[packId]
+        if (targetPack?.emoticons?.[emojiId]) {
+          delete targetPack.emoticons[emojiId]
+          targetPack.updated_at = now
+          changed = true
+        }
+      } else if (response.packs) {
+        for (const pack of Object.values(response.packs)) {
+          if (pack.emoticons?.[emojiId]) {
+            delete pack.emoticons[emojiId]
+            pack.updated_at = now
+            changed = true
+            break
+          }
+        }
       }
 
-      await client.http.request(Method.Delete, '/user_emotes/emote', { userId, emojiId, packId }, undefined, {
-        prefix: ClientPrefix.V3
-      })
+      if (changed) {
+        await this.saveEmojiResponse(response)
+      }
 
       info(`[MatrixEmoji] 删除自定义表情成功: ${emojiId}`)
     } catch (err) {
@@ -216,12 +215,7 @@ class MatrixEmojiService {
    */
   async createPack(name: string, iconFile?: File): Promise<EmojiPack> {
     try {
-      const client = this.getClient()
-      const userId = client.getUserId()
-
-      if (!userId) {
-        throw new Error('用户未登录')
-      }
+      this.assertSupportedUser()
 
       let iconUrl: string | undefined
       if (iconFile) {
@@ -229,29 +223,29 @@ class MatrixEmojiService {
         iconUrl = uploadResult.contentUri
       }
 
-      const packData: Record<string, unknown> = {
+      const response = await this.loadEmojiResponse()
+      const now = Date.now()
+      const packId = this.createId('pack')
+      response.packs ??= {}
+      response.packs[packId] = {
         name,
-        created_at: Date.now()
-      }
-      if (iconUrl) {
-        packData.icon_url = iconUrl
+        icon_url: iconUrl,
+        emoticons: {},
+        created_at: now,
+        updated_at: now
       }
 
-      const response = await client.http.request(Method.Put, '/user_emotes/pack', { userId }, packData, {
-        prefix: ClientPrefix.V3
-      })
+      await this.saveEmojiResponse(response)
 
       info(`[MatrixEmoji] 创建表情包成功: ${name}`)
 
-      const packResponse = response as EmojiPackCreateResponse
-
       return {
-        id: packResponse.pack_id || `pack_${Date.now()}`,
+        id: packId,
         name,
         iconUrl,
         items: [],
-        createdTs: Date.now(),
-        updatedTs: Date.now()
+        createdTs: now,
+        updatedTs: now
       }
     } catch (err) {
       logError(`[MatrixEmoji] 创建表情包失败: ${err}`)
@@ -266,16 +260,12 @@ class MatrixEmojiService {
    */
   async deletePack(packId: string): Promise<void> {
     try {
-      const client = this.getClient()
-      const userId = client.getUserId()
-
-      if (!userId) {
-        throw new Error('用户未登录')
+      this.assertSupportedUser()
+      const response = await this.loadEmojiResponse()
+      if (response.packs?.[packId]) {
+        delete response.packs[packId]
+        await this.saveEmojiResponse(response)
       }
-
-      await client.http.request(Method.Delete, '/user_emotes/pack', { userId, packId }, undefined, {
-        prefix: ClientPrefix.V3
-      })
 
       info(`[MatrixEmoji] 删除表情包成功: ${packId}`)
     } catch (err) {
@@ -292,16 +282,21 @@ class MatrixEmojiService {
    */
   async addEmojiToPack(packId: string, emojiId: string): Promise<void> {
     try {
-      const client = this.getClient()
-      const userId = client.getUserId()
+      this.assertSupportedUser()
+      const response = await this.loadEmojiResponse()
+      const now = Date.now()
+      const sourceEmoji = this.findEmoji(response, emojiId)
 
-      if (!userId) {
-        throw new Error('用户未登录')
+      if (!sourceEmoji) {
+        throw new Error(`表情不存在: ${emojiId}`)
       }
 
-      await client.http.request(Method.Put, '/user_emotes/pack/emote', { userId, packId, emojiId }, undefined, {
-        prefix: ClientPrefix.V3
-      })
+      const targetPack = this.ensurePack(response, packId, now)
+      targetPack.emoticons ??= {}
+      targetPack.emoticons[emojiId] = { ...sourceEmoji }
+      targetPack.updated_at = now
+
+      await this.saveEmojiResponse(response)
 
       info(`[MatrixEmoji] 添加表情到表情包成功: pack=${packId}, emoji=${emojiId}`)
     } catch (err) {
@@ -318,16 +313,14 @@ class MatrixEmojiService {
    */
   async removeEmojiFromPack(packId: string, emojiId: string): Promise<void> {
     try {
-      const client = this.getClient()
-      const userId = client.getUserId()
-
-      if (!userId) {
-        throw new Error('用户未登录')
+      this.assertSupportedUser()
+      const response = await this.loadEmojiResponse()
+      const targetPack = response.packs?.[packId]
+      if (targetPack?.emoticons?.[emojiId]) {
+        delete targetPack.emoticons[emojiId]
+        targetPack.updated_at = Date.now()
+        await this.saveEmojiResponse(response)
       }
-
-      await client.http.request(Method.Delete, '/user_emotes/pack/emote', { userId, packId, emojiId }, undefined, {
-        prefix: ClientPrefix.V3
-      })
 
       info(`[MatrixEmoji] 从表情包移除表情成功: pack=${packId}, emoji=${emojiId}`)
     } catch (err) {
@@ -372,6 +365,79 @@ class MatrixEmojiService {
     }
 
     return packs
+  }
+
+  private assertSupportedUser(userId?: string): string {
+    const client = this.getClient()
+    const currentUserId = client.getUserId()
+
+    if (!currentUserId) {
+      throw new Error('用户未登录')
+    }
+
+    if (userId && userId !== currentUserId) {
+      throw new Error('暂不支持获取其他用户的表情数据')
+    }
+
+    return currentUserId
+  }
+
+  private async loadEmojiResponse(userId?: string): Promise<RawEmojiResponse> {
+    const client = this.getClient()
+    this.assertSupportedUser(userId)
+    const response = await client.getAccountDataFromServer(EMOJI_ACCOUNT_DATA_TYPE)
+
+    if (!response || typeof response !== 'object') {
+      return { packs: {} }
+    }
+
+    const raw = response as RawEmojiResponse
+    return { packs: raw.packs ? { ...raw.packs } : {} }
+  }
+
+  private async saveEmojiResponse(response: RawEmojiResponse): Promise<void> {
+    const client = this.getClient()
+    await client.setAccountData(EMOJI_ACCOUNT_DATA_TYPE, response)
+  }
+
+  private ensurePack(response: RawEmojiResponse, packId: string, now: number): RawEmojiPackData {
+    response.packs ??= {}
+    const existingPack = response.packs[packId]
+    if (existingPack) {
+      existingPack.emoticons ??= {}
+      existingPack.created_at ||= now
+      existingPack.updated_at ||= now
+      existingPack.name ||= packId
+      return existingPack
+    }
+
+    const pack: RawEmojiPackData = {
+      name: packId,
+      emoticons: {},
+      created_at: now,
+      updated_at: now
+    }
+    response.packs[packId] = pack
+    return pack
+  }
+
+  private findEmoji(response: RawEmojiResponse, emojiId: string): RawEmojiData | null {
+    if (!response.packs) {
+      return null
+    }
+
+    for (const pack of Object.values(response.packs)) {
+      const emoji = pack.emoticons?.[emojiId]
+      if (emoji) {
+        return emoji
+      }
+    }
+
+    return null
+  }
+
+  private createId(prefix: 'pack' | 'emote'): string {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
   }
 }
 

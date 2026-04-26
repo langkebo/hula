@@ -1,4 +1,5 @@
 import type { SlidingSync, SlidingSyncState, MSC3575SlidingSyncResponse, MSC3575RoomData } from '@/types/matrix-js-sdk'
+import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 import {
   SlidingSyncReconnectManager,
@@ -34,14 +35,13 @@ export class MatrixSlidingSyncService {
   private _isInitialized: boolean = false
   private callbacks: SlidingSyncCallbacks = {}
   private reconnectManager = new SlidingSyncReconnectManager()
+  private hasCompletedInitialSync = false
   private readonly lifecycleListener = (
     state: SlidingSyncState,
     resp: MSC3575SlidingSyncResponse | null,
     err?: Error
   ) => this.onLifecycle(state, resp, err)
   private readonly roomDataListener = (roomId: string, roomData: MSC3575RoomData) => this.onRoomData(roomId, roomData)
-  private readonly listUpdateListener = (rooms: string[], signal: Record<string, unknown>) =>
-    this.onListUpdate(rooms, signal)
 
   get isInitialized(): boolean {
     return this._isInitialized
@@ -67,15 +67,31 @@ export class MatrixSlidingSyncService {
 
     this.slidingSync = syncInstance
     this._isInitialized = true
+    this.hasCompletedInitialSync = false
 
-    this.slidingSync.on('sync', this.lifecycleListener)
-    this.slidingSync.on('Room.data', this.roomDataListener)
-    this.slidingSync.on('Lists.default', this.listUpdateListener)
+    this.slidingSync.on(SlidingSyncEvent.Lifecycle, this.lifecycleListener)
+    this.slidingSync.on(SlidingSyncEvent.RoomData, this.roomDataListener)
 
     this.reconnectManager.setReconnectFn(async () => {
       const client = matrixClientService.getClient()
       if (client) {
         ;(client as unknown as { retryImmediately?: () => void }).retryImmediately?.()
+      }
+    })
+
+    this.reconnectManager.registerCallbacks({
+      onStateChange: (state) => {
+        switch (state) {
+          case 'reconnecting':
+            matrixClientService.updateConnectionState('RECONNECTING')
+            break
+          case 'failed':
+            matrixClientService.updateConnectionState('ERROR')
+            break
+          case 'connected':
+            matrixClientService.updateConnectionState('CONNECTED')
+            break
+        }
       }
     })
 
@@ -99,12 +115,11 @@ export class MatrixSlidingSyncService {
   }
 
   private detachListeners(instance: SlidingSync): void {
-    instance.off('sync', this.lifecycleListener)
-    instance.off('Room.data', this.roomDataListener)
-    instance.off('Lists.default', this.listUpdateListener)
+    instance.off(SlidingSyncEvent.Lifecycle, this.lifecycleListener)
+    instance.off(SlidingSyncEvent.RoomData, this.roomDataListener)
   }
 
-  private onLifecycle(state: string, resp: MSC3575SlidingSyncResponse | null, err?: Error) {
+  private onLifecycle(state: SlidingSyncState, resp: MSC3575SlidingSyncResponse | null, err?: Error) {
     if (err) {
       error(`[SlidingSync] Lifecycle error: ${err.message}`)
       this.reconnectManager.onError(err)
@@ -112,15 +127,8 @@ export class MatrixSlidingSyncService {
     }
 
     switch (state) {
-      case 'COMPENSATING':
-        info('[SlidingSync] Compensating...')
-        break
-      case 'CATCHUP':
-        info('[SlidingSync] Catching up...')
-        break
-      case 'SYNCING':
-        info('[SlidingSync] Syncing...')
-        this.reconnectManager.onConnected()
+      case 'FINISHED':
+        info('[SlidingSync] Request finished')
         break
       case 'COMPLETE':
         info('[SlidingSync] Sync complete')
@@ -137,6 +145,7 @@ export class MatrixSlidingSyncService {
 
     const unreadUpdates: SlidingSyncUnreadUpdate[] = []
     const roomUpdates: string[] = []
+    const shouldRefreshRoomList = this.hasCompletedInitialSync && this.shouldRefreshRoomList(resp)
 
     for (const roomId of Object.keys(resp.rooms)) {
       const roomData = resp.rooms[roomId]
@@ -162,6 +171,13 @@ export class MatrixSlidingSyncService {
     for (const roomId of roomUpdates) {
       this.callbacks.onRoomUpdate?.(roomId)
     }
+
+    if (shouldRefreshRoomList) {
+      info('[SlidingSync] Room list refresh requested')
+      this.callbacks.onRoomListRefresh?.()
+    }
+
+    this.hasCompletedInitialSync = true
   }
 
   private onRoomData(roomId: string, roomData: MSC3575RoomData) {
@@ -182,12 +198,21 @@ export class MatrixSlidingSyncService {
 
     info(`[SlidingSync] Room data updated: ${roomId}`)
   }
+  private shouldRefreshRoomList(resp: MSC3575SlidingSyncResponse): boolean {
+    return Object.values(resp.rooms).some((roomData) => {
+      const hasStateDelta = !!roomData.state && Object.keys(roomData.state).length > 0
+      const hasSummaryDelta = !!roomData.summary && Object.keys(roomData.summary).length > 0
 
-  private onListUpdate(rooms: string[], signal: Record<string, unknown>) {
-    if (!signal?.initial) {
-      info(`[SlidingSync] List updated: ${rooms.length} rooms`)
-      this.callbacks.onRoomListRefresh?.()
-    }
+      return Boolean(
+        roomData.initial ||
+          roomData.name ||
+          roomData.is_dm !== undefined ||
+          roomData.prev_batch !== undefined ||
+          roomData.timeline?.length ||
+          hasStateDelta ||
+          hasSummaryDelta
+      )
+    })
   }
 
   updateVisibleRange(startIndex: number, endIndex: number): void {
@@ -308,6 +333,7 @@ export class MatrixSlidingSyncService {
     this.reconnectManager.destroy()
     this.slidingSync = null
     this._isInitialized = false
+    this.hasCompletedInitialSync = false
     this.callbacks = {}
     info('[SlidingSync] Service destroyed')
   }

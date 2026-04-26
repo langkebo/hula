@@ -1,4 +1,4 @@
-import { resolveMatrixEndpointConfig } from '@/services/backend'
+import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { UploadSceneEnum } from '@/enums'
 import { info, error } from '@tauri-apps/plugin-log'
 
@@ -25,7 +25,7 @@ class UploadService {
   private baseUrl: string = ''
 
   constructor() {
-    const { homeserverUrl } = resolveMatrixEndpointConfig()
+    const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
     this.baseUrl = homeserverUrl
   }
 

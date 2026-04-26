@@ -28,8 +28,7 @@ export interface MatrixRoomMember {
   itemIds?: string[]
   linkedGitee?: boolean
   linkedGithub?: boolean
-  linkedGitcode?: boolean
-  oauthProviders?: ('gitee' | 'github' | 'gitcode')[]
+  oauthProviders?: ('gitee' | 'github')[]
   hideMyPosts?: boolean
   hideTheirPosts?: boolean
 }
