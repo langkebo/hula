@@ -1,5 +1,5 @@
 <template>
-  <div class="push-settings">
+  <div :class="['push-settings', { 'push-settings--embedded': embedded }]">
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.push.devices') }}</h3>
       <n-spin :show="loading">
@@ -87,6 +87,15 @@ import { matrixPushService, type IPusher, type IPushRules, type PushRuleKind, ty
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PushSettings')
+
+withDefaults(
+  defineProps<{
+    embedded?: boolean
+  }>(),
+  {
+    embedded: false
+  }
+)
 
 defineOptions({
   name: 'PushSettings'
@@ -275,6 +284,10 @@ function handleDndTimeChange() {
 <style scoped>
 .push-settings {
   padding: 0 8px;
+}
+
+.push-settings--embedded {
+  padding: 0;
 }
 
 .settings-section {

@@ -23,7 +23,7 @@
             autocorrect="off"
             autocapitalize="off"
             @keydown.enter="handleSearch"
-            @clear="handleClear">
+            @clear="handleSearchClear">
             <template #left-icon>
               <svg class="w-14px h-14px"><use href="#search" /></svg>
             </template>
@@ -44,7 +44,7 @@
             <template v-else-if="searchResults.length">
               <FloatBlockList
                 :data-source="searchResults"
-                item-key="id"
+                item-key="account"
                 :item-height="64"
                 max-height="calc(100vh / var(--page-scale, 1) - 128px)"
                 style-id="search-hover-classes">
@@ -77,11 +77,11 @@
 
                       <van-button
                         plain
-                        :type="getVantButtonType(item.uid, item.roomId)"
+                        :type="getVantButtonType(item)"
                         size="small"
                         class="action-button"
                         @click="handleButtonClick(item)">
-                        {{ getButtonText(item.uid, item.roomId) }}
+                        {{ getButtonText(item) }}
                       </van-button>
                     </div>
                   </div>
@@ -115,39 +115,17 @@
 <script setup lang="ts">
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useDebounceFn } from '@vueuse/core'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
+import { useFriends, type FriendSearchResult } from '@/composables/useFriends'
 import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
-import type { FriendItem } from '@/services/types'
 import { useBadgeStore } from '@/stores/domains/chat/badge'
-import { createLogger } from '@/utils/Logger'
-import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixContactService, type UserProfile } from '@/services/matrix'
-import { matrixGroupService, type GroupSearchResult } from '@/services/matrix/room/MatrixGroupService'
 import { isMobile } from '@/utils/PlatformConstants'
 import router from '@/router'
 
-const logger = createLogger('AddFriends')
-
-interface SearchResult {
-  uid?: string
-  account: string
-  name: string
-  avatar: string
-  itemIds?: string[] | null
-  roomId?: string
-  deleteStatus?: boolean
-  extJson?: string
-}
-
-const contactStore = useContactStore()
-const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const badgeStore = useBadgeStore()
@@ -157,43 +135,24 @@ const tabs = ref([
   { name: 'user', label: '找好友' },
   { name: 'group', label: '找群聊' }
 ])
-const searchType = ref<string>('recommend')
+const {
+  searchType,
+  searchValue,
+  searchResults,
+  hasSearched,
+  loading,
+  initialLoading,
+  handleSearch,
+  handleClear: clearSearch,
+  handleTypeChange,
+  initialize,
+  getActionKind
+} = useFriends()
+
 const searchPlaceholder: Record<string, string> = {
   recommend: '输入推荐关键词',
   user: '输入昵称搜索好友',
   group: '输入群号搜索群聊'
-}
-const searchValue = ref('')
-const searchResults = ref<SearchResult[]>([])
-const hasSearched = ref(false)
-const loading = ref(false)
-const initialLoading = ref(true)
-
-const getCachedUsers = (): SearchResult[] => {
-  const users = groupStore.allUserInfo
-  logger.debug('users:', users.length)
-
-  return sortSearchResults(
-    users
-      .filter((user) => {
-        const uid = user.uid as string
-        return uid >= '20016' && uid <= '20030'
-      })
-      .map((user) => ({
-        uid: user.uid,
-        account: user.account,
-        name: user.name,
-        avatar: user.avatar,
-        itemIds: user.itemIds || null
-      })),
-    'recommend'
-  )
-}
-
-const clearSearchResults = () => {
-  searchResults.value = []
-  hasSearched.value = false
-  searchValue.value = ''
 }
 
 const handleCopy = (account: string) => {
@@ -201,145 +160,47 @@ const handleCopy = (account: string) => {
   window.$message.success(`复制成功 ${account}`)
 }
 
-const handleClear = () => {
-  clearSearchResults()
-
-  if (searchType.value === 'recommend') {
-    searchResults.value = getCachedUsers()
-  }
-}
-
-const handleSearch = useDebounceFn(async () => {
-  if (!searchValue.value.trim()) {
-    if (searchType.value === 'recommend') {
-      searchResults.value = getCachedUsers()
-    }
-    return
-  }
-
-  loading.value = true
-  hasSearched.value = true
-
+const handleSearchClear = () => {
   try {
-    if (searchType.value === 'group') {
-      const res = await matrixGroupService.searchGroup(searchValue.value)
-      searchResults.value = res.map((group: GroupSearchResult) => ({
-        account: group.account,
-        name: group.name,
-        avatar: group.avatar || '',
-        deleteStatus: !!group.deleteStatus,
-        extJson: group.extJson,
-        roomId: group.roomId
-      }))
-    } else if (searchType.value === 'user') {
-      const res = await matrixContactService.searchFriend(searchValue.value)
-      searchResults.value = res.map((user: UserProfile) => ({
-        uid: user.userId,
-        name: user.displayName || '',
-        avatar: user.avatarUrl || '',
-        account: user.userId
-      }))
-    } else {
-      const cachedUsers = getCachedUsers()
-      searchResults.value = cachedUsers.filter(
-        (user) =>
-          user?.name?.includes(searchValue.value) || (user.uid && user.uid.toString().includes(searchValue.value))
-      )
-    }
-    searchResults.value = sortSearchResults(searchResults.value, searchType.value)
+    clearSearch()
   } catch (error) {
     window.$message.error('搜索失败')
-    searchResults.value = []
-  } finally {
-    loading.value = false
-  }
-}, 300)
-
-const handleTypeChange = () => {
-  clearSearchResults()
-
-  if (searchType.value === 'recommend') {
-    searchResults.value = getCachedUsers()
-  }
-}
-const groupStore = useGroupStore()
-const isInGroup = (roomId: string) => {
-  return groupStore.groupDetails.some((group) => group.roomId === roomId)
-}
-
-const sortSearchResults = (items: SearchResult[], type: string) => {
-  if (type === 'group') {
-    return items.sort((a, b) => {
-      const aInGroup = isInGroup(a.roomId || '')
-      const bInGroup = isInGroup(b.roomId || '')
-      if (aInGroup && !bInGroup) return -1
-      if (!aInGroup && bInGroup) return 1
-      return 0
-    })
-  } else {
-    return items.sort((a, b) => {
-      const aUid = String(a.uid || '')
-      const bUid = String(b.uid || '')
-
-      if (isCurrentUser(aUid)) return -1
-      if (isCurrentUser(bUid)) return 1
-
-      const aIsFriend = isFriend(aUid)
-      const bIsFriend = isFriend(bUid)
-      if (aIsFriend && !bIsFriend) return -1
-      if (!aIsFriend && bIsFriend) return 1
-
-      return 0
-    })
   }
 }
 
-const isFriend = (uid: string) => {
-  return contactStore.contactsList.some((contact: FriendItem) => contact.uid === uid)
-}
-
-const isCurrentUser = (uid: string) => {
-  return userStore.userInfo!.uid === uid
-}
-
-const getButtonText = (uid: string, roomId: string) => {
-  if (searchType.value === 'group') {
-    return isInGroup(roomId) ? '发消息' : '添加'
-  }
-  if (isCurrentUser(uid)) return '编辑资料'
-  if (isFriend(uid)) return '发消息'
+const getButtonText = (item: FriendSearchResult) => {
+  const action = getActionKind(item)
+  if (action === 'edit-profile') return '编辑资料'
+  if (action === 'message') return '发消息'
   return '添加'
 }
 
-const getVantButtonType = (uid: string, roomId: string): 'default' | 'primary' | 'success' | 'warning' | 'danger' => {
-  if (searchType.value === 'group') {
-    return isInGroup(roomId) ? 'default' : 'primary'
-  }
-  if (isCurrentUser(uid)) return 'default'
-  if (isFriend(uid)) return 'default'
+const getVantButtonType = (item: FriendSearchResult): 'default' | 'primary' | 'success' | 'warning' | 'danger' => {
+  const action = getActionKind(item)
+  if (action === 'edit-profile' || action === 'message') return 'default'
   return 'primary'
 }
 
-const handleButtonClick = (item: SearchResult) => {
-  if (searchType.value === 'group') {
-    if (item.roomId && isInGroup(item.roomId)) {
+const handleButtonClick = (item: FriendSearchResult) => {
+  const action = getActionKind(item)
+  if (action === 'edit-profile') {
+    handleEditProfile()
+    return
+  }
+
+  if (action === 'message') {
+    if (searchType.value === 'group') {
       handleSendGroupMessage(item)
     } else {
-      handleAddFriend(item)
+      handleSendMessage(item)
     }
     return
   }
 
-  if (item.uid && isCurrentUser(item.uid)) {
-    handleEditProfile()
-  } else if (item.uid && isFriend(item.uid)) {
-    handleSendMessage(item)
-  } else {
-    handleAddFriend(item)
-  }
+  handleAddFriend(item)
 }
 
-const handleAddFriend = async (item: SearchResult) => {
+const handleAddFriend = async (item: FriendSearchResult) => {
   if (searchType.value === 'user' || searchType.value === 'recommend') {
     globalStore.addFriendModalInfo.uid = item.uid || ''
 
@@ -361,11 +222,11 @@ const handleEditProfile = async () => {
   emitTo('home', 'open_edit_info')
 }
 
-const handleSendMessage = async (item: SearchResult) => {
+const handleSendMessage = async (item: FriendSearchResult) => {
   emitTo('home', 'search_to_msg', { uid: item.uid, roomType: RoomTypeEnum.SINGLE })
 }
 
-const handleSendGroupMessage = async (item: SearchResult) => {
+const handleSendGroupMessage = async (item: FriendSearchResult) => {
   emitTo('home', 'search_to_msg', {
     uid: item.roomId,
     roomType: RoomTypeEnum.GROUP
@@ -373,17 +234,7 @@ const handleSendGroupMessage = async (item: SearchResult) => {
 }
 
 onMounted(async () => {
-  try {
-    await contactStore.getContactList(true)
-
-    const cachedUsers = getCachedUsers()
-
-    if (searchType.value === 'recommend') {
-      searchResults.value = cachedUsers
-    }
-  } finally {
-    initialLoading.value = false
-  }
+  await initialize()
 })
 </script>
 

@@ -75,6 +75,11 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/plugins/dynamic/detail.vue')
   },
   {
+    path: '/favorites',
+    name: 'favorites',
+    component: () => import('@/views/favoritesWindow/index.vue')
+  },
+  {
     path: '/onlineStatus',
     name: 'onlineStatus',
     component: () => import('@/views/onlineStatusWindow/index.vue')
@@ -102,89 +107,79 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
   {
     path: '/settings',
     name: 'settings',
-    component: () => import('@/views/moreWindow/settings/index.vue'),
-    children: [
-      {
-        path: '/general',
-        name: 'general',
-        component: () => import('@/views/moreWindow/settings/General.vue')
-      },
-      {
-        path: '/loginSetting',
-        name: 'loginSetting',
-        component: () => import('@/views/moreWindow/settings/LoginSetting.vue')
-      },
-      {
-        path: '/notification',
-        name: 'notification',
-        component: () => import('@/views/moreWindow/settings/Notification.vue')
-      },
-      {
-        path: '/versatile',
-        name: 'versatile',
-        component: () => import('@/views/moreWindow/settings/Versatile.vue')
-      },
-      {
-        path: '/manageStore',
-        name: 'manageStore',
-        component: () => import('@/views/moreWindow/settings/ManageStore.vue')
-      },
-      {
-        path: '/shortcut',
-        name: 'shortcut',
-        component: () => import('@/views/moreWindow/settings/Shortcut.vue')
-      },
-      {
-        path: '/privateChat',
-        name: 'privateChat',
-        component: () => import('@/views/moreWindow/settings/PrivateChat.vue')
-      },
-      {
-        path: '/account',
-        name: 'account',
-        component: () => import('@/views/moreWindow/settings/Account.vue')
-      },
-      {
-        path: '/sessions',
-        name: 'sessions',
-        component: () => import('@/views/moreWindow/settings/Sessions.vue')
-      },
-      {
-        path: '/appearance',
-        name: 'appearance',
-        component: () => import('@/views/moreWindow/settings/Appearance.vue')
-      },
-      {
-        path: '/sidebar',
-        name: 'sidebar',
-        component: () => import('@/views/moreWindow/settings/Sidebar.vue')
-      },
-      {
-        path: '/voiceVideo',
-        name: 'voiceVideo',
-        component: () => import('@/views/moreWindow/settings/VoiceVideo.vue')
-      },
-      {
-        path: '/securityPrivacy',
-        name: 'securityPrivacy',
-        component: () => import('@/views/moreWindow/settings/SecurityPrivacy.vue')
-      },
-      {
-        path: '/helpAbout',
-        name: 'helpAbout',
-        component: () => import('@/views/moreWindow/settings/HelpAbout.vue')
-      },
-      {
-        path: '/encryption',
-        name: 'encryption',
-        component: () => import('@/views/moreWindow/settings/Encryption.vue')
-      },
-      {
-        path: '/threepid',
-        name: 'threepid',
-        component: () => import('@/views/moreWindow/settings/ThreePidSettings.vue')
-      }
-    ]
+    component: () => import('@/views/settingsWindow/index.vue')
+  },
+  {
+    path: '/general',
+    redirect: '/settings?tab=preferences'
+  },
+  {
+    path: '/loginSetting',
+    redirect: '/settings?tab=preferences'
+  },
+  {
+    path: '/manageStore',
+    redirect: '/settings?tab=preferences'
+  },
+  {
+    path: '/notification',
+    redirect: '/settings?tab=notifications'
+  },
+  {
+    path: '/shortcut',
+    redirect: '/settings?tab=keyboard'
+  },
+  {
+    path: '/privateChat',
+    redirect: '/settings?tab=securityPrivacy'
+  },
+  {
+    path: '/account',
+    redirect: '/settings?tab=account'
+  },
+  {
+    path: '/sessions',
+    redirect: '/settings?tab=sessions'
+  },
+  {
+    path: '/appearance',
+    redirect: '/settings?tab=appearance'
+  },
+  {
+    path: '/sidebar',
+    redirect: '/settings?tab=sidebar'
+  },
+  {
+    path: '/voiceVideo',
+    redirect: '/settings?tab=voiceVideo'
+  },
+  {
+    path: '/security-privacy',
+    redirect: '/settings?tab=securityPrivacy'
+  },
+  {
+    path: '/securityPrivacy',
+    redirect: '/settings?tab=securityPrivacy'
+  },
+  {
+    path: '/help-about',
+    redirect: '/settings?tab=helpAbout'
+  },
+  {
+    path: '/helpAbout',
+    redirect: '/settings?tab=helpAbout'
+  },
+  {
+    path: '/encryption',
+    redirect: '/settings?tab=encryption'
+  },
+  {
+    path: '/threepid',
+    redirect: '/settings?tab=account'
+  },
+  {
+    path: '/versatile',
+    redirect: '/settings?tab=appearance'
   },
   {
     path: '/announList/:roomId/:type',

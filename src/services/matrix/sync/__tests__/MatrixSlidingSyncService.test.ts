@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import matrixSlidingSyncService from '../MatrixSlidingSyncService'
+import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -11,7 +12,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 vi.mock('../../MatrixClientService', () => ({
   default: {
     getSlidingSync: vi.fn(() => null),
-    getClient: vi.fn(() => null)
+    getClient: vi.fn(() => null),
+    updateConnectionState: vi.fn()
   }
 }))
 
@@ -37,9 +39,9 @@ describe('MatrixSlidingSyncService', () => {
     vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(newSync as any)
     await matrixSlidingSyncService.initialize()
 
-    expect(oldSync.on).toHaveBeenCalledTimes(3)
-    expect(oldSync.off).toHaveBeenCalledTimes(3)
-    expect(newSync.on).toHaveBeenCalledTimes(3)
+    expect(oldSync.on).toHaveBeenCalledTimes(2)
+    expect(oldSync.off).toHaveBeenCalledTimes(2)
+    expect(newSync.on).toHaveBeenCalledTimes(2)
   })
 
   it('invokes onUnreadCountsUpdate callback on sync complete', async () => {
@@ -48,7 +50,7 @@ describe('MatrixSlidingSyncService', () => {
 
     const syncInstance = {
       on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
-        if (event === 'sync') {
+        if (event === SlidingSyncEvent.Lifecycle) {
           setTimeout(() => cb('COMPLETE', { rooms: { '!room:1': { notification_count: 5, highlight_count: 2 } } }), 0)
         }
       }),
@@ -69,11 +71,11 @@ describe('MatrixSlidingSyncService', () => {
     const onRoomListRefresh = vi.fn()
     matrixSlidingSyncService.registerCallbacks({ onRoomListRefresh })
 
-    let listCallback: (...args: unknown[]) => void = () => {}
+    let lifecycleCallback: (...args: unknown[]) => void = () => {}
     const syncInstance = {
       on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
-        if (event === 'Lists.default') {
-          listCallback = cb
+        if (event === SlidingSyncEvent.Lifecycle) {
+          lifecycleCallback = cb
         }
       }),
       off: vi.fn()
@@ -82,7 +84,8 @@ describe('MatrixSlidingSyncService', () => {
     vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as any)
     await matrixSlidingSyncService.initialize()
 
-    listCallback(['!room:1'], { initial: false })
+    lifecycleCallback('COMPLETE', { rooms: { '!room:1': { timeline: [{}] } } })
+    lifecycleCallback('COMPLETE', { rooms: { '!room:1': { timeline: [{}] } } })
 
     expect(onRoomListRefresh).toHaveBeenCalled()
   })
@@ -91,11 +94,11 @@ describe('MatrixSlidingSyncService', () => {
     const onRoomListRefresh = vi.fn()
     matrixSlidingSyncService.registerCallbacks({ onRoomListRefresh })
 
-    let listCallback2: (...args: unknown[]) => void = () => {}
+    let lifecycleCallback: (...args: unknown[]) => void = () => {}
     const syncInstance = {
       on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
-        if (event === 'Lists.default') {
-          listCallback2 = cb
+        if (event === SlidingSyncEvent.Lifecycle) {
+          lifecycleCallback = cb
         }
       }),
       off: vi.fn()
@@ -104,7 +107,7 @@ describe('MatrixSlidingSyncService', () => {
     vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as any)
     await matrixSlidingSyncService.initialize()
 
-    listCallback2(['!room:1'], { initial: true })
+    lifecycleCallback('COMPLETE', { rooms: { '!room:1': { timeline: [{}] } } })
 
     expect(onRoomListRefresh).not.toHaveBeenCalled()
   })

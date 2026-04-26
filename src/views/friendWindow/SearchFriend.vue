@@ -32,7 +32,7 @@
           autoCapitalize="off"
           clearable
           @keydown.enter="handleSearch"
-          @clear="handleClear">
+          @clear="handleSearchClear">
           <template #prefix>
             <n-icon>
               <svg class="icon" aria-hidden="true">
@@ -102,11 +102,11 @@
                     <!-- 三种状态的按钮 -->
                     <n-button
                       secondary
-                      :type="getButtonType(item.uid, item.roomId)"
+                      :type="getButtonType(item)"
                       size="small"
                       class="action-button"
                       @click="handleButtonClick(item)">
-                      {{ getButtonText(item.uid, item.roomId) }}
+                      {{ getButtonText(item) }}
                     </n-button>
                   </n-flex>
                 </div>
@@ -149,30 +149,18 @@
 <script setup lang="ts">
 import { emitTo } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('SearchFriend')
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
+import { useFriends, type FriendSearchResult } from '@/composables/useFriends'
 import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
 import { useWindow } from '@/hooks/useWindow'
-import type { FriendItem } from '@/services/types'
-import type { UserProfile } from '@/services/matrix/user/MatrixContactService'
 import { useBadgeStore } from '@/stores/domains/chat/badge'
-import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixContactService, matrixFriendService } from '@/services/matrix'
-import { matrixGroupService, type GroupSearchResult } from '@/services/matrix/room/MatrixGroupService'
 
 const { createWebviewWindow } = useWindow()
-const contactStore = useContactStore()
-const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const badgeStore = useBadgeStore()
@@ -180,84 +168,30 @@ const { themes } = storeToRefs(settingStore)
 
 // 定义标签页
 const { t } = useI18n()
-type SearchType = 'recommend' | 'user' | 'group'
-
-type BaseSearchResult = {
-  account: string
-  name: string
-  avatar: string
-  itemIds?: string[] | null
-  isFavorite?: boolean
-}
-
-type UserSearchResult = BaseSearchResult & {
-  uid: string
-  roomId?: string
-}
-
-type GroupSearchViewItem = BaseSearchResult & {
-  roomId: string
-  uid?: string
-  deleteStatus?: number
-  extJson?: string
-}
-
-type SearchResultItem = UserSearchResult | GroupSearchViewItem
-
 const tabs = computed(() => [
   { name: 'recommend', label: t('home.search_window.tabs.recommend') },
   { name: 'user', label: t('home.search_window.tabs.user') },
   { name: 'group', label: t('home.search_window.tabs.group') }
 ])
-// 搜索类型
-const searchType = ref<SearchType>('recommend')
+const {
+  searchType,
+  searchValue,
+  searchResults,
+  hasSearched,
+  loading,
+  initialLoading,
+  handleSearch,
+  handleClear: clearSearch,
+  handleTypeChange,
+  initialize,
+  getActionKind
+} = useFriends()
 // 搜索类型对应的placeholder映射
 const searchPlaceholder = computed(() => ({
   recommend: t('home.search_window.placeholder.recommend'),
   user: t('home.search_window.placeholder.user'),
   group: t('home.search_window.placeholder.group')
 }))
-// 搜索值
-const searchValue = ref('')
-// 搜索结果
-const searchResults = ref<SearchResultItem[]>([])
-// 是否已经搜索过
-const hasSearched = ref(false)
-// 加载状态
-const loading = ref(false)
-// 初始加载状态
-const initialLoading = ref(true)
-
-// 从缓存存储中获取用户数据
-const getCachedUsers = (): SearchResultItem[] => {
-  const users = groupStore.allUserInfo
-  logger.debug('getCachedUsers', users)
-
-  return sortSearchResults(
-    users
-      .filter((user) => {
-        const uid = String(user.uid)
-        return uid >= '20016' && uid <= '20030'
-      })
-      .map(
-        (user): UserSearchResult => ({
-          uid: user.uid,
-          account: user.account,
-          name: user.name,
-          avatar: user.avatar,
-          itemIds: user.itemIds || null
-        })
-      ),
-    'recommend'
-  )
-}
-
-// 清空搜索结果
-const clearSearchResults = () => {
-  searchResults.value = []
-  hasSearched.value = false
-  searchValue.value = ''
-}
 
 // 处理复制账号
 const handleCopy = (account: string) => {
@@ -266,180 +200,52 @@ const handleCopy = (account: string) => {
 }
 
 // 处理清空按钮点击
-const handleClear = () => {
-  clearSearchResults()
-
-  // 如果是推荐标签，重新加载推荐用户
-  if (searchType.value === 'recommend') {
-    searchResults.value = getCachedUsers()
-  }
-}
-
-// 处理搜索
-const handleSearch = useDebounceFn(async () => {
-  if (!searchValue.value.trim()) {
-    // 如果搜索框为空且是推荐标签，显示所有推荐用户
-    if (searchType.value === 'recommend') {
-      searchResults.value = getCachedUsers()
-    }
-    return
-  }
-
-  loading.value = true
-  hasSearched.value = true
-
+const handleSearchClear = () => {
   try {
-    if (searchType.value === 'group') {
-      // 调用群聊搜索接口
-      const res = await matrixGroupService.searchGroup(searchValue.value)
-      searchResults.value = res.map(
-        (group: GroupSearchResult): GroupSearchViewItem => ({
-          account: group.account,
-          name: group.name,
-          avatar: group.avatar || '',
-          deleteStatus: group.deleteStatus ? 1 : 0,
-          extJson: group.extJson,
-          roomId: group.roomId
-        })
-      )
-    } else if (searchType.value === 'user') {
-      // 调用好友搜索接口
-      const res = await matrixContactService.searchFriend(searchValue.value)
-      const specialFriends = await matrixFriendService.getSpecialFriends()
-      searchResults.value = res.map(
-        (user: UserProfile): UserSearchResult => ({
-          uid: user.userId,
-          name: user.displayName || user.userId,
-          avatar: user.avatarUrl || '',
-          account: user.userId,
-          isFavorite: specialFriends.includes(user.userId)
-        })
-      )
-    } else if (searchType.value === 'recommend') {
-      // 推荐标签搜索结果
-      const cachedUsers = getCachedUsers()
-      searchResults.value = cachedUsers.filter(
-        (user) =>
-          user?.name?.includes(searchValue.value) || (user.uid && user.uid.toString().includes(searchValue.value))
-      )
-    }
-    // 通用排序函数
-    searchResults.value = sortSearchResults(searchResults.value, searchType.value)
+    clearSearch()
   } catch (error) {
     window.$message.error(t('home.search_window.notification.search_fail'))
-    searchResults.value = []
-  } finally {
-    loading.value = false
   }
-}, 300)
-
-// 处理选项卡切换
-const handleTypeChange = () => {
-  clearSearchResults()
-
-  if (searchType.value === 'recommend') {
-    searchResults.value = getCachedUsers()
-  }
-}
-const groupStore = useGroupStore()
-// 判断是否已加入群聊
-const isInGroup = (roomId: string) => {
-  return groupStore.groupDetails.some((group) => group.roomId === roomId)
-}
-
-// 通用排序函数
-const sortSearchResults = (items: SearchResultItem[], type: SearchType) => {
-  if (type === 'group') {
-    // 群聊排序逻辑：已加入的群聊排在前面
-    return items.sort((a, b) => {
-      const aInGroup = isInGroup(a.roomId || '')
-      const bInGroup = isInGroup(b.roomId || '')
-      if (aInGroup && !bInGroup) return -1
-      if (!aInGroup && bInGroup) return 1
-      return 0
-    })
-  } else {
-    // 用户排序逻辑：自己排在最前面，好友排在第二位
-    return items.sort((a, b) => {
-      // 处理uid可能是string或number的情况
-      const aUid = String(a.uid)
-      const bUid = String(b.uid)
-
-      // 自己排在最前面
-      if (isCurrentUser(aUid)) return -1
-      if (isCurrentUser(bUid)) return 1
-
-      // 好友排在第二位
-      const aIsFriend = isFriend(aUid)
-      const bIsFriend = isFriend(bUid)
-      if (aIsFriend && !bIsFriend) return -1
-      if (!aIsFriend && bIsFriend) return 1
-
-      return 0
-    })
-  }
-}
-
-// 判断是否已经是好友
-const isFriend = (uid: string) => {
-  return contactStore.contactsList.some((contact: FriendItem) => contact.uid === uid)
-}
-
-// 判断是否是当前登录用户
-const isCurrentUser = (uid: string) => {
-  return userStore.userInfo!.uid === uid
 }
 
 // 获取按钮文本
-const getButtonText = (uid: string, roomId: string) => {
-  // 群聊逻辑
-  if (searchType.value === 'group') {
-    return isInGroup(roomId) ? t('home.search_window.buttons.message') : t('home.search_window.buttons.add')
+const getButtonText = (item: FriendSearchResult) => {
+  const action = getActionKind(item)
+  if (action === 'edit-profile') {
+    return t('home.search_window.buttons.edit_profile')
   }
-  // 用户逻辑
-  if (isCurrentUser(uid)) return t('home.search_window.buttons.edit_profile')
-  if (isFriend(uid)) return t('home.search_window.buttons.message')
+  if (action === 'message') {
+    return t('home.search_window.buttons.message')
+  }
   return t('home.search_window.buttons.add')
 }
 
 // 获取按钮类型
-const getButtonType = (uid: string, roomId: string) => {
-  // 群聊逻辑
-  if (searchType.value === 'group') {
-    return isInGroup(roomId) ? 'info' : 'primary'
-  }
-  // 用户逻辑
-  if (isCurrentUser(uid)) return 'default'
-  if (isFriend(uid)) return 'info'
+const getButtonType = (item: FriendSearchResult) => {
+  const action = getActionKind(item)
+  if (action === 'edit-profile') return 'default'
+  if (action === 'message') return 'info'
   return 'primary'
 }
 
 // 处理按钮点击
-const handleButtonClick = (item: SearchResultItem) => {
-  const uid = String(item.uid || '')
-  const roomId = item.roomId || ''
-
-  if (searchType.value === 'group') {
-    if (isInGroup(roomId)) {
+const handleButtonClick = (item: FriendSearchResult) => {
+  const action = getActionKind(item)
+  if (action === 'edit-profile') {
+    handleEditProfile()
+  } else if (action === 'message') {
+    if (searchType.value === 'group') {
       handleSendGroupMessage(item)
     } else {
-      handleAddFriend(item)
+      handleSendMessage(item)
     }
-    return
-  }
-
-  // 用户逻辑保持不变
-  if (isCurrentUser(uid)) {
-    handleEditProfile()
-  } else if (isFriend(uid)) {
-    handleSendMessage(item)
   } else {
     handleAddFriend(item)
   }
 }
 
 // 处理添加好友或群聊
-const handleAddFriend = async (item: SearchResultItem) => {
+const handleAddFriend = async (item: FriendSearchResult) => {
   if (searchType.value === 'user' || searchType.value === 'recommend') {
     await createWebviewWindow(
       t('home.search_window.modal.add_friend'),
@@ -473,13 +279,13 @@ const handleEditProfile = async () => {
 }
 
 // 处理发送消息
-const handleSendMessage = async (item: SearchResultItem) => {
+const handleSendMessage = async (item: FriendSearchResult) => {
   const uid = String(item.uid || '')
   emitTo('home', 'search_to_msg', { uid, roomType: RoomTypeEnum.SINGLE })
 }
 
 // 处理发送群消息
-const handleSendGroupMessage = async (item: SearchResultItem) => {
+const handleSendGroupMessage = async (item: FriendSearchResult) => {
   emitTo('home', 'search_to_msg', {
     uid: item.roomId,
     roomType: RoomTypeEnum.GROUP
@@ -488,21 +294,7 @@ const handleSendGroupMessage = async (item: SearchResultItem) => {
 
 onMounted(async () => {
   await getCurrentWebviewWindow().show()
-
-  try {
-    // 初始化联系人列表
-    await contactStore.getContactList(true)
-
-    // 从缓存中获取推荐用户
-    const cachedUsers = getCachedUsers()
-
-    // 默认展示推荐用户
-    if (searchType.value === 'recommend') {
-      searchResults.value = cachedUsers
-    }
-  } finally {
-    initialLoading.value = false
-  }
+  await initialize()
 })
 </script>
 

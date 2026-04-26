@@ -281,8 +281,7 @@
     "tooltip": {
       "copy_account": "复制账号",
       "bound_gitee": "已绑定 Gitee",
-      "bound_github": "已绑定 GitHub",
-      "bound_gitcode": "已绑定 Gitcode"
+      "bound_github": "已绑定 GitHub"
     },
     "buttons": {
       "edit": "编辑资料",
@@ -397,7 +396,7 @@
   "chat_main": {
     "network_offline": "当前网络不可用，请检查你的网络设置",
     "network_connecting": "正在连接服务器...",
-    "network_ws_offline": "服务器连接已断开，正在重试",
+    "network_ws_offline": "网络连接已断开，正在尝试重连...",
     "copy": {
       "empty": "没有可复制的内容",
       "image_processing": "正在将 {format} 格式图片转换为 PNG 并复制...",

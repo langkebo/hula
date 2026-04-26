@@ -1,4 +1,3 @@
-import { type } from '@tauri-apps/plugin-os'
 import {
   createRouter,
   createWebHistory,
@@ -13,13 +12,15 @@ import { createAuthGuard } from '@/router/authGuard'
 import { getCommonRoutes } from '@/router/routes/common'
 import { getDesktopRoutes } from '@/router/routes/desktop'
 import { getMobileRoutes } from '@/router/routes/mobile'
+import { detectAppPlatform, shouldBypassAuthForE2E } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RouterGuard')
 
 const { BASE_URL } = import.meta.env
 
-const isMobile = type() === 'ios' || type() === 'android'
+const appPlatform = detectAppPlatform()
+const isMobile = appPlatform === 'mobile'
 
 const getAllRoutes = (): Array<RouteRecordRaw> => {
   const commonRoutes = getCommonRoutes()
@@ -42,7 +43,8 @@ const authGuard = createAuthGuard({
     const { useAdminStore } = await import('@/stores/domains/admin/admin')
     return useAdminStore().verifyAdminAccess()
   },
-  logger
+  logger,
+  shouldBypassAuth: () => shouldBypassAuthForE2E()
 })
 
 router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {

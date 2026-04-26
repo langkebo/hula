@@ -16,6 +16,13 @@ vi.mock('../../MatrixClientService', () => ({
   default: { getClient: () => getClientMock() }
 }))
 
+const enqueueMock = vi.fn()
+vi.mock('@/services/offline/OfflineQueueService', () => ({
+  offlineQueueService: {
+    enqueue: (...args: any[]) => enqueueMock(...args)
+  }
+}))
+
 const { MatrixRoomDirectMessageService } = await import('../DirectMessageService')
 
 describe('MatrixRoomDirectMessageService', () => {
@@ -48,6 +55,14 @@ describe('MatrixRoomDirectMessageService', () => {
     it('re-throws backend errors', async () => {
       getClientMock.mockReturnValueOnce({ createRoom: vi.fn().mockRejectedValue(new Error('403')) })
       await expect(service.createDirectRoom('@u:e')).rejects.toThrow('403')
+    })
+
+    it('enqueues DM creation when offline', async () => {
+      vi.stubGlobal('navigator', { onLine: false })
+      const id = await service.createDirectRoom('@u:e')
+      expect(enqueueMock).toHaveBeenCalledWith('dm_creation', expect.any(String), { userId: '@u:e' })
+      expect(id).toContain('!pending-dm-')
+      vi.stubGlobal('navigator', { onLine: true })
     })
   })
 

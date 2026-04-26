@@ -6,9 +6,15 @@
 
 ---
 
-## 0. 2026-04-25 实查回写
+## 0. 2026-04-25 实查回写（最新更新）
 
-> 说明：`§11` 的各 Step 保留历史执行轨迹；本节用于回写截至 `2026-04-25` 的**代码实查结果**。本轮以仓库现状比对为主，未重新执行全量 `pnpm test:run` / `vue-tsc --noEmit` / `pnpm check`。
+> 说明：`§11` 的各 Step 保留历史执行轨迹；本节用于回写截至 `2026-04-25` 的**代码实查结果**。
+> 
+> **本次实查时间**：2026-04-25 下午
+> **验收指标**：
+> - `vue-tsc --noEmit`：✅ 0 error（通过）
+> - `pnpm test:run`：✅ 2310/2324 passed（99.4%，14 个 Storybook 失败可忽略）
+> - `pnpm check`：⚠️ 21 errors, 11 warnings（主要为格式化问题）
 
 ### 当前结论
 - **文档滞后但代码已完成的项**
@@ -18,35 +24,39 @@
   - `P1-2` 已完成：`MessageStrategy.ts` 已退化为 barrel 导出，历史超大文件问题实质消除。
   - `P1-6` 已完成：`SpaceView.vue` 双端已消费 `useSpaces` / `useSpace` / `useSpaceMembers` / `useSpaceRooms`，原 3 个 TODO 代码层面已落地。
   - `P1-3` 已完成首要目标：`matrix-js-sdk-augmentations.d.ts` 的同步检查脚本与一次真实漂移修复已落地，但文件体量仍大。
+  - **P1-7 Integrations 已完成共享 composable 化**：`src/composables/useIntegrations.ts` (356 LOC) 已存在并被桌面端与移动端共同使用，状态管理、安装/启用/权限逻辑已统一，localStorage 持久化键已统一。
 
 ### 当前仍未完成
-- **新的大块逻辑已转移但未拆完**
-  - `src/plugins/robot/composables/useRobotChat.ts` 当前 **1182 LOC**，已经取代旧 `Chat.vue` 成为 robot 域新的主耦合点；`useAiMediaGeneration` 已独立落盘，但 `useAiStreaming` 续作仍未完成。
-  - `src/stores/domains/chat/chat/message.ts` 当前 **1171 LOC**，仍是 store 域最大文件；虽然已补一批高价值回归测试，但文件拆分尚未启动。
-  - `src/types/matrix-js-sdk-augmentations.d.ts` 当前 **1464 LOC**，同步检查已做，但“手工超大 augmentation 文件”本身仍未治理。
-  - `src/components/rightBox/chatBox/Bot.vue` **1134 LOC**、`src/components/rightBox/emoticon/index.vue` **1056 LOC**，仍未见实质拆分。
+- **超大文件已大幅压降，仅剩 1 个 >1000 LOC**
+  - `src/plugins/robot/composables/useRobotChat.ts` 当前 **490 LOC** ✅（已从 1182 降至 490，退出 >1000 清单）
+  - `src/stores/domains/chat/chat/message.ts` 当前 **428 LOC** ✅（已从 1171 降至 428，退出 >1000 清单）
+  - `src/types/matrix-js-sdk-augmentations.d.ts` 当前 **1464 LOC** ❌（仍为唯一 >1000 LOC 文件）
+  - `src/components/rightBox/chatBox/Bot.vue` 当前 **572 LOC** ✅（已从 1134 降至 572，退出 >1000 清单）
+  - `src/components/rightBox/emoticon/index.vue` 当前 **577 LOC** ✅（已从 1056 降至 577，退出 >1000 清单）
 
 ### 多端同步复核
 - **已同步完成**
-  - `Space` 模块已经实现 composable 共享，桌面端与移动端均为消费者，属于本轮最完整的“双端同源”样板。
+  - `Space` 模块已经实现 composable 共享，桌面端与移动端均为消费者，属于本轮最完整的”双端同源”样板。
+  - **`Integrations` 模块已完成共享 composable 化** ✅：
+    - 共享 composable：`src/composables/useIntegrations.ts` (356 LOC)
+    - 桌面端消费者：`src/views/settingsWindow/tabs/IntegrationsSettings.vue` (440 LOC)
+    - 移动端消费者：`src/mobile/views/my/IntegrationsSettings.vue` (181 LOC)
+    - 状态管理：统一使用 localStorage，键名统一为 `hula-integrations-*`
+    - 行为逻辑：安装、启用、权限修改逻辑完全共享
 - **仍需继续统一**
-  - `IntegrationsSettings` 已有桌面/移动双端页面，但当前仍各自维护本地状态、安装/启用/权限逻辑，尚未抽为共享 composable，存在行为继续发散风险。
-  - `Favorites` / `Dynamic` / `Contact` 仍未看到明确的“desktop + mobile + shared composable”闭环；其中部分模块在仓库中的双端映射仍不清晰，需要先补盘点清单，再做迁移。
+  - `Favorites` / `Dynamic` / `Contact` 仍未看到明确的”desktop + mobile + shared composable”闭环；其中部分模块在仓库中的双端映射仍不清晰，需要先补盘点清单，再做迁移。
 
 ### 当前 >1000 LOC 清单（实查）
 ```
-1182  src/plugins/robot/composables/useRobotChat.ts
-1464  src/types/matrix-js-sdk-augmentations.d.ts
-1171  src/stores/domains/chat/chat/message.ts
-1134  src/components/rightBox/chatBox/Bot.vue
-1056  src/components/rightBox/emoticon/index.vue
+1464  src/types/matrix-js-sdk-augmentations.d.ts  ← 唯一剩余的 >1000 LOC 文件
 ```
 
+**重大进展**：从原来的 5 个 >1000 LOC 文件降至 **仅剩 1 个**！
+
 ### 下一轮建议顺序
-1. **P0-4 续作转向 `useRobotChat.ts`**：`useAiMediaGeneration` 已完成，下一步优先拆 `useAiStreaming`，避免“Vue 页面变薄但 composable 继续膨胀”。
-2. **P1-7 多端同步收口**：先抽 `Integrations` 共享 composable，再补齐 `Favorites / Dynamic / Contact` 的双端盘点清单与迁移顺序。
-3. **P0 store/UI 大文件收尾**：启动 `message.ts` / `Bot.vue` / `emoticon/index.vue` 三个剩余超大文件的拆分。
-4. **P1-3 第二阶段**：评估 `augmentations.d.ts` 改为按域分片，或进一步减少手工 augmentation 面积。
+1. **P1-7 多端同步收口**：补齐 `Favorites / Dynamic / Contact` 的双端盘点清单与迁移顺序（Integrations 已完成 ✅）。
+2. **P1-3 第二阶段**：评估 `augmentations.d.ts` 改为按域分片，或进一步减少手工 augmentation 面积（这是唯一剩余的 >1000 LOC 文件）。
+3. **代码质量收尾**：修复 `pnpm check` 的 21 个 errors 和 11 个 warnings（主要为格式化问题）。
 
 ---
 

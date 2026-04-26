@@ -13,7 +13,14 @@ vi.mock('../../MatrixClientService', () => ({
   }
 }))
 
+vi.mock('@/services/offline/OfflineQueueService', () => ({
+  offlineQueueService: {
+    enqueue: vi.fn()
+  }
+}))
+
 import matrixClientService from '../../MatrixClientService'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 describe('MatrixReceiptService', () => {
   let mockReceiptManager: {
@@ -129,6 +136,32 @@ describe('MatrixReceiptService', () => {
     const readers = matrixReceiptService.getEventReaders('!room:id', '$event')
 
     expect(readers).toEqual(['@user1:matrix.org'])
+  })
+
+  it('离线时将阅读回执加入队列', async () => {
+    // 模拟离线状态
+    const originalOnLine = navigator.onLine
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true
+    })
+
+    const roomId = '!room:id'
+    const eventId = '$event'
+
+    const result = await matrixReceiptService.sendReadReceiptByEventId(roomId, eventId)
+
+    expect(offlineQueueService.enqueue).toHaveBeenCalledWith('receipt', roomId, {
+      roomId,
+      eventId
+    })
+    expect(result).toBe(eventId)
+
+    // 恢复在线状态
+    Object.defineProperty(navigator, 'onLine', {
+      value: originalOnLine,
+      configurable: true
+    })
   })
 
   it('标记房间已读时发送最后一条消息的回执', async () => {

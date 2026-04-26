@@ -22,6 +22,13 @@ vi.mock('../MembershipService', () => ({
   }
 }))
 
+const enqueueMock = vi.fn()
+vi.mock('@/services/offline/OfflineQueueService', () => ({
+  offlineQueueService: {
+    enqueue: (...args: any[]) => enqueueMock(...args)
+  }
+}))
+
 const { MatrixRoomCreationService } = await import('../CreationService')
 const { Preset, Visibility, NotificationCountType } = await import('matrix-js-sdk')
 
@@ -69,6 +76,18 @@ describe('MatrixRoomCreationService', () => {
     it('re-throws on failure', async () => {
       createRoomMock.mockRejectedValueOnce(new Error('boom'))
       await expect(service.createRoom({ name: 'R' })).rejects.toThrow('boom')
+    })
+
+    it('enqueues creation when offline', async () => {
+      vi.stubGlobal('navigator', { onLine: false })
+      const result = await service.createRoom({ name: 'R' })
+      expect(enqueueMock).toHaveBeenCalledWith(
+        'creation',
+        'pending',
+        expect.objectContaining({ options: { name: 'R' } })
+      )
+      expect(result.roomId).toContain('!pending-')
+      vi.stubGlobal('navigator', { onLine: true })
     })
   })
 

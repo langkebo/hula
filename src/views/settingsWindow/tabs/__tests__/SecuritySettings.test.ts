@@ -16,6 +16,10 @@ const getKeyBackupInfoMock = vi.fn().mockResolvedValue(null)
 const isSecretChatConfiguredMock = vi.fn().mockReturnValue(false)
 const setSecretChatPasswordMock = vi.fn()
 const clearSecretChatPasswordMock = vi.fn()
+const setSecretChatEnabledMock = vi.fn()
+const setSecretChatHideSessionsMock = vi.fn()
+const setSecretChatAutoLockMock = vi.fn()
+const setSecretChatLockTimeoutMock = vi.fn()
 
 type SecuritySettingsVm = ComponentPublicInstance & {
   encryptionEnabled: boolean
@@ -27,6 +31,10 @@ type SecuritySettingsVm = ComponentPublicInstance & {
   sendReadReceipts: boolean
   newBlockedUser: string
   newBlocklistUser: string
+  secretChatEnabled: boolean
+  secretChatHideSessions: boolean
+  secretChatAutoLock: boolean
+  secretChatLockTimeout: number
   secretChatForm: {
     password: string
     confirmPassword: string
@@ -73,10 +81,14 @@ vi.mock('@/services/matrix', () => ({
 
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({
-    secretChat: { password: null },
+    secretChat: { enabled: false, passwordHash: '', hideSessions: false, autoLock: false, lockTimeout: 5 },
     isSecretChatConfigured: () => isSecretChatConfiguredMock(),
     setSecretChatPassword: (password: string) => setSecretChatPasswordMock(password),
-    clearSecretChatPassword: () => clearSecretChatPasswordMock()
+    clearSecretChatPassword: () => clearSecretChatPasswordMock(),
+    setSecretChatEnabled: (enabled: boolean) => setSecretChatEnabledMock(enabled),
+    setSecretChatHideSessions: (enabled: boolean) => setSecretChatHideSessionsMock(enabled),
+    setSecretChatAutoLock: (enabled: boolean) => setSecretChatAutoLockMock(enabled),
+    setSecretChatLockTimeout: (value: number) => setSecretChatLockTimeoutMock(value)
   })
 }))
 

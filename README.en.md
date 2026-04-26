@@ -3,7 +3,7 @@
   <img width="350px" height="150px" src="public/hula.png"/>
 </p>
 
-<p align="center">An instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScript</p>
+<p align="center">A communication system built with Tauri, Vite 7, Vue 3, and TypeScript</p>
 
 <!-- 🌟 Featured -->
 <div align="center">
@@ -108,7 +108,7 @@
 
 ## 📝 Project Introduction
 
-HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScript. It leverages Tauri's cross-platform capabilities and Vue 3's reactive design, combined with TypeScript's type safety features and Vite 7's fast build process, providing users with an efficient, secure, and user-friendly communication solution.
+HuLa is a communication system built with Tauri, Vite 7, Vue 3, and TypeScript. It leverages Tauri's cross-platform capabilities and Vue 3's reactive design, combined with TypeScript's type safety and Vite 7's fast builds, providing users with an efficient, secure, and easy-to-use communication solution.
 
 ## 🛠️ Tech Stack
 

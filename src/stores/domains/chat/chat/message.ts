@@ -1,15 +1,10 @@
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { info } from '@tauri-apps/plugin-log'
-import pLimit from 'p-limit'
 import { defineStore } from 'pinia'
 import { useRoute } from 'vue-router'
-import { MessageStatusEnum, MsgEnum, StoresEnum, RoomTypeEnum, MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt'
+import { MessageStatusEnum, StoresEnum, RoomTypeEnum } from '@/enums'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
-import { useSessionStore, type SessionItem } from './session'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { useSessionStore } from './session'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import {
   pageSize,
@@ -24,12 +19,13 @@ import { getTimerWorker } from './timerWorker'
 
 export type { MessageType, MessageBody, RecalledMessage, CustomForwardTask }
 export { pageSize, ROOM_MESSAGE_CACHE_LIMIT, RECALL_EXPIRATION_TIME }
-import { sendNotification } from '@tauri-apps/plugin-notification'
-import { createLogger } from '@/utils/Logger'
-import { getBodyReply } from '@/utils/messageBody'
-import { createRecallManager } from './recallManager'
 
-const logger = createLogger('ChatMessageStore')
+import { createRecallManager } from './recallManager'
+import { createMessageSortedKeys } from './messageSortedKeys'
+import { createMessageReplyMapping } from './messageReplyMapping'
+import { createMessageRoomIndex } from './messageRoomIndex'
+import { createMessageMutations } from './messageMutations'
+import { createMessageLoading } from './messageLoading'
 
 export const useChatStore = defineStore(
   StoresEnum.CHAT,
@@ -55,149 +51,36 @@ export const useChatStore = defineStore(
       return msg?.message?.status ? transientStatuses.has(msg.message.status) : false
     }
 
-    const ensureSortedMessageState = (roomId: string) => {
-      if (!sortedMessageKeys[roomId]) {
-        sortedMessageKeys[roomId] = []
-      }
-      if (!sortedMessageKeyIndexes[roomId]) {
-        sortedMessageKeyIndexes[roomId] = {}
-      }
-    }
-
-    const rebuildSortedMessageKeyIndex = (roomId: string) => {
-      ensureSortedMessageState(roomId)
-      const nextIndexMap: Record<string, number> = {}
-      sortedMessageKeys[roomId].forEach((msgId, index) => {
-        nextIndexMap[msgId] = index
-      })
-      sortedMessageKeyIndexes[roomId] = nextIndexMap
-    }
-
-    const setSortedMessageKeys = (roomId: string, keys: string[]) => {
-      sortedMessageKeys[roomId] = keys
-      rebuildSortedMessageKeyIndex(roomId)
-    }
-
-    const getMessageOrder = (msg?: MessageType) => {
-      return Number(msg?.message.id ?? 0)
-    }
-
-    const compareMessageKeys = (roomId: string, leftKey: string, rightKey: string) => {
-      const roomMessages = messageMap[roomId]
-      return getMessageOrder(roomMessages?.[leftKey]) - getMessageOrder(roomMessages?.[rightKey])
-    }
-
-    const findMessageInsertIndex = (roomId: string, messageKey: string) => {
-      ensureSortedMessageState(roomId)
-      const keys = sortedMessageKeys[roomId]
-      const roomMessages = messageMap[roomId]
-      const newOrder = getMessageOrder(roomMessages?.[messageKey])
-      let low = 0
-      let high = keys.length - 1
-
-      while (low <= high) {
-        const mid = Math.floor((low + high) / 2)
-        const midMsg = roomMessages[keys[mid]]
-        const midOrder = getMessageOrder(midMsg)
-
-        if (midOrder === newOrder) {
-          low = mid
-          break
-        }
-
-        if (midOrder < newOrder) {
-          low = mid + 1
-        } else {
-          high = mid - 1
-        }
-      }
-
-      return low
-    }
-
-    const mergeSortedMessageKeys = (roomId: string, incomingKeys: string[]) => {
-      ensureSortedMessageState(roomId)
-      if (!incomingKeys.length) {
-        return
-      }
-
-      const existingKeys = sortedMessageKeys[roomId]
-      const existingKeySet = new Set(existingKeys)
-      const uniqueIncomingKeys = incomingKeys.filter((key) => !existingKeySet.has(key))
-      if (!uniqueIncomingKeys.length) {
-        return
-      }
-
-      uniqueIncomingKeys.sort((a, b) => compareMessageKeys(roomId, a, b))
-
-      const mergedKeys: string[] = []
-      let existingIndex = 0
-      let incomingIndex = 0
-
-      while (existingIndex < existingKeys.length && incomingIndex < uniqueIncomingKeys.length) {
-        if (compareMessageKeys(roomId, existingKeys[existingIndex], uniqueIncomingKeys[incomingIndex]) <= 0) {
-          mergedKeys.push(existingKeys[existingIndex])
-          existingIndex++
-        } else {
-          mergedKeys.push(uniqueIncomingKeys[incomingIndex])
-          incomingIndex++
-        }
-      }
-
-      if (existingIndex < existingKeys.length) {
-        mergedKeys.push(...existingKeys.slice(existingIndex))
-      }
-      if (incomingIndex < uniqueIncomingKeys.length) {
-        mergedKeys.push(...uniqueIncomingKeys.slice(incomingIndex))
-      }
-
-      setSortedMessageKeys(roomId, mergedKeys)
-    }
-
-    const getCurrentSortedMessageKeys = (roomId: string) => {
-      ensureSortedMessageState(roomId)
-      if (sortedMessageKeys[roomId].length === 0 && messageMap[roomId]) {
-        setSortedMessageKeys(
-          roomId,
-          Object.keys(messageMap[roomId]).sort((a, b) => compareMessageKeys(roomId, a, b))
-        )
-      }
-      return sortedMessageKeys[roomId]
-    }
+    const sortedKeysHelpers = createMessageSortedKeys(messageMap, sortedMessageKeys, sortedMessageKeyIndexes)
+    const {
+      ensureSortedMessageState,
+      rebuildSortedMessageKeyIndex,
+      setSortedMessageKeys,
+      findMessageInsertIndex,
+      mergeSortedMessageKeys,
+      getCurrentSortedMessageKeys
+    } = sortedKeysHelpers
 
     const replyMapping = reactive<Record<string, Record<string, string[]>>>({})
     const recallMgr = createRecallManager()
     const recalledMessages = recallMgr.recalledMessages
-    const expirationTimers: Record<string, boolean> = {}
+    const { clearAllExpirationTimers, cleanupExpiredRecalledMessages } = recallMgr
     const messageRoomIndexes = reactive<Record<string, string>>({})
     const isMsgMultiChoose = ref<boolean>(false)
     const msgMultiChooseMode = ref<'normal' | 'forward'>('normal')
     const customForwardTask = ref<CustomForwardTask | null>(null)
 
-    const setMessageRoomIndex = (msgId: string, roomId: string) => {
-      if (!msgId || !roomId) return
-      messageRoomIndexes[msgId] = roomId
-    }
+    const roomIndexHelpers = createMessageRoomIndex(messageRoomIndexes, messageMap)
+    const { setMessageRoomIndex, deleteMessageRoomIndex, rebuildMessageRoomIndex, findRoomIdByMsgId } = roomIndexHelpers
 
-    const deleteMessageRoomIndex = (msgId: string) => {
-      if (!msgId) return
-      delete messageRoomIndexes[msgId]
-    }
-
-    const rebuildMessageRoomIndex = (roomId: string) => {
-      for (const msgId in messageRoomIndexes) {
-        if (messageRoomIndexes[msgId] === roomId) {
-          delete messageRoomIndexes[msgId]
-        }
-      }
-
-      const roomMessages = messageMap[roomId]
-      if (!roomMessages) return
-
-      for (const msgId in roomMessages) {
-        setMessageRoomIndex(msgId, roomId)
-      }
-    }
+    const replyMappingHelpers = createMessageReplyMapping(replyMapping, messageMap)
+    const {
+      removeReplyReferences,
+      upsertReplyReference,
+      syncReplyReference,
+      rebuildReplyMapping,
+      migrateReplyTargetReferences
+    } = replyMappingHelpers
 
     const currentMessageMap = computed(() => {
       return messageMap[globalStore.currentSessionRoomId] || {}
@@ -262,78 +145,7 @@ export const useChatStore = defineStore(
       }
     })
 
-    const removeReplyReferences = (roomId: string, sourceMsgId: string) => {
-      if (!sourceMsgId || !replyMapping[roomId]) return
-      const roomReplyMap = replyMapping[roomId]
-      for (const targetMsgId in roomReplyMap) {
-        const nextReplyIds = roomReplyMap[targetMsgId].filter((id) => id !== sourceMsgId)
-        if (nextReplyIds.length > 0) {
-          roomReplyMap[targetMsgId] = nextReplyIds
-        } else {
-          delete roomReplyMap[targetMsgId]
-        }
-      }
-    }
-
-    const upsertReplyReference = (roomId: string, sourceMsgId: string, msg?: MessageType) => {
-      if (!sourceMsgId || !msg) return
-      const replyId = getBodyReply(msg.message.body)?.id
-      if (!replyId) return
-      const roomReplyMap = (replyMapping[roomId] ??= {})
-      const currentReplyIds = roomReplyMap[replyId] ?? []
-      if (!currentReplyIds.includes(sourceMsgId)) {
-        roomReplyMap[replyId] = [...currentReplyIds, sourceMsgId]
-      }
-    }
-
-    const syncReplyReference = (roomId: string, sourceMsgId: string, msg?: MessageType) => {
-      removeReplyReferences(roomId, sourceMsgId)
-      upsertReplyReference(roomId, sourceMsgId, msg)
-    }
-
-    const rebuildReplyMapping = (roomId: string) => {
-      const roomMessages = messageMap[roomId]
-      const roomReplyMap: Record<string, string[]> = {}
-
-      if (roomMessages) {
-        for (const sourceMsgId in roomMessages) {
-          const replyId = getBodyReply(roomMessages[sourceMsgId].message.body)?.id
-          if (!replyId) continue
-          const currentReplyIds = roomReplyMap[replyId] ?? []
-          if (!currentReplyIds.includes(sourceMsgId)) {
-            roomReplyMap[replyId] = [...currentReplyIds, sourceMsgId]
-          }
-        }
-      }
-
-      replyMapping[roomId] = roomReplyMap
-    }
-
-    const migrateReplyTargetReferences = (roomId: string, oldMsgId: string, newMsgId: string) => {
-      if (!oldMsgId || !newMsgId || oldMsgId === newMsgId) return
-
-      const roomReplyMap = replyMapping[roomId]
-      const referencedReplyIds = roomReplyMap?.[oldMsgId] ?? []
-      if (referencedReplyIds.length === 0) return
-
-      const nextReplyIds = roomReplyMap?.[newMsgId] ?? []
-      const mergedReplyIds = [...new Set([...nextReplyIds, ...referencedReplyIds])]
-
-      if (roomReplyMap) {
-        roomReplyMap[newMsgId] = mergedReplyIds
-        delete roomReplyMap[oldMsgId]
-      }
-
-      const roomMessages = messageMap[roomId]
-      if (!roomMessages) return
-
-      for (const sourceMsgId of mergedReplyIds) {
-        const reply = getBodyReply(roomMessages[sourceMsgId]?.message.body)
-        if (reply && reply.id === oldMsgId) {
-          reply.id = newMsgId
-        }
-      }
-    }
+    const currentMsgReply = ref<Partial<MessageType>>({})
 
     const clearOtherRoomsMessages = (currentRoomId: string) => {
       for (const roomId in messageMap) {
@@ -382,55 +194,9 @@ export const useChatStore = defineStore(
       rebuildReplyMapping(roomId)
     }
 
-    const changeRoom = async () => {
-      const currentWindowLabel = WebviewWindow.getCurrent()
-      if (currentWindowLabel.label !== 'home' && currentWindowLabel.label !== 'mobile-home') {
-        return
-      }
-
-      if (!globalStore.currentSessionRoomId) return
-
-      const roomId = globalStore.currentSessionRoomId
-      clearOtherRoomsMessages(roomId)
-      cleanupExpiredRecalledMessages()
-      clearRoomMessagesExceptTransient(roomId)
-
-      currentMessageOptions.value = {
-        isLast: false,
-        isLoading: false,
-        cursor: ''
-      }
-
-      if (currentReplyMap.value) {
-        for (const key in currentReplyMap.value) {
-          delete currentReplyMap.value[key]
-        }
-      }
-
-      try {
-        await getPageMsg(pageSize, roomId, '')
-      } catch (err) {
-        logger.error('无法加载消息:', err)
-        currentMessageOptions.value = {
-          isLast: false,
-          isLoading: false,
-          cursor: ''
-        }
-      }
-
-      if (globalStore.currentSessionRoomId) {
-        sessionStore.markSessionRead(globalStore.currentSessionRoomId)
-      }
-
-      currentMsgReply.value = {}
-    }
-
-    const currentMsgReply = ref<Partial<MessageType>>({})
-
     const chatMessageList = computed(() => {
       const roomId = globalStore.currentSessionRoomId
       if (!roomId || !sortedMessageKeys[roomId]) return []
-
       return sortedMessageKeys[roomId].map((id) => messageMap[roomId][id]).filter(Boolean)
     })
 
@@ -439,194 +205,75 @@ export const useChatStore = defineStore(
       return sortedMessageKeys[roomId].map((id) => messageMap[roomId][id]).filter(Boolean)
     })
 
-    const findRoomIdByMsgId = (msgId: string) => {
-      if (!msgId) return ''
-      const indexedRoomId = messageRoomIndexes[msgId]
-      if (indexedRoomId && messageMap[indexedRoomId]?.[msgId]) {
-        return indexedRoomId
-      }
-      for (const roomId of Object.keys(messageMap)) {
-        const roomMessages = messageMap[roomId]
-        if (roomMessages && msgId in roomMessages) {
-          setMessageRoomIndex(msgId, roomId)
-          return roomId
-        }
-      }
-      return ''
-    }
+    const mutations = createMessageMutations({
+      route,
+      userStore,
+      groupStore,
+      globalStore,
+      sessionStore,
+      recallMgr,
+      messageMap,
+      sortedMessageKeys,
+      replyMapping,
+      messageOptions,
+      newMsgCount,
+      currentMessageMap,
+      currentMessageOptions,
+      currentReplyMap,
+      currentMsgReply,
+      ensureSortedMessageState,
+      rebuildSortedMessageKeyIndex,
+      setSortedMessageKeys,
+      findMessageInsertIndex,
+      getCurrentSortedMessageKeys,
+      setMessageRoomIndex,
+      deleteMessageRoomIndex,
+      rebuildMessageRoomIndex,
+      findRoomIdByMsgId,
+      removeReplyReferences,
+      upsertReplyReference,
+      syncReplyReference,
+      rebuildReplyMapping,
+      migrateReplyTargetReferences
+    })
 
-    const setAllSessionMsgList = async (size = pageSize) => {
-      await info('初始设置所有会话消息列表')
-      if (sessionStore.sessionList.length === 0) return
+    const {
+      pushMsg,
+      updateMsg,
+      deleteMsg,
+      clearRoomMessages,
+      clearRedundantMessages,
+      updateMarkCount,
+      recordRecallMsg,
+      updateRecallMsg
+    } = mutations
 
-      const sortedSessions = [...sessionStore.sessionList].sort((a, b) => b.activeTime - a.activeTime)
-      const limit = pLimit(5)
-      const tasks = sortedSessions.map((session) => limit(() => getPageMsg(size, session.roomId, '', true)))
-      const results = await Promise.allSettled(tasks)
+    const loading = createMessageLoading({
+      globalStore,
+      sessionStore,
+      messageMap,
+      messageOptions,
+      replyMapping,
+      currentMessageOptions,
+      currentReplyMap,
+      currentMsgReply,
+      ensureSortedMessageState,
+      setSortedMessageKeys,
+      mergeSortedMessageKeys,
+      setMessageRoomIndex,
+      syncReplyReference,
+      cleanupExpiredRecalledMessages,
+      clearOtherRoomsMessages,
+      clearRoomMessagesExceptTransient
+    })
 
-      const successCount = results.filter((r) => r.status === 'fulfilled').length
-      const failCount = results.filter((r) => r.status === 'rejected').length
-      await info(`会话消息加载完成: 成功 ${successCount}/${sortedSessions.length}, 失败 ${failCount}`)
-    }
-
-    const getMsgList = async (size = pageSize, async?: boolean) => {
-      await info('获取消息列表')
-      const requestRoomId = globalStore.currentSessionRoomId
-      await getPageMsg(size, requestRoomId, currentMessageOptions.value?.cursor, async)
-    }
-
-    const getPageMsg = async (pageSize: number, roomId: string, cursor: string = '', _async?: boolean) => {
-      try {
-        const result = await matrixEventService.getPagedRoomMessages(roomId, pageSize, cursor)
-
-        if (!messageMap[roomId]) {
-          messageMap[roomId] = {}
-        }
-        ensureSortedMessageState(roomId)
-
-        const newKeys: string[] = []
-        for (const msg of result.messages) {
-          const msgId = msg.message.id
-          messageMap[roomId][msgId] = msg
-          setMessageRoomIndex(msgId, roomId)
-          syncReplyReference(roomId, msgId, msg)
-          newKeys.push(msgId)
-        }
-
-        mergeSortedMessageKeys(roomId, newKeys)
-
-        messageOptions[roomId] = {
-          isLast: result.isLast,
-          isLoading: false,
-          cursor: result.cursor
-        }
-      } catch (err) {
-        logger.error('获取消息失败:', err)
-        messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '' }
-      }
-    }
-
-    const remoteSyncLocks = new Set<string>()
-    const fetchCurrentRoomRemoteOnce = async (size = pageSize) => {
-      const roomId = globalStore.currentSessionRoomId
-      if (!roomId) return
-      if (remoteSyncLocks.has(roomId)) return
-      remoteSyncLocks.add(roomId)
-      try {
-        const opts = messageOptions[roomId] || { isLast: false, isLoading: false, cursor: '' }
-        opts.cursor = ''
-        messageOptions[roomId] = opts
-        await getPageMsg(size, roomId, '')
-      } finally {
-        remoteSyncLocks.delete(roomId)
-      }
-    }
-
-    const pushMsg = async (msg: MessageType, options: { isActiveChatView?: boolean; activeRoomId?: string } = {}) => {
-      if (!msg.message.id) {
-        msg.message.id = `${msg.message.roomId}_${msg.message.sendTime}_${msg.fromUser.uid}`
-      }
-      const messageKey = msg.message.id
-
-      let roomMessages = messageMap[msg.message.roomId]
-      if (!roomMessages) {
-        roomMessages = {}
-        messageMap[msg.message.roomId] = roomMessages
-      }
-
-      // 幂等性检查：如果消息已存在且不是自己发送的更新状态，直接忽略
-      const existedMsg = roomMessages[messageKey]
-      if (existedMsg) {
-        // 允许发送过程中的状态更新（如：发送中 -> 成功）
-        if (existedMsg.message.sendTime === msg.message.sendTime) {
-          return
-        }
-      }
-
-      roomMessages[messageKey] = msg
-      setMessageRoomIndex(messageKey, msg.message.roomId)
-      syncReplyReference(msg.message.roomId, messageKey, msg)
-
-      // 二分查找插入，维持有序性
-      ensureSortedMessageState(msg.message.roomId)
-
-      if (!existedMsg) {
-        const keys = sortedMessageKeys[msg.message.roomId]
-        const low = findMessageInsertIndex(msg.message.roomId, messageKey)
-        keys.splice(low, 0, messageKey)
-        rebuildSortedMessageKeyIndex(msg.message.roomId)
-      }
-
-      const targetRoomId = options.activeRoomId ?? globalStore.currentSessionRoomId ?? ''
-      let isActiveChatView = options.isActiveChatView
-      if (isActiveChatView === undefined) {
-        const currentPath = route?.path
-        isActiveChatView =
-          (currentPath === '/message' || currentPath?.startsWith('/mobile/chatRoom')) &&
-          targetRoomId === msg.message.roomId
-      }
-
-      const uid = msg.fromUser.uid
-      const cacheUser = groupStore.getUserInfo(uid)
-
-      const session = sessionStore.getSession(msg.message.roomId)
-      if (session) {
-        const lastMsgUserName = cacheUser?.name
-        const formattedText =
-          msg.message.type === MsgEnum.RECALL
-            ? session.type === RoomTypeEnum.GROUP
-              ? `${lastMsgUserName}:撤回了一条消息`
-              : msg.fromUser.uid === userStore.userInfo!.uid
-                ? '你撤回了一条消息'
-                : '对方撤回了一条消息'
-            : msg.message.body?.content || msg.message.body?.body || ''
-
-        const updateData: Partial<SessionItem> = {
-          text: formattedText,
-          activeTime: Date.now()
-        }
-
-        const isSelfMessage = msg.fromUser.uid === userStore.userInfo!.uid
-        const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
-
-        if (shouldIncreaseUnread) {
-          updateData.unreadCount = (session.unreadCount || 0) + 1
-          logger.debug('增加未读数:', msg.message.roomId, updateData.unreadCount)
-        }
-
-        sessionStore.updateSession(msg.message.roomId, updateData)
-      } else {
-        const room = await matrixRoomService.getRoom(msg.message.roomId, false)
-        if (room) {
-          const newSession = {
-            roomId: room.roomId,
-            name: room.name || room.roomId,
-            avatar: room.getMxcAvatarUrl() || '',
-            type: room.getJoinedMemberCount() === 2 ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP,
-            unreadCount: 0,
-            activeTime: Date.now()
-          }
-          sessionStore.addSession(newSession)
-          const isSelfMessage = msg.fromUser.uid === userStore.userInfo!.uid
-          const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
-          if (shouldIncreaseUnread) {
-            sessionStore.updateSession(msg.message.roomId, { unreadCount: 1 })
-          }
-        }
-      }
-
-      if (msg.message.body.atUidList?.includes(userStore.userInfo!.uid) && cacheUser) {
-        sendNotification({
-          title: cacheUser.name as string,
-          body: msg.message.body.content || msg.message.body.body || '',
-          icon: cacheUser.avatar as string
-        })
-      }
-
-      if (!isActiveChatView || msg.message.roomId !== targetRoomId) {
-        clearRedundantMessages(msg.message.roomId, ROOM_MESSAGE_CACHE_LIMIT)
-      }
-    }
+    const {
+      setAllSessionMsgList,
+      loadMore,
+      fetchCurrentRoomRemoteOnce,
+      changeRoom,
+      resetAndRefreshCurrentRoomMessages
+    } = loading
 
     const checkMsgExist = (roomId: string, msgId: string) => {
       const current = messageMap[roomId]
@@ -635,11 +282,6 @@ export const useChatStore = defineStore(
 
     const clearMsgCheck = () => {
       chatMessageList.value.forEach((msg) => (msg.isCheck = false))
-    }
-
-    const loadMore = async (size?: number) => {
-      if (currentMessageOptions.value?.isLast) return
-      await getMsgList(size, true)
     }
 
     const clearNewMsgCount = () => {
@@ -658,259 +300,12 @@ export const useChatStore = defineStore(
       return sortedMessageKeyIndexes[roomId]?.[msgId] ?? -1
     }
 
-    const updateMarkCount = async (
-      markList: Array<{ msgId: string; markType: number; markCount: number; actType: number; uid: string }>
-    ) => {
-      await info('保存消息标记到本地数据库')
-      for (const mark of markList) {
-        const { msgId, markType, markCount, actType, uid } = mark
-
-        const msgItem = currentMessageMap.value?.[String(msgId)]
-        if (msgItem && msgItem.message.messageMarks) {
-          const currentMarkStat = msgItem.message.messageMarks[String(markType)] || {
-            count: 0,
-            userMarked: false
-          }
-
-          if (actType === 1) {
-            if (uid === userStore.userInfo!.uid) {
-              currentMarkStat.userMarked = true
-            }
-            currentMarkStat.count = markCount
-          } else if (actType === 2) {
-            if (uid === userStore.userInfo!.uid) {
-              currentMarkStat.userMarked = false
-            }
-            currentMarkStat.count = markCount
-          }
-
-          msgItem.message.messageMarks[String(markType)] = currentMarkStat
-        }
-      }
-    }
-
-    const recordRecallMsg = (data: {
-      recallUid: string
-      msg: MessageType
-      originalType?: number
-      originalContent?: string
-    }) => {
-      ensureTimerWorkerListener()
-      const recallTime = Date.now()
-      recalledMessages[data.msg.message.id] = {
-        messageId: data.msg.message.id,
-        content: data.originalContent ?? data.msg.message.body.content ?? data.msg.message.body.body ?? '',
-        recallTime,
-        originalType: data.originalType ?? data.msg.message.type
-      }
-
-      if (data.recallUid === userStore.userInfo!.uid) {
-        getTimerWorker().postMessage({
-          type: 'startTimer',
-          msgId: data.msg.message.id,
-          duration: RECALL_EXPIRATION_TIME
-        })
-      }
-
-      expirationTimers[data.msg.message.id] = true
-    }
-
-    const updateRecallMsg = async (data: { msgId: string; recallUid?: string; roomId?: string }) => {
-      const { msgId } = data
-      const resolvedRoomId = data.roomId || findRoomIdByMsgId(msgId)
-      const session = resolvedRoomId ? sessionStore.getSession(resolvedRoomId) : undefined
-      const sessionType = session?.type ?? RoomTypeEnum.SINGLE
-      const roomMessages = resolvedRoomId ? messageMap[resolvedRoomId] : undefined
-      const message = roomMessages?.[msgId] || currentMessageMap.value?.[msgId]
-      let recallMessageBody = ''
-
-      if (message && typeof data.recallUid === 'string') {
-        const currentUid = userStore.userInfo!.uid
-        const senderUid = message.fromUser.uid
-
-        const isRecallerCurrentUser = data.recallUid === currentUid
-        const isSenderCurrentUser = senderUid === currentUid
-        const recallerUser = groupStore.getUserInfo(data.recallUid, resolvedRoomId)
-        const recallerName = recallerUser?.myName || recallerUser?.name || data.recallUid || ''
-        const senderUser = groupStore.getUserInfo(senderUid, resolvedRoomId)
-        const senderName = senderUser?.myName || senderUser?.name || message.fromUser.username || senderUid
-        const isGroupChat = sessionType === RoomTypeEnum.GROUP
-
-        if (isRecallerCurrentUser) {
-          if (data.recallUid === senderUid) {
-            recallMessageBody = '你撤回了一条消息'
-          } else {
-            recallMessageBody = `你撤回了${senderName}的一条消息`
-          }
-        } else {
-          if (isGroupChat) {
-            const recallerLabel = recallerName || '对方'
-            if (isSenderCurrentUser) {
-              recallMessageBody = `${recallerLabel}撤回了你的一条消息`
-            } else {
-              recallMessageBody = `${recallerLabel}撤回了一条消息`
-            }
-          } else {
-            if (isSenderCurrentUser) {
-              recallMessageBody = '对方撤回了你的一条消息'
-            } else {
-              recallMessageBody = '对方撤回了一条消息'
-            }
-          }
-        }
-
-        message.message.type = MsgEnum.RECALL
-        message.message.body.content = recallMessageBody
-        message.message.body.body = recallMessageBody
-      }
-
-      if (resolvedRoomId) {
-        const session = sessionStore.getSession(resolvedRoomId)
-        if (session && recallMessageBody) {
-          sessionStore.updateSession(resolvedRoomId, { text: recallMessageBody })
-        }
-        useMitt.emit(MittEnum.UPDATE_SESSION_LAST_MSG, { roomId: resolvedRoomId })
-      }
-
-      const roomReplyMap = resolvedRoomId ? replyMapping[resolvedRoomId] : undefined
-      const messageList = roomReplyMap?.[msgId]
-      if (messageList) {
-        for (const id of messageList) {
-          const msg = roomMessages?.[id] || currentMessageMap.value?.[id]
-          if (msg && typeof msg.message.body === 'object' && msg.message.body.reply) {
-            msg.message.body.reply.body = '原消息已被撤回'
-          }
-        }
-      }
-    }
-
     const getRecalledMessage = (msgId: string): RecalledMessage | undefined => {
-      return recalledMessages[msgId]
+      return recallMgr.getRecalledMessage(msgId)
     }
 
-    const deleteMsg = (msgId: string) => {
-      if (currentMessageMap.value && msgId in currentMessageMap.value) {
-        const roomId = globalStore.currentSessionRoomId
-        delete currentMessageMap.value[msgId]
-        deleteMessageRoomIndex(msgId)
-        removeReplyReferences(roomId, msgId)
-        if (sortedMessageKeys[roomId]) {
-          setSortedMessageKeys(
-            roomId,
-            sortedMessageKeys[roomId].filter((id) => id !== msgId)
-          )
-        }
-      }
-    }
-
-    const clearRoomMessages = (roomId: string) => {
-      if (!roomId) return
-
-      if (messageMap[roomId]) {
-        messageMap[roomId] = {}
-      }
-      rebuildMessageRoomIndex(roomId)
-      replyMapping[roomId] = {}
-
-      setSortedMessageKeys(roomId, [])
-
-      const defaultOptions = {
-        isLast: true,
-        isLoading: false,
-        cursor: ''
-      }
-
-      if (globalStore.currentSessionRoomId === roomId) {
-        currentMessageOptions.value = defaultOptions
-        currentReplyMap.value = {}
-        currentMsgReply.value = {}
-      } else {
-        messageOptions[roomId] = defaultOptions
-      }
-
-      newMsgCount[roomId] = { count: 0, isStart: false }
-    }
-
-    const updateMsg = ({
-      msgId,
-      status,
-      newMsgId,
-      body,
-      uploadProgress,
-      timeBlock,
-      roomId
-    }: {
-      msgId: string
-      status: MessageStatusEnum
-      newMsgId?: string
-      body?: Record<string, unknown>
-      uploadProgress?: number
-      timeBlock?: number
-      roomId?: string
-    }) => {
-      const resolvedRoomId =
-        (roomId && messageMap[roomId]?.[msgId] ? roomId : undefined) ??
-        (messageMap[globalStore.currentSessionRoomId]?.[msgId] ? globalStore.currentSessionRoomId : undefined) ??
-        findRoomIdByMsgId(msgId)
-
-      if (!resolvedRoomId) return
-
-      const roomMessages = messageMap[resolvedRoomId]
-      if (!roomMessages) return
-
-      const msg = roomMessages[msgId]
-      if (!msg) return
-      const previousMessageId = msg.message.id
-
-      msg.message.status = status
-      if (timeBlock !== undefined) {
-        msg.timeBlock = timeBlock
-      }
-      if (body) {
-        msg.message.body = body
-      }
-
-      const nextMsgId = newMsgId ?? msg.message.id
-      if (newMsgId) {
-        msg.message.id = newMsgId
-      }
-
-      if (uploadProgress !== undefined) {
-        logger.debug(`更新消息进度: ${uploadProgress}% (消息ID: ${msgId})`)
-        roomMessages[nextMsgId] = { ...msg, uploadProgress }
-        setMessageRoomIndex(nextMsgId, resolvedRoomId)
-        messageMap[resolvedRoomId] = { ...roomMessages }
-      } else {
-        roomMessages[nextMsgId] = msg
-        setMessageRoomIndex(nextMsgId, resolvedRoomId)
-      }
-
-      removeReplyReferences(resolvedRoomId, previousMessageId)
-      if (newMsgId && previousMessageId !== newMsgId) {
-        migrateReplyTargetReferences(resolvedRoomId, previousMessageId, newMsgId)
-        removeReplyReferences(resolvedRoomId, newMsgId)
-      }
-      upsertReplyReference(resolvedRoomId, nextMsgId, roomMessages[nextMsgId])
-
-      if (newMsgId && msgId !== newMsgId) {
-        delete roomMessages[msgId]
-        deleteMessageRoomIndex(msgId)
-        if (sortedMessageKeys[resolvedRoomId]) {
-          setSortedMessageKeys(
-            resolvedRoomId,
-            sortedMessageKeys[resolvedRoomId].filter((id) => id !== msgId)
-          )
-
-          // 如果是新的 msgId，需要按顺序插入
-          if (!sortedMessageKeys[resolvedRoomId].includes(newMsgId)) {
-            const keys = sortedMessageKeys[resolvedRoomId]
-            const low = findMessageInsertIndex(resolvedRoomId, newMsgId)
-            keys.splice(low, 0, newMsgId)
-            rebuildSortedMessageKeyIndex(resolvedRoomId)
-          }
-        }
-        messageMap[resolvedRoomId] = { ...roomMessages }
-      }
+    const getMessage = (messageId: string) => {
+      return currentMessageMap.value?.[messageId]
     }
 
     const markSessionRead = (roomId: string) => {
@@ -921,58 +316,8 @@ export const useChatStore = defineStore(
       sessionStore.clearCurrentSessionUnread()
     }
 
-    const getMessage = (messageId: string) => {
-      return currentMessageMap.value?.[messageId]
-    }
-
     const removeSession = (roomId: string) => {
       sessionStore.removeSession(roomId)
-    }
-
-    let timerWorkerListenerAttached = false
-    const ensureTimerWorkerListener = () => {
-      if (timerWorkerListenerAttached) return
-      timerWorkerListenerAttached = true
-      getTimerWorker().onmessage = (e) => {
-        const { type, msgId } = e.data
-
-        if (type === 'timeout') {
-          logger.debug(`消息ID: ${msgId} 已过期`)
-          delete recalledMessages[msgId]
-          delete expirationTimers[msgId]
-        } else if (type === 'allTimersCompleted') {
-          logger.debug('撤回消息计时器已全部结束')
-        }
-      }
-    }
-
-    const clearAllExpirationTimers = () => {
-      for (const msgId in expirationTimers) {
-        getTimerWorker().postMessage({
-          type: 'clearTimer',
-          msgId
-        })
-      }
-      for (const msgId in expirationTimers) {
-        delete expirationTimers[msgId]
-      }
-      for (const msgId in recalledMessages) {
-        delete recalledMessages[msgId]
-      }
-    }
-
-    const cleanupExpiredRecalledMessages = () => {
-      const now = Date.now()
-      for (const msgId in recalledMessages) {
-        const msg = recalledMessages[msgId]
-        if (now - msg.recallTime > RECALL_EXPIRATION_TIME) {
-          delete recalledMessages[msgId]
-          if (expirationTimers[msgId]) {
-            getTimerWorker().postMessage({ type: 'clearTimer', msgId })
-            delete expirationTimers[msgId]
-          }
-        }
-      }
     }
 
     const updateTotalUnreadCount = () => {
@@ -980,95 +325,11 @@ export const useChatStore = defineStore(
     }
 
     const requestUnreadCountUpdate = (_sessionId?: string) => {
-      // sessionId parameter was removed in sessionStore, so we don't pass it
       sessionStore.requestUnreadCountUpdate()
     }
 
     const clearUnreadCount = () => {
       sessionStore.clearUnreadCount()
-    }
-
-    const clearRedundantMessages = (roomId: string, limit: number = pageSize) => {
-      const currentMessages = messageMap[roomId]
-      if (!currentMessages) return
-
-      const currentKeys = getCurrentSortedMessageKeys(roomId)
-
-      if (currentKeys.length <= limit) return
-
-      const keptKeys = currentKeys.slice(-limit)
-      const keepMessageIds = new Set(keptKeys)
-      const fallbackCursor = keptKeys[0] || ''
-
-      for (const msgId in currentMessages) {
-        if (!keepMessageIds.has(msgId)) {
-          delete currentMessages[msgId]
-          deleteMessageRoomIndex(msgId)
-        }
-      }
-      setSortedMessageKeys(roomId, keptKeys)
-      rebuildMessageRoomIndex(roomId)
-      rebuildReplyMapping(roomId)
-
-      if (!messageOptions[roomId]) {
-        messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '' }
-      }
-
-      if (fallbackCursor) {
-        messageOptions[roomId] = {
-          ...messageOptions[roomId],
-          cursor: fallbackCursor,
-          isLast: false
-        }
-      }
-
-      logger.info(
-        'trim',
-        `roomId=${roomId}`,
-        `removed=${currentKeys.length - keptKeys.length}`,
-        `kept=${keptKeys.length}`,
-        `limit=${limit}`
-      )
-    }
-
-    const resetAndRefreshCurrentRoomMessages = async () => {
-      if (!globalStore.currentSessionRoomId) return
-
-      const requestRoomId = globalStore.currentSessionRoomId
-
-      try {
-        if (messageMap[requestRoomId]) {
-          messageMap[requestRoomId] = {}
-        }
-        setSortedMessageKeys(requestRoomId, [])
-        replyMapping[requestRoomId] = {}
-
-        messageOptions[requestRoomId] = {
-          isLast: false,
-          isLoading: true,
-          cursor: ''
-        }
-
-        const currentReplyMapping = replyMapping[requestRoomId]
-        if (currentReplyMapping) {
-          for (const key in currentReplyMapping) {
-            delete currentReplyMapping[key]
-          }
-        }
-
-        await getPageMsg(pageSize, requestRoomId, '')
-
-        logger.debug('已重置并刷新当前聊天室的消息列表')
-      } catch (err) {
-        logger.error('重置并刷新消息列表失败:', err)
-        if (globalStore.currentSessionRoomId === requestRoomId) {
-          messageOptions[requestRoomId] = {
-            isLast: false,
-            isLoading: false,
-            cursor: ''
-          }
-        }
-      }
     }
 
     const getGroupSessions = () => {

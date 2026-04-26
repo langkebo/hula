@@ -1,4 +1,11 @@
 import type { RouteRecordRaw } from 'vue-router'
+import {
+  MOBILE_SETTINGS_RELATIVE_PATHS,
+  MOBILE_SETTINGS_HELP_ABOUT_PATH,
+  MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH,
+  MOBILE_SETTINGS_ROUTE_NAMES,
+  MOBILE_SETTINGS_SECURITY_PRIVACY_PATH
+} from '@/mobile/views/my/settingsRoutes'
 
 const ChatRoomLayout = () => import('#/layout/chat-room/ChatRoomLayout.vue')
 const NoticeLayout = () => import('#/layout/chat-room/NoticeLayout.vue')
@@ -23,6 +30,8 @@ const FriendInfo = () => import('#/views/friends/FriendInfo.vue')
 const MobileFriendPage = () => import('#/views/friends/index.vue')
 const StartGroupChat = () => import('#/views/friends/StartGroupChat.vue')
 const MobileMessagePage = () => import('#/views/message/index.vue')
+const MobileDynamicPage = () => import('#/views/dynamic/index.vue')
+const MobileDynamicDetail = () => import('#/views/dynamic/detail.vue')
 const EditBio = () => import('#/views/my/EditBio.vue')
 const EditBirthday = () => import('#/views/my/EditBirthday.vue')
 const EditProfile = () => import('#/views/my/EditProfile.vue')
@@ -194,6 +203,16 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: '/mobile/my',
         name: 'mobileMy',
         component: MobileMy
+      },
+      {
+        path: '/mobile/dynamic',
+        name: 'mobileDynamic',
+        component: MobileDynamicPage
+      },
+      {
+        path: '/mobile/dynamic/:id',
+        name: 'mobileDynamicDetail',
+        component: MobileDynamicDetail
       }
     ]
   },
@@ -263,9 +282,13 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         component: StatusSettings
       },
       {
-        path: 'security',
-        name: 'mobileSecuritySettings',
+        path: MOBILE_SETTINGS_RELATIVE_PATHS.securityPrivacy,
+        name: MOBILE_SETTINGS_ROUTE_NAMES.securityPrivacy,
         component: SecuritySettings
+      },
+      {
+        path: MOBILE_SETTINGS_RELATIVE_PATHS.legacySecurity,
+        redirect: MOBILE_SETTINGS_SECURITY_PRIVACY_PATH
       },
       {
         path: 'devices',
@@ -278,9 +301,13 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         component: NotificationSettings
       },
       {
-        path: 'help',
-        name: 'mobileHelpFeedback',
+        path: MOBILE_SETTINGS_RELATIVE_PATHS.helpAbout,
+        name: MOBILE_SETTINGS_ROUTE_NAMES.helpAbout,
         component: HelpFeedback
+      },
+      {
+        path: MOBILE_SETTINGS_RELATIVE_PATHS.legacyHelp,
+        redirect: MOBILE_SETTINGS_HELP_ABOUT_PATH
       },
       {
         path: 'voiceVideo',
@@ -288,14 +315,18 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         component: VoiceVideoSettings
       },
       {
-        path: 'labs',
-        name: 'mobileLabsSettings',
+        path: MOBILE_SETTINGS_RELATIVE_PATHS.labs,
+        name: MOBILE_SETTINGS_ROUTE_NAMES.labs,
         component: LabsSettings
       },
       {
-        path: 'integrations',
-        name: 'mobileIntegrationsSettings',
+        path: MOBILE_SETTINGS_RELATIVE_PATHS.labsIntegrations,
+        name: MOBILE_SETTINGS_ROUTE_NAMES.labsIntegrations,
         component: IntegrationsSettings
+      },
+      {
+        path: MOBILE_SETTINGS_RELATIVE_PATHS.legacyIntegrations,
+        redirect: MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH
       },
       {
         path: 'homeserver',

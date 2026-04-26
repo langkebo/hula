@@ -50,34 +50,23 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { countGraphemes } from '@/hooks/useCommon.ts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStore } from '@/stores/domains/user/user'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixContactService } from '@/services/matrix'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+import { useFriends } from '@/composables/useFriends'
 
 const logger = createLogger('AddFriendVerify')
 
 const { t } = useI18n()
-const globalStore = useGlobalStore()
 const userStore = useUserStore()
-const groupStore = useGroupStore()
 const requestMsgAutosize = { minRows: 3, maxRows: 3 }
-const userInfo = ref(groupStore.getUserInfo(globalStore.addFriendModalInfo.uid!)!)
-const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(userInfo.value!.avatar as string))
-const requestMsg = ref()
-
-watch(
-  () => globalStore.addFriendModalInfo.uid,
-  (newUid) => {
-    userInfo.value = groupStore.getUserInfo(newUid!)!
-  }
-)
+const { userInfo, avatarSrc, requestMsg, syncDefaultMessage, submitRequest } = useFriends({
+  defaultRequestMessage: computed(() => t('message.friend_verify.default_msg', { name: userStore.userInfo!.name }))
+})
 
 const addFriend = async () => {
-  await matrixContactService.sendAddFriendRequest(globalStore.addFriendModalInfo.uid as string, requestMsg.value)
+  const submitted = await submitRequest()
+  if (!submitted) return
   window.$message.success(t('message.friend_verify.toast_success'))
   setTimeout(async () => {
     await getCurrentWebviewWindow().close()
@@ -88,7 +77,7 @@ onMounted(async () => {
   logger.debug('userInfo', userInfo.value)
 
   await getCurrentWebviewWindow().show()
-  requestMsg.value = t('message.friend_verify.default_msg', { name: userStore.userInfo!.name })
+  syncDefaultMessage()
 })
 </script>
 

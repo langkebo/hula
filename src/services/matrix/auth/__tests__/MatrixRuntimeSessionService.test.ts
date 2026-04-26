@@ -12,6 +12,7 @@ const mockMatrixStore = {
   isInitialized: false,
   userId: '',
   accessToken: '',
+  getClient: vi.fn(),
   initialize: vi.fn(),
   login: vi.fn(),
   loginWithToken: vi.fn(),
@@ -31,6 +32,7 @@ const mockGroupStore = {
 
 const mockRoomStore = {
   rooms: new Map<string, unknown>(),
+  resetState: vi.fn(),
   loadRooms: vi.fn()
 }
 
@@ -126,6 +128,10 @@ vi.mock('@/stores/domains/widget/global', () => ({
 }))
 
 vi.mock('@/services/backend/config', () => ({
+  resolveMatrixRuntimeEndpointConfig: () => ({
+    homeserverUrl: 'https://matrix.example.com',
+    identityServerUrl: 'https://identity.example.com'
+  }),
   resolveMatrixEndpointConfig: () => ({
     homeserverUrl: 'https://matrix.example.com',
     identityServerUrl: 'https://identity.example.com'
@@ -165,6 +171,7 @@ describe('MatrixRuntimeSessionService', () => {
     mockMatrixStore.isInitialized = false
     mockMatrixStore.userId = ''
     mockMatrixStore.accessToken = ''
+    mockMatrixStore.getClient.mockReturnValue({})
     mockMatrixStore.initialize.mockResolvedValue(undefined)
     mockMatrixStore.login.mockResolvedValue(true)
     mockMatrixStore.loginWithToken.mockResolvedValue(true)
@@ -175,6 +182,7 @@ describe('MatrixRuntimeSessionService', () => {
     mockGroupStore.membersMap = { '@alice:example.com': { name: 'Alice' } }
     mockGroupStore.groupDetails = ['old-group']
     mockRoomStore.rooms = new Map([['old-room', {}]])
+    mockRoomStore.resetState.mockReset()
     mockRoomStore.loadRooms.mockResolvedValue(undefined)
     mockConfigStore.config = null
     mockConfigStore.initConfig.mockResolvedValue(undefined)
@@ -210,14 +218,17 @@ describe('MatrixRuntimeSessionService', () => {
 
     expect(mockMatrixStore.initialize).toHaveBeenCalledWith({
       homeserverUrl: 'https://matrix.example.com',
-      identityServerUrl: 'https://identity.example.com'
+      identityServerUrl: 'https://identity.example.com',
+      allowInsecureHttp: false
     })
     expect(mockMatrixStore.login).toHaveBeenCalledWith('alice', 'secret', 'HuLa Client')
     expect(mockInvoke).toHaveBeenCalledWith('switch_user_database', { uid: '@alice:example.com' })
     expect(mockInvoke).toHaveBeenCalledWith('update_token', {
-      uid: '@alice:example.com',
-      token: 'access-token',
-      refreshToken: ''
+      req: {
+        uid: '@alice:example.com',
+        token: 'access-token',
+        refreshToken: ''
+      }
     })
     expect(mockInvoke).toHaveBeenCalledWith('save_user_info', {
       userInfo: {
@@ -225,6 +236,7 @@ describe('MatrixRuntimeSessionService', () => {
       }
     })
     expect(mockRoomStore.loadRooms).toHaveBeenCalled()
+    expect(mockRoomStore.resetState).toHaveBeenCalled()
     expect(mockLoginHistoriesStore.addLoginHistory).toHaveBeenCalledWith(
       expect.objectContaining({
         uid: '@alice:example.com',
@@ -269,14 +281,17 @@ describe('MatrixRuntimeSessionService', () => {
       homeserverUrl: 'https://matrix.example.com',
       identityServerUrl: 'https://identity.example.com',
       accessToken: 'restored-token',
-      userId: '@bob:example.com'
+      userId: '@bob:example.com',
+      allowInsecureHttp: false
     })
     expect(mockMatrixStore.loginWithToken).toHaveBeenCalledWith('restored-token', '@bob:example.com')
     expect(mockUserStore.initUserInfo).toHaveBeenCalledWith('@bob:example.com', 'Bob')
     expect(mockInvoke).toHaveBeenCalledWith('update_token', {
-      uid: '@bob:example.com',
-      token: 'restored-token',
-      refreshToken: 'refresh-token'
+      req: {
+        uid: '@bob:example.com',
+        token: 'restored-token',
+        refreshToken: 'refresh-token'
+      }
     })
     expect(mockUserStore.userInfo).toEqual(
       expect.objectContaining({
@@ -286,6 +301,47 @@ describe('MatrixRuntimeSessionService', () => {
         client: 'PC'
       })
     )
+    expect(mockRoomStore.resetState).toHaveBeenCalled()
+    expect(mockRoomStore.loadRooms).toHaveBeenCalled()
+  })
+
+  it('restores matrix client before bootstrapping when current window client is missing', async () => {
+    mockMatrixStore.userId = '@carol:example.com'
+    mockMatrixStore.getClient.mockReturnValue(null)
+    mockUserStore.userInfo = {
+      uid: '@carol:example.com',
+      name: 'Carol',
+      account: 'carol',
+      email: 'carol@example.com',
+      avatar: 'mxc://carol',
+      client: 'PC'
+    }
+    mockInvoke.mockImplementation(async (command: string) => {
+      if (command === 'get_user_tokens') {
+        return {
+          token: 'stored-token',
+          refreshToken: 'stored-refresh-token'
+        }
+      }
+      return undefined
+    })
+
+    await matrixRuntimeSessionService.bootstrapPostLoginState({
+      account: 'carol',
+      displayName: 'Carol',
+      avatar: 'mxc://carol',
+      client: 'PC'
+    })
+
+    expect(mockMatrixStore.initialize).toHaveBeenCalledWith({
+      homeserverUrl: 'https://matrix.example.com',
+      identityServerUrl: 'https://identity.example.com',
+      accessToken: 'stored-token',
+      userId: '@carol:example.com',
+      allowInsecureHttp: false
+    })
+    expect(mockMatrixStore.loginWithToken).toHaveBeenCalledWith('stored-token', '@carol:example.com')
+    expect(mockRoomStore.resetState).toHaveBeenCalled()
     expect(mockRoomStore.loadRooms).toHaveBeenCalled()
   })
 

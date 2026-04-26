@@ -1,6 +1,7 @@
 import * as sdk from 'matrix-js-sdk'
 import 'matrix-js-sdk/src/manager-extensions'
-import { resolveMatrixEndpointConfig } from '@/services/backend/config'
+import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
+import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
 import { matrixClientService } from '../MatrixClientService'
 
 export interface MatrixLoginResult {
@@ -110,16 +111,18 @@ function generateClientSecret(): string {
 }
 
 function resolveMatrixClientUrl(path: string): string {
-  const { homeserverUrl } = resolveMatrixEndpointConfig()
+  const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
   const normalizedHomeserverUrl = homeserverUrl.replace(/\/+$/, '')
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
   return `${normalizedHomeserverUrl}${normalizedPath}`
 }
 
 function createTemporaryMatrixClient() {
-  const { homeserverUrl } = resolveMatrixEndpointConfig()
+  const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
   return sdk.createClient({
-    baseUrl: homeserverUrl
+    baseUrl: homeserverUrl,
+    allowInsecureHttp: homeserverUrl.startsWith('http://'),
+    fetchFn: getRuntimeAwareFetchFn()
   })
 }
 
@@ -249,7 +252,7 @@ async function postMatrixJson<T>(path: string, body: Record<string, unknown>, fa
   let response: Response
 
   try {
-    response = await fetch(url, {
+    response = await getRuntimeAwareFetch()(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -760,7 +763,7 @@ export class MatrixAuthService {
     try {
       const homeserverUrl = client.getHomeserverUrl()
       const baseUrl = homeserverUrl.replace(/\/_matrix\/client\/?$/, '').replace(/\/$/, '')
-      const response = await fetch(`${baseUrl}/.well-known/matrix/client`)
+      const response = await getRuntimeAwareFetch()(`${baseUrl}/.well-known/matrix/client`)
       if (!response.ok) {
         return {}
       }

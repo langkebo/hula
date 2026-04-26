@@ -54,6 +54,13 @@ vi.mock('pinia', () => ({
   })
 }))
 
+vi.mock('@/views/settingsWindow/tabs/PushSettings.vue', () => ({
+  default: {
+    name: 'PushSettings',
+    template: '<div class="push-settings-stub">Push Settings Stub</div>'
+  }
+}))
+
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({
     notification: { messageSound: true, volume: 80 },
@@ -74,6 +81,8 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     expect(wrapper.find('.notification-settings').exists()).toBe(true)
     expect(wrapper.text()).toContain('桌面通知')
+    expect(wrapper.text()).toContain('推送与规则')
+    expect(wrapper.find('.push-settings-stub').exists()).toBe(true)
   })
 
   it('has desktop notification enabled by default', () => {

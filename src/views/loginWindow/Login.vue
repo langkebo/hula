@@ -216,12 +216,17 @@
     <n-modal v-model:show="showServerConfig" preset="card" title="服务器配置" :style="{ width: '400px' }">
       <n-flex vertical :size="12">
         <n-form-item label="Homeserver URL">
-          <n-input v-model:value="homeserverUrl" placeholder="https://matrix.org" clearable />
+          <n-input v-model:value="homeserverUrl" :placeholder="DEFAULT_MATRIX_HOMESERVER_URL" clearable />
         </n-form-item>
         <n-form-item label="Identity Server URL">
-          <n-input v-model:value="identityServerUrl" placeholder="https://vector.im" clearable />
+          <n-input v-model:value="identityServerUrl" :placeholder="DEFAULT_MATRIX_IDENTITY_SERVER_URL" clearable />
         </n-form-item>
         <n-alert type="info" :bordered="false">修改服务器配置后需要重新登录</n-alert>
+        <n-flex justify="end">
+          <n-button @click="resetServerConfig">重置默认</n-button>
+          <n-button @click="showServerConfig = false">取消</n-button>
+          <n-button type="primary" @click="saveServerConfig">保存</n-button>
+        </n-flex>
       </n-flex>
     </n-modal>
   </n-config-provider>
@@ -247,6 +252,14 @@ import { isCompatibility, isDesktop, isMac } from '@/utils/PlatformConstants'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { formatBottomText } from '@/utils/Formatting'
 import { ThemeEnum } from '@/enums'
+import {
+  DEFAULT_MATRIX_HOMESERVER_URL,
+  DEFAULT_MATRIX_IDENTITY_SERVER_URL,
+  isValidHttpUrl,
+  normalizeHttpUrl,
+  saveMatrixHomeserverUrl,
+  saveMatrixIdentityServerUrl
+} from '@/services/backend'
 import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -286,7 +299,6 @@ const {
 const loginContext: ThirdPartyLoginContext = {
   giteeLogin: () => {},
   githubLogin: () => {},
-  gitcodeLogin: () => {},
   homeserverUrl,
   loading,
   loginDisabled
@@ -335,6 +347,32 @@ const handleAutoLoginActivity = () => {
 const triggerAutoLogin = () => {
   cancelAutoLogin()
   normalLogin('PC', true, true)
+}
+
+const saveServerConfig = () => {
+  const normalizedHomeserverUrl = normalizeHttpUrl(homeserverUrl.value || DEFAULT_MATRIX_HOMESERVER_URL)
+  const normalizedIdentityServerUrl = normalizeHttpUrl(identityServerUrl.value || DEFAULT_MATRIX_IDENTITY_SERVER_URL)
+
+  if (!isValidHttpUrl(normalizedHomeserverUrl)) {
+    window.$message.error('Homeserver 地址格式无效')
+    return
+  }
+
+  if (!isValidHttpUrl(normalizedIdentityServerUrl)) {
+    window.$message.error('Identity Server 地址格式无效')
+    return
+  }
+
+  homeserverUrl.value = saveMatrixHomeserverUrl(normalizedHomeserverUrl)
+  identityServerUrl.value = saveMatrixIdentityServerUrl(normalizedIdentityServerUrl)
+  showServerConfig.value = false
+  window.$message.success('服务器配置已保存，重新登录后生效')
+}
+
+const resetServerConfig = () => {
+  homeserverUrl.value = saveMatrixHomeserverUrl(DEFAULT_MATRIX_HOMESERVER_URL)
+  identityServerUrl.value = saveMatrixIdentityServerUrl(DEFAULT_MATRIX_IDENTITY_SERVER_URL)
+  window.$message.success('已恢复默认服务器配置')
 }
 
 const cancelAutoLoginAndShowManual = () => {
@@ -601,8 +639,9 @@ onMounted(async () => {
     startTour()
   }
 
-  if (!isJumpDirectly.value) {
-    await getCurrentWebviewWindow().show()
+  const currentWindow = getCurrentWebviewWindow()
+  if (!isJumpDirectly.value && currentWindow.label === 'login') {
+    await currentWindow.show()
   }
 
   if (login.value.autoLogin) {

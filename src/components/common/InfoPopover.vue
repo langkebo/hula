@@ -130,12 +130,6 @@
               </template>
               <span>{{ t('home.profile_card.tooltip.bound_github') }}</span>
             </n-tooltip>
-            <n-tooltip v-if="linkedGitcode">
-              <template #trigger>
-                <svg class="size-18px color-[--color-danger]"><use href="#gitcode-login"></use></svg>
-              </template>
-              <span>{{ t('home.profile_card.tooltip.bound_gitcode') }}</span>
-            </n-tooltip>
           </n-flex>
         </n-flex>
       </n-flex>
@@ -224,10 +218,11 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { resolveDisplayActiveStatus } from '@/utils/presenceStatus'
 
 const { t } = useI18n()
 
-const { uid } = defineProps<{
+const { uid, activeStatus } = defineProps<{
   uid: string
   activeStatus?: OnlineEnum
 }>()
@@ -254,8 +249,7 @@ const isCurrentUserUid = computed(() => userUid.value === uid)
 
 const providerFieldMap = {
   gitee: 'linkedGitee',
-  github: 'linkedGithub',
-  gitcode: 'linkedGitcode'
+  github: 'linkedGithub'
 } as const
 
 type OAuthProvider = keyof typeof providerFieldMap
@@ -277,7 +271,6 @@ const resolveLinkedState = (provider: OAuthProvider) => {
 /** 绑定标识（带当前用户信息兜底，同时兼容 oauthProviders 列表） */
 const linkedGitee = computed(() => resolveLinkedState('gitee'))
 const linkedGithub = computed(() => resolveLinkedState('github'))
-const linkedGitcode = computed(() => resolveLinkedState('gitcode'))
 /** 是否是我的好友 */
 const isMyFriend = computed(() => !!contactStore.contactsList.find((item) => item.uid === uid))
 /** 是否为群聊 */
@@ -297,7 +290,7 @@ const groupNickname = computed(() => {
 })
 // 显示的在线状态
 const displayActiveStatus = computed(() => {
-  return resolvedUserInfo.value?.activeStatus ?? OnlineEnum.OFFLINE
+  return resolveDisplayActiveStatus(activeStatus, resolvedUserInfo.value?.activeStatus)
 })
 
 // 计算当前用户状态图标

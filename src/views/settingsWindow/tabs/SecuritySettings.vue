@@ -131,12 +131,44 @@
       <h3 class="section-title">私密聊天</h3>
       <div class="setting-item">
         <div class="setting-info">
+          <span class="setting-label">启用私密聊天</span>
+          <span class="setting-desc">启用后可通过密码保护隐藏会话</span>
+        </div>
+        <n-switch v-model:value="secretChatEnabled" @update:value="handleSecretChatEnabledChange" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
           <span class="setting-label">私密聊天密码</span>
           <span class="setting-desc">{{ secretChatConfigured ? '已设置密码保护' : '未设置密码' }}</span>
         </div>
         <n-button size="small" @click="handleSetupSecretChat">
           {{ secretChatConfigured ? '修改密码' : '设置密码' }}
         </n-button>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">隐藏私密会话</span>
+          <span class="setting-desc">在会话列表中自动隐藏受保护的私密聊天</span>
+        </div>
+        <n-switch v-model:value="secretChatHideSessions" :disabled="!secretChatEnabled" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">自动锁定</span>
+          <span class="setting-desc">离开应用一段时间后重新校验私密聊天密码</span>
+        </div>
+        <n-switch v-model:value="secretChatAutoLock" :disabled="!secretChatEnabled" />
+      </div>
+      <div v-if="secretChatAutoLock" class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">自动锁定时间</span>
+          <span class="setting-desc">选择私密聊天重新上锁的等待时间</span>
+        </div>
+        <n-select
+          v-model:value="secretChatLockTimeout"
+          size="small"
+          style="width: 140px"
+          :options="lockTimeoutOptions" />
       </div>
       <div v-if="secretChatConfigured" class="setting-item">
         <div class="setting-info">
@@ -149,7 +181,7 @@
 
     <n-modal v-model:show="showSecretChatDialog" preset="card" title="设置私密聊天密码" style="width: 400px">
       <div class="secret-chat-form">
-        <n-form ref="secretChatFormRef" :model="secretChatForm" :rules="secretChatRules">
+        <n-form :model="secretChatForm" :rules="secretChatRules">
           <n-form-item path="password" label="密码">
             <n-input
               v-model:value="secretChatForm.password"
@@ -217,13 +249,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import {
   NButton,
   NDivider,
   NSpin,
   NEmpty,
   NSwitch,
+  NSelect,
   useMessage,
   NModal,
   NForm,
@@ -232,7 +265,6 @@ import {
   NAlert,
   useDialog
 } from 'naive-ui'
-import { storeToRefs } from 'pinia'
 import { Icon } from '@iconify/vue'
 import { matrixAccountService } from '@/services/matrix'
 import { matrixEncryptionService } from '@/services/matrix'
@@ -249,7 +281,6 @@ defineOptions({
 const message = useMessage()
 const dialog = useDialog()
 const settingStore = useSettingStore()
-const { secretChat } = storeToRefs(settingStore)
 
 const loadingIgnored = ref(false)
 const ignoredUsers = ref<string[]>([])
@@ -277,9 +308,24 @@ const showTypingStatus = ref(true)
 const sendReadReceipts = ref(true)
 
 const secretChatConfigured = computed(() => settingStore.isSecretChatConfigured())
+const secretChatEnabled = computed({
+  get: () => settingStore.secretChat.enabled,
+  set: (value: boolean) => settingStore.setSecretChatEnabled(value)
+})
+const secretChatHideSessions = computed({
+  get: () => settingStore.secretChat.hideSessions,
+  set: (value: boolean) => settingStore.setSecretChatHideSessions(value)
+})
+const secretChatAutoLock = computed({
+  get: () => settingStore.secretChat.autoLock,
+  set: (value: boolean) => settingStore.setSecretChatAutoLock(value)
+})
+const secretChatLockTimeout = computed({
+  get: () => settingStore.secretChat.lockTimeout,
+  set: (value: number) => settingStore.setSecretChatLockTimeout(value)
+})
 const showSecretChatDialog = ref(false)
 const savingSecretChat = ref(false)
-const secretChatFormRef = ref()
 const secretChatForm = reactive({
   password: '',
   confirmPassword: ''
@@ -296,6 +342,14 @@ const secretChatRules = {
     trigger: 'blur'
   }
 }
+
+const lockTimeoutOptions = [
+  { label: '1 分钟', value: 1 },
+  { label: '5 分钟', value: 5 },
+  { label: '15 分钟', value: 15 },
+  { label: '30 分钟', value: 30 },
+  { label: '1 小时', value: 60 }
+]
 
 function handleSetupSecretChat() {
   secretChatForm.password = ''
@@ -324,6 +378,10 @@ async function handleSaveSecretChat() {
   } finally {
     savingSecretChat.value = false
   }
+}
+
+function handleSecretChatEnabledChange(value: boolean) {
+  message.success(value ? '已启用私密聊天' : '已关闭私密聊天')
 }
 
 function handleClearSecretChat() {

@@ -206,7 +206,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: 'security',
         label: '安全隐私',
         icon: 'shield',
-        tabId: 'security'
+        tabId: 'securityPrivacy'
       },
       {
         id: 'settings',
@@ -229,11 +229,9 @@ export const MENU_SECTIONS: MenuSection[] = [
     items: [
       {
         id: 'feedback',
-        label: '帮助与反馈',
+        label: '帮助与关于',
         icon: 'chat',
-        action: () => {
-          window.open('https://github.com/nichuanfang/nichuanfang.github.io/issues', '_blank')
-        }
+        tabId: 'helpAbout'
       },
       {
         id: 'divider-help',

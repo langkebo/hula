@@ -13,6 +13,12 @@ import { isMobile } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('EmojiStore')
+const SUPPORTED_EMOJI_MIME_TYPES = ['image/png', 'image/gif', 'image/webp'] as const
+const MIME_TYPE_BY_EXTENSION: Record<string, (typeof SUPPORTED_EMOJI_MIME_TYPES)[number]> = {
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp'
+}
 
 export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
   const isLoading = ref(false) // 是否正在加载
@@ -105,6 +111,30 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
     const hash = await md5FromString(url)
     const ext = await resolveEmojiExt(url)
     return `${hash}.${ext}`
+  }
+
+  const resolveEmojiMimeType = async (url: string, remoteMimeType?: string | null) => {
+    if (
+      remoteMimeType &&
+      SUPPORTED_EMOJI_MIME_TYPES.includes(remoteMimeType as (typeof SUPPORTED_EMOJI_MIME_TYPES)[number])
+    ) {
+      return remoteMimeType
+    }
+
+    const ext = await resolveEmojiExt(url)
+    return MIME_TYPE_BY_EXTENSION[ext] || 'image/png'
+  }
+
+  const createUploadFileFromUrl = async (url: string) => {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`下载表情失败: ${response.status} ${response.statusText}`)
+    }
+
+    const blob = await response.blob()
+    const mimeType = await resolveEmojiMimeType(url, blob.type || response.headers.get('content-type'))
+    const ext = Object.entries(MIME_TYPE_BY_EXTENSION).find(([, value]) => value === mimeType)?.[0] || 'png'
+    return new File([blob], `custom_emoji.${ext}`, { type: mimeType })
   }
 
   const ensureEmojiCached = async (
@@ -205,7 +235,8 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
     const { uid } = userStore.userInfo!
     if (!uid || !emojiUrl) return false
     try {
-      await matrixEmojiService.emojiUpload({ url: emojiUrl } as unknown as File, 'custom_emoji')
+      const uploadFile = await createUploadFileFromUrl(emojiUrl)
+      await matrixEmojiService.emojiUpload(uploadFile, 'custom_emoji')
       window.$message.success('添加表情成功')
       await getEmojiList()
       return true

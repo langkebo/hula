@@ -2,7 +2,7 @@
   <img width="350px" height="150px" src="public/hula.png"/>
 </p>
 
-<p align="center">一款基于Tauri、Vite 7、Vue 3 和 TypeScript 构建的即时通讯系统</p>
+<p align="center">一款基于Tauri、Vite 7、Vue 3 和 TypeScript 构建的通讯系统</p>
 
 <div align="center">
   <a href="https://trendshift.io/repositories/15187" target="_blank">
@@ -81,7 +81,7 @@
 
 ## 📝 项目介绍
 
-HuLa 是一款基于 Tauri、Vite 7、Vue 3 和 TypeScript 构建的即时通讯系统。它利用了 Tauri 的跨平台能力和 Vue 3 的响应式设计，结合了 TypeScript 的类型安全特性和 Vite 7 的快速构建，为用户提供了一个高效、安全和易用的通讯解决方案。
+HuLa 是一款基于 Tauri、Vite 7、Vue 3 和 TypeScript 构建的通讯系统。它利用了 Tauri 的跨平台能力和 Vue 3 的响应式设计，结合了 TypeScript 的类型安全特性 and Vite 7 的快速构建，为用户提供了一个高效、安全和易用的通讯解决方案。
 
 ### 核心技术架构
 

@@ -25,6 +25,6 @@
   "submit_success": "提交成功",
   "submit_failed": "提交失败，请稍后重试",
   "title_required": "请输入标题",
-  "about_description": "HuLa 是一个基于 Matrix 协议的跨平台即时通讯应用",
+  "about_description": "HuLa 是一个基于 Matrix 协议的跨平台通讯应用",
   "copyright": "© 2024 HuLa Team. All rights reserved."
 }

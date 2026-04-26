@@ -9,10 +9,13 @@ import {
 } from 'matrix-js-sdk'
 import { TelemetryManager } from 'matrix-js-sdk/src/telemetry'
 import { PendingEventOrdering, ICreateClientOpts } from '@/types/matrix-js-sdk'
-import { info, error } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
+import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
 
 // 导入并初始化 Manager 扩展
 import 'matrix-js-sdk/src/manager-extensions'
+
+const logger = createLogger('MatrixClient')
 
 /**
  * 连接状态类型
@@ -33,6 +36,8 @@ export interface MatrixClientConfig {
   accessToken?: string
   /** 用户 ID (可选) */
   userId?: string
+  /** 是否允许非安全 HTTP (可选) */
+  allowInsecureHttp?: boolean
 }
 
 /**
@@ -80,10 +85,29 @@ class MatrixClientService {
   private slidingSyncInstance: SlidingSync | null = null
   private telemetryManager: TelemetryManager | null = null
   private observedClient: MatrixClient | null = null
-  private readonly syncListener = (state: string) => {
-    this.emit('sync', { state })
-    this.emit('connectionState', { state })
-    info(`[MatrixClient] 同步状态: ${state}`)
+  private readonly syncListener = (state: string, prevState?: string, data?: unknown) => {
+    this.emit('sync', { state, prevState, data })
+
+    // 增强错误日志
+    if (state === 'ERROR') {
+      logger.error(`同步错误: ${state}`, {
+        prevState,
+        data,
+        homeserverUrl: this.config?.homeserverUrl,
+        userId: this.client?.getUserId(),
+        deviceId: this.client?.getDeviceId(),
+        hasAccessToken: !!this.config?.accessToken,
+        hasSlidingSync: !!this.slidingSyncInstance,
+        connectionState: this.connectionState
+      })
+    } else {
+      logger.info(`同步状态: ${state}`, { prevState })
+    }
+
+    // 如果启用了 Sliding Sync，由 SlidingSyncService 统一管理连接状态
+    if (!this.slidingSyncInstance) {
+      this.emit('connectionState', { state })
+    }
   }
   private readonly roomListener = (room: Room) => {
     this.emit('room', room)
@@ -93,7 +117,42 @@ class MatrixClientService {
   }
 
   constructor() {
-    info('[MatrixClient] Matrix 客户端服务初始化')
+    logger.info('Matrix 客户端服务初始化')
+  }
+
+  private isMatrixApiError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false
+    }
+
+    return 'errcode' in error || 'httpStatus' in error
+  }
+
+  private async loginByHttpFallback(username: string, password: string, deviceName?: string): Promise<LoginResponse> {
+    if (!this.config?.homeserverUrl) {
+      throw new Error('客户端配置缺失，无法执行登录回退请求')
+    }
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    const response = await runtimeFetch(`${this.config.homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        type: 'm.login.password',
+        user: username,
+        password,
+        initial_device_display_name: deviceName || 'HuLa Client'
+      })
+    })
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '')
+      throw new Error(text || `登录失败 (${response.status})`)
+    }
+
+    return (await response.json()) as LoginResponse
   }
 
   /**
@@ -125,19 +184,53 @@ class MatrixClientService {
         deviceId: config.deviceId,
         accessToken: config.accessToken,
         userId: config.userId,
-        useAuthorizationHeader: true
+        useAuthorizationHeader: true,
+        allowInsecureHttp: config.allowInsecureHttp,
+        fetchFn: getRuntimeAwareFetchFn()
       }
 
       if (config.identityServerUrl) {
         clientOpts.idBaseUrl = config.identityServerUrl
       }
 
-      const tempClient = createClient(clientOpts)
+      // 不在这里创建 SlidingSync，延迟到 startClient() 时创建
+      // 这样可以确保有有效的 accessToken
+      this.client = createClient(clientOpts)
 
-      const lists = new Map()
-      lists.set('default', {
-        ranges: [[0, 20]],
-        sort: ['by_recency'],
+      logger.info(`客户端初始化完成: ${config.homeserverUrl}`)
+    } catch (err) {
+      this.connectionState = 'ERROR'
+      logger.error('客户端初始化失败:', err)
+      throw err
+    }
+  }
+
+  /**
+   * 创建 Sliding Sync 实例
+   * 私有方法，在 startClient() 时调用
+   */
+  private createSlidingSync(): SlidingSync {
+    if (!this.client || !this.config) {
+      throw new Error('客户端未初始化')
+    }
+
+    const lists = new Map()
+    lists.set('default', {
+      ranges: [[0, 20]],
+      sort: ['by_recency'],
+      timeline_limit: 10,
+      required_state: [
+        ['m.room.name', ''],
+        ['m.room.avatar', ''],
+        ['m.room.encryption', ''],
+        ['m.room.member', '*']
+      ]
+    })
+
+    const slidingSync = new SlidingSync(
+      this.config.homeserverUrl,
+      lists,
+      {
         timeline_limit: 10,
         required_state: [
           ['m.room.name', ''],
@@ -145,33 +238,17 @@ class MatrixClientService {
           ['m.room.encryption', ''],
           ['m.room.member', '*']
         ]
-      })
+      },
+      this.client,
+      30000
+    )
 
-      const slidingSync = new SlidingSync(
-        config.homeserverUrl,
-        lists,
-        {
-          timeline_limit: 10,
-          required_state: [
-            ['m.room.name', ''],
-            ['m.room.avatar', ''],
-            ['m.room.encryption', ''],
-            ['m.room.member', '*']
-          ]
-        },
-        tempClient,
-        2000
-      )
+    logger.info('Sliding Sync 实例已创建')
+    return slidingSync
+  }
 
-      // slidingSync is an experimental/custom property not in ICreateClientOpts
-      clientOpts.slidingSync = slidingSync
-      this.slidingSyncInstance = slidingSync as SlidingSync
-      this.client = createClient(clientOpts)
-
-      info(`[MatrixClient] 客户端初始化完成: ${config.homeserverUrl} (启用 Sliding Sync)`)
-    } catch (err) {
-      this.connectionState = 'ERROR'
-      error(`[MatrixClient] 客户端初始化失败: ${err}`)
+  /**
+   * 使用用户名密码登录
       throw err
     }
   }
@@ -191,13 +268,24 @@ class MatrixClientService {
 
     try {
       this.connectionState = 'CONNECTING'
-      const loginResponse: LoginResponse = await this.client.login('m.login.password', {
-        user: username,
-        password: password,
-        initial_device_display_name: deviceName || 'HuLa Client'
-      })
+      let loginResponse: LoginResponse
 
-      info(`[MatrixClient] 登录成功: ${loginResponse.user_id}`)
+      try {
+        loginResponse = await this.client.login('m.login.password', {
+          user: username,
+          password: password,
+          initial_device_display_name: deviceName || 'HuLa Client'
+        })
+      } catch (error) {
+        if (this.isMatrixApiError(error)) {
+          throw error
+        }
+
+        logger.warn('SDK 密码登录失败，尝试使用 HTTP 回退登录', error)
+        loginResponse = await this.loginByHttpFallback(username, password, deviceName)
+      }
+
+      logger.info(`登录成功: ${loginResponse.user_id}`)
 
       await this.initialize({
         ...this.config!,
@@ -217,7 +305,7 @@ class MatrixClientService {
     } catch (err) {
       this.connectionState = 'ERROR'
       const errorMessage = err instanceof Error ? err.message : '登录失败'
-      error(`[MatrixClient] 登录失败: ${errorMessage}`)
+      logger.error(`登录失败: ${errorMessage}`)
       return {
         success: false,
         error: errorMessage
@@ -247,11 +335,11 @@ class MatrixClientService {
 
       const ssoUrl = this.client.getSsoLoginUrl(window.location.href, 'HuLa Client', identityProviderId)
 
-      info(`[MatrixClient] 获取 SSO 登录 URL 成功`)
+      logger.info('获取 SSO 登录 URL 成功')
       return ssoUrl
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '获取 SSO 登录 URL 失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      logger.error(errorMessage)
       throw err
     }
   }
@@ -274,7 +362,7 @@ class MatrixClientService {
       })
 
       this.connectionState = 'CONNECTED'
-      info(`[MatrixClient] SSO 登录成功: ${loginResponse.user_id}`)
+      logger.info(`SSO 登录成功: ${loginResponse.user_id}`)
 
       return {
         success: true,
@@ -285,7 +373,7 @@ class MatrixClientService {
     } catch (err) {
       this.connectionState = 'ERROR'
       const errorMessage = err instanceof Error ? err.message : 'SSO 登录失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      logger.error(errorMessage)
       return {
         success: false,
         error: errorMessage
@@ -321,7 +409,7 @@ class MatrixClientService {
     } catch (err) {
       this.connectionState = 'ERROR'
       const errorMessage = err instanceof Error ? err.message : 'Token 登录失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      logger.error(errorMessage)
       return {
         success: false,
         error: errorMessage
@@ -340,10 +428,10 @@ class MatrixClientService {
     try {
       await this.client!.logout()
       await this.stopClient()
-      info('[MatrixClient] 登出成功')
+      logger.info('登出成功')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '登出失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      logger.error(errorMessage)
     } finally {
       this.slidingSyncInstance?.stop?.()
       this.slidingSyncInstance = null
@@ -364,18 +452,34 @@ class MatrixClientService {
     }
 
     try {
+      let shouldStartSlidingSync = false
+
+      // 在启动客户端前创建 Sliding Sync 实例
+      // 此时已经有了有效的 accessToken
+      if (!this.slidingSyncInstance && this.config?.accessToken) {
+        this.slidingSyncInstance = this.createSlidingSync()
+        shouldStartSlidingSync = true
+        logger.info('Sliding Sync 已启用')
+      }
+
       await this.client!.startClient({
         initialSyncLimit: 20,
         pendingEventOrdering: PendingEventOrdering.Detached
       })
+
+      if (this.slidingSyncInstance && shouldStartSlidingSync) {
+        this.slidingSyncInstance.start()
+        logger.info('Sliding Sync 已启动')
+      }
+
       this.connectionState = 'CONNECTED'
       this.setupEventListeners()
 
-      info('[MatrixClient] 客户端启动成功')
+      logger.info('客户端启动成功')
     } catch (err) {
       this.connectionState = 'ERROR'
       const errorMessage = err instanceof Error ? err.message : '客户端启动失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      logger.error(errorMessage, err)
       throw err
     }
   }
@@ -391,11 +495,24 @@ class MatrixClientService {
         this.slidingSyncInstance?.stop?.()
         this.client.stopClient()
         this.connectionState = 'DISCONNECTED'
-        info('[MatrixClient] 客户端已停止')
+        logger.info('客户端已停止')
       }
     } catch (err) {
-      error(`[MatrixClient] 停止客户端失败: ${err}`)
+      logger.error('停止客户端失败:', err)
+      throw err
     }
+  }
+
+  /**
+   * 更新连接状态并触发事件
+   *
+   * @param state - 新的连接状态
+   */
+  updateConnectionState(state: ConnectionState): void {
+    if (this.connectionState === state) return
+    this.connectionState = state
+    this.emit('connectionState', { state })
+    logger.info(`连接状态已更新: ${state}`)
   }
 
   /**
@@ -474,7 +591,7 @@ class MatrixClientService {
 
     try {
       const response = await this.client.createRoom(options)
-      info(`[MatrixClient] 创建房间成功: ${response.room_id}`)
+      logger.info(`创建房间成功: ${response.room_id}`)
       const room = this.client.getRoom(response.room_id)
       if (!room) {
         throw new Error('创建房间后无法获取房间实例')
@@ -482,7 +599,7 @@ class MatrixClientService {
       return room
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '创建房间失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      logger.error(errorMessage)
       throw err
     }
   }
@@ -501,7 +618,7 @@ class MatrixClientService {
 
     try {
       await this.client!.joinRoom(roomId)
-      info(`[MatrixClient] 加入房间成功: ${roomId}`)
+      logger.info(`加入房间成功: ${roomId}`)
       const room = this.client!.getRoom(roomId)
       if (!room) {
         throw new Error('加入房间后无法获取房间实例')
@@ -509,7 +626,7 @@ class MatrixClientService {
       return room
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '加入房间失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      logger.error(errorMessage)
       throw err
     }
   }
@@ -527,10 +644,10 @@ class MatrixClientService {
 
     try {
       await this.client!.leave(roomId)
-      info(`[MatrixClient] 离开房间成功: ${roomId}`)
+      logger.info(`离开房间成功: ${roomId}`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '离开房间失败'
-      error(`[MatrixClient] ${errorMessage}`)
+      logger.error(errorMessage)
       throw err
     }
   }

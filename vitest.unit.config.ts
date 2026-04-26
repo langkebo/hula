@@ -7,11 +7,12 @@ import AutoImport from 'unplugin-auto-import/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitest/config'
-import { getComponentsDirs, getComponentsDtsPath } from './build/config/components'
+import { getComponentsDirs, getComponentsDtsPath, getComponentsGlobs } from './build/config/components'
 
 const testPlatform = process.env.TAURI_ENV_PLATFORM
 const testComponentsDirs = getComponentsDirs(testPlatform)
 const testComponentsDtsPath = getComponentsDtsPath(testPlatform)
+const testComponentsGlobs = getComponentsGlobs(testPlatform)
 
 export default defineConfig({
   plugins: [
@@ -30,6 +31,7 @@ export default defineConfig({
     }),
     Components({
       dirs: testComponentsDirs,
+      globs: testComponentsGlobs,
       resolvers: [NaiveUiResolver()],
       dts: testComponentsDtsPath
     })

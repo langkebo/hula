@@ -85,6 +85,7 @@ import { ref, computed, reactive } from 'vue'
 import { NAvatar, NButton, NForm, NFormItem, NInput, NDivider, useMessage, useDialog } from 'naive-ui'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { useSettingsTabDirty } from '@/composables/settings/useSettingsDirtyRegistry'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AccountSettings')
@@ -130,6 +131,12 @@ const passwordForm = reactive({
   newPassword: '',
   confirmPassword: ''
 })
+
+const hasUnsavedPasswordChanges = computed(() => {
+  return Boolean(passwordForm.oldPassword || passwordForm.newPassword || passwordForm.confirmPassword)
+})
+
+useSettingsTabDirty('account', hasUnsavedPasswordChanges)
 
 function handleAvatarChange() {
   fileInputRef.value?.click()

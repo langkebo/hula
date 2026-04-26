@@ -13,6 +13,17 @@ import { matrixClientService } from '../../MatrixClientService'
 
 const mockFetch = vi.fn()
 
+function createMockJsonResponse(body: unknown) {
+  const text = typeof body === 'string' ? body : JSON.stringify(body)
+  const json = typeof body === 'string' ? JSON.parse(body) : body
+
+  return {
+    ok: true,
+    text: vi.fn().mockResolvedValue(text),
+    json: vi.fn().mockResolvedValue(json)
+  }
+}
+
 describe('MatrixAuthService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -101,7 +112,7 @@ describe('MatrixAuthService', () => {
 
         const result = await MatrixAuthService.login('testuser', 'password123', 'device-id', 'Device Name')
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:8008/_matrix/client/v3/login', expect.anything())
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:28008/_matrix/client/v3/login', expect.anything())
         expect(result).toEqual(mockResult)
       })
 
@@ -129,10 +140,7 @@ describe('MatrixAuthService', () => {
           access_token: 'token123',
           device_id: 'device123'
         }
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          text: vi.fn().mockResolvedValue(JSON.stringify(mockResult))
-        } as any)
+        mockFetch.mockResolvedValueOnce(createMockJsonResponse(mockResult) as any)
 
         const result = await MatrixAuthService.login('testuser', 'password123', 'device-id', 'Device Name')
 
@@ -204,7 +212,7 @@ describe('MatrixAuthService', () => {
 
         const result = await MatrixAuthService.register('newuser', 'password123')
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:8008/_matrix/client/v3/register', expect.anything())
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:28008/_matrix/client/v3/register', expect.anything())
         expect(result).toEqual({
           user_id: '@newuser:matrix.org'
         })
@@ -214,10 +222,7 @@ describe('MatrixAuthService', () => {
         const mockResult = {
           user_id: '@newuser:matrix.org'
         }
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          text: vi.fn().mockResolvedValue(JSON.stringify(mockResult))
-        } as any)
+        mockFetch.mockResolvedValueOnce(createMockJsonResponse(mockResult) as any)
 
         const result = await MatrixAuthService.register('newuser', 'password123')
 
@@ -253,19 +258,13 @@ describe('MatrixAuthService', () => {
           submit_url: 'https://matrix.org/submit',
           expires_in: 3600
         }
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          text: vi.fn().mockResolvedValue(JSON.stringify(mockResult))
-        } as any)
+        mockFetch.mockResolvedValueOnce(createMockJsonResponse(mockResult) as any)
 
         const result = await MatrixAuthService.requestEmailToken('test@example.com')
 
-        expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/register/email/requestToken',
-          expect.objectContaining({
-            method: 'POST'
-          })
-        )
+        const [url, requestInit] = mockFetch.mock.calls[0]
+        expect(String(url)).toBe('http://localhost:28008/_matrix/client/v3/register/email/requestToken')
+        expect(requestInit?.method).toBe('POST')
         expect(result).toMatchObject(mockResult)
         expect(result.client_secret).toHaveLength(43)
       })
@@ -290,23 +289,17 @@ describe('MatrixAuthService', () => {
       })
 
       it('should accept custom sendAttempt', async () => {
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          text: vi.fn().mockResolvedValue(
-            JSON.stringify({
-              sid: 'session-id-123'
-            })
-          )
-        } as any)
+        mockFetch.mockResolvedValueOnce(
+          createMockJsonResponse({
+            sid: 'session-id-123'
+          }) as any
+        )
 
         await MatrixAuthService.requestEmailToken('test@example.com', 3)
 
-        expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/register/email/requestToken',
-          expect.objectContaining({
-            body: expect.stringContaining('"send_attempt":3')
-          })
-        )
+        const [url, requestInit] = mockFetch.mock.calls[0]
+        expect(String(url)).toBe('http://localhost:28008/_matrix/client/v3/register/email/requestToken')
+        expect(requestInit?.body).toContain('"send_attempt":3')
       })
 
       it('should request password reset email token through homeserver', async () => {
@@ -322,7 +315,7 @@ describe('MatrixAuthService', () => {
         const result = await MatrixAuthService.requestPasswordEmailToken('test@example.com', 1, 'secret123')
 
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/account/password/email/requestToken',
+          'http://localhost:28008/_matrix/client/v3/account/password/email/requestToken',
           expect.objectContaining({
             method: 'POST',
             body: JSON.stringify({
@@ -378,7 +371,7 @@ describe('MatrixAuthService', () => {
 
         expect(requestPasswordEmailToken).toHaveBeenCalledWith('test@example.com', 'secret123', 1)
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/account/password/email/requestToken',
+          'http://localhost:28008/_matrix/client/v3/account/password/email/requestToken',
           expect.anything()
         )
         expect(result).toEqual({
@@ -403,7 +396,7 @@ describe('MatrixAuthService', () => {
         const result = await MatrixAuthService.getCaptcha()
 
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/register/captcha/send',
+          'http://localhost:28008/_matrix/client/v3/register/captcha/send',
           expect.objectContaining({
             method: 'POST'
           })
@@ -450,7 +443,7 @@ describe('MatrixAuthService', () => {
         const result = await MatrixAuthService.forgetPassword('test@example.com', 1, 'secret123')
 
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/account/password/email/requestToken',
+          'http://localhost:28008/_matrix/client/v3/account/password/email/requestToken',
           expect.anything()
         )
         expect(result).toEqual({
@@ -533,7 +526,7 @@ describe('MatrixAuthService', () => {
         )
 
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/account/password',
+          'http://localhost:28008/_matrix/client/v3/account/password',
           expect.anything()
         )
       })
@@ -553,7 +546,7 @@ describe('MatrixAuthService', () => {
         )
 
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/account/password',
+          'http://localhost:28008/_matrix/client/v3/account/password',
           expect.objectContaining({
             method: 'POST',
             body: JSON.stringify({
@@ -589,7 +582,7 @@ describe('MatrixAuthService', () => {
         )
 
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/account/password',
+          'http://localhost:28008/_matrix/client/v3/account/password',
           expect.objectContaining({
             body: JSON.stringify({
               new_password: 'newPassword123',
@@ -614,7 +607,7 @@ describe('MatrixAuthService', () => {
         await MatrixAuthService.resetPassword('newPassword123')
 
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/account/password',
+          'http://localhost:28008/_matrix/client/v3/account/password',
           expect.objectContaining({
             body: JSON.stringify({
               new_password: 'newPassword123',
@@ -664,7 +657,7 @@ describe('MatrixAuthService', () => {
 
         expect(submitEmailToken).not.toHaveBeenCalled()
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/account/password/email/submitToken',
+          'http://localhost:28008/_matrix/client/v3/account/password/email/submitToken',
           expect.objectContaining({
             method: 'POST',
             body: JSON.stringify({
@@ -715,7 +708,7 @@ describe('MatrixAuthService', () => {
         const result = await MatrixAuthService.submitEmailToken('code123', 'secret123', 'sid123')
 
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8008/_matrix/client/v3/register/email/submitToken',
+          'http://localhost:28008/_matrix/client/v3/register/email/submitToken',
           expect.objectContaining({
             method: 'POST',
             body: JSON.stringify({

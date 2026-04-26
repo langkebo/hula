@@ -11,12 +11,34 @@ export interface Badge {
   describe: string
 }
 
+const KNOWN_BADGES: Record<string, Badge> = {
+  '6': {
+    id: '6',
+    img: '/hula.png',
+    describe: '频道徽章'
+  }
+}
+
+export function buildBadgeCatalog(ids: string[]): Badge[] {
+  return [...new Set(ids)]
+    .filter((id): id is string => Boolean(id))
+    .map((id) => {
+      const knownBadge = KNOWN_BADGES[id]
+      if (knownBadge) return knownBadge
+      return {
+        id,
+        img: '/img/dispersion-bg.png',
+        describe: `徽章 ${id}`
+      }
+    })
+}
+
 export const useBadgeStore = defineStore(StoresEnum.BADGE, () => {
-  const badges = ref<Badge[]>([])
+  const badges = ref<Badge[]>(buildBadgeCatalog(Object.keys(KNOWN_BADGES)))
 
   const badgeById = computed(() => (id?: string) => {
     if (!id) return undefined
-    return badges.value.find((badge) => badge.id === id)
+    return badges.value.find((badge) => badge.id === id) ?? buildBadgeCatalog([id])[0]
   })
 
   const setBadges = (list: Badge[]) => {
@@ -43,7 +65,7 @@ export const useBadgeStore = defineStore(StoresEnum.BADGE, () => {
       if (accountData) {
         const content = accountData.getContent()
         if (content?.badges && Array.isArray(content.badges)) {
-          badges.value = content.badges as Badge[]
+          badges.value = buildBadgeCatalog((content.badges as Badge[]).map((badge) => badge.id))
         }
       }
     } catch (error) {

@@ -18,7 +18,7 @@
       </div>
       <div class="config-hint">
         <p>{{ t('menu.homeserver_hint') }}</p>
-        <p class="example">{{ t('menu.homeserver_example') }}: http://localhost:8008</p>
+        <p class="example">{{ t('menu.homeserver_example') }}: http://localhost:28008</p>
       </div>
     </div>
     <template #footer>

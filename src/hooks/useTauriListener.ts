@@ -2,6 +2,7 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { error, info } from '@tauri-apps/plugin-log'
 import { getCurrentInstance, onUnmounted } from 'vue'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('TauriListener')
 
@@ -27,7 +28,8 @@ export const useTauriListener = () => {
   const listeners: Promise<UnlistenFn>[] = []
   const listenerIds: string[] = []
   const instance = getCurrentInstance()
-  const windowLabel = WebviewWindow.getCurrent().label
+  const runtimeAvailable = hasTauriRuntime()
+  const windowLabel = runtimeAvailable ? WebviewWindow.getCurrent().label : 'browser'
   let isComponentMounted = true
 
   /**
@@ -35,6 +37,7 @@ export const useTauriListener = () => {
    * @param listener Promise<UnlistenFn>
    */
   const addListener = async (listener: Promise<UnlistenFn>, id?: string) => {
+    if (!runtimeAvailable) return
     const listenerId = id || `listener_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
     if (listenerIdMap.has(listenerId)) {
       try {
@@ -61,6 +64,9 @@ export const useTauriListener = () => {
    * @param listenerPromises Promise<UnlistenFn>数组
    */
   const pushListeners = (listenerPromises: Promise<UnlistenFn>[]) => {
+    if (!runtimeAvailable) {
+      return listenerPromises
+    }
     listeners.push(...listenerPromises)
 
     // 同时添加到全局监听器管理中
@@ -141,6 +147,7 @@ export const useTauriListener = () => {
 
   // 监听窗口关闭事件来自动清理监听器
   const setupWindowCloseListener = async () => {
+    if (!runtimeAvailable) return
     try {
       const appWindow = WebviewWindow.getCurrent()
       const currentWindowLabel = appWindow.label
@@ -170,7 +177,9 @@ export const useTauriListener = () => {
   }
 
   // 设置窗口关闭监听器
-  setupWindowCloseListener()
+  if (runtimeAvailable) {
+    setupWindowCloseListener()
+  }
 
   // 只在组件实例存在时才注册 onUnmounted 钩子
   if (instance) {

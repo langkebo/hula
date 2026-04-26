@@ -93,7 +93,8 @@ async function handleInitialize(payload: MatrixClientConfig): Promise<void> {
     deviceId: payload.deviceId,
     accessToken: payload.accessToken,
     userId: payload.userId,
-    useAuthorizationHeader: true
+    useAuthorizationHeader: true,
+    allowInsecureHttp: payload.allowInsecureHttp
   }
 
   const tempClient = sdk!.createClient(clientOpts)

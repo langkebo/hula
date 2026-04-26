@@ -36,6 +36,25 @@ describe('authGuard', () => {
     expect(mockHasAuthenticatedSession).not.toHaveBeenCalled()
   })
 
+  it('allows auxiliary desktop windows without authentication', async () => {
+    const guard = createAuthGuard({
+      isMobile: false,
+      hasAuthenticatedSession: mockHasAuthenticatedSession,
+      verifyAdminAccess: mockVerifyAdminAccess,
+      logger: {
+        warn: mockWarn,
+        error: mockError
+      }
+    })
+
+    await guard(createRoute('/capture'), createRoute('/'), next)
+    await guard(createRoute('/checkupdate'), createRoute('/'), next)
+
+    expect(next).toHaveBeenNthCalledWith(1)
+    expect(next).toHaveBeenNthCalledWith(2)
+    expect(mockHasAuthenticatedSession).not.toHaveBeenCalled()
+  })
+
   it('redirects unauthenticated desktop users to login', async () => {
     mockHasAuthenticatedSession.mockResolvedValue(false)
 
@@ -111,6 +130,24 @@ describe('authGuard', () => {
     expect(next).toHaveBeenCalledWith()
   })
 
+  it('bypasses auth when E2E harness is enabled', async () => {
+    const guard = createAuthGuard({
+      isMobile: true,
+      hasAuthenticatedSession: mockHasAuthenticatedSession,
+      verifyAdminAccess: mockVerifyAdminAccess,
+      logger: {
+        warn: mockWarn,
+        error: mockError
+      },
+      shouldBypassAuth: () => true
+    })
+
+    await guard(createRoute('/mobile/dynamic'), createRoute('/'), next)
+
+    expect(next).toHaveBeenCalledWith()
+    expect(mockHasAuthenticatedSession).not.toHaveBeenCalled()
+  })
+
   it('falls back to login when auth check throws', async () => {
     const failure = new Error('boom')
     mockHasAuthenticatedSession.mockRejectedValue(failure)
@@ -135,6 +172,8 @@ describe('authGuard', () => {
 describe('isPublicRoute', () => {
   it('matches oidc callback and nested public paths', () => {
     expect(isPublicRoute('/oidc/callback')).toBe(true)
+    expect(isPublicRoute('/capture')).toBe(true)
+    expect(isPublicRoute('/checkupdate')).toBe(true)
     expect(isPublicRoute('/mobile/privacyAgreement/detail')).toBe(true)
     expect(isPublicRoute('/message')).toBe(false)
   })

@@ -117,7 +117,23 @@ pub async fn get_user_tokens(state: State<'_, AppData>) -> Result<TokenResponse,
         },
     };
 
-    info!("Successfully retrieved user token info: {:?}", response);
+    let token_len = response
+        .token
+        .as_ref()
+        .map(|token| token.len())
+        .unwrap_or(0);
+    let refresh_token_len = response
+        .refresh_token
+        .as_ref()
+        .map(|token| token.len())
+        .unwrap_or(0);
+    info!(
+        "Successfully retrieved user token info: token_present={}, token_len={}, refresh_token_present={}, refresh_token_len={}",
+        response.token.is_some(),
+        token_len,
+        response.refresh_token.is_some(),
+        refresh_token_len
+    );
     Ok(response)
 }
 

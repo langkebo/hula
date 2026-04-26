@@ -1,4 +1,4 @@
-import { resolveMatrixEndpointConfig } from '@/services/backend'
+import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { info, error } from '@tauri-apps/plugin-log'
 
 export interface IceServerConfig {
@@ -21,7 +21,7 @@ class ConfigService {
   private configCache: AppConfig | null = null
 
   constructor() {
-    const { homeserverUrl } = resolveMatrixEndpointConfig()
+    const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
     this.baseUrl = homeserverUrl
   }
 

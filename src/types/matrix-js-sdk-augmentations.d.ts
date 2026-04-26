@@ -30,6 +30,8 @@ declare module 'matrix-js-sdk' {
     R0 = '/_matrix/client/r0'
   }
 
+  // Note: These types exist in matrix-js-sdk/@types/partials.ts but are not exported from main index
+  // We re-export them here for convenience
   export const Visibility: {
     readonly Public: 'public'
     readonly Private: 'private'
@@ -101,6 +103,8 @@ declare module 'matrix-js-sdk' {
   export type EmptyObject = Record<string, never>
 
   // ==================== 接口补充 ====================
+  // Note: ICreateRoomOpts exists in matrix-js-sdk/@types/requests.ts but is not exported from main index
+  // We re-export it here for convenience
   export interface ICreateRoomOpts {
     room_alias_name?: string
     name?: string
@@ -171,18 +175,16 @@ declare module 'matrix-js-sdk' {
     stop(): void
     registerExtension(extension: unknown): void
     on(
-      event: 'sync',
+      event: 'SlidingSync.Lifecycle',
       callback: (state: SlidingSyncState, resp: MSC3575SlidingSyncResponse | null, err?: Error) => void
     ): void
-    on(event: 'Room.data', callback: (roomId: string, roomData: MSC3575RoomData) => void): void
-    on(event: 'Lists.default', callback: (rooms: string[], signal: Record<string, unknown>) => void): void
+    on(event: 'SlidingSync.RoomData', callback: (roomId: string, roomData: MSC3575RoomData) => void): void
     on(event: string, callback: (...args: unknown[]) => void): void
     off(
-      event: 'sync',
+      event: 'SlidingSync.Lifecycle',
       callback: (state: SlidingSyncState, resp: MSC3575SlidingSyncResponse | null, err?: Error) => void
     ): void
-    off(event: 'Room.data', callback: (roomId: string, roomData: MSC3575RoomData) => void): void
-    off(event: 'Lists.default', callback: (rooms: string[], signal: Record<string, unknown>) => void): void
+    off(event: 'SlidingSync.RoomData', callback: (roomId: string, roomData: MSC3575RoomData) => void): void
     off(event: string, callback: (...args: unknown[]) => void): void
     setListRanges(listName: string, ranges: number[][]): void
     getList(
@@ -202,6 +204,7 @@ declare module 'matrix-js-sdk' {
     accessToken?: string
     userId?: string
     deviceId?: string
+    fetchFn?: typeof globalThis.fetch
     store?: unknown
     scheduler?: unknown
     cryptoStore?: unknown
@@ -211,6 +214,7 @@ declare module 'matrix-js-sdk' {
     cryptoCallbacks?: unknown
     localTimeoutMs?: number
     useLazyLoading?: boolean
+    allowInsecureHttp?: boolean
     pendingEventOrdering?: PendingEventOrdering
     unstableClientRelationAggregation?: boolean
     verificationCallbacks?: unknown
@@ -247,6 +251,8 @@ declare module 'matrix-js-sdk' {
     include_threads?: boolean
   }
 
+  // Note: ISendEventResponse exists in matrix-js-sdk/@types/requests.ts but is not exported from main index
+  // We re-export it here for convenience
   export interface ISendEventResponse {
     event_id: string
   }
@@ -329,6 +335,8 @@ declare module 'matrix-js-sdk' {
     is?: string
   }
 
+  // Note: Push types exist in matrix-js-sdk/@types/PushRules.ts but are not exported from main index
+  // We re-export them here for convenience
   export interface IPushRule {
     rule_id: string
     default: boolean
@@ -388,7 +396,8 @@ declare module 'matrix-js-sdk' {
   }
 
   // ==================== Voice ====================
-  // Voice 类型的补充定义
+  // synapse-rust 特有：语音消息功能扩展
+  // 官方 matrix-js-sdk 不包含这些类型
   export enum VoiceEvent {
     StateChanged = 'StateChanged',
     NewSession = 'NewSession',
@@ -507,6 +516,8 @@ declare module 'matrix-js-sdk' {
     removeAllListeners(event?: VoiceEvent): void
   }
 
+  // synapse-rust 特有：输入状态管理器扩展
+  // 官方 matrix-js-sdk 不包含此管理器接口
   export interface TypingManager {
     startTyping(roomId: string, options?: { timeout?: number }): Promise<void>
     stopTyping(roomId: string): Promise<void>
@@ -517,6 +528,8 @@ declare module 'matrix-js-sdk' {
     stop(): void
   }
 
+  // synapse-rust 特有：已读回执管理器扩展
+  // 官方 matrix-js-sdk 不包含此管理器接口
   export interface ReadReceiptsManager {
     sendReadReceipt(roomId: string, eventId: string): Promise<void>
     setReadMarkers(roomId: string, eventId: string, fullyReadEventId?: string): Promise<void>
@@ -540,6 +553,10 @@ declare module 'matrix-js-sdk' {
   export enum SlidingSyncState {
     RequestFinished = 'FINISHED',
     Complete = 'COMPLETE'
+  }
+  export enum SlidingSyncEvent {
+    RoomData = 'SlidingSync.RoomData',
+    Lifecycle = 'SlidingSync.Lifecycle'
   }
   export interface MSC3575SlidingSyncResponse {
     pos: string
@@ -1026,7 +1043,8 @@ declare module 'matrix-js-sdk' {
     setAvatar(avatar: string): Promise<void>
   }
 
-  // BurnAfterReadManager 类型
+  // synapse-rust 特有：阅后即焚功能管理器
+  // 官方 matrix-js-sdk 不包含此功能
   export interface BurnAfterReadManager {
     enableBurn(roomId: string, burnAfterMs?: number): Promise<{ enabled: boolean; burn_after_ms: number }>
     disableBurn(roomId: string): Promise<{ enabled: boolean; burn_after_ms: number }>
@@ -1046,6 +1064,8 @@ declare module 'matrix-js-sdk' {
     stop(): void
   }
 
+  // synapse-rust 特有：在线状态管理器扩展
+  // 官方 matrix-js-sdk 不包含此管理器接口
   export interface PresenceManager {
     setPresence(userId: string, presence: string, statusMsg?: string): Promise<void>
     getPresence(

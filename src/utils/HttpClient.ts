@@ -1,4 +1,4 @@
-import { resolveMatrixEndpointConfig } from '@/services/backend'
+import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { error as logError } from '@tauri-apps/plugin-log'
 
 export interface RequestOptions {
@@ -23,7 +23,7 @@ class HttpClient {
   private baseUrl: string = ''
 
   constructor() {
-    const { homeserverUrl } = resolveMatrixEndpointConfig()
+    const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
     this.baseUrl = homeserverUrl
   }
 

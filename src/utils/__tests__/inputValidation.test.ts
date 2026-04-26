@@ -68,7 +68,7 @@ describe('inputValidation', () => {
   describe('isValidUrl', () => {
     it('accepts valid URLs', () => {
       expect(isValidUrl('https://example.com')).toBe(true)
-      expect(isValidUrl('http://localhost:8008')).toBe(true)
+      expect(isValidUrl('http://localhost:28008')).toBe(true)
     })
 
     it('rejects invalid URLs', () => {

@@ -12,13 +12,37 @@ export const isMobilePlatform = (platform?: string) => {
 
 /** 根据平台返回自动导入插件需要扫描的组件目录 */
 export const getComponentsDirs = (platform?: string) => {
-  if (isMobilePlatform(platform)) {
+  const normalizedPlatform = normalizePlatform(platform)
+  if (!normalizedPlatform || isMobilePlatform(normalizedPlatform)) {
     return ['src/components', 'src/mobile/components']
   }
   return ['src/components']
 }
 
+/** 使用 globs 精确控制自动注册范围，避免显式导入的同名组件发生冲突 */
+export const getComponentsGlobs = (platform?: string) => {
+  const normalizedPlatform = normalizePlatform(platform)
+  const globs = ['src/components/**/*.vue']
+
+  if (!normalizedPlatform || isMobilePlatform(normalizedPlatform)) {
+    globs.push('src/mobile/components/**/*.vue')
+  }
+
+  globs.push(
+    '!src/components/thread/ThreadIndicator.vue',
+    '!src/components/thread/ThreadView.vue',
+    '!src/mobile/components/thread/ThreadIndicator.vue',
+    '!src/mobile/components/thread/ThreadView.vue'
+  )
+
+  return globs
+}
+
 /** 按平台选择对应的组件类型声明文件路径 */
 export const getComponentsDtsPath = (platform?: string) => {
-  return isMobilePlatform(platform) ? 'src/typings/components.mobile.d.ts' : 'src/typings/components.pc.d.ts'
+  const normalizedPlatform = normalizePlatform(platform)
+  if (!normalizedPlatform) {
+    return 'src/typings/components.d.ts'
+  }
+  return isMobilePlatform(normalizedPlatform) ? 'src/typings/components.mobile.d.ts' : 'src/typings/components.pc.d.ts'
 }

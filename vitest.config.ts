@@ -7,7 +7,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitest/config'
-import { getComponentsDirs, getComponentsDtsPath } from './build/config/components'
+import { getComponentsDirs, getComponentsDtsPath, getComponentsGlobs } from './build/config/components'
 import path from 'node:path'
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
 import { playwright } from '@vitest/browser-playwright'
@@ -17,6 +17,7 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 const testPlatform = process.env.TAURI_ENV_PLATFORM
 const testComponentsDirs = getComponentsDirs(testPlatform)
 const testComponentsDtsPath = getComponentsDtsPath(testPlatform)
+const testComponentsGlobs = getComponentsGlobs(testPlatform)
 export default defineConfig({
   plugins: [
     vue(),
@@ -35,6 +36,7 @@ export default defineConfig({
     Components({
       dirs: testComponentsDirs,
       // 根据环境加载对应组件目录
+      globs: testComponentsGlobs,
       resolvers: [NaiveUiResolver()],
       dts: testComponentsDtsPath
     })

@@ -22,7 +22,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch v-model="integrationsEnabled" @change="handleIntegrationsToggle" />
+                <van-switch :model-value="integrationsEnabled" @update:model-value="handleIntegrationsToggle" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -50,7 +50,10 @@
                   </div>
                 </template>
                 <template #right-icon>
-                  <van-switch v-model="integration.enabled" size="20" @change="handleToggleIntegration(integration)" />
+                  <van-switch
+                    :model-value="integration.enabled"
+                    size="20"
+                    @update:model-value="(value) => handleToggleIntegration(integration, value)" />
                 </template>
               </van-cell>
             </van-cell-group>
@@ -81,19 +84,25 @@
             <van-cell-group inset>
               <van-cell :title="t('mobile_integrations.permission_user_info')">
                 <template #right-icon>
-                  <van-switch v-model="permissions.userInfo" @change="handlePermissionChange" />
+                  <van-switch
+                    :model-value="permissions.userInfo"
+                    @update:model-value="(value) => handlePermissionChange('userInfo', value)" />
                 </template>
               </van-cell>
 
               <van-cell :title="t('mobile_integrations.permission_room_list')">
                 <template #right-icon>
-                  <van-switch v-model="permissions.roomList" @change="handlePermissionChange" />
+                  <van-switch
+                    :model-value="permissions.roomList"
+                    @update:model-value="(value) => handlePermissionChange('roomList', value)" />
                 </template>
               </van-cell>
 
               <van-cell :title="t('mobile_integrations.permission_send_message')">
                 <template #right-icon>
-                  <van-switch v-model="permissions.sendMessage" @change="handlePermissionChange" />
+                  <van-switch
+                    :model-value="permissions.sendMessage"
+                    @update:model-value="(value) => handlePermissionChange('sendMessage', value)" />
                 </template>
               </van-cell>
             </van-cell-group>
@@ -105,131 +114,66 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
-import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import { useTimerManager } from '@/utils/TimerManager'
-
-const logger = createLogger('IntegrationsSettings')
-const timerManager = useTimerManager()
+import {
+  createDefaultIntegrationsCatalog,
+  useIntegrations,
+  type Integration,
+  type IntegrationCatalogItem,
+  type IntegrationPermissions
+} from '@/composables/useIntegrations'
 
 const { t } = useI18n()
 
-interface Integration {
-  id: string
-  name: string
-  description: string
-  version: string
-  icon?: string
-  enabled: boolean
-}
-
-const integrationsEnabled = ref(true)
-
-const integrations = ref<Integration[]>([
-  {
-    id: 'github',
-    name: 'GitHub',
-    description: t('mobile_integrations.integration_github'),
-    version: '1.2.0',
-    icon: 'mdi:github',
-    enabled: true
-  },
-  {
-    id: 'giphy',
-    name: 'Giphy',
-    description: t('mobile_integrations.integration_giphy'),
-    version: '2.0.1',
-    icon: 'mdi:gif',
-    enabled: false
-  }
-])
-
-const availableIntegrations = ref<Integration[]>([
-  {
-    id: 'jira',
-    name: 'Jira',
-    description: t('mobile_integrations.integration_jira'),
-    version: '1.0.0',
-    icon: 'mdi:jira',
-    enabled: false
-  },
-  {
-    id: 'google-calendar',
-    name: 'Google Calendar',
-    description: t('mobile_integrations.integration_calendar'),
-    version: '1.1.0',
-    icon: 'mdi:calendar',
-    enabled: false
-  }
-])
-
-const permissions = ref({
-  userInfo: true,
-  roomList: false,
-  sendMessage: false
-})
-
-onMounted(() => {
-  loadSavedSettings()
-})
-
-function loadSavedSettings() {
-  const savedEnabled = localStorage.getItem('hula-integrations-enabled')
-  if (savedEnabled) integrationsEnabled.value = savedEnabled === 'true'
-
-  const savedPermissions = localStorage.getItem('hula-integrations-permissions')
-  if (savedPermissions) {
-    try {
-      permissions.value = JSON.parse(savedPermissions)
-    } catch (e) {
-      logger.error('Failed to parse saved permissions')
-    }
-  }
-}
+const {
+  integrationsEnabled,
+  integrations,
+  availableIntegrations,
+  permissions,
+  setIntegrationsEnabled,
+  setIntegrationEnabled,
+  installIntegration,
+  setPermission
+} = useIntegrations(createDefaultIntegrationsCatalog({ translate: t }))
 
 function handleIntegrationsToggle(value: boolean) {
-  localStorage.setItem('hula-integrations-enabled', value.toString())
+  setIntegrationsEnabled(value)
   showToast({
     type: 'success',
     message: value ? t('mobile_integrations.enabled_success') : t('mobile_integrations.disabled_success')
   })
 }
 
-function handleToggleIntegration(integration: Integration) {
+function handleToggleIntegration(integration: Integration, value: boolean) {
+  setIntegrationEnabled(integration.id, value)
   showToast({
     type: 'success',
-    message: integration.enabled
+    message: value
       ? t('mobile_integrations.integration_enabled', { name: integration.name })
       : t('mobile_integrations.integration_disabled', { name: integration.name })
   })
 }
 
-function handleInstallIntegration(integration: Integration) {
+async function handleInstallIntegration(integration: IntegrationCatalogItem) {
   showToast({
     type: 'loading',
     message: t('mobile_integrations.installing', { name: integration.name }),
     duration: 1000
   })
 
-  timerManager.setTimeout(() => {
-    integrations.value.push({
-      ...integration,
-      enabled: true
-    })
-    availableIntegrations.value = availableIntegrations.value.filter((i) => i.id !== integration.id)
-
+  const installed = await installIntegration(integration.id, 1000)
+  if (installed) {
     showToast({
       type: 'success',
       message: t('mobile_integrations.install_success', { name: integration.name })
     })
-  }, 1000)
+  }
 }
 
-function handlePermissionChange() {
-  localStorage.setItem('hula-integrations-permissions', JSON.stringify(permissions.value))
+function handlePermissionChange(key: keyof IntegrationPermissions, value: boolean) {
+  setPermission(key, value)
 }
 </script>
 

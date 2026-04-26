@@ -1,6 +1,6 @@
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { info, error, warn } from '@tauri-apps/plugin-log'
 
 const SPECIAL_FRIENDS_EVENT_TYPE = 'm.special_friends' as const
 
@@ -12,6 +12,7 @@ class MatrixSpecialFriendService {
   private listeners: Set<() => void> = new Set()
   private cache: Set<string> | null = null
   private observedClient: MatrixClient | null = null
+  private hasWarnedBeforeClientReady = false
 
   constructor() {
     this.ensureSyncListener()
@@ -40,6 +41,7 @@ class MatrixSpecialFriendService {
       return
     }
 
+    this.hasWarnedBeforeClientReady = false
     client.on('accountData', this.accountDataListener)
   }
 
@@ -82,6 +84,14 @@ class MatrixSpecialFriendService {
 
       return specialFriends
     } catch (err) {
+      if (err instanceof Error && err.message === '客户端未初始化') {
+        if (!this.hasWarnedBeforeClientReady) {
+          this.hasWarnedBeforeClientReady = true
+          warn('[SpecialFriend] Matrix 客户端未就绪，返回空特别关注列表')
+        }
+        return []
+      }
+
       error(`[SpecialFriend] 获取特别关注好友失败: ${err}`)
       return []
     }
@@ -171,6 +181,7 @@ class MatrixSpecialFriendService {
 
   clearCache(): void {
     this.cache = null
+    this.hasWarnedBeforeClientReady = false
   }
 }
 

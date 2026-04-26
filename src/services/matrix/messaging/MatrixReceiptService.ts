@@ -2,6 +2,7 @@ import type { MatrixClient, MatrixEvent, ReadReceiptsManager } from 'matrix-js-s
 import { NotificationCountType } from '@/types/matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 export interface ReadReceipt {
   userId: string
@@ -47,6 +48,12 @@ class MatrixReceiptService {
   }
 
   async sendReadReceiptByEventId(roomId: string, eventId: string): Promise<string | undefined> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('receipt', roomId, { roomId, eventId })
+      info(`[MatrixReceipt] 离线状态，已将阅读回执入队: ${roomId}/${eventId}`)
+      return eventId
+    }
+
     try {
       const client = matrixClientService.getClient()
       if (!client) {

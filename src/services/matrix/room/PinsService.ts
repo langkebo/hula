@@ -1,5 +1,6 @@
 import { info, error } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 /**
  * Room pinned / sticky events domain service.
@@ -30,6 +31,11 @@ export class MatrixRoomPinsService {
   }
 
   async setPinnedEvents(roomId: string, eventIds: string[]): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('pin', roomId, { roomId, type: 'pinned', eventIds })
+      info(`[MatrixRoom] 离线状态，已将设置置顶事件入队: ${roomId}`)
+      return
+    }
     const client = this.getClient()
     try {
       await client.sendStateEvent(roomId, 'm.room.pinned_events', { pinned: eventIds }, '')
@@ -55,6 +61,11 @@ export class MatrixRoomPinsService {
   }
 
   async setStickyEvents(roomId: string, events: Record<string, unknown>): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('pin', roomId, { roomId, type: 'sticky', events })
+      info(`[MatrixRoom] 离线状态，已将设置粘性事件入队: ${roomId}`)
+      return
+    }
     const client = this.getClient()
     try {
       await client.http.authedRequest(

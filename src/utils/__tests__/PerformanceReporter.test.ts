@@ -135,6 +135,25 @@ describe('PerformanceReporter', () => {
     })
   })
 
+  describe('reportPageRender', () => {
+    it('should report page render metrics', () => {
+      const endpoint = 'http://localhost:9090'
+      performanceReporter.initialize({
+        endpoint,
+        batchSize: 10,
+        flushInterval: 5000,
+        enabled: true,
+        debug: false
+      })
+
+      performanceReporter.reportPageRender('mobile-dynamic-index', 320, 800, '/mobile/dynamic', {
+        source: 'tab-bar'
+      })
+
+      expect(performanceReporter.getMetricsCount()).toBe(1)
+    })
+  })
+
   describe('SLA thresholds', () => {
     it('should classify LCP metrics correctly', () => {
       const endpoint = 'http://localhost:9090'

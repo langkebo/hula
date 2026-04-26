@@ -49,11 +49,7 @@
               </n-flex>
             </template>
             <template #header-extra>
-              <span class="text-(10px #707070)">
-                {{ specialContacts.filter((c) => c.activeStatus === OnlineEnum.ONLINE).length }}/{{
-                  specialContacts.length
-                }}
-              </span>
+              <span class="text-(10px #707070)">{{ specialOnlineCount }}/{{ specialContacts.length }}</span>
             </template>
             <n-scrollbar style="max-height: calc(100vh / var(--page-scale, 1) - 270px)" @scroll="handleFriendScroll">
               <div @contextmenu.stop="$event.preventDefault()">
@@ -110,11 +106,7 @@
               </n-flex>
             </template>
             <template #header-extra>
-              <span class="text-(10px #707070)">
-                {{ onlineCount - specialContacts.filter((c) => c.activeStatus === OnlineEnum.ONLINE).length }}/{{
-                  normalContacts.length
-                }}
-              </span>
+              <span class="text-(10px #707070)">{{ normalOnlineCount }}/{{ normalContacts.length }}</span>
             </template>
             <n-scrollbar style="max-height: calc(100vh / var(--page-scale, 1) - 270px)" @scroll="handleFriendScroll">
               <div @contextmenu.stop="$event.preventDefault()">
@@ -242,14 +234,14 @@
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum, UserType } from '@/enums'
+import { useFriends } from '@/composables/useFriends'
+import { MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { DetailsContent, FriendItem } from '@/services/types'
-import { useContactStore, type MatrixContact } from '@/stores/domains/chat/contacts'
+import type { DetailsContent } from '@/services/types'
+import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
 import { createLogger } from '@/utils/Logger'
@@ -264,96 +256,30 @@ const menuList = computed(() => [
   { label: t('home.friends_list.menu.rename_group'), icon: 'edit' },
   { label: t('home.friends_list.menu.delete_group'), icon: 'delete' }
 ])
-const activeItem = ref('')
 const detailsShow = ref(false)
 const shrinkStatus = ref(false)
 const contactStore = useContactStore()
 const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
-const userStatusStore = useUserStatusStore()
 const settingStore = useSettingStore()
 const { themes } = storeToRefs(settingStore)
-const { stateList } = storeToRefs(userStatusStore)
-
-/** 群聊列表 */
-const groupChatList = computed(() => {
-  return [...groupStore.groupDetails].sort((a, b) => {
-    // 将roomId为'1'的群聊排在最前面
-    if (a.roomId === '1' && b.roomId !== '1') return -1
-    if (a.roomId !== '1' && b.roomId === '1') return 1
-    return 0
-  })
-})
-
-/** 统计在线用户人数 */
-const onlineCount = computed(() => {
-  return contactStore.contactsList.filter((item: MatrixContact) => item.activeStatus === OnlineEnum.ONLINE).length
-})
-
-/** 特殊关心好友列表 */
-const specialContacts = computed(() => {
-  return contactStore.favoriteContacts.sort((a: MatrixContact, b: MatrixContact) => {
-    if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
-    if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
-    return 0
-  })
-})
-
-/** 屏蔽好友列表 */
-const blockedContacts = computed(() => {
-  return contactStore.blockedContacts.sort((a: MatrixContact, b: MatrixContact) => {
-    return (b.lastOptTime || 0) - (a.lastOptTime || 0)
-  })
-})
-
-/** 普通好友列表（排除特殊关心和屏蔽的） */
-const normalContacts = computed(() => {
-  const specialIds = new Set(specialContacts.value.map((c: MatrixContact) => c.uid))
-  const blockedIds = new Set(blockedContacts.value.map((c: MatrixContact) => c.uid))
-  return contactStore.contactsList
-    .filter((c: MatrixContact) => !specialIds.has(c.uid) && !blockedIds.has(c.uid))
-    .sort((a: MatrixContact, b: MatrixContact) => {
-      const aIsBot = isBotUser(a.uid)
-      const bIsBot = isBotUser(b.uid)
-      if (aIsBot && !bIsBot) return -1
-      if (!aIsBot && bIsBot) return 1
-      if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
-      if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
-      return 0
-    })
-})
-
-/** 是否显示分组视图 */
-const showGroupedView = ref(true)
-/** 各分组展开状态 */
-const groupExpandedState = ref({
-  special: true,
-  normal: true,
-  blocked: false
-})
-
-/** 渲染好友项 */
-const renderContactItem = (item: FriendItem, extraClass = '') => {
-  return `<div @click="handleClick('${item.uid}', RoomTypeEnum.SINGLE)" :class="['item-box w-full h-75px mb-5px', '${extraClass}', { active: activeItem === '${item.uid}' }]">
-    <n-flex align="center" :size="10" class="h-75px pl-6px pr-8px flex-1 truncate">
-      <n-avatar round style="border: 1px solid var(--avatar-border-color)" :size="44"
-        class="grayscale" :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser('${item.uid}') }"
-        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo('${item.uid}')!.avatar!)"
-        :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-        :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
-      <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
-        <span class="text-14px leading-tight flex-1 truncate">{{ groupStore.getUserInfo('${item.uid}')!.name }}</span>
-        <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
-          [{{ isBotUser('${item.uid}') ? '${t('home.friends_list.bot_tag')}' : (getUserState('${item.uid}') ? translateStateTitle(getUserState('${item.uid}')?.title) : (item.activeStatus === OnlineEnum.ONLINE ? '${t('home.friends_list.status.online')}' : '${t('home.friends_list.status.offline')}')) }}]
-        </div>
-      </n-flex>
-    </n-flex>
-  </div>`
-}
+const {
+  groupChatList,
+  specialContacts,
+  specialOnlineCount,
+  blockedContacts,
+  normalContacts,
+  normalOnlineCount,
+  selectedItem: activeItem,
+  isBotUser,
+  getUserState,
+  setSelectedItem,
+  clearSelectedItem
+} = useFriends()
 
 const handleClick = (index: string, type: number) => {
   detailsShow.value = true
-  activeItem.value = index
+  setSelectedItem(index)
   const data = {
     context: {
       type: type,
@@ -381,7 +307,7 @@ const handleFriendScroll = (e: Event) => {
 
 const resetSelection = () => {
   detailsShow.value = false
-  activeItem.value = ''
+  clearSelectedItem()
   useMitt.emit(MittEnum.DETAILS_SHOW, {
     context: undefined,
     detailsShow: false
@@ -406,7 +332,7 @@ const handleApply = async (applyType: 'friend' | 'group') => {
       applyType
     } as DetailsContent
   })
-  activeItem.value = ''
+  clearSelectedItem()
 }
 
 const handleOpenSecretChat = () => {
@@ -428,18 +354,6 @@ const fetchContactData = async () => {
   } catch (error) {
     logger.error('获取联系人数据失败:', error)
   }
-}
-
-const isBotUser = (uid: string) => groupStore.getUserInfo(uid)?.account === UserType.BOT
-/** 获取用户状态 */
-const getUserState = (uid: string) => {
-  const userInfo = groupStore.getUserInfo(uid)
-  const userStateId = userInfo?.userStateId
-
-  if (userStateId && userStateId !== '1') {
-    return stateList.value.find((state: { id: string }) => state.id === userStateId)
-  }
-  return null
 }
 
 const translateStateTitle = (title?: string) => {

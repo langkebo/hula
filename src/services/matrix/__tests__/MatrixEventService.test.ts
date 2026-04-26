@@ -33,10 +33,17 @@ vi.mock('../messaging/MatrixMessageRelationService', () => ({
   }
 }))
 
+vi.mock('@/services/offline/OfflineQueueService', () => ({
+  offlineQueueService: {
+    enqueue: vi.fn()
+  }
+}))
+
 import matrixClientService from '../MatrixClientService'
 import { matrixReceiptService } from '../messaging/MatrixReceiptService'
 import { matrixReactionService } from '../messaging/MatrixReactionService'
 import { matrixMessageRelationService } from '../messaging/MatrixMessageRelationService'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 describe('MatrixEventService', () => {
   beforeEach(() => {
@@ -254,6 +261,22 @@ describe('MatrixEventService', () => {
       await expect(matrixEventService.sendEvent('!room:id', 'm.room.message', { body: 'test' })).rejects.toThrow(
         '客户端未初始化'
       )
+    })
+
+    it('should enqueue event when offline', async () => {
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+      vi.mocked(offlineQueueService.enqueue).mockReturnValue('q-5')
+
+      const result = await matrixEventService.sendEvent('!room:id', 'm.room.message', { body: 'hello' })
+
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('message', '!room:id', {
+        roomId: '!room:id',
+        eventType: 'm.room.message',
+        content: { body: 'hello' }
+      })
+      expect(result).toBe('local-q-5')
+
+      Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
     })
   })
 })

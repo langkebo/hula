@@ -721,6 +721,23 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   }
 
   /**
+   * 重置房间相关状态，避免账号切换或登录恢复时残留旧数据。
+   */
+  function resetState(): void {
+    rooms.value = new Map()
+    messages.value = new Map()
+    hasMoreMessages.value = new Map()
+    currentRoomId.value = null
+    isLoading.value = false
+    isLoadingMore.value = false
+    clearRoomDetailCache()
+    triggerRef(rooms)
+    triggerRef(messages)
+    triggerRef(hasMoreMessages)
+    info('[RoomStore] 房间状态已重置')
+  }
+
+  /**
    * 清理过期缓存（内存优化）
    * 移除最旧的缓存项，保留最近的 N 个
    *
@@ -772,6 +789,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     setupEventListeners,
     loadRoomDetail,
     loadRoomDetails,
+    resetState,
     clearRoomDetailCache,
     pruneCache,
     getCacheStats,

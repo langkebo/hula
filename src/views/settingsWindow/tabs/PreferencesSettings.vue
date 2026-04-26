@@ -18,6 +18,75 @@
     <n-divider />
 
     <div class="settings-section">
+      <h3 class="section-title">启动与存储</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">自动登录</span>
+          <span class="setting-desc">启动应用后自动恢复上次登录状态</span>
+        </div>
+        <n-switch v-model:value="autoLogin" @update:value="handleAutoLoginChange" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">开机启动</span>
+          <span class="setting-desc">系统启动后自动启动桌面端应用</span>
+        </div>
+        <n-switch
+          v-model:value="autoStartup"
+          :loading="autoStartupLoading"
+          :disabled="!desktopRuntimeAvailable"
+          @update:value="handleAutoStartupChange" />
+      </div>
+      <div class="storage-panel">
+        <div class="storage-panel-header">
+          <div class="setting-info">
+            <span class="setting-label">本地存储目录</span>
+            <span class="setting-desc">统一管理扫描目录并查看当前空间占用</span>
+          </div>
+          <n-button size="small" :disabled="scanning || !currentDirectory" @click="startScan">
+            {{ scanning ? '扫描中' : '开始扫描' }}
+          </n-button>
+        </div>
+        <div class="storage-path-row">
+          <n-radio-group v-model:value="pathType" @update:value="handleStoragePathTypeChange">
+            <n-radio value="default">默认目录</n-radio>
+            <n-radio value="custom">自定义目录</n-radio>
+          </n-radio-group>
+          <n-button
+            v-if="pathType === 'custom'"
+            size="small"
+            secondary
+            :disabled="scanning"
+            @click="selectCustomDirectory">
+            选择目录
+          </n-button>
+        </div>
+        <div class="storage-directory">{{ currentDirectory || '正在获取目录...' }}</div>
+        <div class="storage-stats">
+          <span>已处理 {{ scanProgress.files_processed }} 个文件</span>
+          <span>目录大小 {{ formatBytes(scanProgress.total_size) }}</span>
+          <span>
+            {{
+              showDiskUsage && diskInfo
+                ? `磁盘占用 ${diskInfo.disk_usage_percentage.toFixed(2)}%`
+                : `扫描进度 ${scanningProgress.toFixed(0)}%`
+            }}
+          </span>
+        </div>
+        <n-progress
+          type="line"
+          :percentage="
+            showDiskUsage && diskInfo
+              ? Number(diskInfo.disk_usage_percentage.toFixed(0))
+              : Number(scanningProgress.toFixed(0))
+          "
+          :processing="scanning" />
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
       <h3 class="section-title">消息发送</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -196,9 +265,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { NSelect, NSwitch, NDivider, useMessage } from 'naive-ui'
+import { NButton, NDivider, NProgress, NRadio, NRadioGroup, NSelect, NSwitch, useMessage } from 'naive-ui'
 import { storeToRefs } from 'pinia'
+import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
+import { open } from '@tauri-apps/plugin-dialog'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useScannerStore } from '@/stores/domains/widget/scanner'
+import { isDesktop } from '@/utils/PlatformConstants'
+import { formatBytes } from '@/utils/Formatting.ts'
 import { useI18n } from 'vue-i18n'
 
 defineOptions({
@@ -208,7 +282,11 @@ defineOptions({
 const message = useMessage()
 const { locale } = useI18n()
 const settingStore = useSettingStore()
+const scannerStore = useScannerStore()
 const { chat, page } = storeToRefs(settingStore)
+const { pathType, currentDirectory, scanning, showDiskUsage, diskInfo, scanProgress, scanningProgress } =
+  storeToRefs(scannerStore)
+const desktopRuntimeAvailable = isDesktop()
 
 const language = ref(page.value.lang || 'AUTO')
 const languageOptions = [
@@ -220,6 +298,9 @@ const languageOptions = [
 ]
 
 const sendKey = ref(chat.value?.sendKey || 'Enter')
+const autoLogin = ref(settingStore.login.autoLogin)
+const autoStartup = ref(settingStore.login.autoStartup)
+const autoStartupLoading = ref(false)
 const sendKeyOptions = [
   { label: 'Enter', value: 'Enter' },
   { label: 'Ctrl + Enter', value: 'Ctrl+Enter' },
@@ -347,7 +428,26 @@ onMounted(() => {
   if (savedTyping !== null) {
     sendTypingNotifications.value = savedTyping === 'true'
   }
+
+  if (desktopRuntimeAvailable) {
+    void syncDesktopPreferences()
+  }
 })
+
+async function syncDesktopPreferences() {
+  try {
+    autoStartup.value = await isEnabled()
+    settingStore.setAutoStartup(autoStartup.value)
+  } catch (error) {
+    message.warning('读取开机启动状态失败')
+  }
+
+  try {
+    await scannerStore.initializeScanner()
+  } catch (error) {
+    message.warning('初始化存储扫描失败')
+  }
+}
 
 function handleLanguageChange(value: string) {
   settingStore.page.lang = value
@@ -360,6 +460,52 @@ function handleLanguageChange(value: string) {
 function handleSendKeyChange(value: string) {
   settingStore.setSendMessageShortcut(value)
   message.success(`发送键已设置为 ${sendKeyOptions.find((s) => s.value === value)?.label}`)
+}
+
+function handleAutoLoginChange(value: boolean) {
+  settingStore.setAutoLogin(value)
+  message.success(value ? '已启用自动登录' : '已关闭自动登录')
+}
+
+async function handleAutoStartupChange(value: boolean) {
+  if (!desktopRuntimeAvailable) {
+    autoStartup.value = false
+    return
+  }
+
+  autoStartupLoading.value = true
+  try {
+    await (value ? enable() : disable())
+    settingStore.setAutoStartup(value)
+    message.success(value ? '已启用开机启动' : '已关闭开机启动')
+  } catch (error) {
+    autoStartup.value = !value
+    message.error('设置开机启动失败')
+  } finally {
+    autoStartupLoading.value = false
+  }
+}
+
+function handleStoragePathTypeChange(value: 'default' | 'custom') {
+  scannerStore.setPathType(value)
+}
+
+async function selectCustomDirectory() {
+  try {
+    const result = await open({
+      directory: true,
+      title: '选择要扫描的目录'
+    })
+    if (result) {
+      scannerStore.setCustomDirectory(result)
+    }
+  } catch (error) {
+    message.error('选择目录失败')
+  }
+}
+
+async function startScan() {
+  await scannerStore.startScan()
 }
 
 function handleConfirmChange(value: boolean) {
@@ -476,5 +622,49 @@ function handleTypingToggle(value: boolean) {
   font-size: 12px;
   color: var(--color-text-quaternary);
   margin-top: 4px;
+}
+
+.storage-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+:deep(.dark) .storage-panel {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.storage-panel-header,
+.storage-path-row,
+.storage-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.storage-stats {
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--color-text-quaternary);
+}
+
+.storage-directory {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+
+:deep(.dark) .storage-directory {
+  background: rgba(255, 255, 255, 0.05);
 }
 </style>

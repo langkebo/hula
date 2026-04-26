@@ -71,7 +71,7 @@
 
 | 变量名 | 默认值 | 位置 | 状态 |
 |--------|--------|------|------|
-| VITE_HOMESERVER_URL | http://localhost:8008 | .env | ✅ 正确 |
+| VITE_HOMESERVER_URL | http://localhost:28008 | .env | ✅ 正确 |
 | VITE_IDENTITY_SERVER_URL | https://vector.im | config.ts | ✅ 正确 |
 | VITE_APP_NAME | HuLa | .env | ✅ 正确 |
 | VITE_PC_URL | GitHub 仓库 | .env | ✅ 正确 |
@@ -160,7 +160,7 @@ $ grep -rn "homeserver" src/ | grep -v test | wc -l
 ```typescript
 // 初始化
 await matrixClientService.initialize({
-  homeserverUrl: 'http://localhost:8008',
+  homeserverUrl: 'http://localhost:28008',
   accessToken: token,
   userId: userId
 });
@@ -911,7 +911,7 @@ pnpm check:sdk-types
    - 文档: https://matrix-org.github.io/matrix-js-sdk/
 
 2. **synapse-rust**
-   - GitHub: https://github.com/HuLaSpark/synapse-rust
+   - GitHub: https://github.com/langkebo/synapse-rust
    - 文档: 项目 README
 
 3. **Matrix 协议**

@@ -10,6 +10,7 @@ import matrixMessageAdapter from './messaging/MatrixMessageAdapter'
 import matrixRoomService from './room/MatrixRoomService'
 import { info, error } from '@tauri-apps/plugin-log'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 interface UploadResponse {
   content_uri?: string
@@ -88,6 +89,17 @@ class MatrixEventService {
   }
 
   async sendEvent(roomId: string, eventType: string, content: EventContent): Promise<string> {
+    if (!navigator.onLine) {
+      const id = offlineQueueService.enqueue('message', roomId, {
+        roomId,
+        eventType,
+        content
+      })
+      info(`[MatrixEvent] 离线状态，已将事件发送操作入队: ${roomId}/${eventType} (queueId: ${id})`)
+      // 返回一个带有前缀的临时 ID，以便前端识别
+      return `local-${id}`
+    }
+
     const client = this.getClient()
 
     try {

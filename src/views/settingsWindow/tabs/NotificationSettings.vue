@@ -144,6 +144,14 @@
         <n-switch v-model:value="friendAcceptNotify" @update:value="handleFriendAcceptNotify" />
       </div>
     </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">推送与规则</h3>
+      <p class="section-desc">统一管理推送设备、规则开关和免打扰时段</p>
+      <PushSettings embedded />
+    </div>
   </div>
 </template>
 
@@ -151,6 +159,7 @@
 import { ref, onMounted } from 'vue'
 import { NSwitch, NSlider, NDivider, NInput, NButton, NTag, useMessage } from 'naive-ui'
 import { storeToRefs } from 'pinia'
+import PushSettings from '@/views/settingsWindow/tabs/PushSettings.vue'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 defineOptions({
@@ -381,5 +390,11 @@ function handleFriendAcceptNotify(value: boolean) {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.section-desc {
+  margin: -8px 0 16px;
+  font-size: 12px;
+  color: var(--color-text-quaternary);
 }
 </style>

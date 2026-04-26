@@ -7,8 +7,16 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
+          <div class="rounded-14px bg-white px-14px py-12px">
+            <div class="text-15px font-600 text-[--text-color]">{{ t('mobile_favorites.title') }}</div>
+            <div class="mt-4px text-12px text-gray-400">
+              共 {{ totalCount }} 项，消息 {{ favoriteStats.messages }} 条，图片 {{ favoriteStats.images }} 张，链接
+              {{ favoriteStats.links }} 个
+            </div>
+          </div>
+
           <van-tabs v-model:active="activeTab" sticky>
-            <van-tab :title="t('mobile_favorites.messages')">
+            <van-tab :title="t('mobile_favorites.messages')" name="messages">
               <div v-if="favoriteMessages.length === 0" class="flex flex-col items-center justify-center py-60px">
                 <Icon icon="mdi:message-star-outline" :width="48" color="#d9d9d9" />
                 <div class="text-14px text-gray-400 mt-12px">{{ t('mobile_favorites.empty_messages') }}</div>
@@ -19,19 +27,18 @@
                   :key="msg.id"
                   class="bg-white rounded-12px p-12px border border-gray-100">
                   <div class="flex items-center gap-8px mb-8px">
-                    <van-image round width="32" height="32" :src="msg.avatar" />
                     <div class="flex-1">
-                      <div class="text-14px font-medium">{{ msg.username }}</div>
-                      <div class="text-12px text-gray-400">{{ formatTime(msg.time) }}</div>
+                      <div class="text-14px font-medium">{{ msg.conversationName }}</div>
+                      <div class="text-12px text-gray-400">{{ msg.senderName }} · {{ formatTime(msg.timestamp) }}</div>
                     </div>
-                    <van-icon name="star" color="#fa8c16" @click="removeFavorite(msg.id)" />
+                    <van-icon name="star" color="#fa8c16" @click="removeMessage(msg.id)" />
                   </div>
                   <div class="text-14px text-gray-700">{{ msg.content }}</div>
                 </div>
               </div>
             </van-tab>
 
-            <van-tab :title="t('mobile_favorites.images')">
+            <van-tab :title="t('mobile_favorites.images')" name="images">
               <div v-if="favoriteImages.length === 0" class="flex flex-col items-center justify-center py-60px">
                 <Icon icon="mdi:image-outline" :width="48" color="#d9d9d9" />
                 <div class="text-14px text-gray-400 mt-12px">{{ t('mobile_favorites.empty_images') }}</div>
@@ -41,7 +48,7 @@
                   v-for="img in favoriteImages"
                   :key="img.id"
                   class="aspect-square rounded-8px overflow-hidden relative">
-                  <img :src="img.url" class="w-full h-full object-cover" />
+                  <img :src="img.imageUrl" class="w-full h-full object-cover" />
                   <div class="absolute top-4px right-4px">
                     <van-icon name="star" color="#fa8c16" size="16" @click="removeImageFavorite(img.id)" />
                   </div>
@@ -49,7 +56,7 @@
               </div>
             </van-tab>
 
-            <van-tab :title="t('mobile_favorites.links')">
+            <van-tab :title="t('mobile_favorites.links')" name="links">
               <div v-if="favoriteLinks.length === 0" class="flex flex-col items-center justify-center py-60px">
                 <Icon icon="mdi:link-variant" :width="48" color="#d9d9d9" />
                 <div class="text-14px text-gray-400 mt-12px">{{ t('mobile_favorites.empty_links') }}</div>
@@ -63,7 +70,7 @@
                   <div class="flex items-center gap-8px">
                     <Icon icon="mdi:link-variant" :width="20" color="#1989fa" />
                     <div class="flex-1 truncate text-14px text-blue-500">{{ link.title }}</div>
-                    <van-icon name="star" color="#fa8c16" @click.stop="removeLinkFavorite(link.id)" />
+                    <van-icon name="star" color="#fa8c16" @click.stop="removeLink(link.id)" />
                   </div>
                   <div class="text-12px text-gray-400 mt-4px truncate">{{ link.url }}</div>
                 </div>
@@ -77,43 +84,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
+import { useFavorites } from '@/composables/useFavorites'
 
 const { t } = useI18n()
+const {
+  activeTab,
+  favoriteMessages,
+  favoriteImages,
+  favoriteLinks,
+  favoriteStats,
+  totalCount,
+  removeMessageFavorite,
+  removeImageFavorite,
+  removeLinkFavorite,
+  formatTime
+} = useFavorites()
 
-const activeTab = ref(0)
-
-const favoriteMessages = ref([
-  { id: '1', username: '张三', avatar: '', time: Date.now() - 3600000, content: '这是一条收藏的消息示例' }
-])
-
-const favoriteImages = ref([
-  { id: '1', url: 'https://picsum.photos/200/200?random=1' },
-  { id: '2', url: 'https://picsum.photos/200/200?random=2' }
-])
-
-const favoriteLinks = ref([{ id: '1', title: 'Matrix 协议官网', url: 'https://matrix.org' }])
-
-function formatTime(timestamp: number): string {
-  const date = new Date(timestamp)
-  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString().slice(0, 5)
-}
-
-function removeFavorite(id: string) {
-  favoriteMessages.value = favoriteMessages.value.filter((m) => m.id !== id)
+function removeMessage(id: string) {
+  removeMessageFavorite(id)
   showToast(t('mobile_favorites.removed'))
 }
 
-function removeImageFavorite(id: string) {
-  favoriteImages.value = favoriteImages.value.filter((i) => i.id !== id)
+function removeImage(id: string) {
+  removeImageFavorite(id)
   showToast(t('mobile_favorites.removed'))
 }
 
-function removeLinkFavorite(id: string) {
-  favoriteLinks.value = favoriteLinks.value.filter((l) => l.id !== id)
+function removeLink(id: string) {
+  removeLinkFavorite(id)
   showToast(t('mobile_favorites.removed'))
 }
 
