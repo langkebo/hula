@@ -1,8 +1,8 @@
 use crate::AppData;
 use crate::error::CommonError;
 use crate::pojo::common::{CursorPageParam, CursorPageResp};
-use crate::repository::im_message_repository::MessageWithThumbnail;
 use crate::repository::im_message_repository;
+use crate::repository::im_message_repository::MessageWithThumbnail;
 use crate::vo::vo::ChatMessageReq;
 
 use entity::im_message;
