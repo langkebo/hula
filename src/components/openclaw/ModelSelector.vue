@@ -68,7 +68,7 @@ const handleSelect = (key: string) => {
 
 .model-selector__current {
   font-size: 12px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -78,6 +78,6 @@ const handleSelect = (key: string) => {
 .model-selector__arrow {
   width: 12px;
   height: 12px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 }
 </style>

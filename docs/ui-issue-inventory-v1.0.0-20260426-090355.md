@@ -77,7 +77,7 @@
   - `UI-001`、`UI-008`、`UI-010`: 设置壳层双实现与旧设置隐藏依赖仍然存在
   - `UI-002`: `default.scss` 虽已开始改为直接消费 `--hula-*`，且当前未见桌面端显式运行时导入；`setting.ts` 中 `themes.versatile` 固定为 `simple`，代码侧也未发现 `.default` 主题类动态挂载，但仓库内仍保留该文件，主题代码层尚未完成物理清理
   - `UI-005`、`UI-006`、`UI-009`、`UI-014`: 主工作区与房间/空间统一承载仍未开始实施
-  - `UI-004`、`UI-013`: 旧别名变量、悬空变量与设置壳层之外的样式消费点仍有进一步清理空间；`FileContent.vue`、`AvatarCropper.vue`、`ContextMenu.vue`、`InfoEdit.vue`、`InfoPopover.vue`、`definePlugins/List.vue`、`model.tsx`、`Login.vue` 中已确认的 `--line-color`、`--chat-text-color` 消费点已完成收敛
+  - `UI-004`、`UI-013`: 旧别名变量、悬空变量与设置壳层之外的样式消费点仍有进一步清理空间；`FileContent.vue`、`AvatarCropper.vue`、`ContextMenu.vue`、`InfoEdit.vue`、`InfoPopover.vue`、`definePlugins/List.vue`、`model.tsx`、`Login.vue`、`ManageGroupMember.vue`、`TrendRadarView.vue`、`OpenClawView.vue`、`LockScreen.vue`、`chat-header.scss`、`plugins/robot/views/chatSettings/model.tsx`、`TrendingPanel.vue`、`NewsCard.vue`、`SearchPanel.vue`、`components/openclaw/ModelSelector.vue` 与 `AddFriends.vue` 中已确认的 `--line-color`、`--chat-text-color`、`--text-color`、`--text-color-secondary`、`--text-color-tertiary` 消费点已完成收敛
   - `UI-011`: 设置偏好页中的语言选项和发送键选项已改为消费 i18n 文案键，设置壳层的导航标题、当前标签标题与搜索索引也已接入运行时翻译来源，移动端 `PreferencesSettings.vue`、`BurnAfterReadSettings.vue` 中的阅后即焚时长标签与格式化逻辑、`MobileQRCode.vue` 中的扫码状态/权限提示、`EditProfile.vue` 中的保存反馈，以及 `AiAssistant.vue` 中的新建会话/空响应占位与建议提示词也已改为复用语言包键；`src/mobile/views/my` 目录中的运行时中文日志与用户可见硬编码文案已完成一轮清理，但设置体系其余目录仍需继续统一
 
 ## 总体结论

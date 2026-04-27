@@ -60,13 +60,13 @@
                         " />
                       <div class="flex flex-col justify-center gap-10px flex-1">
                         <div class="flex items-center gap-10px">
-                          <span class="text-(14px [--text-color])">{{ item.name }}</span>
+                          <span class="text-(14px [--hula-text-primary])">{{ item.name }}</span>
                           <template v-for="account in item.itemIds" :key="account">
                             <img class="size-20px" :src="badgeStore.badgeById(account)?.img" alt="" />
                           </template>
                         </div>
                         <div class="flex items-center gap-10px">
-                          <span class="text-(12px [--chat-text-color])">{{ `账号：${item.account}` }}</span>
+                          <span class="text-(12px [--hula-text-secondary])">{{ `账号：${item.account}` }}</span>
                           <svg
                             class="size-12px hover:color-#909090 hover:transition-colors cursor-pointer"
                             @click="handleCopy(item.account)">

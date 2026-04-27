@@ -119,7 +119,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   justify-content: center;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   background: var(--bg-hover);
   border-radius: 4px;
   flex-shrink: 0;
@@ -152,7 +152,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 
 .trending-panel__hot-value {
   font-size: 11px;
-  color: var(--text-color-tertiary);
+  color: var(--hula-text-tertiary);
 }
 
 .trending-panel__category {
@@ -184,7 +184,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   justify-content: center;
   gap: 8px;
   padding: 20px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   font-size: 12px;
 }
 
