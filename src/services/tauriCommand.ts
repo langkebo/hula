@@ -1,22 +1,8 @@
-/**
- * @deprecated 此文件已废弃，将迁移到 Matrix SDK 登录
- * 请使用 matrix-js-sdk 的认证功能
- * 迁移完成后此文件将被删除
- */
 import { invoke } from '@tauri-apps/api/core'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { TauriCommand } from '../enums'
-import { useLogin } from '../hooks/useLogin'
-import { useWindow } from '../hooks/useWindow'
-import { useLoginHistoriesStore } from '../stores/loginHistory'
-import { useSettingStore } from '../stores/setting'
-import { useUserStore } from '../stores/user'
-import { useUserStatusStore } from '../stores/userStatus'
-import { getAllUserState, getUserDetail } from '../utils/ImRequestUtils'
-import { ErrorType, invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
-import { getEnhancedFingerprint } from './fingerprint'
+import { matrixRuntimeSessionService } from '@/services/matrix'
+import { useMatrixStore } from '../stores/domains/chat/matrix'
+import { useUserStore } from '../stores/domains/user/user'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
-import type { UserInfoType } from './types'
 
 export type Settings = {
   database: {
@@ -73,88 +59,97 @@ export const switchUserDatabase = async (uid: string): Promise<void> => {
   return await invoke('switch_user_database', { uid })
 }
 
+export type FileQueryParam = {
+  navigationType: string
+  selectedUser?: string
+  searchKeyword?: string
+  roomId?: string
+  page: number
+  pageSize: number
+}
+
+export type FileManagerFileItem = {
+  id: string
+  fileName?: string
+  name?: string
+  originalName?: string
+  title?: string
+  fileType?: string
+  fileSize?: number
+  downloadUrl?: string
+  url?: string
+  uploadTime: string
+  sender?: {
+    id: string
+    name?: string
+  }
+}
+
+export type FileManagerTimeGroup = {
+  date: string
+  displayDate: string
+  files: FileManagerFileItem[]
+}
+
+export type FileManagerUser = {
+  id: string
+  name: string
+  [key: string]: unknown
+}
+
+export type FileManagerNavigationItem = {
+  key: string
+  label?: string
+  icon?: string
+  active?: boolean
+  [key: string]: unknown
+}
+
+export type FileManagerQueryResponse = {
+  timeGroupedFiles: FileManagerTimeGroup[]
+  userList: FileManagerUser[]
+}
+
+export const queryFiles = async (param: FileQueryParam): Promise<FileManagerQueryResponse> => {
+  return await invoke('query_files', { param })
+}
+
+export const getNavigationItems = async (): Promise<FileManagerNavigationItem[]> => {
+  return await invoke('get_navigation_items')
+}
+
 export const loginCommand = async (
   info: Partial<{
     account: string
-    password: string
-    avatar: string
     name: string
     uid: string
-  }>,
-  auto: boolean = false
+  }>
 ) => {
+  const matrixStore = useMatrixStore()
   const userStore = useUserStore()
-  const settingStore = useSettingStore()
-
-  const loginInfo = settingStore.login.autoLogin ? (userStore.userInfo as UserInfoType) : info
-  // 存储此次登陆设备指纹
-  const clientId = await getEnhancedFingerprint()
 
   await ensureAppStateReady()
 
-  await invoke('login_command', {
-    data: {
-      account: loginInfo.account ? loginInfo.account : '',
-      password: loginInfo.password ? loginInfo.password : '',
-      deviceType: 'PC',
-      systemType: '2',
-      clientId: clientId,
-      grantType: 'PASSWORD',
-      isAutoLogin: auto,
-      asyncData: false,
-      uid: info.uid
-    }
-  }).then(async (res: any) => {
-    // 数据库切换已在后端 login_command 中完成
-    // Matrix SDK 初始化连接通过 loginProcess -> setLoginState -> completeLogin 处理
-    await loginProcess(res.token, res.refreshToken, res.client)
+  const uid = info.uid || userStore.userInfo?.uid || matrixStore.userId || ''
+  if (!uid) {
+    throw new Error('缺少用户ID，无法恢复登录会话')
+  }
+
+  const tokens = await matrixRuntimeSessionService.getStoredTokens()
+
+  if (!tokens.token) {
+    throw new Error('缺少访问令牌，无法恢复登录会话')
+  }
+
+  await matrixRuntimeSessionService.restoreWithAccessToken({
+    uid,
+    accessToken: tokens.token,
+    refreshToken: tokens.refreshToken ?? undefined,
+    displayName: info.name,
+    account: info.account,
+    client: 'PC',
+    bootstrapAfterRestore: true
   })
-}
 
-const loginProcess = async (token: string, refreshToken: string, client: string) => {
-  const userStatusStore = useUserStatusStore()
-  const userStore = useUserStore()
-  const loginHistoriesStore = useLoginHistoriesStore()
-  const { setLoginState } = useLogin()
-
-  userStatusStore.stateList = await getAllUserState()
-
-  const userDetail: any = await getUserDetail()
-  userStatusStore.stateId = userDetail.userStateId
-
-  const account = {
-    ...userDetail,
-    token,
-    refreshToken,
-    client
-  }
-  userStore.userInfo = account
-
-  loginHistoriesStore.addLoginHistory(account)
-
-  // 在 sqlite 中存储用户信息
-  await invokeWithErrorHandler(
-    TauriCommand.SAVE_USER_INFO,
-    {
-      userInfo: userDetail
-    },
-    {
-      customErrorMessage: '保存用户信息失败',
-      errorType: ErrorType.Client
-    }
-  )
-
-  await setLoginState()
-  await openHomeWindow()
-}
-
-const openHomeWindow = async () => {
-  const { createWebviewWindow } = useWindow()
-  const registerWindow = await WebviewWindow.getByLabel('register')
-  if (registerWindow) {
-    await registerWindow.close().catch((error) => {
-      console.warn('关闭注册窗口失败:', error)
-    })
-  }
-  await createWebviewWindow('HuLa', 'home', 960, 720, 'login', true, 330, 480, undefined, false)
+  await matrixRuntimeSessionService.completeDesktopLoginTransition()
 }

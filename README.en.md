@@ -3,12 +3,12 @@
   <img width="350px" height="150px" src="public/hula.png"/>
 </p>
 
-<p align="center">An instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScript</p>
+<p align="center">A communication system built with Tauri, Vite 7, Vue 3, and TypeScript</p>
 
 <!-- 🌟 Featured -->
 <div align="center">
   <a href="https://trendshift.io/repositories/15187" target="_blank">
-    <img src="https://trendshift.io/api/badge/repositories/15187" alt="HuLaSpark%2FHuLa | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+    <img src="https://trendshift.io/api/badge/repositories/15187" alt="龙卷风%2FHuLa | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
   </a>
   <a href="https://hellogithub.com/repository/743b101346c54f6cb5c20eed2edbaa40" target="_blank">
     <img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=743b101346c54f6cb5c20eed2edbaa40&claim_uid=WsQaY6SlnL7qxG3&theme=neutral" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" />
@@ -23,13 +23,13 @@
       <img src="https://gitee.com/llangkebo/hula/badge/star.svg?theme=gvp" alt="Gitee Stars">
     </a>
     <a href="https://gitee.com/llangkebo/hula/stargazers">
-      <img src="https://img.shields.io/github/stars/HulaSpark/HuLa?style=social" alt="GitHub Stars">
+      <img src="https://img.shields.io/github/stars/llangkebo/hula?style=social" alt="GitHub Stars">
     </a>
-    <a href="https://gitcode.com/HuLaSpark/HuLa">
-      <img src="https://gitcode.com/HuLaSpark/HuLa/star/badge.svg" alt="GitCode Stars">
+    <a href="https://gitee.com/llangkebo/hula">
+      <img src="https://gitee.com/llangkebo/hula/star/badge.svg" alt="GitCode Stars">
     </a>
-    <a href="https://gitcode.com/HuLaSpark/HuLa">
-      <img src="https://atomgit.com/HuLaSpark/HuLa/star/2025top.svg" alt="2025 Top 100 Open Source Projects">
+    <a href="https://gitee.com/llangkebo/hula">
+      <img src="https://gitee.com/llangkebo/hula/star/2025top.svg" alt="2025 Top 100 Open Source Projects">
     </a>
   </p>
 </div>
@@ -38,17 +38,14 @@
 
 <div align="center">
   <p>
-    <a href="https://deepwiki.com/HuLaSpark/HuLa">
+    <a href="https://deepwiki.com/llangkebo/hula">
       <img src="https://deepwiki.com/badge.svg" alt="DeepWiki">
     </a>
-    <a href="https://app.fossa.com/projects/git%2Bgithub.com%2FHuLaSpark%2FHuLa?ref=badge_shield">
-      <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FHuLaSpark%2FHuLa.svg?type=shield" alt="FOSSA Status">
+    <a href="https://app.fossa.com/projects/git%2Bgitee.com%2Fllangkebo%2Fhula?ref=badge_shield">
+      <img src="https://app.fossa.com/api/projects/git%2Bgitee.com%2Fllangkebo%2Fhula.svg?type=shield" alt="FOSSA Status">
     </a>
     <a href="https://www.bestpractices.dev/en/projects/9692">
       <img src="https://bestpractices.coreinfrastructure.org/projects/9692/badge" alt="CII Best Practices">
-    </a>
-    <a href="https://hulaspark.com">
-      <img src="public/hulaspark-badge.svg" alt="HuLaSpark">
     </a>
     <a href="https://discord.gg/WhSkvhNEeE">
       <img src="https://img.shields.io/badge/-Discord-5865F2?logo=discord&logoColor=white&labelColor=555555" alt="Discord">
@@ -78,9 +75,9 @@
   <h3>🔗 Quick Links</h3>
 
   <p>
-    💻 <strong>Website:</strong><a href="https://hulaspark.com">HuLaSpark</a> |
+    💻 <strong>Website:</strong><a href="https://cjystx.top">龙卷风</a> |
     📝 <strong>document：</strong><a href="docs/project_guide.md">Configuration and Tutorials</a> |
-    ☕️ <strong>Server:</strong><a href="https://github.com/HuLaSpark/synapse-rust">synapse-rust</a> |
+    ☕️ <strong>Server:</strong><a href="https://gitee.com/llangkebo/synapse-rust">synapse-rust</a> |
     💬 <strong>WeChat:</strong><code>cy2439646234</code>
   </p>
 </div>
@@ -89,13 +86,13 @@
   <a href="README.md">中文</a> |
   English |
   <!-- Keep these links. Translations will automatically update with the README. -->
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=de">Deutsch</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=es">Español</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=fr">français</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=ja">日本語</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=ko">한국어</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=pt">Português</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=ru">Русский</a>
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=de">Deutsch</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=es">Español</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=fr">français</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=ja">日本語</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=ko">한국어</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=pt">Português</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=ru">Русский</a>
 </p>
 
 ## 🌐 Supported Platforms
@@ -111,7 +108,7 @@
 
 ## 📝 Project Introduction
 
-HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScript. It leverages Tauri's cross-platform capabilities and Vue 3's reactive design, combined with TypeScript's type safety features and Vite 7's fast build process, providing users with an efficient, secure, and user-friendly communication solution.
+HuLa is a communication system built with Tauri, Vite 7, Vue 3, and TypeScript. It leverages Tauri's cross-platform capabilities and Vue 3's reactive design, combined with TypeScript's type safety and Vite 7's fast builds, providing users with an efficient, secure, and easy-to-use communication solution.
 
 ## 🛠️ Tech Stack
 
@@ -239,7 +236,7 @@ HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScr
 | 🎥 | Video Calling | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 | ⌨️ | Global Shortcut Control | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 | 📺 | Dedicated Media Viewer | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
-| 📁 | File Upload (Qiniu Cloud) | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
+| 📁 | File Upload | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 | 🔄 | Auto-update System | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 | 🌍 | i18n support | ![In Progress](https://img.shields.io/badge/98%25-In%20Progress-f0ad4e?style=flat&labelColor=faf3e6&color=f0ad4e) |
 
@@ -262,24 +259,24 @@ HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScr
 
 ## 👏 Thanks to all Contributors!
 
-<a href="https://openomy.com/HuLaSpark/HuLa" target="_blank" style="display: block; width: 100%;" align="center">
-  <img src="https://openomy.com/svg?repo=HuLaSpark/HuLa&chart=bubble&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
+<a href="https://openomy.com/llangkebo/hula" target="_blank" style="display: block; width: 100%;" align="center">
+  <img src="https://openomy.com/svg?repo=llangkebo/hula&chart=bubble&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
 </a>
 
 <br/>
 
-<a href="https://openomy.com/HuLaSpark/HuLa" target="_blank" style="display: block; width: 100%;" align="center">
-  <img src="https://openomy.com/svg?repo=HuLaSpark/HuLa&chart=list&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
+<a href="https://openomy.com/llangkebo/hula" target="_blank" style="display: block; width: 100%;" align="center">
+  <img src="https://openomy.com/svg?repo=llangkebo/hula&chart=list&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
 </a>
 
 <br/>
 
-<a href="https://openomy.com/HuLaSpark/HuLa" target="_blank" style="display: block; width: 100%;" align="center">
-  <img src="https://openomy.com/svg?repo=HuLaSpark/HuLa&chart=podium&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
+<a href="https://openomy.com/llangkebo/hula" target="_blank" style="display: block; width: 100%;" align="center">
+  <img src="https://openomy.com/svg?repo=llangkebo/hula&chart=podium&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
 </a>
 
 <!-- <a href="https://gitee.com/llangkebo/hula/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=HuLaSpark/HuLa" />
+  <img src="https://contrib.rocks/image?repo=llangkebo/hula" />
 </a> -->
 
 <br/>
@@ -433,7 +430,7 @@ Execute **pnpm run commit** to invoke _git commit_ interaction, complete informa
 
   > 📝 **Friendly Reminder**
   > This list is manually updated. If you have sponsored but are not listed, please contact us:
-  > 🐛 [GitHub Issue](https://gitee.com/llangkebo/hula/issues) | 📧 Email: `2439646234@qq.com` | 💬 WeChat: `cy2439646234`
+  > 🐛 [GitHub Issue](https://gitee.com/llangkebo/hula/issues) | 📧 Email: `656042408@qq.com` | 💬 WeChat: `cy2439646234`
 
   <br>
 </div>
@@ -446,8 +443,8 @@ Execute **pnpm run commit** to invoke _git commit_ interaction, complete informa
   <h3>⚖️ License Information</h3>
 
   <p>
-    <a href="https://app.fossa.com/projects/git%2Bgithub.com%2FHuLaSpark%2FHuLa?ref=badge_large">
-      <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FHuLaSpark%2FHuLa.svg?type=large" alt="FOSSA Status" style="max-width: 100%; border-radius: 8px;">
+    <a href="https://app.fossa.com/projects/git%2Bgitee.com%2Fllangkebo%2Fhula?ref=badge_large">
+      <img src="https://app.fossa.com/api/projects/git%2Bgitee.com%2Fllangkebo%2Fhula.svg?type=large" alt="FOSSA Status" style="max-width: 100%; border-radius: 8px;">
     </a>
   </p>
 

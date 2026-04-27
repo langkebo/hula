@@ -5,14 +5,14 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
 import type { BadgeType, UserInfoType } from '@/services/types.ts'
-import { useGroupStore } from '@/stores/group'
-import { useLoginHistoriesStore } from '@/stores/loginHistory.ts'
-import { useMenuTopStore } from '@/stores/menuTop.ts'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStore } from '@/stores/user.ts'
-import { useUserStatusStore } from '@/stores/userStatus.ts'
+import { useGroupStore, type MatrixRoomMember } from '@/stores/domains/chat/group'
+import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
+import { useMenuTopStore } from '@/stores/domains/settings/menuTop'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { matrixAccountService } from '@/services/matrix'
-import { setUserBadge } from '@/utils/ImRequestUtils'
+import { badgeService } from '@/services/BadgeService'
 import { storeToRefs } from 'pinia'
 
 export const leftHook = () => {
@@ -22,7 +22,6 @@ export const leftHook = () => {
   const { menuTop } = storeToRefs(useMenuTopStore())
   const loginHistoriesStore = useLoginHistoriesStore()
   const userStore = useUserStore()
-  const { themes } = settingStore
   const userStatusStore = useUserStatusStore()
   const { currentState } = storeToRefs(userStatusStore)
   const activeUrl = ref<string>(menuTop.value?.[0]?.url || 'message')
@@ -33,9 +32,11 @@ export const leftHook = () => {
   const infoShow = ref(false)
   /** 是否显示上半部分操作栏中的提示 */
   const tipShow = ref(true)
-  const themeColor = ref(themes.content === ThemeEnum.DARK ? 'rgba(63,63,63, 0.2)' : 'rgba(241,241,241, 0.2)')
+  const themeColor = ref(
+    settingStore.themeContent === ThemeEnum.DARK ? 'rgba(63,63,63, 0.2)' : 'rgba(241,241,241, 0.2)'
+  )
   /** 已打开窗口的列表 */
-  const openWindowsList = ref(new Set())
+  const openWindowsList = ref(new Set<string>())
   /** 编辑资料弹窗 */
   const editInfo = ref<{
     show: boolean
@@ -60,7 +61,7 @@ export const leftHook = () => {
 
   watchEffect(() => {
     /** 判断是否是跟随系统主题 */
-    if (themes.pattern === ThemeEnum.OS) {
+    if (settingStore.themePattern === ThemeEnum.OS) {
       followOS()
       prefers.addEventListener('change', followOS)
     } else {
@@ -69,15 +70,21 @@ export const leftHook = () => {
   })
 
   /** 更新缓存里面的用户信息 */
-  const updateCurrentUserCache = (key: 'name' | 'wearingItemId' | 'avatar', value: any) => {
-    const currentUser = userStore.userInfo!.uid && groupStore.getUserInfo(userStore.userInfo!.uid)
+  const updateCurrentUserCache = (key: 'name' | 'wearingItemId' | 'avatar', value: string | null | undefined) => {
+    const uid = userStore.userInfo?.uid
+    if (!uid) return
+    const currentUser = groupStore.getUserInfo(uid) as MatrixRoomMember | null
     if (currentUser) {
-      currentUser[key] = value // 更新缓存里面的用户信息
+      if (key === 'wearingItemId') {
+        currentUser[key] = value ?? undefined
+      } else if (value) {
+        currentUser[key] = value
+      }
     }
   }
 
   /** 保存用户信息 */
-  const saveEditInfo = (localUserInfo: any) => {
+  const saveEditInfo = (localUserInfo: Partial<UserInfoType>) => {
     if (!localUserInfo.name || localUserInfo.name.trim() === '') {
       window.$message.error('昵称不能为空')
       return
@@ -100,7 +107,7 @@ export const leftHook = () => {
   const toggleWarningBadge = async (badge: BadgeType) => {
     if (!badge?.id) return
     try {
-      await setUserBadge({ badgeId: badge.id })
+      await badgeService.setUserBadge(badge.id)
       // 更新本地缓存中的用户徽章信息
       const currentUser = userStore.userInfo!.uid && groupStore.getUserInfo(userStore.userInfo!.uid)
       if (currentUser) {
@@ -119,7 +126,7 @@ export const leftHook = () => {
       nextTick(() => {
         window.$message.success('佩戴成功')
       })
-    } catch (_error) {
+    } catch {
       window.$message.error('佩戴失败，请稍后重试')
     }
   }
@@ -183,8 +190,8 @@ export const leftHook = () => {
     infoShow.value = false
   }
 
-  const closeMenu = (event: any) => {
-    if (!event.target.matches('.setting-item, .more, .more *')) {
+  const closeMenu = (event: MouseEvent) => {
+    if (event.target instanceof HTMLElement && !event.target.matches('.setting-item, .more, .more *')) {
       settingShow.value = false
     }
   }
@@ -194,13 +201,13 @@ export const leftHook = () => {
     pageJumps(activeUrl.value)
     window.addEventListener('click', closeMenu, true)
 
-    useMitt.on(MittEnum.SHRINK_WINDOW, (event: any) => {
-      shrinkStatus.value = event as boolean
+    useMitt.on(MittEnum.SHRINK_WINDOW, (event: boolean) => {
+      shrinkStatus.value = event
     })
     useMitt.on(MittEnum.CLOSE_INFO_SHOW, () => {
       infoShow.value = false
     })
-    useMitt.on(MittEnum.TO_SEND_MSG, (event: any) => {
+    useMitt.on(MittEnum.TO_SEND_MSG, (event: { url: string }) => {
       activeUrl.value = event.url
     })
   })

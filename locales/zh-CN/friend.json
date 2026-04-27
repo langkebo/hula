@@ -93,5 +93,22 @@
     "request_received": "收到私密好友请求",
     "accept": "接受",
     "reject": "拒绝"
+  },
+  "group": {
+    "title": "好友分组",
+    "search": "搜索分组",
+    "empty": "暂无分组",
+    "create": "创建分组",
+    "name_placeholder": "请输入分组名称",
+    "member_count": "{count} 位成员",
+    "rename": "重命名",
+    "delete": "删除分组",
+    "create_success": "分组创建成功",
+    "create_failed": "创建分组失败",
+    "rename_success": "重命名成功",
+    "rename_failed": "重命名失败",
+    "delete_success": "分组已删除",
+    "delete_failed": "删除分组失败",
+    "load_failed": "加载分组失败"
   }
 }

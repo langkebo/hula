@@ -22,15 +22,19 @@
           :style="{
             width: `${imageStyle.width}`,
             height: `${imageStyle.height}`,
-            backgroundColor: '#c8c8c833'
+            backgroundColor: 'var(--hula-surface-sidebar-selected)'
           }"
           class="rounded-10px">
           <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
         </n-flex>
       </template>
       <template #error>
-        <n-flex v-if="isError" align="center" justify="center" class="w-200px h-150px bg-#c8c8c833 rounded-10px">
-          <svg class="size-34px color-[--chat-text-color]"><use href="#error-picture"></use></svg>
+        <n-flex
+          v-if="isError"
+          align="center"
+          justify="center"
+          class="w-200px h-150px rounded-10px bg-[--hula-surface-sidebar-selected]">
+          <svg class="size-34px color-[--hula-text-tertiary]"><use href="#error-picture"></use></svg>
         </n-flex>
       </template>
     </n-image>
@@ -48,7 +52,7 @@
             <svg class="progress-ring" width="44" height="44">
               <circle
                 class="progress-ring-circle"
-                stroke="rgba(255,255,255,0.3)"
+                stroke="color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)"
                 stroke-width="3"
                 fill="transparent"
                 r="18"
@@ -56,7 +60,7 @@
                 cy="22" />
               <circle
                 class="progress-ring-circle progress-ring-fill"
-                stroke="#13987f"
+                stroke="var(--hula-color-primary-500)"
                 stroke-width="3"
                 fill="transparent"
                 r="18"
@@ -74,7 +78,7 @@
             <svg class="progress-ring" width="44" height="44">
               <circle
                 class="progress-ring-circle"
-                stroke="rgba(255,255,255,0.3)"
+                stroke="color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)"
                 stroke-width="3"
                 fill="transparent"
                 r="18"
@@ -82,7 +86,7 @@
                 cy="22" />
               <circle
                 class="progress-ring-circle progress-ring-fill"
-                stroke="white"
+                stroke="var(--hula-text-inverse)"
                 stroke-width="3"
                 fill="transparent"
                 r="18"
@@ -143,14 +147,16 @@ import { useIntersectionTaskQueue } from '@/hooks/useIntersectionTaskQueue'
 import { useMitt } from '@/hooks/useMitt'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import type { MsgType, VideoBody } from '@/services/types'
-import { useVideoViewer as useVideoViewerStore } from '@/stores/videoViewer'
-import { useThumbnailCacheStore } from '@/stores/thumbnailCache'
-import { useChatStore } from '@/stores/chat'
+import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
+import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { formatBytes } from '@/utils/Formatting.ts'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
+const logger = createLogger('Video')
 const { openVideoViewer, getLocalVideoPath, checkVideoDownloaded } = useVideoViewer()
 const VideoPreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/VideoPreview.vue')) : void 0
 const videoViewerStore = useVideoViewerStore()
@@ -208,7 +214,7 @@ const persistVideoLocalPath = async (absolutePath: string) => {
     body: nextBody
   })
   const updated = { ...target, message: { ...target.message, body: nextBody } }
-  await invokeSilently(TauriCommand.SAVE_MSG, { data: updated as any })
+  await invokeSilently(TauriCommand.SAVE_MSG, { data: updated })
 }
 const localVideoThumbSrc = ref<string | null>(null)
 
@@ -292,7 +298,7 @@ const ensureLocalVideoThumbnail = async () => {
       return
     }
   } catch (error) {
-    console.warn('[Video] 检查缩略图文件失败:', error)
+    logger.warn('检查缩略图文件失败:', error)
   }
 
   localVideoThumbSrc.value = null
@@ -321,7 +327,7 @@ watch(
         }
       }
     } catch (error) {
-      console.warn('[Video] 本地视频校验失败:', error)
+      logger.warn('本地视频校验失败:', error)
     }
   },
   { immediate: true }
@@ -377,7 +383,7 @@ const downloadVideo = async () => {
       }
     }
   } catch (error) {
-    console.error('下载视频失败:', error)
+    logger.error('下载视频失败:', error)
   }
 }
 
@@ -442,7 +448,7 @@ const handleOpenVideoViewer = async () => {
 
         // 如果下载失败，不继续打开视频
         if (!isVideoDownloaded.value) {
-          console.error('视频下载失败，无法打开')
+          logger.error('视频下载失败，无法打开')
           return
         }
       }
@@ -450,7 +456,7 @@ const handleOpenVideoViewer = async () => {
       if (isMobile()) {
         const playableUrl = await resolveMobilePlayableUrl()
         if (!playableUrl) {
-          console.error('未找到可播放的视频地址')
+          logger.error('未找到可播放的视频地址')
           return
         }
         mobileVideoUrl.value = playableUrl
@@ -460,7 +466,7 @@ const handleOpenVideoViewer = async () => {
 
       await openVideoViewer(props.body.url, [MsgEnum.VIDEO])
     } catch (error) {
-      console.error('打开视频失败:', error)
+      logger.error('打开视频失败:', error)
     } finally {
       isOpening.value = false
     }

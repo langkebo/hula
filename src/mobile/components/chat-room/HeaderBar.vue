@@ -26,7 +26,7 @@
     </div>
   </div>
 
-  <n-divider v-if="props.border" class="m-0!" />
+  <div v-if="props.border" class="h-1px bg-gray-200 dark:bg-gray-700"></div>
 </template>
 
 <script setup lang="ts">

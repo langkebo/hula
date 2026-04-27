@@ -12,7 +12,7 @@ vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn(() => Promise.resolve(vi.fn()))
 }))
 
-vi.mock('@/stores/matrix', () => ({
+vi.mock('@/stores/domains/chat/matrix', () => ({
   useMatrixStore: vi.fn(() => ({
     connectionState: 'CONNECTED',
     isInitialized: true

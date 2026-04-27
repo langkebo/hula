@@ -16,8 +16,8 @@
           <van-cell-group inset>
             <van-cell
               v-for="device in devices"
-              :key="device.deviceId"
-              :title="device.displayName || t('mobile_devices.unnamed_device')"
+              :key="device.device_id"
+              :title="device.display_name || t('mobile_devices.unnamed_device')"
               :label="formatDeviceLabel(device)">
               <template #icon>
                 <div class="w-40px h-40px rounded-full bg-gray-100 mr-12px flex items-center justify-center">
@@ -26,7 +26,7 @@
               </template>
               <template #right-icon>
                 <van-button
-                  v-if="!isCurrentDevice(device.deviceId)"
+                  v-if="!isCurrentDevice(device.device_id)"
                   size="small"
                   type="danger"
                   plain
@@ -50,16 +50,19 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { ref, onMounted } from 'vue'
 import { showConfirmDialog, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
-import { matrixAccountService, type DeviceInfo } from '@/services/matrix/MatrixAccountService'
-import { matrixClientService } from '@/services/matrix'
+import { matrixDeviceService } from '@/services/matrix'
+import type { Device } from '@/services/matrix/user/MatrixDeviceService'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('DeviceManagement')
 
 const { t } = useI18n()
 
-const devices = ref<DeviceInfo[]>([])
+const devices = ref<Device[]>([])
 const loading = ref(false)
 const currentDeviceId = ref<string>('')
 
@@ -70,13 +73,10 @@ onMounted(async () => {
 async function loadDevices() {
   loading.value = true
   try {
-    const client = matrixClientService.getClient()
-    if (client) {
-      currentDeviceId.value = client.getDeviceId() || ''
-    }
-    devices.value = await matrixAccountService.getDevices()
+    currentDeviceId.value = matrixDeviceService.getCurrentDeviceId() || ''
+    devices.value = await matrixDeviceService.getDevices()
   } catch (error) {
-    console.error('[MobileDevices] 获取设备列表失败:', error)
+    logger.error('Failed to load devices', error)
     showToast({
       type: 'fail',
       message: t('mobile_devices.load_failed')
@@ -90,8 +90,8 @@ function isCurrentDevice(deviceId: string): boolean {
   return deviceId === currentDeviceId.value
 }
 
-function getDeviceIcon(device: DeviceInfo): string {
-  const ua = device.lastSeenUserAgent?.toLowerCase() || ''
+function getDeviceIcon(device: Device): string {
+  const ua = device.last_seen_user_agent?.toLowerCase() || ''
   if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
     return 'mdi:cellphone'
   }
@@ -101,30 +101,30 @@ function getDeviceIcon(device: DeviceInfo): string {
   return 'mdi:laptop'
 }
 
-function formatDeviceLabel(device: DeviceInfo): string {
+function formatDeviceLabel(device: Device): string {
   const parts: string[] = []
-  if (device.lastSeenIp) {
-    parts.push(device.lastSeenIp)
+  if (device.last_seen_ip) {
+    parts.push(device.last_seen_ip)
   }
-  if (device.lastSeenTs) {
-    const date = new Date(device.lastSeenTs)
+  if (device.last_seen_ts) {
+    const date = new Date(device.last_seen_ts)
     parts.push(date.toLocaleDateString())
   }
   return parts.join(' · ') || t('mobile_devices.no_info')
 }
 
-async function handleDeleteDevice(device: DeviceInfo) {
+async function handleDeleteDevice(device: Device) {
   try {
     await showConfirmDialog({
       title: t('mobile_devices.delete_confirm.title'),
       message: t('mobile_devices.delete_confirm.message', {
-        name: device.displayName || t('mobile_devices.unnamed_device')
+        name: device.display_name || t('mobile_devices.unnamed_device')
       }),
       confirmButtonText: t('mobile_devices.delete_confirm.confirm'),
       cancelButtonText: t('mobile_devices.delete_confirm.cancel')
     })
 
-    await matrixAccountService.deleteDevice(device.deviceId)
+    await matrixDeviceService.deleteDevice(device.device_id)
     showToast({
       type: 'success',
       message: t('mobile_devices.delete_success')
@@ -132,7 +132,7 @@ async function handleDeleteDevice(device: DeviceInfo) {
     await loadDevices()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('[MobileDevices] 删除设备失败:', error)
+      logger.error('Failed to delete device', error)
       showToast({
         type: 'fail',
         message: t('mobile_devices.delete_failed')
@@ -142,7 +142,7 @@ async function handleDeleteDevice(device: DeviceInfo) {
 }
 
 async function handleDeleteOtherDevices() {
-  const otherDevices = devices.value.filter((d) => !isCurrentDevice(d.deviceId))
+  const otherDevices = devices.value.filter((d) => !isCurrentDevice(d.device_id))
   if (otherDevices.length === 0) {
     showToast(t('mobile_devices.no_other_devices'))
     return
@@ -156,8 +156,8 @@ async function handleDeleteOtherDevices() {
       cancelButtonText: t('mobile_devices.delete_other_confirm.cancel')
     })
 
-    const deviceIds = otherDevices.map((d) => d.deviceId)
-    await matrixAccountService.deleteDevices(deviceIds)
+    const deviceIds = otherDevices.map((d) => d.device_id)
+    await matrixDeviceService.deleteDevices(deviceIds)
     showToast({
       type: 'success',
       message: t('mobile_devices.delete_success')
@@ -165,7 +165,7 @@ async function handleDeleteOtherDevices() {
     await loadDevices()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('[MobileDevices] 批量删除设备失败:', error)
+      logger.error('Failed to delete devices in batch', error)
       showToast({
         type: 'fail',
         message: t('mobile_devices.delete_failed')

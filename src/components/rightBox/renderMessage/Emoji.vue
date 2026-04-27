@@ -25,15 +25,19 @@
           :style="{
             width: '120px',
             height: '120px',
-            backgroundColor: '#c8c8c833'
+            backgroundColor: 'var(--hula-surface-sidebar-selected)'
           }"
           class="rounded-10px">
           <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
         </n-flex>
       </template>
       <template #error>
-        <n-flex v-if="isError" align="center" justify="center" class="w-150px h-150px bg-#c8c8c833 rounded-10px">
-          <svg class="size-34px color-[--chat-text-color]"><use href="#error-picture"></use></svg>
+        <n-flex
+          v-if="isError"
+          align="center"
+          justify="center"
+          class="w-150px h-150px rounded-10px bg-[--hula-surface-sidebar-selected]">
+          <svg class="size-34px color-[--hula-text-tertiary]"><use href="#error-picture"></use></svg>
         </n-flex>
       </template>
     </n-image>
@@ -53,10 +57,13 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { exists } from '@tauri-apps/plugin-fs'
 import { MsgEnum } from '@/enums/index'
 import { useImageViewer } from '@/hooks/useImageViewer'
-import { useThumbnailCacheStore } from '@/stores/thumbnailCache'
+import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import type { EmojiBody, MsgType } from '@/services/types'
 import { getRemoteFileSize } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
+
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Emoji')
 
 const props = defineProps<{
   body: EmojiBody
@@ -79,7 +86,7 @@ const displayEmojiSrc = computed(() => localEmojiSrc.value || props.body?.url ||
 
 const handleImageError = () => {
   isError.value = true
-  console.error('表情包加载失败:', props.body.url)
+  logger.error('表情包加载失败:', props.body.url)
 }
 
 const handleOpenImage = () => {
@@ -115,7 +122,7 @@ const ensureLocalEmoji = async () => {
       return
     }
   } catch (error) {
-    console.warn('[Emoji] 检查本地表情失败:', error)
+    logger.warn('检查本地表情失败:', error)
   }
   localEmojiSrc.value = null
   await maybeDownloadEmoji()
@@ -138,7 +145,7 @@ const maybeDownloadEmoji = async () => {
       localEmojiSrc.value = convertFileSrc(path)
     }
   } catch (error) {
-    console.warn('[Emoji] 自动下载失败:', error)
+    logger.warn('自动下载失败:', error)
   }
 }
 

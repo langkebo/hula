@@ -1,6 +1,8 @@
 import { ref } from 'vue'
-import { ImUrlEnum } from '@/enums'
-import { imRequestResult } from '@/utils/ImRequestUtils'
+import { matrixExtensionEndpoints } from '@/services/backend'
+import { httpClient } from '@/utils/HttpClient'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('AssistantModelPresets')
 
 export type AssistantModelPreset = {
   id: string
@@ -29,13 +31,13 @@ const fetchAssistantModelPresets = async (force = false) => {
   assistantModelLoading.value = true
   assistantModelError.value = null
   try {
-    const response = await imRequestResult<AssistantModelPreset[]>({
-      url: ImUrlEnum.GET_ASSISTANT_MODEL_LIST
+    const response = await httpClient.requestResult<AssistantModelPreset[]>({
+      url: matrixExtensionEndpoints.GET_ASSISTANT_MODEL_LIST
     })
-    if (!response.isOk()) {
+    if (!response.ok) {
       throw response.error
     }
-    const normalized = (response.value ?? []).map((preset) => ({
+    const normalized = (response.data ?? []).map((preset) => ({
       ...preset,
       modelUrl: appendVersionQuery(preset.modelUrl, preset.version)
     }))
@@ -50,7 +52,7 @@ const fetchAssistantModelPresets = async (force = false) => {
     assistantModelMeta.value = metaMap
     assistantModelPresets.value = sorted
   } catch (error) {
-    console.error('获取 AI 模型列表失败:', error)
+    logger.error('获取 AI 模型列表失败:', error)
     assistantModelError.value = error
     assistantModelPresets.value = []
     assistantModelMeta.value = {}

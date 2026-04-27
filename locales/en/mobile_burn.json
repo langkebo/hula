@@ -1,0 +1,17 @@
+{
+  "title": "Burn After Read",
+  "global_section": "Global Settings",
+  "global_enable": "Enable Burn After Read",
+  "default_duration": "Default Burn Duration",
+  "show_countdown": "Show Countdown",
+  "room_section": "Room Settings",
+  "no_rooms": "No burn rooms yet",
+  "stats_section": "Statistics",
+  "total_burned": "Total Burned Messages",
+  "active_rooms": "Active Rooms",
+  "warning": "Burn after read messages will be permanently deleted when expired and cannot be recovered. Use with caution.",
+  "enabled": "Burn after read enabled",
+  "disabled": "Burn after read disabled",
+  "room_enabled": "Room burn after read enabled",
+  "room_disabled": "Room burn after read disabled"
+}

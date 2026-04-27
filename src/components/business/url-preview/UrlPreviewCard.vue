@@ -5,7 +5,7 @@ import {
   type UrlPreview,
   simplifyUrl,
   getDomain
-} from '@/services/matrix/MatrixUrlPreviewService'
+} from '@/services/matrix/media/MatrixUrlPreviewService'
 
 interface Props {
   url: string
@@ -82,11 +82,11 @@ const handleClick = () => {
 
 <style scoped lang="scss">
 .url-preview-card {
-  border: 1px solid var(--border-color, #e0e0e0);
+  border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  background: var(--bg-color, #fff);
+  background: var(--hula-surface-panel);
   transition: box-shadow 0.2s;
 
   &:hover {
@@ -104,7 +104,7 @@ const handleClick = () => {
   .loading-spinner {
     width: 16px;
     height: 16px;
-    border: 2px solid var(--border-color, #e0e0e0);
+    border: 2px solid var(--hula-border-default);
     border-top-color: var(--primary-color, #007aff);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;

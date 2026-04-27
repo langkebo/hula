@@ -1,5 +1,7 @@
 import { UploadSceneEnum } from '@/enums'
 import { UploadProviderEnum, useUpload } from './useUpload'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('AvatarUpload')
 
 export interface AvatarUploadOptions {
   // 上传成功后的回调函数，参数为下载URL
@@ -75,12 +77,10 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
         return
       }
 
-      // 使用useUpload中的七牛云上传功能
       const { uploadFile, fileInfo } = useUpload()
 
-      // 执行上传，使用七牛云上传方式
       await uploadFile(file, {
-        provider: UploadProviderEnum.QINIU,
+        provider: UploadProviderEnum.DEFAULT,
         enableDeduplication: true,
         scene: scene
       })
@@ -107,7 +107,7 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
       // 关闭裁剪窗口
       showCropper.value = false
     } catch (error) {
-      console.error('上传头像失败:', error)
+      logger.error('上传头像失败:', error)
       window.$message.error('上传头像失败')
       // 发生错误时也需要结束加载状态
       cropperRef.value?.finishLoading()

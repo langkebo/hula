@@ -11,6 +11,7 @@ export type Any = unknown
 export type AnyObject = Record<string, unknown>
 
 /** 任意函数 */
+// biome-ignore lint/suspicious/noExplicitAny: utility alias must be the widest callable
 export type AnyFunction = (...args: any[]) => any
 
 /** 任意数组 */
@@ -25,6 +26,7 @@ export type AnyPromise<T = unknown> = Promise<T>
 export type ComponentProps<T> = T extends { $props: infer P } ? P : Partial<T>
 
 /** Vue 组件 emit */
+// biome-ignore lint/suspicious/noExplicitAny: infer signature width must match Vue's declaration
 export type ComponentEmits<T> = T extends { $emit: (event: infer E, ...args: any[]) => void } ? E : never
 
 /** Vue ref 类型 */
@@ -98,8 +100,18 @@ export type EventListener<T = unknown> = (data: T) => void
 export type EventEmitter<T = unknown> = {
   on(event: string, listener: EventListener<T>): void
   off(event: string, listener: EventListener<T>): void
-  emit(event: string, data: T): void
+  emit(event: string, data?: T): void
   once(event: string, listener: EventListener<T>): void
+}
+
+// ==================== 业务特定类型 ====================
+
+/** 位置信息数据 */
+export type LocationData = {
+  latitude: number
+  longitude: number
+  address?: string
+  timestamp: number
 }
 
 // ==================== 存储 ====================
@@ -147,9 +159,11 @@ export type DeepReadonly<T> = T extends (infer U)[]
 export type DeepPartial<T> = T extends object ? { [P in keyof T]?: DeepPartial<T[P]> } : T
 
 /** 函数参数 */
+// biome-ignore lint/suspicious/noExplicitAny: conditional infer pattern requires any
 export type Arguments<T extends AnyFunction> = T extends (...args: infer A) => any ? A : never
 
 /** 函数返回值 */
+// biome-ignore lint/suspicious/noExplicitAny: conditional infer pattern requires any
 export type ReturnType<T extends AnyFunction> = T extends (...args: any) => infer R ? R : never
 
 // ==================== UI 相关 ====================

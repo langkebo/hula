@@ -29,7 +29,7 @@ import { CheckUpdate, LockScreen, modalShow } from './model.tsx'
 
 const componentMap = shallowRef<Component>()
 // 存储要传递给组件的props
-const componentProps = shallowRef<Record<string, any>>({})
+const componentProps = shallowRef<Record<string, unknown>>({})
 /** 弹窗组件内容映射 */
 const componentMapping: Record<number, Component> = {
   [ModalEnum.LOCK_SCREEN]: LockScreen,
@@ -39,7 +39,7 @@ const componentMapping: Record<number, Component> = {
 const leftMinWidthClass = computed(() => (isMac26() ? 'min-w-68px' : 'min-w-64px'))
 
 onMounted(() => {
-  useMitt.on(MittEnum.LEFT_MODAL_SHOW, (event: { type: ModalEnum; props?: Record<string, any> }) => {
+  useMitt.on(MittEnum.LEFT_MODAL_SHOW, (event: { type: ModalEnum; props?: Record<string, unknown> }) => {
     componentMap.value = componentMapping[event.type]
     // 保存传入的props
     componentProps.value = event.props || {}

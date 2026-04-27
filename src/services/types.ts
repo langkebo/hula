@@ -216,10 +216,8 @@ export type UserItem = {
   linkedGitee?: boolean
   /** 是否绑定 GitHub */
   linkedGithub?: boolean
-  /** 是否绑定 GitCode */
-  linkedGitcode?: boolean
   /** 已绑定的 OAuth 提供商 */
-  oauthProviders?: ('gitee' | 'github' | 'gitcode')[]
+  oauthProviders?: ('gitee' | 'github')[]
 }
 
 export type GroupStatisticType = {
@@ -288,10 +286,8 @@ export type UserInfoType = {
   linkedGitee?: boolean
   /** 是否绑定 GitHub */
   linkedGithub?: boolean
-  /** 是否绑定 GitCode */
-  linkedGitcode?: boolean
   /** 已绑定的 OAuth 提供商 */
-  oauthProviders?: ('gitee' | 'github' | 'gitcode')[]
+  oauthProviders?: ('gitee' | 'github')[]
 }
 
 export type BadgeType = {
@@ -403,6 +399,9 @@ export type VoiceBody = {
   size: number
   second: number
   url: string
+  mxcUrl?: string
+  fileName?: string
+  mimeType?: string
 }
 
 export type MergeBodyBody = {
@@ -520,6 +519,7 @@ export type MessageBody =
   | LocationBody
   | BeaconBody
   | LinkPreviewBody
+  // biome-ignore lint/suspicious/noExplicitAny: union must allow arbitrary message body shapes for forward compatibility
   | any
 export type MsgType = {
   /** 消息ID */
@@ -550,8 +550,7 @@ export type ReplyType = {
   id: string
   username: string
   type: MsgEnum
-  /** 根据不同类型回复的消息展示也不同-`过渡版` */
-  body: any
+  body: string | object
   /**
    * 是否可消息跳转
    * @enum {number}  `0`否 `1`是
@@ -575,8 +574,7 @@ export type MessageReq = {
     content?: string
     /** 回复的消息id */
     replyMsgId?: number
-    /** 任意 */
-    [key: string]: any
+    [key: string]: unknown
   }
 }
 
@@ -767,8 +765,8 @@ export type ModifyUserInfoType = {
 export type Login = {
   /** token */
   token: string
-  /** 刷新token */
-  refreshToken: string
+  /** 刷新token，可选 */
+  refreshToken?: string
   /** 客户端 */
   client: string
 }
@@ -819,15 +817,6 @@ export type ConfigType = {
   logo: string
   /** 系统名称 */
   name: string
-  /** 七牛 */
-  qiNiu: {
-    /** oss域名 */
-    ossDomain: string
-    /** 分片大小 */
-    fragmentSize: string
-    /** 超过多少MB开启分片上传 */
-    turnSharSize: string
-  }
   /** 大群ID */
   roomGroupId: string
 }
@@ -884,7 +873,7 @@ export type RightMouseMessageItem = {
       fileName: string
       replyMsgId: string | null
       atUidList: string[] | null
-      reply: any | null // 可进一步细化
+      reply: ReplyType | null
     }
     messageMarks: {
       [key: string]: {
@@ -898,10 +887,15 @@ export type RightMouseMessageItem = {
   _index: number
 }
 
-export type DetailsContent = {
-  type: 'apply'
-  applyType: 'friend' | 'group'
-}
+export type DetailsContent =
+  | {
+      type: 'apply'
+      applyType: 'friend' | 'group'
+    }
+  | {
+      type: RoomTypeEnum
+      uid: string
+    }
 
 /**
  * 媒体类型枚举
@@ -916,8 +910,49 @@ export enum MediaType {
  * 朋友圈权限枚举
  */
 export enum FeedPermission {
-  PRIVACY = 'privacy', // 私密
-  OPEN = 'open', // 公开
-  PART_VISIBLE = 'partVisible', // 部分可见
-  NOT_ANYONE = 'notAnyone' // 不给谁看
+  PRIVACY = 'privacy',
+  OPEN = 'open',
+  PART_VISIBLE = 'partVisible',
+  NOT_ANYONE = 'notAnyone'
+}
+
+export interface RoomMemberInfo {
+  userId: string
+  name: string
+  avatarUrl?: string
+  powerLevel?: number
+}
+
+export interface RoomDetail {
+  roomId: string
+  topic: string | null
+  memberCount: number
+  joinedCount: number
+  ownerId: string | null
+  joinRule: 'public' | 'invite' | 'knock' | 'private' | null
+  canonicalAlias: string | null
+  avatarUrl: string | null
+  createdTs: number | null
+  isPublic: boolean | null
+}
+
+export interface UnreadCount {
+  notificationCount: number
+  highlightCount: number
+  totalCount: number
+}
+
+export interface RoomInfo {
+  roomId: string
+  name: string
+  avatarUrl: string | null
+  isDirect: boolean
+  isEncrypted: boolean
+  unreadCount: number
+  highlightCount: number
+  notificationCount: number
+  lastMessage: string | null
+  lastMessageTime: number | null
+  members: RoomMemberInfo[]
+  detail?: RoomDetail
 }

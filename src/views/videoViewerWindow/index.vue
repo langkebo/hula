@@ -94,13 +94,22 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import { readDir } from '@tauri-apps/plugin-fs'
 import ActionBar from '@/components/windows/ActionBar.vue'
 import { useTauriListener } from '@/hooks/useTauriListener'
-import { useVideoViewer } from '@/stores/videoViewer.ts'
+import { useVideoViewer } from '@/stores/domains/widget/videoViewer'
+import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+const logger = createLogger('VideoViewer')
 const { addListener } = useTauriListener()
 const videoViewerStore = useVideoViewer()
 const appWindow = WebviewWindow.getCurrent()
+
+type VideoUpdatedPayload = {
+  list: string[]
+  index: number
+  currentVideoPath?: string
+}
+
 // 支持的视频文件扩展名
 const supportedVideoExtensions = ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm', '.m4v']
 
@@ -196,9 +205,9 @@ const getVideosFromCurrentFolder = async (currentVideoPath: string) => {
         .map(async (entry) => await join(folderPath, entry.name))
     )
 
-    return videoFiles.sort() // 按文件名排序
+    return videoFiles.sort()
   } catch (error) {
-    console.warn('获取文件夹视频文件失败:', error)
+    logger.warn('获取文件夹视频文件失败:', error)
     return []
   }
 }
@@ -213,7 +222,7 @@ const playPause = () => {
           isPlaying.value = true
         })
         .catch((error) => {
-          console.warn('视频播放失败:', error)
+          logger.warn('视频播放失败:', error)
           isPlaying.value = false
         })
     } else {
@@ -244,7 +253,7 @@ const onVideoLoaded = () => {
         isPlaying.value = true
       })
       .catch((error) => {
-        console.warn('自动播放失败，可能需要用户交互:', error)
+        logger.warn('自动播放失败，可能需要用户交互:', error)
         isPlaying.value = false
       })
   }
@@ -307,14 +316,13 @@ const previousVideo = async () => {
           isPlaying.value = true
         })
         .catch((error) => {
-          console.warn('视频播放失败:', error)
+          logger.warn('视频播放失败:', error)
           isPlaying.value = false
         })
     }
   })
 }
 
-// 切换到下一个视频
 const nextVideo = async () => {
   if (!canGoNext.value) return
 
@@ -352,14 +360,13 @@ const nextVideo = async () => {
           isPlaying.value = true
         })
         .catch((error) => {
-          console.warn('视频播放失败:', error)
+          logger.warn('视频播放失败:', error)
           isPlaying.value = false
         })
     }
   })
 }
 
-// 显示提示信息
 const showVideoTip = (message: string) => {
   tipText.value = message
   showTip.value = true
@@ -373,7 +380,7 @@ onMounted(async () => {
 
   // 修改事件名称与发送端保持一致
   await addListener(
-    appWindow.listen('video-updated', (event: any) => {
+    appWindow.listen<VideoUpdatedPayload>('video-updated', (event) => {
       const { list, index } = event.payload
       videoList.value = list
       currentIndex.value = index
@@ -381,7 +388,7 @@ onMounted(async () => {
         if (videoRef.value) {
           videoRef.value.load()
           videoRef.value.play().catch((error) => {
-            console.warn('视频播放失败:', error)
+            logger.warn('视频播放失败:', error)
             isPlaying.value = false
           })
         }

@@ -11,13 +11,13 @@
         <div
           v-if="isMac()"
           @click="closeWindow"
-          class="mac-close size-13px shadow-inner bg-#ed6a5eff rounded-50% mt-6px select-none absolute left-6px">
-          <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+          class="mac-close size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% mt-6px select-none absolute left-6px">
+          <svg class="hidden size-7px color-[--hula-surface-media-preview] select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>
 
-        <n-flex class="text-(14px [--text-color]) select-none pt-6px" justify="center">
+        <n-flex class="text-(14px [--hula-text-primary]) select-none pt-6px" justify="center">
           {{ t('components.avatarCropper.title') }}
         </n-flex>
 
@@ -27,7 +27,7 @@
           @click="closeWindow">
           <use href="#close"></use>
         </svg>
-        <span class="h-1px w-full bg-[--line-color]"></span>
+        <span class="h-1px w-full bg-[--hula-border-default]"></span>
       </n-flex>
 
       <!-- 主体内容 -->
@@ -52,7 +52,7 @@
         <n-flex vertical class="px-20px">
           <!-- 圆形预览 -->
           <div class="mb-20px">
-            <div class="text-14px text-[--text-color] mb-8px">
+            <div class="text-14px text-[--hula-text-primary] mb-8px">
               {{ t('components.avatarCropper.preview.round') }}
             </div>
             <div class="preview-wrapper">
@@ -75,7 +75,7 @@
 
           <!-- 方形预览 -->
           <div>
-            <div class="text-14px text-[--text-color] mb-8px w-120px">
+            <div class="text-14px text-[--hula-text-primary] mb-8px w-120px">
               {{ t('components.avatarCropper.preview.square') }}
             </div>
             <div class="preview-wrapper">
@@ -107,23 +107,31 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import type { CSSProperties } from 'vue'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import 'vue-cropper/dist/index.css'
 import { VueCropper } from 'vue-cropper'
 
 const { t } = useI18n()
 const localImageUrl = ref('')
-const cropperRef = ref()
+
+type CropPreview = {
+  url: string
+  img: CSSProperties | null
+  w: number
+  h: number
+}
+
+type VueCropperInstance = InstanceType<typeof VueCropper> & {
+  getCropBlob: (callback: (blob: Blob) => void) => void
+}
+
+const cropperRef = ref<VueCropperInstance | null>(null)
 const loading = ref(false)
 const loadingText = computed(() =>
   loading.value ? t('components.avatarCropper.uploading') : t('components.common.confirm')
 )
-const previewUrl = ref<{
-  url: string
-  img: any
-  w: number
-  h: number
-}>()
+const previewUrl = ref<CropPreview | null>(null)
 
 const emit = defineEmits<{
   'update:show': [value: boolean]
@@ -143,7 +151,7 @@ watch(
   { immediate: true }
 )
 
-const handleRealTime = (data: { url: string; img: any; w: number; h: number }) => {
+const handleRealTime = (data: CropPreview) => {
   previewUrl.value = data
 }
 

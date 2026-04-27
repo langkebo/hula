@@ -239,7 +239,7 @@ defineExpose({
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-size: 13px;
-  color: var(--text-color-2);
+  color: var(--hula-text-secondary);
 }
 
 .new-message-badge {

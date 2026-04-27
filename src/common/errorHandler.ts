@@ -4,6 +4,10 @@
  */
 
 import { AppException, ErrorType } from './exception'
+import { translateMatrixError, type TranslatedError } from './matrixErrorTranslator'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('GlobalErrorHandler')
 
 // 错误回调类型
 type ErrorCallback = (error: Error, context?: Record<string, unknown>) => void
@@ -74,20 +78,27 @@ class GlobalErrorHandler {
         standardError = new Error(String(error))
       }
 
-      // 记录错误日志
-      console.error('[GlobalErrorHandler]', standardError, context)
+      logger.error(standardError.message, context)
 
-      // 触发所有注册的回调
       this.errorCallbacks.forEach((callback) => {
         try {
           callback(standardError, context)
         } catch (callbackError) {
-          console.error('[GlobalErrorHandler] 回调执行失败:', callbackError)
+          logger.error('回调执行失败:', callbackError)
         }
       })
     } finally {
       this.isHandling = false
     }
+  }
+
+  /**
+   * 处理 Matrix SDK 错误，返回用户友好的翻译结果
+   */
+  public handleMatrixError(error: unknown, context?: Record<string, unknown>): TranslatedError {
+    const translated = translateMatrixError(error)
+    this.handleError(error, { ...context, matrixErrorLevel: translated.level })
+    return translated
   }
 
   /**

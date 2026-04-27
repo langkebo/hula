@@ -14,6 +14,37 @@ vi.mock('../MatrixClientService', () => ({
   }
 }))
 
+vi.mock('../messaging/MatrixReceiptService', () => ({
+  matrixReceiptService: {
+    sendReadReceiptByEventId: vi.fn()
+  }
+}))
+
+vi.mock('../messaging/MatrixReactionService', () => ({
+  matrixReactionService: {
+    addReaction: vi.fn()
+  }
+}))
+
+vi.mock('../messaging/MatrixMessageRelationService', () => ({
+  matrixMessageRelationService: {
+    replyToMessage: vi.fn(),
+    editMessage: vi.fn()
+  }
+}))
+
+vi.mock('@/services/offline/OfflineQueueService', () => ({
+  offlineQueueService: {
+    enqueue: vi.fn()
+  }
+}))
+
+import matrixClientService from '../MatrixClientService'
+import { matrixReceiptService } from '../messaging/MatrixReceiptService'
+import { matrixReactionService } from '../messaging/MatrixReactionService'
+import { matrixMessageRelationService } from '../messaging/MatrixMessageRelationService'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+
 describe('MatrixEventService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -27,6 +58,23 @@ describe('MatrixEventService', () => {
     it('should throw error when client is not initialized', async () => {
       await expect(matrixEventService.sendTextMessage('!room:id', 'Hello World')).rejects.toThrow('客户端未初始化')
     })
+
+    it('should send text message with formatted body when html is provided', async () => {
+      const mockClient = {
+        sendEvent: vi.fn().mockResolvedValue({ event_id: '$text' })
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+
+      const result = await matrixEventService.sendTextMessage('!room:id', 'Hello World', '<b>Hello World</b>')
+
+      expect(mockClient.sendEvent).toHaveBeenCalledWith('!room:id', 'm.room.message', {
+        msgtype: 'm.text',
+        body: 'Hello World',
+        format: 'org.matrix.custom.html',
+        formatted_body: '<b>Hello World</b>'
+      })
+      expect(result).toBe('$text')
+    })
   })
 
   describe('sendImageMessage', () => {
@@ -34,6 +82,29 @@ describe('MatrixEventService', () => {
       await expect(matrixEventService.sendImageMessage('!room:id', 'mxc://matrix.org/image')).rejects.toThrow(
         '客户端未初始化'
       )
+    })
+
+    it('should upload local file before sending image message', async () => {
+      const file = new File(['image'], 'demo.png', { type: 'image/png' })
+      const mockClient = {
+        uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/uploaded-image' }),
+        sendEvent: vi.fn().mockResolvedValue({ event_id: '$image' })
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+
+      const result = await matrixEventService.sendImageMessage('!room:id', file, undefined, 'custom.png')
+
+      expect(mockClient.uploadContent).toHaveBeenCalledWith(file, { type: 'image/png' })
+      expect(mockClient.sendEvent).toHaveBeenCalledWith('!room:id', 'm.room.message', {
+        msgtype: 'm.image',
+        body: 'custom.png',
+        info: {
+          size: file.size,
+          mimetype: 'image/png'
+        },
+        url: 'mxc://matrix.org/uploaded-image'
+      })
+      expect(result).toBe('$image')
     })
   })
 
@@ -90,6 +161,31 @@ describe('MatrixEventService', () => {
     it('should throw error when client is not initialized', async () => {
       await expect(matrixEventService.sendMessageReceipt('!room:id', '$event:id')).rejects.toThrow('客户端未初始化')
     })
+
+    it('should delegate read receipts to MatrixReceiptService', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixReceiptService.sendReadReceiptByEventId).mockResolvedValue('$event:id')
+
+      await matrixEventService.sendMessageReceipt('!room:id', '$event:id')
+
+      expect(matrixReceiptService.sendReadReceiptByEventId).toHaveBeenCalledWith('!room:id', '$event:id')
+    })
+
+    it('should keep fallback path for non-read receipt types', async () => {
+      const mockEvent = { getId: vi.fn(() => '$event:id') }
+      const mockRoom = {
+        findEventById: vi.fn(() => mockEvent)
+      }
+      const mockClient = {
+        getRoom: vi.fn(() => mockRoom),
+        sendReadReceipt: vi.fn().mockResolvedValue(undefined)
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+
+      await matrixEventService.sendMessageReceipt('!room:id', '$event:id', 'm.read.private' as any)
+
+      expect(mockClient.sendReadReceipt).toHaveBeenCalledWith(mockEvent, 'm.read.private')
+    })
   })
 
   describe('getRoomTimeline', () => {
@@ -110,6 +206,18 @@ describe('MatrixEventService', () => {
         '客户端未初始化'
       )
     })
+
+    it('should delegate replies to MatrixMessageRelationService', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixMessageRelationService.replyToMessage).mockResolvedValue('$reply')
+
+      const result = await matrixEventService.replyToEvent('!room:id', '$event:id', 'Reply text')
+
+      expect(matrixMessageRelationService.replyToMessage).toHaveBeenCalledWith('!room:id', '$event:id', {
+        body: 'Reply text'
+      })
+      expect(result).toBe('$reply')
+    })
   })
 
   describe('editEvent', () => {
@@ -118,11 +226,33 @@ describe('MatrixEventService', () => {
         '客户端未初始化'
       )
     })
+
+    it('should delegate edits to MatrixMessageRelationService', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixMessageRelationService.editMessage).mockResolvedValue('$edited')
+
+      const result = await matrixEventService.editEvent('!room:id', '$event:id', 'Edited text')
+
+      expect(matrixMessageRelationService.editMessage).toHaveBeenCalledWith('!room:id', '$event:id', {
+        body: 'Edited text'
+      })
+      expect(result).toBe('$edited')
+    })
   })
 
   describe('reactToEvent', () => {
     it('should throw error when client is not initialized', async () => {
       await expect(matrixEventService.reactToEvent('!room:id', '$event:id', '👍')).rejects.toThrow('客户端未初始化')
+    })
+
+    it('should delegate reactions to MatrixReactionService', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixReactionService.addReaction).mockResolvedValue('$reaction')
+
+      const result = await matrixEventService.reactToEvent('!room:id', '$event:id', '👍')
+
+      expect(matrixReactionService.addReaction).toHaveBeenCalledWith('!room:id', '$event:id', '👍')
+      expect(result).toBe('$reaction')
     })
   })
 
@@ -131,6 +261,22 @@ describe('MatrixEventService', () => {
       await expect(matrixEventService.sendEvent('!room:id', 'm.room.message', { body: 'test' })).rejects.toThrow(
         '客户端未初始化'
       )
+    })
+
+    it('should enqueue event when offline', async () => {
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+      vi.mocked(offlineQueueService.enqueue).mockReturnValue('q-5')
+
+      const result = await matrixEventService.sendEvent('!room:id', 'm.room.message', { body: 'hello' })
+
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('message', '!room:id', {
+        roomId: '!room:id',
+        eventType: 'm.room.message',
+        content: { body: 'hello' }
+      })
+      expect(result).toBe('local-q-5')
+
+      Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
     })
   })
 })

@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noConsole: Worker download logging is intentionally kept in this worker.
 /// <reference lib="webworker" />
 
 type DownloadRequest = {

@@ -200,7 +200,7 @@ if (props.lazy) {
   gap: 8px;
   background: var(--bg-color);
   font-size: 12px;
-  color: var(--text-color-3);
+  color: var(--hula-text-tertiary);
 }
 
 .loading-progress {

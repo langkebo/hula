@@ -56,38 +56,41 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { matrixChatRoleService } from '@/services/matrix'
+import { chatRoleService, type ChatRole } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ChatRoleSelector')
 
 const props = defineProps<{
-  modelValue?: any
+  modelValue?: ChatRole
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [role: any]
+  'update:modelValue': [role: ChatRole]
   'open-management': []
 }>()
 
 const showRoleList = ref(false)
-const roleList = ref<any[]>([])
-const currentRole = ref<any>(props.modelValue)
+const roleList = ref<ChatRole[]>([])
+const currentRole = ref<ChatRole | undefined>(props.modelValue)
 
 // 加载角色列表
 const loadRoleList = async () => {
   try {
-    const data = await matrixChatRoleService.page({ pageNo: 1, pageSize: 100 })
-    roleList.value = (data.list || []).filter((item: any) => item.status === 0) // 只显示可用的角色
+    const data = await chatRoleService.page({ pageNo: 1, pageSize: 100 })
+    roleList.value = (data.list || []).filter((item: ChatRole) => item.status === 0) // 只显示可用的角色
 
     // 如果没有选中角色，默认选中第一个
     if (!currentRole.value && roleList.value.length > 0) {
       handleSelectRole(roleList.value[0])
     }
   } catch (error) {
-    console.error('加载角色列表失败:', error)
+    logger.error('加载角色列表失败:', error)
   }
 }
 
 // 选择角色
-const handleSelectRole = (role: any) => {
+const handleSelectRole = (role: ChatRole) => {
   currentRole.value = role
   emit('update:modelValue', role)
   showRoleList.value = false
@@ -147,7 +150,7 @@ defineExpose({
   gap: 12px;
   padding: 12px;
   background: var(--bg-color);
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
@@ -164,7 +167,7 @@ defineExpose({
     .role-name {
       font-size: 14px;
       font-weight: 500;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -196,7 +199,7 @@ defineExpose({
   left: 0;
   right: 0;
   background: var(--bg-color);
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 1000;
@@ -209,12 +212,12 @@ defineExpose({
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    border-bottom: 1px solid var(--line-color);
+    border-bottom: 1px solid var(--hula-border-default);
 
     .header-title {
       font-size: 14px;
       font-weight: 500;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
     }
   }
 
@@ -246,7 +249,7 @@ defineExpose({
       .role-item-name {
         font-size: 14px;
         font-weight: 500;
-        color: var(--text-color);
+        color: var(--hula-text-primary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

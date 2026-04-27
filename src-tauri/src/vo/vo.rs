@@ -20,30 +20,3 @@ pub struct ChatMessageReq {
     pub is_temp: Option<bool>,
     pub is_push_message: Option<bool>,
 }
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct LoginReq {
-    pub grant_type: String,
-    pub system_type: String,
-    pub device_type: String,
-    pub client_id: String,
-    pub code: Option<String>,
-    pub redirect_uri: Option<String>,
-    pub account: String,
-    pub password: String,
-    #[serde(default)]
-    pub is_auto_login: bool,
-    pub async_data: bool,
-    pub uid: Option<String>, // 用于自动登录时传递用户ID
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct LoginResp {
-    pub token: String,
-    pub client: String,
-    pub refresh_token: String,
-    pub uid: String,
-    pub expire: String,
-}

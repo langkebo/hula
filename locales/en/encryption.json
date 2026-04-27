@@ -1,0 +1,10 @@
+{
+  "health": {
+    "cross_signing_incomplete": "Cross-signing not set up, other devices cannot verify this device",
+    "unverified_devices": "Unverified devices detected, consider verifying them for message security",
+    "backup_not_synced": "Key backup not synced, losing this device may prevent decrypting history",
+    "undecryptable": "{count} message(s) cannot be decrypted, attempting key recovery",
+    "all_good": "Encryption status is healthy, all security checks passed",
+    "recheck": "Recheck"
+  }
+}

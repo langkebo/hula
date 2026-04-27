@@ -1,18 +1,18 @@
 <template>
   <n-modal v-model:show="modalVisible" :mask-closable="false" class="rounded-8px" transform-origin="center">
-    <div class="h-full w-480px bg-[--bg-edit] box-border flex flex-col items-center justify-between">
+    <div class="location-modal h-full w-480px box-border flex flex-col items-center justify-between">
       <!-- 标题栏 -->
       <n-flex :size="6" vertical class="w-full">
         <div
           v-if="isMac()"
           @click="modalVisible = false"
-          class="mac-close size-13px shadow-inner bg-#ed6a5eff rounded-50% mt-6px select-none absolute left-6px">
-          <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+          class="mac-close location-modal__mac-close size-13px shadow-inner rounded-50% mt-6px select-none absolute left-6px">
+          <svg class="hidden location-modal__mac-close-icon size-7px select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>
 
-        <n-flex class="text-(14px [--text-color]) select-none pt-6px" justify="center">{{ modalTitle }}</n-flex>
+        <n-flex class="text-(14px [--hula-text-primary]) select-none pt-6px" justify="center">{{ modalTitle }}</n-flex>
 
         <svg
           v-if="isWindows()"
@@ -20,7 +20,7 @@
           @click="modalVisible = false">
           <use href="#close"></use>
         </svg>
-        <span class="h-1px w-full bg-[--line-color]"></span>
+        <span class="h-1px w-full bg-[--hula-border-default]"></span>
       </n-flex>
 
       <!-- 地图加载错误 -->
@@ -65,7 +65,7 @@
           <!-- 地图加载中 -->
           <div v-if="locationState.loading || mapLoading" class="flex-col-center gap-42px">
             <n-spin :size="42" />
-            <p class="text-(14px [--text-cplor])">
+            <p class="text-(14px [--hula-text-secondary])">
               {{
                 locationState.loading
                   ? t('message.location.modal.loading.locating')
@@ -88,13 +88,13 @@
         </div>
 
         <!-- 位置信息显示 -->
-        <div v-if="selectedLocation" class="rounded-6px bg-#fefefe dark:bg-#303030 p-12px">
+        <div v-if="selectedLocation" class="location-modal__info rounded-6px p-12px">
           <n-flex vertical :size="8">
             <span class="text-14px font-medium">{{ t('message.location.modal.info.current') }}</span>
-            <div class="text-12px text-gray-500">
+            <div class="text-(12px [--hula-text-secondary])">
               {{ selectedLocation.address || t('message.location.modal.info.fetching_address') }}
             </div>
-            <div class="text-11px text-gray-400">
+            <div class="text-(11px [--hula-text-tertiary])">
               {{
                 t('message.location.modal.info.coordinate', {
                   lat: selectedLocation.latitude.toFixed(6),
@@ -122,13 +122,10 @@ import { reverseGeocode } from '@/services/mapApi'
 import StaticProxyMap from './StaticProxyMap.vue'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+import type { LocationData } from '@/types/common'
 
-type LocationData = {
-  latitude: number
-  longitude: number
-  address?: string
-  timestamp: number
-}
+const logger = createLogger('LocationModal')
 
 type LocationModalProps = {
   visible: boolean
@@ -188,7 +185,7 @@ const getLocation = async () => {
 
     // 获取地址信息
     const geocodeResult = await reverseGeocode(result.transformed.lat, result.transformed.lng).catch((error) => {
-      console.warn(t('message.location.modal.errors.geocode_failed'), error)
+      logger.warn('逆地理编码失败:', error)
       return null
     })
     const address =
@@ -203,7 +200,7 @@ const getLocation = async () => {
       timestamp: result.timestamp
     }
   } catch (error) {
-    console.error('获取位置失败:', error)
+    logger.error('获取位置失败:', error)
   }
 }
 
@@ -239,7 +236,7 @@ const handleLocationChange = async (newLocation: { lat: number; lng: number }) =
 
   // 获取新位置的地址
   const geocodeResult = await reverseGeocode(newLocation.lat, newLocation.lng).catch((error) => {
-    console.warn(t('message.location.modal.errors.geocode_failed'), error)
+    logger.warn('逆地理编码失败:', error)
     return null
   })
   const address =
@@ -270,4 +267,20 @@ const handleConfirm = async () => {
 }
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.location-modal {
+  background-color: var(--hula-surface-panel-muted);
+}
+
+.location-modal__mac-close {
+  background-color: color-mix(in srgb, var(--hula-color-danger-500) 72%, transparent);
+}
+
+.location-modal__mac-close-icon {
+  color: var(--hula-text-primary);
+}
+
+.location-modal__info {
+  background-color: var(--hula-surface-elevated);
+}
+</style>

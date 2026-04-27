@@ -14,12 +14,10 @@
           <!-- 头像 -->
           <div class="flex justify-center mb-50px">
             <div class="rounded-full relative bg-white w-86px h-86px overflow-hidden" @click="openAvatarCropper">
-              <n-avatar
-                class="absolute"
-                :size="86"
+              <img
+                class="absolute size-86px rounded-full object-cover"
                 :src="AvatarUtils.getAvatarUrl(localUserInfo.avatar!)"
-                fallback-src="/logo.png"
-                round />
+                @error="($event.target as HTMLImageElement).src = '/logo.png'" />
               <div
                 class="absolute h-50% w-full bottom-0 bg-[rgb(50,50,50)] bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-15 backdrop-saturate-100 backdrop-contrast-100"></div>
               <div class="absolute bottom-25% text-center w-full text-12px text-white">
@@ -35,174 +33,92 @@
             <AvatarCropper ref="cropperRef" v-model:show="showCropper" :image-url="localImageUrl" @crop="handleCrop" />
           </div>
           <!-- 个人信息 -->
-          <n-card class="p-0! rounded-16px">
-            <n-form @submit="saveEditInfo" label-placement="left" label-align="left" :label-width="80">
-              <n-form-item :label="t('mobile_edit_profile.nickname')">
-                <n-input
-                  readonly
-                  v-model:value="localUserInfo.name"
-                  :placeholder="t('mobile_edit_profile.placeholder.nickname')"
-                  class="bg-transparent!" />
-              </n-form-item>
+          <div class="rounded-16px bg-white dark:bg-[#1a1a1a] overflow-hidden">
+            <van-form @submit="saveEditInfo">
+              <van-field
+                v-model="localUserInfo.name"
+                :label="t('mobile_edit_profile.nickname')"
+                :placeholder="t('mobile_edit_profile.placeholder.nickname')"
+                readonly
+                class="bg-transparent!" />
 
-              <n-divider class="my-3! p-0!" />
+              <div class="mx-16px border-b border-gray-200 dark:border-gray-700"></div>
 
-              <n-form-item
+              <van-field
+                v-model="genderText"
                 :label="t('mobile_edit_profile.gender')"
-                :placeholder="t('mobile_edit_profile.placeholder.gender')">
-                <n-input
-                  @click="pickerState.gender = true"
-                  v-model:value="genderText"
-                  readonly
-                  :placeholder="t('mobile_edit_profile.placeholder.gender')"
-                  class="bg-transparent!" />
-              </n-form-item>
+                :placeholder="t('mobile_edit_profile.placeholder.gender')"
+                readonly
+                is-link
+                @click="pickerState.gender = true"
+                class="bg-transparent!" />
 
-              <n-divider class="my-3! p-0!" />
+              <div class="mx-16px border-b border-gray-200 dark:border-gray-700"></div>
 
-              <n-form-item
+              <van-field
+                v-model="birthday"
                 :label="t('mobile_edit_profile.brithday')"
-                :placeholder="t('mobile_edit_profile.placeholder.brithday')">
-                <n-input
-                  @click="toEditBirthday"
-                  v-model:value="birthday"
-                  readonly
-                  :placeholder="t('mobile_edit_profile.placeholder.brithday')"
-                  class="bg-transparent!" />
-              </n-form-item>
+                :placeholder="t('mobile_edit_profile.placeholder.brithday')"
+                readonly
+                is-link
+                @click="toEditBirthday"
+                class="bg-transparent!" />
 
-              <n-divider class="my-3! p-0!" />
+              <div class="mx-16px border-b border-gray-200 dark:border-gray-700"></div>
 
-              <n-form-item label="地区" :placeholder="t('mobile_edit_profile.placeholder.brithday')">
-                <n-input
-                  @click="pickerState.region = true"
-                  v-model:value="region"
-                  readonly
-                  :placeholder="t('mobile_edit_profile.placeholder.brithday')"
-                  class="bg-transparent!" />
-              </n-form-item>
+              <van-field
+                v-model="region"
+                :label="t('mobile_edit_profile.region')"
+                :placeholder="t('mobile_edit_profile.placeholder.brithday')"
+                readonly
+                is-link
+                @click="pickerState.region = true"
+                class="bg-transparent!" />
 
-              <n-divider class="my-3! p-0!" />
+              <div class="mx-16px border-b border-gray-200 dark:border-gray-700"></div>
 
-              <n-form-item
-                disabled
+              <van-field
+                v-model="localUserInfo.phone"
                 :label="t('mobile_edit_profile.phone')"
-                :placeholder="t('mobile_edit_profile.placeholder.phone')">
-                <n-input
-                  disabled
-                  readonly
-                  v-model:value="localUserInfo.phone"
-                  :placeholder="t('mobile_edit_profile.placeholder.phone')"
-                  class="bg-transparent!" />
-              </n-form-item>
-
-              <n-divider class="my-3! p-0!" />
-
-              <n-form-item
+                :placeholder="t('mobile_edit_profile.placeholder.phone')"
+                readonly
                 disabled
+                class="bg-transparent!" />
+
+              <div class="mx-16px border-b border-gray-200 dark:border-gray-700"></div>
+
+              <van-field
+                v-model="localUserInfo.resume"
                 :label="t('mobile_edit_profile.bio')"
-                :placeholder="t('mobile_edit_profile.placeholder.bio')">
-                <n-input
-                  type="textarea"
-                  v-model:value="localUserInfo.resume"
-                  :placeholder="t('mobile_edit_profile.placeholder.bio')"
-                  class="bg-transparent!"
-                  @click="toEditBio"
-                  readonly />
-              </n-form-item>
-              <!-- <van-cell-group class="shadow" inset> -->
-              <!-- 昵称 -->
-              <!-- <van-field
-                    :disabled="true"
-                    v-model="localUserInfo.name"
-                    name="昵称"
-                    :label="t('mobile_edit_profile.nickname')"
-                    :placeholder="t('mobile_edit_profile.placeholder.nickname')"
-                    :rules="[{ required: true, message: t('mobile_edit_profile.placeholder.nickname') }]" /> -->
+                :placeholder="t('mobile_edit_profile.placeholder.bio')"
+                type="textarea"
+                rows="2"
+                autosize
+                readonly
+                @click="toEditBio"
+                class="bg-transparent!" />
 
-              <!-- 性别 -->
-              <!-- <van-field
-                    v-model="genderText"
-                    is-link
-                    readonly
-                    name="picker"
-                    :label="t('mobile_edit_profile.gender')"
-                    :placeholder="t('mobile_edit_profile.placeholder.gender')"
-                    @click="pickerState.gender = true" /> -->
-
-              <n-drawer
-                v-model:show="pickerState.gender"
-                class="rounded-t-20px! overflow-hidden"
-                position="bottom"
-                round
-                placement="bottom"
-                default-height="300px">
+              <!-- 性别选择器 -->
+              <van-popup v-model:show="pickerState.gender" position="bottom" round>
                 <van-picker
                   :columns="pickerColumn.gender"
                   @confirm="pickerConfirm.gender"
                   @cancel="pickerState.gender = false" />
-              </n-drawer>
-              <!-- <van-popup v-model:show="pickerState.gender" position="bottom">
-                    <van-picker
-                      :columns="pickerColumn.gender"
-                      @confirm="pickerConfirm.gender"
-                      @cancel="pickerState.gender = false" />
-                  </van-popup> -->
+              </van-popup>
 
-              <!-- 生日 -->
-              <!-- <van-field
-                    v-model="birthday"
-                    :name="t('mobile_edit_profile.brithday')"
-                    :label="t('mobile_edit_profile.brithday')"
-                    :placeholder="t('mobile_edit_profile.placeholder.brithday')"
-                    is-link
-                    readonly
-                    @click="toEditBirthday" /> -->
-
-              <!-- 地区 -->
-              <!-- <van-field
-                    v-model="region"
-                    is-link
-                    readonly
-                    name="area"
-                    :label="t('mobile_edit_profile.brithday')"
-                    :placeholder="t('mobile_edit_profile.placeholder.brithday')"
-                    @click="pickerState.region = true" />
-                  -->
+              <!-- 地区选择器 -->
               <area-drawer
                 v-model:show="pickerState.region"
                 @confirm="pickerConfirm.region"
                 @cancel="pickerState.region = false" />
 
-              <!-- 手机号 -->
-              <!-- <van-field
-                    :disabled="true"
-                    v-model="localUserInfo.phone"
-                    type="tel"
-                    name="手机号"
-                    :label="t('mobile_edit_profile.phone')"
-                    :placeholder="t('mobile_edit_profile.placeholder.phone')"
-                    :rules="[{ required: false, message: '请填写手机号' }]" /> -->
-
-              <!-- 简介 -->
-              <!-- <van-field
-                    v-model="localUserInfo.resume"
-                    name="简介"
-                    :label="t('mobile_edit_profile.bio')"
-                    :placeholder="t('mobile_edit_profile.placeholder.bio')"
-                    type="textarea"
-                    rows="3"
-                    autosize
-                    @click="toEditBio" /> -->
-              <!-- </van-cell-group> -->
-
-              <div class="flex justify-center mt-20px">
-                <n-button block attr-type="submit" type="primary" strong secondary round>
+              <div class="flex justify-center mt-20px px-16px pb-20px">
+                <van-button block type="primary" round native-type="submit">
                   {{ t('mobile_edit_profile.save_btn') }}
-                </n-button>
+                </van-button>
               </div>
-            </n-form>
-          </n-card>
+            </van-form>
+          </div>
         </div>
       </div>
     </template>
@@ -213,12 +129,15 @@
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import router from '@/router'
 import type { ModifyUserInfoType, UserInfoType } from '@/services/types.ts'
-import { useGroupStore } from '@/stores/group'
-import { useLoginHistoriesStore } from '@/stores/loginHistory'
-import { useUserStore } from '@/stores/user.ts'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixAccountService } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('EditProfile')
 
 const { t } = useI18n()
 const genderText = computed(() => {
@@ -237,15 +156,17 @@ const pickerColumn = ref({
   ]
 })
 
+type PickerOption = { text: string; value: number }
+
 const pickerConfirm = {
-  gender: (data: { selectedOptions: any }) => {
+  gender: (data: { selectedOptions: PickerOption[] }) => {
     const selected = data.selectedOptions[0].value
     localUserInfo.value.sex = selected
     pickerState.value.gender = false
   },
-  region: (data: { selectedOptions: any }) => {
+  region: (data: { selectedOptions: PickerOption[] }) => {
     const selected = data.selectedOptions
-    region.value = selected.map((item: { text: any }) => item.text).join('/')
+    region.value = selected.map((item) => item.text).join('/')
     pickerState.value.region = false
   }
 }
@@ -264,20 +185,14 @@ const {
   handleCrop: onCrop
 } = useAvatarUpload({
   onSuccess: async (downloadUrl) => {
-    // 更新编辑信息
     localUserInfo.value.avatar = downloadUrl
-    // 更新用户信息
     userStore.userInfo!.avatar = downloadUrl
-    // 更新头像更新时间
     userStore.userInfo!.avatarUpdateTime = Date.now()
-    // 更新登录历史记录
     loginHistoriesStore.loginHistories.filter((item) => item.uid === userStore.userInfo!.uid)[0].avatar = downloadUrl
-    // 更新缓存里面的用户信息
     updateCurrentUserCache('avatar', downloadUrl)
   }
 })
 
-// 处理裁剪，调用hook中的方法
 const handleCrop = async (cropBlob: Blob) => {
   await onCrop(cropBlob)
 }
@@ -302,16 +217,16 @@ const toEditBio = () => {
   router.push('/mobile/mobileMy/editBio')
 }
 
-const updateCurrentUserCache = (key: 'name' | 'wearingItemId' | 'avatar', value: any) => {
+const updateCurrentUserCache = (key: 'name' | 'wearingItemId' | 'avatar', value: string) => {
   const currentUser = userStore.userInfo!.uid && groupStore.getUserInfo(userStore.userInfo!.uid)
   if (currentUser) {
-    currentUser[key] = value // 更新缓存里面的用户信息
+    currentUser[key] = value
   }
 }
 
 const saveEditInfo = async () => {
   if (!localUserInfo.value.name || localUserInfo.value.name.trim() === '') {
-    window.$message.error('昵称不能为空')
+    window.$message.error(t('mobile_edit_profile.nickname_required'))
     return
   }
 
@@ -331,10 +246,10 @@ const saveEditInfo = async () => {
     updateCurrentUserCache('name', localUserInfo.value.name)
     if (!localUserInfo.value.modifyNameChance) return
     localUserInfo.value.modifyNameChance -= 1
-    window.$message.success('修改成功')
+    window.$message.success(t('mobile_edit_profile.save_success'))
   } catch (error) {
-    console.error('修改用户信息失败:', error)
-    window.$message.error('修改失败，请重试')
+    logger.error('Failed to update profile', error)
+    window.$message.error(t('mobile_edit_profile.save_failed'))
   }
 }
 
@@ -344,12 +259,11 @@ onMounted(async () => {
 </script>
 
 <style lang="scss" scoped>
-@use '@/styles/scss/form-item.scss';
+:deep(.van-cell.van-field) {
+  padding: 10px 16px;
+}
 
-@use 'vant/lib/index.css';
-
-.custom-border-b-1 {
-  border-bottom: 1px solid;
-  border-color: #d9d9d9;
+:deep(.van-cell.van-field::after) {
+  display: none;
 }
 </style>

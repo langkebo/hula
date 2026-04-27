@@ -20,8 +20,8 @@
 import { computed } from 'vue'
 import { NAvatar } from 'naive-ui'
 import { useUserMenu } from './useUserMenu'
-import { useUserStore } from '@/stores/user'
-import { useSettingStore } from '@/stores/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import UserMenuDropdown from './UserMenuDropdown.vue'
 import defaultAvatarImg from '@/assets/img/win.png'
 
@@ -32,13 +32,12 @@ defineOptions({
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 
-const { isOpen, position, isContextMenu, closeMenu, handleMenuItemClick, handleLeftClick } =
-  useUserMenu()
+const { isOpen, position, isContextMenu, closeMenu, handleMenuItemClick, handleLeftClick } = useUserMenu()
 
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
 const defaultAvatar = computed(() => defaultAvatarImg)
 
-const showOnlineStatus = computed(() => settingStore.themes.pattern !== 'os')
+const showOnlineStatus = computed(() => settingStore.themePattern !== 'os')
 
 const onlineClass = computed(() => {
   return 'online'
@@ -61,11 +60,7 @@ const onlineClass = computed(() => {
 }
 
 .avatar-container:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .avatar-container:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--hula-surface-list-hover);
 }
 
 .online-indicator {
@@ -75,22 +70,22 @@ const onlineClass = computed(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 2px solid var(--bg-color, #fff);
+  border: 2px solid var(--avatar-border-color);
 }
 
 .online-indicator.online {
-  background-color: #52c41a;
+  background-color: var(--hula-status-online);
 }
 
 .online-indicator.offline {
-  background-color: #8c8c8c;
+  background-color: var(--hula-status-offline);
 }
 
 .online-indicator.busy {
-  background-color: #faad14;
+  background-color: var(--hula-status-busy);
 }
 
 .online-indicator.away {
-  background-color: #1890ff;
+  background-color: var(--hula-status-away);
 }
 </style>

@@ -8,13 +8,19 @@ interface ImportMetaEnv {
   readonly VITE_APP_NAME: string
   /** Matrix Homeserver 地址 */
   readonly VITE_HOMESERVER_URL: string
+  /** Matrix Identity Server 地址 */
+  readonly VITE_IDENTITY_SERVER_URL?: string
   /** giteeToken */
   readonly VITE_GITEE_TOKEN: string
+  /** Prometheus Pushgateway / ingest endpoint */
+  readonly VITE_PROMETHEUS_ENDPOINT?: string
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+declare const __APP_VERSION__: string
 
 declare module '*.vue' {
   import { defineComponent } from 'vue'
@@ -30,4 +36,5 @@ declare interface Window {
   $dialog: ReturnType<typeof useDialog>
   $modal: ReturnType<typeof useModal>
   $invoke: (channel: string, payload?: unknown) => Promise<unknown>
+  __HULA_RENDER_SAMPLES__?: import('@/utils/AppHarness').RenderSampleRecord[]
 }

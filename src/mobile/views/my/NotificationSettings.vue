@@ -60,21 +60,42 @@
           <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_notifications.advanced_section') }}</div>
 
           <van-cell-group inset>
-            <van-cell :title="t('mobile_notifications.desktop_notifications')">
+            <van-cell :title="t('mobile_notifications.push_notifications')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-indigo-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:cellphone-message" :width="20" color="#597ef7" />
+                </div>
+              </template>
               <template #right-icon>
-                <van-switch v-model="desktopNotifications" :disabled="!notificationsEnabled" />
+                <van-switch v-model="pushNotifications" :disabled="!notificationsEnabled" @change="handlePushToggle" />
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_notifications.email_notifications')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-teal-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:email-outline" :width="20" color="#13c2c2" />
+                </div>
+              </template>
               <template #right-icon>
-                <van-switch v-model="emailNotifications" :disabled="!notificationsEnabled" />
+                <van-switch
+                  v-model="emailNotifications"
+                  :disabled="!notificationsEnabled"
+                  @change="handleEmailToggle" />
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_notifications.encrypted_rooms')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-purple-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:shield-lock-outline" :width="20" color="#722ed1" />
+                </div>
+              </template>
               <template #right-icon>
-                <van-switch v-model="encryptedRoomNotifications" :disabled="!notificationsEnabled" />
+                <van-switch
+                  v-model="encryptedRoomNotifications"
+                  :disabled="!notificationsEnabled"
+                  @change="handleEncryptedRoomToggle" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -94,9 +115,11 @@
 import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
-import { matrixPushService } from '@/services/matrix'
-import { PushRuleKind, TweakName, type IPushRule } from '@/types/matrix-js-sdk'
+import { matrixPushService, type IPushRule } from '@/services/matrix'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('NotificationSettings')
 
 const { t } = useI18n()
 
@@ -104,7 +127,7 @@ const notificationsEnabled = ref(true)
 const soundEnabled = ref(true)
 const roomNotifyMode = ref('all')
 const groupNotifyMode = ref('mention')
-const desktopNotifications = ref(true)
+const pushNotifications = ref(true)
 const emailNotifications = ref(false)
 const encryptedRoomNotifications = ref(true)
 const saving = ref(false)
@@ -117,22 +140,20 @@ async function loadPushRules() {
   try {
     const rules = await matrixPushService.getPushRules()
 
-    const globalRules = rules.global
+    const overrideRules = matrixPushService.getOverrideRules(rules)
+    const roomRules = matrixPushService.getRoomRules(rules)
 
-    const overrideRules: IPushRule[] | undefined = globalRules[PushRuleKind.Override]
-    const roomRules: IPushRule[] | undefined = globalRules[PushRuleKind.RoomSpecific]
-
-    const masterRule = overrideRules?.find((r) => r.rule_id === '.m.rule.master')
+    const masterRule = overrideRules?.find((r: IPushRule) => r.rule_id === '.m.rule.master')
     if (masterRule && !masterRule.enabled) {
       notificationsEnabled.value = true
     }
 
-    const dmRule = roomRules?.find((r) => r.rule_id === '.m.rule.room_one_to_one')
+    const dmRule = roomRules?.find((r: IPushRule) => r.rule_id === '.m.rule.room_one_to_one')
     if (dmRule) {
       roomNotifyMode.value = dmRule.enabled ? 'all' : 'none'
     }
 
-    const messageRule = roomRules?.find((r) => r.rule_id === '.m.rule.message')
+    const messageRule = roomRules?.find((r: IPushRule) => r.rule_id === '.m.rule.message')
     if (messageRule) {
       if (
         messageRule.actions?.some((a) => {
@@ -144,15 +165,15 @@ async function loadPushRules() {
       }
     }
   } catch (error) {
-    console.error('[MobileNotifications] 加载推送规则失败:', error)
+    logger.error('Failed to load push rules', error)
   }
 }
 
 async function handleNotificationsToggle(enabled: boolean) {
   try {
-    await matrixPushService.setPushRuleEnabled('global', PushRuleKind.Override, '.m.rule.master', !enabled)
+    await matrixPushService.setMasterRuleEnabled(enabled)
   } catch (error) {
-    console.error('[MobileNotifications] 设置通知开关失败:', error)
+    logger.error('Failed to update notification toggle', error)
     notificationsEnabled.value = !enabled
   }
 }
@@ -161,14 +182,24 @@ async function handleSoundToggle(enabled: boolean) {
   try {
     const ruleIds = ['.m.rule.room_one_to_one', '.m.rule.message']
     for (const ruleId of ruleIds) {
-      await matrixPushService.setPushRuleActions('global', PushRuleKind.RoomSpecific, ruleId, [
-        { set_tweak: { tweak: TweakName.Sound, value: enabled ? 'default' : 'none' } }
-      ])
+      await matrixPushService.setRoomSoundEnabled(ruleId, enabled)
     }
   } catch (error) {
-    console.error('[MobileNotifications] 设置声音失败:', error)
+    logger.error('Failed to update notification sound', error)
     soundEnabled.value = !enabled
   }
+}
+
+function handlePushToggle(enabled: boolean) {
+  localStorage.setItem('hula-push-notifications', enabled.toString())
+}
+
+function handleEmailToggle(enabled: boolean) {
+  localStorage.setItem('hula-email-notifications', enabled.toString())
+}
+
+function handleEncryptedRoomToggle(enabled: boolean) {
+  localStorage.setItem('hula-encrypted-room-notifications', enabled.toString())
 }
 
 async function handleSave() {
@@ -177,20 +208,15 @@ async function handleSave() {
     const dmEnabled = roomNotifyMode.value !== 'none'
     const msgEnabled = groupNotifyMode.value !== 'none'
 
-    await matrixPushService.setPushRuleEnabled(
-      'global',
-      PushRuleKind.RoomSpecific,
-      '.m.rule.room_one_to_one',
-      dmEnabled
-    )
-    await matrixPushService.setPushRuleEnabled('global', PushRuleKind.RoomSpecific, '.m.rule.message', msgEnabled)
+    await matrixPushService.setRoomRuleEnabled('.m.rule.room_one_to_one', dmEnabled)
+    await matrixPushService.setRoomRuleEnabled('.m.rule.message', msgEnabled)
 
     showToast({
       type: 'success',
       message: t('mobile_notifications.save_success')
     })
   } catch (error) {
-    console.error('[MobileNotifications] 保存设置失败:', error)
+    logger.error('Failed to save notification settings', error)
     showToast({
       type: 'fail',
       message: t('mobile_notifications.save_failed')

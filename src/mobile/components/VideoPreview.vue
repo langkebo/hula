@@ -8,13 +8,14 @@
         @click="handleClose">
         <div class="relative w-full h-full flex items-center justify-center overflow-hidden">
           <div class="absolute rounded-8 bg-black/75 z-20 shadow-lg" :style="backStyle">
-            <n-button quaternary circle class="bg-white/20" @click.stop="handleClose" aria-label="返回">
-              <template #icon>
-                <svg class="size-22px text-white rotate-180">
-                  <use href="#right"></use>
-                </svg>
-              </template>
-            </n-button>
+            <button
+              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
+              @click.stop="handleClose"
+              aria-label="返回">
+              <svg class="size-22px text-white rotate-180">
+                <use href="#right"></use>
+              </svg>
+            </button>
           </div>
           <video
             v-if="videoUrl"
@@ -25,30 +26,20 @@
             autoplay
             @click.stop />
           <div class="absolute flex gap-3 p-2 rounded-8 text-white bg-black/75 z-20 shadow-lg" :style="actionStyle">
-            <n-button
+            <button
               v-if="showSave"
-              circle
-              quaternary
-              size="medium"
-              class="bg-white/20"
+              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleSave"
               aria-label="保存">
-              <template #icon>
-                <svg class="size-22px text-white"><use href="#Importing"></use></svg>
-              </template>
-            </n-button>
-            <n-button
+              <svg class="size-22px text-white"><use href="#Importing"></use></svg>
+            </button>
+            <button
               v-if="showMore"
-              circle
-              quaternary
-              size="medium"
-              class="bg-white/20"
+              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleMore"
               aria-label="更多">
-              <template #icon>
-                <svg class="size-22px text-white"><use href="#more"></use></svg>
-              </template>
-            </n-button>
+              <svg class="size-22px text-white"><use href="#more"></use></svg>
+            </button>
           </div>
         </div>
       </div>
@@ -57,13 +48,16 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import type { CSSProperties } from 'vue'
-import { useChatStore } from '@/stores/chat'
-import { useFileDownloadStore } from '@/stores/fileDownload'
-import { useFileStore } from '@/stores/file'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
+import { useFileStore } from '@/stores/domains/widget/file'
 import { extractFileName } from '@/utils/Formatting'
 import type { MsgType } from '@/services/types'
 import { isMobile } from '@/utils/PlatformConstants'
+
+const logger = createLogger('VideoPreview')
 
 interface Props {
   visible: boolean
@@ -151,7 +145,7 @@ const handleSave = async () => {
     }
     window.$message?.success?.('视频已保存')
   } catch (error) {
-    console.error('保存视频失败:', error)
+    logger.error('保存视频失败:', error)
     window.$message?.error?.('保存失败')
   }
 }

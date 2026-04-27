@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img width="350px" height="150px" src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/public/hula.png"/>
+  <img width="350px" height="150px" src="https://raw.gitee.com/llangkebo/hula/files/master/public/hula.png"/>
 </p>
 
 <p align="center">An instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScript</p>
@@ -8,7 +8,7 @@
 <!-- 🌟 Featured -->
 <div align="center">
   <a href="https://trendshift.io/repositories/15187" target="_blank">
-    <img src="https://trendshift.io/api/badge/repositories/15187" alt="HuLaSpark%2FHuLa | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+    <img src="https://trendshift.io/api/badge/repositories/15187" alt="龙卷风%2FHuLa | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
   </a>
   <a href="https://hellogithub.com/repository/743b101346c54f6cb5c20eed2edbaa40" target="_blank">
     <img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=743b101346c54f6cb5c20eed2edbaa40&claim_uid=WsQaY6SlnL7qxG3&theme=neutral" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" />
@@ -23,13 +23,13 @@
       <img src="https://gitee.com/llangkebo/hula/badge/star.svg?theme=gvp" alt="Gitee Stars">
     </a>
     <a href="https://gitee.com/llangkebo/hula/stargazers">
-      <img src="https://img.shields.io/github/stars/HulaSpark/HuLa?style=social" alt="GitHub Stars">
+      <img src="https://img.shields.io/github/stars/llangkebo/hula?style=social" alt="GitHub Stars">
     </a>
-    <a href="https://gitcode.com/HuLaSpark/HuLa">
-      <img src="https://gitcode.com/HuLaSpark/HuLa/star/badge.svg" alt="GitCode Stars">
+    <a href="https://gitee.com/llangkebo/hula">
+      <img src="https://gitee.com/llangkebo/hula/star/badge.svg" alt="GitCode Stars">
     </a>
-    <a href="https://gitcode.com/HuLaSpark/HuLa">
-      <img src="https://atomgit.com/HuLaSpark/HuLa/star/2025top.svg" alt="2025 Top 100 Open Source Projects">
+    <a href="https://gitee.com/llangkebo/hula">
+      <img src="https://gitee.com/llangkebo/hula/star/2025top.svg" alt="2025 Top 100 Open Source Projects">
     </a>
   </p>
 </div>
@@ -38,17 +38,14 @@
 
 <div align="center">
   <p>
-    <a href="https://deepwiki.com/HuLaSpark/HuLa">
+    <a href="https://deepwiki.com/llangkebo/hula">
       <img src="https://deepwiki.com/badge.svg" alt="DeepWiki">
     </a>
-    <a href="https://app.fossa.com/projects/git%2Bgithub.com%2FHuLaSpark%2FHuLa?ref=badge_shield">
-      <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FHuLaSpark%2FHuLa.svg?type=shield" alt="FOSSA Status">
+    <a href="https://app.fossa.com/projects/git%2Bgitee.com%2Fllangkebo%2Fhula?ref=badge_shield">
+      <img src="https://app.fossa.com/api/projects/git%2Bgitee.com%2Fllangkebo%2Fhula.svg?type=shield" alt="FOSSA Status">
     </a>
     <a href="https://www.bestpractices.dev/en/projects/9692">
       <img src="https://bestpractices.coreinfrastructure.org/projects/9692/badge" alt="CII Best Practices">
-    </a>
-    <a href="https://hulaspark.com">
-      <img src="../../public/hulaspark-badge.svg" alt="HuLaSpark">
     </a>
     <a href="https://discord.gg/WhSkvhNEeE">
       <img src="https://img.shields.io/badge/-Discord-5865F2?logo=discord&logoColor=white&labelColor=555555" alt="Discord">
@@ -78,9 +75,9 @@
   <h3>🔗 Quick Links</h3>
 
   <p>
-    💻 <strong>Website:</strong><a href="https://hulaspark.com">HuLaSpark</a> |
+    💻 <strong>Website:</strong><a href="https://cjystx.top">龙卷风</a> |
     📝 <strong>document：</strong><a href="docs/project_guide.md">Configuration and Tutorials</a> |
-    ☕️ <strong>Server:</strong><a href="https://github.com/HuLaSpark/synapse-rust">synapse-rust</a> |
+    ☕️ <strong>Server:</strong><a href="https://gitee.com/llangkebo/synapse-rust">synapse-rust</a> |
     💬 <strong>WeChat:</strong><code>cy2439646234</code>
   </p>
 </div>
@@ -89,13 +86,13 @@
   <a href="README.md">中文</a> |
   English |
   <!-- Keep these links. Translations will automatically update with the README. -->
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=de">Deutsch</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=es">Español</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=fr">français</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=ja">日本語</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=ko">한국어</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=pt">Português</a> |
-  <a href="https://www.readme-i18n.com/HuLaSpark/HuLa?lang=ru">Русский</a>
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=de">Deutsch</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=es">Español</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=fr">français</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=ja">日本語</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=ko">한국어</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=pt">Português</a> |
+  <a href="https://www.readme-i18n.com/llangkebo/hula?lang=ru">Русский</a>
 </p>
 
 ## 🌐 Supported Platforms
@@ -132,36 +129,36 @@ HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScr
 </div>
 
 <div align="center">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-1.webp" alt="img2-1" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-2.webp" alt="img2-2" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-3.webp" alt="img2-3" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-4.webp" alt="img2-4" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-5.webp" alt="img2-5" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-6.webp" alt="img2-6" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-7.webp" alt="img2-7" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-8.webp" alt="img2-8" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-9.webp" alt="img2-9" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-10.webp" alt="img2-10" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-11.webp" alt="img2-11" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-12.webp" alt="img2-12" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-13.webp" alt="img2-13" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-14.webp" alt="img2-14" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img2-15.webp" alt="img2-15" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-1.webp" alt="img2-1" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-2.webp" alt="img2-2" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-3.webp" alt="img2-3" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-4.webp" alt="img2-4" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-5.webp" alt="img2-5" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-6.webp" alt="img2-6" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-7.webp" alt="img2-7" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-8.webp" alt="img2-8" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-9.webp" alt="img2-9" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-10.webp" alt="img2-10" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-11.webp" alt="img2-11" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-12.webp" alt="img2-12" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-13.webp" alt="img2-13" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-14.webp" alt="img2-14" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img2-15.webp" alt="img2-15" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
 </div>
 
 <br/>
 
 <div align="center">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img.png" alt="img-main" width="280" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img_1.png" alt="img-conversation" width="280" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img_2.png" alt="img-contacts" width="280" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img_3.png" alt="img-settings" width="280" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img_4.png" alt="Message Features" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img_5.png" alt="Theme Switching" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img_6.png" alt="Emojis" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img_7.png" alt="Group Management" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img_8.png" alt="Personal Settings" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img_9.png" alt="File Transfer" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img.png" alt="img-main" width="280" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img_1.png" alt="img-conversation" width="280" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img_2.png" alt="img-contacts" width="280" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img_3.png" alt="img-settings" width="280" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img_4.png" alt="Message Features" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img_5.png" alt="Theme Switching" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img_6.png" alt="Emojis" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img_7.png" alt="Group Management" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img_8.png" alt="Personal Settings" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img_9.png" alt="File Transfer" width="280" style="border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 6px;">
 </div>
 
 <div align="center">
@@ -169,13 +166,13 @@ HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScr
 </div>
 
 <div align="center">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img3-1.webp" alt="img3-1" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img3-2.webp" alt="img3-2" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img3-3.webp" alt="img3-3" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img3-4.webp" alt="img3-4" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img3-5.webp" alt="img3-5" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img3-6.webp" alt="img3-6" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img3-7.webp" alt="img3-6" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img3-1.webp" alt="img3-1" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img3-2.webp" alt="img3-2" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img3-3.webp" alt="img3-3" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img3-4.webp" alt="img3-4" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img3-5.webp" alt="img3-5" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img3-6.webp" alt="img3-6" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img3-7.webp" alt="img3-6" width="220" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 8px;">
 </div>
 
 <br>
@@ -239,7 +236,7 @@ HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScr
 | 🎥 | Video Calling | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 | ⌨️ | Global Shortcut Control | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 | 📺 | Dedicated Media Viewer | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
-| 📁 | File Upload (Qiniu Cloud) | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
+| 📁 | File Upload | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 | 🔄 | Auto-update System | ![Completed](https://img.shields.io/badge/✅-Completed-008080?style=flat&labelColor=e6f7f7&color=008080) |
 
 ### 🌐 Cross-platform Support
@@ -261,24 +258,24 @@ HuLa is an instant messaging system built with Tauri, Vite 7, Vue 3, and TypeScr
 
 ## 👏 Thanks to all Contributors!
 
-<a href="https://openomy.com/HuLaSpark/HuLa" target="_blank" style="display: block; width: 100%;" align="center">
-  <img src="https://openomy.com/svg?repo=HuLaSpark/HuLa&chart=bubble&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
+<a href="https://openomy.com/llangkebo/hula" target="_blank" style="display: block; width: 100%;" align="center">
+  <img src="https://openomy.com/svg?repo=llangkebo/hula&chart=bubble&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
 </a>
 
 <br/>
 
-<a href="https://openomy.com/HuLaSpark/HuLa" target="_blank" style="display: block; width: 100%;" align="center">
-  <img src="https://openomy.com/svg?repo=HuLaSpark/HuLa&chart=list&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
+<a href="https://openomy.com/llangkebo/hula" target="_blank" style="display: block; width: 100%;" align="center">
+  <img src="https://openomy.com/svg?repo=llangkebo/hula&chart=list&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
 </a>
 
 <br/>
 
-<a href="https://openomy.com/HuLaSpark/HuLa" target="_blank" style="display: block; width: 100%;" align="center">
-  <img src="https://openomy.com/svg?repo=HuLaSpark/HuLa&chart=podium&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
+<a href="https://openomy.com/llangkebo/hula" target="_blank" style="display: block; width: 100%;" align="center">
+  <img src="https://openomy.com/svg?repo=llangkebo/hula&chart=podium&latestMonth=12" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
 </a>
 
 <!-- <a href="https://gitee.com/llangkebo/hula/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=HuLaSpark/HuLa" />
+  <img src="https://contrib.rocks/image?repo=llangkebo/hula" />
 </a> -->
 
 <br/>
@@ -314,7 +311,7 @@ Downloading installation packages from the web may show a damaged package prompt
 #### 1. Open "System Settings" - "Security & Privacy", check as shown: Allow apps downloaded from "Anywhere" to run:
 
 <div align="center">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/img_10.png" alt="img_10.png" />
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/img_10.png" alt="img_10.png" />
 </div>
 
 #### 2. If errors persist, execute the following commands in Terminal:
@@ -348,8 +345,8 @@ Execute **pnpm run commit** to invoke _git commit_ interaction, complete informa
 <p><em>If you find HuLa helpful, welcome to sponsor and support us. Your support is our motivation to keep moving forward!</em></p>
 
 <div>
- <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/zs.jpg" height="240" alt="WeChat Code">
-  <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/zfb.png" height="240" alt="Alipay Code">
+ <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/zs.jpg" height="240" alt="WeChat Code">
+  <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/zfb.png" height="240" alt="Alipay Code">
 </div>
 
 <br>
@@ -365,9 +362,9 @@ Execute **pnpm run commit** to invoke _git commit_ interaction, complete informa
   <p><em>Use the HuLa mobile app to scan the Issues group QR code below and share feedback anytime.</em></p>
 
   <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-    <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/wx.png" width="260" height="340" alt="WeChat Group QR Code">
-    <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/qq.jpg" width="260" height="340" alt="QQ Group QR Code">
-    <img src="https://raw.gitcode.com/HuLaSpark/HuLa/files/master/preview/HuLa-QR.png" width="315" height="315" alt="HuLa Issues Group QR Code">
+    <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/wx.png" width="260" height="340" alt="WeChat Group QR Code">
+    <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/qq.jpg" width="260" height="340" alt="QQ Group QR Code">
+    <img src="https://raw.gitee.com/llangkebo/hula/files/master/preview/HuLa-QR.png" width="315" height="315" alt="HuLa Issues Group QR Code">
   </div>
 </div>
 
@@ -432,7 +429,7 @@ Execute **pnpm run commit** to invoke _git commit_ interaction, complete informa
 
   > 📝 **Friendly Reminder**
   > This list is manually updated. If you have sponsored but are not listed, please contact us:
-  > 🐛 [GitHub Issue](https://gitee.com/llangkebo/hula/issues) | 📧 Email: `2439646234@qq.com` | 💬 WeChat: `cy2439646234`
+  > 🐛 [GitHub Issue](https://gitee.com/llangkebo/hula/issues) | 📧 Email: `656042408@qq.com` | 💬 WeChat: `cy2439646234`
 
   <br>
 </div>
@@ -445,8 +442,8 @@ Execute **pnpm run commit** to invoke _git commit_ interaction, complete informa
   <h3>⚖️ License Information</h3>
 
   <p>
-    <a href="https://app.fossa.com/projects/git%2Bgithub.com%2FHuLaSpark%2FHuLa?ref=badge_large">
-      <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FHuLaSpark%2FHuLa.svg?type=large" alt="FOSSA Status" style="max-width: 100%; border-radius: 8px;">
+    <a href="https://app.fossa.com/projects/git%2Bgitee.com%2Fllangkebo%2Fhula?ref=badge_large">
+      <img src="https://app.fossa.com/api/projects/git%2Bgitee.com%2Fllangkebo%2Fhula.svg?type=large" alt="FOSSA Status" style="max-width: 100%; border-radius: 8px;">
     </a>
   </p>
 

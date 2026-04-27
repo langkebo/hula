@@ -64,13 +64,15 @@
             <!-- 判断是否有特别的菜单项才需要分割线 -->
             <div v-if="visibleSpecialMenu.length > 0" class="flex-col-y-center gap-6px">
               <!-- 分割线（只有当常规菜单存在时才显示） -->
-              <div v-if="visibleMenu && visibleMenu.length > 0" class="h-1px bg-[--line-color] m-[2px_8px]"></div>
+              <div
+                v-if="visibleMenu && visibleMenu.length > 0"
+                class="h-1px bg-[--hula-border-default] m-[2px_8px]"></div>
               <div
                 @click="handleClick(item)"
                 class="menu-item"
                 :class="{ 'menu-item-danger': isDangerousItem(item) }"
-                v-for="item in visibleSpecialMenu"
-                :key="item.label">
+                v-for="(item, index) in visibleSpecialMenu"
+                :key="index">
                 <svg><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
                 <p class="h-24px">{{ getMenuItemProp(item, 'label') }}</p>
               </div>
@@ -134,11 +136,24 @@ import { useViewport } from '@/hooks/useViewport.ts'
 import { isMobile } from '@/utils/PlatformConstants'
 import { useI18n } from 'vue-i18n'
 
+type MenuContent = unknown
+type ContextMenuItem = OPT.RightMenu<MenuContent>
+type ReactionEmoji = {
+  url: string
+  value: number
+  title: string
+}
+
+type SizePayload = {
+  width: number
+  height: number
+}
+
 type Props = {
-  content?: Record<string, any>
-  menu?: any[]
-  emoji?: any[]
-  specialMenu?: any[]
+  content?: MenuContent
+  menu?: ContextMenuItem[]
+  emoji?: ReactionEmoji[]
+  specialMenu?: ContextMenuItem[]
 }
 const { t } = useI18n()
 
@@ -160,7 +175,7 @@ const displayedEmojis = computed(() => {
 // 使用计算属性过滤显示的菜单项
 const visibleMenu = computed(() => {
   // 检查是否有 visible 属性并作为函数调用
-  return props.menu?.filter((item: any) => {
+  return props.menu?.filter((item) => {
     if (typeof item.visible === 'function') {
       return item.visible(props.content) // 如果 visible 是函数，则调用它
     }
@@ -171,7 +186,7 @@ const visibleMenu = computed(() => {
 
 // 添加 specialMenu 的过滤功能
 const visibleSpecialMenu = computed(() => {
-  return props.specialMenu?.filter((item: any) => {
+  return props.specialMenu?.filter((item) => {
     if (typeof item.visible === 'function') {
       return item.visible(props.content)
     }
@@ -201,7 +216,7 @@ const w = ref(0)
 const h = ref(0)
 // 二级菜单状态
 const showSubmenu = ref(false)
-const activeSubmenu = ref<any[]>([])
+const activeSubmenu = ref<ContextMenuItem[]>([])
 const submenuPosition = ref({
   left: '0px',
   top: '0px'
@@ -284,13 +299,13 @@ watch(
   }
 )
 
-const handleSize = ({ width, height }: any) => {
+const handleSize = ({ width, height }: SizePayload) => {
   w.value = width
   h.value = height
 }
 
 /** 处理右键主菜单点击事件 */
-const handleClick = (item: string) => {
+const handleClick = (item: ContextMenuItem) => {
   nextTick(() => {
     showMenu.value = false
     emit('select', item)
@@ -298,7 +313,7 @@ const handleClick = (item: string) => {
 }
 
 /** 处理回复表情事件 */
-const handleReplyEmoji = (item: string) => {
+const handleReplyEmoji = (item: ReactionEmoji) => {
   if (!item) return
   nextTick(() => {
     showMenu.value = false
@@ -307,23 +322,25 @@ const handleReplyEmoji = (item: string) => {
 }
 
 // 处理子菜单项点击
-const handleSubItemClick = (item: any) => {
+const handleSubItemClick = (item: ContextMenuItem) => {
   if (typeof item.click === 'function') {
     item.click(props.content)
   }
   showSubmenu.value = false
 }
 
-const handleBeforeEnter = (el: any) => {
-  el.style.height = 0
+const handleBeforeEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = '0'
 }
 
-const handleEnter = (el: any) => {
-  el.style.height = 'auto'
-  const h = el.clientHeight
-  el.style.height = 0
+const handleEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = 'auto'
+  const h = element.clientHeight
+  element.style.height = '0'
   requestAnimationFrame(() => {
-    el.style.height = `${h}px`
+    element.style.height = `${h}px`
   })
 }
 
@@ -332,7 +349,7 @@ const handleEnter = (el: any) => {
  * @param item 菜单项
  * @param prop 属性名 ('icon' | 'label')
  */
-const getMenuItemProp = (item: any, prop: 'icon' | 'label') => {
+const getMenuItemProp = (item: ContextMenuItem, prop: 'icon' | 'label') => {
   return typeof item[prop] === 'function' ? item[prop](props.content) : item[prop]
 }
 
@@ -340,13 +357,13 @@ const getMenuItemProp = (item: any, prop: 'icon' | 'label') => {
  * 判断菜单项是否需要危险样式
  * @param item 菜单项
  */
-const isDangerousItem = (item: any) => {
+const isDangerousItem = (item: ContextMenuItem) => {
   const icon = getMenuItemProp(item, 'icon')
   return ['logout', 'forbid'].includes(icon)
 }
 
 // 修改 handleMouseEnter 函数
-const handleMouseEnter = (item: any, index: number) => {
+const handleMouseEnter = (item: ContextMenuItem, index: number) => {
   // 检查是否有子菜单（包括函数形式的 children）
   const hasChildren = typeof item.children === 'function' ? true : Array.isArray(item.children)
   if (!hasChildren) {
@@ -362,7 +379,12 @@ const handleMouseEnter = (item: any, index: number) => {
   }
 
   // 获取当前菜单项的位置
-  const menuItem = document.querySelectorAll('.menu-item')[index]
+  const menuItem = document.querySelectorAll<HTMLElement>('.menu-item')[index]
+  if (!menuItem) {
+    showSubmenu.value = false
+    return
+  }
+
   const rect = menuItem.getBoundingClientRect()
 
   // 计算子菜单的预期宽度和高度
@@ -402,7 +424,7 @@ const handleMouseEnter = (item: any, index: number) => {
 // 修改鼠标离开处理函数
 const handleMouseLeave = (e: MouseEvent) => {
   // 增加一个状态来跟踪鼠标移动
-  const relatedTarget = e.relatedTarget as HTMLElement
+  const relatedTarget = e.relatedTarget as HTMLElement | null
 
   // 如果鼠标是移动到子菜单或者子菜单的子元素上，则不关闭菜单
   if (relatedTarget?.closest('.context-submenu')) {
@@ -438,7 +460,7 @@ const isMouseInMainMenu = (e: MouseEvent) => {
 }
 
 // 添加判断是否显示箭头的函数
-const shouldShowArrow = (item: any) => {
+const shouldShowArrow = (item: ContextMenuItem) => {
   // 如果 children 是函数，先获取结果
   const children = typeof item.children === 'function' ? item.children(props.content) : item.children
 
@@ -502,7 +524,7 @@ const shouldShowArrow = (item: any) => {
     display: flex;
     align-items: center;
     &:hover {
-      background-color: var(--bg-menu-hover);
+      background-color: var(--hula-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;
       }
@@ -523,7 +545,7 @@ const shouldShowArrow = (item: any) => {
     display: flex;
     align-items: center;
     &:hover {
-      background-color: var(--bg-menu-hover);
+      background-color: var(--hula-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;
       }
@@ -544,7 +566,7 @@ const shouldShowArrow = (item: any) => {
     display: flex;
     align-items: center;
     &:hover {
-      background-color: var(--bg-menu-hover);
+      background-color: var(--hula-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;
       }
@@ -556,32 +578,32 @@ const shouldShowArrow = (item: any) => {
   @include menu-item-style();
   .emoji-container {
     -webkit-backdrop-filter: blur(10px);
-    background: var(--bg-menu);
+    background: var(--hula-menu-bg);
     /* 允许放置表情符号，每个28px宽，加上间隔 */
     @apply flex flex-wrap max-w-180px px-6px select-none;
   }
 
   .emoji-item {
-    @apply flex-center size-28px rounded-4px text-16px cursor-pointer hover:bg-[--emoji-hover];
+    @apply flex-center size-28px rounded-4px text-16px cursor-pointer hover:bg-[--hula-menu-hover];
   }
 
   .emoji-more-btn {
-    @apply flex-center size-28px px-4px rounded-4px text-12px cursor-pointer bg-[--bg-menu-hover] hover:bg-[--emoji-hover];
+    @apply flex-center size-28px px-4px rounded-4px text-12px cursor-pointer bg-[--hula-menu-hover] hover:bg-[--hula-menu-hover];
   }
   .menu-list {
     @include menu-list();
     width: max-content;
     .menu-item-disabled {
       @include menu-item();
-      color: var(--disabled-color);
+      color: var(--hula-text-disabled);
       svg {
-        color: var(--disabled-color);
+        color: var(--hula-text-disabled);
       }
     }
     .menu-item-danger {
-      color: #d03553;
+      color: var(--hula-color-danger-500);
       svg {
-        color: #d03553;
+        color: var(--hula-color-danger-500);
       }
     }
   }
@@ -593,15 +615,15 @@ const shouldShowArrow = (item: any) => {
     @include menu-list-wrap();
     .menu-item-disabled {
       @include menu-item-wrap();
-      color: var(--disabled-color);
+      color: var(--hula-text-disabled);
       svg {
-        color: var(--disabled-color);
+        color: var(--hula-text-disabled);
       }
     }
     .menu-item-danger {
-      color: #d03553;
+      color: var(--hula-color-danger-500);
       svg {
-        color: #d03553;
+        color: var(--hula-color-danger-500);
       }
     }
   }
@@ -616,9 +638,9 @@ const shouldShowArrow = (item: any) => {
     @include menu-list();
     min-width: 120px;
     .menu-item-danger {
-      color: #d03553;
+      color: var(--hula-color-danger-500);
       svg {
-        color: #d03553;
+        color: var(--hula-color-danger-500);
       }
     }
   }
@@ -648,7 +670,7 @@ const shouldShowArrow = (item: any) => {
       justify-self: end;
       width: 12px;
       height: 12px;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
     }
 
     .check-icon {

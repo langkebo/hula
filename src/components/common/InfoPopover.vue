@@ -4,9 +4,7 @@
     <!-- 背景 -->
     <img
       class="absolute rounded-t-8px z-2 top-0 left-0 w-full h-100px"
-      :class="
-        groupStore.getUserInfo(uid)?.wearingItemId === '6' ? 'object-contain bg-#e9e9e980 dark:bg-#111' : 'object-cover'
-      "
+      :class="groupStore.getUserInfo(uid)?.wearingItemId === '6' ? 'object-contain developer-cover' : 'object-cover'"
       :src="groupStore.getUserInfo(uid)?.wearingItemId === '6' ? '/hula.png' : '/img/dispersion-bg.png'"
       alt="" />
     <div class="h-20px"></div>
@@ -22,8 +20,8 @@
             round
             :size="80"
             :src="avatarSrc"
-            :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-            :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
+            :color="avatarColor"
+            :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
         </div>
 
         <!-- 在线状态点 -->
@@ -38,7 +36,9 @@
                 "
                 class="z-30 absolute top-72px left-72px border-(6px solid [--avatar-border-color]) rounded-full size-18px"
                 :class="[
-                  displayActiveStatus === OnlineEnum.ONLINE ? 'bg-#1ab292' : 'bg-#909090',
+                  displayActiveStatus === OnlineEnum.ONLINE
+                    ? 'bg-[--hula-color-primary-500]'
+                    : 'bg-[--hula-text-tertiary]',
                   isCurrentUserUid ? 'cursor-pointer' : 'cursor-default'
                 ]"></div>
             </template>
@@ -81,7 +81,7 @@
 
         <n-flex align="center" :size="8">
           <p
-            class="text-(18px [--chat-text-color]) w-fit"
+            class="text-(18px [--hula-text-secondary]) w-fit"
             :class="{ 'cursor-pointer text-underline': isCurrentUserUid }"
             @click="openEditInfo"
             style="
@@ -95,7 +95,7 @@
           </p>
           <span
             v-if="groupNickname && groupNickname !== groupStore.getUserInfo(uid)?.name"
-            class="text-(13px [--chat-text-color])">
+            class="text-(13px [--hula-text-secondary])">
             ({{ groupNickname }})
           </span>
         </n-flex>
@@ -104,11 +104,13 @@
         <n-flex align="center" :size="10">
           <n-flex align="center" :size="12">
             <p class="text-[--info-text-color]">{{ t('home.profile_card.labels.account') }}</p>
-            <span class="text-(12px [--chat-text-color])">{{ `${groupStore.getUserInfo(uid)?.account}` }}</span>
+            <span class="text-(12px [--hula-text-secondary])">{{ `${groupStore.getUserInfo(uid)?.account}` }}</span>
 
             <n-tooltip trigger="hover">
               <template #trigger>
-                <svg class="size-12px cursor-pointer hover:color-#909090 hover:transition-colors" @click="handleCopy">
+                <svg
+                  class="size-12px cursor-pointer hover:color-[--hula-text-tertiary] hover:transition-colors"
+                  @click="handleCopy">
                   <use href="#copy"></use>
                 </svg>
               </template>
@@ -118,21 +120,15 @@
             <!-- Gitee/GitHub/GitCode 标识 -->
             <n-tooltip v-if="linkedGitee">
               <template #trigger>
-                <svg class="size-18px color-#d5304f"><use href="#gitee-login"></use></svg>
+                <svg class="size-18px color-[--hula-color-danger-500]"><use href="#gitee-login"></use></svg>
               </template>
               <span>{{ t('home.profile_card.tooltip.bound_gitee') }}</span>
             </n-tooltip>
             <n-tooltip v-if="linkedGithub">
               <template #trigger>
-                <svg class="size-18px color-#303030 dark:color-#fefefe"><use href="#github-login"></use></svg>
+                <svg class="size-18px color-[--hula-text-primary]"><use href="#github-login"></use></svg>
               </template>
               <span>{{ t('home.profile_card.tooltip.bound_github') }}</span>
-            </n-tooltip>
-            <n-tooltip v-if="linkedGitcode">
-              <template #trigger>
-                <svg class="size-18px color-#d5304f"><use href="#gitcode-login"></use></svg>
-              </template>
-              <span>{{ t('home.profile_card.tooltip.bound_gitcode') }}</span>
             </n-tooltip>
           </n-flex>
         </n-flex>
@@ -141,7 +137,7 @@
       <!-- 地址 -->
       <n-flex align="center" :size="26" class="select-none">
         <span class="text-[--info-text-color]">{{ t('home.profile_card.labels.location') }}</span>
-        <span class="text-(13px [--chat-text-color])">
+        <span class="text-(13px [--hula-text-secondary])">
           {{ groupStore.getUserInfo(uid)?.locPlace || t('home.profile_card.location_unknown') }}
         </span>
       </n-flex>
@@ -158,14 +154,14 @@
                   :width="38"
                   :height="38"
                   :src="badgeStore.badgeById(id)?.img"
-                  :color="themes.content === ThemeEnum.DARK ? '' : '#c8c8c8'"
-                  :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  :color="badgeAvatarColor"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   @load="badgeLoadedMap[id] = true"
                   @error="badgeLoadedMap[id] = true" />
                 <n-popover trigger="hover" :show-arrow="false" placement="top">
                   <template #trigger>
                     <svg
-                      class="absolute -top-2px -right-2px size-12px bg-#fff dark:bg-#303030 rounded-full cursor-pointer shadow-sm p-1px">
+                      class="absolute -top-2px -right-2px size-12px bg-[--avatar-border-color] rounded-full cursor-pointer shadow-sm p-1px">
                       <use href="#tips"></use>
                     </svg>
                   </template>
@@ -209,30 +205,33 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { MittEnum, OnlineEnum, ThemeEnum } from '@/enums/index.ts'
-import { useCommon } from '@/hooks/useCommon.ts'
+import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import { leftHook } from '@/layout/left/hook'
-import { useBadgeStore } from '@/stores/badge'
-import { useChatStore } from '@/stores/chat'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStatusStore } from '@/stores/userStatus'
-import { useUserStore } from '@/stores/user'
+import { useBadgeStore } from '@/stores/domains/chat/badge'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { resolveDisplayActiveStatus } from '@/utils/presenceStatus'
 
 const { t } = useI18n()
 
-const { uid } = defineProps<{
+const { uid, activeStatus } = defineProps<{
   uid: string
   activeStatus?: OnlineEnum
 }>()
 const { createWebviewWindow } = useWindow()
-const { userUid, openMsgSession } = useCommon()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
+const avatarColor = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-inverse)'))
+const badgeAvatarColor = computed(() =>
+  settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-disabled)'
+)
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
@@ -240,6 +239,7 @@ const { openContent } = leftHook()
 const contactStore = useContactStore()
 const userStatusStore = useUserStatusStore()
 const userStore = useUserStore()
+const userUid = computed(() => userStore.userInfo!.uid)
 const badgeStore = useBadgeStore()
 const { stateList } = storeToRefs(userStatusStore)
 
@@ -252,8 +252,7 @@ const isCurrentUserUid = computed(() => userUid.value === uid)
 
 const providerFieldMap = {
   gitee: 'linkedGitee',
-  github: 'linkedGithub',
-  gitcode: 'linkedGitcode'
+  github: 'linkedGithub'
 } as const
 
 type OAuthProvider = keyof typeof providerFieldMap
@@ -275,7 +274,6 @@ const resolveLinkedState = (provider: OAuthProvider) => {
 /** 绑定标识（带当前用户信息兜底，同时兼容 oauthProviders 列表） */
 const linkedGitee = computed(() => resolveLinkedState('gitee'))
 const linkedGithub = computed(() => resolveLinkedState('github'))
-const linkedGitcode = computed(() => resolveLinkedState('gitcode'))
 /** 是否是我的好友 */
 const isMyFriend = computed(() => !!contactStore.contactsList.find((item) => item.uid === uid))
 /** 是否为群聊 */
@@ -295,7 +293,7 @@ const groupNickname = computed(() => {
 })
 // 显示的在线状态
 const displayActiveStatus = computed(() => {
-  return resolvedUserInfo.value?.activeStatus ?? OnlineEnum.OFFLINE
+  return resolveDisplayActiveStatus(activeStatus, resolvedUserInfo.value?.activeStatus)
 })
 
 // 计算当前用户状态图标
@@ -344,8 +342,7 @@ const handleCopy = () => {
 
 const addFriend = async () => {
   await createWebviewWindow(t('home.profile_card.modal.add_friend'), 'addFriendVerify', 380, 300, '', false, 380, 300)
-  globalStore.addFriendModalInfo.show = true
-  globalStore.addFriendModalInfo.uid = uid
+  globalStore.openAddFriendModal(uid)
 }
 
 let enableScroll = () => {}
@@ -372,7 +369,7 @@ onMounted(() => {
     .avatar-hover {
       opacity: 0;
       transition: opacity 0.4s ease-in-out;
-      background: rgba(0, 0, 0, 0.2);
+      background: var(--hula-overlay-mask-subtle);
       cursor: pointer;
     }
   }
@@ -384,7 +381,11 @@ onMounted(() => {
 
 .text-underline {
   &:hover {
-    @apply cursor-pointer underline underline-offset-3 decoration-2 decoration-[#606060];
+    @apply cursor-pointer underline underline-offset-3 decoration-2 decoration-[--hula-text-secondary];
   }
+}
+
+.developer-cover {
+  background: var(--hula-surface-panel-muted);
 }
 </style>

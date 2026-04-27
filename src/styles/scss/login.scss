@@ -1,24 +1,13 @@
-/** 改变输入框中的位置 */
-:deep(.n-input .n-input__input, .n-input .n-input__textarea) {
+:deep(.van-field .van-field__control) {
   margin-left: 22px;
 }
 
-/** 自定义密码输入框圆点样式 */
-:deep(.n-input .n-input__input-el[type="password"]) {
-  font-size: 22px !important; /* 增大圆点大小 */
-  font-family: 'Courier New', monospace !important; /* 使用等宽字体 */
+:deep(.van-field .van-field__control[type="password"]) {
+  font-size: 22px !important;
+  font-family: 'Courier New', monospace !important;
   line-height: 22px;
 }
 
-/** 隐藏naive UI的滚动条 */
-:deep(
-    .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--vertical > .n-scrollbar-rail__scrollbar,
-    .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--vertical > .n-scrollbar-rail__scrollbar
-  ) {
-  display: none;
-}
-
-/** 登录按钮样式 */
 .gradient-button {
   @apply text-#fff border-none;
   background: linear-gradient(to left, #7db1ac, #87c0c4);

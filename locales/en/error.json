@@ -1,0 +1,20 @@
+{
+  "matrix": {
+    "forbidden": "Permission denied",
+    "unknown_token": "Session expired, please log in again",
+    "missing_token": "Not logged in, please log in",
+    "rate_limited": "Too many requests, please try later",
+    "not_found": "Resource not found",
+    "bad_request": "Invalid request",
+    "user_in_use": "Username already taken",
+    "invalid_username": "Invalid username format",
+    "weak_password": "Password too weak",
+    "exclusive": "Exclusive operation",
+    "guest_forbidden": "Guest access not allowed, please register or log in",
+    "friend_exists": "Already friends",
+    "friend_pending": "Friend request pending",
+    "network": "Network disconnected, please check your connection",
+    "server_unavailable": "Server temporarily unavailable, please try later",
+    "unknown": "Operation failed, please try again"
+  }
+}

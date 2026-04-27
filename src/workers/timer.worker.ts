@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noConsole: Worker debug logging is intentionally gated and kept in this worker.
 /// <reference lib="webworker" />
 
 /** 修改类型定义以支持字符串和数字类型的key */
@@ -14,7 +15,7 @@ const timerIds = new Map<TimerId, TimerInfo>()
 let activeTimers = 0
 
 /** 周期性心跳定时器ID */
-let periodicHeartbeatId: NodeJS.Timeout | null = null
+let periodicHeartbeatId: ReturnType<typeof setInterval> | null = null
 
 /** 日志控制开关，默认不打印日志 */
 let ENABLE_LOGGING = false
@@ -52,7 +53,7 @@ const logDebugInfo = (msgId: TimerId, remainingTime: number) => {
  * @description 如何开启日志打印
  * @example timerWorker.postMessage({ type: 'setLogging', logging: true })
  */
-const safeLog = (message: string, ...args: any[]) => {
+const safeLog = (message: string, ...args: unknown[]) => {
   if (ENABLE_LOGGING) {
     console.log(message, ...args)
   }
@@ -165,7 +166,7 @@ self.onmessage = (e) => {
       periodicHeartbeatId = setInterval(() => {
         safeLog('[Worker] 发送心跳')
         self.postMessage({ type: 'periodicHeartbeat' })
-      }, interval || 9900) as any
+      }, interval || 9900)
 
       safeLog('[Worker] 心跳定时器已启动, 间隔:', interval, 'ms')
       break

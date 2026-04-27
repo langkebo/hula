@@ -10,94 +10,80 @@
     </template>
 
     <template #container>
-      <!-- 主要内容 -->
-      <n-flex vertical :size="14">
+      <div class="flex flex-col gap-14px">
         <!-- 搜索框 -->
         <div class="px-16px">
-          <n-input
-            v-model:value="searchValue"
-            type="text"
+          <van-field
+            v-model="searchValue"
             :placeholder="searchPlaceholder[searchType]"
-            :maxlength="20"
-            round
-            spellCheck="false"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
+            maxlength="20"
             clearable
+            autocomplete="off"
+            :spellcheck="false"
+            autocorrect="off"
+            autocapitalize="off"
             @keydown.enter="handleSearch"
-            @clear="handleClear">
-            <template #prefix>
-              <n-icon>
-                <svg class="icon" aria-hidden="true">
-                  <use href="#search" />
-                </svg>
-              </n-icon>
+            @clear="handleSearchClear">
+            <template #left-icon>
+              <svg class="w-14px h-14px"><use href="#search" /></svg>
             </template>
-          </n-input>
+          </van-field>
         </div>
 
         <!-- 搜索类型切换 -->
-        <n-tabs v-model:value="searchType" animated size="small" @update:value="handleTypeChange">
-          <n-tab-pane v-for="tab in tabs" :key="tab.name" :name="tab.name" :tab="tab.label">
-            <template>
-              <span>{{ tab.label }}</span>
-            </template>
-
+        <van-tabs v-model:active="searchType" animated shrink @update:active="handleTypeChange">
+          <van-tab v-for="tab in tabs" :key="tab.name" :name="tab.name" :title="tab.label">
             <!-- 初始加载状态 -->
             <template v-if="initialLoading">
-              <n-spin class="flex-center" style="height: calc(100vh / var(--page-scale, 1) - 200px)" size="large" />
+              <div class="flex-center" style="height: calc(100vh / var(--page-scale, 1) - 200px)">
+                <van-loading size="36px" />
+              </div>
             </template>
 
             <!-- 搜索结果 -->
             <template v-else-if="searchResults.length">
               <FloatBlockList
                 :data-source="searchResults"
-                item-key="id"
+                item-key="account"
                 :item-height="64"
                 max-height="calc(100vh / var(--page-scale, 1) - 128px)"
                 style-id="search-hover-classes">
                 <template #item="{ item }">
                   <div class="p-[0_20px] box-border">
-                    <n-flex align="center" :size="12" class="p-[8px_0] rounded-lg">
-                      <n-avatar
-                        :size="48"
+                    <div class="flex items-center gap-12px p-[8px_0] rounded-lg">
+                      <img
                         :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                        :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-                        :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                        round />
-                      <n-flex vertical justify="center" :size="10" class="flex-1">
-                        <n-space align="center" :size="10">
-                          <span class="text-(14px [--text-color])">{{ item.name }}</span>
+                        class="size-48px rounded-full object-cover"
+                        @error="
+                          ($event.target as HTMLImageElement).src =
+                            settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'
+                        " />
+                      <div class="flex flex-col justify-center gap-10px flex-1">
+                        <div class="flex items-center gap-10px">
+                          <span class="text-(14px [--hula-text-primary])">{{ item.name }}</span>
                           <template v-for="account in item.itemIds" :key="account">
                             <img class="size-20px" :src="badgeStore.badgeById(account)?.img" alt="" />
                           </template>
-                        </n-space>
-                        <n-flex align="center" :size="10">
-                          <span class="text-(12px [--chat-text-color])">{{ `账号：${item.account}` }}</span>
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <svg
-                                class="size-12px hover:color-#909090 hover:transition-colors"
-                                @click="handleCopy(item.account)">
-                                <use href="#copy"></use>
-                              </svg>
-                            </template>
-                            <span>复制账号</span>
-                          </n-tooltip>
-                        </n-flex>
-                      </n-flex>
+                        </div>
+                        <div class="flex items-center gap-10px">
+                          <span class="text-(12px [--hula-text-secondary])">{{ `账号：${item.account}` }}</span>
+                          <svg
+                            class="size-12px hover:color-#909090 hover:transition-colors cursor-pointer"
+                            @click="handleCopy(item.account)">
+                            <use href="#copy"></use>
+                          </svg>
+                        </div>
+                      </div>
 
-                      <!-- 三种状态的按钮 -->
-                      <n-button
-                        secondary
-                        :type="getButtonType(item.uid, item.roomId)"
+                      <van-button
+                        plain
+                        :type="getVantButtonType(item)"
                         size="small"
                         class="action-button"
                         @click="handleButtonClick(item)">
-                        {{ getButtonText(item.uid, item.roomId) }}
-                      </n-button>
-                    </n-flex>
+                        {{ getButtonText(item) }}
+                      </van-button>
+                    </div>
                   </div>
                 </template>
               </FloatBlockList>
@@ -105,35 +91,23 @@
 
             <!-- 搜索中状态 -->
             <template v-else-if="loading">
-              <n-spin class="flex-center" style="height: calc(100vh / var(--page-scale, 1) - 200px)" size="large" />
+              <div class="flex-center" style="height: calc(100vh / var(--page-scale, 1) - 200px)">
+                <van-loading size="36px" />
+              </div>
             </template>
 
             <!-- 搜索无结果状态 -->
             <template v-else-if="hasSearched">
-              <n-empty
-                class="flex-center"
-                style="height: calc(100vh / var(--page-scale, 1) - 200px)"
-                description="未找到相关结果" />
+              <van-empty description="未找到相关结果" />
             </template>
 
             <!-- 默认空状态 -->
             <template v-else>
-              <n-empty
-                style="height: calc(100vh / var(--page-scale, 1) - 200px)"
-                class="flex-center"
-                description="输入关键词搜索">
-                <template #icon>
-                  <n-icon>
-                    <svg>
-                      <use href="#explosion"></use>
-                    </svg>
-                  </n-icon>
-                </template>
-              </n-empty>
+              <van-empty description="输入关键词搜索" image="search" />
             </template>
-          </n-tab-pane>
-        </n-tabs>
-      </n-flex>
+          </van-tab>
+        </van-tabs>
+      </div>
     </template>
   </AutoFixHeightPage>
 </template>
@@ -141,286 +115,119 @@
 <script setup lang="ts">
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useDebounceFn } from '@vueuse/core'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
+import { useFriends, type FriendSearchResult } from '@/composables/useFriends'
 import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
-import type { FriendItem } from '@/services/types'
-import { useBadgeStore } from '@/stores/badge'
-import { useContactStore } from '@/stores/contacts'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStore } from '@/stores/user'
+import { useBadgeStore } from '@/stores/domains/chat/badge'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixContactService, matrixGroupService } from '@/services/matrix'
 import { isMobile } from '@/utils/PlatformConstants'
 import router from '@/router'
 
-const contactStore = useContactStore()
-const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const badgeStore = useBadgeStore()
-const { themes } = storeToRefs(settingStore)
-// 定义标签页
 const tabs = ref([
   { name: 'recommend', label: '推荐' },
   { name: 'user', label: '找好友' },
   { name: 'group', label: '找群聊' }
 ])
-// 搜索类型
-const searchType = ref<'recommend' | 'user' | 'group'>('recommend')
-// 搜索类型对应的placeholder映射
-const searchPlaceholder = {
+const {
+  searchType,
+  searchValue,
+  searchResults,
+  hasSearched,
+  loading,
+  initialLoading,
+  handleSearch,
+  handleClear: clearSearch,
+  handleTypeChange,
+  initialize,
+  getActionKind
+} = useFriends()
+
+const searchPlaceholder: Record<string, string> = {
   recommend: '输入推荐关键词',
   user: '输入昵称搜索好友',
   group: '输入群号搜索群聊'
 }
-// 搜索值
-const searchValue = ref('')
-// 搜索结果
-const searchResults = ref<any[]>([])
-// 是否已经搜索过
-const hasSearched = ref(false)
-// 加载状态
-const loading = ref(false)
-// 初始加载状态
-const initialLoading = ref(true)
 
-// 从缓存存储中获取用户数据
-const getCachedUsers = () => {
-  // 从缓存中获取所有用户
-  const users = groupStore.allUserInfo
-  console.log(users)
-
-  // 筛选出需要显示的用户（ID在20016-20030之间的用户）
-  return sortSearchResults(
-    users
-      .filter((user) => {
-        const uid = user.uid as string
-        return uid >= '20016' && uid <= '20030'
-      })
-      .map((user) => ({
-        uid: user.uid,
-        account: user.account,
-        name: user.name,
-        avatar: user.avatar,
-        itemIds: user.itemIds || null
-      })),
-    'recommend'
-  )
-}
-
-// 清空搜索结果
-const clearSearchResults = () => {
-  searchResults.value = []
-  hasSearched.value = false
-  searchValue.value = ''
-}
-
-// 处理复制账号
 const handleCopy = (account: string) => {
   navigator.clipboard.writeText(account)
   window.$message.success(`复制成功 ${account}`)
 }
 
-// 处理清空按钮点击
-const handleClear = () => {
-  clearSearchResults()
-
-  // 如果是推荐标签，重新加载推荐用户
-  if (searchType.value === 'recommend') {
-    searchResults.value = getCachedUsers()
-  }
-}
-
-// 处理搜索
-const handleSearch = useDebounceFn(async () => {
-  if (!searchValue.value.trim()) {
-    // 如果搜索框为空且是推荐标签，显示所有推荐用户
-    if (searchType.value === 'recommend') {
-      searchResults.value = getCachedUsers()
-    }
-    return
-  }
-
-  loading.value = true
-  hasSearched.value = true
-
+const handleSearchClear = () => {
   try {
-    if (searchType.value === 'group') {
-      const res = await matrixGroupService.searchGroup(searchValue.value)
-      searchResults.value = res.map((group: any) => ({
-        account: group.account,
-        name: group.name,
-        avatar: group.avatar,
-        deleteStatus: group.deleteStatus,
-        extJson: group.extJson,
-        roomId: group.roomId
-      }))
-    } else if (searchType.value === 'user') {
-      const res = await matrixContactService.searchFriend(searchValue.value)
-      searchResults.value = res.map((user: any) => ({
-        uid: user.uid,
-        name: user.name,
-        avatar: user.avatar,
-        account: user.account
-      }))
-    } else {
-      // 推荐标签搜索结果
-      const cachedUsers = getCachedUsers()
-      searchResults.value = cachedUsers.filter(
-        (user) =>
-          user?.name?.includes(searchValue.value) || (user.uid && user.uid.toString().includes(searchValue.value))
-      )
-    }
-    // 通用排序函数
-    searchResults.value = sortSearchResults(searchResults.value, searchType.value)
+    clearSearch()
   } catch (error) {
     window.$message.error('搜索失败')
-    searchResults.value = []
-  } finally {
-    loading.value = false
-  }
-}, 300)
-
-// 处理选项卡切换
-const handleTypeChange = () => {
-  clearSearchResults()
-
-  if (searchType.value === 'recommend') {
-    searchResults.value = getCachedUsers()
-  }
-}
-const groupStore = useGroupStore()
-// 判断是否已加入群聊
-const isInGroup = (roomId: string) => {
-  return groupStore.groupDetails.some((group) => group.roomId === roomId)
-}
-
-// 通用排序函数
-const sortSearchResults = (items: any[], type: 'user' | 'group' | 'recommend') => {
-  if (type === 'group') {
-    // 群聊排序逻辑：已加入的群聊排在前面
-    return items.sort((a, b) => {
-      const aInGroup = isInGroup(a.roomId)
-      const bInGroup = isInGroup(b.roomId)
-      if (aInGroup && !bInGroup) return -1
-      if (!aInGroup && bInGroup) return 1
-      return 0
-    })
-  } else {
-    // 用户排序逻辑：自己排在最前面，好友排在第二位
-    return items.sort((a, b) => {
-      // 处理uid可能是string或number的情况
-      const aUid = String(a.uid)
-      const bUid = String(b.uid)
-
-      // 自己排在最前面
-      if (isCurrentUser(aUid)) return -1
-      if (isCurrentUser(bUid)) return 1
-
-      // 好友排在第二位
-      const aIsFriend = isFriend(aUid)
-      const bIsFriend = isFriend(bUid)
-      if (aIsFriend && !bIsFriend) return -1
-      if (!aIsFriend && bIsFriend) return 1
-
-      return 0
-    })
   }
 }
 
-// 判断是否已经是好友
-const isFriend = (uid: string) => {
-  return contactStore.contactsList.some((contact: FriendItem) => contact.uid === uid)
-}
-
-// 判断是否是当前登录用户
-const isCurrentUser = (uid: string) => {
-  return userStore.userInfo!.uid === uid
-}
-
-// 获取按钮文本
-const getButtonText = (uid: string, roomId: string) => {
-  // 群聊逻辑
-  if (searchType.value === 'group') {
-    return isInGroup(roomId) ? '发消息' : '添加'
-  }
-  // 用户逻辑
-  if (isCurrentUser(uid)) return '编辑资料'
-  if (isFriend(uid)) return '发消息'
+const getButtonText = (item: FriendSearchResult) => {
+  const action = getActionKind(item)
+  if (action === 'edit-profile') return '编辑资料'
+  if (action === 'message') return '发消息'
   return '添加'
 }
 
-// 获取按钮类型
-const getButtonType = (uid: string, roomId: string) => {
-  // 群聊逻辑
-  if (searchType.value === 'group') {
-    return isInGroup(roomId) ? 'info' : 'primary'
-  }
-  // 用户逻辑
-  if (isCurrentUser(uid)) return 'default'
-  if (isFriend(uid)) return 'info'
+const getVantButtonType = (item: FriendSearchResult): 'default' | 'primary' | 'success' | 'warning' | 'danger' => {
+  const action = getActionKind(item)
+  if (action === 'edit-profile' || action === 'message') return 'default'
   return 'primary'
 }
 
-// 处理按钮点击
-const handleButtonClick = (item: any) => {
-  if (searchType.value === 'group') {
-    if (isInGroup(item.roomId)) {
+const handleButtonClick = (item: FriendSearchResult) => {
+  const action = getActionKind(item)
+  if (action === 'edit-profile') {
+    handleEditProfile()
+    return
+  }
+
+  if (action === 'message') {
+    if (searchType.value === 'group') {
       handleSendGroupMessage(item)
     } else {
-      handleAddFriend(item)
+      handleSendMessage(item)
     }
     return
   }
 
-  // 用户逻辑保持不变
-  if (isCurrentUser(item.uid)) {
-    handleEditProfile()
-  } else if (isFriend(item.uid)) {
-    handleSendMessage(item)
-  } else {
-    handleAddFriend(item)
-  }
+  handleAddFriend(item)
 }
 
-// 处理添加好友或群聊
-const handleAddFriend = async (item: any) => {
+const handleAddFriend = async (item: FriendSearchResult) => {
   if (searchType.value === 'user' || searchType.value === 'recommend') {
-    globalStore.addFriendModalInfo.uid = item.uid
+    globalStore.setAddFriendTarget(item.uid || '')
 
     router.push('/mobile/mobileFriends/confirmAddFriend')
   } else {
-    globalStore.addGroupModalInfo.account = item.account
-    globalStore.addGroupModalInfo.name = item.name
-    globalStore.addGroupModalInfo.avatar = item.avatar
+    globalStore.setAddGroupTarget({
+      account: item.account,
+      name: item.name,
+      avatar: item.avatar
+    })
 
     router.push('/mobile/mobileFriends/confirmAddGroup')
   }
 }
 
-// 处理编辑个人资料
 const handleEditProfile = async () => {
-  // 获取主窗口
   if (!isMobile()) {
     const homeWindow = await WebviewWindow.getByLabel('home')
-    // 激活主窗口
     await homeWindow?.setFocus()
   }
-  // 打开个人资料编辑窗口
   emitTo('home', 'open_edit_info')
 }
 
-// 处理发送消息
-const handleSendMessage = async (item: any) => {
+const handleSendMessage = async (item: FriendSearchResult) => {
   emitTo('home', 'search_to_msg', { uid: item.uid, roomType: RoomTypeEnum.SINGLE })
 }
 
-// 处理发送群消息
-const handleSendGroupMessage = async (item: any) => {
+const handleSendGroupMessage = async (item: FriendSearchResult) => {
   emitTo('home', 'search_to_msg', {
     uid: item.roomId,
     roomType: RoomTypeEnum.GROUP
@@ -428,22 +235,7 @@ const handleSendGroupMessage = async (item: any) => {
 }
 
 onMounted(async () => {
-  // await getCurrentWebviewWindow().show()
-
-  try {
-    // 初始化联系人列表
-    await contactStore.getContactList(true)
-
-    // 从缓存中获取推荐用户
-    const cachedUsers = getCachedUsers()
-
-    // 默认展示推荐用户
-    if (searchType.value === 'recommend') {
-      searchResults.value = cachedUsers
-    }
-  } finally {
-    initialLoading.value = false
-  }
+  await initialize()
 })
 </script>
 
@@ -463,12 +255,17 @@ onMounted(async () => {
   transform: scale(0.98);
 }
 
-/* 移除标签内容的内边距 */
-:deep(.n-tab-pane) {
-  padding: 0 !important;
+:deep(.van-cell.van-field) {
+  padding: 8px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.85);
 }
 
-:deep(.n-tabs .n-tabs-nav-scroll-wrapper) {
-  padding: 0 20px 10px !important;
+:deep(.van-cell.van-field::after) {
+  display: none;
+}
+
+:deep(.van-tab__panel) {
+  padding: 0;
 }
 </style>

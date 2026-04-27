@@ -6,8 +6,14 @@
           <img v-if="!minimal" src="/hula.png" class="logo-image" alt="HuLa Logo" />
           <div v-else class="minimal-logo">
             <svg class="w-48px h-48px" viewBox="0 0 100 100" fill="none">
-              <circle cx="50" cy="50" r="45" stroke="#13987f" stroke-width="4" fill="none" />
-              <path d="M30 50 L45 65 L70 35" stroke="#13987f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+              <circle cx="50" cy="50" r="45" stroke="var(--hula-color-primary-500)" stroke-width="4" fill="none" />
+              <path
+                d="M30 50 L45 65 L70 35"
+                stroke="var(--hula-color-primary-500)"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                fill="none" />
             </svg>
           </div>
         </div>
@@ -16,11 +22,11 @@
           <n-progress
             type="line"
             :show-indicator="false"
-            :color="'#13987f'"
-            :rail-color="'#13987f30'"
+            :color="'var(--hula-color-primary-500)'"
+            :rail-color="'color-mix(in srgb, var(--hula-color-primary-500) 30%, transparent)'"
             :percentage="percentage" />
           <n-flex justify="center" align="center" :gap="12">
-            <n-spin :size="12" :color="'#13987f'" />
+            <n-spin :size="12" :color="'var(--hula-color-primary-500)'" />
             <span class="loading-text">{{ loadingText }}</span>
           </n-flex>
         </div>
@@ -29,9 +35,7 @@
           <n-alert type="error" :show-icon="true">
             {{ errorMessage }}
           </n-alert>
-          <n-button v-if="retryable" type="primary" size="small" @click="$emit('retry')">
-            重试
-          </n-button>
+          <n-button v-if="retryable" type="primary" size="small" @click="$emit('retry')">{{ t('retry') }}</n-button>
         </div>
       </div>
     </div>
@@ -40,6 +44,7 @@
 
 <script setup lang="ts">
 import { NAlert } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 
 defineProps<{
   visible: boolean
@@ -54,6 +59,8 @@ defineProps<{
 defineEmits<{
   retry: []
 }>()
+
+const { t } = useI18n()
 </script>
 
 <style scoped>
@@ -64,7 +71,7 @@ defineEmits<{
   display: flex;
   justify-content: center;
   align-items: center;
-  background: var(--bg-popover, #ffffff);
+  background: var(--hula-surface-elevated);
 }
 
 .splash-screen.is-minimal {
@@ -107,7 +114,7 @@ defineEmits<{
 
 .loading-text {
   font-size: 14px;
-  color: #666;
+  color: var(--hula-text-secondary);
 }
 
 .error-section {

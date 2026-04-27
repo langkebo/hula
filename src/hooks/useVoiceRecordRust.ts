@@ -1,12 +1,14 @@
 import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import { startRecording, stopRecording } from 'tauri-plugin-mic-recorder-api'
-import { useUserStore } from '@/stores/user'
+import { useUserStore } from '@/stores/domains/user/user'
 import { calculateCompressionRatio, compressAudioToMp3, getAudioInfo } from '@/utils/AudioCompression'
 import { getImageCache } from '@/utils/PathUtil.ts'
 import { isMobile } from '@/utils/PlatformConstants'
 import { UploadSceneEnum } from '../enums'
 import { useUpload } from './useUpload'
 import { removeTempFile } from '@/utils/TempFileManager'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('VoiceRecordRust')
 
 // 导入worker计时器
 let timerWorker: Worker | null = null
@@ -75,7 +77,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
         }
 
         timerWorker.onerror = (error) => {
-          console.error('[VoiceRecord Worker Error]', error)
+          logger.error('Worker Error:', error)
         }
       }
 
@@ -88,7 +90,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
 
       options.onStart?.()
     } catch (error) {
-      console.error('开始录音失败:', error)
+      logger.error('开始录音失败:', error)
       window.$message?.error('录音失败')
       options.onError?.('录音失败')
     }
@@ -124,8 +126,8 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
         const audioData = await readFile(audioPath)
 
         // 获取原始音频信息
-        const originalInfo = await getAudioInfo(audioData.buffer as any)
-        console.log('原始音频信息:', {
+        const originalInfo = await getAudioInfo(audioData.buffer as ArrayBuffer)
+        logger.debug('原始音频信息:', {
           duration: `${originalInfo.duration.toFixed(2)}秒`,
           sampleRate: `${originalInfo.sampleRate}Hz`,
           channels: originalInfo.channels,
@@ -133,7 +135,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
         })
 
         // 压缩音频为MP3格式
-        const compressedBlob = await compressAudioToMp3(audioData.buffer as any, {
+        const compressedBlob = await compressAudioToMp3(audioData.buffer as ArrayBuffer, {
           channels: 1, // 单声道
           sampleRate: 22050, // 降低采样率
           bitRate: 64 // 较低比特率
@@ -141,7 +143,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
 
         // 计算压缩比
         const compressionRatio = calculateCompressionRatio(originalInfo.size, compressedBlob.size)
-        console.log('音频压缩完成:', {
+        logger.debug('音频压缩完成:', {
           originalSize: `${(originalInfo.size / 1024 / 1024).toFixed(2)}MB`,
           compressedSize: `${(compressedBlob.size / 1024 / 1024).toFixed(2)}MB`,
           compressionRatio: `${compressionRatio}%`
@@ -152,7 +154,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
 
         // 异步处理缓存，不阻塞UI更新
         saveAudioToCache(compressedBlob, duration).catch((error) => {
-          console.error('缓存音频文件失败:', error)
+          logger.error('缓存音频文件失败:', error)
           // 缓存失败不影响主要功能，只记录错误
         })
 
@@ -160,7 +162,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
         await removeTempFile(audioPath, { reason: '删除原始录音文件失败' })
       }
     } catch (error) {
-      console.error('停止录音或压缩失败:', error)
+      logger.error('停止录音或压缩失败:', error)
 
       // 确保录音状态被正确重置
       isRecording.value = false
@@ -188,7 +190,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
 
       // 调用Rust后端停止录音，但不处理返回的音频文件
       await stopRecording()
-      console.log('取消录音')
+      logger.debug('取消录音')
 
       isRecording.value = false
 
@@ -205,7 +207,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
         audioMonitor.value = null
       }
     } catch (error) {
-      console.error('取消录音失败:', error)
+      logger.error('取消录音失败:', error)
       // 确保状态被重置
       isRecording.value = false
       options.onError?.('取消录音失败')
@@ -258,12 +260,12 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       await file.write(new Uint8Array(arrayBuffer))
       await file.close()
 
-      console.log('音频文件已保存到:', fullPath)
+      logger.debug('音频文件已保存到:', fullPath)
 
       // 调用回调，传递本地路径
       options.onStop?.(audioBlob, duration, fullPath)
     } catch (error) {
-      console.error('保存音频文件失败:', error)
+      logger.error('保存音频文件失败:', error)
       window.$message?.error('音频保存失败')
       options.onError?.('音频保存失败')
     }

@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full w-full bg-[--center-bg-color] select-none cursor-default">
+  <div class="h-full w-full bg-[--hula-surface-panel] select-none cursor-default">
     <!-- 窗口头部 -->
     <ActionBar
       class="absolute right-0 w-full z-999"
@@ -9,7 +9,7 @@
 
     <!-- 标题 -->
     <p
-      class="absolute-x-center h-fit pt-6px text-(13px [--text-color]) select-none cursor-default"
+      class="absolute-x-center h-fit pt-6px text-(13px [--hula-text-primary]) select-none cursor-default"
       data-tauri-drag-region>
       {{ t('message.group_verify.title') }}
     </p>
@@ -21,8 +21,8 @@
           <n-avatar round size="large" :src="userInfo.avatar" />
 
           <n-flex vertical :size="10">
-            <p class="text-[--text-color]">{{ userInfo.name }}</p>
-            <p class="text-(12px [--text-color])">
+            <p class="text-[--hula-text-primary]">{{ userInfo.name }}</p>
+            <p class="text-(12px [--hula-text-primary])">
               {{ t('message.group_verify.account', { account: userInfo.account }) }}
             </p>
           </n-flex>
@@ -42,7 +42,7 @@
           type="textarea"
           :placeholder="t('message.group_verify.placeholder')" />
 
-        <n-button class="mt-120px" color="#13987f" @click="addFriend">
+        <n-button class="mt-120px" color="var(--color-primary)" @click="addFriend">
           {{ t('message.group_verify.send_btn') }}
         </n-button>
       </n-flex>
@@ -51,29 +51,24 @@
 </template>
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useCommon } from '@/hooks/useCommon.ts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useUserStore } from '@/stores/user.ts'
-import { matrixGroupService } from '@/services/matrix'
+import { countGraphemes } from '@/hooks/useCommon.ts'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
+
+const logger = createLogger('AddGroupVerify')
 
 const { t } = useI18n()
-const globalStore = useGlobalStore()
 const userStore = useUserStore()
-const { countGraphemes } = useCommon()
 const requestMsgAutosize = { minRows: 3, maxRows: 3 }
-const userInfo = ref(globalStore.addGroupModalInfo)
-const requestMsg = ref()
-
-watch(
-  () => globalStore.addGroupModalInfo,
-  (newUid) => {
-    userInfo.value = { ...newUid }
-  }
+const { userInfo, requestMsg, syncDefaultMessage, submitRequest } = useGroupRequestConfirm(
+  computed(() => t('message.group_verify.default_msg', { name: userStore.userInfo!.name }))
 )
 
 const addFriend = async () => {
-  await matrixGroupService.applyGroup(String(globalStore.addGroupModalInfo.account))
+  const submitted = await submitRequest()
+  if (!submitted) return
   window.$message.success(t('message.group_verify.toast_success'))
   setTimeout(async () => {
     await getCurrentWebviewWindow().close()
@@ -81,10 +76,10 @@ const addFriend = async () => {
 }
 
 onMounted(async () => {
-  console.log(userInfo.value)
+  logger.debug('userInfo', userInfo.value)
 
   await getCurrentWebviewWindow().show()
-  requestMsg.value = t('message.group_verify.default_msg', { name: userStore.userInfo!.name })
+  syncDefaultMessage()
 })
 </script>
 

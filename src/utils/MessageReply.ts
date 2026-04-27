@@ -1,6 +1,6 @@
 import { MsgEnum } from '@/enums'
 import type { MsgType } from '@/services/types'
-import type { MessageType } from '@/stores/chat'
+import type { MessageType } from '@/stores/domains/chat/chat'
 
 /**
  * 根据消息类型获取回复内容

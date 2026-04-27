@@ -22,11 +22,16 @@ import { getVersion } from '@tauri-apps/api/app'
 import { confirm } from '@tauri-apps/plugin-dialog'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { check } from '@tauri-apps/plugin-updater'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStore } from '@/stores/user.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isMac } from '@/utils/PlatformConstants'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+import { TimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('LeftModel')
+const timerManager = new TimerManager()
 
 const formRef = ref<FormInst | null>()
 const formValue = ref({
@@ -50,7 +55,7 @@ export const lock = ref({
       lock.value.loading = true
       lockScreen.value.password = formValue.value.lockPassword
       lockScreen.value.enable = true
-      setTimeout(async () => {
+      timerManager.setTimeout(async () => {
         /** 发送锁屏事件，当打开的窗口接受到后会自动锁屏 */
         await emit(EventEnum.LOCK_SCREEN)
         lock.value.loading = false
@@ -70,7 +75,7 @@ export const LockScreen = defineComponent(() => {
   lock.value.rules.lockPassword.message = t('message.lock_screen.validation_required')
   return () => (
     <NModal v-model:show={modalShow.value} maskClosable={false} class="w-350px border-rd-8px">
-      <div class="bg-[--bg-popover] w-360px h-full p-6px box-border flex flex-col">
+      <div class="bg-[--hula-surface-elevated] w-360px h-full p-6px box-border flex flex-col">
         {isMac() ? (
           <div
             onClick={() => (modalShow.value = false)}
@@ -90,7 +95,7 @@ export const LockScreen = defineComponent(() => {
 
             <NAvatar bordered round size={80} src={AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)} />
 
-            <p class="text-(14px center [--text-color]) truncate w-200px">{userStore.userInfo!.name}</p>
+            <p class="text-(14px center [--hula-text-primary]) truncate w-200px">{userStore.userInfo!.name}</p>
           </NFlex>
           <NForm ref={formRef} model={formValue.value} rules={lock.value.rules}>
             <NFormItem
@@ -231,7 +236,7 @@ export const CheckUpdate = defineComponent(() => {
         try {
           await relaunch()
         } catch (e) {
-          console.log(e)
+          logger.debug(String(e))
           window.$message.error(t('message.check_update.restart_failed'))
         }
       })
@@ -255,7 +260,7 @@ export const CheckUpdate = defineComponent(() => {
         }
         newVersion.value = e.version
         // 检查版本之间不同的提交信息和提交日期
-        const url = `https://gitee.com/api/v5/repos/HuLaSpark/HuLa/releases/tags/v${newVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
+        const url = `https://gitee.com/api/v5/repos/llangkebo/hula/releases/tags/v${newVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
         getCommitLog(url, true)
         buttonState.value = 'update_now'
         checkLoading.value = false
@@ -273,13 +278,13 @@ export const CheckUpdate = defineComponent(() => {
 
   onMounted(async () => {
     await init()
-    const url = `https://gitee.com/api/v5/repos/HuLaSpark/HuLa/releases/tags/v${currentVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
+    const url = `https://gitee.com/api/v5/repos/llangkebo/hula/releases/tags/v${currentVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
     await getCommitLog(url)
     await checkUpdate()
   })
   return () => (
     <NModal v-model:show={modalShow.value} maskClosable={false} class="w-350px border-rd-8px">
-      <div class="bg-[--bg-popover] w-500px h-full p-6px box-border flex flex-col">
+      <div class="bg-[--hula-surface-elevated] w-500px h-full p-6px box-border flex flex-col">
         {isMac() ? (
           <div
             onClick={() => (modalShow.value = false)}

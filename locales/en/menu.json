@@ -31,6 +31,9 @@
   "add_friend": "Add Friend",
   "report": "Report",
   "ctx_menu_more": "More",
+  "context_menu_actions": "Context menu",
+  "context_menu_reactions": "Reaction menu",
+  "context_submenu_actions": "Submenu",
   "set_admin": "Make admin",
   "set_admin_success": "Admin added",
   "set_admin_fail": "Grant admin failed",
@@ -63,5 +66,63 @@
   "today": "Today",
   "yesterday": "Yesterday",
   "start_group_chat": "New Chat",
-  "add_contact": "Add Contact"
+  "add_contact": "Add Contact",
+  "user_menu": {
+    "status": {
+      "title": "Set Status",
+      "online": "Online",
+      "away": "Away",
+      "busy": "Busy",
+      "offline": "Invisible",
+      "updated": "Status updated"
+    },
+    "sections": {
+      "quick_actions": "Quick Actions",
+      "friend_management": "Friend Management",
+      "settings": "Settings",
+      "help": "Help",
+      "account": "Account"
+    },
+    "items": {
+      "send_message": "Send Message",
+      "encrypted_chat": "Encrypted Chat",
+      "set_favorite": "Set as Favorite",
+      "set_normal": "Set as Normal Friend",
+      "set_blocked": "Block",
+      "remove_friend": "Remove Friend",
+      "notifications": "Notifications",
+      "security_privacy": "Security & Privacy",
+      "account_settings": "Account Settings",
+      "device_management": "Device Management",
+      "help_about": "Help & About",
+      "my_home": "My Home"
+    },
+    "dialogs": {
+      "select_friend": {
+        "title": "Select Friend",
+        "content": "Choose a friend from the friend list before continuing.",
+        "positive": "Open Friend List"
+      },
+      "remove_friend": {
+        "title": "Remove Friend",
+        "content": "Remove this friend? You need to add them again afterward.",
+        "positive": "Remove",
+        "redirect_hint": "Select the friend you want to remove in the friend list.",
+        "failed": "Operation failed"
+      },
+      "encrypted_chat": {
+        "title": "Select Friend",
+        "content": "Choose a friend from the friend list to start an encrypted chat.",
+        "positive": "Open Friend List"
+      },
+      "logout": {
+        "title": "Sign Out",
+        "content": "Are you sure you want to sign out? You need to log in again to continue.",
+        "positive": "Sign Out",
+        "loading": "Signing out...",
+        "success": "Signed out",
+        "failed": "Failed to sign out"
+      }
+    }
+  }
 }

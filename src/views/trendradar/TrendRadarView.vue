@@ -148,7 +148,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useTrendRadar } from '@/services/trendradar'
-import type { TrendRadarNews } from '@/services/trendradar'
+import type { TrendRadarNews, TrendRadarTopic, TrendRadarRssArticle } from '@/services/trendradar'
 import NewsCard from '@/components/trendradar/NewsCard.vue'
 import TrendingPanel from '@/components/trendradar/TrendingPanel.vue'
 import SearchPanel from '@/components/trendradar/SearchPanel.vue'
@@ -170,8 +170,8 @@ const analyzeLoading = ref(false)
 
 const newsList = ref<TrendRadarNews[]>([])
 const searchResults = ref<TrendRadarNews[]>([])
-const trendingTopics = ref<any[]>([])
-const rssList = ref<TrendRadarNews[]>([])
+const trendingTopics = ref<TrendRadarTopic[]>([])
+const rssList = ref<TrendRadarRssArticle[]>([])
 
 const inputKeyword = ref('')
 const analyzeKeyword = ref('')
@@ -203,7 +203,7 @@ const handleNewsClick = (news: TrendRadarNews) => {
   }
 }
 
-const handleTopicClick = (topic: any) => {
+const handleTopicClick = (topic: TrendRadarTopic) => {
   analyzeKeyword.value = topic.name || topic.topic || topic.title || ''
   activeTab.value = 'analyze'
 }
@@ -304,8 +304,8 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--line-color);
-  background: var(--bg-popover);
+  border-bottom: 1px solid var(--hula-border-default);
+  background: var(--hula-surface-elevated);
 }
 
 .trendradar-view__header-left {
@@ -318,13 +318,13 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
 }
 
 .trendradar-view__title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   margin: 0;
 }
 
@@ -338,7 +338,7 @@ onMounted(() => {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   transition: transform 0.3s ease;
 }
 
@@ -355,11 +355,11 @@ onMounted(() => {
 .trendradar-view__sidebar {
   width: 100px;
   padding: 12px;
-  border-right: 1px solid var(--line-color);
+  border-right: 1px solid var(--hula-border-default);
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
 }
 
 .trendradar-view__nav-item {
@@ -370,14 +370,14 @@ onMounted(() => {
   padding: 12px 8px;
   border-radius: 8px;
   cursor: pointer;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   font-size: 12px;
   transition: all 0.2s ease;
 }
 
 .trendradar-view__nav-item:hover {
-  background: var(--bg-hover);
-  color: var(--chat-text-color);
+  background: var(--hula-surface-list-hover);
+  color: var(--hula-text-secondary);
 }
 
 .trendradar-view__nav-item--active {
@@ -421,7 +421,7 @@ onMounted(() => {
 .trendradar-view__panel-header h3 {
   font-size: 16px;
   font-weight: 600;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   margin: 0;
 }
 
@@ -434,7 +434,7 @@ onMounted(() => {
   justify-content: center;
   gap: 12px;
   padding: 60px 20px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   font-size: 14px;
 }
 
@@ -460,20 +460,20 @@ onMounted(() => {
 .trendradar-view__analyze-icon {
   width: 16px;
   height: 16px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 }
 
 .trendradar-view__analyze-result {
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
   border-radius: 8px;
   padding: 16px;
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
 }
 
 .trendradar-view__analyze-content {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   white-space: pre-wrap;
 }
 
@@ -481,13 +481,13 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   padding: 12px 16px;
-  border-top: 1px solid var(--line-color);
-  background: var(--bg-popover);
+  border-top: 1px solid var(--hula-border-default);
+  background: var(--hula-surface-elevated);
 }
 
 .trendradar-view__input-icon {
   width: 16px;
   height: 16px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 }
 </style>

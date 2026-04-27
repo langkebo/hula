@@ -2,11 +2,11 @@
   <img width="350px" height="150px" src="public/hula.png"/>
 </p>
 
-<p align="center">一款基于Tauri、Vite 7、Vue 3 和 TypeScript 构建的即时通讯系统</p>
+<p align="center">一款基于Tauri、Vite 7、Vue 3 和 TypeScript 构建的通讯系统</p>
 
 <div align="center">
   <a href="https://trendshift.io/repositories/15187" target="_blank">
-    <img src="https://trendshift.io/api/badge/repositories/15187" alt="HuLaSpark%20%20HuLa | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+    <img src="https://trendshift.io/api/badge/repositories/15187" alt="龙卷风%20%20HuLa | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
   </a>
   <a href="https://hellogithub.com/repository/743b101346c54f6cb5c20eed2edbaa40" target="_blank">
     <img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=743b101346c54f6cb5c20eed2edbaa40&claim_uid=WsQaY6SlnL7qxG3&theme=neutral" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" />
@@ -21,13 +21,13 @@
       <img src="https://gitee.com/llangkebo/hula/badge/star.svg?theme=gvp" alt="Gitee Stars">
     </a>
     <a href="https://gitee.com/llangkebo/hula/stargazers">
-      <img src="https://img.shields.io/github/stars/HulaSpark/HuLa?style=social" alt="GitHub Stars">
+      <img src="https://img.shields.io/github/stars/llangkebo/hula?style=social" alt="GitHub Stars">
     </a>
-    <a href="https://gitcode.com/HuLaSpark/HuLa">
-      <img src="https://gitcode.com/HuLaSpark/HuLa/star/badge.svg" alt="GitCode Stars">
+    <a href="https://gitcode.com/llangkebo/hula">
+      <img src="https://gitcode.com/llangkebo/hula/star/badge.svg" alt="GitCode Stars">
     </a>
-    <a href="https://gitcode.com/HuLaSpark/HuLa">
-      <img src="https://atomgit.com/HuLaSpark/HuLa/star/2025top.svg" alt="2025百大开源项目">
+    <a href="https://gitcode.com/llangkebo/hula">
+      <img src="https://atomgit.com/llangkebo/hula/star/2025top.svg" alt="2025百大开源项目">
     </a>
   </p>
 </div>
@@ -36,17 +36,14 @@
 
 <div align="center">
   <p>
-    <a href="https://deepwiki.com/HuLaSpark/HuLa">
+    <a href="https://deepwiki.com/llangkebo/hula">
       <img src="https://deepwiki.com/badge.svg" alt="DeepWiki">
     </a>
-    <a href="https://app.fossa.com/projects/git%20Bgithub.com%20FHuLaSpark%20FHuLa?ref=badge_shield">
-      <img src="https://app.fossa.com/api/projects/git%20Bgithub.com%20FHuLaSpark%20FHuLa.svg?type=shield" alt="FOSSA Status">
+    <a href="https://app.fossa.com/projects/git%20Bgithub.com%20F龙卷风%20FHuLa?ref=badge_shield">
+      <img src="https://app.fossa.com/api/projects/git%20Bgithub.com%20F龙卷风%20FHuLa.svg?type=shield" alt="FOSSA Status">
     </a>
     <a href="https://www.bestpractices.dev/zh-CN/projects/9692">
       <img src="https://bestpractices.coreinfrastructure.org/projects/9692/badge" alt="CII Best Practices">
-    </a>
-    <a href="https://hulaspark.com">
-      <img src="public/hulaspark-badge.svg" alt="HuLaSpark">
     </a>
     <a href="https://discord.gg/WhSkvhNEeE">
       <img src="https://img.shields.io/badge/-Discord-5865FF?logo=discord&logoColor=white&labelColor=555555" alt="Discord">
@@ -59,9 +56,9 @@
 <div align="center">
   <h3>🔗 快速链接</h3>
   <p>
-    💻 <strong>官网：</strong><a href="https://hulaspark.com">HuLaSpark</a> |
+    💻 <strong>官网：</strong><a href="https:matrixhulasparcom">龙卷风</a> |
     📝 <strong>启动文档：</strong><a href="docs/project_guide.md">环境配置及其启动教程</a> |
-    💬 <strong>服务端：</strong><a href="https://github.com/HuLaSpark/synapse-rust">synapse-rust</a> |
+    💬 <strong>服务端：</strong><a href="https://github.com/langkebo/synapse-rust">synapse-rust</a> |
     📱 <strong>微信：</strong><code>cy2439646234</code>
   </p>
 </div>
@@ -84,7 +81,27 @@
 
 ## 📝 项目介绍
 
-HuLa 是一款基于 Tauri、Vite 7、Vue 3 和 TypeScript 构建的即时通讯系统。它利用了 Tauri 的跨平台能力和 Vue 3 的响应式设计，结合了 TypeScript 的类型安全特性和 Vite 7 的快速构建，为用户提供了一个高效、安全和易用的通讯解决方案。
+HuLa 是一款基于 Tauri、Vite 7、Vue 3 和 TypeScript 构建的通讯系统。它利用了 Tauri 的跨平台能力和 Vue 3 的响应式设计，结合了 TypeScript 的类型安全特性 and Vite 7 的快速构建，为用户提供了一个高效、安全和易用的通讯解决方案。
+
+### 核心技术架构
+
+HuLa 采用三层架构设计，确保高性能与可维护性：
+
+| 层级 | 技术 | 说明 |
+|------|------|------|
+| **前端应用** | Tauri + Vue 3 + TypeScript | 跨平台桌面/移动应用 |
+| **SDK 层** | matrix-js-sdk (本地) | Matrix 协议封装与扩展 |
+| **后端服务** | synapse-rust | Rust 编写的 Matrix Homeserver |
+
+### 后端对接
+
+HuLa 通过集成本地 [matrix-js-sdk](https://github.com/langkebo/matrix-js-sdk) 实现与 [synapse-rust](https://github.com/langkebo/synapse-rust) 后端的完整对接：
+
+- **Matrix Client API**: 标准 Matrix 协议接口，覆盖认证、房间、消息、媒体等核心能力
+- **synapse-rust 扩展**: Rust 后端特有的增强功能，包括好友关系、Widget、语音消息等
+- **throwOnError 模式**: 遵循 SDK 错误处理规范，读取操作默认抛出异常，确保错误可观测性
+
+详细 API 契约请参考 [matrix-js-sdk API 契约文档](./matrix-js-sdk/docs/api-contract/)。
 
 ## 🛠️ 技术栈
 
@@ -165,11 +182,13 @@ pnpm run tauri:build
 
 ## ⚠️ 注意事项
 
-1. **本地 SDK 集成**: 项目使用 `link:../matrix-js-sdk` 方式集成本地 Matrix SDK
-2. **开发环境**: 需要同时运行 hula 和 matrix-js-sdk 项目
-3. **依赖管理**: 使用 pnpm 作为包管理器
-4. **类型检查**: 运行 `pnpm vue-tsc --noEmit` 进行类型检查
-5. **代码规范**: 遵循 `.trae/rules/project_rules.md` 中的规范
+1. **本地 SDK 集成**: 项目使用 `link:../matrix-js-sdk` 方式集成本地 Matrix SDK，通过该 SDK 实现与 synapse-rust 后端的完整对接
+2. **后端服务**: 项目对接 [synapse-rust](https://gitee.com/llangkebo/synapse-rust) 作为 Matrix Homeserver，支持标准 Matrix 协议及 Rust 后端扩展能力
+3. **API 契约遵循**: 所有 SDK 调用遵循 [matrix-js-sdk API 契约](./matrix-js-sdk/docs/api-contract/) 中的 throwOnError 错误处理模式
+4. **依赖管理**: 使用 pnpm 作为包管理器
+5. **类型检查**: 运行 `pnpm vue-tsc --noEmit` 进行类型检查
+6. **代码规范**: 遵循 `.trae/rules/project_rules.md` 中的规范
+7. **开发环境**: 需同时运行 hula、matrix-js-sdk 和 synapse-rust 三个项目
 
 ## 📋 提交规范
 

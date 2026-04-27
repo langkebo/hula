@@ -34,6 +34,7 @@
         </div>
       </div>
     </transition>
+    <SettingsDialog />
   </div>
 </template>
 
@@ -43,34 +44,37 @@ import { info } from '@tauri-apps/plugin-log'
 import { useI18n } from 'vue-i18n'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
 import { useCheckUpdate } from '@/hooks/useCheckUpdate'
-import { useLogin } from '@/hooks/useLogin'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global.ts'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isMobile, isWindows } from '@/utils/PlatformConstants'
 import { MittEnum, MsgEnum, NotificationTypeEnum, TauriCommand } from '@/enums'
-import { clearListener, initListener, readCountQueue } from '@/utils/ReadCountQueue'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { UserAttentionType } from '@tauri-apps/api/window'
-import type { MessageType } from '@/stores/chat'
+import type { MessageType } from '@/stores/domains/chat/chat'
 import { WsResponseMessageType } from '@/enums'
-import { useChatStore } from '@/stores/chat'
-import { useFileStore } from '@/stores/file'
-import { useUserStore } from '@/stores/user'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useInitialSyncStore } from '@/stores/initialSync.ts'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useFileStore } from '@/stores/domains/widget/file'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useInitialSyncStore } from '@/stores/domains/chat/initialSync'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useRoute } from 'vue-router'
 import { audioManager } from '@/utils/AudioManager'
 import { useOverlayController } from '@/hooks/useOverlayController'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { usePrivacyProtection } from '@/composables/usePrivacyProtection'
 import PrivacyOverlay from '@/components/privacy/PrivacyOverlay.vue'
 import { RoomTypeEnum } from '@/enums'
 import { getFilesMeta } from '@/utils/PathUtil'
 import FileUtil from '@/utils/FileUtil'
 import type { FilesMeta } from '@/services/types'
+import { createLogger } from '@/utils/Logger'
+import SettingsDialog from '@/views/settingsWindow/SettingsDialog.vue'
+
+const logger = createLogger('Layout')
 
 const { t } = useI18n()
 const route = useRoute()
@@ -86,7 +90,7 @@ const hasCachedSessions = computed(() => chatStore.sessionList.length > 0)
 const appWindow = WebviewWindow.getCurrent()
 const loadingPercentage = ref(10)
 const loadingText = ref(t('home.loading.app'))
-const { resetLoginState, logout, init } = useLogin()
+const { logout, init } = useLoginFlow()
 // 是否需要阻塞首屏并做初始化同步
 const requiresInitialSync = ref(true)
 const shouldBlockInitialRender = computed(() => requiresInitialSync.value && !hasCachedSessions.value)
@@ -99,7 +103,7 @@ const { overlayVisible, markAsyncLoaded } = useOverlayController({
 
 const { isPrivacyMode, settings, enterPrivateChat, leavePrivateChat, generateWatermark } = usePrivacyProtection({
   onPrivacyChange: (isPrivate) => {
-    console.info('[Layout] 隐私模式变更:', isPrivate)
+    logger.info('隐私模式变更:', isPrivate)
   }
 })
 
@@ -147,7 +151,7 @@ const runInitWithMode = (_block: boolean) => {
   })
 
   return p.catch((error) => {
-    console.error('[layout] 初始化失败:', error)
+    logger.error('初始化失败:', error)
     throw error
   })
 }
@@ -227,9 +231,8 @@ const tauriFileDropUnlisteners: UnlistenFn[] = []
 // 导入Web Worker
 const timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url))
 
-// 添加错误处理
 timerWorker.onerror = (error) => {
-  console.error('[Worker Error]', error)
+  logger.error('Worker Error', error)
 }
 
 // 监听 Worker 消息
@@ -244,10 +247,7 @@ watch(
   () => appWindow.label === 'home',
   (newValue) => {
     if (newValue) {
-      // 初始化监听器
-      initListener()
-      // 读取消息队列
-      readCountQueue()
+      // 窗口就绪
     }
   },
   { immediate: true }
@@ -284,7 +284,7 @@ const playMessageSound = async () => {
     audio.volume = Math.min(1, Math.max(0, volume / 100))
     await audioManager.play(audio, 'message-notification')
   } catch (error) {
-    console.warn('播放消息音效失败:', error)
+    logger.warn('播放消息音效失败:', error)
   }
 }
 
@@ -391,8 +391,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
             await home.requestUserAttention(UserAttentionType.Critical)
           }
         } catch (error) {
-          console.warn('检查窗口状态失败:', error)
-          // 如果检查失败，默认播放音效
+          logger.warn('检查窗口状态失败:', error)
           shouldPlaySound = true
         }
       } else {
@@ -432,7 +431,7 @@ const buildPathUploadFiles = async (paths: string[]) => {
     const filesMeta = (await getFilesMeta<FilesMeta>(paths)) ?? []
     return await FileUtil.map2PathUploadFile(paths, filesMeta)
   } catch (error) {
-    console.error('[layout] 解析拖拽文件元数据失败:', error)
+    logger.error('解析拖拽文件元数据失败:', error)
     window.$message?.error?.('解析拖拽文件失败')
     return []
   }
@@ -448,7 +447,7 @@ const handleNativeFileDrop = async (paths: string[]) => {
       window.$message?.error?.('无法识别拖拽的文件')
     }
   } catch (error) {
-    console.error('[layout] 处理原生拖拽文件失败:', error)
+    logger.error('处理原生拖拽文件失败:', error)
   } finally {
     isDraggingFiles.value = false
   }
@@ -476,13 +475,12 @@ const setupNativeFileDropListeners = async () => {
     })
     tauriFileDropUnlisteners.push(unlisten)
   } catch (error) {
-    console.error('[layout] 注册原生文件拖拽监听失败:', error)
+    logger.error('注册原生文件拖拽监听失败:', error)
   }
 }
 
 listen('relogin', async () => {
   info('收到重新登录事件')
-  await resetLoginState()
   await logout()
 })
 
@@ -501,7 +499,7 @@ onBeforeMount(async () => {
       try {
         await groupStore.getGroupUserList(globalStore.currentSessionRoomId, true)
       } catch (error) {
-        console.error('[layout] 页面初始化：刷新群成员列表失败', error)
+        logger.error('页面初始化：刷新群成员列表失败', error)
       }
     }
   }
@@ -517,9 +515,6 @@ onMounted(async () => {
   // 监听home窗口被聚焦的事件，当窗口被聚焦时自动关闭状态栏通知
   const homeWindow = await WebviewWindow.getByLabel('home')
   if (homeWindow) {
-    // TODO: Matrix SDK 消息监听器设置
-    // await matrixClientService.setupEventListeners()
-
     // 监听窗口聚焦事件，聚焦时停止tray闪烁
     if (isWindows()) {
       homeWindow.listen('tauri://focus', async () => {
@@ -528,7 +523,7 @@ onMounted(async () => {
           await emitTo('tray', 'home_focus', {})
           await emitTo('notify', 'home_focus', {})
         } catch (error) {
-          console.warn('[layout] 向其他窗口广播聚焦事件失败:', error)
+          logger.warn('向其他窗口广播聚焦事件失败:', error)
         }
       })
 
@@ -537,7 +532,7 @@ onMounted(async () => {
           await emitTo('tray', 'home_blur', {})
           await emitTo('notify', 'home_blur', {})
         } catch (error) {
-          console.warn('[layout] 向其他窗口广播失焦事件失败:', error)
+          logger.warn('向其他窗口广播失焦事件失败:', error)
         }
       })
     }
@@ -551,7 +546,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cleanupNativeFileDropListeners()
-  clearListener()
   // 清除Web Worker计时器
   timerWorker.postMessage({
     type: 'clearTimer',

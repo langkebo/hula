@@ -114,7 +114,7 @@ import ActionBar from '@/components/windows/ActionBar.vue'
 import { useDownload } from '@/hooks/useDownload'
 import { useImageViewer as useImageViewerHook } from '@/hooks/useImageViewer'
 import { useTauriListener } from '@/hooks/useTauriListener'
-import { useImageViewer as useImageViewerStore } from '@/stores/imageViewer.ts'
+import { useImageViewer as useImageViewerStore } from '@/stores/domains/widget/imageViewer'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -378,7 +378,7 @@ onMounted(async () => {
   await getCurrentWebviewWindow().show()
 
   await addListener(
-    appWindow.listen('update-image', (event: any) => {
+    appWindow.listen<{ index: number }>('update-image', (event) => {
       const { index } = event.payload
       imageList.value = imageViewerStore.imageList
       syncCurrentIndex(index)

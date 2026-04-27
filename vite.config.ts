@@ -11,7 +11,7 @@ import { NaiveUiResolver, VantResolver } from 'unplugin-vue-components/resolvers
 import Components from 'unplugin-vue-components/vite' //组件注册
 import { type ConfigEnv, defineConfig, loadEnv } from 'vite'
 import VueSetupExtend from 'vite-plugin-vue-setup-extend'
-import { getComponentsDirs, getComponentsDtsPath } from './build/config/components'
+import { getComponentsDirs, getComponentsDtsPath, getComponentsGlobs } from './build/config/components'
 import { createManualChunks } from './build/config/chunks'
 import { atStartup } from './build/config/console'
 import packageJson from './package.json'
@@ -46,11 +46,12 @@ export default defineConfig(({ mode }: ConfigEnv) => {
   const serverPort = isPC ? 6130 : 5210
   const componentsDirs = getComponentsDirs(currentPlatform)
   const componentsDtsPath = getComponentsDtsPath(currentPlatform)
+  const componentsGlobs = getComponentsGlobs(currentPlatform)
 
   // 根据平台决定host地址
   const host = (() => {
     if (isPC) {
-      return '127.0.0.1'
+      return 'localhost'
     }
 
     // 移动端逻辑：检查是否为有效的内网IP地址
@@ -77,7 +78,10 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         // 配置移动端路径别名#
         '#': fileURLToPath(new URL('./src/mobile', import.meta.url)),
         // 配置路径别名~(根路径)
-        '~': fileURLToPath(new URL('.', import.meta.url))
+        '~': fileURLToPath(new URL('.', import.meta.url)),
+        // stream-monaco / monaco-editor 空壳替换（项目未使用 monaco 编辑功能）
+        'stream-monaco': fileURLToPath(new URL('./build/empty-module.js', import.meta.url)),
+        'monaco-editor': fileURLToPath(new URL('./build/empty-module.js', import.meta.url))
       }
     },
     css: {
@@ -121,6 +125,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       /**自动导入组件，但是不会自动导入jsx和tsx*/
       Components({
         dirs: componentsDirs, // 根据平台加载对应组件目录
+        globs: componentsGlobs,
         resolvers: [NaiveUiResolver(), VantResolver()],
         dts: componentsDtsPath
       }),
@@ -136,16 +141,14 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     },
     build: {
       // 设置兼容低版本浏览器的目标
-      target: ['chrome87', 'edge88', 'firefox78', 'safari14'],
+      target: ['chrome90', 'edge90', 'firefox90', 'safari15'],
       cssCodeSplit: true, // 启用 CSS 代码拆分
       minify: 'esbuild' as const, // 指定使用哪种混淆器
       // chunk 大小警告的限制(kb)
       chunkSizeWarningLimit: 1200,
       // esbuild配置，解决低版本浏览器兼容性问题
       esbuild: {
-        supported: {
-          'top-level-await': false
-        },
+        target: 'es2020',
         // 生产环境移除 console.log、debugger(默认移除注释)
         drop: mode === 'production' ? ['console', 'debugger'] : []
       },
@@ -175,6 +178,20 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       host: '0.0.0.0',
       port: serverPort,
       strictPort: true,
+      proxy: {
+        '/_matrix': {
+          target: 'http://localhost:28008',
+          changeOrigin: true
+        },
+        '/_synapse': {
+          target: 'http://localhost:28008',
+          changeOrigin: true
+        },
+        '/.well-known/matrix': {
+          target: 'http://localhost:28008',
+          changeOrigin: true
+        }
+      },
       watch: {
         // 3. tell vite to ignore watching `src-tauri`
         ignored: ['**/src-tauri/**']
@@ -186,7 +203,11 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         'X-Frame-Options': 'DENY',
         'X-XSS-Protection': '1; mode=block',
         'Referrer-Policy': 'strict-origin-when-cross-origin',
-        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Resource-Policy': 'same-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()'
       }
     }
   }

@@ -4,6 +4,9 @@ import { BaseDirectory, writeFile } from '@tauri-apps/plugin-fs'
 import { AppException } from '@/common/exception'
 import { isMobile } from '@/utils/PlatformConstants'
 import { removeTempFile } from '@/utils/TempFileManager'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('VideoThumbnail')
 
 // 压缩缩略图至给定尺寸与质量，保持比例，返回压缩后的 File
 const compressThumbnail = async (
@@ -136,7 +139,7 @@ export const generateVideoThumbnail = async (file: File): Promise<File> => {
 
     return await compressThumbnail(thumbnailFile)
   } catch (error) {
-    console.error('Rust 缩略图生成失败，尝试使用前端兜底方案:', error)
+    logger.error('Rust 缩略图生成失败，尝试使用前端兜底方案:', error)
     if (isMobile() || String(error).includes('Command get_video_thumbnail not found')) {
       return await getLocalVideoThumbnail(file)
     }

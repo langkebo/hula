@@ -49,18 +49,14 @@
                 class="result-item"
                 @click="handleMessageClick(result)">
                 <div class="result-avatar">
-                  <n-avatar
-                    round
-                    :size="36"
-                    :src="result.avatarUrl"
-                    :fallback-src="defaultAvatar" />
+                  <n-avatar round :size="36" :src="result.avatarUrl" :fallback-src="defaultAvatar" />
                 </div>
                 <div class="result-info">
                   <div class="result-header">
                     <span class="result-name">{{ result.name }}</span>
                     <span class="result-room">{{ result.roomName }}</span>
                   </div>
-                  <div class="result-preview" v-html="result.content?.body" />
+                  <div class="result-preview" v-html="result.previewHtml" />
                 </div>
                 <div class="result-time">
                   {{ formatTime(result.timestamp) }}
@@ -79,19 +75,11 @@
                 class="result-item"
                 @click="handleRoomClick(result)">
                 <div class="result-avatar">
-                  <n-avatar
-                    round
-                    :size="36"
-                    :src="result.avatarUrl"
-                    :fallback-src="defaultAvatar" />
+                  <n-avatar round :size="36" :src="result.avatarUrl" :fallback-src="defaultAvatar" />
                 </div>
                 <div class="result-info">
                   <span class="result-name">{{ result.name }}</span>
-                  <span v-if="result.isEncrypted" class="encrypted-badge">
-                    <svg class="size-12px">
-                      <use href="#lock"></use>
-                    </svg>
-                  </span>
+                  <span class="result-room">{{ result.memberCount }}</span>
                 </div>
               </div>
             </div>
@@ -107,11 +95,7 @@
                 class="result-item"
                 @click="handleUserClick(result)">
                 <div class="result-avatar">
-                  <n-avatar
-                    round
-                    :size="36"
-                    :src="result.avatarUrl"
-                    :fallback-src="defaultAvatar" />
+                  <n-avatar round :size="36" :src="result.avatarUrl" :fallback-src="defaultAvatar" />
                 </div>
                 <div class="result-info">
                   <span class="result-name">{{ result.name }}</span>
@@ -121,7 +105,7 @@
             </div>
 
             <div v-if="!hasResults" class="empty-state">
-              <svg class="size-48px color-#909090">
+              <svg class="size-48px color-[--hula-text-tertiary]">
                 <use href="#search"></use>
               </svg>
               <span class="empty-text">{{ t('search.no_results') }}</span>
@@ -153,11 +137,33 @@
 </template>
 
 <script setup lang="ts">
+import type { InputInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { matrixSearchService } from '@/services/matrix'
-import { useSpotlightStore } from '@/stores/spotlight'
+import {
+  matrixSearchService,
+  type SearchResult as MatrixSearchResult,
+  type RoomSearchResult,
+  type UserSearchResult
+} from '@/services/matrix/MatrixSearchService'
+import { useSpotlightStore } from '@/stores/domains/widget/spotlight'
 import { formatTimestamp } from '@/utils/ComputedTime'
 import { useDebounceFn } from '@vueuse/core'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('SpotlightDialog')
+
+type SpotlightMessageResult = MatrixSearchResult & {
+  name: string
+  avatarUrl?: string
+  previewHtml: string
+}
+
+type SpotlightRoomResult = RoomSearchResult & {
+  name: string
+}
+
+type SpotlightUserResult = UserSearchResult & {
+  name: string
+}
 
 const props = defineProps<{
   visible: boolean
@@ -172,13 +178,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const spotlightStore = useSpotlightStore()
-const searchInputRef = ref()
+const searchInputRef = ref<InputInst | null>(null)
 const searchQuery = ref('')
 const searchType = ref<'all' | 'messages' | 'rooms' | 'users'>('all')
 const isSearching = ref(false)
-const messageResults = ref<any[]>([])
-const roomResults = ref<any[]>([])
-const userResults = ref<any[]>([])
+const messageResults = ref<SpotlightMessageResult[]>([])
+const roomResults = ref<SpotlightRoomResult[]>([])
+const userResults = ref<SpotlightUserResult[]>([])
 const defaultAvatar = '/logoD.png'
 
 const recentSearches = computed(() => spotlightStore.recentSearches)
@@ -190,6 +196,11 @@ const hasResults = computed(() => {
 const formatTime = (timestamp?: number) => {
   if (!timestamp) return ''
   return formatTimestamp(timestamp, true)
+}
+
+const getMessagePreviewHtml = (result: MatrixSearchResult) => {
+  const body = result.content.body
+  return typeof body === 'string' ? body : ''
 }
 
 const handleSearch = useDebounceFn(async () => {
@@ -215,29 +226,39 @@ const handleSearch = useDebounceFn(async () => {
         : Promise.resolve([])
     ])
 
-    messageResults.value = messages
-    roomResults.value = rooms
-    userResults.value = users
+    messageResults.value = messages.map((result) => ({
+      ...result,
+      name: result.sender,
+      previewHtml: getMessagePreviewHtml(result)
+    }))
+    roomResults.value = rooms.map((result) => ({
+      ...result,
+      name: result.roomName
+    }))
+    userResults.value = users.map((result) => ({
+      ...result,
+      name: result.displayName || result.userId
+    }))
 
     spotlightStore.addRecentSearch(query)
   } catch (error) {
-    console.error('[SpotlightDialog] 搜索失败:', error)
+    logger.error('搜索失败:', error)
   } finally {
     isSearching.value = false
   }
 }, 300)
 
-const handleMessageClick = (result: any) => {
+const handleMessageClick = (result: SpotlightMessageResult) => {
   emit('message-selected', result.roomId, result.eventId)
   emit('update:visible', false)
 }
 
-const handleRoomClick = (result: any) => {
+const handleRoomClick = (result: SpotlightRoomResult) => {
   emit('room-selected', result.roomId)
   emit('update:visible', false)
 }
 
-const handleUserClick = (result: any) => {
+const handleUserClick = (result: SpotlightUserResult) => {
   emit('user-selected', result.userId)
   emit('update:visible', false)
 }
@@ -265,7 +286,7 @@ watch(
 
 <style scoped lang="scss">
 .spotlight-dialog {
-  @apply flex flex-col bg-[--bg-color] rounded-12px overflow-hidden;
+  @apply flex flex-col bg-[--hula-surface-panel] rounded-12px overflow-hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
@@ -294,18 +315,18 @@ watch(
 }
 
 .section-title {
-  @apply text-12px font-medium color-#909090;
+  @apply text-12px font-medium color-[--hula-text-tertiary];
 }
 
 .section-count {
-  @apply text-12px color-#909090;
+  @apply text-12px color-[--hula-text-tertiary];
 }
 
 .result-item {
   @apply flex items-center gap-12px px-16px py-10px cursor-pointer transition-all;
 
   &:hover {
-    background: var(--emoji-hover);
+    background: var(--hula-menu-hover);
   }
 }
 
@@ -326,28 +347,28 @@ watch(
 }
 
 .result-room {
-  @apply text-12px color-#909090 truncate;
+  @apply text-12px color-[--hula-text-tertiary] truncate;
 }
 
 .result-preview {
-  @apply text-12px color-#909090 truncate;
+  @apply text-12px color-[--hula-text-tertiary] truncate;
 
   :deep(mark) {
-    background: rgba(19, 152, 127, 0.3);
+    background: var(--color-primary-active);
     color: inherit;
   }
 }
 
 .result-time {
-  @apply text-12px color-#909090 flex-shrink-0;
+  @apply text-12px color-[--hula-text-tertiary] flex-shrink-0;
 }
 
 .encrypted-badge {
-  @apply flex-center color-#13987f;
+  @apply flex-center color-[--color-primary];
 }
 
 .result-userId {
-  @apply text-12px color-#909090;
+  @apply text-12px color-[--hula-text-tertiary];
 }
 
 .empty-state {
@@ -355,7 +376,7 @@ watch(
 }
 
 .empty-text {
-  @apply text-14px color-#909090;
+  @apply text-14px color-[--hula-text-tertiary];
 }
 
 .recent-searches {
@@ -366,7 +387,7 @@ watch(
   @apply cursor-pointer;
 
   &:hover {
-    background: var(--emoji-hover);
+    background: var(--hula-menu-hover);
   }
 }
 </style>

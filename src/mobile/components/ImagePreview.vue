@@ -23,48 +23,33 @@
           <div
             class="absolute right-3 flex gap-3 p-2 rounded-8 text-white bg-black/75 z-20 shadow-lg"
             :style="actionStyle">
-            <n-button
+            <button
               v-if="showForward"
-              circle
-              quaternary
-              size="medium"
+              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleForward"
-              aria-label="转发"
-              class="bg-white/20">
-              <template #icon>
-                <svg class="size-22px text-white">
-                  <use href="#share"></use>
-                </svg>
-              </template>
-            </n-button>
-            <n-button
+              aria-label="转发">
+              <svg class="size-22px text-white">
+                <use href="#share"></use>
+              </svg>
+            </button>
+            <button
               v-if="showSave"
-              circle
-              quaternary
-              size="medium"
+              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleSave"
-              aria-label="保存"
-              class="bg-white/20">
-              <template #icon>
-                <svg class="size-22px text-white">
-                  <use href="#Importing"></use>
-                </svg>
-              </template>
-            </n-button>
-            <n-button
+              aria-label="保存">
+              <svg class="size-22px text-white">
+                <use href="#Importing"></use>
+              </svg>
+            </button>
+            <button
               v-if="showMore"
-              circle
-              quaternary
-              size="medium"
+              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleMore"
-              aria-label="更多"
-              class="bg-white/20">
-              <template #icon>
-                <svg class="size-22px text-white">
-                  <use href="#more"></use>
-                </svg>
-              </template>
-            </n-button>
+              aria-label="更多">
+              <svg class="size-22px text-white">
+                <use href="#more"></use>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -73,14 +58,17 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { MergeMessageType, MittEnum } from '@/enums'
-import { useChatStore } from '@/stores/chat'
-import { useFileDownloadStore } from '@/stores/fileDownload'
-import { useFileStore } from '@/stores/file'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
+import { useFileStore } from '@/stores/domains/widget/file'
 import { useMitt } from '@/hooks/useMitt'
 import { extractFileName } from '@/utils/Formatting'
 import type { MsgType } from '@/services/types'
 import type { CSSProperties } from 'vue'
+
+const logger = createLogger('ImagePreview')
 
 interface Props {
   visible: boolean
@@ -127,9 +115,7 @@ const actionStyle = computed(() => ({
   bottom: `${Math.max(safeAreaInsets.value.bottom + 16, 16)}px`
 }))
 
-// 获取当前房间ID的方法
 const getCurrentRoomId = () => {
-  // 从 props.message 中获取房间ID，如果没有则从 chatStore 获取
   return props.message?.roomId || chatStore.currentSessionInfo?.roomId || ''
 }
 
@@ -145,7 +131,7 @@ const handleForward = () => {
     }
     return
   }
-  const target = chatStore.chatMessageList.find((m: any) => m.message.id === msgId)
+  const target = chatStore.getMessage(msgId)
   if (!target) {
     if (window.$message) {
       window.$message.warning('未找到可转发的消息')
@@ -172,31 +158,28 @@ const handleSave = async () => {
     const fileName = extractFileName(imageUrl) || 'image.png'
     const result = await fileDownloadStore.downloadFile(imageUrl, fileName)
     if (result && window.$message) {
-      console.log('图片保存路径:', result)
+      logger.debug('图片保存路径:', result)
       window.$message.success('图片已保存')
 
-      // 保存文件信息到 file store
       const roomId = getCurrentRoomId()
       if (roomId) {
-        // 获取文件状态，使用相对路径（localPath）而不是绝对路径
         const fileStatus = fileDownloadStore.getFileStatus(imageUrl)
         const localPath = fileStatus.localPath || result
 
-        // 如果没有消息信息，手动创建文件信息
         const fileInfo = {
-          id: props.message!.id, // 生成唯一ID
+          id: props.message!.id,
           roomId,
           fileName,
           type: 'image' as const,
-          url: localPath, // 使用相对路径
+          url: localPath,
           suffix: fileName.split('.').pop()?.toLowerCase()
         }
         fileStore.addFile(fileInfo)
-        console.log('[ImagePreview Debug] 保存文件信息到 fileStore:', fileInfo)
+        logger.debug('保存文件信息到 fileStore:', fileInfo)
       }
     }
   } catch (e) {
-    console.error('保存图片失败:', e)
+    logger.error('保存图片失败:', e)
     if (window.$message) {
       window.$message.error('保存失败')
     }
@@ -342,7 +325,6 @@ const handleTouchEnd = (event: TouchEvent) => {
 </script>
 
 <style scoped>
-/* 图片预览背景淡入淡出动画 */
 .image-preview-enter-active,
 .image-preview-leave-active {
   transition: opacity 0.3s ease;
@@ -353,7 +335,6 @@ const handleTouchEnd = (event: TouchEvent) => {
   opacity: 0;
 }
 
-/* 图片缩放动画 */
 .image-zoom-enter-active,
 .image-zoom-leave-active {
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);

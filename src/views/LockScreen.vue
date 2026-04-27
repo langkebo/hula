@@ -10,8 +10,8 @@
       <div v-if="!isUnlockPage" @click.stop="isUnlockPage = true" class="size-full rounded-8px">
         <n-flex vertical align="center" :size="120" class="size-full mt-10%">
           <n-flex vertical align="center" :size="20" class="will-change-auto will-change-contents">
-            <p class="text-(100px [--chat-text-color]) font-500">{{ currentTime }}</p>
-            <n-flex align="center" :size="30" class="text-(30px [--chat-text-color])">
+            <p class="text-(100px [--hula-text-secondary]) font-500">{{ currentTime }}</p>
+            <n-flex align="center" :size="30" class="text-(30px [--hula-text-secondary])">
               <p>{{ currentMonthAndDate }}</p>
               <p>{{ currentWeekday }}</p>
             </n-flex>
@@ -19,7 +19,7 @@
 
           <n-flex vertical justify="center" align="center" :size="20" class="tips">
             <svg><use href="#search"></use></svg>
-            <p class="text-(16px [--chat-text-color]) text-center leading-24px">
+            <p class="text-(16px [--hula-text-secondary]) text-center leading-24px">
               {{ t('message.lock_screen.tip_description') }}
             </p>
           </n-flex>
@@ -38,10 +38,10 @@
         <n-flex vertical align="center" justify="center" :size="30" class="mt--75px">
           <n-avatar
             round
-            style="border: 2px solid #f1f1f1"
+            style="border: 2px solid var(--lock-border-color, #f1f1f1)"
             :size="120"
             :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)" />
-          <p class="text-(24px [--chat-text-color]) font-500">{{ userStore.userInfo!.name }}</p>
+          <p class="text-(24px [--hula-text-secondary]) font-500">{{ userStore.userInfo!.name }}</p>
 
           <!-- 密码输入框 -->
           <n-input
@@ -51,8 +51,8 @@
               width: 320px;
               border: 2px solid rgba(255, 255, 255, 0.1);
               border-bottom-color: rgba(19, 152, 127, 1);
-              background-color: #404040;
-              color: #fff;
+              background-color: var(--lock-input-bg, #404040);
+              color: var(--lock-input-color, #fff);
             "
             spellCheck="false"
             autoComplete="off"
@@ -68,7 +68,7 @@
                 <template #trigger>
                   <svg
                     @click.stop="unlock"
-                    class="size-16px color-#e3e3e3 mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-all duration-300 ease-in-out hover:bg-#13987fe6">
+                    class="size-16px color-#e3e3e3 mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-all duration-300 ease-in-out hover:bg-[--color-primary]e6">
                     <use href="#arrow-right"></use>
                   </svg>
                 </template>
@@ -80,12 +80,12 @@
           <!-- 登录时显示的文字 -->
           <n-flex vertical align="center" justify="center" :size="30" v-if="isLogining && !isWrongPassword">
             <img class="size-42px" src="@/assets/img/loading-one.svg" alt="" />
-            <p class="text-(20px [--chat-text-color])">{{ t('message.lock_screen.unlocking') }}</p>
+            <p class="text-(20px [--hula-text-secondary])">{{ t('message.lock_screen.unlocking') }}</p>
           </n-flex>
 
           <!-- 密码不正常时显示 -->
           <n-flex v-if="isWrongPassword" vertical justify="center" align="center" :size="30">
-            <p class="text-(18px [--chat-text-color])">{{ t('message.lock_screen.wrong_password') }}</p>
+            <p class="text-(18px [--hula-text-secondary])">{{ t('message.lock_screen.wrong_password') }}</p>
             <p
               @click="init"
               class="w-120px bg-[rgba(255,255,255,0.1)] backdrop-blur-xl cursor-pointer p-10px rounded-8px text-(14px #323232 center) font-500">
@@ -99,7 +99,7 @@
           justify="space-around"
           align="center"
           :size="0"
-          class="options text-(14px [--chat-text-color])">
+          class="options text-(14px [--hula-text-secondary])">
           <p @click="isUnlockPage = false">{{ t('message.lock_screen.return_action') }}</p>
           <p @click="logout">{{ t('message.lock_screen.logout_action') }}</p>
           <p>{{ t('message.lock_screen.forgot_password') }}</p>
@@ -114,19 +114,21 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { onKeyStroke } from '@vueuse/core'
 import dayjs from 'dayjs'
 import { type InputInst } from 'naive-ui'
-import { useLogin } from '@/hooks/useLogin.ts'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStore } from '@/stores/user.ts'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { getWeekday } from '@/utils/ComputedTime'
+import { useTimerManager } from '@/utils/TimerManager'
 import { useI18n } from 'vue-i18n'
 
 const appWindow = WebviewWindow.getCurrent()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
 const { lockScreen } = storeToRefs(settingStore)
-const { logout } = useLogin()
+const { logout } = useLoginFlow()
 const { t } = useI18n()
+const timerManager = useTimerManager()
 /** 解锁密码 */
 const password = ref('')
 /** 是否是解锁页面 */
@@ -142,8 +144,6 @@ const currentMonthAndDate = ref(dayjs().format('MM/DD'))
 // const currentMonthAndDate = ref(new Date().toLocaleDateString('chinese', { month: 'long', day: 'numeric' }))
 /** 当前星期 */
 const currentWeekday = ref(getWeekday(new Date().toLocaleString()))
-/** 计算当前时间的定时器 */
-let intervalId: NodeJS.Timeout | null = null
 /** 密码输入框实例 */
 const inputInstRef = ref<InputInst | null>(null)
 /** 白名单窗口（锁屏时不隐藏的窗口） */
@@ -153,8 +153,7 @@ const hiddenWindows = ref<string[]>([])
 
 watch(isUnlockPage, (val) => {
   if (val) {
-    /** 延迟 300ms 后自动获取焦点，不然会触发一次回车事件 */
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       inputInstRef.value?.focus()
     }, 300)
   }
@@ -176,12 +175,12 @@ const unlock = () => {
   } else {
     isLogining.value = true
     if (password.value === lockScreen.value.password) {
-      setTimeout(() => {
+      timerManager.setTimeout(() => {
         lockScreen.value.enable = false
         isLogining.value = false
       }, 1000)
     } else {
-      setTimeout(() => {
+      timerManager.setTimeout(() => {
         isWrongPassword.value = true
       }, 300)
     }
@@ -193,7 +192,7 @@ const init = () => {
   if (isWrongPassword.value) {
     isWrongPassword.value = false
     isLogining.value = false
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       inputInstRef.value?.focus()
     }, 600)
     password.value = ''
@@ -233,7 +232,7 @@ watchEffect(() => {
 })
 
 onMounted(() => {
-  intervalId = setInterval(() => {
+  timerManager.setInterval(() => {
     currentTime.value = dayjs().format('HH:mm')
     currentMonthAndDate.value = dayjs().format('MM/DD')
     currentWeekday.value = getWeekday(new Date().toLocaleString())
@@ -246,14 +245,11 @@ onMounted(() => {
     })
   }
 
-  // 锁屏时隐藏其他窗口，解锁时显示
   hideOtherWindows()
 })
 
 onUnmounted(() => {
-  if (intervalId) {
-    clearInterval(intervalId)
-  }
+  timerManager.clearAll()
 })
 </script>
 <style scoped lang="scss">
@@ -269,23 +265,25 @@ onUnmounted(() => {
 .tips {
   @apply cursor-pointer w-240px p-12px rounded-8px transition-all duration-300 ease-in-out;
   svg {
-    @apply size-24px color-#f1f1f1 p-4px bg-#80808080 rounded-8px;
+    @apply size-24px p-4px rounded-8px;
+    color: var(--lock-icon-color, #f1f1f1);
+    background-color: var(--lock-icon-bg, rgba(128, 128, 128, 0.5));
   }
 }
 
 :deep(.hover-box),
 :deep(.action-close) {
   svg {
-    color: #fff;
+    color: var(--lock-action-color, #fff);
   }
 }
 :deep(.hover-box) {
   &:hover {
-    background-color: #464646;
+    background-color: var(--lock-hover-bg, #464646);
   }
 }
 :deep(.n-input .n-input__input-el, .n-input .n-input__textarea-el) {
-  color: #fff;
+  color: var(--lock-input-color, #fff);
 }
 
 /*

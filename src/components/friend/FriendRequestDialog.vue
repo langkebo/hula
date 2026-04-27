@@ -23,7 +23,7 @@
                 <n-avatar
                   :size="48"
                   :src="AvatarUtils.getAvatarUrl(request.avatarUrl)"
-                  :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   round />
                 <n-flex vertical :size="4" class="flex-1">
                   <span class="text-14px font-medium">{{ request.displayName || request.userId }}</span>
@@ -59,7 +59,7 @@
                 <n-avatar
                   :size="48"
                   :src="AvatarUtils.getAvatarUrl(request.avatarUrl)"
-                  :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   round />
                 <n-flex vertical :size="4" class="flex-1">
                   <span class="text-14px font-medium">{{ request.displayName || request.userId }}</span>
@@ -83,17 +83,15 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
-import { useContactStore, type FriendRequestItem } from '@/stores/contacts'
-import { useSettingStore } from '@/stores/setting'
+import { useContactStore, type FriendRequestItem } from '@/stores/domains/chat/contacts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const { t } = useI18n()
 const contactStore = useContactStore()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 
 const visible = defineModel<boolean>('show', { default: false })
 const activeTab = ref<'incoming' | 'outgoing'>('incoming')
@@ -170,7 +168,7 @@ watch(visible, (val) => {
 .request-item {
   padding: 12px;
   border-radius: 8px;
-  background: var(--bg-color);
-  border: 1px solid var(--border-color);
+  background: var(--hula-surface-panel);
+  border: 1px solid var(--hula-border-default);
 }
 </style>

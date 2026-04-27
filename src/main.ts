@@ -1,26 +1,31 @@
 import 'uno.css'
 import '@unocss/reset/eric-meyer.css'
 import '@/styles/css/design-tokens.css'
-import TlbsMap from 'tlbs-map-vue'
 import { setupI18n } from '@/services/i18n'
 import { AppException } from '@/common/exception.ts'
 import vResize from '@/directives/v-resize'
 import vSlide from '@/directives/v-slide.ts'
 import router from '@/router'
 import { pinia } from '@/stores'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { initializePlatform, isIOS, isMobile } from '@/utils/PlatformConstants'
 import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
 import { invoke } from '@tauri-apps/api/core'
 import App from '@/App.vue'
-import VueVirtualScroller from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Main')
 
 initializePlatform()
-startWebVitalObserver()
+startWebVitalObserver({
+  prometheusEndpoint: import.meta.env.VITE_PROMETHEUS_ENDPOINT,
+  debug: import.meta.env.DEV
+})
 
-if (isIOS()) {
+if (isIOS() && hasTauriRuntime()) {
   invoke('request_ios_badge_authorization').catch((error) => {
-    console.warn('[HuLaBadge] 请求 iOS 角标权限失败', error)
+    logger.warn('请求 iOS 角标权限失败', error)
   })
 }
 
@@ -57,19 +62,12 @@ if (isMobile()) {
 }
 
 async function setup() {
+  if (!hasTauriRuntime()) return
   await invoke('set_complete', { task: 'frontend' })
 }
 
 const app = createApp(App)
-app
-  .use(router)
-  .use(pinia)
-  .use(TlbsMap)
-  .use(setupI18n)
-  .use(VueVirtualScroller as any)
-  .directive('resize', vResize)
-  .directive('slide', vSlide)
-  .mount('#app')
+app.use(router).use(pinia).use(setupI18n).directive('resize', vResize).directive('slide', vSlide).mount('#app')
 app.config.errorHandler = (err) => {
   if (err instanceof AppException) {
     window.$message.error(err.message)

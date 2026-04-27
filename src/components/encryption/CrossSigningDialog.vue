@@ -127,7 +127,9 @@ import { ref, computed, watch } from 'vue'
 import { NModal, NButton, NTag, NDivider, NSpin, NFlex, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionService } from '@/services/matrix/MatrixEncryptionService'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('CrossSigning')
 
 const { t } = useI18n()
 const message = useMessage()
@@ -163,7 +165,7 @@ const loadCrossSigningInfo = async () => {
     selfSigningKey.value = info.selfSigningPublicKey ?? null
     userSigningKey.value = info.userSigningPublicKey ?? null
   } catch (err) {
-    console.error('[CrossSigning] 加载信息失败:', err)
+    logger.error('Failed to load cross-signing info:', err)
   } finally {
     loading.value = false
   }
@@ -176,7 +178,7 @@ const handleSetup = async () => {
     message.success(t('encryption.cross_signing.setup_success'))
     await loadCrossSigningInfo()
   } catch (err) {
-    console.error('[CrossSigning] 设置失败:', err)
+    logger.error('Failed to set up cross-signing:', err)
     message.error(t('encryption.cross_signing.setup_failed'))
   } finally {
     settingUp.value = false
@@ -190,7 +192,7 @@ const handleReset = async () => {
     message.success(t('encryption.cross_signing.reset_success'))
     await loadCrossSigningInfo()
   } catch (err) {
-    console.error('[CrossSigning] 重置失败:', err)
+    logger.error('Failed to reset cross-signing:', err)
     message.error(t('encryption.cross_signing.reset_failed'))
   } finally {
     resetting.value = false
@@ -208,7 +210,7 @@ const handleCopyKeys = async () => {
     await navigator.clipboard.writeText(keysText)
     message.success(t('encryption.cross_signing.copied'))
   } catch (err) {
-    console.error('[CrossSigning] 复制失败:', err)
+    logger.error('Failed to copy public keys:', err)
     message.error(t('encryption.cross_signing.copy_failed'))
   }
 }
@@ -217,11 +219,15 @@ const handleClose = () => {
   visible.value = false
 }
 
-watch(visible, (val) => {
-  if (val) {
-    loadCrossSigningInfo()
-  }
-})
+watch(
+  visible,
+  (val) => {
+    if (val) {
+      loadCrossSigningInfo()
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped lang="scss">
@@ -236,7 +242,7 @@ watch(visible, (val) => {
 
   :deep(.n-card__footer) {
     padding: 12px 20px;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--hula-border-default);
   }
 }
 
@@ -245,7 +251,7 @@ watch(visible, (val) => {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: var(--bg-color-secondary);
+  background: var(--hula-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -256,11 +262,11 @@ watch(visible, (val) => {
 }
 
 .status-active {
-  color: #52c41a;
+  color: var(--color-success);
 }
 
 .status-inactive {
-  color: #faad14;
+  color: var(--color-warning);
 }
 
 .status-info {
@@ -275,7 +281,7 @@ watch(visible, (val) => {
 
 .status-desc {
   font-size: 12px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   margin-top: 4px;
 }
 
@@ -291,7 +297,7 @@ watch(visible, (val) => {
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--bg-color-secondary);
+    background: var(--hula-surface-panel-muted);
     border-radius: 8px;
     margin-bottom: 8px;
   }
@@ -318,7 +324,7 @@ watch(visible, (val) => {
   .key-value {
     font-size: 11px;
     font-family: monospace;
-    color: var(--text-color-secondary);
+    color: var(--hula-text-secondary);
     margin-top: 2px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -331,7 +337,7 @@ watch(visible, (val) => {
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--bg-color-secondary);
+    background: var(--hula-surface-panel-muted);
     border-radius: 8px;
     margin-bottom: 8px;
   }
@@ -354,7 +360,7 @@ watch(visible, (val) => {
 
   .action-desc {
     font-size: 12px;
-    color: var(--text-color-secondary);
+    color: var(--hula-text-secondary);
     margin-top: 2px;
   }
 }

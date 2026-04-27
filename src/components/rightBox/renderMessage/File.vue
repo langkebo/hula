@@ -13,8 +13,8 @@
           :highlight-style="{
             padding: '0 4px',
             borderRadius: '6px',
-            color: '#000',
-            background: '#13987f'
+            color: 'var(--hula-text-inverse)',
+            background: 'var(--hula-color-primary-500)'
           }" />
         <template v-else>
           {{ truncateFileName(body?.fileName || fallbackFileName) }}
@@ -46,7 +46,7 @@
             <svg class="progress-ring" width="24" height="24">
               <circle
                 class="progress-ring-circle"
-                stroke="rgba(19, 152, 127, 0.4)"
+                stroke="color-mix(in srgb, var(--hula-color-primary-500) 40%, transparent)"
                 stroke-width="2"
                 fill="transparent"
                 r="10"
@@ -54,7 +54,7 @@
                 cy="12" />
               <circle
                 class="progress-ring-circle progress-ring-fill"
-                stroke="#13987f"
+                stroke="var(--hula-color-primary-500)"
                 stroke-width="2"
                 fill="transparent"
                 r="10"
@@ -73,7 +73,7 @@
             <svg class="progress-ring" width="24" height="24">
               <circle
                 class="progress-ring-circle"
-                stroke="rgba(255, 255, 255, 0.3)"
+                stroke="color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)"
                 stroke-width="2"
                 fill="transparent"
                 r="10"
@@ -81,7 +81,7 @@
                 cy="12" />
               <circle
                 class="progress-ring-circle progress-ring-fill"
-                stroke="#fff"
+                stroke="var(--hula-text-inverse)"
                 stroke-width="2"
                 fill="transparent"
                 r="10"
@@ -113,15 +113,17 @@ import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener'
 import { MessageStatusEnum, TauriCommand } from '@/enums'
 import { useDownload } from '@/hooks/useDownload'
 import type { FileBody, FilesMeta, MsgType } from '@/services/types'
-import { useFileDownloadStore } from '@/stores/fileDownload'
-import { useGlobalStore } from '@/stores/global'
-import { useUserStore } from '@/stores/user'
-import { useChatStore } from '@/stores/chat'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { formatBytes, getFileSuffix } from '@/utils/Formatting'
 import { getFilesMeta } from '@/utils/PathUtil'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
+const logger = createLogger('File')
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
@@ -178,7 +180,7 @@ const persistFileLocalPath = async (absolutePath: string) => {
     body: nextBody
   })
   const updated = { ...target, message: { ...target.message, body: nextBody } }
-  await invokeSilently(TauriCommand.SAVE_MSG, { data: updated as any })
+  await invokeSilently(TauriCommand.SAVE_MSG, { data: updated })
 }
 
 const revealInDirSafely = async (targetPath?: string | null) => {
@@ -189,7 +191,7 @@ const revealInDirSafely = async (targetPath?: string | null) => {
   try {
     await revealItemInDir(targetPath)
   } catch (error) {
-    console.error('在文件夹中显示文件失败:', error)
+    logger.error('在文件夹中显示文件失败:', error)
     window.$message?.error(t('message.file.toast.reveal_fail'))
   }
 }
@@ -231,7 +233,7 @@ watch(
       try {
         await fileDownloadStore.checkFileExists(newUrl, newFileName)
       } catch (error) {
-        console.error('检查文件状态失败:', error)
+        logger.error('检查文件状态失败:', error)
       }
     }
   },
@@ -321,17 +323,17 @@ const handleFileClick = async () => {
       try {
         await openPath(props.body.url)
       } catch (openError) {
-        console.warn('无法直接打开文件，尝试在文件管理器中显示:', openError)
+        logger.warn('无法直接打开文件，尝试在文件管理器中显示:', openError)
         await revealInDirSafely(props.body.url)
       }
     }
   } catch (error) {
-    console.error('打开文件失败:', error)
+    logger.error('打开文件失败:', error)
     const errorMessage = error instanceof Error ? error.message : t('message.file.unknown_error')
     if (errorMessage.includes('Not allowed to open path') || errorMessage.includes('revealItemInDir')) {
-      console.error('无法打开或显示文件。请手动在文件管理器中找到并打开文件。')
+      logger.error('无法打开或显示文件。请手动在文件管理器中找到并打开文件。')
     } else {
-      console.error(`打开文件失败: ${errorMessage}`)
+      logger.error(`打开文件失败: ${errorMessage}`)
     }
   } finally {
     const currentChatRoomId = globalStore.currentSessionRoomId // 这个id可能为群id可能为用户uid，所以不能只用用户uid
@@ -366,12 +368,12 @@ const downloadAndOpenFile = async () => {
       try {
         await openPath(absolutePath)
       } catch (openError) {
-        console.warn('无法直接打开文件，尝试在文件管理器中显示:', openError)
+        logger.warn('无法直接打开文件，尝试在文件管理器中显示:', openError)
         await revealInDirSafely(absolutePath)
       }
     }
   } catch (error) {
-    console.error('下载文件失败:', error)
+    logger.error('下载文件失败:', error)
     const errorMessage = error instanceof Error ? error.message : '未知错误'
     if (errorMessage.includes('Not allowed to open path') || errorMessage.includes('revealItemInDir')) {
       window.$message?.error(t('message.file.toast.download_open_fail'))
@@ -392,7 +394,7 @@ const downloadFileOnly = async () => {
       void persistFileLocalPath(absolutePath)
     }
   } catch (error) {
-    console.error('下载文件失败:', error)
+    logger.error('下载文件失败:', error)
   } finally {
     // 刷新文件状态
     const currentChatRoomId = globalStore.currentSessionRoomId
@@ -439,7 +441,7 @@ onMounted(async () => {
       // 检查文件是否已存在于本地
       await fileDownloadStore.checkFileExists(props.body.url, props.body.fileName)
     } catch (error) {
-      console.error('检查文件状态失败:', error)
+      logger.error('检查文件状态失败:', error)
     }
   }
 })
@@ -447,7 +449,7 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .file-container {
-  @apply relative custom-shadow bg-[--file-bg-color] w-225px h-70px rounded-8px px-14px py-4px flex-y-center;
+  @apply relative custom-shadow bg-[--hula-surface-panel-muted] w-225px h-70px rounded-8px px-14px py-4px flex-y-center;
   cursor: default !important;
   user-select: none !important;
   transition: all 0.2s ease;
@@ -469,7 +471,7 @@ onMounted(async () => {
 
 .file-name {
   font-size: 14px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   line-height: 1.2;
   margin-bottom: 8px;
   white-space: nowrap;
@@ -481,7 +483,7 @@ onMounted(async () => {
 
 .file-size {
   font-size: 12px;
-  color: #909090;
+  color: var(--hula-text-tertiary);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -491,12 +493,12 @@ onMounted(async () => {
   font-size: 10px;
   padding: 2px 4px;
   border-radius: 4px;
-  @apply light:bg-#60606020 dark:bg-#444;
-  color: #909090;
+  background: color-mix(in srgb, var(--hula-text-tertiary) 16%, transparent);
+  color: var(--hula-text-tertiary);
 
   &.downloaded {
-    background: rgba(19, 152, 127, 0.3);
-    color: #13987f;
+    background: color-mix(in srgb, var(--hula-color-primary-500) 30%, transparent);
+    color: var(--hula-color-primary-500);
   }
 }
 
@@ -519,7 +521,7 @@ onMounted(async () => {
 }
 
 .file-overlay {
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--hula-overlay-inverse-strong);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -541,18 +543,18 @@ onMounted(async () => {
 .download-circle {
   width: 22px;
   height: 22px;
-  background: rgba(20, 20, 20, 0.6);
+  background: var(--hula-overlay-inverse-strong);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid var(--hula-border-inverse-muted);
 }
 
 .download-circle .download-btn-icon {
   width: 14px;
   height: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: color-mix(in srgb, var(--hula-text-inverse) 80%, transparent);
 }
 
 .progress-circle {
@@ -572,23 +574,23 @@ onMounted(async () => {
 
 .progress-text {
   font-size: 8px;
-  color: #fff;
+  color: var(--hula-text-inverse);
   text-align: center;
   font-weight: 500;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--hula-surface-media-preview) 50%, transparent);
 }
 
 .loading-icon {
   width: 20px;
   height: 20px;
-  color: #fff;
+  color: var(--hula-text-inverse);
   animation: spin 1s linear infinite;
 }
 
 .download-btn-icon {
   width: 16px;
   height: 16px;
-  color: #fff;
+  color: var(--hula-text-inverse);
 }
 
 @keyframes spin {

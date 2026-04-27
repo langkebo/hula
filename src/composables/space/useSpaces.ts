@@ -1,0 +1,53 @@
+import { ref, type Ref } from 'vue'
+import { matrixSpaceService } from '@/services/matrix'
+import type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('useSpaces')
+
+export interface UseSpacesResult {
+  spaces: Ref<SpaceInfo[]>
+  loading: Ref<boolean>
+  mutating: Ref<boolean>
+  error: Ref<string | null>
+  load: () => Promise<void>
+  create: (options: SpaceOptions) => Promise<SpaceInfo | null>
+}
+
+export function useSpaces(): UseSpacesResult {
+  const spaces = ref<SpaceInfo[]>([])
+  const loading = ref(false)
+  const mutating = ref(false)
+  const error = ref<string | null>(null)
+
+  const load = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      spaces.value = await matrixSpaceService.getSpaces()
+    } catch (err) {
+      logger.error('load spaces failed', err)
+      error.value = err instanceof Error ? err.message : String(err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const create = async (options: SpaceOptions): Promise<SpaceInfo | null> => {
+    mutating.value = true
+    error.value = null
+    try {
+      const result = await matrixSpaceService.createSpace(options)
+      if (result) await load()
+      return result
+    } catch (err) {
+      logger.error('create space failed', err)
+      error.value = err instanceof Error ? err.message : String(err)
+      return null
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  return { spaces, loading, mutating, error, load, create }
+}

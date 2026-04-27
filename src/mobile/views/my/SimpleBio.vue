@@ -8,9 +8,9 @@
               <div class="py-15px flex gap-10px w-full items-center justify-end">
                 <div class="bg-#E7EFE6 dark:bg-gray/20 flex flex-wrap ps-2 items-center rounded-full gap-1 h-24px px-2">
                   <span class="w-12px h-12px rounded-15px bg-#079669"></span>
-                  <n-text style="font-size: 12px">
+                  <span style="font-size: 12px">
                     {{ t('mobile_my.online') }}
-                  </n-text>
+                  </span>
                 </div>
                 <svg @click="toSettings" class="dark:color-gray-200/90 iconpark-icon h-32px w-32px block">
                   <use href="#wode-shezhi"></use>
@@ -23,12 +23,11 @@
                 </svg>
               </div>
             </div>
-            <n-card size="small" class="rounded-lg" content-class="flex gap-20px items-center">
-              <n-avatar
-                :size="74"
+            <div class="bg-white dark:bg-dark-card rounded-lg p-15px flex gap-20px items-center">
+              <img
+                class="w-74px h-74px rounded-full object-cover flex-shrink-0"
                 :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)"
-                fallback-src="/logo.png"
-                round />
+                @error="($event.target as HTMLImageElement).src = '/logo.png'" />
 
               <div @click="toMyInfo" class="flex flex-col flex-1 py-10px">
                 <div class="font-bold text-18px">{{ userStore.userInfo!.name }}</div>
@@ -40,8 +39,8 @@
               <div @click="toMyInfo" class="flex items-center justify-end">
                 <svg @click="handleBack" class="w-24px text-gray h-24px iconpark-icon"><use href="#right"></use></svg>
               </div>
-            </n-card>
-            <n-card size="small" content-class="flex flex-col w-full flex-1" class="rounded-lg">
+            </div>
+            <div class="bg-white dark:bg-dark-card rounded-lg p-15px flex flex-col w-full flex-1">
               <div
                 v-for="item in options"
                 :key="item.label"
@@ -55,7 +54,7 @@
                   <svg class="w-20px text-gray h-20px iconpark-icon"><use href="#right"></use></svg>
                 </div>
               </div>
-            </n-card>
+            </div>
           </div>
         </div>
       </template>
@@ -64,10 +63,13 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import router from '@/router'
-import { useUserStore } from '@/stores/user'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('SimpleBio')
 
 const userStore = useUserStore()
 const { t } = useI18n()
@@ -78,13 +80,6 @@ const options = ref([
     label: t('mobile_my.photos'),
     onClick: () => {
       router.push('/mobile/mobileMy/myAlbum')
-    }
-  },
-  {
-    icon: 'shoucang',
-    label: t('mobile_my.favorites'),
-    onClick: () => {
-      router.push('/mobile/mobileMy/favorites')
     }
   },
   {
@@ -123,14 +118,8 @@ const toMyInfo = () => {
 }
 
 const handleBack = async () => {
-  // const result = await invoke('plugin:hula|ping', {
-  //   payload: { value: 'hello world' }
-  // })
-  // console.log('插件测试结果：', result)
-
-  // TODO 返回上一页
   router.back()
-  console.log('返回')
+  logger.debug('Navigate back')
 }
 </script>
 

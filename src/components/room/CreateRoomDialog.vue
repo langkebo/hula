@@ -1,6 +1,6 @@
 <template>
   <n-modal
-    v-model:show="visible"
+    :show="visible"
     preset="card"
     :title="t('room.create.title')"
     :style="{ width: '480px' }"
@@ -42,7 +42,7 @@
 
       <n-form-item :label="t('room.create.encryption')" path="isEncrypted">
         <n-switch v-model:value="formData.isEncrypted" />
-        <span class="ml-8px text-12px color-#909090">{{ t('room.create.encryption_hint') }}</span>
+        <span class="ml-8px text-12px color-[--hula-text-tertiary]">{{ t('room.create.encryption_hint') }}</span>
       </n-form-item>
 
       <n-form-item :label="t('room.create.history')" path="historyVisibility">
@@ -69,8 +69,8 @@ import { useI18n } from 'vue-i18n'
 import type { FormInst, FormRules, UploadCustomRequestOptions } from 'naive-ui'
 import { matrixRoomService } from '@/services/matrix'
 import { matrixMediaService } from '@/services/matrix'
-import matrixClientService from '@/services/matrix/MatrixClientService'
-import { Visibility, Preset } from '@/types/matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('CreateRoomDialog')
 
 const props = defineProps<{
   visible: boolean
@@ -85,6 +85,7 @@ const { t } = useI18n()
 const formRef = ref<FormInst>()
 const creating = ref(false)
 const defaultAvatar = '/logoD.png'
+const serverDomain = ref('matrix.org')
 
 const formData = reactive({
   name: '',
@@ -93,7 +94,7 @@ const formData = reactive({
   isPublic: false,
   alias: '',
   isEncrypted: false,
-  historyVisibility: 'shared'
+  historyVisibility: 'shared' as 'shared' | 'invited' | 'joined' | 'world_readable'
 })
 
 const rules: FormRules = {
@@ -110,10 +111,14 @@ const historyOptions = [
   { label: t('room.create.history_world_readable'), value: 'world_readable' }
 ]
 
-const serverDomain = computed(() => {
-  const client = matrixClientService.getClient()
-  return client?.getDomain() || 'matrix.org'
-})
+const loadServerDomain = async () => {
+  try {
+    serverDomain.value = await matrixRoomService.getServerDomain()
+  } catch (error) {
+    logger.error('获取 homeserver 域名失败:', error)
+    serverDomain.value = 'matrix.org'
+  }
+}
 
 const handleAvatarUpload = async ({ file }: UploadCustomRequestOptions) => {
   try {
@@ -123,7 +128,7 @@ const handleAvatarUpload = async ({ file }: UploadCustomRequestOptions) => {
     const result = await matrixMediaService.uploadFile(uploadFile)
     formData.avatarUrl = result.contentUri
   } catch (error) {
-    console.error('[CreateRoomDialog] 上传头像失败:', error)
+    logger.error('上传头像失败:', error)
     window.$message?.error(t('room.create.avatar_upload_failed'))
   }
 }
@@ -137,50 +142,22 @@ const handleCreate = async () => {
 
   creating.value = true
   try {
-    const initialState: any[] = []
-
-    if (formData.isEncrypted) {
-      initialState.push({
-        type: 'm.room.encryption',
-        state_key: '',
-        content: {
-          algorithm: 'm.megolm.v1.aes-sha2'
-        }
-      })
-    }
-
-    if (formData.historyVisibility !== 'shared') {
-      initialState.push({
-        type: 'm.room.history_visibility',
-        state_key: '',
-        content: {
-          history_visibility: formData.historyVisibility
-        }
-      })
-    }
-
-    const room = await matrixRoomService.createRoom({
+    const room = await matrixRoomService.createGroupRoom({
       name: formData.name,
       topic: formData.topic,
-      room_alias_name: formData.alias || undefined,
-      visibility: formData.isPublic ? Visibility.Public : Visibility.Private,
-      preset: formData.isPublic ? Preset.PublicChat : Preset.PrivateChat,
-      initial_state: initialState.length > 0 ? initialState : undefined
+      avatarUrl: formData.avatarUrl || undefined,
+      isPublic: formData.isPublic,
+      alias: formData.alias || undefined,
+      isEncrypted: formData.isEncrypted,
+      historyVisibility: formData.historyVisibility
     })
-
-    if (formData.avatarUrl && room) {
-      const client = (await import('@/services/matrix/MatrixClientService')).default.getClient()
-      if (client) {
-        await client.sendStateEvent(room.roomId, 'm.room.avatar' as any, { url: formData.avatarUrl }, '')
-      }
-    }
 
     window.$message?.success(t('room.create.success'))
     emit('created', room?.roomId || '')
     emit('update:visible', false)
     resetForm()
   } catch (error) {
-    console.error('[CreateRoomDialog] 创建房间失败:', error)
+    logger.error('创建房间失败:', error)
     window.$message?.error(t('room.create.failed'))
   } finally {
     creating.value = false
@@ -200,10 +177,13 @@ const resetForm = () => {
 watch(
   () => props.visible,
   (visible) => {
-    if (!visible) {
+    if (visible) {
+      void loadServerDomain()
+    } else {
       resetForm()
     }
-  }
+  },
+  { immediate: true }
 )
 </script>
 

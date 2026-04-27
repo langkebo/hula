@@ -74,18 +74,20 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { exit } from '@tauri-apps/plugin-process'
 import { useWindow } from '@/hooks/useWindow.ts'
 import type { UserState } from '@/services/types'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStore } from '@/stores/user'
-import { useUserStatusStore } from '@/stores/userStatus'
-import { changeUserState } from '@/utils/ImRequestUtils'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { isWindows } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('Tray')
+const timerManager = useTimerManager()
 
 const appWindow = WebviewWindow.getCurrent()
 const { checkWinExist, createWebviewWindow, resizeWindow } = useWindow()
 const userStatusStore = useUserStatusStore()
-const userStore = useUserStore()
 const settingStore = useSettingStore()
 const globalStore = useGlobalStore()
 const { lockScreen } = storeToRefs(settingStore)
@@ -98,14 +100,14 @@ const iconVisible = ref(false)
 
 // 消息提示音状态
 const messageSound = computed({
-  get: () => settingStore.notification.messageSound,
+  get: () => settingStore.messageSoundEnabled,
   set: (value: boolean) => {
     settingStore.setMessageSoundEnabled(value)
   }
 })
 
 const division = () => {
-  return <div class={'h-1px bg-[--line-color] w-full'}></div>
+  return <div class={'h-1px bg-[--hula-border-default] w-full'}></div>
 }
 
 const translateStateTitle = (title?: string) => {
@@ -126,13 +128,10 @@ const handleExit = () => {
 
 const toggleStatus = async (item: UserState) => {
   try {
-    await changeUserState({ id: item.id })
-
-    stateId.value = item.id
-    userStore.userInfo!.userStateId = item.id
+    await userStatusStore.changeCurrentUserState(item)
     appWindow.hide()
   } catch (error) {
-    console.error('更新状态失败:', error)
+    logger.error('更新状态失败:', error)
     appWindow.hide()
   }
 }
@@ -144,13 +143,12 @@ const toggleMessageSound = () => {
   })
 }
 
-let blinkTask: NodeJS.Timeout | null = null
+let blinkTask: number | null = null
 let homeFocusUnlisten: (() => void) | null = null
 let homeBlurUnlisten: (() => void) | null = null
 
 const startBlinkTask = () => {
-  blinkTask = setInterval(async () => {
-    // 定时器触发时，切换图标状态
+  blinkTask = timerManager.setInterval(async () => {
     const tray = await TrayIcon.getById('tray')
     tray?.setIcon(iconVisible.value ? 'tray/icon.png' : null)
     iconVisible.value = !iconVisible.value
@@ -159,15 +157,14 @@ const startBlinkTask = () => {
 
 const stopBlinkTask = async () => {
   if (blinkTask) {
-    clearInterval(blinkTask)
+    timerManager.clearInterval(blinkTask)
     blinkTask = null
 
-    // 恢复托盘图标为默认状态，防止图标消失
     try {
       const tray = await TrayIcon.getById('tray')
       await tray?.setIcon('tray/icon.png')
     } catch (e) {
-      console.warn('[Tray] 恢复托盘图标失败:', e)
+      logger.warn('恢复托盘图标失败:', e)
     }
     iconVisible.value = false
   }
@@ -221,6 +218,6 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .tray {
-  @apply bg-[--center-bg-color] size-full p-8px box-border select-none text-[--text-color] text-12px;
+  @apply bg-[--hula-surface-panel] size-full p-8px box-border select-none text-[--hula-text-primary] text-12px;
 }
 </style>

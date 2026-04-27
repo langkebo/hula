@@ -1,4 +1,7 @@
 import { type, version } from '@tauri-apps/plugin-os'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('PlatformConstants')
 
 /**
  * 平台类型枚举
@@ -35,10 +38,10 @@ class PlatformDetector {
         PlatformDetector._osType === 'windows' && PlatformDetector.isWindows10Version(PlatformDetector._osVersion)
 
       if (import.meta.env.DEV) {
-        console.log(`Platform detected: ${PlatformDetector._osType} (${PlatformDetector._platformType})`)
+        logger.debug(`Platform detected: ${PlatformDetector._osType} (${PlatformDetector._platformType})`)
       }
     } catch (error) {
-      console.warn('Failed to detect platform type, defaulting to desktop:', error)
+      logger.warn('Failed to detect platform type, defaulting to desktop:', error)
     }
 
     PlatformDetector._initialized = true
@@ -69,7 +72,7 @@ class PlatformDetector {
     try {
       return version()
     } catch (error) {
-      console.warn('Failed to detect platform version:', error)
+      logger.warn('Failed to detect platform version:', error)
       return undefined
     }
   }

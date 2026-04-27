@@ -18,7 +18,7 @@
       </div>
       <div class="config-hint">
         <p>{{ t('menu.homeserver_hint') }}</p>
-        <p class="example">{{ t('menu.homeserver_example') }}: http://localhost:8008</p>
+        <p class="example">{{ t('menu.homeserver_example') }}: http://localhost:28008</p>
       </div>
     </div>
     <template #footer>
@@ -34,6 +34,14 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NModal, NInput, NButton } from 'naive-ui'
+import {
+  isValidHttpUrl,
+  normalizeHttpUrl,
+  resolveMatrixEndpointConfig,
+  saveMatrixHomeserverUrl
+} from '@/services/backend'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('HomeserverDialog')
 
 const { t } = useI18n()
 
@@ -48,8 +56,7 @@ watch(
   () => showModal.value,
   (val) => {
     if (val) {
-      const saved = localStorage.getItem('hula-homeserver-url')
-      homeserverUrl.value = saved || import.meta.env.VITE_HOMESERVER_URL || 'http://localhost:8008'
+      homeserverUrl.value = resolveMatrixEndpointConfig().homeserverUrl
     }
   }
 )
@@ -64,14 +71,9 @@ async function handleSave() {
     return
   }
 
-  let url = homeserverUrl.value.trim()
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'http://' + url
-  }
+  const url = normalizeHttpUrl(homeserverUrl.value)
 
-  try {
-    new URL(url)
-  } catch {
+  if (!isValidHttpUrl(url)) {
     window.$message.error(t('menu.homeserver_invalid'))
     return
   }
@@ -79,12 +81,12 @@ async function handleSave() {
   saving.value = true
 
   try {
-    localStorage.setItem('hula-homeserver-url', url)
+    homeserverUrl.value = saveMatrixHomeserverUrl(url)
     emit('save', url)
     window.$message.success(t('menu.homeserver_saved'))
     showModal.value = false
   } catch (error) {
-    console.error('保存 homeserver 失败:', error)
+    logger.error('Failed to save homeserver URL:', error)
     window.$message.error(t('menu.homeserver_save_failed'))
   } finally {
     saving.value = false
@@ -103,19 +105,19 @@ async function handleSave() {
 
 .config-label {
   font-size: 14px;
-  color: var(--text-color-1);
+  color: var(--hula-text-primary);
   margin-bottom: 8px;
 }
 
 .config-hint {
   font-size: 12px;
-  color: #999;
+  color: var(--hula-text-quaternary);
   line-height: 1.6;
 }
 
 .config-hint .example {
   margin-top: 4px;
-  color: #666;
+  color: var(--hula-text-secondary);
 }
 
 .modal-footer {

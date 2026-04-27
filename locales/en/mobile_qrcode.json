@@ -1,0 +1,11 @@
+{
+  "page_title": "Scan",
+  "group_title": "Group QR Code",
+  "account": "Account",
+  "scan_hint": "Scan to add friend",
+  "scan_cancelled": "Scan cancelled",
+  "scan_failed_or_cancelled": "Scan failed or was cancelled",
+  "camera_permission_required": "Camera permission is required. Please enable it in system settings.",
+  "permission_missing": "Permission missing",
+  "scan_error": "An error occurred while scanning"
+}

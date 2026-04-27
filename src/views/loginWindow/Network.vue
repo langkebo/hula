@@ -98,7 +98,9 @@
       </n-tabs>
 
       <n-flex align="center" justify="center" :size="40" class="pt-10px">
-        <p @click="handleSave" class="text-(14px #13987f) cursor-pointer">{{ t('login.network.actions.save') }}</p>
+        <p @click="handleSave" class="text-(14px --color-primary) cursor-pointer">
+          {{ t('login.network.actions.save') }}
+        </p>
         <p @click="router.push('/login')" class="text-(14px #707070) cursor-pointer">
           {{ t('login.network.actions.back') }}
         </p>
@@ -108,18 +110,19 @@
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Network')
 import { darkTheme, lightTheme } from 'naive-ui'
-import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { updateSettings } from '@/services/tauriCommand'
-import { useSettingStore } from '@/stores/setting'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { ProxySettings } from '@/typings/global'
 import { addSlashToHead } from '@/utils/StringUtils.ts'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
-const naiveTheme = computed(() => (themes.value.content === 'dark' ? darkTheme : lightTheme))
+const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 
 const apiOptions = computed(() => [
   {
@@ -220,7 +223,7 @@ const handleSave = async () => {
     const settings = JSON.stringify(proxySettings)
     localStorage.setItem('proxySettings', settings)
     await updateTauriSettings(proxySettings)
-    console.log('settings', proxySettings)
+    logger.debug('settings', proxySettings)
 
     window.$message.success(t('login.network.messages.save_success'))
   } catch (error) {

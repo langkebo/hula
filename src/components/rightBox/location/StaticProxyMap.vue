@@ -7,8 +7,8 @@
       @wheel.prevent="onWheel"
       @mousedown.prevent="onMouseDown"></div>
     <div v-if="controls" class="absolute right-8px bottom-8px flex flex-col gap-6px">
-      <button class="size-26px rounded-4px bg-#ffffff50 dark:bg-#00000040" @click="zoomIn">+</button>
-      <button class="size-26px rounded-4px bg-#ffffff50 dark:bg-#00000040" @click="zoomOut">-</button>
+      <button class="static-proxy-map__zoom-btn" @click="zoomIn">+</button>
+      <button class="static-proxy-map__zoom-btn" @click="zoomOut">-</button>
     </div>
   </div>
 </template>
@@ -68,8 +68,8 @@ const fetchImage = async () => {
     const next = await getStaticMap(lat, lng, w, h, zoom.value)
     imgSrc.value = next || prev
     emit('map-ready')
-  } catch (e: any) {
-    emit('map-error', String(e?.message || e))
+  } catch (e) {
+    emit('map-error', e instanceof Error ? e.message : String(e))
   }
 }
 
@@ -140,4 +140,13 @@ onMounted(() => {
 })
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+.static-proxy-map__zoom-btn {
+  @apply size-26px rounded-4px text-[--hula-text-primary];
+  background: color-mix(in srgb, var(--hula-surface-panel) 50%, transparent);
+
+  [data-theme='dark'] & {
+    background: color-mix(in srgb, var(--hula-surface-app) 40%, transparent);
+  }
+}
+</style>

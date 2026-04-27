@@ -7,10 +7,7 @@
     :bordered="false"
     @update:show="$emit('update:visible', $event)">
     <div class="forward-dialog">
-      <n-input
-        v-model:value="searchQuery"
-        :placeholder="t('message.forward.search_placeholder')"
-        clearable>
+      <n-input v-model:value="searchQuery" :placeholder="t('message.forward.search_placeholder')" clearable>
         <template #prefix>
           <svg class="size-16px">
             <use href="#search"></use>
@@ -26,14 +23,8 @@
             class="room-item"
             :class="{ selected: selectedRooms.includes(room.roomId) }"
             @click="toggleRoom(room.roomId)">
-            <n-checkbox
-              :checked="selectedRooms.includes(room.roomId)"
-              @update:checked="toggleRoom(room.roomId)" />
-            <n-avatar
-              round
-              :size="36"
-              :src="room.avatar"
-              :fallback-src="defaultAvatar" />
+            <n-checkbox :checked="selectedRooms.includes(room.roomId)" @update:checked="toggleRoom(room.roomId)" />
+            <n-avatar round :size="36" :src="room.avatar" :fallback-src="defaultAvatar" />
             <div class="room-info">
               <span class="room-name">{{ room.name }}</span>
               <span v-if="room.isEncrypted" class="encrypted-badge">
@@ -50,7 +41,7 @@
         <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
         <n-button type="primary" :disabled="selectedRooms.length === 0" :loading="forwarding" @click="handleForward">
           {{ t('message.forward.send') }}
-          <template v-if="selectedRooms.length > 0"> ({{ selectedRooms.length }}) </template>
+          <template v-if="selectedRooms.length > 0">({{ selectedRooms.length }})</template>
         </n-button>
       </div>
     </div>
@@ -59,9 +50,11 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixForwardService } from '@/services/matrix'
-import { useRoomStore } from '@/stores/room'
+import { matrixForwardService, matrixMessageService } from '@/services/matrix'
+import { useRoomStore } from '@/stores/domains/chat/room'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('ForwardDialog')
 
 const props = defineProps<{
   visible: boolean
@@ -88,9 +81,9 @@ const filteredRooms = computed(() => {
   const query = searchQuery.value.toLowerCase()
 
   return rooms
-    .filter((room: any) => room.roomId !== props.roomId)
-    .filter((room: any) => !query || room.name?.toLowerCase().includes(query))
-    .map((room: any) => ({
+    .filter((room) => room.roomId !== props.roomId)
+    .filter((room) => !query || room.name?.toLowerCase().includes(query))
+    .map((room) => ({
       roomId: room.roomId,
       name: room.name || room.roomId,
       avatar: AvatarUtils.getAvatarUrl(room.avatarUrl || ''),
@@ -117,13 +110,7 @@ const handleForward = async () => {
 
   forwarding.value = true
   try {
-    const client = (await import('@/services/matrix/MatrixClientService')).default.getClient()
-    if (!client) return
-
-    const room = client.getRoom(props.roomId)
-    if (!room) return
-
-    const event = room.findEventById(props.eventId)
+    const event = await matrixMessageService.getRoomMessage(props.roomId, props.eventId)
     if (!event) return
 
     const results = await matrixForwardService.forwardEventToMultipleRooms(event, selectedRooms.value)
@@ -138,7 +125,7 @@ const handleForward = async () => {
       window.$message?.error(t('message.forward.failed'))
     }
   } catch (error) {
-    console.error('[ForwardDialog] 转发失败:', error)
+    logger.error('转发失败:', error)
     window.$message?.error(t('message.forward.failed'))
   } finally {
     forwarding.value = false
@@ -169,11 +156,11 @@ watch(
   @apply flex items-center gap-12px p-8px rounded-8px cursor-pointer transition-all;
 
   &:hover {
-    background: var(--emoji-hover);
+    background: var(--hula-fill-hover);
   }
 
   &.selected {
-    background: rgba(19, 152, 127, 0.1);
+    background: var(--hula-color-primary-100);
   }
 }
 
@@ -186,10 +173,10 @@ watch(
 }
 
 .encrypted-badge {
-  @apply flex-center color-#13987f;
+  @apply flex-center color-[--hula-color-primary-500];
 }
 
 .dialog-footer {
-  @apply flex justify-end gap-12px pt-8px border-t-1px border-solid border-[--border-color];
+  @apply flex justify-end gap-12px pt-8px border-t-1px border-solid border-[--hula-border-default];
 }
 </style>

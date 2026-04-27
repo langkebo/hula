@@ -1,13 +1,13 @@
 <template>
   <div class="min-w-0 cursor-default select-none flex-1 flex flex-col bg-[--right-bg-color] overflow-hidden">
     <!-- 内容头部 -->
-    <div class="flex-shrink-0 px-20px py-16px border-b border-solid border-[--line-color]">
+    <div class="flex-shrink-0 px-20px py-16px border-b border-solid border-[--hula-border-default]">
       <div class="flex items-center justify-between gap-32px">
         <n-flex vertical class="flex-shrink-0">
-          <h2 class="text-18px font-600 text-[--text-color] m-0">
+          <h2 class="text-18px font-600 text-[--hula-text-primary] m-0">
             {{ getContentTitle() }}
           </h2>
-          <p class="text-14px text-[--text-color] opacity-60 m-0 mt-4px">
+          <p class="text-14px text-[--hula-text-secondary] opacity-60 m-0 mt-4px">
             {{ getContentSubtitle() }}
           </p>
         </n-flex>
@@ -23,10 +23,10 @@
           autoCorrect="off"
           autoCapitalize="off"
           style="width: 200px"
-          class="rounded-6px border-(solid 1px [--line-color])"
+          class="rounded-6px border-(solid 1px [--hula-border-default])"
           size="small">
           <template #prefix>
-            <svg class="size-16px text-[--text-color] opacity-60">
+            <svg class="size-16px text-[--hula-text-secondary] opacity-60">
               <use href="#search"></use>
             </svg>
           </template>
@@ -59,7 +59,7 @@
                 <div class="file-meta-info">
                   <div class="flex-center gap-4px">
                     <p>{{ t('fileManager.list.meta.from') }}</p>
-                    <p class="file-sender">{{ getUserDisplayName(file.sender?.id) }}</p>
+                    <p class="file-sender">{{ file.sender?.id ? getUserDisplayName(file.sender.id) : '' }}</p>
                   </div>
                   <p class="opacity-80">{{ file.uploadTime }}</p>
                 </div>
@@ -76,7 +76,7 @@
             {{ t('fileManager.search.clear') }}
           </n-button>
 
-          <n-button v-if="selectedUser" @click="clearUserFilter" ghost color="#13987f" size="small">
+          <n-button v-if="selectedUser" @click="clearUserFilter" ghost color="var(--color-primary)" size="small">
             {{ t('fileManager.search.showAllUsers') }}
           </n-button>
         </template>
@@ -91,14 +91,33 @@ import { useI18n } from 'vue-i18n'
 import ContextMenu from '@/components/common/ContextMenu.vue'
 import { useDownload } from '@/hooks/useDownload'
 import type { FileBody } from '@/services/types'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import EmptyState from './EmptyState.vue'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('FileContent')
+
+type FileItem = {
+  id: string
+  fileName?: string
+  name?: string
+  originalName?: string
+  title?: string
+  fileType?: string
+  fileSize?: number
+  downloadUrl?: string
+  url?: string
+  uploadTime: string
+  sender?: {
+    id: string
+    name?: string
+  }
+}
 
 type TimeGroup = {
   date: string
   displayDate: string
-  files: any[]
+  files: FileItem[]
 }
 
 type User = {
@@ -137,7 +156,7 @@ const normalizedFileSearchKeyword = computed(() => fileSearchKeyword.value.trim(
 const hasActiveSearch = computed(() => normalizedFileSearchKeyword.value.length > 0)
 
 // 检查文件是否匹配搜索关键词
-const matchesFileByKeyword = (file: any, keyword: string) => {
+const matchesFileByKeyword = (file: FileItem, keyword: string) => {
   if (!keyword) {
     return true
   }
@@ -170,7 +189,7 @@ const displayedTimeGroupedFiles = computed(() => {
 
   return timeGroupedFiles.value
     .map((group) => {
-      const matchedFiles = group.files.filter((file: any) => matchesFileByKeyword(file, keyword))
+      const matchedFiles = group.files.filter((file: FileItem) => matchesFileByKeyword(file, keyword))
       if (matchedFiles.length === 0) {
         return null
       }
@@ -190,11 +209,11 @@ const totalDisplayedFiles = computed(() => sumBy(displayedTimeGroupedFiles.value
 
 const { downloadFile } = useDownload()
 
-const fileContextMenu = computed<OPT.RightMenu[]>(() => [
+const fileContextMenu = computed<OPT.RightMenu<FileItem>[]>(() => [
   {
     label: t('menu.save_as'),
     icon: 'Importing',
-    click: async (targetFile: any) => {
+    click: async (targetFile: FileItem) => {
       const downloadUrl = targetFile.downloadUrl || targetFile.url
       const defaultName = targetFile.fileName ? String(targetFile.fileName) : undefined
       const isVideo = targetFile.fileType === 'video'
@@ -216,21 +235,21 @@ const fileContextMenu = computed<OPT.RightMenu[]>(() => [
           await saveFileAttachmentAs(saveParams)
         }
       } catch (error) {
-        console.error('文件另存为失败:', error)
+        logger.error('文件另存为失败:', error)
       }
     }
   }
 ])
 
-const handleFileMenuSelect = async (menuItem: OPT.RightMenu | null, file: any) => {
-  if (!menuItem || typeof menuItem.click !== 'function') {
+const handleFileMenuSelect = async (menuItem: OPT.RightMenu<FileItem>, file: FileItem) => {
+  if (typeof menuItem.click !== 'function') {
     return
   }
 
   try {
     await menuItem.click(file)
   } catch (error) {
-    console.error('执行文件菜单操作失败:', error)
+    logger.error('执行文件菜单操作失败:', error)
   }
 }
 
@@ -336,7 +355,7 @@ const clearUserFilter = () => {
 }
 
 // 转换文件数据为 FileBody 格式
-const convertToFileBody = (file: any): FileBody => {
+const convertToFileBody = (file: FileItem): FileBody => {
   return {
     fileName: file.fileName || '',
     size: file.fileSize || 0,
@@ -347,7 +366,7 @@ const convertToFileBody = (file: any): FileBody => {
 
 <style scoped lang="scss">
 .time-group {
-  @apply sticky top-10px z-10 flex items-center justify-between p-12px rounded-6px text-[--text-color] bg-#e3e3e380 dark:bg-#30303080 backdrop-blur-md;
+  @apply sticky top-10px z-10 flex items-center justify-between p-12px rounded-6px text-[--hula-text-primary] bg-#e3e3e380 dark:bg-#30303080 backdrop-blur-md;
 }
 
 .file-meta-info {
@@ -356,11 +375,11 @@ const convertToFileBody = (file: any): FileBody => {
   align-items: center;
   padding: 0 4px;
   font-size: 12px;
-  color: #909090;
+  color: var(--hula-text-tertiary);
 }
 
 .file-sender {
-  color: #13987f;
+  color: var(--color-primary);
   cursor: pointer;
 
   &:hover {

@@ -154,14 +154,17 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { showConfirmDialog, showToast, showLoadingToast } from 'vant'
 import { Icon } from '@iconify/vue'
-import { matrixAccountService } from '@/services/matrix/MatrixAccountService'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { matrixCryptoService } from '@/services/matrix'
-import { useLogin } from '@/hooks/useLogin'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SecuritySettings')
 
 const { t } = useI18n()
 const router = useRouter()
-const { logout, resetLoginState } = useLogin()
+const { logout } = useLoginFlow()
 
 const deviceCount = ref('0')
 const ignoredUsersCount = ref('0')
@@ -207,7 +210,7 @@ async function loadSecurityInfo() {
       keyBackupEnabled.value = cryptoStatus.keyBackupEnabled
     }
   } catch (error) {
-    console.error('[MobileSecurity] 加载安全信息失败:', error)
+    logger.error('Failed to load security details', error)
   }
 }
 
@@ -247,7 +250,7 @@ async function handleChangePassword() {
       confirmPassword: ''
     }
   } catch (error) {
-    console.error('[MobileSecurity] 修改密码失败:', error)
+    logger.error('Failed to change password', error)
     showToast({
       type: 'fail',
       message: t('mobile_security.password_change_failed')
@@ -280,7 +283,7 @@ async function handleSetupBackup() {
     backupPassphrase.value = ''
     await loadSecurityInfo()
   } catch (error) {
-    console.error('[MobileSecurity] 设置备份失败:', error)
+    logger.error('Failed to set up key backup', error)
     showToast({
       type: 'fail',
       message: t('mobile_security.backup_setup_failed')
@@ -297,13 +300,40 @@ async function handleExportKeys() {
       cancelButtonText: t('mobile_security.export_keys_confirm.cancel')
     })
 
-    showToast({
-      type: 'success',
-      message: t('mobile_security.export_keys_success')
+    showLoadingToast({
+      message: t('mobile_security.exporting_keys'),
+      forbidClick: true
     })
+
+    const keysJson = await matrixCryptoService.exportKeys('')
+    if (keysJson) {
+      const blob = new Blob([keysJson], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `hula-keys-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      showToast({
+        type: 'success',
+        message: t('mobile_security.export_keys_success')
+      })
+    } else {
+      showToast({
+        type: 'fail',
+        message: t('mobile_security.export_keys_empty')
+      })
+    }
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('[MobileSecurity] 导出密钥失败:', error)
+      logger.error('Failed to export keys', error)
+      showToast({
+        type: 'fail',
+        message: t('mobile_security.export_keys_failed')
+      })
     }
   }
 }
@@ -322,12 +352,11 @@ async function handleDeactivate() {
       type: 'success',
       message: t('mobile_security.deactivate_success')
     })
-    await resetLoginState()
     await logout()
     router.push('/mobile/login')
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('[MobileSecurity] 注销账户失败:', error)
+      logger.error('Failed to deactivate account', error)
       showToast({
         type: 'fail',
         message: t('mobile_security.deactivate_failed')

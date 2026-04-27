@@ -23,12 +23,14 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
 
+const logger = createLogger('MyMessages')
 const { t } = useI18n()
 
 const onUpdate = (newTab: string) => {
-  console.log('已更新：', newTab)
+  logger.debug('Tab updated:', newTab)
 }
 
 const tabOptions = reactive([

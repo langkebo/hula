@@ -1,123 +1,104 @@
-/**
- * 应用服务 (Application Service)
- * 第三方应用服务集成
- */
+import type { MatrixClient } from 'matrix-js-sdk'
 import { matrixClientService } from './MatrixClientService'
+import { error } from '@tauri-apps/plugin-log'
 
-export interface ApplicationService {
-  id: string
-  url: string
-  asToken: string
-  sender: string
-  namespacedUsers: string[]
-  enabled: boolean
+export interface ApplicationServiceNamespace {
+  exclusive: boolean
+  pattern: string
 }
 
-export interface AsRegistration {
+export interface ApplicationServiceRegistration {
+  id?: string
   url: string
   as_token: string
   sender: string
   namespaces?: {
-    users?: { exclusive: boolean; pattern: string }[]
-    rooms?: { exclusive: boolean; pattern: string }[]
-    aliases?: { exclusive: boolean; pattern: string }[]
+    users?: ApplicationServiceNamespace[]
+    rooms?: ApplicationServiceNamespace[]
+    aliases?: ApplicationServiceNamespace[]
   }
-  protocols?: string[]
-  rate_limited?: boolean
+}
+
+export interface RegisteredApplicationService {
+  id: string
+  url: string
 }
 
 class MatrixApplicationService {
-  private get client() {
-    const c = matrixClientService.getClient()
-    if (!c) throw new Error('Matrix client not initialized')
-    return c
+  private getClient(): MatrixClient {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+    return client
   }
 
-  /**
-   * 注册应用服务
-   */
-  async register(asInfo: AsRegistration): Promise<boolean> {
+  async register(payload: ApplicationServiceRegistration): Promise<boolean> {
     try {
-      await this.client.http.authedRequest({}, 'POST', '/_matrix/client/v3/applicationservice/register', undefined, {
-        body: JSON.stringify(asInfo)
-      })
+      await this.getClient().http.authedRequest('POST', '/_synapse/admin/v1/appservices', undefined, payload)
       return true
-    } catch (error) {
-      console.error('[ApplicationService] 注册失败:', error)
+    } catch (err) {
+      error(`[MatrixApplicationService] 注册失败: ${err}`)
       return false
     }
   }
 
-  /**
-   * 获取应用服务列表
-   */
-  async list(): Promise<ApplicationService[]> {
+  async list(): Promise<RegisteredApplicationService[]> {
     try {
-      const response = (await this.client.http.authedRequest(
-        {},
-        'GET',
-        '/_matrix/client/v3/applicationservice/services',
-        undefined
-      )) as any
-      return response.services || []
-    } catch (error) {
-      console.error('[ApplicationService] 获取列表失败:', error)
+      const response = (await this.getClient().http.authedRequest('GET', '/_synapse/admin/v1/appservices')) as {
+        services?: unknown
+      }
+      return Array.isArray(response.services) ? (response.services as RegisteredApplicationService[]) : []
+    } catch (err) {
+      error(`[MatrixApplicationService] 获取列表失败: ${err}`)
       return []
     }
   }
 
-  /**
-   * 禁用/启用应用服务
-   */
-  async setEnabled(serviceId: string, enabled: boolean): Promise<boolean> {
+  async setEnabled(id: string, enabled: boolean): Promise<boolean> {
     try {
-      await this.client.http.authedRequest(
-        {},
+      await this.getClient().http.authedRequest(
         'PUT',
-        `/_matrix/client/v3/applicationservice/services/${serviceId}/enabled`,
+        `/_synapse/admin/v1/appservices/${encodeURIComponent(id)}`,
         undefined,
-        { body: JSON.stringify({ enabled }) }
+        {
+          enabled
+        }
       )
       return true
-    } catch (error) {
-      console.error('[ApplicationService] 设置启用状态失败:', error)
+    } catch (err) {
+      error(`[MatrixApplicationService] 设置启用状态失败: ${err}`)
       return false
     }
   }
 
-  /**
-   * 获取应用服务用户命名空间
-   */
-  async getUsersNamespace(serviceId: string): Promise<{ exclusive: boolean; pattern: string }[]> {
-    try {
-      const response = (await this.client.http.authedRequest(
-        {},
-        'GET',
-        `/_matrix/client/v3/applicationservice/services/${serviceId}/users`,
-        undefined
-      )) as any
-      return response.namespaces?.users || []
-    } catch {
-      return []
-    }
+  async getUsersNamespace(id: string): Promise<ApplicationServiceNamespace[]> {
+    return this.getNamespace(id, 'users')
   }
 
-  /**
-   * 获取应用服务房间命名空间
-   */
-  async getRoomsNamespace(serviceId: string): Promise<{ exclusive: boolean; pattern: string }[]> {
+  async getRoomsNamespace(id: string): Promise<ApplicationServiceNamespace[]> {
+    return this.getNamespace(id, 'rooms')
+  }
+
+  private async getNamespace(id: string, key: 'users' | 'rooms'): Promise<ApplicationServiceNamespace[]> {
     try {
-      const response = (await this.client.http.authedRequest(
-        {},
+      const response = (await this.getClient().http.authedRequest(
         'GET',
-        `/_matrix/client/v3/applicationservice/services/${serviceId}/rooms`,
-        undefined
-      )) as any
-      return response.namespaces?.rooms || []
-    } catch {
+        `/_synapse/admin/v1/appservices/${encodeURIComponent(id)}`
+      )) as {
+        namespaces?: {
+          users?: unknown
+          rooms?: unknown
+        }
+      }
+      const value = response.namespaces?.[key]
+      return Array.isArray(value) ? (value as ApplicationServiceNamespace[]) : []
+    } catch (err) {
+      error(`[MatrixApplicationService] 获取 namespace 失败: ${err}`)
       return []
     }
   }
 }
 
 export const matrixApplicationService = new MatrixApplicationService()
+export default matrixApplicationService

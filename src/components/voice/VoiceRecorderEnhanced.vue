@@ -121,7 +121,7 @@
     </div>
 
     <div v-if="error" class="error-message">
-      <n-icon color="#e74c3c">
+      <n-icon color="var(--color-danger)">
         <svg><use href="#warning" /></svg>
       </n-icon>
       <span>{{ error }}</span>
@@ -131,10 +131,12 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixVoiceService, type VoiceUploadProgress } from '@/services/matrix/MatrixVoiceService'
+import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import { info, error as logError } from '@tauri-apps/plugin-log'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
+const timerManager = useTimerManager()
 
 const props = defineProps<{
   roomId: string
@@ -146,10 +148,17 @@ const emit = defineEmits<{
   (
     e: 'send',
     data: {
-      mxcUrl: string
-      duration: number
-      size: number
-      filename: string
+      type: 'm.voice'
+      content: {
+        msgtype: 'm.audio'
+        body: string
+        url: string
+        info: {
+          duration: number
+          mimetype: string
+          size: number
+        }
+      }
     }
   ): void
 }>()
@@ -170,7 +179,7 @@ let audioChunks: Blob[] = []
 let audioContext: AudioContext | null = null
 let analyser: AnalyserNode | null = null
 let previewAudio: HTMLAudioElement | null = null
-let recordingInterval: ReturnType<typeof setInterval> | null = null
+let recordingInterval: number | null = null
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60)
@@ -217,7 +226,7 @@ const startRecording = async () => {
     isRecording.value = true
     recordingTime.value = 0
 
-    recordingInterval = setInterval(() => {
+    recordingInterval = timerManager.setInterval(() => {
       recordingTime.value++
 
       if (analyser) {
@@ -285,22 +294,26 @@ const handleSend = async () => {
       props.roomId,
       new Blob([uint8Array.buffer], { type: 'audio/webm' })
     )
+    const mxcUrl = result.mxcUrl ?? result.url
+    if (!mxcUrl) {
+      throw new Error('SDK 未返回可发送的语音媒体地址')
+    }
 
     emit('send', {
-        type: 'm.voice',
-        content: {
-          msgtype: 'm.audio',
-          body: `Voice message (${recordingDuration.value}s)`,
-          url: result.content_uri,
-          info: {
-            duration: recordingDuration.value,
-            mimetype: 'audio/webm',
-            size: audioBlob.value.size
-          }
+      type: 'm.voice',
+      content: {
+        msgtype: 'm.audio',
+        body: `Voice message (${recordingDuration.value}s)`,
+        url: mxcUrl,
+        info: {
+          duration: recordingDuration.value,
+          mimetype: 'audio/webm',
+          size: audioBlob.value.size
         }
-      } as any)
+      }
+    })
 
-    info(`[VoiceRecorder] 语音上传成功: ${result.content_uri}`)
+    info(`[VoiceRecorder] 语音上传成功: ${mxcUrl}`)
     resetState()
   } catch (err) {
     error.value = t('voice.recorder.upload_failed')
@@ -331,7 +344,7 @@ const resetState = () => {
   }
 
   if (recordingInterval) {
-    clearInterval(recordingInterval)
+    timerManager.clearInterval(recordingInterval)
     recordingInterval = null
   }
 }
@@ -341,6 +354,7 @@ onUnmounted(() => {
   if (audioContext) {
     audioContext.close()
   }
+  timerManager.clearAll()
 })
 </script>
 
@@ -371,7 +385,7 @@ onUnmounted(() => {
 }
 
 .hint-text {
-  color: var(--text-color-3);
+  color: var(--hula-text-tertiary);
   font-size: 14px;
 }
 
@@ -383,7 +397,7 @@ onUnmounted(() => {
   .pulse-ring {
     position: absolute;
     inset: -4px;
-    border: 2px solid #e74c3c;
+    border: 2px solid var(--color-danger);
     border-radius: 50%;
     animation: pulse-ring 1.5s infinite;
   }
@@ -391,7 +405,7 @@ onUnmounted(() => {
   .pulse-dot {
     position: absolute;
     inset: 2px;
-    background: #e74c3c;
+    background: var(--color-danger);
     border-radius: 50%;
   }
 }
@@ -399,7 +413,7 @@ onUnmounted(() => {
 .recording-time {
   font-size: 18px;
   font-weight: 600;
-  color: #e74c3c;
+  color: var(--color-danger);
   font-variant-numeric: tabular-nums;
 }
 
@@ -412,12 +426,12 @@ onUnmounted(() => {
   .volume-bar {
     width: 4px;
     height: 4px;
-    background: #ccc;
+    background: var(--hula-text-disabled);
     border-radius: 2px;
     transition: height 0.1s;
 
     &.active {
-      background: #13987f;
+      background: var(--color-primary);
       height: 16px;
     }
   }
@@ -431,7 +445,7 @@ onUnmounted(() => {
 
 .preview-duration {
   font-size: 14px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
 }
 
 .controls {
@@ -444,7 +458,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #e74c3c;
+  color: var(--color-danger);
   font-size: 13px;
 }
 

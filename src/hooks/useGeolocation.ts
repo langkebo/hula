@@ -1,5 +1,7 @@
 import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Geolocation')
 
 type GeolocationState = {
   loading: boolean
@@ -38,7 +40,7 @@ export const useGeolocation = () => {
         state.value.permission = permission.state
         return permission.state
       } catch (error) {
-        console.warn(t('message.location.hook.permission_check_failed'), error)
+        logger.warn('权限检查失败:', error)
       }
     }
     return 'prompt'

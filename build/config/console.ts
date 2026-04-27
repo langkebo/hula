@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noConsole: Vite startup banner intentionally writes to the terminal.
 import pkg from '../../package.json'
 import { execSync } from 'node:child_process'
 

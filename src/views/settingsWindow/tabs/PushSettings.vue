@@ -1,5 +1,5 @@
 <template>
-  <div class="push-settings">
+  <div :class="['push-settings', { 'push-settings--embedded': embedded }]">
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.push.devices') }}</h3>
       <n-spin :show="loading">
@@ -83,9 +83,19 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { NSpin, NEmpty, NButton, NSwitch, NDivider, NTimePicker, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import { matrixPushService } from '@/services/matrix'
-import { matrixClientService } from '@/services/matrix'
-import type { IPusher, IPushRules } from 'matrix-js-sdk'
+import { matrixPushService, type IPusher, type IPushRules, type PushRuleKind, type IPushRule } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('PushSettings')
+
+withDefaults(
+  defineProps<{
+    embedded?: boolean
+  }>(),
+  {
+    embedded: false
+  }
+)
 
 defineOptions({
   name: 'PushSettings'
@@ -105,22 +115,17 @@ const invitePushEnabled = ref(true)
 const dndEnabled = ref(false)
 const dndStartTime = ref<number | null>(null)
 const dndEndTime = ref<number | null>(null)
+let unsubscribePushRules: (() => void) | null = null
 
 onMounted(async () => {
   await Promise.all([fetchPushers(), fetchPushRules()])
   loadDndSettings()
-
-  const client = matrixClientService.getClient() as any
-  if (client) {
-    client.on('pushRules', handlePushRulesUpdate)
-  }
+  unsubscribePushRules = matrixPushService.subscribePushRules(handlePushRulesUpdate)
 })
 
 onUnmounted(() => {
-  const client = matrixClientService.getClient() as any
-  if (client) {
-    client.removeListener('pushRules', handlePushRulesUpdate)
-  }
+  unsubscribePushRules?.()
+  unsubscribePushRules = null
 })
 
 function handlePushRulesUpdate(rules: IPushRules) {
@@ -146,7 +151,7 @@ async function fetchPushRules() {
     pushRules.value = rules
     updateUIFromRules(rules)
   } catch (error) {
-    console.error('[PushSettings] 获取推送规则失败:', error)
+    logger.error('Failed to fetch push rules', error)
     loadSavedSettings()
   } finally {
     rulesLoading.value = false
@@ -155,13 +160,13 @@ async function fetchPushRules() {
 
 function updateUIFromRules(rules: IPushRules) {
   if (rules.global) {
-    const masterRule = rules.global.override?.find((r: any) => r.rule_id === '.m.rule.master')
+    const masterRule = rules.global.override?.find((r: IPushRule) => r.rule_id === '.m.rule.master')
     masterEnabled.value = !masterRule?.enabled
 
-    const messageRule = rules.global.content?.find((r: any) => r.rule_id === '.m.rule.contains_user_name')
+    const messageRule = rules.global.content?.find((r: IPushRule) => r.rule_id === '.m.rule.contains_user_name')
     messagePushEnabled.value = messageRule?.enabled !== false
 
-    const inviteRule = rules.global.override?.find((r: any) => r.rule_id === '.m.rule.invite_for_me')
+    const inviteRule = rules.global.override?.find((r: IPushRule) => r.rule_id === '.m.rule.invite_for_me')
     invitePushEnabled.value = inviteRule?.enabled !== false
   }
 }
@@ -209,7 +214,7 @@ function handleDeletePusher(pusher: IPusher) {
     onPositiveClick: async () => {
       try {
         await matrixPushService.unregisterPusher(pusher.pushkey, pusher.app_id)
-        pushers.value = pushers.value.filter((p) => p.pushkey !== pusher.pushkey)
+        pushers.value = pushers.value.filter((p: IPusher) => p.pushkey !== pusher.pushkey)
         message.success(t('setting.push.delete.success'))
       } catch (error) {
         message.error(t('setting.push.delete.failed'))
@@ -220,11 +225,11 @@ function handleDeletePusher(pusher: IPusher) {
 
 async function handleMasterToggle(enabled: boolean) {
   try {
-    await matrixPushService.setPushRuleEnabled('global', 'override' as any, '.m.rule.master', !enabled)
+    await matrixPushService.setPushRuleEnabled('global', 'override', '.m.rule.master', !enabled)
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
-    console.error('[PushSettings] 设置主规则失败:', error)
-    message.error('设置失败')
+    logger.error('Failed to update master push rule', error)
+    message.error(t('setting.push.updateFailed'))
     masterEnabled.value = !enabled
   }
 }
@@ -232,26 +237,31 @@ async function handleMasterToggle(enabled: boolean) {
 async function handleMessagePushToggle(enabled: boolean) {
   try {
     const rules = pushRules.value?.global?.content || []
-    const messageRule = rules.find((r: any) => r.rule_id === '.m.rule.contains_user_name')
+    const messageRule = rules.find((r: { rule_id?: string }) => r.rule_id === '.m.rule.contains_user_name')
 
     if (messageRule) {
-      await matrixPushService.setPushRuleEnabled('global', 'content' as any, '.m.rule.contains_user_name', enabled)
+      await matrixPushService.setPushRuleEnabled(
+        'global',
+        'content' as PushRuleKind,
+        '.m.rule.contains_user_name',
+        enabled
+      )
     }
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
-    console.error('[PushSettings] 设置消息规则失败:', error)
-    message.error('设置失败')
+    logger.error('Failed to update message push rule', error)
+    message.error(t('setting.push.updateFailed'))
     messagePushEnabled.value = !enabled
   }
 }
 
 async function handleInvitePushToggle(enabled: boolean) {
   try {
-    await matrixPushService.setPushRuleEnabled('global', 'override' as any, '.m.rule.invite_for_me', enabled)
+    await matrixPushService.setPushRuleEnabled('global', 'override' as PushRuleKind, '.m.rule.invite_for_me', enabled)
     message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
   } catch (error) {
-    console.error('[PushSettings] 设置邀请规则失败:', error)
-    message.error('设置失败')
+    logger.error('Failed to update invite push rule', error)
+    message.error(t('setting.push.updateFailed'))
     invitePushEnabled.value = !enabled
   }
 }
@@ -273,42 +283,43 @@ function handleDndTimeChange() {
 
 <style scoped>
 .push-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
+}
+
+.push-settings--embedded {
+  padding: 0;
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-4);
+  color: var(--hula-text-primary);
 }
 
 .device-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .device-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-:deep(.dark) .device-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) var(--hula-space-4);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .device-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--hula-space-3);
 }
 
 .device-details {
@@ -317,32 +328,29 @@ function handleDndTimeChange() {
 }
 
 .device-name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--hula-font-size-base);
+  font-weight: var(--hula-font-weight-medium);
+  color: var(--hula-text-primary);
 }
 
 .device-meta {
   display: flex;
-  gap: 12px;
-  font-size: 12px;
-  color: #999;
+  gap: var(--hula-space-3);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
 }
 
 .device-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -351,40 +359,33 @@ function handleDndTimeChange() {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: #999;
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .time-range {
   display: flex;
   gap: 24px;
-  margin-top: 12px;
-  padding: 12px 16px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-:deep(.dark) .time-range {
-  background-color: rgba(255, 255, 255, 0.05);
+  margin-top: var(--hula-space-3);
+  padding: var(--hula-space-3) var(--hula-space-4);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .time-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--hula-space-3);
 }
 
 .time-label {
-  font-size: 14px;
-  color: #666;
-}
-
-:deep(.dark) .time-label {
-  color: #aaa;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-secondary);
 }
 </style>

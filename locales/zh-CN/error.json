@@ -1,0 +1,20 @@
+{
+  "matrix": {
+    "forbidden": "权限不足，无法执行此操作",
+    "unknown_token": "会话已过期，请重新登录",
+    "missing_token": "未登录或会话丢失，请重新登录",
+    "rate_limited": "请求过于频繁，请稍后重试",
+    "not_found": "请求的资源不存在",
+    "bad_request": "请求参数有误",
+    "user_in_use": "用户名已被占用",
+    "invalid_username": "用户名格式无效",
+    "weak_password": "密码强度不足",
+    "exclusive": "该操作为排他性操作",
+    "guest_forbidden": "访客无法执行此操作，请注册或登录",
+    "friend_exists": "好友关系已存在",
+    "friend_pending": "好友请求待处理中",
+    "network": "网络连接中断，请检查网络设置",
+    "server_unavailable": "服务器暂时不可用，请稍后重试",
+    "unknown": "操作失败，请稍后重试"
+  }
+}

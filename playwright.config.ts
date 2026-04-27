@@ -1,4 +1,5 @@
-import { defineConfig, devices } from '@playwright/test';
+/// <reference types="node" />
+import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
@@ -8,13 +9,27 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry',
+    baseURL: 'http://127.0.0.1:5210',
+    trace: 'on-first-retry'
+  },
+  webServer: {
+    command: 'pnpm dev --host 127.0.0.1 --port 5210',
+    url: 'http://127.0.0.1:5210',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000
   },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'desktop-chromium',
+      use: { ...devices['Desktop Chrome'] }
     },
-  ],
-});
+    {
+      name: 'mobile-chromium',
+      use: { ...devices['Pixel 7'] }
+    },
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 14'] }
+    }
+  ]
+})

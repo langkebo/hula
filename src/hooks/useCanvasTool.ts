@@ -1,4 +1,6 @@
 import { ref, computed, onUnmounted, type Ref } from 'vue'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('CanvasTool')
 
 interface ScreenConfig {
   startX: number
@@ -8,11 +10,14 @@ interface ScreenConfig {
 }
 
 export function useCanvasTool(
-  drawCanvas: any,
-  drawCtx: any,
-  imgCtx: any,
+  drawCanvasRef: Ref<HTMLCanvasElement | null>,
+  drawCtxRef: Ref<CanvasRenderingContext2D | null>,
+  imgCtxRef: Ref<CanvasRenderingContext2D | null>,
   screenConfig: Ref<ScreenConfig>
 ) {
+  const drawCanvas = computed(() => drawCanvasRef.value!)
+  const drawCtx = computed(() => drawCtxRef.value!)
+  const imgCtx = computed(() => imgCtxRef.value!)
   const drawConfig = ref({
     startX: 0,
     startY: 0,
@@ -33,8 +38,8 @@ export function useCanvasTool(
   const canUndo = computed(() => drawConfig.value.actions.length > 0)
 
   const draw = (type: string) => {
-    if (!drawCanvas) return
-    const { clientWidth: containerWidth, clientHeight: containerHeight } = drawCanvas
+    if (!drawCanvasRef.value) return
+    const { clientWidth: containerWidth, clientHeight: containerHeight } = drawCanvas.value
     drawConfig.value.scaleX = (screen.width * window.devicePixelRatio) / containerWidth
     drawConfig.value.scaleY = (screen.height * window.devicePixelRatio) / containerHeight
     currentTool.value = type
@@ -162,7 +167,13 @@ export function useCanvasTool(
     context.strokeRect(x, y, width, height)
   }
 
-  const drawCircle = (context: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number) => {
+  const drawCircle = (
+    context: CanvasRenderingContext2D,
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number
+  ) => {
     // 限制圆形的绘制范围在框选矩形区域内
     const limitedEndX = Math.min(Math.max(endX, screenConfig.value.startX), screenConfig.value.endX)
     const limitedEndY = Math.min(Math.max(endY, screenConfig.value.startY), screenConfig.value.endY)
@@ -308,8 +319,10 @@ export function useCanvasTool(
     closeListen()
     if (drawConfig.value.undoStack.length > 0) {
       const imageData = drawConfig.value.undoStack.pop()
-      drawConfig.value.actions.push(imageData as never)
-      drawCtx.value.putImageData(imageData, 0, 0)
+      if (imageData) {
+        drawConfig.value.actions.push(imageData as never)
+        drawCtx.value.putImageData(imageData, 0, 0)
+      }
     }
   }
 
@@ -318,7 +331,7 @@ export function useCanvasTool(
     closeListen()
     drawConfig.value.actions = []
     drawConfig.value.undoStack = []
-    if (drawCtx.value && drawCanvas.value) {
+    if (drawCtxRef.value && drawCanvasRef.value) {
       drawCtx.value.clearRect(0, 0, drawCanvas.value.width, drawCanvas.value.height)
     }
   }
@@ -329,7 +342,7 @@ export function useCanvasTool(
     drawConfig.value.undoStack = []
     drawConfig.value.isDrawing = false
     currentTool.value = ''
-    console.log('绘图状态已重置，历史记录已清除')
+    logger.info('绘图状态已重置，历史记录已清除')
   }
 
   // 停止当前绘图操作
@@ -337,17 +350,17 @@ export function useCanvasTool(
     drawConfig.value.isDrawing = false
     currentTool.value = ''
     closeListen()
-    console.log('绘图操作已停止')
+    logger.info('绘图操作已停止')
   }
 
   // 清除事件监听
   const clearEvents = () => {
     closeListen()
-    console.log('绘图事件监听已清除')
+    logger.info('绘图事件监听已清除')
   }
 
   const startListen = () => {
-    const el = drawCanvas.value
+    const el = drawCanvasRef.value
     if (!el) return
     // 仅在绘图画布上监听按下与移动，避免点击工具栏也触发绘图流程
     el.addEventListener('mousedown', handleMouseDown)
@@ -357,7 +370,7 @@ export function useCanvasTool(
   }
 
   const closeListen = () => {
-    const el = drawCanvas.value
+    const el = drawCanvasRef.value
     if (el) {
       el.removeEventListener('mousedown', handleMouseDown)
       el.removeEventListener('mousemove', handleMouseMove)

@@ -1,6 +1,6 @@
 <template>
   <n-flex vertical class="select-none">
-    <n-flex align="center" justify="space-between" class="color-[--text-color] px-20px py-10px">
+    <n-flex align="center" justify="space-between" class="color-[--hula-text-primary] px-20px py-10px">
       <p class="text-16px">
         {{ t(props.type === 'friend' ? 'home.apply_list.friend_notice' : 'home.apply_list.group_notice') }}
       </p>
@@ -19,7 +19,7 @@
             align="center"
             justify="space-between"
             :size="10"
-            class="bg-[--center-bg-color] rounded-10px p-20px box-border border-(1px solid [--bg-popover])">
+            class="bg-[--hula-surface-panel] rounded-10px p-20px box-border border-(1px solid [--hula-border-default])">
             <n-flex align="center" :size="10" class="min-w-0 flex-1">
               <n-avatar
                 round
@@ -36,7 +36,7 @@
                     @click="
                       isCurrentUser(item.senderId) ? (currentUserId = item.operateId) : (currentUserId = item.senderId)
                     "
-                    class="text-(14px #13987f) cursor-pointer shrink-0 max-w-150px truncate">
+                    class="text-(14px --hula-color-primary-500) cursor-pointer shrink-0 max-w-150px truncate">
                     {{
                       item.eventType === NoticeType.GROUP_MEMBER_DELETE && item.operateId == item.receiverId
                         ? t('home.apply_list.you')
@@ -45,20 +45,22 @@
                   </p>
 
                   <div class="flex items-center min-w-0 flex-1 gap-6px">
-                    <p class="text-(14px [--text-color]) min-w-0 truncate whitespace-nowrap">
+                    <p class="text-(14px [--hula-text-primary]) min-w-0 truncate whitespace-nowrap">
                       {{ applyMsg(item) }}
                     </p>
 
-                    <p class="text-(10px #909090) shrink-0 whitespace-nowrap">{{ formatTimestamp(item.createTime) }}</p>
+                    <p class="text-(12px --hula-text-tertiary) shrink-0 whitespace-nowrap">
+                      {{ formatTimestamp(item.createTime) }}
+                    </p>
                   </div>
                 </n-flex>
                 <p
                   :title="t('home.apply_list.message_label') + item.content"
                   v-if="isFriendApplyOrGroupInvite(item)"
-                  class="text-(12px [--text-color]) cursor-default w-340px truncate">
+                  class="text-(12px [--hula-text-primary]) cursor-default w-340px truncate">
                   {{ t('home.apply_list.message_label') }}{{ item.content }}
                 </p>
-                <p v-else class="text-(12px [--text-color])">
+                <p v-else class="text-(12px [--hula-text-primary])">
                   {{
                     t('home.apply_list.handler_label', {
                       name: groupStore.getUserInfo(item.senderId)?.name || t('home.apply_list.unknown_user')
@@ -82,24 +84,30 @@
                   :options="dropdownOptions"
                   @select="(key: string) => handleFriendAction(key, item.applyId)">
                   <n-icon class="cursor-pointer px-6px">
-                    <svg class="size-16px color-[--text-color]">
+                    <svg class="size-16px color-[--hula-text-primary]">
                       <use href="#more"></use>
                     </svg>
                   </n-icon>
                 </n-dropdown>
               </n-flex>
-              <span class="text-(12px #64a29c)" v-else-if="item.status === RequestNoticeAgreeStatus.ACCEPTED">
+              <span
+                class="text-(12px [--hula-color-primary-500])"
+                v-else-if="item.status === RequestNoticeAgreeStatus.ACCEPTED">
                 {{ t('home.apply_list.status.accepted') }}
               </span>
-              <span class="text-(12px #c14053)" v-else-if="item.status === RequestNoticeAgreeStatus.REJECTED">
+              <span
+                class="text-(12px [--hula-color-danger-500])"
+                v-else-if="item.status === RequestNoticeAgreeStatus.REJECTED">
                 {{ t('home.apply_list.status.rejected') }}
               </span>
-              <span class="text-(12px #909090)" v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
+              <span
+                class="text-(12px --hula-text-tertiary)"
+                v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
                 {{ t('home.apply_list.status.ignored') }}
               </span>
               <span
-                class="text-(12px #64a29c)"
-                :class="{ 'text-(12px #c14053)': item.status === RequestNoticeAgreeStatus.REJECTED }"
+                class="text-(12px [--hula-color-primary-500])"
+                :class="{ 'text-(12px [--hula-color-danger-500])': item.status === RequestNoticeAgreeStatus.REJECTED }"
                 v-else-if="isCurrentUser(item.senderId)">
                 {{
                   isAccepted(item)
@@ -127,12 +135,17 @@ import { useI18n } from 'vue-i18n'
 import { uniq } from 'es-toolkit'
 import type { NoticeItem } from '@/services/types.ts'
 import { NoticeType, RequestNoticeAgreeStatus } from '@/services/types.ts'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useUserStore } from '@/stores/user'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { matrixGroupService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+const logger = createLogger('ApplyList')
+const timerManager = useTimerManager()
 
 const userStore = useUserStore()
 const contactStore = useContactStore()
@@ -147,11 +160,11 @@ const props = defineProps<{
 }>()
 
 // 新增：存储群组信息的响应式对象
-const groupDetailsMap = ref<Record<string, any>>({})
+const groupDetailsMap = ref<Record<string, MatrixGroupInfo>>({})
 const loadingGroups = ref<Set<string>>(new Set())
 
 // 检查好友申请是否已被接受
-const isAccepted = (item: any) => {
+const isAccepted = (item: NoticeItem) => {
   return item.status !== RequestNoticeAgreeStatus.UNTREATED
 }
 
@@ -188,7 +201,7 @@ const getGroupDetail = async (roomId: string) => {
       return groupInfo
     }
   } catch (error) {
-    console.error('获取群组信息失败:', error)
+    logger.error('获取群组信息失败:', error)
   } finally {
     loadingGroups.value.delete(roomId)
   }
@@ -269,13 +282,13 @@ const isCurrentUser = (uid: string) => {
  * 获取当前用户查询视角
  * @param item 通知消息
  */
-const getUserInfo = (item: any) => {
+const getUserInfo = (item: NoticeItem) => {
   switch (item.eventType) {
     case NoticeType.FRIEND_APPLY:
     case NoticeType.GROUP_MEMBER_DELETE:
     case NoticeType.GROUP_SET_ADMIN:
     case NoticeType.GROUP_RECALL_ADMIN:
-      return groupStore.getUserInfo(item.operateId)
+      return groupStore.getUserInfo(item.operateId ?? '')
     case NoticeType.ADD_ME:
     case NoticeType.GROUP_INVITE:
     case NoticeType.GROUP_INVITE_ME:
@@ -285,7 +298,7 @@ const getUserInfo = (item: any) => {
 }
 
 // 判断是否为好友申请或者群申请、群邀请
-const isFriendApplyOrGroupInvite = (item: any) => {
+const isFriendApplyOrGroupInvite = (item: NoticeItem) => {
   return (
     item.eventType === NoticeType.FRIEND_APPLY ||
     item.eventType === NoticeType.GROUP_APPLY ||
@@ -334,7 +347,7 @@ const handleAgree = async (item: NoticeItem) => {
       markAsRead: true
     })
   } finally {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       loadingMap.value[applyId] = false
     }, 600)
   }
@@ -360,7 +373,7 @@ const handleFriendAction = async (action: string, applyId: string) => {
       })
     }
   } finally {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       loadingMap.value[applyId] = false
     }, 600)
   }
@@ -369,6 +382,10 @@ const handleFriendAction = async (action: string, applyId: string) => {
 onMounted(() => {
   // 组件挂载时刷新一次列表
   contactStore.getApplyPage(props.type, true)
+})
+
+onUnmounted(() => {
+  timerManager.clearAll()
 })
 
 // 监听applyList变化，批量加载群组信息

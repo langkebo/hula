@@ -11,8 +11,8 @@
         <n-avatar
           :size="34"
           :src="avatarSrc"
-          :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-          :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+          :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#fff'"
+          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
           round />
 
         <div
@@ -34,11 +34,11 @@
           <n-avatar
             :src="avatarSrc"
             round
-            :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-            :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+            :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#fff'"
+            :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
             class="size-68px text-20px select-none cursor-default" />
 
-          <n-flex :size="10" class="text-[--text-color]" justify="center" vertical>
+          <n-flex :size="10" class="text-[--hula-text-primary]" justify="center" vertical>
             <span class="text-18px">{{ userStore.userInfo?.name }}</span>
             <span class="text-(12px [--info-text-color])">
               {{ t('home.profile_card.labels.account') }} {{ userStore.userInfo?.account }}
@@ -95,12 +95,11 @@
     @item-click="handleMenuItemClick" />
 </template>
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStore } from '@/stores/user.ts'
-import { useGroupStore } from '@/stores/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils.ts'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts'
 import { leftHook } from '../hook.ts'
@@ -111,7 +110,6 @@ const userStore = useUserStore()
 const groupStore = useGroupStore()
 const { t } = useI18n()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar as string))
 const currentUserLocation = computed(() => {
   const uid = userStore.userInfo?.uid

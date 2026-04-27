@@ -37,7 +37,7 @@
             <p>（4）设备信息：我们会收集您的设备型号、操作系统版本、设备标识符等信息，以便为您提供更好的服务体验。</p>
 
             <h3>1.2 我们如何使用您的个人信息</h3>
-            <p>（1）为您提供服务：包括即时通讯、文件传输、音视频通话等核心功能。</p>
+            <p>（1）为您提供服务：包括通讯、文件传输、音视频通话等核心功能。</p>
             <p>（2）维护服务安全：检测和防范安全威胁、欺诈等违法犯罪活动。</p>
             <p>（3）改进服务质量：分析服务使用情况，优化产品功能和用户体验。</p>
             <p>（4）客户服务：处理您的咨询、投诉和建议。</p>
@@ -84,7 +84,7 @@
             <p>（2）我们会采取一切合理可行的措施，确保未收集无关的个人信息。</p>
             <p>（3）我们会采取一切合理可行的措施，确保个人信息不被保留超过实现目的所必需的期限。</p>
             <p>
-              （4）互联网并非绝对安全的环境，而且电子邮件、即时通讯、社交软件等与其他用户的交流方式无法确定是否完全加密。
+              （4）互联网并非绝对安全的环境，而且电子邮件、通讯、社交软件等与其他用户的交流方式无法确定是否完全加密。
             </p>
           </section>
 
@@ -190,13 +190,13 @@
     h1 {
       font-size: 24px;
       font-weight: bold;
-      color: #333;
+      color: var(--hula-text-primary);
       margin-bottom: 10px;
     }
 
     .update-time {
       font-size: 14px;
-      color: #666;
+      color: var(--hula-text-secondary);
     }
   }
 
@@ -211,7 +211,7 @@
       h2 {
         font-size: 18px;
         font-weight: bold;
-        color: #333;
+        color: var(--hula-text-primary);
         width: fit-content;
         margin-bottom: 15px;
         border-bottom: 2px solid #13987f90;
@@ -221,13 +221,13 @@
       h3 {
         font-size: 16px;
         font-weight: bold;
-        color: #444;
+        color: var(--hula-text-primary);
         margin: 15px 0 10px 0;
       }
 
       p {
         font-size: 14px;
-        color: #555;
+        color: var(--hula-text-secondary);
         margin-bottom: 10px;
         text-indent: 2em;
       }
@@ -241,22 +241,22 @@
 }
 
 .agreement-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--right-bg-color);
   border-radius: 3px;
 }
 
 .agreement-content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--hula-text-disabled);
   border-radius: 3px;
 }
 
 .agreement-content::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--hula-text-tertiary);
 }
 
 :deep(.action-close) {
   svg {
-    color: #303030;
+    color: var(--hula-text-primary);
   }
 }
 </style>

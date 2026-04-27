@@ -5,9 +5,9 @@
       <!-- 录音状态文字 -->
       <div class="voice-status">
         <div v-if="!isRecording && !audioBlob && !isProcessing">
-          <span class="text-#909090 flex-y-center gap-6px select-none">
+          <span class="text-[--hula-text-tertiary] flex-y-center gap-6px select-none">
             {{ t('message.voice_recorder.tap_prefix') }}
-            <svg class="size-14px color-#13987f"><use href="#voice"></use></svg>
+            <svg class="size-14px color-[--hula-color-primary-500]"><use href="#voice"></use></svg>
             {{ t('message.voice_recorder.tap_suffix') }}
           </span>
         </div>
@@ -99,13 +99,23 @@
 <script setup lang="ts">
 import { useVoiceRecordRust } from '@/hooks/useVoiceRecordRust'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
+export type VoiceRecordPayload = {
+  localPath: string
+  size: number
+  duration: number
+  filename: string
+  type?: string
+}
+
+const logger = createLogger('VoiceRecorder')
 const { t } = useI18n()
 
 // 事件定义
 const emit = defineEmits<{
   cancel: []
-  send: [voiceData: any]
+  send: [voiceData: VoiceRecordPayload]
 }>()
 
 // 录音状态
@@ -129,10 +139,10 @@ const {
   formatTime
 } = useVoiceRecordRust({
   onStart: () => {
-    console.log('开始录音')
+    logger.debug('开始录音')
   },
   onStop: (blob, duration, localPath) => {
-    console.log('录音结束', duration, '本地路径:', localPath)
+    logger.debug('录音结束', duration, '本地路径:', localPath)
     audioBlob.value = blob
     recordingDuration.value = duration
     localAudioPath.value = localPath
@@ -217,7 +227,7 @@ const togglePlayback = () => {
 // 发送语音
 const handleSend = async () => {
   if (!audioBlob.value || !localAudioPath.value) {
-    console.log('🎤 缺少音频数据，退出发送')
+    logger.debug('缺少音频数据，退出发送')
     return
   }
 
@@ -226,7 +236,7 @@ const handleSend = async () => {
 
     // 直接使用本地路径，不需要重新上传文件
     // 这样和其他文件发送逻辑保持一致，都是先缓存到本地再处理
-    const voiceData = {
+    const voiceData: VoiceRecordPayload = {
       localPath: localAudioPath.value,
       size: audioBlob.value.size,
       duration: recordingDuration.value,
@@ -234,13 +244,13 @@ const handleSend = async () => {
       type: 'audio/mp3'
     }
 
-    console.log('🎤 发送语音数据:', voiceData)
+    logger.debug('发送语音数据:', voiceData)
     emit('send', voiceData)
 
     // 发送后立即重置状态，避免下次打开时还显示这条录音
     resetRecordingState()
   } catch (error) {
-    console.error('🎤 发送语音失败:', error)
+    logger.error('发送语音失败:', error)
   } finally {
     sending.value = false
   }
@@ -268,7 +278,7 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 @mixin base-control-button($dark-bg, $bg) {
-  @apply flex-center size-36px text-#fff cursor-pointer rounded-full;
+  @apply flex-center size-36px text-[--hula-text-inverse] cursor-pointer rounded-full;
   background-color: $bg;
   [data-theme='dark'] & {
     background-color: $dark-bg;
@@ -276,7 +286,7 @@ onUnmounted(() => {
 }
 
 .voice-recorder-container {
-  @apply flex flex-col relative w-full h-110px bg-[--bg-color] rounded-8px;
+  @apply flex flex-col relative w-full h-110px bg-[--hula-surface-panel] rounded-8px;
 }
 
 .voice-recorder-main {
@@ -284,29 +294,29 @@ onUnmounted(() => {
 }
 
 .voice-status {
-  @apply text-(14px [--text-color] center) max-h-24px;
+  @apply text-(14px [--hula-text-primary] center) max-h-24px;
 
   .status-recording {
-    @apply flex-y-center gap-8px text-#13987f select-none;
+    @apply flex-y-center gap-8px text-[--hula-color-primary-500] select-none;
 
     .recording-animation {
       position: relative;
       .pulse-dot {
-        @apply size-8px bg-#13987f rounded-full;
+        @apply size-8px bg-[--hula-color-primary-500] rounded-full;
         animation: pulse 1.5s infinite;
       }
     }
   }
 
   .status-processing {
-    @apply flex-y-center gap-8px text-[--chat-text-color] select-none;
+    @apply flex-y-center gap-8px text-[--hula-text-secondary] select-none;
 
     .processing-animation {
       position: relative;
       .loading-spinner {
         @apply size-12px rounded-full;
         border: 2px solid transparent;
-        border-top: 2px solid var(--chat-text-color);
+        border-top: 2px solid var(--hula-text-secondary);
         animation: spin 1s linear infinite;
       }
     }
@@ -317,7 +327,7 @@ onUnmounted(() => {
       @apply flex-y-center gap-8px;
 
       .play-btn {
-        @apply flex-center size-30px bg-inherit border-none cursor-pointer text-#13987f;
+        @apply flex-center size-30px bg-inherit border-none cursor-pointer text-[--hula-color-primary-500];
 
         svg {
           @apply size-16px;
@@ -351,19 +361,31 @@ onUnmounted(() => {
   }
 
   .record-btn {
-    @include base-control-button(#13987f80, #13987f);
+    @include base-control-button(
+      color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent),
+      var(--hula-color-primary-500)
+    );
   }
 
   .stop-btn {
-    @include base-control-button(#e74c3c96, #e74c3c);
+    @include base-control-button(
+      color-mix(in srgb, var(--hula-color-danger-500) 72%, transparent),
+      var(--hula-color-danger-500)
+    );
   }
 
   .refresh-btn {
-    @include base-control-button(#f39c1280, #f39c12);
+    @include base-control-button(
+      color-mix(in srgb, var(--hula-color-warning-500) 72%, transparent),
+      var(--hula-color-warning-500)
+    );
   }
 
   .send-btn {
-    @include base-control-button(#13987f80, #13987f);
+    @include base-control-button(
+      color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent),
+      var(--hula-color-primary-500)
+    );
 
     .loading-spinner {
       @apply size-16px rounded-full;
@@ -375,7 +397,10 @@ onUnmounted(() => {
 
   .cancel-btn,
   .cancel-record-btn {
-    @include base-control-button(#95a5a640, #95a5a690);
+    @include base-control-button(
+      color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent),
+      color-mix(in srgb, var(--hula-text-tertiary) 60%, transparent)
+    );
   }
 }
 

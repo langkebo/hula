@@ -1,6 +1,6 @@
 <template>
   <n-config-provider
-    :theme-overrides="themes.content === ThemeEnum.DARK ? darkThemeOverrides : lightThemeOverrides"
+    :theme-overrides="settingStore.themeContent === ThemeEnum.DARK ? darkThemeOverrides : lightThemeOverrides"
     :theme="globalTheme"
     :locale="currentNaiveLocale"
     :date-locale="currentNaiveDateLocale">
@@ -26,6 +26,7 @@ import {
   dateEnUS,
   dateZhCN,
   enUS,
+  type GlobalTheme,
   type GlobalThemeOverrides,
   type NDateLocale,
   type NLocale,
@@ -34,7 +35,10 @@ import {
 } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { hasTauriRuntime } from '@/utils/AppHarness'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('NaiveProvider')
 
 const { notificMax, messageMax } = defineProps<{
   notificMax?: number
@@ -42,7 +46,6 @@ const { notificMax, messageMax } = defineProps<{
 }>()
 defineOptions({ name: 'NaiveProvider' })
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 const { locale } = useI18n()
 
 type NaiveLocalePack = {
@@ -62,7 +65,7 @@ const resolveNaiveLocale = (lang: string): NaiveLocalePack => naiveLocaleMap[lan
 const currentNaiveLocale = computed(() => resolveNaiveLocale(locale.value).locale)
 const currentNaiveDateLocale = computed(() => resolveNaiveLocale(locale.value).dateLocale)
 /**监听深色主题颜色变化*/
-const globalTheme = ref<any>(themes.value.content === ThemeEnum.DARK ? darkTheme : lightTheme)
+const globalTheme = ref<GlobalTheme | null>(settingStore.themeContent === ThemeEnum.DARK ? darkTheme : lightTheme)
 const prefers = matchMedia('(prefers-color-scheme: dark)')
 // 定义不需要显示消息提示的窗口
 const noMessageWindows = ['tray', 'notify', 'capture', 'update', 'checkupdate']
@@ -72,11 +75,11 @@ const isValidContent = (theme?: string): theme is ThemeEnum => theme === ThemeEn
 const applyThemeContent = (theme: ThemeEnum) => {
   globalTheme.value = theme === ThemeEnum.DARK ? darkTheme : lightTheme
   document.documentElement.dataset.theme = theme
-  console.log(globalTheme.value)
+  logger.debug('Applied theme content', globalTheme.value)
 }
 
 const syncOsTheme = () => {
-  if (themes.value.pattern !== ThemeEnum.OS) return
+  if (settingStore.themePattern !== ThemeEnum.OS) return
   settingStore.syncOsTheme()
 }
 
@@ -98,7 +101,7 @@ const detachPrefersListener = () => {
 }
 
 watch(
-  () => themes.value.pattern,
+  () => settingStore.themePattern,
   (pattern) => {
     if (pattern === ThemeEnum.OS) {
       syncOsTheme()
@@ -112,7 +115,7 @@ watch(
 )
 
 watch(
-  () => themes.value.content,
+  () => settingStore.themeContent,
   (content) => {
     if (!isValidContent(content)) {
       settingStore.normalizeThemeState()
@@ -129,22 +132,20 @@ onUnmounted(() => {
 
 const commonTheme: GlobalThemeOverrides = {
   Badge: {
-    color: '#c14053'
+    color: 'var(--hula-color-danger-500)'
   },
   Input: {
     borderRadius: '10px',
     borderHover: '0',
-    // TODO: 不清楚为什么去掉边框
-    // border: '0',
     borderDisabled: '0',
     borderFocus: '0',
     boxShadowFocus: '0'
   },
   Checkbox: {
-    colorChecked: '#13987f',
-    borderChecked: '1px solid #13987f',
-    borderFocus: '1px solid #13987f',
-    boxShadowFocus: '0 0 0 2px rgba(19, 152, 127, 0.3)'
+    colorChecked: 'var(--hula-color-primary-500)',
+    borderChecked: '1px solid var(--hula-color-primary-500)',
+    borderFocus: '1px solid var(--hula-color-primary-500)',
+    boxShadowFocus: '0 0 0 2px var(--hula-color-primary-300-alpha)'
   },
   Tag: {
     borderRadius: '4px'
@@ -152,16 +153,16 @@ const commonTheme: GlobalThemeOverrides = {
   Button: {
     borderRadiusMedium: '10px',
     borderRadiusSmall: '6px',
-    colorPrimary: '#13987f'
+    colorPrimary: 'var(--hula-color-primary-500)'
   },
   Tabs: {
-    tabTextColorSegment: '#707070',
+    tabTextColorSegment: 'var(--hula-text-secondary)',
     tabPaddingMediumSegment: '4px',
-    tabTextColorActiveLine: '#13987f',
-    tabTextColorHoverLine: '#13987f',
-    tabTextColorActiveBar: '#13987f',
-    tabTextColorHoverBar: '#13987f',
-    barColor: '#13987f'
+    tabTextColorActiveLine: 'var(--hula-color-primary-500)',
+    tabTextColorHoverLine: 'var(--hula-color-primary-500)',
+    tabTextColorActiveBar: 'var(--hula-color-primary-500)',
+    tabTextColorHoverBar: 'var(--hula-color-primary-500)',
+    barColor: 'var(--hula-color-primary-500)'
   },
   Popover: {
     padding: '5px',
@@ -171,42 +172,42 @@ const commonTheme: GlobalThemeOverrides = {
     borderRadius: '8px'
   },
   Avatar: {
-    border: '1px solid #fff'
+    border: '1px solid var(--hula-surface-panel)'
   },
   Switch: {
-    railColorActive: '#13987f',
-    loadingColor: '#13987f',
-    boxShadowFocus: '0 0 0 2px rgba(19, 152, 127, 0.3)'
+    railColorActive: 'var(--hula-color-primary-500)',
+    loadingColor: 'var(--hula-color-primary-500)',
+    boxShadowFocus: '0 0 0 2px var(--hula-color-primary-300-alpha)'
   },
   Radio: {
-    boxShadowActive: 'inset 0 0 0 1px #13987f',
-    boxShadowFocus: 'inset 0 0 0 1px #13987f,0 0 0 2px rgba(19, 152, 127, 0.3)',
-    boxShadowHover: 'inset 0 0 0 1px #13987f',
-    dotColorActive: '#13987f'
+    boxShadowActive: 'inset 0 0 0 1px var(--hula-color-primary-500)',
+    boxShadowFocus: 'inset 0 0 0 1px var(--hula-color-primary-500),0 0 0 2px var(--hula-color-primary-300-alpha)',
+    boxShadowHover: 'inset 0 0 0 1px var(--hula-color-primary-500)',
+    dotColorActive: 'var(--hula-color-primary-500)'
   },
   Message: {
-    iconColorSuccess: '#13987f',
-    iconColorLoading: '#13987f',
-    loadingColor: '#13987f',
+    iconColorSuccess: 'var(--hula-color-primary-500)',
+    iconColorLoading: 'var(--hula-color-primary-500)',
+    loadingColor: 'var(--hula-color-primary-500)',
     borderRadius: '8px'
   },
   Slider: {
     handleSize: '12px',
     fontSize: '10px',
     markFontSize: '8px',
-    fillColor: '#13987f',
-    fillColorHover: '#13987f',
+    fillColor: 'var(--hula-color-primary-500)',
+    fillColorHover: 'var(--hula-color-primary-500)',
     indicatorBorderRadius: '8px'
   },
   Notification: {
     borderRadius: '8px'
   },
   Steps: {
-    indicatorBorderColorProcess: '#13987f',
-    indicatorColorProcess: '#52aea3'
+    indicatorBorderColorProcess: 'var(--hula-color-primary-500)',
+    indicatorColorProcess: 'var(--hula-color-primary-300)'
   },
   LoadingBar: {
-    colorLoading: '#13987f'
+    colorLoading: 'var(--hula-color-primary-500)'
   }
 }
 
@@ -214,12 +215,12 @@ const commonTheme: GlobalThemeOverrides = {
 const lightThemeOverrides: GlobalThemeOverrides = {
   ...commonTheme,
   Scrollbar: {
-    color: '#d5d5d5',
-    colorHover: '#c5c5c5'
+    color: 'var(--hula-border-strong)',
+    colorHover: 'var(--hula-border-default)'
   },
   Skeleton: {
-    color: 'rgba(200, 200, 200, 0.6)',
-    colorEnd: 'rgba(200, 200, 200, 0.2)'
+    color: 'color-mix(in srgb, var(--hula-border-strong) 60%, transparent)',
+    colorEnd: 'color-mix(in srgb, var(--hula-border-default) 20%, transparent)'
   }
 }
 
@@ -227,8 +228,8 @@ const lightThemeOverrides: GlobalThemeOverrides = {
 const darkThemeOverrides: GlobalThemeOverrides = {
   ...commonTheme,
   Scrollbar: {
-    color: 'rgba(255, 255, 255, 0.2)',
-    colorHover: 'rgba(255, 255, 255, 0.3)'
+    color: 'color-mix(in srgb, var(--hula-text-inverse) 20%, transparent)',
+    colorHover: 'color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)'
   }
 }
 
@@ -261,6 +262,9 @@ const registerNaiveTools = () => {
 
   // 检查当前路由是否需要禁用消息
   const shouldDisableMessage = () => {
+    if (!hasTauriRuntime()) {
+      return false
+    }
     return noMessageWindows.includes(getCurrentWebviewWindow().label)
   }
 

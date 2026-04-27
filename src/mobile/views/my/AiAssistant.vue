@@ -26,7 +26,7 @@
                 </template>
                 <template #value>
                   <van-picker
-                    v-model="selectedProvider"
+                    v-model="selectedProviderValues"
                     :columns="providerColumns"
                     @change="handleProviderChange" />
                 </template>
@@ -249,6 +249,9 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AiAssistant')
 
 const { t } = useI18n()
 
@@ -311,6 +314,12 @@ const siliconflowModels: AIModel[] = [
 ]
 
 const selectedProvider = ref<AIProvider>('openclaw')
+const selectedProviderValues = computed({
+  get: () => [selectedProvider.value],
+  set: (val: string[]) => {
+    if (val[0]) selectedProvider.value = val[0] as AIProvider
+  }
+})
 const selectedModel = ref<AIModel | null>(null)
 const loadingModels = ref(false)
 
@@ -374,7 +383,7 @@ const suggestions = [
     desc: 'ai_assistant.suggestions.translate_desc',
     icon: 'mdi:translate',
     color: '#1989fa',
-    prompt: '请帮我翻译以下内容：'
+    prompt: t('ai_assistant.suggestions.translate_prompt')
   },
   {
     id: 2,
@@ -382,7 +391,7 @@ const suggestions = [
     desc: 'ai_assistant.suggestions.summarize_desc',
     icon: 'mdi:text-box-outline',
     color: '#52c41a',
-    prompt: '请帮我总结以下内容：'
+    prompt: t('ai_assistant.suggestions.summarize_prompt')
   },
   {
     id: 3,
@@ -390,7 +399,7 @@ const suggestions = [
     desc: 'ai_assistant.suggestions.code_desc',
     icon: 'mdi:code-tags',
     color: '#722ed1',
-    prompt: '请帮我解释以下代码：'
+    prompt: t('ai_assistant.suggestions.code_prompt')
   },
   {
     id: 4,
@@ -398,7 +407,7 @@ const suggestions = [
     desc: 'ai_assistant.suggestions.chat_desc',
     icon: 'mdi:chat-outline',
     color: '#fa8c16',
-    prompt: '你好，我想和你聊聊'
+    prompt: t('ai_assistant.suggestions.chat_prompt')
   }
 ]
 
@@ -430,7 +439,7 @@ function loadCharacters() {
       characters.value = []
     }
   } catch (err) {
-    console.error('[AiAssistant] 加载角色列表失败:', err)
+    logger.error('Failed to load characters', err)
     characters.value = []
   }
 }
@@ -446,7 +455,7 @@ function loadConversations() {
       }
     }
   } catch (err) {
-    console.error('[AiAssistant] 加载对话列表失败:', err)
+    logger.error('Failed to load conversations', err)
     conversations.value = []
   }
 }
@@ -461,7 +470,7 @@ function loadMessages(conversationId: string) {
       messages.value = []
     }
   } catch (err) {
-    console.error('[AiAssistant] 加载消息列表失败:', err)
+    logger.error('Failed to load messages', err)
     messages.value = []
   }
 }
@@ -470,7 +479,7 @@ function createNewConversation(): string {
   const id = `conv_${Date.now()}`
   const conversation: LocalConversation = {
     id,
-    title: '新的对话',
+    title: t('ai_assistant.new_conversation'),
     provider: selectedProvider.value,
     modelId: selectedModel.value?.id || '',
     characterId: selectedCharacter.value?.id,
@@ -491,7 +500,7 @@ function saveMessages(conversationId: string) {
   localStorage.setItem(`ai_messages_${conversationId}`, JSON.stringify(messages.value))
 }
 
-function handleProviderChange({ selectedOptions }: any) {
+function handleProviderChange({ selectedOptions }: { selectedOptions: Array<{ value: AIProvider }> }) {
   selectedProvider.value = selectedOptions[0].value
   selectedModel.value = filteredModels.value[0] || null
   saveProviderSettings()
@@ -526,7 +535,7 @@ async function deleteCharacter(id: string) {
     }
     showToast(t('ai_assistant.character_deleted'))
   } catch (err) {
-    console.error('[AiAssistant] 删除角色失败:', err)
+    logger.error('Failed to delete character', err)
   }
 }
 
@@ -560,7 +569,7 @@ async function saveCharacter() {
     editingCharacter.value = null
     characterForm.value = { name: '', description: '', systemPrompt: '' }
   } catch (err) {
-    console.error('[AiAssistant] 保存角色失败:', err)
+    logger.error('Failed to save character', err)
   }
 }
 
@@ -575,7 +584,7 @@ function loadApiKeySettings() {
       apiKeySettings.value = JSON.parse(stored)
     }
   } catch (e) {
-    console.warn('[AiAssistant] 加载 API 设置失败:', e)
+    logger.warn('Failed to load API settings', e)
   }
 }
 
@@ -590,7 +599,7 @@ function loadProviderSettings() {
       selectedProvider.value = stored as AIProvider
     }
   } catch (e) {
-    console.warn('[AiAssistant] 加载 Provider 设置失败:', e)
+    logger.warn('Failed to load provider settings', e)
   }
 }
 
@@ -602,7 +611,7 @@ async function testConnection() {
   try {
     const response = await fetch(`${apiKeySettings.value.baseUrl}/v1/models`, {
       headers: {
-        'Authorization': `Bearer ${apiKeySettings.value.apiKey}`
+        Authorization: `Bearer ${apiKeySettings.value.apiKey}`
       }
     })
     if (response.ok) {
@@ -612,7 +621,7 @@ async function testConnection() {
       showToast(t('ai_assistant.connection_failed'))
     }
   } catch (err) {
-    console.error('[AiAssistant] 测试连接失败:', err)
+    logger.error('Failed to test connection', err)
     showToast(t('ai_assistant.connection_failed'))
   }
 }
@@ -682,7 +691,7 @@ async function handleSend() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKeySettings.value.apiKey}`
+        Authorization: `Bearer ${apiKeySettings.value.apiKey}`
       },
       body: JSON.stringify({
         model: selectedModel.value?.id,
@@ -736,7 +745,7 @@ async function handleSend() {
     const lastMsgIndex = messages.value.length - 1
     messages.value[lastMsgIndex] = {
       ...messages.value[lastMsgIndex],
-      content: fullContent || '收到响应，但内容为空',
+      content: fullContent || t('ai_assistant.empty_response'),
       loading: false
     }
     saveMessages(conversationId)

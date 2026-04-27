@@ -1,5 +1,7 @@
 import type { Ref } from 'vue'
 import { audioManager } from '@/utils/AudioManager'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('AudioPlayback')
 
 export type AudioPlaybackReturn = {
   // 状态
@@ -99,7 +101,7 @@ export const useAudioPlayback = (
           playbackProgress.value = progress || 0
           shouldResumeFromPosition.value = false // 重置标志
         } catch (error) {
-          console.warn('恢复播放位置失败:', error)
+          logger.warn('恢复播放位置失败:', error)
           // 恢复失败时清理状态
           lastPlayPosition.value = 0
           shouldResumeFromPosition.value = false
@@ -182,7 +184,7 @@ export const useAudioPlayback = (
       isPlaying.value = true
       hasBeenPlayed.value = true
     } catch (error) {
-      console.error('播放控制错误:', error)
+      logger.error('播放控制错误:', error)
       isPlaying.value = false
       loading.value = false
 
@@ -226,7 +228,7 @@ export const useAudioPlayback = (
         audioElement.value.src = ''
         audioElement.value.load() // 重置音频元素
       } catch (error) {
-        console.warn('清理音频元素时出现错误:', error)
+        logger.warn('清理音频元素时出现错误:', error)
       } finally {
         audioElement.value = null
       }

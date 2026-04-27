@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noConsole: Template code intentionally includes simple console-based examples.
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'

@@ -32,7 +32,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { useGlobalStore } from '@/stores/global'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { storeToRefs } from 'pinia'
 import { UserType } from '@/enums'
 
@@ -61,7 +61,7 @@ const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
     position: absolute;
     width: 40px;
     height: 3px;
-    background: #909090;
+    background: var(--hula-text-tertiary);
     border-radius: 2px;
     opacity: 0;
     transition: all 0.2s ease;
@@ -78,8 +78,8 @@ const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
     transition: all 0.2s ease;
     opacity: 0;
     box-shadow:
-      0 -3px 0 0 rgba(102, 102, 102, 0.5),
-      0 3px 0 0 rgba(102, 102, 102, 0.5);
+      0 -3px 0 0 color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent),
+      0 3px 0 0 color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent);
     pointer-events: none;
   }
 
@@ -93,8 +93,8 @@ const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
     &::after {
       opacity: 1;
       box-shadow:
-        0 -3px 0 0 rgba(102, 102, 102, 0.8),
-        0 3px 0 0 rgba(102, 102, 102, 0.8);
+        0 -3px 0 0 color-mix(in srgb, var(--hula-text-tertiary) 80%, transparent),
+        0 3px 0 0 color-mix(in srgb, var(--hula-text-tertiary) 80%, transparent);
     }
   }
 
@@ -103,14 +103,14 @@ const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
     &::before {
       opacity: 1;
       transform: scaleY(1.2);
-      background: #13987f80;
+      background: color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent);
     }
 
     &::after {
       opacity: 1;
       box-shadow:
-        0 -3px 0 0 #13987f80,
-        0 3px 0 0 #13987f80;
+        0 -3px 0 0 color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent),
+        0 3px 0 0 color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent);
     }
   }
 }

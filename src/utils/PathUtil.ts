@@ -4,6 +4,9 @@ import { BaseDirectory, exists, mkdir, readFile, writeFile } from '@tauri-apps/p
 import { type FileTypeResult, fileTypeFromBuffer } from 'file-type'
 import type { FilesMeta } from '@/services/types'
 import { isMobile } from './PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('PathUtil')
 
 // Tauri 资源目录下存放用户数据的根目录名
 const USER_DATA = 'userData'
@@ -268,7 +271,7 @@ export async function detectRemoteFileType(options: {
 
       // 2. 如果是空文件，直接返回 undefined
       if (resolvedFileSize === 0) {
-        console.log('文件大小为 0 字节，尝试使用后缀名检测')
+        logger.debug('文件大小为 0 字节，尝试使用后缀名检测')
         try {
           const result = await invoke<FilesMeta>('get_files_meta', { filesPath: [url] })
           const meta = result[0]
@@ -277,8 +280,8 @@ export async function detectRemoteFileType(options: {
             ext: meta.file_type,
             mime: meta.mime_type
           }
-        } catch (_error) {
-          console.warn(`该资源无法识别类型：${url}`)
+        } catch {
+          logger.warn(`该资源无法识别类型：${url}`)
           return void 0
         }
       }
@@ -298,7 +301,7 @@ export async function detectRemoteFileType(options: {
       // 4. 如果 buffer 有数据，尝试解析文件类型
       return buffer.byteLength > 0 ? await fileTypeFromBuffer(buffer) : void 0
     } catch (error) {
-      console.error('尝试解析远程文件类型时出现错误：', error)
+      logger.error('尝试解析远程文件类型时出现错误：', error)
       return void 0
     }
   })()
@@ -337,7 +340,7 @@ export async function getRemoteFileSize(url: string): Promise<number | null> {
     const length = response.headers.get('content-length')
     return length ? Number(length) : null
   } catch (error) {
-    console.warn('获取远程文件大小失败:', error)
+    logger.warn('获取远程文件大小失败:', error)
     return null
   }
 }

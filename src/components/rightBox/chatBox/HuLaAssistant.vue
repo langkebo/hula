@@ -6,8 +6,8 @@
         :show-indicator="false"
         :height="6"
         :stroke-width="10"
-        :color="'#13987f'"
-        :rail-color="'#13987f30'"
+        :color="'var(--hula-color-primary-500)'"
+        :rail-color="'color-mix(in srgb, var(--hula-color-primary-500) 30%, transparent)'"
         class="assistant-view__progress"
         type="line" />
       <span class="assistant-view__placeholder-text">
@@ -43,6 +43,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { ensureModelFile } from '@/utils/PathUtil'
 import { isDesktop } from '@/utils/PlatformConstants'
 import { useAssistantModelPresets } from '@/hooks/useAssistantModelPresets'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('HuLaAssistant')
 
 const props = defineProps<{
   active: boolean
@@ -100,7 +103,7 @@ const resolveDracoDecoderPath = async () => {
       dracoDecoderBasePath = assetUrl.endsWith('/') ? assetUrl : `${assetUrl}/`
       return dracoDecoderBasePath
     } catch (error) {
-      console.warn('获取 Draco 解码器资源路径失败, 回退 CDN', error)
+      logger.warn('获取 Draco 解码器资源路径失败, 回退 CDN', error)
     }
   }
   dracoDecoderBasePath = DRACO_DECODER_BASE_URL
@@ -117,7 +120,7 @@ const ensureDracoLoader = async () => {
       await dracoLoader.preload()
     } catch (error) {
       if (decoderPath !== DRACO_DECODER_BASE_URL) {
-        console.warn('预加载本地 Draco 解码器失败, 回退 CDN', error)
+        logger.warn('预加载本地 Draco 解码器失败, 回退 CDN', error)
         dracoDecoderBasePath = DRACO_DECODER_BASE_URL
         decoderPath = DRACO_DECODER_BASE_URL
         dracoLoader.setDecoderPath(decoderPath)
@@ -153,7 +156,7 @@ const resolveModelSource = async () => {
           lastResolvedModelSource = localUrl
           return localUrl
         } catch (error) {
-          console.warn('缓存远程模型失败, 回退为在线加载', error)
+          logger.warn('缓存远程模型失败, 回退为在线加载', error)
         }
       }
     }
@@ -327,7 +330,7 @@ const loadModel = async () => {
         },
         (error) => {
           loadingProgress.value = 0
-          console.error('[Assistant] 模型加载失败', modelSource, error)
+          logger.error('模型加载失败', modelSource, error)
           reject(error)
         }
       )
@@ -397,7 +400,7 @@ const loadModel = async () => {
     activeAction = mixer.clipAction(preferred)
     activeAction.reset().play()
   } else {
-    console.debug('[Assistant] 模型没有动画片段')
+    logger.debug('模型没有动画片段')
   }
   adjustFraming(scaledSize, centerY)
   loadingProgress.value = 100
@@ -522,8 +525,12 @@ onUnmounted(() => {
   justify-content: center;
   margin: 16px;
   border-radius: 16px;
-  background: radial-gradient(ellipse at center, rgba(19, 152, 127, 0.24), rgba(19, 152, 127, 0));
-  box-shadow: inset 0 0 0 1px rgba(19, 152, 127, 0.1);
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--hula-color-primary-500) 24%, transparent),
+    transparent
+  );
+  box-shadow: inset 0 0 0 1px var(--hula-color-primary-400);
   overflow: hidden;
 
   canvas {
@@ -542,8 +549,8 @@ onUnmounted(() => {
   justify-content: center;
   gap: 12px;
   font-size: 14px;
-  color: #13987f;
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--hula-color-primary-500);
+  background: color-mix(in srgb, var(--hula-surface-panel) 12%, transparent);
   backdrop-filter: blur(8px);
 }
 
@@ -555,6 +562,6 @@ onUnmounted(() => {
 .assistant-view__placeholder-text {
   padding-top: 12px;
   font-size: 14px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
 }
 </style>

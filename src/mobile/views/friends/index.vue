@@ -13,97 +13,89 @@
     <!-- 导航条 -->
     <NavBar>
       <template #center>
-        <n-text>{{ t('mobile_contact.title') }}</n-text>
+        <span>{{ t('mobile_contact.title') }}</span>
       </template>
       <template #right>
-        <n-dropdown
-          @on-clickoutside="addIconHandler.clickOutside"
-          @select="addIconHandler.select"
-          trigger="click"
-          :show-arrow="true"
-          :options="uiViewsData.addOptions">
-          <n-button round strong secondary @click="addIconHandler.open">
-            <template #icon>
-              <n-icon>
-                <svg><use href="#plus"></use></svg>
-              </n-icon>
-            </template>
-          </n-button>
-        </n-dropdown>
+        <van-popover
+          v-model:show="showAddPopover"
+          :actions="addActions"
+          @select="onAddActionSelect"
+          placement="bottom-end">
+          <template #reference>
+            <van-button round plain size="small">
+              <svg class="w-16px h-16px"><use href="#plus"></use></svg>
+            </van-button>
+          </template>
+        </van-popover>
       </template>
     </NavBar>
 
     <!-- 输入框 -->
     <div class="px-16px mt-2 mb-12px z-1">
-      <n-input
+      <van-field
         id="search"
         class="rounded-6px w-full relative text-12px"
-        :maxlength="20"
+        maxlength="20"
         clearable
-        spellCheck="false"
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
+        autocomplete="off"
+        :spellcheck="false"
+        autocorrect="off"
+        autocapitalize="off"
         :placeholder="t('mobile_contact.input.search')">
-        <template #prefix>
+        <template #left-icon>
           <svg class="w-12px h-12px"><use href="#search"></use></svg>
         </template>
-      </n-input>
+      </van-field>
     </div>
 
-    <n-card
-      :segmented="{ content: true, footer: 'soft' }"
-      :bordered="false"
-      class="custom-rounded flex-1"
-      header-class="py-15px! px-16px! text-14px!"
-      :title="t('mobile_contact.my_chat')">
-      <template #header-extra>
-        <div @click="toMessage" class="h-full flex items-center justify-end">
+    <div class="custom-rounded flex-1 bg-white dark:bg-[#1a1a1a]">
+      <!-- 卡片头部 -->
+      <div
+        class="flex items-center justify-between py-15px px-16px text-14px border-b border-gray-100 dark:border-gray-700">
+        <span class="font-medium">{{ t('mobile_contact.my_chat') }}</span>
+        <div class="flex items-center gap-8px" @click="toMessage">
           <span
             v-if="contactUnreadCount > 0"
-            class="px-4px py-4px rounded-999px bg-#c14053 text-white text-12px font-600 min-w-20px text-center">
+            class="px-4px py-4px rounded-999px bg-[--color-danger] text-white text-12px font-600 min-w-20px text-center">
             {{ contactUnreadCount > 99 ? '99+' : contactUnreadCount }}
           </span>
-        </div>
-        <div @click="toMessage" class="h-full flex justify-end items-center">
           <img src="@/assets/mobile/friend/right-arrow.webp" class="block h-20px dark:invert" alt="" />
         </div>
-      </template>
+      </div>
 
-      <n-tabs type="segment" animated class="mt-4px p-[4px_10px_0px_8px]">
-        <n-tab-pane name="1" :tab="t('mobile_contact.tab.contacts')">
-          <n-collapse :display-directive="'show'" :default-expanded-names="['special', 'normal']">
+      <!-- 选项卡 -->
+      <van-tabs v-model:active="activeTab" type="card" class="mt-4px p-[4px_10px_0px_8px]">
+        <van-tab :title="t('mobile_contact.tab.contacts')">
+          <van-collapse v-model="activeCollapseNames">
             <ContextMenu @contextmenu="showMenu($event)" @select="handleSelect($event.label)" :menu="menuList">
               <!-- 特殊关心分组 -->
-              <n-collapse-item v-if="specialContacts.length > 0" name="special">
-                <template #header>
-                  <n-flex align="center" :size="8">
-                    <svg class="size-14px color-#f5a623"><use href="#star-fill"></use></svg>
+              <van-collapse-item v-if="specialContacts.length > 0" name="special">
+                <template #title>
+                  <div class="flex items-center gap-8px">
+                    <svg class="size-14px color-[--color-warning]"><use href="#star-fill"></use></svg>
                     <span>{{ t('mobile_contact.group.special') || '特别关心' }}</span>
-                  </n-flex>
+                  </div>
                 </template>
-                <template #header-extra>
-                  <span class="text-(10px #707070)">{{ specialContacts.filter(c => c.activeStatus === OnlineEnum.ONLINE).length }}/{{ specialContacts.length }}</span>
+                <template #value>
+                  <span class="text-(10px [--hula-text-secondary])">
+                    {{ specialOnlineCount }}/{{ specialContacts.length }}
+                  </span>
                 </template>
-                <n-scrollbar style="max-height: calc(100vh - (340px + var(--safe-area-inset-top)))">
+                <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
                   <div @contextmenu.stop="$event.preventDefault()">
-                    <n-flex
+                    <div
                       v-for="item in specialContacts"
                       :key="item.uid"
                       @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
                       :class="{ active: activeItem === item.uid }"
-                      class="item-box w-full h-75px mb-5px"
-                      align="center"
-                      :size="10">
-                      <n-avatar
-                        round
-                        style="border: 1px solid var(--avatar-border-color)"
-                        :size="44"
-                        class="grayscale"
+                      class="item-box w-full h-75px mb-5px flex items-center gap-10px">
+                      <img
+                        class="size-44px rounded-full object-cover grayscale"
                         :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
+                        style="border: 1px solid var(--avatar-border-color)"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                        fallback-src="/logo.png" />
-                      <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
+                        @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                      <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
                           {{ groupStore.getUserInfo(item.uid)?.name }}
                         </span>
@@ -112,50 +104,56 @@
                           <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
                           <template v-else-if="getUserState(item.uid)">
                             <img class="size-12px rounded-50%" :src="getUserState(item.uid)?.url" alt="" />
-                            {{ getUserState(item.uid)?.title }}
+                            {{ translateStateTitle(getUserState(item.uid)?.title) }}
                           </template>
                           <template v-else>
-                            <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
-                            {{ item.activeStatus === OnlineEnum.ONLINE ? (t('mobile_contact.status.online') || '在线') : (t('mobile_contact.status.offline') || '离线') }}
+                            <span
+                              class="inline-block size-8px rounded-full"
+                              :style="{
+                                backgroundColor: item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'
+                              }"></span>
+                            {{
+                              item.activeStatus === OnlineEnum.ONLINE
+                                ? t('mobile_contact.status.online') || '在线'
+                                : t('mobile_contact.status.offline') || '离线'
+                            }}
                           </template>
                           ]
                         </div>
-                      </n-flex>
-                    </n-flex>
+                      </div>
+                    </div>
                   </div>
-                </n-scrollbar>
-              </n-collapse-item>
+                </div>
+              </van-collapse-item>
 
               <!-- 普通好友分组 -->
-              <n-collapse-item name="normal">
-                <template #header>
-                  <n-flex align="center" :size="8">
-                    <svg class="size-14px color-#666"><use href="#friends"></use></svg>
+              <van-collapse-item name="normal">
+                <template #title>
+                  <div class="flex items-center gap-8px">
+                    <svg class="size-14px color-[--hula-text-secondary]"><use href="#friends"></use></svg>
                     <span>{{ t('mobile_contact.group.normal') || '我的好友' }}</span>
-                  </n-flex>
+                  </div>
                 </template>
-                <template #header-extra>
-                  <span class="text-(10px #707070)">{{ onlineCount - specialContacts.filter(c => c.activeStatus === OnlineEnum.ONLINE).length }}/{{ normalContacts.length }}</span>
+                <template #value>
+                  <span class="text-(10px [--hula-text-secondary])">
+                    {{ normalOnlineCount }}/{{ normalContacts.length }}
+                  </span>
                 </template>
-                <n-scrollbar style="max-height: calc(100vh - (340px + var(--safe-area-inset-top)))">
+                <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
                   <div @contextmenu.stop="$event.preventDefault()">
-                    <n-flex
+                    <div
                       v-for="item in normalContacts"
                       :key="item.uid"
                       @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
                       :class="{ active: activeItem === item.uid }"
-                      class="item-box w-full h-75px mb-5px"
-                      align="center"
-                      :size="10">
-                      <n-avatar
-                        round
-                        style="border: 1px solid var(--avatar-border-color)"
-                        :size="44"
-                        class="grayscale"
+                      class="item-box w-full h-75px mb-5px flex items-center gap-10px">
+                      <img
+                        class="size-44px rounded-full object-cover grayscale"
                         :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
+                        style="border: 1px solid var(--avatar-border-color)"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                        fallback-src="/logo.png" />
-                      <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
+                        @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                      <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
                           {{ groupStore.getUserInfo(item.uid)?.name }}
                         </span>
@@ -164,252 +162,200 @@
                           <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
                           <template v-else-if="getUserState(item.uid)">
                             <img class="size-12px rounded-50%" :src="getUserState(item.uid)?.url" alt="" />
-                            {{ getUserState(item.uid)?.title }}
+                            {{ translateStateTitle(getUserState(item.uid)?.title) }}
                           </template>
                           <template v-else>
-                            <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
-                            {{ item.activeStatus === OnlineEnum.ONLINE ? (t('mobile_contact.status.online') || '在线') : (t('mobile_contact.status.offline') || '离线') }}
+                            <span
+                              class="inline-block size-8px rounded-full"
+                              :style="{
+                                backgroundColor: item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'
+                              }"></span>
+                            {{
+                              item.activeStatus === OnlineEnum.ONLINE
+                                ? t('mobile_contact.status.online') || '在线'
+                                : t('mobile_contact.status.offline') || '离线'
+                            }}
                           </template>
                           ]
                         </div>
-                      </n-flex>
-                    </n-flex>
+                      </div>
+                    </div>
                   </div>
-                </n-scrollbar>
-              </n-collapse-item>
+                </div>
+              </van-collapse-item>
 
               <!-- 屏蔽好友分组 -->
-              <n-collapse-item v-if="blockedContacts.length > 0" name="blocked">
-                <template #header>
-                  <n-flex align="center" :size="8">
-                    <svg class="size-14px color-#999"><use href="#forbidden"></use></svg>
+              <van-collapse-item v-if="blockedContacts.length > 0" name="blocked">
+                <template #title>
+                  <div class="flex items-center gap-8px">
+                    <svg class="size-14px color-[--color-text-quaternary]"><use href="#forbidden"></use></svg>
                     <span>{{ t('mobile_contact.group.blocked') || '已屏蔽' }}</span>
-                  </n-flex>
+                  </div>
                 </template>
-                <template #header-extra>
-                  <span class="text-(10px #707070)">{{ blockedContacts.length }}</span>
+                <template #value>
+                  <span class="text-(10px [--hula-text-secondary])">{{ blockedContacts.length }}</span>
                 </template>
-                <n-scrollbar style="max-height: calc(100vh - (340px + var(--safe-area-inset-top)))">
+                <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
                   <div @contextmenu.stop="$event.preventDefault()">
-                    <n-flex
+                    <div
                       v-for="item in blockedContacts"
                       :key="item.uid"
                       @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
                       :class="{ active: activeItem === item.uid }"
-                      class="item-box w-full h-75px mb-5px opacity-60"
-                      align="center"
-                      :size="10">
-                      <n-avatar
-                        round
+                      class="item-box w-full h-75px mb-5px opacity-60 flex items-center gap-10px">
+                      <img
+                        class="size-44px rounded-full object-cover grayscale"
                         style="border: 1px solid var(--avatar-border-color)"
-                        :size="44"
-                        class="grayscale"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                        fallback-src="/logo.png" />
-                      <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
+                        @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                      <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
                           {{ groupStore.getUserInfo(item.uid)?.name }}
                         </span>
-                        <div class="text leading-tight text-12px text-#909090">
+                        <div class="text leading-tight text-12px text-[--hula-text-tertiary]">
                           [{{ t('mobile_contact.status.blocked') || '已屏蔽' }}]
                         </div>
-                      </n-flex>
-                    </n-flex>
+                      </div>
+                    </div>
                   </div>
-                </n-scrollbar>
-              </n-collapse-item>
+                </div>
+              </van-collapse-item>
             </ContextMenu>
-          </n-collapse>
-        </n-tab-pane>
-        <n-tab-pane name="2" :tab="t('mobile_contact.tab.group')">
-          <n-collapse :display-directive="'show'" accordion :default-expanded-names="['1']">
-            <n-collapse-item :title="t('mobile_contact.group.title')" name="1">
-              <template #header-extra>
-                <span class="text-(10px #707070)">{{ groupChatList.length }}</span>
+          </van-collapse>
+        </van-tab>
+        <van-tab :title="t('mobile_contact.tab.group')">
+          <van-collapse v-model="activeGroupCollapseNames">
+            <van-collapse-item :title="t('mobile_contact.group.title')" name="1">
+              <template #value>
+                <span class="text-(10px [--hula-text-secondary])">{{ groupChatList.length }}</span>
               </template>
-              <n-scrollbar style="max-height: calc(100vh - (340px + var(--safe-area-inset-top)))">
+              <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
                 <div
                   @click="handleClick(item.roomId, RoomTypeEnum.GROUP)"
                   :class="{ active: activeItem === item.roomId }"
                   class="item-box w-full h-75px mb-5px"
                   v-for="item in groupChatList"
                   :key="item.roomId">
-                  <n-flex align="center" :size="10" class="h-75px pl-6px pr-8px flex-1 truncate">
-                    <n-avatar
-                      round
+                  <div class="flex items-center gap-10px h-75px pl-6px pr-8px flex-1 truncate">
+                    <img
+                      class="size-44px rounded-full object-cover"
                       style="border: 1px solid var(--avatar-border-color)"
-                      bordered
-                      :size="44"
                       :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                      fallback-src="/logo.png" />
-
+                      @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <span class="text-14px leading-tight flex-1 truncate">{{ item.remark || item.groupName }}</span>
-                  </n-flex>
+                  </div>
                 </div>
-              </n-scrollbar>
-            </n-collapse-item>
-          </n-collapse>
-        </n-tab-pane>
-      </n-tabs>
-    </n-card>
+              </div>
+            </van-collapse-item>
+          </van-collapse>
+        </van-tab>
+      </van-tabs>
+    </div>
   </div>
 </template>
+
 <style scoped>
 .custom-rounded {
-  border-top-left-radius: 20px; /* 左上角 */
+  border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   overflow: hidden;
 }
+
+:deep(.van-cell.van-field) {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+:deep(.van-cell.van-field::after) {
+  display: none;
+}
+
+:deep(.van-collapse-item__content) {
+  padding: 0;
+}
+
+:deep(.van-tabs__nav--card) {
+  border-radius: 8px;
+  overflow: hidden;
+}
 </style>
+
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import NavBar from '#/layout/navBar/index.vue'
-import addFriendIcon from '@/assets/mobile/chat-home/add-friend.webp'
-import groupChatIcon from '@/assets/mobile/chat-home/group-chat.webp'
-import { MittEnum, OnlineEnum, RoomTypeEnum, UserType } from '@/enums'
+import { useFriends } from '@/composables/useFriends'
+import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global'
-import { useGroupStore } from '@/stores/group'
-import { useUserStatusStore } from '@/stores/userStatus'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
-/**
- * 渲染图片图标的函数工厂
- * @param {string} src - 图标图片路径
- * @returns {() => import('vue').VNode} 返回一个渲染图片的函数组件
- */
-const renderImgIcon = (src: string) => {
-  return () =>
-    h('img', {
-      src,
-      style: 'display:block; width: 24px; height: 24px; vertical-align: middle',
-      class: 'dark:invert'
-    })
+const logger = createLogger('FriendsIndex')
+const timerManager = useTimerManager()
+
+const showAddPopover = ref(false)
+const addActions = [
+  { text: t('menu.start_group_chat'), value: '/mobile/mobileFriends/startGroupChat' },
+  { text: t('menu.add_contact'), value: '/mobile/mobileFriends/addFriends' }
+]
+
+const onAddActionSelect = (action: { text: string; value: string }) => {
+  router.push(action.value)
+  maskHandler.close()
 }
 
-/**
- * UI 视图数据，包含菜单选项及其图标
- * @type {import('vue').Ref<{ addOptions: { label: string; key: string; icon: () => import('vue').VNode }[] }>}
- */
-const uiViewsData = ref({
-  addOptions: [
-    {
-      label: t('menu.start_group_chat'),
-      key: '/mobile/mobileFriends/startGroupChat',
-      icon: renderImgIcon(groupChatIcon)
-    },
-    {
-      label: t('menu.add_contact'),
-      key: '/mobile/mobileFriends/addFriends',
-      icon: renderImgIcon(addFriendIcon)
-    }
-  ]
-})
+const activeTab = ref(0)
+const activeCollapseNames = ref(['special', 'normal'])
+const activeGroupCollapseNames = ref(['1'])
 
 const menuList = ref([
   { label: '添加分组', icon: 'plus' },
   { label: '重命名该组', icon: 'edit' },
   { label: '删除分组', icon: 'delete' }
 ])
-/** 建议把此状态存入localStorage中 */
-const activeItem = ref('')
+
 const detailsShow = ref(false)
 const shrinkStatus = ref(false)
 const groupStore = useGroupStore()
-const globalStore = useGlobalStore()
 const contactStore = useContactStore()
-const userStatusStore = useUserStatusStore()
-const { stateList } = storeToRefs(userStatusStore)
-
-const contactUnreadCount = computed(
-  () => globalStore.unReadMark.newFriendUnreadCount + globalStore.unReadMark.newGroupUnreadCount
-)
+const {
+  groupChatList,
+  specialContacts,
+  specialOnlineCount,
+  blockedContacts,
+  normalContacts,
+  normalOnlineCount,
+  contactUnreadCount,
+  selectedItem: activeItem,
+  isBotUser,
+  getUserState,
+  setSelectedItem,
+  clearSelectedItem
+} = useFriends()
 
 const toMessage = async () => {
   try {
     await Promise.all([contactStore.getApplyPage('friend', true, true), contactStore.getApplyPage('group', true, true)])
     await contactStore.getApplyUnReadCount()
   } catch (error) {
-    console.error('刷新通知并标记已读失败', error)
+    logger.error('刷新通知并标记已读失败', error)
     window.$message?.error?.('刷新通知失败，请稍后再试')
   } finally {
     router.push('/mobile/mobileMy/myMessages')
   }
 }
 
-/** 群聊列表 */
-const groupChatList = computed(() => {
-  return [...groupStore.groupDetails].sort((a, b) => {
-    // 将roomId为'1'的群聊排在最前面
-    if (a.roomId === '1' && b.roomId !== '1') return -1
-    if (a.roomId !== '1' && b.roomId === '1') return 1
-    return 0
-  })
-})
-/** 统计在线用户人数 */
-const onlineCount = computed(() => {
-  return contactStore.contactsList.filter((item) => item.activeStatus === OnlineEnum.ONLINE).length
-})
-/** 排序好友列表 */
-const sortedContacts = computed(() => {
-  return [...contactStore.contactsList].sort((a, b) => {
-    // 在线用户排在前面
-    if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
-    if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
-    return 0
-  })
-})
-
-/** 特殊关心好友列表 */
-const specialContacts = computed(() => {
-  return contactStore.favoriteContacts.sort((a, b) => {
-    if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
-    if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
-    return 0
-  })
-})
-
-/** 屏蔽好友列表 */
-const blockedContacts = computed(() => {
-  return contactStore.blockedContacts.sort((a, b) => {
-    return (b.lastOptTime || 0) - (a.lastOptTime || 0)
-  })
-})
-
-/** 普通好友列表（排除特殊关心和屏蔽的） */
-const normalContacts = computed(() => {
-  const specialIds = new Set(specialContacts.value.map(c => c.uid))
-  const blockedIds = new Set(blockedContacts.value.map(c => c.uid))
-  return contactStore.contactsList
-    .filter(c => !specialIds.has(c.uid) && !blockedIds.has(c.uid))
-    .sort((a, b) => {
-      const aIsBot = isBotUser(a.uid)
-      const bIsBot = isBotUser(b.uid)
-      if (aIsBot && !bIsBot) return -1
-      if (!aIsBot && bIsBot) return 1
-      if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
-      if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
-      return 0
-    })
-})
-
 const { preloadChatRoom } = useMessage()
 
-const isBotUser = (uid: string) => groupStore.getUserInfo(uid)?.account === UserType.BOT
-
-/**
- *
- * @param uid 群聊id或好友uid
- * @param type 1 群聊 2 单聊
- */
 const handleClick = async (id: string, type: number) => {
   detailsShow.value = true
-  activeItem.value = id
+  setSelectedItem(id)
   const data = {
     context: {
       type: type,
@@ -424,31 +370,22 @@ const handleClick = async (id: string, type: number) => {
       await preloadChatRoom(id)
       router.push(`/mobile/chatRoom/chatMain`)
     } catch (error) {
-      console.error(error)
+      logger.error(String(error))
     }
   } else {
     router.push(`/mobile/mobileFriends/friendInfo/${id}`)
   }
 }
 
-// todo 需要循环数组来展示分组
-const showMenu = (event: MouseEvent) => {
-  console.log(event)
-}
+const showMenu = (_event: MouseEvent) => {}
 
-const handleSelect = (event: MouseEvent) => {
-  console.log(event)
-}
+const handleSelect = (_event: MouseEvent) => {}
 
-/** 获取用户状态 */
-const getUserState = (uid: string) => {
-  const userInfo = groupStore.getUserInfo(uid)!
-  const userStateId = userInfo.userStateId
-
-  if (userStateId && userStateId !== '1') {
-    return stateList.value.find((state: { id: string }) => state.id === userStateId)
-  }
-  return null
+const translateStateTitle = (title?: string) => {
+  if (!title) return ''
+  const key = `auth.onlineStatus.states.${title}`
+  const translated = t(key)
+  return translated === key ? title : translated
 }
 
 onMounted(async () => {
@@ -459,34 +396,20 @@ onMounted(async () => {
     await contactStore.getContactList(true)
     await contactStore.getApplyPage('friend', false)
   } catch (error) {
-    console.log('请求好友申请列表失败')
+    logger.debug('请求好友申请列表失败')
   }
 })
 
 onUnmounted(() => {
   detailsShow.value = false
+  clearSelectedItem()
   useMitt.emit(MittEnum.DETAILS_SHOW, detailsShow.value)
 })
 
-/**
- * 页面蒙板显示状态
- * @type {import('vue').Ref<boolean>}
- */
 const showMask = ref(false)
-
-/**
- * 当前页面滚动的纵向位置，避免打开蒙板时页面跳动
- * @type {number}
- */
 let scrollY = 0
 
-/**
- * 控制页面蒙板的对象，包含打开和关闭方法
- */
 const maskHandler = {
-  /**
-   * 打开蒙板，并锁定滚动位置
-   */
   open: () => {
     scrollY = window.scrollY
     showMask.value = true
@@ -495,47 +418,15 @@ const maskHandler = {
     document.body.style.top = `-${scrollY}px`
     document.body.style.width = '100%'
   },
-
-  /**
-   * 关闭蒙板，恢复滚动状态和位置
-   */
   close: () => {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       showMask.value = false
       document.body.style.overflow = ''
       document.body.style.position = ''
       document.body.style.top = ''
       document.body.style.width = ''
-      window.scrollTo(0, scrollY) // 恢复滚动位置
+      window.scrollTo(0, scrollY)
     }, 200)
-  }
-}
-
-/**
- * 添加按钮相关事件处理对象
- */
-const addIconHandler = {
-  /**
-   * 选项选择时关闭蒙板
-   */
-  select: (item: string) => {
-    console.log('选择的项：', item)
-    router.push(item)
-    maskHandler.close()
-  },
-
-  /**
-   * 点击加号按钮打开蒙板
-   */
-  open: () => {
-    maskHandler.open()
-  },
-
-  /**
-   * 点击下拉菜单外部区域关闭蒙板
-   */
-  clickOutside: () => {
-    maskHandler.close()
   }
 }
 </script>

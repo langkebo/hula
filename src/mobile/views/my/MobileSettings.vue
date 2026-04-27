@@ -32,7 +32,10 @@
               </template>
             </van-cell>
 
-            <van-cell :title="t('mobile_setting.security')" is-link @click="router.push('/mobile/mobileMy/security')">
+            <van-cell
+              :title="t('mobile_setting.security')"
+              is-link
+              @click="router.push(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)">
               <template #icon>
                 <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
                   <Icon icon="mdi:shield-lock" :width="20" color="#ff4d4f" />
@@ -88,10 +91,47 @@
             </van-cell>
           </van-cell-group>
 
+          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.privacy_section') }}</div>
+
+          <van-cell-group inset>
+            <van-cell
+              :title="t('mobile_setting.preferences')"
+              is-link
+              @click="router.push('/mobile/mobileMy/preferences')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-cyan-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:tune" :width="20" color="#13c2c2" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('mobile_setting.burn_after_read')"
+              is-link
+              @click="router.push('/mobile/mobileMy/burnAfterRead')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:timer-outline" :width="20" color="#fa8c16" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell :title="t('mobile_setting.mjolnir')" is-link @click="router.push('/mobile/mobileMy/mjolnir')">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:block-helper" :width="20" color="#ff4d4f" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
           <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.help_section') }}</div>
 
           <van-cell-group inset>
-            <van-cell :title="t('mobile_setting.help_feedback')" is-link @click="router.push('/mobile/mobileMy/help')">
+            <van-cell
+              :title="t('mobile_setting.help_feedback')"
+              is-link
+              @click="router.push(MOBILE_SETTINGS_HELP_ABOUT_PATH)">
               <template #icon>
                 <div class="w-40px h-40px rounded-full bg-indigo-50 mr-12px flex items-center justify-center">
                   <Icon icon="mdi:help-circle" :width="20" color="#597ef7" />
@@ -104,42 +144,16 @@
 
           <van-cell-group inset>
             <van-cell
-              :title="t('mobile_setting.voice_video')"
+              v-for="item in advancedSettingsItems"
+              :key="item.path"
+              :title="t(item.titleKey)"
               is-link
-              @click="router.push('/mobile/mobileMy/voiceVideo')">
+              @click="router.push(item.path)">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-teal-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:video" :width="20" color="#20c997" />
-                </div>
-              </template>
-            </van-cell>
-
-            <van-cell :title="t('mobile_setting.labs')" is-link @click="router.push('/mobile/mobileMy/labs')">
-              <template #icon>
-                <div class="w-40px h-40px rounded-full bg-pink-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:flask" :width="20" color="#eb2f96" />
-                </div>
-              </template>
-            </van-cell>
-
-            <van-cell
-              :title="t('mobile_setting.integrations')"
-              is-link
-              @click="router.push('/mobile/mobileMy/integrations')">
-              <template #icon>
-                <div class="w-40px h-40px rounded-full bg-amber-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:puzzle" :width="20" color="#fa8c16" />
-                </div>
-              </template>
-            </van-cell>
-
-            <van-cell
-              :title="t('mobile_setting.homeserver')"
-              is-link
-              @click="router.push('/mobile/mobileMy/homeserver')">
-              <template #icon>
-                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:server" :width="20" color="#1890ff" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="{ backgroundColor: item.iconBackgroundColor }">
+                  <Icon :icon="item.icon" :width="20" :color="item.iconColor" />
                 </div>
               </template>
             </van-cell>
@@ -159,36 +173,38 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { showDialog, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { info } from '@tauri-apps/plugin-log'
-import { useGlobalStore } from '@/stores/global'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useUserStatusStore } from '@/stores/userStatus'
-import { useLogin } from '@/hooks/useLogin'
-import * as ImRequestUtils from '@/utils/ImRequestUtils'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useI18n } from 'vue-i18n'
+import { MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
+import { MOBILE_SETTINGS_HELP_ABOUT_PATH, MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from './settingsRoutes'
 
-const { t, locale } = useI18n()
+const logger = createLogger('MobileSettings')
+
+const { t } = useI18n()
 const router = useRouter()
 const globalStore = useGlobalStore()
 const { isTrayMenuShow } = storeToRefs(globalStore)
 const settingStore = useSettingStore()
 const userStatusStore = useUserStatusStore()
+const advancedSettingsItems = MOBILE_ADVANCED_SETTINGS_ITEMS
 
 const themeValue = computed({
-  get: () => settingStore.themes.content,
+  get: () => settingStore.themeContent,
   set: (val) => settingStore.toggleTheme(val)
 })
 
 const languageValue = computed({
-  get: () => settingStore.page.lang,
-  set: (v) => {
-    settingStore.page.lang = v
-    locale.value = v === 'zh-CN' ? 'zh-CN' : 'en'
-  }
+  get: () => settingStore.languagePreference,
+  set: (v) => settingStore.setLanguage(v)
 })
 
 const currentStatusId = computed(() => userStatusStore.stateId || 'online')
@@ -208,15 +224,13 @@ const statusLabel = computed(() => currentStatus.value.label)
 const statusIcon = computed(() => currentStatus.value.icon)
 const statusColor = computed(() => currentStatus.value.color)
 
-const { logout, resetLoginState } = useLogin()
+const { logout } = useLoginFlow()
 
 const isLoggingOut = ref(false)
 
 async function handleLogout() {
   if (isLoggingOut.value) return
   isLoggingOut.value = true
-
-  let logoutSuccess = false
 
   showDialog({
     title: t('mobile_setting.logout_confirm.title'),
@@ -227,29 +241,19 @@ async function handleLogout() {
   })
     .then(async () => {
       try {
-        await ImRequestUtils.logout({ autoLogin: true })
-        logoutSuccess = true
-      } catch (error) {
-        console.error('服务器登出失败：', error)
-      }
-
-      try {
-        await resetLoginState()
         await logout()
 
         settingStore.toggleLogin(false, false)
         info('登出账号')
         isTrayMenuShow.value = false
 
-        if (logoutSuccess) {
-          showToast({
-            type: 'success',
-            message: t('mobile_setting.logout_success')
-          })
-        }
+        showToast({
+          type: 'success',
+          message: t('mobile_setting.logout_success')
+        })
         await router.push('/mobile/login')
       } catch (localError) {
-        console.error('本地登出清理失败：', localError)
+        logger.error('Failed to clear local logout state', localError)
         showToast({
           type: 'fail',
           message: t('mobile_setting.logout_failed')

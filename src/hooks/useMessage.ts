@@ -1,14 +1,14 @@
+import { ref } from 'vue'
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { SessionItem } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useSettingStore } from '@/stores/setting.ts'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user'
-import { shield, notification } from '@/utils/ImRequestUtils'
-import { matrixGroupService, matrixSessionService } from '@/services/matrix'
+import type { SessionItem } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
+import { matrixGroupService, matrixRoomNotificationService, matrixSessionService } from '@/services/matrix'
 import { invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
 import { useI18n } from 'vue-i18n'
 
@@ -20,17 +20,19 @@ let isShrinkListenerRegistered = false
 const registerShrinkListener = () => {
   if (isShrinkListenerRegistered) return
   isShrinkListenerRegistered = true
-  useMitt.on(MittEnum.SHRINK_WINDOW, async (event: any) => {
+  useMitt.on(MittEnum.SHRINK_WINDOW, async (event: unknown) => {
     shrinkStatus.value = event as boolean
   })
 }
+
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Message')
 
 export const useMessage = () => {
   const { t } = useI18n()
   const globalStore = useGlobalStore()
   const chatStore = useChatStore()
   const settingStore = useSettingStore()
-  const { chat } = storeToRefs(settingStore)
   const contactStore = useContactStore()
   const groupStore = useGroupStore()
   const userStore = useUserStore()
@@ -61,7 +63,7 @@ export const useMessage = () => {
     msgBoxShow.value = true
     // 更新当前会话信息
     const roomId = item.roomId
-    console.log('[handleMsgClick] 点击会话:', roomId, 'UI未读数:', item.unreadCount)
+    logger.debug('点击会话:', roomId, 'UI未读数:', item.unreadCount)
 
     globalStore.updateCurrentSessionRoomId(roomId)
 
@@ -72,7 +74,7 @@ export const useMessage = () => {
     try {
       await ensureGroupMembersSynced(roomId, item.type)
     } catch (error) {
-      console.error('[useMessage] 同步群成员失败:', error)
+      logger.error('同步群成员失败:', error)
     }
   }
 
@@ -116,8 +118,8 @@ export const useMessage = () => {
 
   /** 处理双击事件 */
   const handleMsgDblclick = (item: SessionItem) => {
-    if (!chat.value.isDouble) return
-    console.log(item)
+    if (!settingStore.messageDoubleClickEnabled) return
+    logger.debug('双击消息项:', item)
   }
 
   const menuList = ref<OPT.RightMenu[]>([
@@ -142,9 +144,9 @@ export const useMessage = () => {
     {
       label: () => t('menu.copy_account'),
       icon: 'copy',
-      click: (item: any) => {
-        navigator.clipboard.writeText(item.account)
-        window.$message.success(t('message.message_menu.copy_success', { account: item.account }))
+      click: (item: SessionItem) => {
+        navigator.clipboard.writeText(item.account ?? '')
+        window.$message.success(t('message.message_menu.copy_success', { account: item.account ?? '' }))
       }
     },
     {
@@ -177,10 +179,7 @@ export const useMessage = () => {
             click: async () => {
               // 如果当前是屏蔽状态，需要先取消屏蔽
               if (item.shield) {
-                await shield({
-                  roomId: item.roomId,
-                  state: false
-                })
+                await matrixRoomNotificationService.setRoomShield(item.roomId, false)
                 chatStore.updateSession(item.roomId, { shield: false })
               }
               await handleNotificationChange(item, NotificationTypeEnum.RECEPTION)
@@ -192,10 +191,7 @@ export const useMessage = () => {
             click: async () => {
               // 如果当前是屏蔽状态，需要先取消屏蔽
               if (item.shield) {
-                await shield({
-                  roomId: item.roomId,
-                  state: false
-                })
+                await matrixRoomNotificationService.setRoomShield(item.roomId, false)
                 chatStore.updateSession(item.roomId, { shield: false })
               }
               await handleNotificationChange(item, NotificationTypeEnum.NOT_DISTURB)
@@ -205,10 +201,7 @@ export const useMessage = () => {
             label: () => t('menu.block_group_messages'),
             icon: item.shield ? 'check-small' : '',
             click: async () => {
-              await shield({
-                roomId: item.roomId,
-                state: !item.shield
-              })
+              await matrixRoomNotificationService.setRoomShield(item.roomId, !item.shield)
 
               // 更新本地会话状态
               chatStore.updateSession(item.roomId, {
@@ -240,10 +233,7 @@ export const useMessage = () => {
       label: (item: SessionItem) => (item.shield ? t('menu.unblock_user_messages') : t('menu.block_user_messages')),
       icon: (item: SessionItem) => (item.shield ? 'message-success' : 'people-unknown'),
       click: async (item: SessionItem) => {
-        await shield({
-          roomId: item.roomId,
-          state: !item.shield
-        })
+        await matrixRoomNotificationService.setRoomShield(item.roomId, !item.shield)
 
         // 更新本地会话状态
         chatStore.updateSession(item.roomId, {
@@ -290,7 +280,7 @@ export const useMessage = () => {
         return 'logout'
       },
       click: async (item: SessionItem) => {
-        console.log('删除好友或退出群聊执行')
+        logger.debug('删除好友或退出群聊执行')
         // 单聊：删除好友
         if (item.type === RoomTypeEnum.SINGLE) {
           if (!item.detailId) return
@@ -334,36 +324,36 @@ export const useMessage = () => {
     }
   ])
 
-  // 添加通知设置变更处理函数
   const handleNotificationChange = async (item: SessionItem, newType: NotificationTypeEnum) => {
-    await notification({
-      roomId: item.roomId,
-      type: newType
-    })
+    try {
+      await matrixRoomNotificationService.setRoomNotification(item.roomId, newType)
 
-    // 更新本地会话状态
-    chatStore.updateSession(item.roomId, {
-      muteNotification: newType
-    })
+      // 更新本地会话状态
+      chatStore.updateSession(item.roomId, {
+        muteNotification: newType
+      })
 
-    // 如果从免打扰切换到允许提醒，需要重新计算全局未读数
-    if (item.muteNotification === NotificationTypeEnum.NOT_DISTURB && newType === NotificationTypeEnum.RECEPTION) {
-      chatStore.updateTotalUnreadCount()
-    }
-
-    // 显示操作成功提示
-    let message = ''
-    switch (newType) {
-      case NotificationTypeEnum.RECEPTION:
-        message = t('message.message_menu.notification_allowed')
-        break
-      case NotificationTypeEnum.NOT_DISTURB:
-        message = t('message.message_menu.notification_silent')
-        // 设置免打扰时也需要更新全局未读数，因为该会话的未读数将不再计入
+      // 如果从免打扰切换到允许提醒，需要重新计算全局未读数
+      if (item.muteNotification === NotificationTypeEnum.NOT_DISTURB && newType === NotificationTypeEnum.RECEPTION) {
         chatStore.updateTotalUnreadCount()
-        break
+      }
+
+      // 显示操作成功提示
+      let message = ''
+      switch (newType) {
+        case NotificationTypeEnum.RECEPTION:
+          message = t('message.message_menu.notification_allowed')
+          break
+        case NotificationTypeEnum.NOT_DISTURB:
+          message = t('message.message_menu.notification_silent')
+          // 设置免打扰时也需要更新全局未读数，因为该会话的未读数将不再计入
+          chatStore.updateTotalUnreadCount()
+          break
+      }
+      window.$message.success(message)
+    } catch (e) {
+      window.$message.error(String(e))
     }
-    window.$message.success(message)
   }
 
   const visibleMenu = (item: SessionItem) => {

@@ -78,9 +78,9 @@ export const useContextMenu = (ContextMenuRef: Ref, isNull?: Ref<boolean>) => {
     window.addEventListener('wheel', preventDefault, { passive: false }) // 禁止使用滚轮滚动页面
   }
 
-  const closeMenu = (event: any) => {
+  const closeMenu = (event: MouseEvent) => {
     /** 需要判断点击如果不是.context-menu类的元素的时候，menu才会关闭 */
-    if (!event.target.matches('.context-menu, .context-menu *')) {
+    if (!(event.target as HTMLElement | null)?.matches('.context-menu, .context-menu *')) {
       handleVirtualListScroll(false)
       showMenu.value = false
       enableTextSelection() // 恢复文本选择功能

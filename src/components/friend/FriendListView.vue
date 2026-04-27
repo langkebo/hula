@@ -69,7 +69,7 @@
                 <n-avatar
                   :size="44"
                   :src="AvatarUtils.getAvatarUrl(friend.avatarUrl)"
-                  :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   round />
               </n-badge>
               <n-flex vertical :size="4" class="flex-1 truncate">
@@ -101,13 +101,13 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { OnlineEnum, ThemeEnum } from '@/enums'
-import { useContactStore, type MatrixContact } from '@/stores/contacts'
-import { useSettingStore } from '@/stores/setting'
+import { useContactStore, type MatrixContact } from '@/stores/domains/chat/contacts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import type { FriendStatus } from '@/services/matrix/MatrixFriendService'
+import type { FriendStatus } from '@/services/matrix/friends/MatrixFriendService'
+import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpecialFriendService'
 import FriendRequestDialog from './FriendRequestDialog.vue'
 import AddFriendDialog from './AddFriendDialog.vue'
 import FriendDetailDrawer from './FriendDetailDrawer.vue'
@@ -116,7 +116,6 @@ import ContextMenu from '@/components/common/ContextMenu.vue'
 const { t } = useI18n()
 const contactStore = useContactStore()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 
 const searchValue = ref('')
 const currentFilter = ref<FriendStatus | 'all'>('all')
@@ -228,9 +227,7 @@ const handleContextMenuSelect = async (item: { label: string }) => {
 
 const handleSetSecretFriend = async (friend: MatrixContact) => {
   try {
-    await window.$invoke('create_secret_friend', {
-      data: { friendId: friend.userId }
-    })
+    await matrixSpecialFriendService.addSpecialFriend(friend.userId)
     window.$message.success(t('friend.secret_chat.success'))
   } catch (e) {
     window.$message.error(String(e))
@@ -260,11 +257,11 @@ onMounted(async () => {
   transition: background-color 0.2s;
 
   &:hover {
-    background: var(--list-hover-color);
+    background: var(--hula-surface-list-hover);
   }
 
   &:active {
-    background: var(--msg-active-color);
+    background: var(--hula-surface-session-active);
   }
 }
 </style>
