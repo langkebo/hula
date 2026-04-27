@@ -168,7 +168,7 @@ watch(visible, (val) => {
 .request-item {
   padding: 12px;
   border-radius: 8px;
-  background: var(--bg-color);
-  border: 1px solid var(--border-color);
+  background: var(--hula-surface-panel);
+  border: 1px solid var(--hula-border-default);
 }
 </style>

@@ -10,13 +10,13 @@
       v-if="!isMinimized"
       class="minimize-btn"
       type="button"
-      title="最小化"
+      :title="t('memoryMonitor.minimize')"
       @click.stop="toggleMinimize(true)"
       @pointerdown.stop>
       <svg class="size-16px color-[--hula-text-inverse] rotate-90"><use href="#right"></use></svg>
     </button>
     <template v-if="!isMinimized">
-      <div class="title">Memory Monitor (click to toggle)</div>
+      <div class="title">{{ t('memoryMonitor.title') }}</div>
       <div v-if="expanded" class="section">
         <template v-for="(value, name) in storeInfo" :key="name">
           <div v-if="String(name).startsWith('--')" class="label">{{ name }}</div>
@@ -27,15 +27,16 @@
         </template>
       </div>
       <div v-else class="section">
-        <div class="item color-[--hula-text-tertiary]">Click to expand</div>
+        <div class="item color-[--hula-text-tertiary]">{{ t('memoryMonitor.expandHint') }}</div>
       </div>
     </template>
 
-    <img v-else class="size-24px" title="点击恢复内存监控" src="/logoL.png" alt="" />
+    <img v-else class="size-24px" :title="t('memoryMonitor.restore')" src="/logoL.png" alt="" />
   </div>
 </template>
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, reactive, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -43,6 +44,7 @@ import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 const logger = createLogger('MemoryMonitor')
 const timerManager = useTimerManager()
+const { t } = useI18n()
 
 const storeInfo = ref<Record<string, string | number>>({})
 const expanded = ref(true)

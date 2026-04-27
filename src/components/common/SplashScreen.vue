@@ -35,7 +35,7 @@
           <n-alert type="error" :show-icon="true">
             {{ errorMessage }}
           </n-alert>
-          <n-button v-if="retryable" type="primary" size="small" @click="$emit('retry')">重试</n-button>
+          <n-button v-if="retryable" type="primary" size="small" @click="$emit('retry')">{{ t('retry') }}</n-button>
         </div>
       </div>
     </div>
@@ -44,6 +44,7 @@
 
 <script setup lang="ts">
 import { NAlert } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 
 defineProps<{
   visible: boolean
@@ -58,6 +59,8 @@ defineProps<{
 defineEmits<{
   retry: []
 }>()
+
+const { t } = useI18n()
 </script>
 
 <style scoped>

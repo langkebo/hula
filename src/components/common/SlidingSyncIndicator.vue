@@ -16,6 +16,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { NSpin } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   status: 'syncing' | 'complete' | 'error' | 'idle'
@@ -24,17 +25,22 @@ const props = defineProps<{
   totalRooms?: number
 }>()
 
+const { t } = useI18n()
+
 const statusText = computed(() => {
   switch (props.status) {
     case 'syncing':
       if (props.syncedRooms !== undefined && props.totalRooms !== undefined) {
-        return `同步中 ${props.syncedRooms}/${props.totalRooms}`
+        return t('slidingSyncIndicator.syncingProgress', {
+          synced: props.syncedRooms,
+          total: props.totalRooms
+        })
       }
-      return '同步中...'
+      return t('slidingSyncIndicator.syncing')
     case 'complete':
-      return '同步完成'
+      return t('slidingSyncIndicator.complete')
     case 'error':
-      return '同步失败'
+      return t('slidingSyncIndicator.error')
     default:
       return ''
   }
