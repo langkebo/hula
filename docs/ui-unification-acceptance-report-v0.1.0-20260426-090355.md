@@ -70,7 +70,7 @@
 - 主题文件和 Token 来源未完全单一化。
 - 房间/空间入口分散，缺少统一工作区模板。
 - 组件样式存在大量 fallback 和硬编码色值。
-- 设置页主壳层国际化已显著收敛，但设置体系其余日志、错误提示与辅助文案仍未完成统一。
+- 设置页主壳层、搜索关键词与移动端阅后即焚时长文案已显著收敛，但设置体系其余日志、错误提示与辅助文案仍未完成统一。
 
 ### 5.2 已确认基线
 
@@ -142,7 +142,7 @@
   - `src/components/search/SpotlightDialog.vue` 已完成 `--emoji-hover` 末尾消费替换，`src/styles/scss/global/variable.scss` 已物理删除无外部消费的 `--box-shadow-color`、`--emoji-hover` 与 `--emoji-active-color`，残留扫描与诊断校验均通过
   - `src/components/fileManager/FileContent.vue`、`src/components/common/AvatarCropper.vue`、`ContextMenu.vue`、`InfoPopover.vue`、`src/layout/left/components/InfoEdit.vue`、`definePlugins/List.vue`、`src/layout/center/model.tsx` 与 `src/views/loginWindow/Login.vue` 已完成本轮下一批低频历史别名收敛，旧 `--line-color`、`--chat-text-color` 已替换为 `--hula-border-default`、`--hula-text-secondary`，残留扫描与诊断校验均通过
   - `src/composables/settings/settingsOptions.ts`、`src/views/settingsWindow/tabs/PreferencesSettings.vue` 与 `locales/zh-CN/setting.json`、`locales/en/setting.json` 已完成设置偏好页一轮国际化收敛，语言选项与发送键选项已改为消费 i18n 文案键；相关诊断通过，`PreferencesSettings.test.ts` 已同步更新，当前 IDE 环境下定向执行 `vitest` 命令超时，仍需在后续验收阶段单独复跑
-  - `src/stores/domains/settings/settingsSchema.ts`、`src/composables/settings/useSettingsShell.ts`、`src/composables/settings/settingsSearchIndex.ts`、`src/views/settingsWindow/SettingsDialog.vue` 与 `locales/zh-CN/setting.json`、`locales/en/setting.json` 已完成设置壳层第二轮国际化收敛，设置导航标题、当前标签标题、搜索索引与搜索关键词别名已改为跟随运行时翻译或语言包数组；相关诊断通过，`useSettingsShell.test.ts` 与 `SettingsDialog.test.ts` 定向执行 `vitest` 已通过
+  - `src/stores/domains/settings/settingsSchema.ts`、`src/composables/settings/useSettingsShell.ts`、`src/composables/settings/settingsSearchIndex.ts`、`src/views/settingsWindow/SettingsDialog.vue` 与 `locales/zh-CN/setting.json`、`locales/en/setting.json` 已完成设置壳层第二轮国际化收敛，设置导航标题、当前标签标题、搜索索引与搜索关键词别名已改为跟随运行时翻译或语言包数组；移动端 `src/mobile/views/my/PreferencesSettings.vue`、`BurnAfterReadSettings.vue` 中的阅后即焚时长标签和格式化逻辑也已改为复用共享翻译键；相关诊断通过
 - 当前验收状态更新:
   - `UI 统一方案`: 继续有效，作为实施依据保留
   - `单一权威组件库替换`: 尚未开始
