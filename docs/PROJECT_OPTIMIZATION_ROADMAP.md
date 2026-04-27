@@ -1,11 +1,11 @@
 # HuLa 项目统一优化方案
 
-> **版本**: v1.3.0  
+> **版本**: v1.4.0  
 > **生成时间**: 2026-04-27  
 > **更新时间**: 2026-04-27  
 > **适用范围**: 全项目架构、UI 系统、代码质量、安全性  
 > **执行周期**: 1-2 个月  
-> **当前状态**: P0 任务 6/6 已启动 (P0-6 持续推进, 测试用例已扩展至 2766+), P1 任务 6/6 完成 (100%), P2 任务 5/5 完成 (100%)
+> **当前状态**: P0 任务 6/6 已启动 (P0-6 持续推进, 测试用例已扩展至 2867+), P1 任务 6/6 完成 (100%), P2 任务 5/5 完成 (100%)
 
 ---
 
@@ -257,17 +257,17 @@
 
 **验收标准**：
 - [x] hooks 测试文件数 29 个 ✅（截至 2026-04-27）
-- [x] stores 测试文件数 20 个 ✅（截至 2026-04-27）
-- [x] utils 测试文件数 19 个 ✅（截至 2026-04-27）
-- [x] strategy 测试文件数 5 个 ✅（截至 2026-04-27）
-- [x] 所有新增单元测试通过 ✅（2766 通过 / 24 既有失败为环境问题）
+- [x] stores 测试文件数 23 个 ✅（截至 2026-04-27, 新增 user/loginHistory、user/userMenu、widget/space、chat/badge、chat/moderation 等）
+- [x] utils 测试文件数 22 个 ✅（截至 2026-04-27, 新增 MessageReply、userStatus、UnreadCountManager、PlatformConstants）
+- [x] strategy 测试文件数 7 个 ✅（截至 2026-04-27, 新增 voice、text）
+- [x] 所有新增单元测试通过 ✅（2867+ 通过 / 24 既有失败为环境问题）
 - [ ] hooks 覆盖率 >60%（持续推进）
 - [ ] stores 覆盖率 >60%（持续推进）
 - [ ] CI 覆盖率检查通过（待启用门槛）
 
 **状态**: 🔄 持续进行中  
-**当前**: hooks 29 / stores 20 / utils 19 / strategy 5 测试文件，2766+ 通过用例  
-**最近增量**: 26 个新测试文件, 274 个新测试用例（覆盖 LRUCache、Result、presenceStatus、typeGuard、useAutoScrollGuard、useMitt、Formatting、CoordinateTransform、TimerManager、FileType、StringUtils、MessageSelect、imageViewer/videoViewer/spotlight/alwaysOnTop/guide/sessionUnread/initialSync/notice/history/mobile、Location/Beacon/Emoji/LinkPreview/AudioCall/VideoCall/Unsupported 策略等）  
+**当前**: hooks 29 / stores 23 / utils 22 / strategy 7 测试文件，2867+ 通过用例  
+**最近增量**: 35 个新测试文件, 375+ 个新测试用例（新增 voice/text 策略, loginHistory/userMenu/badge/moderation/space 等 store, MessageReply/userStatus/UnreadCountManager/PlatformConstants 等 util）  
 **相关文档**：`FRONTEND_OPTIMIZATION_PLAN` §1
 
 ---
@@ -484,11 +484,11 @@
 | 设置壳层 | 单实现 | 单实现 | ✅ |
 | 房间/空间组件 | 统一 | 统一 | ✅ |
 | 测试覆盖率 | 持续提升中 | >70% | 🟡 |
-| 测试用例总数 | 2766 通过 | — | ✅ |
+| 测试用例总数 | 2867+ 通过 | — | ✅ |
 | hooks 测试文件 | 29 | — | ✅ |
-| stores 测试文件 | 20 | — | ✅ |
-| utils 测试文件 | 19 | — | ✅ |
-| strategy 测试文件 | 5 | — | ✅ |
+| stores 测试文件 | 23 | — | ✅ |
+| utils 测试文件 | 22 | — | ✅ |
+| strategy 测试文件 | 7 | — | ✅ |
 | 安全漏洞 | 10 传递依赖 | 0 | 🟡 |
 | E2E 测试 | 部分失败 | 0 失败 | 🟡 |
 | P0 完成度 | 100% | 100% | ✅ |
@@ -560,5 +560,5 @@
 ---
 
 **文档维护者**：前端团队  
-**最后更新**：2026-04-27 (v1.3.0)  
+**最后更新**：2026-04-27 (v1.4.0)  
 **下次审查**：2026-05-04
