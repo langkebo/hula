@@ -28,7 +28,7 @@
             v-model:value="isTop"
             :true-value="true"
             :false-value="false" />
-          <span class="text-(14px [--text-color]) ml-10px">{{ t('announcement.form.pinned') }}</span>
+          <span class="text-(14px [--hula-text-primary]) ml-10px">{{ t('announcement.form.pinned') }}</span>
         </div>
         <div class="w-45% h-42px flex-end-center">
           <n-button quaternary size="small" class="bg-[--button-bg]" @click="handleCancel">
@@ -143,7 +143,7 @@
               </div>
             </div>
             <div
-              class="w-full select-text cursor-auto text-(13px [--text-color]) ws-pre-wrap line-height-tight pt-12px break-words">
+              class="w-full select-text cursor-auto text-(13px [--hula-text-primary]) ws-pre-wrap line-height-tight pt-12px break-words">
               <div
                 :class="[
                   'content-wrapper',

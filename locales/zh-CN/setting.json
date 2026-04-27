@@ -356,12 +356,7 @@
   },
   "theme": {
     "title": "主题",
-    "restore_default": "恢复默认",
-    "versatile": {
-      "title": "变出活力色彩",
-      "description": "感受色彩的魅力，创造属于你的色彩世界",
-      "simple": "极简素雅"
-    }
+    "restore_default": "恢复默认"
   },
   "push": {
     "title": "推送设置",
@@ -1064,6 +1059,7 @@
     "disabled": "已禁用全局快捷键",
     "updated": "快捷键已更新",
     "reset_success": "快捷键已恢复默认设置",
+    "conflict_error": "快捷键冲突，请选择其他组合",
     "actions": {
       "send_message": "发送消息",
       "new_line": "换行",

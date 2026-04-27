@@ -33,10 +33,10 @@
                   -apple-system,
                   sans-serif;
               "
-              class="text-(16px [--text-color])">
+              class="text-(16px [--hula-text-primary])">
               {{ userStore.userInfo?.name ? userStore.userInfo.name : t('mobile_home.noname') }}
             </p>
-            <p class="text-(10px [--text-color])">
+            <p class="text-(10px [--hula-text-primary])">
               {{
                 userStore.userInfo?.uid
                   ? groupStore.getUserInfo(userStore.userInfo!.uid)?.locPlace || t('mobile_home.china')
@@ -163,7 +163,7 @@
                     {{ item.top ? t('mobile_home.chat.unpin') : t('mobile_home.chat.pintop') }}
                   </div>
                   <div
-                    :class="(item?.unreadCount ?? 0) > 0 ? 'bg-[--color-text-tertiary]' : 'bg-[--color-warning]'"
+                    :class="(item?.unreadCount ?? 0) > 0 ? 'bg-[--hula-text-tertiary]' : 'bg-[--color-warning]'"
                     class="h-full text-14px w-80px text-white flex items-center justify-center"
                     @click="handleToggleReadStatus((item?.unreadCount ?? 0) > 0, item)">
                     {{
@@ -366,7 +366,7 @@ const sessionList = computed(() => {
         ...item,
         avatar: latestAvatar,
         name: displayName,
-        lastMsg: displayMsg || '欢迎使用HuLa',
+        lastMsg: displayMsg || t('message.message_list.default_last_msg'),
         lastMsgTime: formatTimestamp(item?.activeTime),
         isAtMe
       }

@@ -64,7 +64,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 
 <style scoped>
 .trending-panel {
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
   border-radius: 8px;
   padding: 12px;
   border: 1px solid var(--hula-border-default);
@@ -108,7 +108,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 }
 
 .trending-panel__item:hover {
-  background: var(--bg-hover);
+  background: var(--hula-surface-list-hover);
 }
 
 .trending-panel__rank {
@@ -120,7 +120,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   font-size: 12px;
   font-weight: 600;
   color: var(--hula-text-secondary);
-  background: var(--bg-hover);
+  background: var(--hula-surface-list-hover);
   border-radius: 4px;
   flex-shrink: 0;
 }

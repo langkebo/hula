@@ -55,7 +55,7 @@
               <span class="text-14px font-medium">{{ t('mobile_chat_setting.group_members_title') }}</span>
               <div
                 @click="toGroupChatMember"
-                class="text-12px text-[--color-text-secondary] flex flex-wrap gap-10px items-center">
+                class="text-12px text-[--hula-text-secondary] flex flex-wrap gap-10px items-center">
                 <i18n-t keypath="mobile_chat_setting.member_count">
                   <template #count>
                     <span class="text-[--color-primary]">{{ groupStore.countInfo?.memberNum || 0 }}</span>
@@ -84,7 +84,7 @@
                       :src="avatarSrc(i.avatar)"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                   </div>
-                  <div class="truncate max-w-full text-[--color-text-secondary]">{{ i.name }}</div>
+                  <div class="truncate max-w-full text-[--hula-text-secondary]">{{ i.name }}</div>
                 </div>
                 <div class="flex flex-col justify-center items-center gap-5px cursor-pointer">
                   <van-button plain round size="small" icon="plus" @click="toInviteGroupMember" />
@@ -119,7 +119,7 @@
                     })
                   }}
                 </div>
-                <div class="text-12px text-[--color-text-secondary] flex flex-wrap gap-10px items-center">
+                <div class="text-12px text-[--hula-text-secondary] flex flex-wrap gap-10px items-center">
                   <div>{{ activeItem?.account || '' }}</div>
                   <div>
                     <svg class="w-14px h-14px iconpark-icon">
@@ -133,7 +133,7 @@
             <!-- 公告内容 -->
             <div @click="goToNotice" v-if="isGroup" class="flex flex-col text-14px gap-10px p-15px">
               <div>{{ t('mobile_chat_setting.group_notice.title') }}</div>
-              <div class="text-[--color-text-secondary] line-clamp-2 text-12px line-height-20px">
+              <div class="text-[--hula-text-secondary] line-clamp-2 text-12px line-height-20px">
                 {{ announList.length > 0 ? announList[0]?.content : '' }}
               </div>
             </div>
@@ -143,7 +143,7 @@
             <!-- 群名称 -->
             <div class="flex justify-between p-15px items-center">
               <div class="text-14px">{{ t('mobile_chat_setting.group_name') }}</div>
-              <div class="text-12px text-[--color-text-secondary] flex flex-wrap gap-10px items-center">
+              <div class="text-12px text-[--hula-text-secondary] flex flex-wrap gap-10px items-center">
                 <van-field
                   v-model="nameValue"
                   :border="false"
@@ -159,7 +159,7 @@
             <!-- 群别名 -->
             <div v-if="isGroup" class="flex justify-between p-15px items-center">
               <div class="text-14px">{{ t('mobile_chat_setting.group_alias') }}</div>
-              <div class="text-12px text-[--color-text-secondary] flex flex-wrap gap-10px items-center">
+              <div class="text-12px text-[--hula-text-secondary] flex flex-wrap gap-10px items-center">
                 <van-field
                   v-model="nicknameValue"
                   :border="false"
@@ -175,7 +175,7 @@
           <div class="w-full flex flex-col gap-15px rounded-10px">
             <div class="ps-15px text-14px">
               <span class="dark:text-white">{{ t('mobile_chat_setting.remark') }}</span>
-              <span class="text-[--color-text-secondary] ml-1">
+              <span class="text-[--hula-text-secondary] ml-1">
                 {{ t('mobile_chat_setting.remar_kprivate_visible') }}
               </span>
             </div>

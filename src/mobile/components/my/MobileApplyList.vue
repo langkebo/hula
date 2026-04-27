@@ -2,7 +2,7 @@
   <div class="select-none flex flex-col">
     <div
       v-if="props.closeHeader === true ? false : true"
-      class="flex items-center justify-between color-[--text-color] px-20px py-10px">
+      class="flex items-center justify-between color-[--hula-text-primary] px-20px py-10px">
       <p class="text-16px">
         {{
           props.type === 'friend' ? t('mobile_mymessage.notification.friend') : t('mobile_mymessage.notification.group')
@@ -82,7 +82,7 @@
             <template #reference>
               <div
                 class="cursor-pointer px-15px py-3px rounded-5px mt-10px bg-gray-300 h-50% flex items-center justify-center">
-                <svg class="size-16px color-[--text-color]">
+                <svg class="size-16px color-[--hula-text-primary]">
                   <use href="#more"></use>
                 </svg>
               </div>

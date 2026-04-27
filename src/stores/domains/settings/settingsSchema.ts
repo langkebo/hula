@@ -31,21 +31,21 @@ export interface SettingsTab {
 export type SettingsTabTranslator = (key: string) => string
 
 export const SETTINGS_TABS: SettingsTab[] = [
-  { id: 'account', label: '账户', icon: 'user' },
-  { id: 'sessions', label: '会话管理', icon: 'devices' },
-  { id: 'appearance', label: '外观设置', icon: 'palette' },
-  { id: 'notifications', label: '通知设置', icon: 'bell' },
-  { id: 'preferences', label: '偏好设置', icon: 'settings' },
-  { id: 'keyboard', label: '快捷键', icon: 'keyboard', desktopOnly: true },
-  { id: 'sidebar', label: '侧边栏', icon: 'sidebar', desktopOnly: true },
-  { id: 'voiceVideo', label: '语音视频', icon: 'microphone' },
-  { id: 'securityPrivacy', label: '安全与隐私', icon: 'shield' },
-  { id: 'encryption', label: '加密', icon: 'key' },
+  { id: 'account', label: 'Account', icon: 'user' },
+  { id: 'sessions', label: 'Sessions', icon: 'devices' },
+  { id: 'appearance', label: 'Appearance', icon: 'palette' },
+  { id: 'notifications', label: 'Notifications', icon: 'bell' },
+  { id: 'preferences', label: 'Preferences', icon: 'settings' },
+  { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', desktopOnly: true },
+  { id: 'sidebar', label: 'Sidebar', icon: 'sidebar', desktopOnly: true },
+  { id: 'voiceVideo', label: 'Voice & Video', icon: 'microphone' },
+  { id: 'securityPrivacy', label: 'Security & Privacy', icon: 'shield' },
+  { id: 'encryption', label: 'Encryption', icon: 'key' },
   { id: 'labs', label: 'Labs', icon: 'flask' },
-  { id: 'mjolnir', label: '屏蔽管理', icon: 'block-helper' },
-  { id: 'helpAbout', label: '帮助与关于', icon: 'help-circle' },
-  { id: 'friends', label: '好友管理', icon: 'account-group' },
-  { id: 'burnAfterRead', label: '阅后即焚', icon: 'timer-outline' }
+  { id: 'mjolnir', label: 'Moderation', icon: 'block-helper' },
+  { id: 'helpAbout', label: 'Help & About', icon: 'help-circle' },
+  { id: 'friends', label: 'Friends', icon: 'account-group' },
+  { id: 'burnAfterRead', label: 'Burn After Read', icon: 'timer-outline' }
 ]
 
 export const SETTINGS_TAB_TRANSLATION_KEYS: Record<SettingsTabType, string> = {

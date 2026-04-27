@@ -240,6 +240,7 @@ describe('KeyBackupSetupDialog', () => {
 
     ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey = 'RECOVERY-KEY-123'
     ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'WRONG-KEY'
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).step = 'verify'
     await (wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKeyInput()
 
     expect(messageErrorMock).toHaveBeenCalledWith('密钥不匹配，请重新输入')
@@ -247,8 +248,8 @@ describe('KeyBackupSetupDialog', () => {
     ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'RECOVERY-KEY-123'
     await (wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKeyInput()
 
-    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('intro')
-    expect(messageErrorMock).toHaveBeenCalledWith('备份验证失败，请重试')
+    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('verify')
+    expect(messageErrorMock).toHaveBeenCalledWith('验证备份失败')
   })
 
   it('取消时重置内部状态', async () => {

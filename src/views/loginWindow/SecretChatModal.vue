@@ -1,11 +1,11 @@
 <template>
   <n-config-provider :theme="naiveTheme" class="secret-chat-modal size-full select-none">
     <div class="w-350px h-360px border-rd-8px select-none cursor-default">
-      <div class="bg-[--bg-popover] size-full p-6px box-border flex flex-col">
+      <div class="bg-[--hula-surface-elevated] size-full p-6px box-border flex flex-col">
         <svg
           v-if="!isMac()"
           @click="handleCancel"
-          class="w-12px h-12px ml-a cursor-pointer select-none text-[--text-color]">
+          class="w-12px h-12px ml-a cursor-pointer select-none text-[--hula-text-primary]">
           <use href="#close"></use>
         </svg>
         <div class="flex flex-col gap-10px p-10px select-none">
@@ -13,8 +13,8 @@
             <svg class="size-48px text-[--primary-color]">
               <use href="#lock"></use>
             </svg>
-            <span class="text-(14px [--text-color]) font-bold">私密聊天</span>
-            <div class="text-(13px [--text-color-tertiary]) text-center px-8px leading-relaxed">请输入私密聊天密码</div>
+            <span class="text-(14px [--hula-text-primary]) font-bold">私密聊天</span>
+            <div class="text-(13px [--hula-text-tertiary]) text-center px-8px leading-relaxed">请输入私密聊天密码</div>
           </n-flex>
 
           <n-form ref="formRef" :model="formValue" :rules="rules" class="w-full px-8px">

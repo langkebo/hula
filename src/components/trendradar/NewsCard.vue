@@ -72,7 +72,7 @@ const handleClick = () => {
 
 <style scoped>
 .news-card {
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
   border-radius: 8px;
   padding: 12px;
   cursor: pointer;

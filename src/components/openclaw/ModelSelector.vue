@@ -56,14 +56,14 @@ const handleSelect = (key: string) => {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: var(--bg-hover);
+  background: var(--hula-surface-panel-muted);
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .model-selector__trigger:hover {
-  background: var(--bg-active);
+  background: var(--hula-menu-hover);
 }
 
 .model-selector__current {

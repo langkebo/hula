@@ -9,7 +9,7 @@
 
     <!-- 标题 -->
     <p
-      class="absolute-x-center h-fit pt-6px text-(13px [--text-color]) select-none cursor-default"
+      class="absolute-x-center h-fit pt-6px text-(13px [--hula-text-primary]) select-none cursor-default"
       data-tauri-drag-region>
       {{ t('message.group_verify.title') }}
     </p>
@@ -21,8 +21,8 @@
           <n-avatar round size="large" :src="userInfo.avatar" />
 
           <n-flex vertical :size="10">
-            <p class="text-[--text-color]">{{ userInfo.name }}</p>
-            <p class="text-(12px [--text-color])">
+            <p class="text-[--hula-text-primary]">{{ userInfo.name }}</p>
+            <p class="text-(12px [--hula-text-primary])">
               {{ t('message.group_verify.account', { account: userInfo.account }) }}
             </p>
           </n-flex>

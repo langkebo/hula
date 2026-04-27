@@ -19,7 +19,7 @@
             :class="{ network: isWindows() }"
             class="w-30px h-24px flex-center hover-box">
             <svg
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--action-bar-icon-color]']"
+              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
               class="size-16px cursor-pointer">
               <use href="#settings"></use>
             </svg>
@@ -30,13 +30,13 @@
               <template #trigger>
                 <svg
                   v-if="alwaysOnTopStatus"
-                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--action-bar-icon-color]']"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
                   class="size-14px outline-none cursor-pointer">
                   <use href="#onTop"></use>
                 </svg>
                 <svg
                   v-else
-                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--action-bar-icon-color]']"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
                   class="size-16px outline-none cursor-pointer">
                   <use href="#notOnTop"></use>
                 </svg>
@@ -48,7 +48,7 @@
           <!-- 收缩页面 -->
           <div v-if="shrink" @click="shrinkWindow" class="hover-box">
             <svg
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--action-bar-icon-color]']"
+              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
               class="size-16px cursor-pointer">
               <use href="#left-bar"></use>
             </svg>
@@ -56,7 +56,7 @@
           <!-- 最小化 -->
           <div v-if="minW" @click="appWindow.minimize()" class="hover-box">
             <svg
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--action-bar-icon-color]']"
+              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
               class="size-24px opacity-66 cursor-pointer">
               <use href="#maximize"></use>
             </svg>
@@ -65,13 +65,13 @@
           <div v-if="maxW" @click="restoreWindow" class="hover-box">
             <svg
               v-show="!windowMaximized"
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--action-bar-icon-color]']"
+              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
               class="size-18px cursor-pointer">
               <use href="#rectangle-small"></use>
             </svg>
             <svg
               v-show="windowMaximized"
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--action-bar-icon-color]']"
+              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
               class="size-16px cursor-pointer">
               <use href="#internal-reduction"></use>
             </svg>
@@ -83,7 +83,7 @@
             :class="{ windowMaximized: 'rounded-rt-8px' }"
             class="action-close">
             <svg
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--action-bar-icon-color]']"
+              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
               class="size-14px cursor-pointer">
               <use href="#close"></use>
             </svg>
@@ -101,7 +101,7 @@
     </template>
     <!-- 是否退到托盘提示框 -->
     <n-modal v-if="!tips.notTips" v-model:show="tipsRef.show" class="rounded-8px">
-      <div class="bg-[--bg-popover] w-290px h-full p-6px box-border flex flex-col">
+      <div class="bg-[--hula-surface-elevated] w-290px h-full p-6px box-border flex flex-col">
         <svg @click="tipsRef.show = false" class="size-12px ml-a cursor-pointer select-none">
           <use href="#close"></use>
         </svg>
@@ -115,7 +115,7 @@
             <n-radio :checked="tipsRef.type === CloseBxEnum.CLOSE" @change="tipsRef.type = CloseBxEnum.CLOSE" />
             <span>{{ t('components.actionBar.close_prompt.exit_app') }}</span>
           </label>
-          <label class="text-(12px --color-text-tertiary) flex gap-6px justify-end items-center">
+          <label class="text-(12px --hula-text-tertiary) flex gap-6px justify-end items-center">
             <n-checkbox size="small" v-model:checked="tipsRef.notTips" />
             <span>{{ t('components.actionBar.close_prompt.no_prompt') }}</span>
           </label>

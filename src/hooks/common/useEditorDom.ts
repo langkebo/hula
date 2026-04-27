@@ -363,7 +363,7 @@ export const useEditorDom = (options: UseEditorDomOptions) => {
       contentBox = document.createElement('span')
       contentBox.style.cssText = `
       font-size: 12px;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
       cursor: default;
       width: fit-content;
       max-width: 350px;

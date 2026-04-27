@@ -11,7 +11,7 @@
 
     <!-- 标题 -->
     <p
-      class="absolute-x-center h-fit pt-6px text-(12px [--text-color]) select-none cursor-default"
+      class="absolute-x-center h-fit pt-6px text-(12px [--hula-text-primary]) select-none cursor-default"
       data-tauri-drag-region>
       {{ windowTitle }}
     </p>
@@ -19,7 +19,7 @@
     <!-- 内容区域 -->
     <div class="bg-[--bg-edit] pt-24px size-full box-border flex flex-col">
       <n-transfer
-        class="h-full text-[--text-color]"
+        class="h-full text-[--hula-text-primary]"
         source-filterable
         target-filterable
         v-model:value="selectedValue"

@@ -11,7 +11,7 @@
           </svg>
         </div>
 
-        <n-flex class="text-(14px [--text-color]) select-none pt-6px" justify="center">
+        <n-flex class="text-(14px [--hula-text-primary]) select-none pt-6px" justify="center">
           {{ t('home.profile_edit.title') }}
         </n-flex>
 
@@ -230,7 +230,7 @@ onMounted(async () => {
     @apply absolute top-0 left-0 w-full h-full flex-center gap-4px z-999 opacity-0;
   }
 
-  @apply bg-[--disabled-color] relative rounded-50% size-fit p-4px cursor-pointer;
+  @apply bg-[--hula-text-disabled] relative rounded-50% size-fit p-4px cursor-pointer;
 
   &:hover .tip {
     @apply opacity-100;

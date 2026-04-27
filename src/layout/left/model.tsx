@@ -75,7 +75,7 @@ export const LockScreen = defineComponent(() => {
   lock.value.rules.lockPassword.message = t('message.lock_screen.validation_required')
   return () => (
     <NModal v-model:show={modalShow.value} maskClosable={false} class="w-350px border-rd-8px">
-      <div class="bg-[--bg-popover] w-360px h-full p-6px box-border flex flex-col">
+      <div class="bg-[--hula-surface-elevated] w-360px h-full p-6px box-border flex flex-col">
         {isMac() ? (
           <div
             onClick={() => (modalShow.value = false)}
@@ -95,7 +95,7 @@ export const LockScreen = defineComponent(() => {
 
             <NAvatar bordered round size={80} src={AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)} />
 
-            <p class="text-(14px center [--text-color]) truncate w-200px">{userStore.userInfo!.name}</p>
+            <p class="text-(14px center [--hula-text-primary]) truncate w-200px">{userStore.userInfo!.name}</p>
           </NFlex>
           <NForm ref={formRef} model={formValue.value} rules={lock.value.rules}>
             <NFormItem
@@ -284,7 +284,7 @@ export const CheckUpdate = defineComponent(() => {
   })
   return () => (
     <NModal v-model:show={modalShow.value} maskClosable={false} class="w-350px border-rd-8px">
-      <div class="bg-[--bg-popover] w-500px h-full p-6px box-border flex flex-col">
+      <div class="bg-[--hula-surface-elevated] w-500px h-full p-6px box-border flex flex-col">
         {isMac() ? (
           <div
             onClick={() => (modalShow.value = false)}

@@ -198,7 +198,7 @@ onUnmounted(() => {
 }
 
 .call-duration {
-  @apply text-14px color-[--color-text-tertiary];
+  @apply text-14px color-[--hula-text-tertiary];
 }
 
 .call-status {
@@ -223,7 +223,7 @@ onUnmounted(() => {
 }
 
 .status-text {
-  @apply text-12px color-[--color-text-tertiary];
+  @apply text-12px color-[--hula-text-tertiary];
 }
 
 .call-content {

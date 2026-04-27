@@ -669,12 +669,7 @@
   },
   "theme": {
     "title": "Theme",
-    "restore_default": "Restore",
-    "versatile": {
-      "title": "Vivid palette",
-      "description": "Feel the charm of colors and craft your own palette",
-      "simple": "Minimal grace"
-    }
+    "restore_default": "Restore"
   },
   "push": {
     "title": "Push Settings",
@@ -1037,6 +1032,7 @@
     "disabled": "Global shortcuts disabled",
     "updated": "Shortcut updated",
     "reset_success": "Default shortcuts restored",
+    "conflict_error": "Shortcut conflict, please choose another combination",
     "actions": {
       "send_message": "Send Message",
       "new_line": "New Line",

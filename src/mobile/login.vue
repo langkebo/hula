@@ -2,7 +2,7 @@
   <MobileLayout :backgroundImage="'/login_bg.png'" :safeAreaTop="false" :safeAreaBottom="false">
     <div class="h-full flex-col-center gap-40px">
       <div class="flex-center absolute top-13vh left-36px">
-        <p class="text-(20px [--text-color])">{{ t('login.mobile.welcome_title') }}</p>
+        <p class="text-(20px [--hula-text-primary])">{{ t('login.mobile.welcome_title') }}</p>
         <img src="@/assets/mobile/2.svg" alt="" class="w-80px h-20px" />
       </div>
 
@@ -64,7 +64,7 @@
         <div
           style="border: 1px solid rgba(70, 70, 70, 0.1)"
           v-if="loginHistories.length > 0 && arrowStatus"
-          class="account-box absolute w-80% max-h-140px bg-[--bg-popover] mt-45px z-99 rounded-8px p-8px box-border">
+          class="account-box absolute w-80% max-h-140px bg-[--hula-surface-elevated] mt-45px z-99 rounded-8px p-8px box-border">
           <div style="max-height: 120px; overflow-y: auto">
             <div
               v-for="item in loginHistories"
@@ -74,7 +74,7 @@
               <div class="flex-between-center">
                 <img
                   :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                  class="size-28px bg-[--disabled-color] rounded-50% object-cover" />
+                  class="size-28px bg-[--hula-text-disabled] rounded-50% object-cover" />
                 <p class="text-14px color-[--chat-text-color]">{{ item.account }}</p>
                 <svg @click.stop="delAccount(item)" class="w-12px h-12px">
                   <use href="#close"></use>
@@ -239,7 +239,7 @@
         <div
           v-if="showEmailSuggestions"
           style="border: 1px solid rgba(70, 70, 70, 0.1)"
-          class="absolute w-80% bg-[--bg-popover] z-99 rounded-8px p-4px box-border">
+          class="absolute w-80% bg-[--hula-surface-elevated] z-99 rounded-8px p-4px box-border">
           <div
             v-for="option in commonEmailDomains"
             :key="option.value"
@@ -737,11 +737,11 @@ onUnmounted(() => {
 }
 
 :deep(.van-field__right-icon) {
-  color: var(--text-color-secondary, #505050);
+  color: var(--hula-text-secondary);
   cursor: pointer;
 }
 
 :deep(.van-field__clear) {
-  color: var(--text-color-tertiary, #909090);
+  color: var(--hula-text-tertiary);
 }
 </style>

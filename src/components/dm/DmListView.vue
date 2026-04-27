@@ -205,12 +205,12 @@ onMounted(async () => {
   transition: background-color 0.2s;
 
   &:hover {
-    background: var(--list-hover-color);
+    background: var(--hula-surface-list-hover);
   }
 
   &.active {
-    background: var(--msg-active-color);
-    color: var(--msg-active-text-color, #fff);
+    background: var(--hula-surface-session-active);
+    color: var(--hula-text-inverse);
   }
 
   &.pinned {

@@ -34,10 +34,10 @@
             <n-flex v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
               <svg
                 v-if="!arrowStatus"
-                class="down w-18px h-18px color-#505050 dark:color-[--color-text-tertiary] cursor-pointer">
+                class="down w-18px h-18px color-#505050 dark:color-[--hula-text-tertiary] cursor-pointer">
                 <use href="#down"></use>
               </svg>
-              <svg v-else class="down w-18px h-18px color-#505050 dark:color-[--color-text-tertiary] cursor-pointer">
+              <svg v-else class="down w-18px h-18px color-#505050 dark:color-[--hula-text-tertiary] cursor-pointer">
                 <use href="#up"></use>
               </svg>
             </n-flex>
@@ -55,7 +55,7 @@
               v-for="item in loginHistories"
               :key="item.account"
               @click="giveAccount(item)"
-              class="p-8px cursor-pointer hover:bg-[--color-text-tertiary]20 dark:hover:bg-[--color-text-tertiary]30 hover:rounded-6px">
+              class="p-8px cursor-pointer hover:bg-[--hula-text-tertiary]20 dark:hover:bg-[--hula-text-tertiary]30 hover:rounded-6px">
               <div class="flex-between-center">
                 <n-avatar :src="AvatarUtils.getAvatarUrl(item.avatar)" color="#fff" class="size-28px rounded-50%" />
                 <p class="text-14px color-#505050 dark:color-#fefefe">{{ item.account }}</p>
@@ -87,7 +87,7 @@
         <!-- 协议 -->
         <n-flex align="center" justify="center" :size="6">
           <n-checkbox v-model:checked="protocol" />
-          <div class="text-12px color-[--color-text-tertiary] cursor-default lh-14px agreement">
+          <div class="text-12px color-[--hula-text-tertiary] cursor-default lh-14px agreement">
             <span>{{ t('login.term.checkout.text1') }}</span>
             <span class="color-[--color-primary] cursor-pointer" @click.stop="openServiceAgreement">
               {{ t('login.term.checkout.text2') }}
@@ -192,12 +192,12 @@
           </template>
           <n-flex vertical :size="2">
             <div
-              class="register text-14px cursor-pointer hover:bg-[--color-text-tertiary]30 hover:rounded-6px p-8px"
+              class="register text-14px cursor-pointer hover:bg-[--hula-text-tertiary]30 hover:rounded-6px p-8px"
               @click="router.push('/register')">
               {{ t('login.register') }}
             </div>
             <div
-              class="text-14px cursor-pointer hover:bg-[--color-text-tertiary]30 hover:rounded-6px p-8px"
+              class="text-14px cursor-pointer hover:bg-[--hula-text-tertiary]30 hover:rounded-6px p-8px"
               @click="createWebviewWindow('忘记密码', 'forgetPassword', 600, 600)">
               {{ t('login.option.items.forget') }}
             </div>
@@ -205,7 +205,7 @@
               v-if="!isCompatibility()"
               @click="showServerConfig = true"
               :class="{ network: isMac() }"
-              class="text-14px cursor-pointer hover:bg-[--color-text-tertiary]30 hover:rounded-6px p-8px">
+              class="text-14px cursor-pointer hover:bg-[--hula-text-tertiary]30 hover:rounded-6px p-8px">
               {{ t('login.option.items.network_setting') }}
             </div>
           </n-flex>

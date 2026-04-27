@@ -2,7 +2,7 @@
   <n-flex
     vertical
     :size="0"
-    class="flex-1 truncate border-l-(1px solid [--hula-border-default]) custom-shadow select-none text-[--text-color]">
+    class="flex-1 truncate border-l-(1px solid [--hula-border-default]) custom-shadow select-none text-[--hula-text-primary]">
     <!-- 右上角操作栏 -->
     <ActionBar
       :shrink="false"

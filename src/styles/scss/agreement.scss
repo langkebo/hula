@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   background: var(--hula-surface-panel);
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   user-select: none;
   -webkit-user-select: none;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -107,6 +107,6 @@
 
 :deep(.action-close) {
   svg {
-    color: var(--action-bar-icon-color);
+    color: var(--hula-text-secondary);
   }
 }

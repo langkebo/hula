@@ -8,7 +8,7 @@
     <n-flex vertical class="w-full size-full">
       <!-- 标题 -->
       <n-flex justify="center" class="w-full">
-        <p class="text-(18px [--text-color]) select-none">{{ t('auth.forget.title') }}</p>
+        <p class="text-(18px [--hula-text-primary]) select-none">{{ t('auth.forget.title') }}</p>
       </n-flex>
 
       <!-- 步骤条 -->
@@ -25,7 +25,7 @@
           <n-form-item path="email" :label="t('auth.forget.form.email_label')">
             <n-input
               :allow-input="noSideSpace"
-              class="border-(1px solid var(--color-text-tertiary)/80) no-indent-input w-300px!"
+              class="border-(1px solid var(--hula-text-tertiary)/80) no-indent-input w-300px!"
               v-model:value="formData.email"
               :placeholder="t('auth.forget.form.email_placeholder')"
               spellCheck="false"
@@ -40,7 +40,7 @@
             <n-flex :size="8">
               <n-input
                 :allow-input="noSideSpace"
-                class="border-(1px solid var(--color-text-tertiary)/80) no-indent-input w-300px!"
+                class="border-(1px solid var(--hula-text-tertiary)/80) no-indent-input w-300px!"
                 v-model:value="formData.emailCode"
                 :placeholder="t('auth.forget.form.code_placeholder')"
                 spellCheck="false"
@@ -80,7 +80,7 @@
             <n-flex vertical :size="8" class="w-full">
               <n-input
                 :allow-input="noSideSpace"
-                class="border-(1px solid var(--color-text-tertiary)/80) w-full no-indent-input"
+                class="border-(1px solid var(--hula-text-tertiary)/80) w-full no-indent-input"
                 v-model:value="passwordForm.password"
                 type="password"
                 show-password-on="click"
@@ -113,7 +113,7 @@
             <n-flex vertical :size="8" class="w-full">
               <n-input
                 :allow-input="noSideSpace"
-                class="border-(1px solid var(--color-text-tertiary)/80) w-full no-indent-input"
+                class="border-(1px solid var(--hula-text-tertiary)/80) w-full no-indent-input"
                 v-model:value="passwordForm.confirmPassword"
                 type="password"
                 show-password-on="click"
@@ -157,7 +157,7 @@
         <img class="size-98px" src="/emoji/party-popper.webp" alt="" />
 
         <div class="mt-16px text-18px">{{ t('auth.forget.success.title') }}</div>
-        <div class="mt-16px text-14px text-[--color-text-secondary]">{{ t('auth.forget.success.desc') }}</div>
+        <div class="mt-16px text-14px text-[--hula-text-secondary]">{{ t('auth.forget.success.desc') }}</div>
       </div>
     </n-flex>
   </n-config-provider>

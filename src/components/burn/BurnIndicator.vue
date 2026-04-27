@@ -66,7 +66,7 @@ const show = computed(() => {
   border-radius: 12px;
   font-size: 11px;
   font-weight: 500;
-  background: var(--bg-hover);
+  background: var(--hula-surface-list-hover);
   border: 1px solid var(--hula-border-default);
   transition: all 0.3s ease;
 }

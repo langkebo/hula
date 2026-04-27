@@ -102,6 +102,9 @@ const setDocumentTheme = (theme: string) => {
   document.documentElement.dataset.theme = theme
 }
 
+// Older persisted settings may still carry a removed `versatile` field.
+// Strip it during theme normalization so restored state converges to the
+// current single-theme runtime model without breaking existing local data.
 type LegacyThemeState = STO.Setting['themes'] & {
   versatile?: string
 }

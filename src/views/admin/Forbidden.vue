@@ -49,7 +49,7 @@ const goHome = () => router.push('/message')
 
 .forbidden-desc {
   font-size: 14px;
-  color: var(--color-text-secondary);
+  color: var(--hula-text-secondary);
   margin: 0;
 }
 </style>

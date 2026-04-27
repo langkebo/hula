@@ -420,7 +420,7 @@ const {
 
   .prompt {
     font-size: 13px;
-    color: var(--text-color);
+    color: var(--hula-text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;

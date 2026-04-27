@@ -1,5 +1,5 @@
 <template>
-  <div class="size-full bg-[--bg-popover] select-none cursor-default">
+  <div class="size-full bg-[--hula-surface-elevated] select-none cursor-default">
     <!--顶部操作栏-->
     <ActionBar :is-drag="false" :max-w="false" :min-w="false" :shrink="false" />
 
@@ -12,12 +12,12 @@
       <n-flex justify="space-between" align="center">
         <n-flex align="center">
           <n-flex align="center">
-            <p class="text-[--text-color]">{{ t('message.check_update.current_version') }}:</p>
-            <p class="text-(12px --color-text-tertiary) font-500">{{ currentVersion }}</p>
+            <p class="text-[--hula-text-primary]">{{ t('message.check_update.current_version') }}:</p>
+            <p class="text-(12px --hula-text-tertiary) font-500">{{ currentVersion }}</p>
           </n-flex>
 
           <n-flex v-if="newVersion" align="center" class="relative">
-            <svg class="w-24px h-24px select-none color-[--disabled-color]">
+            <svg class="w-24px h-24px select-none color-[--hula-text-disabled]">
               <use href="#RightArrow"></use>
             </svg>
 
@@ -31,18 +31,18 @@
         </n-flex>
         <n-flex align="center" size="medium">
           <div v-if="newVersionTime">
-            <span class="text-(12px --color-text-tertiary)">{{ t('message.check_update.new_release_date') }}</span>
+            <span class="text-(12px --hula-text-tertiary)">{{ t('message.check_update.new_release_date') }}</span>
             <span class="text-(12px --color-primary)">{{ handRelativeTime(newVersionTime) }}</span>
           </div>
 
           <div v-else>
-            <span class="text-(12px --color-text-tertiary)">{{ t('message.check_update.release_date') }}</span>
+            <span class="text-(12px --hula-text-tertiary)">{{ t('message.check_update.release_date') }}</span>
             <span class="text-(12px --color-primary)">{{ handRelativeTime(versionTime) }}</span>
           </div>
         </n-flex>
       </n-flex>
       <n-flex justify="space-between" align="center" class="mb-2px">
-        <p class="text-(12px --color-text-tertiary)">{{ t('message.check_update.log_title') }}</p>
+        <p class="text-(12px --hula-text-tertiary)">{{ t('message.check_update.log_title') }}</p>
         <n-button text @click="toggleLogVisible">
           <n-flex align="center">
             <span class="text-(12px --color-primary)">
@@ -78,7 +78,7 @@
 
             <n-flex>
               <n-flex vertical :size="20">
-                <svg class="m-[4px_40px] w-24px h-24px select-none rotate-270 color-[--disabled-color]">
+                <svg class="m-[4px_40px] w-24px h-24px select-none rotate-270 color-[--hula-text-disabled]">
                   <use href="#RightArrow"></use>
                 </svg>
 

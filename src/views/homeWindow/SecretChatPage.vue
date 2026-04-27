@@ -125,7 +125,7 @@ const handleClose = () => {
 }
 
 .session-item:hover {
-  background: var(--bg-hover);
+  background: var(--hula-surface-list-hover);
 }
 
 .session-avatar {

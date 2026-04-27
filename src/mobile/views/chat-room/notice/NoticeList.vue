@@ -14,7 +14,7 @@
                   <div class="flex flex-col w-full gap-10px">
                     <div class="flex items-center justify-between text-14px">
                       <span class="flex gap-5px">
-                        <span class="text-[--color-text-secondary]">发布人:</span>
+                        <span class="text-[--hula-text-secondary]">发布人:</span>
                         <span class="text-black dark:text-white/80">{{ groupStore.getUserInfo(item.uid)?.name }}</span>
                       </span>
                       <span
@@ -24,12 +24,12 @@
                         置顶
                       </span>
                     </div>
-                    <div class="text-14px line-clamp-3 line-height-20px text-[--color-text-secondary] max-h-60px">
+                    <div class="text-14px line-clamp-3 line-height-20px text-[--hula-text-secondary] max-h-60px">
                       {{ item.content }}
                     </div>
 
                     <div class="flex items-center justify-between text-12px">
-                      <span class="flex gap-5px text-[--color-text-secondary]">
+                      <span class="flex gap-5px text-[--hula-text-secondary]">
                         {{ formatTimestamp(item.createTime) }}
                       </span>
                       <span class="text-[--color-primary]">128人已读</span>

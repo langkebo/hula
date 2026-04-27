@@ -375,7 +375,7 @@ const convertToFileBody = (file: FileItem): FileBody => {
   align-items: center;
   padding: 0 4px;
   font-size: 12px;
-  color: var(--color-text-tertiary);
+  color: var(--hula-text-tertiary);
 }
 
 .file-sender {

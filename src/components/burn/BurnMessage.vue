@@ -133,7 +133,7 @@ const indicatorStatus = computed(() => {
 <style scoped>
 .burn-message {
   position: relative;
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
   border-radius: 12px;
   padding: 12px;
   border: 1px solid var(--hula-border-default);

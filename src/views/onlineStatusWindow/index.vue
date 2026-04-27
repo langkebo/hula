@@ -129,7 +129,7 @@ onMounted(async () => {
     white-space: normal;
   }
   &:not(.active):hover {
-    background: var(--disabled-color);
+    background: var(--hula-text-disabled);
     cursor: pointer;
   }
 }
@@ -145,7 +145,7 @@ onMounted(async () => {
 
 :deep(.action-close) {
   svg {
-    color: var(--action-bar-icon-color);
+    color: var(--hula-text-secondary);
   }
 }
 /** 隐藏naive UI的滚动条 */

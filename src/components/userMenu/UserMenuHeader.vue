@@ -24,7 +24,7 @@
           </n-button>
         </template>
         <div class="status-menu">
-          <div class="status-menu-title">设置状态</div>
+          <div class="status-menu-title">{{ t('menu.user_menu.status.title') }}</div>
           <div
             v-for="status in statusOptions"
             :key="status.id"
@@ -47,6 +47,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { NAvatar, NButton, NPopover, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -68,6 +69,7 @@ const emit = defineEmits<{
 }>()
 
 const message = useMessage()
+const { t } = useI18n()
 const userStore = useUserStore()
 const userStatusStore = useUserStatusStore()
 const settingStore = useSettingStore()
@@ -80,15 +82,20 @@ const defaultAvatar = computed(() => defaultAvatarImg)
 
 const currentStatusId = ref(userStatusStore.stateId || 'online')
 
-const statusOptions = [
-  { id: 'online', label: '在线', icon: 'mdi:circle', color: 'var(--hula-status-online)' },
-  { id: 'away', label: '离开', icon: 'mdi:circle', color: 'var(--hula-status-away)' },
-  { id: 'busy', label: '忙碌', icon: 'mdi:circle', color: 'var(--hula-status-busy)' },
-  { id: 'offline', label: '隐身', icon: 'mdi:circle-outline', color: 'var(--hula-status-offline)' }
-]
+const statusOptions = computed(() => [
+  { id: 'online', label: t('menu.user_menu.status.online'), icon: 'mdi:circle', color: 'var(--hula-status-online)' },
+  { id: 'away', label: t('menu.user_menu.status.away'), icon: 'mdi:circle', color: 'var(--hula-status-away)' },
+  { id: 'busy', label: t('menu.user_menu.status.busy'), icon: 'mdi:circle', color: 'var(--hula-status-busy)' },
+  {
+    id: 'offline',
+    label: t('menu.user_menu.status.offline'),
+    icon: 'mdi:circle-outline',
+    color: 'var(--hula-status-offline)'
+  }
+])
 
 const statusIcon = computed(() => {
-  const status = statusOptions.find((s) => s.id === currentStatusId.value)
+  const status = statusOptions.value.find((s) => s.id === currentStatusId.value)
   return status?.icon || 'mdi:circle'
 })
 
@@ -97,7 +104,7 @@ const statusClass = computed(() => {
 })
 
 const statusStyle = computed(() => {
-  const status = statusOptions.find((s) => s.id === currentStatusId.value)
+  const status = statusOptions.value.find((s) => s.id === currentStatusId.value)
   return {
     backgroundColor: status?.color || 'var(--hula-status-online)'
   }
@@ -137,9 +144,9 @@ async function handleStatusChange(statusId: string) {
 
   try {
     await matrixAccountService.setPresence(presenceMap[statusId] || 'online')
-    message.success('状态已更新')
+    message.success(t('menu.user_menu.status.updated'))
   } catch (error) {
-    logger.error('设置状态失败:', error)
+    logger.error('Failed to update user presence:', error)
   }
 }
 </script>
@@ -186,7 +193,7 @@ async function handleStatusChange(statusId: string) {
 .user-name {
   font-size: 16px;
   font-weight: 500;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -230,7 +237,7 @@ async function handleStatusChange(statusId: string) {
 }
 
 .status-option:hover {
-  background-color: var(--bg-msg-hover);
+  background-color: var(--hula-surface-list-hover);
 }
 
 .status-option.active {

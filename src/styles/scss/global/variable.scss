@@ -365,7 +365,7 @@ html[data-blur='1'] {
 @mixin menu-item-style($position: fixed) {
   position: $position;
   background: var(--bg-menu);
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   border-radius: 6px;
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);

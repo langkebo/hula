@@ -218,6 +218,6 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .tray {
-  @apply bg-[--hula-surface-panel] size-full p-8px box-border select-none text-[--text-color] text-12px;
+  @apply bg-[--hula-surface-panel] size-full p-8px box-border select-none text-[--hula-text-primary] text-12px;
 }
 </style>

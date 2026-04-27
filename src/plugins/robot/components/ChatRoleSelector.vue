@@ -167,7 +167,7 @@ defineExpose({
     .role-name {
       font-size: 14px;
       font-weight: 500;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -217,7 +217,7 @@ defineExpose({
     .header-title {
       font-size: 14px;
       font-weight: 500;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
     }
   }
 
@@ -249,7 +249,7 @@ defineExpose({
       .role-item-name {
         font-size: 14px;
         font-weight: 500;
-        color: var(--text-color);
+        color: var(--hula-text-primary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

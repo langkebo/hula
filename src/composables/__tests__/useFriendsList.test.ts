@@ -36,7 +36,8 @@ vi.mock('@/stores/domains/widget/global', () => ({
     unReadMark: {
       newFriendUnreadCount: 2,
       newGroupUnreadCount: 3
-    }
+    },
+    contactUnreadCount: 5
   })
 }))
 
