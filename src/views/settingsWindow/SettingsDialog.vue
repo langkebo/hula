@@ -92,8 +92,16 @@ const props = withDefaults(
 
 const settingsDialogStore = useSettingsDialogStore()
 const { isDesktop } = usePlatform()
-const { t } = useI18n()
-const { searchQuery, filteredTabs } = useSettingsShell({ isDesktop, translate: t })
+const { t, tm } = useI18n()
+const resolveSearchKeywords = (tabId: SettingsTabType): string[] => {
+  const value = tm(`setting.dialog.search_terms.${tabId}`)
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+const { searchQuery, filteredTabs } = useSettingsShell({
+  isDesktop,
+  translate: t,
+  resolveSearchKeywords
+})
 const dialog = useDialog()
 const SETTINGS_CONTENT_ID = 'settings-tab-panel'
 

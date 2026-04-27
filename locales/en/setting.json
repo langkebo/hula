@@ -38,6 +38,23 @@
       "help_about": "Help & About",
       "friends": "Friends",
       "burn_after_read": "Burn After Read"
+    },
+    "search_terms": {
+      "account": ["account", "profile", "display-name"],
+      "sessions": ["device", "session", "login"],
+      "appearance": ["appearance", "theme", "wallpaper", "timestamp"],
+      "notifications": ["notifications", "alerts", "push", "push-rules", "pusher"],
+      "preferences": ["preferences", "media", "language", "privacy", "startup", "storage", "scan", "autostart"],
+      "keyboard": ["keyboard", "shortcuts", "hotkey", "keymap"],
+      "sidebar": ["sidebar", "navigation", "left-panel"],
+      "voice_video": ["voice", "video", "audio", "webrtc"],
+      "security_privacy": ["security", "privacy", "visibility", "secret-chat", "lock", "hidden"],
+      "encryption": ["encryption", "secret-storage", "secure-backup", "cross-signing"],
+      "labs": ["labs", "beta", "integrations", "extensions"],
+      "mjolnir": ["moderation", "block", "ban"],
+      "help_about": ["help", "about", "updates", "diagnostics"],
+      "friends": ["friends", "contacts", "remark"],
+      "burn_after_read": ["burn-after-read", "ephemeral", "burn", "timer"]
     }
   },
   "footer": {
