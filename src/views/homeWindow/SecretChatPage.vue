@@ -16,10 +16,10 @@
 
     <div class="secret-chat-content">
       <div v-if="hiddenSessions.length === 0" class="empty-state">
-        <svg class="size-48px text-[--text-color-disabled]" viewBox="0 0 24 24" fill="currentColor">
+        <svg class="size-48px text-[--hula-text-disabled]" viewBox="0 0 24 24" fill="currentColor">
           <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
         </svg>
-        <span class="text-(14px [--text-color-disabled]) mt-10px">暂无隐藏会话</span>
+        <span class="text-(14px [--hula-text-disabled]) mt-10px">暂无隐藏会话</span>
       </div>
 
       <div v-else class="session-list">
@@ -79,7 +79,7 @@ const handleClose = () => {
 .secret-chat-page {
   display: flex;
   flex-direction: column;
-  background: var(--bg-primary);
+  background: var(--hula-surface-app);
 }
 
 .secret-chat-header {
@@ -87,7 +87,7 @@ const handleClose = () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--hula-border-default);
 }
 
 .header-title {
@@ -163,7 +163,7 @@ const handleClose = () => {
 .session-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -171,7 +171,7 @@ const handleClose = () => {
 
 .session-preview {
   font-size: 12px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
