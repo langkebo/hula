@@ -71,7 +71,7 @@ const getAllImages = async () => {
   try {
     if (Object.keys(fileStore.roomFilesMap).length === 0) {
       if (globalStore.currentSessionRoomId) {
-        logger.debug('扫描本地文件，roomId:', globalStore.currentSessionRoomId)
+        logger.debug('Scanning local files for room:', globalStore.currentSessionRoomId)
         await fileStore.scanLocalFiles(globalStore.currentSessionRoomId)
       }
     }
@@ -97,7 +97,7 @@ const getAllImages = async () => {
       )
     }
 
-    logger.debug('最终图片列表:', imagesList)
+    logger.debug('Final image list:', imagesList)
     allImages.value = imagesList
   } catch (error) {
     logger.error('Failed to load images', error)
@@ -110,13 +110,13 @@ const getAllImages = async () => {
 }
 
 const handleImageClick = (image: { displayUrl: string; originalUrl: string; id: string; roomId: string }) => {
-  logger.debug('点击图片:', image)
+  logger.debug('Image clicked:', image)
   activeImageUrl.value = image.displayUrl
   showImagePreviewRef.value = true
 }
 
 onMounted(() => {
-  logger.debug('MyAlbum 组件已挂载')
+  logger.debug('MyAlbum mounted')
   getAllImages()
 })
 </script>

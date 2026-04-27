@@ -30,7 +30,7 @@ const logger = createLogger('MyMessages')
 const { t } = useI18n()
 
 const onUpdate = (newTab: string) => {
-  logger.debug('已更新：', newTab)
+  logger.debug('Tab updated:', newTab)
 }
 
 const tabOptions = reactive([

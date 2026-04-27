@@ -119,7 +119,7 @@ const toMyInfo = () => {
 
 const handleBack = async () => {
   router.back()
-  logger.debug('返回')
+  logger.debug('Navigate back')
 }
 </script>
 
