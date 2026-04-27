@@ -389,13 +389,13 @@
   - `src/views/announWindow/index.vue`、`Tray.vue`、`Notify.vue`、`friendWindow/AddFriendVerify.vue`、`friendWindow/AddGroupVerify.vue`、`onlineStatusWindow/index.vue`、`modalWindow/index.vue`、`previewFileWindow/index.vue` 以及 `src/components/fileManager/UserList.vue`、`SideNavigation.vue`、`UserItem.vue`、`src/styles/scss/agreement.scss` 已完成窗口壳层与文件管理侧栏下一批低风险样式收敛，替换旧 `--center-bg-color`、`--line-color`、`--chat-text-color` 为 `--hula-surface-panel`、`--hula-border-default`、`--hula-text-secondary`
   - `src/components/fileManager/FileContent.vue`、`src/components/common/AvatarCropper.vue`、`ContextMenu.vue`、`InfoPopover.vue`、`src/layout/left/components/InfoEdit.vue`、`definePlugins/List.vue`、`src/layout/center/model.tsx` 与 `src/views/loginWindow/Login.vue` 已完成又一批低风险历史别名收敛，替换文件管理内容区、头像裁剪、右键菜单、资料弹层、插件列表、主工作区占位文案和登录页中的旧 `--line-color`、`--chat-text-color` 为 `--hula-border-default`、`--hula-text-secondary`
   - `src/composables/settings/settingsOptions.ts`、`src/views/settingsWindow/tabs/PreferencesSettings.vue` 与 `locales/zh-CN/setting.json`、`locales/en/setting.json` 已完成设置偏好页一轮低风险国际化收敛，语言选项与发送键选项不再内联硬编码标签，统一改为消费 `setting.*` i18n 文案键
-  - `src/stores/domains/settings/settingsSchema.ts`、`src/composables/settings/useSettingsShell.ts`、`src/composables/settings/settingsSearchIndex.ts`、`src/views/settingsWindow/SettingsDialog.vue` 与 `locales/zh-CN/setting.json`、`locales/en/setting.json` 已完成设置壳层第二轮国际化收敛，设置导航标题、当前标签标题和搜索匹配项不再依赖固定中文标签，改为通过运行时翻译生成；设置搜索关键词别名也已从运行时代码迁移到语言包数组；相关 `useSettingsShell.test.ts`、`SettingsDialog.test.ts` 已补充验证
+  - `src/stores/domains/settings/settingsSchema.ts`、`src/composables/settings/useSettingsShell.ts`、`src/composables/settings/settingsSearchIndex.ts`、`src/views/settingsWindow/SettingsDialog.vue` 与 `locales/zh-CN/setting.json`、`locales/en/setting.json` 已完成设置壳层第二轮国际化收敛，设置导航标题、当前标签标题和搜索匹配项不再依赖固定中文标签，改为通过运行时翻译生成；设置搜索关键词别名也已从运行时代码迁移到语言包数组；移动端 `src/mobile/views/my/PreferencesSettings.vue`、`BurnAfterReadSettings.vue` 中的阅后即焚时长标签与格式化逻辑也已切换到共享翻译键；相关 `useSettingsShell.test.ts`、`SettingsDialog.test.ts` 已补充验证
 - 仍待处理:
   - `variable.scss` 中剩余的历史业务别名和少量业务辅助色仍需继续收敛
   - 主工作区其他组件中的硬编码颜色仍需分批迁移
   - `default.scss` 当前未见桌面端显式运行时导入，且 `setting.ts` 中 `themes.versatile` 固定为 `simple`、代码侧未发现 `.default` 主题类动态挂载；可按高概率遗留文件继续推进物理清理评估
   - 房间/空间工作区与设置壳层统一仍未进入实施阶段
-  - 设置体系中的日志、错误提示和辅助提示文案仍需继续补齐到 i18n
+  - 设置体系中的日志、错误提示和辅助提示文案仍需继续补齐到 i18n，下一批可优先处理桌面/移动设置页中的失败日志与错误提示
 
 ## 结论
 
