@@ -99,7 +99,7 @@ const handleClick = () => {
 
 .news-card__time {
   font-size: 11px;
-  color: var(--text-color-tertiary);
+  color: var(--hula-text-tertiary);
 }
 
 .news-card__title {
@@ -116,7 +116,7 @@ const handleClick = () => {
 
 .news-card__summary {
   font-size: 12px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   margin: 0 0 8px 0;
   line-height: 1.5;
   display: -webkit-box;
