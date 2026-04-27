@@ -49,10 +49,6 @@ vi.mock('@iconify/vue', () => ({
   Icon: { name: 'Icon', template: '<i />', props: ['icon', 'width', 'color'] }
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
-
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => settingStoreMock
 }))

@@ -19,7 +19,11 @@ vi.mock('vue-i18n', () => ({
         'encryption.backup_setup_dialog.verify_failed': '验证失败，请重新输入',
         'encryption.backup_setup_dialog.create_failed': '创建备份失败',
         'encryption.backup_setup_dialog.key_mismatch': '密钥不匹配，请重新输入',
-        'encryption.backup.copy_success': '恢复密钥已复制到剪贴板'
+        'encryption.backup.copy_success': '恢复密钥已复制到剪贴板',
+        'setting.burn_after_read.formats.seconds': `${params?.count}秒`,
+        'setting.burn_after_read.formats.minutes': `${params?.count}分钟`,
+        'setting.burn_after_read.formats.hours': `${params?.count}小时`,
+        'setting.burn_after_read.formats.days': `${params?.count}天`
       }
       return translations[key] || key
     },
