@@ -20,6 +20,25 @@ const translationMap: Record<string, string> = {
 }
 
 const translate = (key: string) => translationMap[key] ?? key
+const keywordMap = {
+  account: ['账号', '个人资料', 'profile', 'display-name'],
+  sessions: ['设备', 'device', 'session', 'login'],
+  appearance: ['主题', 'theme', 'wallpaper', 'timestamp'],
+  notifications: ['通知', '提醒', 'push', 'push-rules', 'pusher'],
+  preferences: ['偏好', 'media', 'language', 'privacy', 'startup', 'storage', 'scan', 'autostart'],
+  keyboard: ['快捷键', 'hotkey', 'keymap'],
+  sidebar: ['侧边栏', 'left-panel', 'navigation'],
+  voiceVideo: ['语音', '视频', 'audio', 'video', 'webrtc'],
+  securityPrivacy: ['安全', '隐私', 'security', 'privacy', 'visibility', 'secret-chat', 'lock', 'hidden'],
+  encryption: ['加密', 'secret-storage', 'secure-backup', 'cross-signing'],
+  labs: ['实验功能', 'beta', 'integrations', '扩展中心'],
+  mjolnir: ['屏蔽', '封禁', 'moderation', 'block'],
+  helpAbout: ['帮助', '关于', '更新', '诊断', 'help', 'about'],
+  friends: ['好友', 'contacts', 'remark'],
+  burnAfterRead: ['阅后即焚', 'ephemeral', 'burn', 'timer']
+} as const
+
+const resolveSearchKeywords = (tabId: keyof typeof keywordMap) => [...keywordMap[tabId]]
 
 describe('useSettingsShell', () => {
   it('keeps the documented 15 tabs visible on desktop', () => {
@@ -38,7 +57,7 @@ describe('useSettingsShell', () => {
   })
 
   it('matches legacy and canonical aliases from the shared search index', () => {
-    const shell = useSettingsShell({ isDesktop: true })
+    const shell = useSettingsShell({ isDesktop: true, resolveSearchKeywords })
 
     shell.setSearchQuery('push')
     expect(shell.filteredTabs.value.map((tab) => tab.id)).toEqual(['notifications'])
@@ -51,7 +70,7 @@ describe('useSettingsShell', () => {
   })
 
   it('supports Chinese keywords and reset flow', () => {
-    const shell = useSettingsShell({ isDesktop: true, initialQuery: '隐私' })
+    const shell = useSettingsShell({ isDesktop: true, initialQuery: '隐私', resolveSearchKeywords })
 
     expect(shell.hasSearchQuery.value).toBe(true)
     expect(shell.filteredTabs.value.map((tab) => tab.id)).toEqual(['securityPrivacy'])
@@ -63,13 +82,13 @@ describe('useSettingsShell', () => {
 
   it('finds the first matching tab for deep-link style search', () => {
     expect(findFirstMatchingSettingsTab('help-about')).toBe('helpAbout')
-    expect(findFirstMatchingSettingsTab('快捷键', false)).toBeUndefined()
+    expect(findFirstMatchingSettingsTab('快捷键', false, undefined, resolveSearchKeywords)).toBeUndefined()
   })
 
   it('uses translated tab labels for visible tabs and search matching', () => {
-    const shell = useSettingsShell({ isDesktop: true, translate })
+    const shell = useSettingsShell({ isDesktop: true, translate, resolveSearchKeywords })
 
     expect(shell.visibleTabs.value.find((tab) => tab.id === 'account')?.label).toBe('Account')
-    expect(findFirstMatchingSettingsTab('voicevideo', true, translate)).toBe('voiceVideo')
+    expect(findFirstMatchingSettingsTab('voicevideo', true, translate, resolveSearchKeywords)).toBe('voiceVideo')
   })
 })

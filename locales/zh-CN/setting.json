@@ -38,6 +38,50 @@
       "help_about": "帮助与关于",
       "friends": "好友管理",
       "burn_after_read": "阅后即焚"
+    },
+    "search_terms": {
+      "account": ["账号", "账户", "个人资料", "profile", "display-name"],
+      "sessions": ["设备", "会话", "登录", "device", "session", "login"],
+      "appearance": ["外观", "主题", "壁纸", "时间戳", "theme", "wallpaper", "timestamp"],
+      "notifications": ["通知", "提醒", "push", "push-rules", "pusher"],
+      "preferences": [
+        "偏好",
+        "媒体",
+        "语言",
+        "隐私",
+        "启动",
+        "存储",
+        "扫描",
+        "media",
+        "language",
+        "privacy",
+        "startup",
+        "storage",
+        "scan",
+        "autostart"
+      ],
+      "keyboard": ["快捷键", "热键", "hotkey", "keymap"],
+      "sidebar": ["侧边栏", "导航", "left-panel", "navigation"],
+      "voice_video": ["语音", "视频", "音频", "audio", "video", "webrtc"],
+      "security_privacy": [
+        "安全",
+        "隐私",
+        "可见性",
+        "锁定",
+        "隐藏",
+        "security",
+        "privacy",
+        "visibility",
+        "secret-chat",
+        "lock",
+        "hidden"
+      ],
+      "encryption": ["加密", "secret-storage", "secure-backup", "cross-signing"],
+      "labs": ["实验功能", "扩展中心", "beta", "integrations"],
+      "mjolnir": ["屏蔽", "封禁", "moderation", "block"],
+      "help_about": ["帮助", "关于", "更新", "诊断", "help", "about"],
+      "friends": ["好友", "联系人", "备注", "contacts", "remark"],
+      "burn_after_read": ["阅后即焚", "ephemeral", "burn", "timer"]
     }
   },
   "footer": {
