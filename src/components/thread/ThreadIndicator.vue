@@ -8,12 +8,7 @@
       <Icon icon="mdi:chevron-right" />
     </n-icon>
   </div>
-  <n-button
-    v-else
-    text
-    size="small"
-    class="start-thread-btn"
-    @click="handleOpenThread">
+  <n-button v-else text size="small" class="start-thread-btn" @click="handleOpenThread">
     <template #icon>
       <n-icon><Icon icon="mdi:message-reply-text" /></n-icon>
     </template>
@@ -91,7 +86,7 @@ onMounted(() => {
 
 .start-thread-btn {
   font-size: 13px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 
   &:hover {
     color: var(--primary-color);

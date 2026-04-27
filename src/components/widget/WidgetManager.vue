@@ -72,11 +72,7 @@
     </n-modal>
 
     <!-- Widget 权限对话框 -->
-    <n-modal
-      v-model:show="showPermissionsDialog"
-      preset="card"
-      :title="t('widget.permissions')"
-      style="width: 560px">
+    <n-modal v-model:show="showPermissionsDialog" preset="card" :title="t('widget.permissions')" style="width: 560px">
       <div v-if="selectedWidget" class="permissions-content">
         <div class="widget-info-header">
           <strong>{{ selectedWidget.name || selectedWidget.id }}</strong>
@@ -96,7 +92,12 @@
               <div class="permission-tags">
                 <n-tag v-for="p in row.permissions" :key="p" size="small" type="info">{{ p }}</n-tag>
               </div>
-              <n-button text type="error" size="small" :disabled="savingPermissions" @click="handleRemovePermission(row)">
+              <n-button
+                text
+                type="error"
+                size="small"
+                :disabled="savingPermissions"
+                @click="handleRemovePermission(row)">
                 <template #icon>
                   <n-icon><Icon icon="mdi:close" /></n-icon>
                 </template>
@@ -383,13 +384,13 @@ onMounted(() => {
 
       .widget-type {
         font-size: 12px;
-        color: var(--text-color-secondary);
+        color: var(--hula-text-secondary);
         margin-bottom: 2px;
       }
 
       .widget-url {
         font-size: 11px;
-        color: var(--text-color-tertiary);
+        color: var(--hula-text-tertiary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

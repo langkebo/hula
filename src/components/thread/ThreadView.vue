@@ -201,7 +201,7 @@ watch(
 
       .timestamp {
         font-size: 12px;
-        color: var(--text-color-secondary);
+        color: var(--hula-text-secondary);
       }
     }
   }
@@ -209,7 +209,7 @@ watch(
   .message-content {
     font-size: 14px;
     line-height: 1.5;
-    color: var(--text-color);
+    color: var(--hula-text-primary);
   }
 }
 
@@ -250,14 +250,14 @@ watch(
 
         .timestamp {
           font-size: 11px;
-          color: var(--text-color-secondary);
+          color: var(--hula-text-secondary);
         }
       }
 
       .message-content {
         font-size: 14px;
         line-height: 1.5;
-        color: var(--text-color);
+        color: var(--hula-text-primary);
       }
     }
   }
