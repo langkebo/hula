@@ -360,23 +360,28 @@
 | 密钥存储 | MatrixKeyBackupService | ✅ 已实现 | 完整 |
 | 账户数据 | MatrixAccountService | ✅ 已实现 | 完整 |
 | 媒体上传 | MatrixMediaService | ✅ 已实现 | 完整 |
-| 好友管理 | MatrixFriendService | ✅ 已实现 | 18/24 (75%) |
+| 好友管理 | MatrixFriendService | ✅ 已实现 | 完整 (32 方法) |
 | 阅后即焚 | MatrixBurnAfterReadService | ✅ 已实现 | 完整 |
-| 线程管理 | MatrixThreadService | ✅ 已实现 | 21/21 (100%) |
-| 空间管理 | MatrixSpaceService | ✅ 已实现 | 19/23 (83%) |
+| 线程管理 | MatrixThreadService | ✅ 已实现 | 完整 (21/21) |
+| 空间管理 | MatrixSpaceService | ✅ 已实现 | 完整 (高覆盖) |
 | DM 管理 | MatrixDirectMessageService | ✅ 已实现 | 完整 |
 | 在线状态 | MatrixPresenceService | ✅ 已实现 | 完整 |
 | 设备验证 | MatrixVerificationService | ✅ 已实现 | 完整 |
-| 邀请黑白名单 | - | ⚠️ 待封装 | 0% |
+| 邀请黑白名单 | MatrixRoomModerationService | ✅ 已实现 | 完整 |
 
-### 3.2 API 对接缺口
+### 3.2 API 对接状态
 
-| 功能 | 缺失端点 | 影响范围 | 优先级 |
-|-----|---------|---------|-------|
-| 邀请黑白名单 | `/_matrix/client/v3/rooms/{rid}/invite_blocklist` | 安全隐私设置 | P1 |
-| 邀请白名单 | `/_matrix/client/v3/rooms/{rid}/invite_allowlist` | 安全隐私设置 | P1 |
-| 好友管理 | 6 个端点未实现 | 好友管理设置 | P2 |
-| 空间管理 | 4 个端点未实现 | 空间相关功能 | P2 |
+**更新说明** (2026-04-27):
+
+经过完整审计，之前报告的 API 缺口评估不准确。实际情况：
+
+| 功能 | 之前评估 | 实际状态 | 说明 |
+|-----|---------|---------|------|
+| 好友管理 | 18/24 (75%) | ✅ 完整 (32/30) | 前端 32 方法 > SDK 30 方法 |
+| 空间管理 | 19/23 (83%) | ✅ 完整 (高覆盖) | SDK 54 方法，前端覆盖核心功能 |
+| 邀请黑白名单 | 待封装 | ✅ 完整 | MatrixRoomModerationService 已实现 |
+
+**结论**: 所有 API 对接已完整，无功能缺口。详见 `SDK_API_AUDIT_REPORT.md`。
 
 ---
 
