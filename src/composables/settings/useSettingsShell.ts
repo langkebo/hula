@@ -1,5 +1,5 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
-import { matchesSettingsSearch } from './settingsSearchIndex'
+import { matchesSettingsSearch, type SettingsSearchKeywordResolver } from './settingsSearchIndex'
 import {
   SETTINGS_TABS,
   getSettingsTabs,
@@ -12,6 +12,7 @@ export interface UseSettingsShellOptions {
   isDesktop?: boolean
   initialQuery?: string
   translate?: SettingsTabTranslator
+  resolveSearchKeywords?: SettingsSearchKeywordResolver
 }
 
 export interface UseSettingsShellResult {
@@ -34,13 +35,16 @@ export function useSettingsShell(options: UseSettingsShellOptions = {}): UseSett
   const isDesktop = options.isDesktop ?? true
   const searchQuery = ref(options.initialQuery?.trim() || '')
   const translate = options.translate
+  const resolveSearchKeywords = options.resolveSearchKeywords
 
   const visibleTabs = computed(() => {
     return getSettingsTabs(translate).filter((tab) => matchesPlatform(tab, isDesktop))
   })
 
   const filteredTabs = computed(() => {
-    return visibleTabs.value.filter((tab) => matchesSettingsSearch(tab.id, searchQuery.value, translate))
+    return visibleTabs.value.filter((tab) =>
+      matchesSettingsSearch(tab.id, searchQuery.value, translate, resolveSearchKeywords)
+    )
   })
 
   const hasSearchQuery = computed(() => searchQuery.value.trim().length > 0)
@@ -68,8 +72,10 @@ export function useSettingsShell(options: UseSettingsShellOptions = {}): UseSett
 export function findFirstMatchingSettingsTab(
   query?: string,
   isDesktop = true,
-  translate?: SettingsTabTranslator
+  translate?: SettingsTabTranslator,
+  resolveSearchKeywords?: SettingsSearchKeywordResolver
 ): SettingsTabType | undefined {
-  return SETTINGS_TABS.find((tab) => matchesPlatform(tab, isDesktop) && matchesSettingsSearch(tab.id, query, translate))
-    ?.id
+  return SETTINGS_TABS.find(
+    (tab) => matchesPlatform(tab, isDesktop) && matchesSettingsSearch(tab.id, query, translate, resolveSearchKeywords)
+  )?.id
 }

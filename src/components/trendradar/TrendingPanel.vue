@@ -67,7 +67,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   background: var(--bg-popover);
   border-radius: 8px;
   padding: 12px;
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
 }
 
 .trending-panel__header {
@@ -76,7 +76,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   gap: 8px;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--hula-border-default);
 }
 
 .trending-panel__icon {
@@ -88,7 +88,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 .trending-panel__title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
 }
 
 .trending-panel__list {
@@ -137,7 +137,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 
 .trending-panel__topic-name {
   font-size: 13px;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

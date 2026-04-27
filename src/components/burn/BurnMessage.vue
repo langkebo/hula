@@ -136,7 +136,7 @@ const indicatorStatus = computed(() => {
   background: var(--bg-popover);
   border-radius: 12px;
   padding: 12px;
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   transition: all 0.3s ease;
 }
 

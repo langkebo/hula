@@ -9,7 +9,7 @@
     <template #trigger>
       <div class="flex items-center gap-6px cursor-pointer">
         <svg><use href="#model"></use></svg>
-        <span class="text-(12px [--chat-text-color])">
+        <span class="text-(12px [--hula-text-primary])">
           {{ selectedModel ? selectedModel.name : '选择模型' }}
         </span>
       </div>

@@ -5,6 +5,7 @@ import {
   SETTINGS_TABS,
   getSettingsTabLabel,
   type LegacySettingsTabType,
+  type SettingsTab,
   type SettingsTabTranslator,
   type SettingsTabType
 } from '@/stores/domains/settings/settingsSchema'
@@ -14,23 +15,7 @@ export interface SettingsSearchEntry {
   terms: string[]
 }
 
-const SETTINGS_SEARCH_KEYWORDS: Record<SettingsTabType, string[]> = {
-  account: ['账号', '个人资料', 'profile', 'display-name'],
-  sessions: ['设备', 'device', 'session', 'login'],
-  appearance: ['主题', 'theme', 'wallpaper', 'timestamp'],
-  notifications: ['通知', '提醒', 'push', 'push-rules', 'pusher'],
-  preferences: ['偏好', 'media', 'language', 'privacy', 'startup', 'storage', 'scan', 'autostart'],
-  keyboard: ['快捷键', 'hotkey', 'keymap'],
-  sidebar: ['侧边栏', 'left-panel', 'navigation'],
-  voiceVideo: ['语音', '视频', 'audio', 'video', 'webrtc'],
-  securityPrivacy: ['安全', '隐私', 'security', 'privacy', 'visibility', 'secret-chat', 'lock', 'hidden'],
-  encryption: ['加密', 'secret-storage', 'secure-backup', 'cross-signing'],
-  labs: ['实验功能', 'beta', 'integrations', '扩展中心'],
-  mjolnir: ['屏蔽', '封禁', 'moderation', 'block'],
-  helpAbout: ['帮助', '关于', '更新', '诊断', 'help', 'about'],
-  friends: ['好友', 'contacts', 'remark'],
-  burnAfterRead: ['阅后即焚', 'ephemeral', 'burn', 'timer']
-}
+export type SettingsSearchKeywordResolver = (tabId: SettingsTabType) => string[]
 
 const ROUTE_TERMS: Partial<Record<SettingsTabType, string[]>> = {
   notifications: [SETTINGS_CANONICAL_ROUTE_SEGMENTS.notifications],
@@ -69,26 +54,40 @@ function getLegacyTerms(tabId: SettingsTabType): string[] {
     .map(([legacyTabId]) => legacyTabId)
 }
 
-function buildSettingsSearchIndex(t?: SettingsTabTranslator): SettingsSearchEntry[] {
-  return SETTINGS_TABS.map((tab) => ({
+function getKeywordTerms(tabId: SettingsTabType, keywordResolver?: SettingsSearchKeywordResolver): string[] {
+  return keywordResolver?.(tabId) ?? []
+}
+
+function buildSettingsSearchIndex(
+  tabs: SettingsTab[],
+  t?: SettingsTabTranslator,
+  keywordResolver?: SettingsSearchKeywordResolver
+): SettingsSearchEntry[] {
+  return tabs.map((tab) => ({
     id: tab.id,
     terms: uniqueTerms([
       tab.id,
       getSettingsTabLabel(tab.id, t),
       ...getLegacyTerms(tab.id),
-      ...(SETTINGS_SEARCH_KEYWORDS[tab.id] ?? []),
+      ...getKeywordTerms(tab.id, keywordResolver),
       ...(ROUTE_TERMS[tab.id] ?? [])
     ])
   }))
 }
 
-export const SETTINGS_SEARCH_INDEX = buildSettingsSearchIndex()
+export const SETTINGS_SEARCH_INDEX = buildSettingsSearchIndex(SETTINGS_TABS)
 
-export function matchesSettingsSearch(tabId: SettingsTabType, query?: string, t?: SettingsTabTranslator): boolean {
+export function matchesSettingsSearch(
+  tabId: SettingsTabType,
+  query?: string,
+  t?: SettingsTabTranslator,
+  keywordResolver?: SettingsSearchKeywordResolver
+): boolean {
   const normalizedQuery = normalizeSearchTerm(query || '')
   if (!normalizedQuery) return true
 
-  const searchIndex = t ? buildSettingsSearchIndex(t) : SETTINGS_SEARCH_INDEX
+  const searchIndex =
+    t || keywordResolver ? buildSettingsSearchIndex(SETTINGS_TABS, t, keywordResolver) : SETTINGS_SEARCH_INDEX
   const entry = searchIndex.find((item) => item.id === tabId)
   if (!entry) return false
 

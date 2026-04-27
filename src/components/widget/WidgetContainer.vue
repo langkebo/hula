@@ -213,7 +213,7 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 12px 16px;
   background: var(--bg-secondary);
-  border-bottom: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--hula-border-default);
 
   .widget-title {
     display: flex;
