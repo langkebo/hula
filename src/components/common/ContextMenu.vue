@@ -670,7 +670,7 @@ const shouldShowArrow = (item: ContextMenuItem) => {
       justify-self: end;
       width: 12px;
       height: 12px;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
     }
 
     .check-icon {

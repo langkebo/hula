@@ -17,7 +17,7 @@
           </svg>
         </div>
 
-        <n-flex class="text-(14px [--text-color]) select-none pt-6px" justify="center">
+        <n-flex class="text-(14px [--hula-text-primary]) select-none pt-6px" justify="center">
           {{ t('components.avatarCropper.title') }}
         </n-flex>
 
@@ -52,7 +52,7 @@
         <n-flex vertical class="px-20px">
           <!-- 圆形预览 -->
           <div class="mb-20px">
-            <div class="text-14px text-[--text-color] mb-8px">
+            <div class="text-14px text-[--hula-text-primary] mb-8px">
               {{ t('components.avatarCropper.preview.round') }}
             </div>
             <div class="preview-wrapper">
@@ -75,7 +75,7 @@
 
           <!-- 方形预览 -->
           <div>
-            <div class="text-14px text-[--text-color] mb-8px w-120px">
+            <div class="text-14px text-[--hula-text-primary] mb-8px w-120px">
               {{ t('components.avatarCropper.preview.square') }}
             </div>
             <div class="preview-wrapper">

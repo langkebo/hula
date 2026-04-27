@@ -171,7 +171,7 @@ const handleAvatarError = (event: Event) => {
 
 .user-name {
   font-size: 14px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -180,7 +180,7 @@ const handleAvatarError = (event: Event) => {
 
 .user-subtitle {
   font-size: 12px;
-  color: var(--text-color);
+  color: var(--hula-text-secondary);
   opacity: 0.6;
   white-space: nowrap;
   overflow: hidden;

@@ -6,61 +6,69 @@
           <Icon icon="mdi:shield-key" :width="64" />
         </div>
         <div class="intro-text">
-          <p>安全备份可以保护您的加密消息。即使您丢失设备或清除数据，也可以通过恢复密钥找回历史消息。</p>
-          <p class="warning-text">请妥善保管恢复密钥，它将用于恢复您的加密消息。</p>
+          <p>{{ t('encryption.backup_setup_dialog.intro_primary') }}</p>
+          <p class="warning-text">{{ t('encryption.backup_setup_dialog.intro_warning') }}</p>
         </div>
         <div class="intro-actions">
-          <n-button @click="handleCancel">取消</n-button>
-          <n-button type="primary" @click="startSetup">开始设置</n-button>
+          <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
+          <n-button type="primary" @click="startSetup">
+            {{ t('encryption.backup_setup_dialog.start_setup') }}
+          </n-button>
         </div>
       </div>
 
       <div v-else-if="step === 'create'" class="step-content">
         <div class="create-info">
           <Icon icon="mdi:key-chain" :width="48" />
-          <p>正在创建安全备份...</p>
+          <p>{{ t('encryption.backup_setup_dialog.creating') }}</p>
         </div>
       </div>
 
       <div v-else-if="step === 'showKey'" class="step-content">
         <div class="key-display">
-          <div class="key-label">您的恢复密钥</div>
+          <div class="key-label">{{ t('encryption.backup_setup_dialog.your_recovery_key') }}</div>
           <div class="key-value">{{ recoveryKey }}</div>
           <div class="key-actions">
             <n-button size="small" @click="copyKey">
               <template #icon><Icon icon="mdi:content-copy" :width="16" /></template>
-              复制密钥
+              {{ t('encryption.backup.copy_key') }}
             </n-button>
             <n-button size="small" @click="downloadKey">
               <template #icon><Icon icon="mdi:download" :width="16" /></template>
-              下载密钥
+              {{ t('encryption.backup.download_key') }}
             </n-button>
           </div>
         </div>
         <div class="key-warning">
           <Icon icon="mdi:alert-circle" :width="20" />
-          <span>请将此密钥保存在安全的地方，不要分享给他人。</span>
+          <span>{{ t('encryption.backup_setup_dialog.key_warning') }}</span>
         </div>
-        <n-checkbox v-model:checked="keySaved" class="key-checkbox">我已安全保存恢复密钥</n-checkbox>
+        <n-checkbox v-model:checked="keySaved" class="key-checkbox">
+          {{ t('encryption.backup_setup_dialog.key_saved_confirm') }}
+        </n-checkbox>
         <div class="step-actions">
-          <n-button @click="handleCancel">取消</n-button>
-          <n-button type="primary" :disabled="!keySaved" @click="confirmSetup">确认完成</n-button>
+          <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
+          <n-button type="primary" :disabled="!keySaved" @click="confirmSetup">
+            {{ t('encryption.backup_setup_dialog.confirm_complete') }}
+          </n-button>
         </div>
       </div>
 
       <div v-else-if="step === 'verify'" class="step-content">
         <div class="verify-info">
-          <p>请输入您刚才保存的恢复密钥以确认备份已正确保存：</p>
+          <p>{{ t('encryption.backup_setup_dialog.verify_prompt') }}</p>
         </div>
         <n-input
           v-model:value="verifyKey"
           type="textarea"
-          placeholder="请输入恢复密钥"
+          :placeholder="t('encryption.backup.key_placeholder')"
           :rows="3"
           class="verify-input" />
         <div class="step-actions">
-          <n-button @click="step = 'showKey'">返回</n-button>
-          <n-button type="primary" :disabled="!verifyKey.trim()" @click="verifyKeyInput">验证密钥</n-button>
+          <n-button @click="step = 'showKey'">{{ t('common.back') }}</n-button>
+          <n-button type="primary" :disabled="!verifyKey.trim()" @click="verifyKeyInput">
+            {{ t('encryption.backup_setup_dialog.verify_key') }}
+          </n-button>
         </div>
       </div>
 
@@ -69,11 +77,11 @@
           <Icon icon="mdi:check-circle" :width="64" class="success-color" />
         </div>
         <div class="success-text">
-          <h3>安全备份设置成功！</h3>
-          <p>您的加密消息现在已受到保护。</p>
+          <h3>{{ t('encryption.backup_setup_dialog.success_title') }}</h3>
+          <p>{{ t('encryption.backup_setup_dialog.success_desc') }}</p>
         </div>
         <div class="step-actions">
-          <n-button type="primary" @click="handleClose">完成</n-button>
+          <n-button type="primary" @click="handleClose">{{ t('common.close') }}</n-button>
         </div>
       </div>
     </n-spin>
@@ -84,9 +92,11 @@
 import { ref, computed } from 'vue'
 import { NModal, NButton, NSpin, NCheckbox, NInput, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import { matrixEncryptionService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('KeyBackupSetup')
+const { t } = useI18n()
 
 defineOptions({
   name: 'KeyBackupSetupDialog'
@@ -118,17 +128,17 @@ const verifyKey = ref('')
 const dialogTitle = computed(() => {
   switch (step.value) {
     case 'intro':
-      return '设置安全备份'
+      return t('encryption.backup_setup_dialog.dialog_title_intro')
     case 'create':
-      return '创建备份中'
+      return t('encryption.backup_setup_dialog.dialog_title_create')
     case 'showKey':
-      return '保存恢复密钥'
+      return t('encryption.backup_setup_dialog.dialog_title_show_key')
     case 'verify':
-      return '验证恢复密钥'
+      return t('encryption.backup_setup_dialog.dialog_title_verify')
     case 'success':
-      return '设置完成'
+      return t('encryption.backup_setup_dialog.dialog_title_success')
     default:
-      return '安全备份'
+      return t('encryption.backup_setup_dialog.dialog_title_default')
   }
 })
 
@@ -160,8 +170,8 @@ async function startSetup() {
     recoveryKey.value = key
     step.value = 'showKey'
   } catch (error) {
-    logger.error('创建备份失败:', error)
-    message.error('创建安全备份失败，请稍后重试')
+    logger.error('Failed to create secure backup:', error)
+    message.error(t('encryption.backup_setup_dialog.create_failed'))
     step.value = 'intro'
   } finally {
     loading.value = false
@@ -171,8 +181,8 @@ async function startSetup() {
 function copyKey() {
   navigator.clipboard
     .writeText(recoveryKey.value)
-    .then(() => message.success('恢复密钥已复制到剪贴板'))
-    .catch(() => message.error('复制失败，请手动复制'))
+    .then(() => message.success(t('encryption.backup.copy_success')))
+    .catch(() => message.error(t('encryption.backup_setup_dialog.copy_manual')))
 }
 
 function downloadKey() {
@@ -185,7 +195,7 @@ function downloadKey() {
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
-  message.success('恢复密钥已下载')
+  message.success(t('encryption.backup.download_success'))
 }
 
 function confirmSetup() {
@@ -194,7 +204,7 @@ function confirmSetup() {
 
 async function verifyKeyInput() {
   if (verifyKey.value.trim() !== recoveryKey.value) {
-    message.error('密钥不匹配，请重新输入')
+    message.error(t('encryption.backup_setup_dialog.key_mismatch'))
     return
   }
 
@@ -203,13 +213,13 @@ async function verifyKeyInput() {
     const backupInfo = await matrixEncryptionService.getKeyBackupInfo()
     if (backupInfo) {
       step.value = 'success'
-      message.success('安全备份验证成功')
+      message.success(t('encryption.backup_setup_dialog.verify_success'))
     } else {
-      message.error('备份验证失败，请重试')
+      message.error(t('encryption.backup_setup_dialog.verify_failed'))
     }
   } catch (error) {
-    logger.error('验证备份失败:', error)
-    message.error('验证备份失败')
+    logger.error('Failed to verify backup setup:', error)
+    message.error(t('encryption.backup_setup_dialog.verify_failed'))
   } finally {
     loading.value = false
   }
@@ -235,7 +245,7 @@ async function verifyKeyInput() {
 
 .intro-text p {
   margin: 8px 0;
-  color: var(--text-color, #333);
+  color: var(--hula-text-primary);
 }
 
 .warning-text {

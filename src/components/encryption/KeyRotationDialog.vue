@@ -149,7 +149,7 @@ const statusDesc = computed(() => {
 
 const formatDate = (timestamp: number): string => {
   if (!timestamp) return '-'
-  return new Date(timestamp).toLocaleString('zh-CN')
+  return new Date(timestamp).toLocaleString()
 }
 
 const formatKeyId = (keyId: string): string => {
@@ -169,7 +169,7 @@ const loadRotationStatus = async () => {
     autoRotate.value = status.enabled
     rotationInterval.value = Math.round(status.intervalMs / (24 * 60 * 60 * 1000)) || 7
   } catch (err) {
-    logger.error('加载状态失败:', err)
+    logger.error('Failed to load rotation status:', err)
   } finally {
     loading.value = false
   }
@@ -182,7 +182,7 @@ const loadRotationHistory = async () => {
       rotationHistory.value = await matrixEncryptionService.getRotationHistory(deviceId)
     }
   } catch (err) {
-    logger.error('加载历史失败:', err)
+    logger.error('Failed to load rotation history:', err)
   }
 }
 
@@ -199,7 +199,7 @@ const handleRotate = async () => {
       message.error(t('encryption.key_rotation.rotation_failed'))
     }
   } catch (err) {
-    logger.error('轮换失败:', err)
+    logger.error('Key rotation failed:', err)
     message.error(t('encryption.key_rotation.rotation_failed'))
   } finally {
     rotating.value = false
@@ -211,7 +211,7 @@ const handleConfigChange = async () => {
     await matrixEncryptionService.configureKeyRotation(autoRotate.value, rotationInterval.value)
     message.success(t('encryption.key_rotation.config_success'))
   } catch (err) {
-    logger.error('配置失败:', err)
+    logger.error('Failed to update key rotation config:', err)
     message.error(t('encryption.key_rotation.config_failed'))
   }
 }
@@ -240,13 +240,13 @@ watch(visible, (val) => {
 
   :deep(.n-card__footer) {
     padding: 12px 20px;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--hula-border-default);
   }
 }
 
 .rotation-status {
   padding: 12px;
-  background: var(--bg-color-secondary);
+  background: var(--hula-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -276,18 +276,18 @@ watch(visible, (val) => {
 
 .status-desc {
   font-size: 12px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   margin-top: 2px;
 }
 
 .last-rotation {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--hula-border-default);
   font-size: 12px;
 
   .label {
-    color: var(--text-color-secondary);
+    color: var(--hula-text-secondary);
   }
 
   .value {
@@ -307,7 +307,7 @@ watch(visible, (val) => {
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--bg-color-secondary);
+    background: var(--hula-surface-panel-muted);
     border-radius: 8px;
     margin-bottom: 8px;
   }
@@ -329,7 +329,7 @@ watch(visible, (val) => {
 
   .action-desc {
     font-size: 12px;
-    color: var(--text-color-secondary);
+    color: var(--hula-text-secondary);
   }
 }
 
@@ -341,7 +341,7 @@ watch(visible, (val) => {
 
 .history-item {
   padding: 8px 12px;
-  background: var(--bg-color);
+  background: var(--hula-surface-panel);
   border-radius: 4px;
   margin-bottom: 4px;
 }
@@ -354,11 +354,11 @@ watch(visible, (val) => {
 
 .history-key {
   font-family: monospace;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
 }
 
 .history-time {
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 }
 
 .rotation-config {
@@ -367,7 +367,7 @@ watch(visible, (val) => {
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--bg-color-secondary);
+    background: var(--hula-surface-panel-muted);
     border-radius: 8px;
     margin-bottom: 8px;
   }
@@ -383,7 +383,7 @@ watch(visible, (val) => {
 
   .config-desc {
     font-size: 12px;
-    color: var(--text-color-secondary);
+    color: var(--hula-text-secondary);
     margin-top: 2px;
   }
 }

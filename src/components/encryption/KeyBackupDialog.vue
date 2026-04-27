@@ -291,22 +291,22 @@ watch(visible, (val) => {
 
   :deep(.n-card__footer) {
     padding: 12px 20px;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--hula-border-default);
   }
 }
 
 .status-card {
   padding: 16px;
   border-radius: 8px;
-  background: var(--bg-color);
-  border: 1px solid var(--border-color);
+  background: var(--hula-surface-panel);
+  border: 1px solid var(--hula-border-default);
 }
 
 .recovery-key-display {
   padding: 12px 16px;
-  background: var(--bg-color);
+  background: var(--hula-surface-panel);
   border-radius: 8px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--hula-border-default);
   word-break: break-all;
   font-family: monospace;
   font-size: 14px;

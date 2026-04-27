@@ -126,7 +126,7 @@
             </n-tooltip>
             <n-tooltip v-if="linkedGithub">
               <template #trigger>
-                <svg class="size-18px color-[--text-color]"><use href="#github-login"></use></svg>
+                <svg class="size-18px color-[--hula-text-primary]"><use href="#github-login"></use></svg>
               </template>
               <span>{{ t('home.profile_card.tooltip.bound_github') }}</span>
             </n-tooltip>
