@@ -38,10 +38,6 @@ vi.mock('@/composables/useBurnAfterRead', () => ({
   })
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
-
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => settingStoreMock
 }))
