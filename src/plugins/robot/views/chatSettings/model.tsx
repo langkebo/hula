@@ -103,7 +103,7 @@ export const Switch = defineComponent(
   (props: { active: boolean }) => {
     const v = ref(props.active)
     return () => (
-      <NSwitch v-model:value={v.value} class={'text-(12px [--chat-text-color])'} size={'small'}>
+      <NSwitch v-model:value={v.value} class={'text-(12px [--hula-text-secondary])'} size={'small'}>
         {{
           checked: () => '开启',
           unchecked: () => '关闭'
