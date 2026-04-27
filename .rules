@@ -278,6 +278,20 @@ Theme tokens live in `src/styles/scss/global/variable.scss`, but prefer inline U
 - Never modify SDK code directly; propose changes to the SDK repository instead
 - SDK type augmentations live in `src/types/matrix-js-sdk-augmentations.d.ts`; verify with `pnpm check:sdk-types`
 
+### Type Augmentations Maintenance
+- **File**: `src/types/matrix-js-sdk-augmentations.d.ts` (1484 lines, 168 type definitions)
+- **Purpose**: Extends matrix-js-sdk with missing type definitions
+- **Structure**: Single file using `declare module` pattern (required by TypeScript)
+- **Organization**: Divided into sections with `// ====` comments:
+  - Basic types (Method, ClientPrefix, Visibility, etc.)
+  - Interface supplements (ICreateRoomOpts, IPublicRoomsOpts, etc.)
+  - OIDC types
+  - Push notification types
+  - Event and Timeline types
+  - Voice/VoIP types
+- **Important**: Do NOT split this file - TypeScript module augmentation requires all extensions in the same `declare module` block
+- **Maintenance**: Add new types in the appropriate section, keep comments updated
+
 ### Service Layer Pattern
 - All Matrix SDK calls must go through service classes in `src/services/matrix/`
 - Services are organized by subdomain: `auth/`, `room/`, `messaging/`, `media/`, `user/`, `friends/`, `notifications/`, `crypto/`, `sync/`, `admin/`, `ai/`, `widget/`
