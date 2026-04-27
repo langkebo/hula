@@ -1,5 +1,5 @@
 <template>
-  <main class="size-full bg-[--center-bg-color] select-none">
+  <main class="size-full bg-[--hula-surface-panel] select-none">
     <ActionBar class="absolute right-0 w-full" :shrink="false" :max-w="false" :min-w="false" />
 
     <n-flex

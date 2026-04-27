@@ -1,32 +1,32 @@
 <template>
   <div class="sidebar-settings">
     <div class="settings-section">
-      <h3 class="section-title">布局</h3>
+      <h3 class="section-title">{{ t('setting.sidebar.layout') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示头像</span>
-          <span class="setting-desc">在侧边栏列表项中显示用户头像</span>
+          <span class="setting-label">{{ t('setting.sidebar.show_avatar') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.show_avatar_desc') }}</span>
         </div>
         <n-switch v-model:value="showAvatar" @update:value="handleLayoutToggle('showAvatar')" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示折叠按钮</span>
-          <span class="setting-desc">在侧边栏底部显示折叠/展开按钮</span>
+          <span class="setting-label">{{ t('setting.sidebar.show_collapsed') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.show_collapsed_desc') }}</span>
         </div>
         <n-switch v-model:value="showCollapsed" @update:value="handleLayoutToggle('showCollapsed')" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示拖拽手柄</span>
-          <span class="setting-desc">允许拖拽调整侧边栏宽度</span>
+          <span class="setting-label">{{ t('setting.sidebar.show_drag') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.show_drag_desc') }}</span>
         </div>
         <n-switch v-model:value="showDrag" @update:value="handleLayoutToggle('showDrag')" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">仅显示图标</span>
-          <span class="setting-desc">侧边栏仅显示图标，不显示文字</span>
+          <span class="setting-label">{{ t('setting.sidebar.show_icons_only') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.show_icons_only_desc') }}</span>
         </div>
         <n-switch v-model:value="showIconsOnly" @update:value="handleLayoutToggle('showIconsOnly')" />
       </div>
@@ -35,46 +35,39 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">显示内容</h3>
+      <h3 class="section-title">{{ t('setting.sidebar.display_content') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示收藏夹</span>
-          <span class="setting-desc">在侧边栏显示收藏的房间</span>
-        </div>
-        <n-switch v-model:value="showFavourites" @update:value="handleToggle('showFavourites')" />
-      </div>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">显示空间</span>
-          <span class="setting-desc">在侧边栏显示空间列表</span>
+          <span class="setting-label">{{ t('setting.sidebar.show_spaces') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.show_spaces_desc') }}</span>
         </div>
         <n-switch v-model:value="showSpaces" @update:value="handleToggle('showSpaces')" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示房间</span>
-          <span class="setting-desc">在侧边栏显示房间列表</span>
+          <span class="setting-label">{{ t('setting.sidebar.show_rooms') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.show_rooms_desc') }}</span>
         </div>
         <n-switch v-model:value="showRooms" @update:value="handleToggle('showRooms')" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示直接消息</span>
-          <span class="setting-desc">在侧边栏显示私聊列表</span>
+          <span class="setting-label">{{ t('setting.sidebar.show_direct_messages') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.show_direct_messages_desc') }}</span>
         </div>
         <n-switch v-model:value="showDirectMessages" @update:value="handleToggle('showDirectMessages')" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示好友分组</span>
-          <span class="setting-desc">在侧边栏显示好友分组列表</span>
+          <span class="setting-label">{{ t('setting.sidebar.show_friends') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.show_friends_desc') }}</span>
         </div>
         <n-switch v-model:value="showFriends" @update:value="handleToggle('showFriends')" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示活跃线程</span>
-          <span class="setting-desc">在侧边栏显示活跃线程入口</span>
+          <span class="setting-label">{{ t('setting.sidebar.show_threads') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.show_threads_desc') }}</span>
         </div>
         <n-switch v-model:value="showThreads" @update:value="handleToggle('showThreads')" />
       </div>
@@ -83,28 +76,24 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">排序方式</h3>
+      <h3 class="section-title">{{ t('setting.sidebar.sort_by') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">房间排序</span>
-          <span class="setting-desc">选择房间的排列顺序</span>
+          <span class="setting-label">{{ t('setting.sidebar.room_sort') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.room_sort_desc') }}</span>
         </div>
-        <n-select
-          v-model:value="sortBy"
-          :options="sortOptions"
-          style="width: 150px"
-          @update:value="handleSortChange" />
+        <n-select v-model:value="sortBy" :options="sortOptions" style="width: 150px" @update:value="handleSortChange" />
       </div>
     </div>
 
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">列表项大小</h3>
+      <h3 class="section-title">{{ t('setting.sidebar.list_item_size') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">列表项大小</span>
-          <span class="setting-desc">调整侧边栏列表项的显示大小</span>
+          <span class="setting-label">{{ t('setting.sidebar.list_item_size') }}</span>
+          <span class="setting-desc">{{ t('setting.sidebar.list_item_size_desc') }}</span>
         </div>
         <n-select
           v-model:value="itemSize"
@@ -117,7 +106,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { NSwitch, NDivider, NSelect, useMessage } from 'naive-ui'
 
 defineOptions({
@@ -125,10 +115,10 @@ defineOptions({
 })
 
 const message = useMessage()
+const { t } = useI18n()
 
 const STORAGE_KEY = 'hula-sidebar-settings'
 
-const showFavourites = ref(true)
 const showSpaces = ref(true)
 const showRooms = ref(true)
 const showDirectMessages = ref(true)
@@ -141,17 +131,17 @@ const showIconsOnly = ref(false)
 const sortBy = ref('activity')
 const itemSize = ref('medium')
 
-const sortOptions = [
-  { label: '最近活动', value: 'activity' },
-  { label: '按字母顺序', value: 'alphabetical' },
-  { label: '手动排序', value: 'manual' }
-]
+const sortOptions = computed(() => [
+  { label: t('setting.sidebar.sort_options.recent'), value: 'activity' },
+  { label: t('setting.sidebar.sort_options.alphabetical'), value: 'alphabetical' },
+  { label: t('setting.sidebar.sort_options.manual'), value: 'manual' }
+])
 
-const itemSizeOptions = [
-  { label: '小', value: 'small' },
-  { label: '中', value: 'medium' },
-  { label: '大', value: 'large' }
-]
+const itemSizeOptions = computed(() => [
+  { label: t('setting.sidebar.size_small'), value: 'small' },
+  { label: t('setting.sidebar.size_medium'), value: 'medium' },
+  { label: t('setting.sidebar.size_large'), value: 'large' }
+])
 
 onMounted(() => {
   loadSettings()
@@ -162,7 +152,6 @@ function loadSettings() {
   if (saved) {
     try {
       const settings = JSON.parse(saved)
-      if (settings.showFavourites !== undefined) showFavourites.value = settings.showFavourites
       if (settings.showSpaces !== undefined) showSpaces.value = settings.showSpaces
       if (settings.showRooms !== undefined) showRooms.value = settings.showRooms
       if (settings.showDirectMessages !== undefined) showDirectMessages.value = settings.showDirectMessages
@@ -182,7 +171,6 @@ function loadSettings() {
 
 function saveSettings() {
   const settings = {
-    showFavourites: showFavourites.value,
     showSpaces: showSpaces.value,
     showRooms: showRooms.value,
     showDirectMessages: showDirectMessages.value,
@@ -201,32 +189,32 @@ function saveSettings() {
 function handleToggle(key: string) {
   saveSettings()
   const labelMap: Record<string, string> = {
-    showFavourites: '收藏夹',
-    showSpaces: '空间',
-    showRooms: '房间',
-    showDirectMessages: '直接消息',
-    showFriends: '好友分组',
-    showThreads: '活跃线程'
+    showSpaces: t('setting.sidebar.show_spaces_short'),
+    showRooms: t('setting.sidebar.show_rooms_short'),
+    showDirectMessages: t('setting.sidebar.show_direct_messages_short'),
+    showFriends: t('setting.sidebar.show_friends_short'),
+    showThreads: t('setting.sidebar.show_threads_short')
   }
   const label = labelMap[key] || key
   const stateMap: Record<string, boolean> = {
-    showFavourites: showFavourites.value,
     showSpaces: showSpaces.value,
     showRooms: showRooms.value,
     showDirectMessages: showDirectMessages.value,
     showFriends: showFriends.value,
     showThreads: showThreads.value
   }
-  message.success(stateMap[key] ? `已显示${label}` : `已隐藏${label}`)
+  message.success(
+    stateMap[key] ? t('setting.sidebar.feedback.shown', { label }) : t('setting.sidebar.feedback.hidden', { label })
+  )
 }
 
 function handleLayoutToggle(key: string) {
   saveSettings()
   const labelMap: Record<string, string> = {
-    showAvatar: '头像',
-    showCollapsed: '折叠按钮',
-    showDrag: '拖拽手柄',
-    showIconsOnly: '仅图标模式'
+    showAvatar: t('setting.sidebar.show_avatar_short'),
+    showCollapsed: t('setting.sidebar.show_collapsed_short'),
+    showDrag: t('setting.sidebar.show_drag_short'),
+    showIconsOnly: t('setting.sidebar.show_icons_only_short')
   }
   const label = labelMap[key] || key
   const stateMap: Record<string, boolean> = {
@@ -235,47 +223,54 @@ function handleLayoutToggle(key: string) {
     showDrag: showDrag.value,
     showIconsOnly: showIconsOnly.value
   }
-  message.success(stateMap[key] ? `已开启${label}` : `已关闭${label}`)
+  message.success(
+    stateMap[key] ? t('setting.sidebar.feedback.enabled', { label }) : t('setting.sidebar.feedback.disabled', { label })
+  )
 }
 
 function handleSortChange(value: string) {
   sortBy.value = value
   saveSettings()
-  message.success(`排序方式已更改为${sortOptions.find((o) => o.value === value)?.label}`)
+  message.success(
+    t('setting.sidebar.feedback.sort_changed', {
+      label: sortOptions.value.find((o) => o.value === value)?.label || value
+    })
+  )
 }
 
 function handleItemSizeChange(value: string) {
   itemSize.value = value
   saveSettings()
-  message.success(`列表项大小已更改为${itemSizeOptions.find((o) => o.value === value)?.label}`)
+  message.success(
+    t('setting.sidebar.feedback.size_changed', {
+      label: itemSizeOptions.value.find((o) => o.value === value)?.label || value
+    })
+  )
 }
 </script>
 
 <style scoped>
 .sidebar-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-4);
+  color: var(--hula-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -284,12 +279,13 @@ function handleItemSizeChange(value: string) {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 </style>

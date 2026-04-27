@@ -22,15 +22,19 @@
           :style="{
             width: `${imageStyle.width}`,
             height: `${imageStyle.height}`,
-            backgroundColor: '#c8c8c833'
+            backgroundColor: 'var(--hula-surface-sidebar-selected)'
           }"
           class="rounded-10px">
           <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
         </n-flex>
       </template>
       <template #error>
-        <n-flex v-if="isError" align="center" justify="center" class="w-200px h-150px bg-#c8c8c833 rounded-10px">
-          <svg class="size-34px color-[--chat-text-color]"><use href="#error-picture"></use></svg>
+        <n-flex
+          v-if="isError"
+          align="center"
+          justify="center"
+          class="w-200px h-150px rounded-10px bg-[--hula-surface-sidebar-selected]">
+          <svg class="size-34px color-[--hula-text-tertiary]"><use href="#error-picture"></use></svg>
         </n-flex>
       </template>
     </n-image>
@@ -48,7 +52,7 @@
             <svg class="progress-ring" width="44" height="44">
               <circle
                 class="progress-ring-circle"
-                stroke="rgba(255,255,255,0.3)"
+                stroke="color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)"
                 stroke-width="3"
                 fill="transparent"
                 r="18"
@@ -56,7 +60,7 @@
                 cy="22" />
               <circle
                 class="progress-ring-circle progress-ring-fill"
-                stroke="#13987f"
+                stroke="var(--hula-color-primary-500)"
                 stroke-width="3"
                 fill="transparent"
                 r="18"
@@ -74,7 +78,7 @@
             <svg class="progress-ring" width="44" height="44">
               <circle
                 class="progress-ring-circle"
-                stroke="rgba(255,255,255,0.3)"
+                stroke="color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)"
                 stroke-width="3"
                 fill="transparent"
                 r="18"
@@ -82,7 +86,7 @@
                 cy="22" />
               <circle
                 class="progress-ring-circle progress-ring-fill"
-                stroke="white"
+                stroke="var(--hula-text-inverse)"
                 stroke-width="3"
                 fill="transparent"
                 r="18"

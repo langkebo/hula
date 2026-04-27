@@ -81,10 +81,10 @@ const defaultAvatar = computed(() => defaultAvatarImg)
 const currentStatusId = ref(userStatusStore.stateId || 'online')
 
 const statusOptions = [
-  { id: 'online', label: '在线', icon: 'mdi:circle', color: 'var(--color-success)' },
-  { id: 'away', label: '离开', icon: 'mdi:circle', color: 'var(--color-warning)' },
-  { id: 'busy', label: '忙碌', icon: 'mdi:circle', color: 'var(--color-danger)' },
-  { id: 'offline', label: '隐身', icon: 'mdi:circle-outline', color: 'var(--color-text-quaternary)' }
+  { id: 'online', label: '在线', icon: 'mdi:circle', color: 'var(--hula-status-online)' },
+  { id: 'away', label: '离开', icon: 'mdi:circle', color: 'var(--hula-status-away)' },
+  { id: 'busy', label: '忙碌', icon: 'mdi:circle', color: 'var(--hula-status-busy)' },
+  { id: 'offline', label: '隐身', icon: 'mdi:circle-outline', color: 'var(--hula-status-offline)' }
 ]
 
 const statusIcon = computed(() => {
@@ -99,15 +99,15 @@ const statusClass = computed(() => {
 const statusStyle = computed(() => {
   const status = statusOptions.find((s) => s.id === currentStatusId.value)
   return {
-    backgroundColor: status?.color || 'var(--color-success)'
+    backgroundColor: status?.color || 'var(--hula-status-online)'
   }
 })
 
 const isDark = computed(() => {
-  if (settingStore.themes.pattern === 'os') {
+  if (settingStore.themePattern === 'os') {
     return window.matchMedia('(prefers-color-scheme: dark)').matches
   }
-  return settingStore.themes.content === 'dark'
+  return settingStore.themeContent === 'dark'
 })
 
 const themeIcon = computed(() => {
@@ -172,14 +172,10 @@ async function handleStatusChange(statusId: string) {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--bg-color, #fff);
+  border: 2px solid var(--avatar-border-color);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-:deep(.dark) .status-indicator {
-  border-color: #1a1a1a;
 }
 
 .user-details {
@@ -190,19 +186,15 @@ async function handleStatusChange(statusId: string) {
 .user-name {
   font-size: 16px;
   font-weight: 500;
-  color: var(--text-color, #1a1a1a);
+  color: var(--text-color);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-:deep(.dark) .user-name {
-  color: #fff;
-}
-
 .user-id {
   font-size: 12px;
-  color: var(--text-color-3, #999);
+  color: var(--hula-text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -224,7 +216,7 @@ async function handleStatusChange(statusId: string) {
 .status-menu-title {
   padding: 4px 12px;
   font-size: 12px;
-  color: var(--color-text-quaternary);
+  color: var(--hula-text-quaternary);
   margin-bottom: 4px;
 }
 
@@ -238,14 +230,10 @@ async function handleStatusChange(statusId: string) {
 }
 
 .status-option:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .status-option:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--bg-msg-hover);
 }
 
 .status-option.active {
-  background-color: var(--color-info-light);
+  background-color: var(--hula-color-info-100);
 }
 </style>

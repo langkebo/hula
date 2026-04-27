@@ -56,7 +56,6 @@ vi.mock('vue-i18n', () => ({
         'mobile_my.online': '在线',
         'mobile_my.default_bio': '暂无简介',
         'mobile_my.photos': '相册',
-        'mobile_my.favorites': '收藏',
         'mobile_my.files': '文件',
         'mobile_my.appearance': '外观',
         'mobile_my.intelligent': '智能助手'
@@ -86,5 +85,6 @@ describe('Mobile Dynamic entry cleanup', () => {
 
     expect(wrapper.text()).not.toContain('社区')
     expect(wrapper.text()).not.toContain('Community')
+    expect(wrapper.text()).not.toContain('收藏')
   })
 })

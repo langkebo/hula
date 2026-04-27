@@ -173,7 +173,6 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
 import { Icon } from '@iconify/vue'
 import { ThemeEnum, AiMsgContentTypeEnum } from '@/enums'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -214,10 +213,9 @@ const emit = defineEmits<{
 }>()
 
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 const resolvedUserAvatar = computed(() => (props.userAvatar ? AvatarUtils.getAvatarUrl(props.userAvatar) : ''))
 const isDarkTheme = computed(() => {
-  const content = themes.value.content
+  const content = settingStore.themeContent
   if (!content) {
     return document.documentElement.dataset.theme === ThemeEnum.DARK
   }

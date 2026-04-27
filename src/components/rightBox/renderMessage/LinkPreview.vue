@@ -3,8 +3,10 @@
     <!-- 原文链接或内容展示 -->
     <div
       v-if="showUrl"
-      class="text-14px color-[--chat-text-color] mb-8px break-words whitespace-pre-wrap leading-relaxed">
-      <a :href="body?.url" target="_blank" class="color-[--color-primary] hover:underline" @click.stop>{{ body?.url }}</a>
+      class="text-14px color-[--hula-text-tertiary] mb-8px break-words whitespace-pre-wrap leading-relaxed">
+      <a :href="body?.url" target="_blank" class="color-[--hula-color-primary-500] hover:underline" @click.stop>
+        {{ body?.url }}
+      </a>
     </div>
 
     <!-- 预览卡片 -->
@@ -28,10 +30,10 @@
         </p>
 
         <div class="preview-footer flex-y-center mt-auto pt-6px">
-          <svg class="size-12px color-[--text-color-3] mr-4px">
+          <svg class="size-12px color-[--hula-text-quaternary] mr-4px">
             <use href="#link"></use>
           </svg>
-          <span class="text-11px color-[--text-color-3] truncate">
+          <span class="text-11px color-[--hula-text-quaternary] truncate">
             {{ body?.siteName || domainName }}
           </span>
         </div>
@@ -96,16 +98,16 @@ const handleLinkClick = () => {
 
 .preview-card {
   cursor: pointer;
-  @apply: flex flex-col bg-[--group-notice-bg]
-  border-(1px solid #e3e3e3) dark:border-(1px solid #404040)
-  hover:bg-#fefefe99 dark:hover:bg-#60606040 rounded-8px overflow-hidden box-border
+  @apply: flex flex-col bg-[--hula-surface-muted]
+  border-(1px solid [--hula-border-default])
+  hover:bg-[--hula-fill-hover] rounded-8px overflow-hidden box-border
   custom-shadow transition-colors duration-200;
 
   &.has-image {
     @apply: flex-row h-90px;
 
     .preview-image-wrapper {
-      @apply: w-90px h-full flex-shrink-0 bg-gray-100 dark:bg-#202020;
+      @apply: w-90px h-full flex-shrink-0 bg-[--hula-surface-app];
     }
 
     .preview-image {
@@ -120,11 +122,11 @@ const handleLinkClick = () => {
     }
 
     .preview-title {
-      @apply: text-13px font-medium color-[--text-color] leading-tight mb-4px;
+      @apply: text-13px font-medium color-[--hula-text-primary] leading-tight mb-4px;
     }
 
     .preview-desc {
-      @apply: text-12px color-[--text-color-2] leading-snug;
+      @apply: text-12px color-[--hula-text-secondary] leading-snug;
       /* 在水平模式下描述最多显示两行 */
       -webkit-line-clamp: 2 !important;
     }
@@ -134,11 +136,11 @@ const handleLinkClick = () => {
     @apply: p-10px;
 
     .preview-title {
-      @apply: text-14px font-medium color-[--text-color] leading-tight mb-6px;
+      @apply: text-14px font-medium color-[--hula-text-primary] leading-tight mb-6px;
     }
 
     .preview-desc {
-      @apply: text-12px color-[--text-color-2] leading-normal;
+      @apply: text-12px color-[--hula-text-secondary] leading-normal;
     }
   }
 }

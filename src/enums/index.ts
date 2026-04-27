@@ -109,8 +109,6 @@ export enum MittEnum {
   LOCATE_SESSION = 'locateSession',
   /** 聊天框滚动到底部 */
   CHAT_SCROLL_BOTTOM = 'chatScrollBottom',
-  /** 创建群聊 */
-  CREATE_GROUP = 'createGroup',
   /** 更新提示 */
   CHECK_UPDATE = 'checkUpdate',
   /** 强制更新 */
@@ -194,8 +192,6 @@ export enum StoresEnum {
   SESSION_UNREAD = 'sessionUnread',
   /** 缓存 */
   CACHED = 'cached',
-  /** 配置 */
-  CONFIG = 'config',
   /** 视频查看器数据 */
   VIDEOVIEWER = 'videoViewer',
   /** 文件下载管理 */

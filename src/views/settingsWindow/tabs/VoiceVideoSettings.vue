@@ -1,40 +1,40 @@
 <template>
   <div class="voice-video-settings">
     <div class="settings-section">
-      <h3 class="section-title">音频设置</h3>
+      <h3 class="section-title">{{ t('setting.voice_video.audio_section') }}</h3>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">音频输入设备</span>
-          <span class="setting-desc">选择用于语音通话的麦克风</span>
+          <span class="setting-label">{{ t('setting.voice_video.audio_input_label') }}</span>
+          <span class="setting-desc">{{ t('setting.voice_video.audio_input_desc') }}</span>
         </div>
         <n-select
           v-model:value="audioInputId"
           :options="audioInputOptions"
           :loading="devicesLoading"
-          placeholder="选择麦克风"
+          :placeholder="t('setting.voice_video.select_microphone')"
           style="width: 200px"
           @update:value="handleAudioInputChange" />
       </div>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">音频输出设备</span>
-          <span class="setting-desc">选择用于播放声音的扬声器</span>
+          <span class="setting-label">{{ t('setting.voice_video.audio_output_label') }}</span>
+          <span class="setting-desc">{{ t('setting.voice_video.audio_output_desc') }}</span>
         </div>
         <n-select
           v-model:value="audioOutputId"
           :options="audioOutputOptions"
           :loading="devicesLoading"
-          placeholder="选择扬声器"
+          :placeholder="t('setting.voice_video.select_speaker')"
           style="width: 200px"
           @update:value="handleAudioOutputChange" />
       </div>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">输入音量</span>
-          <span class="setting-desc">调整麦克风音量</span>
+          <span class="setting-label">{{ t('setting.voice_video.input_volume_label') }}</span>
+          <span class="setting-desc">{{ t('setting.voice_video.input_volume_desc') }}</span>
         </div>
         <div class="volume-control">
           <n-slider
@@ -50,8 +50,8 @@
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">输出音量</span>
-          <span class="setting-desc">调整扬声器音量</span>
+          <span class="setting-label">{{ t('setting.voice_video.output_volume_label') }}</span>
+          <span class="setting-desc">{{ t('setting.voice_video.output_volume_desc') }}</span>
         </div>
         <div class="volume-control">
           <n-slider
@@ -67,11 +67,11 @@
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">音频测试</span>
-          <span class="setting-desc">测试麦克风是否正常工作</span>
+          <span class="setting-label">{{ t('setting.voice_video.audio_test_label') }}</span>
+          <span class="setting-desc">{{ t('setting.voice_video.audio_test_desc') }}</span>
         </div>
         <n-button :type="isRecording ? 'error' : 'default'" :loading="testLoading" @click="handleTestAudio">
-          {{ isRecording ? '停止测试' : '测试麦克风' }}
+          {{ isRecording ? t('setting.voice_video.stop_test') : t('setting.voice_video.test_microphone') }}
         </n-button>
       </div>
 
@@ -79,36 +79,38 @@
         <div class="level-bar">
           <div class="level-fill" :style="{ width: `${audioLevel}%` }"></div>
         </div>
-        <span class="level-text">音量级别: {{ Math.round(audioLevel) }}%</span>
+        <span class="level-text">
+          {{ t('setting.voice_video.audio_level', { value: String(Math.round(audioLevel)) }) }}
+        </span>
       </div>
     </div>
 
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">视频设置</h3>
+      <h3 class="section-title">{{ t('setting.voice_video.video_section') }}</h3>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">视频输入设备</span>
-          <span class="setting-desc">选择用于视频通话的摄像头</span>
+          <span class="setting-label">{{ t('setting.voice_video.video_input_label') }}</span>
+          <span class="setting-desc">{{ t('setting.voice_video.video_input_desc') }}</span>
         </div>
         <n-select
           v-model:value="videoInputId"
           :options="videoInputOptions"
           :loading="devicesLoading"
-          placeholder="选择摄像头"
+          :placeholder="t('setting.voice_video.select_camera')"
           style="width: 200px"
           @update:value="handleVideoInputChange" />
       </div>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">视频预览</span>
-          <span class="setting-desc">预览摄像头画面</span>
+          <span class="setting-label">{{ t('setting.voice_video.preview_label') }}</span>
+          <span class="setting-desc">{{ t('setting.voice_video.preview_desc') }}</span>
         </div>
         <n-button :type="isPreviewing ? 'error' : 'default'" @click="handleTogglePreview">
-          {{ isPreviewing ? '停止预览' : '开始预览' }}
+          {{ isPreviewing ? t('setting.voice_video.stop_preview') : t('setting.voice_video.start_preview') }}
         </n-button>
       </div>
 
@@ -120,28 +122,28 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">通话设置</h3>
+      <h3 class="section-title">{{ t('setting.voice_video.call_section') }}</h3>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">回声消除</span>
-          <span class="setting-desc">消除通话中的回声</span>
+          <span class="setting-label">{{ t('setting.voice_video.echo_cancellation_label') }}</span>
+          <span class="setting-desc">{{ t('setting.voice_video.echo_cancellation_desc') }}</span>
         </div>
         <n-switch v-model:value="echoCancellation" @update:value="handleEchoCancellationChange" />
       </div>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">噪声抑制</span>
-          <span class="setting-desc">降低背景噪声</span>
+          <span class="setting-label">{{ t('setting.voice_video.noise_suppression_label') }}</span>
+          <span class="setting-desc">{{ t('setting.voice_video.noise_suppression_desc') }}</span>
         </div>
         <n-switch v-model:value="noiseSuppression" @update:value="handleNoiseSuppressionChange" />
       </div>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">自动增益</span>
-          <span class="setting-desc">自动调整麦克风音量</span>
+          <span class="setting-label">{{ t('setting.voice_video.auto_gain_label') }}</span>
+          <span class="setting-desc">{{ t('setting.voice_video.auto_gain_desc') }}</span>
         </div>
         <n-switch v-model:value="autoGainControl" @update:value="handleAutoGainChange" />
       </div>
@@ -150,7 +152,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { NSelect, NSlider, NButton, NSwitch, NDivider, useMessage } from 'naive-ui'
 import { createLogger } from '@/utils/Logger'
 
@@ -161,6 +164,7 @@ defineOptions({
 })
 
 const message = useMessage()
+const { t } = useI18n()
 
 const devicesLoading = ref(false)
 const testLoading = ref(false)
@@ -177,9 +181,30 @@ const echoCancellation = ref(true)
 const noiseSuppression = ref(true)
 const autoGainControl = ref(true)
 
-const audioInputOptions = ref<Array<{ label: string; value: string }>>([])
-const audioOutputOptions = ref<Array<{ label: string; value: string }>>([])
-const videoInputOptions = ref<Array<{ label: string; value: string }>>([])
+const audioInputDevices = ref<MediaDeviceInfo[]>([])
+const audioOutputDevices = ref<MediaDeviceInfo[]>([])
+const videoInputDevices = ref<MediaDeviceInfo[]>([])
+
+const audioInputOptions = computed(() =>
+  audioInputDevices.value.map((d) => ({
+    label: d.label || t('setting.voice_video.microphone_fallback', { id: d.deviceId.slice(0, 8) }),
+    value: d.deviceId
+  }))
+)
+
+const audioOutputOptions = computed(() =>
+  audioOutputDevices.value.map((d) => ({
+    label: d.label || t('setting.voice_video.speaker_fallback', { id: d.deviceId.slice(0, 8) }),
+    value: d.deviceId
+  }))
+)
+
+const videoInputOptions = computed(() =>
+  videoInputDevices.value.map((d) => ({
+    label: d.label || t('setting.voice_video.camera_fallback', { id: d.deviceId.slice(0, 8) }),
+    value: d.deviceId
+  }))
+)
 
 const videoPreviewRef = ref<HTMLVideoElement>()
 let mediaStream: MediaStream | null = null
@@ -202,26 +227,9 @@ async function loadDevices() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices()
 
-    audioInputOptions.value = devices
-      .filter((d) => d.kind === 'audioinput')
-      .map((d) => ({
-        label: d.label || `麦克风 ${d.deviceId.slice(0, 8)}`,
-        value: d.deviceId
-      }))
-
-    audioOutputOptions.value = devices
-      .filter((d) => d.kind === 'audiooutput')
-      .map((d) => ({
-        label: d.label || `扬声器 ${d.deviceId.slice(0, 8)}`,
-        value: d.deviceId
-      }))
-
-    videoInputOptions.value = devices
-      .filter((d) => d.kind === 'videoinput')
-      .map((d) => ({
-        label: d.label || `摄像头 ${d.deviceId.slice(0, 8)}`,
-        value: d.deviceId
-      }))
+    audioInputDevices.value = devices.filter((d) => d.kind === 'audioinput')
+    audioOutputDevices.value = devices.filter((d) => d.kind === 'audiooutput')
+    videoInputDevices.value = devices.filter((d) => d.kind === 'videoinput')
 
     if (audioInputOptions.value.length > 0 && !audioInputId.value) {
       audioInputId.value = audioInputOptions.value[0].value
@@ -234,13 +242,28 @@ async function loadDevices() {
     }
   } catch (error) {
     logger.error('获取设备列表失败:', error)
-    message.error('获取设备列表失败，请检查权限')
+    message.error(t('setting.voice_video.load_devices_failed'))
   } finally {
     devicesLoading.value = false
   }
 }
 
 function loadSavedSettings() {
+  const savedAudioInput = localStorage.getItem('hula-audio-input')
+  if (savedAudioInput) {
+    audioInputId.value = savedAudioInput
+  }
+
+  const savedAudioOutput = localStorage.getItem('hula-audio-output')
+  if (savedAudioOutput) {
+    audioOutputId.value = savedAudioOutput
+  }
+
+  const savedVideoInput = localStorage.getItem('hula-video-input')
+  if (savedVideoInput) {
+    videoInputId.value = savedVideoInput
+  }
+
   const savedInputVolume = localStorage.getItem('hula-input-volume')
   if (savedInputVolume) {
     inputVolume.value = parseInt(savedInputVolume, 10)
@@ -332,10 +355,10 @@ async function startAudioTest() {
 
     isRecording.value = true
     updateAudioLevel()
-    message.success('麦克风测试已开始')
+    message.success(t('setting.voice_video.microphone_test_started'))
   } catch (error) {
     logger.error('麦克风测试失败:', error)
-    message.error('无法访问麦克风，请检查权限')
+    message.error(t('setting.voice_video.microphone_access_failed'))
   }
 }
 
@@ -394,10 +417,10 @@ async function startPreview() {
     }
 
     isPreviewing.value = true
-    message.success('视频预览已开始')
+    message.success(t('setting.voice_video.preview_started'))
   } catch (error) {
     logger.error('视频预览失败:', error)
-    message.error('无法访问摄像头，请检查权限')
+    message.error(t('setting.voice_video.camera_access_failed'))
   }
 }
 
@@ -417,29 +440,26 @@ function stopPreview() {
 
 <style scoped>
 .voice-video-settings {
-  padding: 0;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin: 0 0 16px 0;
-  color: var(--text-color, #1a1a1a);
-}
-
-:deep(.dark) .section-title {
-  color: #fff;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin: 0 0 var(--hula-space-4) 0;
+  color: var(--hula-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -449,75 +469,63 @@ function stopPreview() {
 
 .setting-label {
   display: block;
-  font-size: 14px;
-  color: var(--text-color, #1a1a1a);
-}
-
-:deep(.dark) .setting-label {
-  color: #fff;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
   display: block;
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .volume-control {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--hula-space-3);
 }
 
 .volume-value {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
   min-width: 40px;
 }
 
 .audio-level-display {
-  margin-top: 12px;
-  padding: 12px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-:deep(.dark) .audio-level-display {
-  background-color: rgba(255, 255, 255, 0.05);
+  margin-top: var(--hula-space-3);
+  padding: var(--hula-space-3);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .level-bar {
   height: 8px;
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  background-color: var(--hula-settings-meter-bg);
+  border-radius: var(--hula-radius-xs);
   overflow: hidden;
-}
-
-:deep(.dark) .level-bar {
-  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .level-fill {
   height: 100%;
-  background-color: var(--color-success);
-  border-radius: 4px;
+  background-color: var(--hula-color-success-500);
+  border-radius: var(--hula-radius-xs);
   transition: width 0.1s ease;
 }
 
 .level-text {
   display: block;
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 8px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-2);
   text-align: center;
 }
 
 .video-preview {
-  margin-top: 16px;
-  border-radius: 8px;
+  margin-top: var(--hula-space-4);
+  border-radius: var(--hula-radius-sm);
   overflow: hidden;
-  background-color: #000;
+  background-color: var(--hula-surface-media-preview);
 }
 
 .preview-video {

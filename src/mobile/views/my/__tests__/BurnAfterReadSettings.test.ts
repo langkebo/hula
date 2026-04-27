@@ -3,6 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import BurnAfterReadSettings from '../BurnAfterReadSettings.vue'
 
 const showToastMock = vi.fn()
+const migrateLegacyPreferenceSettingsMock = vi.fn()
+const setBurnDefaultEnabledMock = vi.fn()
+const setBurnShowCountdownEnabledMock = vi.fn()
+const setBurnDefaultDurationMock = vi.fn()
+
+const settingStoreMock = {
+  burnDefaultEnabled: false,
+  burnDefaultDuration: 60,
+  burnShowCountdownEnabled: true,
+  migrateLegacyPreferenceSettings: (...args: any[]) => migrateLegacyPreferenceSettingsMock(...args),
+  setBurnDefaultEnabled: (...args: any[]) => setBurnDefaultEnabledMock(...args),
+  setBurnShowCountdownEnabled: (...args: any[]) => setBurnShowCountdownEnabledMock(...args),
+  setBurnDefaultDuration: (...args: any[]) => setBurnDefaultDurationMock(...args)
+}
 
 vi.mock('vant', () => ({
   showToast: (...args: any[]) => showToastMock(...args),
@@ -28,6 +42,10 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
+vi.mock('@/stores/domains/settings/setting', () => ({
+  useSettingStore: () => settingStoreMock
+}))
+
 vi.mock('@/mobile/components/chat-room/AutoFixHeightPage.vue', () => ({
   default: {
     name: 'AutoFixHeightPage',
@@ -48,6 +66,9 @@ describe('BurnAfterReadSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    settingStoreMock.burnDefaultEnabled = false
+    settingStoreMock.burnDefaultDuration = 60
+    settingStoreMock.burnShowCountdownEnabled = true
   })
 
   it('renders correctly', () => {
@@ -60,34 +81,42 @@ describe('BurnAfterReadSettings', () => {
     expect((wrapper.vm as any).globalEnabled).toBe(false)
   })
 
-  it('loads globalEnabled from localStorage', () => {
-    localStorage.setItem('hula-burn-default-enabled', 'true')
+  it('loads globalEnabled from settingStore getter', () => {
+    settingStoreMock.burnDefaultEnabled = true
     const wrapper = mount(BurnAfterReadSettings)
     expect((wrapper.vm as any).globalEnabled).toBe(true)
   })
 
-  it('loads defaultDuration from localStorage', () => {
-    localStorage.setItem('hula-burn-default-duration', '300')
+  it('loads defaultDuration from settingStore getter', () => {
+    settingStoreMock.burnDefaultDuration = 300
     const wrapper = mount(BurnAfterReadSettings)
     expect((wrapper.vm as any).defaultDuration).toBe(300)
   })
 
-  it('loads showCountdown from localStorage', () => {
-    localStorage.setItem('hula-burn-show-countdown', 'false')
+  it('loads showCountdown from settingStore getter', () => {
+    settingStoreMock.burnShowCountdownEnabled = false
     const wrapper = mount(BurnAfterReadSettings)
     expect((wrapper.vm as any).showCountdown).toBe(false)
   })
 
-  it('saves global toggle to localStorage', () => {
+  it('calls settingStore on global toggle', () => {
     const wrapper = mount(BurnAfterReadSettings)
     ;(wrapper.vm as any).handleGlobalToggle(true)
-    expect(localStorage.getItem('hula-burn-default-enabled')).toBe('true')
+    expect(setBurnDefaultEnabledMock).toHaveBeenCalledWith(true)
   })
 
-  it('saves countdown toggle to localStorage', () => {
+  it('calls settingStore on countdown toggle', () => {
     const wrapper = mount(BurnAfterReadSettings)
     ;(wrapper.vm as any).handleCountdownToggle(false)
-    expect(localStorage.getItem('hula-burn-show-countdown')).toBe('false')
+    expect(setBurnShowCountdownEnabledMock).toHaveBeenCalledWith(false)
+  })
+
+  it('calls settingStore on duration confirm', () => {
+    const wrapper = mount(BurnAfterReadSettings)
+    ;(wrapper.vm as any).handleDurationConfirm({ selectedValues: [300] })
+    expect(setBurnDefaultDurationMock).toHaveBeenCalledWith(300)
+    expect((wrapper.vm as any).defaultDuration).toBe(300)
+    expect((wrapper.vm as any).showDurationPicker).toBe(false)
   })
 
   it('formatDuration returns correct format', () => {

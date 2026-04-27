@@ -156,11 +156,11 @@ watch(
   @apply flex items-center gap-12px p-8px rounded-8px cursor-pointer transition-all;
 
   &:hover {
-    background: var(--emoji-hover);
+    background: var(--hula-fill-hover);
   }
 
   &.selected {
-    background: var(--color-primary-light);
+    background: var(--hula-color-primary-100);
   }
 }
 
@@ -173,10 +173,10 @@ watch(
 }
 
 .encrypted-badge {
-  @apply flex-center color-[--color-primary];
+  @apply flex-center color-[--hula-color-primary-500];
 }
 
 .dialog-footer {
-  @apply flex justify-end gap-12px pt-8px border-t-1px border-solid border-[--border-color];
+  @apply flex justify-end gap-12px pt-8px border-t-1px border-solid border-[--hula-border-default];
 }
 </style>

@@ -133,8 +133,8 @@ defineExpose({
 
 .resize-handle {
   position: absolute;
-  background: white;
-  border: 1px solid #ccc;
+  background: var(--hula-surface-panel);
+  border: 1px solid var(--hula-border-strong);
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -143,7 +143,7 @@ defineExpose({
 }
 
 .resize-handle.disabled {
-  background: #ccc;
+  background: var(--hula-border-strong);
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -203,8 +203,8 @@ defineExpose({
 .border-radius-controller {
   position: absolute;
   left: 0;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
+  background: var(--hula-overlay-inverse-strong);
+  color: var(--hula-text-inverse);
   padding: 5px 8px;
   border-radius: 4px;
   font-size: 12px;
@@ -221,7 +221,7 @@ defineExpose({
   input[type='range'] {
     width: 60px;
     height: 4px;
-    background: #ddd;
+    background: var(--hula-border-default);
     border-radius: 2px;
     outline: none;
     margin: 0;
@@ -230,7 +230,7 @@ defineExpose({
       appearance: none;
       width: 12px;
       height: 12px;
-      background: white;
+      background: var(--hula-surface-panel);
       border-radius: 50%;
       cursor: pointer;
     }

@@ -74,7 +74,6 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -89,7 +88,6 @@ const logger = createLogger('VoiceMessageEnhanced')
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
-const { themes } = storeToRefs(settingStore)
 
 const props = defineProps<{
   body: VoiceBody
@@ -116,7 +114,7 @@ const showTranscription = ref(false)
 
 const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
-const isDarkMode = computed(() => themes.value.content === ThemeEnum.DARK)
+const isDarkMode = computed(() => settingStore.themeContent === ThemeEnum.DARK)
 const isCurrentUser = computed(() => props.fromUserUid === userStore.userInfo?.uid)
 const iconColor = computed(() => (isCurrentUser.value ? '#fff' : isDarkMode.value ? '#fff' : '#000'))
 

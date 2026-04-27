@@ -7,11 +7,11 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave">
     <n-flex v-if="!isLoadingMore && isLast" justify="center" class="box-border absolute-x-center pt-10px">
-      <span class="text-(12px --color-text-tertiary)">以下是全部消息内容</span>
+      <span class="text-(12px [--hula-text-tertiary])">以下是全部消息内容</span>
     </n-flex>
     <n-flex v-if="isLoadingMore && !isLast" justify="center" class="box-border absolute-x-center pt-10px">
       <img class="size-16px" src="@/assets/img/loading.svg" alt="" />
-      <span class="text-(12px --color-text-tertiary)">加载中</span>
+      <span class="text-(12px [--hula-text-tertiary])">加载中</span>
     </n-flex>
     <div ref="phantomRef" class="virtual-list-phantom"></div>
     <div ref="contentRef" class="virtual-list-content">
@@ -675,7 +675,7 @@ defineExpose<VirtualListExpose>({
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(144, 144, 144, 0.3);
+    background-color: color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent);
     border-radius: 3px;
     transition-property: opacity, background-color;
     transition-duration: 0.3s;
@@ -684,7 +684,7 @@ defineExpose<VirtualListExpose>({
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(144, 144, 144, 0.5);
+    background-color: color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent);
   }
 
   &::-webkit-scrollbar-track {

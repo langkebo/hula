@@ -4,9 +4,7 @@
     <!-- 背景 -->
     <img
       class="absolute rounded-t-8px z-2 top-0 left-0 w-full h-100px"
-      :class="
-        groupStore.getUserInfo(uid)?.wearingItemId === '6' ? 'object-contain bg-#e9e9e980 dark:bg-#111' : 'object-cover'
-      "
+      :class="groupStore.getUserInfo(uid)?.wearingItemId === '6' ? 'object-contain developer-cover' : 'object-cover'"
       :src="groupStore.getUserInfo(uid)?.wearingItemId === '6' ? '/hula.png' : '/img/dispersion-bg.png'"
       alt="" />
     <div class="h-20px"></div>
@@ -22,8 +20,8 @@
             round
             :size="80"
             :src="avatarSrc"
-            :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-            :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
+            :color="avatarColor"
+            :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
         </div>
 
         <!-- 在线状态点 -->
@@ -38,7 +36,9 @@
                 "
                 class="z-30 absolute top-72px left-72px border-(6px solid [--avatar-border-color]) rounded-full size-18px"
                 :class="[
-                  displayActiveStatus === OnlineEnum.ONLINE ? 'bg-[--color-primary]' : 'bg-[--color-text-tertiary]',
+                  displayActiveStatus === OnlineEnum.ONLINE
+                    ? 'bg-[--hula-color-primary-500]'
+                    : 'bg-[--hula-text-tertiary]',
                   isCurrentUserUid ? 'cursor-pointer' : 'cursor-default'
                 ]"></div>
             </template>
@@ -81,7 +81,7 @@
 
         <n-flex align="center" :size="8">
           <p
-            class="text-(18px [--chat-text-color]) w-fit"
+            class="text-(18px [--hula-text-secondary]) w-fit"
             :class="{ 'cursor-pointer text-underline': isCurrentUserUid }"
             @click="openEditInfo"
             style="
@@ -95,7 +95,7 @@
           </p>
           <span
             v-if="groupNickname && groupNickname !== groupStore.getUserInfo(uid)?.name"
-            class="text-(13px [--chat-text-color])">
+            class="text-(13px [--hula-text-secondary])">
             ({{ groupNickname }})
           </span>
         </n-flex>
@@ -104,12 +104,12 @@
         <n-flex align="center" :size="10">
           <n-flex align="center" :size="12">
             <p class="text-[--info-text-color]">{{ t('home.profile_card.labels.account') }}</p>
-            <span class="text-(12px [--chat-text-color])">{{ `${groupStore.getUserInfo(uid)?.account}` }}</span>
+            <span class="text-(12px [--hula-text-secondary])">{{ `${groupStore.getUserInfo(uid)?.account}` }}</span>
 
             <n-tooltip trigger="hover">
               <template #trigger>
                 <svg
-                  class="size-12px cursor-pointer hover:color-[--color-text-tertiary] hover:transition-colors"
+                  class="size-12px cursor-pointer hover:color-[--hula-text-tertiary] hover:transition-colors"
                   @click="handleCopy">
                   <use href="#copy"></use>
                 </svg>
@@ -120,7 +120,7 @@
             <!-- Gitee/GitHub/GitCode 标识 -->
             <n-tooltip v-if="linkedGitee">
               <template #trigger>
-                <svg class="size-18px color-[--color-danger]"><use href="#gitee-login"></use></svg>
+                <svg class="size-18px color-[--hula-color-danger-500]"><use href="#gitee-login"></use></svg>
               </template>
               <span>{{ t('home.profile_card.tooltip.bound_gitee') }}</span>
             </n-tooltip>
@@ -137,7 +137,7 @@
       <!-- 地址 -->
       <n-flex align="center" :size="26" class="select-none">
         <span class="text-[--info-text-color]">{{ t('home.profile_card.labels.location') }}</span>
-        <span class="text-(13px [--chat-text-color])">
+        <span class="text-(13px [--hula-text-secondary])">
           {{ groupStore.getUserInfo(uid)?.locPlace || t('home.profile_card.location_unknown') }}
         </span>
       </n-flex>
@@ -154,14 +154,14 @@
                   :width="38"
                   :height="38"
                   :src="badgeStore.badgeById(id)?.img"
-                  :color="themes.content === ThemeEnum.DARK ? '' : '#c8c8c8'"
-                  :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  :color="badgeAvatarColor"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   @load="badgeLoadedMap[id] = true"
                   @error="badgeLoadedMap[id] = true" />
                 <n-popover trigger="hover" :show-arrow="false" placement="top">
                   <template #trigger>
                     <svg
-                      class="absolute -top-2px -right-2px size-12px bg-#fff dark:bg-#303030 rounded-full cursor-pointer shadow-sm p-1px">
+                      class="absolute -top-2px -right-2px size-12px bg-[--avatar-border-color] rounded-full cursor-pointer shadow-sm p-1px">
                       <use href="#tips"></use>
                     </svg>
                   </template>
@@ -228,7 +228,10 @@ const { uid, activeStatus } = defineProps<{
 }>()
 const { createWebviewWindow } = useWindow()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
+const avatarColor = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-inverse)'))
+const badgeAvatarColor = computed(() =>
+  settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-disabled)'
+)
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
@@ -339,8 +342,7 @@ const handleCopy = () => {
 
 const addFriend = async () => {
   await createWebviewWindow(t('home.profile_card.modal.add_friend'), 'addFriendVerify', 380, 300, '', false, 380, 300)
-  globalStore.addFriendModalInfo.show = true
-  globalStore.addFriendModalInfo.uid = uid
+  globalStore.openAddFriendModal(uid)
 }
 
 let enableScroll = () => {}
@@ -367,7 +369,7 @@ onMounted(() => {
     .avatar-hover {
       opacity: 0;
       transition: opacity 0.4s ease-in-out;
-      background: rgba(0, 0, 0, 0.2);
+      background: var(--hula-overlay-mask-subtle);
       cursor: pointer;
     }
   }
@@ -379,7 +381,11 @@ onMounted(() => {
 
 .text-underline {
   &:hover {
-    @apply cursor-pointer underline underline-offset-3 decoration-2 decoration-[--color-text-secondary];
+    @apply cursor-pointer underline underline-offset-3 decoration-2 decoration-[--hula-text-secondary];
   }
+}
+
+.developer-cover {
+  background: var(--hula-surface-panel-muted);
 }
 </style>

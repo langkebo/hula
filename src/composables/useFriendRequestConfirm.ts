@@ -23,7 +23,7 @@ export function useFriendRequestConfirm(defaultMessage?: MaybeRefOrGetter<string
   const groupStore = useGroupStore()
   const requestMsg = ref('')
 
-  const targetUid = computed(() => String(globalStore.addFriendModalInfo.uid || ''))
+  const targetUid = computed(() => String(globalStore.addFriendTargetUid || ''))
   const userInfo = computed<FriendConfirmTarget>(() => {
     const uid = targetUid.value
     if (!uid) return emptyTarget()

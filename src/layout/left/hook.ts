@@ -22,7 +22,6 @@ export const leftHook = () => {
   const { menuTop } = storeToRefs(useMenuTopStore())
   const loginHistoriesStore = useLoginHistoriesStore()
   const userStore = useUserStore()
-  const { themes } = settingStore
   const userStatusStore = useUserStatusStore()
   const { currentState } = storeToRefs(userStatusStore)
   const activeUrl = ref<string>(menuTop.value?.[0]?.url || 'message')
@@ -33,7 +32,9 @@ export const leftHook = () => {
   const infoShow = ref(false)
   /** 是否显示上半部分操作栏中的提示 */
   const tipShow = ref(true)
-  const themeColor = ref(themes.content === ThemeEnum.DARK ? 'rgba(63,63,63, 0.2)' : 'rgba(241,241,241, 0.2)')
+  const themeColor = ref(
+    settingStore.themeContent === ThemeEnum.DARK ? 'rgba(63,63,63, 0.2)' : 'rgba(241,241,241, 0.2)'
+  )
   /** 已打开窗口的列表 */
   const openWindowsList = ref(new Set<string>())
   /** 编辑资料弹窗 */
@@ -60,7 +61,7 @@ export const leftHook = () => {
 
   watchEffect(() => {
     /** 判断是否是跟随系统主题 */
-    if (themes.pattern === ThemeEnum.OS) {
+    if (settingStore.themePattern === ThemeEnum.OS) {
       followOS()
       prefers.addEventListener('change', followOS)
     } else {

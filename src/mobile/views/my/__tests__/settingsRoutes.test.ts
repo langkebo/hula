@@ -18,12 +18,6 @@ describe('settingsRoutes', () => {
     expect(MOBILE_SETTINGS_RELATIVE_PATHS.labsIntegrations).toBe(
       `${SETTINGS_CANONICAL_ROUTE_SEGMENTS.labs}/${SETTINGS_LABS_CHILD_ROUTE_SEGMENTS.integrations}`
     )
-  })
-
-  it('keeps mobile aliases and full paths stable for compatibility redirects', () => {
-    expect(MOBILE_SETTINGS_RELATIVE_PATHS.legacyIntegrations).toBe(SETTINGS_LABS_CHILD_ROUTE_SEGMENTS.integrations)
-    expect(MOBILE_SETTINGS_RELATIVE_PATHS.legacySecurity).toBe('security')
-    expect(MOBILE_SETTINGS_RELATIVE_PATHS.legacyHelp).toBe('help')
     expect(MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH).toBe('/mobile/mobileMy/labs/integrations')
     expect(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH).toBe('/mobile/mobileMy/security-privacy')
     expect(MOBILE_SETTINGS_HELP_ABOUT_PATH).toBe('/mobile/mobileMy/help-about')

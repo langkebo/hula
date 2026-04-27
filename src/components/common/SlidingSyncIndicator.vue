@@ -56,21 +56,21 @@ const statusText = computed(() => {
 }
 
 .sliding-sync-indicator--syncing {
-  background: var(--color-info-light);
-  border-color: var(--color-info)/30;
-  color: var(--color-info);
+  background: var(--hula-color-info-100);
+  border-color: color-mix(in srgb, var(--hula-color-info-500) 30%, transparent);
+  color: var(--hula-color-info-500);
 }
 
 .sliding-sync-indicator--complete {
-  background: var(--color-success-light);
-  border-color: var(--color-success)/30;
-  color: var(--color-success);
+  background: var(--hula-color-success-100);
+  border-color: color-mix(in srgb, var(--hula-color-success-500) 30%, transparent);
+  color: var(--hula-color-success-500);
 }
 
 .sliding-sync-indicator--error {
-  background: var(--color-danger-hover);
-  border-color: var(--color-danger)/30;
-  color: var(--color-danger);
+  background: var(--hula-color-danger-100);
+  border-color: color-mix(in srgb, var(--hula-color-danger-500) 30%, transparent);
+  color: var(--hula-color-danger-500);
 }
 
 .sliding-sync-indicator__icon {

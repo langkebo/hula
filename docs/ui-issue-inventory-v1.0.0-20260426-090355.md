@@ -66,6 +66,20 @@
 | S-09 | 空间入口点击后的路由异常或不可达状态 | 证明死链问题 |
 | S-10 | 新旧设置容器标题区和边栏对比 | 证明布局策略不一致 |
 
+## 当前处理进展
+
+- 更新时间: `2026-04-27`
+- 已局部缓解的问题:
+  - `UI-003`: 当前已明确以 `src/styles/css/design-tokens.css` 为运行时权威 Token 注册中心，并继续把 `simple.scss`、`variable.scss`、`default.scss` 的主题别名回收至 `--hula-*`；菜单浮层、Beta 辅助色和管理后台色板也已开始进入同一 Token 注册中心，`variable.scss` 中无外部消费的 `--box-shadow-color`、`--emoji-hover`、`--emoji-active-color` 也已完成物理删除
+  - `UI-012`: `simple.scss` 与 `variable.scss` 已完成两轮高频硬编码色值替换，覆盖侧边栏、消息列表、图标、禁用态、插件区、文件区、消息气泡、回复态、菜单层与管理后台色板等区域；`settingsWindow` 的全部 16 个 Tab，以及 `ChatSidebar.vue`、`ReactionPicker.vue`、`MessageEditor.vue`、`Announcement.vue`、`LinkPreview.vue`、`Location.vue`、`Beacon.vue`、`AddFriendDialog.vue`、`FriendGroupView.vue`、`InviteDialog.vue`、`CreateRoomDialog.vue`、`ChatMain.vue`、`ChatFooter.vue`、`ChatMsgMultiChoose.vue`、`Text.vue`、`File.vue`、`Voice.vue`、`ChatMultiMsg.vue`、`renderMessage/index.vue`、`Image.vue`、`Emoji.vue`、`Video.vue`、`special/BotMessage.vue`、`ChatHeaderRoot.vue`、`ChatHeaderSidebar.vue`、`ChatHeaderInfo.vue`、`ForwardDialog.vue`、`ApplyList.vue`、`ReplyComposer.vue`、`RenderPollMessage.vue`、`LocationModal.vue`、`MsgInput.vue`、`VoiceRecorder.vue`、`emoticon/index.vue`、`chatBox/HuLaAssistant.vue`、`chatBox/Bot.vue` 与共享 `render-message.scss`、`msg-input.scss` 等右侧聊天区高频组件也已完成一轮向 `--hula-*` 的样式迁移
+  - `UI-015`: 主工作区 `src/layout/center/model.tsx` 已去除两处直接写死的灰色文字样式，右侧聊天主区的 `ChatMain.vue`、`ChatFooter.vue`、`ChatMsgMultiChoose.vue`、`ChatHeaderRoot.vue`、`ChatHeaderSidebar.vue`、`ChatHeaderInfo.vue`、`ForwardDialog.vue`、`ApplyList.vue`、`ReplyComposer.vue`、`RenderPollMessage.vue`、`LocationModal.vue`、`MsgInput.vue`、`VoiceRecorder.vue`、`emoticon/index.vue`、`chatBox/HuLaAssistant.vue`、`chatBox/Bot.vue`、`chatBox/index.vue`、`location/StaticProxyMap.vue`、`location/LocationMap.vue`、`components/search/SpotlightDialog.vue` 与消息组件 `Text.vue`、`File.vue`、`Voice.vue`、`Image.vue`、`Emoji.vue`、`Video.vue`、`special/BotMessage.vue`、共享 `render-message.scss`、`msg-input.scss` 也已继续清理链接卡片、弹层、进度环、媒体遮罩、失败态、回复态、公告态、定位面板、输入联想层、表情面板、语音录制面板、机器人工作区、分割拖拽柄、地图控件、搜索弹窗和占位遮罩中的十六进制/rgba 色值与历史别名
+- 仍未解决的关键问题:
+  - `UI-001`、`UI-008`、`UI-010`: 设置壳层双实现与旧设置隐藏依赖仍然存在
+  - `UI-002`: `default.scss` 虽已开始改为直接消费 `--hula-*`，且当前未见桌面端显式运行时导入；`setting.ts` 中 `themes.versatile` 固定为 `simple`，代码侧也未发现 `.default` 主题类动态挂载，但仓库内仍保留该文件，主题代码层尚未完成物理清理
+  - `UI-005`、`UI-006`、`UI-009`、`UI-014`: 主工作区与房间/空间统一承载仍未开始实施
+  - `UI-004`、`UI-013`: 旧别名变量、悬空变量与设置壳层之外的样式消费点仍有进一步清理空间；`FileContent.vue`、`AvatarCropper.vue`、`ContextMenu.vue`、`InfoEdit.vue`、`InfoPopover.vue`、`definePlugins/List.vue`、`model.tsx`、`Login.vue` 中已确认的 `--line-color`、`--chat-text-color` 消费点已完成收敛
+  - `UI-011`: 设置偏好页中的语言选项和发送键选项已改为消费 i18n 文案键，设置壳层的导航标题、当前标签标题与搜索索引也已接入运行时翻译来源，`SettingsDialog.vue`、`useSettingsShell.ts`、`settingsSearchIndex.ts` 与 `settingsSchema.ts` 已完成一轮联动收敛；但设置体系其余日志与提示文案仍需继续统一
+
 ## 总体结论
 
 - 当前桌面端 UI 的核心问题不是单点缺陷，而是“主题、容器、组件、入口、交互”五层同时存在历史并存。

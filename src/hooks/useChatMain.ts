@@ -59,7 +59,6 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   const { createWebviewWindow, sendWindowPayload, startRtcCall } = useWindow()
   const { getLocalVideoPath, checkVideoDownloaded } = useVideoViewer()
   const settingStore = useSettingStore()
-  const { chat } = storeToRefs(settingStore)
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()
   const chatStore = useChatStore()
@@ -298,11 +297,11 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           return
         }
 
-        item.message.body.translatedText = { provider: chat.value.translate || 'client', text: '' }
+        item.message.body.translatedText = { provider: settingStore.chatTranslateProvider || 'client', text: '' }
         try {
-          const translatedText = await matrixRoomService.translateText(content, chat.value.translate)
+          const translatedText = await matrixRoomService.translateText(content, settingStore.chatTranslateProvider)
           item.message.body.translatedText = {
-            provider: chat.value.translate || 'client',
+            provider: settingStore.chatTranslateProvider || 'client',
             text: translatedText || content
           }
         } catch (error) {
@@ -603,8 +602,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       icon: 'people-plus',
       click: async (item: ContextMenuItem) => {
         await createWebviewWindow('申请加好友', 'addFriendVerify', 380, 300, '', false, 380, 300)
-        globalStore.addFriendModalInfo.show = true
-        globalStore.addFriendModalInfo.uid = item.uid || item.fromUser.uid
+        globalStore.openAddFriendModal(item.uid || item.fromUser.uid)
       },
       visible: (item: ContextMenuItem) => !checkFriendRelation(item.uid || item.fromUser.uid, 'all')
     },

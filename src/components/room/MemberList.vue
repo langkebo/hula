@@ -142,7 +142,7 @@ const regularMembers = computed(() => filteredMembers.value.filter((m) => m.powe
 }
 
 .member-count {
-  @apply text-12px color-[--color-text-tertiary];
+  @apply text-12px color-[--hula-text-tertiary];
 }
 
 .member-filter {
@@ -158,14 +158,14 @@ const regularMembers = computed(() => filteredMembers.value.filter((m) => m.powe
 }
 
 .group-label {
-  @apply text-12px color-[--color-text-tertiary] px-4px;
+  @apply text-12px color-[--hula-text-tertiary] px-4px;
 }
 
 .member-item {
   @apply flex items-center gap-10px p-8px rounded-8px cursor-pointer transition-all;
 
   &:hover {
-    background: var(--emoji-hover);
+    background: var(--hula-fill-hover);
   }
 }
 
@@ -178,23 +178,23 @@ const regularMembers = computed(() => filteredMembers.value.filter((m) => m.powe
 }
 
 .member-role {
-  @apply text-12px color-[--color-primary];
+  @apply text-12px color-[--hula-color-primary-500];
 }
 
 .member-status {
   @apply flex-center;
 
   &.join .status-dot {
-    @apply w-8px h-8px rounded-full bg-[--color-success];
+    @apply w-8px h-8px rounded-full bg-[--hula-color-success-500];
   }
 
   &.invite .status-dot {
-    @apply w-8px h-8px rounded-full bg-[--color-warning];
+    @apply w-8px h-8px rounded-full bg-[--hula-color-warning-500];
   }
 
   &.leave .status-dot,
   &.ban .status-dot {
-    @apply w-8px h-8px rounded-full bg-[--color-text-tertiary];
+    @apply w-8px h-8px rounded-full bg-[--hula-text-tertiary];
   }
 }
 </style>

@@ -53,7 +53,7 @@
               <span>{{ serverHealth?.healthy ? t('admin.dashboard.healthy') : t('admin.dashboard.unhealthy') }}</span>
             </div>
           </div>
-          <n-descriptions bordered :column="1" label-placement="left" style="margin-top: 12px">
+          <n-descriptions bordered :column="1" label-placement="left" class="server-version-descriptions">
             <n-descriptions-item :label="t('admin.dashboard.version')">
               {{ serverVersion?.serverVersion || '-' }}
             </n-descriptions-item>
@@ -88,25 +88,25 @@ const statCards = computed(() => [
     label: t('admin.dashboard.totalUsers'),
     value: stats.value?.userCount ?? 0,
     icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
-    color: 'var(--color-info)'
+    color: 'var(--hula-color-info-500)'
   },
   {
     label: t('admin.dashboard.totalRooms'),
     value: stats.value?.roomCount ?? 0,
     icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
-    color: 'var(--color-success)'
+    color: 'var(--hula-color-success-500)'
   },
   {
     label: t('admin.dashboard.dailyActive'),
     value: stats.value?.dailyActiveUsers ?? 0,
     icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
-    color: 'var(--color-warning)'
+    color: 'var(--hula-color-warning-500)'
   },
   {
     label: t('admin.dashboard.monthlyActive'),
     value: stats.value?.monthlyActiveUsers ?? 0,
     icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
-    color: 'var(--bate-color)'
+    color: 'var(--hula-color-beta-500)'
   }
 ])
 
@@ -189,12 +189,12 @@ onMounted(loadData)
 .stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: var(--admin-title-color);
+  color: var(--admin-stat-value-color);
 }
 
 .stat-label {
   font-size: 13px;
-  color: var(--color-text-quaternary);
+  color: var(--hula-text-quaternary);
   margin-top: 2px;
 }
 
@@ -225,6 +225,10 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.server-version-descriptions {
+  margin-top: 12px;
 }
 
 .health-indicator {

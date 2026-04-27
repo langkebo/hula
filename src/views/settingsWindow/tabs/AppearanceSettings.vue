@@ -1,7 +1,7 @@
 <template>
   <div class="appearance-settings">
     <div class="settings-section">
-      <h3 class="section-title">主题</h3>
+      <h3 class="section-title">{{ t('setting.appearance.theme_section') }}</h3>
       <div class="theme-options">
         <div
           v-for="theme in themeOptions"
@@ -21,11 +21,11 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">字体设置</h3>
+      <h3 class="section-title">{{ t('setting.appearance.font_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">字体</span>
-          <span class="setting-desc">选择界面显示字体</span>
+          <span class="setting-label">{{ t('setting.appearance.font_label') }}</span>
+          <span class="setting-desc">{{ t('setting.appearance.font_desc') }}</span>
         </div>
         <n-select
           v-model:value="fontFamily"
@@ -35,8 +35,8 @@
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">字体大小</span>
-          <span class="setting-desc">调整界面字体大小</span>
+          <span class="setting-label">{{ t('setting.appearance.font_size_label') }}</span>
+          <span class="setting-desc">{{ t('setting.appearance.font_size_desc') }}</span>
         </div>
         <div class="font-size-control">
           <n-slider
@@ -54,18 +54,18 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">界面效果</h3>
+      <h3 class="section-title">{{ t('setting.appearance.effects_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">窗口阴影</span>
-          <span class="setting-desc">为窗口添加阴影效果</span>
+          <span class="setting-label">{{ t('setting.appearance.window_shadow_label') }}</span>
+          <span class="setting-desc">{{ t('setting.appearance.window_shadow_desc') }}</span>
         </div>
         <n-switch v-model:value="windowShadow" @update:value="handleShadowChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">模糊效果</span>
-          <span class="setting-desc">启用窗口模糊背景</span>
+          <span class="setting-label">{{ t('setting.appearance.blur_label') }}</span>
+          <span class="setting-desc">{{ t('setting.appearance.blur_desc') }}</span>
         </div>
         <n-switch v-model:value="blurEffect" @update:value="handleBlurChange" />
       </div>
@@ -74,15 +74,15 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">消息气泡</h3>
+      <h3 class="section-title">{{ t('setting.appearance.bubble_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">气泡样式</span>
-          <span class="setting-desc">选择消息气泡显示样式</span>
+          <span class="setting-label">{{ t('setting.appearance.bubble_style_label') }}</span>
+          <span class="setting-desc">{{ t('setting.appearance.bubble_style_desc') }}</span>
         </div>
         <n-switch v-model:value="bubbleStyle" @update:value="handleBubbleStyleChange">
-          <template #checked>圆角</template>
-          <template #unchecked>方角</template>
+          <template #checked>{{ t('setting.appearance.bubble_rounded') }}</template>
+          <template #unchecked>{{ t('setting.appearance.bubble_square') }}</template>
         </n-switch>
       </div>
     </div>
@@ -91,8 +91,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { NSlider, NSwitch, NDivider, NSelect, useMessage } from 'naive-ui'
-import { storeToRefs } from 'pinia'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 defineOptions({
@@ -100,30 +100,30 @@ defineOptions({
 })
 
 const message = useMessage()
+const { t } = useI18n()
 const settingStore = useSettingStore()
-const { themes, page } = storeToRefs(settingStore)
 
-const themeOptions = [
-  { value: 'light', label: '亮色', previewClass: 'preview-light' },
-  { value: 'dark', label: '暗色', previewClass: 'preview-dark' },
-  { value: 'os', label: '跟随系统', previewClass: 'preview-auto' }
-]
+const themeOptions = computed(() => [
+  { value: 'light', label: t('setting.appearance.theme_light'), previewClass: 'preview-light' },
+  { value: 'dark', label: t('setting.appearance.theme_dark'), previewClass: 'preview-dark' },
+  { value: 'os', label: t('setting.appearance.theme_auto'), previewClass: 'preview-auto' }
+])
 
-const fontOptions = [
-  { label: '默认字体', value: 'PingFang' },
-  { label: '微软雅黑', value: 'Microsoft YaHei' },
-  { label: '苹方', value: 'PingFang SC' },
-  { label: '思源黑体', value: 'Source Han Sans' }
-]
+const fontOptions = computed(() => [
+  { label: t('setting.appearance.font_default'), value: 'PingFang' },
+  { label: t('setting.appearance.font_microsoft_yahei'), value: 'Microsoft YaHei' },
+  { label: t('setting.appearance.font_pingfang_sc'), value: 'PingFang SC' },
+  { label: t('setting.appearance.font_source_han_sans'), value: 'Source Han Sans' }
+])
 
 const currentTheme = computed(() => {
-  return themes.value.pattern === 'os' ? 'os' : themes.value.content
+  return settingStore.themePattern === 'os' ? 'os' : settingStore.themeContent
 })
 
-const fontFamily = ref(page.value.fonts || 'PingFang')
+const fontFamily = ref(settingStore.pageFontFamily)
 const fontSize = ref(14)
-const windowShadow = ref(page.value.shadow ?? true)
-const blurEffect = ref(page.value.blur ?? true)
+const windowShadow = ref(settingStore.pageShadowEnabled)
+const blurEffect = ref(settingStore.pageBlurEnabled)
 const bubbleStyle = ref(true)
 
 onMounted(() => {
@@ -141,19 +141,19 @@ onMounted(() => {
 
 function handleThemeChange(theme: string) {
   settingStore.toggleTheme(theme)
-  message.success('主题已切换')
+  message.success(t('setting.appearance.feedback.theme_changed'))
 }
 
 function handleFontChange(value: string) {
-  settingStore.page.fonts = value
+  settingStore.setPageFont(value)
   document.documentElement.style.setProperty('--font-family', value)
-  message.success('字体已更改')
+  message.success(t('setting.appearance.feedback.font_changed'))
 }
 
 function handleFontSizeChange(value: number) {
   applyFontSize(value)
   localStorage.setItem('hula-font-size', value.toString())
-  message.success(`字体大小已调整为 ${value}px`)
+  message.success(t('setting.appearance.feedback.font_size_changed', { size: String(value) }))
 }
 
 function applyFontSize(size: number) {
@@ -161,39 +161,48 @@ function applyFontSize(size: number) {
 }
 
 function handleShadowChange(value: boolean) {
-  settingStore.page.shadow = value
-  message.success(value ? '已启用窗口阴影' : '已禁用窗口阴影')
+  settingStore.setPageShadowEnabled(value)
+  message.success(
+    value
+      ? t('setting.appearance.feedback.window_shadow_enabled')
+      : t('setting.appearance.feedback.window_shadow_disabled')
+  )
 }
 
 function handleBlurChange(value: boolean) {
-  settingStore.page.blur = value
-  message.success(value ? '已启用模糊效果' : '已禁用模糊效果')
+  settingStore.setPageBlurEnabled(value)
+  message.success(
+    value ? t('setting.appearance.feedback.blur_enabled') : t('setting.appearance.feedback.blur_disabled')
+  )
 }
 
 function handleBubbleStyleChange(value: boolean) {
   localStorage.setItem('hula-bubble-style', value.toString())
-  message.success(value ? '已切换为圆角气泡' : '已切换为方角气泡')
+  message.success(
+    value ? t('setting.appearance.feedback.bubble_rounded') : t('setting.appearance.feedback.bubble_square')
+  )
 }
 </script>
 
 <style scoped>
 .appearance-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-4);
+  color: var(--hula-text-primary);
 }
 
 .theme-options {
   display: flex;
-  gap: 16px;
+  gap: var(--hula-space-4);
 }
 
 .theme-option {
@@ -201,55 +210,59 @@ function handleBubbleStyleChange(value: boolean) {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
+  padding: var(--hula-space-2);
+  border-radius: var(--hula-radius-sm);
   border: 2px solid transparent;
-  transition: border-color 0.2s;
+  transition: border-color var(--hula-motion-duration-normal) var(--hula-motion-ease-standard);
 }
 
 .theme-option:hover {
-  border-color: var(--color-info) / 30;
+  border-color: color-mix(in srgb, var(--hula-color-info-500) 30%, transparent);
 }
 
 .theme-option-active {
-  border-color: var(--color-info);
+  border-color: var(--hula-color-info-500);
 }
 
 .theme-preview {
   width: 80px;
   height: 60px;
-  border-radius: 8px;
+  border-radius: var(--hula-radius-sm);
   display: flex;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: var(--hula-space-2);
 }
 
 .preview-light {
-  background-color: #f5f5f5;
+  background-color: var(--hula-settings-preview-light-shell);
 }
 
 .preview-light .preview-sidebar {
-  background-color: #e8e8e8;
+  background-color: var(--hula-settings-preview-light-sidebar);
 }
 
 .preview-light .preview-content {
-  background-color: #fff;
+  background-color: var(--hula-settings-preview-light-content);
 }
 
 .preview-dark {
-  background-color: #1a1a1a;
+  background-color: var(--hula-settings-preview-dark-shell);
 }
 
 .preview-dark .preview-sidebar {
-  background-color: #2a2a2a;
+  background-color: var(--hula-settings-preview-dark-sidebar);
 }
 
 .preview-dark .preview-content {
-  background-color: #333;
+  background-color: var(--hula-settings-preview-dark-content);
 }
 
 .preview-auto {
-  background: linear-gradient(135deg, #f5f5f5 50%, #1a1a1a 50%);
+  background: linear-gradient(
+    135deg,
+    var(--hula-settings-preview-light-shell) 50%,
+    var(--hula-settings-preview-dark-shell) 50%
+  );
 }
 
 .preview-sidebar {
@@ -259,29 +272,21 @@ function handleBubbleStyleChange(value: boolean) {
 
 .preview-content {
   flex: 1;
-  margin: 4px;
-  border-radius: 4px;
+  margin: var(--hula-space-1);
+  border-radius: var(--hula-radius-xs);
 }
 
 .theme-label {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-
-:deep(.dark) .theme-label {
-  color: #aaa;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-secondary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -290,24 +295,25 @@ function handleBubbleStyleChange(value: boolean) {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .font-size-control {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--hula-space-3);
 }
 
 .font-value {
-  font-size: 12px;
-  color: var(--color-text-secondary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-secondary);
   min-width: 36px;
 }
 </style>

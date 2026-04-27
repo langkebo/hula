@@ -189,7 +189,7 @@ import { MOBILE_SETTINGS_HELP_ABOUT_PATH, MOBILE_SETTINGS_SECURITY_PRIVACY_PATH 
 
 const logger = createLogger('MobileSettings')
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const router = useRouter()
 const globalStore = useGlobalStore()
 const { isTrayMenuShow } = storeToRefs(globalStore)
@@ -198,16 +198,13 @@ const userStatusStore = useUserStatusStore()
 const advancedSettingsItems = MOBILE_ADVANCED_SETTINGS_ITEMS
 
 const themeValue = computed({
-  get: () => settingStore.themes.content,
+  get: () => settingStore.themeContent,
   set: (val) => settingStore.toggleTheme(val)
 })
 
 const languageValue = computed({
-  get: () => settingStore.page.lang,
-  set: (v) => {
-    settingStore.page.lang = v
-    locale.value = v === 'zh-CN' ? 'zh-CN' : 'en'
-  }
+  get: () => settingStore.languagePreference,
+  set: (v) => settingStore.setLanguage(v)
 })
 
 const currentStatusId = computed(() => userStatusStore.stateId || 'online')

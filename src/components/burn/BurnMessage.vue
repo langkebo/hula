@@ -1,5 +1,7 @@
 <template>
-  <div class="burn-message" :class="{ 'burn-message--burning': internalIsBurning, 'burn-message--burned': internalIsBurned }">
+  <div
+    class="burn-message"
+    :class="{ 'burn-message--burning': internalIsBurning, 'burn-message--burned': internalIsBurned }">
     <div class="burn-message__content">
       <slot></slot>
     </div>
@@ -139,8 +141,8 @@ const indicatorStatus = computed(() => {
 }
 
 .burn-message--burning {
-  border-color: rgba(255, 87, 87, 0.5);
-  box-shadow: 0 0 12px rgba(255, 87, 87, 0.2);
+  border-color: color-mix(in srgb, var(--hula-color-danger-500) 50%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--hula-color-danger-500) 20%, transparent);
 }
 
 .burn-message--burned {
@@ -166,7 +168,7 @@ const indicatorStatus = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.9);
+  background: color-mix(in srgb, var(--hula-surface-panel) 90%, transparent);
   backdrop-filter: blur(2px);
   border-radius: 12px;
   z-index: 10;
@@ -175,13 +177,13 @@ const indicatorStatus = computed(() => {
 .burn-message__burned-icon {
   width: 32px;
   height: 32px;
-  color: var(--color-text-tertiary);
+  color: var(--hula-text-tertiary);
   margin-bottom: 8px;
 }
 
 .burn-message__burned-text {
   font-size: 12px;
-  color: var(--color-text-tertiary);
+  color: var(--hula-text-tertiary);
 }
 
 .burn-fade-enter-active,

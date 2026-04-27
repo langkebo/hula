@@ -3,7 +3,9 @@ import {
   SETTINGS_LABS_CHILD_ROUTE_SEGMENTS,
   SETTINGS_LEGACY_TAB_MAP,
   SETTINGS_TABS,
+  getSettingsTabLabel,
   type LegacySettingsTabType,
+  type SettingsTabTranslator,
   type SettingsTabType
 } from '@/stores/domains/settings/settingsSchema'
 
@@ -67,12 +69,12 @@ function getLegacyTerms(tabId: SettingsTabType): string[] {
     .map(([legacyTabId]) => legacyTabId)
 }
 
-function buildSettingsSearchIndex(): SettingsSearchEntry[] {
+function buildSettingsSearchIndex(t?: SettingsTabTranslator): SettingsSearchEntry[] {
   return SETTINGS_TABS.map((tab) => ({
     id: tab.id,
     terms: uniqueTerms([
       tab.id,
-      tab.label,
+      getSettingsTabLabel(tab.id, t),
       ...getLegacyTerms(tab.id),
       ...(SETTINGS_SEARCH_KEYWORDS[tab.id] ?? []),
       ...(ROUTE_TERMS[tab.id] ?? [])
@@ -82,11 +84,12 @@ function buildSettingsSearchIndex(): SettingsSearchEntry[] {
 
 export const SETTINGS_SEARCH_INDEX = buildSettingsSearchIndex()
 
-export function matchesSettingsSearch(tabId: SettingsTabType, query?: string): boolean {
+export function matchesSettingsSearch(tabId: SettingsTabType, query?: string, t?: SettingsTabTranslator): boolean {
   const normalizedQuery = normalizeSearchTerm(query || '')
   if (!normalizedQuery) return true
 
-  const entry = SETTINGS_SEARCH_INDEX.find((item) => item.id === tabId)
+  const searchIndex = t ? buildSettingsSearchIndex(t) : SETTINGS_SEARCH_INDEX
+  const entry = searchIndex.find((item) => item.id === tabId)
   if (!entry) return false
 
   return entry.terms.some((term) => term.includes(normalizedQuery))

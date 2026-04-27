@@ -4,7 +4,6 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { EventEnum, TauriCommand } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
 import { switchUserDatabase } from '@/services/tauriCommand'
-import { useConfigStore } from '@/stores/domains/settings/config'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
@@ -315,7 +314,6 @@ class MatrixRuntimeSessionService {
 
   async bootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
     try {
-      const configStore = useConfigStore()
       const userStore = useUserStore()
       const loginHistoriesStore = useLoginHistoriesStore()
       const matrixStore = useMatrixStore()
@@ -357,13 +355,6 @@ class MatrixRuntimeSessionService {
       void emojiStore.initEmojis().catch(() => {
         logger.warn('[login] 初始化表情失败')
       })
-
-      const cachedConfig = localStorage.getItem('config')
-      if (cachedConfig) {
-        configStore.config = JSON.parse(cachedConfig).config
-      } else {
-        await configStore.initConfig()
-      }
 
       void emojiStore.prefetchEmojiToLocal().catch(() => {
         logger.warn('[login] 预热表情缓存失败')

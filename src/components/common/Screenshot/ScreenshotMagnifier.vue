@@ -21,6 +21,9 @@ const props = defineProps<{
 const magnifierRef = ref<HTMLDivElement | null>(null)
 const magnifierCanvas = ref<HTMLCanvasElement | null>(null)
 const magnifierCtx = ref<CanvasRenderingContext2D | null>(null)
+const selectionBorderColor = getComputedStyle(document.documentElement)
+  .getPropertyValue('--hula-color-primary-500')
+  .trim()
 
 const defaultConfig: MagnifierConfig = {
   width: 120,
@@ -125,7 +128,7 @@ const handleMouseMove = (event: MouseEvent) => {
     mergedConfig.value.height
   )
 
-  magnifierCtx.value.strokeStyle = '#13987f'
+  magnifierCtx.value.strokeStyle = selectionBorderColor || 'black'
   magnifierCtx.value.lineWidth = 1
   magnifierCtx.value.beginPath()
   magnifierCtx.value.moveTo(mergedConfig.value.width / 2, 0)
@@ -149,12 +152,12 @@ defineExpose({
   pointer-events: none;
   width: 120px;
   height: 120px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--hula-border-strong);
   border-radius: 12px;
   overflow: hidden;
   display: none;
-  background: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  background: var(--hula-surface-panel);
+  box-shadow: var(--hula-shadow-md);
 
   canvas {
     display: block;

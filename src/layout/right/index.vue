@@ -28,7 +28,7 @@
 </template>
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { MittEnum, ThemeEnum, RoomTypeEnum } from '@/enums'
+import { MittEnum, ThemeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
 import type { DetailsContent } from '@/services/types'
@@ -37,12 +37,11 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 
 const appWindow = WebviewWindow.getCurrent()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 const globalStore = useGlobalStore()
 const { currentSessionRoomId } = storeToRefs(globalStore)
 const detailsShow = ref(false)
 const detailsContent = ref<DetailsContent>()
-const imgTheme = ref<ThemeEnum>(themes.value.content)
+const imgTheme = ref<ThemeEnum>(settingStore.themeContent)
 const prefers = matchMedia('(prefers-color-scheme: dark)')
 const isChatRoute = computed(() => router.currentRoute.value.path.includes('/message'))
 // 只要路由在消息页且选中了会话（即便会话详情尚未同步），就展示 ChatBox
@@ -57,11 +56,11 @@ const followOS = () => {
 }
 
 watchEffect(() => {
-  if (themes.value.pattern === ThemeEnum.OS) {
+  if (settingStore.themePattern === ThemeEnum.OS) {
     followOS()
     prefers.addEventListener('change', followOS)
   } else {
-    imgTheme.value = themes.value.content || ThemeEnum.LIGHT
+    imgTheme.value = settingStore.themeContent || ThemeEnum.LIGHT
     prefers.removeEventListener('change', followOS)
   }
 })

@@ -94,7 +94,7 @@ export const renderSourceList = (
 
     return (
       <div class="select-none">
-        {placeholder && <div class="text-(12px [--chat-text-color]) pb-6px">{placeholder}</div>}
+        {placeholder && <div class="text-(12px [--hula-text-secondary]) pb-6px">{placeholder}</div>}
         {displayOptions.map((option: SelectOption) => {
           // 判断是否是预选中的好友（仅在启用预选中时生效）
           const isPreSelected = enablePreSelection && option.value === preSelectedFriendId
@@ -187,7 +187,7 @@ export const renderTargetList = (
 
     return (
       <div>
-        {placeholder && <div class="text-(12px [--chat-text-color]) pb-6px">{placeholder}</div>}
+        {placeholder && <div class="text-(12px [--hula-text-secondary]) pb-6px">{placeholder}</div>}
         {(displayOptions as SelectOption[]).map((option) => {
           const isPreSelected = enablePreSelection && option.value === preSelectedFriendId
 
@@ -223,7 +223,7 @@ export const renderTargetList = (
                     height: '12px',
                     cursor: 'pointer',
                     marginLeft: '8px',
-                    color: '#909090'
+                    color: 'var(--hula-text-tertiary)'
                   }}
                   onClick={() => {
                     const newCheckedOptions = checkedOptions.filter((o) => o.value !== option.value)
@@ -237,7 +237,7 @@ export const renderTargetList = (
                 <div
                   style={{
                     fontSize: '10px',
-                    color: '#909090',
+                    color: 'var(--hula-text-tertiary)',
                     marginLeft: '8px'
                   }}>
                   {requiredTag}

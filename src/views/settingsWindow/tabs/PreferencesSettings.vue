@@ -1,11 +1,11 @@
 <template>
   <div class="preferences-settings">
     <div class="settings-section">
-      <h3 class="section-title">语言</h3>
+      <h3 class="section-title">{{ t('setting.preferences.language_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">界面语言</span>
-          <span class="setting-desc">选择应用显示语言</span>
+          <span class="setting-label">{{ t('setting.preferences.interface_language_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.interface_language_desc') }}</span>
         </div>
         <n-select
           v-model:value="language"
@@ -18,18 +18,18 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">启动与存储</h3>
+      <h3 class="section-title">{{ t('setting.preferences.startup_storage_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">自动登录</span>
-          <span class="setting-desc">启动应用后自动恢复上次登录状态</span>
+          <span class="setting-label">{{ t('setting.preferences.auto_login_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.auto_login_desc') }}</span>
         </div>
         <n-switch v-model:value="autoLogin" @update:value="handleAutoLoginChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">开机启动</span>
-          <span class="setting-desc">系统启动后自动启动桌面端应用</span>
+          <span class="setting-label">{{ t('setting.preferences.auto_startup_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.auto_startup_desc') }}</span>
         </div>
         <n-switch
           v-model:value="autoStartup"
@@ -40,17 +40,17 @@
       <div class="storage-panel">
         <div class="storage-panel-header">
           <div class="setting-info">
-            <span class="setting-label">本地存储目录</span>
-            <span class="setting-desc">统一管理扫描目录并查看当前空间占用</span>
+            <span class="setting-label">{{ t('setting.preferences.storage_directory_label') }}</span>
+            <span class="setting-desc">{{ t('setting.preferences.storage_directory_desc') }}</span>
           </div>
           <n-button size="small" :disabled="scanning || !currentDirectory" @click="startScan">
-            {{ scanning ? '扫描中' : '开始扫描' }}
+            {{ scanning ? t('setting.storage.scanning') : t('setting.storage.start_scan') }}
           </n-button>
         </div>
         <div class="storage-path-row">
           <n-radio-group v-model:value="pathType" @update:value="handleStoragePathTypeChange">
-            <n-radio value="default">默认目录</n-radio>
-            <n-radio value="custom">自定义目录</n-radio>
+            <n-radio value="default">{{ t('setting.storage.path_type_default') }}</n-radio>
+            <n-radio value="custom">{{ t('setting.storage.path_type_custom') }}</n-radio>
           </n-radio-group>
           <n-button
             v-if="pathType === 'custom'"
@@ -58,20 +58,17 @@
             secondary
             :disabled="scanning"
             @click="selectCustomDirectory">
-            选择目录
+            {{ t('setting.storage.select_directory') }}
           </n-button>
         </div>
-        <div class="storage-directory">{{ currentDirectory || '正在获取目录...' }}</div>
+        <div class="storage-directory">{{ currentDirectory || t('setting.storage.fetching_directory') }}</div>
         <div class="storage-stats">
-          <span>已处理 {{ scanProgress.files_processed }} 个文件</span>
-          <span>目录大小 {{ formatBytes(scanProgress.total_size) }}</span>
           <span>
-            {{
-              showDiskUsage && diskInfo
-                ? `磁盘占用 ${diskInfo.disk_usage_percentage.toFixed(2)}%`
-                : `扫描进度 ${scanningProgress.toFixed(0)}%`
-            }}
+            {{ t('setting.storage.processed_files') }}
+            {{ t('setting.storage.processed_files_unit', { count: scanProgress.files_processed ?? 0 }) }}
           </span>
+          <span>{{ t('setting.storage.total_size') }} {{ formatBytes(scanProgress.total_size) }}</span>
+          <span>{{ storageProgressText }}</span>
         </div>
         <n-progress
           type="line"
@@ -87,11 +84,11 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">消息发送</h3>
+      <h3 class="section-title">{{ t('setting.preferences.messaging_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">发送键</span>
-          <span class="setting-desc">选择发送消息的快捷键</span>
+          <span class="setting-label">{{ t('setting.preferences.send_key_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.send_key_desc') }}</span>
         </div>
         <n-select
           v-model:value="sendKey"
@@ -101,15 +98,15 @@
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">消息确认</span>
-          <span class="setting-desc">发送前显示确认对话框</span>
+          <span class="setting-label">{{ t('setting.preferences.message_confirm_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.message_confirm_desc') }}</span>
         </div>
         <n-switch v-model:value="messageConfirm" @update:value="handleConfirmChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">消息撤回时间</span>
-          <span class="setting-desc">设置消息可撤回的时间窗口</span>
+          <span class="setting-label">{{ t('setting.preferences.recall_time_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.recall_time_desc') }}</span>
         </div>
         <n-select v-model:value="recallTime" :options="recallTimeOptions" style="width: 150px" />
       </div>
@@ -118,11 +115,11 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">链接预览</h3>
+      <h3 class="section-title">{{ t('setting.preferences.link_preview_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">启用链接预览</span>
-          <span class="setting-desc">自动生成消息中链接的预览</span>
+          <span class="setting-label">{{ t('setting.preferences.link_preview_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.link_preview_desc') }}</span>
         </div>
         <n-switch v-model:value="linkPreview" @update:value="handleLinkPreviewChange" />
       </div>
@@ -131,38 +128,42 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">表情符号</h3>
+      <h3 class="section-title">{{ t('setting.preferences.emoji_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">自动转换表情</span>
-          <span class="setting-desc">将 :) 等符号自动转换为表情</span>
+          <span class="setting-label">{{ t('setting.preferences.emoji_convert_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.emoji_convert_desc') }}</span>
         </div>
         <n-switch v-model:value="emojiConvert" @update:value="handleEmojiChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">表情大小</span>
-          <span class="setting-desc">设置消息中表情的显示大小</span>
+          <span class="setting-label">{{ t('setting.preferences.emoji_size_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.emoji_size_desc') }}</span>
         </div>
-        <n-select v-model:value="emojiSize" :options="emojiSizeOptions" style="width: 120px" />
+        <n-select
+          v-model:value="emojiSize"
+          :options="emojiSizeOptions"
+          style="width: 120px"
+          @update:value="handleEmojiSizeChange" />
       </div>
     </div>
 
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">阅后即焚默认</h3>
+      <h3 class="section-title">{{ t('setting.preferences.burn_defaults_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">新私聊默认开启阅后即焚</span>
-          <span class="setting-desc">创建新私聊时自动开启阅后即焚</span>
+          <span class="setting-label">{{ t('setting.preferences.burn_default_enabled_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.burn_default_enabled_desc') }}</span>
         </div>
         <n-switch v-model:value="burnDefaultEnabled" @update:value="handleBurnDefaultToggle" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">默认焚毁时间</span>
-          <span class="setting-desc">阅后即焚消息的默认焚毁时间</span>
+          <span class="setting-label">{{ t('setting.preferences.burn_default_duration_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.burn_default_duration_desc') }}</span>
         </div>
         <n-select
           v-model:value="burnDefaultDuration"
@@ -172,8 +173,8 @@
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示焚毁倒计时</span>
-          <span class="setting-desc">在消息上显示焚毁倒计时进度</span>
+          <span class="setting-label">{{ t('setting.preferences.burn_show_countdown_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.burn_show_countdown_desc') }}</span>
         </div>
         <n-switch v-model:value="burnShowCountdown" @update:value="handleBurnCountdownToggle" />
       </div>
@@ -182,25 +183,25 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">线程偏好</h3>
+      <h3 class="section-title">{{ t('setting.preferences.thread_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">参与线程时自动订阅</span>
-          <span class="setting-desc">在线程中发送消息后自动订阅该线程</span>
+          <span class="setting-label">{{ t('setting.preferences.thread_auto_subscribe_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.thread_auto_subscribe_desc') }}</span>
         </div>
         <n-switch v-model:value="threadAutoSubscribe" @update:value="handleThreadAutoSubscribe" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">在房间内显示线程入口</span>
-          <span class="setting-desc">在消息列表中显示线程入口图标</span>
+          <span class="setting-label">{{ t('setting.preferences.thread_show_in_room_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.thread_show_in_room_desc') }}</span>
         </div>
         <n-switch v-model:value="threadShowInRoom" @update:value="handleThreadShowInRoom" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">线程通知级别</span>
-          <span class="setting-desc">控制线程消息的通知行为</span>
+          <span class="setting-label">{{ t('setting.preferences.thread_notification_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.thread_notification_desc') }}</span>
         </div>
         <n-select
           v-model:value="threadNotificationLevel"
@@ -213,25 +214,25 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">空间偏好</h3>
+      <h3 class="section-title">{{ t('setting.preferences.space_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">加入空间时自动加入其房间</span>
-          <span class="setting-desc">加入空间后自动加入其中的所有房间</span>
+          <span class="setting-label">{{ t('setting.preferences.space_auto_join_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.space_auto_join_desc') }}</span>
         </div>
         <n-switch v-model:value="spaceAutoJoinRooms" @update:value="handleSpaceAutoJoin" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示子空间</span>
-          <span class="setting-desc">在空间列表中显示嵌套的子空间</span>
+          <span class="setting-label">{{ t('setting.preferences.space_show_subspaces_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.space_show_subspaces_desc') }}</span>
         </div>
         <n-switch v-model:value="spaceShowSubspaces" @update:value="handleSpaceShowSubspaces" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">空间默认通知</span>
-          <span class="setting-desc">新加入空间的默认通知级别</span>
+          <span class="setting-label">{{ t('setting.preferences.space_notification_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.space_notification_desc') }}</span>
         </div>
         <n-select
           v-model:value="spaceDefaultNotification"
@@ -244,18 +245,18 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">隐私偏好</h3>
+      <h3 class="section-title">{{ t('setting.preferences.privacy_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">发送已读回执</span>
-          <span class="setting-desc">让对方知道你已读消息</span>
+          <span class="setting-label">{{ t('setting.preferences.read_receipts_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.read_receipts_desc') }}</span>
         </div>
         <n-switch v-model:value="sendReadReceipts" @update:value="handleReadReceiptsToggle" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">发送输入状态</span>
-          <span class="setting-desc">让对方看到你正在输入</span>
+          <span class="setting-label">{{ t('setting.preferences.typing_notifications_label') }}</span>
+          <span class="setting-desc">{{ t('setting.preferences.typing_notifications_desc') }}</span>
         </div>
         <n-switch v-model:value="sendTypingNotifications" @update:value="handleTypingToggle" />
       </div>
@@ -264,7 +265,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { NButton, NDivider, NProgress, NRadio, NRadioGroup, NSelect, NSwitch, useMessage } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
@@ -274,161 +275,115 @@ import { useScannerStore } from '@/stores/domains/widget/scanner'
 import { isDesktop } from '@/utils/PlatformConstants'
 import { formatBytes } from '@/utils/Formatting.ts'
 import { useI18n } from 'vue-i18n'
+import { useLanguageOptions } from '@/composables/settings/settingsOptions'
 
 defineOptions({
   name: 'PreferencesSettings'
 })
 
 const message = useMessage()
-const { locale } = useI18n()
+const { t } = useI18n()
 const settingStore = useSettingStore()
 const scannerStore = useScannerStore()
-const { chat, page } = storeToRefs(settingStore)
 const { pathType, currentDirectory, scanning, showDiskUsage, diskInfo, scanProgress, scanningProgress } =
   storeToRefs(scannerStore)
 const desktopRuntimeAvailable = isDesktop()
 
-const language = ref(page.value.lang || 'AUTO')
-const languageOptions = [
-  { label: '自动检测', value: 'AUTO' },
-  { label: '简体中文', value: 'zh-CN' },
-  { label: '繁體中文', value: 'zh-TW' },
-  { label: 'English', value: 'en' },
-  { label: '日本語', value: 'ja' }
-]
+settingStore.migrateLegacyPreferenceSettings()
 
-const sendKey = ref(chat.value?.sendKey || 'Enter')
-const autoLogin = ref(settingStore.login.autoLogin)
-const autoStartup = ref(settingStore.login.autoStartup)
+const language = ref(settingStore.languagePreference)
+const languageOptions = useLanguageOptions()
+
+const sendKey = ref(settingStore.sendMessageShortcut)
+const autoLogin = ref(settingStore.autoLoginEnabled)
+const autoStartup = ref(settingStore.autoStartupEnabled)
 const autoStartupLoading = ref(false)
-const sendKeyOptions = [
+const sendKeyOptions = computed(() => [
   { label: 'Enter', value: 'Enter' },
-  { label: 'Ctrl + Enter', value: 'Ctrl+Enter' },
-  { label: 'Shift + Enter', value: 'Shift+Enter' }
-]
+  { label: t('setting.preferences.send_key_ctrl_enter'), value: 'Ctrl+Enter' },
+  { label: t('setting.preferences.send_key_shift_enter'), value: 'Shift+Enter' }
+])
 
-const recallTimeOptions = [
-  { label: '2 分钟', value: 120 },
-  { label: '5 分钟', value: 300 },
-  { label: '10 分钟', value: 600 }
-]
+const recallTimeOptions = computed(() => [
+  { label: t('setting.preferences.recall_2_minutes'), value: 120 },
+  { label: t('setting.preferences.recall_5_minutes'), value: 300 },
+  { label: t('setting.preferences.recall_10_minutes'), value: 600 }
+])
 
-const emojiSizeOptions = [
-  { label: '小', value: 'small' },
-  { label: '中', value: 'medium' },
-  { label: '大', value: 'large' }
-]
+const emojiSizeOptions = computed(() => [
+  { label: t('setting.preferences.emoji_small'), value: 'small' },
+  { label: t('setting.preferences.emoji_medium'), value: 'medium' },
+  { label: t('setting.preferences.emoji_large'), value: 'large' }
+])
 
-const messageConfirm = ref(false)
+const messageConfirm = ref(settingStore.messageConfirmEnabled)
 const recallTime = ref(120)
-const linkPreview = ref(true)
-const emojiConvert = ref(true)
-const emojiSize = ref('medium')
+const linkPreview = ref(settingStore.linkPreviewEnabled)
+const emojiConvert = ref(settingStore.emojiConvertEnabled)
+const emojiSize = ref(settingStore.emojiSize)
 
-const burnDefaultEnabled = ref(false)
-const burnDefaultDuration = ref(60)
-const burnShowCountdown = ref(true)
+const burnDefaultEnabled = ref(settingStore.burnDefaultEnabled)
+const burnDefaultDuration = ref(settingStore.burnDefaultDuration)
+const burnShowCountdown = ref(settingStore.burnShowCountdownEnabled)
 
-const threadAutoSubscribe = ref(true)
-const threadShowInRoom = ref(true)
-const threadNotificationLevel = ref('participate')
+const threadAutoSubscribe = ref(settingStore.threadAutoSubscribeEnabled)
+const threadShowInRoom = ref(settingStore.threadShowInRoomEnabled)
+const threadNotificationLevel = ref(settingStore.threadNotificationLevel)
 
-const spaceAutoJoinRooms = ref(false)
-const spaceShowSubspaces = ref(true)
-const spaceDefaultNotification = ref('all_messages')
+const spaceAutoJoinRooms = ref(settingStore.spaceAutoJoinRoomsEnabled)
+const spaceShowSubspaces = ref(settingStore.spaceShowSubspacesEnabled)
+const spaceDefaultNotification = ref(settingStore.spaceDefaultNotification)
 
-const sendReadReceipts = ref(true)
-const sendTypingNotifications = ref(true)
+const sendReadReceipts = ref(settingStore.sendReadReceiptsEnabled)
+const sendTypingNotifications = ref(settingStore.sendTypingNotificationsEnabled)
 
-const burnDurationOptions = [
-  { label: '30秒', value: 30 },
-  { label: '1分钟', value: 60 },
-  { label: '5分钟', value: 300 },
-  { label: '1小时', value: 3600 },
-  { label: '24小时', value: 86400 }
-]
+const burnDurationOptions = computed(() => [
+  { label: t('setting.burn_after_read.durations.30_seconds'), value: 30 },
+  { label: t('setting.burn_after_read.durations.1_minute'), value: 60 },
+  { label: t('setting.burn_after_read.durations.5_minutes'), value: 300 },
+  { label: t('setting.burn_after_read.durations.1_hour'), value: 3600 },
+  { label: t('setting.burn_after_read.durations.24_hours'), value: 86400 }
+])
 
-const threadNotificationOptions = [
-  { label: '所有消息', value: 'all' },
-  { label: '仅参与的', value: 'participate' },
-  { label: '无通知', value: 'none' }
-]
+const threadNotificationOptions = computed(() => [
+  { label: t('setting.preferences.notification_all_messages'), value: 'all' },
+  { label: t('setting.preferences.notification_participating_only'), value: 'participate' },
+  { label: t('setting.preferences.notification_none'), value: 'none' }
+])
 
-const spaceNotificationOptions = [
-  { label: '所有消息', value: 'all_messages' },
-  { label: '仅提及', value: 'mentions_only' },
-  { label: '无通知', value: 'none' }
-]
+const spaceNotificationOptions = computed(() => [
+  { label: t('setting.preferences.notification_all_messages'), value: 'all_messages' },
+  { label: t('setting.preferences.notification_mentions_only'), value: 'mentions_only' },
+  { label: t('setting.preferences.notification_none'), value: 'none' }
+])
+
+const storageProgressText = computed(() => {
+  if (showDiskUsage.value && diskInfo.value) {
+    return t('setting.preferences.storage_disk_usage', {
+      percentage: diskInfo.value.disk_usage_percentage.toFixed(2)
+    })
+  }
+
+  return t('setting.preferences.storage_scan_progress', {
+    percentage: scanningProgress.value.toFixed(0)
+  })
+})
+
+function findOptionLabel<T extends string | number>(options: Array<{ label: string; value: T }>, value: T) {
+  return options.find((option) => option.value === value)?.label ?? String(value)
+}
+
+function showToggleFeedback(label: string, value: boolean) {
+  message.success(
+    t(value ? 'setting.preferences.feedback.enabled' : 'setting.preferences.feedback.disabled', { label })
+  )
+}
+
+function showOptionSetFeedback(label: string, value: string) {
+  message.success(t('setting.preferences.feedback.option_set', { label, value }))
+}
 
 onMounted(() => {
-  const savedConfirm = localStorage.getItem('hula-message-confirm')
-  if (savedConfirm !== null) {
-    messageConfirm.value = savedConfirm === 'true'
-  }
-
-  const savedLinkPreview = localStorage.getItem('hula-link-preview')
-  if (savedLinkPreview !== null) {
-    linkPreview.value = savedLinkPreview === 'true'
-  }
-
-  const savedEmoji = localStorage.getItem('hula-emoji-convert')
-  if (savedEmoji !== null) {
-    emojiConvert.value = savedEmoji === 'true'
-  }
-
-  const savedEmojiSize = localStorage.getItem('hula-emoji-size')
-  if (savedEmojiSize) {
-    emojiSize.value = savedEmojiSize
-  }
-
-  const savedBurnDefault = localStorage.getItem('hula-burn-default-enabled')
-  if (savedBurnDefault !== null) {
-    burnDefaultEnabled.value = savedBurnDefault === 'true'
-  }
-  const savedBurnDuration = localStorage.getItem('hula-burn-default-duration')
-  if (savedBurnDuration) {
-    burnDefaultDuration.value = parseInt(savedBurnDuration, 10)
-  }
-  const savedBurnCountdown = localStorage.getItem('hula-burn-show-countdown')
-  if (savedBurnCountdown !== null) {
-    burnShowCountdown.value = savedBurnCountdown === 'true'
-  }
-
-  const savedThreadAuto = localStorage.getItem('hula-thread-auto-subscribe')
-  if (savedThreadAuto !== null) {
-    threadAutoSubscribe.value = savedThreadAuto === 'true'
-  }
-  const savedThreadShow = localStorage.getItem('hula-thread-show-in-room')
-  if (savedThreadShow !== null) {
-    threadShowInRoom.value = savedThreadShow === 'true'
-  }
-  const savedThreadNotif = localStorage.getItem('hula-thread-notification-level')
-  if (savedThreadNotif) {
-    threadNotificationLevel.value = savedThreadNotif
-  }
-
-  const savedSpaceAutoJoin = localStorage.getItem('hula-space-auto-join')
-  if (savedSpaceAutoJoin !== null) {
-    spaceAutoJoinRooms.value = savedSpaceAutoJoin === 'true'
-  }
-  const savedSpaceShowSub = localStorage.getItem('hula-space-show-subspaces')
-  if (savedSpaceShowSub !== null) {
-    spaceShowSubspaces.value = savedSpaceShowSub === 'true'
-  }
-  const savedSpaceNotif = localStorage.getItem('hula-space-default-notification')
-  if (savedSpaceNotif) {
-    spaceDefaultNotification.value = savedSpaceNotif
-  }
-
-  const savedReadReceipts = localStorage.getItem('hula-send-read-receipts')
-  if (savedReadReceipts !== null) {
-    sendReadReceipts.value = savedReadReceipts === 'true'
-  }
-  const savedTyping = localStorage.getItem('hula-send-typing-notifications')
-  if (savedTyping !== null) {
-    sendTypingNotifications.value = savedTyping === 'true'
-  }
-
   if (desktopRuntimeAvailable) {
     void syncDesktopPreferences()
   }
@@ -439,32 +394,32 @@ async function syncDesktopPreferences() {
     autoStartup.value = await isEnabled()
     settingStore.setAutoStartup(autoStartup.value)
   } catch (error) {
-    message.warning('读取开机启动状态失败')
+    message.warning(t('setting.preferences.feedback.read_auto_startup_failed'))
   }
 
   try {
     await scannerStore.initializeScanner()
   } catch (error) {
-    message.warning('初始化存储扫描失败')
+    message.warning(t('setting.preferences.feedback.initialize_storage_scan_failed'))
   }
 }
 
 function handleLanguageChange(value: string) {
-  settingStore.page.lang = value
-  if (value !== 'AUTO') {
-    locale.value = value
-  }
-  message.success(`语言已切换为 ${languageOptions.find((l) => l.value === value)?.label}`)
+  settingStore.setLanguage(value)
+  showOptionSetFeedback(
+    t('setting.preferences.interface_language_label'),
+    findOptionLabel(languageOptions.value, value)
+  )
 }
 
 function handleSendKeyChange(value: string) {
   settingStore.setSendMessageShortcut(value)
-  message.success(`发送键已设置为 ${sendKeyOptions.find((s) => s.value === value)?.label}`)
+  showOptionSetFeedback(t('setting.preferences.send_key_label'), findOptionLabel(sendKeyOptions.value, value))
 }
 
 function handleAutoLoginChange(value: boolean) {
   settingStore.setAutoLogin(value)
-  message.success(value ? '已启用自动登录' : '已关闭自动登录')
+  showToggleFeedback(t('setting.preferences.auto_login_label'), value)
 }
 
 async function handleAutoStartupChange(value: boolean) {
@@ -477,10 +432,10 @@ async function handleAutoStartupChange(value: boolean) {
   try {
     await (value ? enable() : disable())
     settingStore.setAutoStartup(value)
-    message.success(value ? '已启用开机启动' : '已关闭开机启动')
+    showToggleFeedback(t('setting.preferences.auto_startup_label'), value)
   } catch (error) {
     autoStartup.value = !value
-    message.error('设置开机启动失败')
+    message.error(t('setting.preferences.feedback.auto_startup_change_failed'))
   } finally {
     autoStartupLoading.value = false
   }
@@ -494,13 +449,13 @@ async function selectCustomDirectory() {
   try {
     const result = await open({
       directory: true,
-      title: '选择要扫描的目录'
+      title: t('setting.storage.select_directory_title')
     })
     if (result) {
       scannerStore.setCustomDirectory(result)
     }
   } catch (error) {
-    message.error('选择目录失败')
+    message.error(t('setting.storage.select_directory_error'))
   }
 }
 
@@ -509,104 +464,112 @@ async function startScan() {
 }
 
 function handleConfirmChange(value: boolean) {
-  localStorage.setItem('hula-message-confirm', value.toString())
-  message.success(value ? '已启用消息确认' : '已禁用消息确认')
+  settingStore.setMessageConfirmEnabled(value)
+  showToggleFeedback(t('setting.preferences.message_confirm_label'), value)
 }
 
 function handleLinkPreviewChange(value: boolean) {
-  localStorage.setItem('hula-link-preview', value.toString())
-  message.success(value ? '已启用链接预览' : '已禁用链接预览')
+  settingStore.setLinkPreviewEnabled(value)
+  showToggleFeedback(t('setting.preferences.link_preview_label'), value)
 }
 
 function handleEmojiChange(value: boolean) {
-  localStorage.setItem('hula-emoji-convert', value.toString())
-  message.success(value ? '已启用表情转换' : '已禁用表情转换')
+  settingStore.setEmojiConvertEnabled(value)
+  showToggleFeedback(t('setting.preferences.emoji_convert_label'), value)
+}
+
+function handleEmojiSizeChange(value: string) {
+  settingStore.setEmojiSize(value)
+  showOptionSetFeedback(t('setting.preferences.emoji_size_label'), findOptionLabel(emojiSizeOptions.value, value))
 }
 
 function handleBurnDefaultToggle(value: boolean) {
-  localStorage.setItem('hula-burn-default-enabled', value.toString())
-  message.success(value ? '已启用新私聊默认阅后即焚' : '已禁用新私聊默认阅后即焚')
+  settingStore.setBurnDefaultEnabled(value)
+  showToggleFeedback(t('setting.preferences.burn_default_enabled_label'), value)
 }
 
 function handleBurnDurationChange(value: number) {
-  localStorage.setItem('hula-burn-default-duration', value.toString())
-  const label = burnDurationOptions.find((o) => o.value === value)?.label
-  message.success(`默认焚毁时间已设置为${label}`)
+  settingStore.setBurnDefaultDuration(value)
+  showOptionSetFeedback(
+    t('setting.preferences.burn_default_duration_label'),
+    findOptionLabel(burnDurationOptions.value, value)
+  )
 }
 
 function handleBurnCountdownToggle(value: boolean) {
-  localStorage.setItem('hula-burn-show-countdown', value.toString())
-  message.success(value ? '已启用焚毁倒计时' : '已禁用焚毁倒计时')
+  settingStore.setBurnShowCountdownEnabled(value)
+  showToggleFeedback(t('setting.preferences.burn_show_countdown_label'), value)
 }
 
 function handleThreadAutoSubscribe(value: boolean) {
-  localStorage.setItem('hula-thread-auto-subscribe', value.toString())
-  message.success(value ? '已启用线程自动订阅' : '已禁用线程自动订阅')
+  settingStore.setThreadAutoSubscribeEnabled(value)
+  showToggleFeedback(t('setting.preferences.thread_auto_subscribe_label'), value)
 }
 
 function handleThreadShowInRoom(value: boolean) {
-  localStorage.setItem('hula-thread-show-in-room', value.toString())
-  message.success(value ? '已启用房间内线程入口' : '已禁用房间内线程入口')
+  settingStore.setThreadShowInRoomEnabled(value)
+  showToggleFeedback(t('setting.preferences.thread_show_in_room_label'), value)
 }
 
 function handleThreadNotificationChange(value: string) {
-  localStorage.setItem('hula-thread-notification-level', value)
-  const label = threadNotificationOptions.find((o) => o.value === value)?.label
-  message.success(`线程通知级别已设置为${label}`)
+  settingStore.setThreadNotificationLevel(value)
+  showOptionSetFeedback(
+    t('setting.preferences.thread_notification_label'),
+    findOptionLabel(threadNotificationOptions.value, value)
+  )
 }
 
 function handleSpaceAutoJoin(value: boolean) {
-  localStorage.setItem('hula-space-auto-join', value.toString())
-  message.success(value ? '已启用空间自动加入房间' : '已禁用空间自动加入房间')
+  settingStore.setSpaceAutoJoinRoomsEnabled(value)
+  showToggleFeedback(t('setting.preferences.space_auto_join_label'), value)
 }
 
 function handleSpaceShowSubspaces(value: boolean) {
-  localStorage.setItem('hula-space-show-subspaces', value.toString())
-  message.success(value ? '已启用显示子空间' : '已禁用显示子空间')
+  settingStore.setSpaceShowSubspacesEnabled(value)
+  showToggleFeedback(t('setting.preferences.space_show_subspaces_label'), value)
 }
 
 function handleSpaceNotificationChange(value: string) {
-  localStorage.setItem('hula-space-default-notification', value)
-  const label = spaceNotificationOptions.find((o) => o.value === value)?.label
-  message.success(`空间默认通知已设置为${label}`)
+  settingStore.setSpaceDefaultNotification(value)
+  showOptionSetFeedback(
+    t('setting.preferences.space_notification_label'),
+    findOptionLabel(spaceNotificationOptions.value, value)
+  )
 }
 
 function handleReadReceiptsToggle(value: boolean) {
-  localStorage.setItem('hula-send-read-receipts', value.toString())
-  message.success(value ? '已启用发送已读回执' : '已禁用发送已读回执')
+  settingStore.setSendReadReceiptsEnabled(value)
+  showToggleFeedback(t('setting.preferences.read_receipts_label'), value)
 }
 
 function handleTypingToggle(value: boolean) {
-  localStorage.setItem('hula-send-typing-notifications', value.toString())
-  message.success(value ? '已启用发送输入状态' : '已禁用发送输入状态')
+  settingStore.setSendTypingNotificationsEnabled(value)
+  showToggleFeedback(t('setting.preferences.typing_notifications_label'), value)
 }
 </script>
 
 <style scoped>
 .preferences-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-4);
+  color: var(--hula-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -615,29 +578,25 @@ function handleTypingToggle(value: boolean) {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .storage-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 14px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.02);
-}
-
-:deep(.dark) .storage-panel {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  gap: var(--hula-space-3);
+  margin-top: var(--hula-space-3);
+  padding: var(--hula-space-4);
+  border: 1px solid var(--hula-settings-divider);
+  border-radius: var(--hula-radius-md);
+  background: var(--hula-settings-card-bg);
 }
 
 .storage-panel-header,
@@ -646,25 +605,21 @@ function handleTypingToggle(value: boolean) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--hula-space-3);
 }
 
 .storage-stats {
   flex-wrap: wrap;
-  font-size: 12px;
-  color: var(--color-text-quaternary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
 }
 
 .storage-directory {
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.03);
-  font-size: 12px;
-  color: var(--color-text-secondary);
+  padding: 10px var(--hula-space-3);
+  border-radius: var(--hula-radius-sm);
+  background: var(--hula-settings-card-bg-hover);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-secondary);
   word-break: break-all;
-}
-
-:deep(.dark) .storage-directory {
-  background: rgba(255, 255, 255, 0.05);
 }
 </style>

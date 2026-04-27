@@ -39,9 +39,6 @@
       @pin-room="handlePinRoom"
       @mute-change="handleMuteNotification"
       @clear-messages="handleClearMessages"
-      @manage-members="handleShowManageMembers"
-      @dissolve="handleModalShow(RoomActEnum.DISSOLUTION_GROUP, t('home.chat_header.dissolve_confirm'))"
-      @exit="handleModalShow(RoomActEnum.EXIT_GROUP, t('home.chat_header.exit_confirm'))"
       @delete-friend="handleModalShow(RoomActEnum.DELETE_FRIEND, t('home.chat_header.delete_friend_confirm'))"
       @delete-room="handleModalShow(RoomActEnum.DELETE_RECORD, t('home.chat_header.delete_room_confirm'))" />
 
@@ -69,14 +66,6 @@
         </n-button>
       </div>
     </n-modal>
-
-    <n-modal
-      v-model:show="showManageGroupMemberModal"
-      preset="card"
-      :title="t('home.chat_header.manage_members')"
-      style="width: 500px">
-      <ManageGroupMember :room-id="currentSessionRoomId" @close="showManageGroupMemberModal = false" />
-    </n-modal>
   </div>
 </template>
 
@@ -97,7 +86,6 @@ import { createLogger } from '@/utils/Logger'
 import ChatHeaderInfo from './ChatHeaderInfo.vue'
 import ChatHeaderToolbar from './ChatHeaderToolbar.vue'
 import ChatHeaderSidebar from './ChatHeaderSidebar.vue'
-import ManageGroupMember from '@/components/rightBox/chatBox/ManageGroupMember.vue'
 
 const logger = createLogger('ChatHeader')
 const { t } = useI18n()
@@ -111,7 +99,6 @@ const { currentSession: activeItem, currentSessionRoomId } = storeToRefs(globalS
 const sidebarShow = ref(false)
 const modalShow = ref(false)
 const showQRCodeModal = ref(false)
-const showManageGroupMemberModal = ref(false)
 const tips = ref('')
 const optionsType = ref<number | undefined>(undefined)
 
@@ -178,12 +165,6 @@ const handleModalConfirm = async () => {
       case RoomActEnum.DELETE_RECORD:
         await handleDeleteRoom()
         break
-      case RoomActEnum.EXIT_GROUP:
-        await handleExitGroup()
-        break
-      case RoomActEnum.DISSOLUTION_GROUP:
-        await handleDissolveGroup()
-        break
       case RoomActEnum.DELETE_FRIEND:
         await handleDeleteFriend()
         break
@@ -203,26 +184,6 @@ const handleDeleteRoom = async () => {
     globalStore.updateCurrentSessionRoomId('')
   } catch (error) {
     logger.error('删除会话失败:', error)
-  }
-}
-
-const handleExitGroup = async () => {
-  if (!currentSessionRoomId.value) return
-  try {
-    await matrixGroupService.leaveRoom(currentSessionRoomId.value)
-    await handleDeleteRoom()
-  } catch (error) {
-    logger.error('退出群组失败:', error)
-  }
-}
-
-const handleDissolveGroup = async () => {
-  if (!currentSessionRoomId.value) return
-  try {
-    await matrixRoomService.leaveRoom(currentSessionRoomId.value)
-    await handleDeleteRoom()
-  } catch (error) {
-    logger.error('解散群组失败:', error)
   }
 }
 
@@ -314,10 +275,6 @@ const handleShareQRCode = () => {
   logger.debug('分享二维码')
 }
 
-const handleShowManageMembers = () => {
-  showManageGroupMemberModal.value = true
-}
-
 const handleStartVideoCall = async () => {
   if (!currentSessionRoomId.value) return
   try {
@@ -402,8 +359,8 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background-color: var(--bg-color);
-  border-bottom: 1px solid var(--border-color);
+  background-color: var(--hula-surface-panel);
+  border-bottom: 1px solid var(--hula-border-default);
   min-height: 60px;
 }
 

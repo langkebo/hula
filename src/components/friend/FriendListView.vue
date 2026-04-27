@@ -69,7 +69,7 @@
                 <n-avatar
                   :size="44"
                   :src="AvatarUtils.getAvatarUrl(friend.avatarUrl)"
-                  :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   round />
               </n-badge>
               <n-flex vertical :size="4" class="flex-1 truncate">
@@ -101,7 +101,6 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { OnlineEnum, ThemeEnum } from '@/enums'
 import { useContactStore, type MatrixContact } from '@/stores/domains/chat/contacts'
@@ -117,7 +116,6 @@ import ContextMenu from '@/components/common/ContextMenu.vue'
 const { t } = useI18n()
 const contactStore = useContactStore()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 
 const searchValue = ref('')
 const currentFilter = ref<FriendStatus | 'all'>('all')

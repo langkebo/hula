@@ -80,7 +80,7 @@ const handleScanAddFriend = async (data: ScanData) => {
     throw new Error(`用户尝试扫自己二维码添加好友但被拒绝: ${JSON.stringify(data)}`)
   }
 
-  globalStore.addFriendModalInfo.uid = uid
+  globalStore.setAddFriendTarget(uid)
 
   timerManager.setTimeout(() => {
     router.push({ name: 'mobileConfirmAddFriend' })
@@ -103,9 +103,11 @@ const handleScanEnterGroup = async (data: ScanData) => {
   const groupStore = useGroupStore()
   const groupDetail = await groupStore.loadGroupInfo(roomId)
 
-  globalStore.addGroupModalInfo.account = roomId
-  globalStore.addGroupModalInfo.name = groupDetail?.name || roomId
-  globalStore.addGroupModalInfo.avatar = groupDetail?.avatar || ''
+  globalStore.setAddGroupTarget({
+    account: roomId,
+    name: groupDetail?.name || roomId,
+    avatar: groupDetail?.avatar || ''
+  })
 
   timerManager.setTimeout(() => {
     router.push({ name: 'mobileConfirmAddGroup' })

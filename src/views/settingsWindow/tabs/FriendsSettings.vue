@@ -1,25 +1,25 @@
 <template>
   <div class="friends-settings">
     <div class="settings-section">
-      <h3 class="section-title">好友请求</h3>
+      <h3 class="section-title">{{ t('setting.friends.requests.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">允许接收好友请求</span>
-          <span class="setting-desc">其他用户可以向你发送好友请求</span>
+          <span class="setting-label">{{ t('setting.friends.requests.allow_label') }}</span>
+          <span class="setting-desc">{{ t('setting.friends.requests.allow_desc') }}</span>
         </div>
         <n-switch v-model:value="allowFriendRequests" @update:value="handleToggle('allowFriendRequests')" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">自动接受好友请求</span>
-          <span class="setting-desc">收到好友请求时自动接受</span>
+          <span class="setting-label">{{ t('setting.friends.requests.auto_accept_label') }}</span>
+          <span class="setting-desc">{{ t('setting.friends.requests.auto_accept_desc') }}</span>
         </div>
         <n-switch v-model:value="autoAcceptFriends" @update:value="handleToggle('autoAcceptFriends')" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">好友请求需要附言</span>
-          <span class="setting-desc">发送好友请求时必须附带留言</span>
+          <span class="setting-label">{{ t('setting.friends.requests.message_required_label') }}</span>
+          <span class="setting-desc">{{ t('setting.friends.requests.message_required_desc') }}</span>
         </div>
         <n-switch v-model:value="friendRequestMessage" @update:value="handleToggle('friendRequestMessage')" />
       </div>
@@ -28,36 +28,46 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">好友分组</h3>
+      <h3 class="section-title">{{ t('setting.friends.groups.title') }}</h3>
       <n-spin :show="loadingGroups">
         <div v-if="friendGroups.length === 0" class="empty-list">
-          <span class="empty-text">暂无好友分组</span>
+          <span class="empty-text">{{ t('setting.friends.groups.empty') }}</span>
         </div>
         <div v-else class="group-list">
           <div v-for="group in friendGroups" :key="group.group_id" class="group-item">
             <div class="group-info">
               <span class="group-name">{{ group.name }}</span>
-              <span class="group-count">{{ group.member_count }}人</span>
+              <span class="group-count">
+                {{ t('setting.friends.groups.member_count', { count: String(group.member_count) }) }}
+              </span>
             </div>
             <div class="group-actions">
-              <n-button size="small" quaternary @click="handleEditGroup(group)">编辑</n-button>
-              <n-button size="small" type="error" quaternary @click="handleDeleteGroup(group)">删除</n-button>
+              <n-button size="small" quaternary @click="handleEditGroup(group)">
+                {{ t('setting.friends.common.edit') }}
+              </n-button>
+              <n-button size="small" type="error" quaternary @click="handleDeleteGroup(group)">
+                {{ t('setting.friends.common.delete') }}
+              </n-button>
             </div>
           </div>
         </div>
       </n-spin>
-      <n-button size="small" style="margin-top: 8px" @click="showCreateGroup = true">+ 创建新分组</n-button>
+      <n-button size="small" style="margin-top: 8px" @click="showCreateGroup = true">
+        {{ t('setting.friends.groups.create_action') }}
+      </n-button>
     </div>
 
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">待处理请求</h3>
+      <h3 class="section-title">{{ t('setting.friends.pending.title') }}</h3>
       <n-spin :show="loadingRequests">
         <div class="request-section">
-          <h4 class="subsection-title">📥 收到的请求 ({{ incomingRequests.length }})</h4>
+          <h4 class="subsection-title">
+            {{ t('setting.friends.pending.incoming_title', { count: String(incomingRequests.length) }) }}
+          </h4>
           <div v-if="incomingRequests.length === 0" class="empty-list">
-            <span class="empty-text">暂无收到的好友请求</span>
+            <span class="empty-text">{{ t('setting.friends.pending.incoming_empty') }}</span>
           </div>
           <div v-for="req in incomingRequests" :key="req.user_id" class="request-item">
             <div class="request-info">
@@ -65,23 +75,29 @@
               <span v-if="req.message" class="request-message">"{{ req.message }}"</span>
             </div>
             <div class="request-actions">
-              <n-button size="small" type="primary" @click="handleAcceptRequest(req)">接受</n-button>
-              <n-button size="small" @click="handleRejectRequest(req)">拒绝</n-button>
+              <n-button size="small" type="primary" @click="handleAcceptRequest(req)">
+                {{ t('setting.friends.pending.accept') }}
+              </n-button>
+              <n-button size="small" @click="handleRejectRequest(req)">
+                {{ t('setting.friends.pending.reject') }}
+              </n-button>
             </div>
           </div>
         </div>
 
         <div class="request-section" style="margin-top: 16px">
-          <h4 class="subsection-title">📤 发出的请求 ({{ outgoingRequests.length }})</h4>
+          <h4 class="subsection-title">
+            {{ t('setting.friends.pending.outgoing_title', { count: String(outgoingRequests.length) }) }}
+          </h4>
           <div v-if="outgoingRequests.length === 0" class="empty-list">
-            <span class="empty-text">暂无发出的好友请求</span>
+            <span class="empty-text">{{ t('setting.friends.pending.outgoing_empty') }}</span>
           </div>
           <div v-for="req in outgoingRequests" :key="req.user_id" class="request-item">
             <div class="request-info">
               <span class="request-user">{{ req.user_id }}</span>
-              <span class="request-status">等待中</span>
+              <span class="request-status">{{ t('setting.friends.pending.waiting') }}</span>
             </div>
-            <n-button size="small" @click="handleCancelRequest(req)">取消</n-button>
+            <n-button size="small" @click="handleCancelRequest(req)">{{ t('setting.common.cancel') }}</n-button>
           </div>
         </div>
       </n-spin>
@@ -90,13 +106,13 @@
     <n-modal
       v-model:show="showCreateGroup"
       preset="dialog"
-      title="创建好友分组"
-      positive-text="创建"
-      negative-text="取消"
+      :title="t('setting.friends.groups.create_title')"
+      :positive-text="t('setting.friends.groups.create_confirm')"
+      :negative-text="t('setting.common.cancel')"
       @positive-click="handleCreateGroup">
       <n-form>
-        <n-form-item label="分组名称">
-          <n-input v-model:value="newGroupName" placeholder="输入分组名称" />
+        <n-form-item :label="t('setting.friends.groups.name_label')">
+          <n-input v-model:value="newGroupName" :placeholder="t('setting.friends.groups.name_placeholder')" />
         </n-form-item>
       </n-form>
     </n-modal>
@@ -104,13 +120,13 @@
     <n-modal
       v-model:show="showEditGroup"
       preset="dialog"
-      title="编辑分组名称"
-      positive-text="保存"
-      negative-text="取消"
+      :title="t('setting.friends.groups.edit_title')"
+      :positive-text="t('setting.common.save')"
+      :negative-text="t('setting.common.cancel')"
       @positive-click="handleSaveGroup">
       <n-form>
-        <n-form-item label="分组名称">
-          <n-input v-model:value="editGroupName" placeholder="输入新的分组名称" />
+        <n-form-item :label="t('setting.friends.groups.name_label')">
+          <n-input v-model:value="editGroupName" :placeholder="t('setting.friends.groups.edit_placeholder')" />
         </n-form-item>
       </n-form>
     </n-modal>
@@ -119,6 +135,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { NSwitch, NDivider, NButton, NSpin, NModal, NForm, NFormItem, NInput, useMessage, useDialog } from 'naive-ui'
 import { matrixFriendService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
@@ -131,6 +148,7 @@ defineOptions({
 
 const message = useMessage()
 const dialog = useDialog()
+const { t } = useI18n()
 
 interface FriendGroup {
   group_id: string
@@ -231,21 +249,21 @@ async function loadFriendRequests() {
 
 function handleToggle(_key: string) {
   saveSettings()
-  message.success('设置已更新')
+  message.success(t('setting.friends.feedback.settings_updated'))
 }
 
 async function handleCreateGroup() {
   if (!newGroupName.value.trim()) {
-    message.warning('请输入分组名称')
+    message.warning(t('setting.friends.groups.name_required'))
     return false
   }
   try {
     await matrixFriendService.createFriendGroup(newGroupName.value.trim())
     newGroupName.value = ''
-    message.success('分组创建成功')
+    message.success(t('setting.friends.groups.create_success'))
     await loadFriendGroups()
   } catch {
-    message.error('创建分组失败')
+    message.error(t('setting.friends.groups.create_failed'))
   }
 }
 
@@ -257,32 +275,32 @@ function handleEditGroup(group: FriendGroup) {
 
 async function handleSaveGroup() {
   if (!editGroupName.value.trim()) {
-    message.warning('请输入分组名称')
+    message.warning(t('setting.friends.groups.name_required'))
     return false
   }
   try {
     await matrixFriendService.renameFriendGroup(editingGroupId.value, editGroupName.value.trim())
-    message.success('分组名称已更新')
+    message.success(t('setting.friends.groups.rename_success'))
     showEditGroup.value = false
     await loadFriendGroups()
   } catch {
-    message.error('更新分组名称失败')
+    message.error(t('setting.friends.groups.rename_failed'))
   }
 }
 
 function handleDeleteGroup(group: FriendGroup) {
   dialog.warning({
-    title: '删除分组',
-    content: `确定要删除分组"${group.name}"吗？分组内的好友不会被删除。`,
-    positiveText: '确定删除',
-    negativeText: '取消',
+    title: t('setting.friends.groups.delete_title'),
+    content: t('setting.friends.groups.delete_confirm', { name: group.name }),
+    positiveText: t('setting.friends.groups.delete_confirm_action'),
+    negativeText: t('setting.common.cancel'),
     onPositiveClick: async () => {
       try {
         await matrixFriendService.deleteFriendGroup(group.group_id)
-        message.success('分组已删除')
+        message.success(t('setting.friends.groups.delete_success'))
         await loadFriendGroups()
       } catch {
-        message.error('删除分组失败')
+        message.error(t('setting.friends.groups.delete_failed'))
       }
     }
   })
@@ -291,65 +309,63 @@ function handleDeleteGroup(group: FriendGroup) {
 async function handleAcceptRequest(req: FriendRequest) {
   try {
     await matrixFriendService.acceptFriendRequest(req.user_id)
-    message.success('已接受好友请求')
+    message.success(t('setting.friends.pending.accept_success'))
     await loadFriendRequests()
   } catch {
-    message.error('接受好友请求失败')
+    message.error(t('setting.friends.pending.accept_failed'))
   }
 }
 
 async function handleRejectRequest(req: FriendRequest) {
   try {
     await matrixFriendService.rejectFriendRequest(req.user_id)
-    message.success('已拒绝好友请求')
+    message.success(t('setting.friends.pending.reject_success'))
     await loadFriendRequests()
   } catch {
-    message.error('拒绝好友请求失败')
+    message.error(t('setting.friends.pending.reject_failed'))
   }
 }
 
 async function handleCancelRequest(req: FriendRequest) {
   try {
     await matrixFriendService.cancelFriendRequest(req.user_id)
-    message.success('已取消好友请求')
+    message.success(t('setting.friends.pending.cancel_success'))
     await loadFriendRequests()
   } catch {
-    message.error('取消好友请求失败')
+    message.error(t('setting.friends.pending.cancel_failed'))
   }
 }
 </script>
 
 <style scoped>
 .friends-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 12px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-3);
+  color: var(--hula-text-primary);
 }
 
 .subsection-title {
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0 0 8px 0;
+  font-size: var(--hula-font-size-base);
+  font-weight: var(--hula-font-weight-medium);
+  margin: 0 0 var(--hula-space-2) 0;
+  color: var(--hula-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -358,71 +374,65 @@ async function handleCancelRequest(req: FriendRequest) {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .group-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .group-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 6px;
-}
-
-:deep(.dark) .group-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  padding: 10px var(--hula-space-3);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .group-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .group-name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--hula-font-size-base);
+  font-weight: var(--hula-font-weight-medium);
+  color: var(--hula-text-primary);
 }
 
 .group-count {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
 }
 
 .group-actions {
   display: flex;
-  gap: 4px;
+  gap: var(--hula-space-1);
 }
 
 .request-section {
-  margin-bottom: 8px;
+  margin-bottom: var(--hula-space-2);
 }
 
 .request-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 6px;
+  padding: 10px var(--hula-space-3);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
   margin-bottom: 6px;
-}
-
-:deep(.dark) .request-item {
-  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .request-info {
@@ -433,40 +443,37 @@ async function handleCancelRequest(req: FriendRequest) {
 }
 
 .request-user {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
   word-break: break-all;
 }
 
 .request-message {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-top: 4px;
-}
-
-:deep(.dark) .request-message {
-  color: #aaa;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-secondary);
+  margin-top: var(--hula-space-1);
 }
 
 .request-status {
-  font-size: 12px;
-  color: var(--color-warning);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-color-warning-500);
+  margin-top: var(--hula-space-1);
 }
 
 .request-actions {
   display: flex;
-  gap: 4px;
+  gap: var(--hula-space-1);
   flex-shrink: 0;
-  margin-left: 12px;
+  margin-left: var(--hula-space-3);
 }
 
 .empty-list {
-  padding: 16px;
+  padding: var(--hula-space-4);
   text-align: center;
 }
 
 .empty-text {
-  font-size: 13px;
-  color: var(--color-text-quaternary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
 }
 </style>

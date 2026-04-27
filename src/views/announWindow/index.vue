@@ -3,10 +3,10 @@
     <ActionBar :shrink="false" :max-w="false" />
     <!-- 编辑公告视图 -->
     <n-flex v-if="viewType === '0' && isAdmin" vertical class="size-full flex-center">
-      <div class="text-(14px [--chat-text-color]) flex-start-center w-95% h-40px">{{ title }}</div>
+      <div class="text-(14px [--hula-text-secondary]) flex-start-center w-95% h-40px">{{ title }}</div>
       <div class="w-95%">
         <n-input
-          class="max-h-480px border-(1px solid var(--color-text-tertiary)/80) rounded-6px bg-[--center-bg-color]"
+          class="max-h-480px border-(1px solid var(--hula-text-tertiary)/80) rounded-6px bg-[--hula-surface-panel]"
           v-model:value="announContent"
           type="textarea"
           :placeholder="t('announcement.form.placeholder')"
@@ -47,7 +47,7 @@
     </n-flex>
     <!-- 查看公告列表视图 -->
     <n-flex v-else vertical :size="6" class="size-full flex-center">
-      <div class="text-(14px [--chat-text-color]) flex-between-center w-95% pt-10px">
+      <div class="text-(14px [--hula-text-secondary]) flex-between-center w-95% pt-10px">
         <span>{{ title }}</span>
         <n-button v-if="isAdmin" size="small" secondary @click="handleNew">
           {{ t('announcement.form.actions.new') }}
@@ -85,10 +85,10 @@
                       round
                       :size="28"
                       :src="avatarSrc(announcement.uid)"
-                      :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-                      :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
+                      :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#fff'"
+                      :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
                     <n-flex vertical :size="4">
-                      <div class="text-(12px [--chat-text-color])">
+                      <div class="text-(12px [--hula-text-secondary])">
                         {{ groupStore.getUserInfo(announcement.uid)?.name }}
                       </div>
                       <div class="text-(12px [#909090])">{{ formatTimestamp(announcement?.timestamp) }}</div>
@@ -189,7 +189,6 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { useRoute } from 'vue-router'
 import { ThemeEnum } from '@/enums'
-import type { AnnouncementItem } from '@/services/types'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -239,7 +238,6 @@ const announcementStore = useAnnouncementStore()
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
-const { themes } = storeToRefs(settingStore)
 /** 判断当前用户是否拥有id为6的徽章 并且是频道 */
 const hasBadge6 = computed(() => {
   // 只有当 roomId 为 "1" 时才进行徽章判断（频道）
@@ -580,8 +578,8 @@ onMounted(async () => {
 
 .content-collapsed {
   max-height: 100px; // 设置为约200px的显示高度
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0)
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0)
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
 }
 
 .expand-button {
@@ -589,7 +587,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: flex-end;
   margin-top: 4px;
-  color: var(--color-primary;
+  color: var(--hula-color-primary-500);
   cursor: pointer;
   font-size: 12px;
 
@@ -599,7 +597,7 @@ onMounted(async () => {
 }
 
 .announcement-link {
-  color: var(--color-primary;
+  color: var(--hula-color-primary-500);
   cursor: pointer;
   word-break: break-all;
   line-height: 2.1rem;

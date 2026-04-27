@@ -5,9 +5,9 @@
       <!-- 录音状态文字 -->
       <div class="voice-status">
         <div v-if="!isRecording && !audioBlob && !isProcessing">
-          <span class="text-[--color-text-tertiary] flex-y-center gap-6px select-none">
+          <span class="text-[--hula-text-tertiary] flex-y-center gap-6px select-none">
             {{ t('message.voice_recorder.tap_prefix') }}
-            <svg class="size-14px color-[--color-primary]"><use href="#voice"></use></svg>
+            <svg class="size-14px color-[--hula-color-primary-500]"><use href="#voice"></use></svg>
             {{ t('message.voice_recorder.tap_suffix') }}
           </span>
         </div>
@@ -278,7 +278,7 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 @mixin base-control-button($dark-bg, $bg) {
-  @apply flex-center size-36px text-#fff cursor-pointer rounded-full;
+  @apply flex-center size-36px text-[--hula-text-inverse] cursor-pointer rounded-full;
   background-color: $bg;
   [data-theme='dark'] & {
     background-color: $dark-bg;
@@ -286,7 +286,7 @@ onUnmounted(() => {
 }
 
 .voice-recorder-container {
-  @apply flex flex-col relative w-full h-110px bg-[--bg-color] rounded-8px;
+  @apply flex flex-col relative w-full h-110px bg-[--hula-surface-panel] rounded-8px;
 }
 
 .voice-recorder-main {
@@ -294,29 +294,29 @@ onUnmounted(() => {
 }
 
 .voice-status {
-  @apply text-(14px [--text-color] center) max-h-24px;
+  @apply text-(14px [--hula-text-primary] center) max-h-24px;
 
   .status-recording {
-    @apply flex-y-center gap-8px text-[--color-primary] select-none;
+    @apply flex-y-center gap-8px text-[--hula-color-primary-500] select-none;
 
     .recording-animation {
       position: relative;
       .pulse-dot {
-        @apply size-8px bg-[--color-primary] rounded-full;
+        @apply size-8px bg-[--hula-color-primary-500] rounded-full;
         animation: pulse 1.5s infinite;
       }
     }
   }
 
   .status-processing {
-    @apply flex-y-center gap-8px text-[--chat-text-color] select-none;
+    @apply flex-y-center gap-8px text-[--hula-text-secondary] select-none;
 
     .processing-animation {
       position: relative;
       .loading-spinner {
         @apply size-12px rounded-full;
         border: 2px solid transparent;
-        border-top: 2px solid var(--chat-text-color);
+        border-top: 2px solid var(--hula-text-secondary);
         animation: spin 1s linear infinite;
       }
     }
@@ -327,7 +327,7 @@ onUnmounted(() => {
       @apply flex-y-center gap-8px;
 
       .play-btn {
-        @apply flex-center size-30px bg-inherit border-none cursor-pointer text-[--color-primary];
+        @apply flex-center size-30px bg-inherit border-none cursor-pointer text-[--hula-color-primary-500];
 
         svg {
           @apply size-16px;
@@ -361,19 +361,31 @@ onUnmounted(() => {
   }
 
   .record-btn {
-    @include base-control-button(var(--color-primary)/80, #13987f);
+    @include base-control-button(
+      color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent),
+      var(--hula-color-primary-500)
+    );
   }
 
   .stop-btn {
-    @include base-control-button(#e74c3c96, #e74c3c);
+    @include base-control-button(
+      color-mix(in srgb, var(--hula-color-danger-500) 72%, transparent),
+      var(--hula-color-danger-500)
+    );
   }
 
   .refresh-btn {
-    @include base-control-button(#f39c1280, #f39c12);
+    @include base-control-button(
+      color-mix(in srgb, var(--hula-color-warning-500) 72%, transparent),
+      var(--hula-color-warning-500)
+    );
   }
 
   .send-btn {
-    @include base-control-button(var(--color-primary)/80, #13987f);
+    @include base-control-button(
+      color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent),
+      var(--hula-color-primary-500)
+    );
 
     .loading-spinner {
       @apply size-16px rounded-full;
@@ -385,7 +397,10 @@ onUnmounted(() => {
 
   .cancel-btn,
   .cancel-record-btn {
-    @include base-control-button(#95a5a640, #95a5a690);
+    @include base-control-button(
+      color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent),
+      color-mix(in srgb, var(--hula-text-tertiary) 60%, transparent)
+    );
   }
 }
 

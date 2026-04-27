@@ -59,7 +59,7 @@ defineOptions({
 
 const globalStore = useGlobalStore()
 const { currentSession } = storeToRefs(globalStore)
-const globalUnreadCount = computed(() => globalStore.unReadMark.newMsgUnreadCount ?? 0)
+const globalUnreadCount = computed(() => globalStore.messageUnreadCount ?? 0)
 
 const props = defineProps<{
   uid?: ''

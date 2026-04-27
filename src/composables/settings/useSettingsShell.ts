@@ -1,10 +1,17 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import { matchesSettingsSearch } from './settingsSearchIndex'
-import { SETTINGS_TABS, type SettingsTab, type SettingsTabType } from '@/stores/domains/settings/settingsSchema'
+import {
+  SETTINGS_TABS,
+  getSettingsTabs,
+  type SettingsTab,
+  type SettingsTabTranslator,
+  type SettingsTabType
+} from '@/stores/domains/settings/settingsSchema'
 
 export interface UseSettingsShellOptions {
   isDesktop?: boolean
   initialQuery?: string
+  translate?: SettingsTabTranslator
 }
 
 export interface UseSettingsShellResult {
@@ -26,13 +33,14 @@ function matchesPlatform(tab: SettingsTab, isDesktop: boolean): boolean {
 export function useSettingsShell(options: UseSettingsShellOptions = {}): UseSettingsShellResult {
   const isDesktop = options.isDesktop ?? true
   const searchQuery = ref(options.initialQuery?.trim() || '')
+  const translate = options.translate
 
   const visibleTabs = computed(() => {
-    return SETTINGS_TABS.filter((tab) => matchesPlatform(tab, isDesktop))
+    return getSettingsTabs(translate).filter((tab) => matchesPlatform(tab, isDesktop))
   })
 
   const filteredTabs = computed(() => {
-    return visibleTabs.value.filter((tab) => matchesSettingsSearch(tab.id, searchQuery.value))
+    return visibleTabs.value.filter((tab) => matchesSettingsSearch(tab.id, searchQuery.value, translate))
   })
 
   const hasSearchQuery = computed(() => searchQuery.value.trim().length > 0)
@@ -57,6 +65,11 @@ export function useSettingsShell(options: UseSettingsShellOptions = {}): UseSett
   }
 }
 
-export function findFirstMatchingSettingsTab(query?: string, isDesktop = true): SettingsTabType | undefined {
-  return SETTINGS_TABS.find((tab) => matchesPlatform(tab, isDesktop) && matchesSettingsSearch(tab.id, query))?.id
+export function findFirstMatchingSettingsTab(
+  query?: string,
+  isDesktop = true,
+  translate?: SettingsTabTranslator
+): SettingsTabType | undefined {
+  return SETTINGS_TABS.find((tab) => matchesPlatform(tab, isDesktop) && matchesSettingsSearch(tab.id, query, translate))
+    ?.id
 }

@@ -20,6 +20,14 @@ const setSecretChatEnabledMock = vi.fn()
 const setSecretChatHideSessionsMock = vi.fn()
 const setSecretChatAutoLockMock = vi.fn()
 const setSecretChatLockTimeoutMock = vi.fn()
+const translationMap: Record<string, string> = {
+  'setting.security.encryption_status': '加密状态',
+  'setting.security.encryption_disabled_title': '端到端加密未启用',
+  'setting.security.user_already_blocked': '该用户已在屏蔽列表中',
+  'setting.private_chat.clear_confirm_title': '确认清除',
+  'setting.private_chat.password_mismatch': '两次输入的密码不一致',
+  'setting.private_chat.password_too_short': '密码长度不能少于4位'
+}
 
 type SecuritySettingsVm = ComponentPublicInstance & {
   encryptionEnabled: boolean
@@ -81,7 +89,10 @@ vi.mock('@/services/matrix', () => ({
 
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({
-    secretChat: { enabled: false, passwordHash: '', hideSessions: false, autoLock: false, lockTimeout: 5 },
+    secretChatEnabled: false,
+    secretChatHideSessions: false,
+    secretChatAutoLock: false,
+    secretChatLockTimeout: 5,
     isSecretChatConfigured: () => isSecretChatConfiguredMock(),
     setSecretChatPassword: (password: string) => setSecretChatPasswordMock(password),
     clearSecretChatPassword: () => clearSecretChatPasswordMock(),
@@ -98,6 +109,21 @@ vi.mock('@/components/encryption/KeyBackupSetupDialog.vue', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn() })
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      if (!params) {
+        return translationMap[key] ?? key
+      }
+
+      return Object.entries(params).reduce(
+        (message, [name, value]) => message.replace(new RegExp(`\\{${name}\\}`, 'g'), value),
+        translationMap[key] ?? key
+      )
+    }
+  })
 }))
 
 describe('SecuritySettings', () => {

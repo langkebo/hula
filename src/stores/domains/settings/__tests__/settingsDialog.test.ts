@@ -15,20 +15,18 @@ describe('settingsDialog', () => {
     expect(SETTINGS_TABS.map((tab) => tab.id)).toContain('helpAbout')
   })
 
-  it('normalizes legacy tab ids to the canonical settings tabs', () => {
-    expect(normalizeSettingsTab('push')).toBe('notifications')
-    expect(normalizeSettingsTab('integrations')).toBe('labs')
+  it('normalizes the remaining legacy tab ids to the canonical settings tabs', () => {
     expect(normalizeSettingsTab('security')).toBe('securityPrivacy')
     expect(normalizeSettingsTab('help')).toBe('helpAbout')
   })
 
-  it('maps legacy dialog targets without breaking activeTab', () => {
+  it('maps remaining legacy dialog targets without breaking activeTab', () => {
     const store = useSettingsDialogStore()
 
-    store.openDialog('push')
-    expect(store.activeTab).toBe('notifications')
+    store.openDialog('security')
+    expect(store.activeTab).toBe('securityPrivacy')
 
-    store.setActiveTab('integrations')
-    expect(store.activeTab).toBe('labs')
+    store.setActiveTab('help')
+    expect(store.activeTab).toBe('helpAbout')
   })
 })

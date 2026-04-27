@@ -28,18 +28,18 @@
             <n-avatar
               :size="56"
               :src="AvatarUtils.getAvatarUrl(searchResult.avatarUrl)"
-              :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+              :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
               round />
             <n-flex vertical :size="4" class="flex-1">
               <span class="text-16px font-medium">{{ searchResult.displayName || searchResult.userId }}</span>
-              <span class="text-12px text-gray-500">{{ searchResult.userId }}</span>
+              <span class="text-12px text-[--hula-text-secondary]">{{ searchResult.userId }}</span>
             </n-flex>
           </n-flex>
 
           <n-divider style="margin: 12px 0" />
 
           <n-flex vertical :size="8">
-            <span class="text-12px text-gray-500">{{ t('friend.add.message_label') }}</span>
+            <span class="text-12px text-[--hula-text-tertiary]">{{ t('friend.add.message_label') }}</span>
             <n-input
               v-model:value="requestMessage"
               type="textarea"
@@ -60,10 +60,10 @@
         <n-empty v-else-if="hasSearched" :description="t('friend.add.not_found')" />
 
         <div v-else class="search-hint">
-          <n-icon size="48" color="#ccc">
+          <n-icon size="48" color="var(--hula-text-tertiary)">
             <svg><use href="#search" /></svg>
           </n-icon>
-          <span class="text-14px text-gray-400">{{ t('friend.add.hint') }}</span>
+          <span class="text-14px text-[--hula-text-tertiary]">{{ t('friend.add.hint') }}</span>
         </div>
       </n-spin>
     </n-flex>
@@ -71,7 +71,6 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
 import { useContactStore, type MatrixContact } from '@/stores/domains/chat/contacts'
@@ -81,7 +80,6 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 const { t } = useI18n()
 const contactStore = useContactStore()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 
 const visible = defineModel<boolean>('show', { default: false })
 const searchValue = ref('')
@@ -164,8 +162,8 @@ watch(visible, (val) => {
 .search-result {
   padding: 12px;
   border-radius: 8px;
-  background: var(--bg-color);
-  border: 1px solid var(--border-color);
+  background: var(--hula-surface-panel);
+  border: 1px solid var(--hula-border-default);
 }
 
 .search-hint {

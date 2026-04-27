@@ -1,25 +1,25 @@
 <template>
   <div class="notification-settings">
     <div class="settings-section">
-      <h3 class="section-title">桌面通知</h3>
+      <h3 class="section-title">{{ t('setting.notification.desktop.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">启用桌面通知</span>
-          <span class="setting-desc">接收新消息时显示桌面通知</span>
+          <span class="setting-label">{{ t('setting.notification.desktop.enable_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.desktop.enable_desc') }}</span>
         </div>
         <n-switch v-model:value="desktopNotification" @update:value="handleNotificationChange" />
       </div>
       <div v-if="desktopNotification" class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">通知声音</span>
-          <span class="setting-desc">收到通知时播放声音</span>
+          <span class="setting-label">{{ t('setting.notification.desktop.sound_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.desktop.sound_desc') }}</span>
         </div>
         <n-switch v-model:value="notificationSound" @update:value="handleSoundChange" />
       </div>
       <div v-if="notificationSound" class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">音量</span>
-          <span class="setting-desc">调整通知声音音量</span>
+          <span class="setting-label">{{ t('setting.notification.desktop.volume_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.desktop.volume_desc') }}</span>
         </div>
         <div class="volume-control">
           <n-slider
@@ -37,18 +37,18 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">通知内容</h3>
+      <h3 class="section-title">{{ t('setting.notification.content.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示消息内容</span>
-          <span class="setting-desc">在通知中显示消息内容</span>
+          <span class="setting-label">{{ t('setting.notification.content.message_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.content.message_desc') }}</span>
         </div>
         <n-switch v-model:value="showMessageContent" @update:value="handleContentChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示发送者名称</span>
-          <span class="setting-desc">在通知中显示发送者名称</span>
+          <span class="setting-label">{{ t('setting.notification.content.sender_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.content.sender_desc') }}</span>
         </div>
         <n-switch v-model:value="showSenderName" @update:value="handleSenderChange" />
       </div>
@@ -57,18 +57,23 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">关键词通知</h3>
+      <h3 class="section-title">{{ t('setting.notification.keyword.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">启用关键词通知</span>
-          <span class="setting-desc">当消息包含指定关键词时发送通知</span>
+          <span class="setting-label">{{ t('setting.notification.keyword.enable_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.keyword.enable_desc') }}</span>
         </div>
         <n-switch v-model:value="keywordNotification" @update:value="handleKeywordToggle" />
       </div>
       <div v-if="keywordNotification" class="keywords-section">
         <div class="keywords-control">
-          <n-input v-model:value="newKeyword" placeholder="输入关键词后按回车添加" @keyup.enter="addKeyword" />
-          <n-button type="primary" @click="addKeyword">添加</n-button>
+          <n-input
+            v-model:value="newKeyword"
+            :placeholder="t('setting.notification.keyword.input_placeholder')"
+            @keyup.enter="addKeyword" />
+          <n-button type="primary" @click="addKeyword">
+            {{ t('setting.notification.keyword.add') }}
+          </n-button>
         </div>
         <div class="keywords-list">
           <n-tag v-for="keyword in keywords" :key="keyword" closable @close="removeKeyword(keyword)">
@@ -81,25 +86,25 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">线程通知</h3>
+      <h3 class="section-title">{{ t('setting.notification.thread.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">线程回复通知</span>
-          <span class="setting-desc">线程中有新回复时发送通知</span>
+          <span class="setting-label">{{ t('setting.notification.thread.reply_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.thread.reply_desc') }}</span>
         </div>
         <n-switch v-model:value="threadReplyNotify" @update:value="handleThreadReplyNotify" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">参与的线程新消息通知</span>
-          <span class="setting-desc">你参与的线程有新消息时通知</span>
+          <span class="setting-label">{{ t('setting.notification.thread.participate_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.thread.participate_desc') }}</span>
         </div>
         <n-switch v-model:value="threadParticipateNotify" @update:value="handleThreadParticipateNotify" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">线程中被 @提及时通知</span>
-          <span class="setting-desc">在线程中被他人提及时发送通知</span>
+          <span class="setting-label">{{ t('setting.notification.thread.mention_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.thread.mention_desc') }}</span>
         </div>
         <n-switch v-model:value="threadMentionNotify" @update:value="handleThreadMentionNotify" />
       </div>
@@ -108,18 +113,18 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">空间通知</h3>
+      <h3 class="section-title">{{ t('setting.notification.space.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">空间新增房间时通知</span>
-          <span class="setting-desc">你加入的空间有新房间时通知</span>
+          <span class="setting-label">{{ t('setting.notification.space.new_room_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.space.new_room_desc') }}</span>
         </div>
         <n-switch v-model:value="spaceNewRoomNotify" @update:value="handleSpaceNewRoomNotify" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">空间成员变更时通知</span>
-          <span class="setting-desc">空间成员加入或离开时通知</span>
+          <span class="setting-label">{{ t('setting.notification.space.member_change_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.space.member_change_desc') }}</span>
         </div>
         <n-switch v-model:value="spaceMemberChangeNotify" @update:value="handleSpaceMemberChangeNotify" />
       </div>
@@ -128,18 +133,18 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">好友请求通知</h3>
+      <h3 class="section-title">{{ t('setting.notification.friend.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">收到好友请求时通知</span>
-          <span class="setting-desc">有新的好友请求时发送通知</span>
+          <span class="setting-label">{{ t('setting.notification.friend.request_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.friend.request_desc') }}</span>
         </div>
         <n-switch v-model:value="friendRequestNotify" @update:value="handleFriendRequestNotify" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">好友请求被接受时通知</span>
-          <span class="setting-desc">你发出的好友请求被接受时通知</span>
+          <span class="setting-label">{{ t('setting.notification.friend.accept_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.friend.accept_desc') }}</span>
         </div>
         <n-switch v-model:value="friendAcceptNotify" @update:value="handleFriendAcceptNotify" />
       </div>
@@ -148,8 +153,8 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">推送与规则</h3>
-      <p class="section-desc">统一管理推送设备、规则开关和免打扰时段</p>
+      <h3 class="section-title">{{ t('setting.notification.push_section.title') }}</h3>
+      <p class="section-desc">{{ t('setting.notification.push_section.desc') }}</p>
       <PushSettings embedded />
     </div>
   </div>
@@ -158,7 +163,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { NSwitch, NSlider, NDivider, NInput, NButton, NTag, useMessage } from 'naive-ui'
-import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import PushSettings from '@/views/settingsWindow/tabs/PushSettings.vue'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
@@ -166,13 +171,19 @@ defineOptions({
   name: 'NotificationSettings'
 })
 
+const { t } = useI18n()
 const message = useMessage()
 const settingStore = useSettingStore()
-const { notification } = storeToRefs(settingStore)
 
 const desktopNotification = ref(true)
-const notificationSound = ref(notification.value?.messageSound ?? true)
-const soundVolume = ref(notification.value?.volume ?? 80)
+const notificationSound = computed({
+  get: () => settingStore.messageSoundEnabled,
+  set: (value: boolean) => settingStore.setMessageSoundEnabled(value)
+})
+const soundVolume = computed({
+  get: () => settingStore.notificationVolume,
+  set: (value: number) => settingStore.setNotificationVolume(value)
+})
 const showMessageContent = ref(true)
 const showSenderName = ref(true)
 const keywordNotification = ref(false)
@@ -237,18 +248,26 @@ async function handleNotificationChange(value: boolean) {
   if (value && 'Notification' in window) {
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') {
-      message.warning('请在系统设置中允许通知权限')
+      message.warning(t('setting.notification.feedback.permission_denied'))
       desktopNotification.value = false
       return
     }
   }
   localStorage.setItem('hula-desktop-notification', value.toString())
-  message.success(value ? '已启用桌面通知' : '已禁用桌面通知')
+  message.success(
+    t('setting.notification.feedback.desktop', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    })
+  )
 }
 
 function handleSoundChange(value: boolean) {
   settingStore.setMessageSoundEnabled(value)
-  message.success(value ? '已启用通知声音' : '已禁用通知声音')
+  message.success(
+    t('setting.notification.feedback.sound', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    })
+  )
 }
 
 function handleVolumeChange(value: number) {
@@ -257,17 +276,29 @@ function handleVolumeChange(value: number) {
 
 function handleContentChange(value: boolean) {
   localStorage.setItem('hula-show-content', value.toString())
-  message.success(value ? '通知将显示消息内容' : '通知将隐藏消息内容')
+  message.success(
+    t('setting.notification.feedback.message_content', {
+      state: t(value ? 'setting.notification.common.shown' : 'setting.notification.common.hidden')
+    })
+  )
 }
 
 function handleSenderChange(value: boolean) {
   localStorage.setItem('hula-show-sender', value.toString())
-  message.success(value ? '通知将显示发送者' : '通知将隐藏发送者')
+  message.success(
+    t('setting.notification.feedback.sender_name', {
+      state: t(value ? 'setting.notification.common.shown' : 'setting.notification.common.hidden')
+    })
+  )
 }
 
 function handleKeywordToggle(value: boolean) {
   localStorage.setItem('hula-keyword-notification', value.toString())
-  message.success(value ? '已启用关键词通知' : '已禁用关键词通知')
+  message.success(
+    t('setting.notification.feedback.keyword', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    })
+  )
 }
 
 function addKeyword() {
@@ -276,77 +307,102 @@ function addKeyword() {
     keywords.value.push(keyword)
     localStorage.setItem('hula-keywords', JSON.stringify(keywords.value))
     newKeyword.value = ''
-    message.success(`已添加关键词: ${keyword}`)
+    message.success(t('setting.notification.feedback.keyword_added', { keyword }))
   }
 }
 
 function removeKeyword(keyword: string) {
   keywords.value = keywords.value.filter((k) => k !== keyword)
   localStorage.setItem('hula-keywords', JSON.stringify(keywords.value))
-  message.success(`已移除关键词: ${keyword}`)
+  message.success(t('setting.notification.feedback.keyword_removed', { keyword }))
 }
 
 function handleThreadReplyNotify(value: boolean) {
   localStorage.setItem('hula-thread-reply-notify', value.toString())
-  message.success(value ? '已启用线程回复通知' : '已禁用线程回复通知')
+  message.success(
+    t('setting.notification.feedback.thread_reply', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    })
+  )
 }
 
 function handleThreadParticipateNotify(value: boolean) {
   localStorage.setItem('hula-thread-participate-notify', value.toString())
-  message.success(value ? '已启用线程参与通知' : '已禁用线程参与通知')
+  message.success(
+    t('setting.notification.feedback.thread_participate', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    })
+  )
 }
 
 function handleThreadMentionNotify(value: boolean) {
   localStorage.setItem('hula-thread-mention-notify', value.toString())
-  message.success(value ? '已启用线程提及通知' : '已禁用线程提及通知')
+  message.success(
+    t('setting.notification.feedback.thread_mention', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    })
+  )
 }
 
 function handleSpaceNewRoomNotify(value: boolean) {
   localStorage.setItem('hula-space-new-room-notify', value.toString())
-  message.success(value ? '已启用空间新房间通知' : '已禁用空间新房间通知')
+  message.success(
+    t('setting.notification.feedback.space_new_room', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    })
+  )
 }
 
 function handleSpaceMemberChangeNotify(value: boolean) {
   localStorage.setItem('hula-space-member-change-notify', value.toString())
-  message.success(value ? '已启用空间成员变更通知' : '已禁用空间成员变更通知')
+  message.success(
+    t('setting.notification.feedback.space_member_change', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    })
+  )
 }
 
 function handleFriendRequestNotify(value: boolean) {
   localStorage.setItem('hula-friend-request-notify', value.toString())
-  message.success(value ? '已启用好友请求通知' : '已禁用好友请求通知')
+  message.success(
+    t('setting.notification.feedback.friend_request', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    })
+  )
 }
 
 function handleFriendAcceptNotify(value: boolean) {
   localStorage.setItem('hula-friend-accept-notify', value.toString())
-  message.success(value ? '已启用好友接受通知' : '已禁用好友接受通知')
+  message.success(
+    t('setting.notification.feedback.friend_accept', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    })
+  )
 }
 </script>
 
 <style scoped>
 .notification-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-4);
+  color: var(--hula-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -355,46 +411,47 @@ function handleFriendAcceptNotify(value: boolean) {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .volume-control {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .volume-value {
-  font-size: 12px;
-  color: var(--color-text-secondary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-secondary);
   min-width: 36px;
 }
 
 .keywords-section {
-  margin-top: 12px;
+  margin-top: var(--hula-space-3);
 }
 
 .keywords-control {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--hula-space-2);
+  margin-bottom: var(--hula-space-3);
 }
 
 .keywords-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .section-desc {
-  margin: -8px 0 16px;
-  font-size: 12px;
-  color: var(--color-text-quaternary);
+  margin: calc(var(--hula-space-2) * -1) 0 var(--hula-space-4);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
 }
 </style>

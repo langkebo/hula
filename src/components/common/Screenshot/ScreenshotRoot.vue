@@ -66,6 +66,11 @@ const maskCanvas = ref<HTMLCanvasElement | null>(null)
 const maskCtx = ref<CanvasRenderingContext2D | null>(null)
 const drawCanvas = ref<HTMLCanvasElement | null>(null)
 const drawCtx = ref<CanvasRenderingContext2D | null>(null)
+const cssVars = getComputedStyle(document.documentElement)
+const selectionBorderColor = cssVars.getPropertyValue('--hula-color-primary-500').trim()
+const overlayMaskColor =
+  cssVars.getPropertyValue('--hula-overlay-mask-default').trim() ||
+  cssVars.getPropertyValue('--hula-surface-overlay').trim()
 
 const magnifierRef = ref<InstanceType<typeof ScreenshotMagnifier> | null>(null)
 const selectionRef = ref<InstanceType<typeof ScreenshotSelection> | null>(null)
@@ -102,7 +107,7 @@ const selectionAreaStyle = ref({
   width: '0px',
   height: '0px',
   borderRadius: '0px',
-  border: '2px solid var(--color-primary)'
+  border: `2px solid ${selectionBorderColor}`
 })
 
 let screenshotImage: HTMLImageElement
@@ -111,7 +116,7 @@ const mouseMoveThrottleDelay = 16
 
 const drawMask = () => {
   if (maskCtx.value && maskCanvas.value) {
-    maskCtx.value.fillStyle = 'rgba(0, 0, 0, 0.4)'
+    maskCtx.value.fillStyle = overlayMaskColor || 'black'
     maskCtx.value.fillRect(0, 0, maskCanvas.value.width, maskCanvas.value.height)
   }
 }
@@ -124,7 +129,7 @@ const drawRectangle = (
   height: number,
   lineWidth: number = 2
 ) => {
-  context.strokeStyle = '#13987f'
+  context.strokeStyle = selectionBorderColor || 'black'
   context.lineWidth = lineWidth
 
   if (borderRadius.value > 0) {
@@ -205,7 +210,7 @@ const updateSelectionAreaPosition = () => {
     width: `${maxX - minX}px`,
     height: `${maxY - minY}px`,
     borderRadius: `${borderRadius.value}px`,
-    border: '2px solid var(--color-primary)'
+    border: `2px solid ${selectionBorderColor}`
   }
 }
 
@@ -429,7 +434,7 @@ const handleResizeMove = (event: MouseEvent) => {
     width: `${newWidth}px`,
     height: `${newHeight}px`,
     borderRadius: `${borderRadius.value}px`,
-    border: '2px solid var(--color-primary)'
+    border: `2px solid ${selectionBorderColor}`
   }
 
   const { scaleX, scaleY } = screenConfig.value

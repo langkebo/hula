@@ -28,7 +28,7 @@
           <div
             style="border-radius: 24px 42px 4px 24px"
             :class="[
-              'z-10 absolute bottom--4px h-6px w-34px bg-[--color-primary] transition-all duration-300 ease-out',
+              'z-10 absolute bottom--4px h-6px w-34px bg-[--hula-color-primary-500] transition-all duration-300 ease-out',
               activeTab === 'login' ? 'left-[33px]' : 'left-[133px]'
             ]"></div>
         </div>
@@ -117,13 +117,13 @@
         <!-- 协议 -->
         <div class="flex items-center justify-center gap-6px absolute bottom-0 w-[80%]" :style="agreementStyle">
           <van-checkbox v-model="protocol" shape="square" icon-size="16px" />
-          <div class="text-12px color-[--color-text-tertiary] cursor-default lh-14px">
+          <div class="text-12px color-[--hula-text-tertiary] cursor-default lh-14px">
             <span>{{ t('login.term.checkout.text1') }}</span>
-            <span @click.stop="toServiceAgreement" class="color-[--color-primary] cursor-pointer">
+            <span @click.stop="toServiceAgreement" class="color-[--hula-color-primary-500] cursor-pointer">
               {{ t('login.term.checkout.text2') }}
             </span>
             <span>{{ t('login.term.checkout.text3') }}</span>
-            <span @click.stop="toPrivacyAgreement" class="color-[--color-primary] cursor-pointer">
+            <span @click.stop="toPrivacyAgreement" class="color-[--hula-color-primary-500] cursor-pointer">
               {{ t('login.term.checkout.text4') }}
             </span>
           </div>
@@ -199,13 +199,13 @@
         <!-- 协议 -->
         <div class="flex items-center justify-center gap-6px mt-10px">
           <van-checkbox v-model="registerProtocol" shape="square" icon-size="16px" />
-          <div class="text-12px color-[--color-text-tertiary] cursor-default lh-14px">
+          <div class="text-12px color-[--hula-text-tertiary] cursor-default lh-14px">
             <span>{{ t('login.term.checkout.text1') }}</span>
-            <span @click.stop="toServiceAgreement" class="color-[--color-primary] cursor-pointer">
+            <span @click.stop="toServiceAgreement" class="color-[--hula-color-primary-500] cursor-pointer">
               {{ t('login.term.checkout.text2') }}
             </span>
             <span>{{ t('login.term.checkout.text3') }}</span>
-            <span @click.stop="toPrivacyAgreement" class="color-[--color-primary] cursor-pointer">
+            <span @click.stop="toPrivacyAgreement" class="color-[--hula-color-primary-500] cursor-pointer">
               {{ t('login.term.checkout.text4') }}
             </span>
           </div>
@@ -318,7 +318,6 @@ const { loginHistories } = storeToRefs(loginHistoriesStore)
 const mobileStore = useMobileStore()
 const safeArea = computed(() => mobileStore.safeArea)
 const settingStore = useSettingStore()
-const { login } = storeToRefs(settingStore)
 
 const isJumpDirectly = ref(false)
 
@@ -655,7 +654,7 @@ const closeMenu = (event: MouseEvent) => {
 }
 
 onBeforeMount(async () => {
-  if (!login.value.autoLogin) {
+  if (!settingStore.autoLoginEnabled) {
     localStorage.removeItem('TOKEN')
     localStorage.removeItem('REFRESH_TOKEN')
     return
@@ -703,7 +702,7 @@ onMounted(async () => {
     loginText.value = t('login.status.service_disconnected')
   })
 
-  if (login.value.autoLogin) {
+  if (settingStore.autoLoginEnabled) {
     normalLogin('MOBILE', true, true)
   } else {
     loginHistories.value.length > 0 && giveAccount(loginHistories.value[0])

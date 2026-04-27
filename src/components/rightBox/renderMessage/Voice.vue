@@ -49,9 +49,7 @@
         class="time-preview"
         :style="{
           left: `${waveformRenderer.scanLinePosition.value}px`,
-          color: isCurrentUser ? '#fff' : isDarkMode ? '#fff' : '#000',
-          backgroundColor: isCurrentUser ? '#303030' : isDarkMode ? '#303030' : '#fff',
-          border: isCurrentUser ? 'none' : isDarkMode ? '1px solid #505050' : '1px solid #d0d0d0'
+          ...timePreviewStyle
         }">
         {{ formatTime(dragControl.previewTime.value) }}
       </div>
@@ -65,8 +63,6 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { ThemeEnum } from '@/enums'
 import { useAudioFileManager } from '@/hooks/useAudioFileManager'
 import { useAudioPlayback } from '@/hooks/useAudioPlayback'
 import { useVoiceDragControl } from '@/hooks/useVoiceDragControl'
@@ -86,7 +82,6 @@ const props = defineProps<{
 
 const settingStore = useSettingStore()
 const userStore = useUserStore()
-const { themes } = storeToRefs(settingStore)
 
 // 使用messageId作为音频ID，确保唯一性
 const rawAudioUrl = computed(() => props.body.mxcUrl || props.body.url)
@@ -96,11 +91,6 @@ const playableAudioUrl = computed(() => {
 const audioId = rawAudioUrl.value || props.body.url
 const waveformCanvas = ref<HTMLCanvasElement | null>(null)
 
-// 判断是否为深色模式
-const isDarkMode = computed(() => {
-  return themes.value.content === ThemeEnum.DARK
-})
-
 // 判断是否为当前用户发送的消息
 const isCurrentUser = computed(() => {
   return props.fromUserUid === userStore.userInfo?.uid
@@ -108,10 +98,22 @@ const isCurrentUser = computed(() => {
 
 // 计算语音图标颜色
 const voiceIconColor = computed(() => {
+  return isCurrentUser.value ? 'var(--hula-text-inverse)' : 'var(--hula-text-primary)'
+})
+
+const timePreviewStyle = computed(() => {
   if (isCurrentUser.value) {
-    return '#fff'
-  } else {
-    return isDarkMode.value ? '#fff' : '#000'
+    return {
+      color: 'var(--hula-text-inverse)',
+      backgroundColor: 'var(--hula-overlay-inverse-strong)',
+      border: 'none'
+    }
+  }
+
+  return {
+    color: 'var(--hula-text-primary)',
+    backgroundColor: 'var(--hula-surface-panel)',
+    border: '1px solid var(--hula-border-strong)'
   }
 })
 
@@ -157,24 +159,22 @@ const waveformRenderer = useWaveformRenderer(
 
 // 计算波形颜色状态
 const getWaveformColors = () => {
-  const baseColor = isCurrentUser.value ? '#ffffff' : isDarkMode.value ? '#ffffff' : '#000000'
+  const baseColor = isCurrentUser.value ? 'var(--hula-text-inverse)' : 'var(--hula-text-primary)'
 
   // 已播放区域颜色（始终完全不透明）
   const playedColor = baseColor
 
   // 未播放区域颜色（根据播放状态调整透明度）
-  let unplayedOpacity: number
   if (audioPlayback.isPlaying.value || dragControl.isDragging.value) {
-    unplayedOpacity = 0.3
-  } else {
-    unplayedOpacity = 1.0
+    return {
+      playedColor,
+      unplayedColor: isCurrentUser.value
+        ? 'color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)'
+        : 'color-mix(in srgb, var(--hula-text-primary) 30%, transparent)'
+    }
   }
 
-  const unplayedColor = `${baseColor}${Math.round(unplayedOpacity * 255)
-    .toString(16)
-    .padStart(2, '0')}`
-
-  return { playedColor, unplayedColor }
+  return { playedColor, unplayedColor: baseColor }
 }
 
 // 格式化时间
@@ -197,10 +197,13 @@ const handleSeekToPosition = (event: MouseEvent) => {
   waveformRenderer.drawWaveformImmediate()
 }
 
-watch(isDarkMode, () => {
-  waveformRenderer.shouldUpdateCache.value = true
-  waveformRenderer.drawWaveform()
-})
+watch(
+  () => settingStore.themeContent,
+  () => {
+    waveformRenderer.shouldUpdateCache.value = true
+    waveformRenderer.drawWaveform()
+  }
+)
 
 watch(audioPlayback.isPlaying, () => {
   waveformRenderer.shouldUpdateCache.value = true
@@ -251,7 +254,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-color, #333);
+  color: var(--hula-text-primary);
 
   svg {
     width: 18px;
@@ -313,7 +316,7 @@ onUnmounted(() => {
     white-space: nowrap;
     pointer-events: none;
     z-index: 2;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--hula-shadow-sm);
     animation: fadeIn 0.2s ease;
   }
 }

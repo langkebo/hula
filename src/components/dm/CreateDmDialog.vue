@@ -37,7 +37,7 @@
             <n-avatar
               :size="56"
               :src="AvatarUtils.getAvatarUrl(searchResult.avatarUrl)"
-              :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+              :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
               round />
             <n-flex vertical :size="4" class="flex-1">
               <span class="text-16px font-medium">{{ searchResult.displayName || searchResult.userId }}</span>
@@ -83,7 +83,7 @@
                 <n-avatar
                   :size="32"
                   :src="AvatarUtils.getAvatarUrl(contact.avatarUrl)"
-                  :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   round />
                 <span class="text-14px truncate">{{ contact.displayName || contact.userId }}</span>
               </n-flex>
@@ -96,7 +96,6 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
 import { useContactStore, type MatrixContact } from '@/stores/domains/chat/contacts'
@@ -107,7 +106,6 @@ import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectM
 const { t } = useI18n()
 const contactStore = useContactStore()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 
 const visible = defineModel<boolean>('show', { default: false })
 const emit = defineEmits<(e: 'created', roomId: string) => void>()

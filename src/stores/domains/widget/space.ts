@@ -22,6 +22,10 @@ export const useSpaceStore = defineStore('space', () => {
     activeSpaceId.value = spaceId
   }
 
+  function replaceSpaces(nextSpaces: SpaceInfo[]) {
+    spaces.value = [...nextSpaces]
+  }
+
   async function createSpace(options: {
     name: string
     topic?: string
@@ -50,6 +54,7 @@ export const useSpaceStore = defineStore('space', () => {
     isLoading,
     loadSpaces,
     setActiveSpace,
+    replaceSpaces,
     createSpace,
     deleteSpace
   }

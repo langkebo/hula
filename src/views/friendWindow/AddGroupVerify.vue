@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full w-full bg-[--center-bg-color] select-none cursor-default">
+  <div class="h-full w-full bg-[--hula-surface-panel] select-none cursor-default">
     <!-- 窗口头部 -->
     <ActionBar
       class="absolute right-0 w-full z-999"

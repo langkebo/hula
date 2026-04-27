@@ -149,8 +149,8 @@ defineExpose({
 <style scoped lang="scss">
 .button-group {
   position: absolute;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
+  background: var(--hula-overlay-inverse-strong);
+  color: var(--hula-text-inverse);
   padding: 5px 8px;
   border-radius: 12px;
   display: flex;
@@ -177,11 +177,11 @@ defineExpose({
     }
 
     &:hover svg {
-      color: var(--color-primary);
+      color: var(--hula-color-primary-500);
     }
 
     &.active svg {
-      color: var(--color-primary);
+      color: var(--hula-color-primary-500);
     }
 
     &.disabled {

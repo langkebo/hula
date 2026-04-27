@@ -121,7 +121,7 @@ let hasPendingPresenceSync = false
 // 只在桌面端初始化窗口管理功能
 const { createWebviewWindow } = isDesktop() ? useWindow() : { createWebviewWindow: () => {} }
 const settingStore = useSettingStore()
-const { lockScreen, page } = storeToRefs(settingStore)
+const { lockScreen } = storeToRefs(settingStore)
 // 全局快捷键管理
 const { initializeGlobalShortcut, cleanupGlobalShortcut } = useGlobalShortcut()
 // 提前初始化网络状态监听，确保不错过 WebSocket 状态变化事件
@@ -208,10 +208,11 @@ useMitt.on(
   async (data: { uid: number; unReadCount4Friend: number; unReadCount4Group: number }) => {
     logger.debug('收到好友申请')
     // 更新未读数
-    globalStore.unReadMark.newFriendUnreadCount = data.unReadCount4Friend || 0
-    globalStore.unReadMark.newGroupUnreadCount = data.unReadCount4Group || 0
-
-    unreadCountManager.refreshBadge(globalStore.unReadMark)
+    globalStore.setUnreadCounts({
+      friend: data.unReadCount4Friend || 0,
+      group: data.unReadCount4Group || 0
+    })
+    globalStore.refreshUnreadBadge()
 
     // 刷新好友申请列表
     await contactStore.getApplyPage('friend', true)
@@ -343,7 +344,7 @@ useMitt.on(WsResponseMessageType.REQUEST_APPROVAL_FRIEND, async () => {
   // 刷新好友列表以获取最新状态
   await contactStore.getContactList(true)
   await contactStore.getApplyUnReadCount()
-  unreadCountManager.refreshBadge(globalStore.unReadMark)
+  globalStore.refreshUnreadBadge()
 })
 
 useMitt.on(WsResponseMessageType.ROOM_INFO_CHANGE, async (data: { roomId: string; name: string; avatar: string }) => {
@@ -630,7 +631,7 @@ const handleWebsocketEvent = async (event: { payload: WebsocketConnectionStatePa
         chatStore.markSessionRead(currentRoomId)
       }
     }
-    unreadCountManager.refreshBadge(globalStore.unReadMark)
+    globalStore.refreshUnreadBadge()
   } finally {
     // 同步完成，隐藏加载状态
     chatStore.syncLoading = false
@@ -793,14 +794,8 @@ onMounted(async () => {
     await import('@/styles/scss/theme/simple.scss')
     document.querySelector('#app')?.classList.add('simple')
   }
-  if (!settingStore.themes.content) {
-    // 首次运行使用跟随系统，保持既有体验
-    settingStore.initTheme(ThemeEnum.OS)
-  } else {
-    // 非首次运行时直接使用已恢复的主题信息，避免被强制改回“跟随系统”
-    settingStore.normalizeThemeState()
-  }
-  document.documentElement.dataset.theme = settingStore.themes.content
+  // 首次运行使用跟随系统；已恢复状态时只做合法化修正
+  settingStore.ensureThemeReady(ThemeEnum.OS)
   window.addEventListener('dragstart', preventDrag)
 
   if (tauriRuntimeAvailable) {
@@ -871,7 +866,7 @@ watch(
 
 /** 控制阴影 */
 watch(
-  () => page.value.shadow,
+  () => settingStore.pageShadowEnabled,
   (val) => {
     // 移动端始终禁用阴影
     if (isMobile()) {
@@ -885,7 +880,7 @@ watch(
 
 /** 控制高斯模糊 */
 watch(
-  () => page.value.blur,
+  () => settingStore.pageBlurEnabled,
   (val) => {
     document.documentElement.setAttribute('data-blur', val ? '1' : '0')
   },
@@ -894,7 +889,7 @@ watch(
 
 /** 控制字体样式 */
 watch(
-  () => page.value.fonts,
+  () => settingStore.pageFontFamily,
   (val) => {
     document.documentElement.style.setProperty('--font-family', val)
   },
@@ -905,10 +900,9 @@ watch(
  * 语言发生变化
  */
 watch(
-  () => page.value.lang,
+  () => settingStore.languagePreference,
   (lang) => {
-    lang = lang === 'AUTO' ? navigator.language : lang
-    loadLanguage(lang)
+    void loadLanguage(lang)
   }
 )
 

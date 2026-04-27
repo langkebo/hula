@@ -21,7 +21,7 @@
           @click="editInfo.show = false">
           <use href="#close"></use>
         </svg>
-        <span class="h-1px w-full bg-[--line-color]"></span>
+        <span class="h-1px w-full bg-[--hula-border-default]"></span>
       </n-flex>
       <n-flex :size="20" class="p-22px select-none" vertical>
         <!-- 头像 -->
@@ -31,20 +31,20 @@
               <div class="avatar-wrapper relative" @click="openAvatarCropper">
                 <n-avatar :size="80" :src="AvatarUtils.getAvatarUrl(editInfo.content.avatar!)" round />
                 <div class="avatar-hover absolute size-full rounded-50% flex-center">
-                  <span class="text-12px color-[--color-text-secondary]">
+                  <span class="text-12px color-[--hula-text-secondary]">
                     {{ t('home.profile_edit.avatar.change') }}
                   </span>
                 </div>
               </div>
             </template>
-            <p class="text-12px text-[--chat-text-color] w-280px leading-5 p-4px">
+            <p class="text-12px text-[--hula-text-secondary] w-280px leading-5 p-4px">
               {{ t('home.profile_edit.avatar.tips') }}
             </p>
           </n-popover>
         </n-flex>
         <!-- 当前佩戴的徽章 -->
         <n-flex v-if="currentBadge" align="center" justify="center">
-          <span class="text-(14px [--color-text-secondary])">{{ t('home.profile_edit.badge.current') }}</span>
+          <span class="text-(14px [--hula-text-secondary])">{{ t('home.profile_edit.badge.current') }}</span>
           <n-popover trigger="hover">
             <template #trigger>
               <img :src="currentBadge?.img" alt="" class="size-22px" />
@@ -74,7 +74,7 @@
               show-count
               type="text">
               <template #prefix>
-                <span class="pr-6px text-[--color-text-tertiary]">
+                <span class="pr-6px text-[--hula-text-tertiary]">
                   {{ t('home.profile_edit.form.nickname.label') }}
                 </span>
               </template>
@@ -103,7 +103,7 @@
                   <n-button
                     style="color: #fff"
                     v-if="item.wearing === IsYesEnum.NO"
-                    color="var(--color-primary)"
+                    color="var(--hula-color-primary-500)"
                     @click="toggleWarningBadge(item)">
                     {{ t('home.profile_edit.badge.wear') }}
                   </n-button>
@@ -125,7 +125,7 @@
         <n-button
           style="color: #fff"
           :disabled="editInfo.content.name === localUserInfo.name"
-          color="var(--color-primary)"
+          color="var(--hula-color-primary-500)"
           @click="saveEditInfo(localUserInfo as ModifyUserInfoType)">
           {{ t('home.profile_edit.actions.save') }}
         </n-button>

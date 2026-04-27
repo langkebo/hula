@@ -56,7 +56,7 @@
                         class="size-48px rounded-full object-cover"
                         @error="
                           ($event.target as HTMLImageElement).src =
-                            themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'
+                            settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'
                         " />
                       <div class="flex flex-col justify-center gap-10px flex-1">
                         <div class="flex items-center gap-10px">
@@ -129,7 +129,6 @@ import router from '@/router'
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const badgeStore = useBadgeStore()
-const { themes } = storeToRefs(settingStore)
 const tabs = ref([
   { name: 'recommend', label: '推荐' },
   { name: 'user', label: '找好友' },
@@ -202,13 +201,15 @@ const handleButtonClick = (item: FriendSearchResult) => {
 
 const handleAddFriend = async (item: FriendSearchResult) => {
   if (searchType.value === 'user' || searchType.value === 'recommend') {
-    globalStore.addFriendModalInfo.uid = item.uid || ''
+    globalStore.setAddFriendTarget(item.uid || '')
 
     router.push('/mobile/mobileFriends/confirmAddFriend')
   } else {
-    globalStore.addGroupModalInfo.account = item.account
-    globalStore.addGroupModalInfo.name = item.name
-    globalStore.addGroupModalInfo.avatar = item.avatar
+    globalStore.setAddGroupTarget({
+      account: item.account,
+      name: item.name,
+      avatar: item.avatar
+    })
 
     router.push('/mobile/mobileFriends/confirmAddGroup')
   }

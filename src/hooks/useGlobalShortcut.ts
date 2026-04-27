@@ -37,13 +37,6 @@ const isMacPlatform = isMac()
  */
 export const useGlobalShortcut = () => {
   const settingStore = useSettingStore()
-  // 获取平台对应的默认快捷键
-  const getDefaultShortcuts = () => {
-    return {
-      screenshot: isMac() ? 'Cmd+Ctrl+H' : 'Ctrl+Alt+H',
-      openMainPanel: isMac() ? 'Cmd+Ctrl+P' : 'Ctrl+Alt+P'
-    }
-  }
 
   /**
    * 确保capture窗口存在
@@ -79,7 +72,7 @@ export const useGlobalShortcut = () => {
       if (!captureWindow) return
 
       // 检查是否需要隐藏home窗口
-      if (settingStore.screenshot.isConceal) {
+      if (settingStore.screenshotConcealEnabled) {
         await homeWindow.hide()
         // 等待窗口隐藏完成
         await new Promise((resolve) => setTimeout(resolve, 100))
@@ -168,14 +161,14 @@ export const useGlobalShortcut = () => {
   const shortcutConfigs: ShortcutConfig[] = [
     {
       key: 'screenshot',
-      defaultValue: getDefaultShortcuts().screenshot,
+      defaultValue: settingStore.screenshotShortcut,
       handler: handleScreenshot,
       updateEventName: 'shortcut-updated',
       registrationEventName: 'shortcut-registration-updated'
     },
     {
       key: 'openMainPanel',
-      defaultValue: getDefaultShortcuts().openMainPanel,
+      defaultValue: settingStore.openMainPanelShortcut,
       handler: handleOpenMainPanel,
       updateEventName: 'open-main-panel-shortcut-updated',
       registrationEventName: 'open-main-panel-shortcut-registration-updated'
@@ -286,7 +279,8 @@ export const useGlobalShortcut = () => {
     if (enabled) {
       // 开启时重新注册所有快捷键并通知设置页面
       for (const config of shortcutConfigs) {
-        const savedShortcut = settingStore.shortcuts?.[config.key] || config.defaultValue
+        const savedShortcut =
+          config.key === 'screenshot' ? settingStore.screenshotShortcut : settingStore.openMainPanelShortcut
         const success = await registerShortcut(config, savedShortcut as string)
 
         // 通知设置页面注册状态更新
@@ -298,7 +292,8 @@ export const useGlobalShortcut = () => {
     } else {
       // 关闭时取消注册所有快捷键并通知设置页面状态为未绑定
       for (const config of shortcutConfigs) {
-        const savedShortcut = settingStore.shortcuts?.[config.key] || config.defaultValue
+        const savedShortcut =
+          config.key === 'screenshot' ? settingStore.screenshotShortcut : settingStore.openMainPanelShortcut
 
         // 通知设置页面注册状态更新为未绑定
         await emitTo('settings', config.registrationEventName, {
@@ -321,13 +316,14 @@ export const useGlobalShortcut = () => {
     await ensureCaptureWindow()
 
     // 检查全局快捷键是否开启，默认为关闭
-    const globalEnabled = settingStore.shortcuts?.globalEnabled ?? false
+    const globalEnabled = settingStore.globalShortcutEnabled
 
     // 只有开启时才注册快捷键
     if (globalEnabled) {
       // 批量注册所有配置的快捷键
       for (const config of shortcutConfigs) {
-        const savedShortcut = settingStore.shortcuts?.[config.key] || config.defaultValue
+        const savedShortcut =
+          config.key === 'screenshot' ? settingStore.screenshotShortcut : settingStore.openMainPanelShortcut
         await registerShortcut(config, savedShortcut as string)
       }
     }
@@ -348,7 +344,7 @@ export const useGlobalShortcut = () => {
         const newShortcut = (event.payload as Record<string, unknown>)?.shortcut as string | undefined
         if (newShortcut) {
           // 只有全局快捷键开启时才处理更新
-          const globalEnabled = settingStore.shortcuts?.globalEnabled ?? false
+          const globalEnabled = settingStore.globalShortcutEnabled
           if (globalEnabled) {
             handleShortcutUpdate(config, newShortcut)
           } else {
@@ -393,7 +389,6 @@ export const useGlobalShortcut = () => {
     // 工具函数
     registerShortcut: (config: ShortcutConfig, shortcut: string) => registerShortcut(config, shortcut),
     unregisterShortcut,
-    getDefaultShortcuts,
 
     // 配置信息（用于外部访问）
     shortcutConfigs

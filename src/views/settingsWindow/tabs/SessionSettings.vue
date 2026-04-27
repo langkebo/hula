@@ -1,17 +1,19 @@
 <template>
   <div class="session-settings">
     <div class="settings-section">
-      <h3 class="section-title">当前设备</h3>
+      <h3 class="section-title">{{ t('setting.sessions.current_device') }}</h3>
       <div class="current-device">
         <div class="device-info">
           <Icon icon="mdi:laptop" :width="32" />
           <div class="device-details">
-            <div class="device-name">{{ currentDevice?.displayName || '当前设备' }}</div>
+            <div class="device-name">
+              {{ currentDevice?.displayName || t('setting.sessions.current_device_fallback') }}
+            </div>
             <div class="device-id">{{ currentDevice?.deviceId }}</div>
           </div>
         </div>
         <div class="device-actions">
-          <n-button size="small" @click="showRenameDialog(currentDevice)">重命名</n-button>
+          <n-button size="small" @click="showRenameDialog(currentDevice)">{{ t('setting.sessions.rename') }}</n-button>
           <n-button size="small" @click="loadDevices">
             <template #icon><Icon icon="mdi:refresh" :width="16" /></template>
           </n-button>
@@ -22,61 +24,68 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">其他设备</h3>
+      <h3 class="section-title">{{ t('setting.sessions.other_devices') }}</h3>
       <n-spin :show="loading">
         <div v-if="otherDevices.length > 0" class="device-list">
           <div v-for="device in otherDevices" :key="device.deviceId" class="device-item">
             <div class="device-info">
               <Icon :icon="getDeviceIcon(device)" :width="24" />
               <div class="device-details">
-                <div class="device-name">{{ device.displayName || '未命名设备' }}</div>
+                <div class="device-name">{{ device.displayName || t('setting.sessions.unnamed_device') }}</div>
                 <div class="device-meta">
                   <span v-if="device.lastSeenIp">IP: {{ device.lastSeenIp }}</span>
-                  <span v-if="device.lastSeenTs">最后活动: {{ formatDate(device.lastSeenTs) }}</span>
+                  <span v-if="device.lastSeenTs">
+                    {{ t('setting.sessions.last_active') }}: {{ formatDate(device.lastSeenTs) }}
+                  </span>
                 </div>
               </div>
             </div>
             <div class="device-actions">
-              <n-button size="tiny" @click="showRenameDialog(device)">重命名</n-button>
-              <n-button size="tiny" type="error" @click="handleDeleteDevice(device)">登出</n-button>
+              <n-button size="tiny" @click="showRenameDialog(device)">{{ t('setting.sessions.rename') }}</n-button>
+              <n-button size="tiny" type="error" @click="handleDeleteDevice(device)">
+                {{ t('setting.sessions.logout') }}
+              </n-button>
             </div>
           </div>
         </div>
-        <n-empty v-else description="没有其他设备" />
+        <n-empty v-else :description="t('setting.sessions.no_other_devices')" />
       </n-spin>
     </div>
 
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">安全操作</h3>
+      <h3 class="section-title">{{ t('setting.sessions.security_actions') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">登出所有其他设备</span>
-          <span class="setting-desc">登出除当前设备外的所有设备</span>
+          <span class="setting-label">{{ t('setting.sessions.logout_all_other_devices') }}</span>
+          <span class="setting-desc">{{ t('setting.sessions.logout_all_other_devices_desc') }}</span>
         </div>
         <n-button size="small" type="warning" @click="handleLogoutAllDevices" :disabled="otherDevices.length === 0">
-          登出全部
+          {{ t('setting.sessions.logout_all_action') }}
         </n-button>
       </div>
     </div>
   </div>
 
-  <n-modal v-model:show="renameDialogVisible" preset="dialog" title="重命名设备">
+  <n-modal v-model:show="renameDialogVisible" preset="dialog" :title="t('setting.sessions.rename_device_title')">
     <n-form>
-      <n-form-item label="设备名称">
-        <n-input v-model:value="newDeviceName" placeholder="请输入设备名称" />
+      <n-form-item :label="t('setting.sessions.device_name')">
+        <n-input v-model:value="newDeviceName" :placeholder="t('setting.sessions.device_name_placeholder')" />
       </n-form-item>
     </n-form>
     <template #action>
-      <n-button @click="renameDialogVisible = false">取消</n-button>
-      <n-button type="primary" @click="handleRenameDevice" :loading="renaming">确定</n-button>
+      <n-button @click="renameDialogVisible = false">{{ t('setting.common.cancel') }}</n-button>
+      <n-button type="primary" @click="handleRenameDevice" :loading="renaming">
+        {{ t('setting.common.confirm') }}
+      </n-button>
     </template>
   </n-modal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { NButton, NDivider, NSpin, NEmpty, NModal, NForm, NFormItem, NInput, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { matrixAccountService, type DeviceInfo } from '@/services/matrix/user/MatrixAccountService'
@@ -88,6 +97,7 @@ defineOptions({
 
 const message = useMessage()
 const dialog = useDialog()
+const { t, locale } = useI18n()
 const matrixStore = useMatrixStore()
 
 const loading = ref(false)
@@ -116,7 +126,7 @@ async function loadDevices() {
   try {
     devices.value = await matrixAccountService.getDevices()
   } catch (error) {
-    message.error('获取设备列表失败')
+    message.error(t('setting.sessions.fetch_failed'))
   } finally {
     loading.value = false
   }
@@ -134,8 +144,9 @@ function getDeviceIcon(device: DeviceInfo): string {
 }
 
 function formatDate(timestamp: number): string {
-  if (!timestamp) return '未知'
-  return new Date(timestamp).toLocaleString('zh-CN')
+  if (!timestamp) return t('setting.sessions.unknown')
+  const resolvedLocale = locale.value === 'en' ? 'en-US' : locale.value
+  return new Date(timestamp).toLocaleString(resolvedLocale)
 }
 
 function showRenameDialog(device: DeviceInfo | undefined) {
@@ -147,18 +158,18 @@ function showRenameDialog(device: DeviceInfo | undefined) {
 
 async function handleRenameDevice() {
   if (!editingDevice.value || !newDeviceName.value.trim()) {
-    message.warning('请输入设备名称')
+    message.warning(t('setting.sessions.enter_device_name'))
     return
   }
 
   renaming.value = true
   try {
     await matrixAccountService.setDeviceName(editingDevice.value.deviceId, newDeviceName.value.trim())
-    message.success('设备名称已更新')
+    message.success(t('setting.sessions.device_name_updated'))
     renameDialogVisible.value = false
     await loadDevices()
   } catch (error) {
-    message.error('重命名失败')
+    message.error(t('setting.sessions.rename_failed'))
   } finally {
     renaming.value = false
   }
@@ -166,17 +177,17 @@ async function handleRenameDevice() {
 
 function handleDeleteDevice(device: DeviceInfo) {
   dialog.warning({
-    title: '登出设备',
-    content: `确定要登出设备 "${device.displayName || device.deviceId}" 吗？该设备将无法再访问您的账户。`,
-    positiveText: '确定登出',
-    negativeText: '取消',
+    title: t('setting.sessions.logout_device_title'),
+    content: t('setting.sessions.logout_device_confirm', { name: device.displayName || device.deviceId }),
+    positiveText: t('setting.sessions.logout_confirm'),
+    negativeText: t('setting.common.cancel'),
     onPositiveClick: async () => {
       try {
         await matrixAccountService.deleteDevice(device.deviceId)
-        message.success('设备已登出')
+        message.success(t('setting.sessions.device_logged_out'))
         await loadDevices()
       } catch (error) {
-        message.error('登出失败')
+        message.error(t('setting.sessions.logout_failed'))
       }
     }
   })
@@ -187,17 +198,17 @@ function handleLogoutAllDevices() {
   if (deviceIds.length === 0) return
 
   dialog.warning({
-    title: '登出所有其他设备',
-    content: `确定要登出所有其他设备吗？共 ${deviceIds.length} 个设备将被登出。`,
-    positiveText: '确定登出',
-    negativeText: '取消',
+    title: t('setting.sessions.logout_all_other_devices'),
+    content: t('setting.sessions.logout_all_confirm_with_count', { count: String(deviceIds.length) }),
+    positiveText: t('setting.sessions.logout_confirm'),
+    negativeText: t('setting.common.cancel'),
     onPositiveClick: async () => {
       try {
         await matrixAccountService.deleteDevices(deviceIds)
-        message.success('所有其他设备已登出')
+        message.success(t('setting.sessions.all_other_devices_logged_out'))
         await loadDevices()
       } catch (error) {
-        message.error('批量登出失败')
+        message.error(t('setting.sessions.logout_all_failed'))
       }
     }
   })
@@ -206,51 +217,48 @@ function handleLogoutAllDevices() {
 
 <style scoped>
 .session-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-4);
+  color: var(--hula-text-primary);
 }
 
 .current-device {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  background-color: var(--color-info-light);
-  border-radius: 8px;
+  padding: var(--hula-space-4);
+  background-color: var(--hula-color-info-100);
+  border-radius: var(--hula-radius-sm);
 }
 
 .device-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .device-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-:deep(.dark) .device-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) var(--hula-space-4);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .device-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--hula-space-3);
 }
 
 .device-details {
@@ -259,36 +267,33 @@ function handleLogoutAllDevices() {
 }
 
 .device-name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--hula-font-size-base);
+  font-weight: var(--hula-font-weight-medium);
+  color: var(--hula-text-primary);
 }
 
 .device-id,
 .device-meta {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
 }
 
 .device-meta {
   display: flex;
-  gap: 12px;
+  gap: var(--hula-space-3);
 }
 
 .device-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -297,12 +302,13 @@ function handleLogoutAllDevices() {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 </style>

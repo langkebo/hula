@@ -1,101 +1,131 @@
 <template>
   <div class="mjolnir-settings">
     <div class="settings-section">
-      <n-alert type="info" :show-icon="true" style="margin-bottom: 16px">
-        Mjolnir 是一个管理屏蔽列表的工具，支持房间、用户和服务器的屏蔽管理。
+      <n-alert type="info" :show-icon="true" class="mjolnir-alert">
+        {{ t('setting.mjolnir.alert_info') }}
       </n-alert>
     </div>
 
     <div class="settings-section">
-      <h3 class="section-title">房间屏蔽列表</h3>
+      <h3 class="section-title">{{ t('setting.mjolnir.room_bans') }}</h3>
       <n-spin :show="loadingRooms">
         <div v-if="roomBanList.length === 0" class="empty-list">
-          <span class="empty-text">暂无房间屏蔽规则</span>
+          <span class="empty-text">{{ t('setting.mjolnir.no_room_bans') }}</span>
         </div>
         <div v-else class="ban-list">
           <div v-for="item in roomBanList" :key="item.entity" class="ban-item">
             <div class="ban-info">
               <span class="ban-entity">{{ item.entity }}</span>
-              <span v-if="item.reason" class="ban-reason">原因: {{ item.reason }}</span>
+              <span v-if="item.reason" class="ban-reason">{{ t('setting.mjolnir.reason') }}: {{ item.reason }}</span>
             </div>
-            <n-button size="small" type="error" quaternary @click="handleRemoveRoomBan(item)">移除</n-button>
+            <n-button size="small" type="error" quaternary @click="handleRemoveRoomBan(item)">
+              {{ t('setting.mjolnir.remove') }}
+            </n-button>
           </div>
         </div>
       </n-spin>
-      <n-button size="small" style="margin-top: 8px" @click="showAddRoomBan = true">+ 添加房间</n-button>
+      <n-button size="small" class="add-ban-button" @click="showAddRoomBan = true">
+        + {{ t('setting.mjolnir.add_room') }}
+      </n-button>
     </div>
 
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">用户屏蔽列表</h3>
+      <h3 class="section-title">{{ t('setting.mjolnir.user_bans') }}</h3>
       <n-spin :show="loadingUsers">
         <div v-if="userBanList.length === 0" class="empty-list">
-          <span class="empty-text">暂无用户屏蔽规则</span>
+          <span class="empty-text">{{ t('setting.mjolnir.no_user_bans') }}</span>
         </div>
         <div v-else class="ban-list">
           <div v-for="item in userBanList" :key="item.entity" class="ban-item">
             <div class="ban-info">
               <span class="ban-entity">{{ item.entity }}</span>
-              <span v-if="item.reason" class="ban-reason">原因: {{ item.reason }}</span>
+              <span v-if="item.reason" class="ban-reason">{{ t('setting.mjolnir.reason') }}: {{ item.reason }}</span>
             </div>
-            <n-button size="small" type="error" quaternary @click="handleRemoveUserBan(item)">移除</n-button>
+            <n-button size="small" type="error" quaternary @click="handleRemoveUserBan(item)">
+              {{ t('setting.mjolnir.remove') }}
+            </n-button>
           </div>
         </div>
       </n-spin>
-      <n-button size="small" style="margin-top: 8px" @click="showAddUserBan = true">+ 添加用户</n-button>
+      <n-button size="small" class="add-ban-button" @click="showAddUserBan = true">
+        + {{ t('setting.mjolnir.add_user') }}
+      </n-button>
     </div>
 
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">服务器屏蔽列表</h3>
+      <h3 class="section-title">{{ t('setting.mjolnir.server_bans') }}</h3>
       <n-spin :show="loadingServers">
         <div v-if="serverBanList.length === 0" class="empty-list">
-          <span class="empty-text">暂无服务器屏蔽规则</span>
+          <span class="empty-text">{{ t('setting.mjolnir.no_server_bans') }}</span>
         </div>
         <div v-else class="ban-list">
           <div v-for="item in serverBanList" :key="item.entity" class="ban-item">
             <div class="ban-info">
               <span class="ban-entity">{{ item.entity }}</span>
-              <span v-if="item.reason" class="ban-reason">原因: {{ item.reason }}</span>
+              <span v-if="item.reason" class="ban-reason">{{ t('setting.mjolnir.reason') }}: {{ item.reason }}</span>
             </div>
-            <n-button size="small" type="error" quaternary @click="handleRemoveServerBan(item)">移除</n-button>
+            <n-button size="small" type="error" quaternary @click="handleRemoveServerBan(item)">
+              {{ t('setting.mjolnir.remove') }}
+            </n-button>
           </div>
         </div>
       </n-spin>
-      <n-button size="small" style="margin-top: 8px" @click="showAddServerBan = true">+ 添加服务器</n-button>
+      <n-button size="small" class="add-ban-button" @click="showAddServerBan = true">
+        + {{ t('setting.mjolnir.add_server') }}
+      </n-button>
     </div>
 
-    <n-modal v-model:show="showAddRoomBan" preset="dialog" title="添加房间屏蔽规则" positive-text="添加" negative-text="取消" @positive-click="handleAddRoomBan">
+    <n-modal
+      v-model:show="showAddRoomBan"
+      preset="dialog"
+      :title="t('setting.mjolnir.add_room_rule')"
+      :positive-text="t('setting.mjolnir.add')"
+      :negative-text="t('setting.mjolnir.cancel')"
+      @positive-click="handleAddRoomBan">
       <n-form ref="roomBanFormRef">
-        <n-form-item label="房间 ID">
+        <n-form-item :label="t('setting.mjolnir.room_id')">
           <n-input v-model:value="newRoomBan.entity" placeholder="#room:example.com" />
         </n-form-item>
-        <n-form-item label="原因">
-          <n-input v-model:value="newRoomBan.reason" placeholder="屏蔽原因（可选）" />
+        <n-form-item :label="t('setting.mjolnir.reason')">
+          <n-input v-model:value="newRoomBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
         </n-form-item>
       </n-form>
     </n-modal>
 
-    <n-modal v-model:show="showAddUserBan" preset="dialog" title="添加用户屏蔽规则" positive-text="添加" negative-text="取消" @positive-click="handleAddUserBan">
+    <n-modal
+      v-model:show="showAddUserBan"
+      preset="dialog"
+      :title="t('setting.mjolnir.add_user_rule')"
+      :positive-text="t('setting.mjolnir.add')"
+      :negative-text="t('setting.mjolnir.cancel')"
+      @positive-click="handleAddUserBan">
       <n-form ref="userBanFormRef">
-        <n-form-item label="用户 ID">
+        <n-form-item :label="t('setting.mjolnir.user_id')">
           <n-input v-model:value="newUserBan.entity" placeholder="@user:example.com" />
         </n-form-item>
-        <n-form-item label="原因">
-          <n-input v-model:value="newUserBan.reason" placeholder="屏蔽原因（可选）" />
+        <n-form-item :label="t('setting.mjolnir.reason')">
+          <n-input v-model:value="newUserBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
         </n-form-item>
       </n-form>
     </n-modal>
 
-    <n-modal v-model:show="showAddServerBan" preset="dialog" title="添加服务器屏蔽规则" positive-text="添加" negative-text="取消" @positive-click="handleAddServerBan">
+    <n-modal
+      v-model:show="showAddServerBan"
+      preset="dialog"
+      :title="t('setting.mjolnir.add_server_rule')"
+      :positive-text="t('setting.mjolnir.add')"
+      :negative-text="t('setting.mjolnir.cancel')"
+      @positive-click="handleAddServerBan">
       <n-form ref="serverBanFormRef">
-        <n-form-item label="服务器名称">
+        <n-form-item :label="t('setting.mjolnir.server_name')">
           <n-input v-model:value="newServerBan.entity" placeholder="example.com" />
         </n-form-item>
-        <n-form-item label="原因">
-          <n-input v-model:value="newServerBan.reason" placeholder="屏蔽原因（可选）" />
+        <n-form-item :label="t('setting.mjolnir.reason')">
+          <n-input v-model:value="newServerBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
         </n-form-item>
       </n-form>
     </n-modal>
@@ -105,10 +135,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { NButton, NDivider, NSpin, NModal, NForm, NFormItem, NInput, NAlert, useMessage, useDialog } from 'naive-ui'
-import { matrixAccountService } from '@/services/matrix'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('MjolnirSettings')
+import { useI18n } from 'vue-i18n'
 
 defineOptions({
   name: 'MjolnirSettings'
@@ -116,6 +143,7 @@ defineOptions({
 
 const message = useMessage()
 const dialog = useDialog()
+const { t } = useI18n()
 
 interface BanItem {
   entity: string
@@ -172,31 +200,31 @@ function saveBanLists() {
 
 function handleAddRoomBan() {
   if (!newRoomBan.entity.trim()) {
-    message.warning('请输入房间 ID')
+    message.warning(t('setting.mjolnir.enter_room_id'))
     return false
   }
   roomBanList.value.push({ entity: newRoomBan.entity.trim(), reason: newRoomBan.reason.trim(), type: 'room_id' })
   newRoomBan.entity = ''
   newRoomBan.reason = ''
   saveBanLists()
-  message.success('已添加房间屏蔽规则')
+  message.success(t('setting.mjolnir.added_room_rule'))
 }
 
 function handleAddUserBan() {
   if (!newUserBan.entity.trim()) {
-    message.warning('请输入用户 ID')
+    message.warning(t('setting.mjolnir.enter_user_id'))
     return false
   }
   userBanList.value.push({ entity: newUserBan.entity.trim(), reason: newUserBan.reason.trim(), type: 'user_id' })
   newUserBan.entity = ''
   newUserBan.reason = ''
   saveBanLists()
-  message.success('已添加用户屏蔽规则')
+  message.success(t('setting.mjolnir.added_user_rule'))
 }
 
 function handleAddServerBan() {
   if (!newServerBan.entity.trim()) {
-    message.warning('请输入服务器名称')
+    message.warning(t('setting.mjolnir.enter_server_name'))
     return false
   }
   serverBanList.value.push({
@@ -207,47 +235,47 @@ function handleAddServerBan() {
   newServerBan.entity = ''
   newServerBan.reason = ''
   saveBanLists()
-  message.success('已添加服务器屏蔽规则')
+  message.success(t('setting.mjolnir.added_server_rule'))
 }
 
 function handleRemoveRoomBan(item: BanItem) {
   dialog.warning({
-    title: '移除屏蔽规则',
-    content: `确定要移除对 ${item.entity} 的屏蔽吗？`,
-    positiveText: '确定',
-    negativeText: '取消',
+    title: t('setting.mjolnir.remove_rule_title'),
+    content: t('setting.mjolnir.remove_rule_confirm', { entity: item.entity }),
+    positiveText: t('setting.mjolnir.confirm'),
+    negativeText: t('setting.mjolnir.cancel'),
     onPositiveClick: () => {
       roomBanList.value = roomBanList.value.filter((b) => b.entity !== item.entity)
       saveBanLists()
-      message.success('已移除房间屏蔽规则')
+      message.success(t('setting.mjolnir.removed_room_rule'))
     }
   })
 }
 
 function handleRemoveUserBan(item: BanItem) {
   dialog.warning({
-    title: '移除屏蔽规则',
-    content: `确定要移除对 ${item.entity} 的屏蔽吗？`,
-    positiveText: '确定',
-    negativeText: '取消',
+    title: t('setting.mjolnir.remove_rule_title'),
+    content: t('setting.mjolnir.remove_rule_confirm', { entity: item.entity }),
+    positiveText: t('setting.mjolnir.confirm'),
+    negativeText: t('setting.mjolnir.cancel'),
     onPositiveClick: () => {
       userBanList.value = userBanList.value.filter((b) => b.entity !== item.entity)
       saveBanLists()
-      message.success('已移除用户屏蔽规则')
+      message.success(t('setting.mjolnir.removed_user_rule'))
     }
   })
 }
 
 function handleRemoveServerBan(item: BanItem) {
   dialog.warning({
-    title: '移除屏蔽规则',
-    content: `确定要移除对 ${item.entity} 的屏蔽吗？`,
-    positiveText: '确定',
-    negativeText: '取消',
+    title: t('setting.mjolnir.remove_rule_title'),
+    content: t('setting.mjolnir.remove_rule_confirm', { entity: item.entity }),
+    positiveText: t('setting.mjolnir.confirm'),
+    negativeText: t('setting.mjolnir.cancel'),
     onPositiveClick: () => {
       serverBanList.value = serverBanList.value.filter((b) => b.entity !== item.entity)
       saveBanLists()
-      message.success('已移除服务器屏蔽规则')
+      message.success(t('setting.mjolnir.removed_server_rule'))
     }
   })
 }
@@ -255,36 +283,41 @@ function handleRemoveServerBan(item: BanItem) {
 
 <style scoped>
 .mjolnir-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 12px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-3);
+  color: var(--hula-text-primary);
+}
+
+.mjolnir-alert {
+  margin-bottom: var(--hula-space-4);
+}
+
+.add-ban-button {
+  margin-top: var(--hula-space-2);
 }
 
 .ban-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .ban-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 6px;
-}
-
-:deep(.dark) .ban-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  padding: 10px var(--hula-space-3);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .ban-info {
@@ -295,14 +328,15 @@ function handleRemoveServerBan(item: BanItem) {
 }
 
 .ban-entity {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
   word-break: break-all;
 }
 
 .ban-reason {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .empty-list {
@@ -311,7 +345,7 @@ function handleRemoveServerBan(item: BanItem) {
 }
 
 .empty-text {
-  font-size: 13px;
-  color: var(--color-text-quaternary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
 }
 </style>

@@ -7,7 +7,7 @@
       isGroup
         ? isCollapsed
           ? 'w-0 pr-1px'
-          : 'w-180px border-l-(1px solid [--right-chat-footer-line-color]) p-[12px_0_12px_6px] custom-shadow'
+          : 'w-180px border-l-(1px solid [--hula-border-default]) p-[12px_0_12px_6px] custom-shadow'
         : 'w-0 pr-1px',
       'item-box'
     ]">
@@ -16,10 +16,10 @@
       v-show="isGroup"
       @click.stop="isCollapsed = !isCollapsed"
       style="border-radius: 18px 0 0 18px"
-      class="contraction transition-all duration-600 ease-in-out absolute top-35% left--14px cursor-pointer opacity-0 bg-#c8c8c833 h-60px w-14px">
+      class="contraction transition-all duration-600 ease-in-out absolute top-35% left--14px cursor-pointer opacity-0 bg-[--hula-surface-sidebar-selected] h-60px w-14px">
       <svg
         :class="isCollapsed ? 'rotate-0' : 'rotate-180'"
-        class="size-16px color-[--color-text-tertiary] dark:color-#303030 absolute top-38%">
+        class="size-16px color-[--hula-text-tertiary] absolute top-38%">
         <use href="#left-arrow"></use>
       </svg>
     </div>
@@ -29,12 +29,12 @@
       <n-flex vertical :size="14" class="px-4px py-10px">
         <n-flex align="center" justify="space-between" :size="8" class="cursor-pointer">
           <p
-            class="text-(14px --text-color) truncate flex-1 min-w-0"
+            class="text-(14px [--hula-text-primary]) truncate flex-1 min-w-0"
             @click="handleOpenAnnoun(announNum === 0 && isAddAnnoun)">
             {{ t('home.chat_sidebar.announcement.title') }}
           </p>
           <svg
-            class="size-16px rotate-270 color-[--text-color] shrink-0"
+            class="size-16px rotate-270 color-[--hula-text-primary] shrink-0"
             @click="handleOpenAnnoun(announNum === 0 && isAddAnnoun)">
             <use v-if="announNum === 0 && isAddAnnoun" href="#plus"></use>
             <use v-else href="#down"></use>
@@ -44,7 +44,7 @@
         <!-- 公告加载失败提示 -->
         <n-flex v-if="announError" class="h-74px" align="center" justify="center">
           <div class="text-center">
-            <p class="text-(12px --color-text-tertiary) mb-8px">
+            <p class="text-(12px --hula-text-tertiary) mb-8px">
               {{ t('home.chat_sidebar.announcement.load_failed') }}
             </p>
             <n-button size="tiny" @click="announcementStore.loadGroupAnnouncements()">
@@ -55,18 +55,18 @@
 
         <!-- 公告内容 -->
         <n-scrollbar v-else class="h-74px">
-          <p class="text-(12px --color-text-tertiary) leading-6 line-clamp-4 max-w-99%" v-if="announNum === 0">
+          <p class="text-(12px --hula-text-tertiary) leading-6 line-clamp-4 max-w-99%" v-if="announNum === 0">
             {{ t('home.chat_sidebar.announcement.default') }}
           </p>
           <p
             v-else
             style="user-select: text"
-            class="announcement-text text-(12px --color-text-tertiary) leading-6 line-clamp-4 max-w-99% break-words">
+            class="announcement-text text-(12px --hula-text-tertiary) leading-6 line-clamp-4 max-w-99% break-words">
             <template v-if="announcementSegments.length > 0">
               <template v-for="(segment, index) in announcementSegments" :key="index">
                 <span
                   v-if="segment.isLink"
-                  class="cursor-pointer hover:underline hover:opacity-80 text-[--color-primary]"
+                  class="cursor-pointer hover:underline hover:opacity-80 text-[--hula-color-primary-500]"
                   @click.stop="openAnnouncementLink(segment.text)">
                   {{ segment.text }}
                 </span>
@@ -123,7 +123,7 @@
             trigger="click"
             placement="left"
             :show-arrow="false"
-            style="padding: 0; background: var(--bg-info)">
+            style="padding: 0; background: var(--hula-surface-panel)">
             <template #trigger>
               <ContextMenu
                 :content="item"
@@ -144,8 +144,8 @@
                         class="grayscale"
                         :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE }"
                         :size="26"
-                        :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-                        :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                        :color="'var(--hula-surface-panel)'"
+                        :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                         :src="AvatarUtils.getAvatarUrl(item.avatar)"
                         @load="userLoadedMap[item.uid] = true"
                         @error="userLoadedMap[item.uid] = true" />
@@ -161,7 +161,7 @@
                         class="flex-1">
                         <img class="size-12px" :src="getUserState(item.userStateId)?.url" alt="" />
                         <span
-                          class="text-10px text-[--chat-text-color] flex-1 min-w-0 truncate"
+                          class="text-10px text-[--hula-text-tertiary] flex-1 min-w-0 truncate"
                           :title="translateStateTitle(getUserState(item.userStateId)?.title)">
                           {{ translateStateTitle(getUserState(item.userStateId)?.title) }}
                         </span>
@@ -171,13 +171,13 @@
 
                   <div
                     v-if="item.roleId === RoleEnum.LORD"
-                    class="flex px-4px bg-[--color-danger]30 py-3px rounded-4px size-fit select-none">
-                    <p class="text-(10px [--color-danger])">{{ t('home.chat_sidebar.roles.owner') }}</p>
+                    class="flex px-4px bg-[--hula-color-danger-500]30 py-3px rounded-4px size-fit select-none">
+                    <p class="text-(10px [--hula-color-danger-500])">{{ t('home.chat_sidebar.roles.owner') }}</p>
                   </div>
                   <div
                     v-if="item.roleId === RoleEnum.ADMIN"
-                    class="flex px-4px bg-[--color-primary-light] py-3px rounded-4px size-fit select-none">
-                    <p class="text-(10px [--color-primary])">{{ t('home.chat_sidebar.roles.admin') }}</p>
+                    class="flex px-4px bg-[--hula-color-primary-100] py-3px rounded-4px size-fit select-none">
+                    <p class="text-(10px [--hula-color-primary-500])">{{ t('home.chat_sidebar.roles.admin') }}</p>
                   </div>
                 </n-flex>
               </ContextMenu>
@@ -224,7 +224,6 @@ const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const announcementStore = useAnnouncementStore()
 const { clearAnnouncements } = announcementStore
-const { themes } = storeToRefs(settingStore)
 // 当前加载的群聊ID
 // 如果成员列表未完全加载，使用当前列表的在线人数，避免与头像显示不一致
 const onlineCountDisplay = computed(() => {

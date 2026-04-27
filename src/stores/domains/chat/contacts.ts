@@ -156,7 +156,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         applyId: request.user_id
       })
       triggerRef(requestFriendsList)
-      globalStore.unReadMark.newFriendUnreadCount++
+      globalStore.incrementFriendUnreadCount()
     }
   }
 
@@ -261,7 +261,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         }))
       ]
 
-      globalStore.unReadMark.newFriendUnreadCount = incoming.length
+      globalStore.setFriendUnreadCount(incoming.length)
       info(`[ContactStore] 加载好友请求成功: ${requestFriendsList.value.length} 个`)
     } catch (err) {
       error(`[ContactStore] 加载好友请求失败: ${err}`)
@@ -361,7 +361,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       requestFriendsList.value = requestFriendsList.value.filter(
         (r) => !(r.userId === userId && r.direction === 'incoming')
       )
-      globalStore.unReadMark.newFriendUnreadCount = Math.max(0, globalStore.unReadMark.newFriendUnreadCount - 1)
+      globalStore.decrementFriendUnreadCount()
       info(`[ContactStore] 接受好友请求成功: ${userId}`)
       return true
     } catch (err) {
@@ -376,7 +376,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       requestFriendsList.value = requestFriendsList.value.filter(
         (r) => !(r.userId === userId && r.direction === 'incoming')
       )
-      globalStore.unReadMark.newFriendUnreadCount = Math.max(0, globalStore.unReadMark.newFriendUnreadCount - 1)
+      globalStore.decrementFriendUnreadCount()
       info(`[ContactStore] 拒绝好友请求成功: ${userId}`)
       return true
     } catch (err) {
@@ -481,7 +481,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       }
 
       pendingInvites.value = invites
-      globalStore.unReadMark.newGroupUnreadCount = invites.filter((i) => i.isGroup).length
+      globalStore.setGroupUnreadCount(invites.filter((i) => i.isGroup).length)
     } catch (err) {
       error(`[ContactStore] 加载邀请列表失败: ${err}`)
     }

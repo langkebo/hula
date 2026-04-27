@@ -7,18 +7,22 @@
       preview-disabled
       width="146"
       height="146"
-      style="border: 2px solid #fff"
+      style="border: 2px solid var(--hula-text-inverse)"
       class="rounded-50% select-none cursor-pointer"
       :src="AvatarUtils.getAvatarUrl(item.avatar)"
       @dblclick="openImageViewer"
       alt="" />
 
-    <span class="text-(20px [--text-color])">{{ item.name }}</span>
+    <span class="text-(20px [--hula-text-primary])">{{ item.name }}</span>
 
     <template v-if="!isBotUser">
-      <span class="text-(12px --color-text-tertiary)">{{ t('home.chat_details.single.empty_signature') }}</span>
+      <span class="text-(12px --hula-text-tertiary)">{{ t('home.chat_details.single.empty_signature') }}</span>
 
-      <n-flex align="center" justify="space-between" :size="30" class="text-#606060 select-none cursor-default">
+      <n-flex
+        align="center"
+        justify="space-between"
+        :size="30"
+        class="text-(14px [--hula-text-secondary]) select-none cursor-default">
         <span>
           {{
             t('home.chat_details.single.region', {
@@ -45,7 +49,7 @@
           :key="index"
           :size="60"
           :border-radius="10"
-          :color="'var(--text-color)'"
+          :color="'var(--hula-text-primary)'"
           @click="opt.onClick">
           <n-tooltip>
             <template #trigger>
@@ -67,14 +71,14 @@
       preview-disabled
       width="120"
       height="120"
-      style="border: 2px solid #fff"
+      style="border: 2px solid var(--hula-text-inverse)"
       class="rounded-12px select-none cursor-pointer"
       :src="AvatarUtils.getAvatarUrl(item.avatar)"
       @dblclick="openImageViewer"
       alt="" />
 
     <!-- 群名称 -->
-    <span class="text-(18px [--text-color])">{{ item.name }}</span>
+    <span class="text-(18px [--hula-text-primary])">{{ item.name }}</span>
 
     <!-- 群公告 -->
     <div v-if="announcementContent" class="announcement-container">
@@ -217,7 +221,7 @@ const handleSendMessage = () => {
 .announcement-container {
   width: 100%;
   padding: 12px;
-  background: var(--bg-color-secondary);
+  background: var(--hula-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -230,7 +234,7 @@ const handleSendMessage = () => {
 
 .announcement-content {
   font-size: 13px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -245,7 +249,7 @@ const handleSendMessage = () => {
 .member-header {
   margin-bottom: 12px;
   font-size: 14px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 }
 
 .member-item {
@@ -258,14 +262,14 @@ const handleSendMessage = () => {
   transition: background 0.2s;
 
   &:hover {
-    background: var(--bg-color-hover);
+    background: var(--hula-surface-panel-muted);
   }
 }
 
 .member-name {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   max-width: 60px;
   overflow: hidden;
   text-overflow: ellipsis;

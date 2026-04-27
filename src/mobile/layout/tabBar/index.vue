@@ -43,10 +43,10 @@ const globalStore = useGlobalStore()
 
 const getUnReadCount = (label: string) => {
   if (label === t('mobile_tabbar.items.messages')) {
-    return globalStore.unReadMark.newMsgUnreadCount
+    return globalStore.messageUnreadCount
   }
   if (label === t('mobile_tabbar.items.contacts')) {
-    return globalStore.unReadMark.newFriendUnreadCount + globalStore.unReadMark.newGroupUnreadCount
+    return globalStore.contactUnreadCount
   }
   return 0
 }

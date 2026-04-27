@@ -100,14 +100,14 @@ const iconVisible = ref(false)
 
 // 消息提示音状态
 const messageSound = computed({
-  get: () => settingStore.notification.messageSound,
+  get: () => settingStore.messageSoundEnabled,
   set: (value: boolean) => {
     settingStore.setMessageSoundEnabled(value)
   }
 })
 
 const division = () => {
-  return <div class={'h-1px bg-[--line-color] w-full'}></div>
+  return <div class={'h-1px bg-[--hula-border-default] w-full'}></div>
 }
 
 const translateStateTitle = (title?: string) => {
@@ -218,6 +218,6 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .tray {
-  @apply bg-[--center-bg-color] size-full p-8px box-border select-none text-[--text-color] text-12px;
+  @apply bg-[--hula-surface-panel] size-full p-8px box-border select-none text-[--text-color] text-12px;
 }
 </style>

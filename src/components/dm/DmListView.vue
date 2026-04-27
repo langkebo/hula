@@ -39,7 +39,7 @@
                 <n-avatar
                   :size="44"
                   :src="AvatarUtils.getAvatarUrl(dmRoom.avatarUrl)"
-                  :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   round />
               </n-badge>
               <n-flex vertical :size="4" class="flex-1 truncate">
@@ -73,7 +73,6 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
 import { matrixDirectMessageService, type DmRoomInfo } from '@/services/matrix/room/MatrixDirectMessageService'
@@ -81,8 +80,6 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt'
 import dayjs from 'dayjs'
 import ContextMenu from '@/components/common/ContextMenu.vue'
 import CreateDmDialog from './CreateDmDialog.vue'
@@ -91,7 +88,6 @@ const { t } = useI18n()
 const settingStore = useSettingStore()
 const chatStore = useChatStore()
 const globalStore = useGlobalStore()
-const { themes } = storeToRefs(settingStore)
 
 const searchValue = ref('')
 const loading = ref(false)

@@ -43,6 +43,39 @@ declare namespace STO {
       /** 开机启动 */
       autoStartup: boolean
     }
+    /** 偏好设置 */
+    preferences: {
+      /** 发送前是否显示确认 */
+      messageConfirm: boolean
+      /** 是否启用链接预览 */
+      linkPreview: boolean
+      /** 是否自动转换表情 */
+      emojiConvert: boolean
+      /** 表情显示大小 */
+      emojiSize: 'small' | 'medium' | 'large'
+      /** 新私聊默认是否开启阅后即焚 */
+      burnDefaultEnabled: boolean
+      /** 阅后即焚默认时长 */
+      burnDefaultDuration: 30 | 60 | 300 | 3600 | 86400
+      /** 是否显示阅后即焚倒计时 */
+      burnShowCountdown: boolean
+      /** 参与线程时是否自动订阅 */
+      threadAutoSubscribe: boolean
+      /** 是否在房间内显示线程入口 */
+      threadShowInRoom: boolean
+      /** 线程通知级别 */
+      threadNotificationLevel: 'all' | 'participate' | 'none'
+      /** 加入空间时是否自动加入房间 */
+      spaceAutoJoinRooms: boolean
+      /** 是否显示子空间 */
+      spaceShowSubspaces: boolean
+      /** 空间默认通知级别 */
+      spaceDefaultNotification: 'all_messages' | 'mentions_only' | 'none'
+      /** 是否发送已读回执 */
+      sendReadReceipts: boolean
+      /** 是否发送输入状态 */
+      sendTypingNotifications: boolean
+    }
     /** 聊天设置 */
     chat: {
       /** 发送快捷键 */

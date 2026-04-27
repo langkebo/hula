@@ -2,6 +2,57 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EncryptionSettings from '../EncryptionSettings.vue'
 
+const translationMap: Record<string, string> = {
+  'setting.encryption.key_section': '加密密钥',
+  'setting.encryption.key_status_title': '加密密钥状态',
+  'setting.encryption.backup_section': '安全备份',
+  'setting.encryption.backup_enable_label': '启用安全备份',
+  'setting.encryption.backup_enable_desc': '将加密密钥备份到服务器',
+  'setting.encryption.backup_version_label': '备份版本',
+  'setting.encryption.backup_version_desc': '当前备份版本: {version}',
+  'setting.encryption.create_backup': '创建新备份',
+  'setting.encryption.restore_key_label': '恢复密钥',
+  'setting.encryption.restore_key_desc': '使用恢复密钥还原加密消息',
+  'setting.encryption.restore': '恢复',
+  'setting.encryption.cross_signing_section': '交叉签名',
+  'setting.encryption.cross_signing_status_label': '交叉签名状态',
+  'setting.encryption.setup_complete': '已设置',
+  'setting.encryption.setup_incomplete': '未设置',
+  'setting.encryption.manage': '管理',
+  'setting.encryption.setup_action': '设置',
+  'setting.encryption.rotation_section': '密钥轮换',
+  'setting.encryption.rotation_status_label': '密钥轮换状态',
+  'setting.encryption.rotation_needed': '需要轮换',
+  'setting.encryption.rotation_up_to_date': '已是最新',
+  'setting.encryption.device_section': '设备验证',
+  'setting.encryption.verify_status_label': '验证状态',
+  'setting.encryption.this_device_verified': '此设备已验证',
+  'setting.encryption.this_device_unverified': '此设备未验证',
+  'setting.encryption.verify_device_action': '验证设备',
+  'setting.encryption.verified': '已验证',
+  'setting.encryption.device_key_label': '设备密钥',
+  'setting.encryption.device_key_desc': '查看此设备的加密密钥指纹',
+  'setting.encryption.view': '查看',
+  'setting.encryption.info_section': '加密信息',
+  'setting.encryption.algorithm_label': '加密算法',
+  'setting.encryption.verified_devices_label': '已验证设备',
+  'setting.encryption.unverified_devices_label': '未验证设备',
+  'setting.encryption.device_count': '{count} 个',
+  'setting.encryption.device_key_fingerprint_title': '设备密钥指纹',
+  'setting.encryption.copy': '复制',
+  'setting.encryption.fingerprint_hint': '此指纹用于验证设备身份，请确保与登录时显示的指纹一致',
+  'setting.encryption.key_status_disabled': '加密未启用',
+  'setting.encryption.key_status_backed_up': '已设置并备份',
+  'setting.encryption.key_status_ready': '已设置',
+  'setting.encryption.disabled': '未启用',
+  'setting.encryption.enable_required': '请先启用加密功能',
+  'setting.encryption.backup_disabled_feedback': '已禁用安全备份',
+  'setting.encryption.backup_created': '备份创建成功',
+  'setting.encryption.restore_success': '密钥恢复成功',
+  'setting.encryption.verify_success': '设备验证成功',
+  'setting.encryption.copied': '已复制到剪贴板'
+}
+
 const {
   getCurrentSessionContextMock,
   getCurrentDeviceFingerprintMock,
@@ -52,6 +103,21 @@ vi.mock('@/services/matrix', () => ({
   matrixVerificationService: {
     isDeviceVerified: isDeviceVerifiedMock
   }
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      if (!params) {
+        return translationMap[key] ?? key
+      }
+
+      return Object.entries(params).reduce(
+        (message, [name, value]) => message.replace(new RegExp(`\\{${name}\\}`, 'g'), value),
+        translationMap[key] ?? key
+      )
+    }
+  })
 }))
 
 vi.mock('naive-ui', async () => {

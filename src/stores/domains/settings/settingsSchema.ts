@@ -17,7 +17,7 @@ export const SETTINGS_TAB_IDS = [
 ] as const
 
 export type SettingsTabType = (typeof SETTINGS_TAB_IDS)[number]
-export type LegacySettingsTabType = 'push' | 'integrations' | 'security' | 'help'
+export type LegacySettingsTabType = 'security' | 'help'
 export type SettingsTabInput = SettingsTabType | LegacySettingsTabType
 
 export interface SettingsTab {
@@ -27,6 +27,8 @@ export interface SettingsTab {
   desktopOnly?: boolean
   mobileOnly?: boolean
 }
+
+export type SettingsTabTranslator = (key: string) => string
 
 export const SETTINGS_TABS: SettingsTab[] = [
   { id: 'account', label: '账户', icon: 'user' },
@@ -46,9 +48,25 @@ export const SETTINGS_TABS: SettingsTab[] = [
   { id: 'burnAfterRead', label: '阅后即焚', icon: 'timer-outline' }
 ]
 
+export const SETTINGS_TAB_TRANSLATION_KEYS: Record<SettingsTabType, string> = {
+  account: 'setting.dialog.tabs.account',
+  sessions: 'setting.dialog.tabs.sessions',
+  appearance: 'setting.dialog.tabs.appearance',
+  notifications: 'setting.dialog.tabs.notifications',
+  preferences: 'setting.dialog.tabs.preferences',
+  keyboard: 'setting.dialog.tabs.keyboard',
+  sidebar: 'setting.dialog.tabs.sidebar',
+  voiceVideo: 'setting.dialog.tabs.voice_video',
+  securityPrivacy: 'setting.dialog.tabs.security_privacy',
+  encryption: 'setting.dialog.tabs.encryption',
+  labs: 'setting.dialog.tabs.labs',
+  mjolnir: 'setting.dialog.tabs.mjolnir',
+  helpAbout: 'setting.dialog.tabs.help_about',
+  friends: 'setting.dialog.tabs.friends',
+  burnAfterRead: 'setting.dialog.tabs.burn_after_read'
+}
+
 export const SETTINGS_LEGACY_TAB_MAP: Record<LegacySettingsTabType, SettingsTabType> = {
-  push: 'notifications',
-  integrations: 'labs',
   security: 'securityPrivacy',
   help: 'helpAbout'
 }
@@ -63,6 +81,22 @@ export const SETTINGS_CANONICAL_ROUTE_SEGMENTS = {
 export const SETTINGS_LABS_CHILD_ROUTE_SEGMENTS = {
   integrations: 'integrations'
 } as const
+
+export function getSettingsTabLabel(tabId: SettingsTabType, t?: SettingsTabTranslator): string {
+  const fallbackLabel = SETTINGS_TABS.find((tab) => tab.id === tabId)?.label ?? tabId
+  if (!t) return fallbackLabel
+
+  const translationKey = SETTINGS_TAB_TRANSLATION_KEYS[tabId]
+  const translatedLabel = t(translationKey)
+  return translatedLabel === translationKey ? fallbackLabel : translatedLabel
+}
+
+export function getSettingsTabs(t?: SettingsTabTranslator): SettingsTab[] {
+  return SETTINGS_TABS.map((tab) => ({
+    ...tab,
+    label: getSettingsTabLabel(tab.id, t)
+  }))
+}
 
 export function normalizeSettingsTab(tab?: SettingsTabInput): SettingsTabType | undefined {
   if (!tab) {

@@ -237,7 +237,6 @@
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import dayjs from 'dayjs'
 import { darkTheme, lightTheme, type FormInst } from 'naive-ui'
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
@@ -258,8 +257,7 @@ type InputType = 'nickName' | 'email' | 'password' | 'confirmPassword'
 const GENERAL_USER_SYSTEM_TYPE = 2
 
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
-const naiveTheme = computed(() => (themes.value.content === 'dark' ? darkTheme : lightTheme))
+const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 const { t } = useI18n()
 
 /** 注册信息 */

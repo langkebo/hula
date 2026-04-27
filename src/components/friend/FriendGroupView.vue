@@ -5,14 +5,18 @@
         <span class="text-16px font-semibold">{{ t('friend.group.title') }}</span>
         <n-button quaternary circle size="small" @click="showCreateDialog = true">
           <template #icon>
-            <n-icon><svg><use href="#plus" /></svg></n-icon>
+            <n-icon>
+              <svg><use href="#plus" /></svg>
+            </n-icon>
           </template>
         </n-button>
       </n-flex>
 
       <n-input v-model:value="searchValue" :placeholder="t('friend.group.search')" size="small" clearable>
         <template #prefix>
-          <n-icon size="16"><svg><use href="#search" /></svg></n-icon>
+          <n-icon size="16">
+            <svg><use href="#search" /></svg>
+          </n-icon>
         </template>
       </n-input>
     </n-flex>
@@ -30,12 +34,14 @@
             @click="handleSelectGroup(group)"
             @contextmenu="handleContextMenu($event, group)">
             <n-flex align="center" :size="12">
-              <div class="w-44px h-44px rounded-8px bg-[--bg-color] flex items-center justify-center">
-                <svg class="size-24px text-[--text-color]"><use href="#folder" /></svg>
+              <div class="w-44px h-44px rounded-8px bg-[--hula-surface-panel] flex items-center justify-center">
+                <svg class="size-24px text-[--hula-text-primary]"><use href="#folder" /></svg>
               </div>
               <n-flex vertical :size="4" class="flex-1 truncate">
                 <span class="text-14px truncate">{{ group.name }}</span>
-                <span class="text-(12px --color-text-tertiary)">{{ t('friend.group.member_count', { count: group.member_count ?? 0 }) }}</span>
+                <span class="text-(12px [--hula-text-tertiary])">
+                  {{ t('friend.group.member_count', { count: group.member_count ?? 0 }) }}
+                </span>
               </n-flex>
             </n-flex>
           </div>
@@ -199,6 +205,6 @@ onMounted(() => {
   transition: background-color 0.2s;
 }
 .group-item:hover {
-  background-color: var(--hover-color);
+  background-color: var(--hula-fill-hover);
 }
 </style>

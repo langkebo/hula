@@ -6,8 +6,8 @@
         :show-indicator="false"
         :height="6"
         :stroke-width="10"
-        :color="'var(--color-primary)'"
-        :rail-color="'var(--color-primary)/30'"
+        :color="'var(--hula-color-primary-500)'"
+        :rail-color="'color-mix(in srgb, var(--hula-color-primary-500) 30%, transparent)'"
         class="assistant-view__progress"
         type="line" />
       <span class="assistant-view__placeholder-text">
@@ -525,8 +525,12 @@ onUnmounted(() => {
   justify-content: center;
   margin: 16px;
   border-radius: 16px;
-  background: radial-gradient(ellipse at center, var(--color-primary)/24, rgba(19, 152, 127, 0));
-  box-shadow: inset 0 0 0 1px var(--color-primary-light);
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--hula-color-primary-500) 24%, transparent),
+    transparent
+  );
+  box-shadow: inset 0 0 0 1px var(--hula-color-primary-400);
   overflow: hidden;
 
   canvas {
@@ -545,8 +549,8 @@ onUnmounted(() => {
   justify-content: center;
   gap: 12px;
   font-size: 14px;
-  color: var(--color-primary);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--hula-color-primary-500);
+  background: color-mix(in srgb, var(--hula-surface-panel) 12%, transparent);
   backdrop-filter: blur(8px);
 }
 
@@ -558,6 +562,6 @@ onUnmounted(() => {
 .assistant-view__placeholder-text {
   padding-top: 12px;
   font-size: 14px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
 }
 </style>

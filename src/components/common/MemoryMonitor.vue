@@ -13,7 +13,7 @@
       title="最小化"
       @click.stop="toggleMinimize(true)"
       @pointerdown.stop>
-      <svg class="size-16px color-#fff rotate-90"><use href="#right"></use></svg>
+      <svg class="size-16px color-[--hula-text-inverse] rotate-90"><use href="#right"></use></svg>
     </button>
     <template v-if="!isMinimized">
       <div class="title">Memory Monitor (click to toggle)</div>
@@ -27,7 +27,7 @@
         </template>
       </div>
       <div v-else class="section">
-        <div class="item text-gray-400">Click to expand</div>
+        <div class="item color-[--hula-text-tertiary]">Click to expand</div>
       </div>
     </template>
 
@@ -311,15 +311,15 @@ const detachDragListeners = () => {
   position: fixed;
   left: 0;
   top: 0;
-  background: rgba(0, 0, 0, 0.85);
-  color: #fff;
+  background: var(--hula-overlay-inverse-strong);
+  color: var(--hula-text-inverse);
   padding: 12px;
   border-radius: 8px;
   font-size: 11px;
   font-family: monospace;
   z-index: 99999;
   min-width: 220px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--hula-shadow-lg);
   cursor: grab;
 }
 .memory-monitor:active {
@@ -334,7 +334,7 @@ const detachDragListeners = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--hula-shadow-md);
 }
 .minimize-btn {
   position: absolute;
@@ -344,8 +344,8 @@ const detachDragListeners = () => {
   height: 20px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--hula-surface-inverse-hover);
+  color: var(--hula-text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -354,26 +354,26 @@ const detachDragListeners = () => {
   padding: 0;
 }
 .minimize-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--hula-text-inverse) 20%, transparent);
 }
 .title {
   font-weight: bold;
   margin-bottom: 8px;
-  color: var(--color-primary);
-  border-bottom: 1px solid #333;
+  color: var(--hula-color-primary-500);
+  border-bottom: 1px solid color-mix(in srgb, var(--hula-text-inverse) 20%, transparent);
   padding-bottom: 4px;
 }
 .section {
   margin-top: 8px;
 }
 .label {
-  color: #60a5fa;
+  color: var(--hula-color-info-400);
   margin-bottom: 4px;
 }
 .item {
   padding: 2px 0;
 }
 .value {
-  color: #fbbf24;
+  color: var(--hula-color-warning-400);
 }
 </style>

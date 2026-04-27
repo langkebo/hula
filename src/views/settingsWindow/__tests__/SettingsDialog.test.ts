@@ -7,6 +7,36 @@ import { useSettingsDialogStore } from '@/stores/domains/settings/settingsDialog
 import SettingsDialog from '../SettingsDialog.vue'
 
 const dialogWarningMock = vi.fn()
+const translationMap: Record<string, string> = {
+  'setting.dialog.title': '设置',
+  'setting.dialog.current_tab': '当前设置',
+  'setting.dialog.search_placeholder': '搜索设置项',
+  'setting.dialog.search_aria_label': '搜索设置项',
+  'setting.dialog.nav_empty': '未找到匹配的设置项',
+  'setting.dialog.nav_aria_label': '设置导航',
+  'setting.dialog.dirty_status': '有未保存的更改',
+  'setting.dialog.close_title': '关闭设置',
+  'setting.dialog.close_aria_label': '关闭设置窗口',
+  'setting.dialog.content_aria_label': '设置内容',
+  'setting.dialog.switch_title': '切换设置项',
+  'setting.dialog.leave_confirm': '继续离开',
+  'setting.dialog.leave_cancel': '继续编辑',
+  'setting.dialog.tabs.account': '账户',
+  'setting.dialog.tabs.sessions': '会话管理',
+  'setting.dialog.tabs.appearance': '外观设置',
+  'setting.dialog.tabs.notifications': '通知设置',
+  'setting.dialog.tabs.preferences': '偏好设置',
+  'setting.dialog.tabs.keyboard': '快捷键',
+  'setting.dialog.tabs.sidebar': '侧边栏',
+  'setting.dialog.tabs.voice_video': '语音视频',
+  'setting.dialog.tabs.security_privacy': '安全与隐私',
+  'setting.dialog.tabs.encryption': '加密',
+  'setting.dialog.tabs.labs': 'Labs',
+  'setting.dialog.tabs.mjolnir': '屏蔽管理',
+  'setting.dialog.tabs.help_about': '帮助与关于',
+  'setting.dialog.tabs.friends': '好友管理',
+  'setting.dialog.tabs.burn_after_read': '阅后即焚'
+}
 
 function createTabStub(
   name: string,
@@ -55,6 +85,17 @@ vi.mock('@iconify/vue', () => ({
   }
 }))
 
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      if (key === 'setting.dialog.leave_content') {
+        return `${params?.label || '当前设置'}存在未保存的更改，继续后这些内容将会丢失。`
+      }
+      return translationMap[key] ?? key
+    }
+  })
+}))
+
 vi.mock('@/composables/usePlatform', () => ({
   usePlatform: () => ({
     isDesktop: true,
@@ -70,13 +111,24 @@ vi.mock('../SettingsTabNav.vue', () => ({
     name: 'SettingsTabNav',
     props: ['tabs', 'activeTab'],
     emits: ['change'],
+    methods: {
+      handleKeydown(event: KeyboardEvent, index: number) {
+        if (event.key !== 'ArrowDown') return
+        const nextTab = this.tabs[index + 1]
+        if (nextTab) {
+          this.$emit('change', nextTab.id)
+        }
+      }
+    },
     template: `
-      <div class="settings-tab-nav">
+      <div class="settings-tab-nav" aria-label="设置导航">
         <button
-          v-for="tab in tabs"
+          v-for="(tab, index) in tabs"
           :key="tab.id"
+          :id="'settings-tab-' + tab.id"
           type="button"
           :data-tab-id="tab.id"
+          @keydown="handleKeydown($event, index)"
           @click="$emit('change', tab.id)"
         >
           {{ tab.label }}
@@ -145,6 +197,22 @@ describe('SettingsDialog', () => {
     expect(wrapper.find('.account-tab-stub').exists()).toBe(true)
   })
 
+  it('exposes accessible labels for the shell and current panel', async () => {
+    const { wrapper } = mountDialog()
+
+    await flushPromises()
+
+    const closeButton = wrapper.find('button[aria-label="关闭设置窗口"]')
+    const panel = wrapper.find('#settings-tab-panel')
+    const nav = wrapper.find('.settings-tab-nav')
+
+    expect(closeButton.exists()).toBe(true)
+    expect(nav.attributes('aria-label')).toBe('设置导航')
+    expect(panel.attributes('role')).toBe('tabpanel')
+    expect(panel.attributes('aria-labelledby')).toBe('settings-tab-account')
+    expect(wrapper.find('.settings-title').text()).toBe('账户')
+  })
+
   it('keeps the current tab when the user cancels the switch confirmation', async () => {
     const { wrapper, store } = mountDialog()
 
@@ -166,6 +234,21 @@ describe('SettingsDialog', () => {
 
     expect(store.activeTab).toBe('account')
     expect(wrapper.find('.account-tab-stub').exists()).toBe(true)
+  })
+
+  it('supports keyboard navigation in the settings tab list', async () => {
+    const { wrapper, store } = mountDialog()
+
+    await flushPromises()
+
+    const activeTabButton = wrapper.find('#settings-tab-account')
+    await activeTabButton.trigger('keydown', { key: 'ArrowDown' })
+    await flushPromises()
+    dialogWarningMock.mock.calls[0][0].onPositiveClick()
+    await flushPromises()
+
+    expect(store.activeTab).toBe('sessions')
+    expect(wrapper.find('.plain-tab-stub').exists()).toBe(true)
   })
 
   it('switches tabs after confirming the dirty-state dialog', async () => {

@@ -8,6 +8,6 @@ import { useGlobalStore } from '../stores/domains/widget/global'
 export const toFriendInfoPage = (uid: string): void => {
   const globalStore = useGlobalStore()
 
-  globalStore.addFriendModalInfo.uid = uid
+  globalStore.setAddFriendTarget(uid)
   router.push(`/mobile/mobileFriends/friendInfo/${uid}`)
 }

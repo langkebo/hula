@@ -1,11 +1,11 @@
 <template>
   <div class="keyboard-settings">
     <div class="settings-section">
-      <h3 class="section-title">全局快捷键</h3>
+      <h3 class="section-title">{{ t('setting.keyboard.global_title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">启用全局快捷键</span>
-          <span class="setting-desc">在应用未激活时也能使用快捷键</span>
+          <span class="setting-label">{{ t('setting.keyboard.global_label') }}</span>
+          <span class="setting-desc">{{ t('setting.keyboard.global_desc') }}</span>
         </div>
         <n-switch v-model:value="globalEnabled" @update:value="handleGlobalShortcutChange" />
       </div>
@@ -14,7 +14,7 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">快捷键列表</h3>
+      <h3 class="section-title">{{ t('setting.keyboard.list_title') }}</h3>
       <div class="shortcut-list">
         <div v-for="shortcut in shortcuts" :key="shortcut.id" class="shortcut-item">
           <div class="shortcut-info">
@@ -31,11 +31,11 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">自定义快捷键</h3>
+      <h3 class="section-title">{{ t('setting.keyboard.custom_title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">截图快捷键</span>
-          <span class="setting-desc">设置截图功能的快捷键</span>
+          <span class="setting-label">{{ t('setting.keyboard.screenshot_label') }}</span>
+          <span class="setting-desc">{{ t('setting.keyboard.screenshot_desc') }}</span>
         </div>
         <n-input
           :value="shortcutsStore.screenshot"
@@ -45,8 +45,8 @@
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">打开主面板</span>
-          <span class="setting-desc">设置打开主面板的快捷键</span>
+          <span class="setting-label">{{ t('setting.keyboard.open_main_panel_label') }}</span>
+          <span class="setting-desc">{{ t('setting.keyboard.open_main_panel_desc') }}</span>
         </div>
         <n-input
           :value="shortcutsStore.openMainPanel"
@@ -55,14 +55,14 @@
           @click="handleEditShortcut('openMainPanel')" />
       </div>
       <div class="reset-section">
-        <n-button @click="resetShortcuts">恢复默认快捷键</n-button>
+        <n-button @click="resetShortcuts">{{ t('setting.keyboard.reset') }}</n-button>
       </div>
     </div>
   </div>
 
-  <n-modal v-model:show="editingShortcut" preset="dialog" title="编辑快捷键">
+  <n-modal v-model:show="editingShortcut" preset="dialog" :title="t('setting.keyboard.edit_title')">
     <div class="shortcut-editor">
-      <p>请按下新的快捷键组合...</p>
+      <p>{{ t('setting.keyboard.edit_hint') }}</p>
       <div class="current-keys">
         <kbd v-for="key in currentEditingKeys" :key="key" class="key">{{ key }}</kbd>
       </div>
@@ -71,46 +71,86 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { computed, ref, reactive, onMounted, onUnmounted } from 'vue'
 import { NButton, NDivider, NSwitch, NInput, NModal, useMessage } from 'naive-ui'
-import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { isMac } from '@/utils/PlatformConstants'
 
 defineOptions({
   name: 'KeyboardSettings'
 })
 
 const message = useMessage()
+const { t } = useI18n()
 const settingStore = useSettingStore()
-const { shortcuts: storeShortcuts } = storeToRefs(settingStore)
 
 const shortcutsStore = reactive({
-  screenshot: storeShortcuts.value?.screenshot || (isMac() ? 'Cmd+Ctrl+H' : 'Ctrl+Alt+H'),
-  openMainPanel: storeShortcuts.value?.openMainPanel || (isMac() ? 'Cmd+Ctrl+P' : 'Ctrl+Alt+P')
+  screenshot: settingStore.screenshotShortcut,
+  openMainPanel: settingStore.openMainPanelShortcut
 })
 
-const globalEnabled = ref(storeShortcuts.value?.globalEnabled ?? false)
+const globalEnabled = computed({
+  get: () => settingStore.globalShortcutEnabled,
+  set: (value: boolean) => handleGlobalShortcutChange(value)
+})
 
-const shortcutList = [
-  { id: 1, action: '发送消息', description: '在聊天窗口发送消息', keys: ['Enter'] },
-  { id: 2, action: '换行', description: '在输入框中换行', keys: ['Shift', 'Enter'] },
-  { id: 3, action: '搜索', description: '打开搜索功能', keys: ['Ctrl', 'F'] },
-  { id: 4, action: '新建会话', description: '创建新的聊天会话', keys: ['Ctrl', 'N'] },
-  { id: 5, action: '关闭会话', description: '关闭当前会话窗口', keys: ['Ctrl', 'W'] },
-  { id: 6, action: '设置', description: '打开设置页面', keys: ['Ctrl', ','] },
-  { id: 7, action: '退出应用', description: '退出应用程序', keys: ['Ctrl', 'Q'] },
-  { id: 8, action: '全屏', description: '切换全屏模式', keys: ['F11'] }
-]
-
-const shortcuts = ref(shortcutList)
+const shortcuts = computed(() => [
+  {
+    id: 1,
+    action: t('setting.keyboard.actions.send_message'),
+    description: t('setting.keyboard.descriptions.send_message'),
+    keys: ['Enter']
+  },
+  {
+    id: 2,
+    action: t('setting.keyboard.actions.new_line'),
+    description: t('setting.keyboard.descriptions.new_line'),
+    keys: ['Shift', 'Enter']
+  },
+  {
+    id: 3,
+    action: t('setting.keyboard.actions.search'),
+    description: t('setting.keyboard.descriptions.search'),
+    keys: ['Ctrl', 'F']
+  },
+  {
+    id: 4,
+    action: t('setting.keyboard.actions.new_session'),
+    description: t('setting.keyboard.descriptions.new_session'),
+    keys: ['Ctrl', 'N']
+  },
+  {
+    id: 5,
+    action: t('setting.keyboard.actions.close_session'),
+    description: t('setting.keyboard.descriptions.close_session'),
+    keys: ['Ctrl', 'W']
+  },
+  {
+    id: 6,
+    action: t('setting.keyboard.actions.settings'),
+    description: t('setting.keyboard.descriptions.settings'),
+    keys: ['Ctrl', ',']
+  },
+  {
+    id: 7,
+    action: t('setting.keyboard.actions.quit_app'),
+    description: t('setting.keyboard.descriptions.quit_app'),
+    keys: ['Ctrl', 'Q']
+  },
+  {
+    id: 8,
+    action: t('setting.keyboard.actions.fullscreen'),
+    description: t('setting.keyboard.descriptions.fullscreen'),
+    keys: ['F11']
+  }
+])
 const editingShortcut = ref(false)
 const currentEditingType = ref('')
 const currentEditingKeys = ref<string[]>([])
 
 function handleGlobalShortcutChange(value: boolean) {
   settingStore.setGlobalShortcutEnabled(value)
-  message.success(value ? '已启用全局快捷键' : '已禁用全局快捷键')
+  message.success(value ? t('setting.keyboard.enabled') : t('setting.keyboard.disabled'))
 }
 
 function handleEditShortcut(type: string) {
@@ -128,7 +168,7 @@ function handleKeyDown(event: KeyboardEvent) {
   if (event.ctrlKey) keys.push('Ctrl')
   if (event.altKey) keys.push('Alt')
   if (event.shiftKey) keys.push('Shift')
-  if (event.metaKey) keys.push(isMac() ? 'Cmd' : 'Meta')
+  if (event.metaKey) keys.push('Meta')
 
   const key = event.key.toUpperCase()
   if (!['CONTROL', 'ALT', 'SHIFT', 'META'].includes(key)) {
@@ -147,21 +187,15 @@ function handleKeyDown(event: KeyboardEvent) {
       settingStore.setOpenMainPanelShortcut(shortcutStr)
     }
     editingShortcut.value = false
-    message.success('快捷键已更新')
+    message.success(t('setting.keyboard.updated'))
   }
 }
 
 function resetShortcuts() {
-  const defaults = {
-    screenshot: isMac() ? 'Cmd+Ctrl+H' : 'Ctrl+Alt+H',
-    openMainPanel: isMac() ? 'Cmd+Ctrl+P' : 'Ctrl+Alt+P'
-  }
-
-  shortcutsStore.screenshot = defaults.screenshot
-  shortcutsStore.openMainPanel = defaults.openMainPanel
-  settingStore.setScreenshotShortcut(defaults.screenshot)
-  settingStore.setOpenMainPanelShortcut(defaults.openMainPanel)
-  message.success('快捷键已恢复默认设置')
+  settingStore.resetGlobalShortcuts()
+  shortcutsStore.screenshot = settingStore.screenshotShortcut
+  shortcutsStore.openMainPanel = settingStore.openMainPanelShortcut
+  message.success(t('setting.keyboard.reset_success'))
 }
 
 onMounted(() => {
@@ -175,29 +209,26 @@ onUnmounted(() => {
 
 <style scoped>
 .keyboard-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-4);
+  color: var(--hula-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -206,32 +237,29 @@ onUnmounted(() => {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .shortcut-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .shortcut-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-:deep(.dark) .shortcut-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) var(--hula-space-4);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .shortcut-info {
@@ -240,18 +268,19 @@ onUnmounted(() => {
 }
 
 .shortcut-action {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .shortcut-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
   margin-top: 2px;
 }
 
 .shortcut-keys {
   display: flex;
-  gap: 4px;
+  gap: var(--hula-space-1);
 }
 
 .key {
@@ -260,35 +289,29 @@ onUnmounted(() => {
   justify-content: center;
   min-width: 28px;
   height: 24px;
-  padding: 0 8px;
-  font-size: 12px;
+  padding: 0 var(--hula-space-2);
+  font-size: var(--hula-font-size-sm);
   font-family: monospace;
-  background-color: var(--bg-msg-hover);
-  border: 1px solid var(--line-color);
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-:deep(.dark) .key {
-  background-color: var(--bg-setting-item);
-  border-color: var(--line-color);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  background-color: var(--hula-surface-panel);
+  border: 1px solid var(--hula-border-default);
+  border-radius: var(--hula-radius-xs);
+  box-shadow: var(--hula-shadow-sm);
 }
 
 .reset-section {
-  margin-top: 16px;
+  margin-top: var(--hula-space-4);
 }
 
 .shortcut-editor {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: var(--hula-space-4);
   padding: 20px;
 }
 
 .current-keys {
   display: flex;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 </style>

@@ -93,10 +93,7 @@
       </div>
 
       <van-popup v-model:show="showDurationPicker" position="bottom" round>
-        <van-picker
-          :columns="durationColumns"
-          @confirm="handleDurationConfirm"
-          @cancel="showDurationPicker = false" />
+        <van-picker :columns="durationColumns" @confirm="handleDurationConfirm" @cancel="showDurationPicker = false" />
       </van-popup>
     </template>
   </AutoFixHeightPage>
@@ -107,12 +104,16 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 
 const { t } = useI18n()
+const settingStore = useSettingStore()
 
-const globalEnabled = ref(false)
-const defaultDuration = ref(60)
-const showCountdown = ref(true)
+settingStore.migrateLegacyPreferenceSettings()
+
+const globalEnabled = ref(settingStore.burnDefaultEnabled)
+const defaultDuration = ref(settingStore.burnDefaultDuration)
+const showCountdown = ref(settingStore.burnShowCountdownEnabled)
 const showDurationPicker = ref(false)
 const loadingRooms = ref(false)
 
@@ -135,15 +136,6 @@ const currentDurationLabel = computed(() => {
 })
 
 onMounted(() => {
-  const savedEnabled = localStorage.getItem('hula-burn-default-enabled')
-  if (savedEnabled !== null) globalEnabled.value = savedEnabled === 'true'
-
-  const savedDuration = localStorage.getItem('hula-burn-default-duration')
-  if (savedDuration) defaultDuration.value = parseInt(savedDuration, 10)
-
-  const savedCountdown = localStorage.getItem('hula-burn-show-countdown')
-  if (savedCountdown !== null) showCountdown.value = savedCountdown === 'true'
-
   loadBurnRooms()
   loadBurnStats()
 })
@@ -178,19 +170,19 @@ function saveBurnRooms() {
 }
 
 function handleGlobalToggle(val: boolean) {
-  localStorage.setItem('hula-burn-default-enabled', val.toString())
+  settingStore.setBurnDefaultEnabled(val)
   showToast(val ? t('mobile_burn.enabled') : t('mobile_burn.disabled'))
 }
 
 function handleCountdownToggle(val: boolean) {
-  localStorage.setItem('hula-burn-show-countdown', val.toString())
+  settingStore.setBurnShowCountdownEnabled(val)
 }
 
 function handleDurationConfirm({ selectedValues }: { selectedValues: number[] }) {
-  const val = selectedValues[0]
+  const val = selectedValues[0] as 30 | 60 | 300 | 3600 | 86400
   if (val) {
     defaultDuration.value = val
-    localStorage.setItem('hula-burn-default-duration', val.toString())
+    settingStore.setBurnDefaultDuration(val)
   }
   showDurationPicker.value = false
 }

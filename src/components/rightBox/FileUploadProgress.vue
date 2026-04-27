@@ -6,13 +6,13 @@
     <!-- 进度条头部信息 -->
     <div class="flex-y-center pb-10px">
       <div class="flex-center gap-8px">
-        <svg class="size-16px color-[--text-color]">
+        <svg class="size-16px color-[--hula-text-primary]">
           <use href="#file2"></use>
         </svg>
-        <span class="text-(14px [--text-color]) max-w-200px truncate">
+        <span class="text-(14px [--hula-text-primary]) max-w-200px truncate">
           {{ getStatusText() }}
         </span>
-        <span class="text-(12px [--text-color])">{{ queue.completedFiles }}/{{ queue.totalFiles }}</span>
+        <span class="text-(12px [--hula-text-primary])">{{ queue.completedFiles }}/{{ queue.totalFiles }}</span>
       </div>
     </div>
 
@@ -23,21 +23,16 @@
       :show-indicator="false"
       :height="6"
       :border-radius="3"
-      :color="'var(--color-primary)'"
-      :rail-color="themes.content === ThemeEnum.DARK ? '#404040' : '#90909040'" />
+      :color="'var(--hula-color-primary-500)'"
+      :rail-color="'var(--hula-border-strong)'" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { ThemeEnum } from '@/enums'
 import { globalFileUploadQueue } from '@/hooks/useFileUploadQueue'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 
 // 队列状态
 const { queue, progress, isUploading } = globalFileUploadQueue
@@ -66,9 +61,9 @@ const getStatusText = () => {
 <style scoped lang="scss">
 .file-upload-progress {
   @apply absolute w-fit max-w-260px bottom-10px left-20px z-1000 rounded-8px p-12px;
-  background: var(--bg-emoji);
+  background: var(--hula-surface-panel);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--hula-shadow-md);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   transition: all 0.3s ease;

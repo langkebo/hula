@@ -12,7 +12,7 @@
             </svg>
           </template>
         </n-button>
-        <p class="text-(12px [--text-color]) text-center w-full whitespace-normal break-words leading-tight">
+        <p class="text-(12px [--hula-text-primary]) text-center w-full whitespace-normal break-words leading-tight">
           {{ opt.text }}
         </p>
       </div>
@@ -20,12 +20,12 @@
   </div>
 
   <n-modal v-model:show="showModal" class="w-70% rounded-8px">
-    <div class="bg-[--bg-popover] h-full p-6px box-border flex flex-col">
+    <div class="bg-[--hula-surface-panel] h-full p-6px box-border flex flex-col">
       <div
         v-if="isMac()"
         @click="showModal = false"
-        class="mac-close z-999 size-13px shadow-inner bg-#ed6a5eff rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+        class="mac-close z-999 size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% select-none absolute left-6px">
+        <svg class="hidden size-7px color-[--hula-surface-media-preview] select-none absolute top-3px left-3px">
           <use href="#close"></use>
         </svg>
       </div>
@@ -36,11 +36,11 @@
       <div class="pt-8px flex flex-col select-none">
         <div class="flex flex-row">
           <!-- 搜索会话 -->
-          <div class="flex-1 h-64vh bg-#e3e3e360 dark:bg-#222 rounded-8px px-12px mt-6px flex flex-col">
+          <div class="flex-1 h-64vh bg-[--hula-surface-search] rounded-8px px-12px mt-6px flex flex-col">
             <n-input
               id="search"
               v-model:value="searchText"
-              class="rounded-6px mt-8px border-(solid 1px [--line-color]) w-full relative text-12px"
+              class="rounded-6px mt-8px border-(solid 1px [--hula-border-default]) w-full relative text-12px"
               :maxlength="20"
               :placeholder="t('message.multi_choose.search_placeholder')"
               clearable
@@ -54,11 +54,11 @@
 
             <n-scrollbar class="flex-1">
               <template v-for="session in filteredSessionList" :key="session.roomId">
-                <n-flex align="center" :size="8" class="text-12px text-[--text-color] py-8px px-4px">
+                <n-flex align="center" :size="8" class="text-12px text-[--hula-text-primary] py-8px px-4px">
                   <n-checkbox v-model:checked="session.isCheck" @click.stop />
                   <n-avatar class="rounded-8px" :size="30" :src="AvatarUtils.getAvatarUrl(session.avatar)" />
                   <p>{{ session.remark ? session.remark : session.name }}</p>
-                  <p class="text-(12px --color-text-tertiary)" v-if="session.type === RoomTypeEnum.GROUP">
+                  <p class="text-(12px --hula-text-tertiary)" v-if="session.type === RoomTypeEnum.GROUP">
                     ({{ groupStore.getGroupDetailByRoomId(session.roomId)?.memberNum }})
                   </p>
                 </n-flex>
@@ -67,12 +67,12 @@
           </div>
           <!-- 已选择会话 -->
           <div class="flex-1 min-w-0 h-64vh px-12px pt-4px flex flex-col">
-            <p class="text-(12px --color-text-tertiary) pb-10px">{{ t('message.multi_choose.send_to_separately') }}</p>
+            <p class="text-(12px --hula-text-tertiary) pb-10px">{{ t('message.multi_choose.send_to_separately') }}</p>
             <n-scrollbar class="flex-1">
               <template v-for="session in selectedSessions" :key="session.roomId">
                 <n-flex align="center" class="p-8px">
                   <n-avatar class="rounded-8px" :size="30" :src="AvatarUtils.getAvatarUrl(session.avatar)" />
-                  <p class="text-(12px [--chat-text-color])">{{ session.remark ? session.remark : session.name }}</p>
+                  <p class="text-(12px [--hula-text-primary])">{{ session.remark ? session.remark : session.name }}</p>
                   <n-button quaternary circle size="small" class="ml-auto" @click="handleRemoveSession(session.roomId)">
                     <template #icon>
                       <n-icon size="14">
@@ -86,7 +86,7 @@
               </template>
             </n-scrollbar>
 
-            <span class="w-full h-1px bg-[--line-color] my-8px"></span>
+            <span class="w-full h-1px bg-[--hula-border-default] my-8px"></span>
 
             <div class="flex-1 flex flex-col justify-between">
               <div class="flex-1 flex-col-center gap-12px">
@@ -99,7 +99,7 @@
                 </template>
                 <ChatMultiMsg v-else :content-list="msgContents" :msg-ids="msgIds" />
               </div>
-              <div class="w-full flex justify-between mt-12px pt-12px border-t-(1px solid [--line-color])">
+              <div class="w-full flex justify-between mt-12px pt-12px border-t-(1px solid [--hula-border-default])">
                 <n-button secondary class="w-100px h-30px" @click="showModal = false">
                   {{ t('message.multi_choose.cancel_button') }}
                 </n-button>
@@ -115,12 +115,12 @@
   </n-modal>
 
   <n-modal v-model:show="showDeleteConfirm" class="w-350px border-rd-8px">
-    <div class="bg-[--bg-popover] w-360px h-full p-6px box-border flex flex-col">
+    <div class="bg-[--hula-surface-panel] w-360px h-full p-6px box-border flex flex-col">
       <div
         v-if="isMac()"
         @click="showDeleteConfirm = false"
-        class="mac-close z-999 size-13px shadow-inner bg-#ed6a5eff rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+        class="mac-close z-999 size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% select-none absolute left-6px">
+        <svg class="hidden size-7px color-[--hula-surface-media-preview] select-none absolute top-3px left-3px">
           <use href="#close"></use>
         </svg>
       </div>
@@ -135,7 +135,11 @@
           <n-button class="w-78px" secondary @click="showDeleteConfirm = false">
             {{ t('message.multi_choose.cancel_button') }}
           </n-button>
-          <n-button class="w-78px" color="var(--color-primary)" :loading="isDeleting" @click="handleBatchDelete">
+          <n-button
+            class="w-78px"
+            color="var(--hula-color-primary-500)"
+            :loading="isDeleting"
+            @click="handleBatchDelete">
             {{ t('message.multi_choose.delete_action') }}
           </n-button>
         </n-flex>
@@ -472,9 +476,9 @@ watch(
   width: 126px;
   min-height: 168px;
   padding: 12px;
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   border-radius: 16px;
-  background-color: var(--bg-popover);
+  background-color: var(--hula-surface-panel);
   cursor: pointer;
 }
 
@@ -486,7 +490,7 @@ watch(
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: var(--center-bg-color);
+  background-color: var(--hula-surface-panel-muted);
 }
 
 .custom-task-card img {

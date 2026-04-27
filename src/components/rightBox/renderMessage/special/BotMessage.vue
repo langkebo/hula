@@ -2,17 +2,18 @@
   <!-- 消息为机器人消息时 -->
   <main class="w-full flex-center">
     <div
-      class="chat-message-max-width dark:bg-[#fbb99020] bg-[#fbb99030] dark:border-(1px solid #fbb99020) border-(1px solid #fbb99040) flex-center chat-bot-message-gap px-12px py-4px rounded-8px">
+      class="chat-message-max-width bg-[--hula-settings-warning-bg] flex-center chat-bot-message-gap px-12px py-4px rounded-8px"
+      style="border: 1px solid color-mix(in srgb, var(--hula-color-warning-400) 30%, transparent)">
       <n-avatar class="select-none" round :size="22" :src="getAvatarSrc(fromUserUid)" />
       <div
         v-for="(part, index) in parseMessage(body.content ?? '')"
         :key="index"
-        class="text-(12px #fbb990) leading-tight select-none cursor-default">
+        class="text-(12px [--hula-color-warning-400]) leading-tight select-none cursor-default">
         <p v-if="part.type === 'text'">{{ part.text }}</p>
-        <p v-else-if="part.type === 'bracket'" class="text-[--color-primary] truncate max-w-20">
+        <p v-else-if="part.type === 'bracket'" class="text-[--hula-color-primary-500] truncate max-w-20">
           {{ part.text }}
         </p>
-        <p v-else-if="part.type === 'number'" class="text-#fbb160">{{ part.text }}</p>
+        <p v-else-if="part.type === 'number'" class="text-[--hula-color-warning-500]">{{ part.text }}</p>
       </div>
       <img class="size-18px" src="/emoji/party-popper.webp" alt="" />
     </div>

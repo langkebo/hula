@@ -10,8 +10,8 @@
       <n-flex justify="center" class="w-full pt-12px" data-tauri-drag-region>
         <n-avatar
           class="welcome size-80px rounded-50% border-(2px solid #fff) dark:border-(2px solid #606060)"
-          :color="themes.content === ThemeEnum.DARK ? '#282828' : '#fff'"
-          :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+          :color="settingStore.themeContent === ThemeEnum.DARK ? '#282828' : '#fff'"
+          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
           :src="AvatarUtils.getAvatarUrl(loginInfo.avatar)" />
       </n-flex>
 
@@ -122,13 +122,13 @@
           <n-avatar
             round
             :size="110"
-            :color="themes.content === ThemeEnum.DARK ? '#282828' : '#fff'"
-            :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+            :color="settingStore.themeContent === ThemeEnum.DARK ? '#282828' : '#fff'"
+            :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
             :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')" />
         </n-flex>
 
         <n-flex justify="center">
-          <n-ellipsis style="max-width: 200px" class="text-(18px [--chat-text-color])">
+          <n-ellipsis style="max-width: 200px" class="text-(18px [--hula-text-secondary])">
             {{ userStore.userInfo?.name || '' }}
           </n-ellipsis>
         </n-flex>
@@ -269,8 +269,7 @@ const logger = createLogger('Login')
 const timerManager = useTimerManager()
 
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
-const naiveTheme = computed(() => (themes.value.content === 'dark' ? darkTheme : lightTheme))
+const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const guideStore = useGuideStore()
@@ -279,7 +278,6 @@ const { isGuideCompleted } = storeToRefs(guideStore)
 const { isOnline } = useNetwork()
 const loginHistoriesStore = useLoginHistoriesStore()
 const { loginHistories } = storeToRefs(loginHistoriesStore)
-const { login } = storeToRefs(settingStore)
 const protocol = ref(true)
 const arrowStatus = ref(false)
 const moreShow = ref(false)
@@ -492,7 +490,7 @@ watch(
 )
 
 watch(
-  () => login.value.autoLogin,
+  () => settingStore.autoLoginEnabled,
   (isAuto) => {
     if (!isAuto) {
       clearAutoLoginTimer()
@@ -626,7 +624,7 @@ onBeforeMount(async () => {
   await handlePendingRemoteLoginPayload()
   isTrayMenuShow.value = false
 
-  if (!login.value.autoLogin) {
+  if (!settingStore.autoLoginEnabled) {
     uiState.value = 'manual'
     localStorage.removeItem('TOKEN')
     localStorage.removeItem('REFRESH_TOKEN')
@@ -644,7 +642,7 @@ onMounted(async () => {
     await currentWindow.show()
   }
 
-  if (login.value.autoLogin) {
+  if (settingStore.autoLoginEnabled) {
     uiState.value = 'auto'
     startAutoLoginCountdown()
   } else {

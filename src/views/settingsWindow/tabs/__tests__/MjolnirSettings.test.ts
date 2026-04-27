@@ -4,6 +4,21 @@ import MjolnirSettings from '../MjolnirSettings.vue'
 
 const messageSuccessMock = vi.fn()
 const messageWarningMock = vi.fn()
+const translationMap: Record<string, string> = {
+  'setting.mjolnir.alert_info': 'Mjolnir 是一个 Matrix 审核机器人，用于管理房间、用户和服务器的屏蔽规则。',
+  'setting.mjolnir.room_bans': '房间屏蔽列表',
+  'setting.mjolnir.user_bans': '用户屏蔽列表',
+  'setting.mjolnir.server_bans': '服务器屏蔽列表',
+  'setting.mjolnir.no_room_bans': '暂无房间屏蔽规则',
+  'setting.mjolnir.no_user_bans': '暂无用户屏蔽规则',
+  'setting.mjolnir.no_server_bans': '暂无服务器屏蔽规则',
+  'setting.mjolnir.enter_room_id': '请输入房间 ID',
+  'setting.mjolnir.enter_user_id': '请输入用户 ID',
+  'setting.mjolnir.enter_server_name': '请输入服务器名称',
+  'setting.mjolnir.added_room_rule': '已添加房间屏蔽规则',
+  'setting.mjolnir.added_user_rule': '已添加用户屏蔽规则',
+  'setting.mjolnir.added_server_rule': '已添加服务器屏蔽规则'
+}
 
 vi.mock('naive-ui', () => ({
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['size', 'type'] },
@@ -24,6 +39,12 @@ vi.mock('@/services/matrix', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: vi.fn(() => ({ error: vi.fn() }))
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => translationMap[key] ?? key
+  })
 }))
 
 describe('MjolnirSettings', () => {

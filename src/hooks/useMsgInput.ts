@@ -1,4 +1,3 @@
-import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref, watchEffect } from 'vue'
 import type { AIModel } from '@/services/types.ts'
@@ -32,7 +31,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
   const { triggerInputEvent, insertNode, getMessageContentType, getEditorRange, imgPaste, reply, userUid } = useCommon()
 
   const settingStore = useSettingStore()
-  const { chat } = storeToRefs(settingStore)
+  const sendKey = computed(() => settingStore.sendMessageShortcut)
   /** 输入框内容  */
   const msgInput = ref('')
   /** 发送按钮是否禁用 */
@@ -185,7 +184,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
   const { chatKey, handleInput, inputKeyDown } = useInputShortcuts({
     messageInputDom,
     msgInput,
-    chat,
+    sendKey,
+    setSendKey: settingStore.setSendMessageShortcut,
     ait,
     aiDialogVisible,
     isChinese,

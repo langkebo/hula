@@ -16,10 +16,14 @@ const makeOpts = (overrides: Partial<ShortcutOpts> = {}): ShortcutOpts => {
   const dom = document.createElement('div')
   document.body.appendChild(dom)
   const messageInputDom = ref(dom) as ShortcutOpts['messageInputDom']
+  const sendKey = ref('Enter')
   return {
     messageInputDom,
     msgInput: ref(''),
-    chat: ref({ sendKey: 'Enter' }),
+    sendKey,
+    setSendKey: vi.fn((value: string) => {
+      sendKey.value = value
+    }),
     ait: ref(false),
     aiDialogVisible: ref(false),
     isChinese: ref(false),
@@ -54,26 +58,27 @@ describe('useInputShortcuts', () => {
   })
 
   describe('chatKey two-way binding', () => {
-    it('mirrors chat.sendKey into chatKey initially', () => {
-      const opts = makeOpts({ chat: ref({ sendKey: '⌘+Enter' }) })
+    it('mirrors sendKey into chatKey initially', () => {
+      const opts = makeOpts({ sendKey: ref('⌘+Enter') })
       const { chatKey } = useInputShortcuts(opts)
       expect(chatKey.value).toBe('⌘+Enter')
     })
 
-    it('propagates external chat.sendKey change to chatKey', async () => {
+    it('propagates external sendKey change to chatKey', async () => {
       const opts = makeOpts()
       const { chatKey } = useInputShortcuts(opts)
-      opts.chat.value.sendKey = 'Ctrl+Enter'
+      opts.sendKey.value = 'Ctrl+Enter'
       await nextTick()
       expect(chatKey.value).toBe('Ctrl+Enter')
     })
 
-    it('propagates chatKey change back to chat.sendKey', async () => {
+    it('propagates chatKey change back through setSendKey', async () => {
       const opts = makeOpts()
       const { chatKey } = useInputShortcuts(opts)
       chatKey.value = '⌘+Enter'
       await nextTick()
-      expect(opts.chat.value.sendKey).toBe('⌘+Enter')
+      expect(opts.setSendKey).toHaveBeenCalledWith('⌘+Enter')
+      expect(opts.sendKey.value).toBe('⌘+Enter')
     })
   })
 
@@ -183,7 +188,7 @@ describe('useInputShortcuts', () => {
 
     it('inserts newline on mac when sendKey=Enter and user presses ⌘+Enter', async () => {
       vi.mocked(isMac).mockReturnValue(true)
-      const opts = makeOpts({ chat: ref({ sendKey: 'Enter' }), msgInput: ref('hi') })
+      const opts = makeOpts({ sendKey: ref('Enter'), msgInput: ref('hi') })
       const { inputKeyDown } = useInputShortcuts(opts)
       const e = keyDownEvent({ key: 'Enter', metaKey: true })
       await inputKeyDown(e)
@@ -193,7 +198,7 @@ describe('useInputShortcuts', () => {
     })
 
     it('submits the form when sendKey=Enter and plain Enter is pressed', async () => {
-      const opts = makeOpts({ chat: ref({ sendKey: 'Enter' }), msgInput: ref('hello') })
+      const opts = makeOpts({ sendKey: ref('Enter'), msgInput: ref('hello') })
       const form = document.createElement('form')
       form.id = 'message-form'
       const requestSubmit = vi.fn()
@@ -211,7 +216,7 @@ describe('useInputShortcuts', () => {
 
     it('submits when sendKey=⌘+Enter (mac) and ⌘+Enter is pressed', async () => {
       vi.mocked(isMac).mockReturnValue(true)
-      const opts = makeOpts({ chat: ref({ sendKey: '⌘+Enter' }), msgInput: ref('hello') })
+      const opts = makeOpts({ sendKey: ref('⌘+Enter'), msgInput: ref('hello') })
       const form = document.createElement('form')
       form.id = 'message-form'
       const requestSubmit = vi.fn()
@@ -227,7 +232,7 @@ describe('useInputShortcuts', () => {
 
     it('does not submit on plain Enter when sendKey=Ctrl+Enter', async () => {
       vi.mocked(isWindows).mockReturnValue(true)
-      const opts = makeOpts({ chat: ref({ sendKey: 'Ctrl+Enter' }), msgInput: ref('hello') })
+      const opts = makeOpts({ sendKey: ref('Ctrl+Enter'), msgInput: ref('hello') })
       const form = document.createElement('form')
       form.id = 'message-form'
       const requestSubmit = vi.fn()

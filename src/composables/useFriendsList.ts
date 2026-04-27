@@ -85,9 +85,7 @@ export function useFriendsList() {
     buildNormalContacts(contactStore.contactsList, specialContacts.value, blockedContacts.value, isBotUser)
   )
   const normalOnlineCount = computed(() => Math.max(onlineCount.value - specialOnlineCount.value, 0))
-  const contactUnreadCount = computed(
-    () => globalStore.unReadMark.newFriendUnreadCount + globalStore.unReadMark.newGroupUnreadCount
-  )
+  const contactUnreadCount = computed(() => globalStore.contactUnreadCount)
   const selectedItem = ref('')
 
   const getUserState = (uid: string): UserStateItem | null => {

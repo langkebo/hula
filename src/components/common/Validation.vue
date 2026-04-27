@@ -17,41 +17,25 @@
         :stroke="strokeColor"
         d="m16 24 6 6 12-12" />
     </svg>
-    <p
-      :class="[
-        'text-12px',
-        { 'color-#131313 dark:color-#fefefe': isValid, 'color-#909090 dark:color-#707070': !isValid }
-      ]">
+    <p :class="['text-12px', { 'color-[--hula-text-primary]': isValid, 'color-[--hula-text-tertiary]': !isValid }]">
       {{ message }}
     </p>
   </n-flex>
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { ThemeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-
 const props = defineProps<{
   value: string
   message?: string
   validator?: (value: string) => boolean
 }>()
 
-const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
-
-const isDarkMode = computed(() => {
-  const theme = themes.value.content || document.documentElement.dataset.theme
-  return theme === ThemeEnum.DARK
-})
-
-const successStrokeColor = computed(() => (isDarkMode.value ? '#4bd9bd' : '#13987f'))
-const neutralStrokeColor = computed(() => (isDarkMode.value ? '#bdbdbd' : '#909090'))
-const successFillColor = computed(() => (isDarkMode.value ? '#143a32' : '#AFDBD2'))
-const neutralFillColor = computed(() => (isDarkMode.value ? '#303030' : '#fefefe'))
+const successStrokeColor = 'var(--hula-color-primary-500)'
+const neutralStrokeColor = 'var(--hula-text-tertiary)'
+const successFillColor = 'var(--hula-color-primary-100)'
+const neutralFillColor = 'var(--hula-surface-panel)'
 
 const isValid = computed(() => (props.validator ? props.validator(props.value) : true))
-const strokeColor = computed(() => (isValid.value ? successStrokeColor.value : neutralStrokeColor.value))
-const fillColor = computed(() => (isValid.value ? successFillColor.value : neutralFillColor.value))
+const strokeColor = computed(() => (isValid.value ? successStrokeColor : neutralStrokeColor))
+const fillColor = computed(() => (isValid.value ? successFillColor : neutralFillColor))
 </script>

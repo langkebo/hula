@@ -42,7 +42,7 @@
 
       <n-form-item :label="t('room.create.encryption')" path="isEncrypted">
         <n-switch v-model:value="formData.isEncrypted" />
-        <span class="ml-8px text-12px color-[--color-text-tertiary]">{{ t('room.create.encryption_hint') }}</span>
+        <span class="ml-8px text-12px color-[--hula-text-tertiary]">{{ t('room.create.encryption_hint') }}</span>
       </n-form-item>
 
       <n-form-item :label="t('room.create.history')" path="historyVisibility">

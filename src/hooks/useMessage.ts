@@ -1,5 +1,4 @@
 import { ref } from 'vue'
-import { storeToRefs } from 'pinia'
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import type { SessionItem } from '@/stores/domains/chat/chat'
@@ -34,7 +33,6 @@ export const useMessage = () => {
   const globalStore = useGlobalStore()
   const chatStore = useChatStore()
   const settingStore = useSettingStore()
-  const { chat } = storeToRefs(settingStore)
   const contactStore = useContactStore()
   const groupStore = useGroupStore()
   const userStore = useUserStore()
@@ -120,7 +118,7 @@ export const useMessage = () => {
 
   /** 处理双击事件 */
   const handleMsgDblclick = (item: SessionItem) => {
-    if (!chat.value.isDouble) return
+    if (!settingStore.messageDoubleClickEnabled) return
     logger.debug('双击消息项:', item)
   }
 

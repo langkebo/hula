@@ -124,7 +124,7 @@ watch(
 )
 
 const division = () => {
-  return <div class={'h-1px bg-[--line-color] w-full'}></div>
+  return <div class={'h-1px bg-[--hula-border-default] w-full'}></div>
 }
 
 // 处理点击消息的逻辑
@@ -355,6 +355,6 @@ onUnmounted(() => {
 </script>
 <style scoped lang="scss">
 .notify {
-  @apply bg-[--center-bg-color] size-full p-8px box-border select-none text-[--text-color] text-12px;
+  @apply bg-[--hula-surface-panel] size-full p-8px box-border select-none text-[--text-color] text-12px;
 }
 </style>

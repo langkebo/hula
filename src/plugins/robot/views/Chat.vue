@@ -31,7 +31,7 @@
 
       <!-- 聊天信息框 -->
       <RobotChatMessageList
-        :class="{ 'shadow-inner': page.shadow }"
+        :class="{ 'shadow-inner': settingStore.pageShadowEnabled }"
         :message-list="messageList"
         :loading-messages="loadingMessages"
         :message-render-version="messageRenderVersion"
@@ -236,7 +236,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
-import { storeToRefs } from 'pinia'
 import RobotChatHeader from '@/plugins/robot/components/RobotChatHeader.vue'
 import RobotChatInputPanel from '@/plugins/robot/components/RobotChatInputPanel.vue'
 import RobotChatMessageList from '@/plugins/robot/components/RobotChatMessageList.vue'
@@ -244,7 +243,6 @@ import { useRobotChat } from '@/plugins/robot/composables/useRobotChat'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 const settingStore = useSettingStore()
-const { page } = storeToRefs(settingStore)
 const MsgInputRef = ref<{ clearInput?: () => void }>()
 
 const {
@@ -357,18 +355,18 @@ const {
 
 .history-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 16px;
 }
 
 .history-item {
-  border: 1px solid var(--line-color;
+  border: 1px solid var(--line-color);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s;
 
   &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -400,7 +398,7 @@ const {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   }
 
   .preview-placeholder {
@@ -422,10 +420,11 @@ const {
 
   .prompt {
     font-size: 13px;
-    color: var(--text-color;
+    color: var(--text-color);
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
@@ -442,7 +441,7 @@ const {
 
   .preview-info {
     padding: 16px;
-    background: var(--bg-color;
+    background: var(--bg-color);
     border-radius: 8px;
   }
 }

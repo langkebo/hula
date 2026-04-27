@@ -1,7 +1,7 @@
 <template>
   <div
     v-show="shouldShowUserList"
-    class="w-240px flex-shrink-0 flex flex-col bg-[--center-bg-color] border-r border-solid border-[--line-color]">
+    class="w-240px flex-shrink-0 flex flex-col bg-[--hula-surface-panel] border-r border-solid border-[--hula-border-default]">
     <!-- 搜索栏 -->
     <div class="p-16px pb-12px">
       <n-input
@@ -13,7 +13,7 @@
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
-        class="rounded-6px border-(solid 1px [--line-color]) w-full relative text-12px"
+        class="rounded-6px border-(solid 1px [--hula-border-default]) w-full relative text-12px"
         size="small">
         <template #prefix>
           <svg class="size-16px text-[--text-color] opacity-60">

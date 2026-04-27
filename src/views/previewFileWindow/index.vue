@@ -3,7 +3,7 @@
     <ActionBar :shrink="false" :current-label="WebviewWindow.getCurrent().label" />
     <n-scrollbar
       style="max-height: calc(100vh)"
-      class="w-full box-border bg-[--center-bg-color] rounded-b-8px border-(solid 1px [--line-color])">
+      class="w-full box-border bg-[--hula-surface-panel] rounded-b-8px border-(solid 1px [--hula-border-default])">
       <div class="flex flex-col gap-4 bg-#808080">
         <VueOfficeDocx v-if="isShowWord" :src="resourceSrc" style="height: 100vh" />
 

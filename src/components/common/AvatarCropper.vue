@@ -11,8 +11,8 @@
         <div
           v-if="isMac()"
           @click="closeWindow"
-          class="mac-close size-13px shadow-inner bg-#ed6a5eff rounded-50% mt-6px select-none absolute left-6px">
-          <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+          class="mac-close size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% mt-6px select-none absolute left-6px">
+          <svg class="hidden size-7px color-[--hula-surface-media-preview] select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>
@@ -27,7 +27,7 @@
           @click="closeWindow">
           <use href="#close"></use>
         </svg>
-        <span class="h-1px w-full bg-[--line-color]"></span>
+        <span class="h-1px w-full bg-[--hula-border-default]"></span>
       </n-flex>
 
       <!-- 主体内容 -->

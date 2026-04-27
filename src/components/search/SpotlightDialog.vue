@@ -326,7 +326,7 @@ watch(
   @apply flex items-center gap-12px px-16px py-10px cursor-pointer transition-all;
 
   &:hover {
-    background: var(--emoji-hover);
+    background: var(--hula-menu-hover);
   }
 }
 
@@ -387,7 +387,7 @@ watch(
   @apply cursor-pointer;
 
   &:hover {
-    background: var(--emoji-hover);
+    background: var(--hula-menu-hover);
   }
 }
 </style>

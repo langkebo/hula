@@ -1,24 +1,24 @@
 <template>
   <!-- 底部栏 -->
   <main
-    :class="[isMobile() ? 'flex-col w-full' : 'border-t-(1px solid [--right-chat-footer-line-color])']"
+    :class="[isMobile() ? 'flex-col w-full' : 'border-t-(1px solid [--hula-border-default])']"
     class="h-full flex flex-col relative">
     <!-- 添加遮罩层 -->
     <div
       v-if="isSingleChat && !isFriend"
       :style="{ height: `${footerHeight}px` }"
-      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto light:bg-[rgba(255,255,255,0.1)] dark:bg-[rgba(33,33,33,0.1)]">
+      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--hula-surface-overlay]">
       <n-flex align="center" justify="center" class="pb-60px">
         <svg class="size-24px">
           <use href="#cloudError"></use>
         </svg>
-        <span class="text-(14px [--chat-text-color])">{{ t('editor.relation.not_friends') }}</span>
+        <span class="text-(14px [--hula-text-tertiary])">{{ t('editor.relation.not_friends') }}</span>
       </n-flex>
     </div>
 
     <ChatMsgMultiChoose v-if="chatStore.isMsgMultiChoose" />
 
-    <div v-if="!chatStore.isMsgMultiChoose" class="color-[--icon-color] flex flex-col flex-1 min-h-0">
+    <div v-if="!chatStore.isMsgMultiChoose" class="color-[--hula-text-secondary] flex flex-col flex-1 min-h-0">
       <!-- 输入框顶部选项栏 -->
       <n-flex
         v-if="!isMobile()"
@@ -35,11 +35,11 @@
             :disabled="chatStore.isMsgMultiChoose"
             style="
               padding: 0;
-              background: var(--bg-emoji);
+              background: var(--hula-surface-panel);
               backdrop-filter: blur(10px);
               -webkit-backdrop-filter: blur(10px);
-              box-shadow: 2px 2px 12px 2px var(--box-shadow-color);
-              border: 1px solid var(--box-shadow-color);
+              box-shadow: var(--hula-shadow-md);
+              border: 1px solid var(--hula-border-default);
               width: auto;
             ">
             <template #trigger>
@@ -57,7 +57,7 @@
                   </svg>
                 </template>
                 <div v-if="recentEmojis.length > 0" class="p-4px">
-                  <div class="text-xs text-gray-500 mb-4px">最近使用</div>
+                  <div class="text-xs text-[--hula-text-tertiary] mb-4px">最近使用</div>
                   <div class="flex flex-wrap gap-8px max-w-212px">
                     <div
                       v-for="(emoji, index) in recentEmojis"
@@ -86,11 +86,11 @@
             <n-popover
               style="
                 padding: 0;
-                background: var(--bg-emoji);
+                background: var(--hula-surface-panel);
                 backdrop-filter: blur(10px);
                 -webkit-backdrop-filter: blur(10px);
-                box-shadow: 2px 2px 12px 2px var(--box-shadow-color);
-                border: 1px solid var(--box-shadow-color);
+                box-shadow: var(--hula-shadow-md);
+                border: 1px solid var(--hula-border-default);
               "
               trigger="hover"
               :show-arrow="false"
@@ -113,7 +113,7 @@
                     </svg>
                     <p>{{ t('editor.screenshot') }}</p>
                   </n-flex>
-                  <p class="text-(12px --color-text-tertiary)">{{ settingStore.shortcuts.screenshot }}</p>
+                  <p class="text-(12px --hula-text-tertiary)">{{ settingStore.screenshotShortcut }}</p>
                 </n-flex>
 
                 <n-flex
@@ -122,7 +122,7 @@
                   justify="space-between"
                   @click="isConceal = !isConceal">
                   <n-checkbox v-model:checked="isConceal" @click.stop />
-                  <p class="text-(12px --chat-text-color)">{{ t('editor.screenshot_hide_curr_window') }}</p>
+                  <p class="text-(12px [--hula-text-primary])">{{ t('editor.screenshot_hide_curr_window') }}</p>
                 </n-flex>
               </div>
             </n-popover>
@@ -169,7 +169,7 @@
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
             <template #trigger>
               <svg
-                :class="{ 'text-[--primary-color]': burnAfterReadEnabled }"
+                :class="{ 'text-[--hula-color-primary-500]': burnAfterReadEnabled }"
                 @click="toggleBurnAfterRead"
                 class="mr-18px cursor-pointer">
                 <use href="#timer"></use>
@@ -300,7 +300,7 @@ const burnAfterReadEnabled = computed(() => burnAfterRead.isRoomBurnEnabled())
 const burnAfterRead = useBurnAfterRead()
 
 const isConceal = computed({
-  get: () => settingStore.screenshot.isConceal,
+  get: () => settingStore.screenshotConcealEnabled,
   set: (value: boolean) => settingStore.setScreenshotConceal(value)
 })
 const recentEmojis = computed(() => {
@@ -774,7 +774,7 @@ onUnmounted(() => {
     cursor: pointer;
 
     &:hover {
-      color: var(--color-primary);
+      color: var(--hula-color-primary-500);
     }
   }
 
@@ -790,7 +790,7 @@ onUnmounted(() => {
 .resize-indicator {
   width: 40px;
   height: 3px;
-  background: var(--resize-indicator-color, #909090);
+  background: var(--hula-text-tertiary);
   border-radius: 2px;
   opacity: 0.3;
   transition: all 0.2s ease;
@@ -804,7 +804,7 @@ onUnmounted(() => {
     transform: translateX(-50%);
     width: 20px;
     height: 1px;
-    background: var(--icon-color, #666);
+    background: var(--hula-text-secondary);
     border-radius: 1px;
     opacity: 0.5;
   }
@@ -817,7 +817,7 @@ onUnmounted(() => {
     transform: translateX(-50%);
     width: 20px;
     height: 1px;
-    background: var(--icon-color, #666);
+    background: var(--hula-text-secondary);
     border-radius: 1px;
     opacity: 0.5;
   }
@@ -841,7 +841,7 @@ onUnmounted(() => {
     border-radius: 4px;
 
     &:hover {
-      background-color: var(--emoji-hover);
+      background-color: var(--hula-fill-hover);
 
       svg {
         animation: twinkle 0.3s ease-in-out;
@@ -860,7 +860,7 @@ onUnmounted(() => {
 .panel-container {
   width: 100%;
   overflow: hidden;
-  background-color: var(--bg-emoji, #f5f5f5);
+  background-color: var(--hula-surface-panel-muted);
   display: flex;
   flex-direction: column;
   transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);

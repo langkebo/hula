@@ -12,6 +12,13 @@ const changePasswordMock = vi.fn().mockResolvedValue(undefined)
 const deactivateAccountMock = vi.fn().mockResolvedValue(undefined)
 const updateAvatarMock = vi.fn().mockResolvedValue(undefined)
 const uploadImageMock = vi.fn().mockResolvedValue({ contentUri: 'mxc://test/avatar' })
+const translationMap: Record<string, string> = {
+  'setting.account.profile': '个人资料',
+  'setting.account.password_incomplete': '请填写完整密码信息',
+  'setting.account.password_mismatch': '两次输入的密码不一致',
+  'setting.account.password_change_failed_with_hint': '密码修改失败，请检查当前密码是否正确',
+  'setting.account.deactivate_confirm_title': '确认停用账户'
+}
 
 vi.mock('naive-ui', () => ({
   NAvatar: { name: 'NAvatar', template: '<div class="n-avatar" />', props: ['round', 'size', 'src', 'fallbackSrc'] },
@@ -69,6 +76,21 @@ vi.mock('@/assets/img/win.png', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() })
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      if (!params) {
+        return translationMap[key] ?? key
+      }
+
+      return Object.entries(params).reduce(
+        (message, [name, value]) => message.replace(new RegExp(`\\{${name}\\}`, 'g'), value),
+        translationMap[key] ?? key
+      )
+    }
+  })
 }))
 
 describe('AccountSettings', () => {
@@ -173,7 +195,7 @@ describe('AccountSettings', () => {
     const wrapper = mount(AccountSettings)
     const vm = wrapper.vm as any
     vm.handleDeactivateAccount()
-    expect(dialogWarningMock).toHaveBeenCalledWith(expect.objectContaining({ title: '注销账户' }))
+    expect(dialogWarningMock).toHaveBeenCalledWith(expect.objectContaining({ title: '确认停用账户' }))
   })
 
   it('avatar uploading is false by default', () => {
