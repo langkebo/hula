@@ -40,21 +40,14 @@
 </template>
 
 <script setup lang="ts">
-interface TrendingTopic {
-  name?: string
-  topic?: string
-  title?: string
-  hotValue?: number | string
-  category?: string
-  trend?: 'up' | 'down' | 'stable'
-}
+import type { TrendRadarTopic } from '@/services/trendradar'
 
 defineProps<{
-  topics: TrendingTopic[]
+  topics: TrendRadarTopic[]
   loading?: boolean
 }>()
 
-const emit = defineEmits<(event: 'topicClick', topic: TrendingTopic) => void>()
+const emit = defineEmits<(event: 'topicClick', topic: TrendRadarTopic) => void>()
 
 const formatHotValue = (value: number | string) => {
   const num = typeof value === 'string' ? parseFloat(value) : value
@@ -64,17 +57,17 @@ const formatHotValue = (value: number | string) => {
   return String(num)
 }
 
-const handleTopicClick = (topic: TrendingTopic) => {
+const handleTopicClick = (topic: TrendRadarTopic) => {
   emit('topicClick', topic)
 }
 </script>
 
 <style scoped>
 .trending-panel {
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
   border-radius: 8px;
   padding: 12px;
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
 }
 
 .trending-panel__header {
@@ -83,7 +76,7 @@ const handleTopicClick = (topic: TrendingTopic) => {
   gap: 8px;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--hula-border-default);
 }
 
 .trending-panel__icon {
@@ -95,7 +88,7 @@ const handleTopicClick = (topic: TrendingTopic) => {
 .trending-panel__title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
 }
 
 .trending-panel__list {
@@ -115,7 +108,7 @@ const handleTopicClick = (topic: TrendingTopic) => {
 }
 
 .trending-panel__item:hover {
-  background: var(--bg-hover);
+  background: var(--hula-surface-list-hover);
 }
 
 .trending-panel__rank {
@@ -126,8 +119,8 @@ const handleTopicClick = (topic: TrendingTopic) => {
   justify-content: center;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-color-secondary);
-  background: var(--bg-hover);
+  color: var(--hula-text-secondary);
+  background: var(--hula-surface-list-hover);
   border-radius: 4px;
   flex-shrink: 0;
 }
@@ -144,7 +137,7 @@ const handleTopicClick = (topic: TrendingTopic) => {
 
 .trending-panel__topic-name {
   font-size: 13px;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -159,7 +152,7 @@ const handleTopicClick = (topic: TrendingTopic) => {
 
 .trending-panel__hot-value {
   font-size: 11px;
-  color: var(--text-color-tertiary);
+  color: var(--hula-text-tertiary);
 }
 
 .trending-panel__category {
@@ -191,7 +184,7 @@ const handleTopicClick = (topic: TrendingTopic) => {
   justify-content: center;
   gap: 8px;
   padding: 20px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   font-size: 12px;
 }
 

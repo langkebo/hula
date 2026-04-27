@@ -1,11 +1,11 @@
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { MittEnum, ModalEnum, PluginEnum } from '@/enums'
-import { useLogin } from '@/hooks/useLogin.ts'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
-import { useSettingStore } from '@/stores/setting'
-import * as ImRequestUtils from '@/utils/ImRequestUtils'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('LeftConfig')
 
 /**
  * 这里的顶部的操作栏使用pinia写入了localstorage中
@@ -58,9 +58,7 @@ const useItemsBottom = () =>
 const useMoreList = () => {
   const { t } = useI18n()
   const { createWebviewWindow } = useWindow()
-  const settingStore = useSettingStore()
-  const { login } = storeToRefs(settingStore)
-  const { logout, resetLoginState } = useLogin()
+  const { logout } = useLoginFlow()
   const showHomeserverDialog = ref(false)
 
   const openHomeserverDialog = () => {
@@ -68,7 +66,7 @@ const useMoreList = () => {
   }
 
   const handleHomeserverSave = (url: string) => {
-    console.log('Homeserver saved:', url)
+    logger.debug('Homeserver saved:', url)
   }
 
   return {
@@ -118,11 +116,9 @@ const useMoreList = () => {
         icon: 'power',
         click: async () => {
           try {
-            await ImRequestUtils.logout({ autoLogin: login.value.autoLogin })
-            await resetLoginState()
             await logout()
           } catch (error) {
-            console.error('退出登录失败:', error)
+            logger.error('退出登录失败:', error)
             window.$message.error('退出登录失败，请重试')
           }
         }

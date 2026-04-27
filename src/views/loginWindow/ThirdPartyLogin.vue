@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-center cursor-default gap-12px text-12px color-#909090">
+  <div class="flex-center cursor-default gap-12px text-12px color-[--hula-text-tertiary]">
     <span class="h-px w-60px bg-#dadada dark:bg-#3a3a3a"></span>
     <span>{{ ssoLabel }}</span>
     <span class="h-px w-60px bg-#dadada dark:bg-#3a3a3a"></span>
@@ -28,16 +28,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useLogin } from '@/hooks/useLogin'
-import { matrixOidcService } from '@/services/matrix/MatrixOidcService'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { resolveMatrixEndpointConfig } from '@/services/backend'
+import { createLogger } from '@/utils/Logger'
 
-export type ThirdPartyLoginContext = Pick<ReturnType<typeof useLogin>, 'loading' | 'loginDisabled'> & {
+const logger = createLogger('ThirdPartyLogin')
+import { useLoginFlow } from '@/hooks/useLoginFlow'
+import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
+
+export type ThirdPartyLoginContext = Pick<ReturnType<typeof useLoginFlow>, 'loading' | 'loginDisabled'> & {
   giteeLogin?: () => void
   githubLogin?: () => void
-  gitcodeLogin?: () => void
+  homeserverUrl?: Ref<string>
 }
 
 const props = withDefaults(
@@ -52,8 +55,10 @@ const props = withDefaults(
 
 const { t } = useI18n()
 
-const defaultContext = useLogin()
-const resolvedContext = props.loginContext ? { ...defaultContext, ...props.loginContext } : defaultContext
+const defaultContext = useLoginFlow()
+const resolvedContext: ThirdPartyLoginContext & ReturnType<typeof useLoginFlow> = props.loginContext
+  ? { ...defaultContext, ...props.loginContext }
+  : defaultContext
 
 const thirdPartyLabel = computed(() => t('login.third_party.title'))
 const ssoLabel = computed(() => t('login.sso.title') || 'SSO 登录')
@@ -68,14 +73,15 @@ const ssoDisabled = computed(
 
 const getHomeserverUrl = (): string => {
   try {
-    const client = matrixClientService.getClient()
-    if (client) {
-      return client.getHomeserverUrl()
+    const configuredHomeserverUrl = resolvedContext.homeserverUrl?.value?.trim()
+    if (configuredHomeserverUrl) {
+      return configuredHomeserverUrl
     }
   } catch (e) {
-    console.warn('[ThirdPartyLogin] Failed to get homeserver URL:', e)
+    logger.warn('Failed to get homeserver URL:', e)
   }
-  return 'http://localhost:8008'
+
+  return resolveMatrixEndpointConfig().homeserverUrl
 }
 
 const handleOidcLogin = async () => {
@@ -97,7 +103,7 @@ const handleOidcLogin = async () => {
       window.$message?.error('获取 OIDC 授权 URL 失败')
     }
   } catch (error) {
-    console.error('[SSO] OIDC login error:', error)
+    logger.error('OIDC login error:', error)
     window.$message?.error('OIDC 登录失败')
   }
 }
@@ -121,7 +127,7 @@ const ssoOptions = computed(() => [
     key: 'oidc',
     label: t('login.sso.oidc') || 'OIDC 单点登录',
     icon: 'OIDC',
-    style: 'color-#13987f dark:color-#13987f80',
+    style: 'color-[--color-primary] dark:color-[--color-primary]80',
     action: handleOidcLogin
   },
   {
@@ -135,29 +141,22 @@ const ssoOptions = computed(() => [
     key: 'cas',
     label: t('login.sso.cas') || 'CAS 单点登录',
     icon: 'CAS',
-    style: 'color-#d5304f dark:color-#d5304f80',
+    style: 'color-[--color-danger] dark:color-[--color-danger]80',
     action: handleCasLogin
   },
   {
     key: 'gitee',
     label: t('login.third_party.gitee'),
     icon: '#gitee-login',
-    style: 'color-#d5304f dark:color-#d5304f80',
-    action: (resolvedContext as any).giteeLogin || noop
+    style: 'color-[--color-danger] dark:color-[--color-danger]80',
+    action: resolvedContext.giteeLogin || noop
   },
   {
     key: 'github',
     label: t('login.third_party.github'),
     icon: '#github-login',
     style: 'color-#303030 dark:color-#fefefe90',
-    action: (resolvedContext as any).githubLogin || noop
-  },
-  {
-    key: 'gitcode',
-    label: t('login.third_party.gitcode'),
-    icon: '#gitcode-login',
-    style: 'color-#d5304f dark:color-#d5304f80',
-    action: (resolvedContext as any).gitcodeLogin || noop
+    action: resolvedContext.githubLogin || noop
   }
 ])
 </script>

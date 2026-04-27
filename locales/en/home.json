@@ -62,8 +62,7 @@
     "tooltip": {
       "copy_account": "Copy account",
       "bound_gitee": "Gitee linked",
-      "bound_github": "GitHub linked",
-      "bound_gitcode": "Gitcode linked"
+      "bound_github": "GitHub linked"
     },
     "empty": {
       "no_result": "No matching result",
@@ -152,6 +151,8 @@
   "chat_header": {
     "bot_tag": "Assistant",
     "status_abnormal": "Friend status unavailable",
+    "start_meeting": "Start meeting",
+    "meeting_widget_name": "Room meeting",
     "toolbar": {
       "audio_call": "Voice call",
       "video_call": "Video call",
@@ -207,7 +208,7 @@
         "delete_friend": "Delete this friend?",
         "dissolve_group": "Disband this group?",
         "exit_group": "Leave this group?",
-        "rename_group": "Rename group to {name} ?",
+        "rename_group": "Rename group to {name}?",
         "update_info": "Save changes to group info?",
         "delete_history": "Delete local chat history?"
       }
@@ -283,8 +284,7 @@
     "tooltip": {
       "copy_account": "Copy account",
       "bound_gitee": "Gitee linked",
-      "bound_github": "GitHub linked",
-      "bound_gitcode": "Gitcode linked"
+      "bound_github": "GitHub linked"
     },
     "buttons": {
       "edit": "Edit profile",
@@ -348,7 +348,7 @@
   "about": {
     "version": "Version: {version} ({arch})",
     "device": "Device: {type}{version}",
-    "copyright": "Copyright © {start}-{end} HuLaSpark",
+    "copyright": "Copyright © {start}-{end} 龙卷风",
     "rights": "All Rights Reserved."
   },
   "apply_list": {

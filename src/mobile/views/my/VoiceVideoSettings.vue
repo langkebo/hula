@@ -152,11 +152,13 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 
+const logger = createLogger('VoiceVideoSettings')
 const { t } = useI18n()
 
 const devicesLoading = ref(false)
@@ -253,7 +255,7 @@ async function loadDevices() {
       videoInputId.value = videoInputDevices.value[0].deviceId
     }
   } catch (error) {
-    console.error('[MobileVoiceVideo] 获取设备列表失败:', error)
+    logger.error('Failed to load media devices', error)
     showToast({
       type: 'fail',
       message: t('mobile_voice_video.device_error')
@@ -280,19 +282,19 @@ function loadSavedSettings() {
   if (savedAutoGain) autoGainControl.value = savedAutoGain === 'true'
 }
 
-function onAudioInputConfirm({ selectedOptions }: any) {
+function onAudioInputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
   audioInputId.value = selectedOptions[0].value
   localStorage.setItem('hula-audio-input', audioInputId.value!)
   showAudioInputPicker.value = false
 }
 
-function onAudioOutputConfirm({ selectedOptions }: any) {
+function onAudioOutputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
   audioOutputId.value = selectedOptions[0].value
   localStorage.setItem('hula-audio-output', audioOutputId.value!)
   showAudioOutputPicker.value = false
 }
 
-function onVideoInputConfirm({ selectedOptions }: any) {
+function onVideoInputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
   videoInputId.value = selectedOptions[0].value
   localStorage.setItem('hula-video-input', videoInputId.value!)
   showVideoInputPicker.value = false
@@ -336,7 +338,7 @@ async function startAudioTest() {
       message: t('mobile_voice_video.test_started')
     })
   } catch (error) {
-    console.error('[MobileVoiceVideo] 麦克风测试失败:', error)
+    logger.error('Failed to start microphone test', error)
     showToast({
       type: 'fail',
       message: t('mobile_voice_video.mic_error')
@@ -404,7 +406,7 @@ async function startPreview() {
       message: t('mobile_voice_video.preview_started')
     })
   } catch (error) {
-    console.error('[MobileVoiceVideo] 视频预览失败:', error)
+    logger.error('Failed to start video preview', error)
     showToast({
       type: 'fail',
       message: t('mobile_voice_video.camera_error')

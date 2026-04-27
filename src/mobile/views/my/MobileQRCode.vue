@@ -6,7 +6,7 @@
       :hidden-right="true"
       :enable-default-background="false"
       :enable-shadow="false"
-      room-name="" />
+      :room-name="t('mobile_qrcode.page_title')" />
 
     <div class="scanner">
       <div
@@ -18,9 +18,16 @@
 <script setup lang="ts">
 import { listen } from '@tauri-apps/api/event'
 import { cancel, Format, scan } from '@tauri-apps/plugin-barcode-scanner'
+import { useI18n } from 'vue-i18n'
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import router from '@/router'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('MobileQRCode')
+const timerManager = useTimerManager()
+const { t } = useI18n()
 
 const result = ref<string | null>(null)
 const isActive = ref(true)
@@ -33,31 +40,31 @@ const startScan = async () => {
     })
 
     const cancelTask = new Promise((resolve) => {
-      const interval = setInterval(() => {
+      const interval = timerManager.setInterval(() => {
         if (!isActive.value) {
-          clearInterval(interval)
+          timerManager.clearInterval(interval)
           resolve(null)
         }
       }, 300)
     })
 
-    const res = (await Promise.race([scanTask, cancelTask])) as any
+    const res = (await Promise.race([scanTask, cancelTask])) as { content?: string } | string | null
 
     // 为空或已取消
     if (!res) {
-      result.value = '扫码已取消'
+      result.value = t('mobile_qrcode.scan_cancelled')
       return
     }
 
-    console.log('扫码结果：', res)
+    logger.debug('Scan result:', res)
 
     if (res && typeof res === 'object' && 'content' in res && typeof res.content === 'string') {
       try {
         const jsonData = JSON.parse(res.content)
-        console.log('扫码json:', jsonData)
+        logger.debug('Parsed QR payload:', jsonData)
         useMitt.emit(MittEnum.QR_SCAN_EVENT, jsonData)
       } catch (error) {
-        console.log('扫码结果不是JSON，按纯文本处理：', error)
+        logger.debug('QR result is not JSON, falling back to plain text:', error)
         useMitt.emit(MittEnum.QR_SCAN_EVENT, { raw: res.content })
       }
 
@@ -74,19 +81,19 @@ const startScan = async () => {
       if (window.history.length > 1) window.history.back()
       else window.close()
     } else {
-      result.value = '扫码失败或已取消'
+      result.value = t('mobile_qrcode.scan_failed_or_cancelled')
     }
-  } catch (err: any) {
-    console.error('扫码异常:', err)
+  } catch (err: unknown) {
+    logger.error('QR scan failed', err)
 
-    if (err && typeof err === 'object' && 'message' in err && /permission/i.test(err.message)) {
-      alert('没有相机权限，请在系统设置中开启权限')
+    if (err && typeof err === 'object' && 'message' in err && /permission/i.test((err as Error).message)) {
+      alert(t('mobile_qrcode.camera_permission_required'))
       router.back() // 用户点 OK 后会执行这里
-      result.value = '缺少权限'
+      result.value = t('mobile_qrcode.permission_missing')
     } else {
-      alert('扫码过程中发生错误')
+      alert(t('mobile_qrcode.scan_error'))
       router.back() // 其他错误也返回上一页
-      result.value = '扫码过程中发生错误'
+      result.value = t('mobile_qrcode.scan_error')
     }
   }
 }
@@ -112,11 +119,11 @@ onMounted(async () => {
       unlistenAndroidBack = await listen('tauri://android-back', () => {
         isActive.value = false
         cancel().catch((e) => {
-          console.warn('cancel() 调用失败:', e)
+          logger.warn('Failed to call cancel()', e)
         })
       })
     } catch (e) {
-      console.warn('监听 Android 返回键失败:', e)
+      logger.warn('Failed to listen for Android back event', e)
     }
   }
 })
@@ -133,7 +140,7 @@ onUnmounted(() => {
     appContainer.style.backgroundColor = originalAppBg
   }
   cancel().catch((e) => {
-    console.warn('cancel() 调用失败:', e)
+    logger.warn('Failed to call cancel()', e)
   })
 })
 </script>

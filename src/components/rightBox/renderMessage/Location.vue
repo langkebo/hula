@@ -3,24 +3,24 @@
     <!-- 位置图标和标题 -->
     <n-flex align="center" justify="space-between" class="pb-8px">
       <div class="flex-y-center gap-8px">
-        <svg class="size-14px color-#13987f">
+        <svg class="size-14px color-[--hula-color-primary-500]">
           <use href="#local"></use>
         </svg>
-        <p class="text-14px font-medium color-[--text-color]">位置</p>
+        <p class="text-14px font-medium color-[--hula-text-primary]">位置</p>
       </div>
 
-      <div class="text-(10px #13987f) p-4px rounded-4px border-(1px solid #13987f)">
+      <div class="text-(10px --hula-color-primary-500) p-4px rounded-4px border-(1px solid --hula-color-primary-500)">
         <p v-if="body?.precision">{{ body.precision }}</p>
       </div>
     </n-flex>
 
     <!-- 地址信息 -->
-    <div class="text-(12px [--chat-text-color]) pb-8px leading-5 line-clamp-2">
+    <div class="text-(12px [--hula-text-tertiary]) pb-8px leading-5 line-clamp-2">
       {{ body?.address || '位置出错' }}
     </div>
 
     <!-- 地图预览区域 -->
-    <div class="relative rounded-6px overflow-hidden bg-gray-100 dark:bg-#202020 h-120px flex-center">
+    <div class="relative rounded-6px overflow-hidden bg-[--hula-surface-app] h-120px flex-center">
       <StaticProxyMap
         v-if="body"
         :location="locationData"
@@ -29,10 +29,10 @@
         :draggable="false"
         :controls="false" />
       <div v-else class="flex-col-center gap-8px">
-        <svg class="size-32px color-[--text-color-3]">
+        <svg class="size-32px color-[--hula-text-quaternary]">
           <use href="#cloudError"></use>
         </svg>
-        <span class="text-12px color-[--text-color-3]">无法展示</span>
+        <span class="text-12px color-[--hula-text-quaternary]">无法展示</span>
       </div>
     </div>
   </main>
@@ -90,9 +90,9 @@ watch(
 .location-message {
   cursor: default;
   user-select: none;
-  @apply: w-260px flex flex-col h-fit bg-[--group-notice-bg]
-  border-(1px solid #e3e3e3) dark:border-(1px solid #404040)
-  hover:bg-#fefefe99 dark:hover:bg-#60606040 rounded-8px p-8px box-border
+  @apply: w-260px flex flex-col h-fit bg-[--hula-surface-muted]
+  border-(1px solid [--hula-border-default])
+  hover:bg-[--hula-fill-hover] rounded-8px p-8px box-border
   custom-shadow transition-colors duration-200;
 }
 </style>

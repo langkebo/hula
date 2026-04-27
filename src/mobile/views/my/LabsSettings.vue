@@ -11,6 +11,23 @@
 
           <van-cell-group inset>
             <van-cell
+              :title="t('mobile_setting.integrations')"
+              :label="t('mobile_integrations.description')"
+              is-link
+              @click="openIntegrationsSettings">
+              <template #icon>
+                <div class="w-40px h-40px rounded-full bg-amber-50 mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:puzzle" :width="20" color="#fa8c16" />
+                </div>
+              </template>
+              <template #value>
+                <van-tag type="warning" size="medium">Beta</van-tag>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <van-cell-group inset>
+            <van-cell
               v-for="feature in labFeatures"
               :key="feature.id"
               :title="feature.name"
@@ -86,8 +103,14 @@ import { ref, computed, onMounted } from 'vue'
 import { showConfirmDialog, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { createLogger } from '@/utils/Logger'
+import { MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH } from './settingsRoutes'
+
+const logger = createLogger('LabsSettings')
 
 const { t } = useI18n()
+const router = useRouter()
 
 interface LabFeature {
   id: string
@@ -188,7 +211,7 @@ function loadSavedSettings() {
         feature.enabled = enabledIds.includes(feature.id)
       })
     } catch (e) {
-      console.error('Failed to parse saved lab features')
+      logger.error('Failed to parse saved lab features')
     }
   }
 
@@ -229,6 +252,10 @@ function handlePerformanceChange(value: boolean) {
     type: 'success',
     message: value ? t('mobile_labs.performance_enabled') : t('mobile_labs.performance_disabled')
   })
+}
+
+function openIntegrationsSettings() {
+  router.push(MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH)
 }
 
 async function handleResetLabs() {

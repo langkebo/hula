@@ -16,14 +16,14 @@
               fallback-src="/default-avatar.png" />
 
             <div class="flex-y-center gap-12px h-fit">
-              <p class="text-(14px #909090)">{{ getUserDisplayName(item.fromUser.uid) }}</p>
-              <p class="text-(12px #909090)">{{ formatTimestamp(item.message.sendTime) }}</p>
+              <p class="text-(12px --hula-text-tertiary)">{{ getUserDisplayName(item.fromUser.uid) }}</p>
+              <p class="text-(12px --hula-text-tertiary)">{{ formatTimestamp(item.message.sendTime) }}</p>
             </div>
           </div>
 
           <ContextMenu
             :content="item"
-            class="w-fit relative flex flex-col pl-44px text-(14px [--text-color]) leading-26px user-select-text"
+            class="w-fit relative flex flex-col pl-44px text-(14px [--hula-text-primary]) leading-26px user-select-text"
             :data-key="item.fromUser.uid === userUid ? `U${item.message.id}` : `Q${item.message.id}`"
             :special-menu="specialMenuList(item.message.type)"
             @select="$event.click(item)">
@@ -51,13 +51,16 @@ import { useChatMain } from '@/hooks/useChatMain'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import { useWindow } from '@/hooks/useWindow'
-import type { MessageType } from '@/stores/message'
-import type { UserItem } from '@/services/types'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user'
+import type { MessageType } from '@/stores/domains/chat/message'
+import type { UserItem } from '@/services/matrix/user/MatrixContactService'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { matrixMessageService, matrixContactService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MultiMsgWindow')
 
 type Msg = {
   msgId: string
@@ -72,8 +75,8 @@ const { openVideoViewer } = useVideoViewer()
 const { specialMenuList } = useChatMain(true, { disableHistoryActions: true })
 
 const choosedMsgs = ref<Msg[]>([])
-const msgs = ref<any[]>([])
-const users = ref<any[]>([])
+const msgs = ref<MessageType[]>([])
+const users = ref<UserItem[]>([])
 const route = useRoute()
 
 const userUid = computed(() => userStore.userInfo?.uid)
@@ -147,7 +150,7 @@ const handleVideoClick = async (videoUrl: string) => {
 
 const getAllMsg = async () => {
   const msgIds = choosedMsgs.value.map((msg) => msg.msgId)
-  msgs.value = await matrixMessageService.getMsgListByIds({ msgIds })
+  msgs.value = (await matrixMessageService.getMsgListByIds({ msgIds })) as unknown as MessageType[]
 }
 
 const getAllUserInfo = async () => {
@@ -164,7 +167,7 @@ onMounted(async () => {
       await getAllUserInfo()
     })
     .catch((e) => {
-      console.error(e)
+      logger.error('Failed to load multi message', e)
     })
 })
 </script>

@@ -39,7 +39,7 @@ export const validatePassword = (value: string): { valid: boolean; message?: str
   const hasUpperCase = /[A-Z]/.test(value)
   const hasLowerCase = /[a-z]/.test(value)
   const hasNumber = /[0-9]/.test(value)
-  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)
+  const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(value)
 
   const strength = [hasUpperCase, hasLowerCase, hasNumber, hasSpecialChar].filter(Boolean).length
 
@@ -67,7 +67,7 @@ export const validatePhone = (value: string): { valid: boolean; message?: string
     return { valid: false, message: '手机号码不能为空' }
   }
   // 简单验证：只允许数字和基本的分隔符
-  const phoneRegex = /^[\d\s\-\+\(\)]{7,20}$/
+  const phoneRegex = /^[\d\s\-+()]{7,20}$/
   if (!phoneRegex.test(value)) {
     return { valid: false, message: '手机号码格式不正确' }
   }
@@ -92,7 +92,7 @@ export const validateMatrixId = (value: string): { valid: boolean; message?: str
   if (!value) {
     return { valid: false, message: 'Matrix ID 不能为空' }
   }
-  const matrixIdRegex = /^@[\w\-\.]+:[\w\-\.]+(\.[\w\-\.]+)+$/
+  const matrixIdRegex = /^@[\w\-.]+:[\w\-.]+(\.[\w\-.]+)+$/
   if (!matrixIdRegex.test(value)) {
     return { valid: false, message: 'Matrix ID 格式不正确，格式应为 @user:server' }
   }
@@ -104,7 +104,7 @@ export const validateRoomId = (value: string): { valid: boolean; message?: strin
   if (!value) {
     return { valid: false, message: '房间 ID 不能为空' }
   }
-  const roomIdRegex = /^![\w\-\.]+:[\w\-\.]+(\.[\w\-\.]+)+$/
+  const roomIdRegex = /^![\w\-.]+:[\w\-.]+(\.[\w\-.]+)+$/
   if (!roomIdRegex.test(value)) {
     return { valid: false, message: '房间 ID 格式不正确' }
   }
@@ -116,7 +116,7 @@ export const validateRoomAlias = (value: string): { valid: boolean; message?: st
   if (!value) {
     return { valid: false, message: '房间别名不能为空' }
   }
-  const aliasRegex = /^#[\w\-\.]+:[\w\-\.]+(\.[\w\-\.]+)+$/
+  const aliasRegex = /^#[\w\-.]+:[\w\-.]+(\.[\w\-.]+)+$/
   if (!aliasRegex.test(value)) {
     return { valid: false, message: '房间别名格式不正确' }
   }
@@ -135,10 +135,7 @@ export const sanitizeInput = (value: string): string => {
 }
 
 /** 验证文件类型 */
-export const validateFileType = (
-  value: string,
-  allowedTypes: string[]
-): { valid: boolean; message?: string } => {
+export const validateFileType = (value: string, allowedTypes: string[]): { valid: boolean; message?: string } => {
   if (!value) {
     return { valid: false, message: '文件类型不能为空' }
   }
@@ -150,10 +147,7 @@ export const validateFileType = (
 }
 
 /** 验证文件大小 */
-export const validateFileSize = (
-  size: number,
-  maxSizeInMB: number
-): { valid: boolean; message?: string } => {
+export const validateFileSize = (size: number, maxSizeInMB: number): { valid: boolean; message?: string } => {
   const maxSizeInBytes = maxSizeInMB * 1024 * 1024
   if (size > maxSizeInBytes) {
     return { valid: false, message: `文件大小不能超过 ${maxSizeInMB}MB` }

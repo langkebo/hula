@@ -3,19 +3,25 @@
   <main class="w-full flex-center">
     <template v-if="isGroup">
       <n-flex align="center" :size="6" v-if="fromUserUid === userUid">
-        <p class="text-(12px #909090) select-none cursor-default">{{ message.body.content }}</p>
-        <p v-if="canReEdit" class="text-(12px #13987f) select-none cursor-pointer" @click="handleReEdit(message.id)">
+        <p class="text-(12px --hula-text-tertiary) select-none cursor-default">{{ message.body.content }}</p>
+        <p
+          v-if="canReEdit"
+          class="text-(12px --hula-color-primary-500) select-none cursor-pointer"
+          @click="handleReEdit(message.id)">
           重新编辑
         </p>
       </n-flex>
-      <span v-else class="text-12px color-#909090 select-none" v-html="recallText"></span>
+      <span v-else class="text-12px color-[--hula-text-tertiary] select-none" v-html="recallText"></span>
     </template>
     <template v-else>
       <n-flex align="center" :size="6">
-        <p class="text-(12px #909090) select-none cursor-default">
+        <p class="text-(12px --hula-text-tertiary) select-none cursor-default">
           {{ message.body.content }}
         </p>
-        <p v-if="canReEdit" class="text-(12px #13987f) select-none cursor-pointer" @click="handleReEdit(message.id)">
+        <p
+          v-if="canReEdit"
+          class="text-(12px --hula-color-primary-500) select-none cursor-pointer"
+          @click="handleReEdit(message.id)">
           重新编辑
         </p>
       </n-flex>
@@ -27,8 +33,8 @@
 import { MittEnum, MsgEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import type { MessageBody, MsgType } from '@/services/types'
-import { useChatStore } from '@/stores/chat'
-import { useUserStore } from '@/stores/user.ts'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useUserStore } from '@/stores/domains/user/user'
 
 const props = defineProps<{
   message: MsgType

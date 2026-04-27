@@ -1,5 +1,5 @@
 <template>
-  <div class="size-full bg-[--bg-popover] select-none cursor-default">
+  <div class="size-full bg-[--hula-surface-elevated] select-none cursor-default">
     <!--顶部操作栏-->
     <ActionBar :is-drag="false" :max-w="false" :min-w="false" :shrink="false" />
 
@@ -12,43 +12,44 @@
       <n-flex justify="space-between" align="center">
         <n-flex align="center">
           <n-flex align="center">
-            <p class="text-[--text-color]">{{ t('message.check_update.current_version') }}:</p>
-            <p class="text-(20px #909090) font-500">{{ currentVersion }}</p>
+            <p class="text-[--hula-text-primary]">{{ t('message.check_update.current_version') }}:</p>
+            <p class="text-(12px --hula-text-tertiary) font-500">{{ currentVersion }}</p>
           </n-flex>
 
           <n-flex v-if="newVersion" align="center" class="relative">
-            <svg class="w-24px h-24px select-none color-#ccc">
+            <svg class="w-24px h-24px select-none color-[--hula-text-disabled]">
               <use href="#RightArrow"></use>
             </svg>
 
-            <p class="relative text-(20px #13987f) font-500">{{ newVersion }}</p>
+            <p class="relative text-(20px --color-primary) font-500">{{ newVersion }}</p>
 
-            <span class="absolute top--10px right--44px p-[4px_8px] bg-#f6dfe3ff rounded-6px text-(12px #ce304f)">
+            <span
+              class="absolute top--10px right--44px p-[4px_8px] bg-#f6dfe3ff rounded-6px text-(12px [--color-danger])">
               {{ t('message.check_update.new_tag') }}
             </span>
           </n-flex>
         </n-flex>
         <n-flex align="center" size="medium">
           <div v-if="newVersionTime">
-            <span class="text-(12px #909090)">{{ t('message.check_update.new_release_date') }}</span>
-            <span class="text-(12px #13987f)">{{ handRelativeTime(newVersionTime) }}</span>
+            <span class="text-(12px --hula-text-tertiary)">{{ t('message.check_update.new_release_date') }}</span>
+            <span class="text-(12px --color-primary)">{{ handRelativeTime(newVersionTime) }}</span>
           </div>
 
           <div v-else>
-            <span class="text-(12px #909090)">{{ t('message.check_update.release_date') }}</span>
-            <span class="text-(12px #13987f)">{{ handRelativeTime(versionTime) }}</span>
+            <span class="text-(12px --hula-text-tertiary)">{{ t('message.check_update.release_date') }}</span>
+            <span class="text-(12px --color-primary)">{{ handRelativeTime(versionTime) }}</span>
           </div>
         </n-flex>
       </n-flex>
       <n-flex justify="space-between" align="center" class="mb-2px">
-        <p class="text-(14px #909090)">{{ t('message.check_update.log_title') }}</p>
+        <p class="text-(12px --hula-text-tertiary)">{{ t('message.check_update.log_title') }}</p>
         <n-button text @click="toggleLogVisible">
           <n-flex align="center">
-            <span class="text-(12px #13987f)">
+            <span class="text-(12px --color-primary)">
               {{ logVisible ? t('message.check_update.collapse') : t('message.check_update.expand') }}
             </span>
             <svg
-              class="w-16px h-16px select-none color-#13987f ml-2px transition-transform duration-300"
+              class="w-16px h-16px select-none color-[--color-primary] ml-2px transition-transform duration-300"
               :class="{ 'rotate-180': !logVisible }">
               <use href="#ArrowDown"></use>
             </svg>
@@ -61,7 +62,7 @@
         :class="logVisible ? 'h-460px' : 'h-0'">
         <n-scrollbar class="p-[0_10px] box-border">
           <div v-if="newCommitLog.length > 0">
-            <div class="p-[4px_8px] mt-4px w-fit bg-#f6dfe3ff rounded-6px text-(12px #ce304f)">
+            <div class="p-[4px_8px] mt-4px w-fit bg-#f6dfe3ff rounded-6px text-(12px [--color-danger])">
               {{ newVersion }}
             </div>
 
@@ -77,11 +78,13 @@
 
             <n-flex>
               <n-flex vertical :size="20">
-                <svg class="m-[4px_40px] w-24px h-24px select-none rotate-270 color-#ccc">
+                <svg class="m-[4px_40px] w-24px h-24px select-none rotate-270 color-[--hula-text-disabled]">
                   <use href="#RightArrow"></use>
                 </svg>
 
-                <span class="p-[4px_8px] w-fit bg-#f1f1f1 rounded-6px text-(12px #999)">{{ currentVersion }}</span>
+                <span class="p-[4px_8px] w-fit bg-#f1f1f1 rounded-6px text-(12px [--color-text-quaternary])">
+                  {{ currentVersion }}
+                </span>
               </n-flex>
             </n-flex>
           </div>
@@ -111,11 +114,14 @@ import { currentMonitor, PhysicalPosition } from '@tauri-apps/api/window'
 import { confirm } from '@tauri-apps/plugin-dialog'
 import { check } from '@tauri-apps/plugin-updater'
 import { useWindow } from '@/hooks/useWindow.ts'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { handRelativeTime } from '@/utils/ComputedTime'
 import { isMac } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler.ts'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('CheckUpdate')
 
 const settingStore = useSettingStore()
 const { t } = useI18n()
@@ -222,7 +228,7 @@ const checkUpdate = async () => {
       }
       newVersion.value = e.version
       // 检查版本之间不同的提交信息和提交日期
-      const url = `https://gitee.com/api/v5/repos/HuLaSpark/HuLa/releases/tags/v${newVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
+      const url = `https://gitee.com/api/v5/repos/llangkebo/hula/releases/tags/v${newVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
       await getCommitLog(url, true)
       text.value = t('message.check_update.update_now')
     })
@@ -261,7 +267,7 @@ const moveWindowToBottomRight = async () => {
     // 移动窗口到计算的位置
     await checkUpdateWindow.setPosition(new PhysicalPosition(x, y))
   } catch (error) {
-    console.error('移动窗口失败:', error)
+    logger.error('移动窗口失败:', error)
   }
 }
 
@@ -297,7 +303,7 @@ const init = async () => {
     try {
       await invokeSilently('hide_title_bar_buttons', { windowLabel: 'checkupdate' })
     } catch (error) {
-      console.error('隐藏标题栏按钮失败:', error)
+      logger.error('隐藏标题栏按钮失败:', error)
     }
   }
 }
@@ -308,7 +314,7 @@ onMounted(async () => {
     loading.value = false
     return
   }
-  const url = `https://gitee.com/api/v5/repos/HuLaSpark/HuLa/releases/tags/v${currentVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
+  const url = `https://gitee.com/api/v5/repos/llangkebo/hula/releases/tags/v${currentVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}`
   await getCommitLog(url)
   await checkUpdate()
 })

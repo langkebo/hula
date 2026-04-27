@@ -59,12 +59,13 @@
       },
       "suspicious": {
         "noGlobalIsNan": "off",
-        "noExplicitAny": "off",
+        "noExplicitAny": "warn",
         "noAssignInExpressions": "off",
         "noImplicitAnyLet": "off",
         "noConfusingVoidType": "off",
         "noArrayIndexKey": "off",
-        "useIterableCallbackReturn": "off"
+        "useIterableCallbackReturn": "off",
+        "noConsole": "warn"
       }
     }
   },
@@ -92,6 +93,16 @@
   },
   "overrides": [
     {
+      "includes": ["**/__tests__/**", "**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}", "tests/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["**/*.vue"],
       "linter": {
         "rules": {
@@ -104,7 +115,7 @@
             "useTemplate": "off"
           },
           "suspicious": {
-            "noExplicitAny": "off",
+            "noExplicitAny": "warn",
             "noAssignInExpressions": "off",
             "noImplicitAnyLet": "off"
           }
@@ -112,6 +123,29 @@
       },
       "formatter": {
         "enabled": true
+      }
+    },
+    {
+      "includes": ["src/stores/**", "src/views/**", "src/components/**", "src/mobile/**", "src/layout/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "matrix-js-sdk": "Import SDK symbols via '@/services/matrix' (architectural rule: components/stores must not import matrix-js-sdk directly).",
+                  "matrix-js-sdk/friend": "Import via '@/services/matrix'.",
+                  "matrix-js-sdk/dm": "Import via '@/services/matrix'.",
+                  "matrix-js-sdk/admin": "Import via '@/services/matrix'.",
+                  "matrix-js-sdk/space": "Import via '@/services/matrix'.",
+                  "matrix-js-sdk/push": "Import via '@/services/matrix'.",
+                  "matrix-js-sdk/webrtc": "Import via '@/services/matrix'."
+                }
+              }
+            }
+          }
+        }
       }
     }
   ]

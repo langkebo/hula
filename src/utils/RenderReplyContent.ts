@@ -19,7 +19,7 @@ export const renderReplyContent = (name?: string, type?: MsgEnum, content?: stri
       if (typeof content === 'string') {
         fileContent = content
       } else if (content && typeof content === 'object' && 'fileName' in content) {
-        fileContent = (content as any).fileName
+        fileContent = (content as Record<string, unknown>).fileName as string
       }
       fileContent = fileContent || MSG_REPLY_TEXT_MAP[MsgEnum.FILE]
 

@@ -1,5 +1,5 @@
 import { NAvatar, NButton } from 'naive-ui'
-import { useNoticeStore } from '@/stores/notice.ts'
+import { useNoticeStore } from '@/stores/domains/chat/notice'
 import { handRelativeTime } from '@/utils/ComputedTime'
 
 const { systemNotice } = storeToRefs(useNoticeStore())
@@ -19,7 +19,7 @@ if (!systemNotice.value) {
           systemNotice.value = true
           SysNTF.destroy()
         }}>
-        <p class="text-(12px #13987f)">已读</p>
+        <p class="text-(12px [--hula-color-primary-500])">已读</p>
       </NButton>
     )
   })

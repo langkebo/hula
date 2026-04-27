@@ -1,19 +1,10 @@
 import { MsgEnum } from '@/enums'
-import { UploadProviderEnum } from '@/hooks/useUpload'
-import { useChatStore } from '@/stores/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { messageStrategyMap } from '@/strategy/MessageStrategy'
 import { removeTempFile } from '@/utils/TempFileManager'
 
-type ReplyContext = {
-  value: {
-    content: string
-    key: number
-    accountName: string
-  }
-}
-
 /**
- * 针对“自定义转发任务”（目前用于群二维码）的统一 Hook。
+ * 针对"自定义转发任务"（目前用于群二维码）的统一 Hook。
  * 负责 blob 资源释放、临时消息清理、多选状态复位以及重新上传临时图片。
  * 后续如果增加“名片/机器人卡片”等其它临时转发形态，只需要在这里扩展即可。
  */
@@ -78,16 +69,13 @@ export const useCustomForwardTask = () => {
       msg = await messageStrategy.getMsg('', replyContext, [file])
       const messageBody = messageStrategy.buildMessageBody(msg, replyContext)
 
-      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
-        provider: UploadProviderEnum.QINIU
-      })
-      const doUploadResult = await messageStrategy.doUpload(msg.path as string, uploadUrl, config as any)
-
-      const uploadResult = doUploadResult as { qiniuUrl?: string } | undefined
-      messageBody.url =
-        (config as any)?.provider && (config as any)?.provider === UploadProviderEnum.QINIU
-          ? uploadResult?.qiniuUrl
-          : downloadUrl
+      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string)
+      const uploadedUrl = await messageStrategy.doUpload(
+        msg.path as string,
+        uploadUrl,
+        config as import('@/hooks/useUpload').UploadOptions
+      )
+      messageBody.url = uploadedUrl || downloadUrl
       delete messageBody.path
 
       if (!messageBody.width) {

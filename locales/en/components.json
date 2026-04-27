@@ -27,5 +27,21 @@
     "title": "Announcement",
     "viewDetail": "View details",
     "windowTitle": "View group announcement"
+  },
+  "slidingSyncIndicator": {
+    "syncingProgress": "Syncing {synced}/{total}",
+    "syncing": "Syncing...",
+    "complete": "Sync complete",
+    "error": "Sync failed"
+  },
+  "virtualList": {
+    "allMessagesLoaded": "All messages are loaded",
+    "loading": "Loading"
+  },
+  "memoryMonitor": {
+    "minimize": "Minimize",
+    "title": "Memory Monitor (click to toggle)",
+    "expandHint": "Click to expand",
+    "restore": "Click to restore memory monitor"
   }
 }

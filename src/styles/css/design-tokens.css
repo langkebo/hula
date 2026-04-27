@@ -1,120 +1,288 @@
 :root {
-  /* ==================== 颜色系统 ==================== */
-  
-  /* 主题色 */
-  --color-primary: #13987f;
-  --color-primary-light: #1ab292;
-  --color-primary-lighter: #64c9b3;
-  --color-primary-dark: #0f7a66;
-  --color-primary-darker: #0a5c4d;
-  
+  /* ==================== Hula Design Tokens ==================== */
+
+  /* 品牌色 */
+  --hula-color-primary-500: #13987f;
+  --hula-color-primary-400: #1ab292;
+  --hula-color-primary-300: #64c9b3;
+  --hula-color-primary-600: #0f7a66;
+  --hula-color-primary-700: #0a5c4d;
+  --hula-color-primary-100: rgba(19, 152, 127, 0.1);
+  --hula-color-primary-200: rgba(19, 152, 127, 0.2);
+  --hula-color-primary-300-alpha: rgba(19, 152, 127, 0.3);
+
   /* 功能色 */
-  --color-success: #52c41a;
-  --color-success-light: #73d13d;
-  --color-success-dark: #389e0d;
-  
-  --color-warning: #fa8c16;
-  --color-warning-light: #ffa940;
-  --color-warning-dark: #d46b08;
-  
-  --color-danger: #ff4d4f;
-  --color-danger-light: #ff7875;
-  --color-danger-dark: #cf1322;
-  
-  --color-info: #1989fa;
-  --color-info-light: #40a9ff;
-  --color-info-dark: #096dd9;
-  
-  /* 中性色 - 文字 */
-  --color-text-primary: #1f1f1f;
-  --color-text-secondary: #505050;
-  --color-text-tertiary: #808080;
-  --color-text-quaternary: #909090;
-  --color-text-disabled: #bfbfbf;
-  --color-text-white: #ffffff;
-  
-  /* 中性色 - 背景 */
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f5f5f5;
+  --hula-color-success-500: #52c41a;
+  --hula-color-success-400: #73d13d;
+  --hula-color-success-600: #389e0d;
+  --hula-color-success-100: rgba(82, 196, 26, 0.1);
+
+  --hula-color-warning-500: #faad14;
+  --hula-color-warning-400: #ffa940;
+  --hula-color-warning-600: #d46b08;
+  --hula-color-warning-100: rgba(250, 173, 20, 0.12);
+
+  --hula-color-danger-500: #ff4d4f;
+  --hula-color-danger-400: #ff7875;
+  --hula-color-danger-600: #cf1322;
+  --hula-color-danger-100: rgba(255, 77, 79, 0.05);
+  --hula-color-danger-200: rgba(255, 77, 79, 0.1);
+
+  --hula-color-info-500: #1890ff;
+  --hula-color-info-400: #40a9ff;
+  --hula-color-info-600: #096dd9;
+  --hula-color-info-100: rgba(24, 144, 255, 0.12);
+
+  /* 中性色 */
+  --hula-text-primary: #18181c;
+  --hula-text-secondary: #505050;
+  --hula-text-tertiary: #909090;
+  --hula-text-quaternary: #999999;
+  --hula-text-disabled: #bfbfbf;
+  --hula-text-inverse: #ffffff;
+
+  --hula-surface-app: #fafafa;
+  --hula-surface-panel: #ffffff;
+  --hula-surface-panel-muted: #f5f5f5;
+  --hula-surface-subtle: #f1f1f1;
+  --hula-surface-elevated: #fdfdfd;
+  --hula-surface-search: #eaeaea;
+  --hula-surface-sidebar: #e5e5e6;
+  --hula-surface-sidebar-hover: rgba(193, 193, 193, 0.4);
+  --hula-surface-sidebar-active: rgba(90, 90, 90, 0.2);
+  --hula-surface-sidebar-selected: rgba(193, 193, 193, 0.6);
+  --hula-surface-list-hover: color-mix(in srgb, var(--hula-text-secondary) 12%, transparent);
+  --hula-surface-session-active: var(--hula-color-primary-500);
+  --hula-surface-overlay: rgba(255, 255, 255, 0.65);
+  --hula-surface-inverse-hover: rgba(255, 255, 255, 0.15);
+  --hula-overlay-mask-default: rgba(0, 0, 0, 0.4);
+  --hula-overlay-mask-subtle: rgba(0, 0, 0, 0.2);
+  --hula-overlay-inverse-strong: rgba(0, 0, 0, 0.8);
+
+  --hula-border-default: #e3e3e3;
+  --hula-border-muted: #f0f0f0;
+  --hula-border-strong: #d9d9d9;
+  --hula-border-contrast: rgba(255, 255, 255, 0.08);
+  --hula-border-inverse-muted: rgba(255, 255, 255, 0.6);
+  --hula-border-layout-divider: var(--hula-border-default);
+
+  --hula-status-online: #52c41a;
+  --hula-status-offline: #909090;
+  --hula-status-busy: #ff4d4f;
+  --hula-status-away: #faad14;
+
+  /* 字体 */
+  --hula-font-family:
+    'PingFang',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  --hula-font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+
+  --hula-font-size-xs: 10px;
+  --hula-font-size-sm: 12px;
+  --hula-font-size-base: 14px;
+  --hula-font-size-lg: 16px;
+  --hula-font-size-xl: 18px;
+  --hula-font-size-2xl: 20px;
+  --hula-font-size-3xl: 24px;
+
+  --hula-font-weight-normal: 400;
+  --hula-font-weight-medium: 500;
+  --hula-font-weight-semibold: 600;
+  --hula-font-weight-bold: 700;
+
+  --hula-line-height-tight: 1.25;
+  --hula-line-height-normal: 1.5;
+  --hula-line-height-relaxed: 1.75;
+
+  /* 间距 */
+  --hula-space-0: 0;
+  --hula-space-1: 4px;
+  --hula-space-2: 8px;
+  --hula-space-3: 12px;
+  --hula-space-4: 16px;
+  --hula-space-5: 20px;
+  --hula-space-6: 24px;
+  --hula-space-8: 32px;
+  --hula-space-10: 40px;
+
+  /* 圆角 */
+  --hula-radius-none: 0;
+  --hula-radius-xs: 4px;
+  --hula-radius-sm: 8px;
+  --hula-radius-md: 10px;
+  --hula-radius-lg: 12px;
+  --hula-radius-xl: 16px;
+  --hula-radius-2xl: 20px;
+  --hula-radius-full: 9999px;
+
+  /* 阴影 */
+  --hula-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --hula-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --hula-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --hula-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --hula-shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.04);
+
+  /* 动效 */
+  --hula-motion-duration-fast: 120ms;
+  --hula-motion-duration-normal: 180ms;
+  --hula-motion-duration-slow: 240ms;
+  --hula-motion-duration-overlay: 280ms;
+  --hula-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --hula-motion-ease-enter: cubic-bezier(0, 0, 0, 1);
+  --hula-motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* 设置壳层 */
+  --hula-settings-sidebar-width: 240px;
+  --hula-settings-content-max-width: 960px;
+  --hula-settings-header-height: 88px;
+  --hula-settings-divider: rgba(0, 0, 0, 0.05);
+  --hula-settings-card-bg: rgba(0, 0, 0, 0.02);
+  --hula-settings-card-bg-hover: rgba(0, 0, 0, 0.03);
+  --hula-settings-meter-bg: rgba(0, 0, 0, 0.1);
+  --hula-settings-warning-bg: var(--hula-color-warning-100);
+  --hula-surface-media-preview: #000000;
+  --hula-settings-preview-light-shell: #f5f5f5;
+  --hula-settings-preview-light-sidebar: #e8e8e8;
+  --hula-settings-preview-light-content: #ffffff;
+  --hula-settings-preview-dark-shell: #1a1a1a;
+  --hula-settings-preview-dark-sidebar: #2a2a2a;
+  --hula-settings-preview-dark-content: #333333;
+
+  /* 菜单与浮层 */
+  --hula-menu-bg: linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--hula-surface-panel) 45%, transparent) 40%,
+    color-mix(in srgb, var(--hula-surface-panel) 65%, transparent) 60%
+  );
+  --hula-menu-hover: color-mix(in srgb, var(--hula-text-primary) 10%, transparent);
+  --hula-shadow-floating-menu:
+    0 0 0 1px var(--hula-border-contrast),
+    0 2px 2px rgb(0 0 0 / 3%),
+    0 4px 4px rgb(0 0 0 / 4%),
+    0 10px 8px rgb(0 0 0 / 5%),
+    0 15px 15px rgb(0 0 0 / 6%),
+    0 30px 30px rgb(0 0 0 / 7%),
+    0 70px 65px rgb(0 0 0 / 9%);
+
+  /* 业务辅助色 */
+  --hula-color-beta-500: #a789d9;
+  --hula-color-beta-100: #d9ccf7;
+
+  /* 管理后台 */
+  --hula-admin-sidebar-bg: #1a1a2e;
+  --hula-admin-sidebar-text: color-mix(in srgb, var(--hula-text-inverse) 65%, transparent);
+  --hula-admin-sidebar-border: var(--hula-border-contrast);
+  --hula-admin-sidebar-hover: color-mix(in srgb, var(--hula-text-inverse) 8%, transparent);
+  --hula-admin-bg: #f0f2f5;
+  --hula-admin-card-bg: var(--hula-surface-panel);
+  --hula-admin-card-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+  --hula-admin-card-shadow-hover: 0 4px 12px rgb(0 0 0 / 10%);
+  --hula-admin-header-border: #e8e8e8;
+  --hula-admin-title-color: #333333;
+  --hula-admin-stat-value-color: #333333;
+  --hula-admin-health-ok-bg: #e8f5e9;
+  --hula-admin-health-ok-text: #2e7d32;
+  --hula-admin-health-err-bg: #ffebee;
+  --hula-admin-health-err-text: #c62828;
+
+  /* ==================== Backward-Compatible Aliases ==================== */
+
+  --color-primary: var(--hula-color-primary-500);
+  --color-primary-light: var(--hula-color-primary-400);
+  --color-primary-lighter: var(--hula-color-primary-300);
+  --color-primary-dark: var(--hula-color-primary-600);
+  --color-primary-darker: var(--hula-color-primary-700);
+
+  --color-success: var(--hula-color-success-500);
+  --color-success-light: var(--hula-color-success-400);
+  --color-success-dark: var(--hula-color-success-600);
+
+  --color-warning: var(--hula-color-warning-500);
+  --color-warning-light: var(--hula-color-warning-400);
+  --color-warning-dark: var(--hula-color-warning-600);
+
+  --color-danger: var(--hula-color-danger-500);
+  --color-danger-light: var(--hula-color-danger-400);
+  --color-danger-dark: var(--hula-color-danger-600);
+
+  --color-info: var(--hula-color-info-500);
+  --color-info-light: var(--hula-color-info-400);
+  --color-info-dark: var(--hula-color-info-600);
+
+  --color-text-primary: var(--hula-text-primary);
+  --color-text-secondary: var(--hula-text-secondary);
+  --color-text-tertiary: var(--hula-text-tertiary);
+  --color-text-quaternary: var(--hula-text-tertiary);
+  --color-text-disabled: var(--hula-text-disabled);
+  --color-text-white: var(--hula-text-inverse);
+
+  --color-bg-primary: var(--hula-surface-panel);
+  --color-bg-secondary: var(--hula-surface-panel-muted);
   --color-bg-tertiary: #e8e8e8;
-  --color-bg-quaternary: #d9d9d9;
+  --color-bg-quaternary: var(--hula-border-strong);
   --color-bg-hover: rgba(0, 0, 0, 0.04);
   --color-bg-active: rgba(0, 0, 0, 0.08);
-  
-  /* 中性色 - 边框 */
-  --color-border-primary: #d9d9d9;
+
+  --color-border-primary: var(--hula-border-strong);
   --color-border-secondary: #e8e8e8;
-  --color-border-tertiary: #f0f0f0;
-  
-  /* 状态色 */
-  --color-online: #52c41a;
-  --color-offline: #909090;
-  --color-busy: #ff4d4f;
-  --color-away: #fa8c16;
-  
-  /* ==================== 字体系统 ==================== */
-  
-  /* 字体家族 */
-  --font-family: 'PingFang', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-  
-  /* 字体大小 */
-  --font-size-xs: 10px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-lg: 16px;
-  --font-size-xl: 18px;
-  --font-size-2xl: 20px;
-  --font-size-3xl: 24px;
-  
-  /* 字重 */
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  
-  /* 行高 */
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.75;
-  
-  /* ==================== 间距系统 ==================== */
-  
-  --spacing-0: 0;
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 20px;
-  --spacing-2xl: 24px;
-  --spacing-3xl: 32px;
-  --spacing-4xl: 40px;
-  
-  /* ==================== 圆角系统 ==================== */
-  
-  --radius-none: 0;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 20px;
-  --radius-full: 9999px;
-  
-  /* ==================== 阴影系统 ==================== */
-  
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
-  
-  /* ==================== 过渡动画 ==================== */
-  
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.2s ease;
-  --transition-slow: 0.3s ease;
-  
-  /* ==================== 层级系统 ==================== */
-  
+  --color-border-tertiary: var(--hula-border-muted);
+
+  --color-online: var(--hula-status-online);
+  --color-offline: var(--hula-status-offline);
+  --color-busy: var(--hula-status-busy);
+  --color-away: var(--hula-status-away);
+
+  --font-family: var(--hula-font-family);
+  --font-family-mono: var(--hula-font-family-mono);
+
+  --font-size-xs: var(--hula-font-size-xs);
+  --font-size-sm: var(--hula-font-size-sm);
+  --font-size-base: var(--hula-font-size-base);
+  --font-size-lg: var(--hula-font-size-lg);
+  --font-size-xl: var(--hula-font-size-xl);
+  --font-size-2xl: var(--hula-font-size-2xl);
+  --font-size-3xl: var(--hula-font-size-3xl);
+
+  --font-weight-normal: var(--hula-font-weight-normal);
+  --font-weight-medium: var(--hula-font-weight-medium);
+  --font-weight-semibold: var(--hula-font-weight-semibold);
+  --font-weight-bold: var(--hula-font-weight-bold);
+
+  --line-height-tight: var(--hula-line-height-tight);
+  --line-height-normal: var(--hula-line-height-normal);
+  --line-height-relaxed: var(--hula-line-height-relaxed);
+
+  --spacing-0: var(--hula-space-0);
+  --spacing-xs: var(--hula-space-1);
+  --spacing-sm: var(--hula-space-2);
+  --spacing-md: var(--hula-space-3);
+  --spacing-lg: var(--hula-space-4);
+  --spacing-xl: var(--hula-space-5);
+  --spacing-2xl: var(--hula-space-6);
+  --spacing-3xl: var(--hula-space-8);
+  --spacing-4xl: var(--hula-space-10);
+
+  --radius-none: var(--hula-radius-none);
+  --radius-sm: var(--hula-radius-xs);
+  --radius-md: var(--hula-radius-sm);
+  --radius-lg: var(--hula-radius-lg);
+  --radius-xl: var(--hula-radius-xl);
+  --radius-2xl: var(--hula-radius-2xl);
+  --radius-full: var(--hula-radius-full);
+
+  --shadow-sm: var(--hula-shadow-sm);
+  --shadow-md: var(--hula-shadow-md);
+  --shadow-lg: var(--hula-shadow-lg);
+  --shadow-xl: var(--hula-shadow-xl);
+
+  --transition-fast: var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+  --transition-normal: var(--hula-motion-duration-normal) var(--hula-motion-ease-standard);
+  --transition-slow: var(--hula-motion-duration-slow) var(--hula-motion-ease-standard);
+
   --z-index-dropdown: 1000;
   --z-index-sticky: 1020;
   --z-index-fixed: 1030;
@@ -127,29 +295,126 @@
 
 /* 暗色主题 */
 html[data-theme='dark'] {
-  /* 中性色 - 文字 */
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #bfbfbf;
-  --color-text-tertiary: #8c8c8c;
-  --color-text-quaternary: #595959;
-  --color-text-disabled: #434343;
-  
-  /* 中性色 - 背景 */
-  --color-bg-primary: #1b1b1b;
-  --color-bg-secondary: #262626;
-  --color-bg-tertiary: #303030;
+  --hula-color-primary-100: rgba(19, 152, 127, 0.15);
+  --hula-color-primary-200: rgba(19, 152, 127, 0.25);
+  --hula-color-primary-300-alpha: rgba(19, 152, 127, 0.35);
+
+  --hula-color-success-500: #73d13d;
+  --hula-color-success-100: rgba(82, 196, 26, 0.15);
+  --hula-color-warning-500: #ffa940;
+  --hula-color-warning-100: rgba(250, 173, 20, 0.15);
+  --hula-color-danger-500: #ff7875;
+  --hula-color-danger-100: rgba(255, 77, 79, 0.08);
+  --hula-color-danger-200: rgba(255, 77, 79, 0.15);
+  --hula-color-info-500: #40a9ff;
+  --hula-color-info-100: rgba(24, 144, 255, 0.15);
+
+  --hula-text-primary: #ffffff;
+  --hula-text-secondary: #bfbfbf;
+  --hula-text-tertiary: #8c8c8c;
+  --hula-text-quaternary: #595959;
+  --hula-text-disabled: #434343;
+
+  --hula-surface-app: #111111;
+  --hula-surface-panel: #1b1b1b;
+  --hula-surface-panel-muted: #262626;
+  --hula-surface-subtle: #303030;
+  --hula-surface-elevated: #303030;
+  --hula-surface-search: #282828;
+  --hula-surface-sidebar: #161616;
+  --hula-surface-sidebar-hover: rgba(255, 255, 255, 0.2);
+  --hula-surface-sidebar-active: #444444;
+  --hula-surface-sidebar-selected: rgba(193, 193, 193, 0.1);
+  --hula-surface-list-hover: color-mix(in srgb, var(--hula-text-inverse) 10%, transparent);
+  --hula-surface-session-active: var(--hula-color-primary-300-alpha);
+  --hula-surface-overlay: rgba(33, 33, 33, 0.95);
+  --hula-surface-inverse-hover: rgba(255, 255, 255, 0.15);
+  --hula-overlay-mask-default: rgba(0, 0, 0, 0.4);
+  --hula-overlay-mask-subtle: rgba(0, 0, 0, 0.2);
+  --hula-overlay-inverse-strong: rgba(0, 0, 0, 0.8);
+
+  --hula-border-default: #404040;
+  --hula-border-muted: #262626;
+  --hula-border-strong: #434343;
+  --hula-border-contrast: rgba(255, 255, 255, 0.06);
+  --hula-border-inverse-muted: rgba(255, 255, 255, 0.6);
+  --hula-border-layout-divider: var(--hula-border-muted);
+
+  --hula-status-online: #73d13d;
+  --hula-status-offline: #595959;
+  --hula-status-busy: #ff7875;
+  --hula-status-away: #ffa940;
+
+  --hula-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --hula-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.24);
+  --hula-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.32);
+  --hula-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+  --hula-shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --hula-settings-divider: rgba(255, 255, 255, 0.05);
+  --hula-settings-card-bg: rgba(255, 255, 255, 0.05);
+  --hula-settings-card-bg-hover: rgba(255, 255, 255, 0.1);
+  --hula-settings-meter-bg: rgba(255, 255, 255, 0.1);
+  --hula-menu-bg: linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--hula-surface-panel) 65%, transparent) 60%,
+    color-mix(in srgb, var(--hula-surface-overlay) 100%, transparent) 90%
+  );
+  --hula-menu-hover: var(--hula-surface-subtle);
+  --hula-shadow-floating-menu:
+    0 0 0 1px var(--hula-border-contrast),
+    0 2px 2px rgb(0 0 0 / 12%),
+    0 4px 4px rgb(0 0 0 / 16%),
+    0 10px 8px rgb(0 0 0 / 20%),
+    0 15px 15px rgb(0 0 0 / 24%),
+    0 30px 30px rgb(0 0 0 / 28%),
+    0 70px 65px rgb(0 0 0 / 36%);
+  --hula-color-beta-500: #a789d9;
+  --hula-color-beta-100: #403555;
+  --hula-admin-sidebar-bg: #141422;
+  --hula-admin-sidebar-text: color-mix(in srgb, var(--hula-text-inverse) 55%, transparent);
+  --hula-admin-sidebar-border: var(--hula-border-contrast);
+  --hula-admin-sidebar-hover: color-mix(in srgb, var(--hula-text-inverse) 10%, transparent);
+  --hula-admin-bg: var(--hula-surface-app);
+  --hula-admin-card-bg: #1e1e1e;
+  --hula-admin-card-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+  --hula-admin-card-shadow-hover: 0 4px 12px rgb(0 0 0 / 30%);
+  --hula-admin-header-border: #333333;
+  --hula-admin-title-color: #e0e0e0;
+  --hula-admin-stat-value-color: #e0e0e0;
+  --hula-admin-health-ok-bg: rgba(46, 125, 50, 0.15);
+  --hula-admin-health-ok-text: #66bb6a;
+  --hula-admin-health-err-bg: rgba(198, 40, 40, 0.15);
+  --hula-admin-health-err-text: #ef5350;
+
+  --color-success: var(--hula-color-success-500);
+  --color-warning: var(--hula-color-warning-500);
+  --color-danger: var(--hula-color-danger-500);
+  --color-info: var(--hula-color-info-500);
+
+  --color-text-primary: var(--hula-text-primary);
+  --color-text-secondary: var(--hula-text-secondary);
+  --color-text-tertiary: var(--hula-text-tertiary);
+  --color-text-quaternary: var(--hula-text-quaternary);
+  --color-text-disabled: var(--hula-text-disabled);
+
+  --color-bg-primary: var(--hula-surface-panel);
+  --color-bg-secondary: var(--hula-surface-panel-muted);
+  --color-bg-tertiary: var(--hula-surface-subtle);
   --color-bg-quaternary: #3a3a3a;
   --color-bg-hover: rgba(255, 255, 255, 0.08);
   --color-bg-active: rgba(255, 255, 255, 0.12);
-  
-  /* 中性色 - 边框 */
-  --color-border-primary: #434343;
-  --color-border-secondary: #303030;
-  --color-border-tertiary: #262626;
-  
-  /* 阴影 */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+
+  --color-border-primary: var(--hula-border-strong);
+  --color-border-secondary: var(--hula-surface-subtle);
+  --color-border-tertiary: var(--hula-border-muted);
+
+  --color-online: var(--hula-status-online);
+  --color-offline: var(--hula-status-offline);
+  --color-busy: var(--hula-status-busy);
+  --color-away: var(--hula-status-away);
+
+  --shadow-sm: var(--hula-shadow-sm);
+  --shadow-md: var(--hula-shadow-md);
+  --shadow-lg: var(--hula-shadow-lg);
+  --shadow-xl: var(--hula-shadow-xl);
 }

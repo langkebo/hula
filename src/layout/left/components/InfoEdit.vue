@@ -11,7 +11,7 @@
           </svg>
         </div>
 
-        <n-flex class="text-(14px [--text-color]) select-none pt-6px" justify="center">
+        <n-flex class="text-(14px [--hula-text-primary]) select-none pt-6px" justify="center">
           {{ t('home.profile_edit.title') }}
         </n-flex>
 
@@ -21,7 +21,7 @@
           @click="editInfo.show = false">
           <use href="#close"></use>
         </svg>
-        <span class="h-1px w-full bg-[--line-color]"></span>
+        <span class="h-1px w-full bg-[--hula-border-default]"></span>
       </n-flex>
       <n-flex :size="20" class="p-22px select-none" vertical>
         <!-- 头像 -->
@@ -31,18 +31,20 @@
               <div class="avatar-wrapper relative" @click="openAvatarCropper">
                 <n-avatar :size="80" :src="AvatarUtils.getAvatarUrl(editInfo.content.avatar!)" round />
                 <div class="avatar-hover absolute size-full rounded-50% flex-center">
-                  <span class="text-12px color-#606060">{{ t('home.profile_edit.avatar.change') }}</span>
+                  <span class="text-12px color-[--hula-text-secondary]">
+                    {{ t('home.profile_edit.avatar.change') }}
+                  </span>
                 </div>
               </div>
             </template>
-            <p class="text-12px text-[--chat-text-color] w-280px leading-5 p-4px">
+            <p class="text-12px text-[--hula-text-secondary] w-280px leading-5 p-4px">
               {{ t('home.profile_edit.avatar.tips') }}
             </p>
           </n-popover>
         </n-flex>
         <!-- 当前佩戴的徽章 -->
         <n-flex v-if="currentBadge" align="center" justify="center">
-          <span class="text-(14px #707070)">{{ t('home.profile_edit.badge.current') }}</span>
+          <span class="text-(14px [--hula-text-secondary])">{{ t('home.profile_edit.badge.current') }}</span>
           <n-popover trigger="hover">
             <template #trigger>
               <img :src="currentBadge?.img" alt="" class="size-22px" />
@@ -72,7 +74,9 @@
               show-count
               type="text">
               <template #prefix>
-                <span class="pr-6px text-#909090">{{ t('home.profile_edit.form.nickname.label') }}</span>
+                <span class="pr-6px text-[--hula-text-tertiary]">
+                  {{ t('home.profile_edit.form.nickname.label') }}
+                </span>
               </template>
             </n-input>
           </template>
@@ -99,7 +103,7 @@
                   <n-button
                     style="color: #fff"
                     v-if="item.wearing === IsYesEnum.NO"
-                    color="#13987f"
+                    color="var(--hula-color-primary-500)"
                     @click="toggleWarningBadge(item)">
                     {{ t('home.profile_edit.badge.wear') }}
                   </n-button>
@@ -121,7 +125,7 @@
         <n-button
           style="color: #fff"
           :disabled="editInfo.content.name === localUserInfo.name"
-          color="#13987f"
+          color="var(--hula-color-primary-500)"
           @click="saveEditInfo(localUserInfo as ModifyUserInfoType)">
           {{ t('home.profile_edit.actions.save') }}
         </n-button>
@@ -143,15 +147,15 @@ import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { IsYesEnum, MittEnum } from '@/enums'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
-import { useCommon } from '@/hooks/useCommon.ts'
+import { countGraphemes } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { leftHook } from '@/layout/left/hook.ts'
 import type { ModifyUserInfoType } from '@/services/types'
-import { useLoginHistoriesStore } from '@/stores/loginHistory'
-import { useUserStore } from '@/stores/user.ts'
+import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { getBadgeList } from '@/utils/ImRequestUtils'
+import { badgeService } from '@/services/BadgeService'
 import { matrixAccountService } from '@/services/matrix'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
@@ -162,7 +166,6 @@ const userStore = useUserStore()
 const { addListener } = useTauriListener()
 const loginHistoriesStore = useLoginHistoriesStore()
 const { editInfo, currentBadge, updateCurrentUserCache, saveEditInfo, toggleWarningBadge } = leftHook()
-const { countGraphemes } = useCommon()
 // 使用自定义hook处理头像上传
 const {
   fileInput: _fileInput,
@@ -202,8 +205,8 @@ const openEditInfo = () => {
   editInfo.value.content = userStore.userInfo!
   localUserInfo.value = { ...userStore.userInfo! }
   /** 获取徽章列表 */
-  getBadgeList().then((res: any) => {
-    editInfo.value.badgeList = res
+  badgeService.getBadgeList().then((res) => {
+    editInfo.value.badgeList = res as unknown as typeof editInfo.value.badgeList
   })
 }
 
@@ -227,7 +230,7 @@ onMounted(async () => {
     @apply absolute top-0 left-0 w-full h-full flex-center gap-4px z-999 opacity-0;
   }
 
-  @apply bg-#ccc relative rounded-50% size-fit p-4px cursor-pointer;
+  @apply bg-[--hula-text-disabled] relative rounded-50% size-fit p-4px cursor-pointer;
 
   &:hover .tip {
     @apply opacity-100;

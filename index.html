@@ -2,17 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://localhost:* http://localhost:*; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: mxc:; connect-src 'self' https://localhost:* http://localhost:* https://127.0.0.1:* http://127.0.0.1:*; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://localhost:* http://localhost:* https://repo.huaweicloud.com:*; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: mxc: blob:; connect-src 'self' ipc://localhost https://localhost:* http://localhost:* https://127.0.0.1:* http://127.0.0.1:* https://repo.huaweicloud.com:*; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none';" />
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+    <meta http-equiv="Cross-Origin-Resource-Policy" content="same-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()" />
     <title>HuLa</title>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <link rel="icon" type="image/png" href="/hula_favicon.ico" />
+    <link rel="preload" href="/hula.png" as="image" />
 
-    <!-- iconpark图标库 -->
-    <script async src="/icon.js"></script>
+    <!-- iconpark图标库 (defer避免阻塞首屏渲染) -->
+    <script defer src="/icon.js"></script>
 
-    <!-- 🧩 加载页样式 -->
+    <!-- 骨架屏 + 加载样式 -->
     <style id="loading-css">
       .rounded-14px {
         border-radius: 14px;
@@ -42,12 +50,152 @@
       .mb-140px {
         margin-bottom: 140px;
       }
+
+      #skeleton {
+        display: flex;
+        height: 100vh;
+        background: #fafafa;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      html[data-theme="dark"] #skeleton {
+        background: #1b1b1b;
+      }
+      .sk-sidebar {
+        width: 64px;
+        background: #f1f1f1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 48px;
+        gap: 20px;
+        flex-shrink: 0;
+      }
+      html[data-theme="dark"] .sk-sidebar {
+        background: #161616;
+      }
+      .sk-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e0e0e0;
+      }
+      html[data-theme="dark"] .sk-avatar {
+        background: #333;
+      }
+      .sk-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: #e0e0e0;
+      }
+      html[data-theme="dark"] .sk-icon {
+        background: #333;
+      }
+      .sk-list {
+        width: 260px;
+        background: #fff;
+        border-right: 1px solid #e8e8e8;
+        padding: 16px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+      html[data-theme="dark"] .sk-list {
+        background: #1b1b1b;
+        border-right-color: #333;
+      }
+      .sk-search {
+        height: 32px;
+        border-radius: 6px;
+        background: #eaeaea;
+      }
+      html[data-theme="dark"] .sk-search {
+        background: #282828;
+      }
+      .sk-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px;
+        border-radius: 8px;
+      }
+      .sk-item-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e8e8e8;
+        flex-shrink: 0;
+      }
+      html[data-theme="dark"] .sk-item-avatar {
+        background: #333;
+      }
+      .sk-item-lines {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .sk-line {
+        height: 12px;
+        border-radius: 4px;
+        background: #e8e8e8;
+      }
+      html[data-theme="dark"] .sk-line {
+        background: #333;
+      }
+      .sk-line-short {
+        width: 60%;
+      }
+      .sk-line-long {
+        width: 85%;
+      }
+      .sk-main {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .sk-logo {
+        width: 80px;
+        height: 34px;
+        opacity: 0.3;
+      }
+      @keyframes sk-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+      .sk-line, .sk-avatar, .sk-icon, .sk-item-avatar, .sk-search {
+        animation: sk-pulse 1.5s ease-in-out infinite;
+      }
     </style>
   </head>
 
   <body>
     <!-- Vue 应用挂载点 -->
-    <div id="app"></div>
+    <div id="app">
+      <!-- 骨架屏：Vue 挂载后自动替换 -->
+      <div id="skeleton">
+        <div class="sk-sidebar">
+          <div class="sk-avatar"></div>
+          <div class="sk-icon"></div>
+          <div class="sk-icon"></div>
+          <div class="sk-icon"></div>
+          <div class="sk-icon"></div>
+        </div>
+        <div class="sk-list">
+          <div class="sk-search"></div>
+          <div class="sk-item"><div class="sk-item-avatar"></div><div class="sk-item-lines"><div class="sk-line sk-line-long"></div><div class="sk-line sk-line-short"></div></div></div>
+          <div class="sk-item"><div class="sk-item-avatar"></div><div class="sk-item-lines"><div class="sk-line sk-line-long"></div><div class="sk-line sk-line-short"></div></div></div>
+          <div class="sk-item"><div class="sk-item-avatar"></div><div class="sk-item-lines"><div class="sk-line sk-line-long"></div><div class="sk-line sk-line-short"></div></div></div>
+          <div class="sk-item"><div class="sk-item-avatar"></div><div class="sk-item-lines"><div class="sk-line sk-line-long"></div><div class="sk-line sk-line-short"></div></div></div>
+          <div class="sk-item"><div class="sk-item-avatar"></div><div class="sk-item-lines"><div class="sk-line sk-line-long"></div><div class="sk-line sk-line-short"></div></div></div>
+        </div>
+        <div class="sk-main">
+          <img class="sk-logo" src="/hula.png" alt="" />
+        </div>
+      </div>
+    </div>
     <!-- 🚀 Vue 应用入口 -->
     <script type="module" src="/src/main.ts"></script>
   </body>

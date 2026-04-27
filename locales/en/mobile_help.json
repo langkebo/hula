@@ -23,6 +23,7 @@
   "feature_description_placeholder": "Describe the feature you'd like",
   "submit": "Submit",
   "submit_success": "Submitted successfully",
+  "submit_failed": "Submission failed, please try again later",
   "title_required": "Please enter a title",
   "about_description": "HuLa is a cross-platform instant messaging app based on Matrix protocol",
   "copyright": "© 2024 HuLa Team. All rights reserved."

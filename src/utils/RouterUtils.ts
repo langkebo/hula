@@ -1,5 +1,5 @@
 import router from '../router'
-import { useGlobalStore } from '../stores/global'
+import { useGlobalStore } from '../stores/domains/widget/global'
 
 /**
  * 跳转到移动端用户详情页
@@ -8,6 +8,6 @@ import { useGlobalStore } from '../stores/global'
 export const toFriendInfoPage = (uid: string): void => {
   const globalStore = useGlobalStore()
 
-  globalStore.addFriendModalInfo.uid = uid
+  globalStore.setAddFriendTarget(uid)
   router.push(`/mobile/mobileFriends/friendInfo/${uid}`)
 }

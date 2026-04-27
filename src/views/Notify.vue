@@ -18,13 +18,13 @@
         <n-avatar round :size="44" :src="AvatarUtils.getAvatarUrl(group.avatar)" />
 
         <n-flex class="flex-1" vertical justify="center" :size="8">
-          <span class="text-(16px [--text-color])">{{ group.name }}</span>
+          <span class="text-(16px [--hula-text-primary])">{{ group.name }}</span>
 
           <n-flex class="w-full" align="center" justify="space-between" :size="10">
-            <span class="max-w-150px truncate text-(12px [--text-color])">
+            <span class="max-w-150px truncate text-(12px [--hula-text-primary])">
               <template v-if="group.isAtMe">
                 <span class="text flex-1 leading-tight text-12px truncate">
-                  <span class="text-#d5304f mr-4px">{{ t('message.message_list.mention_tag') }}</span>
+                  <span class="text-[--color-danger] mr-4px">{{ t('message.message_list.mention_tag') }}</span>
                   <span>{{ group.latestContent.replace(':', '：') }}</span>
                 </span>
               </template>
@@ -36,7 +36,7 @@
             </span>
 
             <!-- 有多少条消息 -->
-            <div class="text-(10px #fff) rounded-full px-6px py-2px flex-center bg-#d5304f">
+            <div class="text-(10px #fff) rounded-full px-6px py-2px flex-center bg-[--color-danger]">
               {{ group.messageCount > 99 ? '99+' : group.messageCount }}
             </div>
           </n-flex>
@@ -44,7 +44,7 @@
       </n-flex>
     </n-scrollbar>
     <component :is="division" />
-    <p @click="handleTip" class="pt-4px pl-6px text-(12px #13987f) cursor-pointer">
+    <p @click="handleTip" class="pt-4px pl-6px text-(12px --color-primary) cursor-pointer">
       {{ t('message.notify.ignore_all') }}
     </p>
   </n-flex>
@@ -59,12 +59,17 @@ import { sumBy } from 'es-toolkit'
 import { RoomTypeEnum } from '@/enums'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
-import type { MessageType } from '@/stores/chat'
-import { useChatStore } from '@/stores/chat'
-import { useGlobalStore } from '@/stores/global.ts'
+import type { MessageType } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isWindows } from '@/utils/PlatformConstants'
+import { useTimerManager } from '@/utils/TimerManager'
+import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('Notify')
+const timerManager = useTimerManager()
 
 // import { useTauriListener } from '../hooks/useTauriListener'
 
@@ -80,6 +85,15 @@ type GroupedMessage = {
   isAtMe: boolean
   top?: boolean // 添加置顶状态属性
   roomType: number // 房间类型：1=群聊，2=单聊
+}
+
+type NotifyEnterPayload = {
+  position: {
+    Physical: {
+      x: number
+      y: number
+    }
+  }
 }
 
 const appWindow = WebviewWindow.getCurrent()
@@ -110,11 +124,11 @@ watch(
 )
 
 const division = () => {
-  return <div class={'h-1px bg-[--line-color] w-full'}></div>
+  return <div class={'h-1px bg-[--hula-border-default] w-full'}></div>
 }
 
 // 处理点击消息的逻辑
-const handleClickMsg = async (group: any) => {
+const handleClickMsg = async (group: GroupedMessage) => {
   // 打开消息页面
   await checkWinExist('home')
   // 找到对应的会话 - 根据roomId而不是消息ID
@@ -126,7 +140,7 @@ const handleClickMsg = async (group: any) => {
       roomType: group.roomType
     })
   } else {
-    console.error('找不到对应的会话信息')
+    logger.error('找不到对应的会话信息')
   }
 }
 
@@ -153,7 +167,7 @@ const handleTip = async () => {
 const debouncedHandleTip = useDebounceFn(handleTip, 100)
 
 // 处理窗口显示和隐藏的逻辑
-const showWindow = async (event: Event<any>) => {
+const showWindow = async (event: Event<NotifyEnterPayload>) => {
   if (tipVisible.value) {
     const notifyWindow = WebviewWindow.getCurrent()
     const outerSize = await notifyWindow?.outerSize()
@@ -193,15 +207,14 @@ const hideWindow = async () => {
 }
 
 const handleMouseEnter = () => {
-  console.log('Mouse enter')
+  logger.debug('Mouse enter')
   isMouseInWindow.value = true
 }
 
-// 增强的鼠标离开处理：增加延迟检测，避免托盘图标交互导致的误触发
 const handleMouseLeave = async () => {
-  console.log('Mouse leave')
+  logger.debug('Mouse leave')
   // 延迟设置 isMouseInWindow 为 false，给鼠标移动到托盘图标的时间
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     // 只有在延迟后鼠标仍然不在窗口内时才隐藏
     if (!isMouseInWindow.value) {
       hideWindow()
@@ -215,13 +228,13 @@ onMounted(async () => {
   resizeWindow('notify', 280, 140)
 
   if (isWindows()) {
-    appWindow.listen('notify_enter', async (event: Event<any>) => {
+    appWindow.listen<NotifyEnterPayload>('notify_enter', async (event) => {
       info('监听到enter事件，打开notify窗口')
       await showWindow(event)
     })
 
     appWindow.listen('notify_leave', async () => {
-      setTimeout(async () => {
+      timerManager.setTimeout(async () => {
         await hideWindow()
       }, 300)
     })
@@ -337,10 +350,11 @@ onUnmounted(() => {
     homeBlurUnlisten()
     homeBlurUnlisten = null
   }
+  timerManager.clearAll()
 })
 </script>
 <style scoped lang="scss">
 .notify {
-  @apply bg-[--center-bg-color] size-full p-8px box-border select-none text-[--text-color] text-12px;
+  @apply bg-[--hula-surface-panel] size-full p-8px box-border select-none text-[--hula-text-primary] text-12px;
 }
 </style>

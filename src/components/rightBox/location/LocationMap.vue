@@ -24,6 +24,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import TlbsMap from 'tlbs-map-vue'
+import { MultiMarker as TlbsMultiMarker } from 'tlbs-map-vue'
 type LocationData = {
   latitude: number
   longitude: number
@@ -84,7 +86,7 @@ const markerStyles = {
     width: 25,
     height: 35,
     anchor: { x: 12, y: 35 },
-    color: '#FF4444'
+    color: 'var(--hula-color-danger-500)'
   }
 }
 
@@ -99,7 +101,7 @@ const markerGeometries = computed(() => [
 ])
 
 // 事件处理
-const handleMarkerClick = (event: any) => {
+const handleMarkerClick = (event: { latLng: { lat: number; lng: number } }) => {
   if (props.draggable) {
     emit('location-change', {
       lat: event.latLng.lat,
@@ -108,7 +110,7 @@ const handleMarkerClick = (event: any) => {
   }
 }
 
-const handleMarkerDragEnd = (event: any) => {
+const handleMarkerDragEnd = (event: { geometry: { position: { lat: number; lng: number } } }) => {
   if (props.draggable) {
     emit('location-change', {
       lat: event.geometry.position.lat,

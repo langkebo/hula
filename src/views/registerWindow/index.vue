@@ -11,165 +11,169 @@
       <!-- 注册菜单 -->
       <n-flex class="ma text-center w-full max-w-320px pointer-events-auto" vertical :size="16">
         <n-flex justify="center" align="center" :size="12">
-          <span class="text-(24px #70938c) textFont">{{ t('auth.register.title') }}</span>
+          <span class="text-(24px [--color-primary]) textFont">{{ t('auth.register.title') }}</span>
           <img class="w-100px h-40px" src="/hula.png" alt="" />
         </n-flex>
-        
+
         <div class="overflow-y-auto max-h-380px px-10px">
           <n-form :model="info" :rules="rules" ref="registerForm">
             <!-- 注册信息 -->
             <div>
-            <n-form-item path="name">
-              <div class="relative w-full">
-                <n-input
-                  class="w-full"
-                  maxlength="8"
-                  minlength="1"
-                  size="large"
-                  v-model:value="info.nickName"
-                  type="text"
-                  spellCheck="false"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  :allow-input="noSideSpace"
-                  :placeholder="t('auth.register.placeholders.nickname')"
-                  clearable>
-                </n-input>
-                <div 
-                  v-if="showNamePrefix || info.nickName"
-                  class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
-                  :class="{ 'top-8px transform-none text-10px': showNamePrefix }">
-                  {{ t('auth.register.labels.nickname') }}
+              <n-form-item path="name">
+                <div class="relative w-full">
+                  <n-input
+                    class="w-full"
+                    maxlength="8"
+                    minlength="1"
+                    size="large"
+                    v-model:value="info.nickName"
+                    type="text"
+                    spellCheck="false"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    :allow-input="noSideSpace"
+                    :placeholder="t('auth.register.placeholders.nickname')"
+                    @focus="handleInputState($event, 'nickName')"
+                    @blur="handleInputState($event, 'nickName')"
+                    clearable></n-input>
+                  <div
+                    v-if="showNamePrefix || info.nickName"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
+                    :class="{ 'top-8px transform-none text-10px': showNamePrefix }">
+                    {{ t('auth.register.labels.nickname') }}
+                  </div>
                 </div>
-              </div>
-            </n-form-item>
+              </n-form-item>
 
-            <n-form-item path="password">
-              <div class="relative w-full">
-                <n-input
-                  class="w-full"
-                  maxlength="16"
-                  minlength="6"
-                  size="large"
-                  spellCheck="false"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  show-password-on="click"
-                  v-model:value="info.password"
-                  type="password"
-                  :allow-input="noSideSpace"
-                  :placeholder="t('auth.register.placeholders.password')"
-                  clearable>
-                </n-input>
-                <div 
-                  v-if="showPasswordPrefix || info.password"
-                  class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
-                  :class="{ 'top-8px transform-none text-10px': showPasswordPrefix }">
-                  {{ t('auth.register.labels.password') }}
+              <n-form-item path="password">
+                <div class="relative w-full">
+                  <n-input
+                    class="w-full"
+                    maxlength="16"
+                    minlength="6"
+                    size="large"
+                    spellCheck="false"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    show-password-on="click"
+                    v-model:value="info.password"
+                    type="password"
+                    :allow-input="noSideSpace"
+                    :placeholder="t('auth.register.placeholders.password')"
+                    @focus="handleInputState($event, 'password')"
+                    @blur="handleInputState($event, 'password')"
+                    clearable></n-input>
+                  <div
+                    v-if="showPasswordPrefix || info.password"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
+                    :class="{ 'top-8px transform-none text-10px': showPasswordPrefix }">
+                    {{ t('auth.register.labels.password') }}
+                  </div>
                 </div>
-              </div>
-            </n-form-item>
+              </n-form-item>
 
-            <n-form-item path="confirmPassword">
-              <div class="relative w-full">
-                <n-input
-                  class="w-full"
-                  maxlength="16"
-                  minlength="6"
-                  size="large"
-                  spellCheck="false"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  show-password-on="click"
-                  v-model:value="confirmPassword"
-                  type="password"
-                  :allow-input="noSideSpace"
-                  :placeholder="t('auth.register.placeholders.confirm_placeholder')"
-                  clearable>
-                </n-input>
-                <div 
-                  v-if="showConfirmPasswordPrefix || confirmPassword"
-                  class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
-                  :class="{ 'top-8px transform-none text-10px': showConfirmPasswordPrefix }">
-                  {{ t('auth.register.labels.confirm') }}
+              <n-form-item path="confirmPassword">
+                <div class="relative w-full">
+                  <n-input
+                    class="w-full"
+                    maxlength="16"
+                    minlength="6"
+                    size="large"
+                    spellCheck="false"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    show-password-on="click"
+                    v-model:value="confirmPassword"
+                    type="password"
+                    :allow-input="noSideSpace"
+                    :placeholder="t('auth.register.placeholders.confirm_placeholder')"
+                    @focus="handleInputState($event, 'confirmPassword')"
+                    @blur="handleInputState($event, 'confirmPassword')"
+                    clearable></n-input>
+                  <div
+                    v-if="showConfirmPasswordPrefix || confirmPassword"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
+                    :class="{ 'top-8px transform-none text-10px': showConfirmPasswordPrefix }">
+                    {{ t('auth.register.labels.confirm') }}
+                  </div>
                 </div>
-              </div>
-            </n-form-item>
+              </n-form-item>
 
-            <n-form-item path="email">
-              <div class="relative w-full">
-                <n-auto-complete
-                  class="w-full"
-                  size="large"
-                  v-model:value="info.email"
-                  :placeholder="t('auth.register.placeholders.email')"
-                  :options="commonEmailDomains"
-                  :get-show="getShow"
-                  :append="true"
-                  clearable
-                  type="text"
-                  spellCheck="false"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off">
-                </n-auto-complete>
-                <div 
-                  v-if="showemailPrefix || info.email"
-                  class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-#70938c pointer-events-none z-10"
-                  :class="{ 'top-8px transform-none text-10px': showemailPrefix }">
-                  {{ t('auth.register.labels.email') }}
+              <n-form-item path="email">
+                <div class="relative w-full">
+                  <n-auto-complete
+                    class="w-full"
+                    size="large"
+                    v-model:value="info.email"
+                    :placeholder="t('auth.register.placeholders.email')"
+                    :options="commonEmailDomains"
+                    :get-show="getShow"
+                    :append="true"
+                    clearable
+                    type="text"
+                    spellCheck="false"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    @focus="handleInputState($event, 'email')"
+                    @blur="handleInputState($event, 'email')"></n-auto-complete>
+                  <div
+                    v-if="showemailPrefix || info.email"
+                    class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
+                    :class="{ 'top-8px transform-none text-10px': showemailPrefix }">
+                    {{ t('auth.register.labels.email') }}
+                  </div>
                 </div>
-              </div>
-            </n-form-item>
+              </n-form-item>
 
-            <!-- 密码提示信息 -->
-            <n-flex vertical v-if="info.password">
-              <n-flex vertical :size="4">
-                <Validation
-                  :value="info.password"
-                  :message="t('auth.register.password_hints.min_length')"
-                  :validator="validateMinLength" />
-                <Validation
-                  :value="info.password"
-                  :message="t('auth.register.password_hints.alpha_numeric')"
-                  :validator="validateAlphaNumeric" />
-                <Validation
-                  :value="info.password"
-                  :message="t('auth.register.password_hints.special_char')"
-                  :validator="validateSpecialChar" />
+              <!-- 密码提示信息 -->
+              <n-flex vertical v-if="info.password">
+                <n-flex vertical :size="4">
+                  <Validation
+                    :value="info.password"
+                    :message="t('auth.register.password_hints.min_length')"
+                    :validator="validateMinLength" />
+                  <Validation
+                    :value="info.password"
+                    :message="t('auth.register.password_hints.alpha_numeric')"
+                    :validator="validateAlphaNumeric" />
+                  <Validation
+                    :value="info.password"
+                    :message="t('auth.register.password_hints.special_char')"
+                    :validator="validateSpecialChar" />
+                </n-flex>
               </n-flex>
-            </n-flex>
 
-            <!-- 协议 -->
-            <n-flex align="center" justify="center" :size="6" class="mt-10px">
-              <n-checkbox v-model:checked="protocol" />
-              <div class="text-12px color-#909090 cursor-default lh-14px">
-                <span>{{ t('login.term.checkout.text1') }}</span>
-                <span class="color-#13987f cursor-pointer" @click.stop="openServiceAgreement">
-                  {{ t('login.term.checkout.text2') }}
-                </span>
-                <span>{{ t('login.term.checkout.text3') }}</span>
-                <span class="color-#13987f cursor-pointer" @click.stop="openPrivacyAgreement">
-                  {{ t('login.term.checkout.text4') }}
-                </span>
-              </div>
-            </n-flex>
-          </div>
-        </n-form>
+              <!-- 协议 -->
+              <n-flex align="center" justify="center" :size="6" class="mt-10px">
+                <n-checkbox v-model:checked="protocol" />
+                <div class="text-12px color-[--hula-text-tertiary] cursor-default lh-14px">
+                  <span>{{ t('login.term.checkout.text1') }}</span>
+                  <span class="color-[--color-primary] cursor-pointer" @click.stop="openServiceAgreement">
+                    {{ t('login.term.checkout.text2') }}
+                  </span>
+                  <span>{{ t('login.term.checkout.text3') }}</span>
+                  <span class="color-[--color-primary] cursor-pointer" @click.stop="openPrivacyAgreement">
+                    {{ t('login.term.checkout.text4') }}
+                  </span>
+                </div>
+              </n-flex>
+            </div>
+          </n-form>
         </div>
 
         <n-button
-          :loading="loading"
-          :disabled="btnEnable"
+          :loading="loading || registerLoading"
+          :disabled="btnDisabled"
           tertiary
           class="w-full mt-20px gradient-button"
           @click="handleStepAction">
           {{ btnText }}
         </n-button>
-        <p v-if="sendCodeCooldown > 0" class="text-(12px #13987f) mt-6px whitespace-nowrap">
+        <p v-if="sendCodeCooldown > 0" class="text-(12px --color-primary) mt-6px whitespace-nowrap">
           {{ t('auth.register.tips.reopen_code') }}
         </p>
       </n-flex>
@@ -177,39 +181,15 @@
 
     <!-- 底部栏 -->
     <n-flex
-      class="text-(12px #909090) w-full absolute bottom-20px left-1/2 transform -translate-x-1/2"
+      class="text-(12px --hula-text-tertiary) w-full absolute bottom-20px left-1/2 transform -translate-x-1/2"
       :size="8"
       justify="center">
-      <span>Copyright {{ currentYear - 1 }}-{{ currentYear }} HuLaSpark All Rights Reserved.</span>
+      <span>Copyright {{ currentYear - 1 }}-{{ currentYear }} 龙卷风 All Rights Reserved.</span>
     </n-flex>
-
-    <!-- 星标提示框 -->
-    <n-modal v-model:show="starTipsModal" :mask-closable="false" class="rounded-8px" transform-origin="center">
-      <div class="bg-[--bg-edit] w-380px h-fit box-border flex flex-col">
-        <n-flex vertical class="w-full h-fit">
-          <video class="w-full h-240px rounded-t-8px object-cover" src="@/assets/video/star.mp4" autoplay loop />
-          <n-flex vertical :size="10" class="p-14px">
-            <p class="text-(16px #303030)">{{ t('auth.register.modal.title') }}</p>
-            <p class="text-(12px #808080) leading-5">{{ t('auth.register.modal.desc') }}</p>
-
-            <n-flex :size="10" class="ml-auto">
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                @click="handleStar"
-                href="https://gitee.com/llangkebo/hula/"
-                class="bg-#363636 cursor-pointer w-70px h-30px rounded-8px flex-center text-(12px #f1f1f1) outline-none no-underline">
-                {{ t('auth.register.modal.cta') }}
-              </a>
-            </n-flex>
-          </n-flex>
-        </n-flex>
-      </div>
-    </n-modal>
 
     <!-- 邮箱验证码输入弹窗 -->
     <n-modal v-model:show="emailCodeModal" :mask-closable="false" class="rounded-8px" transform-origin="center">
-      <div class="bg-#f0f0f0 dark:bg-#303030 w-380px h-fit box-border flex flex-col">
+      <div class="bg-[--hula-surface-elevated] w-380px h-fit box-border flex flex-col">
         <div
           v-if="isMac()"
           @click="emailCodeModal = false"
@@ -227,8 +207,8 @@
         </svg>
         <n-flex vertical class="w-full h-fit">
           <n-flex vertical :size="10" class="p-24px">
-            <p class="text-(16px [--text-color]) mb-10px">{{ t('auth.register.email_modal.title') }}</p>
-            <p class="text-(12px #808080) leading-5 mb-10px">
+            <p class="text-(16px [--hula-text-primary]) mb-10px">{{ t('auth.register.email_modal.title') }}</p>
+            <p class="text-(12px [--hula-text-tertiary]) leading-5 mb-10px">
               {{ t('auth.register.email_modal.desc', { email: info.email }) }}
             </p>
 
@@ -254,51 +234,54 @@
 </template>
 
 <script setup lang="ts">
-import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import dayjs from 'dayjs'
 import { darkTheme, lightTheme, type FormInst } from 'naive-ui'
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
+import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('Register')
 import PinInput from '@/components/atomic/PinInput.vue'
 import Validation from '@/components/common/Validation.vue'
 import { useWindow } from '@/hooks/useWindow'
 import type { RegisterUserReq } from '@/services/types.ts'
-import { useSettingStore } from '@/stores/setting'
-import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 
 // 输入框类型定义
 type InputType = 'nickName' | 'email' | 'password' | 'confirmPassword'
+const GENERAL_USER_SYSTEM_TYPE = 2
 
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
-const naiveTheme = computed(() => (themes.value.content === 'dark' ? darkTheme : lightTheme))
+const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 const { t } = useI18n()
 
 /** 注册信息 */
-const info = unref(
-  ref<RegisterUserReq>({
-    avatar: '',
-    email: '',
-    password: '',
-    nickName: '',
-    code: '',
-    uuid: '',
-    key: 'REGISTER_EMAIL',
-    confirmPassword: '',
-    systemType: 2
-  })
-)
+const info = reactive<RegisterUserReq>({
+  avatar: '',
+  email: '',
+  password: '',
+  nickName: '',
+  code: '',
+  uuid: '',
+  key: 'REGISTER_EMAIL',
+  confirmPassword: '',
+  systemType: GENERAL_USER_SYSTEM_TYPE
+})
 
 /** 确认密码 */
 const confirmPassword = ref('')
 
 /** 协议 */
-const protocol = ref(true)
-const btnEnable = ref(false)
+const protocol = ref(false)
+const btnDisabled = ref(false)
 const loading = ref(false)
 const registerLoading = ref(false)
+const matrixEndpointConfig = resolveMatrixRuntimeEndpointConfig()
 
 // 占位符
 // 前缀显示状态
@@ -339,7 +322,6 @@ const btnText = computed(() => {
 // 使用day.js获取当前年份
 const currentYear = dayjs().year()
 const registerForm = ref<FormInst | null>(null)
-const starTipsModal = ref(false)
 const emailCodeModal = ref(false)
 
 // 邮箱验证码PIN输入
@@ -440,10 +422,11 @@ const canSkipEmail = computed(() => {
 })
 
 watchEffect(() => {
+  const isBusy = loading.value || registerLoading.value
   if (!hasEmail.value) {
-    btnEnable.value = loading.value || !canSkipEmail.value
+    btnDisabled.value = isBusy || !canSkipEmail.value
   } else {
-    btnEnable.value = loading.value || !canSendCode.value
+    btnDisabled.value = isBusy || !canSendCode.value
   }
 })
 
@@ -469,7 +452,7 @@ const emailClientSecret = ref('')
 
 /** 处理步骤操作 */
 const handleStepAction = async () => {
-  if (btnEnable.value || loading.value) return
+  if (btnDisabled.value || loading.value) return
 
   try {
     await registerForm.value?.validate?.()
@@ -496,9 +479,9 @@ const handleStepAction = async () => {
   try {
     const email = info.email.trim()
     info.email = email
-    emailClientSecret.value = generateClientSecret()
     const result = await MatrixAuthService.requestEmailToken(email, 1)
     emailSessionId.value = result.sid
+    emailClientSecret.value = result.client_secret
     startSendCodeCountdown()
     window.$message.success(t('auth.register.messages.code_sent'))
     emailCodeModal.value = true
@@ -507,19 +490,50 @@ const handleStepAction = async () => {
       pinInputRef.value?.focus()
     })
   } catch (error) {
-    console.error('发送验证码失败', error)
+    logger.error('发送验证码失败', error)
+    window.$message.error(getErrorMessage(error, t('auth.register.messages.register_fail')))
   } finally {
     loading.value = false
   }
 }
 
-const generateClientSecret = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let result = ''
-  for (let i = 0; i < 43; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
+const getErrorMessage = (error: unknown, fallback: string) => {
+  return error instanceof Error && error.message ? error.message : fallback
+}
+
+const finishRegistrationAndEnterHome = async (
+  registerResult: Awaited<ReturnType<typeof MatrixAuthService.register>>
+) => {
+  const account = info.nickName.trim()
+  const displayName = account
+
+  if (registerResult.user_id && registerResult.access_token) {
+    await matrixRuntimeSessionService.restoreWithAccessToken({
+      uid: registerResult.user_id,
+      accessToken: registerResult.access_token,
+      refreshToken: registerResult.refresh_token,
+      account,
+      displayName,
+      avatar: info.avatar,
+      client: 'PC',
+      persistTokens: true,
+      bootstrapAfterRestore: true
+    })
+  } else {
+    await matrixRuntimeSessionService.loginWithPassword({
+      username: account,
+      password: info.password,
+      homeserverUrl: matrixEndpointConfig.homeserverUrl,
+      identityServerUrl: matrixEndpointConfig.identityServerUrl,
+      deviceName: 'HuLa Client',
+      account,
+      displayName,
+      avatar: info.avatar,
+      client: 'PC'
+    })
   }
-  return result
+
+  await matrixRuntimeSessionService.completeDesktopLoginTransition()
 }
 
 const startSendCodeCountdown = () => {
@@ -546,20 +560,24 @@ timerWorker.onerror = () => {
   sendCodeCooldown.value = 0
 }
 
+/** 生成随机头像 */
+const generateRandomAvatar = () => {
+  const avatarNum = Math.floor(Math.random() * 21) + 1
+  return avatarNum.toString().padStart(3, '0')
+}
+
 /** 无邮箱直接注册 */
 const handleDirectRegister = async () => {
   registerLoading.value = true
   try {
-    const avatarNum = Math.floor(Math.random() * 21) + 1
-    const avatarId = avatarNum.toString().padStart(3, '0')
-    info.avatar = avatarId
+    info.systemType = GENERAL_USER_SYSTEM_TYPE
+    info.avatar = generateRandomAvatar()
 
-    await MatrixAuthService.register(info.nickName, info.password)
+    const registerResult = await MatrixAuthService.register(info.nickName.trim(), info.password)
+    await finishRegistrationAndEnterHome(registerResult)
     window.$message.success(t('auth.register.messages.register_success'))
-
-    starTipsModal.value = localStorage.getItem('star') !== '1'
   } catch (error) {
-    window.$message.error(t('auth.register.messages.register_fail'))
+    window.$message.error(getErrorMessage(error, t('auth.register.messages.register_fail')))
   } finally {
     registerLoading.value = false
   }
@@ -569,37 +587,35 @@ const handleDirectRegister = async () => {
 const register = async () => {
   registerLoading.value = true
 
-  info.code = emailCode.value
   info.email = info.email.trim()
+  info.code = emailCode.value.trim()
+  info.confirmPassword = confirmPassword.value
 
   try {
-    const avatarNum = Math.floor(Math.random() * 21) + 1
-    const avatarId = avatarNum.toString().padStart(3, '0')
-    info.avatar = avatarId
+    info.systemType = GENERAL_USER_SYSTEM_TYPE
+    info.avatar = generateRandomAvatar()
 
-    info.confirmPassword = confirmPassword.value
+    if (emailSessionId.value && emailClientSecret.value && info.code) {
+      await MatrixAuthService.submitEmailToken(info.code, emailClientSecret.value, emailSessionId.value)
+    }
 
-    await MatrixAuthService.register(
-      info.nickName,
+    const registerResult = await MatrixAuthService.register(
+      info.nickName.trim(),
       info.password,
       emailSessionId.value || undefined,
       emailSessionId.value ? 'm.login.email.identity' : undefined,
-      emailCode.value || undefined
+      undefined,
+      emailClientSecret.value || undefined
     )
+    await finishRegistrationAndEnterHome(registerResult)
     window.$message.success(t('auth.register.messages.register_success'))
 
     emailCodeModal.value = false
-    starTipsModal.value = localStorage.getItem('star') !== '1'
   } catch (error) {
-    window.$message.error(t('auth.register.messages.register_fail'))
+    window.$message.error(getErrorMessage(error, t('auth.register.messages.register_fail')))
   } finally {
     registerLoading.value = false
   }
-}
-
-const handleStar = () => {
-  starTipsModal.value = false
-  localStorage.setItem('star', '1')
 }
 
 onMounted(async () => {

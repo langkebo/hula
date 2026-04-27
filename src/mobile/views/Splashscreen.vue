@@ -4,16 +4,16 @@
 </template>
 
 <script setup lang="ts">
-import { useSettingStore } from '@/stores/setting'
-import { useLogin } from '@/hooks/useLogin'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { invoke } from '@tauri-apps/api/core'
 
 const settingStore = useSettingStore()
 const router = useRouter()
-const { normalLogin } = useLogin()
+const { normalLogin } = useLoginFlow()
 
 const init = async () => {
-  if (settingStore.login.autoLogin) {
+  if (settingStore.autoLoginEnabled) {
     normalLogin('MOBILE', true, true)
   } else {
     router.push('/mobile/login')

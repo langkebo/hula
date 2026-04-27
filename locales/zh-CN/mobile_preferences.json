@@ -1,0 +1,18 @@
+{
+  "title": "通用偏好",
+  "message_section": "消息设置",
+  "send_key": "发送快捷键",
+  "message_confirm": "发送前确认",
+  "link_preview": "链接预览",
+  "emoji_convert": "表情符号转换",
+  "burn_section": "阅后即焚",
+  "burn_default": "默认启用阅后即焚",
+  "burn_duration": "默认焚毁时间",
+  "burn_countdown": "显示倒计时",
+  "thread_section": "线程设置",
+  "thread_auto_subscribe": "自动订阅线程",
+  "thread_show_in_room": "在房间中显示线程",
+  "privacy_section": "隐私设置",
+  "send_read_receipts": "发送已读回执",
+  "send_typing": "发送输入状态"
+}

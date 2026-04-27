@@ -93,5 +93,22 @@
     "request_received": "Secret friend request received",
     "accept": "Accept",
     "reject": "Reject"
+  },
+  "group": {
+    "title": "Friend Groups",
+    "search": "Search groups",
+    "empty": "No groups yet",
+    "create": "Create Group",
+    "name_placeholder": "Enter group name",
+    "member_count": "{count} members",
+    "rename": "Rename",
+    "delete": "Delete Group",
+    "create_success": "Group created",
+    "create_failed": "Failed to create group",
+    "rename_success": "Group renamed",
+    "rename_failed": "Failed to rename group",
+    "delete_success": "Group deleted",
+    "delete_failed": "Failed to delete group",
+    "load_failed": "Failed to load groups"
   }
 }

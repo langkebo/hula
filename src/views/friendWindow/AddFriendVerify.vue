@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full w-full bg-[--center-bg-color] select-none cursor-default">
+  <div class="h-full w-full bg-[--hula-surface-panel] select-none cursor-default">
     <!-- 窗口头部 -->
     <ActionBar
       class="absolute right-0 w-full z-999"
@@ -8,7 +8,7 @@
       :current-label="WebviewWindow.getCurrent().label" />
 
     <!-- 标题 -->
-    <p class="absolute-x-center h-fit pt-6px text-(13px [--text-color]) select-none cursor-default">
+    <p class="absolute-x-center h-fit pt-6px text-(13px [--hula-text-primary]) select-none cursor-default">
       {{ t('message.friend_verify.title') }}
     </p>
 
@@ -19,8 +19,8 @@
           <n-avatar round size="large" :src="avatarSrc" />
 
           <n-flex vertical :size="10">
-            <p class="text-[--text-color]">{{ userInfo.name }}</p>
-            <p class="text-(12px [--text-color])">
+            <p class="text-[--hula-text-primary]">{{ userInfo.name }}</p>
+            <p class="text-(12px [--hula-text-primary])">
               {{ t('message.friend_verify.account', { account: userInfo.account }) }}
             </p>
           </n-flex>
@@ -40,7 +40,7 @@
           type="textarea"
           :placeholder="t('message.friend_verify.placeholder')" />
 
-        <n-button class="mt-30px" color="#13987f" @click="addFriend">
+        <n-button class="mt-30px" color="var(--color-primary)" @click="addFriend">
           {{ t('message.friend_verify.send_btn') }}
         </n-button>
       </n-flex>
@@ -49,33 +49,24 @@
 </template>
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useCommon } from '@/hooks/useCommon.ts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useUserStore } from '@/stores/user.ts'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixContactService } from '@/services/matrix'
-import { useGroupStore } from '@/stores/group'
+import { countGraphemes } from '@/hooks/useCommon.ts'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+import { useFriends } from '@/composables/useFriends'
+
+const logger = createLogger('AddFriendVerify')
 
 const { t } = useI18n()
-const globalStore = useGlobalStore()
 const userStore = useUserStore()
-const groupStore = useGroupStore()
-const { countGraphemes } = useCommon()
 const requestMsgAutosize = { minRows: 3, maxRows: 3 }
-const userInfo = ref(groupStore.getUserInfo(globalStore.addFriendModalInfo.uid!)!)
-const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(userInfo.value!.avatar as string))
-const requestMsg = ref()
-
-watch(
-  () => globalStore.addFriendModalInfo.uid,
-  (newUid) => {
-    userInfo.value = groupStore.getUserInfo(newUid!)!
-  }
-)
+const { userInfo, avatarSrc, requestMsg, syncDefaultMessage, submitRequest } = useFriends({
+  defaultRequestMessage: computed(() => t('message.friend_verify.default_msg', { name: userStore.userInfo!.name }))
+})
 
 const addFriend = async () => {
-  await matrixContactService.sendAddFriendRequest(globalStore.addFriendModalInfo.uid as string, requestMsg.value)
+  const submitted = await submitRequest()
+  if (!submitted) return
   window.$message.success(t('message.friend_verify.toast_success'))
   setTimeout(async () => {
     await getCurrentWebviewWindow().close()
@@ -83,10 +74,10 @@ const addFriend = async () => {
 }
 
 onMounted(async () => {
-  console.log(userInfo.value)
+  logger.debug('userInfo', userInfo.value)
 
   await getCurrentWebviewWindow().show()
-  requestMsg.value = t('message.friend_verify.default_msg', { name: userStore.userInfo!.name })
+  syncDefaultMessage()
 })
 </script>
 

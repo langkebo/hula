@@ -38,9 +38,11 @@
 import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useUserMenu } from './useUserMenu'
-import { useUserStore } from '@/stores/user'
-import { useSettingStore } from '@/stores/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import defaultAvatarImg from '@/assets/img/win.png'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('UserMenuMobile')
 
 defineOptions({
   name: 'UserMenuMobile'
@@ -54,7 +56,7 @@ const { isOpen, menuSections, handleMenuItemClick } = useUserMenu()
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
 const defaultAvatar = computed(() => defaultAvatarImg)
 
-const showOnlineStatus = computed(() => settingStore.themes.pattern !== 'os')
+const showOnlineStatus = computed(() => settingStore.themePattern !== 'os')
 
 const onlineClass = computed(() => {
   return 'online'
@@ -62,10 +64,17 @@ const onlineClass = computed(() => {
 
 const iconMap: Record<string, string> = {
   home: 'mdi:home',
+  message: 'mdi:message-text-outline',
+  lock: 'mdi:lock-outline',
+  star: 'mdi:star-outline',
+  user: 'mdi:account-outline',
+  block: 'mdi:cancel',
+  delete: 'mdi:delete-outline',
   qrcode: 'mdi:qrcode',
   bell: 'mdi:bell',
   shield: 'mdi:shield',
   settings: 'mdi:cog',
+  device: 'mdi:devices',
   chat: 'mdi:chat',
   logout: 'mdi:logout'
 }
@@ -79,7 +88,7 @@ function handleItemClick(id: string) {
 }
 
 function handleThemeToggle() {
-  console.log('Theme toggle')
+  logger.debug('Theme toggle')
 }
 
 function handleTouchClick() {
@@ -103,15 +112,15 @@ function handleTouchClick() {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 2px solid var(--van-background, #fff);
+  border: 2px solid var(--avatar-border-color);
 }
 
 .online-indicator.online {
-  background-color: #52c41a;
+  background-color: var(--hula-status-online);
 }
 
 .online-indicator.offline {
-  background-color: #8c8c8c;
+  background-color: var(--hula-status-offline);
 }
 
 .menu-divider {
@@ -137,7 +146,7 @@ function handleTouchClick() {
 }
 
 .menu-item-danger :deep(.van-cell__title) {
-  color: #d5304f;
+  color: var(--hula-color-danger-500);
 }
 
 .menu-item-disabled {

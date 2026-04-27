@@ -3,7 +3,9 @@
  */
 import { createSharedComposable, tryOnScopeDispose, useOnline } from '@vueuse/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { useMatrixStore } from '@/stores/matrix'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('NetworkStatus')
 
 export type ConnectionStatus = 'unknown' | 'connected' | 'connecting' | 'disconnected' | 'error'
 
@@ -51,10 +53,10 @@ const useSharedNetworkStatus = createSharedComposable(() => {
   const initListeners = async () => {
     try {
       unlistenNetwork = await listen('network-status-changed', (event) => {
-        console.log('[NetworkStatus] 网络状态变化:', event.payload)
+        logger.debug('网络状态变化:', event.payload)
       })
     } catch (error) {
-      console.warn('[NetworkStatus] 无法设置网络监听器:', error)
+      logger.warn('无法设置网络监听器:', error)
     }
   }
 

@@ -7,11 +7,11 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave">
     <n-flex v-if="!isLoadingMore && isLast" justify="center" class="box-border absolute-x-center pt-10px">
-      <span class="text-(12px #909090)">以下是全部消息内容</span>
+      <span class="text-(12px [--hula-text-tertiary])">{{ t('virtualList.allMessagesLoaded') }}</span>
     </n-flex>
     <n-flex v-if="isLoadingMore && !isLast" justify="center" class="box-border absolute-x-center pt-10px">
       <img class="size-16px" src="@/assets/img/loading.svg" alt="" />
-      <span class="text-(14px #909090)">加载中</span>
+      <span class="text-(12px [--hula-text-tertiary])">{{ t('virtualList.loading') }}</span>
     </n-flex>
     <div ref="phantomRef" class="virtual-list-phantom"></div>
     <div ref="contentRef" class="virtual-list-content">
@@ -28,8 +28,11 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const props = defineProps<{
+  // biome-ignore lint/suspicious/noExplicitAny: generic list receives heterogeneous items from callers with their own types
   items: any[]
   estimatedItemHeight?: number
   buffer?: number
@@ -47,6 +50,8 @@ const emit = defineEmits<{
   visibleItemsChange: [ids: string[]]
 }>()
 
+const { t } = useI18n()
+
 // 常量定义
 const DEFAULT_ESTIMATED_HEIGHT = 80 // 默认预估的每项高度
 const BUFFER_SIZE = props.buffer || 5 // 上下缓冲区域的数量
@@ -56,6 +61,9 @@ const LOADING_OFFSET = 26 // 加载中需要的偏移量(26px是加载动画的�
 const ESTIMATED_ITEM_HEIGHT = props.estimatedItemHeight || DEFAULT_ESTIMATED_HEIGHT // 每项的预估高度
 const SCROLL_THRESHOLD = 26 // 滚动到顶部的阈值，用于触发加载更多
 const DOM_CLEANUP_INTERVAL = 60000 // DOM清理间隔，默认1分钟
+
+// 定时器管理器
+const timerManager = useTimerManager()
 
 // 响应式引用
 const containerRef = ref<HTMLElement | null>(null) // 容器元素引用
@@ -318,10 +326,10 @@ const cleanupInvisibleDOMNodes = () => {
 // 定时清理DOM节点
 const startDOMCleanupTimer = () => {
   if (cleanupTimerId !== null) {
-    clearInterval(cleanupTimerId)
+    timerManager.clearInterval(cleanupTimerId)
   }
 
-  cleanupTimerId = window.setInterval(() => {
+  cleanupTimerId = timerManager.setInterval(() => {
     cleanupInvisibleDOMNodes()
   }, DOM_CLEANUP_INTERVAL)
 }
@@ -638,7 +646,7 @@ defineExpose<VirtualListExpose>({
     // 立即执行一次；仅在平滑滚动时再补偿一次
     executeScroll()
     if (options.behavior === 'smooth') {
-      setTimeout(executeScroll, 100)
+      timerManager.setTimeout(executeScroll, 100)
     }
   },
   getContainer: () => containerRef.value
@@ -670,7 +678,7 @@ defineExpose<VirtualListExpose>({
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(144, 144, 144, 0.3);
+    background-color: color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent);
     border-radius: 3px;
     transition-property: opacity, background-color;
     transition-duration: 0.3s;
@@ -679,7 +687,7 @@ defineExpose<VirtualListExpose>({
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(144, 144, 144, 0.5);
+    background-color: color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent);
   }
 
   &::-webkit-scrollbar-track {

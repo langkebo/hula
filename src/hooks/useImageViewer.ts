@@ -2,12 +2,14 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { MsgEnum } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
-import { useChatStore } from '@/stores/chat'
-import { useFileDownloadStore } from '@/stores/fileDownload'
-import { useImageViewer as useImageViewerStore } from '@/stores/imageViewer'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
+import { useImageViewer as useImageViewerStore } from '@/stores/domains/widget/imageViewer'
 import type { FilesMeta } from '@/services/types'
 import { extractFileName } from '@/utils/Formatting'
 import { getFilesMeta } from '@/utils/PathUtil'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('ImageViewer')
 
 type WorkerResponse = {
   success: boolean
@@ -117,7 +119,7 @@ export const useImageViewer = () => {
         }
         return null
       } catch (error) {
-        console.error('检查本地图片失败:', error)
+        logger.error('检查本地图片失败:', error)
         return null
       }
     }
@@ -153,7 +155,7 @@ export const useImageViewer = () => {
       const refreshedStatus = fileDownloadStore.getFileStatus(url)
       return await validatePath(refreshedStatus.absolutePath)
     } catch (error) {
-      console.error('重新检查本地图片失败:', error)
+      logger.error('重新检查本地图片失败:', error)
       return null
     }
   }
@@ -164,7 +166,7 @@ export const useImageViewer = () => {
       try {
         return convertFileSrc(localPath)
       } catch (error) {
-        console.error('转换本地图片路径失败:', error)
+        logger.error('转换本地图片路径失败:', error)
       }
     }
     return url
@@ -188,7 +190,7 @@ export const useImageViewer = () => {
       try {
         return convertFileSrc(localPath)
       } catch (error) {
-        console.error('转换本地媒体路径失败:', error)
+        logger.error('转换本地媒体路径失败:', error)
       }
     }
     return await getDisplayUrl(url)
@@ -204,7 +206,7 @@ export const useImageViewer = () => {
       imageViewerStore.updateImageAt(index, displayUrl)
       imageViewerStore.updateSingleImageSource(displayUrl)
     } catch (error) {
-      console.error('替换本地图片路径失败:', error)
+      logger.error('替换本地图片路径失败:', error)
     }
   }
 
@@ -217,7 +219,7 @@ export const useImageViewer = () => {
         }
       })
       .catch((error) => {
-        console.error('图片下载失败:', error)
+        logger.error('图片下载失败:', error)
       })
   }
 
@@ -366,7 +368,7 @@ export const useImageViewer = () => {
         Math.round(windowHeight)
       )
     } catch (error) {
-      console.error('打开图片查看器失败:', error)
+      logger.error('打开图片查看器失败:', error)
     }
   }
 

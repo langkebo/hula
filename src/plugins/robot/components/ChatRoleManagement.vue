@@ -218,8 +218,14 @@ import type { FormRules, FormInst } from 'naive-ui'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { useMitt } from '@/hooks/useMitt'
-import { useUserStore } from '@/stores/user'
-import { matrixChatRoleService, matrixModelService } from '@/services/matrix'
+import { useUserStore } from '@/stores/domains/user/user'
+import { chatRoleService, modelService, type ChatRole, type AIModel } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+import { useI18n } from 'vue-i18n'
+
+const logger = createLogger('ChatRoleManagement')
+const timerManager = useTimerManager()
 
 const showModal = defineModel<boolean>({ default: false })
 const emit = defineEmits<{
@@ -229,13 +235,13 @@ const emit = defineEmits<{
 const userStore = useUserStore()
 
 // 检查当前用户是否是角色创建人
-const isRoleCreator = (role: any) => {
+const isRoleCreator = (role: ChatRole) => {
   return userStore.userInfo?.uid === role.userId
 }
 
 // 角色列表
 const loading = ref(false)
-const roleList = ref<any[]>([])
+const roleList = ref<ChatRole[]>([])
 const pagination = ref({
   pageNo: 1,
   pageSize: 10,
@@ -244,7 +250,7 @@ const pagination = ref({
 
 // 编辑相关
 const showEditModal = ref(false)
-const editingRole = ref<any>(null)
+const editingRole = ref<ChatRole | null>(null)
 const submitting = ref(false)
 const formRef = ref<FormInst>()
 
@@ -261,8 +267,10 @@ const formData = ref({
   status: 0
 })
 
+type SelectOption = { label: string; value: string | number }
+
 // 类别选项（默认选项）
-const categoryOptions = ref<any[]>([
+const categoryOptions = ref<SelectOption[]>([
   { label: 'AI助手', value: 'AI助手' },
   { label: '写作', value: '写作' },
   { label: '编程开发', value: '编程开发' },
@@ -276,7 +284,7 @@ const categoryOptions = ref<any[]>([
 ])
 
 // 模型选项
-const modelOptions = ref<any[]>([])
+const modelOptions = ref<SelectOption[]>([])
 
 // 状态选项
 const statusOptions = [
@@ -295,7 +303,7 @@ const formRules: FormRules = {
       type: 'number',
       message: '请输入排序值',
       trigger: 'blur',
-      validator: (_rule: any, value: any) => {
+      validator: (_rule: unknown, value: unknown) => {
         return value !== undefined && value !== null && value !== ''
       }
     }
@@ -308,7 +316,7 @@ const formRules: FormRules = {
       type: 'boolean',
       message: '请选择是否公开',
       trigger: 'change',
-      validator: (_rule: any, value: any) => {
+      validator: (_rule: unknown, value: unknown) => {
         return value !== undefined && value !== null
       }
     }
@@ -319,7 +327,7 @@ const formRules: FormRules = {
       type: 'number',
       message: '请选择状态',
       trigger: 'change',
-      validator: (_rule: any, value: any) => {
+      validator: (_rule: unknown, value: unknown) => {
         return value !== undefined && value !== null && value !== ''
       }
     }
@@ -352,25 +360,26 @@ const handleCrop = async (cropBlob: Blob) => {
 // 加载类别列表
 const loadCategoryList = async () => {
   try {
-    const data = await matrixChatRoleService.categoryList()
+    const data = await chatRoleService.categoryList()
     if (data && data.length > 0) {
       categoryOptions.value = data
     }
   } catch (error) {
-    console.error('加载角色类别列表失败:', error)
+    logger.error('加载角色类别列表失败:', error)
   }
 }
 
 // 加载模型列表
 const loadModelList = async () => {
   try {
-    const data = await matrixModelService.page({ pageNo: 1, pageSize: 100 })
-    modelOptions.value = (data.list || []).map((item: any) => ({
+    const data = await modelService.page({ pageNo: 1, pageSize: 100 })
+    modelOptions.value = (data.list || []).map((item: AIModel) => ({
       label: item.name,
       value: item.id
     }))
   } catch (error) {
-    console.error('加载模型列表失败:', error)
+    logger.error('加载模型列表失败:', error)
+    window.$message.error('加载模型列表失败')
   }
 }
 
@@ -378,14 +387,14 @@ const loadModelList = async () => {
 const loadRoleList = async () => {
   loading.value = true
   try {
-    const data = await matrixChatRoleService.page({
+    const data = await chatRoleService.page({
       pageNo: pagination.value.pageNo,
       pageSize: pagination.value.pageSize
     })
     roleList.value = data.list || []
     pagination.value.total = data.total || 0
   } catch (error) {
-    console.error('加载角色列表失败:', error)
+    logger.error('加载角色列表失败:', error)
     window.$message.error('加载角色列表失败')
   } finally {
     loading.value = false
@@ -416,7 +425,7 @@ const handleAdd = () => {
 }
 
 // 编辑角色
-const handleEdit = (role: any) => {
+const handleEdit = (role: ChatRole) => {
   editingRole.value = role
   formData.value = {
     modelId: role.modelId || '',
@@ -438,29 +447,20 @@ const handleSubmit = async () => {
     await formRef.value?.validate()
     submitting.value = true
 
-    const submitData: any = {
-      name: formData.value.name,
-      avatar: formData.value.avatar,
-      category: formData.value.category,
-      sort: formData.value.sort,
-      description: formData.value.description,
-      systemMessage: formData.value.systemMessage,
-      publicStatus: formData.value.publicStatus,
-      status: formData.value.status
-    }
-
-    if (formData.value.modelId) {
-      submitData.modelId = formData.value.modelId
+    const submitData: Partial<ChatRole> = {
+      ...formData.value
     }
 
     if (editingRole.value) {
       // 更新
-      submitData.id = editingRole.value.id
-      await matrixChatRoleService.update(submitData)
+      await chatRoleService.update({
+        id: editingRole.value.id,
+        ...submitData
+      })
       window.$message.success('角色更新成功')
     } else {
       // 创建
-      await matrixChatRoleService.create(submitData)
+      await chatRoleService.create(submitData as ChatRole)
       window.$message.success('角色创建成功')
     }
 
@@ -471,11 +471,11 @@ const handleSubmit = async () => {
     emit('refresh')
     // 通知左侧刷新角色状态
     useMitt.emit('refresh-roles')
-  } catch (error: any) {
-    if (error?.errors) {
+  } catch (error) {
+    if ((error as { errors?: unknown })?.errors) {
       return
     }
-    console.error('保存角色失败:', error)
+    logger.error('保存角色失败:', error)
     window.$message.error('保存角色失败')
   } finally {
     submitting.value = false
@@ -502,14 +502,14 @@ const resetForm = () => {
 // 删除角色
 const handleDelete = async (id: string) => {
   try {
-    await matrixChatRoleService.delete({ id })
+    await chatRoleService.delete({ id })
     window.$message.success('角色删除成功')
     loadRoleList()
     emit('refresh')
     // 通知左侧刷新角色状态
     useMitt.emit('refresh-roles')
   } catch (error) {
-    console.error('删除角色失败:', error)
+    logger.error('删除角色失败:', error)
     window.$message.error('删除角色失败')
   }
 }
@@ -530,7 +530,7 @@ watch(showEditModal, (val) => {
     loadModelList()
   } else {
     // 延迟重置，避免关闭动画时看到数据清空
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       resetForm()
     }, 300)
   }
@@ -549,7 +549,7 @@ watch(showEditModal, (val) => {
 }
 
 .role-card {
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   padding: 16px;
   background: var(--bg-color);
@@ -567,7 +567,7 @@ watch(showEditModal, (val) => {
     .role-name {
       font-size: 16px;
       font-weight: 500;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
     }
 
     .role-meta {

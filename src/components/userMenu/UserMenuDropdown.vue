@@ -39,7 +39,7 @@ import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import UserMenuHeader from './UserMenuHeader.vue'
 import { useUserMenu } from './useUserMenu'
-import type { MenuPosition } from '@/stores/userMenu'
+import type { MenuPosition } from '@/stores/domains/user/userMenu'
 
 defineOptions({
   name: 'UserMenuDropdown'
@@ -66,10 +66,17 @@ const { menuSections } = useUserMenu()
 
 const iconMap: Record<string, string> = {
   home: 'mdi:home',
+  message: 'mdi:message-text-outline',
+  lock: 'mdi:lock-outline',
+  star: 'mdi:star-outline',
+  user: 'mdi:account-outline',
+  block: 'mdi:cancel',
+  delete: 'mdi:delete-outline',
   qrcode: 'mdi:qrcode',
   bell: 'mdi:bell',
   shield: 'mdi:shield',
   settings: 'mdi:cog',
+  device: 'mdi:devices',
   chat: 'mdi:chat',
   logout: 'mdi:logout'
 }

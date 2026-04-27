@@ -81,12 +81,26 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
+type MobileFile = {
+  id: string
+  name: string
+  type: string
+  size: number
+  time: number
+  url: string
+}
+
+type FileAction = {
+  name: string
+  color?: string
+}
+
 const searchQuery = ref('')
 const activeTab = ref(0)
 const showOptions = ref(false)
-const selectedFile = ref<any>(null)
+const selectedFile = ref<MobileFile | null>(null)
 
-const files = ref([
+const files = ref<MobileFile[]>([
   { id: '1', name: '项目文档.pdf', type: 'document', size: 2048000, time: Date.now() - 3600000, url: '' },
   { id: '2', name: '会议记录.docx', type: 'document', size: 1024000, time: Date.now() - 7200000, url: '' },
   {
@@ -147,21 +161,21 @@ function formatTime(timestamp: number): string {
   return date.toLocaleDateString()
 }
 
-function handleFileClick(file: any) {
+function handleFileClick(file: MobileFile) {
   showToast(t('mobile_files.opening', { name: file.name }))
 }
 
-function showFileOptions(file: any) {
+function showFileOptions(file: MobileFile) {
   selectedFile.value = file
   showOptions.value = true
 }
 
-function onActionSelect(action: any) {
+function onActionSelect(action: FileAction) {
   if (action.name === t('mobile_files.actions.delete')) {
-    files.value = files.value.filter((f) => f.id !== selectedFile.value.id)
+    files.value = files.value.filter((f) => f.id !== selectedFile.value?.id)
     showToast(t('mobile_files.deleted'))
   } else {
-    showToast(`${action.name}: ${selectedFile.value.name}`)
+    showToast(`${action.name}: ${selectedFile.value?.name ?? ''}`)
   }
 }
 </script>

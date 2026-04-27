@@ -1,6 +1,8 @@
 import { useThrottleFn } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { isMobile } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('VoiceDragControl')
 
 /**
  * 拖拽控制器返回接口
@@ -141,7 +143,7 @@ export const useVoiceDragControl = (
         document.addEventListener('mouseleave', handleDragEnd)
       }
     } catch (error) {
-      console.error('拖拽开始处理错误:', error)
+      logger.error('拖拽开始处理错误:', error)
       // 错误时恢复页面状态
       restoreMobilePageState()
     }
@@ -156,7 +158,7 @@ export const useVoiceDragControl = (
         // 检查是否超过拖拽阈值
         const clientX = 'touches' in event ? event.touches[0]?.clientX : event.clientX
         if (clientX === undefined) {
-          console.warn('无法获取移动位置')
+          logger.warn('无法获取移动位置')
           return
         }
 
@@ -172,7 +174,7 @@ export const useVoiceDragControl = (
             try {
               onPlayToggle(false)
             } catch (pauseError) {
-              console.warn('暂停播放失败:', pauseError)
+              logger.warn('暂停播放失败:', pauseError)
             }
           }
         } else {
@@ -186,14 +188,14 @@ export const useVoiceDragControl = (
       // 计算当前位置
       const clientX = 'touches' in event ? event.touches[0]?.clientX : event.clientX
       if (clientX === undefined) {
-        console.warn('无法获取拖拽位置')
+        logger.warn('无法获取拖拽位置')
         return
       }
 
       const targetTime = calculateTimeFromPosition(clientX)
       previewTime.value = enhancedClampTime(targetTime)
     } catch (error) {
-      console.error('拖拽移动处理错误:', error)
+      logger.error('拖拽移动处理错误:', error)
       // 错误时结束拖拽
       handleDragEnd()
     }
@@ -224,15 +226,15 @@ export const useVoiceDragControl = (
           // 如果拖拽前在播放，则恢复播放
           if (wasPlayingBeforeDrag.value) {
             onPlayToggle(true).catch((playError) => {
-              console.error('恢复播放失败:', playError)
+              logger.error('恢复播放失败:', playError)
             })
           }
         } catch (seekError) {
-          console.error('设置播放位置失败:', seekError)
+          logger.error('设置播放位置失败:', seekError)
         }
       }
     } catch (error) {
-      console.error('拖拽结束处理错误:', error)
+      logger.error('拖拽结束处理错误:', error)
       // 确保在错误情况下也能恢复页面状态
       restoreMobilePageState()
     } finally {

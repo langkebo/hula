@@ -1,0 +1,42 @@
+[unplugin-vue-components] component "Screenshot"(/Users/ljf/Desktop/hu/hula/src/components/common/Screenshot.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "Screenshot"(/Users/ljf/Desktop/hu/hula/src/components/common/Screenshot.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "ChatHeader"(/Users/ljf/Desktop/hu/hula/src/components/rightBox/chatBox/ChatHeader.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "ChatHeader"(/Users/ljf/Desktop/hu/hula/src/components/rightBox/chatBox/ChatHeader.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "Screenshot"(/Users/ljf/Desktop/hu/hula/src/components/common/Screenshot.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "Screenshot"(/Users/ljf/Desktop/hu/hula/src/components/common/Screenshot.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "ChatHeader"(/Users/ljf/Desktop/hu/hula/src/components/rightBox/chatBox/ChatHeader.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "ChatHeader"(/Users/ljf/Desktop/hu/hula/src/components/rightBox/chatBox/ChatHeader.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "Screenshot"(/Users/ljf/Desktop/hu/hula/src/components/common/Screenshot.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "Screenshot"(/Users/ljf/Desktop/hu/hula/src/components/common/Screenshot.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "ChatHeader"(/Users/ljf/Desktop/hu/hula/src/components/rightBox/chatBox/ChatHeader.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "ChatHeader"(/Users/ljf/Desktop/hu/hula/src/components/rightBox/chatBox/ChatHeader.vue) has naming conflicts with other components, ignored.
+Loaded  vitest@4.1.2  and  @vitest/browser@4.0.18 .
+Running mixed versions is not supported and may lead into bugs
+Update your dependencies and make sure the versions match.
+Loaded  vitest@4.1.2  and  @vitest/browser@4.0.18 .
+Running mixed versions is not supported and may lead into bugs
+Update your dependencies and make sure the versions match.
+[unplugin-vue-components] component "Screenshot"(/Users/ljf/Desktop/hu/hula/src/components/common/Screenshot.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "ChatHeader"(/Users/ljf/Desktop/hu/hula/src/components/rightBox/chatBox/ChatHeader.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "Screenshot"(/Users/ljf/Desktop/hu/hula/src/components/common/Screenshot.vue) has naming conflicts with other components, ignored.
+[unplugin-vue-components] component "ChatHeader"(/Users/ljf/Desktop/hu/hula/src/components/rightBox/chatBox/ChatHeader.vue) has naming conflicts with other components, ignored.
+(node:61021) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61021) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61026) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61026) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61046) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61046) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61060) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61060) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61048) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61048) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)

@@ -1,24 +1,24 @@
 <template>
   <!-- 底部栏 -->
   <main
-    :class="[isMobile() ? 'flex-col w-full' : 'border-t-(1px solid [--right-chat-footer-line-color])']"
+    :class="[isMobile() ? 'flex-col w-full' : 'border-t-(1px solid [--hula-border-default])']"
     class="h-full flex flex-col relative">
     <!-- 添加遮罩层 -->
     <div
       v-if="isSingleChat && !isFriend"
       :style="{ height: `${footerHeight}px` }"
-      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto light:bg-[rgba(255,255,255,0.1)] dark:bg-[rgba(33,33,33,0.1)]">
+      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--hula-surface-overlay]">
       <n-flex align="center" justify="center" class="pb-60px">
         <svg class="size-24px">
           <use href="#cloudError"></use>
         </svg>
-        <span class="text-(14px [--chat-text-color])">{{ t('editor.relation.not_friends') }}</span>
+        <span class="text-(14px [--hula-text-tertiary])">{{ t('editor.relation.not_friends') }}</span>
       </n-flex>
     </div>
 
     <ChatMsgMultiChoose v-if="chatStore.isMsgMultiChoose" />
 
-    <div v-if="!chatStore.isMsgMultiChoose" class="color-[--icon-color] flex flex-col flex-1 min-h-0">
+    <div v-if="!chatStore.isMsgMultiChoose" class="color-[--hula-text-secondary] flex flex-col flex-1 min-h-0">
       <!-- 输入框顶部选项栏 -->
       <n-flex
         v-if="!isMobile()"
@@ -35,11 +35,11 @@
             :disabled="chatStore.isMsgMultiChoose"
             style="
               padding: 0;
-              background: var(--bg-emoji);
+              background: var(--hula-surface-panel);
               backdrop-filter: blur(10px);
               -webkit-backdrop-filter: blur(10px);
-              box-shadow: 2px 2px 12px 2px var(--box-shadow-color);
-              border: 1px solid var(--box-shadow-color);
+              box-shadow: var(--hula-shadow-md);
+              border: 1px solid var(--hula-border-default);
               width: auto;
             ">
             <template #trigger>
@@ -57,7 +57,7 @@
                   </svg>
                 </template>
                 <div v-if="recentEmojis.length > 0" class="p-4px">
-                  <div class="text-xs text-gray-500 mb-4px">最近使用</div>
+                  <div class="text-xs text-[--hula-text-tertiary] mb-4px">最近使用</div>
                   <div class="flex flex-wrap gap-8px max-w-212px">
                     <div
                       v-for="(emoji, index) in recentEmojis"
@@ -86,11 +86,11 @@
             <n-popover
               style="
                 padding: 0;
-                background: var(--bg-emoji);
+                background: var(--hula-surface-panel);
                 backdrop-filter: blur(10px);
                 -webkit-backdrop-filter: blur(10px);
-                box-shadow: 2px 2px 12px 2px var(--box-shadow-color);
-                border: 1px solid var(--box-shadow-color);
+                box-shadow: var(--hula-shadow-md);
+                border: 1px solid var(--hula-border-default);
               "
               trigger="hover"
               :show-arrow="false"
@@ -113,7 +113,7 @@
                     </svg>
                     <p>{{ t('editor.screenshot') }}</p>
                   </n-flex>
-                  <p class="text-(12px #909090)">{{ settingStore.shortcuts.screenshot }}</p>
+                  <p class="text-(12px --hula-text-tertiary)">{{ settingStore.screenshotShortcut }}</p>
                 </n-flex>
 
                 <n-flex
@@ -122,7 +122,7 @@
                   justify="space-between"
                   @click="isConceal = !isConceal">
                   <n-checkbox v-model:checked="isConceal" @click.stop />
-                  <p class="text-(12px --chat-text-color)">{{ t('editor.screenshot_hide_curr_window') }}</p>
+                  <p class="text-(12px [--hula-text-primary])">{{ t('editor.screenshot_hide_curr_window') }}</p>
                 </n-flex>
               </div>
             </n-popover>
@@ -158,26 +158,26 @@
             <span>{{ t('editor.voice') }}</span>
           </n-popover>
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
-          <template #trigger>
-            <svg @click="showLocationModal = true" class="mr-18px">
-              <use href="#local"></use>
-            </svg>
-          </template>
-          <span>{{ t('editor.location') }}</span>
-        </n-popover>
+            <template #trigger>
+              <svg @click="showLocationModal = true" class="mr-18px">
+                <use href="#local"></use>
+              </svg>
+            </template>
+            <span>{{ t('editor.location') }}</span>
+          </n-popover>
 
-        <n-popover trigger="hover" :show-arrow="false" placement="bottom">
-          <template #trigger>
-            <svg
-              :class="{ 'text-[--primary-color]': isBurnAfterRead }"
-              @click="toggleBurnAfterRead"
-              class="mr-18px cursor-pointer">
-              <use href="#timer"></use>
-            </svg>
-          </template>
-          <span>{{ t('editor.burn_after_read') }}</span>
-        </n-popover>
-      </n-flex>
+          <n-popover trigger="hover" :show-arrow="false" placement="bottom">
+            <template #trigger>
+              <svg
+                :class="{ 'text-[--hula-color-primary-500]': burnAfterReadEnabled }"
+                @click="toggleBurnAfterRead"
+                class="mr-18px cursor-pointer">
+                <use href="#timer"></use>
+              </svg>
+            </template>
+            <span>{{ t('editor.burn_after_read') }}</span>
+          </n-popover>
+        </n-flex>
 
         <n-popover trigger="hover" :show-arrow="false" placement="bottom">
           <template #trigger>
@@ -238,18 +238,23 @@ import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import type { FriendItem, SessionItem } from '@/services/types'
-import { useChatStore } from '@/stores/chat'
-import { useContactStore } from '@/stores/contacts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useHistoryStore } from '@/stores/history'
-import { useSettingStore } from '@/stores/setting'
-import { useEmojiStore } from '@/stores/emoji'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useHistoryStore } from '@/stores/domains/chat/history'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useEmojiStore } from '@/stores/domains/chat/emoji'
+import type { LocationData } from '@/types/common'
 import FileUtil from '@/utils/FileUtil'
 import { extractFileName, getMimeTypeFromExtension } from '@/utils/Formatting'
-import { isMac, isMobile } from '@/utils/PlatformConstants'
+import { isMobile } from '@/utils/PlatformConstants'
 import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
+import type { VoiceRecordPayload } from '@/components/rightBox/VoiceRecorder.vue'
 
+const logger = createLogger('ChatFooter')
 const { t } = useI18n()
 // 移动端组件条件导入
 const More = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/chat-room/panel/More.vue')) : void 0
@@ -273,15 +278,29 @@ const chatStore = useChatStore()
 const settingStore = useSettingStore()
 const emojiStore = useEmojiStore()
 const { handleScreenshot } = useGlobalShortcut()
-const MsgInputRef = ref()
-const msgInputDom = ref<HTMLInputElement | null>(null)
+type MsgInputInstance = {
+  messageInputDom: HTMLElement
+  showFileModal: (files: unknown[]) => void
+  sendEmojiDirect: (serverUrl: string) => Promise<void>
+  focus: () => void
+  getLastEditRange: () => SelectionRange | null
+  updateSelectionRange: () => void
+  handleLocationSelected: (locationData: LocationData) => Promise<void>
+  sendVoiceDirect: (voiceData: VoiceRecordPayload) => Promise<void>
+  sendFilesDirect: (files: File[]) => Promise<void>
+  isVoiceMode?: boolean
+}
+
+const MsgInputRef = ref<MsgInputInstance | null>(null)
+const msgInputDom = ref<HTMLElement | null>(null)
 const emojiShow = ref(false)
 const recentlyTip = ref(false)
 const showLocationModal = ref(false)
-const isBurnAfterRead = ref(false)
+const burnAfterReadEnabled = computed(() => burnAfterRead.isRoomBurnEnabled())
+const burnAfterRead = useBurnAfterRead()
 
 const isConceal = computed({
-  get: () => settingStore.screenshot.isConceal,
+  get: () => settingStore.screenshotConcealEnabled,
   set: (value: boolean) => settingStore.setScreenshotConceal(value)
 })
 const recentEmojis = computed(() => {
@@ -386,7 +405,7 @@ watch(emojiShow, (newValue) => {
 // 文件选择（不限制类型）
 const handleFileOpen = async () => {
   const filesData = await FileUtil.openAndCopyFile()
-  if (!filesData) return
+  if (!filesData || !MsgInputRef.value) return
   // 使用processFiles方法进行文件类型验证
   await processFiles(filesData.files, MsgInputRef.value.messageInputDom, MsgInputRef.value?.showFileModal)
 }
@@ -418,6 +437,7 @@ const handleImageOpen = async () => {
 
     // 将所有图片插入到输入框
     for (const file of files) {
+      if (!MsgInputRef.value) break
       await imgPaste(file, MsgInputRef.value.messageInputDom)
     }
   }
@@ -430,14 +450,14 @@ const sendEmojiWithDebounce = useDebounceFn((payload: EmojiUrlPayload) => {
   try {
     // 不等待发送完成，立即返回（避免卡顿）
     MsgInputRef.value?.sendEmojiDirect(payload.serverUrl).catch((error: unknown) => {
-      console.error('[ChatFooter] 发送表情包失败:', error)
+      logger.error('发送表情包失败:', error)
       window.$message?.error?.('发送表情包失败')
     })
 
     // 添加到最近使用表情列表
     updateRecentEmojis(payload.serverUrl)
   } catch (error) {
-    console.error('[ChatFooter] 发送表情包失败:', error)
+    logger.error('发送表情包失败:', error)
     window.$message?.error?.('发送表情包失败')
   }
 }, 200)
@@ -455,8 +475,8 @@ const emojiHandle = async (item: string | EmojiUrlPayload, type: 'emoji' | 'emoj
     return
   }
 
-  const isEmojiUrlPayload = (value: any): value is EmojiUrlPayload =>
-    value && typeof value === 'object' && typeof value.serverUrl === 'string'
+  const isEmojiUrlPayload = (value: unknown): value is EmojiUrlPayload =>
+    value !== null && typeof value === 'object' && typeof (value as { serverUrl?: unknown }).serverUrl === 'string'
 
   // 移动端且是表情包URL时，使用防抖发送（发送服务端URL）
   if (isMobile() && type === 'emoji-url') {
@@ -472,7 +492,7 @@ const emojiHandle = async (item: string | EmojiUrlPayload, type: 'emoji' | 'emoj
   MsgInputRef.value?.focus()
 
   // 尝试获取最后的编辑范围
-  let lastEditRange: SelectionRange | null = MsgInputRef.value?.getLastEditRange()
+  let lastEditRange: SelectionRange | null = MsgInputRef.value?.getLastEditRange() ?? null
 
   // 验证选区是否在输入框内
   const isRangeInInput = (range: Range | null): boolean => {
@@ -585,22 +605,26 @@ const handleVoiceRecord = () => {
 }
 
 // 处理位置选择
-const handleLocationSelected = async (locationData: any) => {
+const handleLocationSelected = async (locationData: LocationData) => {
   try {
-    await MsgInputRef.value.handleLocationSelected(locationData)
+    await MsgInputRef.value?.handleLocationSelected(locationData)
     showLocationModal.value = false
   } catch (error) {
-    console.error('发送位置消息失败:', error)
+    logger.error('发送位置消息失败:', error)
   }
 }
 
 // 切换阅后即焚状态
-const toggleBurnAfterRead = () => {
-  isBurnAfterRead.value = !isBurnAfterRead.value
-  if (isBurnAfterRead.value) {
-    window.$message.success(t('editor.burn_after_read_enabled'))
-  } else {
-    window.$message.info(t('editor.burn_after_read_disabled'))
+const toggleBurnAfterRead = async () => {
+  try {
+    await burnAfterRead.toggleRoomBurn()
+    if (burnAfterReadEnabled.value) {
+      window.$message.success(t('editor.burn_after_read_enabled'))
+    } else {
+      window.$message.info(t('editor.burn_after_read_disabled'))
+    }
+  } catch {
+    window.$message.error(t('editor.burn_after_read_disabled'))
   }
 }
 
@@ -666,11 +690,11 @@ const handleMobileVoiceCancel = () => {
 }
 
 /** 发送语音消息 */
-const handleMobileVoiceSend = async (voiceData: any) => {
+const handleMobileVoiceSend = async (voiceData: VoiceRecordPayload) => {
   try {
     await MsgInputRef.value?.sendVoiceDirect(voiceData)
   } catch (error) {
-    console.error('发送语音失败', error)
+    logger.error('发送语音失败', error)
   }
   // 发送后关闭面板
   handleMobileVoiceCancel()
@@ -681,7 +705,7 @@ const handleMoreSendFiles = async (files: File[]) => {
   try {
     await MsgInputRef.value?.sendFilesDirect(files)
   } catch (error) {
-    console.error('移动端发送文件失败:', error)
+    logger.error('移动端发送文件失败:', error)
     window.$message?.error?.('发送文件失败')
   }
 }
@@ -750,7 +774,7 @@ onUnmounted(() => {
     cursor: pointer;
 
     &:hover {
-      color: #13987f;
+      color: var(--hula-color-primary-500);
     }
   }
 
@@ -766,7 +790,7 @@ onUnmounted(() => {
 .resize-indicator {
   width: 40px;
   height: 3px;
-  background: #909090;
+  background: var(--hula-text-tertiary);
   border-radius: 2px;
   opacity: 0.3;
   transition: all 0.2s ease;
@@ -780,7 +804,7 @@ onUnmounted(() => {
     transform: translateX(-50%);
     width: 20px;
     height: 1px;
-    background: var(--icon-color, #666);
+    background: var(--hula-text-secondary);
     border-radius: 1px;
     opacity: 0.5;
   }
@@ -793,20 +817,31 @@ onUnmounted(() => {
     transform: translateX(-50%);
     width: 20px;
     height: 1px;
-    background: var(--icon-color, #666);
+    background: var(--hula-text-secondary);
     border-radius: 1px;
     opacity: 0.5;
   }
 }
 
 .footer-item {
-  @apply flex-col-y-center gap-4px px-6px py-8px min-w-160px box-border size-fit select-none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 8px;
+  min-width: 160px;
+  box-sizing: border-box;
+  width: fit-content;
+  height: fit-content;
+  user-select: none;
 
   .group {
-    @apply px-4px py-6px rounded-4px;
+    padding: 4px 6px;
+    border-radius: 4px;
 
     &:hover {
-      background-color: var(--emoji-hover);
+      background-color: var(--hula-fill-hover);
 
       svg {
         animation: twinkle 0.3s ease-in-out;
@@ -825,7 +860,7 @@ onUnmounted(() => {
 .panel-container {
   width: 100%;
   overflow: hidden;
-  background-color: var(--bg-emoji, #f5f5f5);
+  background-color: var(--hula-surface-panel-muted);
   display: flex;
   flex-direction: column;
   transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);

@@ -1,5 +1,5 @@
 <template>
-  <van-config-provider :theme="settingStore.themes.content === ThemeEnum.DARK ? 'dark' : 'light'" class="h-full">
+  <van-config-provider :theme="settingStore.themeContent === ThemeEnum.DARK ? 'dark' : 'light'" class="h-full">
     <div
       class="h-full flex flex-col box-border"
       :class="{
@@ -21,21 +21,24 @@
 </template>
 
 <script setup lang="ts">
+import { createLogger } from '@/utils/Logger'
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
-import type { MessageType } from '@/stores/chat'
+import type { MessageType } from '@/stores/domains/chat/chat'
 import { WsResponseMessageType } from '@/enums'
-import { useChatStore } from '@/stores/chat'
-import { useFileStore } from '@/stores/file'
-import { useGlobalStore } from '@/stores/global'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStore } from '@/stores/user'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useFileStore } from '@/stores/domains/widget/file'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { audioManager } from '@/utils/AudioManager'
 import { isMobile, isWindows } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useRoute } from 'vue-router'
+
+const logger = createLogger('MobileLayout')
 interface MobileLayoutProps {
   /** 是否应用顶部安全区域 */
   safeAreaTop?: boolean
@@ -68,7 +71,7 @@ const playMessageSound = async () => {
     audio.volume = Math.min(1, Math.max(0, volume / 100))
     await audioManager.play(audio, 'message-notification')
   } catch (error) {
-    console.warn('播放消息音效失败:', error)
+    logger.warn('播放消息音效失败:', error)
   }
 }
 
@@ -162,7 +165,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
   if (chatStore.checkMsgExist(data.message.roomId, data.message.id)) {
     return
   }
-  console.log('[mobile/layout] 收到的消息：', data)
+  logger.debug('[mobile/layout] 收到的消息：', data)
   // 只有在聊天室页面且当前选中的会话就是消息来源的会话时，才不增加未读数
   chatStore.pushMsg(data, {
     isActiveChatView:
@@ -200,8 +203,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
             shouldPlaySound = true
           }
         } catch (error) {
-          console.warn('检查窗口状态失败:', error)
-          // 如果检查失败，默认播放音效
+          logger.warn('检查窗口状态失败:', error)
           shouldPlaySound = true
         }
       }

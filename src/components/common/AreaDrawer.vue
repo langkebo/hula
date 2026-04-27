@@ -32,18 +32,23 @@
 import { invoke } from '@tauri-apps/api/core'
 import { areaList as list } from '@vant/area-data'
 import { NDrawer } from 'naive-ui'
-// The exported props from vant cannot be used with defineProps.
 import { AreaList, Area as VantArea } from 'vant'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('AreaDrawer')
 
 interface AreaProps {
   areaList?: AreaList
 }
 
 interface Events {
+  // biome-ignore lint/suspicious/noExplicitAny: Vant Area event callbacks pass through arbitrary payloads; callers define their own signatures.
   onChange?: ((...args: any[]) => any) | undefined
+  // biome-ignore lint/suspicious/noExplicitAny: see above
   'onUpdate:modelValue'?: ((...args: any[]) => any) | undefined
+  // biome-ignore lint/suspicious/noExplicitAny: see above
   onCancel?: ((...args: any[]) => any) | undefined
+  // biome-ignore lint/suspicious/noExplicitAny: see above
   onConfirm?: ((...args: any[]) => any) | undefined
 }
 
@@ -57,7 +62,7 @@ const { areaList = list } = defineProps<Props>()
 const { t } = useI18n()
 
 const onScrollInto = () => {
-  console.log('into')
+  logger.debug('into')
   invoke('trigger_haptic_feedback')
 }
 </script>

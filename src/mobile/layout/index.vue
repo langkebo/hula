@@ -23,9 +23,9 @@ import TabBar from '#/layout/tabBar/index.vue'
 const route = useRoute()
 
 // 根据路由动态控制顶部安全区域
-// 当在社区页面时，关闭顶部安全区域
+// 当在动态页面时，关闭顶部安全区域
 const shouldShowTopSafeArea = computed(() => {
-  return route.path !== '/mobile/community'
+  return route.path !== '/mobile/dynamic'
 })
 </script>
 

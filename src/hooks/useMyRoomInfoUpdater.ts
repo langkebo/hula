@@ -1,6 +1,6 @@
-import { useChatStore } from '@/stores/chat'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user.ts'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
 import { matrixRoomService } from '@/services/matrix'
 
 type UpdatePayload = {

@@ -1,4 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const { mockLogger } = vi.hoisted(() => ({
+  mockLogger: {
+    error: vi.fn()
+  }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: vi.fn(() => mockLogger)
+}))
+
 import { globalErrorHandler, createValidationError, createNetworkError } from '../errorHandler'
 import { ErrorType } from '../exception'
 
@@ -9,20 +20,16 @@ describe('errorHandler', () => {
 
   describe('globalErrorHandler', () => {
     it('should handle Error instances', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const error = new Error('test error')
       globalErrorHandler.handleError(error)
-      expect(consoleSpy).toHaveBeenCalled()
-      consoleSpy.mockRestore()
+      expect(mockLogger.error).toHaveBeenCalled()
     })
 
     it('should handle non-Error objects', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       globalErrorHandler.handleError('string error')
       globalErrorHandler.handleError(123)
       globalErrorHandler.handleError(null)
-      expect(consoleSpy).toHaveBeenCalled()
-      consoleSpy.mockRestore()
+      expect(mockLogger.error).toHaveBeenCalledTimes(3)
     })
 
     it('should call registered callbacks', () => {

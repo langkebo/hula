@@ -46,5 +46,9 @@
     "cancel": "Cancel"
   },
   "logout_success": "Logged out successfully",
-  "logout_failed": "Local logout cleanup failed, please restart the app"
+  "logout_failed": "Local logout cleanup failed, please restart the app",
+  "privacy_section": "Privacy & Preferences",
+  "preferences": "General Preferences",
+  "burn_after_read": "Burn After Read",
+  "mjolnir": "Moderation"
 }

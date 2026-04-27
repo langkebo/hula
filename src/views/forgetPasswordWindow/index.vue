@@ -8,7 +8,7 @@
     <n-flex vertical class="w-full size-full">
       <!-- 标题 -->
       <n-flex justify="center" class="w-full">
-        <p class="text-(18px [--text-color]) select-none">{{ t('auth.forget.title') }}</p>
+        <p class="text-(18px [--hula-text-primary]) select-none">{{ t('auth.forget.title') }}</p>
       </n-flex>
 
       <!-- 步骤条 -->
@@ -25,7 +25,7 @@
           <n-form-item path="email" :label="t('auth.forget.form.email_label')">
             <n-input
               :allow-input="noSideSpace"
-              class="border-(1px solid #90909080) no-indent-input w-300px!"
+              class="border-(1px solid var(--hula-text-tertiary)/80) no-indent-input w-300px!"
               v-model:value="formData.email"
               :placeholder="t('auth.forget.form.email_placeholder')"
               spellCheck="false"
@@ -40,7 +40,7 @@
             <n-flex :size="8">
               <n-input
                 :allow-input="noSideSpace"
-                class="border-(1px solid #90909080) no-indent-input w-300px!"
+                class="border-(1px solid var(--hula-text-tertiary)/80) no-indent-input w-300px!"
                 v-model:value="formData.emailCode"
                 :placeholder="t('auth.forget.form.code_placeholder')"
                 spellCheck="false"
@@ -49,7 +49,7 @@
                 autoCapitalize="off"
                 maxlength="6" />
               <n-button
-                color="#13987f"
+                color="var(--color-primary)"
                 ghost
                 :disabled="sendBtnDisabled"
                 :loading="sendingEmailCode"
@@ -80,7 +80,7 @@
             <n-flex vertical :size="8" class="w-full">
               <n-input
                 :allow-input="noSideSpace"
-                class="border-(1px solid #90909080) w-full no-indent-input"
+                class="border-(1px solid var(--hula-text-tertiary)/80) w-full no-indent-input"
                 v-model:value="passwordForm.password"
                 type="password"
                 show-password-on="click"
@@ -113,7 +113,7 @@
             <n-flex vertical :size="8" class="w-full">
               <n-input
                 :allow-input="noSideSpace"
-                class="border-(1px solid #90909080) w-full no-indent-input"
+                class="border-(1px solid var(--hula-text-tertiary)/80) w-full no-indent-input"
                 v-model:value="passwordForm.confirmPassword"
                 type="password"
                 show-password-on="click"
@@ -149,7 +149,7 @@
 
       <!-- 第三步：完成 -->
       <div v-if="currentStep === 3" class="w-full max-w-300px mx-auto mt-100px text-center">
-        <!-- <n-icon size="64" class="text-#13987f">
+        <!-- <n-icon size="64" class="text-[--color-primary]">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path fill="currentColor" d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" />
           </svg>
@@ -157,7 +157,7 @@
         <img class="size-98px" src="/emoji/party-popper.webp" alt="" />
 
         <div class="mt-16px text-18px">{{ t('auth.forget.success.title') }}</div>
-        <div class="mt-16px text-14px text-#666">{{ t('auth.forget.success.desc') }}</div>
+        <div class="mt-16px text-14px text-[--hula-text-secondary]">{{ t('auth.forget.success.desc') }}</div>
       </div>
     </n-flex>
   </n-config-provider>
@@ -165,17 +165,17 @@
 
 <script setup lang="ts">
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { darkTheme, lightTheme } from 'naive-ui'
-import { storeToRefs } from 'pinia'
+import { darkTheme, lightTheme, type FormInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import Validation from '@/components/common/Validation.vue'
-import { useSettingStore } from '@/stores/setting'
-import { MatrixAuthService } from '@/services/matrix/MatrixAuthService'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
+import { createLogger } from '@/utils/Logger'
 
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
-const naiveTheme = computed(() => (themes.value.content === 'dark' ? darkTheme : lightTheme))
+const logger = createLogger('ForgetPassword')
+const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 const { t } = useI18n()
 
 // 导入Web Worker
@@ -186,7 +186,7 @@ const currentStep = ref(1)
 const stepStatus = ref<'error' | 'finish' | 'process' | 'wait' | undefined>('process')
 
 // 第一步表单数据
-const formRef = ref(null)
+const formRef = ref<FormInst | null>(null)
 const formData = ref({
   email: '',
   emailCode: '',
@@ -201,6 +201,10 @@ const countDown = ref(60)
 const verifyLoading = ref(false)
 // 发送验证码loading状态
 const sendingEmailCode = ref(false)
+const emailSessionId = ref('')
+const emailClientSecret = ref('')
+const emailSendAttempt = ref(1)
+const emailVerified = ref(false)
 // 上次获取图片验证码的时间
 const lastCaptchaTime = ref(0)
 // 图片验证码获取间隔时间(毫秒)
@@ -231,7 +235,7 @@ const emailRules = {
 }
 
 // 第二步密码表单
-const passwordFormRef = ref(null)
+const passwordFormRef = ref<FormInst | null>(null)
 const passwordForm = ref({
   password: '',
   confirmPassword: ''
@@ -247,7 +251,7 @@ const passwordRules = {
   confirmPassword: [
     { required: true, message: t('auth.forget.rules.confirm_required'), trigger: 'blur' },
     {
-      validator: (_: any, value: string) => {
+      validator: (_rule: unknown, value: string) => {
         return value === passwordForm.value.password
       },
       message: t('auth.forget.rules.confirm_mismatch'),
@@ -266,6 +270,10 @@ const noSideSpace = (value: string) => !value.startsWith(' ') && !value.endsWith
 
 /** 密码验证函数 */
 const validateMinLength = (value: string) => value.length >= 6
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  return error instanceof Error && error.message ? error.message : fallback
+}
 
 // 获取图片验证码
 const getCaptchaImage = async () => {
@@ -288,7 +296,8 @@ const getCaptchaImage = async () => {
       duration: captchaInterval
     })
   } catch (error) {
-    console.error('获取验证码失败', error)
+    logger.error('获取验证码失败', error)
+    window.$message.error(getErrorMessage(error, '获取验证码失败，请稍后重试'))
     captchaInCooldown.value = false
   }
 }
@@ -308,7 +317,14 @@ const sendEmailCode = async () => {
   sendingEmailCode.value = true
 
   try {
-    await MatrixAuthService.requestEmailToken(formData.value.email, 1)
+    const email = formData.value.email.trim()
+    formData.value.email = email
+
+    const result = await MatrixAuthService.requestPasswordEmailToken(email, emailSendAttempt.value)
+    emailSessionId.value = result.sid
+    emailClientSecret.value = result.client_secret
+    emailVerified.value = false
+    emailSendAttempt.value += 1
 
     window.$message.success(t('auth.forget.messages.code_sent'))
 
@@ -322,7 +338,8 @@ const sendEmailCode = async () => {
       duration: 60 * 1000
     })
   } catch (error) {
-    console.error('发送验证码失败', error)
+    logger.error('发送验证码失败', error)
+    window.$message.error(getErrorMessage(error, '发送验证码失败，请稍后重试'))
     getCaptchaImage()
   } finally {
     sendingEmailCode.value = false
@@ -334,21 +351,33 @@ const verifyEmail = async () => {
   if (!formRef.value) return
 
   try {
-    await (formRef.value as any).validate()
+    await formRef.value.validate()
     verifyLoading.value = true
+    if (!emailSessionId.value || !emailClientSecret.value) {
+      throw new Error('请先发送邮箱验证码')
+    }
 
-    // 这里只是验证表单，实际上不需要调用后端接口，直接进入下一步
-    setTimeout(() => {
-      currentStep.value = 2
-      verifyLoading.value = false
-    }, 500)
+    formData.value.emailCode = formData.value.emailCode.trim()
+    await MatrixAuthService.submitEmailToken(
+      formData.value.emailCode,
+      emailClientSecret.value,
+      emailSessionId.value,
+      'password_reset'
+    )
+
+    emailVerified.value = true
+    currentStep.value = 2
   } catch (error) {
-    console.error('表单验证失败', error)
+    logger.error('表单验证失败', error)
+    window.$message.error(getErrorMessage(error, '邮箱验证码校验失败，请稍后重试'))
+  } finally {
+    verifyLoading.value = false
   }
 }
 
 // 返回上一步
 const goBack = () => {
+  emailVerified.value = false
   currentStep.value = 1
 }
 
@@ -357,16 +386,27 @@ const submitNewPassword = async () => {
   if (!passwordFormRef.value) return
 
   try {
-    await (passwordFormRef.value as any).validate()
+    await passwordFormRef.value.validate()
     submitLoading.value = true
 
-    await MatrixAuthService.forgetPassword(formData.value.email)
+    if (!emailVerified.value || !emailSessionId.value || !emailClientSecret.value) {
+      throw new Error('请先完成邮箱验证码校验')
+    }
+
+    await MatrixAuthService.resetPassword(
+      passwordForm.value.password,
+      emailSessionId.value,
+      'm.login.email.identity',
+      undefined,
+      emailClientSecret.value
+    )
 
     currentStep.value = 3
     stepStatus.value = 'finish'
-    submitLoading.value = false
   } catch (error) {
-    console.error('重置密码失败', error)
+    logger.error('重置密码失败', error)
+    window.$message.error(getErrorMessage(error, '重置密码失败，请稍后重试'))
+  } finally {
     submitLoading.value = false
   }
 }
@@ -402,8 +442,7 @@ timerWorker.onmessage = (e) => {
 
 // Worker 错误处理
 timerWorker.onerror = (error) => {
-  console.error('[Timer Worker Error]', error)
-  // 发生错误时恢复按钮状态
+  logger.error('Timer Worker Error', error)
   sendBtnDisabled.value = false
   emailCodeBtnText.value = t('auth.forget.actions.resend')
 }

@@ -1,6 +1,9 @@
 import { invoke } from '@tauri-apps/api/core'
 import { AppException, ErrorType } from '@/common/exception'
 import { Result, ok, err } from '@/common/result'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('TauriInvokeHandler')
 
 /**
  * Tauri invoke 调用的统一错误处理包装器，返回 Result 模型
@@ -9,9 +12,9 @@ import { Result, ok, err } from '@/common/result'
  * @param options 错误处理选项
  * @returns Promise<Result<T, AppException>>
  */
-export async function invokeWithResult<T = any>(
+export async function invokeWithResult<T = unknown>(
   command: string,
-  args?: Record<string, any>,
+  args?: Record<string, unknown>,
   options?: {
     /** 是否显示错误提示，默认为 true */
     showError?: boolean
@@ -29,7 +32,7 @@ export async function invokeWithResult<T = any>(
     const result = await invoke<T>(command, args)
     return ok(result)
   } catch (error) {
-    console.error(`[Tauri Invoke Error] 命令: ${command}`, error)
+    logger.error(`命令: ${command}`, error)
 
     // 构造错误消息
     let errorMessage = customErrorMessage
@@ -62,9 +65,9 @@ export async function invokeWithResult<T = any>(
  * [Deprecated] 遗留的 Tauri invoke 调用包装器，直接抛出异常
  * 建议使用 invokeWithResult 替代
  */
-export async function invokeWithErrorHandler<T = any>(
+export async function invokeWithErrorHandler<T = unknown>(
   command: string,
-  args?: Record<string, any>,
+  args?: Record<string, unknown>,
   options?: {
     /** 是否显示错误提示，默认为 true */
     showError?: boolean
@@ -82,7 +85,7 @@ export async function invokeWithErrorHandler<T = any>(
     const result = await invoke<T>(command, args)
     return result
   } catch (error) {
-    console.error(`[Tauri Invoke Error] 命令: ${command}`, error)
+    logger.error(`命令: ${command}`, error)
 
     // 构造错误消息
     let errorMessage = customErrorMessage
@@ -116,7 +119,7 @@ export async function invokeWithErrorHandler<T = any>(
  * @param args 命令参数
  * @returns Promise<T | null> 成功返回结果，失败返回 null
  */
-export async function invokeSilently<T = any>(command: string, args?: Record<string, any>): Promise<T | null> {
+export async function invokeSilently<T = unknown>(command: string, args?: Record<string, unknown>): Promise<T | null> {
   try {
     return await invokeWithErrorHandler<T>(command, args, { showError: false })
   } catch {
@@ -131,9 +134,9 @@ export async function invokeSilently<T = any>(command: string, args?: Record<str
  * @param options 重试选项
  * @returns Promise<T>
  */
-export async function invokeWithRetry<T = any>(
+export async function invokeWithRetry<T = unknown>(
   command: string,
-  args?: Record<string, any>,
+  args?: Record<string, unknown>,
   options?: {
     /** 最大重试次数，默认为 3 */
     maxRetries?: number
@@ -161,7 +164,7 @@ export async function invokeWithRetry<T = any>(
       lastError = error
 
       if (attempt < maxRetries) {
-        console.log(`重试 ${command} 命令 (${attempt}/${maxRetries})...`)
+        logger.debug(`重试 ${command} 命令 (${attempt}/${maxRetries})...`)
         await new Promise((resolve) => setTimeout(resolve, retryDelay))
       }
     }

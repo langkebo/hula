@@ -3,8 +3,8 @@
  * 请使用 matrix-js-sdk 的位置功能或第三方地图 SDK
  * 迁移完成后此文件将被删除
  */
-import { imRequestResult } from '@/utils/ImRequestUtils'
-import { ImUrlEnum } from '@/enums'
+import { httpClient } from '@/utils/HttpClient'
+import { matrixExtensionEndpoints } from '@/services/backend'
 import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
 
 type TransformedCoordinate = {
@@ -39,15 +39,15 @@ type ReverseGeocodeResult = {
 export const transformCoordinates = async (lat: number, lng: number): Promise<TransformedCoordinate> => {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new Error('坐标范围无效')
   try {
-    const data = await imRequestResult<{ lat: number; lng: number }>({
-      url: ImUrlEnum.MAP_COORD_TRANSLATE,
+    const data = await httpClient.requestResult<{ lat: number; lng: number }>({
+      url: matrixExtensionEndpoints.MAP_COORD_TRANSLATE,
       params: { lat, lng }
     })
-    if (data.isOk()) {
-      return { lat: data.value.lat, lng: data.value.lng }
+    if (data.ok && data.data) {
+      return { lat: data.data.lat, lng: data.data.lng }
     }
     return wgs84ToGcj02(lat, lng)
-  } catch (_error) {
+  } catch {
     return wgs84ToGcj02(lat, lng)
   }
 }
@@ -56,20 +56,20 @@ export const transformCoordinates = async (lat: number, lng: number): Promise<Tr
 export const reverseGeocode = async (lat: number, lng: number): Promise<ReverseGeocodeResult | null> => {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new Error('坐标范围无效')
   try {
-    const data = await imRequestResult<ReverseGeocodeResult>({
-      url: ImUrlEnum.MAP_REVERSE_GEOCODE,
+    const data = await httpClient.requestResult<ReverseGeocodeResult>({
+      url: matrixExtensionEndpoints.MAP_REVERSE_GEOCODE,
       params: { lat, lng }
     })
-    return data.isOk() ? data.value : null
-  } catch (_error) {
+    return data.ok && data.data ? data.data : null
+  } catch {
     return null
   }
 }
 
 export const getStaticMap = async (lat: number, lng: number, width = 600, height = 400, zoom = 18): Promise<string> => {
-  const data = await imRequestResult<{ dataUrl: string }>({
-    url: ImUrlEnum.MAP_STATIC,
+  const data = await httpClient.requestResult<{ dataUrl: string }>({
+    url: matrixExtensionEndpoints.MAP_STATIC,
     params: { lat, lng, width, height, zoom }
   })
-  return data.isOk() ? (data.value.dataUrl || '') : ''
+  return data.ok && data.data ? data.data.dataUrl || '' : ''
 }

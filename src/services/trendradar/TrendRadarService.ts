@@ -1,10 +1,10 @@
 import { info, error, warn } from '@tauri-apps/plugin-log'
-import { ref, shallowRef } from 'vue'
+import { ref } from 'vue'
 
 export interface TrendRadarTool {
   name: string
   description: string
-  inputSchema: Record<string, any>
+  inputSchema: Record<string, unknown>
 }
 
 export interface TrendRadarNews {
@@ -20,19 +20,33 @@ export interface TrendRadarSearchResult {
   total: number
 }
 
+export interface TrendRadarTopic {
+  name?: string
+  topic?: string
+  title?: string
+  hotValue?: number | string
+  category?: string
+  trend?: 'up' | 'down' | 'stable'
+  [key: string]: unknown
+}
+
+export type TrendRadarRssArticle = TrendRadarNews & Record<string, unknown>
+
+export type TrendRadarAnalysisResult = string | Record<string, unknown> | unknown[]
+
 export interface McpRpcRequest {
   jsonrpc: '2.0'
   method: string
   params?: {
     name?: string
-    arguments?: Record<string, any>
+    arguments?: Record<string, unknown>
   }
   id: number | string
 }
 
-export interface McpRpcResponse {
+export interface McpRpcResponse<T = unknown> {
   jsonrpc: '2.0'
-  result?: any
+  result?: T
   error?: {
     code: number
     message: string
@@ -42,6 +56,20 @@ export interface McpRpcResponse {
 
 const DEFAULT_MCP_ENDPOINT = 'http://127.0.0.1:3333/mcp'
 const DEFAULT_TIMEOUT = 30000
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+const getArrayField = <T>(value: unknown, key: string): T[] | null => {
+  if (!isRecord(value)) return null
+  const field = value[key]
+  return Array.isArray(field) ? (field as T[]) : null
+}
+
+const getNumberField = (value: unknown, key: string): number | undefined => {
+  if (!isRecord(value)) return undefined
+  const field = value[key]
+  return typeof field === 'number' ? field : undefined
+}
 
 class TrendRadarService {
   private mcpEndpoint: string = DEFAULT_MCP_ENDPOINT
@@ -56,7 +84,7 @@ class TrendRadarService {
     return this.mcpEndpoint
   }
 
-  private async callMcp<T = any>(method: string, params?: Record<string, any>): Promise<T> {
+  private async callMcp<T = unknown>(method: string, params?: Record<string, unknown>): Promise<T> {
     const id = ++this.requestId
 
     const request: McpRpcRequest = {
@@ -85,7 +113,7 @@ class TrendRadarService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
-      const data: McpRpcResponse = await response.json()
+      const data = (await response.json()) as McpRpcResponse<T>
 
       if (data.error) {
         throw new Error(`MCP Error ${data.error.code}: ${data.error.message}`)
@@ -116,10 +144,10 @@ class TrendRadarService {
     }
   }
 
-  async callTool(toolName: string, args?: Record<string, any>): Promise<any> {
+  async callTool<T = unknown>(toolName: string, args?: Record<string, unknown>): Promise<T> {
     info(`[TrendRadar] Calling tool: ${toolName}`)
     try {
-      const result = await this.callMcp<any>('tools/call', {
+      const result = await this.callMcp<T>('tools/call', {
         name: toolName,
         arguments: args || {}
       })
@@ -133,13 +161,17 @@ class TrendRadarService {
 
   async getLatestNews(platforms?: string[], limit: number = 10): Promise<TrendRadarSearchResult> {
     try {
-      const result = await this.callTool('get_latest_news', {
-        platforms: platforms || ['知乎', '今日头条', '百度热搜'],
-        limit
-      })
+      const result = await this.callTool<{ news?: TrendRadarNews[]; total?: number } | TrendRadarNews[]>(
+        'get_latest_news',
+        {
+          platforms: platforms || ['知乎', '今日头条', '百度热搜'],
+          limit
+        }
+      )
+      const news = getArrayField<TrendRadarNews>(result, 'news') ?? (Array.isArray(result) ? result : [])
       return {
-        news: result.news || result || [],
-        total: result.total || result.news?.length || 0
+        news,
+        total: getNumberField(result, 'total') ?? news.length
       }
     } catch (err) {
       error(`[TrendRadar] Failed to get latest news: ${err}`)
@@ -149,13 +181,17 @@ class TrendRadarService {
 
   async searchNews(keyword: string, limit: number = 10): Promise<TrendRadarSearchResult> {
     try {
-      const result = await this.callTool('search_news', {
-        keyword,
-        limit
-      })
+      const result = await this.callTool<{ news?: TrendRadarNews[]; total?: number } | TrendRadarNews[]>(
+        'search_news',
+        {
+          keyword,
+          limit
+        }
+      )
+      const news = getArrayField<TrendRadarNews>(result, 'news') ?? (Array.isArray(result) ? result : [])
       return {
-        news: result.news || result || [],
-        total: result.total || result.news?.length || 0
+        news,
+        total: getNumberField(result, 'total') ?? news.length
       }
     } catch (err) {
       error(`[TrendRadar] Failed to search news: ${err}`)
@@ -163,32 +199,37 @@ class TrendRadarService {
     }
   }
 
-  async getTrendingTopics(limit: number = 10): Promise<any[]> {
+  async getTrendingTopics(limit: number = 10): Promise<TrendRadarTopic[]> {
     try {
-      const result = await this.callTool('get_trending_topics', { limit })
-      return result.topics || result || []
+      const result = await this.callTool<{ topics?: TrendRadarTopic[] } | TrendRadarTopic[]>('get_trending_topics', {
+        limit
+      })
+      return getArrayField<TrendRadarTopic>(result, 'topics') ?? (Array.isArray(result) ? result : [])
     } catch (err) {
       error(`[TrendRadar] Failed to get trending topics: ${err}`)
       throw new Error(`获取趋势话题失败: ${err}`)
     }
   }
 
-  async getLatestRss(feeds?: string[], limit: number = 10): Promise<any[]> {
+  async getLatestRss(feeds?: string[], limit: number = 10): Promise<TrendRadarRssArticle[]> {
     try {
-      const result = await this.callTool('get_latest_rss', {
-        feeds: feeds || [],
-        limit
-      })
-      return result.articles || result || []
+      const result = await this.callTool<{ articles?: TrendRadarRssArticle[] } | TrendRadarRssArticle[]>(
+        'get_latest_rss',
+        {
+          feeds: feeds || [],
+          limit
+        }
+      )
+      return getArrayField<TrendRadarRssArticle>(result, 'articles') ?? (Array.isArray(result) ? result : [])
     } catch (err) {
       error(`[TrendRadar] Failed to get RSS updates: ${err}`)
       throw new Error(`获取 RSS 更新失败: ${err}`)
     }
   }
 
-  async analyzeTopicTrend(topic: string): Promise<any> {
+  async analyzeTopicTrend(topic: string): Promise<TrendRadarAnalysisResult> {
     try {
-      const result = await this.callTool('analyze_topic_trend', { topic })
+      const result = await this.callTool<TrendRadarAnalysisResult>('analyze_topic_trend', { topic })
       return result
     } catch (err) {
       error(`[TrendRadar] Failed to analyze topic trend: ${err}`)

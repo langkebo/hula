@@ -56,19 +56,19 @@ const handleSelect = (key: string) => {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: var(--bg-hover);
+  background: var(--hula-surface-panel-muted);
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .model-selector__trigger:hover {
-  background: var(--bg-active);
+  background: var(--hula-menu-hover);
 }
 
 .model-selector__current {
   font-size: 12px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -78,6 +78,6 @@ const handleSelect = (key: string) => {
 .model-selector__arrow {
   width: 12px;
   height: 12px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 }
 </style>

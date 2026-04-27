@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// biome-ignore-all lint/suspicious/noConsole: This interactive CLI intentionally writes prompts and status to the terminal.
 
 import { select } from '@inquirer/prompts'
 import { spawn } from 'child_process'

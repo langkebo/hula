@@ -24,7 +24,7 @@
           </n-button>
         </template>
         <div class="status-menu">
-          <div class="status-menu-title">设置状态</div>
+          <div class="status-menu-title">{{ t('menu.user_menu.status.title') }}</div>
           <div
             v-for="status in statusOptions"
             :key="status.id"
@@ -47,14 +47,17 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { NAvatar, NButton, NPopover, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
-import { useUserStore } from '@/stores/user'
-import { useUserStatusStore } from '@/stores/userStatus'
-import { useSettingStore } from '@/stores/setting'
-import { useMatrixStore } from '@/stores/matrix'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { matrixAccountService } from '@/services/matrix'
 import defaultAvatarImg from '@/assets/img/win.png'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('UserMenuHeader')
 
 defineOptions({
   name: 'UserMenuHeader'
@@ -66,6 +69,7 @@ const emit = defineEmits<{
 }>()
 
 const message = useMessage()
+const { t } = useI18n()
 const userStore = useUserStore()
 const userStatusStore = useUserStatusStore()
 const settingStore = useSettingStore()
@@ -78,15 +82,20 @@ const defaultAvatar = computed(() => defaultAvatarImg)
 
 const currentStatusId = ref(userStatusStore.stateId || 'online')
 
-const statusOptions = [
-  { id: 'online', label: '在线', icon: 'mdi:circle', color: '#52c41a' },
-  { id: 'away', label: '离开', icon: 'mdi:circle', color: '#faad14' },
-  { id: 'busy', label: '忙碌', icon: 'mdi:circle', color: '#ff4d4f' },
-  { id: 'offline', label: '隐身', icon: 'mdi:circle-outline', color: '#999' }
-]
+const statusOptions = computed(() => [
+  { id: 'online', label: t('menu.user_menu.status.online'), icon: 'mdi:circle', color: 'var(--hula-status-online)' },
+  { id: 'away', label: t('menu.user_menu.status.away'), icon: 'mdi:circle', color: 'var(--hula-status-away)' },
+  { id: 'busy', label: t('menu.user_menu.status.busy'), icon: 'mdi:circle', color: 'var(--hula-status-busy)' },
+  {
+    id: 'offline',
+    label: t('menu.user_menu.status.offline'),
+    icon: 'mdi:circle-outline',
+    color: 'var(--hula-status-offline)'
+  }
+])
 
 const statusIcon = computed(() => {
-  const status = statusOptions.find((s) => s.id === currentStatusId.value)
+  const status = statusOptions.value.find((s) => s.id === currentStatusId.value)
   return status?.icon || 'mdi:circle'
 })
 
@@ -95,17 +104,17 @@ const statusClass = computed(() => {
 })
 
 const statusStyle = computed(() => {
-  const status = statusOptions.find((s) => s.id === currentStatusId.value)
+  const status = statusOptions.value.find((s) => s.id === currentStatusId.value)
   return {
-    backgroundColor: status?.color || '#52c41a'
+    backgroundColor: status?.color || 'var(--hula-status-online)'
   }
 })
 
 const isDark = computed(() => {
-  if (settingStore.themes.pattern === 'os') {
+  if (settingStore.themePattern === 'os') {
     return window.matchMedia('(prefers-color-scheme: dark)').matches
   }
-  return settingStore.themes.content === 'dark'
+  return settingStore.themeContent === 'dark'
 })
 
 const themeIcon = computed(() => {
@@ -135,9 +144,9 @@ async function handleStatusChange(statusId: string) {
 
   try {
     await matrixAccountService.setPresence(presenceMap[statusId] || 'online')
-    message.success('状态已更新')
+    message.success(t('menu.user_menu.status.updated'))
   } catch (error) {
-    console.error('[UserMenuHeader] 设置状态失败:', error)
+    logger.error('Failed to update user presence:', error)
   }
 }
 </script>
@@ -170,14 +179,10 @@ async function handleStatusChange(statusId: string) {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--bg-color, #fff);
+  border: 2px solid var(--avatar-border-color);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-:deep(.dark) .status-indicator {
-  border-color: #1a1a1a;
 }
 
 .user-details {
@@ -188,19 +193,15 @@ async function handleStatusChange(statusId: string) {
 .user-name {
   font-size: 16px;
   font-weight: 500;
-  color: var(--text-color, #1a1a1a);
+  color: var(--hula-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-:deep(.dark) .user-name {
-  color: #fff;
-}
-
 .user-id {
   font-size: 12px;
-  color: var(--text-color-3, #999);
+  color: var(--hula-text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -222,7 +223,7 @@ async function handleStatusChange(statusId: string) {
 .status-menu-title {
   padding: 4px 12px;
   font-size: 12px;
-  color: #999;
+  color: var(--hula-text-quaternary);
   margin-bottom: 4px;
 }
 
@@ -236,14 +237,10 @@ async function handleStatusChange(statusId: string) {
 }
 
 .status-option:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .status-option:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--hula-surface-list-hover);
 }
 
 .status-option.active {
-  background-color: rgba(24, 144, 255, 0.1);
+  background-color: var(--hula-color-info-100);
 }
 </style>

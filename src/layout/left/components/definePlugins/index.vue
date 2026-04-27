@@ -1,7 +1,7 @@
 <template>
   <!-- 弹出框 -->
   <n-modal v-model:show="isShow" :mask-closable="false" class="w-390px border-rd-8px">
-    <div class="bg-[--bg-popover] min-h-350px h-full box-border flex flex-col">
+    <div class="bg-[--hula-surface-elevated] min-h-350px h-full box-border flex flex-col">
       <!-- 顶部图片加上操作栏 -->
       <div class="h-140px relative w-full p-6px box-border">
         <img
@@ -32,7 +32,7 @@
 
       <n-flex justify="space-between" align="center">
         <n-flex :size="4" align="center" class="p-18px truncate flex-1 min-w-0">
-          <p class="text-(16px [--text-color]) leading-loose truncate flex-1 min-w-0">
+          <p class="text-(16px [--hula-text-primary]) leading-loose truncate flex-1 min-w-0">
             {{ t('home.action.plugin_manage') }}
           </p>
           <div
@@ -68,7 +68,7 @@
   </n-modal>
 </template>
 <script setup lang="ts">
-import { usePluginsStore } from '@/stores/plugins.ts'
+import { usePluginsStore } from '@/stores/domains/settings/plugins'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import Card from './Card.vue'
 import List from './List.vue'

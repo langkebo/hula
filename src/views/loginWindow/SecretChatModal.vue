@@ -1,11 +1,11 @@
 <template>
   <n-config-provider :theme="naiveTheme" class="secret-chat-modal size-full select-none">
     <div class="w-350px h-360px border-rd-8px select-none cursor-default">
-      <div class="bg-[--bg-popover] size-full p-6px box-border flex flex-col">
+      <div class="bg-[--hula-surface-elevated] size-full p-6px box-border flex flex-col">
         <svg
           v-if="!isMac()"
           @click="handleCancel"
-          class="w-12px h-12px ml-a cursor-pointer select-none text-[--text-color]">
+          class="w-12px h-12px ml-a cursor-pointer select-none text-[--hula-text-primary]">
           <use href="#close"></use>
         </svg>
         <div class="flex flex-col gap-10px p-10px select-none">
@@ -13,10 +13,8 @@
             <svg class="size-48px text-[--primary-color]">
               <use href="#lock"></use>
             </svg>
-            <span class="text-(14px [--text-color]) font-bold">私密聊天</span>
-            <div class="text-(13px [--text-color-tertiary]) text-center px-8px leading-relaxed">
-              请输入私密聊天密码
-            </div>
+            <span class="text-(14px [--hula-text-primary]) font-bold">私密聊天</span>
+            <div class="text-(13px [--hula-text-tertiary]) text-center px-8px leading-relaxed">请输入私密聊天密码</div>
           </n-flex>
 
           <n-form ref="formRef" :model="formValue" :rules="rules" class="w-full px-8px">
@@ -28,15 +26,14 @@
                 size="large"
                 @keyup.enter="handleConfirm"
                 show-password-on="click"
-                :disabled="loading">
-              </n-input>
+                :disabled="loading"></n-input>
             </n-form-item>
           </n-form>
 
           <n-button
             style="color: #fff"
             class="w-full"
-            color="#13987f"
+            color="var(--color-primary)"
             size="large"
             @click="handleConfirm"
             :loading="loading"
@@ -56,16 +53,14 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, lightTheme } from 'naive-ui'
-import { storeToRefs } from 'pinia'
-import { useSettingStore } from '@/stores/setting'
-import { useUserStore } from '@/stores/user'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isMac } from '@/utils/PlatformConstants'
-import { useI18n } from '@/plugins/i18n'
+import { createLogger } from '@/utils/Logger'
 
-const { t } = useI18n()
+const logger = createLogger('SecretChatModal')
+
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
-const naiveTheme = computed(() => (themes.value.content === 'dark' ? darkTheme : lightTheme))
+const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 
 const formRef = ref()
 const loading = ref(false)
@@ -106,7 +101,7 @@ const handleConfirm = async () => {
     }
   } catch (error) {
     errorMsg.value = '验证失败'
-    console.error('私密聊天密码验证失败:', error)
+    logger.error('私密聊天密码验证失败:', error)
   } finally {
     loading.value = false
   }

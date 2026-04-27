@@ -3,21 +3,23 @@
     <div class="secret-chat-header">
       <div class="header-title">
         <svg class="size-20px" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 3a9 9 0 0 0-9 9 9.75 9.75 0 0 0 5.5 8.38l-1.15 1.15a1 1 0 0 0 1.37 1.37l1.15-1.15A9.75 9.75 0 0 0 21 12a9 9 0 0 0-9-9zm-5 9a5 5 0 1 1 10 0 5 5 0 0 1-10 0z"/>
+          <path
+            d="M12 3a9 9 0 0 0-9 9 9.75 9.75 0 0 0 5.5 8.38l-1.15 1.15a1 1 0 0 0 1.37 1.37l1.15-1.15A9.75 9.75 0 0 0 21 12a9 9 0 0 0-9-9zm-5 9a5 5 0 1 1 10 0 5 5 0 0 1-10 0z" />
         </svg>
         <span>私密聊天</span>
       </div>
       <svg @click="handleClose" class="w-20px h-20px cursor-pointer" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        <path
+          d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
       </svg>
     </div>
 
     <div class="secret-chat-content">
       <div v-if="hiddenSessions.length === 0" class="empty-state">
-        <svg class="size-48px text-[--text-color-disabled]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+        <svg class="size-48px text-[--hula-text-disabled]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
         </svg>
-        <span class="text-(14px [--text-color-disabled]) mt-10px">暂无隐藏会话</span>
+        <span class="text-(14px [--hula-text-disabled]) mt-10px">暂无隐藏会话</span>
       </div>
 
       <div v-else class="session-list">
@@ -49,7 +51,7 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
-import { useSessionStore, type SessionItem } from '@/stores/chat/session'
+import { useSessionStore, type SessionItem } from '@/stores/domains/chat/chat/session'
 
 defineOptions({
   name: 'SecretChatPage'
@@ -77,7 +79,7 @@ const handleClose = () => {
 .secret-chat-page {
   display: flex;
   flex-direction: column;
-  background: var(--bg-primary);
+  background: var(--hula-surface-app);
 }
 
 .secret-chat-header {
@@ -85,7 +87,7 @@ const handleClose = () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--hula-border-default);
 }
 
 .header-title {
@@ -123,7 +125,7 @@ const handleClose = () => {
 }
 
 .session-item:hover {
-  background: var(--bg-hover);
+  background: var(--hula-surface-list-hover);
 }
 
 .session-avatar {
@@ -161,7 +163,7 @@ const handleClose = () => {
 .session-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -169,7 +171,7 @@ const handleClose = () => {
 
 .session-preview {
   font-size: 12px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

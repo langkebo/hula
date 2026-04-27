@@ -1,6 +1,10 @@
 <template>
   <div class="h-100vh w-100vw">
     <NaiveProvider :message-max="3" :notific-max="3" class="h-full">
+      <ConnectionStatusBanner
+        :state="connectionState"
+        :retry-count="connectionRetryCount"
+        @retry="handleConnectionRetry" />
       <SplashScreen
         v-if="showSplash"
         :visible="showSplash"
@@ -29,11 +33,29 @@ import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
-import { useGlobalStore } from '@/stores/global'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
-import LockScreen from '@/views/LockScreen.vue'
-import MemoryMonitor from '@/components/common/MemoryMonitor.vue'
+import { useConnectionStatus } from '@/composables/useConnectionStatus'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import {
+  matrixClientService,
+  matrixMessageService,
+  matrixReceiptService,
+  matrixReactionService,
+  matrixRoomService,
+  matrixRoomCreationService,
+  matrixRoomDirectMessageService,
+  matrixRoomPinsService,
+  matrixRoomTagsService
+} from '@/services/matrix'
+import { matrixRoomStateService } from '@/services/matrix/room/StateService'
+import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
+import { hasTauriRuntime } from '@/utils/AppHarness'
+import { buildPresenceStorePatch, collectTrackedPresenceUserIds } from '@/utils/presenceStatus'
+import ConnectionStatusBanner from '@/components/common/ConnectionStatusBanner.vue'
+const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
+const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))
 import SplashScreen from '@/components/common/SplashScreen.vue'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
@@ -43,26 +65,38 @@ import {
   WsResponseMessageType,
   type WsTokenExpire
 } from '@/services/wsType.ts'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGroupStore } from '@/stores/group'
-import { useUserStore } from '@/stores/user'
-import { useChatStore } from '@/stores/chat'
-import { useAnnouncementStore } from '@/stores/announcement'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import type { MarkItemType, RevokedMsgType, UserItem } from '@/services/types.ts'
-import * as ImRequestUtils from '@/utils/ImRequestUtils'
+import type { MatrixRoomMember } from '@/stores/domains/chat/group/types.ts'
 import { listen } from '@tauri-apps/api/event'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { updateSettings } from '@/services/tauriCommand.ts'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('App')
 const mobileRtcCallFloatCell = isMobile()
   ? defineAsyncComponent(() => import('@/mobile/components/RtcCallFloatCell.vue'))
   : null
 
 const isDev = import.meta.env.DEV
+const tauriRuntimeAvailable = hasTauriRuntime()
 const showMemoryMonitor = ref(true)
-const isHomeDesktopWindow = computed(() => isDesktop() && appWindow.label === 'home')
+const isHomeDesktopWindow = computed(() => isDesktop() && appWindow?.label === 'home')
 
-const { state: bootstrapState, loadingMessage: bootstrapMessage, loadingProgress: bootstrapProgress, error: bootstrapError, bootstrap } = useBootstrap()
+const {
+  state: bootstrapState,
+  loadingMessage: bootstrapMessage,
+  loadingProgress: bootstrapProgress,
+  error: bootstrapError,
+  bootstrap
+} = useBootstrap()
+
+const { state: connectionState, retryCount: connectionRetryCount, retry: handleConnectionRetry } = useConnectionStatus()
 
 const showSplash = computed(() => bootstrapState.value === 'initializing' || bootstrapState.value === 'idle')
 
@@ -76,15 +110,18 @@ const announcementStore = useAnnouncementStore()
 const userUid = computed(() => userStore.userInfo!.uid)
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = tauriRuntimeAvailable ? WebviewWindow.getCurrent() : null
 const { createRtcCallWindow, sendWindowPayload } = useWindow()
 const globalStore = useGlobalStore()
 const router = useRouter()
 const { addListener } = useTauriListener()
+const subscribedPresenceUserIds = new Set<string>()
+let isPresenceSyncInFlight = false
+let hasPendingPresenceSync = false
 // 只在桌面端初始化窗口管理功能
 const { createWebviewWindow } = isDesktop() ? useWindow() : { createWebviewWindow: () => {} }
 const settingStore = useSettingStore()
-const { themes, lockScreen, page, login } = storeToRefs(settingStore)
+const { lockScreen } = storeToRefs(settingStore)
 // 全局快捷键管理
 const { initializeGlobalShortcut, cleanupGlobalShortcut } = useGlobalShortcut()
 // 提前初始化网络状态监听，确保不错过 WebSocket 状态变化事件
@@ -108,7 +145,20 @@ const preventDrag = (e: MouseEvent) => {
 }
 const preventGlobalContextMenu = (event: MouseEvent) => event.preventDefault()
 
-useMitt.on(WsResponseMessageType.VideoCallRequest, (event) => {
+type VideoCallRequestPayload = {
+  callerUid: string
+  isVideo: boolean
+  [key: string]: unknown
+}
+
+type WebsocketConnectionStatePayload = {
+  type?: string
+  state?: string
+  isReconnection?: boolean
+  is_reconnection?: boolean
+}
+
+useMitt.on<VideoCallRequestPayload>(WsResponseMessageType.VideoCallRequest, (event) => {
   info(`收到通话请求：${JSON.stringify(event)}`)
   const remoteUid = event.callerUid
   const callType = event.isVideo ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO
@@ -141,6 +191,7 @@ useMitt.on(WsResponseMessageType.LOGIN_SUCCESS, async (data: LoginSuccessResType
   })
   // 刚登录成功时同步当前/首个群聊的成员信息，避免消息显示“未知用户”
   await refreshActiveGroupMembers()
+  await syncAvatarPresence()
 })
 
 useMitt.on(WsResponseMessageType.MSG_RECALL, (data: RevokedMsgType) => {
@@ -155,12 +206,13 @@ useMitt.on(WsResponseMessageType.MY_ROOM_INFO_CHANGE, (data: { myName: string; r
 useMitt.on(
   WsResponseMessageType.REQUEST_NEW_FRIEND,
   async (data: { uid: number; unReadCount4Friend: number; unReadCount4Group: number }) => {
-    console.log('收到好友申请')
+    logger.debug('收到好友申请')
     // 更新未读数
-    globalStore.unReadMark.newFriendUnreadCount = data.unReadCount4Friend || 0
-    globalStore.unReadMark.newGroupUnreadCount = data.unReadCount4Group || 0
-
-    unreadCountManager.refreshBadge(globalStore.unReadMark)
+    globalStore.setUnreadCounts({
+      friend: data.unReadCount4Friend || 0,
+      group: data.unReadCount4Group || 0
+    })
+    globalStore.refreshUnreadBadge()
 
     // 刷新好友申请列表
     await contactStore.getApplyPage('friend', true)
@@ -206,15 +258,16 @@ const handleMemberRemove = async (userList: UserItem[], roomId: string) => {
 // 处理其他成员加入群聊
 const handleOtherMemberAdd = async (user: UserItem, roomId: string) => {
   info('群成员加入群聊，添加群成员数据')
-  const matrixMember: any = {
+  const matrixMember: MatrixRoomMember = {
     ...user,
     userId: user.uid,
     displayName: user.name,
     avatarUrl: user.avatar,
-    membership: 'join' as const,
+    membership: 'join',
     powerLevel: 0,
     isModerator: false,
-    isCreator: false
+    isCreator: false,
+    roleId: 2 // 普通成员
   }
   groupStore.addUserItem(matrixMember, roomId)
 }
@@ -237,7 +290,7 @@ const handleSelfAdd = async (roomId: string) => {
   try {
     await groupStore.getGroupUserList(roomId, true)
   } catch (error) {
-    console.error('初始化群成员失败:', error)
+    logger.error('初始化群成员失败:', error)
   }
 }
 
@@ -276,7 +329,7 @@ useMitt.on(
 )
 
 useMitt.on(WsResponseMessageType.MSG_MARK_ITEM, async (data: { markList: MarkItemType[] }) => {
-  console.log('收到消息标记更新:', data)
+  logger.debug('收到消息标记更新:', data)
 
   // 确保data.markList是一个数组再传递给updateMarkCount
   if (data && data.markList && Array.isArray(data.markList)) {
@@ -291,7 +344,7 @@ useMitt.on(WsResponseMessageType.REQUEST_APPROVAL_FRIEND, async () => {
   // 刷新好友列表以获取最新状态
   await contactStore.getContactList(true)
   await contactStore.getApplyUnReadCount()
-  unreadCountManager.refreshBadge(globalStore.unReadMark)
+  globalStore.refreshUnreadBadge()
 })
 
 useMitt.on(WsResponseMessageType.ROOM_INFO_CHANGE, async (data: { roomId: string; name: string; avatar: string }) => {
@@ -307,23 +360,20 @@ useMitt.on(WsResponseMessageType.ROOM_INFO_CHANGE, async (data: { roomId: string
 
 useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExpire) => {
   if (Number(userUid.value) === Number(wsTokenExpire.uid) && userStore.userInfo!.client === wsTokenExpire.client) {
-    const { useLogin } = await import('@/hooks/useLogin')
-    const { resetLoginState, logout } = useLogin()
+    const { useLoginFlow } = await import('@/hooks/useLoginFlow')
+    const { logout } = useLoginFlow()
     if (isMobile()) {
       try {
-        // 1. 先重置登录状态（不请求接口，只清理本地）
-        await resetLoginState()
-        // 2. 调用登出方法
         await logout()
 
         settingStore.toggleLogin(false, false)
         info('账号在其他设备登录')
 
-        // 3. 立即跳转到登录页，使用 replace 替换当前路由
+        // 立即跳转到登录页，使用 replace 替换当前路由
         const router = await import('@/router')
         await router.default.replace('/mobile/login')
 
-        // 4. 跳转后再显示弹窗提示
+        // 跳转后再显示弹窗提示
         const { showDialog } = await import('vant')
         await import('vant/es/dialog/style')
 
@@ -337,7 +387,7 @@ useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExp
           allowHtml: false
         })
       } catch (error) {
-        console.error('处理token过期失败：', error)
+        logger.error('处理token过期失败：', error)
       }
     } else {
       // 桌面端处理：聚焦主窗口并显示远程登录弹窗
@@ -350,15 +400,13 @@ useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExp
           timestamp: Date.now()
         }
       })
-      await ImRequestUtils.logout({ autoLogin: login.value.autoLogin })
-      await resetLoginState()
       await logout()
     }
   }
 })
 
 useMitt.on(WsResponseMessageType.INVALID_USER, (param: { uid: string }) => {
-  console.log('无效用户')
+  logger.debug('无效用户')
   const data = param
   // 消息列表删掉拉黑的发言
   // chatStore.filterUser(data.uid)
@@ -367,7 +415,7 @@ useMitt.on(WsResponseMessageType.INVALID_USER, (param: { uid: string }) => {
 })
 
 useMitt.on(WsResponseMessageType.ONLINE, async (onStatusChangeType: OnStatusChangeType) => {
-  console.log('收到用户上线通知')
+  logger.debug('收到用户上线通知')
   // 群聊
   if (onStatusChangeType.type === 1) {
     groupStore.updateOnlineNum({
@@ -387,7 +435,7 @@ useMitt.on(WsResponseMessageType.ONLINE, async (onStatusChangeType: OnStatusChan
 })
 
 useMitt.on(WsResponseMessageType.ROOM_DISSOLUTION, async (roomId: string) => {
-  console.log('收到群解散通知', roomId)
+  logger.debug('收到群解散通知', roomId)
   // 移除群聊的会话
   chatStore.removeSession(roomId)
   // 移除群聊的详情
@@ -399,19 +447,22 @@ useMitt.on(WsResponseMessageType.ROOM_DISSOLUTION, async (roomId: string) => {
 })
 
 useMitt.on(WsResponseMessageType.USER_STATE_CHANGE, async (data: { uid: string; userStateId: string }) => {
-  console.log('收到用户状态改变', data)
+  logger.debug('收到用户状态改变', data)
   groupStore.updateUserItem(data.uid, {
     userStateId: data.userStateId
   })
 })
 
-useMitt.on(WsResponseMessageType.GROUP_SET_ADMIN_SUCCESS, (event) => {
-  console.log('设置群管理员---> ', event)
-  groupStore.updateAdminStatus(event.roomId, event.uids, event.status)
-})
+useMitt.on<{ roomId: string; uids: string[]; status: number | boolean }>(
+  WsResponseMessageType.GROUP_SET_ADMIN_SUCCESS,
+  (event) => {
+    logger.debug('设置群管理员---> ', event)
+    groupStore.updateAdminStatus(event.roomId, event.uids, Boolean(event.status))
+  }
+)
 
 useMitt.on(WsResponseMessageType.OFFLINE, async (onStatusChangeType: OnStatusChangeType) => {
-  console.log('收到用户下线通知', onStatusChangeType)
+  logger.debug('收到用户下线通知', onStatusChangeType)
   // 群聊
   if (onStatusChangeType.type === 1) {
     groupStore.updateOnlineNum({
@@ -435,7 +486,7 @@ const handleVideoCall = async (remotedUid: string, callType: CallTypeEnum) => {
   const currentSession = globalStore.currentSession
   const targetUid = remotedUid || currentSession?.detailId
   if (!targetUid) {
-    console.warn('[App] 当前会话尚未就绪或无法解析对端用户，忽略通话事件')
+    logger.warn('当前会话尚未就绪或无法解析对端用户，忽略通话事件')
     return
   }
   if (isMobile()) {
@@ -456,13 +507,12 @@ const handleVideoCall = async (remotedUid: string, callType: CallTypeEnum) => {
 
 const listenMobileReLogin = async () => {
   if (isMobile()) {
-    const { useLogin } = await import('@/hooks/useLogin')
+    const { useLoginFlow } = await import('@/hooks/useLoginFlow')
 
-    const { resetLoginState, logout } = useLogin()
+    const { logout } = useLoginFlow()
     addListener(
       listen('relogin', async () => {
         info('收到重新登录事件')
-        await resetLoginState()
         await logout()
       }),
       'mobile-relogin'
@@ -483,16 +533,67 @@ const refreshActiveGroupMembers = async () => {
       tasks.push(groupStore.getGroupUserList(activeRoomId, true))
     }
     await Promise.allSettled(tasks)
+    await syncAvatarPresence()
   } catch (error) {
-    console.error('[Network] 刷新群成员失败:', error)
+    logger.error('刷新群成员失败:', error)
+  }
+}
+
+const applyPresenceToStores = async () => {
+  const trackedUserIds = collectTrackedPresenceUserIds({
+    currentUserId: userStore.userInfo?.uid,
+    contacts: contactStore.contactsList,
+    members: groupStore.allUserInfo
+  })
+
+  if (!trackedUserIds.length || !matrixClientService.getClient()) {
+    return
+  }
+
+  const nextSubscribedUserIds = trackedUserIds.filter((userId) => !subscribedPresenceUserIds.has(userId))
+  if (nextSubscribedUserIds.length) {
+    await matrixPresenceService.subscribeToPresence(nextSubscribedUserIds)
+    nextSubscribedUserIds.forEach((userId) => subscribedPresenceUserIds.add(userId))
+  }
+
+  const presences = await matrixPresenceService.getBatchPresence(trackedUserIds)
+  const now = Date.now()
+
+  presences.forEach((presence) => {
+    const patch = buildPresenceStorePatch(presence, now)
+    contactStore.updateContactPresence(presence.user_id, patch)
+    groupStore.updateUserPresence(presence.user_id, {
+      activeStatus: patch.activeStatus,
+      lastOptTime: patch.lastOptTime
+    })
+  })
+}
+
+const syncAvatarPresence = async () => {
+  if (isPresenceSyncInFlight) {
+    hasPendingPresenceSync = true
+    return
+  }
+
+  isPresenceSyncInFlight = true
+  try {
+    await applyPresenceToStores()
+  } catch (error) {
+    logger.error('同步头像在线状态失败:', error)
+  } finally {
+    isPresenceSyncInFlight = false
+    if (hasPendingPresenceSync) {
+      hasPendingPresenceSync = false
+      await syncAvatarPresence()
+    }
   }
 }
 
 let lastWsConnectionState: string | null = null
 let isReconnectInFlight = false
 
-const handleWebsocketEvent = async (event: any) => {
-  const payload: any = event.payload
+const handleWebsocketEvent = async (event: { payload: WebsocketConnectionStatePayload | null | undefined }) => {
+  const payload = event.payload
   if (!payload || payload.type !== 'connectionStateChanged') return
 
   const previousState = (lastWsConnectionState || '').toUpperCase() || null
@@ -512,7 +613,7 @@ const handleWebsocketEvent = async (event: any) => {
   // 开始同步，显示加载状态
   chatStore.syncLoading = true
   try {
-    // Rust 端已通过 schedule_post_reconnect_sync 调用 sync_messages，前端无需重复调用
+    // 消息同步已由前端 MatrixSyncService 通过 SDK 处理
     await chatStore.getSessionList(true)
 
     // 重连后同步当前/首个群聊成员信息，避免展示断网前的旧数据
@@ -530,7 +631,7 @@ const handleWebsocketEvent = async (event: any) => {
         chatStore.markSessionRead(currentRoomId)
       }
     }
-    unreadCountManager.refreshBadge(globalStore.unReadMark)
+    globalStore.refreshUnreadBadge()
   } finally {
     // 同步完成，隐藏加载状态
     chatStore.syncLoading = false
@@ -552,13 +653,136 @@ const requestNetworkPermissionForIOS = async () => {
 onMounted(async () => {
   await bootstrap()
 
+  offlineQueueService.setReplayFn(async (op) => {
+    switch (op.type) {
+      case 'message': {
+        const payload = op.payload as Record<string, unknown>
+        if (payload.eventType && payload.content) {
+          // 处理 MatrixEventService.sendEvent 的离线入队
+          const { roomId, eventType, content } = payload as {
+            roomId: string
+            eventType: string
+            content: Record<string, unknown>
+          }
+          await matrixClientService.getClient()?.sendEvent(roomId, eventType, content)
+        } else {
+          // 处理 MatrixMessageService.sendStructuredMessage 的旧格式（如果有）
+          // 或者如果是嵌套在 payload.payload 中
+          const structuredPayload = (payload.payload || payload) as any
+          await matrixMessageService.sendStructuredMessage(structuredPayload)
+        }
+        break
+      }
+      case 'receipt': {
+        const { roomId, eventId } = op.payload as { roomId: string; eventId: string }
+        await matrixReceiptService.sendReadReceiptByEventId(roomId, eventId)
+        break
+      }
+      case 'reaction': {
+        const { roomId, eventId, emoji } = op.payload as { roomId: string; eventId: string; emoji: string }
+        await matrixReactionService.addReaction(roomId, eventId, emoji)
+        break
+      }
+      case 'state': {
+        const { roomId, type, content } = op.payload as {
+          roomId: string
+          type: 'name' | 'topic' | 'avatar'
+          content: string
+        }
+        if (type === 'name') {
+          await matrixRoomStateService.setRoomName(roomId, content)
+        } else if (type === 'topic') {
+          await matrixRoomStateService.setRoomTopic(roomId, content)
+        } else if (type === 'avatar') {
+          await matrixRoomStateService.setRoomAvatar(roomId, content)
+        }
+        break
+      }
+      case 'redact': {
+        const { roomId, eventId, reason } = op.payload as {
+          roomId: string
+          eventId: string
+          reason?: string
+        }
+        await matrixClientService.getClient()?.redactEvent(roomId, eventId, undefined, { reason })
+        break
+      }
+      case 'push_rule': {
+        const { roomId, enabled } = op.payload as { roomId: string; enabled: boolean }
+        await matrixRoomStateService.setPushRule(roomId, enabled)
+        break
+      }
+      case 'membership': {
+        const payload = op.payload as {
+          roomId: string
+          type: 'join' | 'leave' | 'invite' | 'kick' | 'ban' | 'unban'
+          userId?: string
+          reason?: string
+        }
+        if (payload.type === 'join') {
+          await matrixRoomService.joinRoom(payload.roomId)
+        } else if (payload.type === 'leave') {
+          await matrixRoomService.leaveRoom(payload.roomId)
+        } else if (payload.type === 'invite' && payload.userId) {
+          await matrixRoomService.inviteUser(payload.roomId, payload.userId)
+        } else if (payload.type === 'kick' && payload.userId) {
+          await matrixRoomService.kickUser(payload.roomId, payload.userId, payload.reason)
+        } else if (payload.type === 'ban' && payload.userId) {
+          await matrixRoomService.banUser(payload.roomId, payload.userId, payload.reason)
+        } else if (payload.type === 'unban' && payload.userId) {
+          await matrixRoomService.unbanUser(payload.roomId, payload.userId)
+        }
+        break
+      }
+      case 'creation': {
+        const { options } = op.payload as { options: any }
+        await matrixRoomCreationService.createRoom(options)
+        break
+      }
+      case 'dm_creation': {
+        const { userId } = op.payload as { userId: string }
+        await matrixRoomDirectMessageService.createDirectRoom(userId)
+        break
+      }
+      case 'tag': {
+        const { roomId, tag, order, action } = op.payload as {
+          roomId: string
+          tag: string
+          order?: number
+          action: 'set' | 'remove'
+        }
+        if (action === 'set') {
+          await matrixRoomTagsService.setTag(roomId, tag, order)
+        } else {
+          await matrixRoomTagsService.removeTag(roomId, tag)
+        }
+        break
+      }
+      case 'pin': {
+        const payload = op.payload as {
+          roomId: string
+          type: 'pinned' | 'sticky'
+          eventIds?: string[]
+          events?: Record<string, unknown>
+        }
+        if (payload.type === 'pinned' && payload.eventIds) {
+          await matrixRoomPinsService.setPinnedEvents(payload.roomId, payload.eventIds)
+        } else if (payload.type === 'sticky' && payload.events) {
+          await matrixRoomPinsService.setStickyEvents(payload.roomId, payload.events)
+        }
+        break
+      }
+    }
+  })
+  offlineQueueService.startNetworkListener()
+
   if (isIOS()) {
     requestNetworkPermissionForIOS()
   }
 
-  if (isWindows10()) {
+  if (isWindows10() && appWindow) {
     void appWindow.setShadow(false).catch((error) => {
-      console.warn('禁用窗口阴影失败:', error)
+      logger.warn('禁用窗口阴影失败:', error)
     })
   }
   // 判断是否是桌面端，桌面端需要调整样式
@@ -566,21 +790,20 @@ onMounted(async () => {
   // 判断是否是移动端，移动端需要加载安全区域适配样式
   isMobile() && import('@/styles/scss/global/mobile.scss')
 
-  import(`@/styles/scss/theme/${themes.value.versatile}.scss`)
-  if (!settingStore.themes.content) {
-    // 首次运行使用跟随系统，保持既有体验
-    settingStore.initTheme(ThemeEnum.OS)
-  } else {
-    // 非首次运行时直接使用已恢复的主题信息，避免被强制改回“跟随系统”
-    settingStore.normalizeThemeState()
+  if (isDesktop()) {
+    await import('@/styles/scss/theme/simple.scss')
+    document.querySelector('#app')?.classList.add('simple')
   }
-  document.documentElement.dataset.theme = settingStore.themes.content
+  // 首次运行使用跟随系统；已恢复状态时只做合法化修正
+  settingStore.ensureThemeReady(ThemeEnum.OS)
   window.addEventListener('dragstart', preventDrag)
 
-  addListener(listen('websocket-event', handleWebsocketEvent), 'websocket-event')
+  if (tauriRuntimeAvailable) {
+    addListener(listen('websocket-event', handleWebsocketEvent), 'websocket-event')
+  }
 
   // 只在桌面端的主窗口中初始化全局快捷键
-  if (isDesktop() && appWindow.label === 'home') {
+  if (isDesktop() && appWindow?.label === 'home') {
     initializeGlobalShortcut()
   }
   /** 开发环境不禁止 */
@@ -595,12 +818,12 @@ onMounted(async () => {
     window.addEventListener('contextmenu', preventGlobalContextMenu, false)
   }
   // 只在桌面端处理窗口相关事件
-  if (isDesktop()) {
+  if (isDesktop() && tauriRuntimeAvailable && appWindow) {
     useMitt.on(MittEnum.CHECK_UPDATE, async () => {
       const checkUpdateWindow = await WebviewWindow.getByLabel('checkupdate')
       await checkUpdateWindow?.show()
     })
-    useMitt.on(MittEnum.DO_UPDATE, async (event) => {
+    useMitt.on<{ close: string }>(MittEnum.DO_UPDATE, async (event) => {
       await createWebviewWindow('更新', 'update', 490, 335, '', false, 490, 335, false, true)
       const closeWindow = await WebviewWindow.getByLabel(event.close)
       closeWindow?.close()
@@ -616,18 +839,34 @@ onMounted(async () => {
 })
 
 onUnmounted(async () => {
+  subscribedPresenceUserIds.clear()
   window.removeEventListener('contextmenu', preventGlobalContextMenu, false)
   window.removeEventListener('dragstart', preventDrag)
 
   // 只在桌面端的主窗口中清理全局快捷键
-  if (isDesktop() && appWindow.label === 'home') {
+  if (isDesktop() && appWindow?.label === 'home') {
     await cleanupGlobalShortcut()
   }
 })
 
+watch(
+  () =>
+    collectTrackedPresenceUserIds({
+      currentUserId: userStore.userInfo?.uid,
+      contacts: contactStore.contactsList,
+      members: groupStore.allUserInfo
+    }).join('|'),
+  () => {
+    void syncAvatarPresence()
+  },
+  {
+    immediate: true
+  }
+)
+
 /** 控制阴影 */
 watch(
-  () => page.value.shadow,
+  () => settingStore.pageShadowEnabled,
   (val) => {
     // 移动端始终禁用阴影
     if (isMobile()) {
@@ -641,7 +880,7 @@ watch(
 
 /** 控制高斯模糊 */
 watch(
-  () => page.value.blur,
+  () => settingStore.pageBlurEnabled,
   (val) => {
     document.documentElement.setAttribute('data-blur', val ? '1' : '0')
   },
@@ -650,7 +889,7 @@ watch(
 
 /** 控制字体样式 */
 watch(
-  () => page.value.fonts,
+  () => settingStore.pageFontFamily,
   (val) => {
     document.documentElement.style.setProperty('--font-family', val)
   },
@@ -661,28 +900,10 @@ watch(
  * 语言发生变化
  */
 watch(
-  () => page.value.lang,
+  () => settingStore.languagePreference,
   (lang) => {
-    lang = lang === 'AUTO' ? navigator.language : lang
-    loadLanguage(lang)
+    void loadLanguage(lang)
   }
-)
-
-/** 控制变化主题 */
-watch(
-  () => themes.value.versatile,
-  async (val, oldVal) => {
-    console.log(val)
-
-    await import(`@/styles/scss/theme/${val}.scss`)
-    // 然后给最顶层的div设置val的类样式
-    const app = document.querySelector('#app')?.classList as DOMTokenList
-    app.remove(oldVal as string)
-    await nextTick(() => {
-      app.add(val)
-    })
-  },
-  { immediate: true }
 )
 
 /** 监听会话变化 */
@@ -701,7 +922,7 @@ useMitt.on(MittEnum.MSG_INIT, async () => {
         await announcementStore.loadGroupAnnouncements()
       }
     } catch (error) {
-      console.error('会话切换处理失败:', error)
+      logger.error('会话切换处理失败:', error)
     }
   })
 })

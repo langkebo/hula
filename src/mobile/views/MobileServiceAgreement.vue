@@ -19,14 +19,13 @@
           <section>
             <h2>1. 服务条款的确认和接纳</h2>
             <p>
-              欢迎使用HuLa即时通讯软件！HuLa的各项电子服务的所有权和运作权归HuLa所有。用户必须完全同意所有服务条款并完成注册程序，才能成为HuLa的正式用户。
+              欢迎使用HuLa软件！HuLa的各项电子服务的所有权和运作权归HuLa所有。用户必须完全同意所有服务条款并完成注册程序，才能成为HuLa的正式用户。
             </p>
           </section>
-
           <section>
             <h2>2. 服务简介</h2>
             <p>
-              HuLa是一款免费的即时通讯软件，用户可以通过HuLa与好友进行文字、语音、视频聊天，分享图片、文件等。HuLa致力于为用户提供安全、稳定、便捷的通讯服务。
+              HuLa是一款免费的通讯软件，用户可以通过HuLa与好友进行文字、语音、视频聊天，分享图片、文件等。HuLa致力于为用户提供安全、稳定、便捷的通讯服务。
             </p>
           </section>
 
@@ -149,13 +148,13 @@
     h1 {
       font-size: 24px;
       font-weight: bold;
-      color: #333;
+      color: var(--hula-text-primary);
       margin-bottom: 10px;
     }
 
     .update-time {
       font-size: 14px;
-      color: #666;
+      color: var(--hula-text-secondary);
     }
   }
 
@@ -170,7 +169,7 @@
       h2 {
         font-size: 18px;
         font-weight: bold;
-        color: #333;
+        color: var(--hula-text-primary);
         width: fit-content;
         margin-bottom: 15px;
         border-bottom: 2px solid #13987f90;
@@ -179,7 +178,7 @@
 
       p {
         font-size: 14px;
-        color: #555;
+        color: var(--hula-text-secondary);
         margin-bottom: 10px;
         text-indent: 2em;
       }
@@ -193,22 +192,22 @@
 }
 
 .agreement-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--right-bg-color);
   border-radius: 3px;
 }
 
 .agreement-content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--hula-text-disabled);
   border-radius: 3px;
 }
 
 .agreement-content::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--hula-text-tertiary);
 }
 
 :deep(.action-close) {
   svg {
-    color: #303030;
+    color: var(--hula-text-primary);
   }
 }
 </style>

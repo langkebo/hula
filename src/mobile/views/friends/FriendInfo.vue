@@ -22,31 +22,31 @@
             class="w-full z-1 overflow-y-auto absolute z-3">
             <div class="custom-rounded flex px-24px flex-col gap-4 z-1 p-10px mt-4 shadow">
               <div :style="{ height: tabHeight - 10 + 'px' }" class="flex flex-col">
-                <n-tabs type="line" animated>
-                  <n-tab-pane name="info" tab="基本信息">
+                <van-tabs v-model:active="activeTab" animated>
+                  <van-tab title="基本信息">
                     <div class="py-20px">
-                      <n-descriptions label-placement="left" :column="1" bordered>
-                        <n-descriptions-item label="用户ID">
-                          {{ uid }}
-                        </n-descriptions-item>
-                        <n-descriptions-item label="用户名">
-                          {{ userInfo?.name || '未知' }}
-                        </n-descriptions-item>
-                      </n-descriptions>
+                      <div class="rounded-8px overflow-hidden border border-gray-200">
+                        <div class="flex items-center px-16px py-12px border-b border-gray-200">
+                          <span class="text-14px text-#666 w-80px">用户ID</span>
+                          <span class="text-14px">{{ uid }}</span>
+                        </div>
+                        <div class="flex items-center px-16px py-12px">
+                          <span class="text-14px text-#666 w-80px">用户名</span>
+                          <span class="text-14px">{{ userInfo?.name || '未知' }}</span>
+                        </div>
+                      </div>
                     </div>
-                  </n-tab-pane>
-                  <n-tab-pane name="activity" tab="动态">
+                  </van-tab>
+                  <van-tab title="动态">
                     <div class="py-20px text-center">
-                      <n-empty description="暂无动态内容">
-                        <template #extra>
-                          <n-text depth="3" class="text-12px">
-                            Matrix 协议暂不支持朋友圈功能
-                          </n-text>
+                      <van-empty description="暂无动态内容">
+                        <template #description>
+                          <span class="text-12px text-#999">Matrix 协议暂不支持朋友圈功能</span>
                         </template>
-                      </n-empty>
+                      </van-empty>
                     </div>
-                  </n-tab-pane>
-                </n-tabs>
+                  </van-tab>
+                </van-tabs>
               </div>
             </div>
           </div>
@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import PersonalInfo from '#/components/my/PersonalInfo.vue'
-import { useUserStore } from '@/stores/user'
+import { useUserStore } from '@/stores/domains/user/user'
 
 const userStore = useUserStore()
 
@@ -66,6 +66,7 @@ const route = useRoute()
 const uid = route.params.uid as string
 const isMyPage = ref(false)
 const userInfo = computed(() => userStore.userInfo)
+const activeTab = ref(0)
 
 const isShow = ref(true)
 const measureRef = ref<HTMLDivElement>()

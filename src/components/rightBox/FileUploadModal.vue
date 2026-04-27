@@ -5,18 +5,18 @@
     :mask-closable="false"
     class="rounded-8px"
     transform-origin="center">
-    <div class="bg-[--bg-edit] min-w-320px h-fit box-border flex flex-col select-none cursor-default">
+    <div class="bg-[--hula-surface-panel] min-w-320px h-fit box-border flex flex-col select-none cursor-default">
       <n-flex :size="6" vertical>
         <div
           v-if="isMac()"
           @click="visible = false"
-          class="mac-close size-13px shadow-inner bg-#ed6a5eff rounded-50% mt-6px select-none absolute left-6px">
-          <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+          class="mac-close size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% mt-6px select-none absolute left-6px">
+          <svg class="hidden size-7px color-[--hula-surface-media-preview] select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>
 
-        <n-flex class="text-(14px [--text-color]) select-none pt-6px" justify="center">
+        <n-flex class="text-(14px [--hula-text-primary]) select-none pt-6px" justify="center">
           {{ t('message.file_upload.title') }}
         </n-flex>
 
@@ -26,7 +26,7 @@
           @click="visible = false">
           <use href="#close"></use>
         </svg>
-        <span class="h-1px w-full bg-[--line-color]"></span>
+        <span class="h-1px w-full bg-[--hula-border-default]"></span>
       </n-flex>
 
       <!-- 内容 -->
@@ -43,15 +43,15 @@
 
             <div class="flex-1 min-w-0">
               <div
-                class="text-(14px [--text-color]) whitespace-nowrap overflow-hidden text-ellipsis pb-4px"
+                class="text-(14px [--hula-text-primary]) whitespace-nowrap overflow-hidden text-ellipsis pb-4px"
                 :title="file.name">
                 {{ file.name }}
               </div>
-              <div class="text-(12px [--chat-text-color])">{{ formatFileSize(file.size) }}</div>
+              <div class="text-(12px [--hula-text-secondary])">{{ formatFileSize(file.size) }}</div>
             </div>
 
             <div @click="removeFile(index)" class="flex-shrink-0 pl-20px cursor-pointer">
-              <svg class="size-20px hover:color-#909090 transition-colors duration-200 ease-in-out">
+              <svg class="size-20px hover:color-[--hula-text-tertiary] transition-colors duration-200 ease-in-out">
                 <use href="#squareClose"></use>
               </svg>
             </div>

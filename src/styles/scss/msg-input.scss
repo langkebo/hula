@@ -11,7 +11,7 @@
   overflow-y: visible; /** 由 n-scrollbar 组件处理滚动 */
   overflow-x: hidden; /** 内容过多时不允许横向滚动 */
   flex: 1; /** 弹性盒自适应填充可用空间 */
-  caret-color: #13987f; /** 光标颜色，可根据需求调整 */
+  caret-color: var(--hula-color-primary-500); /** 光标颜色，可根据需求调整 */
   white-space: normal; /** 保留空白符号并正常换行 */
   word-break: break-all; /** 强制在单词内部进行换行 */
   overflow-wrap: break-all;
@@ -22,21 +22,21 @@
   -webkit-hyphens: auto;
 }
 .ait-options {
-  @apply z-999 w-200px h-fit max-h-190px bg-[--center-bg-color] rounded-8px p-[5px_0_5px_5px] border-(1px solid [--box-shadow-color]);
-  box-shadow: 2px 2px 12px 2px var(--box-shadow-color);
+  @apply z-999 w-200px h-fit max-h-190px bg-[--hula-surface-panel] rounded-8px p-[5px_0_5px_5px] border-(1px solid [--hula-border-default]);
+  box-shadow: var(--hula-shadow-md);
   .ait-item {
-    @apply h-26px text-[--text-color] text-14px p-[5px_0_5px_10px] mr-5px rounded-6px cursor-pointer;
+    @apply h-26px text-[--hula-text-primary] text-14px p-[5px_0_5px_10px] mr-5px rounded-6px cursor-pointer;
   }
 }
 
 .AI-options {
-  @apply z-999 w-260px h-fit max-h-190px bg-[--center-bg-color] rounded-8px p-[5px_0_5px_5px] border-(1px solid [--box-shadow-color]);
-  box-shadow: 2px 2px 12px 2px var(--box-shadow-color);
+  @apply z-999 w-260px h-fit max-h-190px bg-[--hula-surface-panel] rounded-8px p-[5px_0_5px_5px] border-(1px solid [--hula-border-default]);
+  box-shadow: var(--hula-shadow-md);
   .AI-item {
-    @apply h-26px text-[--text-color] text-14px p-[5px_0_5px_10px] mr-7px rounded-6px cursor-pointer;
+    @apply h-26px text-[--hula-text-primary] text-14px p-[5px_0_5px_10px] mr-7px rounded-6px cursor-pointer;
   }
 }
 
 .active {
-  background-color: var(--list-hover-color);
+  background-color: var(--hula-menu-hover);
 }

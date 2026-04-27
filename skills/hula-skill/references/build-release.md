@@ -60,7 +60,7 @@ cargo run             # Run server
 
 ```bash
 docker build -t synapse-rust .
-docker run -p 8008:8008 synapse-rust
+docker run -p 8008:28008 synapse-rust
 ```
 
 ## Release Checklist

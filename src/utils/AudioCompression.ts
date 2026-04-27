@@ -1,4 +1,7 @@
 import * as lamejs from '@breezystack/lamejs'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AudioCompression')
 
 /**
  * 音频压缩配置接口
@@ -45,15 +48,15 @@ export async function compressAudioToMp3(audioBuffer: ArrayBuffer, config: Audio
     const mp3Data = encodeToMp3(samples, finalConfig)
 
     // 创建MP3 Blob - 将 Int8Array 转换为 Uint8Array
-    const uint8Arrays = mp3Data.map((data) => new Uint8Array(data))
-    const blob = new Blob(uint8Arrays, { type: 'audio/mp3' })
+    const uint8Arrays = mp3Data
+    const blob = new Blob(uint8Arrays as BlobPart[], { type: 'audio/mp3' })
 
     // 清理AudioContext
     await audioContext.close()
 
     return blob
   } catch (error) {
-    console.error('音频压缩失败:', error)
+    logger.error('音频压缩失败:', error)
     throw new Error('音频压缩失败')
   }
 }
@@ -147,9 +150,9 @@ function mixToMono(audioBuffer: AudioBuffer): Float32Array {
 /**
  * 使用lamejs将音频数据编码为MP3
  */
-function encodeToMp3(samples: Int16Array, config: Required<AudioCompressionConfig>): Int8Array[] {
+function encodeToMp3(samples: Int16Array, config: Required<AudioCompressionConfig>): Uint8Array[] {
+  const mp3Data: Uint8Array[] = []
   const mp3encoder = new lamejs.Mp3Encoder(config.channels, config.sampleRate, config.bitRate)
-  const mp3Data: Int8Array[] = []
   const sampleBlockSize = 1152 // lamejs推荐的块大小
 
   // 分块编码
@@ -161,10 +164,9 @@ function encodeToMp3(samples: Int16Array, config: Required<AudioCompressionConfi
       sampleChunk = samples.subarray(i, i + sampleBlockSize)
       const mp3buf = mp3encoder.encodeBuffer(sampleChunk)
       if (mp3buf.length > 0) {
-        mp3Data.push(mp3buf as any)
+        mp3Data.push(mp3buf)
       }
     } else {
-      // 立体声
       const leftChunk = new Int16Array(sampleBlockSize)
       const rightChunk = new Int16Array(sampleBlockSize)
 
@@ -175,7 +177,7 @@ function encodeToMp3(samples: Int16Array, config: Required<AudioCompressionConfi
 
       const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk)
       if (mp3buf.length > 0) {
-        mp3Data.push(mp3buf as any)
+        mp3Data.push(mp3buf)
       }
     }
   }
@@ -183,7 +185,7 @@ function encodeToMp3(samples: Int16Array, config: Required<AudioCompressionConfi
   // 完成编码
   const mp3buf = mp3encoder.flush()
   if (mp3buf.length > 0) {
-    mp3Data.push(mp3buf as any)
+    mp3Data.push(mp3buf)
   }
 
   return mp3Data

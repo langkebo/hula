@@ -9,7 +9,7 @@
       <n-flex justify="space-between" align="center" :size="0">
         <n-flex :size="4" vertical>
           <n-flex :size="0" align="center">
-            <p class="text-(20px [--chat-text-color]) font-semibold select-none">HuLa-</p>
+            <p class="text-(20px [--hula-text-primary]) font-semibold select-none">HuLa-</p>
             <p class="gpt-subtitle">ChatBot</p>
             <div class="ml-6px p-[4px_8px] size-fit bg-[--bate-bg] rounded-8px text-(12px [--bate-color] center)">
               Beta
@@ -25,7 +25,7 @@
         <n-flex align="center">
           <n-avatar bordered round :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)" :size="48" />
           <n-flex vertical>
-            <p class="text-(14px [--chat-text-color]) font-500">{{ userStore.userInfo!.name }}</p>
+            <p class="text-(14px [--hula-text-primary]) font-500">{{ userStore.userInfo!.name }}</p>
             <p class="text-(12px #909090)">剩余：28天过期</p>
           </n-flex>
         </n-flex>
@@ -70,13 +70,13 @@
               :menu="menuList"
               :special-menu="specialMenuList"
               class="msg-box w-full h-75px mb-5px"
-              @select="$event.click(item)">
+              @select="(menuItem) => menuItem.click?.(item as any)">
               <div class="absolute flex flex-col gap-14px w-full p-[8px_14px] box-border">
                 <n-flex justify="space-between" align="center" :size="0" class="leading-22px">
                   <n-ellipsis
                     v-if="editingItemId !== item.id"
                     style="width: calc(100% - 20px)"
-                    class="text-(14px [--chat-text-color]) truncate font-500 select-none">
+                    class="text-(14px [--hula-text-primary]) truncate font-500 select-none">
                     {{ item.title || `会话 ${index + 1}` }}
                   </n-ellipsis>
                   <n-input
@@ -96,7 +96,7 @@
                     class="h-22px lh-22px rounded-6px"></n-input>
                   <svg
                     @click.stop="deleteChat(item)"
-                    class="color-[--chat-text-color] size-20px opacity-0 absolute right-0px top-4px">
+                    class="color-[--hula-text-primary] size-20px opacity-0 absolute right-0px top-4px">
                     <use href="#squareClose"></use>
                   </svg>
                 </n-flex>
@@ -130,14 +130,14 @@
         <n-flex :size="4" align="center">
           <div
             @click="jump"
-            class="bg-[--chat-bt-color] border-(1px solid [--line-color]) color-[--chat-text-color] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
+            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
             <svg class="size-18px"><use href="#settings"></use></svg>
           </div>
           <a
             target="_blank"
             rel="noopener noreferrer"
             href="https://gitee.com/llangkebo/hula/"
-            class="bg-[--chat-bt-color] border-(1px solid [--line-color]) color-[--chat-text-color] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
+            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
             <svg class="size-18px"><use href="#github"></use></svg>
           </a>
         </n-flex>
@@ -145,19 +145,19 @@
         <n-flex :size="4" align="center">
           <div
             @click="openHistory"
-            class="bg-[--chat-bt-color] border-(1px solid [--line-color]) color-[--chat-text-color] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
+            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
             title="生成历史">
             <Icon icon="mdi:history" class="text-18px" />
           </div>
           <div
             @click="openModelManagement"
-            class="bg-[--chat-bt-color] border-(1px solid [--line-color]) color-[--chat-text-color] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
+            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
             title="管理模型">
             <Icon icon="mdi:robot-outline" class="text-18px" />
           </div>
           <div
             @click="openRoleManagement"
-            class="bg-[--chat-bt-color] border-(1px solid [--line-color]) color-[--chat-text-color] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
+            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
             title="管理角色">
             <Icon icon="mdi:account-cog" class="text-18px" />
           </div>
@@ -171,7 +171,7 @@
         <div
           v-else
           @click="add"
-          class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--line-color]) select-none text-(12px [--chat-text-color]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
+          class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) select-none text-(12px [--hula-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
           <svg class="size-15px pb-2px"><use href="#plus"></use></svg>
           <p>新的聊天</p>
         </div>
@@ -186,7 +186,7 @@
           </template>
           <template #trigger>
             <div
-              class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--line-color]) select-none text-(12px [--chat-text-color]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
+              class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) select-none text-(12px [--hula-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
               <svg class="size-15px pb-2px"><use href="#delete"></use></svg>
               <p>全部删除</p>
             </div>
@@ -203,10 +203,15 @@ import { type InputInst, type VirtualListInst } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
-import { useUserStore } from '@/stores/user.ts'
+import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixConversationService, matrixChatRoleService } from '@/services/matrix'
+import { conversationService, chatRoleService, type Conversation, type ChatRole } from '@/services/matrix'
 import { formatTimestamp } from '@/utils/ComputedTime'
+import { createLogger } from '@/utils/Logger'
+import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('RobotLeft')
+const timerManager = useTimerManager()
 
 const userStore = useUserStore()
 const activeItem = ref<ChatItem | null>(null)
@@ -253,13 +258,13 @@ const fetchConversationList = async (isLoadMore = false) => {
   }
 
   try {
-    const data = await matrixConversationService.page({
+    const data = await conversationService.page({
       pageNo: pageNo.value,
       pageSize: pageSize.value
     })
 
     if (data && data.list) {
-      const newChats = data.list.map((item: any) => {
+      const newChats = data.list.map((item: Conversation) => {
         const parsedCreateTime = Number(item.createTime)
         return {
           id: item.id,
@@ -282,7 +287,7 @@ const fetchConversationList = async (isLoadMore = false) => {
         // 首次加载且有会话时，自动选择第一个会话
         if (newChats.length > 0) {
           // 延迟发送事件，确保 Chat.vue 的列表已加载
-          setTimeout(() => {
+          timerManager.setTimeout(() => {
             handleActive(newChats[0])
           }, 500)
         }
@@ -298,7 +303,7 @@ const fetchConversationList = async (isLoadMore = false) => {
       }
     }
   } catch (error) {
-    console.error('获取会话列表失败:', error)
+    logger.error('获取会话列表失败:', error)
     window.$message.error('获取会话列表失败')
   } finally {
     loading.value = false
@@ -346,7 +351,7 @@ const menuList = ref<OPT.RightMenu[]>([
     label: '打开独立聊天窗口',
     icon: 'freezing-line-column',
     click: (item: ChatItem) => {
-      console.log('打开独立窗口:', item)
+      logger.debug('打开独立窗口:', item)
     }
   },
   {
@@ -395,14 +400,14 @@ const handleActive = (item: ChatItem) => {
 // 检查是否有可用角色
 const checkHasRoles = async () => {
   try {
-    const data = await matrixChatRoleService.page({ pageNo: 1, pageSize: 100 })
+    const data = await chatRoleService.page({ pageNo: 1, pageSize: 100 })
     // 检查是否有可用的角色（status === 0）
-    const availableRoles = (data.list || []).filter((item: any) => item.status === 0)
+    const availableRoles = (data.list || []).filter((item: ChatRole) => item.status === 0)
     hasRoles.value = availableRoles.length > 0
     // 保存第一个可用角色的ID
     firstAvailableRoleId.value = availableRoles.length > 0 ? availableRoles[0].id : null
   } catch (error) {
-    console.error('检查角色失败:', error)
+    logger.error('检查角色失败:', error)
     hasRoles.value = false
     firstAvailableRoleId.value = null
   }
@@ -433,7 +438,7 @@ const add = async () => {
   }
 
   try {
-    const data = await matrixConversationService.create({
+    const data = await conversationService.create({
       roleId: firstAvailableRoleId.value,
       knowledgeId: undefined,
       title: '新的会话'
@@ -465,7 +470,7 @@ const add = async () => {
       window.$message.success('会话创建成功')
     }
   } catch (error) {
-    console.error('❌ 创建会话失败:', error)
+    logger.error('创建会话失败:', error)
     window.$message.error('创建会话失败')
   }
 }
@@ -473,7 +478,7 @@ const add = async () => {
 /** 删除单个会话 */
 const deleteChat = async (item: ChatItem) => {
   try {
-    await matrixConversationService.delete({ conversationIdList: [item.id] })
+    await conversationService.delete({ conversationIdList: [item.id] })
 
     const index = chatList.value.findIndex((chat) => chat.id === item.id)
     if (index !== -1) {
@@ -498,7 +503,7 @@ const deleteChat = async (item: ChatItem) => {
       window.$message.success('会话删除成功')
     }
   } catch (error) {
-    console.error('❌ 删除会话失败:', error)
+    logger.error('删除会话失败:', error)
     window.$message.error('删除会话失败')
   }
 }
@@ -513,7 +518,7 @@ const deleteAllChats = async () => {
     }
 
     const allChatIds = chatList.value.map((chat) => chat.id)
-    await matrixConversationService.delete({ conversationIdList: allChatIds })
+    await conversationService.delete({ conversationIdList: allChatIds })
 
     // 清空本地列表
     chatList.value = []
@@ -525,7 +530,7 @@ const deleteAllChats = async () => {
 
     window.$message.success('全部会话已删除')
   } catch (error) {
-    console.error('删除全部会话失败:', error)
+    logger.error('删除全部会话失败:', error)
     window.$message.error('删除全部会话失败')
   }
 }
@@ -559,7 +564,7 @@ const handleBlur = async (item: ChatItem, index: number) => {
   }
 
   try {
-    await matrixConversationService.update({
+    await conversationService.update({
       id: item.id,
       title: nextTitle
     })
@@ -569,7 +574,7 @@ const handleBlur = async (item: ChatItem, index: number) => {
     useMitt.emit('left-chat-title', { id: item.id, title: nextTitle })
     useMitt.emit('update-chat-title', { id: item.id, title: nextTitle })
   } catch (error) {
-    console.error('❌ 重命名会话失败:', error)
+    logger.error('重命名会话失败:', error)
     item.title = previousTitle
     chatList.value[index].title = previousTitle
     originalTitle.value = previousTitle
@@ -591,8 +596,8 @@ onMounted(async () => {
     router.push('/welcome')
   }
 
-  useMitt.on('update-chat-title', (e: any) => {
-    chatList.value.filter((item) => {
+  useMitt.on('update-chat-title', (e: { id: string; title: string }) => {
+    chatList.value.forEach((item) => {
       if (item.id === e.id) {
         item.title = e.title
       }
@@ -616,7 +621,7 @@ onMounted(async () => {
   })
 
   // ✅ 监听添加会话事件
-  useMitt.on('add-conversation', (newChat: any) => {
+  useMitt.on('add-conversation', (newChat: Conversation) => {
     if (newChat && newChat.id) {
       // 检查是否已存在
       const exists = chatList.value.some((chat) => chat.id === newChat.id)
@@ -645,7 +650,7 @@ onMounted(async () => {
     }
   })
 
-  useMitt.on('update-chat-meta', (payload: any) => {
+  useMitt.on('update-chat-meta', (payload: { id: string; messageCount?: number; createTime?: number }) => {
     if (!payload?.id) return
     const target = chatList.value.find((chat) => chat.id === payload.id)
     if (target) {
@@ -684,11 +689,11 @@ onMounted(async () => {
 .plugins {
   @apply size-fit bg-[--chat-bt-color] rounded-8px custom-shadow p-[8px_14px]
   flex items-center gap-10px select-none cursor-pointer
-  text-14px color-[--chat-text-color] border-(1px solid [--line-color]);
+  text-14px color-[--hula-text-primary] border-(1px solid [--hula-border-default]);
 }
 
 .chat-item {
-  @apply relative bg-[--chat-bt-color] border-(1px solid [--line-color]) cursor-pointer custom-shadow rounded-8px w-full h-65px;
+  @apply relative bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) cursor-pointer custom-shadow rounded-8px w-full h-65px;
   transition: all 0.2s ease;
 
   &:hover {

@@ -2,7 +2,7 @@
  * 隐私保护 Composable
  *
  * 管理私密聊天的防截屏功能
- * - 监听 com.hula.privacy 事件
+ * - 监听 com:hula:privacy 事件
  * - 桌面端启用 FLAG_SECURE
  * - Web 端显示动态水印
  */
@@ -10,6 +10,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { isDesktop } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+
+const PRIVACY_EVENT_NAME = 'com:hula:privacy' as const
+
+const logger = createLogger('PrivacyProtection')
 
 export interface PrivacySettings {
   blockScreenshot: boolean
@@ -36,7 +41,7 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
   async function enablePrivacyProtection() {
     if (!isDesktop()) {
-      console.warn('[PrivacyProtection] 仅桌面端支持 FLAG_SECURE')
+      logger.warn('仅桌面端支持 FLAG_SECURE')
       return false
     }
 
@@ -46,10 +51,10 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
       await window.setDecorations(true)
 
-      console.info('[PrivacyProtection] 已启用隐私保护模式')
+      logger.info('已启用隐私保护模式')
       return true
     } catch (error) {
-      console.error('[PrivacyProtection] 启用隐私保护失败:', error)
+      logger.error('启用隐私保护失败:', error)
       return false
     }
   }
@@ -63,10 +68,10 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
       await window.setDecorations(true)
 
-      console.info('[PrivacyProtection] 已禁用隐私保护模式')
+      logger.info('已禁用隐私保护模式')
       return true
     } catch (error) {
-      console.error('[PrivacyProtection] 禁用隐私保护失败:', error)
+      logger.error('禁用隐私保护失败:', error)
       return false
     }
   }
@@ -77,7 +82,7 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
     await enablePrivacyProtection()
 
-    console.info(`[PrivacyProtection] 进入私密聊天: ${roomId}`)
+    logger.info(`进入私密聊天: ${roomId}`)
   }
 
   async function leavePrivateChat(roomId: string) {
@@ -86,15 +91,15 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
     await disablePrivacyProtection()
 
-    console.info(`[PrivacyProtection] 离开私密聊天: ${roomId}`)
+    logger.info(`离开私密聊天: ${roomId}`)
   }
 
   async function setupPrivacyEventListener() {
     if (!isDesktop()) return
 
     try {
-      unlistenPrivacyEvent = await listen<{ action: string; roomId?: string }>('com.hula.privacy', (event) => {
-        console.info('[PrivacyProtection] 收到隐私事件:', event.payload)
+      unlistenPrivacyEvent = await listen<{ action: string; roomId?: string }>(PRIVACY_EVENT_NAME, (event) => {
+        logger.info('收到隐私事件:', event.payload)
 
         const { action, roomId } = event.payload
 
@@ -122,9 +127,9 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
         }
       })
 
-      console.info('[PrivacyProtection] 隐私事件监听已设置')
+      logger.info('隐私事件监听已设置')
     } catch (error) {
-      console.error('[PrivacyProtection] 设置隐私事件监听失败:', error)
+      logger.error('设置隐私事件监听失败:', error)
     }
   }
 
@@ -148,7 +153,7 @@ export function usePrivacyProtection(options: UsePrivacyProtectionOptions = {}) 
 
   function getCurrentUserId(): string {
     try {
-      const userStore = require('@/stores/user').useUserStore()
+      const userStore = require('@/stores/domains/user/user').useUserStore()
       return userStore.userInfo?.uid || 'anonymous'
     } catch {
       return 'anonymous'

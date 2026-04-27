@@ -2,22 +2,21 @@ import type { Emitter, Handler } from 'mitt'
 import mitt from 'mitt'
 import type { MittEnum } from '@/enums'
 
-const mittInstance: Emitter<any> = mitt()
+const mittInstance: Emitter<Record<string, unknown>> = mitt()
 
 export const useMitt = {
-  on: (event: MittEnum | string, handler: Handler<any>) => {
-    mittInstance.on(event, handler)
-    // 仅当在有效的响应式作用域中时才注册清理
+  on: <T = unknown>(event: MittEnum | string, handler: Handler<T>) => {
+    mittInstance.on(event, handler as Handler<unknown>)
     if (getCurrentScope()) {
       onUnmounted(() => {
-        mittInstance.off(event, handler)
+        mittInstance.off(event, handler as Handler<unknown>)
       })
     }
   },
-  emit: (event: MittEnum | string, data?: any) => {
+  emit: <T = unknown>(event: MittEnum | string, data?: T) => {
     mittInstance.emit(event, data)
   },
-  off: (event: MittEnum | string, handler: Handler<any>) => {
-    mittInstance.off(event, handler)
+  off: <T = unknown>(event: MittEnum | string, handler: Handler<T>) => {
+    mittInstance.off(event, handler as Handler<unknown>)
   }
 }

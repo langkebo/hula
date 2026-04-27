@@ -19,7 +19,7 @@
         <div v-if="isMobile()" class="flex items-center justify-center w-6 ms-5px h-2.5rem">
           <svg
             @click="handleVoiceClick"
-            :class="mobilePanelState === MobilePanelStateEnum.VOICE ? 'text-#169781' : ''"
+            :class="mobilePanelState === MobilePanelStateEnum.VOICE ? 'text-[--hula-color-primary-500]' : ''"
             class="w-25px h-25px mt-2px outline-none">
             <use href="#voice"></use>
           </svg>
@@ -51,14 +51,16 @@
               class="n-input"
               :class="
                 isMobile()
-                  ? 'empty:before:content-[attr(data-placeholder)] before:text-(12px #777) p-2 min-h-2rem ps-10px! text-14px! rounded-10px! max-h-8rem! flex items-center'
-                  : 'empty:before:content-[attr(data-placeholder)] before:text-(12px #777) p-2'
+                  ? 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--hula-text-tertiary]) p-2 min-h-2rem ps-10px! text-14px! rounded-10px! max-h-8rem! flex items-center'
+                  : 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--hula-text-tertiary]) p-2'
               "></div>
           </n-scrollbar>
         </ContextMenu>
 
         <!-- 工具栏 -->
-        <div v-if="!isMobile()" class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-gray-200/50">
+        <div
+          v-if="!isMobile()"
+          class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-[--hula-border-default]">
           <!-- 位置共享 -->
           <n-tooltip trigger="hover">
             <template #trigger>
@@ -105,16 +107,16 @@
         <!-- 发送按钮 -->
         <div
           v-if="!isMobile()"
-          class="flex-shrink-0 max-h-52px p-4px pr-12px border-t border-gray-200/50 flex justify-end mb-4px">
+          class="flex-shrink-0 max-h-52px p-4px pr-12px border-t border-[--hula-border-default] flex justify-end mb-4px">
           <n-button-group size="small">
             <n-button
-              color="#13987f"
+              color="var(--hula-color-primary-500)"
               :disabled="props.isAIMode && props.isAIStreaming ? false : disabledSend"
               class="w-65px"
               @click="handleDesktopSend">
               {{ props.isAIMode && props.isAIStreaming ? '停止思考' : t('editor.send') }}
             </n-button>
-            <n-button color="#13987f" class="p-[0_6px]">
+            <n-button color="var(--hula-color-primary-500)" class="p-[0_6px]">
               <template #icon>
                 <n-popselect
                   v-model:show="arrow"
@@ -133,7 +135,7 @@
                       justify="center"
                       align="center"
                       :size="4"
-                      class="text-(12px #777) cursor-default tracking-1 select-none">
+                      class="text-(12px [--hula-text-tertiary]) cursor-default tracking-1 select-none">
                       <i18n-t keypath="editor.send_or_newline">
                         <template #send>
                           <span v-if="chatKey !== 'Enter'">
@@ -182,8 +184,8 @@
                   round
                   :size="22"
                   :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                  :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-                  :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  color="var(--hula-surface-panel)"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   :render-placeholder="() => null"
                   :intersection-observer-options="{
                     root: '#image-chat-ait'
@@ -214,12 +216,12 @@
                 <n-flex align="center" justify="space-between" class="w-full pr-6px">
                   <n-flex align="center">
                     <img class="size-18px object-contain" :src="item.avatar" alt="" />
-                    <p class="text-(14px [--chat-text-color])">{{ item.name }}</p>
+                    <p class="text-(14px [--hula-text-primary])">{{ item.name }}</p>
                   </n-flex>
 
                   <n-flex align="center" :size="6">
                     <div
-                      class="ml-6px p-[4px_8px] size-fit bg-[--bate-bg] rounded-6px text-(11px [--bate-color] center)">
+                      class="ml-6px p-[4px_8px] size-fit bg-[--hula-color-beta-100] rounded-6px text-(11px [--hula-color-beta-500] center)">
                       Beta
                     </div>
                     <n-tag size="small" class="text-10px" :bordered="false" type="success">128k</n-tag>
@@ -241,10 +243,10 @@
           </div>
           <div
             v-if="msgInput"
-            class="flex-shrink-0 max-h-62px h-full border-t border-gray-200/50 flex items-center justify-end">
+            class="flex-shrink-0 max-h-62px h-full border-t border-[--hula-border-default] flex items-center justify-end">
             <n-button-group size="small" :class="isMobile() ? 'h-full' : 'pr-20px'">
               <n-button
-                color="#13987f"
+                color="var(--hula-color-primary-500)"
                 :disabled="props.isAIMode && props.isAIStreaming ? false : disabledSend"
                 class="w-3rem h-full"
                 @click="handleMobileSend">
@@ -283,17 +285,22 @@ import { MacOsKeyEnum, MittEnum, RoomTypeEnum, ThemeEnum, WinKeyEnum } from '@/e
 import { useCommon } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useMsgInput } from '@/hooks/useMsgInput.ts'
-import { useGlobalStore } from '@/stores/global'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
-import { useSendOptions } from '@/views/moreWindow/settings/config.ts'
-import { useGroupStore } from '@/stores/group'
+import { useSendOptions } from '@/composables/settings/settingsOptions'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { MobilePanelStateEnum } from '@/enums'
 import { useI18n, I18nT } from 'vue-i18n'
 import type { UploadFile } from '@/utils/FileType'
+import type { AIModel, UserItem } from '@/services/types.ts'
 import LocationModal from './location/LocationModal.vue'
-import { matrixBeaconService } from '@/services/matrix/MatrixBeaconService'
+import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService'
+import { createLogger } from '@/utils/Logger'
+import type { LocationData } from '@/types/common'
+
+const logger = createLogger('MsgInput')
 
 interface Props {
   isAIMode?: boolean
@@ -308,7 +315,6 @@ const props = withDefaults(defineProps<Props>(), {
 const { t } = useI18n()
 const appWindow = WebviewWindow.getCurrent()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 const { handlePaste, processFiles } = useCommon()
 const sendOptions = useSendOptions()
 /** 发送按钮旁的箭头 */
@@ -451,7 +457,7 @@ const handleBeaconClick = async () => {
       window.$message?.success(t('message.beacon.started') || '信标已启动')
     }
   } catch (error) {
-    console.error('[MsgInput] 启动 Beacon 失败:', error)
+    logger.error('启动 Beacon 失败:', error)
     window.$message?.error(t('message.beacon.failed') || '信标启动失败')
   }
 }
@@ -470,7 +476,7 @@ const handleFileConfirm = async (files: UploadFile[]) => {
   try {
     await sendFilesDirect(files)
   } catch (error) {
-    console.error('弹窗发送文件失败:', error)
+    logger.error('弹窗发送文件失败:', error)
   }
   showFileModal.value = false
   pendingFiles.value = []
@@ -488,33 +494,42 @@ const handleGlobalFilesDrop = async (files: UploadFile[]) => {
   try {
     await processFiles(files, messageInputDom.value, showFileModalCallback)
   } catch (error) {
-    console.error('处理拖拽文件失败:', error)
+    logger.error('处理拖拽文件失败:', error)
     window.$message?.error?.('处理拖拽文件失败')
   }
 }
 
 /** 位置选择完成的回调 */
-const handleLocationSelected = async (locationData: any) => {
-  await sendLocationDirect(locationData)
+const handleLocationSelected = async (locationData: LocationData) => {
+  try {
+    await sendLocationDirect(locationData)
+  } catch (error) {
+    logger.error('发送位置失败:', error)
+    window.$message?.error?.(t('message.location.send_failed') || '发送位置失败')
+  }
 }
 
 /** 处理键盘上下键切换提及项 */
 const handleAitKeyChange = (
   direction: 1 | -1,
-  list: Ref<any[]>,
+  list: Ref<UserItem[] | AIModel[]>,
   virtualListInst: VirtualListInst,
-  key: Ref<number | string | null>
+  key: Ref<string | null>
 ) => {
   const currentIndex = list.value.findIndex((item) => item.uid === key.value)
   const newIndex = Math.max(0, Math.min(currentIndex + direction, list.value.length - 1))
-  key.value = list.value[newIndex].uid
-  // 获取新选中项在列表中的索引，并滚动到该位置(使用key来进行定位)
-  virtualListInst?.scrollTo({ index: newIndex })
+  const item = list.value[newIndex]
+  if (item) {
+    key.value = item.uid
+    // 获取新选中项在列表中的索引，并滚动到该位置(使用key来进行定位)
+    virtualListInst?.scrollTo({ index: newIndex })
+  }
 }
 
-const closeMenu = (event: any) => {
+/** 关闭右键菜单 */
+const closeMenu = (event: MouseEvent) => {
   /** 需要判断点击如果不是.context-menu类的元素的时候，menu才会关闭 */
-  if (!event.target.matches('#message-input, #message-input *')) {
+  if (event.target instanceof HTMLElement && !event.target.matches('#message-input, #message-input *')) {
     ait.value = false
   }
 }
@@ -537,6 +552,10 @@ const disableSelectAll = (e: KeyboardEvent) => {
 // 语音录制相关事件处理
 const handleVoiceCancel = () => {
   isVoiceMode.value = false
+}
+
+const handleAitClick = (item: UserItem) => {
+  handleAit(item)
 }
 
 // 使用枚举管理移动端面板状态
@@ -652,32 +671,12 @@ const determineSendType = (): 'ai' | 'im' => {
   return 'im'
 }
 
-// 手机端发送逻辑
+/** 移动端发送消息 */
 const handleMobileSend = async () => {
-  const isAi = determineSendType() === 'ai'
-  if (isAi && props.isAIStreaming) {
-    selfEmitter('stop-ai')
-    return
-  }
-  const content = getInputContent()
-  if (!content.trim()) {
-    window.$message.warning('请输入消息内容')
-    return
-  }
-  if (isAi) {
-    await handleAISend()
+  if (props.isAIMode && props.isAIStreaming) {
+    useMitt.emit(MittEnum.AI_STOP_STREAMING)
   } else {
     await send()
-  }
-
-  // 发送后不关闭面板，保持当前状态
-  selfEmitter('send', {
-    panelState: mobilePanelState.value
-  })
-
-  // 移动端发送消息后重新聚焦输入框
-  if (isMobile()) {
-    focusInput()
   }
 }
 
@@ -705,20 +704,10 @@ const handleAISend = async () => {
   clearInput()
 }
 
-// 桌面端发送逻辑
+/** 桌面端发送消息 */
 const handleDesktopSend = async () => {
-  const isAi = determineSendType() === 'ai'
-  if (isAi && props.isAIStreaming) {
-    selfEmitter('stop-ai')
-    return
-  }
-  const content = getInputContent()
-  if (!content.trim()) {
-    window.$message.warning('请输入消息内容')
-    return
-  }
-  if (isAi) {
-    await handleAISend()
+  if (props.isAIMode && props.isAIStreaming) {
+    useMitt.emit(MittEnum.AI_STOP_STREAMING)
   } else {
     await send()
   }
@@ -815,9 +804,16 @@ onMounted(async () => {
       setIsFocus(true)
     }
   })
-  // 窗口与组件间通信：通过 mitt 事件监听，AT 功能需要在单聊/群聊中正确区分
-  useMitt.on(MittEnum.AT, (event: any) => {
-    handleAit(groupStore.getUserInfo(event)!)
+  /** 监听艾特事件 */
+  useMitt.on(MittEnum.AT, (event: string | { user: UserItem }) => {
+    if (typeof event === 'object' && event.user) {
+      handleAit(event.user)
+    } else {
+      const userInfo = groupStore.getUserInfo(event as string)
+      if (userInfo) {
+        handleAit(userInfo)
+      }
+    }
   })
   // 监听录音模式切换事件
   useMitt.on(MittEnum.VOICE_RECORD_TOGGLE, () => {
@@ -830,7 +826,7 @@ onMounted(async () => {
       isVoiceMode.value = false
     }
   })
-  appWindow.listen('screenshot', async (e: any) => {
+  appWindow.listen<{ buffer: number[]; mimeType: string }>('screenshot', async (e) => {
     // 确保输入框获得焦点
     if (messageInputDom.value) {
       messageInputDom.value.focus()
@@ -842,7 +838,7 @@ onMounted(async () => {
 
         await processFiles([file], messageInputDom.value, showFileModalCallback)
       } catch (error) {
-        console.error('处理截图失败:', error)
+        logger.error('处理截图失败:', error)
       }
     }
   })

@@ -6,7 +6,7 @@
  *  枚举值：全部大写，单词间用下划线分割
  */
 
-/** WebSocket 消息类型 (从旧系统迁移) */
+/** WebSocket 消息类型 */
 export enum WsResponseMessageType {
   NO_INTERNET = 'noInternet',
   LOGIN_SUCCESS = 'loginSuccess',
@@ -45,36 +45,6 @@ export enum WsResponseMessageType {
   WEBRTC_SIGNAL = 'WEBRTC_SIGNAL',
   AllMuted = 'AllMuted',
   CANCEL = 'CANCEL'
-}
-
-/**请求响应码类型*/
-export enum RCodeEnum {
-  /**成功请求*/
-  OK = '200',
-  /**请求错误*/
-  FAIL = '400',
-  /**服务器出现问题*/
-  SERVE_EXCEPTION = '500',
-  /**业务出现问题*/
-  BUSINESS_EXCEPTION = '600'
-}
-
-/**URL*/
-export enum URLEnum {
-  /**用户*/
-  USER = '/im/user',
-  /**Token*/
-  TOKEN = '/oauth',
-  /**聊天*/
-  CHAT = '/im/chat',
-  /**房间*/
-  ROOM = '/im/room',
-  /**系统*/
-  SYSTEM = '/system',
-  /**验证码*/
-  CAPTCHA = '/im/captcha',
-  /**消息推送服务前缀*/
-  WEBSOCKET = '/ws'
 }
 
 /** tauri原生跨窗口通信时传输的类型 */
@@ -139,8 +109,6 @@ export enum MittEnum {
   LOCATE_SESSION = 'locateSession',
   /** 聊天框滚动到底部 */
   CHAT_SCROLL_BOTTOM = 'chatScrollBottom',
-  /** 创建群聊 */
-  CREATE_GROUP = 'createGroup',
   /** 更新提示 */
   CHECK_UPDATE = 'checkUpdate',
   /** 强制更新 */
@@ -164,7 +132,11 @@ export enum MittEnum {
   /** 会话切换完成*/
   SESSION_CHANGED = 'sessionChanged',
   /** 更新会话最后一条消息 */
-  UPDATE_SESSION_LAST_MSG = 'updateSessionLastMsg'
+  UPDATE_SESSION_LAST_MSG = 'updateSessionLastMsg',
+  /** 打开线程 */
+  OPEN_THREAD = 'openThread',
+  /** AI 停止流式输出 */
+  AI_STOP_STREAMING = 'ai_stop_streaming'
 }
 
 /** 主题类型 */
@@ -220,8 +192,6 @@ export enum StoresEnum {
   SESSION_UNREAD = 'sessionUnread',
   /** 缓存 */
   CACHED = 'cached',
-  /** 配置 */
-  CONFIG = 'config',
   /** 视频查看器数据 */
   VIDEOVIEWER = 'videoViewer',
   /** 文件下载管理 */
@@ -604,11 +574,6 @@ export enum NotificationTypeEnum {
 export enum TauriCommand {
   /** 更新我的群聊信息 */
   UPDATE_MY_ROOM_INFO = 'update_my_room_info',
-  /** 获取房间成员 */
-  GET_ROOM_MEMBERS = 'get_room_members',
-  /** 分页查询所有房间 */
-  PAGE_ROOM = 'page_room',
-  /** 分页查询房间成员 */
   CURSOR_PAGE_ROOM_MEMBERS = 'cursor_page_room_members',
   /** 列出所有会话列表 */
   LIST_CONTACTS = 'list_contacts_command',
@@ -644,8 +609,8 @@ export enum TauriCommand {
   GENERATE_MINIO_PRESIGNED_URL = 'generate_minio_presigned_url',
   /** 通过 Rust 端 PUT 上传本地文件 */
   UPLOAD_FILE_PUT = 'upload_file_put',
-  /** 通过 Rust 端七牛分片上传本地文件 */
-  QINIU_UPLOAD_RESUMABLE = 'qiniu_upload_resumable'
+  /** 检查管理员状态 */
+  CHECK_ADMIN_STATUS = 'check_admin_status'
 }
 
 // 通话状态枚举
@@ -663,329 +628,6 @@ export enum RTCCallStatus {
 export enum CallTypeEnum {
   AUDIO = 1, // 语音通话
   VIDEO = 2 // 视频通话
-}
-
-export enum ImUrlEnum {
-  // Token 相关
-  /** 登录 */
-  LOGIN = 'login',
-  /** 刷新token */
-  REFRESH_TOKEN = 'refreshToken',
-  /** 忘记密码 */
-  FORGET_PASSWORD = 'forgetPassword',
-  /** 检查token */
-  CHECK_TOKEN = 'checkToken',
-  /** 退出登录 */
-  LOGOUT = 'logout',
-  /** 注册 */
-  REGISTER = 'register',
-
-  // 系统相关
-  /** 获取七牛云token */
-  GET_QINIU_TOKEN = 'getQiniuToken',
-  /** 初始化配置 */
-  INIT_CONFIG = 'initConfig',
-  /** 获取默认存储提供者 */
-  STORAGE_PROVIDER = 'storageProvider',
-  /** 获取模型列表 */
-  GET_ASSISTANT_MODEL_LIST = 'getAssistantModelList',
-  /** 坐标转换 */
-  MAP_COORD_TRANSLATE = 'mapCoordTranslate',
-  /** 逆地理编码 */
-  MAP_REVERSE_GEOCODE = 'mapReverseGeocode',
-  /** 地址静态图片 */
-  MAP_STATIC = 'mapStatic',
-
-  // 验证码相关
-  /** 发送验证码 */
-  SEND_CAPTCHA = 'sendCaptcha',
-  /** 获取验证码 */
-  GET_CAPTCHA = 'getCaptcha',
-
-  // 群公告相关
-  /** 查看群公告 */
-  ANNOUNCEMENT = 'announcement',
-  /** 编辑群公告 */
-  EDIT_ANNOUNCEMENT = 'editAnnouncement',
-  /** 删除群公告 */
-  DELETE_ANNOUNCEMENT = 'deleteAnnouncement',
-  /** 发布群公告 */
-  PUSH_ANNOUNCEMENT = 'pushAnnouncement',
-  /** 获取群公告列表 */
-  GET_ANNOUNCEMENT_LIST = 'getAnnouncementList',
-
-  // 群聊申请相关
-  /** 申请加群 */
-  APPLY_GROUP = 'applyGroup',
-
-  // 群聊搜索和管理
-  /** 搜索群聊 */
-  SEARCH_GROUP = 'searchGroup',
-  /** 修改我的群聊信息 */
-  UPDATE_MY_ROOM_INFO = 'updateMyRoomInfo',
-  /** 修改群聊信息 */
-  UPDATE_ROOM_INFO = 'updateRoomInfo',
-  /** 群聊列表 */
-  GROUP_LIST = 'groupList',
-  /** 群聊详情 */
-  GROUP_DETAIL = 'groupDetail',
-  /** 群聊信息 */
-  GROUP_INFO = 'groupInfo',
-
-  // 群聊管理员
-  /** 撤销管理员 */
-  REVOKE_ADMIN = 'revokeAdmin',
-  /** 添加管理员 */
-  ADD_ADMIN = 'addAdmin',
-
-  // 群聊成员管理
-  /** 退出群聊 */
-  EXIT_GROUP = 'exitGroup',
-  /** 接受邀请 */
-  ACCEPT_INVITE = 'acceptInvite',
-  /** 邀请列表 */
-  INVITE_LIST = 'inviteList',
-  /** 邀请群成员 */
-  INVITE_GROUP_MEMBER = 'inviteGroupMember',
-  /** 创建群聊 */
-  CREATE_GROUP = 'createGroup',
-
-  // 聊天会话相关
-  /** 屏蔽消息 */
-  SHIELD = 'shield',
-  /** 通知设置 */
-  NOTIFICATION = 'notification',
-  /** 删除会话 */
-  DELETE_SESSION = 'deleteSession',
-  /** 设置会话置顶 */
-  SET_SESSION_TOP = 'setSessionTop',
-  /** 会话详情（联系人） */
-  SESSION_DETAIL_WITH_FRIENDS = 'sessionDetailWithFriends',
-  /** 会话详情 */
-  SESSION_DETAIL = 'sessionDetail',
-
-  // 消息已读未读
-  /** 获取消息已读数 */
-  GET_MSG_READ_COUNT = 'getMsgReadCount',
-  /** 获取消息已读列表 */
-  GET_MSG_READ_LIST = 'getMsgReadList',
-
-  // 好友相关
-  /** 修改好友备注 */
-  MODIFY_FRIEND_REMARK = 'modifyFriendRemark',
-  /** 删除好友 */
-  DELETE_FRIEND = 'deleteFriend',
-  /** 发送添加好友请求 */
-  SEND_ADD_FRIEND_REQUEST = 'sendAddFriendRequest',
-  /** 处理邀请 */
-  HANDLE_INVITE = 'handleInvite',
-  /** 通知未读数 */
-  NOTICE_UN_READ_COUNT = 'noticeUnReadCount',
-  /** 请求通知页面 */
-  REQUEST_NOTICE_PAGE = 'requestNoticePage',
-  /** 通知已读 */
-  REQUEST_NOTICE_READ = 'RequestNoticeRead',
-  /** 获取联系人列表 */
-  GET_CONTACT_LIST = 'getContactList',
-  /** 搜索好友 */
-  SEARCH_FRIEND = 'searchFriend',
-
-  // 用户状态相关
-  /** 改变用户状态 */
-  CHANGE_USER_STATE = 'changeUserState',
-  /** 获取所有用户状态 */
-  GET_ALL_USER_STATE = 'getAllUserState',
-
-  // 二维码相关
-  /** 生成二维码 */
-  GENERATE_QR_CODE = 'generateQRCode',
-  /** 检查二维码状态 */
-  CHECK_QR_STATUS = 'checkQRStatus',
-  /** 扫描二维码 */
-  SCAN_QR_CODE = 'scanQRCode',
-  /** 确认登录 */
-  CONFIRM_QR_CODE = 'confirmQRCode',
-
-  // 用户信息相关
-  /** 上传头像 */
-  UPLOAD_AVATAR = 'uploadAvatar',
-  /** 获取表情 */
-  GET_EMOJI = 'getEmoji',
-  /** 删除表情 */
-  DELETE_EMOJI = 'deleteEmoji',
-  /** 添加表情 */
-  ADD_EMOJI = 'addEmoji',
-  /** 设置用户徽章 */
-  SET_USER_BADGE = 'setUserBadge',
-  /** 修改用户基础信息 */
-  MODIFY_USER_INFO = 'ModifyUserInfo',
-  /** 获取用户信息详情 */
-  GET_USER_INFO_DETAIL = 'getUserInfoDetail',
-  /** 批量获取徽章 */
-  GET_BADGES_BATCH = 'getBadgesBatch',
-  /** 获取徽章列表 */
-  GET_BADGE_LIST = 'getBadgeList',
-  /** 拉黑用户 */
-  BLOCK_USER = 'blockUser',
-
-  // 消息相关
-  /** 撤回消息 */
-  RECALL_MSG = 'recallMsg',
-  /** 标记消息 */
-  MARK_MSG = 'markMsg',
-  /** 获取消息列表 */
-  GET_MSG_LIST = 'getMsgList',
-  /** 获取成员统计 */
-  GET_MEMBER_STATISTIC = 'getMemberStatistic',
-
-  /** 获取朋友圈详情 */
-  FEED_DETAIL = 'feedDetail',
-  /** 获取朋友圈列表 */
-  FEED_LIST = 'feedList',
-  /** 发布朋友圈 */
-  PUSH_FEED = 'pushFeed',
-  /** 删除朋友圈 */
-  DEL_FEED = 'delFeed',
-  /** 编辑朋友圈 */
-  EDIT_FEED = 'editFeed',
-  /** 获取朋友圈权限 */
-  GET_FEED_PERMISSION = 'getFeedPermission',
-
-  // 朋友圈点赞相关
-  /** 点赞或取消点赞 */
-  FEED_LIKE_TOGGLE = 'feedLikeToggle',
-  /** 获取点赞列表 */
-  FEED_LIKE_LIST = 'feedLikeList',
-  /** 获取点赞数量 */
-  FEED_LIKE_COUNT = 'feedLikeCount',
-  /** 判断是否已点赞 */
-  FEED_LIKE_HAS_LIKED = 'feedLikeHasLiked',
-
-  // 朋友圈评论相关
-  /** 发表评论 */
-  FEED_COMMENT_ADD = 'feedCommentAdd',
-  /** 删除评论 */
-  FEED_COMMENT_DELETE = 'feedCommentDelete',
-  /** 获取评论列表 */
-  FEED_COMMENT_LIST = 'feedCommentList',
-  /** 获取所有评论列表（不分页） */
-  FEED_COMMENT_ALL = 'feedCommentAll',
-  /** 获取评论数量 */
-  FEED_COMMENT_COUNT = 'feedCommentCount',
-
-  // 群成员信息
-  /** 获取所有用户基础信息 */
-  GET_ALL_USER_BASE_INFO = 'getAllUserBaseInfo',
-
-  GROUP_LIST_MEMBER = 'groupListMember',
-  SEND_MSG = 'sendMsg',
-  SET_HIDE = 'setHide',
-  GET_FRIEND_PAGE = 'getFriendPage',
-  MARK_MSG_READ = 'markMsgRead',
-  /** 移出群成员 */
-  REMOVE_GROUP_MEMBER = 'removeGroupMember',
-  CHECK_EMAIL = 'checkEmail',
-
-  MERGE_MSG = 'mergeMsg',
-  GET_USER_BY_IDS = 'getUserByIds',
-
-  /** 发送 AI 消息 */
-  MESSAGE_SEND_STREAM = 'messageSendStream',
-  /** 保存生成内容消息（用于音频、图片、视频等生成功能） */
-  MESSAGE_SAVE_GENERATED_CONTENT = 'messageSaveGeneratedContent',
-  /** 获取指定会话消息列表 */
-  MESSAGE_LIST_BY_CONVERSATION_ID = 'messageListByConversationId',
-  /** 删除单条消息 */
-  MESSAGE_DELETE = 'messageDelete',
-  /** 删除指定对话的消息 */
-  MESSAGE_DELETE_BY_CONVERSATION_ID = 'messageDeleteByConversationId',
-  /** 获取会话消息列表 */
-  CONVERSATION_PAGE = 'conversationPage',
-  /** 获得【我的】聊天对话 */
-  CONVERSATION_GET_MY = 'conversationGetMy',
-  /** 创建会话 */
-  CONVERSATION_CREATE_MY = 'conversationCreateMy',
-  /** 更新会话 */
-  CONVERSATION_UPDATE_MY = 'conversationUpdateMy',
-  /** 删除会话 */
-  CONVERSATION_DELETE_MY = 'conversationDeleteMy',
-  /** 获得模型 */
-  MODEL_GET = 'modelGet',
-  /** 获得模型剩余使用次数 */
-  MODEL_REMAINING_USAGE = 'modelRemainingUsage',
-  /** 获得模型分页 */
-  MODEL_PAGE = 'modelPage',
-  /** 创建模型 */
-  MODEL_CREATE = 'modelCreate',
-  /** 更新模型 */
-  MODEL_UPDATE = 'modelUpdate',
-  /** 删除模型 */
-  MODEL_DELETE = 'modelDelete',
-
-  // ==================== AI 图片生成 ====================
-  /** 获取【我的】图片生成分页 */
-  IMAGE_MY_PAGE = 'imageMyPage',
-  /** 获取【我的】图片生成记录 */
-  IMAGE_GET = 'imageGet',
-  /** 根据ID列表获取【我的】图片记录 */
-  IMAGE_MY_LIST_BY_IDS = 'imageMyListByIds',
-  /** 生成图片 */
-  IMAGE_DRAW = 'imageDraw',
-  /** 删除【我的】图片记录 */
-  IMAGE_DELETE_MY = 'imageDeleteMy',
-
-  // ==================== AI 视频生成 ====================
-  /** 获取【我的】视频生成分页 */
-  VIDEO_MY_PAGE = 'videoMyPage',
-  /** 获取【我的】视频生成记录 */
-  VIDEO_GET = 'videoGet',
-  /** 根据ID列表获取【我的】视频记录 */
-  VIDEO_MY_LIST_BY_IDS = 'videoMyListByIds',
-  /** 生成视频 */
-  VIDEO_GENERATE = 'videoGenerate',
-  /** 删除【我的】视频记录 */
-  VIDEO_DELETE_MY = 'videoDeleteMy',
-
-  // ==================== AI 音频生成 ====================
-  /** 获取【我的】音频生成分页 */
-  AUDIO_MY_PAGE = 'audioMyPage',
-  /** 获取【我的】音频生成记录 */
-  AUDIO_GET_MY = 'audioGetMy',
-  /** 根据ID列表获取【我的】音频记录 */
-  AUDIO_MY_LIST_BY_IDS = 'audioMyListByIds',
-  /** 生成音频 */
-  AUDIO_GENERATE = 'audioGenerate',
-  /** 删除【我的】音频记录 */
-  AUDIO_DELETE_MY = 'audioDeleteMy',
-  /** 获取指定模型支持的声音列表 */
-  AUDIO_VOICES = 'audioVoices',
-
-  /** API 密钥分页 */
-  API_KEY_PAGE = 'apiKeyPage',
-  /** API 密钥简单列表 */
-  API_KEY_SIMPLE_LIST = 'apiKeySimpleList',
-  /** 创建 API 密钥 */
-  API_KEY_CREATE = 'apiKeyCreate',
-  /** 更新 API 密钥 */
-  API_KEY_UPDATE = 'apiKeyUpdate',
-  /** 删除 API 密钥 */
-  API_KEY_DELETE = 'apiKeyDelete',
-  /** 查询 API 密钥余额 */
-  API_KEY_BALANCE = 'apiKeyBalance',
-  /** 获取平台列表 */
-  PLATFORM_LIST = 'platformList',
-  /** 添加平台模型 */
-  PLATFORM_ADD_MODEL = 'platformAddModel',
-  /** 聊天角色分页 */
-  CHAT_ROLE_PAGE = 'chatRolePage',
-  /** 聊天角色类别列表 */
-  CHAT_ROLE_CATEGORY_LIST = 'chatRoleCategoryList',
-  /** 创建聊天角色 */
-  CHAT_ROLE_CREATE = 'chatRoleCreate',
-  /** 更新聊天角色 */
-  CHAT_ROLE_UPDATE = 'chatRoleUpdate',
-  /** 删除聊天角色 */
-  CHAT_ROLE_DELETE = 'chatRoleDelete'
 }
 
 // 滚动意图管理枚举

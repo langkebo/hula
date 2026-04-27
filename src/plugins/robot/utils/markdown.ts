@@ -1,5 +1,4 @@
 import type { DefineComponent } from 'vue'
-import { MarkdownCodeBlockNode, setCustomComponents } from 'markstream-vue'
 
 interface MarkdownCodeBlockNodeData {
   type: 'code_block'
@@ -28,16 +27,15 @@ type MarkdownCodeBlockNodeProps = {
   showExpandButton?: boolean
   showPreviewButton?: boolean
   showFontSizeButtons?: boolean
-  onCopy?: (...args: any[]) => void
-  onPreviewCode?: (...args: any[]) => void
+  onCopy?: (...args: unknown[]) => void
+  onPreviewCode?: (...args: unknown[]) => void
   [key: string]: unknown
 }
-
-const MarkdownCodeBlockNodeComponent = MarkdownCodeBlockNode as unknown as DefineComponent<MarkdownCodeBlockNodeProps>
 
 export const ROBOT_MARKDOWN_CUSTOM_ID = 'robot-chat-markdown'
 
 let initialized = false
+let initPromise: Promise<void> | null = null
 
 const toolbarOverrides = {
   isShowPreview: false,
@@ -48,29 +46,41 @@ const toolbarOverrides = {
   showCopyButton: true
 } satisfies Partial<MarkdownCodeBlockNodeProps>
 
-const RobotMarkdownCodeBlockNode = defineComponent({
-  name: 'RobotMarkdownCodeBlockNode',
-  inheritAttrs: false,
-  setup(_, { attrs, slots }) {
-    return () =>
-      h(
-        MarkdownCodeBlockNodeComponent,
-        {
-          ...(attrs as Partial<MarkdownCodeBlockNodeProps>),
-          ...toolbarOverrides
-        } as MarkdownCodeBlockNodeProps,
-        slots
-      )
-  }
-})
-
-// 配置默认的代码块组件和主题
-export function initMarkdownRenderer() {
+export async function initMarkdownRenderer() {
   if (initialized) return
+  if (initPromise) {
+    await initPromise
+    return
+  }
 
-  setCustomComponents(ROBOT_MARKDOWN_CUSTOM_ID, {
-    code_block: RobotMarkdownCodeBlockNode
-  })
+  initPromise = (async () => {
+    const { MarkdownCodeBlockNode, setCustomComponents } = await import('markstream-vue')
+    const MarkdownCodeBlockNodeComponent =
+      MarkdownCodeBlockNode as unknown as DefineComponent<MarkdownCodeBlockNodeProps>
 
-  initialized = true
+    const RobotMarkdownCodeBlockNode = defineComponent({
+      name: 'RobotMarkdownCodeBlockNode',
+      inheritAttrs: false,
+      setup(_, { attrs, slots }) {
+        return () =>
+          h(
+            MarkdownCodeBlockNodeComponent,
+            {
+              ...(attrs as Partial<MarkdownCodeBlockNodeProps>),
+              ...toolbarOverrides
+            } as MarkdownCodeBlockNodeProps,
+            slots
+          )
+      }
+    })
+
+    setCustomComponents(ROBOT_MARKDOWN_CUSTOM_ID, {
+      code_block: RobotMarkdownCodeBlockNode
+    })
+
+    initialized = true
+    initPromise = null
+  })()
+
+  await initPromise
 }

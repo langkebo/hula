@@ -79,21 +79,24 @@ import { invoke } from '@tauri-apps/api/core'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('QRCode')
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
-import { useLogin } from '@/hooks/useLogin'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { getEnhancedFingerprint } from '@/services/fingerprint'
 import { loginCommand } from '@/services/tauriCommand'
 import { TauriCommand } from '@/enums'
-import { useGlobalStore } from '@/stores/global'
-import { useSettingStore } from '@/stores/setting'
-import { matrixQrLoginService } from '@/services/matrix'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { matrixQrLoginService, type QRLoginResult } from '@/services/matrix'
 import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
-const naiveTheme = computed(() => (themes.value.content === 'dark' ? darkTheme : lightTheme))
+const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 const { createWebviewWindow } = useWindow()
 const { isTrayMenuShow } = storeToRefs(globalStore)
 const { t } = useI18n()
@@ -110,7 +113,8 @@ const qrCodeBgColor = ref('#FFFFFF')
 const qrCodeType = ref('canvas' as const)
 const qrCodeIcon = ref('/logo.png')
 const qrErrorCorrectionLevel = ref('H' as const)
-const pollInterval = ref<NodeJS.Timeout | null>(null)
+const timerManager = useTimerManager()
+const pollInterval = ref<number | null>(null)
 const pollStartAt = ref<number | null>(null)
 const MAX_POLL_DURATION = 5 * 60 * 1000 // 5分钟超时，防止长时间占用内存
 const pollingRequesting = ref(false)
@@ -127,7 +131,7 @@ const scanStatusText = computed(() =>
   scanStatus.value.textKey ? t(`login.qr.overlay.${scanStatus.value.textKey}`) : ''
 )
 
-const { loading: loginLoading, loginDisabled } = useLogin()
+const { loading: loginLoading, loginDisabled } = useLoginFlow()
 const loginContext: ThirdPartyLoginContext = {
   loading: loginLoading,
   loginDisabled
@@ -164,19 +168,22 @@ const refreshQRCode = () => {
 
 const clearPolling = () => {
   if (pollInterval.value) {
-    clearInterval(pollInterval.value)
+    timerManager.clearInterval(pollInterval.value)
     pollInterval.value = null
   }
   pollStartAt.value = null
 }
 
-const handleConfirmed = async (res: any) => {
+const handleConfirmed = async (res: QRLoginResult) => {
   if (confirmedHandled.value) {
     return
   }
   confirmedHandled.value = true
   clearPolling()
   try {
+    if (!res.data) {
+      throw new Error('missing data in QR login result')
+    }
     await invoke(TauriCommand.UPDATE_TOKEN, {
       req: {
         uid: res.data.uid,
@@ -185,7 +192,7 @@ const handleConfirmed = async (res: any) => {
       }
     })
 
-    await loginCommand({ uid: res.data.uid }, true).then(() => {
+    await loginCommand({ uid: res.data.uid }).then(() => {
       scanStatus.value = {
         status: 'success',
         icon: 'success',
@@ -195,7 +202,7 @@ const handleConfirmed = async (res: any) => {
       loadTextKey.value = 'login'
     })
   } catch (error) {
-    console.error('获取用户详情失败:', error)
+    logger.error('获取用户详情失败:', error)
     confirmedHandled.value = false
     handleError('fetch_failed')
   }
@@ -203,11 +210,10 @@ const handleConfirmed = async (res: any) => {
 
 const startPolling = () => {
   if (pollInterval.value) {
-    clearInterval(pollInterval.value)
+    timerManager.clearInterval(pollInterval.value)
   }
   pollStartAt.value = Date.now()
-  pollInterval.value = setInterval(async () => {
-    // 超时保护：超过 5 分钟自动停止并提示
+  pollInterval.value = timerManager.setInterval(async () => {
     if (pollStartAt.value && Date.now() - pollStartAt.value > MAX_POLL_DURATION) {
       clearPolling()
       handleError('expired')
@@ -219,13 +225,14 @@ const startPolling = () => {
     }
     pollingRequesting.value = true
     try {
-      const res: any = await matrixQrLoginService.checkStatus()
+      const res = await matrixQrLoginService.checkStatus()
+      if (!res) {
+        return
+      }
       switch (res.status) {
         case 'PENDING':
-          // 等待中
           break
         case 'SCANNED':
-          // 已扫描，等待确认
           handleAuth()
           break
         case 'CONFIRMED':

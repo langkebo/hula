@@ -84,7 +84,7 @@ const handleCancel = () => {
 
 <style scoped lang="scss">
 .reply-composer {
-  @apply flex items-start p-8px bg-[--right-chat-reply-color] rounded-8px mb-8px;
+  @apply flex items-start p-8px bg-[--hula-surface-subtle] rounded-8px mb-8px;
 }
 
 .reply-preview {
@@ -92,7 +92,7 @@ const handleCancel = () => {
 }
 
 .reply-line {
-  @apply w-3px h-full min-h-40px rounded-2px bg-#13987f;
+  @apply w-3px h-full min-h-40px rounded-2px bg-[--hula-color-primary-500];
 }
 
 .reply-content {
@@ -104,11 +104,11 @@ const handleCancel = () => {
 }
 
 .reply-sender {
-  @apply text-12px color-#13987f font-medium flex-1 truncate;
+  @apply text-12px color-[--hula-color-primary-500] font-medium flex-1 truncate;
 }
 
 .reply-body {
-  @apply text-12px color-#909090 truncate;
+  @apply text-12px color-[--hula-text-tertiary] truncate;
 }
 
 .reply-text {
@@ -129,6 +129,6 @@ const handleCancel = () => {
 }
 
 .reply-type-label {
-  @apply text-12px color-#909090;
+  @apply text-12px color-[--hula-text-tertiary];
 }
 </style>

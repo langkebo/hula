@@ -3,9 +3,12 @@ import { LogicalSize } from '@tauri-apps/api/dpi'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { UserAttentionType, primaryMonitor, type Monitor } from '@tauri-apps/api/window'
 import { info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('useWindow')
 import { assign } from 'es-toolkit/compat'
 import { CallTypeEnum, EventEnum, RoomTypeEnum } from '@/enums'
-import { useGlobalStore } from '@/stores/global'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isCompatibility, isDesktop, isMac, isWindows, isWindows10 } from '@/utils/PlatformConstants'
 
 /** 判断是兼容的系统 */
@@ -193,12 +196,12 @@ export const useWindow = () => {
    * @param payload - 要发送的 JSON 数据对象，不限制字段内容。
    * @returns 返回一个 Promise，表示调用 Rust 后端命令的完成情况。
    */
-  const sendWindowPayload = async (windowLabel: string, payload: any) => {
+  const sendWindowPayload = async (windowLabel: string, payload: Record<string, unknown>) => {
     // 移动端不支持窗口管理
     if (!isDesktop()) {
       return Promise.resolve()
     }
-    console.log('新窗口的载荷：', payload)
+    logger.debug('新窗口的载荷:', payload)
     return invoke<void>('push_window_payload', {
       label: windowLabel,
       // 这个payload只要是json就能传，不限制字段
@@ -239,13 +242,13 @@ export const useWindow = () => {
    *
    * @example
    * const unlisten = await getWindowPayloadListener<MyPayload>('my-window', (event) => {
-   *   console.log('收到 payload 更新：', event.payload)
+   *   logger.debug('收到 payload 更新:', event.payload)
    * })
    *
    * // 需要时手动取消监听
    * unlisten()
    */
-  // async function getWindowPayloadListener<T>(this: any, windowLabel: string, callback: (event: any) => void) {
+  // async function getWindowPayloadListener<T>(this: unknown, windowLabel: string, callback: (event: unknown) => void) {
   //   const listenLabel = `${windowLabel}:update`
 
   //   return addListener(
@@ -271,7 +274,7 @@ export const useWindow = () => {
     width: number,
     height: number,
     parent: string,
-    payload?: Record<string, any>,
+    payload?: Record<string, unknown>,
     options?: {
       minWidth?: number
       minHeight?: number
@@ -343,7 +346,7 @@ export const useWindow = () => {
             movable: false
           })
         } catch (error) {
-          console.error('设置子窗口不可拖动失败:', error)
+          logger.error('设置子窗口不可拖动失败:', error)
         }
         try {
           await invoke('set_macos_traffic_lights_spacing', {
@@ -357,7 +360,7 @@ export const useWindow = () => {
 
     // 监听错误事件
     modalWindow.once('tauri://error', async (e) => {
-      console.error(`${title}窗口创建失败:`, e)
+      logger.error(`${title}窗口创建失败:`, e)
       window.$message?.error(`创建${title}窗口失败`)
       await parentWindow?.setEnabled(true)
     })
@@ -370,7 +373,7 @@ export const useWindow = () => {
         try {
           await parentWindow?.setEnabled(true)
         } catch (error) {
-          console.error('重新启用父窗口失败:', error)
+          logger.error('重新启用父窗口失败:', error)
         }
       }
     })
@@ -396,7 +399,7 @@ export const useWindow = () => {
     const newSize = new LogicalSize(clampedSize.width, clampedSize.height)
     // 调用窗口的 setSize 方法进行尺寸调整
     await webview?.setSize(newSize).catch((error) => {
-      console.error('无法调整窗口大小:', error)
+      logger.error('无法调整窗口大小:', error)
     })
   }
 
@@ -442,7 +445,7 @@ export const useWindow = () => {
     const webview = await WebviewWindow.getByLabel(label)
     if (webview) {
       await webview.setResizable(resizable).catch((error) => {
-        console.error('设置窗口可调整大小失败:', error)
+        logger.error('设置窗口可调整大小失败:', error)
       })
     }
   }
@@ -468,7 +471,7 @@ export const useWindow = () => {
       }
       await createRtcCallWindow(false, remoteUid, globalStore.currentSessionRoomId, callType)
     } catch (error) {
-      console.error('创建视频通话窗口失败:', error)
+      logger.error('创建视频通话窗口失败:', error)
     }
   }
 
@@ -517,4 +520,21 @@ export const useWindow = () => {
     startRtcCall,
     createRtcCallWindow
   }
+}
+
+export async function createWebviewWindow(
+  title: string,
+  label: string,
+  width: number,
+  height: number,
+  wantCloseWindow?: string,
+  resizable = false,
+  minW = 330,
+  minH = 495,
+  transparent?: boolean,
+  visible = false,
+  queryParams?: Record<string, string | number | boolean>
+) {
+  const { createWebviewWindow: _create } = useWindow()
+  return _create(title, label, width, height, wantCloseWindow, resizable, minW, minH, transparent, visible, queryParams)
 }

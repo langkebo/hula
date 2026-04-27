@@ -1,33 +1,40 @@
 <template>
-  <n-modal v-model:show="visible" preset="card" title="设备验证" style="width: 450px" :mask-closable="false">
+  <n-modal
+    v-model:show="visible"
+    preset="card"
+    :title="t('encryption.device_verify_dialog.title')"
+    style="width: 450px"
+    :mask-closable="false">
     <n-spin :show="loading">
       <div v-if="step === 'intro'" class="step-content">
         <div class="intro-icon">
           <Icon icon="mdi:shield-check" :width="64" />
         </div>
         <div class="intro-text">
-          <p>验证此设备可以确保您的加密通信安全。</p>
-          <p>验证后，您可以确认此设备确实是您本人的设备。</p>
+          <p>{{ t('encryption.device_verify_dialog.intro_primary') }}</p>
+          <p>{{ t('encryption.device_verify_dialog.intro_secondary') }}</p>
         </div>
         <div class="device-info-card">
           <div class="info-row">
-            <span class="info-label">设备ID</span>
+            <span class="info-label">{{ t('encryption.device_verify_dialog.device_id') }}</span>
             <span class="info-value">{{ deviceId }}</span>
           </div>
           <div class="info-row">
-            <span class="info-label">设备名称</span>
-            <span class="info-value">{{ deviceName || '未命名设备' }}</span>
+            <span class="info-label">{{ t('encryption.device_verify_dialog.device_name') }}</span>
+            <span class="info-value">{{ deviceName || t('encryption.device_verify_dialog.unnamed_device') }}</span>
           </div>
         </div>
         <div class="step-actions">
-          <n-button @click="handleCancel">取消</n-button>
-          <n-button type="primary" @click="startVerification">开始验证</n-button>
+          <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
+          <n-button type="primary" @click="startVerification">
+            {{ t('encryption.device_verify_dialog.start_verification') }}
+          </n-button>
         </div>
       </div>
 
       <div v-else-if="step === 'showKey'" class="step-content">
         <div class="key-display">
-          <div class="key-label">设备密钥指纹</div>
+          <div class="key-label">{{ t('encryption.device_verify_dialog.fingerprint_label') }}</div>
           <div class="fingerprint-display">
             <div v-for="(chunk, index) in fingerprintChunks" :key="index" class="fingerprint-chunk">
               {{ chunk }}
@@ -35,16 +42,20 @@
           </div>
           <div class="key-hint">
             <Icon icon="mdi:information" :width="16" />
-            <span>请确认此指纹与您其他设备上显示的指纹一致</span>
+            <span>{{ t('encryption.device_verify_dialog.fingerprint_hint') }}</span>
           </div>
         </div>
         <div class="verification-question">
-          <p>此指纹是否与您其他设备上显示的一致？</p>
+          <p>{{ t('encryption.device_verify_dialog.match_question') }}</p>
         </div>
         <div class="step-actions">
-          <n-button @click="handleCancel">取消</n-button>
-          <n-button type="error" @click="handleReject">不匹配</n-button>
-          <n-button type="primary" @click="handleConfirm">确认匹配</n-button>
+          <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
+          <n-button type="error" @click="handleReject">
+            {{ t('encryption.device_verify_dialog.mismatch') }}
+          </n-button>
+          <n-button type="primary" @click="handleConfirm">
+            {{ t('encryption.device_verify_dialog.confirm_match') }}
+          </n-button>
         </div>
       </div>
 
@@ -53,11 +64,11 @@
           <Icon icon="mdi:check-circle" :width="64" class="success-color" />
         </div>
         <div class="success-text">
-          <h3>设备验证成功！</h3>
-          <p>此设备已被标记为已验证。</p>
+          <h3>{{ t('encryption.device_verify_dialog.success_title') }}</h3>
+          <p>{{ t('encryption.device_verify_dialog.success_desc') }}</p>
         </div>
         <div class="step-actions">
-          <n-button type="primary" @click="handleClose">完成</n-button>
+          <n-button type="primary" @click="handleClose">{{ t('common.close') }}</n-button>
         </div>
       </div>
 
@@ -66,12 +77,12 @@
           <Icon icon="mdi:alert-circle" :width="64" class="error-color" />
         </div>
         <div class="error-text">
-          <h3>验证失败</h3>
-          <p>指纹不匹配，此设备可能不是您的设备。</p>
-          <p class="warning-text">建议您检查设备或联系支持。</p>
+          <h3>{{ t('encryption.device_verify_dialog.rejected_title') }}</h3>
+          <p>{{ t('encryption.device_verify_dialog.rejected_desc') }}</p>
+          <p class="warning-text">{{ t('encryption.device_verify_dialog.rejected_hint') }}</p>
         </div>
         <div class="step-actions">
-          <n-button @click="handleClose">关闭</n-button>
+          <n-button @click="handleClose">{{ t('common.close') }}</n-button>
         </div>
       </div>
     </n-spin>
@@ -82,8 +93,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { NModal, NButton, NSpin, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
-import { matrixEncryptionService } from '@/services/matrix'
-import { matrixClientService } from '@/services/matrix'
+import { useI18n } from 'vue-i18n'
+import { matrixEncryptionContextService, matrixEncryptionService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('DeviceVerify')
+const { t } = useI18n()
 
 defineOptions({
   name: 'DeviceVerifyDialog'
@@ -119,10 +133,7 @@ const fingerprintChunks = computed(() => {
 })
 
 onMounted(async () => {
-  const client = matrixClientService.getClient()
-  if (client) {
-    userId.value = client.getUserId() || ''
-  }
+  userId.value = matrixEncryptionContextService.getCurrentSessionContext().userId ?? ''
 })
 
 function handleCancel() {
@@ -145,32 +156,22 @@ async function startVerification() {
   loading.value = true
 
   try {
-    const client = matrixClientService.getClient() as any
-    if (!client) {
-      throw new Error('客户端未初始化')
+    const sessionContext = matrixEncryptionContextService.getCurrentSessionContext()
+    const targetUserId = sessionContext.userId
+    const targetDeviceId = props.deviceId || sessionContext.deviceId
+
+    if (!targetUserId || !targetDeviceId) {
+      throw new Error('Device context unavailable')
     }
 
-    const crypto = client.getCrypto?.()
-    if (!crypto) {
-      throw new Error('加密模块不可用')
-    }
-
-    const targetDeviceId = props.deviceId || client.deviceId
-    const keys = await crypto.getOwnDeviceKeys?.()
-
-    if (keys?.ed25519) {
-      fingerprint.value = keys.ed25519
-    } else {
-      const deviceKeys = await client.getStoredDevice?.(userId.value, targetDeviceId)
-      if (deviceKeys) {
-        fingerprint.value = deviceKeys.getFingerprint?.() || '无法获取指纹'
-      }
-    }
-
+    userId.value = targetUserId
+    fingerprint.value =
+      (await matrixEncryptionContextService.getDeviceFingerprint(targetUserId, targetDeviceId)) ||
+      t('encryption.device_verify_dialog.fingerprint_unavailable')
     step.value = 'showKey'
   } catch (error) {
-    console.error('[DeviceVerify] 获取设备密钥失败:', error)
-    message.error('获取设备密钥失败')
+    logger.error('Failed to load device fingerprint:', error)
+    message.error(t('encryption.device_verify_dialog.load_fingerprint_failed'))
   } finally {
     loading.value = false
   }
@@ -180,20 +181,21 @@ async function handleConfirm() {
   loading.value = true
 
   try {
-    const client = matrixClientService.getClient() as any
-    if (!client) {
-      throw new Error('客户端未初始化')
+    const sessionContext = matrixEncryptionContextService.getCurrentSessionContext()
+    const targetUserId = userId.value || sessionContext.userId
+    const targetDeviceId = props.deviceId || sessionContext.deviceId
+
+    if (!targetUserId || !targetDeviceId) {
+      throw new Error('Device context unavailable')
     }
 
-    const targetDeviceId = props.deviceId || client.deviceId
-
-    await matrixEncryptionService.trustDevice(userId.value, targetDeviceId)
+    await matrixEncryptionService.trustDevice(targetUserId, targetDeviceId)
 
     step.value = 'success'
-    message.success('设备验证成功')
+    message.success(t('encryption.verify_success'))
   } catch (error) {
-    console.error('[DeviceVerify] 验证失败:', error)
-    message.error('验证失败')
+    logger.error('Device verification failed:', error)
+    message.error(t('encryption.device_verify_dialog.verify_failed'))
   } finally {
     loading.value = false
   }
@@ -223,7 +225,7 @@ function handleReject() {
 
 .intro-text p {
   margin: 8px 0;
-  color: var(--text-color, #333);
+  color: var(--hula-text-primary);
 }
 
 .device-info-card {
@@ -252,7 +254,7 @@ function handleReject() {
 }
 
 .info-label {
-  color: #999;
+  color: var(--color-text-quaternary);
   font-size: 14px;
 }
 
@@ -268,7 +270,7 @@ function handleReject() {
 
 .key-label {
   font-size: 14px;
-  color: #999;
+  color: var(--color-text-quaternary);
   margin-bottom: 12px;
 }
 
@@ -299,7 +301,7 @@ function handleReject() {
   justify-content: center;
   gap: 8px;
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 
 .verification-question {
@@ -326,11 +328,11 @@ function handleReject() {
 }
 
 .success-color {
-  color: #52c41a;
+  color: var(--color-success);
 }
 
 .error-color {
-  color: #ff4d4f;
+  color: var(--color-danger);
 }
 
 .success-text,
@@ -346,11 +348,11 @@ function handleReject() {
 .success-text p,
 .error-text p {
   margin: 0;
-  color: #999;
+  color: var(--color-text-quaternary);
 }
 
 .warning-text {
-  color: #faad14 !important;
+  color: var(--color-warning) !important;
   margin-top: 8px !important;
 }
 </style>

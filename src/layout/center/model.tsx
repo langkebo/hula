@@ -1,8 +1,8 @@
 import type { TransferRenderSourceList, TransferRenderTargetLabel } from 'naive-ui'
 import { NAvatar, NCheckbox } from 'naive-ui'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useGroupStore } from '@/stores/group.ts'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { UserType } from '@/enums'
 
@@ -94,7 +94,7 @@ export const renderSourceList = (
 
     return (
       <div class="select-none">
-        {placeholder && <div class="text-(12px [--chat-text-color]) pb-6px">{placeholder}</div>}
+        {placeholder && <div class="text-(12px [--hula-text-secondary]) pb-6px">{placeholder}</div>}
         {displayOptions.map((option: SelectOption) => {
           // 判断是否是预选中的好友（仅在启用预选中时生效）
           const isPreSelected = enablePreSelection && option.value === preSelectedFriendId
@@ -170,7 +170,7 @@ export const renderLabel = (({ option }: { option: SelectOption }) => {
       <div style={{ display: 'flex', marginLeft: '12px', alignSelf: 'center', fontSize: '14px' }}>{option.label}</div>
     </div>
   )
-}) as any as TransferRenderTargetLabel
+}) as unknown as TransferRenderTargetLabel
 
 // 创建自定义的目标列表渲染函数
 export const renderTargetList = (
@@ -179,22 +179,16 @@ export const renderTargetList = (
   placeholder = '',
   requiredTag = ''
 ): TransferRenderSourceList => {
-  return ({
-    onCheck,
-    checkedOptions,
-    pattern
-  }) => {
+  return ({ onCheck, checkedOptions, pattern }) => {
     // 根据搜索模式过滤选项
     const displayOptions = pattern
-      ? checkedOptions.filter((option) =>
-          (option.label as string)?.toLowerCase().includes(pattern.toLowerCase())
-        )
+      ? checkedOptions.filter((option) => (option.label as string)?.toLowerCase().includes(pattern.toLowerCase()))
       : checkedOptions
 
     return (
       <div>
-        {placeholder && <div class="text-(12px [--chat-text-color]) pb-6px">{placeholder}</div>}
-        {(displayOptions as SelectOption[]).map((option: any) => {
+        {placeholder && <div class="text-(12px [--hula-text-secondary]) pb-6px">{placeholder}</div>}
+        {(displayOptions as SelectOption[]).map((option) => {
           const isPreSelected = enablePreSelection && option.value === preSelectedFriendId
 
           return (
@@ -229,11 +223,11 @@ export const renderTargetList = (
                     height: '12px',
                     cursor: 'pointer',
                     marginLeft: '8px',
-                    color: '#909090'
+                    color: 'var(--hula-text-tertiary)'
                   }}
                   onClick={() => {
-                    const newCheckedOptions = checkedOptions.filter((o: any) => o.value !== option.value)
-                    onCheck(newCheckedOptions.map((o: any) => o.value))
+                    const newCheckedOptions = checkedOptions.filter((o) => o.value !== option.value)
+                    onCheck(newCheckedOptions.map((o) => o.value))
                   }}>
                   <use href="#close"></use>
                 </svg>
@@ -243,7 +237,7 @@ export const renderTargetList = (
                 <div
                   style={{
                     fontSize: '10px',
-                    color: '#909090',
+                    color: 'var(--hula-text-tertiary)',
                     marginLeft: '8px'
                   }}>
                   {requiredTag}

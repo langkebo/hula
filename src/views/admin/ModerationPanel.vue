@@ -99,10 +99,10 @@ import {
   type DataTableColumns
 } from 'naive-ui'
 import { Icon } from '@iconify/vue'
-import { useModerationStore } from '@/stores/moderation'
+import { useModerationStore } from '@/stores/domains/chat/moderation'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import type { Report } from '@/services/matrix/MatrixModerationService'
+import type { Report } from '@/services/matrix/admin/MatrixModerationService'
 
 defineOptions({
   name: 'ModerationPanel'

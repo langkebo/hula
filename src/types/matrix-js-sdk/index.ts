@@ -8,7 +8,7 @@
 export * from 'matrix-js-sdk'
 
 // 补充 SDK 缺失的类型
-export { PendingEventOrdering, Method, ClientPrefix } from '../matrix-js-sdk.d'
+export { PendingEventOrdering, Method, ClientPrefix } from 'matrix-js-sdk'
 export {
   Visibility,
   Preset,
@@ -17,8 +17,9 @@ export {
   NotificationCountType,
   RoomType,
   EventType,
-  TweakName
-} from '../matrix-js-sdk.d'
+  TweakName,
+  SlidingSyncState
+} from 'matrix-js-sdk'
 export type {
   PushRuleAction,
   EmptyObject,
@@ -28,5 +29,7 @@ export type {
   IEventRelation,
   ISendEventResponse,
   RegisterResponse,
-  IRequestTokenResponse
-} from '../matrix-js-sdk.d'
+  IRequestTokenResponse,
+  MSC3575SlidingSyncResponse,
+  MSC3575RoomData
+} from 'matrix-js-sdk'

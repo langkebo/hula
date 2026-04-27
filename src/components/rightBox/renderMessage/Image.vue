@@ -28,15 +28,19 @@
             :style="{
               width: `${imageStyle.width}`,
               height: `${imageStyle.height}`,
-              backgroundColor: '#c8c8c833'
+              backgroundColor: 'var(--hula-surface-sidebar-selected)'
             }"
             class="rounded-10px">
             <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
           </n-flex>
         </template>
         <template #error>
-          <n-flex v-if="isError" align="center" justify="center" class="w-200px h-150px bg-#c8c8c833 rounded-10px">
-            <svg class="size-34px color-[--chat-text-color]">
+          <n-flex
+            v-if="isError"
+            align="center"
+            justify="center"
+            class="w-200px h-150px rounded-10px bg-[--hula-surface-sidebar-selected]">
+            <svg class="size-34px color-[--hula-text-tertiary]">
               <use href="#error-picture"></use>
             </svg>
           </n-flex>
@@ -49,7 +53,7 @@
         :style="{
           width: '100%',
           height: '100%',
-          backgroundColor: '#c8c8c833'
+          backgroundColor: 'var(--hula-surface-sidebar-selected)'
         }">
         <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
       </n-flex>
@@ -72,8 +76,9 @@ import { MsgEnum } from '@/enums'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import type { ImageBody, MsgType } from '@/services/types'
 import { isMobile } from '@/utils/PlatformConstants'
-import { useThumbnailCacheStore } from '@/stores/thumbnailCache'
-import { buildQiniuThumbnailUrl, getPreferredQiniuFormat } from '@/utils/QiniuImageUtils'
+import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('Image')
 
 const ImagePreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/ImagePreview.vue')) : void 0
 
@@ -169,17 +174,7 @@ const handleOpenImageViewer = () => {
 const remoteThumbnailSrc = computed(() => {
   const originalUrl = props.body?.url
   if (!originalUrl) return ''
-  const deviceRatio = typeof window !== 'undefined' ? Math.max(window.devicePixelRatio || 1, 1) : 1
-  const thumbnailWidth = Math.ceil(MAX_WIDTH * Math.min(deviceRatio, 2))
-  const format = getPreferredQiniuFormat()
-
-  return (
-    buildQiniuThumbnailUrl(originalUrl, {
-      width: thumbnailWidth,
-      quality: THUMB_QUALITY,
-      format
-    }) ?? originalUrl
-  )
+  return originalUrl
 })
 
 const downloadKey = computed(() => remoteThumbnailSrc.value || props.body?.url || '')
@@ -209,7 +204,7 @@ const ensureLocalThumbnail = async () => {
       return
     }
   } catch (error) {
-    console.warn('[Image] 检查缩略图文件失败:', error)
+    logger.warn('检查缩略图文件失败:', error)
   }
   localThumbnailSrc.value = null
   thumbnailStore.invalidate(downloadKey.value)

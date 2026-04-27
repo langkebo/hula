@@ -12,7 +12,7 @@ interface Package {
   author: Record<string, string>
   dependencies: Record<string, string>
   devDependencies: Record<string, string>
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface PkgJson {

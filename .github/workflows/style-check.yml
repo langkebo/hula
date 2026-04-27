@@ -1,0 +1,63 @@
+name: Style Check
+
+on:
+  pull_request:
+    branches: [master, develop]
+  push:
+    branches: [master, develop]
+
+jobs:
+  check-hardcoded-colors:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for hardcoded color values
+        run: |
+          echo "Checking for hardcoded hex colors and rgba values..."
+
+          # Exclude design-tokens.css, variable.scss, and test files
+          VIOLATIONS=$(grep -rn --include="*.vue" --include="*.tsx" --include="*.scss" \
+            --exclude-dir=node_modules \
+            --exclude-dir=dist \
+            --exclude-dir=.git \
+            --exclude="design-tokens.css" \
+            --exclude="variable.scss" \
+            --exclude="*.test.ts" \
+            --exclude="*.test.tsx" \
+            -E '#[0-9a-fA-F]{3,6}[^0-9a-fA-F]|rgba?\(' src/ | \
+            grep -v "// @allow-hardcoded-color" | \
+            grep -v "hula-" || true)
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "❌ Found hardcoded color values:"
+            echo "$VIOLATIONS"
+            echo ""
+            echo "Please use design tokens from design-tokens.css instead."
+            echo "If you must use a hardcoded color, add '// @allow-hardcoded-color' comment."
+            exit 1
+          else
+            echo "✅ No hardcoded color values found"
+          fi
+
+      - name: Check for deprecated CSS variables
+        run: |
+          echo "Checking for deprecated CSS variables..."
+
+          DEPRECATED=$(grep -rn --include="*.vue" --include="*.scss" \
+            --exclude-dir=node_modules \
+            --exclude="variable.scss" \
+            -E '\-\-line-color|\-\-chat-text-color|\-\-bg-color[^-]|\-\-text-color-[0-9]' src/ || true)
+
+          if [ -n "$DEPRECATED" ]; then
+            echo "❌ Found deprecated CSS variables:"
+            echo "$DEPRECATED"
+            echo ""
+            echo "Please use --hula-* prefixed tokens instead:"
+            echo "  --line-color → --hula-border-default"
+            echo "  --chat-text-color → --hula-text-primary"
+            echo "  --bg-color → --hula-surface-*"
+            exit 1
+          else
+            echo "✅ No deprecated CSS variables found"
+          fi

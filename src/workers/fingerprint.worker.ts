@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noConsole: Worker performance logging is intentionally kept in this worker.
 /// <reference lib="webworker" />
 
 // 检测浏览器特征
@@ -8,7 +9,7 @@ const detectBrowserFeatures = async (): Promise<Record<string, boolean>> => {
     webgl: async () => {
       try {
         const canvas = new OffscreenCanvas(1, 1)
-        return !!(canvas as any).getContext('webgl')
+        return !!canvas.getContext('webgl')
       } catch {
         return false
       }
@@ -16,14 +17,16 @@ const detectBrowserFeatures = async (): Promise<Record<string, boolean>> => {
     canvas: async () => {
       try {
         const canvas = new OffscreenCanvas(1, 1)
-        return !!(canvas as any).getContext('2d')
+        return !!canvas.getContext('2d')
       } catch {
         return false
       }
     },
     audio: async () => {
       try {
-        return !!(self.AudioContext || (self as any).webkitAudioContext)
+        return !!(
+          self.AudioContext || (self as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+        )
       } catch {
         return false
       }
@@ -48,8 +51,13 @@ const detectBrowserFeatures = async (): Promise<Record<string, boolean>> => {
   return features
 }
 
+type FingerprintDeviceInfo = Record<string, unknown>
+
 // 生成设备指纹
-const generateFingerprint = async (data: { deviceInfo: any; browserFingerprint: string }): Promise<string> => {
+const generateFingerprint = async (data: {
+  deviceInfo: FingerprintDeviceInfo
+  browserFingerprint: string
+}): Promise<string> => {
   try {
     const totalStart = performance.now()
 

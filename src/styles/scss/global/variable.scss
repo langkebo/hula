@@ -1,20 +1,27 @@
 @use 'fonts';
 * {
   font-family: var(--font-family), sans-serif !important;
-  caret-color: #13987f !important; /* 改变输入框光标的颜色 */
+  caret-color: var(--hula-color-primary-500) !important;
 }
+
+:focus-visible {
+  outline: 2px solid var(--hula-color-primary-500);
+  outline-offset: 2px;
+  border-radius: var(--hula-radius-xs);
+}
+
 html,
 body,
 svg {
   &::selection {
-    background: rgba(19, 152, 127, 0.3); /** 输入框选中文本背景色 */
+    background: var(--hula-color-primary-300-alpha);
   }
   outline: none;
-  overscroll-behavior: none; // 禁止mac的"触底反弹"效果
+  overscroll-behavior: none;
 }
 
 ::selection {
-  background: rgba(19, 152, 127, 0.3); /** 输入框选中文本背景色 */
+  background: var(--hula-color-primary-300-alpha);
 }
 /**! 主题变量 */
 /* todo: 这里只需要定义单个颜色的变量即可无需重复定义组件的颜色 */
@@ -25,214 +32,253 @@ svg {
   --font-family: 'PingFang';
   // 是否启用透明高斯模糊
   --blur-enabled: 1;
-    // 应用背景色
-  --app-bg-color: #FAFAFA;
+  // 语义化颜色
+  --color-primary: var(--hula-color-primary-500);
+  --color-primary-light: var(--hula-color-primary-100);
+  --color-primary-hover: var(--hula-color-primary-200);
+  --color-primary-active: var(--hula-color-primary-300-alpha);
+  --color-success: var(--hula-color-success-500);
+  --color-success-light: var(--hula-color-success-100);
+  --color-warning: var(--hula-color-warning-500);
+  --color-warning-light: var(--hula-color-warning-100);
+  --color-danger: var(--hula-color-danger-500);
+  --color-danger-light: var(--hula-color-danger-100);
+  --color-danger-hover: var(--hula-color-danger-200);
+  --color-info: var(--hula-color-info-500);
+  --color-info-light: var(--hula-color-info-100);
+  --color-text-tertiary: var(--hula-text-tertiary);
+  --color-text-quaternary: var(--hula-text-quaternary);
+  --color-text-secondary: var(--hula-text-secondary);
+  // 应用背景色
+  --app-bg-color: var(--hula-surface-app);
 
-  --center-bg-color: #fff;
-  --right-bg-color: #f1f1f1;
-  // 阴影样式的颜色
-  --box-shadow-color: rgba(0, 0, 0, 0.08);
+  --center-bg-color: var(--hula-surface-panel);
+  --right-bg-color: var(--hula-surface-subtle);
   // 文字颜色
-  --text-color: #18181c;
+  --text-color: var(--hula-text-primary);
   // 整体图标颜色
-  --icon-color: #000;
-  --action-bar-icon-color: #404040;
-  --action-bar-icon-hover: #e7e7e7;
+  --icon-color: var(--hula-text-primary);
+  --action-bar-icon-color: var(--hula-text-secondary);
+  --action-bar-icon-hover: var(--hula-surface-search);
   // 搜索框背景颜色
-  --search-bg-color: #EAEAEA;
+  --search-bg-color: var(--hula-surface-search);
   // 消息列表样式
-  --bg-msg-first-child: #eeeeee;
-  --bg-msg-hover: #f3f3f3;
-  --bg-active-msg: #13987f;
+  --bg-msg-first-child: var(--hula-surface-search);
+  --bg-msg-hover: var(--hula-surface-panel-muted);
+  --bg-active-msg: var(--hula-color-primary-500);
   // 聊天框整体样式
-  --bg-chat-drawer: #f0f0f0;
-  --bg-setting-item: #fdfdfd;
-  --setting-item-line: #f1f1f1;
+  --bg-chat-drawer: var(--hula-surface-panel-muted);
+  --bg-setting-item: var(--hula-surface-elevated);
+  --setting-item-line: var(--hula-surface-subtle);
   // 弹出框背景样式
-  --bg-popover: #fdfdfd;
+  --bg-popover: var(--hula-surface-elevated);
   // 右键菜单样式或者需要透明的菜单的样式
-  --bg-menu: linear-gradient(45deg, rgba(255, 255, 255, 0.45) 40%, rgba(255, 255, 255, 0.65) 60%);
-  --bg-menu-hover: rgba(10, 20, 28, 0.1);
-  --line-color: #e3e3e3;
+  --bg-menu: var(--hula-menu-bg);
+  --bg-menu-hover: var(--hula-menu-hover);
+  --line-color: var(--hula-border-default);
   // 通用左边菜单栏的hover样式
-  --bg-left-menu: rgba(241, 241, 241, 1);
-  --bg-left-menu-hover: rgba(90, 90, 90, 0.1);
-  --bg-left-active: rgba(90, 90, 90, 0.2);
+  --bg-left-menu: var(--hula-surface-subtle);
+  --bg-left-menu-hover: color-mix(in srgb, var(--hula-text-secondary) 10%, transparent);
+  --bg-left-active: var(--hula-surface-sidebar-active);
   //通用按钮样式
-  --button-bg-color: #f1f1f1;
+  --button-bg-color: var(--hula-surface-subtle);
   // 通用禁用时的样式
-  --disabled-color: #c1c1c1;
+  --disabled-color: var(--hula-text-disabled);
   // 气泡背景颜色
-  --bg-bubble: rgb(253, 253, 253);
-  --bg-bubble-active: #f1f1f1;
+  --bg-bubble: var(--hula-surface-elevated);
+  --bg-bubble-active: var(--hula-surface-subtle);
   // 翻译气泡背景色
-  --bg-translate-bubble: rgba(200, 200, 200, 0.4);
+  --bg-translate-bubble: color-mix(in srgb, var(--hula-text-tertiary) 25%, transparent);
   // 头像状态的背景颜色
-  --bg-avatar: rgba(241, 241, 241, 1);
+  --bg-avatar: var(--hula-surface-subtle);
   // 个人信息框背景颜色
-  --info-hover: #eeeeee70;
-  --info-text-color: #202020;
+  --info-hover: color-mix(in srgb, var(--hula-surface-subtle) 45%, transparent);
+  --info-text-color: var(--hula-text-primary);
   // 系统托盘hover样式
-  --tray-hover: #eee;
-  --tray-hover-e: #f5dce1;
+  --tray-hover: var(--hula-surface-search);
+  --tray-hover-e: color-mix(in srgb, var(--hula-color-danger-100) 85%, var(--hula-surface-panel));
   // 信息框背景颜色
-  --bg-info: rgba(255, 255, 255);
+  --bg-info: var(--hula-surface-panel);
   // 表情框样式
-  --bg-emoji: rgba(255, 255, 255, 0.6);
-  --emoji-hover: #e3e3e3;
-  --emoji-active-color: #13987f;
+  --bg-emoji: var(--hula-surface-overlay);
   // 回复消息样式
-  --reply-color: #909090;
-  --reply-hover: #505050;
-  --bg-reply-img-count: #e3e3e3;
+  --reply-color: var(--hula-text-tertiary);
+  --reply-hover: var(--hula-text-secondary);
+  --bg-reply-img-count: var(--hula-border-default);
   // 编辑资料背景颜色
-  --bg-edit: #f0f0f0;
+  --bg-edit: var(--hula-border-muted);
   // 聊天框时间戳样式
-  --time-color: #e3e3e3;
+  --time-color: var(--hula-border-default);
   // chat模块样式
-  --chat-bt-color: #fff;
-  --chat-left-bg: #cef9ec;
-  --chat-right-bg: #f1f1f1;
-  --chat-text-color: #505050;
-  --chat-hover-color: #e3e3e3;
+  --chat-bt-color: var(--hula-text-inverse);
+  --chat-left-bg: color-mix(in srgb, var(--hula-color-primary-200) 65%, var(--hula-surface-panel));
+  --chat-right-bg: var(--hula-surface-subtle);
+  --chat-text-color: var(--hula-text-secondary);
+  --chat-hover-color: var(--hula-border-default);
   // 搜索框内样式
-  --search-color: #eee;
+  --search-color: var(--hula-surface-search);
   // bate
-  --bate-color: #a789d9;
-  --bate-bg: #d9ccf7;
+  --bate-color: var(--hula-color-beta-500);
+  --bate-bg: var(--hula-color-beta-100);
   // 卡片hover样式
-  --card-bg: #13987f60;
+  --card-bg: var(--hula-color-primary-300-alpha);
   // 安装进度条样式
-  --progress-bg: #e0e9fc;
+  --progress-bg: color-mix(in srgb, var(--hula-color-primary-100) 80%, var(--hula-surface-panel));
   // 回复消息框背景
-  --reply-bg: rgba(204, 204, 204, 0.4);
+  --reply-bg: color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent);
   // 危险样式
-  --danger-text: #c14053;
-  --danger-bg: #f6dfe3;
+  --danger-text: var(--hula-color-danger-500);
+  --danger-bg: var(--hula-color-danger-100);
   // 警告样式
-  --warning-text: #f7b668ff;
-  --warning-bg: #fdeeddff;
+  --warning-text: var(--hula-color-warning-500);
+  --warning-bg: var(--hula-color-warning-100);
   // 头像边框颜色
-  --avatar-border-color: #fff;
+  --avatar-border-color: var(--hula-surface-panel);
   // hover头像样式
-  --avatar-hover-bg: rgba(255, 255, 255, 0.1);
+  --avatar-hover-bg: color-mix(in srgb, var(--hula-surface-panel) 70%, transparent);
   // 插件背景颜色
-  --plugin-bg-color: #eee;
+  --plugin-bg-color: var(--hula-surface-search);
   // 列表悬浮的颜色
-  --float-block-hover-color: #767676;
+  --float-block-hover-color: var(--hula-text-tertiary);
   // 悬浮按钮hover样式
-  --float-hover-bg-color: rgb(221, 240, 236);
+  --float-hover-bg-color: color-mix(in srgb, var(--hula-color-primary-100) 80%, var(--hula-surface-panel));
   // 群公告列表背景色
-  --group-notice-list-bg: #ffffffb6;
+  --group-notice-list-bg: color-mix(in srgb, var(--hula-surface-panel) 72%, transparent);
   // 文件文本的背景颜色
-  --file-bg-color: #fdfdfd;
+  --file-bg-color: var(--hula-surface-elevated);
   // // 安全区域默认预设
   // --safe-area-inset-top: 16px;
   // --safe-area-inset-right: 0px;
   // --safe-area-inset-bottom: 16px;
   // --safe-area-inset-left: 0px;
-  --van-dialog-confirm-button-text-color: #169b80;
+  --van-dialog-confirm-button-text-color: var(--hula-color-primary-500);
+  // 管理后台
+  --admin-sidebar-bg: var(--hula-admin-sidebar-bg);
+  --admin-sidebar-text: var(--hula-admin-sidebar-text);
+  --admin-sidebar-border: var(--hula-admin-sidebar-border);
+  --admin-sidebar-hover: var(--hula-admin-sidebar-hover);
+  --admin-bg: var(--hula-admin-bg);
+  --admin-card-bg: var(--hula-admin-card-bg);
+  --admin-card-shadow: var(--hula-admin-card-shadow);
+  --admin-card-shadow-hover: var(--hula-admin-card-shadow-hover);
+  --admin-header-border: var(--hula-admin-header-border);
+  --admin-title-color: var(--hula-admin-title-color);
+  --admin-stat-value-color: var(--hula-admin-stat-value-color);
+  --admin-health-ok-bg: var(--hula-admin-health-ok-bg);
+  --admin-health-ok-text: var(--hula-admin-health-ok-text);
+  --admin-health-err-bg: var(--hula-admin-health-err-bg);
+  --admin-health-err-text: var(--hula-admin-health-err-text);
 }
 
 html[data-theme='dark'] {
-  --center-bg-color: #1b1b1b;
-  --right-bg-color: #161616;
-  // 阴影样式的颜色
-  --box-shadow-color: rgba(90, 90, 90, 0.1);
+  --center-bg-color: var(--hula-surface-panel);
+  --right-bg-color: var(--hula-surface-sidebar);
   // 文字颜色
-  --text-color: #fff;
+  --text-color: var(--hula-text-primary);
   // 整体图标颜色
-  --icon-color: #c1c1c1;
-  --action-bar-icon-color: #c1c1c1;
-  --action-bar-icon-hover: #242424;
+  --icon-color: var(--hula-text-secondary);
+  --action-bar-icon-color: var(--hula-text-secondary);
+  --action-bar-icon-hover: var(--hula-surface-search);
   // 搜索框背景颜色
-  --search-bg-color: #282828;
+  --search-bg-color: var(--hula-surface-search);
   // 消息列表样式
-  --bg-msg-first-child: #282828;
-  --bg-msg-hover: #2d2d2d;
-  --bg-active-msg: rgba(19, 152, 127, 0.6);
+  --bg-msg-first-child: var(--hula-surface-search);
+  --bg-msg-hover: var(--hula-surface-subtle);
+  --bg-active-msg: var(--hula-color-primary-200);
   // 聊天框整体样式
-  --bg-chat-drawer: #1b1b1b;
-  --bg-setting-item: #262626;
-  --setting-item-line: #333333;
+  --bg-chat-drawer: var(--hula-surface-panel);
+  --bg-setting-item: var(--hula-surface-panel-muted);
+  --setting-item-line: var(--hula-surface-subtle);
   // 弹出框背景样式
-  --bg-popover: #303030;
+  --bg-popover: var(--hula-surface-elevated);
   // 右键菜单样式或者需要透明的菜单的样式
-  --bg-menu: linear-gradient(45deg, rgba(33, 33, 33, 0.65) 60%, rgba(33, 33, 33, 0.95) 90%);
-  --bg-menu-hover: #323232;
-  --line-color: #404040;
+  --bg-menu: var(--hula-menu-bg);
+  --bg-menu-hover: var(--hula-menu-hover);
+  --line-color: var(--hula-border-default);
   // 通用左边菜单栏的hover样式
-  --bg-left-menu: rgba(22, 22, 22, 1);
-  --bg-left-menu-hover: #3b3b3b;
-  --bg-left-active: #444444;
+  --bg-left-menu: var(--hula-surface-sidebar);
+  --bg-left-menu-hover: var(--hula-surface-sidebar-hover);
+  --bg-left-active: var(--hula-surface-sidebar-active);
   //通用按钮样式
-  --button-bg-color: #3f3f3f;
+  --button-bg-color: var(--hula-surface-subtle);
   // 通用禁用时的样式
-  --disabled-color: #575757;
+  --disabled-color: var(--hula-text-disabled);
   // 气泡背景颜色
-  --bg-bubble: rgb(38, 38, 38);
-  --bg-bubble-active: rgba(66, 66, 66, 0.8);
+  --bg-bubble: var(--hula-surface-panel-muted);
+  --bg-bubble-active: color-mix(in srgb, var(--hula-surface-subtle) 80%, transparent);
   // 翻译气泡背景色
-  --bg-translate-bubble: rgba(144, 144, 144, 0.2);
+  --bg-translate-bubble: color-mix(in srgb, var(--hula-text-tertiary) 22%, transparent);
   // 头像状态的背景颜色
-  --bg-avatar: rgba(22, 22, 22, 1);
+  --bg-avatar: var(--hula-surface-sidebar);
   // 个人信息框背景颜色
-  --info-hover: #3b3b3b60;
-  --info-text-color: #eee;
+  --info-hover: color-mix(in srgb, var(--hula-surface-subtle) 38%, transparent);
+  --info-text-color: var(--hula-text-primary);
   // 系统托盘hover样式
-  --tray-hover: #3b3b3b;
-  --tray-hover-e: #bb8188;
+  --tray-hover: var(--hula-surface-subtle);
+  --tray-hover-e: color-mix(in srgb, var(--hula-color-danger-200) 70%, var(--hula-surface-panel));
   // 信息框背景颜色
-  --bg-info: rgba(27, 27, 27);
+  --bg-info: var(--hula-surface-panel);
   // 表情框样式
-  --bg-emoji: rgba(27, 27, 27, 0.8);
-  --emoji-hover: #3b3b3b;
-  --emoji-active-color: #13987f;
+  --bg-emoji: color-mix(in srgb, var(--hula-surface-panel) 80%, transparent);
   // 回复消息样式
-  --reply-color: #e3e3e3;
-  --reply-hover: #b1b1b1;
-  --bg-reply-img-count: #505050;
+  --reply-color: var(--hula-text-tertiary);
+  --reply-hover: var(--hula-text-secondary);
+  --bg-reply-img-count: var(--hula-text-secondary);
   // 编辑资料背景颜色
-  --bg-edit: #262626;
+  --bg-edit: var(--hula-surface-panel-muted);
   // 聊天框时间戳样式
-  --time-color: #3b3b3b;
+  --time-color: var(--hula-surface-subtle);
   // chat模块样式
-  --chat-bt-color: #3b3b3b;
-  --chat-left-bg: #355b55;
-  --chat-right-bg: #161616;
-  --chat-text-color: #b1b1b1;
-  --chat-hover-color: #262626;
+  --chat-bt-color: var(--hula-surface-subtle);
+  --chat-left-bg: color-mix(in srgb, var(--hula-color-primary-500) 32%, var(--hula-surface-panel));
+  --chat-right-bg: var(--hula-surface-sidebar);
+  --chat-text-color: var(--hula-text-secondary);
+  --chat-hover-color: var(--hula-surface-panel-muted);
   // 搜索框内样式
-  --search-color: #333;
+  --search-color: var(--hula-surface-search);
   // bate
-  --bate-color: #a789d9;
-  --bate-bg: #403555;
   // 卡片hover样式
-  --card-bg: #13987f20;
+  --card-bg: var(--hula-color-primary-100);
   // 安装进度条样式
   --progress-bg: transparent;
   // 回复消息框背景
-  --reply-bg: rgba(30, 30, 30, 0.6);
+  --reply-bg: color-mix(in srgb, var(--hula-surface-panel) 70%, transparent);
   // 危险样式
-  --danger-text: #da8583;
-  --danger-bg: #37292c;
+  --danger-text: var(--hula-color-danger-500);
+  --danger-bg: var(--hula-color-danger-100);
   // 警告样式
-  --warning-text: #f4c375ff;
-  --warning-bg: #402f1dff;
+  --warning-text: var(--hula-color-warning-500);
+  --warning-bg: var(--hula-color-warning-100);
   // 头像边框颜色
-  --avatar-border-color: #1b1b1b;
+  --avatar-border-color: var(--hula-surface-panel);
   // hover头像样式
-  --avatar-hover-bg: rgba(30, 30, 30, 0.6);
+  --avatar-hover-bg: color-mix(in srgb, var(--hula-surface-panel) 70%, transparent);
   // 插件背景颜色
-  --plugin-bg-color: #3b3b3b;
+  --plugin-bg-color: var(--hula-surface-subtle);
   // 列表悬浮的颜色
-  --float-block-hover-color: #fff;
+  --float-block-hover-color: var(--hula-text-inverse);
   // 悬浮按钮hover样式
-  --float-hover-bg-color: rgb(25, 50, 45);
+  --float-hover-bg-color: color-mix(in srgb, var(--hula-color-primary-200) 45%, var(--hula-surface-panel));
   // 群公告列表背景色
-  --group-notice-list-bg: #262626;
+  --group-notice-list-bg: var(--hula-surface-panel-muted);
   // 文件文本的背景颜色
-  --file-bg-color: #222;
+  --file-bg-color: var(--hula-surface-elevated);
+  // 管理后台
+  --admin-sidebar-bg: var(--hula-admin-sidebar-bg);
+  --admin-sidebar-text: var(--hula-admin-sidebar-text);
+  --admin-sidebar-border: var(--hula-admin-sidebar-border);
+  --admin-sidebar-hover: var(--hula-admin-sidebar-hover);
+  --admin-bg: var(--hula-admin-bg);
+  --admin-card-bg: var(--hula-admin-card-bg);
+  --admin-card-shadow: var(--hula-admin-card-shadow);
+  --admin-card-shadow-hover: var(--hula-admin-card-shadow-hover);
+  --admin-header-border: var(--hula-admin-header-border);
+  --admin-title-color: var(--hula-admin-title-color);
+  --admin-stat-value-color: var(--hula-admin-stat-value-color);
+  --admin-health-ok-bg: var(--hula-admin-health-ok-bg);
+  --admin-health-ok-text: var(--hula-admin-health-ok-text);
+  --admin-health-err-bg: var(--hula-admin-health-err-bg);
+  --admin-health-err-text: var(--hula-admin-health-err-text);
 }
 /**! end */
 // 线性动画
@@ -277,7 +323,7 @@ html[data-theme='dark'] {
 html[data-blur='1'] {
   .n-modal-mask,
   .n-drawer-mask {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: color-mix(in srgb, var(--hula-surface-panel) 10%, transparent);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
@@ -309,28 +355,21 @@ html[data-blur='1'] {
 
 /**! 修改naive-ui Popselect选中的样式 */
 .n-base-select-menu .n-base-select-option.n-base-select-option--selected {
-  color: #13987f;
+  color: var(--hula-color-primary-500);
 }
 .n-base-select-menu .n-base-select-option .n-base-select-option__check {
-  color: #13987f;
+  color: var(--hula-color-primary-500);
 }
 
 /**! 通用菜单项目样式 */
 @mixin menu-item-style($position: fixed) {
   position: $position;
   background: var(--bg-menu);
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   border-radius: 6px;
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 2px 2px rgb(0 0 0 / 3%),
-    0 4px 4px rgb(0 0 0 / 4%),
-    0 10px 8px rgb(0 0 0 / 5%),
-    0 15px 15px rgb(0 0 0 / 6%),
-    0 30px 30px rgb(0 0 0 / 7%),
-    0 70px 65px rgb(0 0 0 / 9%);
+  box-shadow: var(--hula-shadow-floating-menu);
   z-index: 999;
   width: fit-content;
   font-size: 14px;
@@ -368,7 +407,7 @@ html[data-blur='1'] {
 
 /** 修改默认的naive-ui的选择器样式 */
 :deep(.n-base-selection) {
-  --n-box-shadow-active: 0 0 0 2px rgba(19, 152, 127, 0.2) !important;
-  --n-border-active: 1px solid #13987f !important;
-  --n-border-hover: 1px solid #13987f !important;
+  --n-box-shadow-active: 0 0 0 2px var(--hula-color-primary-200) !important;
+  --n-border-active: 1px solid var(--hula-color-primary-500) !important;
+  --n-border-hover: 1px solid var(--hula-color-primary-500) !important;
 }

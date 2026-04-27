@@ -1,37 +1,39 @@
 <template>
-  <div>
-    <div class="flex gap-2 mx-2">
-      <n-input type="text" placeholder="请输入聊天内容" />
-      <n-button strong secondary type="primary" @click="() => router.back()">取消</n-button>
-    </div>
+  <AutoFixHeightPage :show-footer="false">
+    <template #header>
+      <HeaderBar border :isOfficial="false" :hidden-right="true" :room-name="t('mobile_chat.search')" />
+    </template>
 
-    <div class="flex flex-col items-center mt-10">
-      <div class="mb-8 text-gray">快速搜索聊天内容</div>
-      <div class="grid grid-cols-3 gap-4 max-w-xs">
-        <n-button text class="text-size-lg text-center" type="primary">群成员</n-button>
-        <n-button text class="text-size-lg text-center" type="primary">日期</n-button>
-        <n-button
-          text
-          class="text-size-lg text-center"
-          type="primary"
-          @click="
-            () =>
-              router.push({
-                name: 'mobileMediaViewer'
-              })
-          ">
-          图片与视频
-        </n-button>
-        <n-button text class="text-size-lg text-center" type="primary">文件</n-button>
-        <n-button text class="text-size-lg text-center" type="primary">链接</n-button>
-        <n-button text class="text-size-lg text-center" type="primary">音乐与音频</n-button>
+    <template #container>
+      <div class="flex flex-col overflow-auto h-full">
+        <div class="p-16px">
+          <van-search v-model="searchQuery" :placeholder="t('mobile_chat.search_placeholder')" shape="round" />
+
+          <div class="flex flex-col items-center mt-20px">
+            <div class="mb-16px text-14px text-gray-400">{{ t('mobile_chat.quick_search') }}</div>
+            <div class="grid grid-cols-3 gap-12px w-full max-w-300px">
+              <van-button plain type="primary" size="small" icon="friends-o">{{ t('mobile_chat.members') }}</van-button>
+              <van-button plain type="primary" size="small" icon="calendar-o">{{ t('mobile_chat.date') }}</van-button>
+              <van-button plain type="primary" size="small" icon="photo-o" @click="router.push({ name: 'mobileMediaViewer' })">{{ t('mobile_chat.media') }}</van-button>
+              <van-button plain type="primary" size="small" icon="description">{{ t('mobile_chat.files') }}</van-button>
+              <van-button plain type="primary" size="small" icon="link-o">{{ t('mobile_chat.links') }}</van-button>
+              <van-button plain type="primary" size="small" icon="music-o">{{ t('mobile_chat.audio') }}</van-button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </AutoFixHeightPage>
 </template>
 
 <script setup lang="ts">
-const router = useRouter()
-</script>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
+import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 
-<style scoped></style>
+const router = useRouter()
+const { t } = useI18n()
+const searchQuery = ref('')
+</script>

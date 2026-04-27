@@ -1,5 +1,8 @@
 import { BaseDirectory, remove } from '@tauri-apps/plugin-fs'
 import { isMobile } from '@/utils/PlatformConstants'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('TempFileManager')
 
 export type RemoveTempFileOptions = {
   /**
@@ -39,7 +42,7 @@ export const removeTempFile = async (path?: string | null, options: RemoveTempFi
   } catch (error) {
     if (!options.silent) {
       const prefix = options.reason ?? '删除临时文件失败'
-      console.warn(`${prefix}:`, error)
+      logger.warn(`${prefix}:`, error)
     }
   }
 }

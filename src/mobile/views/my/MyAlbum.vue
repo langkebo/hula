@@ -13,12 +13,10 @@
       <template #container>
         <div class="flex flex-col overflow-auto h-full">
           <div class="flex flex-col p-20px gap-20px">
-            <!-- 加载状态 -->
             <div v-if="loading" class="flex justify-center items-center py-40px">
-              <n-spin size="medium" />
+              <van-loading size="24px" />
             </div>
 
-            <!-- 空状态 -->
             <div v-else-if="allImages.length === 0" class="flex flex-col justify-center items-center py-40px gap-10px">
               <svg class="iconpark-icon w-60px h-60px text-gray">
                 <use href="#xiangce"></use>
@@ -26,7 +24,6 @@
               <div class="text-gray text-14px">{{ t('mobile_photo.empty') }}</div>
             </div>
 
-            <!-- 图片网格 -->
             <div v-else class="grid grid-cols-4 gap-1">
               <div
                 v-for="(image, index) in allImages"
@@ -41,7 +38,6 @@
       </template>
     </AutoFixHeightPage>
 
-    <!-- 图片预览组件 -->
     <ImagePreview
       v-model:visible="showImagePreviewRef"
       :image-url="activeImageUrl"
@@ -52,49 +48,44 @@
 </template>
 
 <script setup lang="ts">
-import { useFileStore } from '@/stores/file'
-import { useGlobalStore } from '@/stores/global'
+import { useFileStore } from '@/stores/domains/widget/file'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import ImagePreview from '@/mobile/components/ImagePreview.vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MyAlbum')
 
 const { t } = useI18n()
 const fileStore = useFileStore()
 const globalStore = useGlobalStore()
 
-// 图片预览状态
 const showImagePreviewRef = ref(false)
 const activeImageUrl = ref('')
 const loading = ref(true)
 
-// 所有图片列表
 const allImages = ref<Array<{ displayUrl: string; originalUrl: string; id: string; roomId: string }>>([])
 
-/**
- * 获取所有房间的图片
- */
 const getAllImages = async () => {
   loading.value = true
   try {
-    // 检查 roomFilesMap 是否为空，如果为空则扫描本地文件
     if (Object.keys(fileStore.roomFilesMap).length === 0) {
       if (globalStore.currentSessionRoomId) {
-        console.log('[MyAlbum Debug] 扫描本地文件，roomId:', globalStore.currentSessionRoomId)
+        logger.debug('Scanning local files for room:', globalStore.currentSessionRoomId)
         await fileStore.scanLocalFiles(globalStore.currentSessionRoomId)
       }
     }
 
     const roomFilesMap = fileStore.roomFilesMap
-    console.log('[MyAlbum Debug] roomFilesMap:', roomFilesMap)
+    logger.debug('roomFilesMap:', roomFilesMap)
     const imagesList: Array<{ displayUrl: string; originalUrl: string; id: string; roomId: string }> = []
 
-    // 遍历所有房间
     for (const roomId in roomFilesMap) {
       const files = await fileStore.getRoomFilesForDisplay(roomId)
-      console.log('[MyAlbum Debug] roomId:', roomId, 'files:', files)
+      logger.debug('roomId:', roomId, 'files:', files)
 
-      // 只获取图片类型的文件
       const images = files.filter((file) => file.type === 'image')
-      console.log('[MyAlbum Debug] roomId:', roomId, 'images:', images)
+      logger.debug('roomId:', roomId, 'images:', images)
 
       imagesList.push(
         ...images.map((img) => ({
@@ -106,10 +97,10 @@ const getAllImages = async () => {
       )
     }
 
-    console.log('[MyAlbum Debug] 最终图片列表:', imagesList)
+    logger.debug('Final image list:', imagesList)
     allImages.value = imagesList
   } catch (error) {
-    console.error('获取图片失败:', error)
+    logger.error('Failed to load images', error)
     if (window.$message) {
       window.$message.error(t('mobile_photo.image_load_failed'))
     }
@@ -118,21 +109,16 @@ const getAllImages = async () => {
   }
 }
 
-/**
- * 处理图片点击
- */
 const handleImageClick = (image: { displayUrl: string; originalUrl: string; id: string; roomId: string }) => {
-  console.log('[MyAlbum Debug] 点击图片:', image)
+  logger.debug('Image clicked:', image)
   activeImageUrl.value = image.displayUrl
   showImagePreviewRef.value = true
 }
 
 onMounted(() => {
-  console.log('[MyAlbum Debug] MyAlbum 组件已挂载')
+  logger.debug('MyAlbum mounted')
   getAllImages()
 })
 </script>
 
-<style scoped>
-/* 可以添加自定义样式 */
-</style>
+<style scoped></style>

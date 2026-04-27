@@ -1,7 +1,7 @@
 {
   "name": "tauri-plugin-hula-api",
   "version": "0.1.0",
-  "author": "You",
+  "author": "龙卷风 <656042408@qq.com>",
   "description": "",
   "type": "module",
   "types": "./dist-js/index.d.ts",

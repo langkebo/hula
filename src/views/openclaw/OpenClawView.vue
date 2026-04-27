@@ -98,6 +98,9 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useOpenClaw, ConnectionState } from '@/services/openclaw'
 import ConnectionStatus from '@/components/openclaw/ConnectionStatus.vue'
 import ModelSelector from '@/components/openclaw/ModelSelector.vue'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('OpenClawView')
 
 interface Model {
   id: string
@@ -159,7 +162,7 @@ const handleConnect = async () => {
   try {
     await connect()
   } catch (error) {
-    console.error('连接失败:', error)
+    logger.error('连接失败:', error)
   }
 }
 
@@ -220,8 +223,8 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--line-color);
-  background: var(--bg-popover);
+  border-bottom: 1px solid var(--hula-border-default);
+  background: var(--hula-surface-elevated);
 }
 
 .openclaw-view__header-left {
@@ -234,13 +237,13 @@ onMounted(async () => {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
 }
 
 .openclaw-view__title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   margin: 0;
 }
 
@@ -268,7 +271,7 @@ onMounted(async () => {
   justify-content: center;
   height: 100%;
   text-align: center;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 }
 
 .openclaw-view__welcome-icon {
@@ -286,7 +289,7 @@ onMounted(async () => {
 .openclaw-view__welcome h3 {
   font-size: 18px;
   font-weight: 600;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   margin: 0 0 8px 0;
 }
 
@@ -305,11 +308,11 @@ onMounted(async () => {
 
 .openclaw-view__quick-action {
   padding: 8px 16px;
-  background: var(--bg-popover);
-  border: 1px solid var(--line-color);
+  background: var(--hula-surface-elevated);
+  border: 1px solid var(--hula-border-default);
   border-radius: 16px;
   font-size: 13px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -372,15 +375,15 @@ onMounted(async () => {
 }
 
 .openclaw-view__message--assistant .openclaw-view__message-bubble {
-  background: var(--bg-popover);
-  color: var(--chat-text-color);
+  background: var(--hula-surface-elevated);
+  color: var(--hula-text-secondary);
   border-bottom-left-radius: 4px;
 }
 
 .openclaw-view__footer {
   padding: 12px 16px;
-  border-top: 1px solid var(--line-color);
-  background: var(--bg-popover);
+  border-top: 1px solid var(--hula-border-default);
+  background: var(--hula-surface-elevated);
 }
 
 .openclaw-view__input-wrapper {

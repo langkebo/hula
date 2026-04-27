@@ -82,7 +82,7 @@ const handleVote = (index: number) => {
 
 <style scoped lang="scss">
 .poll-message {
-  @apply flex flex-col gap-12px p-12px bg-[--right-chat-reply-color] rounded-8px min-w-200px max-w-320px;
+  @apply flex flex-col gap-12px p-12px bg-[--hula-surface-subtle] rounded-8px min-w-200px max-w-320px;
 }
 
 .poll-header {
@@ -101,11 +101,11 @@ const handleVote = (index: number) => {
   @apply relative flex items-center p-8px rounded-6px cursor-pointer transition-all overflow-hidden;
 
   &:not(.ended):hover {
-    background: var(--emoji-hover);
+    background: var(--hula-fill-hover);
   }
 
   &.selected {
-    background: rgba(19, 152, 127, 0.1);
+    background: var(--hula-color-primary-100);
   }
 }
 
@@ -118,18 +118,18 @@ const handleVote = (index: number) => {
 }
 
 .option-count {
-  @apply text-12px color-#909090;
+  @apply text-12px color-[--hula-text-tertiary];
 }
 
 .option-progress {
-  @apply absolute inset-y-0 left-0 bg-#13987f20 rounded-6px transition-all;
+  @apply absolute inset-y-0 left-0 bg-[--hula-color-primary-500]20 rounded-6px transition-all;
 }
 
 .poll-footer {
-  @apply flex items-center justify-between text-12px color-#909090;
+  @apply flex items-center justify-between text-12px color-[--hula-text-tertiary];
 }
 
 .ended-badge {
-  @apply px-6px py-2px bg-#90909020 rounded-4px;
+  @apply px-6px py-2px bg-[--hula-text-tertiary]20 rounded-4px;
 }
 </style>

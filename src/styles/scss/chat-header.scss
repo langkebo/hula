@@ -13,11 +13,11 @@
 }
 
 .box-item {
-  @apply border-(solid 1px [--line-color]) custom-shadow;
+  @apply border-(solid 1px [--hula-border-default]) custom-shadow;
   &:first-child {
     margin-top: 0;
   }
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   margin-top: 20px;
   background: var(--bg-setting-item);
   width: 100%;

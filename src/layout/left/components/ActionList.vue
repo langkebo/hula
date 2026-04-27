@@ -47,8 +47,8 @@
         <n-badge
           v-if="item.url === 'message'"
           :max="99"
-          :value="unReadMark.newMsgUnreadCount"
-          :show="unreadReady && unReadMark.newMsgUnreadCount > 0">
+          :value="messageUnreadCount"
+          :show="unreadReady && messageUnreadCount > 0">
           <svg class="size-22px">
             <use
               :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
@@ -137,7 +137,7 @@
           </template>
           <div v-if="miniShowPlugins.length">
             <n-flex
-              v-for="(item, index) in miniShowPlugins as any"
+              v-for="(item, index) in miniShowPlugins"
               :key="'excess-' + index"
               @click="pageJumps(item.url, item.title, item.size, item.window)"
               class="p-[6px_5px] rounded-4px cursor-pointer hover:bg-[--setting-item-line]"
@@ -262,10 +262,10 @@ import { invoke } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { PluginEnum, ShowModeEnum } from '@/enums'
 import { useTauriListener } from '@/hooks/useTauriListener.ts'
-import { useGlobalStore } from '@/stores/global.ts'
-import { useMenuTopStore } from '@/stores/menuTop.ts'
-import { usePluginsStore } from '@/stores/plugins.ts'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useMenuTopStore } from '@/stores/domains/settings/menuTop'
+import { usePluginsStore } from '@/stores/domains/settings/plugins'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useItemsBottom, useMoreList } from '../config.tsx'
 import { leftHook } from '../hook.ts'
 import DefinePlugins from './definePlugins/index.vue'
@@ -282,8 +282,8 @@ const { menuTop } = storeToRefs(useMenuTopStore())
 const itemsBottom = useItemsBottom()
 const { plugins } = storeToRefs(pluginsStore)
 const { t } = useI18n()
-const unReadMark = computed(() => globalStore.unReadMark)
 const unreadReady = computed(() => globalStore.unreadReady)
+const messageUnreadCount = computed(() => globalStore.messageUnreadCount)
 // const headerRef = useTemplateRef('header')
 // const actionListRef = useTemplateRef('actionList')
 //const { } = toRefs(getCurrentInstance) // 所有菜单的外层div
@@ -303,13 +303,13 @@ const miniShowPlugins = computed(() => {
 })
 const { activeUrl, openWindowsList, settingShow, tipShow, pageJumps } = leftHook()
 
-const handleTipShow = (item: any) => {
+const handleTipShow = (item: { dot?: boolean }) => {
   tipShow.value = false
   item.dot = false
 }
 
 const unreadApplyCount = computed(() => {
-  return globalStore.unReadMark.newFriendUnreadCount + globalStore.unReadMark.newGroupUnreadCount
+  return globalStore.contactUnreadCount
 })
 
 const startResize = () => {

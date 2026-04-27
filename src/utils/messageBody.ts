@@ -2,7 +2,7 @@
  * MessageBody 类型 guards 和工具函数
  */
 
-import type { MessageBody } from '@/stores/message'
+import type { MessageBody } from '@/stores/domains/chat/message'
 import { isObject, isString } from './typeGuard'
 
 /**
@@ -28,7 +28,7 @@ export function toMessageBody(body: unknown): MessageBody {
   if (isObject(body)) {
     return body as MessageBody
   }
-  return { content: String(body ?? '') }
+  return { content: String(body) }
 }
 
 /**

@@ -1,7 +1,7 @@
 <template>
   <div
     v-show="shouldShowUserList"
-    class="w-240px flex-shrink-0 flex flex-col bg-[--center-bg-color] border-r border-solid border-[--line-color]">
+    class="w-240px flex-shrink-0 flex flex-col bg-[--hula-surface-panel] border-r border-solid border-[--hula-border-default]">
     <!-- 搜索栏 -->
     <div class="p-16px pb-12px">
       <n-input
@@ -13,10 +13,10 @@
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
-        class="rounded-6px border-(solid 1px [--line-color]) w-full relative text-12px"
+        class="rounded-6px border-(solid 1px [--hula-border-default]) w-full relative text-12px"
         size="small">
         <template #prefix>
-          <svg class="size-16px text-[--text-color] opacity-60">
+          <svg class="size-16px text-[--hula-text-secondary] opacity-60">
             <use href="#search"></use>
           </svg>
         </template>
@@ -26,7 +26,7 @@
     <!-- 动态内容区域 -->
     <div class="flex-1 px-8px overflow-hidden">
       <div class="pl-4px mb-12px">
-        <span class="text-14px font-500 text-[--text-color]">{{ getSectionTitle() }}</span>
+        <span class="text-14px font-500 text-[--hula-text-primary]">{{ getSectionTitle() }}</span>
       </div>
 
       <n-scrollbar style="height: calc(100vh / var(--page-scale, 1) - 110px)">
@@ -42,7 +42,7 @@
           <component
             :is="getItemComponent()"
             v-for="item in filteredList"
-            :key="(item as any).id || (item as any).roomId || (item as any).uid"
+            :key="getItemKey(item)"
             :user="item"
             :room="item"
             :contact="item"
@@ -53,17 +53,19 @@
           <!-- 空状态 -->
           <div v-if="filteredList.length === 0 && searchKeyword && !loading" class="flex-center h-200px">
             <div class="flex-col-center">
-              <svg class="size-48px text-[--text-color] opacity-30 mb-12px">
+              <svg class="size-48px text-[--hula-text-primary] opacity-30 mb-12px">
                 <use href="#search"></use>
               </svg>
-              <p class="text-14px text-[--text-color] opacity-60 m-0">{{ getEmptyMessage() }}</p>
+              <p class="text-14px text-[--hula-text-secondary] opacity-60 m-0">{{ getEmptyMessage() }}</p>
             </div>
           </div>
 
           <!-- 加载状态 -->
           <div v-if="loading" class="flex-center h-200px">
             <n-spin size="small" />
-            <span class="ml-8px text-14px text-[--text-color] opacity-60">加载中</span>
+            <span class="ml-8px text-14px text-[--hula-text-secondary] opacity-60">
+              {{ t('fileManager.common.loading') }}
+            </span>
           </div>
         </div>
       </n-scrollbar>
@@ -72,16 +74,41 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
-import { useContactStore } from '@/stores/contacts.ts'
-import { useGroupStore } from '@/stores/group'
+import type { MatrixContact } from '@/stores/domains/chat/contacts'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import UserItem from './UserItem.vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+const logger = createLogger('UserList')
+
+type FileManagerContactItem = MatrixContact & {
+  avatar: string
+}
+
+type FileManagerGroupItem = MatrixGroupInfo & {
+  avatar: string
+}
+
+type FileManagerOptionItem = {
+  id?: string
+  uid?: string
+  roomId?: string
+  directRoomId?: string
+  name?: string
+  roomName?: string
+  groupName?: string
+  nickname?: string
+  avatar: string
+}
+
+type FileManagerListItem = Partial<FileManagerContactItem & FileManagerGroupItem> & FileManagerOptionItem
 
 type FileManagerState = {
   activeNavigation: Ref<string>
-  userList: Ref<any[]>
+  userList: Ref<FileManagerListItem[]>
   selectedUser: Ref<string>
   selectedRoom: Ref<string>
   setSearchKeyword: (keyword: string) => void
@@ -100,8 +127,7 @@ const groupStore = useGroupStore()
 // 本地状态
 const searchKeyword = ref('')
 const loading = ref(false)
-const contactList = ref<any[]>([])
-const sessionList = ref<any[]>([])
+const sessionList = ref<FileManagerContactItem[]>([])
 
 // 是否显示用户列表
 const shouldShowUserList = computed(() => {
@@ -121,6 +147,22 @@ const currentList = computed(() => {
       return []
   }
 })
+
+const getItemLabel = (item: FileManagerListItem) => {
+  return item.name || item.roomName || item.groupName || item.nickname || ''
+}
+
+const getUserSelectionId = (item: FileManagerListItem) => {
+  return item.uid || item.id || ''
+}
+
+const getRoomSelectionId = (item: FileManagerListItem) => {
+  return item.roomId || item.directRoomId || item.id || ''
+}
+
+const getItemKey = (item: FileManagerListItem) => {
+  return getRoomSelectionId(item) || getUserSelectionId(item)
+}
 
 // 丰富好友数据
 const enrichedContactsList = computed(() => {
@@ -156,9 +198,8 @@ const filteredList = computed(() => {
     return currentList.value
   }
 
-  return currentList.value.filter((item: any) => {
-    const name = item.name || item.roomName || item.groupName || item.nickname || ''
-    return name.toLowerCase().includes(searchKeyword.value.toLowerCase())
+  return currentList.value.filter((item) => {
+    return getItemLabel(item).toLowerCase().includes(searchKeyword.value.toLowerCase())
   })
 })
 
@@ -192,7 +233,7 @@ const getSectionTitle = () => {
 }
 
 // 获取全部选项
-const getAllOption = () => {
+const getAllOption = (): FileManagerOptionItem => {
   switch (activeNavigation.value) {
     case 'senders':
       return { id: '', name: t('fileManager.userList.allOptions.senders'), avatar: '' }
@@ -212,13 +253,13 @@ const getItemComponent = () => {
 }
 
 // 判断项目是否被选中
-const isItemSelected = (item: any) => {
+const isItemSelected = (item: FileManagerListItem) => {
   switch (activeNavigation.value) {
     case 'senders':
-      return selectedUser.value === (item.id || item.uid)
+      return selectedUser.value === getUserSelectionId(item)
     case 'sessions':
     case 'groups':
-      return selectedRoom.value === (item.roomId || item.id)
+      return selectedRoom.value === getRoomSelectionId(item)
     default:
       return false
   }
@@ -239,14 +280,14 @@ const getEmptyMessage = () => {
 }
 
 // 处理项目点击
-const handleItemClick = (item: any) => {
+const handleItemClick = (item: FileManagerListItem) => {
   switch (activeNavigation.value) {
     case 'senders':
-      setSelectedUser(item.uid || item.id || '')
+      setSelectedUser(getUserSelectionId(item))
       break
     case 'sessions':
     case 'groups':
-      setSelectedRoom(item.roomId || item.id || '')
+      setSelectedRoom(getRoomSelectionId(item))
       break
   }
 }
@@ -257,36 +298,21 @@ const loadContacts = async () => {
     loading.value = true
     await contactStore.getContactList()
   } catch (error) {
-    console.error('加载联系人失败:', error)
+    logger.error('加载联系人失败:', error)
   } finally {
     loading.value = false
   }
 }
 
-// 加载联系人列表 (恢复原始方式)
-const loadContactsOriginal = async () => {
-  try {
-    loading.value = true
-    const contacts = (await invoke('list_contacts_command')) as any[]
-    contactList.value = contacts
-  } catch (error) {
-    console.error('加载联系人失败:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-// 加载会话列表 (恢复原始方式)
 const loadSessions = async () => {
   try {
     loading.value = true
-    // 使用联系人作为会话列表，并处理头像
-    sessionList.value = contactList.value.map((item) => ({
+    sessionList.value = contactStore.contactsList.map((item) => ({
       ...item,
       avatar: AvatarUtils.getAvatarUrl(item.avatar)
     }))
   } catch (error) {
-    console.error('加载会话失败:', error)
+    logger.error('加载会话失败:', error)
   } finally {
     loading.value = false
   }
@@ -299,7 +325,7 @@ const loadGroups = async () => {
     // 群组数据已经在 groupStore 中管理，无需额外加载
     // 如果需要刷新群组数据，可以调用相应的 store 方法
   } catch (error) {
-    console.error('加载群聊失败:', error)
+    logger.error('加载群聊失败:', error)
   } finally {
     loading.value = false
   }
@@ -319,8 +345,8 @@ watch(
         }
         break
       case 'sessions':
-        if (contactList.value.length === 0) {
-          await loadContactsOriginal()
+        if (contactStore.contactsList.length === 0) {
+          await loadContacts()
         }
         await loadSessions()
         break

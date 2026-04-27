@@ -13,11 +13,11 @@
               <Transition mode="out-in">
                 <svg
                   v-if="plugin.state === PluginEnum.NOT_INSTALLED || plugin.state === PluginEnum.DOWNLOADING"
-                  class="size-34px color-#999">
+                  class="size-34px color-[--hula-text-quaternary]">
                   <use :href="`#${plugin.icon}`"></use>
                 </svg>
                 <template v-else>
-                  <svg class="size-34px color-#555">
+                  <svg class="size-34px color-[--hula-text-secondary]">
                     <use :href="`#${plugin.iconAction || plugin.icon}`"></use>
                   </svg>
                 </template>
@@ -26,10 +26,12 @@
 
             <n-flex vertical :size="10">
               <n-flex align="center" :size="6">
-                <p class="text-(14px #666) pl-4px">{{ plugin.title }}</p>
+                <p class="text-(14px [--hula-text-secondary]) pl-4px">{{ plugin.title }}</p>
 
                 <Transition>
-                  <svg v-if="plugin.isAdd && plugin.state !== PluginEnum.BUILTIN" class="color-#666 size-14px">
+                  <svg
+                    v-if="plugin.isAdd && plugin.state !== PluginEnum.BUILTIN"
+                    class="color-[--hula-text-secondary] size-14px">
                     <use href="#notOnTop"></use>
                   </svg>
                 </Transition>
@@ -39,17 +41,19 @@
                 <n-flex
                   v-if="plugin.state === PluginEnum.UNINSTALLING"
                   class="relative rounded-22px bg-#f6dfe3 size-fit p-[4px_8px]">
-                  <p class="text-(12px #c14053 center)">{{ t('home.plugins.status.uninstalling') }}</p>
+                  <p class="text-(12px [--hula-color-danger-500] center)">
+                    {{ t('home.plugins.status.uninstalling') }}
+                  </p>
                 </n-flex>
 
                 <n-flex
                   v-else-if="plugin.state === PluginEnum.BUILTIN"
                   class="relative rounded-22px bg-#e3e3e3 size-fit p-[4px_8px]">
-                  <p class="text-(12px #777 center)">{{ t('home.plugins.status.builtin') }}</p>
+                  <p class="text-(12px [--hula-text-tertiary] center)">{{ t('home.plugins.status.builtin') }}</p>
                 </n-flex>
 
                 <n-flex v-else class="relative rounded-22px bg-#e0e9fc size-fit p-[4px_8px]">
-                  <p class="text-(12px #4C77BD center)">{{ plugin.version }}</p>
+                  <p class="text-(12px [--hula-color-info-500] center)">{{ plugin.version }}</p>
                 </n-flex>
               </Transition>
             </n-flex>
@@ -62,7 +66,7 @@
             justify="center"
             align="center"
             :size="8"
-            class="box bg-[--button-bg-color]">
+            class="box bg-[--hula-surface-subtle]">
             <!-- 在下载中进度条 -->
             <n-flex
               @click="handleState(plugin)"
@@ -82,7 +86,7 @@
                 <p class="absolute-center text-(12px #4C77BD)">{{ plugin.progress }}%</p>
               </div>
 
-              <p v-else class="text-(12px [--chat-text-color] center) w-full">
+              <p v-else class="text-(12px [--hula-text-secondary] center) w-full">
                 {{ t('home.plugins.actions.install') }}
               </p>
             </n-flex>
@@ -137,12 +141,14 @@ import { storeToRefs } from 'pinia'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { PluginEnum } from '@/enums'
 import { usePluginsList } from '@/layout/left/config.tsx'
-import { usePluginsStore } from '@/stores/plugins.ts'
+import { usePluginsStore } from '@/stores/domains/settings/plugins'
+import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
 const appWindow = WebviewWindow.getCurrent()
 const pluginsStore = usePluginsStore()
 const pluginsList = usePluginsList()
+const timerManager = useTimerManager()
 const { plugins } = storeToRefs(pluginsStore)
 const isCurrently = ref(-1)
 const allPlugins = ref([] as STO.Plugins<PluginEnum>[])
@@ -164,11 +170,11 @@ const syncPlugins = (list: STO.Plugins<PluginEnum>[]) =>
 const handleState = (plugin: STO.Plugins<PluginEnum>) => {
   if (plugin.state === PluginEnum.INSTALLED) return
   plugin.state = PluginEnum.DOWNLOADING
-  const interval = setInterval(() => {
+  const interval = timerManager.setInterval(() => {
     if (plugin.progress < 100) {
       plugin.progress += 50
     } else {
-      clearInterval(interval)
+      timerManager.clearInterval(interval)
       plugin.state = PluginEnum.INSTALLED
       plugin.progress = 0
       pluginsStore.addPlugin(plugin)
@@ -178,7 +184,7 @@ const handleState = (plugin: STO.Plugins<PluginEnum>) => {
 
 const handleUnload = (plugin: STO.Plugins<PluginEnum>) => {
   plugin.state = PluginEnum.UNINSTALLING
-  setTimeout(() => {
+  timerManager.setTimeout(() => {
     handleDelete(plugin)
     plugin.state = PluginEnum.NOT_INSTALLED
     plugin.progress = 0
@@ -189,7 +195,7 @@ const handleUnload = (plugin: STO.Plugins<PluginEnum>) => {
 const handleDelete = (p: STO.Plugins<PluginEnum>) => {
   const plugin = plugins.value.find((i) => i.url === p.url)
   if (plugin) {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       pluginsStore.updatePlugin({ ...plugin, isAdd: false })
       p.isAdd = false
       emitTo(appWindow.label, 'startResize')
@@ -200,7 +206,7 @@ const handleDelete = (p: STO.Plugins<PluginEnum>) => {
 const handleAdd = (p: STO.Plugins<PluginEnum>) => {
   const plugin = plugins.value.find((i) => i.url === p.url)
   if (plugin) {
-    setTimeout(() => {
+    timerManager.setTimeout(() => {
       pluginsStore.updatePlugin({ ...plugin, isAdd: true })
       p.isAdd = true
       emitTo(appWindow.label, 'startResize')
@@ -231,6 +237,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('click', closeMenu, true)
+  timerManager.clearAll()
 })
 </script>
 

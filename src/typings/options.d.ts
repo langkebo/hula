@@ -1,5 +1,21 @@
 /** 选项命名空间 */
 declare namespace OPT {
+  type MenuStringResolver<TContent = unknown> = {
+    bivarianceHack(content: TContent): string
+  }['bivarianceHack']
+
+  type MenuAction<TContent = unknown> = {
+    bivarianceHack(content: TContent): void | Promise<void>
+  }['bivarianceHack']
+
+  type MenuVisible<TContent = unknown> = {
+    bivarianceHack(content: TContent): boolean
+  }['bivarianceHack']
+
+  type MenuChildrenResolver<TContent = unknown> = {
+    bivarianceHack(content: TContent): RightMenu<TContent>[] | null
+  }['bivarianceHack']
+
   /** 主页左侧选项 */
   namespace L {
     /**
@@ -66,13 +82,14 @@ declare namespace OPT {
    * @param click 点击事件
    * @param visible 显示条件
    */
-  type RightMenu = {
-    label: string | ((...args: any[]) => string)
-    icon: string | ((...args: any[]) => string)
-    click?: (...args: any[]) => void
-    visible?: (...args: any[]) => void
-    children?: RightMenu[] | ((...args: any[]) => void)
-  } | null
+  type RightMenu<TContent = unknown> = {
+    label: string | MenuStringResolver<TContent>
+    icon: string | MenuStringResolver<TContent>
+    click?: MenuAction<TContent>
+    visible?: MenuVisible<TContent>
+    children?: RightMenu<TContent>[] | MenuChildrenResolver<TContent>
+    disabled?: boolean
+  }
 
   /**
    * 详情页选项
@@ -83,6 +100,6 @@ declare namespace OPT {
   type Details = {
     url: string
     title: string
-    click: (...args: any[]) => void
+    click: (...args: unknown[]) => void
   }
 }

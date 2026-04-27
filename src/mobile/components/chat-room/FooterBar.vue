@@ -1,6 +1,5 @@
 <template>
   <div ref="root">
-    <!-- 隐藏的 contenteditable，用于复用 useMsgInput 的发送逻辑 -->
     <div
       ref="messageInputDom"
       contenteditable="true"
@@ -8,8 +7,24 @@
       style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; white-space: pre-wrap"></div>
 
     <div class="w-full min-h-20px flex flex-col z-2 footer-bar-shadow">
-      <div class="flex-1 min-h-0">
+      <div v-if="showVoicePanel" class="voice-panel-container">
+        <VoicePanel @cancel="showVoicePanel = false" @send="handleVoiceSend" />
+      </div>
+      <div v-else class="flex-1 min-h-0">
         <chat-footer :detail-id="globalStore.currentSession?.detailId"></chat-footer>
+      </div>
+      <div class="flex items-center justify-center py-4px border-t border-gray-100 bg-white">
+        <van-button
+          size="small"
+          :type="showVoicePanel ? 'primary' : 'default'"
+          plain
+          round
+          @click="showVoicePanel = !showVoicePanel">
+          <template #icon>
+            <Icon :icon="showVoicePanel ? 'mdi:keyboard' : 'mdi:microphone'" :width="16" />
+          </template>
+          {{ showVoicePanel ? t('mobile_chat.keyboard') : t('mobile_chat.voice') }}
+        </van-button>
       </div>
     </div>
   </div>
@@ -18,13 +33,22 @@
 <script setup lang="ts">
 import 'vant/es/dialog/style'
 import { invoke } from '@tauri-apps/api/core'
-import { useGlobalStore } from '@/stores/global'
+import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isIOS } from '@/utils/PlatformConstants'
+import VoicePanel from './panel/VoicePanel.vue'
 
+const { t } = useI18n()
 const globalStore = useGlobalStore()
 const emit = defineEmits(['focus', 'blur', 'updateHeight'])
 
-// ==== DOM 和状态 ====
+const showVoicePanel = ref(false)
+
+const handleVoiceSend = async (_voiceData: unknown) => {
+  showVoicePanel.value = false
+}
+
 const root = ref()
 
 onMounted(() => {
@@ -51,7 +75,6 @@ onUnmounted(() => {
   }
 })
 
-// ==== 对外暴露 ====
 defineExpose({ root })
 </script>
 
@@ -61,7 +84,6 @@ defineExpose({ root })
 
   svg {
     color: #13987f;
-    /* 主题色 */
     transition: color 0.3s ease;
   }
 
@@ -96,11 +118,7 @@ defineExpose({ root })
   box-shadow: 0 -3px 6px -4px rgba(0, 0, 0, 0.1);
 }
 
-.rotate {
-  transform: rotate(180deg);
-}
-
-.transition-transform {
-  transition: transform 0.15s ease;
+.voice-panel-container {
+  min-height: 120px;
 }
 </style>

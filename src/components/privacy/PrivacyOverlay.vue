@@ -81,7 +81,7 @@ function calculateWatermarkCount() {
 .privacy-overlay__watermark-text {
   font-size: 14px;
   font-weight: 500;
-  color: #909090;
+  color: var(--hula-text-tertiary);
   white-space: nowrap;
   user-select: none;
 }

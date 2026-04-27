@@ -27,5 +27,21 @@
     "title": "公告",
     "viewDetail": "查看详情",
     "windowTitle": "查看群公告"
+  },
+  "slidingSyncIndicator": {
+    "syncingProgress": "同步中 {synced}/{total}",
+    "syncing": "同步中...",
+    "complete": "同步完成",
+    "error": "同步失败"
+  },
+  "virtualList": {
+    "allMessagesLoaded": "以下是全部消息内容",
+    "loading": "加载中"
+  },
+  "memoryMonitor": {
+    "minimize": "最小化",
+    "title": "内存监控（点击切换）",
+    "expandHint": "点击展开",
+    "restore": "点击恢复内存监控"
   }
 }

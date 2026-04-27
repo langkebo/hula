@@ -164,7 +164,14 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import type { FormRules, FormInst } from 'naive-ui'
-import { matrixApiKeyService } from '@/services/matrix'
+import { apiKeyService, type ApiKey, type ApiKeyBalance, type Platform } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ApiKeyManagement')
+
+const hasValidationErrors = (value: unknown): value is { errors: unknown } => {
+  return typeof value === 'object' && value !== null && 'errors' in value
+}
 
 const showModal = defineModel<boolean>({ default: false })
 const emit = defineEmits<{
@@ -173,7 +180,7 @@ const emit = defineEmits<{
 
 // 密钥列表
 const loading = ref(false)
-const apiKeyList = ref<any[]>([])
+const apiKeyList = ref<ApiKey[]>([])
 const pagination = ref({
   pageNo: 1,
   pageSize: 10,
@@ -181,12 +188,12 @@ const pagination = ref({
 })
 
 // 余额相关
-const balanceMap = ref<Record<string, any>>({}) // 存储每个密钥的余额信息
+const balanceMap = ref<Record<string, ApiKeyBalance>>({}) // 存储每个密钥的余额信息
 const balanceLoadingMap = ref<Record<string, boolean>>({}) // 存储每个密钥的余额加载状态
 
 // 编辑相关
 const showEditModal = ref(false)
-const editingApiKey = ref<any>(null)
+const editingApiKey = ref<ApiKey | null>(null)
 const submitting = ref(false)
 const formRef = ref<FormInst>()
 
@@ -205,15 +212,15 @@ const platformOptions = ref<Array<{ label: string; value: string }>>([])
 // 加载平台列表
 const loadPlatformList = async () => {
   try {
-    const data = await matrixApiKeyService.platformList()
+    const data = await apiKeyService.platformList()
 
     if (data && Array.isArray(data)) {
-      platformOptions.value = data.map((item: any) => ({
+      platformOptions.value = data.map((item: Platform) => ({
         label: item.label,
         value: item.platform
       }))
     } else {
-      console.warn('平台列表数据格式不正确:', data)
+      logger.warn('平台列表数据格式不正确:', data)
       platformOptions.value = []
     }
   } catch (error) {
@@ -242,7 +249,7 @@ const formRules: FormRules = {
       type: 'number',
       message: '请选择状态',
       trigger: 'change',
-      validator: (_rule: any, value: any) => {
+      validator: (_rule: unknown, value: unknown) => {
         return value !== undefined && value !== null && value !== ''
       }
     }
@@ -260,14 +267,14 @@ const maskApiKey = (key: string) => {
 const loadApiKeyList = async () => {
   loading.value = true
   try {
-    const data = await matrixApiKeyService.page({
+    const data = await apiKeyService.page({
       pageNo: pagination.value.pageNo,
       pageSize: pagination.value.pageSize
     })
     apiKeyList.value = data.list || []
     pagination.value.total = data.total || 0
   } catch (error) {
-    console.error('加载 API 密钥列表失败:', error)
+    logger.error('加载 API 密钥列表失败:', error)
     window.$message.error('加载 API 密钥列表失败')
   } finally {
     loading.value = false
@@ -294,7 +301,7 @@ const handleAdd = () => {
 }
 
 // 编辑密钥
-const handleEdit = (apiKey: any) => {
+const handleEdit = (apiKey: ApiKey) => {
   editingApiKey.value = apiKey
   formData.value = {
     name: apiKey.name,
@@ -312,7 +319,7 @@ const handleSubmit = async () => {
     await formRef.value?.validate()
     submitting.value = true
 
-    const submitData: any = {
+    const submitData: Partial<ApiKey> = {
       name: formData.value.name,
       apiKey: formData.value.apiKey,
       platform: formData.value.platform,
@@ -325,24 +332,26 @@ const handleSubmit = async () => {
 
     if (editingApiKey.value) {
       // 更新
-      submitData.id = editingApiKey.value.id
-      await matrixApiKeyService.update(submitData)
+      const updateData = {
+        ...submitData,
+        id: editingApiKey.value.id
+      } as ApiKey
+      await apiKeyService.update(updateData)
       window.$message.success('密钥更新成功')
     } else {
       // 创建
-      await matrixApiKeyService.create(submitData)
+      await apiKeyService.create(submitData as ApiKey)
       window.$message.success('密钥创建成功')
     }
 
     showEditModal.value = false
     loadApiKeyList()
-    // 通知父组件刷新
     emit('refresh')
-  } catch (error: any) {
-    if (error?.errors) {
+  } catch (error) {
+    if (hasValidationErrors(error)) {
       return
     }
-    console.error('保存密钥失败:', error)
+    logger.error('保存密钥失败:', error)
     window.$message.error('保存密钥失败')
   } finally {
     submitting.value = false
@@ -352,12 +361,12 @@ const handleSubmit = async () => {
 // 删除密钥
 const handleDelete = async (id: string) => {
   try {
-    await matrixApiKeyService.delete({ id })
+    await apiKeyService.delete({ id })
     window.$message.success('密钥删除成功')
     loadApiKeyList()
     emit('refresh')
   } catch (error) {
-    console.error('删除密钥失败:', error)
+    logger.error('删除密钥失败:', error)
     window.$message.error('删除密钥失败')
   }
 }
@@ -366,11 +375,11 @@ const handleDelete = async (id: string) => {
 const handleQueryBalance = async (id: string) => {
   try {
     balanceLoadingMap.value[id] = true
-    const data = await matrixApiKeyService.balance({ id })
+    const data = await apiKeyService.balance({ id })
     balanceMap.value[id] = data
     window.$message.success('余额查询成功')
   } catch (error) {
-    console.error('查询余额失败:', error)
+    logger.error('查询余额失败:', error)
     window.$message.error('查询余额失败')
   } finally {
     balanceLoadingMap.value[id] = false
@@ -403,7 +412,7 @@ onMounted(() => {
 }
 
 .api-key-card {
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   padding: 16px;
   background: var(--bg-color);
@@ -421,7 +430,7 @@ onMounted(() => {
     .api-key-name {
       font-size: 16px;
       font-weight: 500;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
     }
 
     .api-key-meta {

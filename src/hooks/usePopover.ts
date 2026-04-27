@@ -14,8 +14,8 @@ export const usePopover = (selectKey: Ref<string>, id: string) => {
     window.removeEventListener('wheel', preventDefault)
   }
 
-  const close = (event: any) => {
-    if (!event.target.matches('.n-popover, .n-popover *')) {
+  const close = (event: MouseEvent) => {
+    if (!(event.target as HTMLElement | null)?.matches('.n-popover, .n-popover *')) {
       enableScroll()
     }
   }
