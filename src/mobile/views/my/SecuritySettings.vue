@@ -210,7 +210,7 @@ async function loadSecurityInfo() {
       keyBackupEnabled.value = cryptoStatus.keyBackupEnabled
     }
   } catch (error) {
-    logger.error('加载安全信息失败:', error)
+    logger.error('Failed to load security details', error)
   }
 }
 
@@ -250,7 +250,7 @@ async function handleChangePassword() {
       confirmPassword: ''
     }
   } catch (error) {
-    logger.error('修改密码失败:', error)
+    logger.error('Failed to change password', error)
     showToast({
       type: 'fail',
       message: t('mobile_security.password_change_failed')
@@ -283,7 +283,7 @@ async function handleSetupBackup() {
     backupPassphrase.value = ''
     await loadSecurityInfo()
   } catch (error) {
-    logger.error('设置备份失败:', error)
+    logger.error('Failed to set up key backup', error)
     showToast({
       type: 'fail',
       message: t('mobile_security.backup_setup_failed')
@@ -329,7 +329,7 @@ async function handleExportKeys() {
     }
   } catch (error) {
     if (error !== 'cancel') {
-      logger.error('导出密钥失败:', error)
+      logger.error('Failed to export keys', error)
       showToast({
         type: 'fail',
         message: t('mobile_security.export_keys_failed')
@@ -356,7 +356,7 @@ async function handleDeactivate() {
     router.push('/mobile/login')
   } catch (error) {
     if (error !== 'cancel') {
-      logger.error('注销账户失败:', error)
+      logger.error('Failed to deactivate account', error)
       showToast({
         type: 'fail',
         message: t('mobile_security.deactivate_failed')

@@ -165,7 +165,7 @@ async function loadPushRules() {
       }
     }
   } catch (error) {
-    logger.error('加载推送规则失败:', error)
+    logger.error('Failed to load push rules', error)
   }
 }
 
@@ -173,7 +173,7 @@ async function handleNotificationsToggle(enabled: boolean) {
   try {
     await matrixPushService.setMasterRuleEnabled(enabled)
   } catch (error) {
-    logger.error('设置通知开关失败:', error)
+    logger.error('Failed to update notification toggle', error)
     notificationsEnabled.value = !enabled
   }
 }
@@ -185,7 +185,7 @@ async function handleSoundToggle(enabled: boolean) {
       await matrixPushService.setRoomSoundEnabled(ruleId, enabled)
     }
   } catch (error) {
-    logger.error('设置声音失败:', error)
+    logger.error('Failed to update notification sound', error)
     soundEnabled.value = !enabled
   }
 }
@@ -216,7 +216,7 @@ async function handleSave() {
       message: t('mobile_notifications.save_success')
     })
   } catch (error) {
-    logger.error('保存设置失败:', error)
+    logger.error('Failed to save notification settings', error)
     showToast({
       type: 'fail',
       message: t('mobile_notifications.save_failed')

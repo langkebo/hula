@@ -241,7 +241,7 @@ async function loadDevices() {
       videoInputId.value = videoInputOptions.value[0].value
     }
   } catch (error) {
-    logger.error('获取设备列表失败:', error)
+    logger.error('Failed to load media devices', error)
     message.error(t('setting.voice_video.load_devices_failed'))
   } finally {
     devicesLoading.value = false
@@ -357,7 +357,7 @@ async function startAudioTest() {
     updateAudioLevel()
     message.success(t('setting.voice_video.microphone_test_started'))
   } catch (error) {
-    logger.error('麦克风测试失败:', error)
+    logger.error('Failed to start microphone test', error)
     message.error(t('setting.voice_video.microphone_access_failed'))
   }
 }
@@ -419,7 +419,7 @@ async function startPreview() {
     isPreviewing.value = true
     message.success(t('setting.voice_video.preview_started'))
   } catch (error) {
-    logger.error('视频预览失败:', error)
+    logger.error('Failed to start video preview', error)
     message.error(t('setting.voice_video.camera_access_failed'))
   }
 }

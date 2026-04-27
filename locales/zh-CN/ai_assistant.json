@@ -36,6 +36,9 @@
   "base_url_required": "请输入 Base URL",
   "testing": "测试中...",
   "connection_success": "连接成功",
+  "connection_failed": "连接失败",
+  "new_conversation": "新的对话",
+  "empty_response": "收到响应，但内容为空",
   "suggestions": {
     "translate": "翻译文本",
     "translate_desc": "将文本翻译成其他语言",

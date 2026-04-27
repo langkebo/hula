@@ -255,7 +255,7 @@ async function loadDevices() {
       videoInputId.value = videoInputDevices.value[0].deviceId
     }
   } catch (error) {
-    logger.error('获取设备列表失败:', error)
+    logger.error('Failed to load media devices', error)
     showToast({
       type: 'fail',
       message: t('mobile_voice_video.device_error')
@@ -338,7 +338,7 @@ async function startAudioTest() {
       message: t('mobile_voice_video.test_started')
     })
   } catch (error) {
-    logger.error('麦克风测试失败:', error)
+    logger.error('Failed to start microphone test', error)
     showToast({
       type: 'fail',
       message: t('mobile_voice_video.mic_error')
@@ -406,7 +406,7 @@ async function startPreview() {
       message: t('mobile_voice_video.preview_started')
     })
   } catch (error) {
-    logger.error('视频预览失败:', error)
+    logger.error('Failed to start video preview', error)
     showToast({
       type: 'fail',
       message: t('mobile_voice_video.camera_error')

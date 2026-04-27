@@ -107,7 +107,7 @@ async function handleSave() {
     })
     router.back()
   } catch (error) {
-    logger.error('设置状态失败:', error)
+    logger.error('Failed to update status', error)
     showToast({
       type: 'fail',
       message: t('mobile_status.save_failed')

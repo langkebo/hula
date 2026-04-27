@@ -76,7 +76,7 @@ async function loadDevices() {
     currentDeviceId.value = matrixDeviceService.getCurrentDeviceId() || ''
     devices.value = await matrixDeviceService.getDevices()
   } catch (error) {
-    logger.error('获取设备列表失败:', error)
+    logger.error('Failed to load devices', error)
     showToast({
       type: 'fail',
       message: t('mobile_devices.load_failed')
@@ -132,7 +132,7 @@ async function handleDeleteDevice(device: Device) {
     await loadDevices()
   } catch (error) {
     if (error !== 'cancel') {
-      logger.error('删除设备失败:', error)
+      logger.error('Failed to delete device', error)
       showToast({
         type: 'fail',
         message: t('mobile_devices.delete_failed')
@@ -165,7 +165,7 @@ async function handleDeleteOtherDevices() {
     await loadDevices()
   } catch (error) {
     if (error !== 'cancel') {
-      logger.error('批量删除设备失败:', error)
+      logger.error('Failed to delete devices in batch', error)
       showToast({
         type: 'fail',
         message: t('mobile_devices.delete_failed')

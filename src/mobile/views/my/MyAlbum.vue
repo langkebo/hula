@@ -100,7 +100,7 @@ const getAllImages = async () => {
     logger.debug('最终图片列表:', imagesList)
     allImages.value = imagesList
   } catch (error) {
-    logger.error('获取图片失败:', error)
+    logger.error('Failed to load images', error)
     if (window.$message) {
       window.$message.error(t('mobile_photo.image_load_failed'))
     }
