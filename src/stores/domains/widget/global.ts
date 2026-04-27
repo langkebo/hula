@@ -28,16 +28,37 @@ export interface RequestFriendItem {
   applyId?: string
 }
 
+type UnreadMarkState = {
+  newFriendUnreadCount: number
+  newMsgUnreadCount: number
+  newGroupUnreadCount: number
+}
+
+type AddFriendModalState = {
+  show: boolean
+  uid?: string
+}
+
+type AddGroupModalState = {
+  show: boolean
+  name?: string
+  avatar?: string
+  account?: string
+}
+
+const normalizeUnreadCount = (count: number): number => {
+  if (!Number.isFinite(count)) {
+    return 0
+  }
+  return Math.max(0, count)
+}
+
 export const useGlobalStore = defineStore(
   StoresEnum.GLOBAL,
   () => {
     const chatStore = useChatStore()
 
-    const unReadMark = reactive<{
-      newFriendUnreadCount: number
-      newMsgUnreadCount: number
-      newGroupUnreadCount: number
-    }>({
+    const unReadMark = reactive<UnreadMarkState>({
       newFriendUnreadCount: 0,
       newGroupUnreadCount: 0,
       newMsgUnreadCount: 0
@@ -80,26 +101,16 @@ export const useGlobalStore = defineStore(
 
     const currentSelectedContact = ref<FriendItem | RequestFriendItem>()
 
-    const addFriendModalInfo = ref<{ show: boolean; uid?: string }>({
+    const addFriendModalInfo = ref<AddFriendModalState>({
       show: false,
       uid: void 0
     })
 
-    const addGroupModalInfo = ref<{ show: boolean; name?: string; avatar?: string; account?: string }>({
+    const addGroupModalInfo = ref<AddGroupModalState>({
       show: false,
       name: '',
       avatar: '',
       account: ''
-    })
-
-    const createGroupModalInfo = reactive<{
-      show: boolean
-      isInvite: boolean
-      selectedUid: number[]
-    }>({
-      show: false,
-      isInvite: false,
-      selectedUid: []
     })
 
     const tipVisible = ref<boolean>(false)
@@ -164,6 +175,85 @@ export const useGlobalStore = defineStore(
       tipVisible.value = visible
     }
 
+    const messageUnreadCount = computed(() => unReadMark.newMsgUnreadCount)
+    const friendUnreadCount = computed(() => unReadMark.newFriendUnreadCount)
+    const groupUnreadCount = computed(() => unReadMark.newGroupUnreadCount)
+    const contactUnreadCount = computed(() => friendUnreadCount.value + groupUnreadCount.value)
+    const addFriendTargetUid = computed(() => addFriendModalInfo.value.uid ?? '')
+    const addFriendModalVisible = computed(() => addFriendModalInfo.value.show)
+    const addGroupTargetAccount = computed(() => addGroupModalInfo.value.account ?? '')
+    const addGroupTargetName = computed(() => addGroupModalInfo.value.name ?? '')
+    const addGroupTargetAvatar = computed(() => addGroupModalInfo.value.avatar ?? '')
+    const addGroupModalVisible = computed(() => addGroupModalInfo.value.show)
+
+    const setFriendUnreadCount = (count: number) => {
+      unReadMark.newFriendUnreadCount = normalizeUnreadCount(count)
+    }
+
+    const incrementFriendUnreadCount = (step = 1) => {
+      unReadMark.newFriendUnreadCount = normalizeUnreadCount(unReadMark.newFriendUnreadCount + step)
+    }
+
+    const decrementFriendUnreadCount = (step = 1) => {
+      unReadMark.newFriendUnreadCount = normalizeUnreadCount(unReadMark.newFriendUnreadCount - step)
+    }
+
+    const clearFriendUnreadCount = () => {
+      unReadMark.newFriendUnreadCount = 0
+    }
+
+    const setGroupUnreadCount = (count: number) => {
+      unReadMark.newGroupUnreadCount = normalizeUnreadCount(count)
+    }
+
+    const setMessageUnreadCount = (count: number) => {
+      unReadMark.newMsgUnreadCount = normalizeUnreadCount(count)
+    }
+
+    const setUnreadCounts = (payload: { friend?: number; group?: number; message?: number }) => {
+      if (payload.friend !== undefined) {
+        setFriendUnreadCount(payload.friend)
+      }
+      if (payload.group !== undefined) {
+        setGroupUnreadCount(payload.group)
+      }
+      if (payload.message !== undefined) {
+        setMessageUnreadCount(payload.message)
+      }
+    }
+
+    const refreshUnreadBadge = (feedUnreadCount?: number) => {
+      unreadCountManager.refreshBadge(unReadMark, feedUnreadCount)
+    }
+
+    const setAddFriendTarget = (uid?: string) => {
+      addFriendModalInfo.value.uid = uid ? String(uid) : ''
+    }
+
+    const openAddFriendModal = (uid?: string) => {
+      setAddFriendTarget(uid)
+      addFriendModalInfo.value.show = true
+    }
+
+    const closeAddFriendModal = () => {
+      addFriendModalInfo.value.show = false
+    }
+
+    const setAddGroupTarget = (payload: { account?: string; name?: string; avatar?: string }) => {
+      addGroupModalInfo.value.account = payload.account ?? ''
+      addGroupModalInfo.value.name = payload.name ?? ''
+      addGroupModalInfo.value.avatar = payload.avatar ?? ''
+    }
+
+    const openAddGroupModal = (payload: { account?: string; name?: string; avatar?: string }) => {
+      setAddGroupTarget(payload)
+      addGroupModalInfo.value.show = true
+    }
+
+    const closeAddGroupModal = () => {
+      addGroupModalInfo.value.show = false
+    }
+
     const updateGlobalUnreadCount = () => {
       info('[global]更新全局未读消息计数')
       unreadCountManager.calculateTotal(chatStore.sessionList, unReadMark)
@@ -225,11 +315,34 @@ export const useGlobalStore = defineStore(
       addGroupModalInfo,
       currentSelectedContact,
       currentReadUnreadList,
-      createGroupModalInfo,
       tipVisible,
       isTrayMenuShow,
       unreadReady,
+      messageUnreadCount,
+      friendUnreadCount,
+      groupUnreadCount,
+      contactUnreadCount,
+      addFriendTargetUid,
+      addFriendModalVisible,
+      addGroupTargetAccount,
+      addGroupTargetName,
+      addGroupTargetAvatar,
+      addGroupModalVisible,
       setTipVisible,
+      setFriendUnreadCount,
+      incrementFriendUnreadCount,
+      decrementFriendUnreadCount,
+      clearFriendUnreadCount,
+      setGroupUnreadCount,
+      setMessageUnreadCount,
+      setUnreadCounts,
+      refreshUnreadBadge,
+      setAddFriendTarget,
+      openAddFriendModal,
+      closeAddFriendModal,
+      setAddGroupTarget,
+      openAddGroupModal,
+      closeAddGroupModal,
       updateGlobalUnreadCount,
       updateCurrentSessionRoomId,
       currentSessionRoomId,

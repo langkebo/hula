@@ -55,6 +55,14 @@ The project supports:
 4. Ensure you have access to a synapse-rust backend instance (see [synapse-rust](https://github.com/langkebo/synapse-rust))
 5. Configure `VITE_HOMESERVER_URL` in `.env.local` (never commit this file)
 
+### Three-Repo Development
+For full local development, you need all three repositories running:
+1. **synapse-rust** - Backend Matrix Homeserver (default port: 28008)
+2. **matrix-js-sdk** - Local SDK (sibling directory `../matrix-js-sdk`)
+3. **hula** - This frontend application
+
+If `pnpm install` fails with SDK linking errors, verify the `matrix-js-sdk` directory exists at `../matrix-js-sdk` relative to this repo.
+
 ### Environment Variables
 - `VITE_APP_NAME` - Application name
 - `VITE_HOMESERVER_URL` - Matrix Homeserver URL (default: `http://localhost:28008`)

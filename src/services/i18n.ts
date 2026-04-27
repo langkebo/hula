@@ -53,6 +53,7 @@ const locales = Object.entries(import.meta.glob('../../locales/**/*.json'))
 export const availableLocales = Object.keys(locales)
 
 const loadedLanguages: Locale[] = []
+export type LanguagePreference = Locale | 'AUTO' | string
 
 // Obtain language prefix
 function getLangPrefix(lang: string) {
@@ -94,7 +95,7 @@ const normalizeLang = (lang: string): Locale => {
 }
 
 // 应用语言到 i18n 和 html 标签
-export function setI18nLanguage(lang: Locale) {
+export function setI18nLanguage(lang: LanguagePreference) {
   const resolved = normalizeLang(lang)
   i18n.global.locale.value = resolved
   setDayjsLocale(resolved)
@@ -115,7 +116,7 @@ function findLocales(lang: string) {
 }
 
 // 加载语言包并切换语言，确保 lang 被归一化后再加载
-export async function loadLanguage(lang: Locale) {
+export async function loadLanguage(lang: LanguagePreference) {
   const resolvedLang = normalizeLang(lang)
   if (i18n.global.locale.value === resolvedLang) {
     return setI18nLanguage(resolvedLang)
@@ -152,12 +153,16 @@ export async function loadLanguage(lang: Locale) {
   return setI18nLanguage(resolvedLang)
 }
 
+export async function applyLanguagePreference(lang?: LanguagePreference) {
+  return loadLanguage(lang ?? 'AUTO')
+}
+
 /**
  * Ensure that pinia is initialized first.
  */
 export const setupI18n = (app: App) => {
   const settingStore = useSettingStore()
 
-  loadLanguage(settingStore.page.lang ?? 'en')
+  void applyLanguagePreference(settingStore.languagePreference)
   app.use(i18n)
 }

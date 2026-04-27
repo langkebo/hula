@@ -198,11 +198,11 @@ watch(
   @apply flex items-center gap-12px p-8px rounded-8px cursor-pointer transition-all;
 
   &:hover {
-    background: var(--emoji-hover);
+    background: var(--hula-fill-hover);
   }
 
   &.selected {
-    background: var(--color-primary-light);
+    background: var(--hula-color-primary-100);
   }
 }
 
@@ -215,7 +215,7 @@ watch(
 }
 
 .user-id {
-  @apply text-12px color-[--color-text-tertiary] truncate;
+  @apply text-12px color-[--hula-text-tertiary] truncate;
 }
 
 .manual-invite {

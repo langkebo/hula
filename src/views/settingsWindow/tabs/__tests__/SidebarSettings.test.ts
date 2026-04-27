@@ -4,9 +4,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SidebarSettings from '../SidebarSettings.vue'
 
 const messageSuccessMock = vi.fn()
+const translationMap: Record<string, string> = {
+  'setting.sidebar.display_content': '显示内容',
+  'setting.sidebar.sort_by': '排序方式',
+  'setting.sidebar.list_item_size': '列表项大小',
+  'setting.sidebar.show_spaces': '显示空间',
+  'setting.sidebar.show_rooms': '显示房间',
+  'setting.sidebar.show_direct_messages': '显示直接消息',
+  'setting.sidebar.show_friends': '显示好友分组',
+  'setting.sidebar.show_threads': '显示活跃线程',
+  'setting.sidebar.sort_options.recent': '最近活动',
+  'setting.sidebar.sort_options.alphabetical': '按字母顺序',
+  'setting.sidebar.sort_options.manual': '手动排序',
+  'setting.sidebar.size_small': '小',
+  'setting.sidebar.size_medium': '中',
+  'setting.sidebar.size_large': '大'
+}
 
 type SidebarSettingsVm = ComponentPublicInstance & {
-  showFavourites: boolean
   showSpaces: boolean
   showRooms: boolean
   showDirectMessages: boolean
@@ -26,6 +41,21 @@ vi.mock('naive-ui', () => ({
   useMessage: () => ({ success: messageSuccessMock })
 }))
 
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      if (!params) {
+        return translationMap[key] ?? key
+      }
+
+      return Object.entries(params).reduce(
+        (message, [name, value]) => message.replace(new RegExp(`\\{${name}\\}`, 'g'), value),
+        translationMap[key] ?? key
+      )
+    }
+  })
+}))
+
 describe('SidebarSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -42,7 +72,6 @@ describe('SidebarSettings', () => {
 
   it('shows all display toggles', () => {
     const wrapper = mount(SidebarSettings)
-    expect(wrapper.text()).toContain('显示收藏夹')
     expect(wrapper.text()).toContain('显示空间')
     expect(wrapper.text()).toContain('显示房间')
     expect(wrapper.text()).toContain('显示直接消息')
@@ -54,7 +83,6 @@ describe('SidebarSettings', () => {
     localStorage.setItem(
       'hula-sidebar-settings',
       JSON.stringify({
-        showFavourites: false,
         showSpaces: true,
         showRooms: true,
         showDirectMessages: false,
@@ -66,7 +94,6 @@ describe('SidebarSettings', () => {
     )
     const wrapper = mount(SidebarSettings)
     const vm = getVm(wrapper)
-    expect(vm.showFavourites).toBe(false)
     expect(vm.showDirectMessages).toBe(false)
     expect(vm.showThreads).toBe(false)
     expect(vm.sortBy).toBe('alphabetical')
@@ -76,16 +103,15 @@ describe('SidebarSettings', () => {
   it('saves settings to localStorage on toggle', () => {
     const wrapper = mount(SidebarSettings)
     const vm = getVm(wrapper)
-    vm.showFavourites = false
+    vm.showSpaces = false
     vm.saveSettings()
     const saved = JSON.parse(localStorage.getItem('hula-sidebar-settings')!)
-    expect(saved.showFavourites).toBe(false)
+    expect(saved.showSpaces).toBe(false)
   })
 
   it('defaults all display toggles to true', () => {
     const wrapper = mount(SidebarSettings)
     const vm = getVm(wrapper)
-    expect(vm.showFavourites).toBe(true)
     expect(vm.showSpaces).toBe(true)
     expect(vm.showRooms).toBe(true)
     expect(vm.showDirectMessages).toBe(true)

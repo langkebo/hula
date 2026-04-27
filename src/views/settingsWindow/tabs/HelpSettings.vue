@@ -1,15 +1,15 @@
 <template>
   <div class="help-settings">
     <div class="settings-section">
-      <h3 class="section-title">关于</h3>
+      <h3 class="section-title">{{ t('setting.help_about.about') }}</h3>
       <div class="about-info">
         <div class="app-logo">
           <img src="@/assets/img/win.png" alt="Logo" width="64" height="64" />
         </div>
         <div class="app-info">
           <div class="app-name">HuLa</div>
-          <div class="app-version">版本 {{ appVersion }}</div>
-          <div class="sdk-version">Matrix SDK v{{ sdkVersion }}</div>
+          <div class="app-version">{{ t('setting.help_about.version') }} {{ appVersion }}</div>
+          <div class="sdk-version">{{ t('setting.help_about.matrix_sdk_version') }} v{{ sdkVersion }}</div>
         </div>
       </div>
     </div>
@@ -17,25 +17,27 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">检查更新</h3>
+      <h3 class="section-title">{{ t('setting.help_about.check_update') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">当前版本</span>
+          <span class="setting-label">{{ t('setting.help_about.current_version') }}</span>
           <span class="setting-desc">{{ appVersion }}</span>
         </div>
         <n-button size="small" :loading="checkingUpdate" @click="handleCheckUpdate">
-          {{ checkingUpdate ? '检查中...' : '检查更新' }}
+          {{ checkingUpdate ? t('setting.help_about.checking') : t('setting.help_about.check_update') }}
         </n-button>
       </div>
       <div v-if="updateInfo" class="update-info">
         <div v-if="updateInfo.hasUpdate" class="update-available">
           <Icon icon="mdi:download" :width="16" />
-          <span>发现新版本: {{ updateInfo.latestVersion }}</span>
-          <n-button size="small" type="primary" @click="handleDownloadUpdate">立即更新</n-button>
+          <span>{{ t('setting.help_about.new_version_found', { version: updateInfo.latestVersion }) }}</span>
+          <n-button size="small" type="primary" @click="handleDownloadUpdate">
+            {{ t('setting.help_about.update_now') }}
+          </n-button>
         </div>
         <div v-else class="update-latest">
           <Icon icon="mdi:check-circle" :width="16" />
-          <span>已是最新版本</span>
+          <span>{{ t('setting.help_about.up_to_date') }}</span>
         </div>
       </div>
     </div>
@@ -43,26 +45,26 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">链接</h3>
+      <h3 class="section-title">{{ t('setting.help_about.links') }}</h3>
       <div class="link-list">
         <div class="link-item" @click="openLink('https://matrix.org')">
           <Icon icon="mdi:web" :width="20" />
-          <span>Matrix 官网</span>
+          <span>{{ t('setting.help_about.matrix_website') }}</span>
           <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
         </div>
         <div class="link-item" @click="openLink('https://spec.matrix.org')">
           <Icon icon="mdi:book-open-variant" :width="20" />
-          <span>Matrix 规范</span>
+          <span>{{ t('setting.help_about.matrix_spec') }}</span>
           <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
         </div>
         <div class="link-item" @click="openLink('https://github.com/nichuanfang/nichuanfang.github.io')">
           <Icon icon="mdi:github" :width="20" />
-          <span>GitHub</span>
+          <span>{{ t('setting.help_about.project_home') }}</span>
           <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
         </div>
         <div class="link-item" @click="openLink('https://element-hq.github.io/synapse/latest/')">
           <Icon icon="mdi:server" :width="20" />
-          <span>Synapse 文档</span>
+          <span>{{ t('setting.help_about.synapse_docs') }}</span>
           <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
         </div>
       </div>
@@ -71,25 +73,25 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">反馈与支持</h3>
+      <h3 class="section-title">{{ t('setting.help_about.support') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">提交问题反馈</span>
-          <span class="setting-desc">报告 Bug 或提出功能建议</span>
+          <span class="setting-label">{{ t('setting.help_about.submit_feedback') }}</span>
+          <span class="setting-desc">{{ t('setting.help_about.feedback_desc') }}</span>
         </div>
         <n-button size="small" @click="handleFeedback">
           <template #icon><Icon icon="mdi:bug-outline" :width="16" /></template>
-          反馈
+          {{ t('setting.help_about.feedback_action') }}
         </n-button>
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">查看日志</span>
-          <span class="setting-desc">打开应用日志目录</span>
+          <span class="setting-label">{{ t('setting.help_about.view_logs') }}</span>
+          <span class="setting-desc">{{ t('setting.help_about.view_logs_desc') }}</span>
         </div>
         <n-button size="small" @click="handleOpenLogs">
           <template #icon><Icon icon="mdi:folder-outline" :width="16" /></template>
-          打开
+          {{ t('setting.help_about.open') }}
         </n-button>
       </div>
     </div>
@@ -97,18 +99,18 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">技术信息</h3>
+      <h3 class="section-title">{{ t('setting.help_about.technical_info') }}</h3>
       <div class="tech-info">
         <div class="tech-item">
-          <span class="tech-label">运行平台</span>
+          <span class="tech-label">{{ t('setting.help_about.runtime_platform') }}</span>
           <span class="tech-value">{{ platform }}</span>
         </div>
         <div class="tech-item">
-          <span class="tech-label">Tauri 版本</span>
+          <span class="tech-label">{{ t('setting.help_about.tauri_version') }}</span>
           <span class="tech-value">{{ tauriVersion }}</span>
         </div>
         <div class="tech-item">
-          <span class="tech-label">Vue 版本</span>
+          <span class="tech-label">{{ t('setting.help_about.vue_version') }}</span>
           <span class="tech-value">{{ vueVersion }}</span>
         </div>
       </div>
@@ -120,6 +122,7 @@
 import { ref, onMounted } from 'vue'
 import { NButton, NDivider, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import { usePlatform } from '@/composables/usePlatform'
 import { createLogger } from '@/utils/Logger'
 
@@ -130,6 +133,7 @@ defineOptions({
 })
 
 const message = useMessage()
+const { t } = useI18n()
 const { isDesktop: isDesktopPlatform } = usePlatform()
 
 const appVersion = ref('1.0.0')
@@ -146,7 +150,7 @@ onMounted(async () => {
 
 async function loadVersionInfo() {
   try {
-    platform.value = isDesktopPlatform ? 'Tauri Desktop' : 'Web Browser'
+    platform.value = isDesktopPlatform ? t('setting.help_about.platform_desktop') : t('setting.help_about.platform_web')
 
     if (isDesktopPlatform) {
       try {
@@ -181,10 +185,10 @@ async function loadVersionInfo() {
         }
       }
     } catch {
-      logger.debug('无法加载 package.json')
+      logger.debug('Failed to load package.json')
     }
   } catch (error) {
-    logger.error('加载版本信息失败:', error)
+    logger.error('Failed to load version info:', error)
   }
 }
 
@@ -200,9 +204,9 @@ async function handleCheckUpdate() {
       latestVersion: appVersion.value
     }
 
-    message.success('已是最新版本')
+    message.success(t('setting.help_about.up_to_date'))
   } catch (error) {
-    message.error('检查更新失败')
+    message.error(t('setting.help_about.check_update_failed'))
   } finally {
     checkingUpdate.value = false
   }
@@ -228,40 +232,37 @@ async function handleOpenLogs() {
       const logPath = await appDataDir()
       await open(logPath)
     } catch (error) {
-      message.error('无法打开日志目录')
+      message.error(t('setting.help_about.open_logs_failed'))
     }
   } else {
-    message.info('Web 版本暂不支持此功能')
+    message.info(t('setting.help_about.open_logs_unsupported'))
   }
 }
 </script>
 
 <style scoped>
 .help-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-4);
+  color: var(--hula-text-primary);
 }
 
 .about-info {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-:deep(.dark) .about-info {
-  background-color: rgba(255, 255, 255, 0.05);
+  gap: var(--hula-space-4);
+  padding: var(--hula-space-4);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .app-logo img {
@@ -279,18 +280,14 @@ async function handleOpenLogs() {
 }
 
 .app-version {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  margin-top: 4px;
-}
-
-:deep(.dark) .app-version {
-  color: #aaa;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-secondary);
+  margin-top: var(--hula-space-1);
 }
 
 .sdk-version {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
   margin-top: 2px;
 }
 
@@ -298,12 +295,8 @@ async function handleOpenLogs() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -312,85 +305,70 @@ async function handleOpenLogs() {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .update-info {
-  margin-top: 12px;
-  padding: 12px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-:deep(.dark) .update-info {
-  background-color: rgba(255, 255, 255, 0.05);
+  margin-top: var(--hula-space-3);
+  padding: var(--hula-space-3);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .update-available {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--color-info);
+  gap: var(--hula-space-2);
+  color: var(--hula-color-info-500);
 }
 
 .update-latest {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--color-success);
+  gap: var(--hula-space-2);
+  color: var(--hula-color-success-500);
 }
 
 .link-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .link-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
+  gap: var(--hula-space-3);
+  padding: var(--hula-space-3) var(--hula-space-4);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
   cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-:deep(.dark) .link-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  transition: background-color var(--hula-motion-duration-normal) var(--hula-motion-ease-standard);
 }
 
 .link-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .link-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--hula-settings-card-bg-hover);
 }
 
 .link-arrow {
   margin-left: auto;
-  color: var(--color-text-quaternary);
+  color: var(--hula-text-quaternary);
 }
 
 .tech-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-:deep(.dark) .tech-info {
-  background-color: rgba(255, 255, 255, 0.05);
+  gap: var(--hula-space-2);
+  padding: var(--hula-space-4);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .tech-item {
@@ -399,16 +377,13 @@ async function handleOpenLogs() {
 }
 
 .tech-label {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-
-:deep(.dark) .tech-label {
-  color: #aaa;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-secondary);
 }
 
 .tech-value {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--hula-font-size-base);
+  font-weight: var(--hula-font-weight-medium);
+  color: var(--hula-text-primary);
 }
 </style>

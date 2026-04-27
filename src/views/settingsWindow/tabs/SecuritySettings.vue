@@ -1,7 +1,7 @@
 <template>
   <div class="security-settings">
     <div class="settings-section">
-      <h3 class="section-title">加密状态</h3>
+      <h3 class="section-title">{{ t('setting.security.encryption_status') }}</h3>
       <div class="encryption-status">
         <div class="status-icon">
           <Icon
@@ -10,9 +10,19 @@
             :class="encryptionEnabled ? 'status-secure' : 'status-insecure'" />
         </div>
         <div class="status-info">
-          <div class="status-title">{{ encryptionEnabled ? '端到端加密已启用' : '端到端加密未启用' }}</div>
+          <div class="status-title">
+            {{
+              encryptionEnabled
+                ? t('setting.security.encryption_enabled_title')
+                : t('setting.security.encryption_disabled_title')
+            }}
+          </div>
           <div class="status-desc">
-            {{ encryptionEnabled ? '您的消息受到端到端加密保护' : '消息未加密，建议启用加密功能' }}
+            {{
+              encryptionEnabled
+                ? t('setting.security.encryption_enabled_desc')
+                : t('setting.security.encryption_disabled_desc')
+            }}
           </div>
         </div>
       </div>
@@ -21,47 +31,49 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">恢复密钥</h3>
+      <h3 class="section-title">{{ t('setting.security.recovery_key') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">安全备份</span>
+          <span class="setting-label">{{ t('setting.security.backup_label') }}</span>
           <span class="setting-desc">{{ backupStatusText }}</span>
         </div>
         <n-button size="small" :loading="backupLoading" @click="handleSetupBackup">
-          {{ hasBackup ? '管理备份' : '设置备份' }}
+          {{ hasBackup ? t('setting.security.manage_backup') : t('setting.security.setup_backup') }}
         </n-button>
       </div>
       <div v-if="hasBackup" class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">导出恢复密钥</span>
-          <span class="setting-desc">将恢复密钥导出到安全位置</span>
+          <span class="setting-label">{{ t('setting.security.export_recovery_key') }}</span>
+          <span class="setting-desc">{{ t('setting.security.export_recovery_key_desc') }}</span>
         </div>
-        <n-button size="small" :loading="exportLoading" @click="handleExportKey">导出</n-button>
+        <n-button size="small" :loading="exportLoading" @click="handleExportKey">
+          {{ t('setting.security.export') }}
+        </n-button>
       </div>
     </div>
 
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">隐私设置</h3>
+      <h3 class="section-title">{{ t('setting.security.privacy_settings') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示在线状态</span>
-          <span class="setting-desc">允许其他用户看到您的在线状态</span>
+          <span class="setting-label">{{ t('setting.security.show_online_status') }}</span>
+          <span class="setting-desc">{{ t('setting.security.show_online_status_desc') }}</span>
         </div>
         <n-switch v-model:value="showOnlineStatus" @update:value="handleOnlineStatusChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示输入状态</span>
-          <span class="setting-desc">允许其他用户看到您正在输入</span>
+          <span class="setting-label">{{ t('setting.security.show_typing_status') }}</span>
+          <span class="setting-desc">{{ t('setting.security.show_typing_status_desc') }}</span>
         </div>
         <n-switch v-model:value="showTypingStatus" @update:value="handleTypingStatusChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示已读回执</span>
-          <span class="setting-desc">发送消息已读回执</span>
+          <span class="setting-label">{{ t('setting.security.send_read_receipts') }}</span>
+          <span class="setting-desc">{{ t('setting.security.send_read_receipts_desc') }}</span>
         </div>
         <n-switch v-model:value="sendReadReceipts" @update:value="handleReadReceiptsChange" />
       </div>
@@ -70,56 +82,60 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">被忽略的用户</h3>
+      <h3 class="section-title">{{ t('setting.security.ignored_users') }}</h3>
       <n-spin :show="loadingIgnored">
         <div v-if="ignoredUsers.length > 0" class="ignored-list">
           <div v-for="user in ignoredUsers" :key="user" class="ignored-item">
             <span class="user-id">{{ user }}</span>
-            <n-button size="tiny" @click="handleUnignore(user)">取消忽略</n-button>
+            <n-button size="tiny" @click="handleUnignore(user)">{{ t('setting.security.unignore') }}</n-button>
           </div>
         </div>
-        <n-empty v-else description="没有忽略的用户" />
+        <n-empty v-else :description="t('setting.security.no_ignored_users')" />
       </n-spin>
     </div>
 
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">屏蔽用户</h3>
+      <h3 class="section-title">{{ t('setting.security.blocked_users') }}</h3>
       <n-spin :show="loadingBlocked">
         <div v-if="blockedUsers.length > 0" class="ignored-list">
           <div v-for="user in blockedUsers" :key="user" class="ignored-item">
             <span class="user-id">{{ user }}</span>
-            <n-button size="tiny" @click="handleUnblock(user)">取消屏蔽</n-button>
+            <n-button size="tiny" @click="handleUnblock(user)">{{ t('setting.security.unblock') }}</n-button>
           </div>
         </div>
-        <n-empty v-else description="没有屏蔽的用户" />
+        <n-empty v-else :description="t('setting.security.no_blocked_users')" />
       </n-spin>
       <div style="margin-top: 8px">
-        <n-button size="small" @click="showAddBlocked = true">+ 添加屏蔽用户</n-button>
+        <n-button size="small" @click="showAddBlocked = true">{{ t('setting.security.add_blocked_user') }}</n-button>
       </div>
     </div>
 
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">邀请黑白名单</h3>
-      <n-alert type="info" :show-icon="true" style="margin-bottom: 12px; font-size: 12px">
-        邀请黑白名单为房间级别设置，此处为全局默认配置。
+      <h3 class="section-title">{{ t('setting.security.invite_lists') }}</h3>
+      <n-alert type="info" :show-icon="true" class="invite-lists-alert">
+        {{ t('setting.security.invite_lists_info') }}
       </n-alert>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">邀请黑名单</span>
-          <span class="setting-desc">阻止这些用户邀请你加入房间</span>
+          <span class="setting-label">{{ t('setting.security.invite_blocklist') }}</span>
+          <span class="setting-desc">{{ t('setting.security.invite_blocklist_desc') }}</span>
         </div>
-        <n-button size="small" @click="showInviteBlocklist = true">管理 ({{ inviteBlocklist.length }})</n-button>
+        <n-button size="small" @click="showInviteBlocklist = true">
+          {{ t('setting.security.manage') }} ({{ inviteBlocklist.length }})
+        </n-button>
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">邀请白名单</span>
-          <span class="setting-desc">仅允许这些用户邀请你加入房间</span>
+          <span class="setting-label">{{ t('setting.security.invite_allowlist') }}</span>
+          <span class="setting-desc">{{ t('setting.security.invite_allowlist_desc') }}</span>
         </div>
-        <n-button size="small" @click="showInviteAllowlist = true">管理 ({{ inviteAllowlist.length }})</n-button>
+        <n-button size="small" @click="showInviteAllowlist = true">
+          {{ t('setting.security.manage') }} ({{ inviteAllowlist.length }})
+        </n-button>
       </div>
     </div>
 
@@ -128,41 +144,49 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">私密聊天</h3>
+      <h3 class="section-title">{{ t('setting.private_chat.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">启用私密聊天</span>
-          <span class="setting-desc">启用后可通过密码保护隐藏会话</span>
+          <span class="setting-label">{{ t('setting.private_chat.enable') }}</span>
+          <span class="setting-desc">{{ t('setting.private_chat.enable_desc') }}</span>
         </div>
         <n-switch v-model:value="secretChatEnabled" @update:value="handleSecretChatEnabledChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">私密聊天密码</span>
-          <span class="setting-desc">{{ secretChatConfigured ? '已设置密码保护' : '未设置密码' }}</span>
+          <span class="setting-label">{{ t('setting.private_chat.password') }}</span>
+          <span class="setting-desc">
+            {{
+              secretChatConfigured
+                ? t('setting.security.private_chat_password_configured')
+                : t('setting.security.private_chat_password_not_configured')
+            }}
+          </span>
         </div>
         <n-button size="small" @click="handleSetupSecretChat">
-          {{ secretChatConfigured ? '修改密码' : '设置密码' }}
+          {{
+            secretChatConfigured ? t('setting.private_chat.change_password') : t('setting.private_chat.set_password')
+          }}
         </n-button>
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">隐藏私密会话</span>
-          <span class="setting-desc">在会话列表中自动隐藏受保护的私密聊天</span>
+          <span class="setting-label">{{ t('setting.private_chat.hide_sessions') }}</span>
+          <span class="setting-desc">{{ t('setting.private_chat.hide_sessions_desc') }}</span>
         </div>
         <n-switch v-model:value="secretChatHideSessions" :disabled="!secretChatEnabled" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">自动锁定</span>
-          <span class="setting-desc">离开应用一段时间后重新校验私密聊天密码</span>
+          <span class="setting-label">{{ t('setting.private_chat.auto_lock') }}</span>
+          <span class="setting-desc">{{ t('setting.private_chat.auto_lock_desc') }}</span>
         </div>
         <n-switch v-model:value="secretChatAutoLock" :disabled="!secretChatEnabled" />
       </div>
       <div v-if="secretChatAutoLock" class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">自动锁定时间</span>
-          <span class="setting-desc">选择私密聊天重新上锁的等待时间</span>
+          <span class="setting-label">{{ t('setting.private_chat.lock_timeout') }}</span>
+          <span class="setting-desc">{{ t('setting.security.private_chat_lock_timeout_desc') }}</span>
         </div>
         <n-select
           v-model:value="secretChatLockTimeout"
@@ -172,34 +196,40 @@
       </div>
       <div v-if="secretChatConfigured" class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">清除私密聊天</span>
-          <span class="setting-desc">清除密码并重置所有隐藏会话</span>
+          <span class="setting-label">{{ t('setting.private_chat.clear') }}</span>
+          <span class="setting-desc">{{ t('setting.private_chat.clear_desc') }}</span>
         </div>
-        <n-button size="small" @click="handleClearSecretChat">清除</n-button>
+        <n-button size="small" @click="handleClearSecretChat">{{ t('setting.private_chat.clear') }}</n-button>
       </div>
     </div>
 
-    <n-modal v-model:show="showSecretChatDialog" preset="card" title="设置私密聊天密码" style="width: 400px">
+    <n-modal
+      v-model:show="showSecretChatDialog"
+      preset="card"
+      :title="t('setting.private_chat.set_password')"
+      style="width: 400px">
       <div class="secret-chat-form">
         <n-form :model="secretChatForm" :rules="secretChatRules">
-          <n-form-item path="password" label="密码">
+          <n-form-item path="password" :label="t('setting.private_chat.password')">
             <n-input
               v-model:value="secretChatForm.password"
               type="password"
-              placeholder="请输入密码"
+              :placeholder="t('setting.private_chat.password_placeholder')"
               show-password-on="click" />
           </n-form-item>
-          <n-form-item path="confirmPassword" label="确认密码">
+          <n-form-item path="confirmPassword" :label="t('setting.private_chat.confirm_password')">
             <n-input
               v-model:value="secretChatForm.confirmPassword"
               type="password"
-              placeholder="请再次输入密码"
+              :placeholder="t('setting.private_chat.confirm_password_placeholder')"
               show-password-on="click" />
           </n-form-item>
         </n-form>
         <div class="dialog-footer">
-          <n-button @click="showSecretChatDialog = false">取消</n-button>
-          <n-button type="primary" @click="handleSaveSecretChat" :loading="savingSecretChat">保存</n-button>
+          <n-button @click="showSecretChatDialog = false">{{ t('setting.common.cancel') }}</n-button>
+          <n-button type="primary" @click="handleSaveSecretChat" :loading="savingSecretChat">
+            {{ t('setting.common.save') }}
+          </n-button>
         </div>
       </div>
     </n-modal>
@@ -207,41 +237,61 @@
     <n-modal
       v-model:show="showAddBlocked"
       preset="dialog"
-      title="添加屏蔽用户"
-      positive-text="添加"
-      negative-text="取消"
+      :title="t('setting.security.add_blocked_user_title')"
+      :positive-text="t('setting.security.add')"
+      :negative-text="t('setting.common.cancel')"
       @positive-click="handleAddBlocked">
       <n-form>
-        <n-form-item label="用户 ID">
-          <n-input v-model:value="newBlockedUser" placeholder="@user:example.com" />
+        <n-form-item :label="t('setting.security.user_id_label')">
+          <n-input v-model:value="newBlockedUser" :placeholder="t('setting.security.user_id_placeholder')" />
         </n-form-item>
       </n-form>
     </n-modal>
 
-    <n-modal v-model:show="showInviteBlocklist" preset="card" title="邀请黑名单管理" style="width: 450px">
+    <n-modal
+      v-model:show="showInviteBlocklist"
+      preset="card"
+      :title="t('setting.security.invite_blocklist_manage_title')"
+      style="width: 450px">
       <div class="list-management">
         <div v-for="user in inviteBlocklist" :key="user" class="ignored-item">
           <span class="user-id">{{ user }}</span>
-          <n-button size="tiny" @click="handleRemoveInviteBlocklist(user)">移除</n-button>
+          <n-button size="tiny" @click="handleRemoveInviteBlocklist(user)">{{ t('setting.security.remove') }}</n-button>
         </div>
-        <n-empty v-if="inviteBlocklist.length === 0" description="黑名单为空" />
+        <n-empty v-if="inviteBlocklist.length === 0" :description="t('setting.security.blocklist_empty')" />
         <div style="margin-top: 8px; display: flex; gap: 8px">
-          <n-input v-model:value="newBlocklistUser" placeholder="@user:example.com" size="small" style="flex: 1" />
-          <n-button size="small" type="primary" @click="handleAddInviteBlocklist">添加</n-button>
+          <n-input
+            v-model:value="newBlocklistUser"
+            :placeholder="t('setting.security.user_id_placeholder')"
+            size="small"
+            style="flex: 1" />
+          <n-button size="small" type="primary" @click="handleAddInviteBlocklist">
+            {{ t('setting.security.add') }}
+          </n-button>
         </div>
       </div>
     </n-modal>
 
-    <n-modal v-model:show="showInviteAllowlist" preset="card" title="邀请白名单管理" style="width: 450px">
+    <n-modal
+      v-model:show="showInviteAllowlist"
+      preset="card"
+      :title="t('setting.security.invite_allowlist_manage_title')"
+      style="width: 450px">
       <div class="list-management">
         <div v-for="user in inviteAllowlist" :key="user" class="ignored-item">
           <span class="user-id">{{ user }}</span>
-          <n-button size="tiny" @click="handleRemoveInviteAllowlist(user)">移除</n-button>
+          <n-button size="tiny" @click="handleRemoveInviteAllowlist(user)">{{ t('setting.security.remove') }}</n-button>
         </div>
-        <n-empty v-if="inviteAllowlist.length === 0" description="白名单为空" />
+        <n-empty v-if="inviteAllowlist.length === 0" :description="t('setting.security.allowlist_empty')" />
         <div style="margin-top: 8px; display: flex; gap: 8px">
-          <n-input v-model:value="newAllowlistUser" placeholder="@user:example.com" size="small" style="flex: 1" />
-          <n-button size="small" type="primary" @click="handleAddInviteAllowlist">添加</n-button>
+          <n-input
+            v-model:value="newAllowlistUser"
+            :placeholder="t('setting.security.user_id_placeholder')"
+            size="small"
+            style="flex: 1" />
+          <n-button size="small" type="primary" @click="handleAddInviteAllowlist">
+            {{ t('setting.security.add') }}
+          </n-button>
         </div>
       </div>
     </n-modal>
@@ -250,6 +300,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   NButton,
   NDivider,
@@ -280,6 +331,7 @@ defineOptions({
 
 const message = useMessage()
 const dialog = useDialog()
+const { t } = useI18n()
 const settingStore = useSettingStore()
 
 const loadingIgnored = ref(false)
@@ -309,19 +361,19 @@ const sendReadReceipts = ref(true)
 
 const secretChatConfigured = computed(() => settingStore.isSecretChatConfigured())
 const secretChatEnabled = computed({
-  get: () => settingStore.secretChat.enabled,
+  get: () => settingStore.secretChatEnabled,
   set: (value: boolean) => settingStore.setSecretChatEnabled(value)
 })
 const secretChatHideSessions = computed({
-  get: () => settingStore.secretChat.hideSessions,
+  get: () => settingStore.secretChatHideSessions,
   set: (value: boolean) => settingStore.setSecretChatHideSessions(value)
 })
 const secretChatAutoLock = computed({
-  get: () => settingStore.secretChat.autoLock,
+  get: () => settingStore.secretChatAutoLock,
   set: (value: boolean) => settingStore.setSecretChatAutoLock(value)
 })
 const secretChatLockTimeout = computed({
-  get: () => settingStore.secretChat.lockTimeout,
+  get: () => settingStore.secretChatLockTimeout,
   set: (value: number) => settingStore.setSecretChatLockTimeout(value)
 })
 const showSecretChatDialog = ref(false)
@@ -333,23 +385,23 @@ const secretChatForm = reactive({
 const secretChatRules = {
   password: {
     required: true,
-    message: '请输入密码',
+    message: t('setting.private_chat.password_required'),
     trigger: 'blur'
   },
   confirmPassword: {
     required: true,
-    message: '请再次输入密码',
+    message: t('setting.private_chat.confirm_password_required'),
     trigger: 'blur'
   }
 }
 
-const lockTimeoutOptions = [
-  { label: '1 分钟', value: 1 },
-  { label: '5 分钟', value: 5 },
-  { label: '15 分钟', value: 15 },
-  { label: '30 分钟', value: 30 },
-  { label: '1 小时', value: 60 }
-]
+const lockTimeoutOptions = computed(() => [
+  { label: t('setting.private_chat.1_minute'), value: 1 },
+  { label: t('setting.private_chat.5_minutes'), value: 5 },
+  { label: t('setting.private_chat.15_minutes'), value: 15 },
+  { label: t('setting.private_chat.30_minutes'), value: 30 },
+  { label: t('setting.private_chat.1_hour'), value: 60 }
+])
 
 function handleSetupSecretChat() {
   secretChatForm.password = ''
@@ -359,12 +411,12 @@ function handleSetupSecretChat() {
 
 async function handleSaveSecretChat() {
   if (secretChatForm.password !== secretChatForm.confirmPassword) {
-    message.error('两次输入的密码不一致')
+    message.error(t('setting.private_chat.password_mismatch'))
     return
   }
 
   if (secretChatForm.password.length < 4) {
-    message.error('密码长度不能少于4位')
+    message.error(t('setting.private_chat.password_too_short'))
     return
   }
 
@@ -372,39 +424,39 @@ async function handleSaveSecretChat() {
     savingSecretChat.value = true
     settingStore.setSecretChatPassword(secretChatForm.password)
     showSecretChatDialog.value = false
-    message.success('私密聊天密码设置成功')
+    message.success(t('setting.private_chat.password_set_success'))
   } catch (error) {
-    message.error('设置失败')
+    message.error(t('setting.private_chat.password_set_failed'))
   } finally {
     savingSecretChat.value = false
   }
 }
 
 function handleSecretChatEnabledChange(value: boolean) {
-  message.success(value ? '已启用私密聊天' : '已关闭私密聊天')
+  message.success(value ? t('setting.security.private_chat_enabled') : t('setting.security.private_chat_disabled'))
 }
 
 function handleClearSecretChat() {
   dialog.warning({
-    title: '确认清除',
-    content: '确定要清除私密聊天密码吗？这将重置所有隐藏会话。',
-    positiveText: '确定',
-    negativeText: '取消',
+    title: t('setting.private_chat.clear_confirm_title'),
+    content: t('setting.private_chat.clear_confirm_content'),
+    positiveText: t('setting.common.confirm'),
+    negativeText: t('setting.common.cancel'),
     onPositiveClick: () => {
       settingStore.clearSecretChatPassword()
-      message.success('已清除私密聊天设置')
+      message.success(t('setting.private_chat.clear_success'))
     }
   })
 }
 
 const backupStatusText = computed(() => {
   if (!encryptionEnabled.value) {
-    return '加密未启用'
+    return t('setting.security.backup_not_enabled')
   }
   if (hasBackup.value && backupInfo.value) {
-    return `已备份 ${backupInfo.value.count} 个密钥`
+    return t('setting.security.backup_count', { count: String(backupInfo.value.count) })
   }
-  return '未设置备份'
+  return t('setting.security.backup_not_configured')
 })
 
 onMounted(async () => {
@@ -424,7 +476,7 @@ async function loadBackupInfo() {
     hasBackup.value = !!info
     backupInfo.value = info ? { version: info.version, count: info.count } : null
   } catch (error) {
-    logger.error('获取备份信息失败:', error)
+    logger.error('Failed to fetch backup info', error)
   }
 }
 
@@ -433,7 +485,7 @@ async function loadIgnoredUsers() {
   try {
     ignoredUsers.value = await matrixAccountService.getIgnoredUsers()
   } catch (error) {
-    logger.error('获取忽略用户列表失败:', error)
+    logger.error('Failed to fetch ignored users', error)
   } finally {
     loadingIgnored.value = false
   }
@@ -462,12 +514,12 @@ function handleSetupBackup() {
 
 async function handleBackupSuccess() {
   await loadBackupInfo()
-  message.success('安全备份设置成功')
+  message.success(t('setting.security.backup_setup_success'))
 }
 
 async function handleExportKey() {
   if (!encryptionEnabled.value) {
-    message.warning('请先启用加密功能')
+    message.warning(t('setting.security.enable_encryption_first'))
     return
   }
 
@@ -485,10 +537,10 @@ async function handleExportKey() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
 
-    message.success('密钥已导出，请妥善保管')
+    message.success(t('setting.security.keys_exported'))
   } catch (error) {
-    logger.error('导出密钥失败:', error)
-    message.error('导出密钥失败')
+    logger.error('Failed to export recovery key', error)
+    message.error(t('setting.security.export_key_failed'))
   } finally {
     exportLoading.value = false
   }
@@ -496,17 +548,17 @@ async function handleExportKey() {
 
 function handleOnlineStatusChange(value: boolean) {
   localStorage.setItem('hula-show-online', value.toString())
-  message.success(value ? '已显示在线状态' : '已隐藏在线状态')
+  message.success(value ? t('setting.security.online_status_shown') : t('setting.security.online_status_hidden'))
 }
 
 function handleTypingStatusChange(value: boolean) {
   localStorage.setItem('hula-show-typing', value.toString())
-  message.success(value ? '已显示输入状态' : '已隐藏输入状态')
+  message.success(value ? t('setting.security.typing_status_shown') : t('setting.security.typing_status_hidden'))
 }
 
 function handleReadReceiptsChange(value: boolean) {
   localStorage.setItem('hula-send-receipts', value.toString())
-  message.success(value ? '已启用已读回执' : '已禁用已读回执')
+  message.success(value ? t('setting.security.read_receipts_enabled') : t('setting.security.read_receipts_disabled'))
 }
 
 async function handleUnignore(userId: string) {
@@ -514,9 +566,9 @@ async function handleUnignore(userId: string) {
     const newIgnoredUsers = ignoredUsers.value.filter((u) => u !== userId)
     await matrixAccountService.setIgnoredUsers(newIgnoredUsers)
     ignoredUsers.value = newIgnoredUsers
-    message.success('已取消忽略该用户')
+    message.success(t('setting.security.ignored_user_removed'))
   } catch (error) {
-    message.error('操作失败')
+    message.error(t('setting.security.operation_failed'))
   }
 }
 
@@ -540,23 +592,23 @@ function saveBlockedUsers() {
 
 function handleAddBlocked() {
   if (!newBlockedUser.value.trim()) {
-    message.warning('请输入用户 ID')
+    message.warning(t('setting.security.input_user_id_required'))
     return false
   }
   if (blockedUsers.value.includes(newBlockedUser.value.trim())) {
-    message.warning('该用户已在屏蔽列表中')
+    message.warning(t('setting.security.user_already_blocked'))
     return false
   }
   blockedUsers.value.push(newBlockedUser.value.trim())
   newBlockedUser.value = ''
   saveBlockedUsers()
-  message.success('已添加屏蔽用户')
+  message.success(t('setting.security.blocked_user_added'))
 }
 
 function handleUnblock(userId: string) {
   blockedUsers.value = blockedUsers.value.filter((u) => u !== userId)
   saveBlockedUsers()
-  message.success('已取消屏蔽该用户')
+  message.success(t('setting.security.blocked_user_removed'))
 }
 
 function loadInviteLists() {
@@ -580,73 +632,75 @@ function saveInviteAllowlist() {
 
 function handleAddInviteBlocklist() {
   if (!newBlocklistUser.value.trim()) {
-    message.warning('请输入用户 ID')
+    message.warning(t('setting.security.input_user_id_required'))
     return
   }
   if (inviteBlocklist.value.includes(newBlocklistUser.value.trim())) {
-    message.warning('该用户已在黑名单中')
+    message.warning(t('setting.security.user_already_in_blocklist'))
     return
   }
   inviteBlocklist.value.push(newBlocklistUser.value.trim())
   newBlocklistUser.value = ''
   saveInviteBlocklist()
-  message.success('已添加到邀请黑名单')
+  message.success(t('setting.security.invite_blocklist_added'))
 }
 
 function handleRemoveInviteBlocklist(userId: string) {
   inviteBlocklist.value = inviteBlocklist.value.filter((u) => u !== userId)
   saveInviteBlocklist()
-  message.success('已从邀请黑名单移除')
+  message.success(t('setting.security.invite_blocklist_removed'))
 }
 
 function handleAddInviteAllowlist() {
   if (!newAllowlistUser.value.trim()) {
-    message.warning('请输入用户 ID')
+    message.warning(t('setting.security.input_user_id_required'))
     return
   }
   if (inviteAllowlist.value.includes(newAllowlistUser.value.trim())) {
-    message.warning('该用户已在白名单中')
+    message.warning(t('setting.security.user_already_in_allowlist'))
     return
   }
   inviteAllowlist.value.push(newAllowlistUser.value.trim())
   newAllowlistUser.value = ''
   saveInviteAllowlist()
-  message.success('已添加到邀请白名单')
+  message.success(t('setting.security.invite_allowlist_added'))
 }
 
 function handleRemoveInviteAllowlist(userId: string) {
   inviteAllowlist.value = inviteAllowlist.value.filter((u) => u !== userId)
   saveInviteAllowlist()
-  message.success('已从邀请白名单移除')
+  message.success(t('setting.security.invite_allowlist_removed'))
 }
 </script>
 
 <style scoped>
 .security-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-4);
+  color: var(--hula-text-primary);
+}
+
+.invite-lists-alert {
+  margin-bottom: var(--hula-space-3);
+  font-size: var(--hula-font-size-sm);
 }
 
 .encryption-status {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-:deep(.dark) .encryption-status {
-  background-color: rgba(255, 255, 255, 0.05);
+  gap: var(--hula-space-4);
+  padding: var(--hula-space-4);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .status-icon {
@@ -656,11 +710,11 @@ function handleRemoveInviteAllowlist(userId: string) {
 }
 
 .status-secure {
-  color: var(--color-success);
+  color: var(--hula-color-success-500);
 }
 
 .status-insecure {
-  color: var(--color-warning);
+  color: var(--hula-color-warning-500);
 }
 
 .status-info {
@@ -669,26 +723,23 @@ function handleRemoveInviteAllowlist(userId: string) {
 }
 
 .status-title {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  color: var(--hula-text-primary);
 }
 
 .status-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -697,32 +748,30 @@ function handleRemoveInviteAllowlist(userId: string) {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .ignored-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .ignored-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-:deep(.dark) .ignored-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-2) var(--hula-space-3);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-xs);
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 </style>

@@ -1,241 +1,164 @@
 <template>
-  <n-scrollbar ref="msg-scrollbar" style="max-height: calc(100vh / var(--page-scale, 1) - 70px)">
-    <!-- 消息同步加载提示 -->
-    <div v-if="syncLoading" class="flex-center gap-10px py-12px text-(12px [--text-color])">
-      <n-spin :size="14" />
-      <span>{{ t('message.message_list.sync_loading') }}</span>
-    </div>
-    <!-- 当右侧 chatBox 未展示时，在列表区域提示网络/连接状态 -->
-    <div
-      v-if="networkBanner && !syncLoading && !globalStore.currentSessionRoomId"
-      class="mx-10px mt-6px border-(1px solid [--danger-text]) flex items-center gap-8px rounded-6px bg-[--danger-bg] px-12px py-10px text-(12px [--danger-text])"
-      style="position: sticky; top: 6px; z-index: 999">
-      <svg class="size-16px flex-shrink-0">
-        <use href="#cloudError"></use>
-      </svg>
-      <span class="leading-tight">{{ networkBanner.text }}</span>
-    </div>
-    <!--  会话列表  -->
-    <div v-if="sessionList.length > 0" class="p-[4px_10px_0px_8px] h-full">
-      <RecycleScroller
-        class="scroller h-full"
-        :items="sessionList"
-        :item-size="80"
-        key-field="roomId"
-        v-slot="{ item }">
-        <ContextMenu
-          :class="getItemClasses(item)"
-          :data-key="item.roomId"
-          :menu="visibleMenu(item)"
-          :special-menu="visibleSpecialMenu(item)"
-          :content="item"
-          class="msg-box w-full h-75px mb-5px"
-          @click="handleMsgClick(item)"
-          @dblclick="handleMsgDblclick(item)"
-          @select="$event.click(item)"
-          @menu-show="handleMenuShow(item.roomId, $event)">
-          <n-flex :size="10" align="center" class="h-75px pl-6px pr-8px flex-1">
-            <n-avatar
-              style="border: 1px solid var(--avatar-border-color)"
-              :size="44"
-              :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-              :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-              :src="AvatarUtils.getAvatarUrl(item.avatar)"
-              round />
+  <RoomSpaceWorkbench
+    ref="workbenchRef"
+    :session-list="filteredSessionList"
+    :total-count="sessionList.length"
+    :spaces="spaces"
+    :space-loading="spaceLoading"
+    :selected-space-id="selectedSpaceId"
+    :search-keyword="searchKeyword"
+    :session-type-filter="sessionTypeFilter"
+    :session-sort="sessionSort"
+    :active-space="activeSpace"
+    :can-manage-active-space="canManageSelectedSpace"
+    :selected-session="selectedSession"
+    :sync-loading="syncLoading"
+    :session-loading="chatStore.sessionOptions.isLoading"
+    :network-banner="networkBanner"
+    :on-retry-network="retryWorkbenchSessions"
+    :get-item-classes="getItemClasses"
+    :visible-menu="visibleMenu"
+    :visible-special-menu="visibleSpecialMenu"
+    :on-msg-click="handleMsgClick"
+    :on-msg-dblclick="handleMsgDblclick"
+    :on-menu-show="handleMenuShow"
+    @update:selected-space-id="setSelectedSpaceId"
+    @update:search-keyword="setSearchKeyword"
+    @update:session-type-filter="setSessionTypeFilter"
+    @update:session-sort="setSessionSort"
+    @create-space="openCreateSpace"
+    @invite-space-member="openInviteSpaceMember"
+    @add-space-room="openAddSpaceRoom"
+    @open-space-settings="openSpaceSettings" />
 
-            <n-flex class="h-fit flex-1 truncate" justify="space-between" vertical>
-              <n-flex :size="4" align="center" class="flex-1 truncate" justify="space-between">
-                <n-flex :size="0" align="center" class="leading-tight flex-1 truncate">
-                  <span class="text-14px leading-tight flex-1 truncate">{{ item.name }}</span>
-                  <n-popover trigger="hover" v-if="item.hotFlag === IsAllUserEnum.Yes">
-                    <template #trigger>
-                      <svg
-                        :class="[
-                          globalStore.currentSessionRoomId === item.roomId ? 'color-#33ceab' : 'color-[--color-primary]'
-                        ]"
-                        class="size-20px select-none outline-none cursor-pointer">
-                        <use href="#auth"></use>
-                      </svg>
-                    </template>
-                    <span>{{ t('message.message_list.official_popover') }}</span>
-                  </n-popover>
-
-                  <n-popover trigger="hover" v-if="item.account === UserType.BOT">
-                    <template #trigger>
-                      <svg class="size-20px select-none outline-none cursor-pointer color-[--color-primary]">
-                        <use href="#authenticationUser"></use>
-                      </svg>
-                    </template>
-                    <span>{{ t('message.message_list.bot_popover') }}</span>
-                  </n-popover>
-                </n-flex>
-                <span
-                  v-if="item.account !== UserType.BOT"
-                  :class="{
-                    'color-[--color-danger]90!': item.shield && globalStore.currentSessionRoomId === item.roomId
-                  }"
-                  class="text text-10px w-fit truncate text-right">
-                  {{ item.lastMsgTime }}
-                </span>
-              </n-flex>
-
-              <n-flex align="center" justify="space-between">
-                <template v-if="item.isAtMe">
-                  <span class="text flex-1 leading-tight text-12px truncate">
-                    <span class="text-[--color-danger] mr-4px">{{ t('message.message_list.mention_tag') }}</span>
-                    <span>{{ String(item.lastMsg || '').replace(':', '：') }}</span>
-                  </span>
-                </template>
-                <template v-else-if="item.shield">
-                  <span class="text flex-1 leading-tight text-12px truncate">
-                    <span
-                      :class="
-                        globalStore.currentSessionRoomId === item.roomId
-                          ? 'color-[--color-danger]90'
-                          : 'color-[--color-text-tertiary]'
-                      ">
-                      {{
-                        item.type === RoomTypeEnum.GROUP
-                          ? t('message.message_list.shield_group')
-                          : t('message.message_list.shield_user')
-                      }}
-                    </span>
-                  </span>
-                </template>
-                <template v-else>
-                  <span
-                    :class="[
-                      'text flex-1 leading-tight text-12px truncate',
-                      { 'text-[#707070]! dark:text-[#fff]!': item.account === UserType.BOT }
-                    ]">
-                    {{ String(item.lastMsg || t('message.message_list.default_last_msg')).replace(':', '：') }}
-                  </span>
-                </template>
-
-                <!-- 消息提示 -->
-                <template v-if="item.shield">
-                  <svg
-                    :class="[
-                      globalStore.currentSessionRoomId === item.roomId
-                        ? 'color-[--color-danger]90'
-                        : 'color-[--color-text-tertiary]'
-                    ]"
-                    class="size-14px">
-                    <use href="#forbid"></use>
-                  </svg>
-                </template>
-                <template v-else-if="item.muteNotification === 1 && !item.unreadCount">
-                  <svg
-                    :class="[
-                      globalStore.currentSessionRoomId === item.roomId
-                        ? 'color-#fefefe'
-                        : 'color-[--color-text-tertiary]'
-                    ]"
-                    class="size-14px">
-                    <use href="#close-remind"></use>
-                  </svg>
-                </template>
-                <n-badge
-                  v-else
-                  :max="99"
-                  :value="item.unreadCount"
-                  :show="globalStore.unreadReady && item.unreadCount > 0"
-                  :color="item.muteNotification === 1 ? 'rgba(128, 128, 128, 0.5)' : undefined" />
-              </n-flex>
-            </n-flex>
-          </n-flex>
-        </ContextMenu>
-      </RecycleScroller>
-    </div>
-
-    <!-- 加载中显示的骨架屏 -->
-    <n-flex
-      v-else-if="chatStore.sessionOptions.isLoading"
-      vertical
-      :size="18"
-      style="max-height: calc(100vh / var(--page-scale, 1) - 70px)"
-      class="relative h-100vh box-border p-20px">
-      <n-flex>
-        <n-skeleton style="border-radius: 14px" height="60px" width="100%" :sharp="false" />
+  <n-modal v-model:show="showInviteModal" preset="card" :title="t('space.invite_title')" style="width: 480px">
+    <n-form :model="inviteForm">
+      <n-form-item :label="t('space.invite')">
+        <n-input v-model:value="inviteForm.userId" :placeholder="t('space.invite_user_placeholder')" />
+      </n-form-item>
+    </n-form>
+    <template #footer>
+      <n-flex justify="flex-end" :size="12">
+        <n-button @click="showInviteModal = false">{{ t('common.cancel') }}</n-button>
+        <n-button type="primary" :loading="inviteMutating" @click="submitInviteSpaceMember">
+          {{ t('common.confirm') }}
+        </n-button>
       </n-flex>
+    </template>
+  </n-modal>
 
-      <n-flex>
-        <n-skeleton style="border-radius: 14px" height="40px" width="80%" :sharp="false" />
+  <n-modal v-model:show="showAddRoomModal" preset="card" :title="t('space.add_room_title')" style="width: 480px">
+    <n-form :model="addRoomForm">
+      <n-form-item :label="t('space.add_room')">
+        <n-input v-model:value="addRoomForm.roomId" :placeholder="t('space.add_room_placeholder')" />
+      </n-form-item>
+      <n-form-item>
+        <n-checkbox v-model:checked="addRoomForm.suggested">{{ t('space.add_room_suggested') }}</n-checkbox>
+      </n-form-item>
+    </n-form>
+    <template #footer>
+      <n-flex justify="flex-end" :size="12">
+        <n-button @click="showAddRoomModal = false">{{ t('common.cancel') }}</n-button>
+        <n-button type="primary" :loading="addRoomMutating" @click="submitAddSpaceRoom">
+          {{ t('common.confirm') }}
+        </n-button>
       </n-flex>
+    </template>
+  </n-modal>
 
-      <n-flex justify="end">
-        <n-skeleton style="border-radius: 14px" height="40px" width="80%" :sharp="false" />
+  <n-modal v-model:show="showSettingsModal" preset="card" :title="t('space.settings_title')" style="width: 520px">
+    <n-form :model="settingsForm" label-placement="left" label-width="80">
+      <n-form-item :label="t('space.name')">
+        <n-input v-model:value="settingsForm.name" :placeholder="t('space.name_placeholder')" />
+      </n-form-item>
+      <n-form-item :label="t('space.topic')">
+        <n-input
+          v-model:value="settingsForm.topic"
+          type="textarea"
+          :placeholder="t('space.topic_placeholder')"
+          :rows="3" />
+      </n-form-item>
+    </n-form>
+    <template #footer>
+      <n-flex justify="flex-end" :size="12">
+        <n-button @click="showSettingsModal = false">{{ t('common.cancel') }}</n-button>
+        <n-button type="primary" :loading="settingsMutating" @click="submitSpaceSettings">
+          {{ t('common.confirm') }}
+        </n-button>
       </n-flex>
-
-      <n-flex>
-        <n-skeleton style="border-radius: 14px" height="60px" width="100%" :sharp="false" />
-      </n-flex>
-    </n-flex>
-
-    <!-- 没有数据显示的提示 -->
-    <n-result v-else class="absolute-center" status="418" :description="t('message.message_list.empty_description')">
-      <template #footer>
-        <n-button secondary type="primary">{{ t('message.message_list.empty_action') }}</n-button>
-      </template>
-    </n-result>
-  </n-scrollbar>
+    </template>
+  </n-modal>
 </template>
 <script lang="ts" setup name="message">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { RecycleScroller } from 'vue-virtual-scroller'
-import { MittEnum, RoomTypeEnum, ThemeEnum, UserType, MsgEnum } from '@/enums'
+import { useMessage as useNaiveMessage } from 'naive-ui'
+import { MittEnum, RoomTypeEnum, UserType, MsgEnum } from '@/enums'
 import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
 import { useTauriListener } from '@/hooks/useTauriListener'
-import { IsAllUserEnum } from '@/services/types.ts'
+import type { SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useBotStore } from '@/stores/domains/user/bot'
+import { useSpace, useSpaceMembers, useSpaceRooms } from '@/composables/space'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { useI18n } from 'vue-i18n'
 import { useTimerManager } from '@/utils/TimerManager'
+import { canManageSpaceByPowerLevel } from '@/composables/workbench/spacePermissions'
+import { useRoomSpaceWorkbench } from '@/composables/workbench/useRoomSpaceWorkbench'
+import RoomSpaceWorkbench from '@/components/workbench/RoomSpaceWorkbench.vue'
+import { buildCreateSpaceRoute } from '@/router/spaceNavigation'
 
 const { t } = useI18n()
+const message = useNaiveMessage()
 const timerManager = useTimerManager()
 const route = useRoute()
+const router = useRouter()
 const appWindow = WebviewWindow.getCurrent()
 const chatStore = useChatStore()
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
-const settingStore = useSettingStore()
 const botStore = useBotStore()
 const { addListener } = useTauriListener()
-const { themes } = storeToRefs(settingStore)
 const { syncLoading } = storeToRefs(chatStore)
 const botDisplayText = computed(() => botStore.displayText)
 const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
-const msgScrollbar = useTemplateRef<HTMLElement>('msg-scrollbar')
 const { handleMsgClick, handleMsgDelete, handleMsgDblclick, visibleMenu, visibleSpecialMenu } = useMessage()
 // 跟踪当前显示右键菜单的会话ID
 const activeContextMenuRoomId = ref<string | null>(null)
 const networkStatus = useNetworkStatus()
 const networkBanner = computed(() => {
   if (!networkStatus.browserOnline.value) {
-    return { text: t('home.chat_main.network_offline') }
+    return { text: t('home.chat_main.network_offline'), retryable: false }
   }
 
   if (networkStatus.isWsConnecting.value) {
-    return { text: t('home.chat_main.network_connecting') }
+    return { text: t('home.chat_main.network_connecting'), retryable: false }
   }
 
   if (networkStatus.wsOnline.value === false) {
-    return { text: t('home.chat_main.network_ws_offline') }
+    return { text: t('home.chat_main.network_ws_offline'), retryable: true }
   }
 
   return null
 })
+
+const retryWorkbenchSessions = async () => {
+  if (chatStore.syncLoading || chatStore.sessionOptions.isLoading) return
+
+  chatStore.syncLoading = true
+  try {
+    await chatStore.getSessionList(true)
+  } finally {
+    chatStore.syncLoading = false
+  }
+}
 // 未读清空的定时器
 let clearUnreadTimer: number | null = null
 
@@ -344,10 +267,156 @@ const sessionList = computed(() => {
   )
 })
 
+const selectedSession = computed(() => {
+  if (!globalStore.currentSessionRoomId) return null
+  return sessionList.value.find((item) => item.roomId === globalStore.currentSessionRoomId) ?? null
+})
+
+const {
+  spaces,
+  spaceLoading,
+  selectedSpaceId,
+  activeSpace,
+  searchKeyword,
+  sessionTypeFilter,
+  sessionSort,
+  filteredSessionList,
+  setSelectedSpaceId,
+  setSearchKeyword,
+  setSessionTypeFilter,
+  setSessionSort,
+  ensureRoomVisible,
+  reloadSpaces,
+  reloadActiveSpaceRooms
+} = useRoomSpaceWorkbench(sessionList)
+
+const workbenchRef = ref<InstanceType<typeof RoomSpaceWorkbench> | null>(null)
+const showInviteModal = ref(false)
+const showAddRoomModal = ref(false)
+const showSettingsModal = ref(false)
+const inviteForm = reactive({ userId: '' })
+const addRoomForm = reactive({ roomId: '', suggested: false })
+const settingsForm = reactive({ name: '', topic: '' })
+const {
+  space: selectedSpaceDetail,
+  load: loadSelectedSpace,
+  update: updateSelectedSpace,
+  mutating: settingsMutating
+} = useSpace(() => selectedSpaceId.value)
+const { invite: inviteSpaceMember, mutating: inviteMutating } = useSpaceMembers(() => selectedSpaceId.value)
+const { addRoom: addRoomToSpace, mutating: addRoomMutating } = useSpaceRooms(() => selectedSpaceId.value)
+
+const canManageSelectedSpace = computed(() => {
+  const spaceId = selectedSpaceId.value
+  return canManageSpaceByPowerLevel(matrixClientService.getClient(), spaceId)
+})
+
+const openCreateSpace = () => {
+  void router.push(buildCreateSpaceRoute())
+}
+
+const openInviteSpaceMember = () => {
+  if (!selectedSpaceId.value || !canManageSelectedSpace.value) return
+  inviteForm.userId = ''
+  showInviteModal.value = true
+}
+
+const openAddSpaceRoom = () => {
+  if (!selectedSpaceId.value || !canManageSelectedSpace.value) return
+  addRoomForm.roomId = ''
+  addRoomForm.suggested = false
+  showAddRoomModal.value = true
+}
+
+const openSpaceSettings = async () => {
+  if (!selectedSpaceId.value || !canManageSelectedSpace.value) return
+  await loadSelectedSpace()
+  settingsForm.name = selectedSpaceDetail.value?.name ?? activeSpace.value?.name ?? ''
+  settingsForm.topic = selectedSpaceDetail.value?.topic ?? ''
+  showSettingsModal.value = true
+}
+
+const submitInviteSpaceMember = async () => {
+  const userId = inviteForm.userId.trim()
+  if (!userId) {
+    message.warning(t('space.invite_user_required'))
+    return
+  }
+
+  const ok = await inviteSpaceMember(userId)
+  if (!ok) {
+    message.error(t('space.invite_failed'))
+    return
+  }
+
+  message.success(t('space.invite_success'))
+  showInviteModal.value = false
+}
+
+const submitAddSpaceRoom = async () => {
+  const roomId = addRoomForm.roomId.trim()
+  if (!roomId) {
+    message.warning(t('space.add_room_required'))
+    return
+  }
+
+  const ok = await addRoomToSpace(roomId, { suggested: addRoomForm.suggested })
+  if (!ok) {
+    message.error(t('space.add_room_failed'))
+    return
+  }
+
+  await Promise.all([reloadSpaces(), reloadActiveSpaceRooms()])
+  message.success(t('space.add_room_success'))
+  showAddRoomModal.value = false
+}
+
+const submitSpaceSettings = async () => {
+  const nextName = settingsForm.name.trim()
+  if (!nextName) {
+    message.warning(t('space.name_required'))
+    return
+  }
+
+  const currentName = selectedSpaceDetail.value?.name ?? activeSpace.value?.name ?? ''
+  const currentTopic = selectedSpaceDetail.value?.topic ?? ''
+  const payload: Partial<SpaceOptions> = {}
+
+  if (nextName !== currentName) {
+    payload.name = nextName
+  }
+  if (settingsForm.topic !== currentTopic) {
+    payload.topic = settingsForm.topic
+  }
+
+  if (!Object.keys(payload).length) {
+    showSettingsModal.value = false
+    return
+  }
+
+  const ok = await updateSelectedSpace(payload)
+  if (!ok) {
+    message.error(t('space.settings_failed'))
+    return
+  }
+
+  await reloadSpaces()
+  message.success(t('space.settings_success'))
+  showSettingsModal.value = false
+}
+
+watch(selectedSpaceId, (spaceId) => {
+  if (spaceId) return
+  showInviteModal.value = false
+  showAddRoomModal.value = false
+  showSettingsModal.value = false
+})
+
 watch(
   () => chatStore.currentSessionInfo,
   async (newVal) => {
     if (newVal) {
+      ensureRoomVisible(newVal.roomId)
       // 避免重复调用：如果新会话与当前会话相同，跳过处理，不然会触发两次
       if (newVal.roomId === globalStore.currentSessionRoomId) {
         return
@@ -414,10 +483,10 @@ const getItemClasses = (item: SessionItem) => {
   return {
     active: isCurrentSession,
     'active-bot': isCurrentSession && item.account === UserType.BOT,
-    'active-shield': isCurrentSession && item.shield,
-    'bg-[--bg-msg-first-child] rounded-12px relative': item.top,
+    'active-shield': Boolean(isCurrentSession && item.shield),
+    'bg-[--bg-msg-first-child] rounded-12px relative': Boolean(item.top),
     'context-menu-active': isContextMenuActive,
-    'context-menu-active-shield': item.shield && isContextMenuActive,
+    'context-menu-active-shield': Boolean(item.shield && isContextMenuActive),
     'active-context-menu': isContextMenuActive && isCurrentSession
   }
 }
@@ -449,14 +518,10 @@ onMounted(async () => {
     await handleMsgDelete(roomId)
   })
   useMitt.on(MittEnum.LOCATE_SESSION, async (e: { roomId: string }) => {
-    const index = sessionList.value.findIndex((item) => item.roomId === e.roomId)
+    ensureRoomVisible(e.roomId)
+    const index = filteredSessionList.value.findIndex((item) => item.roomId === e.roomId)
     if (index !== -1) {
-      await nextTick(() => {
-        msgScrollbar.value?.scrollTo({
-          top: index * (75 + 5) - 264,
-          behavior: 'smooth'
-        })
-      })
+      await workbenchRef.value?.scrollToSessionIndex(index)
     }
   })
 })

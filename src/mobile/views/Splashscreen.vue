@@ -13,7 +13,7 @@ const router = useRouter()
 const { normalLogin } = useLoginFlow()
 
 const init = async () => {
-  if (settingStore.login.autoLogin) {
+  if (settingStore.autoLoginEnabled) {
     normalLogin('MOBILE', true, true)
   } else {
     router.push('/mobile/login')

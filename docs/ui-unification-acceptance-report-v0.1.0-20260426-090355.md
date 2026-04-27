@@ -121,7 +121,38 @@
 3. 再实施 `RoomSpaceWorkbench`，同步接入搜索、筛选、排序、离线队列和权限规则。
 4. 最后执行构建体积、测试覆盖率、性能、内存和可访问性正式验收。
 
+## 11. 2026-04-27 增量进展
+
+- 本轮交付类型: `局部代码改造 + 文档同步`
+- 已完成的增量实现:
+  - `src/styles/scss/theme/simple.scss` 已开始以 `--hula-*` 为单一来源回收主题别名
+  - `src/styles/scss/global/variable.scss` 已完成第二轮全局变量收敛，继续将消息激活态、气泡、翻译层、回复态、危险/警告态等高频语义变量改为直连 `--hula-*`
+  - `src/styles/css/design-tokens.css` 已补充菜单浮层、Beta 辅助色和管理后台 Token，`variable.scss` 中对应菜单层与 admin 色板已改为桥接权威 Token
+  - `src/layout/center/model.tsx` 已移除两处直接写死颜色
+  - `src/views/settingsWindow/tabs/AppearanceSettings.vue`、`NotificationSettings.vue`、`SessionSettings.vue`、`VoiceVideoSettings.vue`、`PreferencesSettings.vue`、`SecuritySettings.vue`、`KeyboardSettings.vue`、`SidebarSettings.vue`、`FriendsSettings.vue`、`PushSettings.vue`、`HelpSettings.vue`、`LabsSettings.vue`、`AccountSettings.vue`、`EncryptionSettings.vue`、`BurnAfterReadSettings.vue`、`MjolnirSettings.vue` 已完成设置页全量 Token 收敛
+  - `src/styles/scss/theme/default.scss` 已完成一轮主题别名收敛，侧边栏、消息激活态、右侧背景渐变与列表 hover 等默认皮肤变量已改为消费 `--hula-*` Token
+  - `src/components/rightBox/chatBox/ChatSidebar.vue`、`src/components/rightBox/renderMessage/ReactionPicker.vue`、`MessageEditor.vue`、`Announcement.vue`、`LinkPreview.vue`、`Location.vue`、`Beacon.vue` 与 `src/components/friend/AddFriendDialog.vue`、`FriendGroupView.vue`、`src/components/room/InviteDialog.vue`、`CreateRoomDialog.vue` 已完成本轮右侧聊天区和弹窗类组件的低风险 Token 收敛，残留扫描与诊断校验均通过
+  - `src/components/rightBox/chatBox/ChatMain.vue`、`ChatFooter.vue`、`ChatMsgMultiChoose.vue` 与 `src/components/rightBox/renderMessage/Text.vue`、`File.vue`、`Voice.vue` 已完成下一批右侧聊天主区 Token 收敛，旧 `--chat-text-color`、`--bg-popover`、`--bg-emoji`、`--line-color`、`--icon-color`、`--file-bg-color` 等消费点及多处硬编码色值已替换为 `--hula-*`，残留扫描与诊断校验均通过
+  - `src/components/rightBox/chatBox/ChatMultiMsg.vue`、`src/components/rightBox/renderMessage/index.vue`、`Image.vue`、`Emoji.vue`、`Video.vue`、`special/BotMessage.vue` 与 `src/styles/scss/renderMessage/video.scss` 已完成后续一批展示层 Token 收敛，旧 `--text-color`、`--chat-text-color`、`--bg-info`、`--group-notice-bg`、`--right-chat-reply-color` 与媒体遮罩/进度环中的十六进制、`rgba(...)` 硬编码已替换为 `--hula-*`，残留扫描与诊断校验均通过
+  - `src/components/rightBox/chatBox/ChatHeader/ChatHeaderRoot.vue`、`ChatHeaderSidebar.vue`、`ChatHeaderInfo.vue` 与 `src/styles/scss/render-message.scss` 已完成右侧聊天头部和共享消息样式 Token 收敛，旧 `--bg-color`、`--border-color`、`--text-color-*`、`--primary-color`、`--error-color` 及回复态/公告态硬编码色值已替换为 `--hula-*`，残留扫描与诊断校验均通过
+  - `src/components/rightBox/ForwardDialog.vue`、`ApplyList.vue`、`ReplyComposer.vue`、`src/components/rightBox/renderMessage/RenderPollMessage.vue` 与 `src/components/rightBox/location/LocationModal.vue` 已完成下一批右侧聊天尾部低风险 Token 收敛，旧 `--border-color`、`--text-color`、`--bg-popover`、`--center-bg-color`、`--right-chat-reply-color`、`--bg-edit`、`--line-color` 与定位弹窗中的硬编码面板色已替换为 `--hula-*`，残留扫描与诊断校验均通过
+  - `src/components/rightBox/MsgInput.vue`、`src/styles/scss/msg-input.scss` 与 `src/components/rightBox/emoticon/index.vue` 已完成右侧输入区与表情面板低风险 Token 收敛，旧 `--center-bg-color`、`--box-shadow-color`、`--text-color`、`--chat-text-color`、`--line-color`、`--emoji-hover`、`--emoji-active-color` 及输入区边线/光标硬编码均已替换为 `--hula-*`，残留扫描与诊断校验均通过
+  - `src/components/rightBox/VoiceRecorder.vue`、`src/components/rightBox/chatBox/HuLaAssistant.vue` 与 `Bot.vue` 已完成语音录制面板、机器人工作区与小管家占位层低风险 Token 收敛，旧 `--bg-color`、`--text-color`、`--chat-text-color`、`--line-color`、`--bg-msg-hover` 及按钮/遮罩/Markdown 皮肤中的十六进制、`rgba(...)` 硬编码均已替换为 `--hula-*`，残留扫描与诊断校验均通过
+  - `src/components/rightBox/chatBox/index.vue`、`src/components/rightBox/location/StaticProxyMap.vue` 与 `src/components/rightBox/location/LocationMap.vue` 已完成聊天区分割拖拽柄与定位地图控件硬编码清理，分割条、缩放按钮和定位标记中的灰阶/黑白透明/红色直写值均已替换为 `--hula-*` 或基于 Token 的 `color-mix(...)`，残留扫描与诊断校验均通过
+  - `src/components/search/SpotlightDialog.vue` 已完成 `--emoji-hover` 末尾消费替换，`src/styles/scss/global/variable.scss` 已物理删除无外部消费的 `--box-shadow-color`、`--emoji-hover` 与 `--emoji-active-color`，残留扫描与诊断校验均通过
+  - `src/components/fileManager/FileContent.vue`、`src/components/common/AvatarCropper.vue`、`ContextMenu.vue`、`InfoPopover.vue`、`src/layout/left/components/InfoEdit.vue`、`definePlugins/List.vue`、`src/layout/center/model.tsx` 与 `src/views/loginWindow/Login.vue` 已完成本轮下一批低频历史别名收敛，旧 `--line-color`、`--chat-text-color` 已替换为 `--hula-border-default`、`--hula-text-secondary`，残留扫描与诊断校验均通过
+  - `src/composables/settings/settingsOptions.ts`、`src/views/settingsWindow/tabs/PreferencesSettings.vue` 与 `locales/zh-CN/setting.json`、`locales/en/setting.json` 已完成设置偏好页一轮国际化收敛，语言选项与发送键选项已改为消费 i18n 文案键；相关诊断通过，`PreferencesSettings.test.ts` 已同步更新，当前 IDE 环境下定向执行 `vitest` 命令超时，仍需在后续验收阶段单独复跑
+  - `src/stores/domains/settings/settingsSchema.ts`、`src/composables/settings/useSettingsShell.ts`、`src/composables/settings/settingsSearchIndex.ts`、`src/views/settingsWindow/SettingsDialog.vue` 与 `locales/zh-CN/setting.json`、`locales/en/setting.json` 已完成设置壳层第二轮国际化收敛，设置导航标题、当前标签标题和搜索索引已改为跟随运行时翻译；相关诊断通过，`useSettingsShell.test.ts` 与 `SettingsDialog.test.ts` 定向执行 `vitest` 已通过
+- 当前验收状态更新:
+  - `UI 统一方案`: 继续有效，作为实施依据保留
+  - `单一权威组件库替换`: 尚未开始
+  - `冗余样式/路由/资源清理`: 设置页样式层治理已覆盖全量 Tab，且全局主题入口继续收敛；桌面端当前显式加载的主题文件仍为 `simple.scss`，`setting.ts` 中的 `themes.versatile` 也固定回写为 `simple`，代码侧未发现 `.default` 主题类的动态挂载路径，`default.scss` 可视为高概率仓库残留，后续可进入物理清理评估
+  - `性能`、`测试覆盖率`、`Lighthouse`、`可访问性`: 本轮仍未执行正式验收；设置壳层国际化阻塞已继续缓解，但设置体系仍需继续清理其余硬编码日志与提示文案
+- 当前边界:
+  - 仍未完成设置壳层单一化、房间/空间工作区收拢、旧主题物理清理
+  - 当前结果只能说明“实施阶段已启动”，不能宣称“UI 统一已完成”
+
 ## 结论
 
-- 本轮验收结论为: `文档阶段通过，实施阶段未开始`。
-- 当前可以作为下一轮代码改造的正式输入，但不能据此宣称“已完成 UI 统一”或“已达到性能/覆盖率/体积指标”。
+- 本轮验收结论为: `文档阶段通过，实施阶段已启动但未完成`。
+- 当前可以继续作为下一轮代码改造输入，但仍不能据此宣称“已完成 UI 统一”或“已达到性能/覆盖率/体积指标”。

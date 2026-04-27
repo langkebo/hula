@@ -111,13 +111,13 @@ async function handleSave() {
 
 .config-hint {
   font-size: 12px;
-  color: var(--color-text-quaternary);
+  color: var(--hula-text-quaternary);
   line-height: 1.6;
 }
 
 .config-hint .example {
   margin-top: 4px;
-  color: var(--color-text-secondary);
+  color: var(--hula-text-secondary);
 }
 
 .modal-footer {

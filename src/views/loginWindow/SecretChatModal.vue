@@ -53,19 +53,14 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, lightTheme } from 'naive-ui'
-import { storeToRefs } from 'pinia'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
 import { isMac } from '@/utils/PlatformConstants'
-import { useI18n } from '@/plugins/i18n'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SecretChatModal')
 
-const { t } = useI18n()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
-const naiveTheme = computed(() => (themes.value.content === 'dark' ? darkTheme : lightTheme))
+const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 
 const formRef = ref()
 const loading = ref(false)

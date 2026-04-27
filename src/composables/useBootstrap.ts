@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isDesktop, isMobile } from '@/utils/PlatformConstants'
-import { loadLanguage } from '@/services/i18n'
+import { applyLanguagePreference } from '@/services/i18n'
 import { updateSettings } from '@/services/tauriCommand'
 import { initializePlatform } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
@@ -74,16 +74,11 @@ const useSharedBootstrap = createSharedComposable(() => {
   }
 
   async function restoreTheme() {
-    if (!settingStore.themes.content) {
-      settingStore.initTheme('os')
-    } else {
-      settingStore.normalizeThemeState()
-    }
+    settingStore.ensureThemeReady()
   }
 
   async function restoreLanguage() {
-    const lang = settingStore.page.lang === 'AUTO' ? navigator.language : settingStore.page.lang
-    loadLanguage(lang)
+    await applyLanguagePreference(settingStore.languagePreference)
   }
 
   async function checkSession() {

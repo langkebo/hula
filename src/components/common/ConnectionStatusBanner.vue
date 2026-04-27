@@ -100,18 +100,18 @@ const statusText = computed(() => {
 }
 
 .connection-status-banner--offline {
-  background: var(--color-warning, #f0a020);
-  color: #fff;
+  background: var(--hula-color-warning-500);
+  color: var(--hula-text-inverse);
 }
 
 .connection-status-banner--reconnecting {
-  background: var(--color-info, #2080f0);
-  color: #fff;
+  background: var(--hula-color-info-500);
+  color: var(--hula-text-inverse);
 }
 
 .connection-status-banner--error {
-  background: var(--color-danger, #d03050);
-  color: #fff;
+  background: var(--hula-color-danger-500);
+  color: var(--hula-text-inverse);
 }
 
 .connection-status-banner__content {
@@ -132,17 +132,17 @@ const statusText = computed(() => {
 
 .connection-status-banner__retry {
   padding: 2px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--hula-border-inverse-muted);
   border-radius: 4px;
   background: transparent;
-  color: #fff;
+  color: var(--hula-text-inverse);
   font-size: 11px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .connection-status-banner__retry:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--hula-surface-inverse-hover);
 }
 
 .connection-banner-enter-active,

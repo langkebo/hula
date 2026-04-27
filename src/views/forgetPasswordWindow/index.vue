@@ -166,7 +166,6 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, lightTheme, type FormInst } from 'naive-ui'
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import Validation from '@/components/common/Validation.vue'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -176,8 +175,7 @@ import { createLogger } from '@/utils/Logger'
 
 const settingStore = useSettingStore()
 const logger = createLogger('ForgetPassword')
-const { themes } = storeToRefs(settingStore)
-const naiveTheme = computed(() => (themes.value.content === 'dark' ? darkTheme : lightTheme))
+const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 const { t } = useI18n()
 
 // 导入Web Worker

@@ -1,5 +1,6 @@
 <template>
-  <div class="w-200px flex-shrink-0 flex flex-col bg-[--center-bg-color] border-r border-solid border-[--line-color]">
+  <div
+    class="w-200px flex-shrink-0 flex flex-col bg-[--hula-surface-panel] border-r border-solid border-[--hula-border-default]">
     <!-- 导航标题 -->
     <div class="navigation-header p-20px pb-16px">
       <h2 class="text-16px font-600 text-[--text-color] m-0">
@@ -67,7 +68,7 @@ const getNavigationLabel = (item: NavigationItem) => {
 
 <style scoped lang="scss">
 .navigation-header {
-  border-bottom: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--hula-border-default);
 }
 
 .navigation-item {

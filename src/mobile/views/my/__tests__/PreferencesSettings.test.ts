@@ -4,6 +4,42 @@ import PreferencesSettings from '../PreferencesSettings.vue'
 
 const showToastMock = vi.fn()
 const setSendMessageShortcutMock = vi.fn()
+const setMessageConfirmEnabledMock = vi.fn()
+const setLinkPreviewEnabledMock = vi.fn()
+const setEmojiConvertEnabledMock = vi.fn()
+const setBurnDefaultEnabledMock = vi.fn()
+const setBurnDefaultDurationMock = vi.fn()
+const setBurnShowCountdownEnabledMock = vi.fn()
+const setThreadAutoSubscribeEnabledMock = vi.fn()
+const setThreadShowInRoomEnabledMock = vi.fn()
+const setSendReadReceiptsEnabledMock = vi.fn()
+const setSendTypingNotificationsEnabledMock = vi.fn()
+const migrateLegacyPreferenceSettingsMock = vi.fn()
+
+const settingStoreMock = {
+  messageConfirmEnabled: false,
+  linkPreviewEnabled: true,
+  emojiConvertEnabled: true,
+  burnDefaultEnabled: false,
+  burnDefaultDuration: 60,
+  burnShowCountdownEnabled: true,
+  threadAutoSubscribeEnabled: true,
+  threadShowInRoomEnabled: true,
+  sendReadReceiptsEnabled: true,
+  sendTypingNotificationsEnabled: true,
+  migrateLegacyPreferenceSettings: (...args: any[]) => migrateLegacyPreferenceSettingsMock(...args),
+  setMessageConfirmEnabled: (...args: any[]) => setMessageConfirmEnabledMock(...args),
+  setLinkPreviewEnabled: (...args: any[]) => setLinkPreviewEnabledMock(...args),
+  setEmojiConvertEnabled: (...args: any[]) => setEmojiConvertEnabledMock(...args),
+  setBurnDefaultEnabled: (...args: any[]) => setBurnDefaultEnabledMock(...args),
+  setBurnDefaultDuration: (...args: any[]) => setBurnDefaultDurationMock(...args),
+  setBurnShowCountdownEnabled: (...args: any[]) => setBurnShowCountdownEnabledMock(...args),
+  setThreadAutoSubscribeEnabled: (...args: any[]) => setThreadAutoSubscribeEnabledMock(...args),
+  setThreadShowInRoomEnabled: (...args: any[]) => setThreadShowInRoomEnabledMock(...args),
+  setSendReadReceiptsEnabled: (...args: any[]) => setSendReadReceiptsEnabledMock(...args),
+  setSendTypingNotificationsEnabled: (...args: any[]) => setSendTypingNotificationsEnabledMock(...args),
+  setSendMessageShortcut: (...args: any[]) => setSendMessageShortcutMock(...args)
+}
 
 vi.mock('vant', () => ({
   showToast: (...args: any[]) => showToastMock(...args)
@@ -18,9 +54,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 vi.mock('@/stores/domains/settings/setting', () => ({
-  useSettingStore: () => ({
-    setSendMessageShortcut: (...args: any[]) => setSendMessageShortcutMock(...args)
-  })
+  useSettingStore: () => settingStoreMock
 }))
 
 vi.mock('@/mobile/components/chat-room/AutoFixHeightPage.vue', () => ({
@@ -43,6 +77,16 @@ describe('PreferencesSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    settingStoreMock.messageConfirmEnabled = false
+    settingStoreMock.linkPreviewEnabled = true
+    settingStoreMock.emojiConvertEnabled = true
+    settingStoreMock.burnDefaultEnabled = false
+    settingStoreMock.burnDefaultDuration = 60
+    settingStoreMock.burnShowCountdownEnabled = true
+    settingStoreMock.threadAutoSubscribeEnabled = true
+    settingStoreMock.threadShowInRoomEnabled = true
+    settingStoreMock.sendReadReceiptsEnabled = true
+    settingStoreMock.sendTypingNotificationsEnabled = true
   })
 
   it('renders correctly', () => {
@@ -64,41 +108,57 @@ describe('PreferencesSettings', () => {
     expect((wrapper.vm as any).sendTypingNotifications).toBe(true)
   })
 
-  it('loads messageConfirm from localStorage', () => {
-    localStorage.setItem('hula-message-confirm', 'true')
+  it('loads messageConfirm from settingStore getter', () => {
+    settingStoreMock.messageConfirmEnabled = true
     const wrapper = mount(PreferencesSettings)
     expect((wrapper.vm as any).messageConfirm).toBe(true)
   })
 
-  it('loads linkPreview from localStorage', () => {
-    localStorage.setItem('hula-link-preview', 'false')
+  it('loads linkPreview from settingStore getter', () => {
+    settingStoreMock.linkPreviewEnabled = false
     const wrapper = mount(PreferencesSettings)
     expect((wrapper.vm as any).linkPreview).toBe(false)
   })
 
-  it('loads burnDefaultEnabled from localStorage', () => {
-    localStorage.setItem('hula-burn-default-enabled', 'true')
+  it('loads burnDefaultEnabled from settingStore getter', () => {
+    settingStoreMock.burnDefaultEnabled = true
     const wrapper = mount(PreferencesSettings)
     expect((wrapper.vm as any).burnDefaultEnabled).toBe(true)
   })
 
-  it('loads threadAutoSubscribe from localStorage', () => {
-    localStorage.setItem('hula-thread-auto-subscribe', 'false')
+  it('loads threadAutoSubscribe from settingStore getter', () => {
+    settingStoreMock.threadAutoSubscribeEnabled = false
     const wrapper = mount(PreferencesSettings)
     expect((wrapper.vm as any).threadAutoSubscribe).toBe(false)
   })
 
-  it('loads sendReadReceipts from localStorage', () => {
-    localStorage.setItem('hula-send-read-receipts', 'false')
+  it('loads sendReadReceipts from settingStore getter', () => {
+    settingStoreMock.sendReadReceiptsEnabled = false
     const wrapper = mount(PreferencesSettings)
     expect((wrapper.vm as any).sendReadReceipts).toBe(false)
   })
 
-  it('saves toggle to localStorage', () => {
+  it('calls settingStore on preference toggle', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = wrapper.vm as any
-    vm.handleToggle('hula-message-confirm', true)
-    expect(localStorage.getItem('hula-message-confirm')).toBe('true')
+    vm.handleMessageConfirmChange(true)
+    vm.handleLinkPreviewChange(false)
+    vm.handleEmojiConvertChange(false)
+    vm.handleBurnDefaultEnabledChange(true)
+    vm.handleBurnShowCountdownChange(false)
+    vm.handleThreadAutoSubscribeChange(false)
+    vm.handleThreadShowInRoomChange(false)
+    vm.handleReadReceiptsChange(false)
+    vm.handleTypingNotificationsChange(false)
+    expect(setMessageConfirmEnabledMock).toHaveBeenCalledWith(true)
+    expect(setLinkPreviewEnabledMock).toHaveBeenCalledWith(false)
+    expect(setEmojiConvertEnabledMock).toHaveBeenCalledWith(false)
+    expect(setBurnDefaultEnabledMock).toHaveBeenCalledWith(true)
+    expect(setBurnShowCountdownEnabledMock).toHaveBeenCalledWith(false)
+    expect(setThreadAutoSubscribeEnabledMock).toHaveBeenCalledWith(false)
+    expect(setThreadShowInRoomEnabledMock).toHaveBeenCalledWith(false)
+    expect(setSendReadReceiptsEnabledMock).toHaveBeenCalledWith(false)
+    expect(setSendTypingNotificationsEnabledMock).toHaveBeenCalledWith(false)
   })
 
   it('loads sendKey from localStorage', () => {
@@ -116,11 +176,11 @@ describe('PreferencesSettings', () => {
     expect((wrapper.vm as any).showSendKeyPicker).toBe(false)
   })
 
-  it('handleBurnDurationConfirm saves to localStorage', () => {
+  it('handleBurnDurationConfirm saves to settingStore', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = wrapper.vm as any
     vm.handleBurnDurationConfirm({ selectedValues: [300] })
-    expect(localStorage.getItem('hula-burn-default-duration')).toBe('300')
+    expect(setBurnDefaultDurationMock).toHaveBeenCalledWith(300)
     expect((wrapper.vm as any).burnDefaultDuration).toBe(300)
     expect((wrapper.vm as any).showBurnDurationPicker).toBe(false)
   })
@@ -141,14 +201,14 @@ describe('PreferencesSettings', () => {
     expect((wrapper.vm as any).burnDurationLabel).toBe('5分钟')
   })
 
-  it('loads burnDefaultDuration from localStorage', () => {
-    localStorage.setItem('hula-burn-default-duration', '3600')
+  it('loads burnDefaultDuration from settingStore getter', () => {
+    settingStoreMock.burnDefaultDuration = 3600
     const wrapper = mount(PreferencesSettings)
     expect((wrapper.vm as any).burnDefaultDuration).toBe(3600)
   })
 
-  it('loads sendTypingNotifications from localStorage', () => {
-    localStorage.setItem('hula-send-typing-notifications', 'false')
+  it('loads sendTypingNotifications from settingStore getter', () => {
+    settingStoreMock.sendTypingNotificationsEnabled = false
     const wrapper = mount(PreferencesSettings)
     expect((wrapper.vm as any).sendTypingNotifications).toBe(false)
   })

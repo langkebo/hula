@@ -6,7 +6,7 @@
       :src="channelAvatar"
       :size="44"
       round
-      :style="{ border: '2px solid #13987f' }" />
+      :style="{ border: '2px solid var(--hula-color-primary-500)' }" />
     <n-avatar v-else-if="avatar" class="avatar" :src="avatar" :size="44" round :style="avatarStyle" />
     <n-avatar v-else class="avatar" :size="44" round :style="avatarStyle">
       {{ nameInitial }}
@@ -69,12 +69,12 @@ const nameInitial = computed(() => {
 
 const avatarStyle = computed(() => {
   if (isChannel.value) {
-    return { border: '2px solid #18a058' }
+    return { border: '2px solid var(--hula-color-primary-500)' }
   }
   if (props.isOnline) {
-    return { border: '2px solid #18a058' }
+    return { border: '2px solid var(--hula-color-success-500)' }
   }
-  return { border: '2px solid #909399' }
+  return { border: '2px solid var(--hula-border-strong)' }
 })
 
 const channelAvatar = computed(() => {
@@ -99,7 +99,7 @@ const handleClick = () => {
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: color-mix(in srgb, var(--hula-text-primary) 5%, transparent);
   }
 }
 
@@ -123,7 +123,7 @@ const handleClick = () => {
 .name {
   font-size: 16px;
   font-weight: 500;
-  color: var(--text-color-1);
+  color: var(--hula-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -139,7 +139,7 @@ const handleClick = () => {
 .member-count,
 .status {
   font-size: 12px;
-  color: var(--text-color-3);
+  color: var(--hula-text-tertiary);
 }
 
 .status {
@@ -148,7 +148,7 @@ const handleClick = () => {
   gap: 4px;
 
   &.online {
-    color: #18a058;
+    color: var(--hula-color-success-500);
   }
 }
 

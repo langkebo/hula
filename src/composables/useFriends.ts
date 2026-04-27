@@ -288,15 +288,13 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
     buildNormalContacts(contactStore.contactsList, specialContacts.value, blockedContacts.value, isBotUser)
   )
   const normalOnlineCount = computed(() => Math.max(onlineCount.value - specialOnlineCount.value, 0))
-  const contactUnreadCount = computed(
-    () => globalStore.unReadMark.newFriendUnreadCount + globalStore.unReadMark.newGroupUnreadCount
-  )
+  const contactUnreadCount = computed(() => globalStore.contactUnreadCount)
 
   // ============================================================================
   // Computed - Request Confirm
   // ============================================================================
 
-  const targetUid = computed(() => String(globalStore.addFriendModalInfo.uid || ''))
+  const targetUid = computed(() => String(globalStore.addFriendTargetUid || ''))
   const userInfo = computed<FriendConfirmTarget>(() => {
     const uid = targetUid.value
     if (!uid) {

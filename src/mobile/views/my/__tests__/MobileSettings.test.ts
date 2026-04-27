@@ -51,8 +51,8 @@ vi.mock('@/stores/domains/widget/global', () => ({
 
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({
-    themes: { content: 'light' },
-    page: { lang: 'zh-CN' },
+    themeContent: 'light',
+    languagePreference: 'zh-CN',
     toggleTheme: (...args: any[]) => toggleThemeMock(...args),
     toggleLogin: (...args: any[]) => toggleLoginMock(...args)
   })

@@ -13,6 +13,15 @@ const getDevicesMock = vi.fn().mockResolvedValue([])
 const setDeviceNameMock = vi.fn().mockResolvedValue(undefined)
 const deleteDeviceMock = vi.fn().mockResolvedValue(undefined)
 const deleteDevicesMock = vi.fn().mockResolvedValue(undefined)
+const translationMap: Record<string, string> = {
+  'setting.sessions.current_device': '当前设备',
+  'setting.sessions.fetch_failed': '获取设备列表失败',
+  'setting.sessions.enter_device_name': '请输入设备名称',
+  'setting.sessions.rename_failed': '重命名失败',
+  'setting.sessions.logout_device_title': '登出设备',
+  'setting.sessions.logout_all_other_devices': '登出所有其他设备',
+  'setting.sessions.unknown': '未知'
+}
 
 type SessionSettingsVm = ComponentPublicInstance & {
   currentDevice?: DeviceInfo
@@ -67,6 +76,22 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
 vi.mock('@/stores/domains/chat/matrix', () => ({
   useMatrixStore: () => ({
     deviceId: 'CURRENT_DEVICE'
+  })
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    locale: { value: 'zh-CN' },
+    t: (key: string, params?: Record<string, string>) => {
+      if (!params) {
+        return translationMap[key] ?? key
+      }
+
+      return Object.entries(params).reduce(
+        (message, [name, value]) => message.replace(new RegExp(`\\{${name}\\}`, 'g'), value),
+        translationMap[key] ?? key
+      )
+    }
   })
 }))
 

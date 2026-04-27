@@ -83,7 +83,7 @@ export const useLoginFlow = () => {
   const normalLogin = async (
     _deviceType: 'PC' | 'MOBILE',
     _syncRecentMessages: boolean,
-    auto: boolean = settingStore.login.autoLogin
+    auto: boolean = settingStore.autoLoginEnabled
   ) => {
     loading.value = true
     loginText.value = t('login.status.logging_in')

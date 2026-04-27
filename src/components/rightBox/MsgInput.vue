@@ -19,7 +19,7 @@
         <div v-if="isMobile()" class="flex items-center justify-center w-6 ms-5px h-2.5rem">
           <svg
             @click="handleVoiceClick"
-            :class="mobilePanelState === MobilePanelStateEnum.VOICE ? 'text-[--color-primary]' : ''"
+            :class="mobilePanelState === MobilePanelStateEnum.VOICE ? 'text-[--hula-color-primary-500]' : ''"
             class="w-25px h-25px mt-2px outline-none">
             <use href="#voice"></use>
           </svg>
@@ -51,14 +51,16 @@
               class="n-input"
               :class="
                 isMobile()
-                  ? 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--color-text-tertiary]) p-2 min-h-2rem ps-10px! text-14px! rounded-10px! max-h-8rem! flex items-center'
-                  : 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--color-text-tertiary]) p-2'
+                  ? 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--hula-text-tertiary]) p-2 min-h-2rem ps-10px! text-14px! rounded-10px! max-h-8rem! flex items-center'
+                  : 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--hula-text-tertiary]) p-2'
               "></div>
           </n-scrollbar>
         </ContextMenu>
 
         <!-- 工具栏 -->
-        <div v-if="!isMobile()" class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-gray-200/50">
+        <div
+          v-if="!isMobile()"
+          class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-[--hula-border-default]">
           <!-- 位置共享 -->
           <n-tooltip trigger="hover">
             <template #trigger>
@@ -105,16 +107,16 @@
         <!-- 发送按钮 -->
         <div
           v-if="!isMobile()"
-          class="flex-shrink-0 max-h-52px p-4px pr-12px border-t border-gray-200/50 flex justify-end mb-4px">
+          class="flex-shrink-0 max-h-52px p-4px pr-12px border-t border-[--hula-border-default] flex justify-end mb-4px">
           <n-button-group size="small">
             <n-button
-              color="var(--color-primary)"
+              color="var(--hula-color-primary-500)"
               :disabled="props.isAIMode && props.isAIStreaming ? false : disabledSend"
               class="w-65px"
               @click="handleDesktopSend">
               {{ props.isAIMode && props.isAIStreaming ? '停止思考' : t('editor.send') }}
             </n-button>
-            <n-button color="var(--color-primary)" class="p-[0_6px]">
+            <n-button color="var(--hula-color-primary-500)" class="p-[0_6px]">
               <template #icon>
                 <n-popselect
                   v-model:show="arrow"
@@ -133,7 +135,7 @@
                       justify="center"
                       align="center"
                       :size="4"
-                      class="text-(12px [--color-text-tertiary]) cursor-default tracking-1 select-none">
+                      class="text-(12px [--hula-text-tertiary]) cursor-default tracking-1 select-none">
                       <i18n-t keypath="editor.send_or_newline">
                         <template #send>
                           <span v-if="chatKey !== 'Enter'">
@@ -182,8 +184,8 @@
                   round
                   :size="22"
                   :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                  :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-                  :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  color="var(--hula-surface-panel)"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   :render-placeholder="() => null"
                   :intersection-observer-options="{
                     root: '#image-chat-ait'
@@ -214,12 +216,12 @@
                 <n-flex align="center" justify="space-between" class="w-full pr-6px">
                   <n-flex align="center">
                     <img class="size-18px object-contain" :src="item.avatar" alt="" />
-                    <p class="text-(14px [--chat-text-color])">{{ item.name }}</p>
+                    <p class="text-(14px [--hula-text-primary])">{{ item.name }}</p>
                   </n-flex>
 
                   <n-flex align="center" :size="6">
                     <div
-                      class="ml-6px p-[4px_8px] size-fit bg-[--bate-bg] rounded-6px text-(11px [--bate-color] center)">
+                      class="ml-6px p-[4px_8px] size-fit bg-[--hula-color-beta-100] rounded-6px text-(11px [--hula-color-beta-500] center)">
                       Beta
                     </div>
                     <n-tag size="small" class="text-10px" :bordered="false" type="success">128k</n-tag>
@@ -241,10 +243,10 @@
           </div>
           <div
             v-if="msgInput"
-            class="flex-shrink-0 max-h-62px h-full border-t border-gray-200/50 flex items-center justify-end">
+            class="flex-shrink-0 max-h-62px h-full border-t border-[--hula-border-default] flex items-center justify-end">
             <n-button-group size="small" :class="isMobile() ? 'h-full' : 'pr-20px'">
               <n-button
-                color="var(--color-primary)"
+                color="var(--hula-color-primary-500)"
                 :disabled="props.isAIMode && props.isAIStreaming ? false : disabledSend"
                 class="w-3rem h-full"
                 @click="handleMobileSend">
@@ -287,7 +289,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
-import { useSendOptions } from '@/views/moreWindow/settings/config.ts'
+import { useSendOptions } from '@/composables/settings/settingsOptions'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { MobilePanelStateEnum } from '@/enums'
 import { useI18n, I18nT } from 'vue-i18n'
@@ -313,7 +315,6 @@ const props = withDefaults(defineProps<Props>(), {
 const { t } = useI18n()
 const appWindow = WebviewWindow.getCurrent()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 const { handlePaste, processFiles } = useCommon()
 const sendOptions = useSendOptions()
 /** 发送按钮旁的箭头 */

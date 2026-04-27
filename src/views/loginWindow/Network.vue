@@ -114,7 +114,6 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Network')
 import { darkTheme, lightTheme } from 'naive-ui'
-import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { updateSettings } from '@/services/tauriCommand'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -123,8 +122,7 @@ import { addSlashToHead } from '@/utils/StringUtils.ts'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
-const naiveTheme = computed(() => (themes.value.content === 'dark' ? darkTheme : lightTheme))
+const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 
 const apiOptions = computed(() => [
   {

@@ -1,8 +1,8 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { SPACE_ROUTE_NAMES, buildSpaceWorkbenchRoute } from '@/router/spaceNavigation'
 
 const FriendsList = () => import('@/views/homeWindow/FriendsList.vue')
 const Message = () => import('@/views/homeWindow/message/index.vue')
-const SearchDetails = () => import('@/views/homeWindow/SearchDetails.vue')
 
 export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
   {
@@ -12,18 +12,13 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     children: [
       {
         path: '/message',
-        name: 'message',
+        name: SPACE_ROUTE_NAMES.workbench,
         component: Message
       },
       {
         path: '/friendsList',
         name: 'friendsList',
         component: FriendsList
-      },
-      {
-        path: '/searchDetails',
-        name: 'searchDetails',
-        component: SearchDetails
       }
     ]
   },
@@ -75,11 +70,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/plugins/dynamic/detail.vue')
   },
   {
-    path: '/favorites',
-    name: 'favorites',
-    component: () => import('@/views/favoritesWindow/index.vue')
-  },
-  {
     path: '/onlineStatus',
     name: 'onlineStatus',
     component: () => import('@/views/onlineStatusWindow/index.vue')
@@ -103,6 +93,16 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     path: '/modal-invite',
     name: 'modal-invite',
     component: () => import('@/views/modalWindow/index.vue')
+  },
+  {
+    path: '/space/create',
+    name: SPACE_ROUTE_NAMES.create,
+    component: () => import('@/views/homeWindow/SpaceView.vue')
+  },
+  {
+    path: '/space/:roomId?',
+    name: SPACE_ROUTE_NAMES.legacy,
+    redirect: (to) => buildSpaceWorkbenchRoute(to.params.roomId, to.query)
   },
   {
     path: '/settings',
@@ -158,15 +158,7 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     redirect: '/settings?tab=securityPrivacy'
   },
   {
-    path: '/securityPrivacy',
-    redirect: '/settings?tab=securityPrivacy'
-  },
-  {
     path: '/help-about',
-    redirect: '/settings?tab=helpAbout'
-  },
-  {
-    path: '/helpAbout',
     redirect: '/settings?tab=helpAbout'
   },
   {

@@ -96,8 +96,8 @@ const handleEmojiSelect = async (
 
 <style scoped lang="scss">
 .reaction-picker {
-  @apply flex flex-col gap-8px p-8px bg-[--bg-emoji] rounded-8px;
-  box-shadow: 2px 2px 12px 2px var(--box-shadow-color);
+  @apply flex flex-col gap-8px p-8px bg-[--hula-surface-panel] rounded-8px;
+  box-shadow: var(--hula-shadow-md);
 }
 
 .reaction-grid {
@@ -108,12 +108,12 @@ const handleEmojiSelect = async (
   @apply flex-center w-32px h-32px rounded-6px cursor-pointer transition-all;
 
   &:hover {
-    background: var(--emoji-hover);
+    background: var(--hula-fill-hover);
     transform: scale(1.1);
   }
 
   &.active {
-    background: var(--color-primary-hover);
+    background: color-mix(in srgb, var(--hula-color-primary-500) 16%, transparent);
   }
 }
 
@@ -122,6 +122,6 @@ const handleEmojiSelect = async (
 }
 
 .more-reactions {
-  @apply flex-center border-t-1px border-solid border-[--border-color] pt-8px;
+  @apply flex-center border-t-1px border-solid border-[--hula-border-default] pt-8px;
 }
 </style>

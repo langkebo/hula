@@ -2,6 +2,49 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import BurnAfterReadSettings from '../BurnAfterReadSettings.vue'
 
+const translationMap: Record<string, string> = {
+  'setting.common.save': '保存',
+  'setting.common.cancel': '取消',
+  'setting.burn_after_read.global.title': '全局设置',
+  'setting.burn_after_read.global.enabled_label': '全局默认开启阅后即焚',
+  'setting.burn_after_read.global.enabled_desc': '新私聊默认开启阅后即焚功能',
+  'setting.burn_after_read.global.duration_label': '默认焚毁时间',
+  'setting.burn_after_read.global.duration_desc': '消息阅后的默认焚毁倒计时',
+  'setting.burn_after_read.global.auto_read_label': '已读消息自动开始倒计时',
+  'setting.burn_after_read.global.auto_read_desc': '消息被标记为已读后自动启动焚毁倒计时',
+  'setting.burn_after_read.global.notification_label': '消息即将焚毁时通知',
+  'setting.burn_after_read.global.notification_desc': '消息焚毁前发送通知提醒',
+  'setting.burn_after_read.global.countdown_label': '显示焚毁倒计时',
+  'setting.burn_after_read.global.countdown_desc': '在消息上显示焚毁倒计时进度',
+  'setting.burn_after_read.global.sound_label': '消息焚毁时播放音效',
+  'setting.burn_after_read.global.sound_desc': '消息焚毁完成时播放提示音',
+  'setting.burn_after_read.rooms.title': '房间级别设置',
+  'setting.burn_after_read.rooms.empty': '暂无开启阅后即焚的私聊',
+  'setting.burn_after_read.rooms.enabled': '已开启',
+  'setting.burn_after_read.rooms.disabled': '已关闭',
+  'setting.burn_after_read.rooms.duration_value': '焚毁时间: {duration}',
+  'setting.burn_after_read.rooms.edit': '修改',
+  'setting.burn_after_read.rooms.enable': '开启',
+  'setting.burn_after_read.rooms.disable': '关闭',
+  'setting.burn_after_read.rooms.edit_title': '修改房间焚毁时间',
+  'setting.burn_after_read.rooms.duration_label': '焚毁时间',
+  'setting.burn_after_read.stats.title': '焚毁统计',
+  'setting.burn_after_read.stats.total_burned': '总焚毁消息',
+  'setting.burn_after_read.stats.total_pending': '待焚毁消息',
+  'setting.burn_after_read.stats.rooms_enabled': '开启房间数',
+  'setting.burn_after_read.formats.seconds': '{count}秒',
+  'setting.burn_after_read.formats.minutes': '{count}分钟',
+  'setting.burn_after_read.formats.hours': '{count}小时',
+  'setting.burn_after_read.formats.days': '{count}天',
+  'setting.burn_after_read.feedback.duration_changed': '默认焚毁时间已设置为{duration}',
+  'setting.burn_after_read.feedback.settings_updated': '设置已更新',
+  'setting.burn_after_read.feedback.room_enabled': '已开启房间阅后即焚',
+  'setting.burn_after_read.feedback.room_enable_failed': '开启房间阅后即焚失败',
+  'setting.burn_after_read.feedback.room_disabled': '已关闭房间阅后即焚',
+  'setting.burn_after_read.warning':
+    '阅后即焚不能保证对方未截图或保存消息。服务器会在消息到期后删除，但无法控制客户端行为。'
+}
+
 const { mockManager, messageSuccessMock, messageErrorMock } = vi.hoisted(() => ({
   mockManager: {
     getBurnStats: vi.fn(),
@@ -33,6 +76,21 @@ vi.mock('@/services/matrix', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: vi.fn(() => ({ error: vi.fn() }))
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      if (!params) {
+        return translationMap[key] ?? key
+      }
+
+      return Object.entries(params).reduce(
+        (message, [name, value]) => message.replace(new RegExp(`\\{${name}\\}`, 'g'), value),
+        translationMap[key] ?? key
+      )
+    }
+  })
 }))
 
 describe('BurnAfterReadSettings', () => {

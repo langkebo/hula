@@ -1,5 +1,5 @@
 <template>
-  <van-config-provider :theme="settingStore.themes.content === ThemeEnum.DARK ? 'dark' : 'light'" class="h-full">
+  <van-config-provider :theme="settingStore.themeContent === ThemeEnum.DARK ? 'dark' : 'light'" class="h-full">
     <div
       class="h-full flex flex-col box-border"
       :class="{

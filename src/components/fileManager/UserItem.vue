@@ -161,7 +161,7 @@ const handleAvatarError = (event: Event) => {
   height: 8px;
   background-color: var(--color-primary);
   border-radius: 50%;
-  border: 2px solid var(--center-bg-color);
+  border: 2px solid var(--hula-surface-panel);
 }
 
 .user-info {

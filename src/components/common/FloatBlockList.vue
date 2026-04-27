@@ -229,7 +229,7 @@ defineExpose({
   position: absolute;
   left: 0;
   width: 100%;
-  background: var(--float-block-hover-color, rgba(0, 0, 0, 0.1));
+  background: var(--hula-text-primary);
   pointer-events: none;
   transition: top 0.2s ease-in-out;
   z-index: 0;

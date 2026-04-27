@@ -7,6 +7,10 @@ const messageSuccessMock = vi.fn()
 const messageWarningMock = vi.fn()
 const setMessageSoundEnabledMock = vi.fn()
 const setNotificationVolumeMock = vi.fn()
+const translationMap: Record<string, string> = {
+  'setting.notification.desktop.title': '桌面通知',
+  'setting.notification.push_section.title': '推送与规则'
+}
 
 type NotificationSettingsVm = ComponentPublicInstance & {
   desktopNotification: boolean
@@ -48,9 +52,18 @@ vi.mock('naive-ui', () => ({
   useMessage: () => ({ success: messageSuccessMock, warning: messageWarningMock })
 }))
 
-vi.mock('pinia', () => ({
-  storeToRefs: () => ({
-    notification: { value: { messageSound: true, volume: 80 } }
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      if (!params) {
+        return translationMap[key] ?? key
+      }
+
+      return Object.entries(params).reduce(
+        (message, [name, value]) => message.replace(new RegExp(`\\{${name}\\}`, 'g'), value),
+        translationMap[key] ?? key
+      )
+    }
   })
 }))
 
@@ -63,7 +76,8 @@ vi.mock('@/views/settingsWindow/tabs/PushSettings.vue', () => ({
 
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({
-    notification: { messageSound: true, volume: 80 },
+    messageSoundEnabled: true,
+    notificationVolume: 80,
     setMessageSoundEnabled: (value: boolean) => setMessageSoundEnabledMock(value),
     setNotificationVolume: (value: number) => setNotificationVolumeMock(value)
   })

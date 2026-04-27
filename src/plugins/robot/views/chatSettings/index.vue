@@ -13,7 +13,9 @@
   </div>
 
   <!-- 设置的主体内容  -->
-  <n-scrollbar :class="{ 'shadow-inner': page.shadow }" style="max-height: calc(100vh / var(--page-scale, 1) - 104px)">
+  <n-scrollbar
+    :class="{ 'shadow-inner': settingStore.pageShadowEnabled }"
+    style="max-height: calc(100vh / var(--page-scale, 1) - 104px)">
     <n-flex vertical :size="20" class="p-[20px_0]">
       <div v-for="(key, index) in content" :key="index" class="flex flex-1 p-[0_20px]">
         <n-flex
@@ -43,7 +45,6 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { content } from './config.tsx'
 
 const settingStore = useSettingStore()
-const { page } = storeToRefs(settingStore)
 const handleClose = () => {
   router.push('/chat').then(() => {
     nextTick(() => {

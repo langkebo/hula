@@ -8,8 +8,8 @@
       <n-avatar
         :size="56"
         :src="avatarSrc"
-        :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-        :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+        :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#fff'"
+        :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
         class="rounded-12px shadow-md" />
       <!-- 通话类型指示器 -->
       <div class="absolute -bottom-2px -right-2px w-20px h-20px rounded-full bg-blue-500 flex-center shadow-lg">
@@ -25,7 +25,7 @@
         {{ remoteUserInfo?.name || t('message.call_window.unknown_user') }}
       </div>
       <div class="text-12px text-gray-500 dark:text-gray-400 flex items-center">
-        <div class="w-6px h-6px rounded-full bg-[--color-primary] mr-6px animate-pulse"></div>
+        <div class="w-6px h-6px rounded-full bg-[--hula-color-primary-500] mr-6px animate-pulse"></div>
         {{ t('message.call_window.incoming') }} ·
         {{
           callType === CallTypeEnum.VIDEO ? t('message.call_window.video_call') : t('message.call_window.voice_call')
@@ -38,7 +38,7 @@
       <!-- 拒绝按钮 -->
       <div
         @click="hangUp(CallResponseStatus.REJECTED)"
-        class="size-40px rounded-full bg-[--color-danger] hover:bg-[--color-danger] flex-center cursor-pointer shadow-lg">
+        class="size-40px rounded-full bg-[--hula-color-danger-500] hover:bg-[--hula-color-danger-500] flex-center cursor-pointer shadow-lg">
         <svg class="color-#fff size-20px">
           <use href="#PhoneHangup"></use>
         </svg>
@@ -46,7 +46,7 @@
       <!-- 接听按钮 -->
       <div
         @click="acceptCall"
-        class="size-40px rounded-full bg-[--color-primary] hover:bg-[--color-primary] flex-center cursor-pointer shadow-lg">
+        class="size-40px rounded-full bg-[--hula-color-primary-500] hover:bg-[--hula-color-primary-500] flex-center cursor-pointer shadow-lg">
         <svg class="color-#fff size-20px">
           <use href="#phone-telephone-entity"></use>
         </svg>
@@ -144,7 +144,9 @@
                 @click="toggleMute"
                 class="size-44px rounded-full flex-center cursor-pointer"
                 :class="
-                  !isMuted ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+                  !isMuted
+                    ? 'bg-gray-600 hover:bg-gray-500'
+                    : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
                 ">
                 <svg class="size-16px color-#fff">
                   <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
@@ -158,7 +160,9 @@
                 @click="toggleSpeaker"
                 class="size-44px rounded-full flex-center cursor-pointer"
                 :class="
-                  isSpeakerOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+                  isSpeakerOn
+                    ? 'bg-gray-600 hover:bg-gray-500'
+                    : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
                 ">
                 <svg class="size-16px color-#fff">
                   <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
@@ -183,7 +187,9 @@
                 @click="toggleVideo"
                 class="size-44px rounded-full flex-center cursor-pointer"
                 :class="
-                  isVideoEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+                  isVideoEnabled
+                    ? 'bg-gray-600 hover:bg-gray-500'
+                    : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
                 ">
                 <svg class="size-16px color-#fff">
                   <use :href="isVideoEnabled ? '#video-one' : '#monitor-off'"></use>
@@ -195,7 +201,7 @@
             <div class="flex-center">
               <div
                 @click="hangUp()"
-                class="size-44px rounded-full bg-[--color-danger]60 hover:bg-[--color-danger]80 flex-center cursor-pointer">
+                class="size-44px rounded-full bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80 flex-center cursor-pointer">
                 <svg class="size-16px color-#fff">
                   <use href="#PhoneHangup"></use>
                 </svg>
@@ -212,8 +218,8 @@
         <n-avatar
           :size="140"
           :src="avatarSrc"
-          :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-          :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+          :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#fff'"
+          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
           class="rounded-22px mb-16px" />
 
         <!-- 用户名 -->
@@ -243,7 +249,11 @@
           <div
             @click="toggleMute"
             class="size-44px rounded-full flex-center cursor-pointer"
-            :class="!isMuted ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'">
+            :class="
+              !isMuted
+                ? 'bg-gray-600 hover:bg-gray-500'
+                : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
+            ">
             <svg class="size-16px color-#fff">
               <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
             </svg>
@@ -259,7 +269,9 @@
             @click="toggleSpeaker"
             class="size-44px rounded-full flex-center cursor-pointer"
             :class="
-              isSpeakerOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+              isSpeakerOn
+                ? 'bg-gray-600 hover:bg-gray-500'
+                : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
             ">
             <svg class="size-16px color-#fff">
               <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
@@ -276,7 +288,9 @@
             @click="toggleVideo"
             class="size-44px rounded-full flex-center cursor-pointer"
             :class="
-              isVideoEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+              isVideoEnabled
+                ? 'bg-gray-600 hover:bg-gray-500'
+                : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
             ">
             <svg class="size-16px color-#fff">
               <use :href="isVideoEnabled ? '#video-one' : '#monitor-off'"></use>
@@ -291,7 +305,7 @@
         <div class="flex-col-x-center gap-8px w-80px">
           <div
             @click="hangUp()"
-            class="size-44px rounded-full bg-[--color-danger]60 hover:bg-[--color-danger]80 flex-center cursor-pointer">
+            class="size-44px rounded-full bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80 flex-center cursor-pointer">
             <svg class="size-16px color-#fff">
               <use href="#PhoneHangup"></use>
             </svg>
@@ -311,7 +325,11 @@
             <div
               @click="toggleMute"
               class="size-44px rounded-full flex-center cursor-pointer"
-              :class="!isMuted ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'">
+              :class="
+                !isMuted
+                  ? 'bg-gray-600 hover:bg-gray-500'
+                  : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
+              ">
               <svg class="size-16px color-#fff">
                 <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
               </svg>
@@ -327,7 +345,9 @@
               @click="toggleSpeaker"
               class="size-44px rounded-full flex-center cursor-pointer"
               :class="
-                isSpeakerOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-[--color-danger]60 hover:bg-[--color-danger]80'
+                isSpeakerOn
+                  ? 'bg-gray-600 hover:bg-gray-500'
+                  : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
               ">
               <svg class="size-16px color-#fff">
                 <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
@@ -343,7 +363,7 @@
         <div class="flex-x-center">
           <div
             @click="hangUp()"
-            class="size-66px rounded-full bg-[--color-danger]60 hover:bg-[--color-danger]80 flex-center cursor-pointer">
+            class="size-66px rounded-full bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80 flex-center cursor-pointer">
             <svg class="size-24px color-#fff">
               <use href="#PhoneHangup"></use>
             </svg>
@@ -357,7 +377,6 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { LogicalPosition, LogicalSize, PhysicalPosition, PhysicalSize } from '@tauri-apps/api/dpi'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { primaryMonitor } from '@tauri-apps/api/window'
@@ -379,7 +398,6 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const logger = createLogger('CallWindow')
 const settingStore = useSettingStore()
-const { themes } = storeToRefs(settingStore)
 const route = useRoute()
 
 const resolveCallType = (value?: string | null): CallTypeEnum => {

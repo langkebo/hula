@@ -83,13 +83,6 @@ const options = ref([
     }
   },
   {
-    icon: 'shoucang',
-    label: t('mobile_my.favorites'),
-    onClick: () => {
-      router.push('/mobile/mobileMy/favorites')
-    }
-  },
-  {
     icon: 'wenjian',
     label: t('mobile_my.files'),
     onClick: () => {

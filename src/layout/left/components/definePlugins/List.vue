@@ -13,11 +13,11 @@
               <Transition mode="out-in">
                 <svg
                   v-if="plugin.state === PluginEnum.NOT_INSTALLED || plugin.state === PluginEnum.DOWNLOADING"
-                  class="size-34px color-[--color-text-quaternary]">
+                  class="size-34px color-[--hula-text-quaternary]">
                   <use :href="`#${plugin.icon}`"></use>
                 </svg>
                 <template v-else>
-                  <svg class="size-34px color-[--color-text-secondary]">
+                  <svg class="size-34px color-[--hula-text-secondary]">
                     <use :href="`#${plugin.iconAction || plugin.icon}`"></use>
                   </svg>
                 </template>
@@ -26,12 +26,12 @@
 
             <n-flex vertical :size="10">
               <n-flex align="center" :size="6">
-                <p class="text-(14px [--color-text-secondary]) pl-4px">{{ plugin.title }}</p>
+                <p class="text-(14px [--hula-text-secondary]) pl-4px">{{ plugin.title }}</p>
 
                 <Transition>
                   <svg
                     v-if="plugin.isAdd && plugin.state !== PluginEnum.BUILTIN"
-                    class="color-[--color-text-secondary] size-14px">
+                    class="color-[--hula-text-secondary] size-14px">
                     <use href="#notOnTop"></use>
                   </svg>
                 </Transition>
@@ -41,17 +41,19 @@
                 <n-flex
                   v-if="plugin.state === PluginEnum.UNINSTALLING"
                   class="relative rounded-22px bg-#f6dfe3 size-fit p-[4px_8px]">
-                  <p class="text-(12px [--color-danger] center)">{{ t('home.plugins.status.uninstalling') }}</p>
+                  <p class="text-(12px [--hula-color-danger-500] center)">
+                    {{ t('home.plugins.status.uninstalling') }}
+                  </p>
                 </n-flex>
 
                 <n-flex
                   v-else-if="plugin.state === PluginEnum.BUILTIN"
                   class="relative rounded-22px bg-#e3e3e3 size-fit p-[4px_8px]">
-                  <p class="text-(12px [--color-text-tertiary] center)">{{ t('home.plugins.status.builtin') }}</p>
+                  <p class="text-(12px [--hula-text-tertiary] center)">{{ t('home.plugins.status.builtin') }}</p>
                 </n-flex>
 
                 <n-flex v-else class="relative rounded-22px bg-#e0e9fc size-fit p-[4px_8px]">
-                  <p class="text-(12px [--color-info] center)">{{ plugin.version }}</p>
+                  <p class="text-(12px [--hula-color-info-500] center)">{{ plugin.version }}</p>
                 </n-flex>
               </Transition>
             </n-flex>
@@ -84,7 +86,7 @@
                 <p class="absolute-center text-(12px #4C77BD)">{{ plugin.progress }}%</p>
               </div>
 
-              <p v-else class="text-(12px [--chat-text-color] center) w-full">
+              <p v-else class="text-(12px [--hula-text-secondary] center) w-full">
                 {{ t('home.plugins.actions.install') }}
               </p>
             </n-flex>

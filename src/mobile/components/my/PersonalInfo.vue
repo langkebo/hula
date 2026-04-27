@@ -219,7 +219,7 @@ const toChatRoom = async () => {
 }
 
 const handleAddFriend = async () => {
-  globalStore.addFriendModalInfo.uid = uid
+  globalStore.setAddFriendTarget(uid)
   router.push('/mobile/mobileFriends/confirmAddFriend')
 }
 

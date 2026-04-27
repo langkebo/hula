@@ -5,7 +5,6 @@ export interface ChatHeaderState {
   sidebarShow: boolean
   modalShow: boolean
   showQRCodeModal: boolean
-  showManageGroupMemberModal: boolean
   tips: string
   optionsType: RoomActEnum | undefined
   isEditingGroupName: boolean

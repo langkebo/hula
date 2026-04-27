@@ -25,15 +25,19 @@
           :style="{
             width: '120px',
             height: '120px',
-            backgroundColor: '#c8c8c833'
+            backgroundColor: 'var(--hula-surface-sidebar-selected)'
           }"
           class="rounded-10px">
           <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
         </n-flex>
       </template>
       <template #error>
-        <n-flex v-if="isError" align="center" justify="center" class="w-150px h-150px bg-#c8c8c833 rounded-10px">
-          <svg class="size-34px color-[--chat-text-color]"><use href="#error-picture"></use></svg>
+        <n-flex
+          v-if="isError"
+          align="center"
+          justify="center"
+          class="w-150px h-150px rounded-10px bg-[--hula-surface-sidebar-selected]">
+          <svg class="size-34px color-[--hula-text-tertiary]"><use href="#error-picture"></use></svg>
         </n-flex>
       </template>
     </n-image>

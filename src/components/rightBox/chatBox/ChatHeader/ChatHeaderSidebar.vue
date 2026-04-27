@@ -1,5 +1,10 @@
 <template>
-  <n-drawer :show="visible" :width="320" placement="right" :mask-closable="true" @update:show="(v) => emit('update:visible', v)">
+  <n-drawer
+    :show="visible"
+    :width="320"
+    placement="right"
+    :mask-closable="true"
+    @update:show="(v) => emit('update:visible', v)">
     <n-drawer-content :title="drawerTitle" closable>
       <div class="sidebar-content">
         <div v-if="isGroup" class="group-info-section">
@@ -49,13 +54,6 @@
                 :size="32"
                 round
                 :title="user.name" />
-              <n-button v-if="isGroupOwner" quaternary circle size="small" @click="handleManageMembers">
-                <template #icon>
-                  <n-icon size="16">
-                    <svg><use href="#add"></use></svg>
-                  </n-icon>
-                </template>
-              </n-button>
             </div>
           </div>
         </div>
@@ -104,12 +102,6 @@
         <n-divider />
 
         <div class="actions-section">
-          <n-button v-if="isGroup && isGroupOwner" type="error" block @click="handleDissolve">
-            {{ t('home.chat_header.dissolve_group') }}
-          </n-button>
-          <n-button v-else-if="isGroup" type="warning" block @click="handleExit">
-            {{ t('home.chat_header.exit_group') }}
-          </n-button>
           <n-button v-if="!isGroup && showDeleteFriend" type="error" block @click="handleDeleteFriend">
             {{ t('home.chat_header.delete_friend') }}
           </n-button>
@@ -151,9 +143,6 @@ const emit = defineEmits<{
   (e: 'pin-room'): void
   (e: 'mute-change', type: string): void
   (e: 'clear-messages'): void
-  (e: 'manage-members'): void
-  (e: 'dissolve'): void
-  (e: 'exit'): void
   (e: 'delete-friend'): void
   (e: 'delete-room'): void
 }>()
@@ -226,9 +215,6 @@ const handleLocalRemarkInput = (value: string) => {
 const handlePinRoom = () => emit('pin-room')
 const handleMuteChange = (type: string) => emit('mute-change', type)
 const handleClearMessages = () => emit('clear-messages')
-const handleManageMembers = () => emit('manage-members')
-const handleDissolve = () => emit('dissolve')
-const handleExit = () => emit('exit')
 const handleDeleteFriend = () => emit('delete-friend')
 const handleDeleteRoom = () => emit('delete-room')
 </script>
@@ -244,7 +230,7 @@ const handleDeleteRoom = () => emit('delete-room')
   .label {
     display: block;
     font-size: 12px;
-    color: var(--text-color-3);
+    color: var(--hula-text-tertiary);
     margin-bottom: 8px;
   }
 
@@ -259,7 +245,7 @@ const handleDeleteRoom = () => emit('delete-room')
       cursor: pointer;
 
       &:hover {
-        color: var(--primary-color);
+        color: var(--hula-color-primary-500);
       }
     }
   }
@@ -280,11 +266,11 @@ const handleDeleteRoom = () => emit('delete-room')
     cursor: pointer;
 
     &:not(:last-child) {
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--hula-border-default);
     }
 
     &.danger {
-      color: var(--error-color);
+      color: var(--hula-color-danger-500);
     }
 
     .setting-label {

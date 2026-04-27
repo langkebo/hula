@@ -1,11 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
-import {
-  MOBILE_SETTINGS_RELATIVE_PATHS,
-  MOBILE_SETTINGS_HELP_ABOUT_PATH,
-  MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH,
-  MOBILE_SETTINGS_ROUTE_NAMES,
-  MOBILE_SETTINGS_SECURITY_PRIVACY_PATH
-} from '@/mobile/views/my/settingsRoutes'
+import { MOBILE_SETTINGS_RELATIVE_PATHS, MOBILE_SETTINGS_ROUTE_NAMES } from '@/mobile/views/my/settingsRoutes'
 
 const ChatRoomLayout = () => import('#/layout/chat-room/ChatRoomLayout.vue')
 const NoticeLayout = () => import('#/layout/chat-room/NoticeLayout.vue')
@@ -55,7 +49,6 @@ const IntegrationsSettings = () => import('#/views/my/IntegrationsSettings.vue')
 const BurnAfterReadSettings = () => import('#/views/my/BurnAfterReadSettings.vue')
 const MjolnirSettings = () => import('#/views/my/MjolnirSettings.vue')
 const PreferencesSettings = () => import('#/views/my/PreferencesSettings.vue')
-const Favorites = () => import('#/views/my/Favorites.vue')
 const Files = () => import('#/views/my/Files.vue')
 const ConfirmQRLogin = () => import('#/views/ConfirmQRLogin.vue')
 const MyQRCode = () => import('#/views/MyQRCode.vue')
@@ -64,6 +57,69 @@ const MobileForgetPassword = () => import('#/views/MobileForgetPassword.vue')
 const MobileServiceAgreement = () => import('#/views/MobileServiceAgreement.vue')
 const MobilePrivacyAgreement = () => import('#/views/MobilePrivacyAgreement.vue')
 const SyncData = () => import('#/views/SyncData.vue')
+
+const MOBILE_MY_SETTINGS_CHILD_ROUTES: RouteRecordRaw[] = [
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.securityPrivacy,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.securityPrivacy,
+    component: SecuritySettings
+  },
+  {
+    path: 'devices',
+    name: 'mobileDeviceManagement',
+    component: DeviceManagement
+  },
+  {
+    path: 'notifications',
+    name: 'mobileNotificationSettings',
+    component: NotificationSettings
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.helpAbout,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.helpAbout,
+    component: HelpFeedback
+  },
+  {
+    path: 'voiceVideo',
+    name: 'mobileVoiceVideoSettings',
+    component: VoiceVideoSettings
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.labs,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.labs,
+    component: LabsSettings
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.labsIntegrations,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.labsIntegrations,
+    component: IntegrationsSettings
+  },
+  {
+    path: 'homeserver',
+    name: 'mobileHomeserverSettings',
+    component: HomeserverSettings
+  },
+  {
+    path: 'files',
+    name: 'mobileFiles',
+    component: Files
+  },
+  {
+    path: 'burnAfterRead',
+    name: 'mobileBurnAfterReadSettings',
+    component: BurnAfterReadSettings
+  },
+  {
+    path: 'mjolnir',
+    name: 'mobileMjolnirSettings',
+    component: MjolnirSettings
+  },
+  {
+    path: 'preferences',
+    name: 'mobilePreferencesSettings',
+    component: PreferencesSettings
+  }
+]
 
 export const getMobileRoutes = (): Array<RouteRecordRaw> => [
   {
@@ -143,6 +199,11 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'inviteGroupMember',
         name: 'mobileInviteGroupMember',
         component: MobileInviteGroupMember
+      },
+      {
+        path: 'manageGroupMember',
+        name: 'manageGroupMember',
+        component: () => import('@/mobile/views/chat-room/ManageGroupMember.vue')
       },
       {
         path: 'thread/:roomId/:threadRootId',
@@ -281,83 +342,7 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         name: 'mobileStatusSettings',
         component: StatusSettings
       },
-      {
-        path: MOBILE_SETTINGS_RELATIVE_PATHS.securityPrivacy,
-        name: MOBILE_SETTINGS_ROUTE_NAMES.securityPrivacy,
-        component: SecuritySettings
-      },
-      {
-        path: MOBILE_SETTINGS_RELATIVE_PATHS.legacySecurity,
-        redirect: MOBILE_SETTINGS_SECURITY_PRIVACY_PATH
-      },
-      {
-        path: 'devices',
-        name: 'mobileDeviceManagement',
-        component: DeviceManagement
-      },
-      {
-        path: 'notifications',
-        name: 'mobileNotificationSettings',
-        component: NotificationSettings
-      },
-      {
-        path: MOBILE_SETTINGS_RELATIVE_PATHS.helpAbout,
-        name: MOBILE_SETTINGS_ROUTE_NAMES.helpAbout,
-        component: HelpFeedback
-      },
-      {
-        path: MOBILE_SETTINGS_RELATIVE_PATHS.legacyHelp,
-        redirect: MOBILE_SETTINGS_HELP_ABOUT_PATH
-      },
-      {
-        path: 'voiceVideo',
-        name: 'mobileVoiceVideoSettings',
-        component: VoiceVideoSettings
-      },
-      {
-        path: MOBILE_SETTINGS_RELATIVE_PATHS.labs,
-        name: MOBILE_SETTINGS_ROUTE_NAMES.labs,
-        component: LabsSettings
-      },
-      {
-        path: MOBILE_SETTINGS_RELATIVE_PATHS.labsIntegrations,
-        name: MOBILE_SETTINGS_ROUTE_NAMES.labsIntegrations,
-        component: IntegrationsSettings
-      },
-      {
-        path: MOBILE_SETTINGS_RELATIVE_PATHS.legacyIntegrations,
-        redirect: MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH
-      },
-      {
-        path: 'homeserver',
-        name: 'mobileHomeserverSettings',
-        component: HomeserverSettings
-      },
-      {
-        path: 'favorites',
-        name: 'mobileFavorites',
-        component: Favorites
-      },
-      {
-        path: 'files',
-        name: 'mobileFiles',
-        component: Files
-      },
-      {
-        path: 'burnAfterRead',
-        name: 'mobileBurnAfterReadSettings',
-        component: BurnAfterReadSettings
-      },
-      {
-        path: 'mjolnir',
-        name: 'mobileMjolnirSettings',
-        component: MjolnirSettings
-      },
-      {
-        path: 'preferences',
-        name: 'mobilePreferencesSettings',
-        component: PreferencesSettings
-      }
+      ...MOBILE_MY_SETTINGS_CHILD_ROUTES
     ]
   },
   {

@@ -4,11 +4,6 @@ const Splashscreen = () => import('#/views/Splashscreen.vue')
 
 export const getCommonRoutes = (): Array<RouteRecordRaw> => [
   {
-    path: '/manageGroupMember',
-    name: 'manageGroupMember',
-    component: () => import('@/views/ManageGroupMember.vue')
-  },
-  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/loginWindow/Login.vue')

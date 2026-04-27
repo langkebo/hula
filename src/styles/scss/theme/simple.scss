@@ -2,14 +2,14 @@
 :root {
   .simple {
     // 侧边栏样式
-    --left-bg-color: rgba(229, 229, 230, 1);
-    --left-active-bg-color: rgba(193, 193, 193, 0.6);
-    --left-text-color: #333;
-    --left-icon-color: #333;
-    --left-active-hover: #13987f;
-    --left-bg-hover: rgba(193, 193, 193, 0.4);
-    --left-active-icon-color: #13987f;
-    --left-win-icon-color: rgba(19, 152, 127, 0.6);
+    --left-bg-color: var(--hula-surface-sidebar);
+    --left-active-bg-color: var(--hula-surface-sidebar-selected);
+    --left-text-color: var(--hula-text-secondary);
+    --left-icon-color: var(--hula-text-secondary);
+    --left-active-hover: var(--hula-color-primary-500);
+    --left-bg-hover: var(--hula-surface-sidebar-hover);
+    --left-active-icon-color: var(--hula-color-primary-500);
+    --left-win-icon-color: var(--hula-color-primary-200);
 
     // 通用背景色
     --background: oklch(1 0 0);
@@ -20,43 +20,43 @@
     --input: oklch(0.92 0.004 286.32);
 
     // 包含边框的选中样式
-    --border-active-color: #13987f;
+    --border-active-color: var(--hula-color-primary-500);
 
     // 右边布局内容背景
-    --right-theme-bg-color: #f1f1f1;
+    --right-theme-bg-color: var(--hula-surface-subtle);
 
     // 聊天框主体样式
-    --right-chat-reply-color: #ddd;
-    --right-chat-reply-active-color: rgba(99, 99, 99, 0.1);
-    --right-chat-footer-line-color: #e3e3e3;
+    --right-chat-reply-color: var(--hula-border-strong);
+    --right-chat-reply-active-color: color-mix(in srgb, var(--hula-text-secondary) 12%, transparent);
+    --right-chat-footer-line-color: var(--hula-border-default);
 
     // 消息列表样式
-    --msg-active-color: #13987f;
+    --msg-active-color: var(--hula-color-primary-500);
     // 群公告消息背景色
-    --group-notice-bg: #fff;
+    --group-notice-bg: var(--hula-surface-panel);
 
     // 列表通用hover
-    --list-hover-color: rgba(99, 99, 99, 0.1);
+    --list-hover-color: color-mix(in srgb, var(--hula-text-secondary) 12%, transparent);
 
     // 整体hover图标的样式
-    --icon-hover-color: #e7e7e7;
+    --icon-hover-color: var(--hula-surface-search);
 
     // 移动端样式
-    --tab-bar-icon-color: rgba(19, 152, 127, 1);
+    --tab-bar-icon-color: var(--hula-color-primary-500);
   }
 }
 
 html[data-theme='dark'] {
   .simple {
     // 侧边栏样式
-    --left-bg-color: #161616;
-    --left-active-bg-color: rgba(193, 193, 193, 0.1);
-    --left-text-color: #e3e3e3;
-    --left-icon-color: #e3e3e3;
-    --left-active-hover: #13987f;
-    --left-bg-hover: rgba(255, 255, 255, 0.2);
-    --left-active-icon-color: #13987f;
-    --left-win-icon-color: rgba(19, 152, 127, 0.6);
+    --left-bg-color: var(--hula-surface-sidebar);
+    --left-active-bg-color: var(--hula-surface-sidebar-selected);
+    --left-text-color: var(--hula-border-default);
+    --left-icon-color: var(--hula-border-default);
+    --left-active-hover: var(--hula-color-primary-500);
+    --left-bg-hover: var(--hula-surface-sidebar-hover);
+    --left-active-icon-color: var(--hula-color-primary-500);
+    --left-win-icon-color: var(--hula-color-primary-200);
 
     --background: oklch(27, 27, 27);
     --foreground: oklch(0.985 0 0);
@@ -66,29 +66,29 @@ html[data-theme='dark'] {
     --input: oklch(1 0 0 / 15%);
 
     // 包含边框的选中样式
-    --border-active-color: #13987f;
+    --border-active-color: var(--hula-color-primary-500);
 
     // 右边布局内容背景
-    --right-theme-bg-color: #161616;
+    --right-theme-bg-color: var(--hula-surface-sidebar);
 
     // 聊天框主体样式
-    --right-chat-reply-color: #3b3b3b;
-    --right-chat-reply-active-color: rgba(255, 255, 255, 0.1);
-    --right-chat-footer-line-color: #202020;
+    --right-chat-reply-color: var(--hula-surface-subtle);
+    --right-chat-reply-active-color: color-mix(in srgb, var(--hula-text-inverse) 10%, transparent);
+    --right-chat-footer-line-color: var(--hula-border-muted);
 
     // 消息列表样式
-    --msg-active-color: rgba(19, 152, 127, 0.4);
+    --msg-active-color: var(--hula-color-primary-300-alpha);
     // 群公告消息背景色
-    --group-notice-bg: rgba(133, 133, 133, 0.2);
+    --group-notice-bg: color-mix(in srgb, var(--hula-text-tertiary) 20%, transparent);
 
     // 列表通用hover
-    --list-hover-color: rgba(244, 244, 244, 0.1);
+    --list-hover-color: color-mix(in srgb, var(--hula-text-inverse) 10%, transparent);
 
     // 整体hover图标的样式
-    --icon-hover-color: #242424;
+    --icon-hover-color: var(--hula-surface-search);
 
     // 移动端样式
-    --tab-bar-icon-color: rgba(19, 152, 127, 0.4);
+    --tab-bar-icon-color: var(--hula-color-primary-300-alpha);
   }
 }
 /**! end */

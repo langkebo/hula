@@ -1,7 +1,7 @@
 <template>
   <div class="min-w-0 cursor-default select-none flex-1 flex flex-col bg-[--right-bg-color] overflow-hidden">
     <!-- 内容头部 -->
-    <div class="flex-shrink-0 px-20px py-16px border-b border-solid border-[--line-color]">
+    <div class="flex-shrink-0 px-20px py-16px border-b border-solid border-[--hula-border-default]">
       <div class="flex items-center justify-between gap-32px">
         <n-flex vertical class="flex-shrink-0">
           <h2 class="text-18px font-600 text-[--text-color] m-0">
@@ -23,7 +23,7 @@
           autoCorrect="off"
           autoCapitalize="off"
           style="width: 200px"
-          class="rounded-6px border-(solid 1px [--line-color])"
+          class="rounded-6px border-(solid 1px [--hula-border-default])"
           size="small">
           <template #prefix>
             <svg class="size-16px text-[--text-color] opacity-60">

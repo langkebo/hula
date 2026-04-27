@@ -56,7 +56,7 @@ const { isOpen, menuSections, handleMenuItemClick } = useUserMenu()
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
 const defaultAvatar = computed(() => defaultAvatarImg)
 
-const showOnlineStatus = computed(() => settingStore.themes.pattern !== 'os')
+const showOnlineStatus = computed(() => settingStore.themePattern !== 'os')
 
 const onlineClass = computed(() => {
   return 'online'
@@ -105,15 +105,15 @@ function handleTouchClick() {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 2px solid var(--van-background, #fff);
+  border: 2px solid var(--avatar-border-color);
 }
 
 .online-indicator.online {
-  background-color: var(--color-success);
+  background-color: var(--hula-status-online);
 }
 
 .online-indicator.offline {
-  background-color: #8c8c8c;
+  background-color: var(--hula-status-offline);
 }
 
 .menu-divider {
@@ -139,7 +139,7 @@ function handleTouchClick() {
 }
 
 .menu-item-danger :deep(.van-cell__title) {
-  color: #d5304f;
+  color: var(--hula-color-danger-500);
 }
 
 .menu-item-disabled {

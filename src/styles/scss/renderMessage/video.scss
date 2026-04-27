@@ -9,7 +9,11 @@
 
 .video-overlay {
   @apply: absolute top-0 left-0 right-0 bottom-0 opacity-100 flex-center rounded-8px cursor-default select-none;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.6) 100%);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--hula-surface-media-preview) 0%, transparent) 0%,
+    color-mix(in srgb, var(--hula-surface-media-preview) 60%, transparent) 100%
+  );
   pointer-events: none;
 }
 
@@ -19,20 +23,20 @@
   pointer-events: auto;
 
   &:hover:not(.loading) {
-    background: rgba(0, 0, 0, 0.4);
+    background: color-mix(in srgb, var(--hula-surface-media-preview) 40%, transparent);
     transform: translate(-50%, -50%) scale(1.1);
   }
 
   &.loading {
-    background: rgba(0, 0, 0, 0.6);
+    background: color-mix(in srgb, var(--hula-surface-media-preview) 60%, transparent);
     cursor: not-allowed;
   }
 }
 
 .loading-spinner {
   @apply: size-20px rounded-full;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid white;
+  border: 2px solid color-mix(in srgb, var(--hula-text-inverse) 30%, transparent);
+  border-top: 2px solid var(--hula-text-inverse);
   animation: spin 1s linear infinite;
 }
 
@@ -60,7 +64,7 @@
 }
 
 .upload-icon {
-  color: rgba(19, 152, 127, 0.4);
+  color: color-mix(in srgb, var(--hula-color-primary-500) 40%, transparent);
 }
 
 @keyframes spin {
@@ -75,12 +79,12 @@
 
 .loading-tip {
   @apply: absolute top-8px right-8px color-white px-8px py-4px rounded-4px text-10px backdrop-blur-4px;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--hula-overlay-inverse-strong);
 }
 
 .upload-tip {
   @apply: color-white backdrop-blur-4px;
-  background: rgba(19, 152, 127, 0.4);
+  background: color-mix(in srgb, var(--hula-color-primary-500) 40%, transparent);
 }
 
 .loading-text {
@@ -99,7 +103,7 @@
 
 .video-info {
   @apply: absolute bottom-8px left-8px color-white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--hula-surface-media-preview) 80%, transparent);
 }
 
 .video-filename {

@@ -43,6 +43,8 @@ watch(
 .settings-window-page {
   width: 100%;
   height: 100%;
-  background: var(--bg-color, #fff);
+  background: var(--hula-surface-app);
+  padding: var(--hula-space-3);
+  box-sizing: border-box;
 }
 </style>

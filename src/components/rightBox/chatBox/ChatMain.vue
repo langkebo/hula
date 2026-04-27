@@ -5,7 +5,7 @@
       v-if="networkBanner"
       align="center"
       justify="center"
-      class="z-999 w-full h-40px rounded-4px text-(12px [--danger-text]) bg-[--danger-bg] flex-shrink-0">
+      class="z-999 w-full h-40px rounded-4px text-(12px [--hula-color-danger-500]) bg-[--hula-color-danger-100] flex-shrink-0">
       <svg class="size-16px">
         <use href="#cloudError"></use>
       </svg>
@@ -25,12 +25,14 @@
               <svg class="size-16px flex-shrink-0">
                 <use href="#Loudspeaker"></use>
               </svg>
-              <div class="flex-1 min-w-0 line-clamp-1 text-(12px [--chat-text-color])">
+              <div class="flex-1 min-w-0 line-clamp-1 text-(12px [--hula-text-tertiary])">
                 {{ topAnnouncement.content }}
               </div>
             </n-flex>
             <div class="flex-shrink-0 w-60px select-none" @click="handleViewAnnouncement">
-              <p class="text-(12px --color-primary) cursor-pointer">{{ t('home.chat_main.announcement.view_all') }}</p>
+              <p class="text-(12px --hula-color-primary-500) cursor-pointer">
+                {{ t('home.chat_main.announcement.view_all') }}
+              </p>
             </div>
           </n-flex>
         </div>
@@ -54,7 +56,7 @@
           <div
             v-show="chatStore.shouldShowNoMoreMessage"
             class="flex-center gap-6px h-32px flex-shrink-0 cursor-default select-none">
-            <p class="text-(12px --color-text-tertiary)">{{ t('home.chat_main.no_more') }}</p>
+            <p class="text-(12px --hula-text-tertiary)">{{ t('home.chat_main.no_more') }}</p>
           </div>
           <DynamicScroller
             class="scroller flex-1"
@@ -73,7 +75,7 @@
                 :data-message-id="item.message.id"
                 :data-message-index="index">
                 <!-- 信息间隔时间 -->
-                <span class="text-(12px --color-text-tertiary) select-none p-4px" v-if="item.timeBlock" @click.stop>
+                <span class="text-(12px --hula-text-tertiary) select-none p-4px" v-if="item.timeBlock" @click.stop>
                   {{ timeToStr(item.message.sendTime) }}
                 </span>
                 <!-- 消息内容容器 -->
@@ -84,7 +86,7 @@
                     item.message.type === MsgEnum.RECALL ? 'min-h-22px' : 'min-h-62px',
                     isGroup ? 'p-[14px_10px_14px_20px]' : 'chat-single p-[4px_10px_10px_20px]',
                     { 'active-reply': activeReply === item.message.id },
-                    { 'bg-[--color-text-tertiary]20': computeMsgHover(item) }
+                    { 'bg-[--hula-text-tertiary]20': computeMsgHover(item) }
                   ]"
                   @click="
                     () => {
@@ -114,7 +116,8 @@
       :style="{ bottom: '24px', right: '50px' }">
       <div class="float-box" :class="{ max: currentNewMsgCount?.count > 99 }" @click="handleFloatButtonClick">
         <n-flex justify="space-between" align="center">
-          <n-icon :color="currentNewMsgCount?.count > 99 ? 'var(--color-danger)' : 'var(--color-primary)'">
+          <n-icon
+            :color="currentNewMsgCount?.count > 99 ? 'var(--hula-color-danger-500)' : 'var(--hula-color-primary-500)'">
             <svg>
               <use href="#double-down"></use>
             </svg>
@@ -122,7 +125,7 @@
           <span
             v-if="currentNewMsgCount?.count && currentNewMsgCount.count > 0"
             class="text-12px"
-            :class="{ 'color-[--color-danger]': currentNewMsgCount?.count > 99 }">
+            :class="{ 'color-[--hula-color-danger-500]': currentNewMsgCount?.count > 99 }">
             {{ t('home.chat_main.new_messages', { count: newMsgCountLabel }) }}
           </span>
         </n-flex>
@@ -135,12 +138,12 @@
 
   <!-- 弹出框 -->
   <n-modal v-model:show="modalShow" class="w-350px border-rd-8px">
-    <div class="bg-[--bg-popover] w-360px h-full p-6px box-border flex flex-col">
+    <div class="bg-[--hula-surface-panel] w-360px h-full p-6px box-border flex flex-col">
       <div
         v-if="isMac()"
         @click="modalShow = false"
-        class="mac-close z-999 size-13px shadow-inner bg-#ed6a5eff rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+        class="mac-close z-999 size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% select-none absolute left-6px">
+        <svg class="hidden size-7px color-[--hula-surface-media-preview] select-none absolute top-3px left-3px">
           <use href="#close"></use>
         </svg>
       </div>
@@ -152,7 +155,7 @@
         <span class="text-14px">{{ tips }}</span>
 
         <n-flex justify="end">
-          <n-button @click="handleConfirm" class="w-78px" color="var(--color-primary)">
+          <n-button @click="handleConfirm" class="w-78px" color="var(--hula-color-primary-500)">
             {{ t('home.chat_main.confirm') }}
           </n-button>
           <n-button @click="modalShow = false" class="w-78px" secondary>{{ t('home.chat_main.cancel') }}</n-button>
@@ -162,12 +165,12 @@
   </n-modal>
 
   <n-modal v-model:show="groupNicknameModalVisible" class="w-360px border-rd-8px" :mask-closable="false">
-    <div class="bg-[--bg-popover] w-360px h-full p-6px box-border flex flex-col">
+    <div class="bg-[--hula-surface-panel] w-360px h-full p-6px box-border flex flex-col">
       <div
         v-if="isMac()"
         @click="groupNicknameModalVisible = false"
-        class="mac-close z-999 size-13px shadow-inner bg-#ed6a5eff rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+        class="mac-close z-999 size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% select-none absolute left-6px">
+        <svg class="hidden size-7px color-[--hula-surface-media-preview] select-none absolute top-3px left-3px">
           <use href="#close"></use>
         </svg>
       </div>
@@ -179,21 +182,24 @@
         <use href="#close"></use>
       </svg>
       <div class="flex flex-col gap-20px p-[22px_10px_10px_22px] select-none">
-        <span class="text-(16px [--text-color]) font-500">{{ t('home.chat_main.group_nickname.title') }}</span>
+        <span class="text-(16px [--hula-text-primary]) font-500">{{ t('home.chat_main.group_nickname.title') }}</span>
         <n-input
           v-model:value="groupNicknameValue"
           :placeholder="t('home.chat_main.group_nickname.placeholder')"
           :maxlength="12"
-          class="border-(1px solid var(--color-text-tertiary)/80)"
+          class="border-(1px solid color-mix(in srgb, var(--hula-text-tertiary) 80%, transparent))"
           :disabled="groupNicknameSubmitting"
           clearable
           @keydown.enter.prevent="handleGroupNicknameConfirm" />
-        <p v-if="groupNicknameError" class="text-(12px [--color-danger])">{{ groupNicknameError }}</p>
+        <p v-if="groupNicknameError" class="text-(12px [--hula-color-danger-500])">{{ groupNicknameError }}</p>
         <n-flex justify="end" :size="12">
           <n-button @click="groupNicknameModalVisible = false" :disabled="groupNicknameSubmitting" secondary>
             {{ t('home.chat_main.cancel') }}
           </n-button>
-          <n-button color="var(--color-primary)" :loading="groupNicknameSubmitting" @click="handleGroupNicknameConfirm">
+          <n-button
+            color="var(--hula-color-primary-500)"
+            :loading="groupNicknameSubmitting"
+            @click="handleGroupNicknameConfirm">
             {{ t('home.chat_main.confirm') }}
           </n-button>
         </n-flex>
@@ -922,7 +928,7 @@ onUnmounted(() => {
   z-index: 10;
   width: fit-content;
   user-select: none;
-  color: var(--color-primary);
+  color: var(--hula-color-primary-500);
   cursor: pointer;
 }
 
@@ -944,7 +950,7 @@ onUnmounted(() => {
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(144, 144, 144, 0.3);
+    background-color: color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent);
     border-radius: 3px;
     transition-property: opacity, background-color;
     transition-duration: 0.3s;
@@ -954,7 +960,7 @@ onUnmounted(() => {
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(144, 144, 144, 0.5);
+    background-color: color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent);
   }
 
   &::-webkit-scrollbar-track {

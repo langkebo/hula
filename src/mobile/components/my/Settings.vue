@@ -33,7 +33,7 @@ const active = ref(false)
 const globalStore = useGlobalStore()
 
 const unreadApplyCount = computed(() => {
-  return globalStore.unReadMark.newFriendUnreadCount + globalStore.unReadMark.newGroupUnreadCount
+  return globalStore.contactUnreadCount
 })
 
 const activate = () => {}

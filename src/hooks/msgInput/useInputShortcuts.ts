@@ -13,8 +13,10 @@ const logger = createLogger('InputShortcuts')
 export interface InputShortcutsOptions {
   messageInputDom: Ref<HTMLElement | null | undefined> | Ref<HTMLElement>
   msgInput: Ref<string>
-  /** 来自 `useSettingStore` 的 `chat` 引用，含 `sendKey` 字段 */
-  chat: Ref<{ sendKey: string }>
+  /** 来自 `useSettingStore` 的发送消息快捷键引用 */
+  sendKey: Ref<string>
+  /** 写回发送消息快捷键的 store action */
+  setSendKey: (value: string) => void
   ait: Ref<boolean>
   aiDialogVisible: Ref<boolean>
   isChinese: Ref<boolean>
@@ -32,7 +34,7 @@ export interface InputShortcutsOptions {
 }
 
 export interface InputShortcutsHook {
-  /** 与 `setting.chat.sendKey` 双向绑定的本地 ref */
+  /** 与发送消息快捷键双向同步的本地 ref */
   chatKey: Ref<string>
   /** 防抖后的 input 事件处理器 */
   handleInput: (e: Event) => Promise<void>
@@ -44,7 +46,7 @@ export interface InputShortcutsHook {
  * 输入框快捷键 / 发送键 / 防抖输入处理 hook。
  *
  * 负责三件事：
- * 1. `chatKey` 与 `setting.chat.sendKey` 的双向同步（store 改了 UI 跟着变，UI 改了写回 store）。
+ * 1. `chatKey` 与发送消息快捷键的双向同步（store 改了 UI 跟着变，UI 改了写回 store）。
  * 2. `handleInput`：防抖处理输入框内容，在空内容场景下重置 trigger 面板状态；否则把文本交给 `handleTrigger` 判断 `@` / `/` / `#`。
  * 3. `inputKeyDown`：按 `sendKey` 配置处理 Enter / Ctrl+Enter / ⌘+Enter 三档发送策略，并屏蔽 `ait` / `aiDialogVisible` / IME 组字状态。
  *
@@ -54,7 +56,8 @@ export function useInputShortcuts(options: InputShortcutsOptions): InputShortcut
   const {
     messageInputDom,
     msgInput,
-    chat,
+    sendKey,
+    setSendKey,
     ait,
     aiDialogVisible,
     isChinese,
@@ -67,18 +70,18 @@ export function useInputShortcuts(options: InputShortcutsOptions): InputShortcut
     triggerInputEvent
   } = options
 
-  const chatKey = ref(chat.value.sendKey)
+  const chatKey = ref(sendKey.value)
 
   // store → local
   watch(
-    () => chat.value.sendKey,
+    () => sendKey.value,
     (v) => {
       if (v !== chatKey.value) chatKey.value = v
     }
   )
   // local → store
   watch(chatKey, (v) => {
-    if (chat.value.sendKey !== v) chat.value.sendKey = v
+    if (sendKey.value !== v) setSendKey(v)
   })
 
   const handleInput = useDebounceFn(async (e: Event) => {
@@ -153,11 +156,11 @@ export function useInputShortcuts(options: InputShortcutsOptions): InputShortcut
     const isWindowsPlatform = isWindows()
     const isEnterKey = e.key === 'Enter'
     const isCtrlOrMetaKey = isWindowsPlatform ? e.ctrlKey : e.metaKey
-    const sendKeyIsEnter = chat.value.sendKey === 'Enter'
-    const sendKeyIsCtrlEnter = chat.value.sendKey === `${isWindowsPlatform ? 'Ctrl' : '⌘'}+Enter`
+    const sendKeyIsEnter = sendKey.value === 'Enter'
+    const sendKeyIsCtrlEnter = sendKey.value === `${isWindowsPlatform ? 'Ctrl' : '⌘'}+Enter`
 
     // mac 下当 sendKey=Enter，用 ⌘+Enter 插入换行
-    if (!isWindowsPlatform && chat.value.sendKey === 'Enter' && e.metaKey && e.key === 'Enter') {
+    if (!isWindowsPlatform && sendKey.value === 'Enter' && e.metaKey && e.key === 'Enter') {
       e.preventDefault()
       const dom = messageInputDom.value
       if (dom) {

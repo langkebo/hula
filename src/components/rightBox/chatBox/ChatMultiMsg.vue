@@ -1,16 +1,16 @@
 <template>
   <main class="multi-msg" @click.stop="openMultiMsgWindow">
-    <p class="text-(14px [--text-color]) select-none pb-12px truncate">{{ chatRecordTitle }}</p>
+    <p class="text-(14px [--hula-text-primary]) select-none pb-12px truncate">{{ chatRecordTitle }}</p>
 
     <div class="max-h-90px overflow-hidden mx-6px select-none">
-      <p v-for="content in processedContentList" class="text-(12px [--chat-text-color]) leading-22px truncate">
+      <p v-for="content in processedContentList" class="text-(12px [--hula-text-tertiary]) leading-22px truncate">
         {{ content }}
       </p>
     </div>
 
-    <p class="w-full h-1px bg-#e3e3e3 dark:bg-#80808050 my-6px select-none"></p>
+    <p class="w-full h-1px bg-[--hula-border-default] my-6px select-none"></p>
 
-    <p class="text-(10px [--chat-text-color]) ml-4px select-none">查看 {{ msgIds.length }} 条转发消息</p>
+    <p class="text-(10px [--hula-text-tertiary]) ml-4px select-none">查看 {{ msgIds.length }} 条转发消息</p>
   </main>
 </template>
 
@@ -116,9 +116,9 @@ const openMultiMsgWindow = async () => {
 <style scoped lang="scss">
 .multi-msg {
   cursor: default;
-  @apply: w-230px flex flex-col h-fit bg-[--group-notice-bg]
-  border-(1px solid #e3e3e3) dark:border-(1px solid #404040)
-  hover:bg-#fefefe99 dark:hover:bg-#60606040 rounded-8px p-8px box-border
+  @apply: w-230px flex flex-col h-fit bg-[--hula-surface-panel-muted]
+  border-(1px solid [--hula-border-default])
+  hover:bg-[--hula-surface-panel] rounded-8px p-8px box-border
   custom-shadow transition-colors duration-200;
 }
 </style>

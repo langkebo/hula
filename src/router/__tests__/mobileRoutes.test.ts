@@ -3,12 +3,10 @@ import { createMemoryHistory, createRouter, type RouteRecordRaw, type Router } f
 import {
   MOBILE_SETTINGS_HELP_ABOUT_PATH,
   MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH,
-  MOBILE_SETTINGS_LEGACY_INTEGRATIONS_PATH,
-  MOBILE_SETTINGS_LEGACY_HELP_PATH,
-  MOBILE_SETTINGS_LEGACY_SECURITY_PATH,
   MOBILE_SETTINGS_ROUTE_NAMES,
   MOBILE_SETTINGS_SECURITY_PRIVACY_PATH
 } from '@/mobile/views/my/settingsRoutes'
+import { getCommonRoutes } from '@/router/routes/common'
 import { getMobileRoutes } from '@/router/routes/mobile'
 
 function flattenRoutes(routes: RouteRecordRaw[]): RouteRecordRaw[] {
@@ -38,51 +36,61 @@ describe('getMobileRoutes', () => {
     expect(integrationsRoute?.name).toBe(MOBILE_SETTINGS_ROUTE_NAMES.labsIntegrations)
   })
 
-  it('keeps the legacy integrations link as a redirect', () => {
-    const routes = flattenRoutes(getMobileRoutes())
-    const legacyRoute = routes.find((route) => route.path === 'integrations')
-
-    expect(legacyRoute).toBeDefined()
-    expect(MOBILE_SETTINGS_LEGACY_INTEGRATIONS_PATH).toBe('/mobile/mobileMy/integrations')
-    expect(legacyRoute?.redirect).toBe(MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH)
-  })
-
-  it('redirects legacy integrations navigation to the labs subpage', async () => {
+  it('keeps the canonical security path stable', async () => {
     router = createRouter({
       history: createMemoryHistory(),
       routes: getMobileRoutes()
     })
 
-    await router.push(MOBILE_SETTINGS_LEGACY_INTEGRATIONS_PATH)
+    await router.push(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
+    await router.isReady()
+    expect(router.currentRoute.value.fullPath).toBe(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
+    expect(router.currentRoute.value.name).toBe(MOBILE_SETTINGS_ROUTE_NAMES.securityPrivacy)
+  }, 10000)
+
+  it('keeps the canonical help path stable', async () => {
+    router = createRouter({
+      history: createMemoryHistory(),
+      routes: getMobileRoutes()
+    })
+
+    await router.push(MOBILE_SETTINGS_HELP_ABOUT_PATH)
+    await router.isReady()
+    expect(router.currentRoute.value.fullPath).toBe(MOBILE_SETTINGS_HELP_ABOUT_PATH)
+    expect(router.currentRoute.value.name).toBe(MOBILE_SETTINGS_ROUTE_NAMES.helpAbout)
+  }, 10000)
+
+  it('keeps the canonical integrations path stable', async () => {
+    router = createRouter({
+      history: createMemoryHistory(),
+      routes: getMobileRoutes()
+    })
+
+    await router.push(MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH)
     await router.isReady()
 
     expect(router.currentRoute.value.fullPath).toBe(MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH)
     expect(router.currentRoute.value.name).toBe(MOBILE_SETTINGS_ROUTE_NAMES.labsIntegrations)
   }, 10000)
 
-  it('redirects the legacy security path to security-privacy', async () => {
+  it('keeps manage group member under mobile chat routes only', async () => {
+    const mobileRoutes = flattenRoutes(getMobileRoutes())
+    const commonRoutes = flattenRoutes(getCommonRoutes())
+    const manageGroupMemberRoute = mobileRoutes.find((route) => route.name === 'manageGroupMember')
+
+    expect(manageGroupMemberRoute).toBeDefined()
+    expect(manageGroupMemberRoute?.path).toBe('manageGroupMember')
+    expect(commonRoutes.some((route) => route.name === 'manageGroupMember')).toBe(false)
+
     router = createRouter({
       history: createMemoryHistory(),
       routes: getMobileRoutes()
     })
 
-    await router.push(MOBILE_SETTINGS_LEGACY_SECURITY_PATH)
+    await router.push({ name: 'manageGroupMember' })
     await router.isReady()
 
-    expect(router.currentRoute.value.fullPath).toBe(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
-    expect(router.currentRoute.value.name).toBe(MOBILE_SETTINGS_ROUTE_NAMES.securityPrivacy)
+    expect(router.currentRoute.value.fullPath).toBe('/mobile/chatRoom/manageGroupMember')
+    expect(router.currentRoute.value.name).toBe('manageGroupMember')
   }, 10000)
-
-  it('redirects the legacy help path to help-about', async () => {
-    router = createRouter({
-      history: createMemoryHistory(),
-      routes: getMobileRoutes()
-    })
-
-    await router.push(MOBILE_SETTINGS_LEGACY_HELP_PATH)
-    await router.isReady()
-
-    expect(router.currentRoute.value.fullPath).toBe(MOBILE_SETTINGS_HELP_ABOUT_PATH)
-    expect(router.currentRoute.value.name).toBe(MOBILE_SETTINGS_ROUTE_NAMES.helpAbout)
-  })
 })

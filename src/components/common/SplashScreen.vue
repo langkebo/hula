@@ -6,10 +6,10 @@
           <img v-if="!minimal" src="/hula.png" class="logo-image" alt="HuLa Logo" />
           <div v-else class="minimal-logo">
             <svg class="w-48px h-48px" viewBox="0 0 100 100" fill="none">
-              <circle cx="50" cy="50" r="45" stroke="#13987f" stroke-width="4" fill="none" />
+              <circle cx="50" cy="50" r="45" stroke="var(--hula-color-primary-500)" stroke-width="4" fill="none" />
               <path
                 d="M30 50 L45 65 L70 35"
-                stroke="#13987f"
+                stroke="var(--hula-color-primary-500)"
                 stroke-width="4"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -22,11 +22,11 @@
           <n-progress
             type="line"
             :show-indicator="false"
-            :color="'var(--color-primary)'"
-            :rail-color="'var(--color-primary)/30'"
+            :color="'var(--hula-color-primary-500)'"
+            :rail-color="'color-mix(in srgb, var(--hula-color-primary-500) 30%, transparent)'"
             :percentage="percentage" />
           <n-flex justify="center" align="center" :gap="12">
-            <n-spin :size="12" :color="'var(--color-primary)'" />
+            <n-spin :size="12" :color="'var(--hula-color-primary-500)'" />
             <span class="loading-text">{{ loadingText }}</span>
           </n-flex>
         </div>
@@ -68,7 +68,7 @@ defineEmits<{
   display: flex;
   justify-content: center;
   align-items: center;
-  background: var(--bg-popover, #ffffff);
+  background: var(--hula-surface-elevated);
 }
 
 .splash-screen.is-minimal {
@@ -111,7 +111,7 @@ defineEmits<{
 
 .loading-text {
   font-size: 14px;
-  color: var(--color-text-secondary);
+  color: var(--hula-text-secondary);
 }
 
 .error-section {

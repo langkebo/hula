@@ -72,21 +72,21 @@ const show = computed(() => {
 }
 
 .burn-indicator--burning {
-  background: rgba(255, 87, 87, 0.1);
-  border-color: rgba(255, 87, 87, 0.3);
-  color: var(--color-danger, #ff4757);
+  background: color-mix(in srgb, var(--hula-color-danger-500) 10%, transparent);
+  border-color: color-mix(in srgb, var(--hula-color-danger-500) 30%, transparent);
+  color: var(--hula-color-danger-500);
 }
 
 .burn-indicator--burned {
   background: rgba(108, 108, 108, 0.1);
   border-color: rgba(108, 108, 108, 0.3);
-  color: var(--color-text-tertiary);
+  color: var(--hula-text-tertiary);
 }
 
 .burn-indicator--waiting {
-  background: var(--color-warning-light);
-  border-color: var(--color-warning)/30;
-  color: var(--color-warning);
+  background: var(--hula-color-warning-100);
+  border-color: color-mix(in srgb, var(--hula-color-warning-500) 30%, transparent);
+  color: var(--hula-color-warning-500);
 }
 
 .burn-indicator__icon {
@@ -145,7 +145,7 @@ const show = computed(() => {
 
 .burn-indicator__progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-danger, #ff4757), #ff6b81);
+  background: linear-gradient(90deg, var(--hula-color-danger-500), var(--hula-color-danger-400));
   transition: width 1s linear;
 }
 </style>

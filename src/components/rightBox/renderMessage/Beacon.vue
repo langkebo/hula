@@ -3,37 +3,37 @@
     <!-- 位置图标和标题 -->
     <n-flex align="center" justify="space-between" class="pb-8px">
       <div class="flex-y-center gap-8px">
-        <svg class="size-14px color-#ff7a00">
+        <svg class="size-14px color-[--hula-color-warning-400]">
           <use href="#local"></use>
         </svg>
-        <p class="text-14px font-medium color-[--text-color]">实时位置共享</p>
+        <p class="text-14px font-medium color-[--hula-text-primary]">实时位置共享</p>
       </div>
 
       <div class="flex-y-center gap-4px">
         <span v-if="isActive" class="status-dot active"></span>
         <span v-else class="status-dot inactive"></span>
-        <p class="text-10px" :class="isActive ? 'color-[--color-primary]' : 'color-[--color-text-quaternary]'">
+        <p class="text-10px" :class="isActive ? 'color-[--hula-color-primary-500]' : 'color-[--hula-text-quaternary]'">
           {{ isActive ? '共享中' : '已结束' }}
         </p>
       </div>
     </n-flex>
 
     <!-- 描述信息 -->
-    <div class="text-(12px [--chat-text-color]) pb-8px leading-5 line-clamp-2">
+    <div class="text-(12px [--hula-text-tertiary]) pb-8px leading-5 line-clamp-2">
       {{ body?.description || '发起了位置共享' }}
     </div>
 
     <!-- 状态面板 -->
-    <div class="relative rounded-6px overflow-hidden bg-gray-100 dark:bg-#202020 h-80px flex-col-center gap-8px">
+    <div class="relative rounded-6px overflow-hidden bg-[--hula-surface-app] h-80px flex-col-center gap-8px">
       <template v-if="isActive">
-        <p class="text-12px color-[--text-color-2]">剩余时间: {{ remainingTimeText }}</p>
+        <p class="text-12px color-[--hula-text-secondary]">剩余时间: {{ remainingTimeText }}</p>
         <n-button size="small" type="primary" secondary @click.stop="handleJoinClick">查看位置</n-button>
       </template>
       <template v-else>
-        <svg class="size-24px color-[--text-color-3]">
+        <svg class="size-24px color-[--hula-text-quaternary]">
           <use href="#time-out"></use>
         </svg>
-        <span class="text-12px color-[--text-color-3]">本次位置共享已结束</span>
+        <span class="text-12px color-[--hula-text-quaternary]">本次位置共享已结束</span>
       </template>
     </div>
   </main>
@@ -179,9 +179,9 @@ onUnmounted(() => {
 .beacon-message {
   cursor: default;
   user-select: none;
-  @apply: w-260px flex flex-col h-fit bg-[--group-notice-bg]
-  border-(1px solid #e3e3e3) dark:border-(1px solid #404040)
-  hover:bg-#fefefe99 dark:hover:bg-#60606040 rounded-8px p-8px box-border
+  @apply: w-260px flex flex-col h-fit bg-[--hula-surface-muted]
+  border-(1px solid [--hula-border-default])
+  hover:bg-[--hula-fill-hover] rounded-8px p-8px box-border
   custom-shadow transition-colors duration-200;
 }
 
@@ -192,13 +192,13 @@ onUnmounted(() => {
   display: inline-block;
 
   &.active {
-    background-color: var(--color-primary);
-    box-shadow: 0 0 4px var(--color-primary);
+    background-color: var(--hula-color-primary-500);
+    box-shadow: 0 0 4px var(--hula-color-primary-500);
     animation: pulse 2s infinite;
   }
 
   &.inactive {
-    background-color: var(--color-text-quaternary);
+    background-color: var(--hula-text-quaternary);
   }
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full w-full bg-[--center-bg-color] select-none cursor-default">
+  <div class="h-full w-full bg-[--hula-surface-app] select-none cursor-default">
     <!-- 窗口头部 -->
     <ActionBar
       class="absolute right-0 w-full z-999"
@@ -9,7 +9,7 @@
 
     <!-- 标题 -->
     <p
-      class="absolute-x-center h-fit pt-6px text-(13px [--text-color]) select-none cursor-default"
+      class="absolute-x-center h-fit pt-6px text-(13px [--hula-text-primary]) select-none cursor-default"
       data-tauri-drag-region>
       {{ t('home.search_window.title') }}
     </p>
@@ -22,8 +22,8 @@
           v-model:value="searchValue"
           type="text"
           size="small"
-          style="border-radius: 8px; border: 1px solid #ccc"
-          :placeholder="searchPlaceholder[searchType]"
+          style="border-radius: 8px; border: 1px solid var(--hula-border-default)"
+          :placeholder="currentSearchPlaceholder"
           :maxlength="20"
           round
           spellCheck="false"
@@ -69,27 +69,24 @@
                     <n-avatar
                       :size="48"
                       :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                      :color="themes.content === ThemeEnum.DARK ? '' : '#fff'"
-                      :fallback-src="themes.content === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                      :color="avatarColor"
+                      :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                       round />
                     <n-flex vertical justify="center" :size="10" class="flex-1">
                       <n-space align="center" :size="10">
-                        <span class="text-(14px [--text-color])">{{ item.name }}</span>
-                        <svg v-if="item.isFavorite" class="size-14px color-#f0a020">
-                          <use href="#star"></use>
-                        </svg>
+                        <span class="text-(14px [--hula-text-primary])">{{ item.name }}</span>
                         <template v-for="account in item.itemIds" :key="account">
                           <img class="size-20px" :src="badgeStore.badgeById(account)?.img" alt="" />
                         </template>
                       </n-space>
                       <n-flex align="center" :size="10">
-                        <span class="text-(12px [--chat-text-color])">
+                        <span class="text-(12px [--hula-text-secondary])">
                           {{ t('home.search_window.labels.account', { account: item.account }) }}
                         </span>
                         <n-tooltip trigger="hover">
                           <template #trigger>
                             <svg
-                              class="size-12px hover:color-[--color-text-tertiary] hover:transition-colors"
+                              class="size-12px hover:color-[--hula-text-tertiary] hover:transition-colors"
                               @click="handleCopy(item.account)">
                               <use href="#copy"></use>
                             </svg>
@@ -152,8 +149,7 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import { useI18n } from 'vue-i18n'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { useFriends, type FriendSearchResult } from '@/composables/useFriends'
-import { ThemeEnum } from '@/enums'
-import { RoomTypeEnum } from '@/enums/index.ts'
+import { RoomTypeEnum, ThemeEnum } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
 import { useBadgeStore } from '@/stores/domains/chat/badge'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -164,14 +160,13 @@ const { createWebviewWindow } = useWindow()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const badgeStore = useBadgeStore()
-const { themes } = storeToRefs(settingStore)
+const avatarColor = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-inverse)'))
 
 // 定义标签页
 const { t } = useI18n()
 const tabs = computed(() => [
   { name: 'recommend', label: t('home.search_window.tabs.recommend') },
-  { name: 'user', label: t('home.search_window.tabs.user') },
-  { name: 'group', label: t('home.search_window.tabs.group') }
+  { name: 'user', label: t('home.search_window.tabs.user') }
 ])
 const {
   searchType,
@@ -189,9 +184,11 @@ const {
 // 搜索类型对应的placeholder映射
 const searchPlaceholder = computed(() => ({
   recommend: t('home.search_window.placeholder.recommend'),
-  user: t('home.search_window.placeholder.user'),
-  group: t('home.search_window.placeholder.group')
+  user: t('home.search_window.placeholder.user')
 }))
+const currentSearchPlaceholder = computed(() =>
+  searchType.value === 'user' ? searchPlaceholder.value.user : searchPlaceholder.value.recommend
+)
 
 // 处理复制账号
 const handleCopy = (account: string) => {
@@ -234,38 +231,16 @@ const handleButtonClick = (item: FriendSearchResult) => {
   if (action === 'edit-profile') {
     handleEditProfile()
   } else if (action === 'message') {
-    if (searchType.value === 'group') {
-      handleSendGroupMessage(item)
-    } else {
-      handleSendMessage(item)
-    }
+    handleSendMessage(item)
   } else {
     handleAddFriend(item)
   }
 }
 
-// 处理添加好友或群聊
+// 处理添加好友
 const handleAddFriend = async (item: FriendSearchResult) => {
-  if (searchType.value === 'user' || searchType.value === 'recommend') {
-    await createWebviewWindow(
-      t('home.search_window.modal.add_friend'),
-      'addFriendVerify',
-      380,
-      300,
-      '',
-      false,
-      380,
-      300
-    )
-    globalStore.addFriendModalInfo.show = true
-    globalStore.addFriendModalInfo.uid = item.uid
-  } else {
-    await createWebviewWindow(t('home.search_window.modal.add_group'), 'addGroupVerify', 380, 400, '', false, 380, 400)
-    globalStore.addGroupModalInfo.show = true
-    globalStore.addGroupModalInfo.account = item.account
-    globalStore.addGroupModalInfo.name = item.name
-    globalStore.addGroupModalInfo.avatar = item.avatar
-  }
+  await createWebviewWindow(t('home.search_window.modal.add_friend'), 'addFriendVerify', 380, 300, '', false, 380, 300)
+  globalStore.openAddFriendModal(item.uid)
 }
 
 // 处理编辑个人资料
@@ -284,14 +259,6 @@ const handleSendMessage = async (item: FriendSearchResult) => {
   emitTo('home', 'search_to_msg', { uid, roomType: RoomTypeEnum.SINGLE })
 }
 
-// 处理发送群消息
-const handleSendGroupMessage = async (item: FriendSearchResult) => {
-  emitTo('home', 'search_to_msg', {
-    uid: item.roomId,
-    roomType: RoomTypeEnum.GROUP
-  })
-}
-
 onMounted(async () => {
   await getCurrentWebviewWindow().show()
   await initialize()
@@ -307,7 +274,7 @@ onMounted(async () => {
 .action-button:hover {
   opacity: 1;
   transform: scale(1.06);
-  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.25);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--hula-color-primary-500) 25%, transparent);
 }
 
 .action-button:active {

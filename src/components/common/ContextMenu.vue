@@ -64,7 +64,9 @@
             <!-- 判断是否有特别的菜单项才需要分割线 -->
             <div v-if="visibleSpecialMenu.length > 0" class="flex-col-y-center gap-6px">
               <!-- 分割线（只有当常规菜单存在时才显示） -->
-              <div v-if="visibleMenu && visibleMenu.length > 0" class="h-1px bg-[--line-color] m-[2px_8px]"></div>
+              <div
+                v-if="visibleMenu && visibleMenu.length > 0"
+                class="h-1px bg-[--hula-border-default] m-[2px_8px]"></div>
               <div
                 @click="handleClick(item)"
                 class="menu-item"
@@ -576,17 +578,17 @@ const shouldShowArrow = (item: ContextMenuItem) => {
   @include menu-item-style();
   .emoji-container {
     -webkit-backdrop-filter: blur(10px);
-    background: var(--bg-menu);
+    background: var(--hula-menu-bg);
     /* 允许放置表情符号，每个28px宽，加上间隔 */
     @apply flex flex-wrap max-w-180px px-6px select-none;
   }
 
   .emoji-item {
-    @apply flex-center size-28px rounded-4px text-16px cursor-pointer hover:bg-[--emoji-hover];
+    @apply flex-center size-28px rounded-4px text-16px cursor-pointer hover:bg-[--hula-menu-hover];
   }
 
   .emoji-more-btn {
-    @apply flex-center size-28px px-4px rounded-4px text-12px cursor-pointer bg-[--bg-menu-hover] hover:bg-[--emoji-hover];
+    @apply flex-center size-28px px-4px rounded-4px text-12px cursor-pointer bg-[--hula-menu-hover] hover:bg-[--hula-menu-hover];
   }
   .menu-list {
     @include menu-list();
@@ -599,9 +601,9 @@ const shouldShowArrow = (item: ContextMenuItem) => {
       }
     }
     .menu-item-danger {
-      color: var(--color-danger, #d03553);
+      color: var(--hula-color-danger-500);
       svg {
-        color: var(--color-danger, #d03553);
+        color: var(--hula-color-danger-500);
       }
     }
   }
@@ -619,9 +621,9 @@ const shouldShowArrow = (item: ContextMenuItem) => {
       }
     }
     .menu-item-danger {
-      color: var(--color-danger, #d03553);
+      color: var(--hula-color-danger-500);
       svg {
-        color: var(--color-danger, #d03553);
+        color: var(--hula-color-danger-500);
       }
     }
   }
@@ -636,9 +638,9 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     @include menu-list();
     min-width: 120px;
     .menu-item-danger {
-      color: var(--color-danger, #d03553);
+      color: var(--hula-color-danger-500);
       svg {
-        color: var(--color-danger, #d03553);
+        color: var(--hula-color-danger-500);
       }
     }
   }

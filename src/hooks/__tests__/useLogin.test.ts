@@ -14,9 +14,7 @@ const mockGlobalStore = reactive({
 })
 
 const mockSettingStore = reactive({
-  login: {
-    autoLogin: true
-  },
+  autoLoginEnabled: true,
   setAutoLogin: vi.fn(),
   closeAutoLogin: vi.fn()
 })
@@ -143,7 +141,7 @@ const { useLoginFlow } = await import('../useLoginFlow')
 describe('useLoginFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockSettingStore.login.autoLogin = true
+    mockSettingStore.autoLoginEnabled = true
     mockUserStore.userInfo = {
       uid: '@alice:example.com',
       account: 'alice',

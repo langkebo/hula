@@ -36,11 +36,6 @@ const mockRoomStore = {
   loadRooms: vi.fn()
 }
 
-const mockConfigStore = {
-  config: null as any,
-  initConfig: vi.fn()
-}
-
 const mockLoginHistoriesStore = {
   addLoginHistory: vi.fn()
 }
@@ -109,10 +104,6 @@ vi.mock('@/stores/domains/chat/group', () => ({
 
 vi.mock('@/stores/domains/chat/room', () => ({
   useRoomStore: () => mockRoomStore
-}))
-
-vi.mock('@/stores/domains/settings/config', () => ({
-  useConfigStore: () => mockConfigStore
 }))
 
 vi.mock('@/stores/domains/user/loginHistory', () => ({
@@ -184,8 +175,6 @@ describe('MatrixRuntimeSessionService', () => {
     mockRoomStore.rooms = new Map([['old-room', {}]])
     mockRoomStore.resetState.mockReset()
     mockRoomStore.loadRooms.mockResolvedValue(undefined)
-    mockConfigStore.config = null
-    mockConfigStore.initConfig.mockResolvedValue(undefined)
     mockLoginHistoriesStore.addLoginHistory.mockReset()
     mockEmojiStore.initEmojis.mockResolvedValue(undefined)
     mockEmojiStore.prefetchEmojiToLocal.mockResolvedValue(undefined)

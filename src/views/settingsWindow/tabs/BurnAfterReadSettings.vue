@@ -1,19 +1,19 @@
 <template>
   <div class="burn-after-read-settings">
     <div class="settings-section">
-      <h3 class="section-title">全局设置</h3>
+      <h3 class="section-title">{{ t('setting.burn_after_read.global.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">全局默认开启阅后即焚</span>
-          <span class="setting-desc">新私聊默认开启阅后即焚功能</span>
+          <span class="setting-label">{{ t('setting.burn_after_read.global.enabled_label') }}</span>
+          <span class="setting-desc">{{ t('setting.burn_after_read.global.enabled_desc') }}</span>
         </div>
         <n-switch v-model:value="globalBurnEnabled" @update:value="handleGlobalBurnToggle" />
       </div>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">默认焚毁时间</span>
-          <span class="setting-desc">消息阅后的默认焚毁倒计时</span>
+          <span class="setting-label">{{ t('setting.burn_after_read.global.duration_label') }}</span>
+          <span class="setting-desc">{{ t('setting.burn_after_read.global.duration_desc') }}</span>
         </div>
         <n-select
           v-model:value="globalBurnDuration"
@@ -24,32 +24,32 @@
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">已读消息自动开始倒计时</span>
-          <span class="setting-desc">消息被标记为已读后自动启动焚毁倒计时</span>
+          <span class="setting-label">{{ t('setting.burn_after_read.global.auto_read_label') }}</span>
+          <span class="setting-desc">{{ t('setting.burn_after_read.global.auto_read_desc') }}</span>
         </div>
         <n-switch v-model:value="autoBurnRead" @update:value="handleToggle('autoBurnRead')" />
       </div>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">消息即将焚毁时通知</span>
-          <span class="setting-desc">消息焚毁前发送通知提醒</span>
+          <span class="setting-label">{{ t('setting.burn_after_read.global.notification_label') }}</span>
+          <span class="setting-desc">{{ t('setting.burn_after_read.global.notification_desc') }}</span>
         </div>
         <n-switch v-model:value="burnNotification" @update:value="handleToggle('burnNotification')" />
       </div>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">显示焚毁倒计时</span>
-          <span class="setting-desc">在消息上显示焚毁倒计时进度</span>
+          <span class="setting-label">{{ t('setting.burn_after_read.global.countdown_label') }}</span>
+          <span class="setting-desc">{{ t('setting.burn_after_read.global.countdown_desc') }}</span>
         </div>
         <n-switch v-model:value="showBurnCountdown" @update:value="handleToggle('showBurnCountdown')" />
       </div>
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">消息焚毁时播放音效</span>
-          <span class="setting-desc">消息焚毁完成时播放提示音</span>
+          <span class="setting-label">{{ t('setting.burn_after_read.global.sound_label') }}</span>
+          <span class="setting-desc">{{ t('setting.burn_after_read.global.sound_desc') }}</span>
         </div>
         <n-switch v-model:value="burnSound" @update:value="handleToggle('burnSound')" />
       </div>
@@ -58,27 +58,39 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">房间级别设置</h3>
+      <h3 class="section-title">{{ t('setting.burn_after_read.rooms.title') }}</h3>
       <n-spin :show="loadingRooms">
         <div v-if="burnRooms.length === 0" class="empty-list">
-          <span class="empty-text">暂无开启阅后即焚的私聊</span>
+          <span class="empty-text">{{ t('setting.burn_after_read.rooms.empty') }}</span>
         </div>
         <div v-else class="room-list">
           <div v-for="room in burnRooms" :key="room.roomId" class="room-item">
             <div class="room-info">
               <span class="room-name">{{ room.name || room.roomId }}</span>
               <div class="room-burn-status">
-                <n-tag v-if="room.burnEnabled" type="success" size="small">已开启</n-tag>
-                <n-tag v-else type="default" size="small">已关闭</n-tag>
+                <n-tag v-if="room.burnEnabled" type="success" size="small">
+                  {{ t('setting.burn_after_read.rooms.enabled') }}
+                </n-tag>
+                <n-tag v-else type="default" size="small">{{ t('setting.burn_after_read.rooms.disabled') }}</n-tag>
                 <span v-if="room.burnEnabled" class="room-duration">
-                  焚毁时间: {{ formatDuration(room.burnDuration || globalBurnDuration) }}
+                  {{
+                    t('setting.burn_after_read.rooms.duration_value', {
+                      duration: formatDuration(room.burnDuration || globalBurnDuration)
+                    })
+                  }}
                 </span>
               </div>
             </div>
             <div class="room-actions">
-              <n-button v-if="room.burnEnabled" size="small" @click="handleEditRoomBurn(room)">修改</n-button>
-              <n-button v-if="room.burnEnabled" size="small" type="warning" @click="handleDisableRoomBurn(room)">关闭</n-button>
-              <n-button v-if="!room.burnEnabled" size="small" type="primary" @click="handleEnableRoomBurn(room)">开启</n-button>
+              <n-button v-if="room.burnEnabled" size="small" @click="handleEditRoomBurn(room)">
+                {{ t('setting.burn_after_read.rooms.edit') }}
+              </n-button>
+              <n-button v-if="room.burnEnabled" size="small" type="warning" @click="handleDisableRoomBurn(room)">
+                {{ t('setting.burn_after_read.rooms.disable') }}
+              </n-button>
+              <n-button v-if="!room.burnEnabled" size="small" type="primary" @click="handleEnableRoomBurn(room)">
+                {{ t('setting.burn_after_read.rooms.enable') }}
+              </n-button>
             </div>
           </div>
         </div>
@@ -88,20 +100,20 @@
     <n-divider />
 
     <div class="settings-section">
-      <h3 class="section-title">焚毁统计</h3>
+      <h3 class="section-title">{{ t('setting.burn_after_read.stats.title') }}</h3>
       <n-spin :show="loadingStats">
         <div class="stats-grid">
           <div class="stat-card">
             <span class="stat-value">{{ burnStats.totalBurned }}</span>
-            <span class="stat-label">总焚毁消息</span>
+            <span class="stat-label">{{ t('setting.burn_after_read.stats.total_burned') }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ burnStats.totalPending }}</span>
-            <span class="stat-label">待焚毁消息</span>
+            <span class="stat-label">{{ t('setting.burn_after_read.stats.total_pending') }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ burnStats.roomsWithBurnEnabled }}</span>
-            <span class="stat-label">开启房间数</span>
+            <span class="stat-label">{{ t('setting.burn_after_read.stats.rooms_enabled') }}</span>
           </div>
         </div>
       </n-spin>
@@ -111,13 +123,19 @@
 
     <div class="settings-section">
       <n-alert type="warning" :show-icon="true">
-        阅后即焚不能保证对方未截图或保存消息。服务器会在消息到期后删除，但无法控制客户端行为。
+        {{ t('setting.burn_after_read.warning') }}
       </n-alert>
     </div>
 
-    <n-modal v-model:show="showEditRoom" preset="dialog" title="修改房间焚毁时间" positive-text="保存" negative-text="取消" @positive-click="handleSaveRoomBurn">
+    <n-modal
+      v-model:show="showEditRoom"
+      preset="dialog"
+      :title="t('setting.burn_after_read.rooms.edit_title')"
+      :positive-text="t('setting.common.save')"
+      :negative-text="t('setting.common.cancel')"
+      @positive-click="handleSaveRoomBurn">
       <n-form>
-        <n-form-item label="焚毁时间">
+        <n-form-item :label="t('setting.burn_after_read.rooms.duration_label')">
           <n-select v-model:value="editRoomDuration" :options="burnDurationOptions" style="width: 100%" />
         </n-form-item>
       </n-form>
@@ -126,7 +144,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   NSwitch,
   NDivider,
@@ -152,6 +171,7 @@ defineOptions({
 
 const message = useMessage()
 const dialog = useDialog()
+const { t } = useI18n()
 
 const globalBurnEnabled = ref(false)
 const globalBurnDuration = ref(60)
@@ -182,13 +202,13 @@ const showEditRoom = ref(false)
 const editRoomId = ref('')
 const editRoomDuration = ref(60)
 
-const burnDurationOptions = [
-  { label: '30秒', value: 30 },
-  { label: '1分钟', value: 60 },
-  { label: '5分钟', value: 300 },
-  { label: '1小时', value: 3600 },
-  { label: '24小时', value: 86400 }
-]
+const burnDurationOptions = computed(() => [
+  { label: t('setting.burn_after_read.durations.30_seconds'), value: 30 },
+  { label: t('setting.burn_after_read.durations.1_minute'), value: 60 },
+  { label: t('setting.burn_after_read.durations.5_minutes'), value: 300 },
+  { label: t('setting.burn_after_read.durations.1_hour'), value: 3600 },
+  { label: t('setting.burn_after_read.durations.24_hours'), value: 86400 }
+])
 
 const STORAGE_KEY = 'hula-burn-after-read-settings'
 
@@ -236,8 +256,8 @@ async function loadBurnStats() {
     const stats = await matrixBurnAfterReadService.getBurnStats()
     if (stats) {
       burnStats.totalBurned = stats.totalBurned || 0
-      burnStats.totalPending = stats.totalPending || 0
-      burnStats.roomsWithBurnEnabled = stats.roomsWithBurnEnabled || 0
+      burnStats.totalPending = stats.totalPending ?? 0
+      burnStats.roomsWithBurnEnabled = stats.roomsWithBurnEnabled ?? 0
     }
   } catch {
     logger.error('Failed to load burn stats')
@@ -247,23 +267,23 @@ async function loadBurnStats() {
 }
 
 function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}秒`
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}小时`
-  return `${Math.floor(seconds / 86400)}天`
+  if (seconds < 60) return t('setting.burn_after_read.formats.seconds', { count: String(seconds) })
+  if (seconds < 3600) return t('setting.burn_after_read.formats.minutes', { count: String(Math.floor(seconds / 60)) })
+  if (seconds < 86400) return t('setting.burn_after_read.formats.hours', { count: String(Math.floor(seconds / 3600)) })
+  return t('setting.burn_after_read.formats.days', { count: String(Math.floor(seconds / 86400)) })
 }
 
 async function handleGlobalBurnToggle(value: boolean) {
   if (value) {
     dialog.warning({
-      title: '开启阅后即焚',
-      content: '全局开启后，新私聊将默认启用阅后即焚。阅后即焚不能保证对方未截图或保存消息。',
-      positiveText: '确定开启',
-      negativeText: '取消',
+      title: t('setting.burn_after_read.dialogs.enable_title'),
+      content: t('setting.burn_after_read.dialogs.enable_content'),
+      positiveText: t('setting.burn_after_read.dialogs.enable_confirm'),
+      negativeText: t('setting.common.cancel'),
       onPositiveClick: () => {
         globalBurnEnabled.value = true
         saveSettings()
-        message.success('已全局开启阅后即焚')
+        message.success(t('setting.burn_after_read.feedback.global_enabled'))
       },
       onNegativeClick: () => {
         globalBurnEnabled.value = false
@@ -272,19 +292,19 @@ async function handleGlobalBurnToggle(value: boolean) {
   } else {
     globalBurnEnabled.value = false
     saveSettings()
-    message.info('已全局关闭阅后即焚')
+    message.info(t('setting.burn_after_read.feedback.global_disabled'))
   }
 }
 
 function handleBurnDurationChange(value: number) {
   globalBurnDuration.value = value
   saveSettings()
-  message.success(`默认焚毁时间已设置为${formatDuration(value)}`)
+  message.success(t('setting.burn_after_read.feedback.duration_changed', { duration: formatDuration(value) }))
 }
 
 function handleToggle(_key: string) {
   saveSettings()
-  message.success('设置已更新')
+  message.success(t('setting.burn_after_read.feedback.settings_updated'))
 }
 
 function handleEditRoomBurn(room: BurnRoom) {
@@ -302,10 +322,10 @@ async function handleSaveRoomBurn() {
     }
     saveSettings()
     showEditRoom.value = false
-    message.success('房间焚毁时间已更新')
+    message.success(t('setting.burn_after_read.feedback.room_duration_updated'))
     await loadBurnStats()
   } catch {
-    message.error('更新房间焚毁时间失败')
+    message.error(t('setting.burn_after_read.feedback.room_duration_failed'))
   }
 }
 
@@ -315,10 +335,10 @@ async function handleEnableRoomBurn(room: BurnRoom) {
     room.burnEnabled = true
     room.burnDuration = globalBurnDuration.value
     saveSettings()
-    message.success('已开启房间阅后即焚')
+    message.success(t('setting.burn_after_read.feedback.room_enabled'))
     await loadBurnStats()
   } catch {
-    message.error('开启房间阅后即焚失败')
+    message.error(t('setting.burn_after_read.feedback.room_enable_failed'))
   }
 }
 
@@ -327,39 +347,36 @@ async function handleDisableRoomBurn(room: BurnRoom) {
     await matrixBurnAfterReadService.disableBurn(room.roomId)
     room.burnEnabled = false
     saveSettings()
-    message.success('已关闭房间阅后即焚')
+    message.success(t('setting.burn_after_read.feedback.room_disabled'))
     await loadBurnStats()
   } catch {
-    message.error('关闭房间阅后即焚失败')
+    message.error(t('setting.burn_after_read.feedback.room_disable_failed'))
   }
 }
 </script>
 
 <style scoped>
 .burn-after-read-settings {
-  padding: 0 8px;
+  padding: 0 var(--hula-space-2);
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 12px;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
+  margin-bottom: var(--hula-space-3);
+  color: var(--hula-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-:deep(.dark) .setting-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-3) 0;
+  border-bottom: 1px solid var(--hula-settings-divider);
 }
 
 .setting-info {
@@ -368,32 +385,29 @@ async function handleDisableRoomBurn(room: BurnRoom) {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .room-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .room-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 6px;
-}
-
-:deep(.dark) .room-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  padding: 10px var(--hula-space-3);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .room-info {
@@ -404,76 +418,65 @@ async function handleDisableRoomBurn(room: BurnRoom) {
 }
 
 .room-name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--hula-font-size-base);
+  font-weight: var(--hula-font-weight-medium);
+  color: var(--hula-text-primary);
   word-break: break-all;
 }
 
 .room-burn-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  gap: var(--hula-space-2);
+  margin-top: var(--hula-space-1);
 }
 
 .room-duration {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-
-:deep(.dark) .room-duration {
-  color: #aaa;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-secondary);
 }
 
 .room-actions {
   display: flex;
-  gap: 4px;
+  gap: var(--hula-space-1);
   flex-shrink: 0;
-  margin-left: 12px;
+  margin-left: var(--hula-space-3);
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: var(--hula-space-3);
 }
 
 .stat-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-:deep(.dark) .stat-card {
-  background-color: rgba(255, 255, 255, 0.05);
+  padding: var(--hula-space-4);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 600;
-  color: var(--text-color, #1a1a1a);
-}
-
-:deep(.dark) .stat-value {
-  color: #fff;
+  color: var(--hula-text-primary);
 }
 
 .stat-label {
-  font-size: 12px;
-  color: var(--color-text-quaternary);
-  margin-top: 4px;
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  margin-top: var(--hula-space-1);
 }
 
 .empty-list {
-  padding: 16px;
+  padding: var(--hula-space-4);
   text-align: center;
 }
 
 .empty-text {
-  font-size: 13px;
-  color: var(--color-text-quaternary);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
 }
 </style>

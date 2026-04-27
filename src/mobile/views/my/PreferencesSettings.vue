@@ -29,10 +29,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch
-                  v-model="messageConfirm"
-                  size="22px"
-                  @change="handleToggle('hula-message-confirm', messageConfirm)" />
+                <van-switch v-model="messageConfirm" size="22px" @change="handleMessageConfirmChange" />
               </template>
             </van-cell>
 
@@ -43,10 +40,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch
-                  v-model="linkPreview"
-                  size="22px"
-                  @change="handleToggle('hula-link-preview', linkPreview)" />
+                <van-switch v-model="linkPreview" size="22px" @change="handleLinkPreviewChange" />
               </template>
             </van-cell>
 
@@ -57,10 +51,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch
-                  v-model="emojiConvert"
-                  size="22px"
-                  @change="handleToggle('hula-emoji-convert', emojiConvert)" />
+                <van-switch v-model="emojiConvert" size="22px" @change="handleEmojiConvertChange" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -75,10 +66,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch
-                  v-model="burnDefaultEnabled"
-                  size="22px"
-                  @change="handleToggle('hula-burn-default-enabled', burnDefaultEnabled)" />
+                <van-switch v-model="burnDefaultEnabled" size="22px" @change="handleBurnDefaultEnabledChange" />
               </template>
             </van-cell>
 
@@ -91,10 +79,7 @@
 
             <van-cell :title="t('mobile_preferences.burn_countdown')">
               <template #right-icon>
-                <van-switch
-                  v-model="burnShowCountdown"
-                  size="22px"
-                  @change="handleToggle('hula-burn-show-countdown', burnShowCountdown)" />
+                <van-switch v-model="burnShowCountdown" size="22px" @change="handleBurnShowCountdownChange" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -109,19 +94,13 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch
-                  v-model="threadAutoSubscribe"
-                  size="22px"
-                  @change="handleToggle('hula-thread-auto-subscribe', threadAutoSubscribe)" />
+                <van-switch v-model="threadAutoSubscribe" size="22px" @change="handleThreadAutoSubscribeChange" />
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_preferences.thread_show_in_room')">
               <template #right-icon>
-                <van-switch
-                  v-model="threadShowInRoom"
-                  size="22px"
-                  @change="handleToggle('hula-thread-show-in-room', threadShowInRoom)" />
+                <van-switch v-model="threadShowInRoom" size="22px" @change="handleThreadShowInRoomChange" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -136,19 +115,13 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch
-                  v-model="sendReadReceipts"
-                  size="22px"
-                  @change="handleToggle('hula-send-read-receipts', sendReadReceipts)" />
+                <van-switch v-model="sendReadReceipts" size="22px" @change="handleReadReceiptsChange" />
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_preferences.send_typing')">
               <template #right-icon>
-                <van-switch
-                  v-model="sendTypingNotifications"
-                  size="22px"
-                  @change="handleToggle('hula-send-typing-notifications', sendTypingNotifications)" />
+                <van-switch v-model="sendTypingNotifications" size="22px" @change="handleTypingNotificationsChange" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -173,26 +146,27 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import { showToast } from 'vant'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
 
-const messageConfirm = ref(false)
-const linkPreview = ref(true)
-const emojiConvert = ref(true)
+settingStore.migrateLegacyPreferenceSettings()
+
+const messageConfirm = ref(settingStore.messageConfirmEnabled)
+const linkPreview = ref(settingStore.linkPreviewEnabled)
+const emojiConvert = ref(settingStore.emojiConvertEnabled)
 const sendKey = ref('Enter')
 
-const burnDefaultEnabled = ref(false)
-const burnDefaultDuration = ref(60)
-const burnShowCountdown = ref(true)
+const burnDefaultEnabled = ref(settingStore.burnDefaultEnabled)
+const burnDefaultDuration = ref(settingStore.burnDefaultDuration)
+const burnShowCountdown = ref(settingStore.burnShowCountdownEnabled)
 
-const threadAutoSubscribe = ref(true)
-const threadShowInRoom = ref(true)
+const threadAutoSubscribe = ref(settingStore.threadAutoSubscribeEnabled)
+const threadShowInRoom = ref(settingStore.threadShowInRoomEnabled)
 
-const sendReadReceipts = ref(true)
-const sendTypingNotifications = ref(true)
+const sendReadReceipts = ref(settingStore.sendReadReceiptsEnabled)
+const sendTypingNotifications = ref(settingStore.sendTypingNotificationsEnabled)
 
 const showSendKeyPicker = ref(false)
 const showBurnDurationPicker = ref(false)
@@ -224,19 +198,6 @@ const burnDurationLabel = computed(() => {
 })
 
 onMounted(() => {
-  loadSetting('hula-message-confirm', messageConfirm)
-  loadSetting('hula-link-preview', linkPreview)
-  loadSetting('hula-emoji-convert', emojiConvert)
-  loadSetting('hula-burn-default-enabled', burnDefaultEnabled)
-  loadSetting('hula-burn-show-countdown', burnShowCountdown)
-  loadSetting('hula-thread-auto-subscribe', threadAutoSubscribe)
-  loadSetting('hula-thread-show-in-room', threadShowInRoom)
-  loadSetting('hula-send-read-receipts', sendReadReceipts)
-  loadSetting('hula-send-typing-notifications', sendTypingNotifications)
-
-  const savedDuration = localStorage.getItem('hula-burn-default-duration')
-  if (savedDuration) burnDefaultDuration.value = parseInt(savedDuration, 10)
-
   const savedSendKey = localStorage.getItem('hula-send-key')
   if (savedSendKey) sendKey.value = savedSendKey
 })
@@ -250,6 +211,42 @@ function handleToggle(key: string, val: boolean) {
   localStorage.setItem(key, val.toString())
 }
 
+function handleMessageConfirmChange(value: boolean) {
+  settingStore.setMessageConfirmEnabled(value)
+}
+
+function handleLinkPreviewChange(value: boolean) {
+  settingStore.setLinkPreviewEnabled(value)
+}
+
+function handleEmojiConvertChange(value: boolean) {
+  settingStore.setEmojiConvertEnabled(value)
+}
+
+function handleBurnDefaultEnabledChange(value: boolean) {
+  settingStore.setBurnDefaultEnabled(value)
+}
+
+function handleBurnShowCountdownChange(value: boolean) {
+  settingStore.setBurnShowCountdownEnabled(value)
+}
+
+function handleThreadAutoSubscribeChange(value: boolean) {
+  settingStore.setThreadAutoSubscribeEnabled(value)
+}
+
+function handleThreadShowInRoomChange(value: boolean) {
+  settingStore.setThreadShowInRoomEnabled(value)
+}
+
+function handleReadReceiptsChange(value: boolean) {
+  settingStore.setSendReadReceiptsEnabled(value)
+}
+
+function handleTypingNotificationsChange(value: boolean) {
+  settingStore.setSendTypingNotificationsEnabled(value)
+}
+
 function handleSendKeyConfirm({ selectedValues }: { selectedValues: string[] }) {
   const val = selectedValues[0]
   if (val) {
@@ -261,10 +258,10 @@ function handleSendKeyConfirm({ selectedValues }: { selectedValues: string[] }) 
 }
 
 function handleBurnDurationConfirm({ selectedValues }: { selectedValues: number[] }) {
-  const val = selectedValues[0]
+  const val = selectedValues[0] as 30 | 60 | 300 | 3600 | 86400
   if (val) {
     burnDefaultDuration.value = val
-    localStorage.setItem('hula-burn-default-duration', val.toString())
+    settingStore.setBurnDefaultDuration(val)
   }
   showBurnDurationPicker.value = false
 }

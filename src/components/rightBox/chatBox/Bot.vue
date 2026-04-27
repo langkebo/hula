@@ -40,7 +40,7 @@
               @click="openLocalModel">
               导入模型
             </n-button>
-            <n-badge class="mr-14px" value="Beta" :color="'var(--bate-color)'">
+            <n-badge class="mr-14px" value="Beta" :color="'var(--hula-color-beta-500)'">
               <div :class="['assistant-btn', { active: isAssistantView }]" @click="showAssistant()">3D预览</div>
             </n-badge>
             <n-dropdown
@@ -162,7 +162,7 @@ onUnmounted(cleanup)
   width: 100%;
   max-width: 100%;
   overflow: hidden;
-  background: var(--bg-color);
+  background: var(--hula-surface-panel);
 }
 
 .language-switcher {
@@ -170,8 +170,8 @@ onUnmounted(cleanup)
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--line-color);
-  background: var(--bg-color);
+  border-bottom: 1px solid var(--hula-border-default);
+  background: var(--hula-surface-panel);
   max-width: 100%;
   overflow: hidden;
   box-sizing: border-box;
@@ -191,8 +191,8 @@ onUnmounted(cleanup)
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-    color: var(--text-color);
-    background: var(--bg-msg-hover);
+    color: var(--hula-text-primary);
+    background: var(--hula-surface-panel-muted);
     transition: all 0.2s ease;
     user-select: none;
     -webkit-user-select: none;
@@ -203,14 +203,15 @@ onUnmounted(cleanup)
     }
 
     &:hover {
-      @apply bg-[--color-primary]/40 text-[--color-primary];
+      background: color-mix(in srgb, var(--hula-color-primary-500) 40%, transparent);
+      color: var(--hula-color-primary-500);
     }
   }
 
   .page-title {
     flex: 1;
     font-size: 13px;
-    color: var(--chat-text-color);
+    color: var(--hula-text-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -218,7 +219,7 @@ onUnmounted(cleanup)
     padding: 0 12px;
     &:hover {
       text-decoration-line: underline;
-      color: var(--color-primary);
+      color: var(--hula-color-primary-500);
     }
   }
 
@@ -230,8 +231,8 @@ onUnmounted(cleanup)
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-    color: var(--text-color);
-    background: var(--bg-msg-hover);
+    color: var(--hula-text-primary);
+    background: var(--hula-surface-panel-muted);
     transition: all 0.2s ease;
     user-select: none;
     -webkit-user-select: none;
@@ -243,7 +244,8 @@ onUnmounted(cleanup)
     }
 
     &:hover {
-      @apply bg-[--color-primary]/40 text-[--color-primary];
+      background: color-mix(in srgb, var(--hula-color-primary-500) 40%, transparent);
+      color: var(--hula-color-primary-500);
     }
   }
 
@@ -252,20 +254,28 @@ onUnmounted(cleanup)
     border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
-    color: var(--text-color);
-    background: linear-gradient(135deg, var(--color-primary) / 32, var(--color-primary-light));
+    color: var(--hula-text-primary);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--hula-color-primary-500) 32%, transparent),
+      var(--hula-color-primary-400)
+    );
     transition: all 0.2s ease-in-out;
     user-select: none;
     -webkit-user-select: none;
 
     &:hover {
-      color: var(--color-primary);
+      color: var(--hula-color-primary-500);
     }
 
     &.active {
-      color: #ffffff;
-      background: linear-gradient(135deg, #13987f, #1fb39b80);
-      border-color: var(--color-primary) / 40;
+      color: var(--hula-text-inverse);
+      background: linear-gradient(
+        135deg,
+        var(--hula-color-primary-600),
+        color-mix(in srgb, var(--hula-color-primary-500) 50%, transparent)
+      );
+      border-color: color-mix(in srgb, var(--hula-color-primary-500) 40%, transparent);
     }
   }
 
@@ -278,20 +288,20 @@ onUnmounted(cleanup)
     border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
-    color: var(--text-color);
-    background: var(--bg-msg-hover);
+    color: var(--hula-text-primary);
+    background: var(--hula-surface-panel-muted);
     transition: all 0.2s ease-in-out;
     user-select: none;
     -webkit-user-select: none;
 
     &:hover {
-      color: var(--color-primary);
+      color: var(--hula-color-primary-500);
     }
 
     &.active {
-      color: var(--color-primary);
-      background: var(--color-primary) / 18;
-      box-shadow: inset 0 0 0 1px var(--color-primary) / 25;
+      color: var(--hula-color-primary-500);
+      background: color-mix(in srgb, var(--hula-color-primary-500) 18%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hula-color-primary-500) 25%, transparent);
     }
   }
 
@@ -308,19 +318,21 @@ onUnmounted(cleanup)
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-    color: var(--text-color);
-    background: var(--bg-msg-hover);
+    color: var(--hula-text-primary);
+    background: var(--hula-surface-panel-muted);
     transition: all 0.2s ease;
     user-select: none;
     -webkit-user-select: none;
 
     &:hover {
-      @apply dark:bg-[--color-primary]/40 bg-[#e8f4f1] text-[--color-primary];
+      background: color-mix(in srgb, var(--hula-color-primary-100) 85%, var(--hula-surface-panel));
+      color: var(--hula-color-primary-500);
     }
 
     &.active {
-      @apply dark:bg-[--color-primary]/40 bg-[#e8f4f1] text-[--color-primary];
-      box-shadow: inset 0 0 0 1px var(--color-primary) / 60;
+      background: color-mix(in srgb, var(--hula-color-primary-100) 85%, var(--hula-surface-panel));
+      color: var(--hula-color-primary-500);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hula-color-primary-500) 60%, transparent);
     }
   }
 
@@ -353,7 +365,7 @@ onUnmounted(cleanup)
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--text-color-secondary, #909090);
+  color: var(--hula-text-tertiary);
   font-size: 14px;
   padding: 16px;
   text-align: center;
@@ -369,7 +381,7 @@ onUnmounted(cleanup)
   overflow-x: hidden;
   padding: 20px;
   background-color: transparent;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   box-sizing: border-box;
   font-size: 14px;
   line-height: 1.7;
@@ -380,20 +392,20 @@ onUnmounted(cleanup)
   > * {
     max-width: 100%;
   }
-  --fgColor-default: var(--text-color);
-  --fgColor-muted: var(--chat-text-color, var(--text-color));
-  --fgColor-accent: var(--color-primary);
-  --fgColor-attention: var(--color-primary);
-  --fgColor-success: var(--success-color, #13987f);
-  --fgColor-danger: var(--danger-color, #d1242f);
-  --bgColor-default: var(--bg-color);
-  --bgColor-muted: var(--bg-msg-hover);
-  --bgColor-neutral-muted: rgba(144, 144, 144, 0.15);
-  --bgColor-attention-muted: var(--color-primary)/16;
-  --borderColor-default: var(--line-color);
-  --borderColor-muted: var(--line-color);
-  --borderColor-neutral-muted: rgba(144, 144, 144, 0.2);
-  --borderColor-accent-emphasis: var(--color-primary);
+  --fgColor-default: var(--hula-text-primary);
+  --fgColor-muted: var(--hula-text-secondary);
+  --fgColor-accent: var(--hula-color-primary-500);
+  --fgColor-attention: var(--hula-color-primary-500);
+  --fgColor-success: var(--hula-color-success-500);
+  --fgColor-danger: var(--hula-color-danger-500);
+  --bgColor-default: var(--hula-surface-panel);
+  --bgColor-muted: var(--hula-surface-panel-muted);
+  --bgColor-neutral-muted: color-mix(in srgb, var(--hula-text-tertiary) 15%, transparent);
+  --bgColor-attention-muted: color-mix(in srgb, var(--hula-color-primary-500) 16%, transparent);
+  --borderColor-default: var(--hula-border-default);
+  --borderColor-muted: var(--hula-border-default);
+  --borderColor-neutral-muted: color-mix(in srgb, var(--hula-text-tertiary) 20%, transparent);
+  --borderColor-accent-emphasis: var(--hula-color-primary-500);
 
   // 通用表格处理
   :deep(table) {
@@ -468,7 +480,7 @@ onUnmounted(cleanup)
 
   // 长 URL 和文本处理
   :deep(a) {
-    color: var(--color-primary);
+    color: var(--hula-color-primary-500);
     word-break: break-word;
     overflow-wrap: break-word;
     text-decoration: none;
@@ -561,11 +573,11 @@ onUnmounted(cleanup)
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(144, 144, 144, 0.3);
+    background: color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent);
     border-radius: 3px;
 
     &:hover {
-      background: rgba(144, 144, 144, 0.5);
+      background: color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent);
     }
   }
 }

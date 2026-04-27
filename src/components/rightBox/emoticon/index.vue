@@ -12,7 +12,7 @@
         <!-- 最近使用 -->
         <div v-if="activeIndex === 0">
           <div v-if="emojiRef.historyList?.length > 0">
-            <span v-if="!checkIsUrl(emojiRef.historyList[0])" class="text-12px text-[--text-color]">
+            <span v-if="!checkIsUrl(emojiRef.historyList[0])" class="text-12px text-[--hula-text-primary]">
               {{ t('emoticon.recent.title') }}
             </span>
             <n-flex align="center" :class="isMobile() ? 'emoji-grid-mobile mt-12px mb-12px' : 'mt-12px mb-12px'">
@@ -31,7 +31,7 @@
           <!-- emoji表情 -->
           <div v-for="items in emojiObj" :key="items?.name">
             <template v-if="items?.name && items.value?.length">
-              <span class="text-12px text-[--text-color]">{{ items.name }}</span>
+              <span class="text-12px text-[--hula-text-primary]">{{ items.name }}</span>
               <n-flex align="center" :class="isMobile() ? 'emoji-grid-mobile my-12px' : 'my-12px'">
                 <n-flex
                   align="center"
@@ -49,7 +49,7 @@
 
         <!-- 表情包系列 -->
         <div v-else-if="currentSeries" class="series-virtual-wrapper">
-          <span class="text-12px text-[--text-color] pl-12px">{{ currentSeries.name }}</span>
+          <span class="text-12px text-[--hula-text-primary] pl-12px">{{ currentSeries.name }}</span>
           <div class="series-virtual-container mt-12px">
             <n-virtual-list
               ref="seriesVirtualListRef"
@@ -95,7 +95,7 @@
         <!-- 我的喜欢页面 -->
         <div v-else>
           <div v-if="emojiStore.emojiList?.length > 0">
-            <span class="text-12px text-[--text-color]">{{ t('emoticon.favorites.title') }}</span>
+            <span class="text-12px text-[--hula-text-primary]">{{ t('emoticon.favorites.title') }}</span>
             <n-flex align="center" :class="isMobile() ? 'emoji-pack-grid-mobile mx-6px my-12px' : 'mx-6px my-12px'">
               <n-flex
                 align="center"
@@ -463,14 +463,14 @@ onBeforeUnmount(() => {
 
 .emoji-item {
   @apply cursor-pointer;
-  @apply size-36px text-26px hover:bg-[--emoji-hover] rounded-8px;
+  @apply size-36px text-26px hover:bg-[--hula-menu-hover] rounded-8px;
 }
 
 .emoji-item--image {
   @apply size-60px hover:bg-transparent;
 
   &:hover .emoji-image {
-    @apply scale-116 bg-[--emoji-hover] rounded-8px;
+    @apply scale-116 bg-[--hula-menu-hover] rounded-8px;
   }
 }
 
@@ -480,7 +480,7 @@ onBeforeUnmount(() => {
 
 .expression-item {
   @apply h-50px w-full p-[0_14px] box-border select-none;
-  border-top: 1px solid var(--line-color);
+  border-top: 1px solid var(--hula-border-default);
 
   .scrollbar-container {
     @apply w-full max-w-420px;
@@ -495,7 +495,7 @@ onBeforeUnmount(() => {
     svg {
       @apply size-26px my-4px p-6px rounded-8px mr-12px flex-shrink-0 inline-flex items-center justify-center;
       &:not(.active):hover {
-        background-color: var(--emoji-hover);
+        background-color: var(--hula-menu-hover);
         cursor: pointer;
       }
     }
@@ -504,12 +504,12 @@ onBeforeUnmount(() => {
   .series-icon {
     @apply size-30px my-4px p-4px rounded-8px mr-12px flex-shrink-0 inline-flex items-center justify-center;
     &:not(.active):hover {
-      background-color: var(--emoji-hover);
+      background-color: var(--hula-menu-hover);
       cursor: pointer;
     }
 
     &.active {
-      background-color: var(--emoji-active-color) !important;
+      background-color: var(--hula-color-primary-500) !important;
     }
 
     &:last-child {

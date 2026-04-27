@@ -13,11 +13,10 @@ export function useGroupRequestConfirm(defaultMessage?: MaybeRefOrGetter<string>
   const requestMsg = ref('')
 
   const userInfo = computed<GroupConfirmTarget>(() => {
-    const group = globalStore.addGroupModalInfo
     return {
-      name: group.name || '',
-      avatar: group.avatar || '',
-      account: group.account || ''
+      name: globalStore.addGroupTargetName || '',
+      avatar: globalStore.addGroupTargetAvatar || '',
+      account: globalStore.addGroupTargetAccount || ''
     }
   })
 

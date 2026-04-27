@@ -47,8 +47,8 @@
         <n-badge
           v-if="item.url === 'message'"
           :max="99"
-          :value="unReadMark.newMsgUnreadCount"
-          :show="unreadReady && unReadMark.newMsgUnreadCount > 0">
+          :value="messageUnreadCount"
+          :show="unreadReady && messageUnreadCount > 0">
           <svg class="size-22px">
             <use
               :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
@@ -282,8 +282,8 @@ const { menuTop } = storeToRefs(useMenuTopStore())
 const itemsBottom = useItemsBottom()
 const { plugins } = storeToRefs(pluginsStore)
 const { t } = useI18n()
-const unReadMark = computed(() => globalStore.unReadMark)
 const unreadReady = computed(() => globalStore.unreadReady)
+const messageUnreadCount = computed(() => globalStore.messageUnreadCount)
 // const headerRef = useTemplateRef('header')
 // const actionListRef = useTemplateRef('actionList')
 //const { } = toRefs(getCurrentInstance) // 所有菜单的外层div
@@ -309,7 +309,7 @@ const handleTipShow = (item: { dot?: boolean }) => {
 }
 
 const unreadApplyCount = computed(() => {
-  return globalStore.unReadMark.newFriendUnreadCount + globalStore.unReadMark.newGroupUnreadCount
+  return globalStore.contactUnreadCount
 })
 
 const startResize = () => {
