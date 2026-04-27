@@ -10,8 +10,8 @@
       <div v-if="!isUnlockPage" @click.stop="isUnlockPage = true" class="size-full rounded-8px">
         <n-flex vertical align="center" :size="120" class="size-full mt-10%">
           <n-flex vertical align="center" :size="20" class="will-change-auto will-change-contents">
-            <p class="text-(100px [--chat-text-color]) font-500">{{ currentTime }}</p>
-            <n-flex align="center" :size="30" class="text-(30px [--chat-text-color])">
+            <p class="text-(100px [--hula-text-secondary]) font-500">{{ currentTime }}</p>
+            <n-flex align="center" :size="30" class="text-(30px [--hula-text-secondary])">
               <p>{{ currentMonthAndDate }}</p>
               <p>{{ currentWeekday }}</p>
             </n-flex>
@@ -19,7 +19,7 @@
 
           <n-flex vertical justify="center" align="center" :size="20" class="tips">
             <svg><use href="#search"></use></svg>
-            <p class="text-(16px [--chat-text-color]) text-center leading-24px">
+            <p class="text-(16px [--hula-text-secondary]) text-center leading-24px">
               {{ t('message.lock_screen.tip_description') }}
             </p>
           </n-flex>
@@ -41,7 +41,7 @@
             style="border: 2px solid var(--lock-border-color, #f1f1f1)"
             :size="120"
             :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)" />
-          <p class="text-(24px [--chat-text-color]) font-500">{{ userStore.userInfo!.name }}</p>
+          <p class="text-(24px [--hula-text-secondary]) font-500">{{ userStore.userInfo!.name }}</p>
 
           <!-- 密码输入框 -->
           <n-input
@@ -80,12 +80,12 @@
           <!-- 登录时显示的文字 -->
           <n-flex vertical align="center" justify="center" :size="30" v-if="isLogining && !isWrongPassword">
             <img class="size-42px" src="@/assets/img/loading-one.svg" alt="" />
-            <p class="text-(20px [--chat-text-color])">{{ t('message.lock_screen.unlocking') }}</p>
+            <p class="text-(20px [--hula-text-secondary])">{{ t('message.lock_screen.unlocking') }}</p>
           </n-flex>
 
           <!-- 密码不正常时显示 -->
           <n-flex v-if="isWrongPassword" vertical justify="center" align="center" :size="30">
-            <p class="text-(18px [--chat-text-color])">{{ t('message.lock_screen.wrong_password') }}</p>
+            <p class="text-(18px [--hula-text-secondary])">{{ t('message.lock_screen.wrong_password') }}</p>
             <p
               @click="init"
               class="w-120px bg-[rgba(255,255,255,0.1)] backdrop-blur-xl cursor-pointer p-10px rounded-8px text-(14px #323232 center) font-500">
@@ -99,7 +99,7 @@
           justify="space-around"
           align="center"
           :size="0"
-          class="options text-(14px [--chat-text-color])">
+          class="options text-(14px [--hula-text-secondary])">
           <p @click="isUnlockPage = false">{{ t('message.lock_screen.return_action') }}</p>
           <p @click="logout">{{ t('message.lock_screen.logout_action') }}</p>
           <p>{{ t('message.lock_screen.forgot_password') }}</p>

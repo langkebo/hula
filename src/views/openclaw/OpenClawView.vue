@@ -223,7 +223,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--hula-border-default);
   background: var(--bg-popover);
 }
 
@@ -237,13 +237,13 @@ onMounted(async () => {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
 }
 
 .openclaw-view__title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   margin: 0;
 }
 
@@ -309,10 +309,10 @@ onMounted(async () => {
 .openclaw-view__quick-action {
   padding: 8px 16px;
   background: var(--bg-popover);
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   border-radius: 16px;
   font-size: 13px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -376,13 +376,13 @@ onMounted(async () => {
 
 .openclaw-view__message--assistant .openclaw-view__message-bubble {
   background: var(--bg-popover);
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   border-bottom-left-radius: 4px;
 }
 
 .openclaw-view__footer {
   padding: 12px 16px;
-  border-top: 1px solid var(--line-color);
+  border-top: 1px solid var(--hula-border-default);
   background: var(--bg-popover);
 }
 
