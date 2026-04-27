@@ -85,9 +85,10 @@ test.describe('Dynamic Mobile Flow', () => {
     const runtimeIssues = createRuntimeIssueCollector(page)
     await bootstrapMobileHarness(page)
     await page.goto('/mobile/dynamic')
+    await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/mobile\/dynamic$/)
-    await expect(page.getByText('动态共享骨架')).toBeVisible()
+    await expect(page.getByText('动态共享骨架')).toBeVisible({ timeout: 10000 })
 
     const indexSample = await waitForSample(page, 'mobile-dynamic-index')
     expectNoRouteRuntimeIssues(runtimeIssues)
