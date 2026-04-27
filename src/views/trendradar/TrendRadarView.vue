@@ -338,7 +338,7 @@ onMounted(() => {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   transition: transform 0.3s ease;
 }
 
@@ -370,7 +370,7 @@ onMounted(() => {
   padding: 12px 8px;
   border-radius: 8px;
   cursor: pointer;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   font-size: 12px;
   transition: all 0.2s ease;
 }
@@ -434,7 +434,7 @@ onMounted(() => {
   justify-content: center;
   gap: 12px;
   padding: 60px 20px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   font-size: 14px;
 }
 
@@ -460,7 +460,7 @@ onMounted(() => {
 .trendradar-view__analyze-icon {
   width: 16px;
   height: 16px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 }
 
 .trendradar-view__analyze-result {
@@ -488,6 +488,6 @@ onMounted(() => {
 .trendradar-view__input-icon {
   width: 16px;
   height: 16px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 }
 </style>

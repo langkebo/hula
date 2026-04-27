@@ -271,7 +271,7 @@ onMounted(async () => {
   justify-content: center;
   height: 100%;
   text-align: center;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
 }
 
 .openclaw-view__welcome-icon {
@@ -289,7 +289,7 @@ onMounted(async () => {
 .openclaw-view__welcome h3 {
   font-size: 18px;
   font-weight: 600;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   margin: 0 0 8px 0;
 }
 
