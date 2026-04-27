@@ -7,7 +7,7 @@
       </svg>
 
       <!-- 标题 -->
-      <h3 v-if="title" class="empty-title text-15px font-500 text-[--text-color] mb-8px m-0">
+      <h3 v-if="title" class="empty-title text-15px font-500 text-[--hula-text-primary] mb-8px m-0">
         {{ title }}
       </h3>
 
@@ -35,7 +35,7 @@ const { title } = defineProps<{
 }
 
 .empty-svg {
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   opacity: 0.3;
   transition: opacity 0.3s ease;
 }

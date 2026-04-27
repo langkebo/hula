@@ -286,7 +286,7 @@ watch(
 
 <style scoped lang="scss">
 .spotlight-dialog {
-  @apply flex flex-col bg-[--bg-color] rounded-12px overflow-hidden;
+  @apply flex flex-col bg-[--hula-surface-panel] rounded-12px overflow-hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 

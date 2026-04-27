@@ -3,7 +3,7 @@
     class="w-200px flex-shrink-0 flex flex-col bg-[--hula-surface-panel] border-r border-solid border-[--hula-border-default]">
     <!-- 导航标题 -->
     <div class="navigation-header p-20px pb-16px">
-      <h2 class="text-16px font-600 text-[--text-color] m-0">
+      <h2 class="text-16px font-600 text-[--hula-text-primary] m-0">
         {{ t('fileManager.navigation.title') }}
       </h2>
     </div>
@@ -79,7 +79,7 @@ const getNavigationLabel = (item: NavigationItem) => {
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   user-select: none;
 
   &:hover:not(&--active) {

@@ -4,10 +4,10 @@
     <div class="flex-shrink-0 px-20px py-16px border-b border-solid border-[--hula-border-default]">
       <div class="flex items-center justify-between gap-32px">
         <n-flex vertical class="flex-shrink-0">
-          <h2 class="text-18px font-600 text-[--text-color] m-0">
+          <h2 class="text-18px font-600 text-[--hula-text-primary] m-0">
             {{ getContentTitle() }}
           </h2>
-          <p class="text-14px text-[--text-color] opacity-60 m-0 mt-4px">
+          <p class="text-14px text-[--hula-text-secondary] opacity-60 m-0 mt-4px">
             {{ getContentSubtitle() }}
           </p>
         </n-flex>
@@ -26,7 +26,7 @@
           class="rounded-6px border-(solid 1px [--hula-border-default])"
           size="small">
           <template #prefix>
-            <svg class="size-16px text-[--text-color] opacity-60">
+            <svg class="size-16px text-[--hula-text-secondary] opacity-60">
               <use href="#search"></use>
             </svg>
           </template>
@@ -366,7 +366,7 @@ const convertToFileBody = (file: FileItem): FileBody => {
 
 <style scoped lang="scss">
 .time-group {
-  @apply sticky top-10px z-10 flex items-center justify-between p-12px rounded-6px text-[--text-color] bg-#e3e3e380 dark:bg-#30303080 backdrop-blur-md;
+  @apply sticky top-10px z-10 flex items-center justify-between p-12px rounded-6px text-[--hula-text-primary] bg-#e3e3e380 dark:bg-#30303080 backdrop-blur-md;
 }
 
 .file-meta-info {

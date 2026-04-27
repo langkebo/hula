@@ -165,7 +165,7 @@ const loadCrossSigningInfo = async () => {
     selfSigningKey.value = info.selfSigningPublicKey ?? null
     userSigningKey.value = info.userSigningPublicKey ?? null
   } catch (err) {
-    logger.error('加载信息失败:', err)
+    logger.error('Failed to load cross-signing info:', err)
   } finally {
     loading.value = false
   }
@@ -178,7 +178,7 @@ const handleSetup = async () => {
     message.success(t('encryption.cross_signing.setup_success'))
     await loadCrossSigningInfo()
   } catch (err) {
-    logger.error('设置失败:', err)
+    logger.error('Failed to set up cross-signing:', err)
     message.error(t('encryption.cross_signing.setup_failed'))
   } finally {
     settingUp.value = false
@@ -192,7 +192,7 @@ const handleReset = async () => {
     message.success(t('encryption.cross_signing.reset_success'))
     await loadCrossSigningInfo()
   } catch (err) {
-    logger.error('重置失败:', err)
+    logger.error('Failed to reset cross-signing:', err)
     message.error(t('encryption.cross_signing.reset_failed'))
   } finally {
     resetting.value = false
@@ -210,7 +210,7 @@ const handleCopyKeys = async () => {
     await navigator.clipboard.writeText(keysText)
     message.success(t('encryption.cross_signing.copied'))
   } catch (err) {
-    logger.error('复制失败:', err)
+    logger.error('Failed to copy public keys:', err)
     message.error(t('encryption.cross_signing.copy_failed'))
   }
 }
@@ -242,7 +242,7 @@ watch(
 
   :deep(.n-card__footer) {
     padding: 12px 20px;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--hula-border-default);
   }
 }
 
@@ -251,7 +251,7 @@ watch(
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: var(--bg-color-secondary);
+  background: var(--hula-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -281,7 +281,7 @@ watch(
 
 .status-desc {
   font-size: 12px;
-  color: var(--text-color-secondary);
+  color: var(--hula-text-secondary);
   margin-top: 4px;
 }
 
@@ -297,7 +297,7 @@ watch(
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--bg-color-secondary);
+    background: var(--hula-surface-panel-muted);
     border-radius: 8px;
     margin-bottom: 8px;
   }
@@ -324,7 +324,7 @@ watch(
   .key-value {
     font-size: 11px;
     font-family: monospace;
-    color: var(--text-color-secondary);
+    color: var(--hula-text-secondary);
     margin-top: 2px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -337,7 +337,7 @@ watch(
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--bg-color-secondary);
+    background: var(--hula-surface-panel-muted);
     border-radius: 8px;
     margin-bottom: 8px;
   }
@@ -360,7 +360,7 @@ watch(
 
   .action-desc {
     font-size: 12px;
-    color: var(--text-color-secondary);
+    color: var(--hula-text-secondary);
     margin-top: 2px;
   }
 }

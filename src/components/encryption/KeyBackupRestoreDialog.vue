@@ -1,18 +1,23 @@
 <template>
-  <n-modal v-model:show="visible" preset="card" title="恢复密钥备份" style="width: 500px" :mask-closable="false">
+  <n-modal
+    v-model:show="visible"
+    preset="card"
+    :title="t('encryption.backup_restore_dialog.title')"
+    style="width: 500px"
+    :mask-closable="false">
     <n-spin :show="loading">
       <div class="restore-content">
         <div class="intro-text">
-          <p>输入您的恢复密钥以还原加密消息历史。</p>
-          <p class="hint-text">恢复密钥是一串字符，您在设置备份时保存的。</p>
+          <p>{{ t('encryption.backup_restore_dialog.intro_primary') }}</p>
+          <p class="hint-text">{{ t('encryption.backup_restore_dialog.intro_hint') }}</p>
         </div>
 
         <n-form ref="formRef" :model="formData" label-placement="top">
-          <n-form-item label="恢复密钥" path="recoveryKey">
+          <n-form-item :label="t('encryption.backup_restore_dialog.recovery_key_label')" path="recoveryKey">
             <n-input
               v-model:value="formData.recoveryKey"
               type="textarea"
-              placeholder="请输入恢复密钥"
+              :placeholder="t('encryption.recovery_key_placeholder')"
               :rows="4"
               :disabled="loading" />
           </n-form-item>
@@ -20,7 +25,9 @@
 
         <div v-if="restoreProgress !== null" class="progress-section">
           <n-progress type="line" :percentage="restoreProgress" :indicator-placement="'inside'" processing />
-          <div class="progress-text">正在恢复密钥... {{ restoreProgress }}%</div>
+          <div class="progress-text">
+            {{ t('encryption.backup_restore_dialog.restoring_progress', { progress: restoreProgress }) }}
+          </div>
         </div>
 
         <div v-if="restoreResult" class="result-section" :class="restoreResult.success ? 'success' : 'error'">
@@ -32,9 +39,9 @@
 
     <template #action>
       <div class="dialog-footer">
-        <n-button @click="handleCancel" :disabled="loading">取消</n-button>
+        <n-button @click="handleCancel" :disabled="loading">{{ t('common.cancel') }}</n-button>
         <n-button type="primary" :loading="loading" :disabled="!formData.recoveryKey.trim()" @click="handleRestore">
-          恢复
+          {{ t('encryption.restore') }}
         </n-button>
       </div>
     </template>
@@ -45,11 +52,13 @@
 import { ref, computed, reactive } from 'vue'
 import { NModal, NButton, NSpin, NForm, NFormItem, NInput, NProgress, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import { matrixEncryptionService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 const logger = createLogger('KeyBackupRestore')
 const timerManager = useTimerManager()
+const { t } = useI18n()
 
 defineOptions({
   name: 'KeyBackupRestoreDialog'
@@ -93,7 +102,7 @@ function resetState() {
 
 async function handleRestore() {
   if (!formData.recoveryKey.trim()) {
-    message.warning('请输入恢复密钥')
+    message.warning(t('encryption.recovery_key_required'))
     return
   }
 
@@ -116,10 +125,10 @@ async function handleRestore() {
 
     restoreResult.value = {
       success: true,
-      message: `成功恢复 ${result.imported} 个密钥`
+      message: t('encryption.backup_restore_dialog.restore_result_success', { imported: result.imported })
     }
 
-    message.success('密钥恢复成功')
+    message.success(t('encryption.restore_success'))
 
     timerManager.setTimeout(() => {
       visible.value = false
@@ -127,13 +136,13 @@ async function handleRestore() {
       emit('success')
     }, 1500)
   } catch (error) {
-    logger.error('恢复失败:', error)
+    logger.error('Failed to restore from backup:', error)
     restoreProgress.value = null
     restoreResult.value = {
       success: false,
-      message: '恢复失败，请检查密钥是否正确'
+      message: t('encryption.backup_restore_dialog.restore_result_failed')
     }
-    message.error('恢复失败')
+    message.error(t('encryption.restore_backup_failed'))
   } finally {
     if (progressInterval !== null) {
       timerManager.clearInterval(progressInterval)
