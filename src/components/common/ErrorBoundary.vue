@@ -45,7 +45,7 @@ const errorStack = computed(() => error.value?.stack || '')
 
 onErrorCaptured((err: Error) => {
   error.value = err
-  logger.error('捕获到错误:', err)
+  logger.error('Captured error:', err)
   return false
 })
 
@@ -57,7 +57,7 @@ const handleReload = async () => {
   try {
     await relaunch()
   } catch (err) {
-    logger.error('重启失败:', err)
+    logger.error('Failed to relaunch app:', err)
     window.location.reload()
   }
 }

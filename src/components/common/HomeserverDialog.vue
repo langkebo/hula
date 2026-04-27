@@ -86,7 +86,7 @@ async function handleSave() {
     window.$message.success(t('menu.homeserver_saved'))
     showModal.value = false
   } catch (error) {
-    logger.error('保存 homeserver 失败:', error)
+    logger.error('Failed to save homeserver URL:', error)
     window.$message.error(t('menu.homeserver_save_failed'))
   } finally {
     saving.value = false
@@ -105,7 +105,7 @@ async function handleSave() {
 
 .config-label {
   font-size: 14px;
-  color: var(--text-color-1);
+  color: var(--hula-text-primary);
   margin-bottom: 8px;
 }
 

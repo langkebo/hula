@@ -243,7 +243,7 @@ const drawImgCanvas = (type: DrawToolType) => {
     try {
       if (type) drawTools.draw(type)
     } catch (error) {
-      logger.error(`绘图工具激活失败: ${type}`, error)
+      logger.error(`Failed to activate drawing tool: ${type}`, error)
       currentDrawTool.value = null
       if (drawCanvas.value) {
         drawCanvas.value.style.pointerEvents = 'none'
@@ -632,14 +632,14 @@ const confirmSelection = async () => {
                   mimeType: 'image/png'
                 })
               } catch (e) {
-                logger.warn('发送截图到主窗口失败:', e)
+                logger.warn('Failed to send screenshot to home window:', e)
               }
 
               try {
                 await writeImage(buffer)
                 window.$message?.success(t('message.screenshot.save_success'))
               } catch (clipboardError) {
-                logger.error('复制到剪贴板失败:', clipboardError)
+                logger.error('Failed to copy screenshot to clipboard:', clipboardError)
                 window.$message?.error(t('message.screenshot.save_failed'))
               }
 
@@ -655,7 +655,7 @@ const confirmSelection = async () => {
         }, 'image/png')
       }
     } catch (error) {
-      logger.error('Canvas操作失败:', error)
+      logger.error('Canvas operation failed:', error)
       window.$message?.error(t('message.screenshot.save_failed'))
       await resetScreenshot()
     }
@@ -731,7 +731,7 @@ const initCanvas = async () => {
   }
 
   const screenshotData = await invokeWithErrorHandler<string>('screenshot', config, {
-    customErrorMessage: '截图失败',
+    customErrorMessage: t('message.screenshot.save_failed'),
     errorType: ErrorType.Client
   })
 
@@ -786,7 +786,7 @@ const initCanvas = async () => {
           }
           isImageLoaded.value = true
         } catch (error) {
-          logger.error('绘制图像到canvas失败:', error)
+          logger.error('Failed to draw image to canvas:', error)
         }
       }
     }

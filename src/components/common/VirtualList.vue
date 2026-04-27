@@ -7,11 +7,11 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave">
     <n-flex v-if="!isLoadingMore && isLast" justify="center" class="box-border absolute-x-center pt-10px">
-      <span class="text-(12px [--hula-text-tertiary])">以下是全部消息内容</span>
+      <span class="text-(12px [--hula-text-tertiary])">{{ t('virtualList.allMessagesLoaded') }}</span>
     </n-flex>
     <n-flex v-if="isLoadingMore && !isLast" justify="center" class="box-border absolute-x-center pt-10px">
       <img class="size-16px" src="@/assets/img/loading.svg" alt="" />
-      <span class="text-(12px [--hula-text-tertiary])">加载中</span>
+      <span class="text-(12px [--hula-text-tertiary])">{{ t('virtualList.loading') }}</span>
     </n-flex>
     <div ref="phantomRef" class="virtual-list-phantom"></div>
     <div ref="contentRef" class="virtual-list-content">
@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const props = defineProps<{
@@ -48,6 +49,8 @@ const emit = defineEmits<{
   mouseleave: []
   visibleItemsChange: [ids: string[]]
 }>()
+
+const { t } = useI18n()
 
 // 常量定义
 const DEFAULT_ESTIMATED_HEIGHT = 80 // 默认预估的每项高度

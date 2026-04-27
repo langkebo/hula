@@ -214,7 +214,7 @@ onMounted(async () => {
   }
 
   &.pinned {
-    background: var(--bg-color);
+    background: var(--hula-surface-panel);
   }
 }
 </style>
