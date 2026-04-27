@@ -59,13 +59,11 @@
 - **结论**: 安全升级未引入新的测试失败 ✅
 
 ### E2E 测试
-- **通过**: 15 tests
-- **失败**: 2 tests (dynamic-flow.spec.ts 在并发运行时偶现超时)
-- **跳过**: 7 tests
-- **结论**: 
-  - `dynamic-flow.spec.ts` 单独运行时通过 ✅
-  - 失败为测试顺序/时序问题，非功能回归
-  - 建议增加 `waitForLoadState('networkidle')` 或延长超时
+- **通过**: 17 tests ✅
+- **失败**: 0 tests
+- **跳过**: 7 tests (非移动端项目跳过移动专属用例)
+- **结论**: 全部通过 ✅
+  - 修复 `dynamic-flow.spec.ts` 时序问题: 增加 `waitForLoadState('networkidle')` + 超时延长至 10s
 
 ---
 
@@ -76,18 +74,17 @@
 |---------|--------|------|------|
 | `core-flow.spec.ts` | 1 | ✅ Pass | 基础登录页加载验证 |
 | `mobile-entry-smoke.spec.ts` | 6 | ✅ Pass | 移动端入口页烟雾测试 |
-| `dynamic-flow.spec.ts` | 1 | ⚠️ Flaky | 动态页渲染性能测试 (单独运行通过) |
+| `dynamic-flow.spec.ts` | 1 | ✅ Pass | 动态页渲染性能测试 (已修复时序问题) |
 
-### 已知问题
-1. **dynamic-flow 偶现超时**
+### 已修复问题
+1. **dynamic-flow 偶现超时** ✅
    - **现象**: 在完整测试套件中运行时，`page.getByText('动态共享骨架')` 5s 超时
    - **根因**: 测试顺序导致的 dev server 预热问题
-   - **解决方案**: 
-     - 增加 `page.waitForLoadState('networkidle')` 
-     - 或延长超时至 10s
-     - 或在 beforeEach 中预热路由
+   - **解决方案**: 增加 `page.waitForLoadState('networkidle')` + 超时延长至 10s
+   - **状态**: 已修复，全部测试通过 ✅
 
-2. **Storybook 集成测试失败** (既有问题)
+### 已知问题
+1. **Storybook 集成测试失败** (既有问题)
    - 29 个 Storybook 组件测试失败
    - 错误: `Failed to fetch dynamically imported module: axe-core.js`
    - 非本次安全升级引入
@@ -98,7 +95,7 @@
 
 ### 短期
 1. ✅ 安全漏洞已全部修复，可合并至主分支
-2. 修复 `dynamic-flow.spec.ts` 的时序问题 (增加 waitForLoadState)
+2. ✅ E2E 测试全部通过 (dynamic-flow 时序问题已修复)
 3. 调查 Storybook 集成测试的 chunk 加载失败
 
 ### 中期
