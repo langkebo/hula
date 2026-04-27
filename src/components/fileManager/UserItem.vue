@@ -130,7 +130,7 @@ const handleAvatarError = (event: Event) => {
   user-select: none;
 
   &:hover:not(&--selected) {
-    background-color: var(--bg-msg-hover);
+    background-color: var(--hula-surface-list-hover);
   }
 
   &--selected {
@@ -192,7 +192,7 @@ const handleAvatarError = (event: Event) => {
 html[data-theme='dark'] {
   .user-item {
     &:hover:not(&--selected) {
-      background-color: var(--bg-msg-hover);
+      background-color: var(--hula-surface-list-hover);
     }
 
     &--selected {

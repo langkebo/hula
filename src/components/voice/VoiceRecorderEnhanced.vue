@@ -385,7 +385,7 @@ onUnmounted(() => {
 }
 
 .hint-text {
-  color: var(--text-color-3);
+  color: var(--hula-text-tertiary);
   font-size: 14px;
 }
 
@@ -426,7 +426,7 @@ onUnmounted(() => {
   .volume-bar {
     width: 4px;
     height: 4px;
-    background: var(--disabled-color);
+    background: var(--hula-text-disabled);
     border-radius: 2px;
     transition: height 0.1s;
 
@@ -445,7 +445,7 @@ onUnmounted(() => {
 
 .preview-duration {
   font-size: 14px;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
 }
 
 .controls {

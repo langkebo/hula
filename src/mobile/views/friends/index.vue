@@ -77,7 +77,7 @@
                   </div>
                 </template>
                 <template #value>
-                  <span class="text-(10px [--color-text-secondary])">
+                  <span class="text-(10px [--hula-text-secondary])">
                     {{ specialOnlineCount }}/{{ specialContacts.length }}
                   </span>
                 </template>
@@ -130,12 +130,12 @@
               <van-collapse-item name="normal">
                 <template #title>
                   <div class="flex items-center gap-8px">
-                    <svg class="size-14px color-[--color-text-secondary]"><use href="#friends"></use></svg>
+                    <svg class="size-14px color-[--hula-text-secondary]"><use href="#friends"></use></svg>
                     <span>{{ t('mobile_contact.group.normal') || '我的好友' }}</span>
                   </div>
                 </template>
                 <template #value>
-                  <span class="text-(10px [--color-text-secondary])">
+                  <span class="text-(10px [--hula-text-secondary])">
                     {{ normalOnlineCount }}/{{ normalContacts.length }}
                   </span>
                 </template>
@@ -193,7 +193,7 @@
                   </div>
                 </template>
                 <template #value>
-                  <span class="text-(10px [--color-text-secondary])">{{ blockedContacts.length }}</span>
+                  <span class="text-(10px [--hula-text-secondary])">{{ blockedContacts.length }}</span>
                 </template>
                 <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
                   <div @contextmenu.stop="$event.preventDefault()">
@@ -212,7 +212,7 @@
                         <span class="text-14px leading-tight flex-1 truncate">
                           {{ groupStore.getUserInfo(item.uid)?.name }}
                         </span>
-                        <div class="text leading-tight text-12px text-[--color-text-tertiary]">
+                        <div class="text leading-tight text-12px text-[--hula-text-tertiary]">
                           [{{ t('mobile_contact.status.blocked') || '已屏蔽' }}]
                         </div>
                       </div>
@@ -227,7 +227,7 @@
           <van-collapse v-model="activeGroupCollapseNames">
             <van-collapse-item :title="t('mobile_contact.group.title')" name="1">
               <template #value>
-                <span class="text-(10px [--color-text-secondary])">{{ groupChatList.length }}</span>
+                <span class="text-(10px [--hula-text-secondary])">{{ groupChatList.length }}</span>
               </template>
               <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
                 <div

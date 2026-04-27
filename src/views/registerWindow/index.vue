@@ -150,7 +150,7 @@
               <!-- 协议 -->
               <n-flex align="center" justify="center" :size="6" class="mt-10px">
                 <n-checkbox v-model:checked="protocol" />
-                <div class="text-12px color-[--color-text-tertiary] cursor-default lh-14px">
+                <div class="text-12px color-[--hula-text-tertiary] cursor-default lh-14px">
                   <span>{{ t('login.term.checkout.text1') }}</span>
                   <span class="color-[--color-primary] cursor-pointer" @click.stop="openServiceAgreement">
                     {{ t('login.term.checkout.text2') }}
@@ -181,7 +181,7 @@
 
     <!-- 底部栏 -->
     <n-flex
-      class="text-(12px --color-text-tertiary) w-full absolute bottom-20px left-1/2 transform -translate-x-1/2"
+      class="text-(12px --hula-text-tertiary) w-full absolute bottom-20px left-1/2 transform -translate-x-1/2"
       :size="8"
       justify="center">
       <span>Copyright {{ currentYear - 1 }}-{{ currentYear }} 龙卷风 All Rights Reserved.</span>
@@ -189,7 +189,7 @@
 
     <!-- 邮箱验证码输入弹窗 -->
     <n-modal v-model:show="emailCodeModal" :mask-closable="false" class="rounded-8px" transform-origin="center">
-      <div class="bg-#f0f0f0 dark:bg-#303030 w-380px h-fit box-border flex flex-col">
+      <div class="bg-[--hula-surface-elevated] w-380px h-fit box-border flex flex-col">
         <div
           v-if="isMac()"
           @click="emailCodeModal = false"
@@ -207,8 +207,8 @@
         </svg>
         <n-flex vertical class="w-full h-fit">
           <n-flex vertical :size="10" class="p-24px">
-            <p class="text-(16px [--text-color]) mb-10px">{{ t('auth.register.email_modal.title') }}</p>
-            <p class="text-(12px [--color-text-tertiary]) leading-5 mb-10px">
+            <p class="text-(16px [--hula-text-primary]) mb-10px">{{ t('auth.register.email_modal.title') }}</p>
+            <p class="text-(12px [--hula-text-tertiary]) leading-5 mb-10px">
               {{ t('auth.register.email_modal.desc', { email: info.email }) }}
             </p>
 

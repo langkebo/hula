@@ -164,7 +164,7 @@
 
     <!-- 底部操作栏 -->
     <div
-      class="px-20px py-12px bg-[--bg-popover] border-t border-[--hula-border-default] flex justify-between items-center">
+      class="px-20px py-12px bg-[--hula-surface-elevated] border-t border-[--hula-border-default] flex justify-between items-center">
       <span class="text-13px text-[--hula-text-primary]">
         {{ t('home.manage_group_member.selected_count', { count: selectedList.length }) }}
       </span>

@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 
 export type Platform = 'desktop' | 'mobile'
 
@@ -12,20 +13,41 @@ export interface PlatformInfo {
 
 const platformCache = ref<PlatformInfo | null>(null)
 
+const PLATFORM_QUERY_KEY = 'platform'
+const PLATFORM_STORAGE_KEY = 'hula:e2e:platform'
+
+function readRequestedPlatform(): Platform | null {
+  if (typeof window === 'undefined') return null
+
+  const queryValue = new URLSearchParams(window.location.search).get(PLATFORM_QUERY_KEY)
+  if (queryValue === 'desktop' || queryValue === 'mobile') {
+    return queryValue
+  }
+
+  const storageValue = window.localStorage.getItem(PLATFORM_STORAGE_KEY)
+  if (storageValue === 'desktop' || storageValue === 'mobile') {
+    return storageValue
+  }
+
+  return null
+}
+
 function detectPlatform(): PlatformInfo {
   if (platformCache.value) {
     return platformCache.value
   }
 
-  const isTauri = typeof window !== 'undefined' && '__TAURI__' in window
-  const isDesktop = isTauri
-  const isMobile =
-    !isDesktop && typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  const requestedPlatform = readRequestedPlatform()
+  const isTauri = hasTauriRuntime()
+  const isMobileUserAgent = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  const platform: Platform = requestedPlatform ?? (isTauri ? 'desktop' : isMobileUserAgent ? 'mobile' : 'desktop')
+  const isDesktop = platform === 'desktop'
+  const isMobile = platform === 'mobile'
 
   const info: PlatformInfo = {
     isDesktop,
     isMobile,
-    platform: isDesktop ? 'desktop' : 'mobile',
+    platform,
     isTauri,
     isWeb: !isTauri
   }

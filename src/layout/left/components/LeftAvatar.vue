@@ -38,7 +38,7 @@
             :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
             class="size-68px text-20px select-none cursor-default" />
 
-          <n-flex :size="10" class="text-[--text-color]" justify="center" vertical>
+          <n-flex :size="10" class="text-[--hula-text-primary]" justify="center" vertical>
             <span class="text-18px">{{ userStore.userInfo?.name }}</span>
             <span class="text-(12px [--info-text-color])">
               {{ t('home.profile_card.labels.account') }} {{ userStore.userInfo?.account }}

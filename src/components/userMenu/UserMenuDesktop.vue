@@ -60,7 +60,7 @@ const onlineClass = computed(() => {
 }
 
 .avatar-container:hover {
-  background-color: var(--bg-msg-hover);
+  background-color: var(--hula-surface-list-hover);
 }
 
 .online-indicator {

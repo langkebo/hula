@@ -220,7 +220,7 @@ watch(visible, (val) => {
   transition: background-color 0.2s;
 
   &:hover {
-    background: var(--list-hover-color);
+    background: var(--hula-surface-list-hover);
   }
 }
 </style>

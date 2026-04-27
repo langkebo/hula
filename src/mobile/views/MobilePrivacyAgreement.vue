@@ -190,13 +190,13 @@
     h1 {
       font-size: 24px;
       font-weight: bold;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
       margin-bottom: 10px;
     }
 
     .update-time {
       font-size: 14px;
-      color: var(--color-text-secondary);
+      color: var(--hula-text-secondary);
     }
   }
 
@@ -211,7 +211,7 @@
       h2 {
         font-size: 18px;
         font-weight: bold;
-        color: var(--text-color);
+        color: var(--hula-text-primary);
         width: fit-content;
         margin-bottom: 15px;
         border-bottom: 2px solid #13987f90;
@@ -221,13 +221,13 @@
       h3 {
         font-size: 16px;
         font-weight: bold;
-        color: var(--text-color);
+        color: var(--hula-text-primary);
         margin: 15px 0 10px 0;
       }
 
       p {
         font-size: 14px;
-        color: var(--color-text-secondary);
+        color: var(--hula-text-secondary);
         margin-bottom: 10px;
         text-indent: 2em;
       }
@@ -246,17 +246,17 @@
 }
 
 .agreement-content::-webkit-scrollbar-thumb {
-  background: var(--disabled-color);
+  background: var(--hula-text-disabled);
   border-radius: 3px;
 }
 
 .agreement-content::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
+  background: var(--hula-text-tertiary);
 }
 
 :deep(.action-close) {
   svg {
-    color: var(--text-color);
+    color: var(--hula-text-primary);
   }
 }
 </style>

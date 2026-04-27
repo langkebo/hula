@@ -15,7 +15,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDynamic } from '@/composables/useDynamic'
-import { completeRenderSampleOnNextFrame } from '@/utils/AppHarness'
+import { completeRenderSampleOnNextFrame, startRenderSample } from '@/utils/AppHarness'
 
 defineOptions({
   name: 'DynamicDetailPage'
@@ -25,9 +25,16 @@ const route = useRoute()
 const detailId = computed(() => String(route.params.id || route.query.id || 'detail'))
 const { selectedItem, getStatusText } = useDynamic(detailId)
 
+startRenderSample('desktop-dynamic-detail', {
+  route: `/dynamic/${detailId.value}`,
+  meta: {
+    source: 'page-entry'
+  }
+})
+
 onMounted(() => {
   completeRenderSampleOnNextFrame('desktop-dynamic-detail', {
-    route: `/plugins/dynamic/${detailId.value}`
+    route: `/dynamic/${detailId.value}`
   })
 })
 </script>

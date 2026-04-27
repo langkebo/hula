@@ -50,16 +50,11 @@
       </van-action-sheet>
 
       <van-popup v-model:show="showTypePicker" position="bottom">
-        <van-picker
-          :columns="widgetTypeColumns"
-          @confirm="onTypeConfirm"
-          @cancel="showTypePicker = false" />
+        <van-picker :columns="widgetTypeColumns" @confirm="onTypeConfirm" @cancel="showTypePicker = false" />
       </van-popup>
 
       <!-- Permissions action sheet -->
-      <van-action-sheet
-        v-model:show="showPermissionsSheet"
-        :title="selectedWidget?.name || selectedWidget?.id || ''">
+      <van-action-sheet v-model:show="showPermissionsSheet" :title="selectedWidget?.name || selectedWidget?.id || ''">
         <div class="permissions">
           <van-loading v-if="permissionsLoading" class="loading" />
           <van-empty v-else-if="permissionRows.length === 0" :description="t('widget.no_permissions')" />
@@ -281,7 +276,7 @@ if (roomId.value) {
   .row-action {
     font-size: 20px;
     margin-left: 12px;
-    color: var(--text-color-secondary);
+    color: var(--hula-text-secondary);
 
     &.danger {
       color: var(--van-danger-color, #ee0a24);

@@ -305,7 +305,7 @@ onMounted(() => {
   justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid var(--hula-border-default);
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
 }
 
 .trendradar-view__header-left {
@@ -359,7 +359,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
 }
 
 .trendradar-view__nav-item {
@@ -376,7 +376,7 @@ onMounted(() => {
 }
 
 .trendradar-view__nav-item:hover {
-  background: var(--bg-hover);
+  background: var(--hula-surface-list-hover);
   color: var(--hula-text-secondary);
 }
 
@@ -464,7 +464,7 @@ onMounted(() => {
 }
 
 .trendradar-view__analyze-result {
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
   border-radius: 8px;
   padding: 16px;
   border: 1px solid var(--hula-border-default);
@@ -482,7 +482,7 @@ onMounted(() => {
   gap: 12px;
   padding: 12px 16px;
   border-top: 1px solid var(--hula-border-default);
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
 }
 
 .trendradar-view__input-icon {

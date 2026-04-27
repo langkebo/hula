@@ -1,16 +1,16 @@
 <template>
   <n-config-provider :theme="naiveTheme" class="remote-login-modal size-full select-none">
     <div class="w-350px h-310px border-rd-8px select-none cursor-default">
-      <div class="bg-[--bg-popover] size-full p-6px box-border flex flex-col">
+      <div class="bg-[--hula-surface-elevated] size-full p-6px box-border flex flex-col">
         <svg
           v-if="!isMac()"
           @click="handleConfirm"
-          class="w-12px h-12px ml-a cursor-pointer select-none text-[--text-color]">
+          class="w-12px h-12px ml-a cursor-pointer select-none text-[--hula-text-primary]">
           <use href="#close"></use>
         </svg>
         <div class="flex flex-col gap-10px p-10px select-none">
           <n-flex vertical align="center" :size="30">
-            <span class="text-(14px [--text-color])">下线通知</span>
+            <span class="text-(14px [--hula-text-primary])">下线通知</span>
             <div class="relative">
               <img class="rounded-full size-72px" :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')" />
               <div
@@ -20,7 +20,7 @@
                 </svg>
               </div>
             </div>
-            <div class="text-(13px centent [--text-color]) px-12px leading-loose mb-20px">
+            <div class="text-(13px centent [--hula-text-primary]) px-12px leading-loose mb-20px">
               您的账号在其他设备
               <span class="text-[--color-primary]">{{ ip }}</span>
               登录，如非本人登录，请尽快修改密码，建议联系管理员

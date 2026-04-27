@@ -524,7 +524,7 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     display: flex;
     align-items: center;
     &:hover {
-      background-color: var(--bg-menu-hover);
+      background-color: var(--hula-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;
       }
@@ -545,7 +545,7 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     display: flex;
     align-items: center;
     &:hover {
-      background-color: var(--bg-menu-hover);
+      background-color: var(--hula-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;
       }
@@ -566,7 +566,7 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     display: flex;
     align-items: center;
     &:hover {
-      background-color: var(--bg-menu-hover);
+      background-color: var(--hula-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;
       }
@@ -595,9 +595,9 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     width: max-content;
     .menu-item-disabled {
       @include menu-item();
-      color: var(--disabled-color);
+      color: var(--hula-text-disabled);
       svg {
-        color: var(--disabled-color);
+        color: var(--hula-text-disabled);
       }
     }
     .menu-item-danger {
@@ -615,9 +615,9 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     @include menu-list-wrap();
     .menu-item-disabled {
       @include menu-item-wrap();
-      color: var(--disabled-color);
+      color: var(--hula-text-disabled);
       svg {
-        color: var(--disabled-color);
+        color: var(--hula-text-disabled);
       }
     }
     .menu-item-danger {

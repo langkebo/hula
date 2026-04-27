@@ -1,8 +1,11 @@
 import type { SettingsTabType } from '@/stores/domains/settings/settingsDialog'
 import { useRouter } from 'vue-router'
 import { useDialog, useMessage } from 'naive-ui'
+import { i18n } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('MenuConfig')
+
+type MenuTranslator = (key: string, named?: Record<string, unknown>) => string
 
 export interface MenuItem {
   id: string
@@ -23,6 +26,7 @@ export interface MenuItem {
 export interface MenuSection {
   id: string
   title?: string
+  titleKey?: string
   items: MenuItem[]
 }
 
@@ -49,6 +53,10 @@ function navigateToHome(): void {
   }
 }
 
+function translateMenu(key: string, named?: Record<string, unknown>) {
+  return named ? i18n.global.t(key, named) : i18n.global.t(key)
+}
+
 function openSendMessageDialog(): void {
   const router = useRouter()
   if (router) {
@@ -68,10 +76,10 @@ async function setFriendStatus(_status: 'favorite' | 'accepted' | 'blocked'): Pr
   const router = useRouter()
 
   dialog.warning({
-    title: '选择好友',
-    content: '请从好友列表中选择要操作的好友',
-    positiveText: '打开好友列表',
-    negativeText: '取消',
+    title: translateMenu('menu.user_menu.dialogs.select_friend.title'),
+    content: translateMenu('menu.user_menu.dialogs.select_friend.content'),
+    positiveText: translateMenu('menu.user_menu.dialogs.select_friend.positive'),
+    negativeText: translateMenu('common.cancel'),
     onPositiveClick: () => {
       if (router) {
         router.push('/friend')
@@ -98,18 +106,18 @@ async function handleRemoveFriend(): Promise<void> {
   const router = useRouter()
 
   dialog.warning({
-    title: '删除好友',
-    content: '确定要删除该好友吗？删除后需要重新添加',
-    positiveText: '删除',
-    negativeText: '取消',
+    title: translateMenu('menu.user_menu.dialogs.remove_friend.title'),
+    content: translateMenu('menu.user_menu.dialogs.remove_friend.content'),
+    positiveText: translateMenu('menu.user_menu.dialogs.remove_friend.positive'),
+    negativeText: translateMenu('common.cancel'),
     onPositiveClick: async () => {
       try {
         if (router) {
           router.push('/friend')
         }
-        message.info('请在好友列表中选择要删除的好友')
+        message.info(translateMenu('menu.user_menu.dialogs.remove_friend.redirect_hint'))
       } catch {
-        message.error('操作失败')
+        message.error(translateMenu('menu.user_menu.dialogs.remove_friend.failed'))
       }
     }
   })
@@ -119,10 +127,10 @@ async function handleStartEncryptedChat(): Promise<void> {
   const dialog = useDialog()
 
   dialog.warning({
-    title: '选择好友',
-    content: '请从好友列表中选择要发起加密聊天的好友',
-    positiveText: '打开好友列表',
-    negativeText: '取消',
+    title: translateMenu('menu.user_menu.dialogs.encrypted_chat.title'),
+    content: translateMenu('menu.user_menu.dialogs.encrypted_chat.content'),
+    positiveText: translateMenu('menu.user_menu.dialogs.encrypted_chat.positive'),
+    negativeText: translateMenu('common.cancel'),
     onPositiveClick: () => {
       openFriendManagementDialog()
     }
@@ -132,17 +140,20 @@ async function handleStartEncryptedChat(): Promise<void> {
 export const MENU_SECTIONS: MenuSection[] = [
   {
     id: 'quick-actions',
-    title: '快捷操作',
+    title: 'Quick Actions',
+    titleKey: 'menu.user_menu.sections.quick_actions',
     items: [
       {
         id: 'send-message',
-        label: '发送消息',
+        label: 'Send Message',
+        labelKey: 'menu.user_menu.items.send_message',
         icon: 'message',
         action: openSendMessageDialog
       },
       {
         id: 'encrypted-chat',
-        label: '加密聊天',
+        label: 'Encrypted Chat',
+        labelKey: 'menu.user_menu.items.encrypted_chat',
         icon: 'lock',
         action: handleStartEncryptedChat
       },
@@ -156,23 +167,27 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: 'friend-management',
-    title: '好友管理',
+    title: 'Friend Management',
+    titleKey: 'menu.user_menu.sections.friend_management',
     items: [
       {
         id: 'set-favorite',
-        label: '设为特别关注',
+        label: 'Set Favorite',
+        labelKey: 'menu.user_menu.items.set_favorite',
         icon: 'star',
         action: handleSetFavorite
       },
       {
         id: 'set-normal',
-        label: '设为普通好友',
+        label: 'Set Normal Friend',
+        labelKey: 'menu.user_menu.items.set_normal',
         icon: 'user',
         action: handleSetNormal
       },
       {
         id: 'set-blocked',
-        label: '设为屏蔽',
+        label: 'Set Blocked',
+        labelKey: 'menu.user_menu.items.set_blocked',
         icon: 'block',
         danger: true,
         action: handleSetBlocked
@@ -185,7 +200,8 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: 'remove-friend',
-        label: '删除好友',
+        label: 'Remove Friend',
+        labelKey: 'menu.user_menu.items.remove_friend',
         icon: 'delete',
         danger: true,
         action: handleRemoveFriend
@@ -194,29 +210,34 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: 'settings',
-    title: '设置',
+    title: 'Settings',
+    titleKey: 'menu.user_menu.sections.settings',
     items: [
       {
         id: 'notifications',
-        label: '通知设置',
+        label: 'Notifications',
+        labelKey: 'menu.user_menu.items.notifications',
         icon: 'bell',
         tabId: 'notifications'
       },
       {
         id: 'security',
-        label: '安全隐私',
+        label: 'Security & Privacy',
+        labelKey: 'menu.user_menu.items.security_privacy',
         icon: 'shield',
         tabId: 'securityPrivacy'
       },
       {
         id: 'settings',
-        label: '账号设置',
+        label: 'Account Settings',
+        labelKey: 'menu.user_menu.items.account_settings',
         icon: 'settings',
         tabId: 'account'
       },
       {
         id: 'link-device',
-        label: '设备管理',
+        label: 'Device Management',
+        labelKey: 'menu.user_menu.items.device_management',
         icon: 'device',
         tabId: 'sessions',
         desktopOnly: true
@@ -225,11 +246,13 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: 'help',
-    title: '帮助',
+    title: 'Help',
+    titleKey: 'menu.user_menu.sections.help',
     items: [
       {
         id: 'feedback',
-        label: '帮助与关于',
+        label: 'Help & About',
+        labelKey: 'menu.user_menu.items.help_about',
         icon: 'chat',
         tabId: 'helpAbout'
       },
@@ -241,7 +264,8 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: 'home',
-        label: '我的主页',
+        label: 'My Home',
+        labelKey: 'menu.user_menu.items.my_home',
         icon: 'home',
         action: navigateToHome
       }
@@ -249,7 +273,8 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: 'account',
-    title: '账号',
+    title: 'Account',
+    titleKey: 'menu.user_menu.sections.account',
     items: [
       {
         id: 'divider-account',
@@ -259,7 +284,8 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: 'logout',
-        label: '退出登录',
+        label: 'Sign Out',
+        labelKey: 'menu.sign_out',
         icon: 'logout',
         danger: true,
         action: () => {
@@ -286,7 +312,26 @@ export function getMenuSections(): MenuSection[] {
   return MENU_SECTIONS
 }
 
-export function getFilteredSections(isDesktop: boolean): MenuSection[] {
+function translateMenuItem(item: MenuItem, t: MenuTranslator): MenuItem {
+  if (item.divider || !item.labelKey) {
+    return item
+  }
+
+  return {
+    ...item,
+    label: t(item.labelKey)
+  }
+}
+
+function translateMenuSection(section: MenuSection, t: MenuTranslator): MenuSection {
+  return {
+    ...section,
+    title: section.titleKey ? t(section.titleKey) : section.title,
+    items: section.items.map((item) => translateMenuItem(item, t))
+  }
+}
+
+export function getFilteredSections(isDesktop: boolean, t: MenuTranslator = translateMenu): MenuSection[] {
   return MENU_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter((item) => {
@@ -294,7 +339,9 @@ export function getFilteredSections(isDesktop: boolean): MenuSection[] {
       if (item.mobileOnly && isDesktop) return false
       return true
     })
-  })).filter((section) => section.items.length > 0)
+  }))
+    .map((section) => translateMenuSection(section, t))
+    .filter((section) => section.items.length > 0)
 }
 
 export function findMenuItemById(id: string): MenuItem | undefined {
@@ -305,8 +352,8 @@ export function findMenuItemById(id: string): MenuItem | undefined {
   return undefined
 }
 
-export function getFilteredMenuItems(isDesktop: boolean): MenuItem[] {
-  const sections = getFilteredSections(isDesktop)
+export function getFilteredMenuItems(isDesktop: boolean, t: MenuTranslator = translateMenu): MenuItem[] {
+  const sections = getFilteredSections(isDesktop, t)
   const items: MenuItem[] = []
   for (const section of sections) {
     for (const item of section.items) {

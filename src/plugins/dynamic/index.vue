@@ -22,15 +22,22 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useDynamic } from '@/composables/useDynamic'
-import { completeRenderSampleOnNextFrame } from '@/utils/AppHarness'
+import { completeRenderSampleOnNextFrame, startRenderSample } from '@/utils/AppHarness'
 
 defineOptions({
   name: 'DynamicPage'
 })
 
+startRenderSample('desktop-dynamic-index', {
+  route: '/dynamic',
+  meta: {
+    source: 'page-entry'
+  }
+})
+
 onMounted(() => {
   completeRenderSampleOnNextFrame('desktop-dynamic-index', {
-    route: '/plugins/dynamic'
+    route: '/dynamic'
   })
 })
 

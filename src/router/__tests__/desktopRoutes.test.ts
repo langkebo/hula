@@ -11,6 +11,7 @@ describe('desktopRoutes', () => {
     expect(paths).toContain('/help-about')
     expect(paths).not.toContain('/securityPrivacy')
     expect(paths).not.toContain('/helpAbout')
+    expect(paths).not.toContain('/versatile')
   })
 
   it('does not expose the deprecated search details route', () => {

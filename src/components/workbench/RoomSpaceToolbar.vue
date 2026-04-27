@@ -7,6 +7,7 @@
           clearable
           class="toolbar-search min-w-220px flex-1"
           :placeholder="t('space.search_sessions_placeholder')"
+          :aria-label="t('space.search_sessions_placeholder')"
           @update:value="emit('update:searchKeyword', $event)">
           <template #prefix>
             <svg class="size-14px color-[--hula-text-tertiary]">
@@ -38,8 +39,12 @@
             type="button"
             class="toolbar-chip"
             :class="{ 'toolbar-chip--active': sessionTypeFilter === option.value }"
+            role="tab"
+            :aria-selected="sessionTypeFilter === option.value"
+            :tabindex="sessionTypeFilter === option.value ? 0 : -1"
             :data-test="`session-type-${option.value}`"
-            @click="emit('update:sessionTypeFilter', option.value)">
+            @click="emit('update:sessionTypeFilter', option.value)"
+            @keydown="handleChipGroupKeydown($event, sessionTypeOptions, option.value, updateSessionTypeFilter)">
             {{ option.label }}
           </button>
         </div>
@@ -53,8 +58,12 @@
               type="button"
               class="toolbar-chip"
               :class="{ 'toolbar-chip--active': sessionSort === option.value }"
+              role="tab"
+              :aria-selected="sessionSort === option.value"
+              :tabindex="sessionSort === option.value ? 0 : -1"
               :data-test="`session-sort-${option.value}`"
-              @click="emit('update:sessionSort', option.value)">
+              @click="emit('update:sessionSort', option.value)"
+              @keydown="handleChipGroupKeydown($event, sortOptions, option.value, updateSessionSort)">
               {{ option.label }}
             </button>
           </div>
@@ -105,6 +114,48 @@ const sortOptions = computed(() => [
 const sortSummary = computed(() =>
   props.sessionSort === WORKBENCH_SESSION_SORTS.name ? t('space.sort_summary_name') : t('space.sort_summary_recent')
 )
+
+type ChipOption<T extends string> = {
+  value: T
+  label: string
+}
+
+const updateSessionTypeFilter = (value: WorkbenchSessionTypeFilter) => emit('update:sessionTypeFilter', value)
+const updateSessionSort = (value: WorkbenchSessionSort) => emit('update:sessionSort', value)
+
+const handleChipGroupKeydown = <T extends string>(
+  event: KeyboardEvent,
+  options: ReadonlyArray<ChipOption<T>>,
+  currentValue: T,
+  onChange: (value: T) => void
+) => {
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
+    return
+  }
+
+  event.preventDefault()
+
+  const currentIndex = options.findIndex((option) => option.value === currentValue)
+  if (currentIndex === -1) return
+
+  let nextIndex = currentIndex
+  if (event.key === 'Home') {
+    nextIndex = 0
+  } else if (event.key === 'End') {
+    nextIndex = options.length - 1
+  } else {
+    const direction = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1
+    nextIndex = (currentIndex + direction + options.length) % options.length
+  }
+
+  const nextOption = options[nextIndex]
+  if (!nextOption) return
+
+  const target = event.currentTarget as HTMLElement | null
+  const nextButton = target?.parentElement?.querySelectorAll<HTMLButtonElement>('button[role="tab"]')[nextIndex]
+  nextButton?.focus()
+  onChange(nextOption.value)
+}
 </script>
 
 <style scoped lang="scss">
@@ -146,9 +197,20 @@ const sortSummary = computed(() =>
   color: var(--hula-text-primary);
 }
 
+.toolbar-chip:focus-visible {
+  outline: 2px solid var(--hula-color-primary-500);
+  outline-offset: 2px;
+}
+
 .toolbar-chip--active {
   border-color: var(--hula-color-primary-500);
   background: var(--hula-color-primary-100);
   color: var(--hula-color-primary-600);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar-chip {
+    transition: none;
+  }
 }
 </style>

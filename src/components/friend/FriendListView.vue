@@ -257,11 +257,11 @@ onMounted(async () => {
   transition: background-color 0.2s;
 
   &:hover {
-    background: var(--list-hover-color);
+    background: var(--hula-surface-list-hover);
   }
 
   &:active {
-    background: var(--msg-active-color);
+    background: var(--hula-surface-session-active);
   }
 }
 </style>

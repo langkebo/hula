@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUserMenuStore, type MenuPosition, type MenuTrigger } from '@/stores/domains/user/userMenu'
 import { useSettingsDialogStore, type SettingsTabType } from '@/stores/domains/settings/settingsDialog'
 import { isDesktop } from '@/composables/usePlatform'
@@ -15,6 +16,7 @@ export function useUserMenu() {
   const dialog = useDialog()
   const message = useMessage()
   const router = useRouter()
+  const { t } = useI18n()
 
   setRouterInstance(router)
 
@@ -23,7 +25,7 @@ export function useUserMenu() {
   const trigger = computed(() => userMenuStore.trigger)
   const isContextMenu = computed(() => userMenuStore.isContextMenu)
 
-  const menuSections = computed(() => getFilteredSections(isDesktop()))
+  const menuSections = computed(() => getFilteredSections(isDesktop(), t))
 
   setLogoutCallback(async () => {
     showLogoutConfirm()
@@ -31,10 +33,10 @@ export function useUserMenu() {
 
   function showLogoutConfirm() {
     dialog.warning({
-      title: '退出登录',
-      content: '确定要退出登录吗？退出后需要重新登录才能使用。',
-      positiveText: '确定退出',
-      negativeText: '取消',
+      title: t('menu.user_menu.dialogs.logout.title'),
+      content: t('menu.user_menu.dialogs.logout.content'),
+      positiveText: t('menu.user_menu.dialogs.logout.positive'),
+      negativeText: t('common.cancel'),
       onPositiveClick: async () => {
         await handleLogout()
       }
@@ -42,14 +44,14 @@ export function useUserMenu() {
   }
 
   async function handleLogout() {
-    const loading = message.loading('正在退出登录...', { duration: 0 })
+    const loading = message.loading(t('menu.user_menu.dialogs.logout.loading'), { duration: 0 })
     try {
       await matrixRuntimeSessionService.logoutCurrentSession()
-      message.success('已退出登录')
+      message.success(t('menu.user_menu.dialogs.logout.success'))
       window.location.reload()
     } catch (error) {
-      message.error('退出登录失败')
-      logger.error('退出登录失败:', error)
+      message.error(t('menu.user_menu.dialogs.logout.failed'))
+      logger.error('Failed to log out:', error)
     } finally {
       loading.destroy()
     }

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-center cursor-default gap-12px text-12px color-[--color-text-tertiary]">
+  <div class="flex-center cursor-default gap-12px text-12px color-[--hula-text-tertiary]">
     <span class="h-px w-60px bg-#dadada dark:bg-#3a3a3a"></span>
     <span>{{ ssoLabel }}</span>
     <span class="h-px w-60px bg-#dadada dark:bg-#3a3a3a"></span>

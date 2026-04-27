@@ -61,7 +61,7 @@ const goHome = () => {
 
 .not-found-message {
   font-size: 18px;
-  color: var(--color-text-secondary);
+  color: var(--hula-text-secondary);
   margin: 16px 0 32px;
   line-height: 1.6;
 }

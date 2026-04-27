@@ -242,7 +242,7 @@ const goHome = () => {
   transition: all 0.2s;
 
   &:hover {
-    background: var(--bg-msg-hover);
+    background: var(--hula-surface-list-hover);
   }
 }
 

@@ -64,10 +64,17 @@ const onlineClass = computed(() => {
 
 const iconMap: Record<string, string> = {
   home: 'mdi:home',
+  message: 'mdi:message-text-outline',
+  lock: 'mdi:lock-outline',
+  star: 'mdi:star-outline',
+  user: 'mdi:account-outline',
+  block: 'mdi:cancel',
+  delete: 'mdi:delete-outline',
   qrcode: 'mdi:qrcode',
   bell: 'mdi:bell',
   shield: 'mdi:shield',
   settings: 'mdi:cog',
+  device: 'mdi:devices',
   chat: 'mdi:chat',
   logout: 'mdi:logout'
 }

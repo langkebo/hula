@@ -105,7 +105,7 @@
             </div>
 
             <div v-if="!hasResults" class="empty-state">
-              <svg class="size-48px color-[--color-text-tertiary]">
+              <svg class="size-48px color-[--hula-text-tertiary]">
                 <use href="#search"></use>
               </svg>
               <span class="empty-text">{{ t('search.no_results') }}</span>
@@ -315,11 +315,11 @@ watch(
 }
 
 .section-title {
-  @apply text-12px font-medium color-[--color-text-tertiary];
+  @apply text-12px font-medium color-[--hula-text-tertiary];
 }
 
 .section-count {
-  @apply text-12px color-[--color-text-tertiary];
+  @apply text-12px color-[--hula-text-tertiary];
 }
 
 .result-item {
@@ -347,11 +347,11 @@ watch(
 }
 
 .result-room {
-  @apply text-12px color-[--color-text-tertiary] truncate;
+  @apply text-12px color-[--hula-text-tertiary] truncate;
 }
 
 .result-preview {
-  @apply text-12px color-[--color-text-tertiary] truncate;
+  @apply text-12px color-[--hula-text-tertiary] truncate;
 
   :deep(mark) {
     background: var(--color-primary-active);
@@ -360,7 +360,7 @@ watch(
 }
 
 .result-time {
-  @apply text-12px color-[--color-text-tertiary] flex-shrink-0;
+  @apply text-12px color-[--hula-text-tertiary] flex-shrink-0;
 }
 
 .encrypted-badge {
@@ -368,7 +368,7 @@ watch(
 }
 
 .result-userId {
-  @apply text-12px color-[--color-text-tertiary];
+  @apply text-12px color-[--hula-text-tertiary];
 }
 
 .empty-state {
@@ -376,7 +376,7 @@ watch(
 }
 
 .empty-text {
-  @apply text-14px color-[--color-text-tertiary];
+  @apply text-14px color-[--hula-text-tertiary];
 }
 
 .recent-searches {

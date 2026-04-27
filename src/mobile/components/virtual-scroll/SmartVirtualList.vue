@@ -274,7 +274,7 @@ defineExpose({
   justify-content: center;
   align-items: center;
   padding: 12px;
-  color: var(--color-text-tertiary, #909090);
+  color: var(--hula-text-tertiary, #909090);
   font-size: 12px;
 }
 

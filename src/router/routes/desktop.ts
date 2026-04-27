@@ -170,10 +170,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     redirect: '/settings?tab=account'
   },
   {
-    path: '/versatile',
-    redirect: '/settings?tab=appearance'
-  },
-  {
     path: '/announList/:roomId/:type',
     name: 'announList',
     component: () => import('@/views/announWindow/index.vue')

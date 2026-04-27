@@ -224,7 +224,7 @@ onMounted(async () => {
   justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid var(--hula-border-default);
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
 }
 
 .openclaw-view__header-left {
@@ -308,7 +308,7 @@ onMounted(async () => {
 
 .openclaw-view__quick-action {
   padding: 8px 16px;
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
   border: 1px solid var(--hula-border-default);
   border-radius: 16px;
   font-size: 13px;
@@ -375,7 +375,7 @@ onMounted(async () => {
 }
 
 .openclaw-view__message--assistant .openclaw-view__message-bubble {
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
   color: var(--hula-text-secondary);
   border-bottom-left-radius: 4px;
 }
@@ -383,7 +383,7 @@ onMounted(async () => {
 .openclaw-view__footer {
   padding: 12px 16px;
   border-top: 1px solid var(--hula-border-default);
-  background: var(--bg-popover);
+  background: var(--hula-surface-elevated);
 }
 
 .openclaw-view__input-wrapper {

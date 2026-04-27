@@ -179,6 +179,17 @@ function handleKeyDown(event: KeyboardEvent) {
 
   if (keys.length >= 2) {
     const shortcutStr = keys.join('+')
+
+    // Conflict detection
+    const conflictingShortcut = Object.entries(shortcutsStore).find(
+      ([key, value]) => key !== currentEditingType.value && value === shortcutStr
+    )
+
+    if (conflictingShortcut) {
+      message.error(t('setting.keyboard.conflict_error'))
+      return
+    }
+
     if (currentEditingType.value === 'screenshot') {
       shortcutsStore.screenshot = shortcutStr
       settingStore.setScreenshotShortcut(shortcutStr)

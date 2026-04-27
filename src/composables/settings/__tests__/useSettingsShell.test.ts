@@ -47,6 +47,7 @@ describe('useSettingsShell', () => {
     expect(shell.visibleTabs.value).toHaveLength(15)
     expect(shell.visibleTabs.value.map((tab) => tab.id)).toContain('keyboard')
     expect(shell.visibleTabs.value.map((tab) => tab.id)).toContain('sidebar')
+    expect(shell.visibleTabs.value.find((tab) => tab.id === 'account')?.label).toBe('Account')
   })
 
   it('hides desktop-only tabs on mobile', () => {

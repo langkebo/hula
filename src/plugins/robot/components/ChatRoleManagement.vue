@@ -567,7 +567,7 @@ watch(showEditModal, (val) => {
     .role-name {
       font-size: 16px;
       font-weight: 500;
-      color: var(--text-color);
+      color: var(--hula-text-primary);
     }
 
     .role-meta {

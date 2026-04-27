@@ -66,7 +66,7 @@
             justify="center"
             align="center"
             :size="8"
-            class="box bg-[--button-bg-color]">
+            class="box bg-[--hula-surface-subtle]">
             <!-- 在下载中进度条 -->
             <n-flex
               @click="handleState(plugin)"

@@ -360,7 +360,7 @@ onMounted(() => {
   transition: all 0.2s;
 
   &:hover {
-    background: var(--bg-hover);
+    background: var(--hula-surface-list-hover);
   }
 
   .widget-info {

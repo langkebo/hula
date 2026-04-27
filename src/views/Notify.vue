@@ -18,10 +18,10 @@
         <n-avatar round :size="44" :src="AvatarUtils.getAvatarUrl(group.avatar)" />
 
         <n-flex class="flex-1" vertical justify="center" :size="8">
-          <span class="text-(16px [--text-color])">{{ group.name }}</span>
+          <span class="text-(16px [--hula-text-primary])">{{ group.name }}</span>
 
           <n-flex class="w-full" align="center" justify="space-between" :size="10">
-            <span class="max-w-150px truncate text-(12px [--text-color])">
+            <span class="max-w-150px truncate text-(12px [--hula-text-primary])">
               <template v-if="group.isAtMe">
                 <span class="text flex-1 leading-tight text-12px truncate">
                   <span class="text-[--color-danger] mr-4px">{{ t('message.message_list.mention_tag') }}</span>
@@ -355,6 +355,6 @@ onUnmounted(() => {
 </script>
 <style scoped lang="scss">
 .notify {
-  @apply bg-[--hula-surface-panel] size-full p-8px box-border select-none text-[--text-color] text-12px;
+  @apply bg-[--hula-surface-panel] size-full p-8px box-border select-none text-[--hula-text-primary] text-12px;
 }
 </style>

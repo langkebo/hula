@@ -6,7 +6,7 @@
     <span class="status-text">{{ statusText }}</span>
     <n-tooltip v-if="showTooltip" trigger="hover">
       <template #trigger>
-        <svg class="size-14px color-[--color-text-tertiary] cursor-help">
+        <svg class="size-14px color-[--hula-text-tertiary] cursor-help">
           <use href="#info"></use>
         </svg>
       </template>
@@ -84,7 +84,7 @@ const tooltipText = computed(() => {
   }
 
   &.unencrypted {
-    color: var(--color-text-tertiary);
+    color: var(--hula-text-tertiary);
   }
 
   &.error {

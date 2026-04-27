@@ -174,7 +174,7 @@ describe('KeyBackupRestoreDialog', () => {
       success: true,
       message: '成功恢复 3 个密钥'
     })
-    expect(messageSuccessMock).toHaveBeenCalledWith('密钥恢复成功')
+    expect(messageSuccessMock).toHaveBeenCalledWith('恢复成功')
     expect(setTimeoutMock).toHaveBeenCalledWith(expect.any(Function), 1500)
 
     timeoutCallbackRef.current?.()

@@ -8,7 +8,7 @@
       <div class="flex h-full flex-col overflow-auto bg-#f7f8fa">
         <div class="flex flex-col gap-12px p-16px">
           <div class="rounded-16px bg-white p-16px">
-            <div class="text-18px font-600 text-[--text-color]">动态共享骨架</div>
+            <div class="text-18px font-600 text-[--hula-text-primary]">动态共享骨架</div>
             <div class="mt-8px text-13px leading-20px text-gray-500">{{ summary }}</div>
             <div class="mt-12px">
               <van-tag type="primary">{{ hasMobileEntry ? '移动端入口已接入' : '移动端入口未接入' }}</van-tag>
@@ -23,7 +23,7 @@
             @click="openDetail(item.id)">
             <div class="flex items-start justify-between gap-12px">
               <div class="min-w-0 flex-1">
-                <div class="text-15px font-600 text-[--text-color]">{{ item.title }}</div>
+                <div class="text-15px font-600 text-[--hula-text-primary]">{{ item.title }}</div>
                 <div class="mt-6px text-13px leading-20px text-gray-500">{{ item.description }}</div>
               </div>
               <van-tag :type="getTagType(item.status)">{{ getStatusText(item.status) }}</van-tag>
