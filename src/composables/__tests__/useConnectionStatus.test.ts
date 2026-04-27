@@ -11,7 +11,10 @@ vi.mock('vue', async () => {
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
-    getClient: vi.fn(() => null)
+    getClient: vi.fn(() => null),
+    on: vi.fn(),
+    off: vi.fn(),
+    getConnectionState: vi.fn(() => 'connected')
   }
 }))
 
