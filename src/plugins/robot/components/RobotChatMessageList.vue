@@ -14,7 +14,7 @@
             :src="getModelAvatar(selectedModel)"
             :fallback-src="getDefaultAvatar()" />
           <n-flex vertical justify="space-between">
-            <p class="text-(12px [--chat-text-color])">
+            <p class="text-(12px [--hula-text-primary])">
               {{ selectedModel ? selectedModel.name : 'GPT-4' }}
               <n-tag
                 v-if="selectedModel"

@@ -10,7 +10,7 @@
       <div class="flex items-center gap-6px cursor-pointer" @click="emit('update:show', !show)">
         <n-avatar v-if="selectedRole" :src="selectedRole.avatar" :size="24" round :fallback-src="getDefaultAvatar()" />
         <Icon v-else icon="mdi:account-circle" class="text-24px color-#909090" />
-        <span class="text-(12px [--chat-text-color])">
+        <span class="text-(12px [--hula-text-primary])">
           {{ selectedRole ? selectedRole.name : '选择角色' }}
         </span>
         <Icon icon="mdi:chevron-down" class="text-16px color-#909090" />

@@ -818,7 +818,7 @@ onMounted(() => {
 }
 
 .model-card {
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   padding: 16px;
   background: var(--bg-color);

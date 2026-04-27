@@ -27,7 +27,7 @@
         @model-click="handleModelClick"
         @create-new-chat="handleCreateNewChat"
         @delete-chat="handleDeleteChat" />
-      <div class="h-1px bg-[--line-color]"></div>
+      <div class="h-1px bg-[--hula-border-default]"></div>
 
       <!-- 聊天信息框 -->
       <RobotChatMessageList
@@ -44,7 +44,7 @@
         :is-likely-media-url="isLikelyMediaUrl"
         @preview-image="handleImagePreview"
         @delete-message="handleDeleteMessage" />
-      <div class="h-1px bg-[--line-color]"></div>
+      <div class="h-1px bg-[--hula-border-default]"></div>
       <RobotChatInputPanel
         ref="MsgInputRef"
         :show-role-popover="showRolePopover"
@@ -360,7 +360,7 @@ const {
 }
 
 .history-item {
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s;

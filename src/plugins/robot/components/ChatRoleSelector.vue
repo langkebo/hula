@@ -150,7 +150,7 @@ defineExpose({
   gap: 12px;
   padding: 12px;
   background: var(--bg-color);
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
@@ -199,7 +199,7 @@ defineExpose({
   left: 0;
   right: 0;
   background: var(--bg-color);
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 1000;
@@ -212,7 +212,7 @@ defineExpose({
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    border-bottom: 1px solid var(--line-color);
+    border-bottom: 1px solid var(--hula-border-default);
 
     .header-title {
       font-size: 14px;

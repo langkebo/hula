@@ -164,7 +164,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--hula-border-default);
 
   .thread-title {
     display: flex;
@@ -265,7 +265,7 @@ watch(
 
 .thread-reply {
   padding: 16px;
-  border-top: 1px solid var(--line-color);
+  border-top: 1px solid var(--hula-border-default);
 
   .reply-actions {
     display: flex;

@@ -9,7 +9,7 @@
       <n-flex justify="space-between" align="center" :size="0">
         <n-flex :size="4" vertical>
           <n-flex :size="0" align="center">
-            <p class="text-(20px [--chat-text-color]) font-semibold select-none">HuLa-</p>
+            <p class="text-(20px [--hula-text-primary]) font-semibold select-none">HuLa-</p>
             <p class="gpt-subtitle">ChatBot</p>
             <div class="ml-6px p-[4px_8px] size-fit bg-[--bate-bg] rounded-8px text-(12px [--bate-color] center)">
               Beta
@@ -25,7 +25,7 @@
         <n-flex align="center">
           <n-avatar bordered round :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)" :size="48" />
           <n-flex vertical>
-            <p class="text-(14px [--chat-text-color]) font-500">{{ userStore.userInfo!.name }}</p>
+            <p class="text-(14px [--hula-text-primary]) font-500">{{ userStore.userInfo!.name }}</p>
             <p class="text-(12px #909090)">剩余：28天过期</p>
           </n-flex>
         </n-flex>
@@ -76,7 +76,7 @@
                   <n-ellipsis
                     v-if="editingItemId !== item.id"
                     style="width: calc(100% - 20px)"
-                    class="text-(14px [--chat-text-color]) truncate font-500 select-none">
+                    class="text-(14px [--hula-text-primary]) truncate font-500 select-none">
                     {{ item.title || `会话 ${index + 1}` }}
                   </n-ellipsis>
                   <n-input
@@ -96,7 +96,7 @@
                     class="h-22px lh-22px rounded-6px"></n-input>
                   <svg
                     @click.stop="deleteChat(item)"
-                    class="color-[--chat-text-color] size-20px opacity-0 absolute right-0px top-4px">
+                    class="color-[--hula-text-primary] size-20px opacity-0 absolute right-0px top-4px">
                     <use href="#squareClose"></use>
                   </svg>
                 </n-flex>
@@ -130,14 +130,14 @@
         <n-flex :size="4" align="center">
           <div
             @click="jump"
-            class="bg-[--chat-bt-color] border-(1px solid [--line-color]) color-[--chat-text-color] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
+            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
             <svg class="size-18px"><use href="#settings"></use></svg>
           </div>
           <a
             target="_blank"
             rel="noopener noreferrer"
             href="https://gitee.com/llangkebo/hula/"
-            class="bg-[--chat-bt-color] border-(1px solid [--line-color]) color-[--chat-text-color] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
+            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
             <svg class="size-18px"><use href="#github"></use></svg>
           </a>
         </n-flex>
@@ -145,19 +145,19 @@
         <n-flex :size="4" align="center">
           <div
             @click="openHistory"
-            class="bg-[--chat-bt-color] border-(1px solid [--line-color]) color-[--chat-text-color] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
+            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
             title="生成历史">
             <Icon icon="mdi:history" class="text-18px" />
           </div>
           <div
             @click="openModelManagement"
-            class="bg-[--chat-bt-color] border-(1px solid [--line-color]) color-[--chat-text-color] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
+            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
             title="管理模型">
             <Icon icon="mdi:robot-outline" class="text-18px" />
           </div>
           <div
             @click="openRoleManagement"
-            class="bg-[--chat-bt-color] border-(1px solid [--line-color]) color-[--chat-text-color] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
+            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
             title="管理角色">
             <Icon icon="mdi:account-cog" class="text-18px" />
           </div>
@@ -171,7 +171,7 @@
         <div
           v-else
           @click="add"
-          class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--line-color]) select-none text-(12px [--chat-text-color]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
+          class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) select-none text-(12px [--hula-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
           <svg class="size-15px pb-2px"><use href="#plus"></use></svg>
           <p>新的聊天</p>
         </div>
@@ -186,7 +186,7 @@
           </template>
           <template #trigger>
             <div
-              class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--line-color]) select-none text-(12px [--chat-text-color]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
+              class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) select-none text-(12px [--hula-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
               <svg class="size-15px pb-2px"><use href="#delete"></use></svg>
               <p>全部删除</p>
             </div>
@@ -689,11 +689,11 @@ onMounted(async () => {
 .plugins {
   @apply size-fit bg-[--chat-bt-color] rounded-8px custom-shadow p-[8px_14px]
   flex items-center gap-10px select-none cursor-pointer
-  text-14px color-[--chat-text-color] border-(1px solid [--line-color]);
+  text-14px color-[--hula-text-primary] border-(1px solid [--hula-border-default]);
 }
 
 .chat-item {
-  @apply relative bg-[--chat-bt-color] border-(1px solid [--line-color]) cursor-pointer custom-shadow rounded-8px w-full h-65px;
+  @apply relative bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) cursor-pointer custom-shadow rounded-8px w-full h-65px;
   transition: all 0.2s ease;
 
   &:hover {

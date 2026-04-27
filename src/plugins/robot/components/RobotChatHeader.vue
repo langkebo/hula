@@ -6,7 +6,7 @@
       <p
         v-if="!isEdit"
         @click="emit('edit')"
-        class="leading-6 text-(18px [--chat-text-color]) truncate font-500 hover:underline cursor-pointer">
+        class="leading-6 text-(18px [--hula-text-primary]) truncate font-500 hover:underline cursor-pointer">
         {{ chatTitle || '新的会话' }}
       </p>
       <n-input
@@ -122,14 +122,14 @@
           </div>
         </template>
         <n-flex vertical :size="12">
-          <p class="text-(14px [--chat-text-color]) font-500">确定要删除当前会话吗？</p>
+          <p class="text-(14px [--hula-text-primary]) font-500">确定要删除当前会话吗？</p>
           <p class="text-(12px #d5304f)">删除后将无法恢复！</p>
 
           <n-checkbox
             :checked="deleteWithMessages"
             size="small"
             @update:checked="emit('update:delete-with-messages', $event)">
-            <span class="text-(12px [--chat-text-color])">同时删除会话中的所有消息</span>
+            <span class="text-(12px [--hula-text-primary])">同时删除会话中的所有消息</span>
           </n-checkbox>
 
           <n-flex justify="end" :size="8">
@@ -220,7 +220,7 @@ watch(
 }
 
 .right-btn {
-  @apply size-fit border-(1px solid [--line-color]) cursor-pointer bg-[--chat-bt-color] color-[--chat-text-color] rounded-8px custom-shadow p-[10px_11px];
+  @apply size-fit border-(1px solid [--hula-border-default]) cursor-pointer bg-[--chat-bt-color] color-[--hula-text-primary] rounded-8px custom-shadow p-[10px_11px];
   transition: all 0.2s ease;
 
   svg {
