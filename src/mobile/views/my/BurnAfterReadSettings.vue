@@ -121,18 +121,25 @@ const burnRooms = ref<{ roomId: string; name: string; duration: number; enabled:
 
 const burnStats = ref({ totalBurned: 0, activeRooms: 0 })
 
-const durationOptions = [
-  { label: '30秒', value: 30 },
-  { label: '1分钟', value: 60 },
-  { label: '5分钟', value: 300 },
-  { label: '1小时', value: 3600 },
-  { label: '24小时', value: 86400 }
-]
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return t('setting.burn_after_read.formats.seconds', { count: String(seconds) })
+  if (seconds < 3600) return t('setting.burn_after_read.formats.minutes', { count: String(seconds / 60) })
+  if (seconds < 86400) return t('setting.burn_after_read.formats.hours', { count: String(seconds / 3600) })
+  return t('setting.burn_after_read.formats.days', { count: String(seconds / 86400) })
+}
 
-const durationColumns = durationOptions.map((o) => ({ text: o.label, value: o.value }))
+const durationOptions = computed(() => [
+  { label: formatDuration(30), value: 30 },
+  { label: formatDuration(60), value: 60 },
+  { label: formatDuration(300), value: 300 },
+  { label: formatDuration(3600), value: 3600 },
+  { label: formatDuration(86400), value: 86400 }
+])
+
+const durationColumns = computed(() => durationOptions.value.map((o) => ({ text: o.label, value: o.value })))
 
 const currentDurationLabel = computed(() => {
-  return durationOptions.find((o) => o.value === defaultDuration.value)?.label || '1分钟'
+  return durationOptions.value.find((o) => o.value === defaultDuration.value)?.label || formatDuration(60)
 })
 
 onMounted(() => {
@@ -191,12 +198,5 @@ function handleRoomToggle(room: { roomId: string; name: string; duration: number
   room.enabled = val
   saveBurnRooms()
   showToast(val ? t('mobile_burn.room_enabled') : t('mobile_burn.room_disabled'))
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}秒`
-  if (seconds < 3600) return `${seconds / 60}分钟`
-  if (seconds < 86400) return `${seconds / 3600}小时`
-  return `${seconds / 86400}天`
 }
 </script>

@@ -183,18 +183,25 @@ const sendKeyLabel = computed(() => {
   return sendKeyOptions.find((o) => o.value === sendKey.value)?.label || 'Enter'
 })
 
-const burnDurationOptions = [
-  { label: '30秒', value: 30 },
-  { label: '1分钟', value: 60 },
-  { label: '5分钟', value: 300 },
-  { label: '1小时', value: 3600 },
-  { label: '24小时', value: 86400 }
-]
+function formatBurnDuration(value: number): string {
+  if (value < 60) return t('setting.burn_after_read.formats.seconds', { count: String(value) })
+  if (value < 3600) return t('setting.burn_after_read.formats.minutes', { count: String(value / 60) })
+  if (value < 86400) return t('setting.burn_after_read.formats.hours', { count: String(value / 3600) })
+  return t('setting.burn_after_read.formats.days', { count: String(value / 86400) })
+}
 
-const burnDurationColumns = burnDurationOptions.map((o) => ({ text: o.label, value: o.value }))
+const burnDurationOptions = computed(() => [
+  { label: formatBurnDuration(30), value: 30 },
+  { label: formatBurnDuration(60), value: 60 },
+  { label: formatBurnDuration(300), value: 300 },
+  { label: formatBurnDuration(3600), value: 3600 },
+  { label: formatBurnDuration(86400), value: 86400 }
+])
+
+const burnDurationColumns = computed(() => burnDurationOptions.value.map((o) => ({ text: o.label, value: o.value })))
 
 const burnDurationLabel = computed(() => {
-  return burnDurationOptions.find((o) => o.value === burnDefaultDuration.value)?.label || '1分钟'
+  return burnDurationOptions.value.find((o) => o.value === burnDefaultDuration.value)?.label || formatBurnDuration(60)
 })
 
 onMounted(() => {
