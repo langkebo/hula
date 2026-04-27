@@ -3,7 +3,11 @@
     v-model:show="infoShow"
     :placement="shrinkStatus ? 'bottom-start' : 'right-start'"
     :show-arrow="false"
-    style="padding: 0; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px)"
+    style="
+      padding: 0;
+      background: color-mix(in srgb, var(--hula-surface-elevated) 20%, transparent);
+      backdrop-filter: blur(10px);
+    "
     trigger="click">
     <template #trigger>
       <!-- 头像 -->
@@ -11,7 +15,7 @@
         <n-avatar
           :size="34"
           :src="avatarSrc"
-          :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#fff'"
+          :color="settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-surface-elevated)'"
           :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
           round />
 
@@ -34,7 +38,7 @@
           <n-avatar
             :src="avatarSrc"
             round
-            :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#fff'"
+            :color="settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-surface-elevated)'"
             :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
             class="size-68px text-20px select-none cursor-default" />
 
