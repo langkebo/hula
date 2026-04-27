@@ -4,7 +4,7 @@
     data-tauri-drag-region
     id="center"
     :class="{ 'rounded-r-8px': shrinkStatus }"
-    class="resizable select-none flex flex-col border-r-(1px solid [--right-chat-footer-line-color])"
+    class="resizable select-none flex flex-col border-r-(1px solid [--hula-border-layout-divider])"
     :style="centerStyle">
     <!-- 分隔条 -->
     <div v-show="!shrinkStatus" class="resize-handle transition-all duration-600 ease-in-out" @mousedown="initDrag">

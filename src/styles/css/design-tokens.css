@@ -51,6 +51,8 @@
   --hula-surface-sidebar-hover: rgba(193, 193, 193, 0.4);
   --hula-surface-sidebar-active: rgba(90, 90, 90, 0.2);
   --hula-surface-sidebar-selected: rgba(193, 193, 193, 0.6);
+  --hula-surface-list-hover: color-mix(in srgb, var(--hula-text-secondary) 12%, transparent);
+  --hula-surface-session-active: var(--hula-color-primary-500);
   --hula-surface-overlay: rgba(255, 255, 255, 0.65);
   --hula-surface-inverse-hover: rgba(255, 255, 255, 0.15);
   --hula-overlay-mask-default: rgba(0, 0, 0, 0.4);
@@ -62,6 +64,7 @@
   --hula-border-strong: #d9d9d9;
   --hula-border-contrast: rgba(255, 255, 255, 0.08);
   --hula-border-inverse-muted: rgba(255, 255, 255, 0.6);
+  --hula-border-layout-divider: var(--hula-border-default);
 
   --hula-status-online: #52c41a;
   --hula-status-offline: #909090;
@@ -322,6 +325,8 @@ html[data-theme='dark'] {
   --hula-surface-sidebar-hover: rgba(255, 255, 255, 0.2);
   --hula-surface-sidebar-active: #444444;
   --hula-surface-sidebar-selected: rgba(193, 193, 193, 0.1);
+  --hula-surface-list-hover: color-mix(in srgb, var(--hula-text-inverse) 10%, transparent);
+  --hula-surface-session-active: var(--hula-color-primary-300-alpha);
   --hula-surface-overlay: rgba(33, 33, 33, 0.95);
   --hula-surface-inverse-hover: rgba(255, 255, 255, 0.15);
   --hula-overlay-mask-default: rgba(0, 0, 0, 0.4);
@@ -333,6 +338,7 @@ html[data-theme='dark'] {
   --hula-border-strong: #434343;
   --hula-border-contrast: rgba(255, 255, 255, 0.06);
   --hula-border-inverse-muted: rgba(255, 255, 255, 0.6);
+  --hula-border-layout-divider: var(--hula-border-muted);
 
   --hula-status-online: #73d13d;
   --hula-status-offline: #595959;

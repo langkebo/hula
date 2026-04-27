@@ -17,7 +17,6 @@ declare namespace STO {
     themes: {
       content: ThemeEnum
       pattern: string
-      versatile: string
     }
     /** 关闭提示 */
     tips: {

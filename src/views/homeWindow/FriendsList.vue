@@ -1,12 +1,12 @@
 <template>
-  <div class="mt-30px pb-10px flex flex-col gap-10px border-b-(1px solid [--right-chat-footer-line-color])">
+  <div class="mt-30px pb-10px flex flex-col gap-10px border-b-(1px solid [--hula-border-layout-divider])">
     <div class="flex-center gap-5px w-full pr-16px pl-16px box-border">
       <n-input
         id="friends-search"
         v-model:value="searchText"
         @update:value="handleSearchInputChange"
         class="rounded-6px w-full relative text-12px"
-        style="background: var(--search-bg-color)"
+        style="background: var(--hula-surface-search)"
         :maxlength="20"
         clearable
         spellCheck="false"
@@ -51,12 +51,12 @@
     @click="handleApply"
     align="center"
     justify="space-between"
-    class="my-10px p-12px hover:(bg-[--list-hover-color] cursor-pointer)">
-    <div class="text-(14px [--text-color])">{{ t('home.friends_list.notice.friend') }}</div>
+    class="my-10px p-12px hover:(bg-[--hula-surface-list-hover] cursor-pointer)">
+    <div class="text-(14px [--hula-text-primary])">{{ t('home.friends_list.notice.friend') }}</div>
     <n-flex align="center" :size="4">
       <n-badge :value="globalStore.friendUnreadCount" :max="15" />
       <!-- <n-badge v-if="globalStore.friendUnreadCount > 0" dot color="#d5304f" /> -->
-      <svg class="size-16px rotate-270 color-[--text-color]"><use href="#down"></use></svg>
+      <svg class="size-16px rotate-270 color-[--hula-text-primary]"><use href="#down"></use></svg>
     </n-flex>
   </n-flex>
 
@@ -64,10 +64,10 @@
     @click="handleOpenSecretChat"
     align="center"
     justify="space-between"
-    class="my-10px p-12px hover:(bg-[--list-hover-color] cursor-pointer)">
-    <div class="text-(14px [--text-color])">{{ t('home.secret_chat.title') }}</div>
+    class="my-10px p-12px hover:(bg-[--hula-surface-list-hover] cursor-pointer)">
+    <div class="text-(14px [--hula-text-primary])">{{ t('home.secret_chat.title') }}</div>
     <n-flex align="center" :size="4">
-      <svg class="size-16px color-[--text-color]"><use href="#eye-close"></use></svg>
+      <svg class="size-16px color-[--hula-text-primary]"><use href="#eye-close"></use></svg>
     </n-flex>
   </n-flex>
 
@@ -412,19 +412,19 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .item-box {
-  color: var(--text-color);
+  color: var(--hula-text-primary);
   .text {
     color: var(--hula-text-tertiary);
   }
   &:not(.active):hover {
-    background: var(--bg-msg-hover);
+    background: var(--hula-surface-list-hover);
     border-radius: 12px;
     cursor: pointer;
   }
 }
 
 .active {
-  background: var(--msg-active-color);
+  background: var(--hula-surface-session-active);
   border-radius: 12px;
   color: var(--hula-text-inverse);
   .text {

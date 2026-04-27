@@ -121,6 +121,13 @@ describe('SettingStore', () => {
       expect(store.themes.content).toBe(ThemeEnum.LIGHT)
     })
 
+    it('normalizeThemeState strips legacy versatile theme state', () => {
+      const store = useSettingStore()
+      ;(store.themes as typeof store.themes & { versatile?: string }).versatile = 'default'
+      store.normalizeThemeState()
+      expect('versatile' in (store.themes as typeof store.themes & { versatile?: string })).toBe(false)
+    })
+
     it('ensureThemeReady initializes theme when content is empty', () => {
       const store = useSettingStore()
       store.themes.content = ''
