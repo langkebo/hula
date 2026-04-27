@@ -21,8 +21,8 @@
                   @error="($event.target as HTMLImageElement).src = '/logo.png'" />
 
                 <div class="flex flex-col gap-10px">
-                  <p class="text-[--text-color]">{{ userInfo.name }}</p>
-                  <p class="text-(12px [--text-color])">群号: {{ userInfo.account }}</p>
+                  <p class="text-[--hula-text-primary]">{{ userInfo.name }}</p>
+                  <p class="text-(12px [--hula-text-primary])">群号: {{ userInfo.account }}</p>
                 </div>
               </div>
 
