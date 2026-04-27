@@ -241,7 +241,7 @@ async function loadEncryptionInfo() {
     const rotationStatus = await matrixEncryptionService.getKeyRotationStatus()
     needsRotation.value = rotationStatus.needsRotation
   } catch (error) {
-    logger.error('加载加密信息失败:', error)
+    logger.error('Failed to load encryption details', error)
   }
 }
 

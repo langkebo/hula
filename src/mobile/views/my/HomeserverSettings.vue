@@ -82,7 +82,7 @@ async function handleSave() {
       message: t('mobile_setting.homeserver_saved')
     })
   } catch (error) {
-    logger.error('保存 homeserver 失败:', error)
+    logger.error('Failed to save homeserver', error)
     showToast({
       type: 'fail',
       message: t('mobile_setting.homeserver_save_failed')

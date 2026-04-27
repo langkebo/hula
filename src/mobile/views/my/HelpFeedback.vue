@@ -241,7 +241,7 @@ async function submitBugReport() {
     bugReport.value = { title: '', description: '' }
     showBugReport.value = false
   } catch (error) {
-    logger.error('提交 Bug 报告失败:', error)
+    logger.error('Failed to submit bug report', error)
     showToast({
       type: 'fail',
       message: t('mobile_help.submit_failed')
@@ -275,7 +275,7 @@ async function submitFeatureRequest() {
     featureRequest.value = { title: '', description: '' }
     showFeatureRequest.value = false
   } catch (error) {
-    logger.error('提交功能请求失败:', error)
+    logger.error('Failed to submit feature request', error)
     showToast({
       type: 'fail',
       message: t('mobile_help.submit_failed')

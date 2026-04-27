@@ -15,6 +15,9 @@
     "bio": "Please enter a personal introduction"
   },
   "save_btn": "SAVE",
+  "nickname_required": "Nickname is required",
+  "save_success": "Profile updated",
+  "save_failed": "Update failed, please try again",
   "change_avatar": "Change",
   "genders": {
     "male": "Male",

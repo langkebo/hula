@@ -36,6 +36,9 @@
   "base_url_required": "Please enter Base URL",
   "testing": "Testing...",
   "connection_success": "Connection successful",
+  "connection_failed": "Connection failed",
+  "new_conversation": "New conversation",
+  "empty_response": "Received a response, but it was empty",
   "suggestions": {
     "translate": "Translate Text",
     "translate_desc": "Translate text to another language",

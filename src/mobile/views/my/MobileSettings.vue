@@ -253,7 +253,7 @@ async function handleLogout() {
         })
         await router.push('/mobile/login')
       } catch (localError) {
-        logger.error('本地登出清理失败：', localError)
+        logger.error('Failed to clear local logout state', localError)
         showToast({
           type: 'fail',
           message: t('mobile_setting.logout_failed')

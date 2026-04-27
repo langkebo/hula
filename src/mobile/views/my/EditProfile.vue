@@ -68,7 +68,7 @@
 
               <van-field
                 v-model="region"
-                label="地区"
+                :label="t('mobile_edit_profile.region')"
                 :placeholder="t('mobile_edit_profile.placeholder.brithday')"
                 readonly
                 is-link
@@ -226,7 +226,7 @@ const updateCurrentUserCache = (key: 'name' | 'wearingItemId' | 'avatar', value:
 
 const saveEditInfo = async () => {
   if (!localUserInfo.value.name || localUserInfo.value.name.trim() === '') {
-    window.$message.error('昵称不能为空')
+    window.$message.error(t('mobile_edit_profile.nickname_required'))
     return
   }
 
@@ -246,10 +246,10 @@ const saveEditInfo = async () => {
     updateCurrentUserCache('name', localUserInfo.value.name)
     if (!localUserInfo.value.modifyNameChance) return
     localUserInfo.value.modifyNameChance -= 1
-    window.$message.success('修改成功')
+    window.$message.success(t('mobile_edit_profile.save_success'))
   } catch (error) {
-    logger.error('修改用户信息失败:', error)
-    window.$message.error('修改失败，请重试')
+    logger.error('Failed to update profile', error)
+    window.$message.error(t('mobile_edit_profile.save_failed'))
   }
 }
 
