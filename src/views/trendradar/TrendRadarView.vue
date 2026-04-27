@@ -304,7 +304,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--hula-border-default);
   background: var(--bg-popover);
 }
 
@@ -318,13 +318,13 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  color: var(--text-color);
+  color: var(--hula-text-primary);
 }
 
 .trendradar-view__title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   margin: 0;
 }
 
@@ -355,7 +355,7 @@ onMounted(() => {
 .trendradar-view__sidebar {
   width: 100px;
   padding: 12px;
-  border-right: 1px solid var(--line-color);
+  border-right: 1px solid var(--hula-border-default);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -377,7 +377,7 @@ onMounted(() => {
 
 .trendradar-view__nav-item:hover {
   background: var(--bg-hover);
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
 }
 
 .trendradar-view__nav-item--active {
@@ -421,7 +421,7 @@ onMounted(() => {
 .trendradar-view__panel-header h3 {
   font-size: 16px;
   font-weight: 600;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   margin: 0;
 }
 
@@ -467,13 +467,13 @@ onMounted(() => {
   background: var(--bg-popover);
   border-radius: 8px;
   padding: 16px;
-  border: 1px solid var(--line-color);
+  border: 1px solid var(--hula-border-default);
 }
 
 .trendradar-view__analyze-content {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--chat-text-color);
+  color: var(--hula-text-secondary);
   white-space: pre-wrap;
 }
 
@@ -481,7 +481,7 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   padding: 12px 16px;
-  border-top: 1px solid var(--line-color);
+  border-top: 1px solid var(--hula-border-default);
   background: var(--bg-popover);
 }
 

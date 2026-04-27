@@ -92,8 +92,8 @@
   <div v-else class="flex w-full flex-col h-full">
     <!-- PC端头部 -->
     <div class="flex-shrink-0">
-      <div class="flex items-center justify-between px-20px py-16px border-b border-[--line-color]">
-        <h2 class="text-16px font-medium text-[--text-color]">{{ t('home.manage_group_member.title') }}</h2>
+      <div class="flex items-center justify-between px-20px py-16px border-b border-[--hula-border-default]">
+        <h2 class="text-16px font-medium text-[--hula-text-primary]">{{ t('home.manage_group_member.title') }}</h2>
       </div>
     </div>
 
@@ -106,7 +106,7 @@
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
-          class="border-(solid 1px [--line-color]) rounded-8px"
+          class="border-(solid 1px [--hula-border-default]) rounded-8px"
           :placeholder="t('home.manage_group_member.search_placeholder_pc')">
           <template #prefix>
             <svg class="w-12px h-12px"><use href="#search"></use></svg>
@@ -122,7 +122,7 @@
           <div
             v-for="item in filteredMembers"
             :key="item.uid"
-            class="rounded-8px border border-[--line-color] overflow-hidden">
+            class="rounded-8px border border-[--hula-border-default] overflow-hidden">
             <n-checkbox
               :value="item.uid"
               size="large"
@@ -142,10 +142,10 @@
                     style="border: 1px solid var(--avatar-border-color)" />
                   <!-- 文字信息 -->
                   <div class="flex flex-col leading-tight truncate">
-                    <span class="text-13px font-medium truncate text-[--text-color]">
+                    <span class="text-13px font-medium truncate text-[--hula-text-primary]">
                       {{ groupStore.getUserInfo(item.uid)?.name }}
                     </span>
-                    <div class="text-11px text-[--chat-text-color] flex items-center gap-4px truncate">
+                    <div class="text-11px text-[--hula-text-secondary] flex items-center gap-4px truncate">
                       <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
                       {{
                         item.activeStatus === OnlineEnum.ONLINE
@@ -163,8 +163,9 @@
     </div>
 
     <!-- 底部操作栏 -->
-    <div class="px-20px py-12px bg-[--bg-popover] border-t border-[--line-color] flex justify-between items-center">
-      <span class="text-13px text-[--text-color]">
+    <div
+      class="px-20px py-12px bg-[--bg-popover] border-t border-[--hula-border-default] flex justify-between items-center">
+      <span class="text-13px text-[--hula-text-primary]">
         {{ t('home.manage_group_member.selected_count', { count: selectedList.length }) }}
       </span>
       <n-popconfirm v-model:show="showDeleteConfirm">
