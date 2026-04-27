@@ -17,7 +17,7 @@ jobs:
   debug-build:
     runs-on: ${{ inputs.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Ubuntu dependencies
         if: inputs.platform == 'ubuntu-22.04'

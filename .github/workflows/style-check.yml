@@ -10,7 +10,7 @@ jobs:
   check-hardcoded-colors:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Check for hardcoded color values
         run: |
