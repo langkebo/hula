@@ -484,7 +484,7 @@ const getItemClasses = (item: SessionItem) => {
     active: isCurrentSession,
     'active-bot': isCurrentSession && item.account === UserType.BOT,
     'active-shield': Boolean(isCurrentSession && item.shield),
-    'bg-[--bg-msg-first-child] rounded-12px relative': Boolean(item.top),
+    'bg-[--hula-surface-search] rounded-12px relative': Boolean(item.top),
     'context-menu-active': isContextMenuActive,
     'context-menu-active-shield': Boolean(item.shield && isContextMenuActive),
     'active-context-menu': isContextMenuActive && isCurrentSession
@@ -539,6 +539,6 @@ onUnmounted(() => {
 @use '@/styles/scss/message';
 
 #image-no-data {
-  @apply size-full mt-60px text-[--text-color] text-14px;
+  @apply size-full mt-60px text-[--hula-text-primary] text-14px;
 }
 </style>

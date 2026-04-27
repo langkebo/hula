@@ -4,8 +4,6 @@ import { isMac } from '@/utils/PlatformConstants'
 import { setTheme } from '@tauri-apps/api/app'
 import type { Theme } from '@tauri-apps/api/window'
 
-const DESKTOP_THEME_VARIANT = 'simple'
-
 // 获取平台对应的默认快捷键
 const getDefaultShortcuts = () => {
   return {
@@ -104,6 +102,17 @@ const setDocumentTheme = (theme: string) => {
   document.documentElement.dataset.theme = theme
 }
 
+type LegacyThemeState = STO.Setting['themes'] & {
+  versatile?: string
+}
+
+const stripLegacyThemeVariant = (themes: STO.Setting['themes']) => {
+  const legacyThemes = themes as LegacyThemeState
+  if ('versatile' in legacyThemes) {
+    delete legacyThemes.versatile
+  }
+}
+
 const hashPassword = (password: string): string => {
   let hash = 0
   for (let i = 0; i < password.length; i++) {
@@ -121,8 +130,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
   state: (): STO.Setting => ({
     themes: {
       content: '',
-      pattern: ThemeEnum.OS,
-      versatile: DESKTOP_THEME_VARIANT
+      pattern: ThemeEnum.OS
     },
     escClose: true,
     showMode: ShowModeEnum.ICON,
@@ -215,8 +223,8 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.$patch((state) => {
         state.themes.pattern = nextPattern
         state.themes.content = nextContent
-        state.themes.versatile = DESKTOP_THEME_VARIANT
       })
+      stripLegacyThemeVariant(this.themes)
       setDocumentTheme(nextContent)
       setTheme(Object.is(theme, 'os') ? null : (theme as Theme))
     },
@@ -228,8 +236,8 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
         this.$patch((state) => {
           state.themes.pattern = ThemeEnum.OS
           state.themes.content = os
-          state.themes.versatile = DESKTOP_THEME_VARIANT
         })
+        stripLegacyThemeVariant(this.themes)
         setDocumentTheme(os)
         return
       }
@@ -237,8 +245,8 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.$patch((state) => {
         state.themes.pattern = nextTheme
         state.themes.content = nextTheme
-        state.themes.versatile = DESKTOP_THEME_VARIANT
       })
+      stripLegacyThemeVariant(this.themes)
       setDocumentTheme(nextTheme)
     },
     /** 同步系统主题到内容（仅在跟随系统时生效） */
@@ -254,25 +262,20 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     },
     /** 兜底修正主题状态 */
     normalizeThemeState() {
+      stripLegacyThemeVariant(this.themes)
+
       if (this.themes.pattern === ThemeEnum.OS) {
-        if (this.themes.versatile !== DESKTOP_THEME_VARIANT) {
-          this.themes.versatile = DESKTOP_THEME_VARIANT
-        }
         this.syncOsTheme()
         return
       }
       const nextTheme = normalizeTheme(this.themes.pattern || this.themes.content)
-      if (
-        this.themes.pattern !== nextTheme ||
-        this.themes.content !== nextTheme ||
-        this.themes.versatile !== DESKTOP_THEME_VARIANT
-      ) {
+      if (this.themes.pattern !== nextTheme || this.themes.content !== nextTheme) {
         this.$patch((state) => {
           state.themes.pattern = nextTheme
           state.themes.content = nextTheme
-          state.themes.versatile = DESKTOP_THEME_VARIANT
         })
       }
+      stripLegacyThemeVariant(this.themes)
       setDocumentTheme(nextTheme)
     },
     /** 确保主题状态已初始化且可安全使用 */
