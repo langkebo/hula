@@ -282,6 +282,10 @@ export type UserInfoType = {
   client: string
   /** 个人简介 */
   resume: string
+  /** 当前在线状态（前端缓存，登录/presence 同步时写入） */
+  activeStatus?: number
+  /** 最近活跃时间戳（毫秒） */
+  lastOptTime?: number
   /** 是否绑定 Gitee */
   linkedGitee?: boolean
   /** 是否绑定 GitHub */

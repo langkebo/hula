@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
+import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { ref, computed } from 'vue'
 import { StoresEnum, SexEnum } from '@/enums'
 import type { UserInfoType } from '@/services/types'
 import { useMatrixStore } from '../chat/matrix'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import * as PathUtil from '@/utils/PathUtil'
 import { useGlobalStore } from '../widget/global'
 import { info, error } from '@tauri-apps/plugin-log'
@@ -68,7 +70,7 @@ export const useUserStore = defineStore(
         info(`[UserStore] 获取用户资料成功: ${targetUserId}`)
         return userProfile
       } catch (err) {
-        error(`[UserStore] 获取用户资料失败: ${err}`)
+        error(`[UserStore] 获取用户资料失败: ${formatMatrixError(err)}`)
         return null
       }
     }
@@ -88,7 +90,7 @@ export const useUserStore = defineStore(
         info(`[UserStore] 更新显示名称成功: ${displayName}`)
         return true
       } catch (err) {
-        error(`[UserStore] 更新显示名称失败: ${err}`)
+        error(`[UserStore] 更新显示名称失败: ${formatMatrixError(err)}`)
         return false
       }
     }
@@ -108,22 +110,17 @@ export const useUserStore = defineStore(
         info(`[UserStore] 更新头像成功`)
         return true
       } catch (err) {
-        error(`[UserStore] 更新头像失败: ${err}`)
+        error(`[UserStore] 更新头像失败: ${formatMatrixError(err)}`)
         return false
       }
     }
 
     async function getUserPresence(userId: string): Promise<string | null> {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        return null
-      }
-
       try {
-        const presence = await client.getPresence(userId)
+        const presence = await matrixPresenceService.getPresence(userId)
         return presence.presence || null
       } catch (err) {
-        error(`[UserStore] 获取用户状态失败: ${err}`)
+        error(`[UserStore] 获取用户状态失败: ${formatMatrixError(err)}`)
         return null
       }
     }

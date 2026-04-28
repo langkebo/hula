@@ -119,6 +119,7 @@ const { addListener } = useTauriListener()
 const subscribedPresenceUserIds = new Set<string>()
 let isPresenceSyncInFlight = false
 let hasPendingPresenceSync = false
+let unsubscribePresenceListener: (() => void) | null = null
 // 只在桌面端初始化窗口管理功能
 const { createWebviewWindow } = isDesktop() ? useWindow() : { createWebviewWindow: () => {} }
 const settingStore = useSettingStore()
@@ -191,13 +192,37 @@ useMitt.on(WsResponseMessageType.LOGIN_SUCCESS, async (data: LoginSuccessResType
     uid: rest.uid
   })
 
+  if (userStore.userInfo) {
+    userStore.userInfo.activeStatus = OnlineEnum.ONLINE
+    userStore.userInfo.lastOptTime = Date.now()
+  }
+
   // 设置在线状态到服务器
   try {
+    await matrixClientService.waitForClientReady({
+      timeoutMs: 5000
+    })
     await matrixPresenceService.setPresence('online')
     logger.info('[Login] 在线状态已设置为 online')
 
     // 立即同步在线状态，确保显示更新
     await syncAvatarPresence()
+
+    // 注册实时 presence 事件监听，替代轮询
+    if (!unsubscribePresenceListener) {
+      unsubscribePresenceListener = matrixPresenceService.onPresenceChange((presence) => {
+        const patch = buildPresenceStorePatch(presence)
+        contactStore.updateContactPresence(presence.user_id, patch)
+        groupStore.updateUserPresence(presence.user_id, {
+          activeStatus: patch.activeStatus,
+          lastOptTime: patch.lastOptTime
+        })
+        if (userStore.userInfo && presence.user_id === userStore.userInfo.uid) {
+          userStore.userInfo.activeStatus = patch.activeStatus
+          userStore.userInfo.lastOptTime = patch.lastOptTime
+        }
+      })
+    }
   } catch (error) {
     logger.error('[Login] 设置在线状态失败:', error)
   }
@@ -578,6 +603,10 @@ const applyPresenceToStores = async () => {
       activeStatus: patch.activeStatus,
       lastOptTime: patch.lastOptTime
     })
+    if (userStore.userInfo && presence.user_id === userStore.userInfo.uid) {
+      userStore.userInfo.activeStatus = patch.activeStatus
+      userStore.userInfo.lastOptTime = patch.lastOptTime
+    }
   })
 }
 
@@ -852,6 +881,10 @@ onMounted(async () => {
 
 onUnmounted(async () => {
   subscribedPresenceUserIds.clear()
+  if (unsubscribePresenceListener) {
+    unsubscribePresenceListener()
+    unsubscribePresenceListener = null
+  }
   window.removeEventListener('contextmenu', preventGlobalContextMenu, false)
   window.removeEventListener('dragstart', preventDrag)
 

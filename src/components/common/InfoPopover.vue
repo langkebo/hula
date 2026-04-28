@@ -293,7 +293,10 @@ const groupNickname = computed(() => {
 })
 // 显示的在线状态
 const displayActiveStatus = computed(() => {
-  return resolveDisplayActiveStatus(activeStatus, resolvedUserInfo.value?.activeStatus)
+  const fallback = isCurrentUserUid.value
+    ? (resolvedUserInfo.value?.activeStatus ?? userStore.userInfo?.activeStatus)
+    : resolvedUserInfo.value?.activeStatus
+  return resolveDisplayActiveStatus(activeStatus, fallback)
 })
 
 // 计算当前用户状态图标

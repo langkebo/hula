@@ -55,6 +55,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+import { formatMatrixError } from '@/common/matrixErrorTranslator'
 
 const logger = createLogger('OnlineStatusWindow')
 import type { UserState } from '@/services/types'
@@ -94,7 +95,7 @@ const handleActive = async (item: UserState) => {
     await userStatusStore.changeCurrentUserState(item)
     window.$message?.success(t('auth.onlineStatus.messages.success'))
   } catch (error) {
-    logger.error('更新状态失败:', error)
+    logger.error('更新状态失败:', formatMatrixError(error))
     window.$message?.error(t('auth.onlineStatus.messages.error'))
   }
 }
