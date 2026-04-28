@@ -49,6 +49,7 @@ import {
   matrixRoomPinsService,
   matrixRoomTagsService
 } from '@/services/matrix'
+import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixRoomStateService } from '@/services/matrix/room/StateService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -668,7 +669,7 @@ onMounted(async () => {
         } else {
           // 处理 MatrixMessageService.sendStructuredMessage 的旧格式（如果有）
           // 或者如果是嵌套在 payload.payload 中
-          const structuredPayload = (payload.payload || payload) as any
+          const structuredPayload = (payload.payload || payload) as SendMessagePayload
           await matrixMessageService.sendStructuredMessage(structuredPayload)
         }
         break
@@ -735,7 +736,7 @@ onMounted(async () => {
         break
       }
       case 'creation': {
-        const { options } = op.payload as { options: any }
+        const { options } = op.payload as { options: Record<string, unknown> }
         await matrixRoomCreationService.createRoom(options)
         break
       }

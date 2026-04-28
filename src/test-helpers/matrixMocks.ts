@@ -11,7 +11,7 @@
 import { vi } from 'vitest'
 import type { MatrixClient, Room, MatrixEvent } from 'matrix-js-sdk'
 
-type AnyFn = (...args: any[]) => any
+type AnyFn = (...args: unknown[]) => unknown
 
 export type MockMatrixClient<T = MatrixClient> = T & {
   __isMock: true

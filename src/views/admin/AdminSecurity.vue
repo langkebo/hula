@@ -24,7 +24,7 @@
       :data="auditLogs"
       :loading="loading"
       :pagination="pagination"
-      :row-key="(row: any) => row.id"
+      :row-key="(row: AuditLogRow) => row.id"
       striped
       class="mt-16px"
       @update:page="handlePageChange" />
@@ -46,6 +46,17 @@ import {
 } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useAdminSecurity } from '@/composables/admin/useAdminSecurity'
+
+interface AuditLogRow {
+  id: string
+  action: string
+  result: string
+  actor_id: string
+  resource_type: string
+  resource_id: string
+  timestamp: number
+  details?: string
+}
 
 const { t } = useI18n()
 const message = useMessage()
@@ -74,7 +85,7 @@ const RefreshIcon = {
     ])
 }
 
-const columns: DataTableColumns<any> = [
+const columns: DataTableColumns<AuditLogRow> = [
   {
     title: t('admin.security.col_type'),
     key: 'action',

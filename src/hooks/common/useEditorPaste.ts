@@ -33,7 +33,8 @@ export type UseEditorPasteOptions = {
   }
 }
 
-const defaultNotify = () => (window as any).$message
+const defaultNotify = () =>
+  (window as { $message?: { warning: (msg: string) => void; error?: (msg: string) => void } }).$message
 
 const insertImgAtRange = (img: HTMLImageElement, dom: HTMLElement) => {
   const lastEditRange = (dom as { getLastEditRange?: () => Range | null }).getLastEditRange?.()

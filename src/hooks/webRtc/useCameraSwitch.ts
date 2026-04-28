@@ -28,7 +28,7 @@ export type UseCameraSwitchOptions = {
   }
 }
 
-const defaultNotify = () => (window as any).$message
+const defaultNotify = () => (window as { $message?: { error: (msg: string) => void } }).$message
 
 const replaceTrack = (pc: RTCPeerConnection | null, kind: 'audio' | 'video', newTrack: MediaStreamTrack) => {
   pc?.getSenders().forEach((sender) => {

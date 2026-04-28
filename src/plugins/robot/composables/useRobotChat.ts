@@ -304,10 +304,11 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     loadMessages
   })
 
-  const { getDefaultAvatar, getModelAvatar, isRenderableAiImage, getMessageBubbleClass, getAiPlaceholderText } =
-    useAiMessageDisplay({ isAIStreaming })
+  const { getDefaultAvatar, getModelAvatar, getMessageBubbleClass, getAiPlaceholderText } = useAiMessageDisplay({
+    isAIStreaming
+  })
 
-  const { isEdit, originalTitle, handleBlur, handleEdit } = useAiTitleEdit({ currentChat })
+  const { handleBlur, handleEdit, isEdit } = useAiTitleEdit({ currentChat })
 
   const handleSendAI = (data: { content: string }) => {
     if (!data.content.trim()) {
