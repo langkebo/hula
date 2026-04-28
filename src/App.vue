@@ -190,7 +190,16 @@ useMitt.on(WsResponseMessageType.LOGIN_SUCCESS, async (data: LoginSuccessResType
     name: rest.name,
     uid: rest.uid
   })
-  // 刚登录成功时同步当前/首个群聊的成员信息，避免消息显示“未知用户”
+
+  // 设置在线状态到服务器
+  try {
+    await matrixPresenceService.setPresence('online')
+    logger.info('[Login] 在线状态已设置为 online')
+  } catch (error) {
+    logger.error('[Login] 设置在线状态失败:', error)
+  }
+
+  // 刚登录成功时同步当前/首个群聊的成员信息，避免消息显示”未知用户”
   await refreshActiveGroupMembers()
   await syncAvatarPresence()
 })
