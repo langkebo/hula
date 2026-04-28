@@ -1,5 +1,6 @@
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { warn, error as logError } from '@tauri-apps/plugin-log'
+import { formatMatrixError } from '@/common/matrixErrorTranslator'
 
 export interface RequestOptions {
   url: string
@@ -15,16 +16,75 @@ export interface Result<T> {
   error?: string
 }
 
+export class AIExtensionDisabledError extends Error {
+  constructor(endpoint: string) {
+    super(`AI extension endpoint disabled: ${endpoint}`)
+    this.name = 'AIExtensionDisabledError'
+  }
+}
+
+const AI_EXTENSION_ENABLED = import.meta.env.VITE_AI_EXTENSION_ENABLED === 'true'
+
+const AI_EXTENSION_ENDPOINTS = new Set<string>([
+  'getAssistantModelList',
+  'mapCoordTranslate',
+  'mapReverseGeocode',
+  'mapStatic',
+  'messageSendStream',
+  'messageSaveGeneratedContent',
+  'messageListByConversationId',
+  'messageDelete',
+  'messageDeleteByConversationId',
+  'conversationPage',
+  'conversationGetMy',
+  'conversationCreateMy',
+  'conversationUpdateMy',
+  'conversationDeleteMy',
+  'modelRemainingUsage',
+  'modelPage',
+  'modelUpdate',
+  'modelDelete',
+  'imageMyPage',
+  'imageMyListByIds',
+  'imageDraw',
+  'videoMyPage',
+  'videoMyListByIds',
+  'videoGenerate',
+  'audioMyPage',
+  'audioMyListByIds',
+  'audioGenerate',
+  'audioVoices',
+  'apiKeyPage',
+  'apiKeySimpleList',
+  'apiKeyCreate',
+  'apiKeyUpdate',
+  'apiKeyDelete',
+  'apiKeyBalance',
+  'platformList',
+  'platformAddModel',
+  'chatRolePage',
+  'chatRoleCategoryList',
+  'chatRoleCreate',
+  'chatRoleUpdate',
+  'chatRoleDelete'
+])
+
 /**
  * HTTP 请求工具
  * 面向 Matrix 后端的通用 HTTP 请求封装
  */
 class HttpClient {
   private baseUrl: string = ''
+  private hasWarnedAiDisabled = false
 
   constructor() {
     const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
     this.baseUrl = homeserverUrl
+  }
+
+  private isAiExtensionEndpoint(url: string): boolean {
+    const trimmed = url.replace(/^\/+/, '').split(/[?#]/)[0]
+    return AI_EXTENSION_ENDPOINTS.has(trimmed)
   }
 
   /**
@@ -35,8 +95,20 @@ class HttpClient {
   async request<T = unknown>(options: RequestOptions): Promise<T> {
     const { url, method = 'GET', body, params, headers = {} } = options
 
-    // 构建 URL（如果有 params）
-    let fullUrl = `${this.baseUrl}${url}`
+    if (!AI_EXTENSION_ENABLED && this.isAiExtensionEndpoint(url)) {
+      if (!this.hasWarnedAiDisabled) {
+        this.hasWarnedAiDisabled = true
+        warn(`[HttpClient] AI 扩展接口已禁用 (VITE_AI_EXTENSION_ENABLED=false)，跳过请求: ${url}`)
+      }
+      throw new AIExtensionDisabledError(url)
+    }
+
+    const normalizedPath =
+      url.startsWith('http://') || url.startsWith('https://')
+        ? url
+        : `${this.baseUrl.replace(/\/$/, '')}/${url.replace(/^\//, '')}`
+
+    let fullUrl = normalizedPath
     if (params && method === 'GET') {
       const queryString = new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString()
       fullUrl = `${fullUrl}?${queryString}`
@@ -59,7 +131,7 @@ class HttpClient {
       const data = await response.json()
       return data
     } catch (err) {
-      logError(`[HttpClient] 请求失败: ${url}, ${err}`)
+      logError(`[HttpClient] 请求失败: ${url} | ${formatMatrixError(err)}`)
       throw err
     }
   }
