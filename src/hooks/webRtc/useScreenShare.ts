@@ -26,7 +26,8 @@ export type UseScreenShareOptions = {
   }
 }
 
-const defaultNotify = () => (window as any).$message
+const defaultNotify = () =>
+  (window as { $message?: { warning: (msg: string) => void; error: (msg: string) => void } }).$message
 
 export const useScreenShare = (options: UseScreenShareOptions) => {
   const isScreenSharing = ref(false)

@@ -757,7 +757,7 @@ declare module 'matrix-js-sdk' {
     getPresence(userId: string): Promise<{ presence: string; last_active_ago?: number; status_msg?: string }>
     getProfileInfo(userId: string): Promise<{ displayname?: string; avatar_url?: string }>
     getUserProfile(userId: string): Promise<{ displayname?: string; avatar_url?: string }>
-    getDevices(): Promise<{ devices: Device[] }>
+    getDevices(): Promise<Device[]>
     getDevice(deviceId: string): Promise<Device>
     setDeviceName(deviceId: string, name: string): Promise<void>
     deleteDevice(deviceId: string, auth?: Record<string, unknown>): Promise<void>

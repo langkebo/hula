@@ -46,9 +46,7 @@ describe('getReplyContent', () => {
   })
 
   it('formats AI message and replaces &nbsp;', () => {
-    expect(getReplyContent(make(MsgEnum.AI, { content: 'hello&nbsp;world' }))).toBe(
-      "'[AI消息]'hello world"
-    )
+    expect(getReplyContent(make(MsgEnum.AI, { content: 'hello&nbsp;world' }))).toBe("'[AI消息]'hello world")
   })
 
   it('falls back to body.content for unknown types', () => {
