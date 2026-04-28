@@ -35,6 +35,32 @@ export interface DeviceVerificationStatus {
   isTofu(): boolean
 }
 
+export interface LegacyStoredDevice {
+  deviceId: string
+  userId: string
+  displayName?: string
+  isVerified(): boolean
+  isUnverified(): boolean
+}
+
+export interface LegacyDeviceTrustInfo {
+  isVerified(): boolean
+  isCrossSigningVerified(): boolean
+  isTofu(): boolean
+}
+
+export interface LegacyUserTrustInfo extends LegacyDeviceTrustInfo {
+  wasCrossSigningVerified(): boolean
+}
+
+export interface LegacyVerificationRequest {
+  transactionId?: string
+  userId?: string
+  deviceId?: string
+  methods?: string[]
+  phase?: string
+}
+
 export interface CryptoApi {
   requestDeviceVerification(userId: string, deviceId: string): Promise<VerificationRequest>
   getDeviceVerificationStatus(userId: string, deviceId: string): Promise<DeviceVerificationStatus>
@@ -159,6 +185,11 @@ export interface MatrixClientExtended extends MatrixClient {
   getDeviceManager?(): DeviceManager | null
   getCrypto(): CryptoApi | null
   getKeyBackupManager?(): KeyBackupManager | null
+  checkUserTrust?(userId: string): Promise<LegacyUserTrustInfo>
+  checkDeviceTrust?(userId: string, deviceId: string): Promise<LegacyDeviceTrustInfo>
+  getStoredDevicesForUser?(userId: string): Promise<LegacyStoredDevice[]>
+  getStoredDevice?(userId: string, deviceId: string): LegacyStoredDevice | null
+  getVerificationRequestsToDevice?(userId: string): LegacyVerificationRequest[]
 }
 
 // ============================================
