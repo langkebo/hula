@@ -224,23 +224,24 @@ class MatrixPresenceService {
   }
 
   /**
-   * 批量获取用户在线状态
+   * 批量获取用户在线状态（并行）
    *
    * @param userIds 用户 ID 列表
    */
   async getBatchPresence(userIds: string[]): Promise<PresenceInfo[]> {
-    try {
-      const presences: PresenceInfo[] = []
+    if (userIds.length === 0) return []
 
-      for (const userId of userIds) {
-        try {
-          const presence = await this.getPresence(userId)
-          presences.push(presence)
-        } catch (err) {
-          // 忽略单个用户的错误，继续获取其他用户
+    try {
+      // 并行获取所有用户状态
+      const promises = userIds.map((userId) =>
+        this.getPresence(userId).catch((err) => {
           error(`[Presence] 获取用户 ${userId} 在线状态失败: ${err}`)
-        }
-      }
+          return null
+        })
+      )
+
+      const results = await Promise.all(promises)
+      const presences = results.filter((p): p is PresenceInfo => p !== null)
 
       info(`[Presence] 批量获取在线状态成功: ${presences.length}/${userIds.length}`)
       return presences
