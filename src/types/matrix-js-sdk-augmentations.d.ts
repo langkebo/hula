@@ -568,6 +568,9 @@ declare module 'matrix-js-sdk' {
     constructor(opts: { indexedDB: IDBFactory; dbName: string; localStorage?: Storage })
     startup(): Promise<void>
   }
+  export class MemoryStore {
+    constructor(opts: { localStorage?: Storage })
+  }
   export class LocalStorageCryptoStore {
     constructor(localStorage: Storage)
   }

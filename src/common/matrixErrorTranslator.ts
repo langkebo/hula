@@ -166,3 +166,27 @@ export function isRecoverableError(err: unknown): boolean {
 export function getErrorAction(err: unknown): TranslatedError['action'] {
   return translateMatrixError(err).action
 }
+
+/**
+ * 将任意错误格式化为简短可读字符串, 主要用于日志输出。
+ * 优先使用 errcode + error 字段, 回退到 message / String(err)。
+ */
+export function formatMatrixError(err: unknown): string {
+  if (!err) return 'unknown error'
+  if (typeof err === 'string') return err
+  if (err instanceof Error) {
+    const errObj = err as Error & { errcode?: string; data?: { error?: string } }
+    if (errObj.errcode) {
+      const detail = errObj.data?.error ?? errObj.message
+      return detail ? `${errObj.errcode}: ${detail}` : errObj.errcode
+    }
+    return err.message
+  }
+  if (typeof err === 'object') {
+    const obj = err as { errcode?: string; error?: string; message?: string }
+    if (obj.errcode) return obj.error ? `${obj.errcode}: ${obj.error}` : obj.errcode
+    if (obj.message) return obj.message
+    if (obj.error) return obj.error
+  }
+  return String(err)
+}

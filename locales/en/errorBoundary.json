@@ -1,0 +1,9 @@
+{
+  "errorBoundary": {
+    "title": "An error occurred",
+    "unknownError": "Unknown error",
+    "retry": "Retry",
+    "reload": "Reload",
+    "details": "Error details"
+  }
+}

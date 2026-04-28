@@ -1,0 +1,9 @@
+{
+  "errorBoundary": {
+    "title": "出现错误",
+    "unknownError": "未知错误",
+    "retry": "重试",
+    "reload": "重新加载",
+    "details": "错误详情"
+  }
+}
