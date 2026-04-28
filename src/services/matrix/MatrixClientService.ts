@@ -525,6 +525,27 @@ class MatrixClientService {
   }
 
   /**
+   * 等待客户端就绪
+   *
+   * 调用方在初始化竞争窗口里需要拿到一个非 null 的 MatrixClient，
+   * 该方法会以轮询方式等待 `this.client` 被赋值；超时后抛错。
+   *
+   * @param opts.timeoutMs 超时毫秒数，默认 5000
+   * @param opts.intervalMs 轮询间隔，默认 50ms
+   */
+  async waitForClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
+    if (this.client) return this.client
+    const timeoutMs = opts?.timeoutMs ?? 5000
+    const intervalMs = opts?.intervalMs ?? 50
+    const deadline = Date.now() + timeoutMs
+    while (Date.now() < deadline) {
+      if (this.client) return this.client
+      await new Promise((resolve) => setTimeout(resolve, intervalMs))
+    }
+    throw new Error('MatrixClient 未在指定时间内就绪')
+  }
+
+  /**
    * 获取 Sliding Sync 实例
    */
   getSlidingSync(): SlidingSync | null {
