@@ -62,12 +62,10 @@ export class MatrixRoomAccountDataService {
   async setReadLifetime(roomId: string, lifetimeMs: number): Promise<void> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest(
-        'PUT',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/read_lifetime`,
-        undefined,
-        { lifetime: lifetimeMs }
-      )
+      await client.http.authedRequest('PUT', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/burn`, undefined, {
+        enabled: true,
+        burn_after_ms: lifetimeMs
+      })
       info(`[MatrixRoom] 设置阅后即焚成功: ${roomId} (${lifetimeMs}ms)`)
     } catch (err) {
       error(`[MatrixRoom] 设置阅后即焚失败: ${err}`)
@@ -78,8 +76,14 @@ export class MatrixRoomAccountDataService {
   async getExternalServices(): Promise<Array<Record<string, unknown>>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/external_service/list')
-      return (result as { services?: Array<Record<string, unknown>> }).services ?? []
+      // synapse-rust 中此接口目前在 admin 命名空间下
+      const result = await client.http.authedRequest('GET', '/_synapse/admin/v1/external_services')
+      // 兼容两种响应格式：裸数组或带 data 包装的
+      const services =
+        result && typeof result === 'object' && 'data' in result
+          ? (result as { data: Array<Record<string, unknown>> }).data
+          : (result as Array<Record<string, unknown>>)
+      return Array.isArray(services) ? services : []
     } catch (err) {
       error(`[MatrixRoom] 获取外部服务列表失败: ${err}`)
       return []

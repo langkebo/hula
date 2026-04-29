@@ -3,8 +3,9 @@ import { defineComponent, h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RoomSpaceWorkbench from '../RoomSpaceWorkbench.vue'
 
-const { roomSessionListScrollToIndexMock } = vi.hoisted(() => ({
-  roomSessionListScrollToIndexMock: vi.fn()
+const { roomSessionListScrollToIndexMock, viewportWidthMock } = vi.hoisted(() => ({
+  roomSessionListScrollToIndexMock: vi.fn(),
+  viewportWidthMock: { value: 1600 }
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -13,10 +14,18 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+vi.mock('@/hooks/useViewport', () => ({
+  useViewport: () => ({
+    vw: viewportWidthMock,
+    vh: { value: 900 }
+  })
+}))
+
 vi.mock('../RoomSpaceToolbar.vue', () => ({
   default: defineComponent({
     name: 'RoomSpaceToolbarStub',
     props: {
+      compact: { type: Boolean, default: false },
       searchKeyword: { type: String, default: '' },
       sessionTypeFilter: { type: String, default: 'all' },
       sessionSort: { type: String, default: 'recent' },
@@ -27,6 +36,7 @@ vi.mock('../RoomSpaceToolbar.vue', () => ({
     setup(props, { emit }) {
       return () =>
         h('div', { 'data-test': 'toolbar' }, [
+          h('span', { 'data-test': 'toolbar-compact' }, String(props.compact)),
           h('span', { 'data-test': 'toolbar-summary' }, `${props.filteredCount}/${props.totalCount}`),
           h(
             'button',
@@ -73,6 +83,8 @@ vi.mock('../SpaceListPane.vue', () => ({
   default: defineComponent({
     name: 'SpaceListPaneStub',
     props: {
+      compact: { type: Boolean, default: false },
+      narrow: { type: Boolean, default: false },
       spaces: { type: Array, default: () => [] },
       selectedSpaceId: { type: String, default: '' },
       loading: { type: Boolean, default: false },
@@ -82,6 +94,8 @@ vi.mock('../SpaceListPane.vue', () => ({
     setup(props, { emit }) {
       return () =>
         h('div', { 'data-test': 'space-list' }, [
+          h('span', { 'data-test': 'space-list-compact' }, String(props.compact)),
+          h('span', { 'data-test': 'space-list-narrow' }, String(props.narrow)),
           h('span', { 'data-test': 'space-list-selected' }, props.selectedSpaceId),
           h(
             'button',
@@ -101,6 +115,7 @@ vi.mock('../RoomSpaceActionBar.vue', () => ({
   default: defineComponent({
     name: 'RoomSpaceActionBarStub',
     props: {
+      compact: { type: Boolean, default: false },
       spaceName: { type: String, default: '' },
       roomCount: { type: Number, default: 0 },
       sessionCount: { type: Number, default: 0 },
@@ -110,6 +125,7 @@ vi.mock('../RoomSpaceActionBar.vue', () => ({
     setup(props, { emit }) {
       return () =>
         h('div', { 'data-test': 'action-bar' }, [
+          h('span', { 'data-test': 'action-bar-compact' }, String(props.compact)),
           h(
             'span',
             { 'data-test': 'action-bar-title' },
@@ -158,18 +174,93 @@ vi.mock('../WorkbenchDetailPane.vue', () => ({
   default: defineComponent({
     name: 'WorkbenchDetailPaneStub',
     props: {
+      compact: { type: Boolean, default: false },
+      narrow: { type: Boolean, default: false },
       selectedSession: { type: Object, default: null },
       activeSpace: { type: Object, default: null },
       visibleSessionCount: { type: Number, default: 0 },
-      totalSessionCount: { type: Number, default: 0 }
+      totalSessionCount: { type: Number, default: 0 },
+      manageMode: { type: String, default: null },
+      inviteUserId: { type: String, default: '' },
+      addRoomId: { type: String, default: '' },
+      addRoomSuggested: { type: Boolean, default: false },
+      settingsName: { type: String, default: '' },
+      settingsTopic: { type: String, default: '' }
     },
-    setup(props) {
+    emits: [
+      'closeManagePane',
+      'submitManagePane',
+      'update:inviteUserId',
+      'update:addRoomId',
+      'update:addRoomSuggested',
+      'update:settingsName',
+      'update:settingsTopic'
+    ],
+    setup(props, { emit }) {
       return () =>
         h('div', { 'data-test': 'detail-pane' }, [
+          h('span', { 'data-test': 'detail-compact' }, String(props.compact)),
+          h('span', { 'data-test': 'detail-narrow' }, String(props.narrow)),
           h('span', { 'data-test': 'detail-visible-count' }, String(props.visibleSessionCount)),
           h('span', { 'data-test': 'detail-total-count' }, String(props.totalSessionCount)),
           h('span', { 'data-test': 'detail-session-name' }, props.selectedSession?.name ?? ''),
-          h('span', { 'data-test': 'detail-space-name' }, props.activeSpace?.name ?? '')
+          h('span', { 'data-test': 'detail-space-name' }, props.activeSpace?.name ?? ''),
+          h('span', { 'data-test': 'detail-manage-mode' }, props.manageMode ?? ''),
+          h(
+            'button',
+            { type: 'button', 'data-test': 'detail-close-manage', onClick: () => emit('closeManagePane') },
+            'close-manage'
+          ),
+          h(
+            'button',
+            { type: 'button', 'data-test': 'detail-submit-manage', onClick: () => emit('submitManagePane') },
+            'submit-manage'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'detail-update-invite',
+              onClick: () => emit('update:inviteUserId', '@alice:server')
+            },
+            'invite'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'detail-update-room',
+              onClick: () => emit('update:addRoomId', '!room:server')
+            },
+            'room'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'detail-update-suggested',
+              onClick: () => emit('update:addRoomSuggested', true)
+            },
+            'suggested'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'detail-update-name',
+              onClick: () => emit('update:settingsName', 'New Space')
+            },
+            'name'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'detail-update-topic',
+              onClick: () => emit('update:settingsTopic', 'New Topic')
+            },
+            'topic'
+          )
         ])
     }
   })
@@ -195,6 +286,13 @@ const createProps = (overrides: Partial<WorkbenchProps> = {}): WorkbenchProps =>
   syncLoading: false,
   sessionLoading: false,
   networkBanner: null,
+  manageMode: null,
+  manageSubmitting: false,
+  inviteUserId: '',
+  addRoomId: '',
+  addRoomSuggested: false,
+  settingsName: '',
+  settingsTopic: '',
   getItemClasses: () => ({}),
   visibleMenu: () => [],
   visibleSpecialMenu: () => [],
@@ -213,6 +311,7 @@ const mountWorkbench = (overrides: Partial<WorkbenchProps> = {}) =>
 describe('RoomSpaceWorkbench', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    viewportWidthMock.value = 1600
   })
 
   it('passes the correct empty description based on active filters', () => {
@@ -288,11 +387,31 @@ describe('RoomSpaceWorkbench', () => {
   it('passes the selected session and active space into the detail pane', () => {
     const wrapper = mountWorkbench({
       selectedSession: { roomId: '!alpha:server', name: 'Alpha', type: 2, unreadCount: 0, activeTime: 1 } as never,
-      activeSpace: { spaceId: 'space-1', name: 'Space One', childCount: 2 }
+      activeSpace: { spaceId: 'space-1', name: 'Space One', childCount: 2 },
+      manageMode: 'settings',
+      settingsName: 'Space One'
     })
 
     expect(wrapper.get('[data-test="detail-session-name"]').text()).toBe('Alpha')
     expect(wrapper.get('[data-test="detail-space-name"]').text()).toBe('Space One')
+    expect(wrapper.get('[data-test="detail-manage-mode"]').text()).toBe('settings')
+  })
+
+  it('switches the workbench into compact and narrow layout based on viewport width', () => {
+    viewportWidthMock.value = 1180
+
+    const wrapper = mountWorkbench({
+      activeSpace: { spaceId: 'space-1', name: 'Space One', childCount: 2 }
+    })
+
+    expect(wrapper.classes()).toContain('room-space-workbench--compact')
+    expect(wrapper.classes()).toContain('room-space-workbench--narrow')
+    expect(wrapper.get('[data-test="toolbar-compact"]').text()).toBe('true')
+    expect(wrapper.get('[data-test="space-list-compact"]').text()).toBe('true')
+    expect(wrapper.get('[data-test="space-list-narrow"]').text()).toBe('true')
+    expect(wrapper.get('[data-test="action-bar-compact"]').text()).toBe('true')
+    expect(wrapper.get('[data-test="detail-compact"]').text()).toBe('true')
+    expect(wrapper.get('[data-test="detail-narrow"]').text()).toBe('true')
   })
 
   it('passes the retry handler into the session list', async () => {
@@ -303,5 +422,28 @@ describe('RoomSpaceWorkbench', () => {
 
     await wrapper.get('[data-test="session-retry"]').trigger('click')
     expect(onRetryNetwork).toHaveBeenCalledTimes(1)
+  })
+
+  it('forwards inline management actions from the detail pane', async () => {
+    const wrapper = mountWorkbench({
+      activeSpace: { spaceId: 'space-1', name: 'Space One', childCount: 2 },
+      manageMode: 'invite'
+    })
+
+    await wrapper.get('[data-test="detail-close-manage"]').trigger('click')
+    await wrapper.get('[data-test="detail-submit-manage"]').trigger('click')
+    await wrapper.get('[data-test="detail-update-invite"]').trigger('click')
+    await wrapper.get('[data-test="detail-update-room"]').trigger('click')
+    await wrapper.get('[data-test="detail-update-suggested"]').trigger('click')
+    await wrapper.get('[data-test="detail-update-name"]').trigger('click')
+    await wrapper.get('[data-test="detail-update-topic"]').trigger('click')
+
+    expect(wrapper.emitted('closeManagePane')).toEqual([[]])
+    expect(wrapper.emitted('submitManagePane')).toEqual([[]])
+    expect(wrapper.emitted('update:inviteUserId')).toEqual([['@alice:server']])
+    expect(wrapper.emitted('update:addRoomId')).toEqual([['!room:server']])
+    expect(wrapper.emitted('update:addRoomSuggested')).toEqual([[true]])
+    expect(wrapper.emitted('update:settingsName')).toEqual([['New Space']])
+    expect(wrapper.emitted('update:settingsTopic')).toEqual([['New Topic']])
   })
 })

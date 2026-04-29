@@ -106,6 +106,15 @@ describe('MatrixRoomTimelineService', () => {
       })
     })
 
+    it('accepts synapse-rust notification_count/highlight_count fields', async () => {
+      const client = makeHttpClient(() => ({ notification_count: 7, highlight_count: 2 }))
+      getClientMock.mockReturnValueOnce(client)
+      expect(await service.getRoomUnreadCount('!r')).toEqual({
+        unread_notifications: 7,
+        unread_highlighted: 2
+      })
+    })
+
     it('returns zeros when backend throws', async () => {
       getClientMock.mockReturnValueOnce(
         makeHttpClient(() => {

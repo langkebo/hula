@@ -246,12 +246,13 @@ import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { SPACE_ROUTE_NAMES, buildSpaceWorkbenchRoute } from '@/router/spaceNavigation'
+import { buildSpaceWorkbenchRoute } from '@/router/spaceNavigation'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('FriendsList')
+const MESSAGE_ROUTE_NAME = 'message'
 
 const route = useRoute()
 const router = useRouter()
@@ -393,7 +394,7 @@ const translateStateTitle = (title?: string) => {
 watch(
   () => route.name,
   (newName) => {
-    if (newName === SPACE_ROUTE_NAMES.workbench) {
+    if (newName === MESSAGE_ROUTE_NAME) {
       resetSelection()
     }
   },

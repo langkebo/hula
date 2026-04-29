@@ -43,5 +43,15 @@
     "title": "内存监控（点击切换）",
     "expandHint": "点击展开",
     "restore": "点击恢复内存监控"
+  },
+  "encryptionStatus": {
+    "encrypted": "已加密",
+    "unencrypted": "未加密",
+    "unknown": "安全状态待确认",
+    "error": "安全状态异常",
+    "encryptedTooltip": "当前会话已启用端到端加密，消息内容仅参与会话的设备可解密。",
+    "unencryptedTooltip": "当前会话未启用端到端加密，传输链路外的服务可能可见消息内容。",
+    "unknownTooltip": "正在确认当前会话的加密能力，请稍后查看最终状态。",
+    "errorTooltip": "读取当前会话加密状态失败，请检查网络或重新进入会话。"
   }
 }

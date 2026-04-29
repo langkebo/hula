@@ -1,5 +1,8 @@
 <template>
-  <div class="room-space-toolbar border-b border-[--hula-border-default] px-12px py-10px">
+  <div
+    class="room-space-toolbar border-b border-[--hula-border-default] px-12px py-10px"
+    :class="{ 'room-space-toolbar--compact': props.compact }"
+    :data-test="props.rootTestId">
     <n-flex vertical :size="10">
       <n-flex align="center" justify="space-between" :size="12" wrap>
         <n-input
@@ -17,7 +20,7 @@
         </n-input>
 
         <n-flex align="center" :size="8" wrap>
-          <n-button size="small" secondary @click="emit('createSpace')">
+          <n-button v-if="showCreateAction" size="small" secondary @click="emit('createSpace')">
             <template #icon>
               <svg class="size-14px">
                 <use href="#add"></use>
@@ -42,7 +45,7 @@
             role="tab"
             :aria-selected="sessionTypeFilter === option.value"
             :tabindex="sessionTypeFilter === option.value ? 0 : -1"
-            :data-test="`session-type-${option.value}`"
+            :data-test="`${testIdPrefix}-type-${option.value}`"
             @click="emit('update:sessionTypeFilter', option.value)"
             @keydown="handleChipGroupKeydown($event, sessionTypeOptions, option.value, updateSessionTypeFilter)">
             {{ option.label }}
@@ -61,7 +64,7 @@
               role="tab"
               :aria-selected="sessionSort === option.value"
               :tabindex="sessionSort === option.value ? 0 : -1"
-              :data-test="`session-sort-${option.value}`"
+              :data-test="`${testIdPrefix}-sort-${option.value}`"
               @click="emit('update:sessionSort', option.value)"
               @keydown="handleChipGroupKeydown($event, sortOptions, option.value, updateSessionSort)">
               {{ option.label }}
@@ -83,13 +86,24 @@ import {
   type WorkbenchSessionTypeFilter
 } from '@/router/spaceNavigation'
 
-const props = defineProps<{
-  searchKeyword: string
-  sessionTypeFilter: WorkbenchSessionTypeFilter
-  sessionSort: WorkbenchSessionSort
-  filteredCount: number
-  totalCount: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    searchKeyword: string
+    sessionTypeFilter: WorkbenchSessionTypeFilter
+    sessionSort: WorkbenchSessionSort
+    filteredCount: number
+    totalCount: number
+    compact?: boolean
+    showCreateAction?: boolean
+    rootTestId?: string
+    testIdPrefix?: string
+  }>(),
+  {
+    compact: false,
+    showCreateAction: true,
+    testIdPrefix: 'session'
+  }
+)
 
 const emit = defineEmits<{
   'update:searchKeyword': [value: string]
@@ -99,6 +113,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const showCreateAction = computed(() => props.showCreateAction)
+const testIdPrefix = computed(() => props.testIdPrefix)
 
 const sessionTypeOptions = computed(() => [
   { value: WORKBENCH_SESSION_TYPE_FILTERS.all, label: t('space.filter_all') },
@@ -167,6 +183,15 @@ const handleChipGroupKeydown = <T extends string>(
   max-width: 360px;
 }
 
+.room-space-toolbar--compact {
+  padding: 10px;
+}
+
+.room-space-toolbar--compact .toolbar-search {
+  min-width: 180px !important;
+  max-width: none;
+}
+
 .toolbar-summary {
   min-width: 56px;
   text-align: right;
@@ -176,6 +201,10 @@ const handleChipGroupKeydown = <T extends string>(
   display: inline-flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.room-space-toolbar--compact .toolbar-chip-group {
+  gap: 6px;
 }
 
 .toolbar-chip {
@@ -190,6 +219,10 @@ const handleChipGroupKeydown = <T extends string>(
     background-color 0.2s ease,
     border-color 0.2s ease,
     color 0.2s ease;
+}
+
+.room-space-toolbar--compact .toolbar-chip {
+  padding: 4px 10px;
 }
 
 .toolbar-chip:hover {

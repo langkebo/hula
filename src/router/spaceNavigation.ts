@@ -1,7 +1,7 @@
 import type { LocationQuery, LocationQueryRaw, RouteLocationRaw } from 'vue-router'
 
 export const SPACE_ROUTE_NAMES = {
-  workbench: 'message',
+  workbench: 'spaceList',
   legacy: 'space',
   create: 'create-space'
 } as const

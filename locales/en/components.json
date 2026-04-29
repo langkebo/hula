@@ -43,5 +43,15 @@
     "title": "Memory Monitor (click to toggle)",
     "expandHint": "Click to expand",
     "restore": "Click to restore memory monitor"
+  },
+  "encryptionStatus": {
+    "encrypted": "Encrypted",
+    "unencrypted": "Not encrypted",
+    "unknown": "Checking security",
+    "error": "Security issue",
+    "encryptedTooltip": "This conversation uses end-to-end encryption. Only devices in the conversation can decrypt its content.",
+    "unencryptedTooltip": "This conversation is not end-to-end encrypted, so service infrastructure may access message content.",
+    "unknownTooltip": "The app is still verifying the room encryption capability. Check back in a moment.",
+    "errorTooltip": "The app could not load the room encryption status. Check the network or reopen the conversation."
   }
 }

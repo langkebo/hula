@@ -265,4 +265,42 @@ describe('useSessionListState', () => {
 
     wrapper.unmount()
   })
+
+  it('falls back to session text when room messages are not cached locally', async () => {
+    chatStoreMock.sessionList = [
+      ...chatStoreMock.sessionList,
+      {
+        roomId: 'room-fallback',
+        type: RoomTypeEnum.GROUP,
+        avatar: 'fallback-avatar.png',
+        name: '回退群',
+        unreadCount: 0,
+        activeTime: 80,
+        top: false,
+        shield: false,
+        text: 'timeline-preview'
+      }
+    ]
+
+    chatStoreMock.chatMessageListByRoomId.mockImplementation((roomId: string) => {
+      if (roomId === 'room-group') {
+        return [
+          {
+            message: {
+              sendTime: 10,
+              type: MsgEnum.TEXT
+            }
+          }
+        ]
+      }
+
+      return []
+    })
+
+    const { wrapper, api } = await createHarness()
+
+    expect(api.sessionList.value.find((item) => item.roomId === 'room-fallback')?.lastMsg).toBe('timeline-preview')
+
+    wrapper.unmount()
+  })
 })

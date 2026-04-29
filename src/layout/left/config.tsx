@@ -130,9 +130,9 @@ const useMoreList = () => {
 /** 插件列表 */
 const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle'>> = [
   {
-    url: 'dynamic',
-    icon: 'fire',
-    iconAction: 'fire-action',
+    url: 'roomList',
+    icon: 'view-grid-card',
+    iconAction: 'view-grid-card',
     state: PluginEnum.BUILTIN,
     isAdd: true,
     dot: false,
@@ -146,6 +146,16 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
     window: {
       resizable: true
     },
+    miniShow: false
+  },
+  {
+    url: 'space',
+    icon: 'peoples-two',
+    iconAction: 'peoples-two',
+    state: PluginEnum.BUILTIN,
+    isAdd: true,
+    dot: false,
+    progress: 0,
     miniShow: false
   },
   {
@@ -237,11 +247,16 @@ const usePluginsList = () =>
     return computed<STO.Plugins<PluginEnum>[]>(() => [
       {
         ...basePluginsList[0],
-        title: t('home.plugins.dynamic'),
-        shortTitle: t('home.plugins.dynamic_short_title')
+        title: t('home.plugins.room_list'),
+        shortTitle: t('home.plugins.room_list_short_title')
       },
       {
         ...basePluginsList[1],
+        title: t('home.plugins.space_list'),
+        shortTitle: t('home.plugins.space_list_short_title')
+      },
+      {
+        ...basePluginsList[2],
         title: t('home.plugins.chatbot'),
         shortTitle: t('home.plugins.chatbot_short_title')
       }

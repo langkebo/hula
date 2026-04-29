@@ -530,9 +530,9 @@ class SpaceService {
     try {
       const result = (await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/spaces/room/${encodeURIComponent(roomId)}`
-      )) as { spaces?: Array<Record<string, unknown>> }
-      return (result.spaces ?? []).map((space) => ({
+        `/_matrix/client/v3/spaces/room/${encodeURIComponent(roomId)}/parents`
+      )) as Array<Record<string, unknown>>
+      return result.map((space) => ({
         spaceId: space.space_id as string,
         name: (space.name as string) || '',
         topic: (space.topic as string) || undefined,

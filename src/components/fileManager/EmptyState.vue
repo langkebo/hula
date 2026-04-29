@@ -1,10 +1,7 @@
 <template>
   <div class="flex-center h-full">
     <div class="empty-content">
-      <!-- 图标 -->
-      <svg class="mb-16px size-58px">
-        <use href="#explosion"></use>
-      </svg>
+      <Icon :icon="resolvedIcon" class="empty-icon mb-16px" :width="58" />
 
       <!-- 标题 -->
       <h3 v-if="title" class="empty-title text-15px font-500 text-[--hula-text-primary] mb-8px m-0">
@@ -20,9 +17,29 @@
 </template>
 
 <script setup lang="ts">
-const { title } = defineProps<{
-  title?: string
-}>()
+import { computed } from 'vue'
+import { Icon } from '@iconify/vue'
+
+const props = withDefaults(
+  defineProps<{
+    icon?: string
+    title?: string
+  }>(),
+  {
+    icon: 'folder',
+    title: ''
+  }
+)
+
+const iconMap: Record<string, string> = {
+  search: 'mdi:magnify',
+  folder: 'mdi:folder-outline',
+  user: 'mdi:account-outline',
+  message: 'mdi:message-text-outline',
+  group: 'mdi:account-group-outline'
+}
+
+const resolvedIcon = computed(() => iconMap[props.icon] || props.icon)
 </script>
 
 <style scoped lang="scss">
@@ -34,7 +51,7 @@ const { title } = defineProps<{
   animation: fadeInUp 0.5s ease-out;
 }
 
-.empty-svg {
+.empty-icon {
   color: var(--hula-text-primary);
   opacity: 0.3;
   transition: opacity 0.3s ease;
@@ -72,11 +89,11 @@ const { title } = defineProps<{
     animation: none;
   }
 
-  .empty-svg {
+  .empty-icon {
     transition: none;
   }
 
-  .empty-content:hover .empty-svg {
+  .empty-content:hover .empty-icon {
     transform: none;
   }
 }

@@ -31,6 +31,10 @@
   "plugins": {
     "dynamic": "动态列表",
     "dynamic_short_title": "动态",
+    "room_list": "房间列表",
+    "room_list_short_title": "房间",
+    "space_list": "空间列表",
+    "space_list_short_title": "空间",
     "chatbot": "ChatBot",
     "chatbot_short_title": "ChatBot",
     "status": {

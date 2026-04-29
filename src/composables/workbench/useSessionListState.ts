@@ -113,6 +113,10 @@ export const useSessionListState = () => {
           isAtMe = item.unreadCount > 0 ? cached.isAtMe : false
         }
 
+        if (!displayMsg && item.text) {
+          displayMsg = item.text
+        }
+
         if (item.account === UserType.BOT) {
           displayMsg = botDisplayText.value || displayMsg
         }

@@ -1,30 +1,60 @@
 <template>
-  <RoomSessionList
-    ref="sessionListRef"
-    :session-list="roomSessionList"
-    :sync-loading="syncLoading"
-    :session-loading="chatStore.sessionOptions.isLoading"
-    :network-banner="networkBanner"
-    :empty-description="t('message.message_list.empty_description')"
-    :get-item-classes="getItemClasses"
-    :visible-menu="visibleMenu"
-    :visible-special-menu="visibleSpecialMenu"
-    :on-msg-click="handleMsgClick"
-    :on-msg-dblclick="handleMsgDblclick"
-    :on-menu-show="handleMenuShow"
-    :on-retry-network="retrySessions" />
+  <ListWorkbenchShell class="room-list-page">
+    <template #toolbar>
+      <MessageSessionToolbar
+        :search-keyword="searchKeyword"
+        :session-type-filter="sessionTypeFilter"
+        :session-sort="sessionSort"
+        :filtered-count="filteredRoomSessionList.length"
+        :total-count="roomSessionList.length"
+        @update:search-keyword="setSearchKeyword"
+        @update:session-type-filter="setSessionTypeFilter"
+        @update:session-sort="setSessionSort" />
+    </template>
+
+    <template #default>
+      <RoomSessionList
+        ref="sessionListRef"
+        :session-list="filteredRoomSessionList"
+        :sync-loading="syncLoading"
+        :session-loading="chatStore.sessionOptions.isLoading"
+        :network-banner="networkBanner"
+        :empty-description="emptyDescription"
+        :get-item-classes="getItemClasses"
+        :visible-menu="visibleMenu"
+        :visible-special-menu="visibleSpecialMenu"
+        :on-msg-click="handleMsgClick"
+        :on-msg-dblclick="handleMsgDblclick"
+        :on-menu-show="handleMenuShow"
+        :on-retry-network="retrySessions" />
+    </template>
+
+    <template #detail>
+      <WorkbenchDetailPane
+        :selected-session="selectedRoomSession"
+        :active-space="null"
+        :visible-session-count="filteredRoomSessionList.length"
+        :total-session-count="roomSessionList.length" />
+    </template>
+  </ListWorkbenchShell>
 </template>
 <script lang="ts" setup name="roomList">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { MittEnum, RoomTypeEnum } from '@/enums'
+import { useMessageSessionFilters } from '@/composables/workbench/useMessageSessionFilters'
 import { useSessionPageSync } from '@/composables/workbench/useSessionPageSync'
 import { useSessionListState } from '@/composables/workbench/useSessionListState'
+import { useWorkbenchSessionQuerySync } from '@/composables/workbench/useWorkbenchSessionQuerySync'
 import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useTauriListener } from '@/hooks/useTauriListener'
+import { WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
+import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'
 import { useI18n } from 'vue-i18n'
+import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.vue'
 import RoomSessionList from '@/components/workbench/RoomSessionList.vue'
+import WorkbenchDetailPane from '@/components/workbench/WorkbenchDetailPane.vue'
 
 const { t } = useI18n()
 const appWindow = WebviewWindow.getCurrent()
@@ -43,9 +73,40 @@ const {
 } = useSessionListState()
 
 const roomSessionList = computed(() => sessionList.value.filter((item) => item.type === RoomTypeEnum.GROUP))
+const {
+  searchKeyword,
+  sessionTypeFilter,
+  sessionSort,
+  filteredSessionList: filteredRoomSessionList,
+  ensureSessionVisible,
+  setSearchKeyword,
+  setSessionTypeFilter,
+  setSessionSort
+} = useMessageSessionFilters(roomSessionList)
 const sessionListRef = ref<InstanceType<typeof RoomSessionList> | null>(null)
+const ROOM_LIST_ROUTE_NAME = 'roomList'
+
+const selectedRoomSession = computed(
+  () => roomSessionList.value.find((item) => item.roomId === globalStore.currentSessionRoomId) ?? null
+)
+const emptyDescription = computed(() => {
+  if (searchKeyword.value.trim() || sessionTypeFilter.value !== WORKBENCH_SESSION_TYPE_FILTERS.all) {
+    return t('space.empty_filtered_sessions')
+  }
+
+  return t('space.empty_sessions')
+})
 
 useSessionPageSync({ activePath: '/roomList', handleMsgClick })
+useWorkbenchSessionQuerySync({
+  routeName: ROOM_LIST_ROUTE_NAME,
+  searchKeyword,
+  sessionTypeFilter,
+  sessionSort,
+  setSearchKeyword,
+  setSessionTypeFilter,
+  setSessionSort
+})
 
 onBeforeMount(async () => {
   useMitt.emit(MittEnum.LOCATE_SESSION, { roomId: globalStore.currentSessionRoomId })
@@ -67,7 +128,8 @@ onMounted(async () => {
     await handleMsgDelete(roomId)
   })
   useMitt.on(MittEnum.LOCATE_SESSION, async (e: { roomId: string }) => {
-    const index = roomSessionList.value.findIndex((item) => item.roomId === e.roomId)
+    ensureSessionVisible(e.roomId)
+    const index = filteredRoomSessionList.value.findIndex((item) => item.roomId === e.roomId)
     if (index !== -1) {
       await sessionListRef.value?.scrollToIndex(index)
     }
@@ -77,6 +139,10 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 @use '@/styles/scss/message';
+
+.room-list-page {
+  background: var(--hula-surface-panel);
+}
 
 #image-no-data {
   @apply size-full mt-60px text-[--hula-text-primary] text-14px;

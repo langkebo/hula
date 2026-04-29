@@ -193,6 +193,30 @@ describe('SynapseRustExtensionsService', () => {
       expect(result?.name).toBe('Test Room')
     })
 
+    it('should accept bare room summary payloads from synapse-rust', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            room_id: '!room:server',
+            name: 'Bare Room',
+            heroes: [],
+            stats: {
+              room_id: '!room:server',
+              total_events: 10,
+              total_messages: 6,
+              total_media: 1,
+              storage_size: 256
+            }
+          })
+      })
+
+      const result = await synapseRustExtensionsService.getRoomSummary('!room:server')
+
+      expect(result?.room_id).toBe('!room:server')
+      expect(result?.name).toBe('Bare Room')
+    })
+
     it('should return null on error when throwOnError is false', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
@@ -200,6 +224,66 @@ describe('SynapseRustExtensionsService', () => {
       })
       const result = await synapseRustExtensionsService.getRoomSummary('!room:server', false)
       expect(result).toBeNull()
+    })
+  })
+
+  describe('room summary collections', () => {
+    it('should accept bare member arrays from synapse-rust', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              user_id: '@user:server',
+              membership: 'join',
+              is_hero: true
+            }
+          ])
+      })
+
+      const result = await synapseRustExtensionsService.getRoomSummaryMembers('!room:server')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].user_id).toBe('@user:server')
+    })
+
+    it('should accept bare state arrays from synapse-rust', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              event_type: 'm.room.name',
+              state_key: '',
+              event_id: '$event',
+              content: { name: 'Room' }
+            }
+          ])
+      })
+
+      const result = await synapseRustExtensionsService.getRoomSummaryState('!room:server')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].event_type).toBe('m.room.name')
+    })
+
+    it('should accept bare stats objects from synapse-rust', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            room_id: '!room:server',
+            total_events: 5,
+            total_messages: 3,
+            total_media: 1,
+            storage_size: 99
+          })
+      })
+
+      const result = await synapseRustExtensionsService.getRoomSummaryStats('!room:server')
+
+      expect(result?.room_id).toBe('!room:server')
+      expect(result?.total_events).toBe(5)
     })
   })
 

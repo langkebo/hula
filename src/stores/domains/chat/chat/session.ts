@@ -5,10 +5,9 @@ import { RoomTypeEnum, NotificationTypeEnum, StoresEnum } from '@/enums'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
-import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
+import { matrixSessionService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SessionStore')
@@ -41,7 +40,6 @@ export const useSessionStore = defineStore(
     const globalStore = useGlobalStore()
     const userStore = useUserStore()
     const sessionUnreadStore = useSessionUnreadStore()
-    const _groupStore = useGroupStore()
 
     const sessionList = shallowRef<SessionItem[]>([])
     const sessionMap = shallowRef<Record<string, SessionItem>>({})
@@ -59,11 +57,6 @@ export const useSessionStore = defineStore(
     const persistUnreadCount = (roomId: string, count: number) => {
       if (!roomId) return
       sessionUnreadStore.set(userStore.userInfo?.uid, roomId, count)
-    }
-
-    const _removeUnreadCountCache = (roomId: string) => {
-      if (!roomId) return
-      sessionUnreadStore.remove(userStore.userInfo?.uid, roomId)
     }
 
     const rebuildSessionMap = () => {
@@ -144,13 +137,33 @@ export const useSessionStore = defineStore(
         if (sessionOptions.isLoading) return
         sessionOptions.isLoading = true
         globalStore.unreadReady = false
+        const previousSessionMap = sessionList.value.reduce(
+          (map, session) => {
+            map[session.roomId] = session
+            return map
+          },
+          {} as Record<string, SessionItem>
+        )
 
         const specialFriends = await matrixFriendService.getSpecialFriends()
-        const sessions = matrixRoomService.getVisibleRoomSessions(specialFriends)
+        const favoriteFriendIds = new Set(specialFriends)
+        const sessions = await matrixSessionService.getSessionList()
 
-        sessionList.value = uniqBy([...sessionList.value, ...sessions], (s) => s.roomId)
+        sessionList.value = uniqBy(
+          sessions.map((session) => {
+            const previous = previousSessionMap[session.roomId]
+            const favoriteId = session.detailId || session.account
+            return {
+              ...previous,
+              ...session,
+              isFavorite: !!(favoriteId && favoriteFriendIds.has(favoriteId))
+            }
+          }),
+          (s) => s.roomId
+        )
         sessionList.value = orderBy(sessionList.value, ['top', 'isFavorite', 'activeTime'], ['desc', 'desc', 'desc'])
         rebuildSessionMap()
+        syncPersistedUnreadCounts()
 
         globalStore.unreadReady = true
       } catch (err) {

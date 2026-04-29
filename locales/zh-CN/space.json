@@ -43,6 +43,7 @@
   "detail_members_collapse": "收起成员列表",
   "detail_members_view_all": "查看全部成员",
   "detail_members_hide_directory": "收起成员详情",
+  "detail_member_profile": "成员资料",
   "detail_members_empty": "暂无可展示的成员信息",
   "detail_members_load_failed": "成员加载失败，请重试",
   "detail_visible_sessions": "当前可见会话",

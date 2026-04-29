@@ -3,6 +3,8 @@ import { SPACE_ROUTE_NAMES, buildSpaceWorkbenchRoute } from '@/router/spaceNavig
 
 const FriendsList = () => import('@/views/homeWindow/FriendsList.vue')
 const Message = () => import('@/views/homeWindow/message/index.vue')
+const RoomList = () => import('@/views/homeWindow/RoomList.vue')
+const SpaceList = () => import('@/views/homeWindow/SpaceList.vue')
 
 export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
   {
@@ -12,13 +14,23 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     children: [
       {
         path: '/message',
-        name: SPACE_ROUTE_NAMES.workbench,
+        name: 'message',
         component: Message
       },
       {
         path: '/friendsList',
         name: 'friendsList',
         component: FriendsList
+      },
+      {
+        path: '/roomList',
+        name: 'roomList',
+        component: RoomList
+      },
+      {
+        path: '/spaceList',
+        name: SPACE_ROUTE_NAMES.workbench,
+        component: SpaceList
       }
     ]
   },

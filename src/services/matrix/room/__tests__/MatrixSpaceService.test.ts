@@ -256,9 +256,9 @@ describe('MatrixSpaceService', () => {
   describe('getRoomParentSpacesViaApi', () => {
     it('should get room parent spaces via API', async () => {
       const mockHttp = {
-        authedRequest: vi.fn().mockResolvedValue({
-          spaces: [{ space_id: '!parent:server', name: 'Parent Space', member_count: 8, child_count: 2 }]
-        })
+        authedRequest: vi
+          .fn()
+          .mockResolvedValue([{ space_id: '!parent:server', name: 'Parent Space', member_count: 8, child_count: 2 }])
       }
       vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
 
@@ -266,7 +266,10 @@ describe('MatrixSpaceService', () => {
 
       expect(result).toHaveLength(1)
       expect(result[0].spaceId).toBe('!parent:server')
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('GET', '/_matrix/client/v3/spaces/room/!room%3Aserver')
+      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
+        'GET',
+        '/_matrix/client/v3/spaces/room/!room%3Aserver/parents'
+      )
     })
   })
 })

@@ -43,6 +43,7 @@
   "detail_members_collapse": "Collapse Member List",
   "detail_members_view_all": "View All Members",
   "detail_members_hide_directory": "Hide Member Details",
+  "detail_member_profile": "Member Profile",
   "detail_members_empty": "No member details available",
   "detail_members_load_failed": "Failed to load members, please retry",
   "detail_visible_sessions": "Visible Sessions",

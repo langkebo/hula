@@ -175,12 +175,35 @@ class SynapseRustExtensionsService {
     return response.data as T
   }
 
+  private unwrapMaybeWrappedData<T>(
+    response: T | { data?: T; status?: string; code?: string; message?: string }
+  ): T | undefined {
+    if (response && typeof response === 'object' && 'status' in response && response.status === 'error') {
+      const errorResponse = response as { message?: string }
+      throw new Error(errorResponse.message || '请求失败')
+    }
+
+    if (response && typeof response === 'object' && 'data' in response) {
+      return (response as { data?: T }).data
+    }
+
+    return response as T
+  }
+
   async getFriends(): Promise<SynapseFriendInfo[]> {
     try {
-      const response = await this.request<{ data?: SynapseFriendInfo[] }>('/_matrix/client/v1/friends', {
-        method: 'GET'
-      })
-      return this.getData({ ...response, status: 'ok' }) || []
+      const response = await this.request<{ friends?: SynapseFriendInfo[]; data?: SynapseFriendInfo[] }>(
+        '/_matrix/client/v1/friends',
+        {
+          method: 'GET'
+        }
+      )
+      // 兼容多种响应格式
+      if (response && typeof response === 'object') {
+        if ('friends' in response) return response.friends || []
+        if ('data' in response) return response.data || []
+      }
+      return (Array.isArray(response) ? response : []) as SynapseFriendInfo[]
     } catch (err) {
       error(`[SynapseRust] 获取好友列表失败: ${err}`)
       return []
@@ -196,12 +219,23 @@ class SynapseRustExtensionsService {
   }> {
     try {
       const response = await this.request<{
+        request_id?: number
+        status?: string
         data?: { request_id: number; status: string }
       }>('/_matrix/client/v1/friends/request', {
         method: 'POST',
         body: JSON.stringify({ user_id: userId, message })
       })
-      const data = this.getData({ ...response, status: 'ok' })
+
+      let data: { request_id: number; status: string } | undefined
+      if (response && typeof response === 'object') {
+        if ('data' in response) {
+          data = response.data
+        } else if ('request_id' in response) {
+          data = { request_id: response.request_id!, status: response.status || 'pending' }
+        }
+      }
+
       info(`[SynapseRust] 发送好友请求成功: ${userId}`)
       return data || { request_id: 0, status: 'error' }
     } catch (err) {
@@ -212,16 +246,29 @@ class SynapseRustExtensionsService {
 
   async getPendingRequests(): Promise<SynapsePendingRequests> {
     try {
-      const response = await this.request<{
-        data?: SynapseFriendRequest[]
-      }>('/_matrix/client/v1/friends/requests', { method: 'GET' })
-      const requests = this.getData({ ...response, status: 'ok' }) || []
+      const [incomingResponse, outgoingResponse] = await Promise.all([
+        this.request<{ requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }>(
+          '/_matrix/client/v1/friends/requests/incoming',
+          { method: 'GET' }
+        ),
+        this.request<{ requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }>(
+          '/_matrix/client/v1/friends/requests/outgoing',
+          { method: 'GET' }
+        )
+      ])
 
-      const currentUserId = matrixClientService.getClient()?.getUserId()
+      const extractRequests = (response: unknown): SynapseFriendRequest[] => {
+        if (response && typeof response === 'object') {
+          const res = response as { requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }
+          if ('requests' in res) return res.requests || []
+          if ('data' in res) return res.data || []
+        }
+        return Array.isArray(response) ? response : []
+      }
 
       return {
-        incoming: requests.filter((r) => r.recipient === currentUserId),
-        outgoing: requests.filter((r) => r.requester === currentUserId)
+        incoming: extractRequests(incomingResponse),
+        outgoing: extractRequests(outgoingResponse)
       }
     } catch (err) {
       error(`[SynapseRust] 获取待处理请求失败: ${err}`)
@@ -229,35 +276,44 @@ class SynapseRustExtensionsService {
     }
   }
 
-  async acceptFriendRequest(requestId: number): Promise<{
+  async acceptFriendRequest(userId: string): Promise<{
     status: string
-    dm_room_id: string
-    friend: SynapseFriendInfo
+    room_id: string
   }> {
     try {
       const response = await this.request<{
-        data?: {
-          status: string
-          dm_room_id: string
-          friend: SynapseFriendInfo
+        status?: string
+        room_id?: string
+        data?: { status: string; room_id: string }
+      }>(`/_matrix/client/v1/friends/request/${encodeURIComponent(userId)}/accept`, {
+        method: 'POST',
+        body: JSON.stringify({})
+      })
+
+      let data: { status: string; room_id: string } | undefined
+      if (response && typeof response === 'object') {
+        if ('data' in response) {
+          data = response.data
+        } else if ('status' in response) {
+          data = { status: response.status!, room_id: response.room_id || '' }
         }
-      }>(`/_matrix/client/v1/friends/request/${requestId}/accept`, { method: 'POST', body: JSON.stringify({}) })
-      const data = this.getData({ ...response, status: 'ok' })
-      info(`[SynapseRust] 接受好友请求成功: ${requestId}`)
-      return data || { status: 'error', dm_room_id: '', friend: {} as SynapseFriendInfo }
+      }
+
+      info(`[SynapseRust] 接受好友请求成功: ${userId}`)
+      return data || { status: 'error', room_id: '' }
     } catch (err) {
       error(`[SynapseRust] 接受好友请求失败: ${err}`)
       throw err
     }
   }
 
-  async declineFriendRequest(requestId: number): Promise<void> {
+  async declineFriendRequest(userId: string): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v1/friends/request/${requestId}/decline`, {
+      await this.request(`/_matrix/client/v1/friends/request/${encodeURIComponent(userId)}/reject`, {
         method: 'POST',
         body: JSON.stringify({})
       })
-      info(`[SynapseRust] 拒绝好友请求成功: ${requestId}`)
+      info(`[SynapseRust] 拒绝好友请求成功: ${userId}`)
     } catch (err) {
       error(`[SynapseRust] 拒绝好友请求失败: ${err}`)
       throw err
@@ -266,9 +322,8 @@ class SynapseRustExtensionsService {
 
   async removeFriend(userId: string): Promise<void> {
     try {
-      await this.request('/_matrix/client/v1/friends', {
-        method: 'DELETE',
-        body: JSON.stringify({ user_id: userId })
+      await this.request(`/_matrix/client/v1/friends/${encodeURIComponent(userId)}`, {
+        method: 'DELETE'
       })
       info(`[SynapseRust] 删除好友成功: ${userId}`)
     } catch (err) {
@@ -555,10 +610,11 @@ class SynapseRustExtensionsService {
 
   async getRoomSummary(roomId: string, throwOnError = true): Promise<RoomSummary | null> {
     try {
-      const response = await this.request<{
-        data?: RoomSummary
-      }>(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<RoomSummary | { data?: RoomSummary }>(
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 获取房间摘要成功: roomId=${roomId}`)
       return data || null
     } catch (err) {
@@ -572,10 +628,11 @@ class SynapseRustExtensionsService {
 
   async getRoomSummaryMembers(roomId: string, throwOnError = true): Promise<RoomSummaryMember[]> {
     try {
-      const response = await this.request<{
-        data?: RoomSummaryMember[]
-      }>(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/members`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<RoomSummaryMember[] | { data?: RoomSummaryMember[] }>(
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/members`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       const members = data || []
       info(`[SynapseRust] 获取房间摘要成员成功: roomId=${roomId}, count=${members.length}`)
       return members
@@ -597,10 +654,11 @@ class SynapseRustExtensionsService {
 
   async getRoomSummaryState(roomId: string, throwOnError = true): Promise<RoomSummaryState[]> {
     try {
-      const response = await this.request<{
-        data?: RoomSummaryState[]
-      }>(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/state`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<RoomSummaryState[] | { data?: RoomSummaryState[] }>(
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/state`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       const state = data || []
       info(`[SynapseRust] 获取房间摘要状态成功: roomId=${roomId}, count=${state.length}`)
       return state
@@ -615,10 +673,11 @@ class SynapseRustExtensionsService {
 
   async getRoomSummaryStats(roomId: string, throwOnError = true): Promise<RoomSummaryStats | null> {
     try {
-      const response = await this.request<{
-        data?: RoomSummaryStats
-      }>(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/stats`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<RoomSummaryStats | { data?: RoomSummaryStats }>(
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/stats`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 获取房间摘要统计成功: roomId=${roomId}`)
       return data || null
     } catch (err) {

@@ -1,9 +1,24 @@
+import { nextTick } from 'vue'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+import { MittEnum } from '@/enums'
 import { useGlobalStore } from '../global'
 
+const { chatStoreMock, emitMock, getCurrentMock } = vi.hoisted(() => ({
+  chatStoreMock: {
+    sessionList: [] as Array<Record<string, unknown>>,
+    changeRoom: vi.fn(),
+    getSession: vi.fn(),
+    markSessionRead: vi.fn()
+  },
+  emitMock: vi.fn(),
+  getCurrentMock: vi.fn(() => ({ label: 'home' }))
+}))
+
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
-  WebviewWindow: vi.fn()
+  WebviewWindow: {
+    getCurrent: getCurrentMock
+  }
 }))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -11,23 +26,21 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 vi.mock('@/stores/domains/chat/chat', () => ({
-  useChatStore: vi.fn(() => ({
-    sessionList: []
-  }))
+  useChatStore: vi.fn(() => chatStoreMock)
 }))
 
 vi.mock('@/hooks/useMitt.ts', () => ({
   useMitt: {
     on: vi.fn(),
     off: vi.fn(),
-    emit: vi.fn()
+    emit: emitMock
   }
 }))
 
 vi.mock('@/utils/UnreadCountManager', () => ({
   unreadCountManager: {
-    getTotalUnread: vi.fn(() => 0),
-    updateBadge: vi.fn()
+    calculateTotal: vi.fn(),
+    refreshBadge: vi.fn()
   }
 }))
 
@@ -41,6 +54,12 @@ vi.mock('@/utils/Logger', () => ({
 describe('useGlobalStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.clearAllMocks()
+    getCurrentMock.mockReturnValue({ label: 'home' })
+    chatStoreMock.sessionList = []
+    chatStoreMock.changeRoom.mockResolvedValue(undefined)
+    chatStoreMock.getSession.mockReturnValue(undefined)
+    chatStoreMock.markSessionRead.mockImplementation(() => undefined)
   })
 
   it('should initialize with default values', () => {
@@ -62,7 +81,7 @@ describe('useGlobalStore', () => {
 
   it('should manage current session room id', () => {
     const store = useGlobalStore()
-    store.currentSessionRoomId = 'room123'
+    store.updateCurrentSessionRoomId('room123')
 
     expect(store.currentSessionRoomId).toBe('room123')
   })
@@ -73,5 +92,24 @@ describe('useGlobalStore', () => {
 
     store.unreadReady = !initial
     expect(store.unreadReady).toBe(!initial)
+  })
+
+  it('should load messages and emit session change when current session changes', async () => {
+    chatStoreMock.getSession.mockReturnValue({
+      roomId: 'room-1',
+      unreadCount: 2
+    })
+
+    const store = useGlobalStore()
+    store.updateCurrentSessionRoomId('room-1')
+    await nextTick()
+    await Promise.resolve()
+
+    expect(chatStoreMock.changeRoom).toHaveBeenCalledTimes(1)
+    expect(chatStoreMock.markSessionRead).toHaveBeenCalledWith('room-1')
+    expect(emitMock).toHaveBeenCalledWith(MittEnum.SESSION_CHANGED, {
+      roomId: 'room-1',
+      oldRoomId: ''
+    })
   })
 })

@@ -115,12 +115,15 @@ import { ref, computed, watch } from 'vue'
 import { NModal, NButton, NSwitch, NSelect, NDivider, NSpin, NEmpty, NFlex, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionService, type KeyRotationRecord } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { matrixEncryptionService, type KeyRotationRecord } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('KeyRotation')
 
 const { t } = useI18n()
 const message = useMessage()
+const emit = defineEmits<{
+  updated: []
+}>()
 
 const visible = defineModel<boolean>('show', { default: false })
 
@@ -192,9 +195,9 @@ const handleRotate = async () => {
     const result = await matrixEncryptionService.rotateKeys()
     if (result.success) {
       message.success(t('encryption.key_rotation.rotation_success'))
-      needsRotation.value = false
-      lastRotationTime.value = result.rotatedAt
+      await loadRotationStatus()
       await loadRotationHistory()
+      emit('updated')
     } else {
       message.error(t('encryption.key_rotation.rotation_failed'))
     }
@@ -209,6 +212,8 @@ const handleRotate = async () => {
 const handleConfigChange = async () => {
   try {
     await matrixEncryptionService.configureKeyRotation(autoRotate.value, rotationInterval.value)
+    await loadRotationStatus()
+    emit('updated')
     message.success(t('encryption.key_rotation.config_success'))
   } catch (err) {
     logger.error('Failed to update key rotation config:', err)

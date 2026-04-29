@@ -135,7 +135,7 @@
 
     <CrossSigningDialog v-model:show="showCrossSigningDialog" />
 
-    <KeyRotationDialog v-model:show="showKeyRotationDialog" />
+    <KeyRotationDialog v-model:show="showKeyRotationDialog" @updated="loadRotationStatus" />
 
     <n-modal
       v-model:show="deviceKeyVisible"
@@ -238,11 +238,15 @@ async function loadEncryptionInfo() {
     const crossSigningInfo = await matrixEncryptionService.getCrossSigningInfo()
     crossSigningSetup.value = crossSigningInfo.isSetup
 
-    const rotationStatus = await matrixEncryptionService.getKeyRotationStatus()
-    needsRotation.value = rotationStatus.needsRotation
+    await loadRotationStatus()
   } catch (error) {
     logger.error('Failed to load encryption details', error)
   }
+}
+
+async function loadRotationStatus() {
+  const rotationStatus = await matrixEncryptionService.getKeyRotationStatus()
+  needsRotation.value = rotationStatus.needsRotation
 }
 
 function formatFingerprint(key: string): string {

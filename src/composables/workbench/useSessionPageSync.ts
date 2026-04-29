@@ -8,12 +8,18 @@ import { useTimerManager } from '@/utils/TimerManager'
 type SessionChangeHook = (roomId: string) => void
 
 interface UseSessionPageSyncOptions {
-  activePath: string
+  activePath?: string
+  activeRouteName?: string
   handleMsgClick: (item: SessionItem) => Promise<unknown> | unknown
   beforeHandleSession?: SessionChangeHook
 }
 
-export const useSessionPageSync = ({ activePath, handleMsgClick, beforeHandleSession }: UseSessionPageSyncOptions) => {
+export const useSessionPageSync = ({
+  activePath,
+  activeRouteName,
+  handleMsgClick,
+  beforeHandleSession
+}: UseSessionPageSyncOptions) => {
   const route = useRoute()
   const timerManager = useTimerManager()
   const chatStore = useChatStore()
@@ -49,14 +55,16 @@ export const useSessionPageSync = ({ activePath, handleMsgClick, beforeHandleSes
   )
 
   watch(
-    () => route.path,
-    async (newPath) => {
+    () => ({ path: route.path, name: route.name }),
+    async ({ path, name }) => {
       if (clearUnreadTimer) {
         clearTimeout(clearUnreadTimer)
         clearUnreadTimer = null
       }
 
-      if (newPath !== activePath) return
+      const matchesPath = activePath ? path === activePath : false
+      const matchesRouteName = activeRouteName ? name === activeRouteName : false
+      if (!matchesPath && !matchesRouteName) return
 
       const currentRoomId = globalStore.currentSessionRoomId
       if (!currentRoomId) return

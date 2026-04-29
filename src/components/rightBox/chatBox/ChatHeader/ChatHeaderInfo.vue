@@ -33,6 +33,11 @@
             {{ statusTitle }}
           </span>
         </template>
+        <EncryptionStatus
+          v-if="encryptionStatus"
+          :status="encryptionStatus"
+          :show-tooltip="true"
+          class="security-status" />
       </div>
     </div>
   </div>
@@ -45,6 +50,9 @@ import { NAvatar, NTag } from 'naive-ui'
 import { RoomTypeEnum } from '@/enums'
 import { IsAllUserEnum } from '@/services/types'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import EncryptionStatus from '@/components/encryption/EncryptionStatus.vue'
+
+type RoomEncryptionStatus = 'encrypted' | 'unencrypted' | 'unknown' | 'error'
 
 const props = defineProps<{
   name: string
@@ -56,6 +64,7 @@ const props = defineProps<{
   statusTitle: string
   isBotUser: boolean
   hotFlag?: IsAllUserEnum
+  encryptionStatus?: RoomEncryptionStatus | null
 }>()
 
 const { t } = useI18n()
@@ -134,6 +143,7 @@ const handleClick = () => {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .member-count,
@@ -155,5 +165,9 @@ const handleClick = () => {
 .status-icon {
   width: 14px;
   height: 14px;
+}
+
+.security-status {
+  min-width: 0;
 }
 </style>

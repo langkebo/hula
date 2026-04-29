@@ -1,5 +1,10 @@
 <template>
-  <div class="space-list-pane border-r border-[--hula-border-default]">
+  <div
+    class="space-list-pane border-r border-[--hula-border-default]"
+    :class="{
+      'space-list-pane--compact': compact,
+      'space-list-pane--narrow': narrow
+    }">
     <div class="space-list-pane__header px-12px py-10px">
       <n-flex align="center" justify="space-between">
         <span class="text-13px font-500">{{ t('space.title') }}</span>
@@ -49,6 +54,8 @@ defineProps<{
   selectedSpaceId: string
   loading: boolean
   totalCount: number
+  compact?: boolean
+  narrow?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -64,6 +71,16 @@ const { t } = useI18n()
   min-width: 220px;
   height: 100%;
   background: var(--hula-surface-panel);
+}
+
+.space-list-pane--compact {
+  width: 188px;
+  min-width: 188px;
+}
+
+.space-list-pane--narrow {
+  width: 168px;
+  min-width: 168px;
 }
 
 .space-list-pane__body {
@@ -109,5 +126,26 @@ const { t } = useI18n()
   flex-shrink: 0;
   font-size: 12px;
   color: var(--hula-text-tertiary);
+}
+
+.space-list-pane--compact .space-list-pane__header {
+  padding: 10px;
+}
+
+.space-list-pane--compact .space-list-pane__body {
+  gap: 4px;
+  padding: 6px;
+}
+
+.space-list-pane--compact .space-item {
+  padding: 9px 10px;
+}
+
+.space-list-pane--narrow .space-item {
+  padding: 8px 10px;
+}
+
+.space-list-pane--narrow .space-item__name {
+  font-size: 12px;
 }
 </style>

@@ -15,6 +15,13 @@
     :sync-loading="syncLoading"
     :session-loading="chatStore.sessionOptions.isLoading"
     :network-banner="networkBanner"
+    :manage-mode="manageMode"
+    :manage-submitting="manageSubmitting"
+    :invite-user-id="inviteForm.userId"
+    :add-room-id="addRoomForm.roomId"
+    :add-room-suggested="addRoomForm.suggested"
+    :settings-name="settingsForm.name"
+    :settings-topic="settingsForm.topic"
     :on-retry-network="retrySessions"
     :get-item-classes="getItemClasses"
     :visible-menu="visibleMenu"
@@ -26,68 +33,17 @@
     @update:search-keyword="setSearchKeyword"
     @update:session-type-filter="setSessionTypeFilter"
     @update:session-sort="setSessionSort"
+    @update:invite-user-id="inviteForm.userId = $event"
+    @update:add-room-id="addRoomForm.roomId = $event"
+    @update:add-room-suggested="addRoomForm.suggested = $event"
+    @update:settings-name="settingsForm.name = $event"
+    @update:settings-topic="settingsForm.topic = $event"
     @create-space="openCreateSpace"
     @invite-space-member="openInviteSpaceMember"
     @add-space-room="openAddSpaceRoom"
-    @open-space-settings="openSpaceSettings" />
-
-  <n-modal v-model:show="showInviteModal" preset="card" :title="t('space.invite_title')" style="width: 480px">
-    <n-form :model="inviteForm">
-      <n-form-item :label="t('space.invite')">
-        <n-input v-model:value="inviteForm.userId" :placeholder="t('space.invite_user_placeholder')" />
-      </n-form-item>
-    </n-form>
-    <template #footer>
-      <n-flex justify="flex-end" :size="12">
-        <n-button @click="showInviteModal = false">{{ t('common.cancel') }}</n-button>
-        <n-button type="primary" :loading="inviteMutating" @click="submitInviteSpaceMember">
-          {{ t('common.confirm') }}
-        </n-button>
-      </n-flex>
-    </template>
-  </n-modal>
-
-  <n-modal v-model:show="showAddRoomModal" preset="card" :title="t('space.add_room_title')" style="width: 480px">
-    <n-form :model="addRoomForm">
-      <n-form-item :label="t('space.add_room')">
-        <n-input v-model:value="addRoomForm.roomId" :placeholder="t('space.add_room_placeholder')" />
-      </n-form-item>
-      <n-form-item>
-        <n-checkbox v-model:checked="addRoomForm.suggested">{{ t('space.add_room_suggested') }}</n-checkbox>
-      </n-form-item>
-    </n-form>
-    <template #footer>
-      <n-flex justify="flex-end" :size="12">
-        <n-button @click="showAddRoomModal = false">{{ t('common.cancel') }}</n-button>
-        <n-button type="primary" :loading="addRoomMutating" @click="submitAddSpaceRoom">
-          {{ t('common.confirm') }}
-        </n-button>
-      </n-flex>
-    </template>
-  </n-modal>
-
-  <n-modal v-model:show="showSettingsModal" preset="card" :title="t('space.settings_title')" style="width: 520px">
-    <n-form :model="settingsForm" label-placement="left" label-width="80">
-      <n-form-item :label="t('space.name')">
-        <n-input v-model:value="settingsForm.name" :placeholder="t('space.name_placeholder')" />
-      </n-form-item>
-      <n-form-item :label="t('space.topic')">
-        <n-input
-          v-model:value="settingsForm.topic"
-          type="textarea"
-          :placeholder="t('space.topic_placeholder')"
-          :rows="3" />
-      </n-form-item>
-    </n-form>
-    <template #footer>
-      <n-flex justify="flex-end" :size="12">
-        <n-button @click="showSettingsModal = false">{{ t('common.cancel') }}</n-button>
-        <n-button type="primary" :loading="settingsMutating" @click="submitSpaceSettings">
-          {{ t('common.confirm') }}
-        </n-button>
-      </n-flex>
-    </template>
-  </n-modal>
+    @open-space-settings="openSpaceSettings"
+    @close-manage-pane="closeManagePane"
+    @submit-manage-pane="submitManagePane" />
 </template>
 <script lang="ts" setup name="spaceList">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
@@ -106,7 +62,9 @@ import { useI18n } from 'vue-i18n'
 import { canManageSpaceByPowerLevel } from '@/composables/workbench/spacePermissions'
 import { useRoomSpaceWorkbench } from '@/composables/workbench/useRoomSpaceWorkbench'
 import RoomSpaceWorkbench from '@/components/workbench/RoomSpaceWorkbench.vue'
-import { buildCreateSpaceRoute } from '@/router/spaceNavigation'
+import { buildCreateSpaceRoute, SPACE_ROUTE_NAMES } from '@/router/spaceNavigation'
+
+type SpaceManageMode = 'invite' | 'add-room' | 'settings'
 
 const { t } = useI18n()
 const message = useNaiveMessage()
@@ -147,9 +105,7 @@ const {
 } = useRoomSpaceWorkbench(sessionList)
 
 const workbenchRef = ref<InstanceType<typeof RoomSpaceWorkbench> | null>(null)
-const showInviteModal = ref(false)
-const showAddRoomModal = ref(false)
-const showSettingsModal = ref(false)
+const manageMode = ref<SpaceManageMode | null>(null)
 const inviteForm = reactive({ userId: '' })
 const addRoomForm = reactive({ roomId: '', suggested: false })
 const settingsForm = reactive({ name: '', topic: '' })
@@ -166,6 +122,18 @@ const canManageSelectedSpace = computed(() => {
   const spaceId = selectedSpaceId.value
   return canManageSpaceByPowerLevel(matrixClientService.getClient(), spaceId)
 })
+const manageSubmitting = computed(() => {
+  switch (manageMode.value) {
+    case 'invite':
+      return inviteMutating.value
+    case 'add-room':
+      return addRoomMutating.value
+    case 'settings':
+      return settingsMutating.value
+    default:
+      return false
+  }
+})
 
 const openCreateSpace = () => {
   void router.push(buildCreateSpaceRoute())
@@ -174,14 +142,14 @@ const openCreateSpace = () => {
 const openInviteSpaceMember = () => {
   if (!selectedSpaceId.value || !canManageSelectedSpace.value) return
   inviteForm.userId = ''
-  showInviteModal.value = true
+  manageMode.value = 'invite'
 }
 
 const openAddSpaceRoom = () => {
   if (!selectedSpaceId.value || !canManageSelectedSpace.value) return
   addRoomForm.roomId = ''
   addRoomForm.suggested = false
-  showAddRoomModal.value = true
+  manageMode.value = 'add-room'
 }
 
 const openSpaceSettings = async () => {
@@ -189,7 +157,11 @@ const openSpaceSettings = async () => {
   await loadSelectedSpace()
   settingsForm.name = selectedSpaceDetail.value?.name ?? activeSpace.value?.name ?? ''
   settingsForm.topic = selectedSpaceDetail.value?.topic ?? ''
-  showSettingsModal.value = true
+  manageMode.value = 'settings'
+}
+
+const closeManagePane = () => {
+  manageMode.value = null
 }
 
 const submitInviteSpaceMember = async () => {
@@ -206,7 +178,7 @@ const submitInviteSpaceMember = async () => {
   }
 
   message.success(t('space.invite_success'))
-  showInviteModal.value = false
+  closeManagePane()
 }
 
 const submitAddSpaceRoom = async () => {
@@ -224,7 +196,7 @@ const submitAddSpaceRoom = async () => {
 
   await Promise.all([reloadSpaces(), reloadActiveSpaceRooms()])
   message.success(t('space.add_room_success'))
-  showAddRoomModal.value = false
+  closeManagePane()
 }
 
 const submitSpaceSettings = async () => {
@@ -246,7 +218,7 @@ const submitSpaceSettings = async () => {
   }
 
   if (!Object.keys(payload).length) {
-    showSettingsModal.value = false
+    closeManagePane()
     return
   }
 
@@ -258,17 +230,31 @@ const submitSpaceSettings = async () => {
 
   await reloadSpaces()
   message.success(t('space.settings_success'))
-  showSettingsModal.value = false
+  closeManagePane()
+}
+
+const submitManagePane = async () => {
+  switch (manageMode.value) {
+    case 'invite':
+      await submitInviteSpaceMember()
+      return
+    case 'add-room':
+      await submitAddSpaceRoom()
+      return
+    case 'settings':
+      await submitSpaceSettings()
+      return
+    default:
+      return
+  }
 }
 
 watch(selectedSpaceId, (spaceId) => {
   if (spaceId) return
-  showInviteModal.value = false
-  showAddRoomModal.value = false
-  showSettingsModal.value = false
+  closeManagePane()
 })
 useSessionPageSync({
-  activePath: '/spaceList',
+  activeRouteName: SPACE_ROUTE_NAMES.workbench,
   handleMsgClick,
   beforeHandleSession: ensureRoomVisible
 })
