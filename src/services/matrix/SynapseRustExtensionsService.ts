@@ -168,13 +168,6 @@ class SynapseRustExtensionsService {
     return data as T
   }
 
-  private getData<T>(response: { data?: T; status: string; code?: string; message?: string }): T {
-    if (response.status === 'error') {
-      throw new Error(response.message || '请求失败')
-    }
-    return response.data as T
-  }
-
   private unwrapMaybeWrappedData<T>(
     response: T | { data?: T; status?: string; code?: string; message?: string }
   ): T | undefined {
@@ -334,9 +327,9 @@ class SynapseRustExtensionsService {
 
   async setFriendNote(userId: string, note: string): Promise<void> {
     try {
-      await this.request('/_matrix/client/v1/friends/note', {
+      await this.request(`/_matrix/client/v1/friends/${encodeURIComponent(userId)}/note`, {
         method: 'PUT',
-        body: JSON.stringify({ user_id: userId, note })
+        body: JSON.stringify({ note })
       })
       info(`[SynapseRust] 设置好友备注成功: ${userId}`)
     } catch (err) {
@@ -347,10 +340,11 @@ class SynapseRustExtensionsService {
 
   async checkFriendship(userId: string): Promise<boolean> {
     try {
-      const response = await this.request<{
-        data?: SynapseCheckFriendshipResult
-      }>(`/_matrix/client/v1/friends/check/${encodeURIComponent(userId)}`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<SynapseCheckFriendshipResult | { data?: SynapseCheckFriendshipResult }>(
+        `/_matrix/client/v1/friends/check/${encodeURIComponent(userId)}`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       return data?.are_friends || false
     } catch (err) {
       error(`[SynapseRust] 检查好友关系失败: ${err}`)
@@ -360,13 +354,14 @@ class SynapseRustExtensionsService {
 
   async createPrivateDm(userId: string, isPrivate = true): Promise<SynapseCreateDmResult> {
     try {
-      const response = await this.request<{
-        data?: SynapseCreateDmResult
-      }>(`/_matrix/client/v1/friends/dm/${encodeURIComponent(userId)}`, {
-        method: 'POST',
-        body: JSON.stringify({ is_private: isPrivate })
-      })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<SynapseCreateDmResult | { data?: SynapseCreateDmResult }>(
+        `/_matrix/client/v1/friends/dm/${encodeURIComponent(userId)}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ is_private: isPrivate })
+        }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 创建私密私信房间: ${userId}, isPrivate=${isPrivate}`)
       return data || { room_id: '', created: false }
     } catch (err) {
@@ -377,10 +372,11 @@ class SynapseRustExtensionsService {
 
   async getDmRoom(userId: string): Promise<SynapseDmInfo> {
     try {
-      const response = await this.request<{
-        data?: SynapseDmInfo
-      }>(`/_matrix/client/v1/friends/dm/${encodeURIComponent(userId)}`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<SynapseDmInfo | { data?: SynapseDmInfo }>(
+        `/_matrix/client/v1/friends/dm/${encodeURIComponent(userId)}`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       return data || { room_id: '', exists: false }
     } catch (err) {
       error(`[SynapseRust] 获取私信房间失败: ${err}`)
@@ -390,10 +386,10 @@ class SynapseRustExtensionsService {
 
   async getBurnStats(): Promise<BurnStats> {
     try {
-      const response = await this.request<{
-        data?: BurnStats
-      }>('/_matrix/client/v1/user/burn/stats', { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<BurnStats | { data?: BurnStats }>('/_matrix/client/v1/user/burn/stats', {
+        method: 'GET'
+      })
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 获取阅后即焚统计成功: ${JSON.stringify(data)}`)
       return data || { total_burned: 0, total_pending: 0, rooms_with_burn_enabled: 0 }
     } catch (err) {
@@ -409,7 +405,7 @@ class SynapseRustExtensionsService {
    */
   async enableBurnAfterRead(roomId: string, enabled: boolean = true): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/burn`, {
+      await this.request(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/burn`, {
         method: 'PUT',
         body: JSON.stringify({ enabled })
       })
@@ -426,10 +422,11 @@ class SynapseRustExtensionsService {
    */
   async isBurnAfterReadEnabled(roomId: string): Promise<boolean> {
     try {
-      const response = await this.request<{
-        data?: { enabled: boolean }
-      }>(`/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/burn`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<{ enabled: boolean } | { data?: { enabled: boolean } }>(
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/burn`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       return data?.enabled || false
     } catch (err) {
       error(`[SynapseRust] 检查阅后即焚状态失败: ${err}`)
@@ -444,7 +441,7 @@ class SynapseRustExtensionsService {
    */
   async enableAntiScreenshot(roomId: string, enabled: boolean = true): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/anti_screenshot`, {
+      await this.request(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/anti_screenshot`, {
         method: 'PUT',
         body: JSON.stringify({ enabled })
       })
@@ -461,10 +458,11 @@ class SynapseRustExtensionsService {
    */
   async isAntiScreenshotEnabled(roomId: string): Promise<boolean> {
     try {
-      const response = await this.request<{
-        data?: { enabled: boolean }
-      }>(`/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/anti_screenshot`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<{ enabled: boolean } | { data?: { enabled: boolean } }>(
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/anti_screenshot`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       return data?.enabled || false
     } catch (err) {
       error(`[SynapseRust] 检查防截屏状态失败: ${err}`)
@@ -478,26 +476,28 @@ class SynapseRustExtensionsService {
    */
   async createPrivateChat(userIds: string[]): Promise<string> {
     try {
-      const response = await this.request<{
-        data?: { room_id: string }
-      }>('/_matrix/client/v1/rooms/create_private', {
-        method: 'POST',
-        body: JSON.stringify({
-          invite: userIds,
-          is_direct: userIds.length === 1,
-          preset: 'trusted_private_chat',
-          initial_state: [
-            {
-              type: 'm.room.encryption',
-              content: {
-                algorithm: 'm.megolm.v1.aes-sha2'
+      const response = await this.request<{ room_id: string } | { data?: { room_id: string } }>(
+        '/_matrix/client/v3/rooms/create_private',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            invite: userIds,
+            is_direct: userIds.length === 1,
+            preset: 'trusted_private_chat',
+            initial_state: [
+              {
+                type: 'm.room.encryption',
+                content: {
+                  algorithm: 'm.megolm.v1.aes-sha2'
+                }
               }
-            }
-          ]
-        })
-      })
-      const data = this.getData({ ...response, status: 'ok' })
+            ]
+          })
+        }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       const roomId = data?.room_id
+
       if (!roomId) {
         throw new Error('创建房间失败：未返回房间 ID')
       }
@@ -516,10 +516,11 @@ class SynapseRustExtensionsService {
 
   async getInviteBlocklist(roomId: string): Promise<InviteBlocklist> {
     try {
-      const response = await this.request<{
-        data?: InviteBlocklist
-      }>(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_blocklist`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<InviteBlocklist | { data?: InviteBlocklist }>(
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_blocklist`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 获取邀请屏蔽列表成功: roomId=${roomId}`)
       return data || { blocked_users: [], updated_ts: 0 }
     } catch (err) {
@@ -543,10 +544,11 @@ class SynapseRustExtensionsService {
 
   async getInviteAllowlist(roomId: string): Promise<InviteAllowlist> {
     try {
-      const response = await this.request<{
-        data?: InviteAllowlist
-      }>(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_allowlist`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<InviteAllowlist | { data?: InviteAllowlist }>(
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_allowlist`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 获取邀请白名单成功: roomId=${roomId}`)
       return data || { allowed_users: [], updated_ts: 0 }
     } catch (err) {
@@ -570,12 +572,13 @@ class SynapseRustExtensionsService {
 
   async getStickyEvents(roomId: string): Promise<StickyEvent[]> {
     try {
-      const response = await this.request<{
-        data?: StickyEvent[]
-      }>(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<{ events: StickyEvent[] } | { data?: { events: StickyEvent[] } }>(
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 获取粘性事件成功: roomId=${roomId}`)
-      return data || []
+      return data?.events || []
     } catch (err) {
       error(`[SynapseRust] 获取粘性事件失败: ${err}`)
       return []
@@ -586,7 +589,9 @@ class SynapseRustExtensionsService {
     try {
       await this.request(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`, {
         method: 'POST',
-        body: JSON.stringify({ event_id: eventId, event_type: eventType })
+        body: JSON.stringify({
+          events: [{ event_id: eventId, event_type: eventType }]
+        })
       })
       info(`[SynapseRust] 设置粘性事件成功: roomId=${roomId}, eventId=${eventId}`)
     } catch (err) {
@@ -689,32 +694,36 @@ class SynapseRustExtensionsService {
     }
   }
 
-  async getRoomEphemeral(roomId: string, types?: string[]): Promise<Record<string, unknown>> {
+  async getRoomEphemeral(roomId: string, types?: string[]): Promise<any[]> {
     try {
       const queryParams = types ? `?types=${types.map(encodeURIComponent).join(',')}` : ''
-      const response = await this.request<{
-        data?: Record<string, unknown>
-      }>(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ephemeral${queryParams}`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<{ chunk: any[] } | { data?: { chunk: any[] } }>(
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ephemeral${queryParams}`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 获取房间临时事件成功: roomId=${roomId}`)
-      return data || {}
+      return data?.chunk || []
     } catch (err) {
       error(`[SynapseRust] 获取房间临时事件失败: ${err}`)
-      return {}
+      return []
     }
   }
 
   async sendCaptcha(mobile: string, captchaType: string): Promise<{ success: boolean; captchaId?: string }> {
     try {
-      const response = await this.request<{
-        data?: { success: boolean; captcha_id?: string }
-      }>('/_matrix/client/v3/register/captcha/send', {
+      const response = await this.request<
+        { captcha_id: string; expires_in: number } | { data?: { captcha_id: string; expires_in: number } }
+      >('/_matrix/client/r0/register/captcha/send', {
         method: 'POST',
-        body: JSON.stringify({ mobile, type: captchaType })
+        body: JSON.stringify({ target: mobile, captcha_type: captchaType })
       })
-      const data = this.getData({ ...response, status: 'ok' })
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 发送验证码成功: ${mobile}`)
-      return data || { success: false }
+      return {
+        success: !!data?.captcha_id,
+        captchaId: data?.captcha_id
+      }
     } catch (err) {
       error(`[SynapseRust] 发送验证码失败: ${err}`)
       throw err
@@ -723,13 +732,14 @@ class SynapseRustExtensionsService {
 
   async verifyCaptcha(captchaId: string, code: string): Promise<boolean> {
     try {
-      const response = await this.request<{
-        data?: { verified: boolean }
-      }>('/_matrix/client/v3/register/captcha/verify', {
-        method: 'POST',
-        body: JSON.stringify({ captcha_id: captchaId, code })
-      })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<{ verified: boolean } | { data?: { verified: boolean } }>(
+        '/_matrix/client/r0/register/captcha/verify',
+        {
+          method: 'POST',
+          body: JSON.stringify({ captcha_id: captchaId, code })
+        }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 验证码校验成功: ${captchaId}`)
       return data?.verified ?? false
     } catch (err) {
@@ -740,10 +750,11 @@ class SynapseRustExtensionsService {
 
   async getCaptchaStatus(captchaId: string): Promise<Record<string, unknown>> {
     try {
-      const response = await this.request<{
-        data?: Record<string, unknown>
-      }>(`/_matrix/client/v3/register/captcha/status?captcha_id=${encodeURIComponent(captchaId)}`, { method: 'GET' })
-      const data = this.getData({ ...response, status: 'ok' })
+      const response = await this.request<Record<string, unknown> | { data?: Record<string, unknown> }>(
+        `/_matrix/client/r0/register/captcha/status?captcha_id=${encodeURIComponent(captchaId)}`,
+        { method: 'GET' }
+      )
+      const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 获取验证码状态成功: ${captchaId}`)
       return data || {}
     } catch (err) {
