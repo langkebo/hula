@@ -20,6 +20,7 @@ import type {
   SessionOperateEnum,
   SexEnum
 } from '@/enums'
+import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 
 /**响应请求体*/
 export type ServiceResponse<T = unknown> = {
@@ -396,7 +397,11 @@ export type ImageBody = {
   url: string
   width: number
   height: number
+  mimetype?: string
+  fileName?: string
+  localPath?: string
   thumbnailPath?: string
+  encryptedFile?: EncryptedAttachmentFile
 }
 /** 语音消息体 */
 export type VoiceBody = {
@@ -404,8 +409,10 @@ export type VoiceBody = {
   second: number
   url: string
   mxcUrl?: string
+  localPath?: string
   fileName?: string
   mimeType?: string
+  encryptedFile?: EncryptedAttachmentFile
 }
 
 export type MergeBodyBody = {
@@ -426,8 +433,10 @@ export type VideoBody = {
   thumbWidth?: number
   thumbHeight?: number
   thumbUrl?: string
+  thumbnailEncryptedFile?: EncryptedAttachmentFile
   thumbnailPath?: string
   localPath?: string
+  encryptedFile?: EncryptedAttachmentFile
 }
 /** 文件消息体 */
 export type FileBody = {
@@ -435,6 +444,7 @@ export type FileBody = {
   fileName: string
   url: string
   localPath?: string
+  encryptedFile?: EncryptedAttachmentFile
 }
 /** 文本消息体 */
 export type TextBody = {
@@ -523,8 +533,13 @@ export type MessageBody =
   | LocationBody
   | BeaconBody
   | LinkPreviewBody
-  // biome-ignore lint/suspicious/noExplicitAny: union must allow arbitrary message body shapes for forward compatibility
-  | any
+  | (Record<string, unknown> & {
+      content?: string
+      url?: string
+      thumbUrl?: string
+      second?: number
+      fileName?: string
+    })
 export type MsgType = {
   /** 消息ID */
   id: string

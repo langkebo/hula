@@ -4,6 +4,7 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import type { FileTypeResult } from 'file-type'
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
+import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import type { FilesMeta, RightMouseMessageItem } from '@/services/types.ts'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -55,16 +56,29 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
     }
   }
 
+  const downloadFileToLocal = async (
+    fileUrl: string,
+    fileName: string,
+    encryptedFile?: MatrixEncryptedAttachmentLike
+  ) => {
+    if (encryptedFile) {
+      return fileDownloadStore.downloadEncryptedFile(fileUrl, fileName, encryptedFile)
+    }
+
+    return fileDownloadStore.downloadFile(fileUrl, fileName)
+  }
+
   const downloadAndRevealFile = async (params: {
     fileUrl: string
     fileName: string
+    encryptedFile?: MatrixEncryptedAttachmentLike
     i18nKeys: {
       downloadPrompt: string
       success: string
       failed: string
     }
   }) => {
-    const { fileUrl, fileName, i18nKeys } = params
+    const { fileUrl, fileName, encryptedFile, i18nKeys } = params
     const fileStatus = fileDownloadStore.getFileStatus(fileUrl)
     const currentChatRoomId = globalStore.currentSessionRoomId
     const currentUserUid = userStore.userInfo!.uid as string
@@ -76,7 +90,7 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
 
     if (!fileMeta.exists) {
       const downloadMessage = window.$message.info(t(i18nKeys.downloadPrompt))
-      const _absolutePath = await fileDownloadStore.downloadFile(fileUrl, fileName)
+      const _absolutePath = await downloadFileToLocal(fileUrl, fileName, encryptedFile)
 
       if (_absolutePath) {
         absolutePath = _absolutePath
@@ -101,8 +115,21 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
     await revealInDirSafely(absolutePath)
   }
 
-  const downloadAndRevealVideo = async (videoUrl: string) => {
+  const downloadAndRevealVideo = async (params: {
+    videoUrl: string
+    fileName?: string
+    encryptedFile?: MatrixEncryptedAttachmentLike
+  }) => {
     try {
+      const { videoUrl, fileName, encryptedFile } = params
+
+      if (encryptedFile) {
+        const targetFileName = fileName || 'video.mp4'
+        const absolutePath = await fileDownloadStore.downloadEncryptedFile(videoUrl, targetFileName, encryptedFile)
+        await revealInDirSafely(absolutePath)
+        return
+      }
+
       const localPath = await getLocalVideoPath(videoUrl)
       const isDownloaded = await checkVideoDownloaded(videoUrl)
 
@@ -123,12 +150,18 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
   const previewFile = async (item: RightMouseMessageItem) => {
     const path = 'previewFile'
     const LABEL = 'previewFile'
+    const bodyRecord = item.message.body as Record<string, unknown>
 
-    const fileStatus = fileDownloadStore.getFileStatus(item.message.body.url)
+    const getCurrentFileStatus = () => fileDownloadStore.getFileStatus(item.message.body.url)
     const currentChatRoomId = globalStore.currentSessionRoomId
     const currentUserUid = userStore.userInfo!.uid as string
+    const encryptedFile =
+      bodyRecord.encryptedFile && typeof bodyRecord.encryptedFile === 'object'
+        ? (bodyRecord.encryptedFile as MatrixEncryptedAttachmentLike)
+        : undefined
 
     const buildPayload = (item: RightMouseMessageItem, type: FileTypeResult | undefined, localExists: boolean) => {
+      const fileStatus = getCurrentFileStatus()
       const payload = {
         userId: currentUserUid,
         roomId: currentChatRoomId,
@@ -157,12 +190,36 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
     const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
     const absolutePath = await join(resourceDirPath, item.message.body.fileName)
 
-    const result = await getFilesMeta<FilesMeta>([fileStatus?.absolutePath || absolutePath || item.message.body.url])
+    const result = await getFilesMeta<FilesMeta>([
+      getCurrentFileStatus()?.absolutePath || absolutePath || item.message.body.url
+    ])
     const fileMeta = result[0]
 
     try {
       if (!fileMeta.exists) {
-        await fallbackToRemotePayload()
+        if (encryptedFile) {
+          const downloadedPath = await downloadFileToLocal(
+            item.message.body.url,
+            item.message.body.fileName,
+            encryptedFile
+          )
+          if (downloadedPath) {
+            const [downloadedMeta] = await getFilesMeta<FilesMeta>([downloadedPath])
+            const payload = buildPayload(
+              item,
+              {
+                ext: downloadedMeta.file_type,
+                mime: downloadedMeta.mime_type
+              },
+              downloadedMeta.exists
+            )
+            await sendWindowPayload(LABEL, payload)
+          } else {
+            await fallbackToRemotePayload()
+          }
+        } else {
+          await fallbackToRemotePayload()
+        }
       } else {
         const payload = buildPayload(
           item,

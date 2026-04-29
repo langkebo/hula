@@ -1,5 +1,8 @@
 import { save } from '@tauri-apps/plugin-dialog'
+import { writeFile } from '@tauri-apps/plugin-fs'
 import type { useDownload } from '@/hooks/useDownload'
+import { matrixMediaService } from '@/services/matrix'
+import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { extractFileName } from './Formatting'
 import { createLogger } from '@/utils/Logger'
 
@@ -12,6 +15,7 @@ type DownloadFileFn = ReturnType<typeof useDownload>['downloadFile']
 type SaveAttachmentOptions = {
   url?: string
   downloadFile: DownloadFileFn
+  encryptedFile?: MatrixEncryptedAttachmentLike
   defaultFileName?: string
   filters?: Array<{ name: string; extensions: string[] }>
   successMessage?: string
@@ -23,6 +27,7 @@ const normalizeSavePath = (path: string) => path.replace(/\\/g, '/')
 const saveAttachmentAs = async ({
   url,
   downloadFile,
+  encryptedFile,
   defaultFileName,
   filters,
   successMessage,
@@ -44,7 +49,12 @@ const saveAttachmentAs = async ({
     if (!savePath) return
 
     const normalizedPath = normalizeSavePath(savePath)
-    await downloadFile(url, normalizedPath)
+    if (encryptedFile) {
+      const fileData = await matrixMediaService.downloadEncryptedFileBytes(encryptedFile)
+      await writeFile(normalizedPath, fileData)
+    } else {
+      await downloadFile(url, normalizedPath)
+    }
 
     if (successMessage) {
       window.$message.success(successMessage)

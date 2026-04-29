@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { matrixMediaService } from '../MatrixMediaService'
+import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -34,6 +35,7 @@ describe('MatrixMediaService', () => {
 
   afterEach(() => {
     vi.resetAllMocks()
+    vi.unstubAllGlobals()
   })
 
   describe('setCompressOptions', () => {
@@ -101,6 +103,62 @@ describe('MatrixMediaService', () => {
       await expect(matrixMediaService.uploadBlob(blob, 'test.bin', 'application/octet-stream')).rejects.toThrow(
         '客户端未初始化'
       )
+    })
+  })
+
+  describe('uploadEncryptedFile', () => {
+    it('should upload encrypted payload and return Matrix file descriptor', async () => {
+      const uploadContent = vi.fn().mockResolvedValue({
+        content_uri: 'mxc://matrix.org/encrypted123'
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        uploadContent,
+        mxcUrlToHttp: vi.fn()
+      } as any)
+
+      const file = new File(['secret-content'], 'secret.txt', { type: 'text/plain' })
+      const result = await matrixMediaService.uploadEncryptedFile(file)
+
+      expect(uploadContent).toHaveBeenCalledTimes(1)
+      expect(uploadContent.mock.calls[0]?.[0]).toBeInstanceOf(Blob)
+      expect(result).toMatchObject({
+        contentUri: 'mxc://matrix.org/encrypted123',
+        size: file.size,
+        mimetype: 'text/plain',
+        encryptedFile: {
+          url: 'mxc://matrix.org/encrypted123',
+          v: 'v2',
+          key: {
+            alg: 'A256CTR',
+            kty: 'oct'
+          }
+        }
+      })
+      expect(result.encryptedFile.hashes.sha256).toBeTruthy()
+      expect(result.encryptedFile.iv).toBeTruthy()
+    })
+  })
+
+  describe('downloadEncryptedFileBytes', () => {
+    it('should download ciphertext and decrypt it back to plaintext', async () => {
+      const sourceFile = new File(['secret-content'], 'secret.txt', { type: 'text/plain' })
+      const encryptedPayload = await matrixAttachmentEncryptionService.encryptAttachment(sourceFile)
+      const ciphertext = await encryptedPayload.encryptedData.arrayBuffer()
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(ciphertext, {
+          status: 200
+        })
+      )
+
+      vi.stubGlobal('fetch', fetchMock)
+
+      const result = await matrixMediaService.downloadEncryptedFileBytes({
+        ...encryptedPayload.encryptedFile,
+        url: 'https://example.com/encrypted.bin'
+      })
+
+      expect(fetchMock).toHaveBeenCalledWith('https://example.com/encrypted.bin')
+      expect(new TextDecoder().decode(result)).toBe('secret-content')
     })
   })
 

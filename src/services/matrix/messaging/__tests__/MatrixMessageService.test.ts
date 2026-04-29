@@ -214,6 +214,122 @@ describe('MatrixMessageService', () => {
     })
   })
 
+  it('sendStructuredMessage 在加密附件场景下使用 file 描述而不是明文 url', async () => {
+    vi.mocked(matrixEventService.sendEvent).mockResolvedValue('$event-file')
+
+    await matrixMessageService.sendStructuredMessage({
+      roomId: '!room:id',
+      msgType: MsgEnum.FILE,
+      body: {
+        fileName: 'secret.pdf',
+        size: 2048,
+        mimetype: 'application/pdf',
+        encryptedFile: {
+          url: 'mxc://example.org/encrypted-file',
+          iv: 'iv',
+          hashes: { sha256: 'hash' },
+          v: 'v2',
+          key: {
+            alg: 'A256CTR',
+            k: 'secret',
+            kty: 'oct',
+            ext: true,
+            key_ops: ['encrypt', 'decrypt']
+          }
+        }
+      }
+    })
+
+    expect(matrixEventService.sendEvent).toHaveBeenCalledWith('!room:id', 'm.room.message', {
+      msgtype: 'm.file',
+      body: 'secret.pdf',
+      file: {
+        url: 'mxc://example.org/encrypted-file',
+        iv: 'iv',
+        hashes: { sha256: 'hash' },
+        v: 'v2',
+        key: {
+          alg: 'A256CTR',
+          k: 'secret',
+          kty: 'oct',
+          ext: true,
+          key_ops: ['encrypt', 'decrypt']
+        }
+      },
+      info: {
+        size: 2048,
+        mimetype: 'application/pdf'
+      }
+    })
+  })
+
+  it('sendStructuredMessage 为加密视频缩略图使用 thumbnail_file 描述', async () => {
+    vi.mocked(matrixEventService.sendEvent).mockResolvedValue('$event-video')
+
+    await matrixMessageService.sendStructuredMessage({
+      roomId: '!room:id',
+      msgType: MsgEnum.VIDEO,
+      body: {
+        fileName: 'secret.mp4',
+        size: 4096,
+        duration: 12,
+        mimetype: 'video/mp4',
+        thumbSize: 256,
+        thumbWidth: 320,
+        thumbHeight: 180,
+        encryptedFile: {
+          url: 'mxc://example.org/encrypted-video',
+          iv: 'videoIv',
+          hashes: { sha256: 'videoHash' },
+          v: 'v2',
+          key: {
+            alg: 'A256CTR',
+            k: 'videoSecret',
+            kty: 'oct',
+            ext: true,
+            key_ops: ['encrypt', 'decrypt']
+          }
+        },
+        thumbnailEncryptedFile: {
+          url: 'mxc://example.org/encrypted-thumb',
+          iv: 'thumbIv',
+          hashes: { sha256: 'thumbHash' },
+          v: 'v2',
+          key: {
+            alg: 'A256CTR',
+            k: 'thumbSecret',
+            kty: 'oct',
+            ext: true,
+            key_ops: ['encrypt', 'decrypt']
+          }
+        }
+      }
+    })
+
+    expect(matrixEventService.sendEvent).toHaveBeenCalledWith('!room:id', 'm.room.message', {
+      msgtype: 'm.video',
+      body: 'secret.mp4',
+      file: expect.objectContaining({
+        url: 'mxc://example.org/encrypted-video',
+        v: 'v2'
+      }),
+      info: expect.objectContaining({
+        size: 4096,
+        duration: 12,
+        mimetype: 'video/mp4',
+        thumbnail_file: expect.objectContaining({
+          url: 'mxc://example.org/encrypted-thumb',
+          v: 'v2'
+        }),
+        thumbnail_info: {
+          size: 256,
+          w: 320,
+          h: 180
+        }
+      })
+    })
+  })
+
   it('sendTextMessage 在离线时应将操作入队', async () => {
     Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
     vi.mocked(offlineQueueService.enqueue).mockReturnValue('q-2')

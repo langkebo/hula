@@ -3,7 +3,7 @@
   <main class="w-full flex-center">
     <template v-if="isGroup">
       <n-flex align="center" :size="6" v-if="fromUserUid === userUid">
-        <p class="text-(12px --hula-text-tertiary) select-none cursor-default">{{ message.body.content }}</p>
+        <p class="text-(12px --hula-text-tertiary) select-none cursor-default">{{ recallContent }}</p>
         <p
           v-if="canReEdit"
           class="text-(12px --hula-color-primary-500) select-none cursor-pointer"
@@ -16,7 +16,7 @@
     <template v-else>
       <n-flex align="center" :size="6">
         <p class="text-(12px --hula-text-tertiary) select-none cursor-default">
-          {{ message.body.content }}
+          {{ recallContent }}
         </p>
         <p
           v-if="canReEdit"
@@ -47,6 +47,13 @@ const chatStore = useChatStore()
 const userStore = useUserStore()
 
 const userUid = computed(() => userStore.userInfo!.uid)
+const recallContent = computed(() => {
+  const body = props.message.body
+  if (body && typeof body === 'object' && 'content' in body && typeof body.content === 'string') {
+    return body.content
+  }
+  return '撤回了一条消息'
+})
 
 const recallText = computed(() => {
   // 处理body可能是字符串或对象的情况

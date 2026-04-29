@@ -94,6 +94,8 @@ class MatrixMessageService {
   private buildMatrixContent(msgType: MsgEnum, body: unknown): Record<string, unknown> {
     const bodyRecord = this.asRecord(body)
     const reply = this.asRecord(bodyRecord.reply)
+    const encryptedFile = this.asRecord(bodyRecord.encryptedFile)
+    const hasEncryptedFile = typeof encryptedFile.url === 'string' && typeof encryptedFile.v === 'string'
 
     const content: Record<string, unknown> = {
       msgtype: this.convertMsgTypeToMatrix(msgType),
@@ -116,7 +118,11 @@ class MatrixMessageService {
       case MsgEnum.IMAGE:
       case MsgEnum.EMOJI: {
         content.body = (bodyRecord.fileName as string | undefined) || 'image'
-        content.url = bodyRecord.url
+        if (hasEncryptedFile) {
+          content.file = encryptedFile
+        } else {
+          content.url = bodyRecord.url
+        }
         content.info = {
           size: (bodyRecord.size as number | undefined) || 0,
           w: (bodyRecord.width as number | undefined) || 0,
@@ -126,26 +132,41 @@ class MatrixMessageService {
         break
       }
       case MsgEnum.VIDEO: {
+        const thumbnailEncryptedFile = this.asRecord(bodyRecord.thumbnailEncryptedFile)
+        const hasEncryptedThumbnail =
+          typeof thumbnailEncryptedFile.url === 'string' && typeof thumbnailEncryptedFile.v === 'string'
         content.body = (bodyRecord.fileName as string | undefined) || 'video'
-        content.url = bodyRecord.url
+        if (hasEncryptedFile) {
+          content.file = encryptedFile
+        } else {
+          content.url = bodyRecord.url
+        }
         content.info = {
           size: (bodyRecord.size as number | undefined) || 0,
           duration: (bodyRecord.duration as number | undefined) || 0,
           w: (bodyRecord.thumbWidth as number | undefined) || 0,
           h: (bodyRecord.thumbHeight as number | undefined) || 0,
           mimetype: (bodyRecord.mimetype as string | undefined) || 'video/mp4',
-          thumbnail_url: bodyRecord.thumbUrl,
           thumbnail_info: {
             size: (bodyRecord.thumbSize as number | undefined) || 0,
             w: (bodyRecord.thumbWidth as number | undefined) || 0,
             h: (bodyRecord.thumbHeight as number | undefined) || 0
           }
         }
+        if (hasEncryptedThumbnail) {
+          ;(content.info as Record<string, unknown>).thumbnail_file = thumbnailEncryptedFile
+        } else {
+          ;(content.info as Record<string, unknown>).thumbnail_url = bodyRecord.thumbUrl
+        }
         break
       }
       case MsgEnum.VOICE: {
         content.body = (bodyRecord.fileName as string | undefined) || 'voice'
-        content.url = bodyRecord.mxcUrl || bodyRecord.url
+        if (hasEncryptedFile) {
+          content.file = encryptedFile
+        } else {
+          content.url = bodyRecord.mxcUrl || bodyRecord.url
+        }
         content.info = {
           size: (bodyRecord.size as number | undefined) || 0,
           duration: (bodyRecord.second as number | undefined) || 0,
@@ -156,7 +177,11 @@ class MatrixMessageService {
       }
       case MsgEnum.FILE: {
         content.body = (bodyRecord.fileName as string | undefined) || 'file'
-        content.url = bodyRecord.url
+        if (hasEncryptedFile) {
+          content.file = encryptedFile
+        } else {
+          content.url = bodyRecord.url
+        }
         content.info = {
           size: (bodyRecord.size as number | undefined) || 0,
           mimetype: (bodyRecord.mimetype as string | undefined) || 'application/octet-stream'

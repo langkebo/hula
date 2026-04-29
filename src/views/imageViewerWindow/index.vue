@@ -108,19 +108,22 @@
 
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { save } from '@tauri-apps/plugin-dialog'
 import { NTooltip } from 'naive-ui'
 import ActionBar from '@/components/windows/ActionBar.vue'
 import { useDownload } from '@/hooks/useDownload'
 import { useImageViewer as useImageViewerHook } from '@/hooks/useImageViewer'
 import { useTauriListener } from '@/hooks/useTauriListener'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { useImageViewer as useImageViewerStore } from '@/stores/domains/widget/imageViewer'
+import { saveFileAttachmentAs } from '@/utils/AttachmentSaver'
+import { extractFileName } from '@/utils/Formatting'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const { addListener } = useTauriListener()
 const { downloadFile } = useDownload()
 const imageViewerStore = useImageViewerStore()
+const chatStore = useChatStore()
 const { downloadOriginalByIndex } = useImageViewerHook()
 const appWindow = WebviewWindow.getCurrent()
 
@@ -277,22 +280,26 @@ const resetImage = (immediate = false) => {
 }
 
 const saveImage = async () => {
-  const imageUrl = currentImage.value
-  const suggestedName = imageUrl.split('/').pop() || 'image.png'
+  const originalUrl = imageViewerStore.originalImageList[currentIndex.value] || currentImage.value
+  if (!originalUrl) return
 
-  const savePath = await save({
+  const bodyRecord =
+    (Object.values(chatStore.currentMessageMap || {}).find((item) => item.message?.body?.url === originalUrl)?.message
+      ?.body as Record<string, unknown> | undefined) || {}
+
+  await saveFileAttachmentAs({
+    url: originalUrl,
+    downloadFile,
+    encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
+    defaultFileName:
+      (typeof bodyRecord.fileName === 'string' && bodyRecord.fileName) || extractFileName(originalUrl) || 'image.png',
     filters: [
       {
         name: t('message.image_viewer.filter_name'),
         extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp']
       }
-    ],
-    defaultPath: suggestedName
+    ]
   })
-
-  if (savePath) {
-    await downloadFile(imageUrl, savePath)
-  }
 }
 
 // 显示提示的函数

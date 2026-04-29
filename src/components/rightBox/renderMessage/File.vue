@@ -147,6 +147,14 @@ const iconDimensions = ref({ width: 40, height: 40 })
 // 上传状态
 const isUploading = computed(() => props.messageStatus === MessageStatusEnum.SENDING)
 const currentUploadProgress = computed(() => props.uploadProgress || 0)
+const hasEncryptedFile = computed(() => {
+  const encryptedFile = props.body?.encryptedFile
+  if (!encryptedFile || typeof encryptedFile !== 'object') {
+    return false
+  }
+
+  return typeof encryptedFile.url === 'string' && typeof encryptedFile.v === 'string'
+})
 
 // 文件下载状态
 const fileStatus = computed(() => {
@@ -354,13 +362,24 @@ const handleFileClick = async () => {
   }
 }
 
+const downloadCurrentFile = async (fileName: string) => {
+  if (!props.body?.url) return null
+
+  if (hasEncryptedFile.value) {
+    if (!props.body.encryptedFile) return null
+    return fileDownloadStore.downloadEncryptedFile(props.body.url, fileName, props.body.encryptedFile)
+  }
+
+  return fileDownloadStore.downloadFile(props.body.url, fileName)
+}
+
 // 下载并打开文件
 const downloadAndOpenFile = async () => {
   if (!props.body?.url || !props.body?.fileName) return
 
   try {
     const fileName = props.body.fileName
-    const absolutePath = await fileDownloadStore.downloadFile(props.body.url, fileName)
+    const absolutePath = await downloadCurrentFile(fileName)
 
     if (absolutePath) {
       void persistFileLocalPath(absolutePath)
@@ -389,7 +408,7 @@ const downloadFileOnly = async () => {
 
   try {
     const fileName = props.body.fileName
-    const absolutePath = await fileDownloadStore.downloadFile(props.body.url, fileName)
+    const absolutePath = await downloadCurrentFile(fileName)
     if (absolutePath) {
       void persistFileLocalPath(absolutePath)
     }

@@ -105,24 +105,92 @@ export const useImageViewer = () => {
   const imageViewerStore = useImageViewerStore()
   const fileDownloadStore = useFileDownloadStore()
 
+  const validatePath = async (absolutePath: string | undefined | null) => {
+    if (!absolutePath) {
+      return null
+    }
+    try {
+      const [meta] = await getFilesMeta<FilesMeta>([absolutePath])
+      if (meta?.exists) {
+        return absolutePath
+      }
+      return null
+    } catch (error) {
+      logger.error('检查本地媒体失败:', error)
+      return null
+    }
+  }
+
+  const getMediaMessageFromChat = (url: string, includeTypes: MsgEnum[]) => {
+    const messages = Object.values(chatStore.currentMessageMap || {})
+    return (
+      messages.find((msg) => includeTypes.includes(msg.message?.type) && msg.message.body?.url === url)?.message ?? null
+    )
+  }
+
+  const getEncryptedMediaBodyFromChat = (url: string, includeTypes: MsgEnum[]) => {
+    const message = getMediaMessageFromChat(url, includeTypes)
+    const body = message?.body as Record<string, unknown> | undefined
+    const encryptedFile = body?.encryptedFile
+
+    if (!encryptedFile || typeof encryptedFile !== 'object') {
+      return null
+    }
+
+    const encryptedRecord = encryptedFile as Record<string, unknown>
+    if (typeof encryptedRecord.url !== 'string' || typeof encryptedRecord.v !== 'string') {
+      return null
+    }
+
+    return body
+  }
+
+  const ensureEncryptedMediaLocalPath = async (
+    url: string,
+    includeTypes: MsgEnum[],
+    forceDownload: boolean = false
+  ) => {
+    const body = getEncryptedMediaBodyFromChat(url, includeTypes)
+    if (!body) {
+      return null
+    }
+
+    const localPath = await validatePath(typeof body.localPath === 'string' ? body.localPath : null)
+    if (localPath) {
+      return localPath
+    }
+
+    const explicitFileName =
+      (typeof body.fileName === 'string' && body.fileName) || (typeof body.filename === 'string' && body.filename) || ''
+    const fileName = explicitFileName || extractFileName(url)
+    if (!fileName) {
+      return null
+    }
+
+    const fileExists = await fileDownloadStore.checkFileExists(url, fileName)
+    if (fileExists) {
+      const status = fileDownloadStore.getFileStatus(url)
+      const existingLocalPath = await validatePath(status.absolutePath)
+      if (existingLocalPath) {
+        return existingLocalPath
+      }
+    }
+
+    if (!forceDownload) {
+      return null
+    }
+
+    try {
+      return await fileDownloadStore.downloadEncryptedFile(url, fileName, body.encryptedFile as Record<string, unknown>)
+    } catch (error) {
+      logger.error('下载加密图片失败:', error)
+      return null
+    }
+  }
+
   const ensureLocalFileExists = async (url: string) => {
     if (!url) return null
     const status = fileDownloadStore.getFileStatus(url)
-    const validatePath = async (absolutePath: string | undefined | null) => {
-      if (!absolutePath) {
-        return null
-      }
-      try {
-        const [meta] = await getFilesMeta<FilesMeta>([absolutePath])
-        if (meta?.exists) {
-          return absolutePath
-        }
-        return null
-      } catch (error) {
-        logger.error('检查本地图片失败:', error)
-        return null
-      }
-    }
 
     if (status?.isDownloaded) {
       const validPath = await validatePath(status.absolutePath)
@@ -173,24 +241,25 @@ export const useImageViewer = () => {
   }
 
   const getLocalMediaPathFromChat = (url: string, includeTypes: MsgEnum[]) => {
-    const messages = Object.values(chatStore.currentMessageMap || {})
-    for (const msg of messages) {
-      if (!includeTypes.includes(msg.message?.type)) continue
-      if (msg.message.body?.url !== url) continue
-      if (msg.message.body?.localPath) {
-        return msg.message.body.localPath as string
-      }
-    }
-    return null
+    const body = getMediaMessageFromChat(url, includeTypes)?.body as Record<string, unknown> | undefined
+    return typeof body?.localPath === 'string' ? body.localPath : null
   }
 
-  const resolveDisplayUrl = async (url: string, includeTypes: MsgEnum[]) => {
+  const resolveDisplayUrl = async (url: string, includeTypes: MsgEnum[], forceEncryptedDownload: boolean = false) => {
     const localPath = getLocalMediaPathFromChat(url, includeTypes)
     if (localPath) {
       try {
         return convertFileSrc(localPath)
       } catch (error) {
         logger.error('转换本地媒体路径失败:', error)
+      }
+    }
+    const encryptedLocalPath = await ensureEncryptedMediaLocalPath(url, includeTypes, forceEncryptedDownload)
+    if (encryptedLocalPath) {
+      try {
+        return convertFileSrc(encryptedLocalPath)
+      } catch (error) {
+        logger.error('转换加密媒体路径失败:', error)
       }
     }
     return await getDisplayUrl(url)
@@ -211,6 +280,20 @@ export const useImageViewer = () => {
   }
 
   const scheduleDownload = (originalUrl: string) => {
+    const encryptedBody = getEncryptedMediaBodyFromChat(originalUrl, [MsgEnum.IMAGE, MsgEnum.EMOJI])
+    if (encryptedBody) {
+      void ensureEncryptedMediaLocalPath(originalUrl, [MsgEnum.IMAGE, MsgEnum.EMOJI], true)
+        .then((absolutePath) => {
+          if (absolutePath) {
+            replaceImageWithLocalPath(originalUrl, absolutePath)
+          }
+        })
+        .catch((error) => {
+          logger.error('加密图片下载失败:', error)
+        })
+      return
+    }
+
     const fileName = extractFileName(originalUrl) || `image-${Date.now()}.png`
     downloadImageWithWorker(originalUrl, fileName)
       .then((absolutePath) => {
@@ -299,7 +382,9 @@ export const useImageViewer = () => {
       }
 
       const dedupedList = deduplicateList(list)
-      const resolvedList = await Promise.all(dedupedList.map((item) => resolveDisplayUrl(item, includeTypes)))
+      const resolvedList = await Promise.all(
+        dedupedList.map((item) => resolveDisplayUrl(item, includeTypes, item === url))
+      )
 
       const targetIndex = dedupedList.indexOf(url)
       const resolvedIndex = targetIndex === -1 ? (index >= 0 ? index : 0) : targetIndex

@@ -146,11 +146,13 @@ import { useDownload } from '@/hooks/useDownload'
 import { useIntersectionTaskQueue } from '@/hooks/useIntersectionTaskQueue'
 import { useMitt } from '@/hooks/useMitt'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
+import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import type { MsgType, VideoBody } from '@/services/types'
 import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
 import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { useChatStore } from '@/stores/domains/chat/chat'
-import { formatBytes } from '@/utils/Formatting.ts'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
+import { extractFileName, formatBytes } from '@/utils/Formatting.ts'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useI18n } from 'vue-i18n'
@@ -161,6 +163,7 @@ const { openVideoViewer, getLocalVideoPath, checkVideoDownloaded } = useVideoVie
 const VideoPreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/VideoPreview.vue')) : void 0
 const videoViewerStore = useVideoViewerStore()
 const chatStore = useChatStore()
+const fileDownloadStore = useFileDownloadStore()
 const { downloadFile, isDownloading, process } = useDownload()
 const { t } = useI18n()
 const props = defineProps<{
@@ -191,6 +194,23 @@ const currentUploadProgress = computed(() => {
   return props.uploadProgress || 0
 })
 const fallbackVideoName = computed(() => t('message.video.unknown_video'))
+const resolvedVideoFileName = computed(() => {
+  const explicitName = props.body?.filename || (props.body as Record<string, unknown>)?.fileName
+  if (typeof explicitName === 'string' && explicitName) {
+    return explicitName
+  }
+
+  const extracted = extractFileName(props.body?.url || '')
+  return extracted || 'video.mp4'
+})
+const resolvedThumbnailFileName = computed(() => {
+  const extracted = extractFileName(props.body?.thumbUrl || '')
+  if (extracted && extracted.includes('.')) {
+    return extracted
+  }
+
+  return `${props.message?.id || 'video'}-thumb.jpg`
+})
 const uploadingTip = computed(() => t('message.video.uploading', { progress: currentUploadProgress.value }))
 const openingTip = computed(() => t('message.video.opening'))
 const thumbnailStore = useThumbnailCacheStore()
@@ -200,13 +220,34 @@ const { observe: observeVideoVisibility, disconnect: disconnectVideoVisibility }
 const showVideoPreviewRef = ref(false)
 const mobileVideoUrl = ref('')
 
-const persistVideoLocalPath = async (absolutePath: string) => {
-  if (!props.message?.id || !absolutePath) return
+const hasEncryptedFile = computed(() => {
+  const encryptedFile = props.body?.encryptedFile
+  if (!encryptedFile || typeof encryptedFile !== 'object') {
+    return false
+  }
+
+  return typeof encryptedFile.url === 'string' && typeof encryptedFile.v === 'string'
+})
+
+const hasEncryptedThumbnailFile = computed(() => {
+  const encryptedFile = props.body?.thumbnailEncryptedFile
+  if (!encryptedFile || typeof encryptedFile !== 'object') {
+    return false
+  }
+
+  return typeof encryptedFile.url === 'string' && typeof encryptedFile.v === 'string'
+})
+
+const persistVideoBodyPatch = async (patch: Partial<VideoBody>) => {
+  if (!props.message?.id) return
   const target = chatStore.getMessage(props.message.id)
   if (!target) return
 
-  const nextBody = { ...(target.message.body || {}), localPath: absolutePath }
-  if (target.message.body?.localPath === absolutePath) return
+  const currentBody = (target.message.body || {}) as Record<string, unknown>
+  const hasChanges = Object.entries(patch).some(([key, value]) => currentBody[key] !== value)
+  if (!hasChanges) return
+
+  const nextBody = { ...currentBody, ...patch }
 
   chatStore.updateMsg({
     msgId: target.message.id,
@@ -215,6 +256,16 @@ const persistVideoLocalPath = async (absolutePath: string) => {
   })
   const updated = { ...target, message: { ...target.message, body: nextBody } }
   await invokeSilently(TauriCommand.SAVE_MSG, { data: updated })
+}
+
+const persistVideoLocalPath = async (absolutePath: string) => {
+  if (!absolutePath) return
+  await persistVideoBodyPatch({ localPath: absolutePath })
+}
+
+const persistVideoThumbnailPath = async (absolutePath: string) => {
+  if (!absolutePath) return
+  await persistVideoBodyPatch({ thumbnailPath: absolutePath })
 }
 const localVideoThumbSrc = ref<string | null>(null)
 
@@ -270,7 +321,10 @@ const containerStyle = computed(() => {
   return `width: ${style.width}; height: ${style.height}; position: relative; border-radius: 8px; overflow: hidden; cursor: pointer;`
 })
 
-const remoteThumbSrc = computed(() => props.body?.thumbUrl || '')
+const remoteThumbSrc = computed(() => {
+  if (hasEncryptedThumbnailFile.value) return ''
+  return props.body?.thumbUrl || ''
+})
 const downloadKey = computed(() => remoteThumbSrc.value || '')
 const displayThumbSrc = computed(() => localVideoThumbSrc.value || remoteThumbSrc.value || '')
 
@@ -285,6 +339,33 @@ const requestVideoThumbnailDownload = () => {
 }
 
 const ensureLocalVideoThumbnail = async () => {
+  if (hasEncryptedThumbnailFile.value && props.body?.thumbUrl) {
+    try {
+      if (props.body.thumbnailPath) {
+        const existsFlag = await exists(props.body.thumbnailPath)
+        if (existsFlag) {
+          localVideoThumbSrc.value = convertFileSrc(props.body.thumbnailPath)
+          return
+        }
+      }
+
+      const absolutePath = await fileDownloadStore.downloadEncryptedFile(
+        props.body.thumbUrl,
+        resolvedThumbnailFileName.value,
+        props.body.thumbnailEncryptedFile as MatrixEncryptedAttachmentLike
+      )
+      if (absolutePath) {
+        localVideoThumbSrc.value = convertFileSrc(absolutePath)
+        await persistVideoThumbnailPath(absolutePath)
+      }
+      return
+    } catch (error) {
+      logger.error('下载加密视频缩略图失败:', error)
+      localVideoThumbSrc.value = null
+      return
+    }
+  }
+
   const localPath = props.body?.thumbnailPath
   if (!localPath) {
     localVideoThumbSrc.value = null
@@ -346,6 +427,22 @@ watch(
 const checkDownloadStatusLazy = async () => {
   if (!props.body?.url || hasCheckedDownloadStatus.value) return
   hasCheckedDownloadStatus.value = true
+  if (hasEncryptedFile.value) {
+    if (props.body.localPath) {
+      try {
+        const existsFlag = await exists(props.body.localPath)
+        isVideoDownloaded.value = existsFlag
+        return
+      } catch (error) {
+        logger.warn('检查加密视频本地文件失败:', error)
+      }
+    }
+
+    const status = fileDownloadStore.getFileStatus(props.body.url)
+    isVideoDownloaded.value = !!status.isDownloaded
+    return
+  }
+
   isVideoDownloaded.value = await checkVideoDownloaded(props.body.url)
 }
 
@@ -368,6 +465,24 @@ const downloadVideo = async () => {
   if (!props.body?.url || isDownloading.value) return
 
   try {
+    if (hasEncryptedFile.value) {
+      const absolutePath = await fileDownloadStore.downloadEncryptedFile(
+        props.body.url,
+        resolvedVideoFileName.value,
+        props.body.encryptedFile as MatrixEncryptedAttachmentLike
+      )
+      isVideoDownloaded.value = !!absolutePath
+
+      if (absolutePath) {
+        videoViewerStore.updateVideoPath(props.body.url, absolutePath)
+        await persistVideoLocalPath(absolutePath)
+        if (isMobile()) {
+          mobileVideoUrl.value = convertFileSrc(absolutePath)
+        }
+      }
+      return
+    }
+
     const localPath = await getLocalVideoPath(props.body?.url)
     if (localPath) {
       const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
@@ -392,6 +507,10 @@ const resolveMobilePlayableUrl = async () => {
   const url = props.body.localPath || ''
   if (url) {
     return convertFileSrc(url)
+  }
+  if (hasEncryptedFile.value) {
+    await downloadVideo()
+    return props.body.localPath ? convertFileSrc(props.body.localPath) : mobileVideoUrl.value
   }
   const downloaded = await checkVideoDownloaded(props.body.url)
   if (!downloaded) return ''
@@ -436,8 +555,21 @@ const handleOpenVideoViewer = async () => {
     try {
       isOpening.value = true
 
+      if (hasEncryptedFile.value) {
+        if (!props.body.localPath) {
+          await downloadVideo()
+        }
+
+        const localExists = props.body.localPath ? await exists(props.body.localPath) : false
+        isVideoDownloaded.value = localExists
+        if (!localExists) {
+          logger.error('加密视频下载失败，无法打开')
+          return
+        }
+      }
+
       // 检查视频是否已下载
-      const isDownloaded = await checkVideoDownloaded(props.body.url)
+      const isDownloaded = hasEncryptedFile.value ? true : await checkVideoDownloaded(props.body.url)
       isVideoDownloaded.value = isDownloaded
 
       // 如果视频未下载，先下载

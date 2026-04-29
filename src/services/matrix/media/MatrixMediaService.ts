@@ -2,11 +2,23 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { matrixClientService } from '../MatrixClientService'
 import { info, error } from '@tauri-apps/plugin-log'
 import { compressImage, isImageFile, formatFileSize } from '@/utils/ImageUtils'
+import {
+  matrixAttachmentEncryptionService,
+  type EncryptedAttachmentFile
+} from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
+import {
+  matrixAttachmentDecryptionService,
+  type MatrixEncryptedAttachmentLike
+} from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 
 export interface UploadResult {
   contentUri: string
   size: number
   mimetype: string
+}
+
+export interface EncryptedUploadResult extends UploadResult {
+  encryptedFile: EncryptedAttachmentFile
 }
 
 export interface MediaInfo {
@@ -79,6 +91,37 @@ class MatrixMediaServiceClass {
     return client
   }
 
+  private resolveDownloadUrl(mediaUrl: string): string {
+    if (!mediaUrl) {
+      throw new Error('媒体 URL 不能为空')
+    }
+
+    if (mediaUrl.startsWith('mxc://')) {
+      const downloadUrl = this.getMediaUrl(mediaUrl)
+      if (!downloadUrl) {
+        throw new Error(`无法解析媒体地址: ${mediaUrl}`)
+      }
+      return downloadUrl
+    }
+
+    return mediaUrl
+  }
+
+  async downloadFileBytes(mediaUrl: string): Promise<Uint8Array> {
+    const response = await fetch(this.resolveDownloadUrl(mediaUrl))
+    if (!response.ok) {
+      throw new Error(`下载失败: ${response.status} ${response.statusText}`)
+    }
+
+    return new Uint8Array(await response.arrayBuffer())
+  }
+
+  async downloadEncryptedFileBytes(encryptedFile: MatrixEncryptedAttachmentLike): Promise<Uint8Array> {
+    const parsedEncryptedFile = matrixAttachmentDecryptionService.parseEncryptedFile(encryptedFile)
+    const ciphertext = await this.downloadFileBytes(parsedEncryptedFile.url)
+    return matrixAttachmentDecryptionService.decryptAttachment(ciphertext, parsedEncryptedFile)
+  }
+
   async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResult> {
     const client = this.getClient()
 
@@ -104,6 +147,34 @@ class MatrixMediaServiceClass {
       }
     } catch (err) {
       error(`[MatrixMedia] 文件上传失败: ${err}`)
+      throw err
+    }
+  }
+
+  async uploadEncryptedFile(file: File, onProgress?: (progress: number) => void): Promise<EncryptedUploadResult> {
+    const client = this.getClient()
+
+    try {
+      const encryptedPayload = await matrixAttachmentEncryptionService.encryptAttachment(file)
+      const uploadResponse = await client.uploadContent(
+        encryptedPayload.encryptedData,
+        this.createUploadOptions('application/octet-stream', onProgress, file.name, false)
+      )
+
+      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+      info(`[MatrixMedia] 加密文件上传成功: ${contentUri}`)
+
+      return {
+        contentUri,
+        size: file.size,
+        mimetype: file.type || 'application/octet-stream',
+        encryptedFile: {
+          ...encryptedPayload.encryptedFile,
+          url: contentUri
+        }
+      }
+    } catch (err) {
+      error(`[MatrixMedia] 加密文件上传失败: ${err}`)
       throw err
     }
   }
