@@ -47,7 +47,8 @@ const flushAll = async () => {
 }
 
 const createHarness = async (options: {
-  activePath: string
+  activePath?: string
+  activeRouteName?: string
   handleMsgClick: HandleMsgClick
   beforeHandleSession?: BeforeHandleSession
 }) => {
@@ -125,6 +126,27 @@ describe('useSessionPageSync', () => {
         myName: '我'
       })
     )
+
+    wrapper.unmount()
+  })
+
+  it('marks the current session as read when the active route name matches the workbench route', async () => {
+    const handleMsgClick = vi.fn()
+    chatStoreMock.getSession.mockReturnValue({ unreadCount: 3 })
+    globalStoreMock.currentSessionRoomId = '!room:server'
+
+    const { router, wrapper } = await createHarness({
+      activeRouteName: 'message',
+      handleMsgClick
+    })
+
+    await router.push('/message')
+    await flushAll()
+
+    vi.advanceTimersByTime(2000)
+    await flushAll()
+
+    expect(chatStoreMock.markSessionRead).toHaveBeenCalledWith('!room:server')
 
     wrapper.unmount()
   })

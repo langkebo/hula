@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 
-const { globalStoreMock, timerWorkerMock } = vi.hoisted(() => ({
+const { globalStoreMock, timerWorkerMock, sessionStoreMock } = vi.hoisted(() => ({
   globalStoreMock: {
     currentSessionRoomId: 'room-1',
     currentSession: null as null | { type?: number }
@@ -11,6 +11,24 @@ const { globalStoreMock, timerWorkerMock } = vi.hoisted(() => ({
     postMessage: vi.fn(),
     terminate: vi.fn(),
     onmessage: null as null | ((event: { data: { type: string; msgId?: string } }) => void)
+  },
+  sessionStoreMock: {
+    sessionList: [],
+    sessionOptions: {},
+    syncLoading: false,
+    getSession: vi.fn(() => undefined),
+    getSessionList: vi.fn(() => []),
+    updateSession: vi.fn(),
+    updateSessionLastActiveTime: vi.fn(),
+    markSessionRead: vi.fn(),
+    updateTotalUnreadCount: vi.fn(),
+    requestUnreadCountUpdate: vi.fn(),
+    clearUnreadCount: vi.fn(),
+    getGroupSessions: vi.fn(() => []),
+    resetSessionSelection: vi.fn(),
+    addSession: vi.fn(),
+    removeSession: vi.fn(),
+    clearCurrentSessionUnread: vi.fn()
   }
 }))
 
@@ -63,24 +81,7 @@ vi.mock('@/stores/domains/user/user', () => ({
 }))
 
 vi.mock('../session', () => ({
-  useSessionStore: () => ({
-    sessionList: [],
-    sessionOptions: {},
-    syncLoading: false,
-    getSession: vi.fn(() => undefined),
-    getSessionList: vi.fn(() => []),
-    updateSession: vi.fn(),
-    updateSessionLastActiveTime: vi.fn(),
-    markSessionRead: vi.fn(),
-    updateTotalUnreadCount: vi.fn(),
-    requestUnreadCountUpdate: vi.fn(),
-    clearUnreadCount: vi.fn(),
-    getGroupSessions: vi.fn(() => []),
-    resetSessionSelection: vi.fn(),
-    addSession: vi.fn(),
-    removeSession: vi.fn(),
-    clearCurrentSessionUnread: vi.fn()
-  })
+  useSessionStore: () => sessionStoreMock
 }))
 
 vi.mock('../../message', () => ({
@@ -134,6 +135,7 @@ const createMessage = (id: string, roomId = 'room-1'): MessageType => ({
 describe('ChatMessageStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.clearAllMocks()
     globalStoreMock.currentSessionRoomId = 'room-1'
     globalStoreMock.currentSession = null
     timerWorkerMock.postMessage.mockClear()
@@ -361,6 +363,38 @@ describe('ChatMessageStore', () => {
       MsgEnum.VOICE,
       MsgEnum.RECALL
     ])
+  })
+
+  it('should fetch current room messages and mark session as read when changing session', async () => {
+    const store = useChatStore()
+    await store.pushMsg(createMessage('1', 'room-2'), { isActiveChatView: false, activeRoomId: 'room-1' })
+
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValue({
+      messages: [
+        {
+          fromUser: { uid: '@user:server', username: 'tester', avatar: 'mxc://avatar' },
+          message: {
+            id: '101',
+            roomId: 'room-1',
+            type: MsgEnum.TEXT,
+            body: { body: 'remote-101', content: 'remote-101' },
+            sendTime: 101,
+            messageMarks: {},
+            status: MessageStatusEnum.SUCCESS
+          },
+          sendTime: 101
+        }
+      ],
+      isLast: true,
+      cursor: ''
+    })
+
+    await store.changeRoom()
+
+    expect(matrixEventService.getPagedRoomMessages).toHaveBeenCalledWith('room-1', 20, '')
+    expect(store.chatMessageListByRoomId('room-1').map((item) => item.message.id)).toEqual(['101'])
+    expect(store.chatMessageListByRoomId('room-2')).toEqual([])
+    expect(sessionStoreMock.markSessionRead).toHaveBeenCalledWith('room-1')
   })
 
   it('should merge remote page messages into existing sorted keys incrementally', async () => {

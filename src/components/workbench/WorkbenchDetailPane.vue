@@ -1,13 +1,80 @@
 <template>
-  <aside class="workbench-detail-pane border-l border-[--hula-border-default]">
+  <aside
+    class="workbench-detail-pane border-l border-[--hula-border-default]"
+    :class="{
+      'workbench-detail-pane--compact': compact,
+      'workbench-detail-pane--narrow': narrow
+    }">
     <div class="workbench-detail-pane__header">
-      <span class="text-13px font-600">{{ t('space.details_title') }}</span>
-      <span class="text-12px color-[--hula-text-tertiary]">
+      <span class="text-13px font-600">{{ managePaneTitle }}</span>
+      <template v-if="computedManageMode">
+        <button type="button" class="detail-members__toggle" @click="emit('closeManagePane')">
+          {{ t('common.close') }}
+        </button>
+      </template>
+      <span v-else class="text-12px color-[--hula-text-tertiary]">
         {{ t('space.sessions_count', { count: visibleSessionCount }) }}
       </span>
     </div>
 
     <div class="workbench-detail-pane__body">
+      <section
+        v-if="computedManageMode && activeSpace"
+        class="detail-card detail-card--manage"
+        data-test="detail-manage-card">
+        <div class="detail-card__title">{{ manageCardTitle }}</div>
+        <p class="detail-card__hint">{{ activeSpace.name }}</p>
+
+        <n-form label-placement="top" :show-feedback="false" class="detail-manage-form">
+          <n-form-item v-if="computedManageMode === 'invite'" :label="t('space.invite')">
+            <n-input
+              :value="computedInviteUserId"
+              :placeholder="t('space.invite_user_placeholder')"
+              @update:value="emit('update:inviteUserId', $event)" />
+          </n-form-item>
+
+          <template v-else-if="computedManageMode === 'add-room'">
+            <n-form-item :label="t('space.add_room')">
+              <n-input
+                :value="computedAddRoomId"
+                :placeholder="t('space.add_room_placeholder')"
+                @update:value="emit('update:addRoomId', $event)" />
+            </n-form-item>
+            <n-checkbox :checked="computedAddRoomSuggested" @update:checked="emit('update:addRoomSuggested', $event)">
+              {{ t('space.add_room_suggested') }}
+            </n-checkbox>
+          </template>
+
+          <template v-else-if="computedManageMode === 'settings'">
+            <n-form-item :label="t('space.name')">
+              <n-input
+                :value="computedSettingsName"
+                :placeholder="t('space.name_placeholder')"
+                @update:value="emit('update:settingsName', $event)" />
+            </n-form-item>
+            <n-form-item :label="t('space.topic')">
+              <n-input
+                :value="computedSettingsTopic"
+                type="textarea"
+                :rows="3"
+                :placeholder="t('space.topic_placeholder')"
+                @update:value="emit('update:settingsTopic', $event)" />
+            </n-form-item>
+          </template>
+        </n-form>
+
+        <n-flex justify="flex-end" :size="12" class="detail-manage-actions">
+          <n-button @click="emit('closeManagePane')">{{ t('common.cancel') }}</n-button>
+          <n-button
+            type="primary"
+            :loading="computedManageSubmitting"
+            :disabled="!computedCanManageSpace"
+            @click="emit('submitManagePane')">
+            {{ t('common.confirm') }}
+          </n-button>
+        </n-flex>
+      </section>
+
       <section v-if="selectedSession" class="detail-card" data-test="detail-session-card">
         <div class="detail-card__title">{{ t('space.detail_session') }}</div>
         <div class="detail-session">
@@ -126,7 +193,9 @@
                 </button>
               </div>
               <div v-else-if="announcementSegments.length" class="detail-announcement">
-                <template v-for="(segment, index) in announcementSegments" :key="`${selectedSession?.roomId}-${index}`">
+                <template
+                  v-for="(segment, index) in announcementSegments"
+                  :key="`ann-seg-${selectedSession?.roomId ?? 'none'}-${index}`">
                   <button
                     v-if="segment.isLink"
                     type="button"
@@ -217,16 +286,19 @@
           </div>
         </div>
       </section>
-    </div>
 
-    <n-modal
-      v-model:show="showMemberProfile"
-      preset="card"
-      :mask-closable="true"
-      class="detail-member-profile-modal"
-      style="width: 320px">
-      <InfoPopover v-if="selectedMemberUid" :uid="selectedMemberUid" :activeStatus="selectedMemberActiveStatus" />
-    </n-modal>
+      <section v-if="selectedMemberUid" class="detail-card" data-test="detail-member-profile-card">
+        <div class="detail-card__title detail-card__title--row">
+          <span>{{ t('space.detail_member_profile') }}</span>
+          <button type="button" class="detail-members__toggle" @click="clearSelectedMember">
+            {{ t('common.close') }}
+          </button>
+        </div>
+        <div class="detail-member-profile">
+          <InfoPopover :uid="selectedMemberUid" :activeStatus="selectedMemberActiveStatus" />
+        </div>
+      </section>
+    </div>
   </aside>
 </template>
 
@@ -258,11 +330,33 @@ type SessionListItem = SessionItem & {
   isAtMe?: boolean
 }
 
+type SpaceManageMode = 'invite' | 'add-room' | 'settings'
+
 const props = defineProps<{
   selectedSession: SessionListItem | null
   activeSpace: SpaceListItem | null
   visibleSessionCount: number
   totalSessionCount: number
+  compact?: boolean
+  narrow?: boolean
+  manageMode?: SpaceManageMode | null
+  canManageSpace?: boolean
+  manageSubmitting?: boolean
+  inviteUserId?: string
+  addRoomId?: string
+  addRoomSuggested?: boolean
+  settingsName?: string
+  settingsTopic?: string
+}>()
+
+const emit = defineEmits<{
+  closeManagePane: []
+  submitManagePane: []
+  'update:inviteUserId': [value: string]
+  'update:addRoomId': [value: string]
+  'update:addRoomSuggested': [value: boolean]
+  'update:settingsName': [value: string]
+  'update:settingsTopic': [value: string]
 }>()
 
 const { t } = useI18n()
@@ -273,7 +367,6 @@ const detailMembers = ref<MatrixRoomMember[]>([])
 const announcementPreview = ref('')
 const showAllMembers = ref(false)
 const showMemberDirectory = ref(false)
-const showMemberProfile = ref(false)
 const selectedMemberUid = ref('')
 const selectedMemberActiveStatus = ref<MatrixRoomMember['activeStatus'] | undefined>(undefined)
 const memberLoadFailed = ref(false)
@@ -302,6 +395,27 @@ const groupMemberCount = computed(
 )
 const groupOnlineCount = computed(() => detailGroupInfo.value?.onlineNum ?? detailMembers.value.length)
 const canEditAnnouncement = computed(() => showGroupInsights.value && Boolean(announcementStore.isAddAnnoun))
+const computedManageMode = computed(() => props.manageMode ?? null)
+const computedCanManageSpace = computed(() => Boolean(props.canManageSpace))
+const computedManageSubmitting = computed(() => Boolean(props.manageSubmitting))
+const computedInviteUserId = computed(() => props.inviteUserId ?? '')
+const computedAddRoomId = computed(() => props.addRoomId ?? '')
+const computedAddRoomSuggested = computed(() => Boolean(props.addRoomSuggested))
+const computedSettingsName = computed(() => props.settingsName ?? '')
+const computedSettingsTopic = computed(() => props.settingsTopic ?? '')
+const manageCardTitle = computed(() => {
+  switch (computedManageMode.value) {
+    case 'invite':
+      return t('space.invite_title')
+    case 'add-room':
+      return t('space.add_room_title')
+    case 'settings':
+      return t('space.settings_title')
+    default:
+      return t('space.details_title')
+  }
+})
+const managePaneTitle = computed(() => (computedManageMode.value ? manageCardTitle.value : t('space.details_title')))
 
 const handleRetrySpaceRooms = async () => {
   const spaceId = activeSpaceId.value
@@ -338,7 +452,11 @@ const handleMemberClick = (member: MatrixRoomMember) => {
 
   selectedMemberUid.value = uid
   selectedMemberActiveStatus.value = member.activeStatus
-  showMemberProfile.value = true
+}
+
+const clearSelectedMember = () => {
+  selectedMemberUid.value = ''
+  selectedMemberActiveStatus.value = undefined
 }
 
 const handleRetryAnnouncement = async () => {
@@ -412,9 +530,7 @@ watch(
     announcementPreview.value = ''
     showAllMembers.value = false
     showMemberDirectory.value = false
-    showMemberProfile.value = false
-    selectedMemberUid.value = ''
-    selectedMemberActiveStatus.value = undefined
+    clearSelectedMember()
     memberLoadFailed.value = false
     announcementLoadFailed.value = false
 
@@ -472,6 +588,16 @@ watch(
   background: var(--hula-surface-panel);
 }
 
+.workbench-detail-pane--compact {
+  width: 280px;
+  min-width: 280px;
+}
+
+.workbench-detail-pane--narrow {
+  width: 240px;
+  min-width: 240px;
+}
+
 .workbench-detail-pane__header {
   display: flex;
   align-items: center;
@@ -492,6 +618,28 @@ watch(
   background: var(--hula-surface-panel-muted);
 }
 
+.workbench-detail-pane--compact .workbench-detail-pane__header {
+  padding: 10px 12px;
+}
+
+.workbench-detail-pane--compact .workbench-detail-pane__body {
+  gap: 10px;
+  padding: 12px;
+}
+
+.workbench-detail-pane--compact .detail-card {
+  padding: 12px;
+}
+
+.workbench-detail-pane--narrow .detail-meta__row {
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+
+.workbench-detail-pane--narrow .detail-session {
+  align-items: flex-start;
+}
+
 .detail-card {
   padding: 16px;
   border: 1px solid var(--hula-border-default);
@@ -507,6 +655,13 @@ watch(
   letter-spacing: 0.02em;
 }
 
+.detail-card__title--row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .detail-card__hint {
   color: var(--hula-text-tertiary);
   font-size: 12px;
@@ -518,6 +673,18 @@ watch(
   min-height: 168px;
   flex-direction: column;
   justify-content: center;
+}
+
+.detail-card--manage {
+  gap: 12px;
+}
+
+.detail-manage-form {
+  margin-top: 12px;
+}
+
+.detail-manage-actions {
+  margin-top: 16px;
 }
 
 .detail-session {
@@ -725,6 +892,17 @@ watch(
   background: var(--hula-fill-hover);
 }
 
+.detail-member-profile {
+  overflow: hidden;
+  border: 1px solid var(--hula-border-default);
+  border-radius: var(--hula-radius-lg);
+  background: var(--hula-surface-subtle);
+}
+
+.detail-member-profile :deep(.n-flex) {
+  width: 100%;
+}
+
 .detail-members__directory :deep(.member-role) {
   color: var(--hula-color-primary-500);
 }
@@ -800,19 +978,5 @@ watch(
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-}
-
-.detail-member-profile-modal :deep(.n-card) {
-  overflow: hidden;
-  border-radius: 12px;
-}
-
-.detail-member-profile-modal :deep(.n-card-header),
-.detail-member-profile-modal :deep(.n-card__footer) {
-  display: none;
-}
-
-.detail-member-profile-modal :deep(.n-card__content) {
-  padding: 0;
 }
 </style>

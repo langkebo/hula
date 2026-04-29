@@ -243,7 +243,9 @@ vi.mock('@/components/encryption/KeyRotationDialog.vue', () => ({
   default: {
     name: 'KeyRotationDialog',
     props: ['show'],
-    template: '<div data-test="rotation-dialog" />'
+    emits: ['updated'],
+    template:
+      '<div data-test="rotation-dialog"><button type="button" data-test="rotation-updated" @click="$emit(\'updated\')">rotation-updated</button></div>'
   }
 }))
 
@@ -348,5 +350,22 @@ describe('EncryptionSettings', () => {
     await flushPromises()
 
     expect(loggerErrorMock).toHaveBeenCalled()
+  })
+
+  it('在轮换弹窗更新后刷新轮换状态', async () => {
+    getKeyRotationStatusMock
+      .mockResolvedValueOnce({ enabled: true, intervalMs: 1, needsRotation: true })
+      .mockResolvedValueOnce({ enabled: true, intervalMs: 1, needsRotation: false })
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('需要轮换')
+
+    await wrapper.get('[data-test="rotation-updated"]').trigger('click')
+    await flushPromises()
+
+    expect(getKeyRotationStatusMock).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).toContain('已是最新')
   })
 })

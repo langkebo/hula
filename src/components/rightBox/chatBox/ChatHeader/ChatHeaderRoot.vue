@@ -9,6 +9,7 @@
       :is-online="isOnline"
       :status-icon="statusIcon"
       :status-title="statusTitle"
+      :encryption-status="encryptionStatus"
       :has-custom-state="hasCustomState"
       @click="handleInfoClick" />
 
@@ -78,6 +79,7 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
 import { RoomActEnum, RoomTypeEnum } from '@/enums'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
 import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
@@ -133,6 +135,8 @@ const statusIcon = ref('')
 const statusTitle = ref('')
 const hasCustomState = ref(false)
 const meetingLoading = ref(false)
+const encryptionStatus = ref<'encrypted' | 'unencrypted' | 'unknown' | 'error'>('unknown')
+let encryptionStatusRequestId = 0
 
 const userList = computed(() => {
   return groupStore.userList.slice(0, 10)
@@ -347,6 +351,33 @@ watch(
     if (currentSessionRoomId.value) {
       localMyName.value = groupStore.myNameInCurrentGroup || ''
       localRemark.value = ''
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => currentSessionRoomId.value,
+  async (roomId) => {
+    const requestId = ++encryptionStatusRequestId
+
+    if (!roomId) {
+      encryptionStatus.value = 'unknown'
+      return
+    }
+
+    try {
+      const encrypted = await matrixEncryptionService.isRoomEncrypted(roomId)
+      if (requestId !== encryptionStatusRequestId) {
+        return
+      }
+      encryptionStatus.value = encrypted ? 'encrypted' : 'unencrypted'
+    } catch (err) {
+      if (requestId !== encryptionStatusRequestId) {
+        return
+      }
+      logger.error('读取会话加密状态失败:', err)
+      encryptionStatus.value = 'error'
     }
   },
   { immediate: true }

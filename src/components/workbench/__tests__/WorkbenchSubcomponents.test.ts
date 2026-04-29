@@ -57,6 +57,19 @@ vi.mock('naive-ui', async () => {
 
   return {
     NFlex: passthroughStub('NFlex'),
+    NForm: passthroughStub('NForm'),
+    NFormItem: defineComponent({
+      name: 'NFormItem',
+      props: {
+        label: {
+          type: String,
+          default: ''
+        }
+      },
+      setup(props, { slots }) {
+        return () => h('label', { 'data-test': 'NFormItem' }, [h('span', props.label), ...(slots.default?.() ?? [])])
+      }
+    }),
     NModal: defineComponent({
       name: 'NModal',
       props: {
@@ -90,6 +103,10 @@ vi.mock('naive-ui', async () => {
           type: String,
           default: ''
         },
+        type: {
+          type: String,
+          default: 'text'
+        },
         placeholder: {
           type: String,
           default: ''
@@ -101,10 +118,32 @@ vi.mock('naive-ui', async () => {
           h('label', { 'data-test': 'NInput' }, [
             slots.prefix?.(),
             h('input', {
+              'data-input-type': props.type,
               value: props.value,
               placeholder: props.placeholder,
               onInput: (event: Event) => emit('update:value', (event.target as HTMLInputElement).value)
             })
+          ])
+      }
+    }),
+    NCheckbox: defineComponent({
+      name: 'NCheckbox',
+      props: {
+        checked: {
+          type: Boolean,
+          default: false
+        }
+      },
+      emits: ['update:checked'],
+      setup(props, { emit, slots }) {
+        return () =>
+          h('label', { 'data-test': 'NCheckbox' }, [
+            h('input', {
+              type: 'checkbox',
+              checked: props.checked,
+              onChange: (event: Event) => emit('update:checked', (event.target as HTMLInputElement).checked)
+            }),
+            ...(slots.default?.() ?? [])
           ])
       }
     }),
@@ -303,6 +342,22 @@ describe('SpaceListPane', () => {
 
     expect(wrapper.emitted('selectSpace')).toEqual([[''], ['space-2']])
   })
+
+  it('applies compact and narrow classes for tighter layouts', () => {
+    const wrapper = mount(SpaceListPane, {
+      props: {
+        spaces: [{ spaceId: 'space-1', name: 'Space One', childCount: 2 }],
+        selectedSpaceId: '',
+        loading: false,
+        totalCount: 3,
+        compact: true,
+        narrow: true
+      }
+    })
+
+    expect(wrapper.classes()).toContain('space-list-pane--compact')
+    expect(wrapper.classes()).toContain('space-list-pane--narrow')
+  })
 })
 
 describe('RoomSpaceToolbar', () => {
@@ -341,6 +396,41 @@ describe('RoomSpaceToolbar', () => {
     expect(wrapper.emitted('update:sessionTypeFilter')).toEqual([['group']])
     expect(wrapper.emitted('update:sessionSort')).toEqual([['name']])
     expect(wrapper.emitted('createSpace')).toEqual([[]])
+  })
+
+  it('adds compact styling hook for constrained widths', () => {
+    const wrapper = mount(RoomSpaceToolbar, {
+      props: {
+        searchKeyword: '',
+        sessionTypeFilter: WORKBENCH_SESSION_TYPE_FILTERS.all,
+        sessionSort: WORKBENCH_SESSION_SORTS.recent,
+        filteredCount: 1,
+        totalCount: 2,
+        compact: true
+      }
+    })
+
+    expect(wrapper.classes()).toContain('room-space-toolbar--compact')
+  })
+
+  it('supports hiding the create action and custom test ids for wrapper reuse', () => {
+    const wrapper = mount(RoomSpaceToolbar, {
+      props: {
+        searchKeyword: '',
+        sessionTypeFilter: WORKBENCH_SESSION_TYPE_FILTERS.all,
+        sessionSort: WORKBENCH_SESSION_SORTS.recent,
+        filteredCount: 1,
+        totalCount: 2,
+        showCreateAction: false,
+        rootTestId: 'message-session-toolbar',
+        testIdPrefix: 'message-session'
+      }
+    })
+
+    expect(wrapper.attributes('data-test')).toBe('message-session-toolbar')
+    expect(wrapper.text()).not.toContain('space.create')
+    expect(wrapper.find('[data-test="message-session-type-all"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="message-session-sort-recent"]').exists()).toBe(true)
   })
 })
 
@@ -400,6 +490,20 @@ describe('RoomSpaceActionBar', () => {
     expect(wrapper.emitted('invite')).toBeUndefined()
     expect(wrapper.emitted('addRoom')).toBeUndefined()
     expect(wrapper.emitted('settings')).toBeUndefined()
+  })
+
+  it('adds compact styling hook for constrained widths', () => {
+    const wrapper = mount(RoomSpaceActionBar, {
+      props: {
+        spaceName: 'Space One',
+        roomCount: 4,
+        sessionCount: 6,
+        canManageSpace: true,
+        compact: true
+      }
+    })
+
+    expect(wrapper.classes()).toContain('room-space-action-bar--compact')
   })
 })
 
@@ -511,6 +615,22 @@ describe('WorkbenchDetailPane', () => {
 
     await filledWrapper.get('.detail-announcement__link').trigger('click')
     expect(openLinkMock).toHaveBeenCalledWith('https://example.com')
+  })
+
+  it('adds compact and narrow layout classes for constrained widths', () => {
+    const wrapper = mount(WorkbenchDetailPane, {
+      props: {
+        selectedSession: null,
+        activeSpace: null,
+        visibleSessionCount: 0,
+        totalSessionCount: 3,
+        compact: true,
+        narrow: true
+      }
+    })
+
+    expect(wrapper.classes()).toContain('workbench-detail-pane--compact')
+    expect(wrapper.classes()).toContain('workbench-detail-pane--narrow')
   })
 
   it('renders space room retry state and reloads child rooms on demand', async () => {
@@ -743,8 +863,96 @@ describe('WorkbenchDetailPane', () => {
 
     await wrapper.get('.detail-member').trigger('click')
 
-    expect(wrapper.find('[data-test="NModal"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="NModal"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="detail-member-profile-card"]').exists()).toBe(true)
     expect(wrapper.get('[data-test="info-popover-stub"]').text()).toBe('u1')
+  })
+
+  it('renders inline space management forms and emits updates', async () => {
+    const wrapper = mount(WorkbenchDetailPane, {
+      props: {
+        selectedSession: null,
+        activeSpace: {
+          spaceId: 'space-1',
+          name: 'Space One',
+          topic: 'topic',
+          memberCount: 3,
+          childCount: 2
+        },
+        visibleSessionCount: 1,
+        totalSessionCount: 1,
+        manageMode: 'invite',
+        inviteUserId: '',
+        canManageSpace: true,
+        manageSubmitting: false
+      }
+    })
+
+    expect(wrapper.text()).toContain('space.invite_title')
+    expect(wrapper.find('[data-test="detail-manage-card"]').exists()).toBe(true)
+
+    await wrapper.get('input[placeholder="space.invite_user_placeholder"]').setValue('@alice:server')
+    await wrapper.get('.detail-manage-actions button:last-child').trigger('click')
+    await wrapper.get('.workbench-detail-pane__header .detail-members__toggle').trigger('click')
+
+    expect(wrapper.emitted('update:inviteUserId')).toEqual([['@alice:server']])
+    expect(wrapper.emitted('submitManagePane')).toEqual([[]])
+    expect(wrapper.emitted('closeManagePane')).toEqual([[]])
+  })
+
+  it('renders add-room and settings inline forms with current values', async () => {
+    const addRoomWrapper = mount(WorkbenchDetailPane, {
+      props: {
+        selectedSession: null,
+        activeSpace: {
+          spaceId: 'space-2',
+          name: 'Space Two',
+          topic: 'topic',
+          memberCount: 5,
+          childCount: 4
+        },
+        visibleSessionCount: 2,
+        totalSessionCount: 2,
+        manageMode: 'add-room',
+        addRoomId: '!room:server',
+        addRoomSuggested: false,
+        canManageSpace: true
+      }
+    })
+
+    expect(addRoomWrapper.text()).toContain('space.add_room_title')
+    await addRoomWrapper.get('input[placeholder="space.add_room_placeholder"]').setValue('!next:server')
+    await addRoomWrapper.get('[data-test="NCheckbox"] input').setValue(true)
+    expect(addRoomWrapper.emitted('update:addRoomId')).toEqual([['!next:server']])
+    expect(addRoomWrapper.emitted('update:addRoomSuggested')).toEqual([[true]])
+
+    const settingsWrapper = mount(WorkbenchDetailPane, {
+      props: {
+        selectedSession: null,
+        activeSpace: {
+          spaceId: 'space-3',
+          name: 'Space Three',
+          topic: 'topic',
+          memberCount: 8,
+          childCount: 6
+        },
+        visibleSessionCount: 3,
+        totalSessionCount: 3,
+        manageMode: 'settings',
+        settingsName: 'Space Three',
+        settingsTopic: 'Initial Topic',
+        canManageSpace: true
+      }
+    })
+
+    expect(settingsWrapper.text()).toContain('space.settings_title')
+
+    const settingsInputs = settingsWrapper.findAll('input')
+    await settingsInputs[0].setValue('Renamed Space')
+    await settingsInputs[1].setValue('Updated Topic')
+
+    expect(settingsWrapper.emitted('update:settingsName')).toEqual([['Renamed Space']])
+    expect(settingsWrapper.emitted('update:settingsTopic')).toEqual([['Updated Topic']])
   })
 
   it('renders member retry state and reloads members on demand', async () => {

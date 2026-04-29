@@ -1,6 +1,12 @@
 <template>
-  <div class="room-space-workbench h-full flex flex-col">
+  <div
+    class="room-space-workbench h-full flex flex-col"
+    :class="{
+      'room-space-workbench--compact': isCompactLayout,
+      'room-space-workbench--narrow': isNarrowLayout
+    }">
     <RoomSpaceToolbar
+      :compact="isCompactLayout"
       :search-keyword="searchKeyword"
       :session-type-filter="sessionTypeFilter"
       :session-sort="sessionSort"
@@ -13,6 +19,8 @@
 
     <div class="min-h-0 flex flex-1">
       <SpaceListPane
+        :compact="isCompactLayout"
+        :narrow="isNarrowLayout"
         :spaces="spaces"
         :selected-space-id="selectedSpaceId"
         :loading="spaceLoading"
@@ -22,6 +30,7 @@
       <div class="min-w-0 flex flex-1 flex-col">
         <RoomSpaceActionBar
           v-if="activeSpace"
+          :compact="isCompactLayout"
           :space-name="activeSpace.name"
           :room-count="activeSpace.childCount"
           :session-count="sessionList.length"
@@ -49,10 +58,27 @@
           </div>
 
           <WorkbenchDetailPane
+            :compact="isCompactLayout"
+            :narrow="isNarrowLayout"
             :selected-session="selectedSession"
             :active-space="activeSpace"
             :visible-session-count="sessionList.length"
-            :total-session-count="totalCount" />
+            :total-session-count="totalCount"
+            :manage-mode="manageMode"
+            :can-manage-space="canManageActiveSpace"
+            :manage-submitting="manageSubmitting"
+            :invite-user-id="inviteUserId"
+            :add-room-id="addRoomId"
+            :add-room-suggested="addRoomSuggested"
+            :settings-name="settingsName"
+            :settings-topic="settingsTopic"
+            @close-manage-pane="emit('closeManagePane')"
+            @submit-manage-pane="emit('submitManagePane')"
+            @update:invite-user-id="emit('update:inviteUserId', $event)"
+            @update:add-room-id="emit('update:addRoomId', $event)"
+            @update:add-room-suggested="emit('update:addRoomSuggested', $event)"
+            @update:settings-name="emit('update:settingsName', $event)"
+            @update:settings-topic="emit('update:settingsTopic', $event)" />
         </div>
       </div>
     </div>
@@ -62,6 +88,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useViewport } from '@/hooks/useViewport'
 import {
   WORKBENCH_SESSION_TYPE_FILTERS,
   type WorkbenchSessionSort,
@@ -86,6 +113,8 @@ type SessionListItem = SessionItem & {
   isAtMe?: boolean
 }
 
+type SpaceManageMode = 'invite' | 'add-room' | 'settings'
+
 const props = defineProps<{
   sessionList: SessionListItem[]
   totalCount: number
@@ -101,6 +130,13 @@ const props = defineProps<{
   syncLoading: boolean
   sessionLoading: boolean
   networkBanner: { text: string; retryable?: boolean } | null
+  manageMode?: SpaceManageMode | null
+  manageSubmitting?: boolean
+  inviteUserId?: string
+  addRoomId?: string
+  addRoomSuggested?: boolean
+  settingsName?: string
+  settingsTopic?: string
   getItemClasses: (item: SessionItem) => Record<string, boolean>
   visibleMenu: (item: SessionItem) => OPT.RightMenu[]
   visibleSpecialMenu: (item: SessionItem) => OPT.RightMenu[]
@@ -119,10 +155,21 @@ const emit = defineEmits<{
   inviteSpaceMember: []
   addSpaceRoom: []
   openSpaceSettings: []
+  closeManagePane: []
+  submitManagePane: []
+  'update:inviteUserId': [value: string]
+  'update:addRoomId': [value: string]
+  'update:addRoomSuggested': [value: boolean]
+  'update:settingsName': [value: string]
+  'update:settingsTopic': [value: string]
 }>()
 
 const sessionListRef = ref<InstanceType<typeof RoomSessionList> | null>(null)
 const { t } = useI18n()
+const { vw } = useViewport()
+
+const isCompactLayout = computed(() => vw.value < 1400)
+const isNarrowLayout = computed(() => vw.value < 1200)
 
 const emptyDescription = computed(() => {
   if (

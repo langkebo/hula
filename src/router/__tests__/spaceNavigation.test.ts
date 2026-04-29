@@ -98,7 +98,7 @@ describe('spaceNavigation', () => {
     expect(readSpaceWorkbenchSessionSort({})).toBe(WORKBENCH_SESSION_SORTS.recent)
   })
 
-  it('redirects desktop legacy space routes into the message workbench', () => {
+  it('redirects desktop legacy space routes into the dedicated space workbench', () => {
     const spaceRoute = getDesktopRoutes().find((route) => route.name === SPACE_ROUTE_NAMES.legacy)
 
     expect(spaceRoute).toBeDefined()

@@ -73,9 +73,15 @@ export class MatrixRoomTimelineService {
         'GET',
         `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/unread_count`
       )
+      const unreadCountResult = result as {
+        unread_notifications?: number
+        unread_highlighted?: number
+        notification_count?: number
+        highlight_count?: number
+      }
       return {
-        unread_notifications: (result as { unread_notifications?: number }).unread_notifications ?? 0,
-        unread_highlighted: (result as { unread_highlighted?: number }).unread_highlighted ?? 0
+        unread_notifications: unreadCountResult.unread_notifications ?? unreadCountResult.notification_count ?? 0,
+        unread_highlighted: unreadCountResult.unread_highlighted ?? unreadCountResult.highlight_count ?? 0
       }
     } catch (err) {
       error(`[MatrixRoom] 获取未读计数失败: ${err}`)

@@ -1,14 +1,10 @@
 <template>
   <div class="encryption-status" :class="statusClass">
-    <svg class="size-16px">
-      <use :href="statusIcon"></use>
-    </svg>
+    <span class="status-dot" aria-hidden="true"></span>
     <span class="status-text">{{ statusText }}</span>
     <n-tooltip v-if="showTooltip" trigger="hover">
       <template #trigger>
-        <svg class="size-14px color-[--hula-text-tertiary] cursor-help">
-          <use href="#info"></use>
-        </svg>
+        <span class="status-hint" aria-label="encryption info">i</span>
       </template>
       {{ tooltipText }}
     </n-tooltip>
@@ -35,52 +31,42 @@ const { t } = useI18n()
 
 const statusClass = computed(() => props.status)
 
-const statusIcon = computed(() => {
-  switch (props.status) {
-    case 'encrypted':
-      return '#lock'
-    case 'unencrypted':
-      return '#unlock'
-    case 'error':
-      return '#alert-triangle'
-    default:
-      return '#help-circle'
-  }
-})
-
 const statusText = computed(() => {
   switch (props.status) {
     case 'encrypted':
-      return t('encryption.encrypted')
+      return t('components.encryptionStatus.encrypted')
     case 'unencrypted':
-      return t('encryption.unencrypted')
+      return t('components.encryptionStatus.unencrypted')
     case 'error':
-      return t('encryption.error')
+      return t('components.encryptionStatus.error')
     default:
-      return t('encryption.unknown')
+      return t('components.encryptionStatus.unknown')
   }
 })
 
 const tooltipText = computed(() => {
   switch (props.status) {
     case 'encrypted':
-      return t('encryption.encrypted_tooltip')
+      return t('components.encryptionStatus.encryptedTooltip')
     case 'unencrypted':
-      return t('encryption.unencrypted_tooltip')
+      return t('components.encryptionStatus.unencryptedTooltip')
     case 'error':
-      return t('encryption.error_tooltip')
+      return t('components.encryptionStatus.errorTooltip')
     default:
-      return t('encryption.unknown_tooltip')
+      return t('components.encryptionStatus.unknownTooltip')
   }
 })
 </script>
 
 <style scoped lang="scss">
 .encryption-status {
-  @apply flex items-center gap-6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 
   &.encrypted {
-    color: var(--color-success);
+    color: var(--hula-color-success-600);
   }
 
   &.unencrypted {
@@ -88,15 +74,41 @@ const tooltipText = computed(() => {
   }
 
   &.error {
-    color: var(--color-danger);
+    color: var(--hula-color-error-600);
   }
 
   &.unknown {
-    color: var(--color-warning);
+    color: var(--hula-color-warning-600);
   }
 }
 
+.status-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+}
+
 .status-text {
-  @apply text-12px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.status-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--hula-text-tertiary);
+  background-color: color-mix(in srgb, var(--hula-text-primary) 8%, transparent);
+  cursor: help;
 }
 </style>

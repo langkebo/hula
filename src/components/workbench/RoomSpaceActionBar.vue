@@ -1,5 +1,7 @@
 <template>
-  <div class="room-space-action-bar border-b border-[--hula-border-default] px-12px py-10px">
+  <div
+    class="room-space-action-bar border-b border-[--hula-border-default] px-12px py-10px"
+    :class="{ 'room-space-action-bar--compact': compact }">
     <n-flex align="center" justify="space-between" :size="12" wrap>
       <n-flex vertical :size="4" class="min-w-0">
         <span class="truncate text-14px font-500">{{ spaceName }}</span>
@@ -46,6 +48,7 @@ const { spaceName, roomCount, sessionCount, canManageSpace } = defineProps<{
   roomCount: number
   sessionCount: number
   canManageSpace: boolean
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -75,5 +78,9 @@ const handleSettings = () => {
 <style scoped lang="scss">
 .room-space-action-bar {
   background: var(--hula-surface-panel);
+}
+
+.room-space-action-bar--compact {
+  padding: 10px;
 }
 </style>

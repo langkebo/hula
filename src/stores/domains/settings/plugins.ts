@@ -5,6 +5,9 @@ import { usePluginsList } from '@/layout/left/config.tsx'
 export const usePluginsStore = defineStore(
   StoresEnum.PLUGINS,
   () => {
+    const LEGACY_PLUGIN_URL_MAP: Record<string, string> = {
+      dynamic: 'roomList'
+    }
     const pluginsList = usePluginsList()
     /** 插件内容 */
     const plugins = ref(pluginsList.value.filter((p) => p.state === PluginEnum.BUILTIN) as STO.Plugins<PluginEnum>[])
@@ -41,18 +44,38 @@ export const usePluginsStore = defineStore(
     }
 
     const syncPluginsWithLocale = (latest: STO.Plugins<PluginEnum>[]) => {
-      plugins.value = plugins.value.map((plugin) => {
-        const updated = latest.find((p) => p.url === plugin.url)
-        return updated
-          ? {
-              ...plugin,
-              size: updated.size ? { ...plugin.size, ...updated.size } : plugin.size,
-              window: updated.window ? { ...plugin.window, ...updated.window } : plugin.window,
-              title: updated.title,
-              shortTitle: updated.shortTitle
-            }
-          : plugin
+      const existingMap = new Map(plugins.value.map((plugin) => [plugin.url, plugin]))
+      const syncedBuiltins = latest.map((builtin) => {
+        const existing = existingMap.get(builtin.url)
+
+        if (!existing) return builtin
+
+        return {
+          ...existing,
+          icon: builtin.icon,
+          iconAction: builtin.iconAction,
+          state: builtin.state,
+          title: builtin.title,
+          shortTitle: builtin.shortTitle,
+          tip: builtin.tip,
+          size: builtin.size ? { ...existing.size, ...builtin.size } : existing.size,
+          window: builtin.window ? { ...existing.window, ...builtin.window } : existing.window
+        }
       })
+
+      const customPlugins = plugins.value.filter((plugin) => !latest.some((builtin) => builtin.url === plugin.url))
+      plugins.value = [...syncedBuiltins, ...customPlugins]
+    }
+
+    const migrateLegacyPlugins = (storedPlugins: STO.Plugins<PluginEnum>[]) => {
+      const migratedMap = new Map<string, STO.Plugins<PluginEnum>>()
+
+      storedPlugins.forEach((plugin) => {
+        const nextUrl = LEGACY_PLUGIN_URL_MAP[plugin.url] || plugin.url
+        migratedMap.set(nextUrl, { ...plugin, url: nextUrl })
+      })
+
+      return [...migratedMap.values()]
     }
 
     watch(pluginsList, (latest) => syncPluginsWithLocale(latest), { immediate: true })
@@ -61,8 +84,8 @@ export const usePluginsStore = defineStore(
       // 读取本地存储的插件数据
       if (localStorage.getItem(StoresEnum.PLUGINS)) {
         plugins.value = []
-        JSON.parse(localStorage.getItem(StoresEnum.PLUGINS)!)['plugins']?.map((item: STO.Plugins<PluginEnum>) =>
-          plugins.value.push(item)
+        migrateLegacyPlugins(JSON.parse(localStorage.getItem(StoresEnum.PLUGINS)!)['plugins'] || []).forEach(
+          (item: STO.Plugins<PluginEnum>) => plugins.value.push(item)
         )
         syncPluginsWithLocale(pluginsList.value)
       }

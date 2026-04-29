@@ -31,6 +31,10 @@
   "plugins": {
     "dynamic": "Moments",
     "dynamic_short_title": "Moments",
+    "room_list": "Rooms",
+    "room_list_short_title": "Rooms",
+    "space_list": "Spaces",
+    "space_list_short_title": "Space",
     "chatbot": "ChatBot",
     "chatbot_short_title": "ChatBot",
     "status": {

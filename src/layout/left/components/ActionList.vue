@@ -43,23 +43,7 @@
           </n-flex>
         </n-popover>
         <!-- 该选项无提示时展示 -->
-        <!-- 消息提示 -->
-        <n-badge
-          v-if="item.url === 'message'"
-          :max="99"
-          :value="messageUnreadCount"
-          :show="unreadReady && messageUnreadCount > 0">
-          <svg class="size-22px">
-            <use
-              :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
-          </svg>
-        </n-badge>
-        <!-- 好友提示 -->
-        <n-badge
-          v-if="item.url === 'friendsList'"
-          :max="99"
-          :value="unreadApplyCount"
-          :show="unreadApplyCount > 0 && unreadReady">
+        <n-badge v-else :max="99" :value="getMenuBadgeValue(item.url)" :show="getMenuBadgeShow(item.url)">
           <svg class="size-22px">
             <use
               :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
@@ -69,6 +53,41 @@
           {{ item.shortTitle }}
         </p>
       </div>
+
+      <section
+        v-if="workspacePlugins.length"
+        class="workspace-entry-group"
+        :class="showMode === ShowModeEnum.ICON ? 'workspace-entry-group--icon' : 'workspace-entry-group--text'"
+        data-test="workspace-entry-group">
+        <button
+          v-for="item in workspacePlugins"
+          :key="item.url"
+          type="button"
+          :class="[
+            'workspace-entry',
+            {
+              'workspace-entry--active': activeUrl === item.url,
+              'workspace-entry--open': openWindowsList.has(item.url),
+              'workspace-entry--text': showMode === ShowModeEnum.TEXT,
+              'workspace-entry--icon': showMode === ShowModeEnum.ICON
+            }
+          ]"
+          :title="item.title"
+          @click="pageJumps(item.url, item.title, item.size, item.window)">
+          <span class="workspace-entry__indicator" aria-hidden="true"></span>
+          <span class="workspace-entry__surface">
+            <n-badge class="workspace-entry__badge" :max="99" :value="item.badge" :show="(item.badge ?? 0) > 0">
+              <svg class="workspace-entry__icon">
+                <use
+                  :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction || item.icon : item.icon}`"></use>
+              </svg>
+            </n-badge>
+            <span v-if="showMode === ShowModeEnum.TEXT" class="workspace-entry__content">
+              <span class="workspace-entry__label">{{ item.shortTitle }}</span>
+            </span>
+          </span>
+        </button>
+      </section>
 
       <div
         v-for="(item, index) in noMiniShowPlugins"
@@ -111,12 +130,17 @@
           </n-flex>
         </n-popover>
         <!-- 该选项无提示时展示 -->
-        <n-badge v-else :max="99" :value="item.badge" :show="(item.badge ?? 0) > 0">
-          <svg class="size-22px">
-            <use
-              :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
-          </svg>
-        </n-badge>
+        <n-popover v-else :show-arrow="false" trigger="hover" placement="right">
+          <template #trigger>
+            <n-badge :max="99" :value="item.badge" :show="(item.badge ?? 0) > 0">
+              <svg class="size-22px">
+                <use
+                  :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction || item.icon : item.icon}`"></use>
+              </svg>
+            </n-badge>
+          </template>
+          <p>{{ item.title }}</p>
+        </n-popover>
         <p v-if="showMode === ShowModeEnum.TEXT && item.title" class="text-(10px center)">
           {{ item.shortTitle }}
         </p>
@@ -289,17 +313,21 @@ const messageUnreadCount = computed(() => globalStore.messageUnreadCount)
 //const { } = toRefs(getCurrentInstance) // 所有菜单的外层div
 const menuShow = ref(false)
 const { moreList, showHomeserverDialog, handleHomeserverSave } = useMoreList()
+const WORKBENCH_PLUGIN_URLS = new Set(['roomList', 'space'])
 // 显示在菜单的插件
 const activePlugins = computed(() => {
   return plugins.value.filter((i) => i.isAdd)
 })
+const workspacePlugins = computed(() => {
+  return activePlugins.value.filter((item) => WORKBENCH_PLUGIN_URLS.has(item.url))
+})
 // 显示在菜单外的插件
 const noMiniShowPlugins = computed(() => {
-  return activePlugins.value.filter((i) => !i.miniShow)
+  return activePlugins.value.filter((item) => !item.miniShow && !WORKBENCH_PLUGIN_URLS.has(item.url))
 })
 // 显示在菜单内的插件
 const miniShowPlugins = computed(() => {
-  return activePlugins.value.filter((i) => i.miniShow)
+  return activePlugins.value.filter((item) => item.miniShow && !WORKBENCH_PLUGIN_URLS.has(item.url))
 })
 const { activeUrl, openWindowsList, settingShow, tipShow, pageJumps } = leftHook()
 
@@ -311,6 +339,19 @@ const handleTipShow = (item: { dot?: boolean }) => {
 const unreadApplyCount = computed(() => {
   return globalStore.contactUnreadCount
 })
+
+const getMenuBadgeValue = (url: string) => {
+  if (url === 'message') return messageUnreadCount.value
+  if (url === 'friendsList') return unreadApplyCount.value
+  return undefined
+}
+
+const getMenuBadgeShow = (url: string) => {
+  if (!unreadReady.value) return false
+  if (url === 'message') return messageUnreadCount.value > 0
+  if (url === 'friendsList') return unreadApplyCount.value > 0
+  return false
+}
 
 const startResize = () => {
   window.dispatchEvent(new Event('resize'))
@@ -325,11 +366,21 @@ const handleResize = async (e: Event) => {
   const bottomPadding = 15
   const randomHeight = 3 // 插件菜单的高度比其他菜单高2.66666666667
   const staticMenuNum = 2
+  const workspaceEntryCount = workspacePlugins.value.length
   const menuNum = Math.floor(
     (windowHeight -
-      (menuTop.value.length + noMiniShowPlugins.value.length + itemsBottom.value.length + staticMenuNum) *
+      (menuTop.value.length +
+        workspaceEntryCount +
+        noMiniShowPlugins.value.length +
+        itemsBottom.value.length +
+        staticMenuNum) *
         menuDivHeight -
-      (menuTop.value.length + noMiniShowPlugins.value.length + itemsBottom.value.length + staticMenuNum - 1) *
+      (menuTop.value.length +
+        workspaceEntryCount +
+        noMiniShowPlugins.value.length +
+        itemsBottom.value.length +
+        staticMenuNum -
+        1) *
         spaceHeight -
       headerTopHeight -
       bottomPadding -
@@ -393,5 +444,132 @@ onMounted(async () => {
 .setting-item {
   left: 24px;
   bottom: -40px;
+}
+
+.workspace-entry-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.workspace-entry-group--icon {
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-entry-group--text {
+  gap: 4px;
+}
+
+.workspace-entry {
+  position: relative;
+  display: flex;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--left-icon-color);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease;
+}
+
+.workspace-entry:focus-visible {
+  outline: none;
+}
+
+.workspace-entry__indicator {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 3px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--left-active-hover);
+  opacity: 0;
+  transform: translateY(-50%) scaleY(0.4);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.workspace-entry__surface {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
+}
+
+.workspace-entry__badge {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.workspace-entry:hover .workspace-entry__surface,
+.workspace-entry:focus-visible .workspace-entry__surface {
+  background: var(--left-bg-hover);
+  color: var(--left-active-hover);
+}
+
+.workspace-entry--active .workspace-entry__surface {
+  background: var(--left-active-bg-color);
+  color: var(--left-active-icon-color);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--left-active-hover) 16%, transparent);
+}
+
+.workspace-entry--open:not(.workspace-entry--active) .workspace-entry__surface {
+  color: var(--left-win-icon-color);
+}
+
+.workspace-entry--active .workspace-entry__indicator {
+  opacity: 1;
+  transform: translateY(-50%) scaleY(1);
+}
+
+.workspace-entry--icon {
+  justify-content: center;
+}
+
+.workspace-entry--icon .workspace-entry__surface {
+  justify-content: center;
+  width: auto;
+  padding: 8px;
+}
+
+.workspace-entry--icon .workspace-entry__indicator {
+  left: 2px;
+}
+
+.workspace-entry--text .workspace-entry__surface {
+  padding-left: 12px;
+}
+
+.workspace-entry__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.workspace-entry__content {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+}
+
+.workspace-entry__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
 }
 </style>

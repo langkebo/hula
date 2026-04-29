@@ -78,6 +78,7 @@ declare module 'vue' {
     KeyRotationDialog: typeof import('./../components/encryption/KeyRotationDialog.vue')['default']
     LazyImage: typeof import('./../components/performance/LazyImage.vue')['default']
     LinkPreview: typeof import('./../components/rightBox/renderMessage/LinkPreview.vue')['default']
+    ListWorkbenchShell: typeof import('./../components/workbench/ListWorkbenchShell.vue')['default']
     LoadingSpinner: typeof import('./../components/atomic/LoadingSpinner.vue')['default']
     Location: typeof import('./../components/rightBox/renderMessage/Location.vue')['default']
     LocationMap: typeof import('./../components/rightBox/location/LocationMap.vue')['default']
@@ -274,6 +275,7 @@ declare module 'vue' {
     WidgetContainer: typeof import('./../components/widget/WidgetContainer.vue')['default']
     WidgetManager: typeof import('./../components/widget/WidgetManager.vue')['default']
     WorkbenchDetailPane: typeof import('./../components/workbench/WorkbenchDetailPane.vue')['default']
+    WorkbenchListIcon: typeof import('./../components/workbench/WorkbenchListIcon.vue')['default']
   }
 }
 
@@ -345,6 +347,7 @@ declare global {
   const KeyRotationDialog: typeof import('./../components/encryption/KeyRotationDialog.vue')['default']
   const LazyImage: typeof import('./../components/performance/LazyImage.vue')['default']
   const LinkPreview: typeof import('./../components/rightBox/renderMessage/LinkPreview.vue')['default']
+  const ListWorkbenchShell: typeof import('./../components/workbench/ListWorkbenchShell.vue')['default']
   const LoadingSpinner: typeof import('./../components/atomic/LoadingSpinner.vue')['default']
   const Location: typeof import('./../components/rightBox/renderMessage/Location.vue')['default']
   const LocationMap: typeof import('./../components/rightBox/location/LocationMap.vue')['default']
@@ -541,4 +544,5 @@ declare global {
   const WidgetContainer: typeof import('./../components/widget/WidgetContainer.vue')['default']
   const WidgetManager: typeof import('./../components/widget/WidgetManager.vue')['default']
   const WorkbenchDetailPane: typeof import('./../components/workbench/WorkbenchDetailPane.vue')['default']
+  const WorkbenchListIcon: typeof import('./../components/workbench/WorkbenchListIcon.vue')['default']
 }
