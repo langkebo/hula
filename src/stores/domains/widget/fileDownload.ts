@@ -3,6 +3,8 @@ import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import { sumBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
+import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { FilesMeta } from '@/services/types'
 import { useUserStore } from '@/stores/domains/user/user'
 import { getFilesMeta } from '@/utils/PathUtil'
@@ -222,7 +224,7 @@ export const useFileDownloadStore = defineStore(
         const isExists = await checkFileExists(fileUrl, fileName)
         if (isExists) {
           const existingStatus = getFileStatus(fileUrl)
-          return existingStatus.localPath || null
+          return existingStatus.absolutePath || existingStatus.localPath || null
         }
 
         // 更新状态为下载中
@@ -291,6 +293,38 @@ export const useFileDownloadStore = defineStore(
         return absolutePath
       } catch (error) {
         logger.error('文件下载失败:', error)
+
+        updateFileStatus(fileUrl, {
+          status: 'failed',
+          error: error instanceof Error ? error.message : '下载失败'
+        })
+
+        window.$message?.error(`文件下载失败: ${error instanceof Error ? error.message : '未知错误'}`)
+        return null
+      }
+    }
+
+    const downloadEncryptedFile = async (
+      fileUrl: string,
+      fileName: string,
+      encryptedFile: MatrixEncryptedAttachmentLike
+    ): Promise<string | null> => {
+      try {
+        const isExists = await checkFileExists(fileUrl, fileName)
+        if (isExists) {
+          const existingStatus = getFileStatus(fileUrl)
+          return existingStatus.absolutePath || existingStatus.localPath || null
+        }
+
+        updateFileStatus(fileUrl, {
+          status: 'downloading',
+          progress: 0
+        })
+
+        const fileData = await matrixMediaService.downloadEncryptedFileBytes(encryptedFile)
+        return await saveFileFromBytes(fileUrl, fileName, fileData)
+      } catch (error) {
+        logger.error('加密文件下载失败:', error)
 
         updateFileStatus(fileUrl, {
           status: 'failed',
@@ -374,6 +408,7 @@ export const useFileDownloadStore = defineStore(
       updateFileStatus,
       checkFileExists,
       downloadFile,
+      downloadEncryptedFile,
       saveFileFromBytes,
       getLocalPath,
       clearDownloadStatus,

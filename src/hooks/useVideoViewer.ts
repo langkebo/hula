@@ -15,6 +15,7 @@ export const useVideoViewer = () => {
   const { createWebviewWindow } = useWindow()
   const VideoViewerStore = useVideoViewerStore()
   const userStore = useUserStore()
+  const chatStore = useChatStore()
 
   // 获取视频文件名
   const getVideoFilename = (url: string) => {
@@ -64,10 +65,33 @@ export const useVideoViewer = () => {
     return await join(videosDir, filename)
   }
 
+  const getPersistedLocalVideoPath = async (url: string): Promise<string | null> => {
+    if (!url) return null
+
+    const message = Object.values(chatStore.currentMessageMap || {}).find((item) => item.message?.body?.url === url)
+    const localPath = message?.message?.body?.localPath
+    if (typeof localPath !== 'string' || !localPath) {
+      return null
+    }
+
+    try {
+      const existsFlag = await exists(localPath)
+      return existsFlag ? localPath : null
+    } catch (error) {
+      logger.warn('检查持久化视频路径失败:', error)
+      return null
+    }
+  }
+
   // 检查视频是否已下载到本地
   const checkVideoDownloaded = async (url: string) => {
     if (!url) return false
     try {
+      const persistedLocalPath = await getPersistedLocalVideoPath(url)
+      if (persistedLocalPath) {
+        return true
+      }
+
       const localPath = await getLocalVideoPath(url)
       if (localPath) {
         const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
@@ -81,6 +105,11 @@ export const useVideoViewer = () => {
 
   // 获取视频的实际播放路径（本地路径优先）
   const getVideoPlayPath = async (url: string) => {
+    const persistedLocalPath = await getPersistedLocalVideoPath(url)
+    if (persistedLocalPath) {
+      return persistedLocalPath
+    }
+
     const isDownloaded = await checkVideoDownloaded(url)
     if (isDownloaded) {
       const localPath = await getLocalVideoPath(url)

@@ -64,6 +64,7 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useMitt } from '@/hooks/useMitt'
+import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { extractFileName } from '@/utils/Formatting'
 import type { MsgType } from '@/services/types'
 import type { CSSProperties } from 'vue'
@@ -147,23 +148,43 @@ const handleForward = () => {
 }
 
 const handleSave = async () => {
-  const imageUrl = props.imageUrl
-  if (!imageUrl) {
+  if (!props.message?.body) {
     if (window.$message) {
       window.$message.warning('无法保存：图片地址缺失')
     }
     return
   }
   try {
-    const fileName = extractFileName(imageUrl) || 'image.png'
-    const result = await fileDownloadStore.downloadFile(imageUrl, fileName)
+    const bodyRecord = props.message.body as Record<string, unknown>
+    const sourceUrl = (typeof bodyRecord.url === 'string' && bodyRecord.url) || props.imageUrl
+    if (!sourceUrl) {
+      window.$message?.warning('无法保存：图片地址缺失')
+      return
+    }
+
+    const fileName =
+      (typeof bodyRecord.fileName === 'string' && bodyRecord.fileName) || extractFileName(sourceUrl) || 'image.png'
+    const encryptedFile =
+      bodyRecord.encryptedFile && typeof bodyRecord.encryptedFile === 'object'
+        ? (bodyRecord.encryptedFile as MatrixEncryptedAttachmentLike)
+        : undefined
+
+    let result: string | null = null
+    if (encryptedFile) {
+      result = await fileDownloadStore.downloadEncryptedFile(sourceUrl, fileName, encryptedFile)
+    } else if (typeof bodyRecord.localPath === 'string' && bodyRecord.localPath) {
+      result = bodyRecord.localPath
+    } else {
+      result = await fileDownloadStore.downloadFile(sourceUrl, fileName)
+    }
+
     if (result && window.$message) {
       logger.debug('图片保存路径:', result)
       window.$message.success('图片已保存')
 
       const roomId = getCurrentRoomId()
       if (roomId) {
-        const fileStatus = fileDownloadStore.getFileStatus(imageUrl)
+        const fileStatus = fileDownloadStore.getFileStatus(sourceUrl)
         const localPath = fileStatus.localPath || result
 
         const fileInfo = {

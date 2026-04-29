@@ -1,4 +1,3 @@
-import { save } from '@tauri-apps/plugin-dialog'
 import { computed, onUnmounted, type InjectionKey } from 'vue'
 import { ErrorType } from '@/common/exception'
 import {
@@ -255,10 +254,15 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           window.$message.warning(t('home.chat_main.feature.coming_soon'))
           return
         }
+        const bodyRecord = item.message.body as Record<string, unknown>
         await saveVideoAttachmentAs({
           url: item.message.body.url,
           downloadFile,
-          defaultFileName: item.message.body.fileName
+          encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
+          defaultFileName:
+            (typeof bodyRecord.fileName === 'string' && bodyRecord.fileName) ||
+            (typeof bodyRecord.filename === 'string' && bodyRecord.filename) ||
+            undefined
         })
       }
     },
@@ -267,7 +271,15 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       label: () => (isMac() ? t('menu.show_in_finder') : t('menu.show_in_folder')),
       icon: 'file2',
       click: async (item: MessageType) => {
-        await downloadAndRevealVideo(item.message.body.url || '')
+        const bodyRecord = item.message.body as Record<string, unknown>
+        await downloadAndRevealVideo({
+          videoUrl: item.message.body.url || '',
+          fileName:
+            (typeof bodyRecord.fileName === 'string' && bodyRecord.fileName) ||
+            (typeof bodyRecord.filename === 'string' && bodyRecord.filename) ||
+            extractFileName(String(item.message.body.url || '')),
+          encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined
+        })
       }
     }
   ])
@@ -373,16 +385,19 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
                 }
                 const fileUrl = item.message.body.url
                 const fileName = item.message.body.fileName
+                const bodyRecord = item.message.body as Record<string, unknown>
                 if (item.message.type === MsgEnum.VIDEO) {
                   await saveVideoAttachmentAs({
                     url: fileUrl,
                     downloadFile,
+                    encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
                     defaultFileName: fileName
                   })
                 } else {
                   await saveFileAttachmentAs({
                     url: fileUrl,
                     downloadFile,
+                    encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
                     defaultFileName: fileName
                   })
                 }
@@ -395,9 +410,11 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
               click: async (item: RightMouseMessageItem) => {
                 const fileUrl = item.message.body.url
                 const fileName = item.message.body.fileName || extractFileName(fileUrl)
+                const bodyRecord = item.message.body as Record<string, unknown>
                 await downloadAndRevealFile({
                   fileUrl,
                   fileName,
+                  encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
                   i18nKeys: {
                     downloadPrompt: 'home.chat_main.file.download_prompt',
                     success: 'home.chat_main.file.download_success',
@@ -448,9 +465,11 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           window.$message.warning(t('home.chat_main.feature.coming_soon'))
           return
         }
+        const bodyRecord = item.message.body as Record<string, unknown>
         await saveFileAttachmentAs({
           url: item.message.body.url,
           downloadFile,
+          encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
           defaultFileName: item.message.body.fileName
         })
       }
@@ -462,9 +481,11 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       click: async (item: RightMouseMessageItem) => {
         const fileUrl = item.message.body.url
         const fileName = item.message.body.fileName || extractFileName(fileUrl)
+        const bodyRecord = item.message.body as Record<string, unknown>
         await downloadAndRevealFile({
           fileUrl,
           fileName,
+          encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
           i18nKeys: {
             downloadPrompt: 'home.chat_main.file.download_prompt',
             success: 'home.chat_main.file.save_success',
@@ -497,22 +518,21 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         try {
           const imageUrl = item.message.body.url
           if (!imageUrl) return
-          const suggestedName = imageUrl || 'image.png'
-
-          // 这里会自动截取url后的文件名，可以尝试打印一下
-          const savePath = await save({
+          const bodyRecord = item.message.body as Record<string, unknown>
+          await saveFileAttachmentAs({
+            url: imageUrl,
+            downloadFile,
+            encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
+            defaultFileName: item.message.body.fileName || extractFileName(imageUrl) || 'image.png',
             filters: [
               {
                 name: '图片',
                 extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp']
               }
             ],
-            defaultPath: suggestedName
+            successMessage: t('home.chat_main.image.save_success'),
+            errorMessage: t('home.chat_main.image.save_failed')
           })
-
-          if (savePath) {
-            await downloadFile(imageUrl, savePath)
-          }
         } catch (error) {
           logger.error('保存图片失败:', error)
           window.$message.error(t('home.chat_main.image.save_failed'))
@@ -529,6 +549,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           return
         }
         const fileName = item.message.body.fileName || extractFileName(fileUrl)
+        const bodyRecord = item.message.body as Record<string, unknown>
         if (!fileName) {
           window.$message.warning(t('home.chat_main.image.locate_failed'))
           return
@@ -536,6 +557,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         await downloadAndRevealFile({
           fileUrl,
           fileName,
+          encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
           i18nKeys: {
             downloadPrompt: 'home.chat_main.image.download_prompt',
             success: 'home.chat_main.image.save_success',

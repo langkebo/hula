@@ -1,3 +1,4 @@
+import { convertFileSrc } from '@tauri-apps/api/core'
 import { join } from '@tauri-apps/api/path'
 import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import type { Ref } from 'vue'
@@ -66,6 +67,20 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
   const audioBuffer = ref<ArrayBuffer | null>(null)
   const isMacOS = isMac()
 
+  const isAbsoluteLocalPath = (path: string) => {
+    return path.startsWith('/') || /^[A-Za-z]:[\\/]/.test(path)
+  }
+
+  const normalizeToArrayBuffer = (fileBuffer: ArrayBuffer | Uint8Array) => {
+    if (!(fileBuffer instanceof Uint8Array)) {
+      return fileBuffer
+    }
+
+    const arrayBuffer = new ArrayBuffer(fileBuffer.byteLength)
+    new Uint8Array(arrayBuffer).set(fileBuffer)
+    return arrayBuffer
+  }
+
   /**
    * 检查音频格式支持
    * @param mimeType MIME类型
@@ -103,14 +118,8 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
     // 读取音频文件内容
     const fileBuffer = await readFile(fullPath, { baseDir })
 
-    // 如果是 Uint8Array，手动转成ArrayBuffer
-    const arrayBuffer =
-      fileBuffer instanceof Uint8Array
-        ? fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength)
-        : fileBuffer
-
     return {
-      fileBuffer: arrayBuffer,
+      fileBuffer: normalizeToArrayBuffer(fileBuffer),
       cachePath,
       fullPath,
       fileExists
@@ -150,6 +159,15 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
    * @returns 存在性检查结果
    */
   const existsAudioFile = async (url: string): Promise<AudioExistsResult> => {
+    if (isAbsoluteLocalPath(url)) {
+      const [fileMeta] = await getFilesMeta<FilesMeta>([url])
+      return {
+        exists: fileMeta.exists,
+        fullPath: url,
+        fileMeta
+      }
+    }
+
     const [fileMeta] = await getFilesMeta<FilesMeta>([url])
     const audioFolder = 'audio'
     const cachePath = getImageCache(audioFolder, userId)
@@ -171,6 +189,10 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
    * @returns 可播放的URL（本地或远程）
    */
   const getAudioUrl = async (originalUrl: string): Promise<string> => {
+    if (isAbsoluteLocalPath(originalUrl)) {
+      return convertFileSrc(originalUrl)
+    }
+
     const existsData = await existsAudioFile(originalUrl)
 
     if (existsData.exists) {
@@ -187,13 +209,7 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
         return originalUrl
       } else {
         // 确保 fileBuffer 是 ArrayBuffer 类型
-        let arrayBuffer: ArrayBuffer
-        if (fileData.fileBuffer instanceof ArrayBuffer) {
-          arrayBuffer = fileData.fileBuffer
-        } else {
-          arrayBuffer = new ArrayBuffer((fileData.fileBuffer as ArrayBuffer).byteLength)
-          new Uint8Array(arrayBuffer).set(new Uint8Array(fileData.fileBuffer as ArrayBuffer))
-        }
+        const arrayBuffer = fileData.fileBuffer
         return URL.createObjectURL(new Blob([new Uint8Array(arrayBuffer)], { type: mimeType }))
       }
     }
@@ -223,6 +239,14 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
    */
   const loadAudioWaveform = async (url: string): Promise<ArrayBuffer | Uint8Array | SharedArrayBuffer> => {
     try {
+      if (isAbsoluteLocalPath(url)) {
+        const fileBuffer = await readFile(url)
+        const arrayBuffer = normalizeToArrayBuffer(fileBuffer)
+        audioBuffer.value = arrayBuffer
+        isFileReady.value = true
+        return arrayBuffer
+      }
+
       // 从url中提取文件基本信息
       const [fileMeta] = await getFilesMeta<FilesMeta>([url])
 

@@ -1,15 +1,12 @@
 import { readFile } from '@tauri-apps/plugin-fs'
 import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
+import { matrixEncryptionService, matrixMediaService } from '@/services/matrix'
 
 type VoiceUploadResult = Awaited<ReturnType<typeof matrixVoiceService.uploadVoice>>
 
 export interface VoiceInputHook {
   /**
-   * 读取本地语音文件后交给 `matrixVoiceService.uploadVoice` 上传。
-   *
-   * 封装原 `useMsgInput.ts` 中的 `uploadVoiceToMatrix`，便于：
-   * - 在 `send` / `sendVoiceDirect` 两处共用；
-   * - 单测可直接替换 `matrixVoiceService`。
+   * 读取本地语音文件后交给 `matrixVoiceService.uploadVoice` 或加密上传。
    */
   uploadVoiceToMatrix: (
     roomId: string,
@@ -27,7 +24,25 @@ export function useVoiceInput(): VoiceInputHook {
     mimeType: string
   ): Promise<VoiceUploadResult> => {
     const fileBytes = await readFile(localPath)
-    return await matrixVoiceService.uploadVoice(roomId, new File([fileBytes], filename, { type: mimeType }))
+    const file = new File([fileBytes], filename, { type: mimeType })
+
+    // 检查房间是否加密
+    const isEncrypted = await matrixEncryptionService.isRoomEncrypted(roomId)
+
+    if (isEncrypted) {
+      // 加密房间：使用加密上传
+      const result = await matrixMediaService.uploadEncryptedFile(file)
+      // 返回兼容 VoiceUploadResult 的格式
+      return {
+        mxcUrl: result.contentUri,
+        httpUrl: matrixMediaService.getMediaUrl(result.contentUri) || undefined,
+        filename,
+        encryptedFile: result.encryptedFile
+      }
+    }
+
+    // 普通房间
+    return await matrixVoiceService.uploadVoice(roomId, file)
   }
 
   return { uploadVoiceToMatrix }

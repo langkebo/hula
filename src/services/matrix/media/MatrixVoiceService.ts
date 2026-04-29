@@ -65,12 +65,15 @@ interface RoomLike {
   findEventById?: (eventId: string) => RoomEventLike | null
 }
 
+import type { EncryptedAttachmentFile } from '../crypto/MatrixAttachmentEncryptionService'
+
 interface VoiceMessageResult {
   eventId?: string
   url?: string
   filename: string
   mxcUrl?: string
   httpUrl?: string
+  encryptedFile?: EncryptedAttachmentFile
 }
 
 interface VoicePlaybackInfo {

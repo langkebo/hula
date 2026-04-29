@@ -4,6 +4,7 @@ import { useChatFileDownload } from '../useChatFileDownload'
 const mockFileDownloadStore = {
   getFileStatus: vi.fn(() => ({ absolutePath: '/test/file.txt', nativePath: '/test' })),
   downloadFile: vi.fn(() => Promise.resolve('/downloaded/file.txt')),
+  downloadEncryptedFile: vi.fn(() => Promise.resolve('/downloaded/encrypted-file.txt')),
   refreshFileDownloadStatus: vi.fn(() => Promise.resolve())
 }
 
@@ -100,21 +101,49 @@ describe('useChatFileDownload', () => {
     it('downloads video when not yet downloaded', async () => {
       mockCheckVideoDownloaded.mockResolvedValueOnce(false)
       const { downloadAndRevealVideo } = createHook()
-      await downloadAndRevealVideo('https://example.com/video.mp4')
+      await downloadAndRevealVideo({ videoUrl: 'https://example.com/video.mp4' })
       expect(mockDownloadFile).toHaveBeenCalled()
     })
 
     it('skips download when already downloaded', async () => {
       mockCheckVideoDownloaded.mockResolvedValueOnce(true)
       const { downloadAndRevealVideo } = createHook()
-      await downloadAndRevealVideo('https://example.com/video.mp4')
+      await downloadAndRevealVideo({ videoUrl: 'https://example.com/video.mp4' })
       expect(mockDownloadFile).not.toHaveBeenCalled()
     })
 
     it('catches and logs errors gracefully', async () => {
       mockGetLocalVideoPath.mockRejectedValueOnce(new Error('path error'))
       const { downloadAndRevealVideo } = createHook()
-      await expect(downloadAndRevealVideo('bad-url')).resolves.toBeUndefined()
+      await expect(downloadAndRevealVideo({ videoUrl: 'bad-url' })).resolves.toBeUndefined()
+    })
+
+    it('downloads encrypted video through decrypt pipeline when descriptor exists', async () => {
+      const { downloadAndRevealVideo } = createHook()
+      await downloadAndRevealVideo({
+        videoUrl: 'mxc://example.org/video',
+        fileName: 'secret-video.mp4',
+        encryptedFile: {
+          url: 'mxc://example.org/video',
+          iv: 'iv',
+          hashes: { sha256: 'hash' },
+          v: 'v2',
+          key: {
+            alg: 'A256CTR',
+            k: 'secret',
+            kty: 'oct',
+            ext: true,
+            key_ops: ['decrypt']
+          }
+        }
+      })
+
+      expect(mockFileDownloadStore.downloadEncryptedFile).toHaveBeenCalledWith(
+        'mxc://example.org/video',
+        'secret-video.mp4',
+        expect.objectContaining({ v: 'v2' })
+      )
+      expect(mockDownloadFile).not.toHaveBeenCalled()
     })
   })
 
@@ -146,6 +175,34 @@ describe('useChatFileDownload', () => {
         i18nKeys: { downloadPrompt: 'prompt', success: 'success', failed: 'failed' }
       })
       expect(mockMessage.error).toHaveBeenCalled()
+    })
+
+    it('downloads encrypted file through decrypt pipeline when descriptor exists', async () => {
+      const { getFilesMeta } = await import('@/utils/PathUtil')
+      vi.mocked(getFilesMeta).mockResolvedValueOnce([{ exists: false }] as never)
+
+      const { downloadAndRevealFile } = createHook()
+      await downloadAndRevealFile({
+        fileUrl: 'https://example.com/file.txt',
+        fileName: 'file.txt',
+        encryptedFile: {
+          url: 'mxc://example.org/encrypted',
+          iv: 'iv',
+          hashes: { sha256: 'hash' },
+          v: 'v2',
+          key: {
+            alg: 'A256CTR',
+            k: 'secret',
+            kty: 'oct',
+            ext: true,
+            key_ops: ['decrypt']
+          }
+        },
+        i18nKeys: { downloadPrompt: 'prompt', success: 'success', failed: 'failed' }
+      })
+
+      expect(mockFileDownloadStore.downloadEncryptedFile).toHaveBeenCalled()
+      expect(mockFileDownloadStore.downloadFile).not.toHaveBeenCalled()
     })
 
     it('reveals existing file without downloading', async () => {
@@ -193,6 +250,44 @@ describe('useChatFileDownload', () => {
       const { previewFile } = createHook()
       await previewFile(item)
       expect(detectRemoteFileType).toHaveBeenCalled()
+      expect(mockSendWindowPayload).toHaveBeenCalled()
+    })
+
+    it('downloads encrypted file before preview when local file is missing', async () => {
+      const { getFilesMeta } = await import('@/utils/PathUtil')
+      vi.mocked(getFilesMeta)
+        .mockResolvedValueOnce([{ exists: false }] as never)
+        .mockResolvedValueOnce([{ exists: true, file_type: 'txt', mime_type: 'text/plain' }] as never)
+
+      const item = {
+        message: {
+          id: 'msg1',
+          body: {
+            url: 'https://example.com/file.txt',
+            fileName: 'file.txt',
+            size: 100,
+            encryptedFile: {
+              url: 'mxc://example.org/encrypted',
+              iv: 'iv',
+              hashes: { sha256: 'hash' },
+              v: 'v2',
+              key: {
+                alg: 'A256CTR',
+                k: 'secret',
+                kty: 'oct',
+                ext: true,
+                key_ops: ['decrypt']
+              }
+            }
+          }
+        },
+        fromUser: { uid: 'user1' }
+      } as never
+
+      const { previewFile } = createHook()
+      await previewFile(item)
+
+      expect(mockFileDownloadStore.downloadEncryptedFile).toHaveBeenCalled()
       expect(mockSendWindowPayload).toHaveBeenCalled()
     })
 

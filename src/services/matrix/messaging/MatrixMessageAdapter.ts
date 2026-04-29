@@ -94,8 +94,11 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
       duration?: number
       thumbnail_info?: { w?: number; h?: number }
       thumbnail_url?: string
+      thumbnail_file?: Record<string, unknown>
       [key: string]: unknown
     }
+    const encryptedFile = content.file as Record<string, unknown> | undefined
+    const mediaUrl = ((content.url as string | undefined) || (encryptedFile?.url as string | undefined) || '') as string
 
     switch (msgType) {
       case MsgEnum.TEXT:
@@ -108,7 +111,9 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
           width: info.w || 0,
           height: info.h || 0,
           mimetype: info.mimetype || '',
-          url: (content.url as string) || ''
+          fileName: (content.body as string) || '',
+          url: mediaUrl,
+          encryptedFile
         } as ImageBody
       case MsgEnum.VIDEO:
         return {
@@ -117,21 +122,31 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
           thumbWidth: info.thumbnail_info?.w || 0,
           thumbHeight: info.thumbnail_info?.h || 0,
           mimetype: info.mimetype || '',
-          url: (content.url as string) || '',
-          thumbUrl: info.thumbnail_url || '',
-          filename: (content.body as string) || ''
+          url: mediaUrl,
+          thumbUrl:
+            (typeof info.thumbnail_url === 'string' && info.thumbnail_url) ||
+            (typeof info.thumbnail_file?.url === 'string' && info.thumbnail_file.url) ||
+            '',
+          thumbnailEncryptedFile: info.thumbnail_file,
+          filename: (content.body as string) || '',
+          encryptedFile
         } as VideoBody
       case MsgEnum.VOICE:
         return {
           size: info.size || 0,
           second: info.duration || 0,
-          url: (content.url as string) || ''
+          url: mediaUrl,
+          mxcUrl: mediaUrl,
+          fileName: (content.body as string) || '',
+          mimeType: info.mimetype || '',
+          encryptedFile
         } as VoiceBody
       case MsgEnum.FILE:
         return {
           size: info.size || 0,
           fileName: (content.body as string) || '',
-          url: (content.url as string) || ''
+          url: mediaUrl,
+          encryptedFile
         } as FileBody
       default:
         return {

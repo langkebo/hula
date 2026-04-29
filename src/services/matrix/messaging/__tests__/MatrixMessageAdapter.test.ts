@@ -55,5 +55,40 @@ describe('MatrixMessageAdapter', () => {
         url: 'mxc://example.org/voice-123'
       })
     })
+
+    it('should fall back to encrypted file metadata for media urls', () => {
+      const result = matrixMessageAdapter.convertMatrixContent(
+        {
+          msgtype: 'm.file',
+          body: 'secret.pdf',
+          file: {
+            url: 'mxc://example.org/encrypted-file',
+            iv: 'iv',
+            hashes: { sha256: 'hash' },
+            v: 'v2',
+            key: {
+              alg: 'A256CTR',
+              k: 'secret',
+              kty: 'oct',
+              ext: true,
+              key_ops: ['encrypt', 'decrypt']
+            }
+          },
+          info: {
+            size: 5120
+          }
+        },
+        MsgEnum.FILE
+      )
+
+      expect(result).toMatchObject({
+        fileName: 'secret.pdf',
+        size: 5120,
+        url: 'mxc://example.org/encrypted-file',
+        encryptedFile: {
+          v: 'v2'
+        }
+      })
+    })
   })
 })

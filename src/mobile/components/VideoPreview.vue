@@ -53,6 +53,7 @@ import type { CSSProperties } from 'vue'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useFileStore } from '@/stores/domains/widget/file'
+import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { extractFileName } from '@/utils/Formatting'
 import type { MsgType } from '@/services/types'
 import { isMobile } from '@/utils/PlatformConstants'
@@ -125,10 +126,24 @@ const updateSafeAreaInsets = () => {
 const getCurrentRoomId = () => props.message?.roomId || chatStore.currentSessionInfo?.roomId || ''
 
 const handleSave = async () => {
-  if (!props.videoUrl) return
+  if (!props.message?.body) return
   try {
-    const fileName = extractFileName(props.videoUrl) || 'video.mp4'
-    const result = await fileDownloadStore.downloadFile(props.videoUrl, fileName)
+    const bodyRecord = props.message.body as Record<string, unknown>
+    const sourceUrl = (typeof bodyRecord.url === 'string' && bodyRecord.url) || props.videoUrl
+    if (!sourceUrl) return
+
+    const fileName =
+      (typeof bodyRecord.fileName === 'string' && bodyRecord.fileName) ||
+      (typeof bodyRecord.filename === 'string' && bodyRecord.filename) ||
+      extractFileName(sourceUrl) ||
+      'video.mp4'
+    const encryptedFile =
+      bodyRecord.encryptedFile && typeof bodyRecord.encryptedFile === 'object'
+        ? (bodyRecord.encryptedFile as MatrixEncryptedAttachmentLike)
+        : undefined
+    const result = encryptedFile
+      ? await fileDownloadStore.downloadEncryptedFile(sourceUrl, fileName, encryptedFile)
+      : await fileDownloadStore.downloadFile(sourceUrl, fileName)
     if (result && props.message) {
       const roomId = getCurrentRoomId()
       if (roomId) {

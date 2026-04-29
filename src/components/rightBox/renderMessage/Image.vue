@@ -64,7 +64,7 @@
       :is="ImagePreview"
       v-if="ImagePreview"
       v-model:visible="showImagePreviewRef"
-      :image-url="body?.url || ''"
+      :image-url="displayImageSrc || body?.url || ''"
       :message="message" />
   </div>
 </template>
@@ -72,10 +72,14 @@
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { exists } from '@tauri-apps/plugin-fs'
-import { MsgEnum } from '@/enums'
+import { MessageStatusEnum, MsgEnum, TauriCommand } from '@/enums'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import type { ImageBody, MsgType } from '@/services/types'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { isMobile } from '@/utils/PlatformConstants'
+import { extractFileName } from '@/utils/Formatting'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('Image')
@@ -102,6 +106,8 @@ const isError = ref(false)
 const { openImageViewer } = useImageViewer()
 const showImagePreviewRef = ref(false)
 const imagesRef = ref<string[]>([])
+const chatStore = useChatStore()
+const fileDownloadStore = useFileDownloadStore()
 const thumbnailStore = useThumbnailCacheStore()
 const localThumbnailSrc = ref<string | null>(null)
 
@@ -143,19 +149,126 @@ const handleImageError = () => {
   isError.value = true
 }
 
-const handleOpenImage = () => {
+const hasEncryptedFile = computed(() => {
+  const encryptedFile = props.body?.encryptedFile
+  if (!encryptedFile || typeof encryptedFile !== 'object') {
+    return false
+  }
+
+  return typeof encryptedFile.url === 'string' && typeof encryptedFile.v === 'string'
+})
+
+const resolvedImageFileName = computed(() => {
+  if (props.body?.fileName) {
+    return props.body.fileName
+  }
+
+  const extractedFileName = extractFileName(props.body?.url || '')
+  if (extractedFileName && extractedFileName !== 'file' && extractedFileName.includes('.')) {
+    return extractedFileName
+  }
+
+  const messageId = props.message?.id || 'image'
+  const extension = props.body?.mimetype?.split('/')[1]?.replace('jpeg', 'jpg') || 'png'
+  return `${messageId}.${extension}`
+})
+
+const persistImageLocalPath = async (absolutePath: string) => {
+  if (!props.message?.id || !absolutePath) return
+  const target = chatStore.getMessage(props.message.id)
+  if (!target) return
+
+  const body = target.message.body
+  const currentBody = typeof body === 'object' && body !== null ? body : { content: String(body) }
+  if (currentBody.localPath === absolutePath) return
+
+  const nextBody = { ...currentBody, localPath: absolutePath }
+  chatStore.updateMsg({
+    msgId: target.message.id,
+    status: target.message.status ?? MessageStatusEnum.SUCCESS,
+    body: nextBody
+  })
+  const updated = { ...target, message: { ...target.message, body: nextBody } }
+  await invokeSilently(TauriCommand.SAVE_MSG, { data: updated })
+}
+
+const applyLocalImagePath = async (absolutePath: string) => {
+  localThumbnailSrc.value = convertFileSrc(absolutePath)
+  isError.value = false
+  await persistImageLocalPath(absolutePath)
+}
+
+const ensureEncryptedImageAvailable = async () => {
+  if (!hasEncryptedFile.value || !props.body?.url) {
+    return
+  }
+
+  if (props.body.localPath) {
+    try {
+      const localExists = await exists(props.body.localPath)
+      if (localExists) {
+        await applyLocalImagePath(props.body.localPath)
+        return
+      }
+    } catch (error) {
+      logger.warn('检查加密图片本地文件失败:', error)
+    }
+  }
+
+  const fileName = resolvedImageFileName.value
+  const encryptedFile = props.body.encryptedFile
+  if (!encryptedFile) {
+    return
+  }
+
+  try {
+    const localExists = await fileDownloadStore.checkFileExists(props.body.url, fileName)
+    if (localExists) {
+      const fileStatus = fileDownloadStore.getFileStatus(props.body.url)
+      if (fileStatus.absolutePath) {
+        await applyLocalImagePath(fileStatus.absolutePath)
+        return
+      }
+    }
+
+    const absolutePath = await fileDownloadStore.downloadEncryptedFile(props.body.url, fileName, encryptedFile)
+    if (absolutePath) {
+      await applyLocalImagePath(absolutePath)
+    }
+  } catch (error) {
+    logger.error('下载加密图片失败:', error)
+  }
+}
+
+const handleOpenImage = async () => {
   if (!isMobile()) return // 非移动端直接返回
 
-  if (props.body?.url) {
-    imagesRef.value = [props.body.url]
+  if (hasEncryptedFile.value) {
+    await ensureEncryptedImageAvailable()
+  }
+
+  const imageUrl = displayImageSrc.value || props.body?.url
+  if (hasEncryptedFile.value && !displayImageSrc.value) {
+    return
+  }
+
+  if (imageUrl) {
+    imagesRef.value = [imageUrl]
     showImagePreviewRef.value = true
   }
 }
 
 // 处理打开图片查看器
-const handleOpenImageViewer = () => {
+const handleOpenImageViewer = async () => {
   if (isMobile()) {
     return
+  }
+
+  if (hasEncryptedFile.value) {
+    await ensureEncryptedImageAvailable()
+    if (!localThumbnailSrc.value) {
+      return
+    }
   }
 
   if (props.body?.url) {
@@ -172,6 +285,7 @@ const handleOpenImageViewer = () => {
  * 计算图片样式
  */
 const remoteThumbnailSrc = computed(() => {
+  if (hasEncryptedFile.value) return ''
   const originalUrl = props.body?.url
   if (!originalUrl) return ''
   return originalUrl
@@ -182,6 +296,7 @@ const downloadKey = computed(() => remoteThumbnailSrc.value || props.body?.url |
 const displayImageSrc = computed(() => localThumbnailSrc.value || remoteThumbnailSrc.value)
 
 const requestThumbnailDownload = () => {
+  if (hasEncryptedFile.value) return
   if (!downloadKey.value || !props.message) return
   void thumbnailStore
     .enqueueThumbnail({ url: downloadKey.value, msgId: props.message.id, roomId: props.message.roomId, kind: 'image' })
@@ -192,6 +307,11 @@ const requestThumbnailDownload = () => {
 }
 
 const ensureLocalThumbnail = async () => {
+  if (hasEncryptedFile.value) {
+    await ensureEncryptedImageAvailable()
+    return
+  }
+
   const localPath = props.body?.thumbnailPath
   if (!localPath) {
     localThumbnailSrc.value = null
@@ -212,7 +332,7 @@ const ensureLocalThumbnail = async () => {
 }
 
 watch(
-  () => props.body?.thumbnailPath,
+  () => [props.body?.thumbnailPath, props.body?.localPath, props.body?.url, hasEncryptedFile.value],
   () => {
     void ensureLocalThumbnail()
   },
@@ -222,7 +342,7 @@ watch(
 watch(
   () => downloadKey.value,
   () => {
-    if (!props.body?.thumbnailPath) {
+    if (!hasEncryptedFile.value && !props.body?.thumbnailPath) {
       requestThumbnailDownload()
     }
   }
@@ -268,6 +388,11 @@ const imageStyle = computed(() => {
 })
 
 onMounted(() => {
+  if (hasEncryptedFile.value) {
+    void ensureEncryptedImageAvailable()
+    return
+  }
+
   if (props.body?.url && !props.body?.thumbnailPath) {
     requestThumbnailDownload()
   }

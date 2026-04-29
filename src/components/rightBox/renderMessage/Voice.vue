@@ -63,14 +63,18 @@
 </template>
 
 <script setup lang="ts">
+import { exists } from '@tauri-apps/plugin-fs'
 import { useAudioFileManager } from '@/hooks/useAudioFileManager'
 import { useAudioPlayback } from '@/hooks/useAudioPlayback'
 import { useVoiceDragControl } from '@/hooks/useVoiceDragControl'
 import { useWaveformRenderer } from '@/hooks/useWaveformRenderer'
+import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
-import type { VoiceBody } from '@/services/types'
+import type { MsgType, VoiceBody } from '@/services/types'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { extractFileName } from '@/utils/Formatting'
 
 import { createLogger } from '@/utils/Logger'
 const logger = createLogger('Voice')
@@ -78,18 +82,39 @@ const logger = createLogger('Voice')
 const props = defineProps<{
   body: VoiceBody
   fromUserUid: string
+  message?: MsgType
 }>()
 
 const settingStore = useSettingStore()
 const userStore = useUserStore()
+const fileDownloadStore = useFileDownloadStore()
 
 // 使用messageId作为音频ID，确保唯一性
 const rawAudioUrl = computed(() => props.body.mxcUrl || props.body.url)
-const playableAudioUrl = computed(() => {
+const fallbackPlayableAudioUrl = computed(() => {
   return matrixVoiceService.getPlayableUrl(props.body.mxcUrl, props.body.url)
 })
 const audioId = rawAudioUrl.value || props.body.url
 const waveformCanvas = ref<HTMLCanvasElement | null>(null)
+const localEncryptedAudioPath = ref<string | null>(null)
+
+const hasEncryptedFile = computed(() => {
+  const encryptedFile = props.body?.encryptedFile
+  if (!encryptedFile || typeof encryptedFile !== 'object') {
+    return false
+  }
+
+  return typeof encryptedFile.url === 'string' && typeof encryptedFile.v === 'string'
+})
+
+const resolvedVoiceFileName = computed(() => {
+  if (props.body?.fileName) {
+    return props.body.fileName
+  }
+
+  const extracted = extractFileName(rawAudioUrl.value || '')
+  return extracted || 'voice.webm'
+})
 
 // 判断是否为当前用户发送的消息
 const isCurrentUser = computed(() => {
@@ -213,16 +238,47 @@ watch(audioPlayback.isPlaying, () => {
 // 组件挂载
 onMounted(async () => {
   try {
+    let waveformSource = fallbackPlayableAudioUrl.value
+    let audioSource = fallbackPlayableAudioUrl.value
+
+    if (hasEncryptedFile.value && rawAudioUrl.value) {
+      if (props.body.localPath) {
+        try {
+          const localExists = await exists(props.body.localPath)
+          if (localExists) {
+            localEncryptedAudioPath.value = props.body.localPath
+          }
+        } catch (error) {
+          logger.warn('检查加密语音本地文件失败:', error)
+        }
+      }
+
+      if (!localEncryptedAudioPath.value) {
+        const absolutePath = await fileDownloadStore.downloadEncryptedFile(
+          rawAudioUrl.value,
+          resolvedVoiceFileName.value,
+          props.body.encryptedFile as MatrixEncryptedAttachmentLike
+        )
+        localEncryptedAudioPath.value = absolutePath
+      }
+
+      if (!localEncryptedAudioPath.value) {
+        throw new Error('加密语音下载失败')
+      }
+
+      waveformSource = localEncryptedAudioPath.value
+      audioSource = await fileManager.getAudioUrl(localEncryptedAudioPath.value)
+    }
+
     // 设置Canvas引用
     waveformRenderer.waveformCanvas.value = waveformCanvas.value
 
     // 加载音频波形数据
-    const audioBuffer = await fileManager.loadAudioWaveform(playableAudioUrl.value)
+    const audioBuffer = await fileManager.loadAudioWaveform(waveformSource)
     await waveformRenderer.generateWaveformData(audioBuffer)
 
     // 创建音频元素
-    const audioUrl = await fileManager.getAudioUrl(playableAudioUrl.value)
-    await audioPlayback.createAudioElement(audioUrl, audioId, second.value)
+    await audioPlayback.createAudioElement(audioSource, audioId, second.value)
   } catch (error) {
     logger.error('组件初始化失败:', error)
   }

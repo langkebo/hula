@@ -8,6 +8,10 @@ import type { MessageType } from '@/stores/domains/chat/chat'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
 import type { MessageStrategy } from '@/strategy/MessageStrategy'
 import { messageStrategyMap } from '@/strategy/MessageStrategy.ts'
+import { matrixEncryptionService, matrixMediaService } from '@/services/matrix'
+import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
+import { isMobile } from '@/utils/PlatformConstants'
+import { BaseDirectory, readFile } from '@tauri-apps/plugin-fs'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
 import { globalFileUploadQueue } from '../useFileUploadQueue.ts'
@@ -60,6 +64,7 @@ interface VoiceUploadResult {
   mxcUrl?: string
   filename?: string
   eventId?: string
+  encryptedFile?: EncryptedAttachmentFile
 }
 
 export interface UseMsgInputSendOptions {
@@ -165,18 +170,33 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       }
       void _progressCallback
 
-      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
-        provider: UploadProviderEnum.DEFAULT
-      })
-      const uploadedUrl = await messageStrategy.doUpload(
-        msg.path as string,
-        uploadUrl,
-        config as Record<string, unknown>
-      )
+      // 检查房间是否加密
+      const isEncrypted = await matrixEncryptionService.isRoomEncrypted(targetRoomId)
 
-      cleanup()
+      if (isEncrypted) {
+        // 使用加密上传
+        const result = await matrixMediaService.uploadEncryptedFile(file, _progressCallback)
+        cleanup()
 
-      messageBody.url = uploadedUrl || downloadUrl
+        // 更新消息内容为加密文件格式
+        messageBody.encryptedFile = result.encryptedFile
+        delete (messageBody as Record<string, unknown>).url
+      } else {
+        // 普通上传
+        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
+          provider: UploadProviderEnum.DEFAULT
+        })
+        const uploadedUrl = await messageStrategy.doUpload(
+          msg.path as string,
+          uploadUrl,
+          config as Record<string, unknown>
+        )
+
+        cleanup()
+
+        messageBody.url = uploadedUrl || downloadUrl
+      }
+
       delete (messageBody as Record<string, unknown>).path
 
       chatStore.updateMsg({
@@ -247,14 +267,31 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       }
       void _progressCallback
 
-      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
-        provider: UploadProviderEnum.DEFAULT
-      })
-      const uploadedUrl = await messageStrategy.doUpload(msg.path, uploadUrl, config as Record<string, unknown>)
+      // 检查房间是否加密
+      const isEncrypted = await matrixEncryptionService.isRoomEncrypted(targetRoomId)
 
-      cleanup()
+      if (isEncrypted) {
+        // 加密房间：读取文件内容并加密上传
+        const fileData = await readFile(file.path)
+        const fileBlob = new File([fileData], file.name, { type: file.type })
+        const result = await matrixMediaService.uploadEncryptedFile(fileBlob, _progressCallback)
+        cleanup()
 
-      messageBody.url = uploadedUrl || downloadUrl
+        // 更新消息内容为加密文件格式
+        messageBody.encryptedFile = result.encryptedFile
+        delete (messageBody as Record<string, unknown>).url
+      } else {
+        // 普通上传
+        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
+          provider: UploadProviderEnum.DEFAULT
+        })
+        const uploadedUrl = await messageStrategy.doUpload(msg.path, uploadUrl, config as Record<string, unknown>)
+
+        cleanup()
+
+        messageBody.url = uploadedUrl || downloadUrl
+      }
+
       delete (messageBody as Record<string, unknown>).path
 
       chatStore.updateMsg({
@@ -325,15 +362,31 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       let voiceHandledByMatrixService = false
 
       if (msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) {
-        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
-          provider: UploadProviderEnum.DEFAULT
-        })
-        const uploadedUrl = await messageStrategy.doUpload(
-          msg.path as string,
-          uploadUrl,
-          config as Record<string, unknown>
-        )
-        ;(messageBody as Record<string, unknown>).url = uploadedUrl || downloadUrl
+        const isEncrypted = await matrixEncryptionService.isRoomEncrypted(targetRoomId)
+
+        if (isEncrypted) {
+          const fileData = await readFile(msg.path as string, {
+            baseDir: isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+          })
+          const fileBlob = new File([fileData], (msg.fileName as string) || 'image.png', {
+            type: (msg.mimeType as string) || 'image/png'
+          })
+          const result = await matrixMediaService.uploadEncryptedFile(fileBlob)
+
+          ;(messageBody as Record<string, unknown>).encryptedFile = result.encryptedFile
+          delete (messageBody as Record<string, unknown>).url
+        } else {
+          const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
+            provider: UploadProviderEnum.DEFAULT
+          })
+          const uploadedUrl = await messageStrategy.doUpload(
+            msg.path as string,
+            uploadUrl,
+            config as Record<string, unknown>
+          )
+          ;(messageBody as Record<string, unknown>).url = uploadedUrl || downloadUrl
+        }
+
         delete (messageBody as Record<string, unknown>).path
 
         chatStore.updateMsg({
@@ -344,37 +397,65 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
           status: MessageStatusEnum.SENDING
         })
       } else if (msg.type === MsgEnum.VIDEO) {
-        let uploadResult: string
-        if (messageStrategy.uploadThumbnail && messageStrategy.doUploadThumbnail) {
-          const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(msg.thumbnail as File, {
+        const isEncrypted = await matrixEncryptionService.isRoomEncrypted(targetRoomId)
+
+        if (isEncrypted) {
+          // 加密房间：加密视频与缩略图
+          let thumbnailEncryptedFile: EncryptedAttachmentFile | undefined
+          if (msg.thumbnail) {
+            const thumbnailResult = await matrixMediaService.uploadEncryptedFile(msg.thumbnail as File)
+            thumbnailEncryptedFile = thumbnailResult.encryptedFile
+          }
+
+          const fileData = await readFile(msg.path as string, {
+            baseDir: isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+          })
+          const fileBlob = new File([fileData], (msg.fileName as string) || 'video.mp4', {
+            type: (msg.mimeType as string) || 'video/mp4'
+          })
+          const videoResult = await matrixMediaService.uploadEncryptedFile(fileBlob)
+
+          ;(messageBody as Record<string, unknown>).encryptedFile = videoResult.encryptedFile
+          if (thumbnailEncryptedFile) {
+            ;(messageBody as Record<string, unknown>).thumbnailEncryptedFile = thumbnailEncryptedFile
+          }
+          delete (messageBody as Record<string, unknown>).url
+          delete (messageBody as Record<string, unknown>).thumbUrl
+        } else {
+          // 普通上传
+          let uploadResult: string
+          if (messageStrategy.uploadThumbnail && messageStrategy.doUploadThumbnail) {
+            const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(msg.thumbnail as File, {
+              provider: UploadProviderEnum.DEFAULT
+            })
+            const thumbnailUploadResult = await messageStrategy.doUploadThumbnail(
+              msg.thumbnail as File,
+              thumbnailUploadInfo.uploadUrl,
+              thumbnailUploadInfo.config as Record<string, unknown>
+            )
+            uploadResult = thumbnailUploadResult || thumbnailUploadInfo.downloadUrl
+          } else {
+            uploadResult = await useUpload()
+              .uploadFile(msg.thumbnail as File, {
+                provider: UploadProviderEnum.DEFAULT,
+                scene: UploadSceneEnum.CHAT
+              })
+              .then((result) => result?.downloadUrl || '')
+          }
+
+          const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
             provider: UploadProviderEnum.DEFAULT
           })
-          const thumbnailUploadResult = await messageStrategy.doUploadThumbnail(
-            msg.thumbnail as File,
-            thumbnailUploadInfo.uploadUrl,
-            thumbnailUploadInfo.config as Record<string, unknown>
+          const uploadedUrl = await messageStrategy.doUpload(
+            msg.path as string,
+            uploadUrl,
+            config as Record<string, unknown>
           )
-          uploadResult = thumbnailUploadResult || thumbnailUploadInfo.downloadUrl
-        } else {
-          uploadResult = await useUpload()
-            .uploadFile(msg.thumbnail as File, {
-              provider: UploadProviderEnum.DEFAULT,
-              scene: UploadSceneEnum.CHAT
-            })
-            .then((result) => result?.downloadUrl || '')
+          ;(messageBody as Record<string, unknown>).url = uploadedUrl || downloadUrl
+          ;(messageBody as Record<string, unknown>).thumbUrl = uploadResult
         }
 
-        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
-          provider: UploadProviderEnum.DEFAULT
-        })
-        const uploadedUrl = await messageStrategy.doUpload(
-          msg.path as string,
-          uploadUrl,
-          config as Record<string, unknown>
-        )
-        ;(messageBody as Record<string, unknown>).url = uploadedUrl || downloadUrl
         delete (messageBody as Record<string, unknown>).path
-        ;(messageBody as Record<string, unknown>).thumbUrl = uploadResult
         ;(messageBody as Record<string, unknown>).thumbSize = (msg.thumbnail as File).size
         ;(messageBody as Record<string, unknown>).thumbWidth = 300
         ;(messageBody as Record<string, unknown>).thumbHeight = 150
@@ -395,8 +476,14 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
           (voiceBody.mimeType || msg.mimeType || 'audio/mpeg') as string
         )
 
-        voiceBody.url = uploadResult.httpUrl || uploadResult.mxcUrl || voiceBody.url
-        voiceBody.mxcUrl = uploadResult.mxcUrl || undefined
+        if (uploadResult.encryptedFile) {
+          voiceBody.encryptedFile = uploadResult.encryptedFile
+          voiceBody.url = '' // 设置为空字符串而不是 delete，以满足类型检查
+          voiceBody.mxcUrl = undefined
+        } else {
+          voiceBody.url = uploadResult.httpUrl || uploadResult.mxcUrl || voiceBody.url
+          voiceBody.mxcUrl = uploadResult.mxcUrl || undefined
+        }
         voiceBody.fileName = voiceBody.fileName || uploadResult.filename
 
         chatStore.updateMsg({
@@ -404,13 +491,16 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
           body: {
             ...voiceBody
           },
-          status: MessageStatusEnum.SUCCESS,
+          status: uploadResult.eventId ? MessageStatusEnum.SUCCESS : MessageStatusEnum.SENDING,
           newMsgId: uploadResult.eventId,
           timeBlock: Date.now()
         })
-        useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
-        chatStore.updateSessionLastActiveTime(targetRoomId)
-        voiceHandledByMatrixService = true
+
+        if (uploadResult.eventId) {
+          useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
+          chatStore.updateSessionLastActiveTime(targetRoomId)
+          voiceHandledByMatrixService = true
+        }
       }
 
       if (!voiceHandledByMatrixService) {
@@ -633,20 +723,51 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
 
       try {
         const uploadResult = await uploadVoiceToMatrix(targetRoomId, voiceData.localPath, msg.filename, msg.mimeType)
-        messageBody.url = uploadResult.httpUrl || uploadResult.mxcUrl || msg.url
-        messageBody.mxcUrl = uploadResult.mxcUrl || undefined
+        if (uploadResult.encryptedFile) {
+          messageBody.encryptedFile = uploadResult.encryptedFile
+          messageBody.url = ''
+          messageBody.mxcUrl = undefined
+        } else {
+          messageBody.url = uploadResult.httpUrl || uploadResult.mxcUrl || msg.url
+          messageBody.mxcUrl = uploadResult.mxcUrl || undefined
+        }
 
-        chatStore.updateMsg({
-          msgId: tempMsgId,
-          body: {
-            ...messageBody
-          },
-          status: MessageStatusEnum.SUCCESS,
-          newMsgId: uploadResult.eventId,
-          timeBlock: Date.now()
-        })
-        useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
-        chatStore.updateSessionLastActiveTime(targetRoomId)
+        if (uploadResult.eventId) {
+          chatStore.updateMsg({
+            msgId: tempMsgId,
+            body: {
+              ...messageBody
+            },
+            status: MessageStatusEnum.SUCCESS,
+            newMsgId: uploadResult.eventId,
+            timeBlock: Date.now()
+          })
+          useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
+          chatStore.updateSessionLastActiveTime(targetRoomId)
+        } else {
+          chatStore.updateMsg({
+            msgId: tempMsgId,
+            body: {
+              ...messageBody
+            },
+            status: MessageStatusEnum.SENDING
+          })
+
+          const burnPayload: SendMessagePayload = {
+            id: tempMsgId,
+            roomId: targetRoomId,
+            msgType: MsgEnum.VOICE,
+            body: messageBody
+          }
+          if (isBurnAfterRead.value) {
+            burnPayload.burnAfterRead = true
+            burnPayload.burnExpiresInMs = burnDuration.value * 1000
+          }
+          await sendWithTracking({
+            tempMsgId,
+            payload: burnPayload
+          })
+        }
       } catch (uploadError) {
         chatStore.updateMsg({
           msgId: tempMsgId,
