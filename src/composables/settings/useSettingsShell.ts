@@ -1,12 +1,12 @@
-import { computed, ref, type ComputedRef, type Ref } from 'vue'
-import { matchesSettingsSearch, type SettingsSearchKeywordResolver } from './settingsSearchIndex'
+import { type ComputedRef, computed, type Ref, ref } from 'vue'
 import {
-  SETTINGS_TABS,
   getSettingsTabs,
+  SETTINGS_TABS,
   type SettingsTab,
   type SettingsTabTranslator,
   type SettingsTabType
 } from '@/stores/domains/settings/settingsSchema'
+import { matchesSettingsSearch, type SettingsSearchKeywordResolver } from './settingsSearchIndex'
 
 export interface UseSettingsShellOptions {
   isDesktop?: boolean

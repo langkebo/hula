@@ -214,15 +214,15 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import type { FormRules, FormInst } from 'naive-ui'
+import type { FormInst, FormRules } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { useMitt } from '@/hooks/useMitt'
+import { type AIModel, type ChatRole, chatRoleService, modelService } from '@/services/matrix'
 import { useUserStore } from '@/stores/domains/user/user'
-import { chatRoleService, modelService, type ChatRole, type AIModel } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
-import { useI18n } from 'vue-i18n'
 
 const logger = createLogger('ChatRoleManagement')
 const timerManager = useTimerManager()

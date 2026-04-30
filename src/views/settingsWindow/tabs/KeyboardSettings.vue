@@ -71,8 +71,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, onMounted, onUnmounted } from 'vue'
-import { NButton, NDivider, NSwitch, NInput, NModal, useMessage } from 'naive-ui'
+import { NButton, NDivider, NInput, NModal, NSwitch, useMessage } from 'naive-ui'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 

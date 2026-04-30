@@ -1,6 +1,7 @@
 // biome-ignore-all lint/suspicious/noConsole: Template code intentionally includes simple console-based examples.
-import { ref, computed } from 'vue'
+
 import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
 import { matrixExampleService } from '@/services/matrix'
 import type { ExampleItem } from '@/types'

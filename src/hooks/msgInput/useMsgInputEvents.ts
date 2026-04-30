@@ -1,9 +1,9 @@
 import { nextTick, onMounted, type Ref } from 'vue'
 import { MittEnum, MsgEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { getReplyContent } from '@/utils/MessageReply.ts'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { createLogger } from '@/utils/Logger'
+import { getReplyContent } from '@/utils/MessageReply.ts'
 
 const logger = createLogger('MsgInputEvents')
 

@@ -1,15 +1,15 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  isValidMatrixUserId,
-  isValidMatrixRoomId,
-  isValidMatrixEventId,
-  isValidEmail,
-  isValidUrl,
-  sanitizeHtml,
-  sanitizeForLog,
-  isNonEmptyString,
   clampNumber,
+  isNonEmptyString,
+  isValidEmail,
+  isValidMatrixEventId,
+  isValidMatrixRoomId,
+  isValidMatrixUserId,
+  isValidUrl,
   sanitizeDisplayName,
+  sanitizeForLog,
+  sanitizeHtml,
   validatePagination
 } from '../inputValidation'
 

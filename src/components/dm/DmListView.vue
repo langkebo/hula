@@ -73,15 +73,15 @@
 </template>
 
 <script setup lang="ts">
+import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { ThemeEnum } from '@/enums'
-import { matrixDirectMessageService, type DmRoomInfo } from '@/services/matrix/room/MatrixDirectMessageService'
-import { useSettingStore } from '@/stores/domains/settings/setting'
+import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import dayjs from 'dayjs'
-import ContextMenu from '@/components/common/ContextMenu.vue'
 import CreateDmDialog from './CreateDmDialog.vue'
 
 const { t } = useI18n()

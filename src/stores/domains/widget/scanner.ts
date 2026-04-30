@@ -3,9 +3,9 @@ import { listen } from '@tauri-apps/api/event'
 import { appCacheDir } from '@tauri-apps/api/path'
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
-import { ErrorType, invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler.ts'
-import { getUserDataRootAbsoluteDir } from '@/utils/PathUtil'
 import { createLogger } from '@/utils/Logger'
+import { getUserDataRootAbsoluteDir } from '@/utils/PathUtil'
+import { ErrorType, invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler.ts'
 
 const logger = createLogger('ScannerStore')
 

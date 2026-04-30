@@ -1,13 +1,14 @@
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useUserMenuStore, type MenuPosition, type MenuTrigger } from '@/stores/domains/user/userMenu'
-import { useSettingsDialogStore, type SettingsTabType } from '@/stores/domains/settings/settingsDialog'
-import { isDesktop } from '@/composables/usePlatform'
-import { getFilteredSections, findMenuItemById, setLogoutCallback, setRouterInstance } from './menuConfig'
 import { useDialog, useMessage } from 'naive-ui'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { isDesktop } from '@/composables/usePlatform'
 import { matrixRuntimeSessionService } from '@/services/matrix'
+import { type SettingsTabType, useSettingsDialogStore } from '@/stores/domains/settings/settingsDialog'
+import { type MenuPosition, type MenuTrigger, useUserMenuStore } from '@/stores/domains/user/userMenu'
 import { createLogger } from '@/utils/Logger'
+import { findMenuItemById, getFilteredSections, setLogoutCallback, setRouterInstance } from './menuConfig'
+
 const logger = createLogger('UserMenu')
 
 export function useUserMenu() {

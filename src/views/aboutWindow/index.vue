@@ -35,10 +35,10 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { arch, version } from '@tauri-apps/plugin-os'
 import dayjs from 'dayjs'
+import { useI18n } from 'vue-i18n'
 import { getOSType, isWindows } from '@/utils/PlatformConstants'
 import pkg from '~/package.json'
 

@@ -134,9 +134,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, NSwitch, useDialog, useMessage } from 'naive-ui'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NSwitch, NDivider, NButton, NSpin, NModal, NForm, NFormItem, NInput, useMessage, useDialog } from 'naive-ui'
 import { matrixFriendService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 

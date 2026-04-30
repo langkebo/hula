@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { MatrixCacheManager, createCachedFetcher } from '../MatrixCacheManager'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createCachedFetcher, MatrixCacheManager } from '../MatrixCacheManager'
 
 describe('MatrixCacheManager', () => {
   beforeEach(() => {

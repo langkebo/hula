@@ -1,10 +1,12 @@
 /**
  * 网络状态监测钩子
  */
-import { createSharedComposable, tryOnScopeDispose, useOnline } from '@vueuse/core'
+
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { createSharedComposable, tryOnScopeDispose, useOnline } from '@vueuse/core'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('NetworkStatus')
 
 export type ConnectionStatus = 'unknown' | 'connected' | 'connecting' | 'disconnected' | 'error'

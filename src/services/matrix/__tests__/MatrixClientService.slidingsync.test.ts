@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { matrixClientService } from '../MatrixClientService'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatrixClientConfig } from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 
 // Mock matrix-js-sdk
 vi.mock('matrix-js-sdk', () => ({

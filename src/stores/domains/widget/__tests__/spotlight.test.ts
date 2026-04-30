@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { useSpotlightStore, type SearchResultItem } from '../spotlight'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { type SearchResultItem, useSpotlightStore } from '../spotlight'
 
 describe('useSpotlightStore', () => {
   beforeEach(() => {

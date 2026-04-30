@@ -81,11 +81,11 @@
 </template>
 
 <script setup lang="ts">
+import { showToast } from 'vant'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { showToast } from 'vant'
-import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminFederation } from '@/composables/admin'
+import MobileLayout from '@/mobile/layout/index.vue'
 import type { FederationDestination } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 

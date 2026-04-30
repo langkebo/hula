@@ -140,6 +140,7 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory, exists } from '@tauri-apps/plugin-fs'
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { MessageStatusEnum, TauriCommand } from '@/enums'
 import { MittEnum, MsgEnum } from '@/enums/index'
 import { useDownload } from '@/hooks/useDownload'
@@ -148,15 +149,14 @@ import { useMitt } from '@/hooks/useMitt'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import type { MsgType, VideoBody } from '@/services/types'
-import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
-import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
+import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
+import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
 import { extractFileName, formatBytes } from '@/utils/Formatting.ts'
+import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
-import { useI18n } from 'vue-i18n'
-import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Video')
 const { openVideoViewer, getLocalVideoPath, checkVideoDownloaded } = useVideoViewer()
@@ -205,7 +205,7 @@ const resolvedVideoFileName = computed(() => {
 })
 const resolvedThumbnailFileName = computed(() => {
   const extracted = extractFileName(props.body?.thumbUrl || '')
-  if (extracted && extracted.includes('.')) {
+  if (extracted?.includes('.')) {
     return extracted
   }
 

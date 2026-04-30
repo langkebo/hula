@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockLogger } = vi.hoisted(() => ({
   mockLogger: {
@@ -10,7 +10,7 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: vi.fn(() => mockLogger)
 }))
 
-import { globalErrorHandler, createValidationError, createNetworkError } from '../errorHandler'
+import { createNetworkError, createValidationError, globalErrorHandler } from '../errorHandler'
 import { ErrorType } from '../exception'
 
 describe('errorHandler', () => {

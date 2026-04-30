@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
-  Err,
-  Ok,
   andThen,
+  Err,
   fromNullable,
   getOrElse,
   isErr,
   isOk,
   map,
   mapErr,
+  Ok,
   tryCatch,
   tryCatchSync,
   unwrap,

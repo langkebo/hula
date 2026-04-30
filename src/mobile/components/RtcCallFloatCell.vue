@@ -32,14 +32,14 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { CallTypeEnum, MittEnum } from '@/enums'
-import { matrixVoIPService } from '@/services/matrix'
 import { useMitt } from '@/hooks/useMitt'
-import { useMobileStore } from '@/stores/domains/settings/mobile'
+import { matrixVoIPService } from '@/services/matrix'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useMobileStore } from '@/stores/domains/settings/mobile'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RtcCallFloatCell')
 

@@ -1,5 +1,5 @@
-import type { MatrixClient } from 'matrix-js-sdk'
 import { error, info } from '@tauri-apps/plugin-log'
+import type { MatrixClient } from 'matrix-js-sdk'
 import { isNonEmptyString, isValidMatrixUserId } from '@/utils/inputValidation'
 import type { RateLimit, ShadowBanStatus, UserDevice, UserInfo } from './AdminTypes'
 

@@ -1,8 +1,8 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import { IsYesEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix'
-import { useUserStore } from '@/stores/domains/user/user'
 import { buildBadgeCatalog } from '@/stores/domains/chat/badge'
-import { info, error } from '@tauri-apps/plugin-log'
+import { useUserStore } from '@/stores/domains/user/user'
 
 export interface Badge {
   id: string

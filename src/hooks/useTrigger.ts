@@ -1,6 +1,7 @@
 import { nextTick, type Ref } from 'vue'
 import { TriggerEnum } from '@/enums'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('Trigger')
 
 // 添加选择器常量

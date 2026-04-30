@@ -1,11 +1,11 @@
-import type { Room, RoomMember, MatrixEvent } from 'matrix-js-sdk'
+import type { MatrixEvent, Room, RoomMember } from 'matrix-js-sdk'
+import { RoomTypeEnum } from '@/enums'
+import type { RoomInfo } from '@/services/types'
 import matrixClientService from '../MatrixClientService'
 import matrixEventServiceLocal from '../MatrixEventService'
-import matrixSlidingSyncService from '../sync/MatrixSlidingSyncService'
 import { matrixReceiptService } from '../messaging/MatrixReceiptService'
+import matrixSlidingSyncService from '../sync/MatrixSlidingSyncService'
 import { matrixRoomCreationService } from './CreationService'
-import type { RoomInfo } from '@/services/types'
-import { RoomTypeEnum } from '@/enums'
 
 const ROOM_EVENTS = {
   Timeline: 'Room.timeline',

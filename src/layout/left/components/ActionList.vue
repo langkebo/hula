@@ -284,18 +284,18 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
+import HomeserverDialog from '@/components/common/HomeserverDialog.vue'
 import { PluginEnum, ShowModeEnum } from '@/enums'
 import { useTauriListener } from '@/hooks/useTauriListener.ts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useMenuTopStore } from '@/stores/domains/settings/menuTop'
 import { usePluginsStore } from '@/stores/domains/settings/plugins'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useItemsBottom, useMoreList } from '../config.tsx'
 import { leftHook } from '../hook.ts'
 import DefinePlugins from './definePlugins/index.vue'
-import HomeserverDialog from '@/components/common/HomeserverDialog.vue'
-import { storeToRefs } from 'pinia'
-import { useI18n } from 'vue-i18n'
 
 const appWindow = WebviewWindow.getCurrent()
 const { addListener } = useTauriListener()

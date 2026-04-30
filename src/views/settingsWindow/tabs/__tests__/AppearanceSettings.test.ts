@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
-import type { ComponentPublicInstance } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentPublicInstance } from 'vue'
 import AppearanceSettings from '../AppearanceSettings.vue'
 
 const messageSuccessMock = vi.fn()

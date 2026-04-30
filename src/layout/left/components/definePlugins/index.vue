@@ -68,11 +68,11 @@
   </n-modal>
 </template>
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { usePluginsStore } from '@/stores/domains/settings/plugins'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import Card from './Card.vue'
 import List from './List.vue'
-import { useI18n } from 'vue-i18n'
 
 /** 是否展示插件管理弹窗 */
 const isShow = defineModel() as unknown as boolean

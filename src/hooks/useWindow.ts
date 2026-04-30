@@ -1,11 +1,12 @@
 import { invoke } from '@tauri-apps/api/core'
 import { LogicalSize } from '@tauri-apps/api/dpi'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { UserAttentionType, primaryMonitor, type Monitor } from '@tauri-apps/api/window'
+import { type Monitor, primaryMonitor, UserAttentionType } from '@tauri-apps/api/window'
 import { info } from '@tauri-apps/plugin-log'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useWindow')
+
 import { assign } from 'es-toolkit/compat'
 import { CallTypeEnum, EventEnum, RoomTypeEnum } from '@/enums'
 import { useGlobalStore } from '@/stores/domains/widget/global'

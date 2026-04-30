@@ -44,13 +44,13 @@ vi.mock('@/services/offline/OfflineQueueService', () => ({
   }
 }))
 
-import { matrixReceiptService } from '../MatrixReceiptService'
-import { matrixEventService } from '../../MatrixEventService'
-import { matrixReactionService } from '../MatrixReactionService'
-import { matrixMessageRelationService } from '../MatrixMessageRelationService'
-import { matrixClientService } from '../../MatrixClientService'
-import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { MsgEnum } from '@/enums'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { matrixClientService } from '../../MatrixClientService'
+import { matrixEventService } from '../../MatrixEventService'
+import { matrixMessageRelationService } from '../MatrixMessageRelationService'
+import { matrixReactionService } from '../MatrixReactionService'
+import { matrixReceiptService } from '../MatrixReceiptService'
 
 describe('MatrixMessageService', () => {
   beforeEach(() => {

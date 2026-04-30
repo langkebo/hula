@@ -16,15 +16,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import type { FormInst } from 'naive-ui'
+import type { PropType } from 'vue'
+import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { useSpaceStore } from '@/stores/domains/widget/space'
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
+import { useSpaceStore } from '@/stores/domains/widget/space'
 import { createLogger } from '@/utils/Logger'
-import type { FormInst } from 'naive-ui'
-
-import type { PropType } from 'vue'
 
 const logger = createLogger('AddToSpaceDialog')
 const { t } = useI18n()

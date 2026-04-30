@@ -1,4 +1,4 @@
-import { computed, ref, type ComputedRef } from 'vue'
+import { type ComputedRef, computed, ref } from 'vue'
 import { isMobile } from '@/utils/PlatformConstants'
 
 interface UseEmojiPaginationOptions<TSeries> {

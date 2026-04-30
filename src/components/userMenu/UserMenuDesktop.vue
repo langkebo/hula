@@ -17,13 +17,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { NAvatar } from 'naive-ui'
-import { useUserMenu } from './useUserMenu'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import UserMenuDropdown from './UserMenuDropdown.vue'
+import { computed } from 'vue'
 import defaultAvatarImg from '@/assets/img/win.png'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import UserMenuDropdown from './UserMenuDropdown.vue'
+import { useUserMenu } from './useUserMenu'
 
 defineOptions({
   name: 'UserMenuDesktop'

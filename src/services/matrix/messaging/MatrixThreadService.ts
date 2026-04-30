@@ -1,7 +1,7 @@
-import type { MatrixEvent, EventType, Room } from 'matrix-js-sdk'
+import { error, info } from '@tauri-apps/plugin-log'
+import type { EventType, MatrixEvent, Room } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 import { matrixReceiptService } from './MatrixReceiptService'
-import { info, error } from '@tauri-apps/plugin-log'
 
 type MsgType = string
 

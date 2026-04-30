@@ -28,9 +28,9 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { useRouter } from 'vue-router'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SyncData')
 

@@ -4,9 +4,9 @@
  * 提供内容举报功能
  */
 
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { ref } from 'vue'
-import { info, error } from '@tauri-apps/plugin-log'
 import { matrixClientService } from '../MatrixClientService'
 
 /**

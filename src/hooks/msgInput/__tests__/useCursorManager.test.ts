@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { useCursorManager } from '../useCursorManager'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { SelectionRange } from '../../useCommon'
+import { useCursorManager } from '../useCursorManager'
 
 const makeSelectionRange = (): SelectionRange => {
   const range = document.createRange()

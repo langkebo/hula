@@ -133,11 +133,11 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { cloneDeep } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { PluginEnum } from '@/enums'
 import { usePluginsList } from '@/layout/left/config.tsx'

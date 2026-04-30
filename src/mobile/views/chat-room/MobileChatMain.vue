@@ -40,15 +40,17 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
+import { open } from '@tauri-apps/plugin-dialog'
+import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
+import { UserType } from '@/enums'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { storeToRefs } from 'pinia'
-import { UserType } from '@/enums'
-import { open } from '@tauri-apps/plugin-dialog'
-import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
+
 const HuLaAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/HuLaAssistant.vue'))
-import { useAssistantModelPresets, type AssistantModelPreset } from '@/hooks/useAssistantModelPresets'
+
+import { type AssistantModelPreset, useAssistantModelPresets } from '@/hooks/useAssistantModelPresets'
 
 const logger = createLogger('MobileChatMain')
 const { t } = useI18n()

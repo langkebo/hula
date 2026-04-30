@@ -135,11 +135,11 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { exit } from '@tauri-apps/plugin-process'
+import { useI18n } from 'vue-i18n'
 import { CloseBxEnum, EventEnum, MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'

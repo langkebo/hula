@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
-import { SETTINGS_TABS, normalizeSettingsTab, type SettingsTabInput, type SettingsTabType } from './settingsSchema'
+import { normalizeSettingsTab, SETTINGS_TABS, type SettingsTabInput, type SettingsTabType } from './settingsSchema'
 
-export { SETTINGS_TABS, getSettingsTabLabel, normalizeSettingsTab } from './settingsSchema'
 export type { LegacySettingsTabType, SettingsTab, SettingsTabInput, SettingsTabType } from './settingsSchema'
+export { getSettingsTabLabel, normalizeSettingsTab, SETTINGS_TABS } from './settingsSchema'
 
 export const useSettingsDialogStore = defineStore(StoresEnum.SETTINGS_DIALOG, () => {
   const isOpen = ref(false)

@@ -1,7 +1,7 @@
-import matrixClientService from '../MatrixClientService'
-import { info, error, warn } from '@tauri-apps/plugin-log'
+import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { MatrixClientExtended, MatrixHttpApi } from '@/types/matrix-extensions'
+import matrixClientService from '../MatrixClientService'
 
 export interface EncryptionSettings {
   algorithm: string

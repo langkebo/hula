@@ -64,9 +64,7 @@
       "account": "Account: {account}"
     },
     "tooltip": {
-      "copy_account": "Copy account",
-      "bound_gitee": "Gitee linked",
-      "bound_github": "GitHub linked"
+      "copy_account": "Copy account"
     },
     "empty": {
       "no_result": "No matching result",
@@ -247,7 +245,6 @@
       "group_name_empty": "Group name cannot be empty",
       "group_name_too_long": "Group name cannot exceed 12 characters",
       "delete_history_success": "Chat history deleted",
-      "delete_history_failed": "Failed to delete chat history",
       "delete_friend_success": "Friend removed",
       "dissolve_not_allowed": "Cannot disband channel",
       "dissolve_success": "Group disbanded",
@@ -312,6 +309,14 @@
     "badge": {
       "current": "Current badge:",
       "wear": "Wear"
+    },
+    "errorBoundary": {
+      "title": "Something went wrong",
+      "message": "The application encountered an error. Try refreshing the page or reloading the app.",
+      "retry": "Retry",
+      "reload": "Reload",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details"
     },
     "form": {
       "nickname": {

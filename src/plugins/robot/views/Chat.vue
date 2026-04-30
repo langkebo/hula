@@ -234,8 +234,8 @@
   </n-modal>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
+import { ref } from 'vue'
 import RobotChatHeader from '@/plugins/robot/components/RobotChatHeader.vue'
 import RobotChatInputPanel from '@/plugins/robot/components/RobotChatInputPanel.vue'
 import RobotChatMessageList from '@/plugins/robot/components/RobotChatMessageList.vue'

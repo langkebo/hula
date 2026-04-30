@@ -89,12 +89,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { NModal, NButton, NSpin, NCheckbox, NInput, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { NButton, NCheckbox, NInput, NModal, NSpin, useMessage } from 'naive-ui'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixEncryptionService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('KeyBackupSetup')
 const { t } = useI18n()
 

@@ -1,6 +1,6 @@
+import { error as logError } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import { error as logError } from '@tauri-apps/plugin-log'
 
 interface VoiceUploadParams {
   roomId: string

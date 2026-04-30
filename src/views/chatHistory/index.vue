@@ -100,6 +100,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDebounceFn } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { MsgEnum, TauriCommand } from '@/enums'
 import { useChatMain } from '@/hooks/useChatMain'
@@ -111,7 +112,6 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatDateGroupLabel } from '@/utils/ComputedTime'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ChatHistory')

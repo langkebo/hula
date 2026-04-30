@@ -1,8 +1,8 @@
 import GraphemeSplitter from 'grapheme-splitter'
 import { useUserStore } from '@/stores/domains/user/user'
-import { useEditorPaste } from './common/useEditorPaste'
 import { getEditorRange, getMessageContentType, triggerInputEvent } from './common/editorDomBasics'
 import { useEditorDom } from './common/useEditorDom'
+import { useEditorPaste } from './common/useEditorPaste'
 
 const domParser = new DOMParser()
 

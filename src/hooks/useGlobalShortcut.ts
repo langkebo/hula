@@ -4,8 +4,9 @@ import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { isMac } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { isMac } from '@/utils/PlatformConstants'
+
 const logger = createLogger('GlobalShortcut')
 
 // 快捷键配置接口

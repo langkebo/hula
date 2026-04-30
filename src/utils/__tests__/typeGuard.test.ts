@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { isObject, isString, isNumber, isEmpty, getProperty, safeGet } from '../typeGuard'
+import { describe, expect, it } from 'vitest'
+import { getProperty, isEmpty, isNumber, isObject, isString, safeGet } from '../typeGuard'
 
 describe('typeGuard', () => {
   describe('isObject', () => {

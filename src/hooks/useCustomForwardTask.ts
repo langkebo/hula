@@ -15,7 +15,7 @@ export const useCustomForwardTask = () => {
    * 统一释放 blob URL，避免内存泄漏
    */
   const releaseBlobUrl = (url?: string) => {
-    if (url && url.startsWith('blob:')) {
+    if (url?.startsWith('blob:')) {
       URL.revokeObjectURL(url)
     }
   }

@@ -28,7 +28,7 @@ export const getEditorRange = (): SelectionRange | null => {
       selection?.addRange(range)
     }
   }
-  if (selection && selection.rangeCount) {
+  if (selection?.rangeCount) {
     const range = selection.getRangeAt(0)
     return { range, selection }
   }

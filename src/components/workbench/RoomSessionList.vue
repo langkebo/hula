@@ -161,15 +161,15 @@
 </template>
 
 <script setup lang="ts">
-import { RecycleScroller } from 'vue-virtual-scroller'
-import { IsAllUserEnum } from '@/services/types'
-import { ThemeEnum, RoomTypeEnum, UserType } from '@/enums'
-import type { SessionItem } from '@/stores/domains/chat/chat'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import ContextMenu from '@/components/common/ContextMenu.vue'
 import { useI18n } from 'vue-i18n'
+import { RecycleScroller } from 'vue-virtual-scroller'
+import ContextMenu from '@/components/common/ContextMenu.vue'
+import { RoomTypeEnum, ThemeEnum, UserType } from '@/enums'
+import { IsAllUserEnum } from '@/services/types'
+import type { SessionItem } from '@/stores/domains/chat/chat'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 
 type SessionListItem = SessionItem & {
   lastMsg?: string

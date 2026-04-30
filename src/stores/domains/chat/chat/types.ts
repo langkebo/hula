@@ -1,4 +1,4 @@
-import { MessageStatusEnum, MsgEnum } from '@/enums'
+import type { MessageStatusEnum, MsgEnum } from '@/enums'
 
 export interface MessageBody {
   content?: string

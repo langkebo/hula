@@ -187,18 +187,18 @@
 import { emitTo } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { ThemeEnum } from '@/enums'
+import { extractLinkSegments, openExternalUrl } from '@/hooks/useLinkSegments'
+import { matrixAnnouncementService } from '@/services/matrix'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { matrixAnnouncementService } from '@/services/matrix'
-import { extractLinkSegments, openExternalUrl } from '@/hooks/useLinkSegments'
 import { createLogger } from '@/utils/Logger'
-import { useI18n } from 'vue-i18n'
 
 const logger = createLogger('Announcement')
 

@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest'
+import { getDesktopRoutes } from '@/router/routes/desktop'
 import {
-  SPACE_ROUTE_NAMES,
-  WORKBENCH_SESSION_SORTS,
-  WORKBENCH_SESSION_TYPE_FILTERS,
-  buildSpaceWorkbenchQuery,
   buildCreateSpaceRoute,
   buildSpaceRoute,
+  buildSpaceWorkbenchQuery,
   buildSpaceWorkbenchRoute,
+  normalizeSpaceId,
   normalizeWorkbenchSearch,
   normalizeWorkbenchSessionSort,
   normalizeWorkbenchSessionTypeFilter,
-  normalizeSpaceId,
   readSpaceWorkbenchSearch,
   readSpaceWorkbenchSessionSort,
   readSpaceWorkbenchSessionTypeFilter,
-  readSpaceWorkbenchSpaceId
+  readSpaceWorkbenchSpaceId,
+  SPACE_ROUTE_NAMES,
+  WORKBENCH_SESSION_SORTS,
+  WORKBENCH_SESSION_TYPE_FILTERS
 } from '@/router/spaceNavigation'
-import { getDesktopRoutes } from '@/router/routes/desktop'
 
 describe('spaceNavigation', () => {
   it('normalizes and builds legacy space routes consistently', () => {

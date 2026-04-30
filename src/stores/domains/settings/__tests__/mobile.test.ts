@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { useMobileStore } from '../mobile'
 
 const makeRect = (overrides: Partial<DOMRect> = {}): DOMRect =>

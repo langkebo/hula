@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { useDownload } from '../useDownload'
 import { BaseDirectory } from '@tauri-apps/plugin-fs'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useDownload } from '../useDownload'
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
   BaseDirectory: {

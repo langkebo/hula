@@ -1,8 +1,8 @@
-import { type Ref } from 'vue'
-import { MsgEnum, UploadSceneEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
+import type { Ref } from 'vue'
 import { AppException } from '@/common/exception.ts'
+import { MsgEnum, UploadSceneEnum } from '@/enums'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/hooks/useUpload'
+import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { AbstractMessageStrategy } from './base'
 
 export class VoiceMessageStrategyImpl extends AbstractMessageStrategy {

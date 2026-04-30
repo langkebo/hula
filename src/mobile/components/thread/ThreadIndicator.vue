@@ -4,19 +4,13 @@
     <span class="reply-count">{{ replyCount }}</span>
     <van-icon name="arrow" size="12" />
   </div>
-  <van-button
-    v-else
-    plain
-    size="mini"
-    type="primary"
-    icon="chat-o"
-    @click="handleOpenThread">
+  <van-button v-else plain size="mini" type="primary" icon="chat-o" @click="handleOpenThread">
     {{ t('thread.start') }}
   </van-button>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 

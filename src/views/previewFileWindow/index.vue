@@ -20,15 +20,15 @@
 </template>
 
 <script setup lang="ts">
-import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { defineAsyncComponent } from 'vue'
-import type { FileTypeResult } from 'file-type'
 import { listen } from '@tauri-apps/api/event'
+import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { merge } from 'es-toolkit'
+import type { FileTypeResult } from 'file-type'
+import { defineAsyncComponent } from 'vue'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { useWindow } from '@/hooks/useWindow'
-import { getFile } from '@/utils/PathUtil'
 import { createLogger } from '@/utils/Logger'
+import { getFile } from '@/utils/PathUtil'
 
 const logger = createLogger('PreviewFile')
 

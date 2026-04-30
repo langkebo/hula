@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -18,6 +18,7 @@ vi.mock('@/services/offline/OfflineQueueService', () => ({
 }))
 
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+
 const { MatrixRoomStateService } = await import('../StateService')
 
 describe('MatrixRoomStateService', () => {

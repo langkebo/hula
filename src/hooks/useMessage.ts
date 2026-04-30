@@ -1,16 +1,18 @@
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
-import { useMitt } from '@/hooks/useMitt.ts'
+import { useMitt } from '@/hooks/useMitt'
+import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
+import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
+import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
-import { matrixGroupService, matrixRoomNotificationService, matrixSessionService } from '@/services/matrix'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { invokeWithErrorHandler } from '../utils/TauriInvokeHandler'
-import { useI18n } from 'vue-i18n'
 
 const msgBoxShow = ref(false)
 const shrinkStatus = ref(false)
@@ -26,6 +28,7 @@ const registerShrinkListener = () => {
 }
 
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('Message')
 
 export const useMessage = () => {

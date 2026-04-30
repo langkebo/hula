@@ -161,11 +161,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { NSwitch, NSlider, NDivider, NInput, NButton, NTag, useMessage } from 'naive-ui'
+import { NButton, NDivider, NInput, NSlider, NSwitch, NTag, useMessage } from 'naive-ui'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import PushSettings from '@/views/settingsWindow/tabs/PushSettings.vue'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import PushSettings from '@/views/settingsWindow/tabs/PushSettings.vue'
 
 defineOptions({
   name: 'NotificationSettings'

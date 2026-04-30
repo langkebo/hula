@@ -14,8 +14,8 @@
 </template>
 
 <script setup lang="ts">
-import CallWindow from '@/views/callWindow/index.vue'
 import { useMobileStore } from '@/stores/domains/settings/mobile'
+import type CallWindow from '@/views/callWindow/index.vue'
 
 const mobileStore = useMobileStore()
 const callWindowRef = ref<InstanceType<typeof CallWindow>>()

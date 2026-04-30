@@ -1,15 +1,14 @@
+export type {
+  ConnectionState,
+  ModelInfo,
+  SiliconFlowConfig,
+  SiliconFlowMessage,
+  StreamChunk
+} from './SiliconFlowService'
 export {
-  useSiliconFlow,
-  siliconFlowClient,
+  AVAILABLE_MODELS,
   DEFAULT_BASE_URL,
   DEFAULT_MODEL,
-  AVAILABLE_MODELS
-} from './SiliconFlowService'
-
-export type {
-  SiliconFlowMessage,
-  SiliconFlowConfig,
-  StreamChunk,
-  ConnectionState,
-  ModelInfo
+  siliconFlowClient,
+  useSiliconFlow
 } from './SiliconFlowService'

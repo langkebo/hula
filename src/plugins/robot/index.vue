@@ -17,11 +17,11 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useMitt } from '@/hooks/useMitt'
-import Left from './layout/Left.vue'
-import Right from './layout/Right.vue'
+import { createLogger } from '@/utils/Logger'
 import ChatRoleManagement from './components/ChatRoleManagement.vue'
 import ModelManagement from './components/ModelManagement.vue'
-import { createLogger } from '@/utils/Logger'
+import Left from './layout/Left.vue'
+import Right from './layout/Right.vue'
 
 const logger = createLogger('RobotPlugin')
 

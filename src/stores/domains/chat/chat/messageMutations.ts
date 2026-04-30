@@ -1,17 +1,17 @@
+import { info } from '@tauri-apps/plugin-log'
+import { sendNotification } from '@tauri-apps/plugin-notification'
 import type { ComputedRef, Ref } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
-import { sendNotification } from '@tauri-apps/plugin-notification'
-import { info } from '@tauri-apps/plugin-log'
-import { MessageStatusEnum, MsgEnum, RoomTypeEnum, MittEnum } from '@/enums'
+import { type MessageStatusEnum, MittEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
-import { createLogger } from '@/utils/Logger'
-import type { useGlobalStore } from '@/stores/domains/widget/global'
 import type { useGroupStore } from '@/stores/domains/chat/group'
 import type { useUserStore } from '@/stores/domains/user/user'
-import type { useSessionStore, SessionItem } from './session'
+import type { useGlobalStore } from '@/stores/domains/widget/global'
+import { createLogger } from '@/utils/Logger'
 import type { createRecallManager } from './recallManager'
-import { ROOM_MESSAGE_CACHE_LIMIT, pageSize, type MessageType } from './types'
+import type { SessionItem, useSessionStore } from './session'
+import { type MessageType, pageSize, ROOM_MESSAGE_CACHE_LIMIT } from './types'
 
 const logger = createLogger('ChatMessageMutations')
 
@@ -366,7 +366,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
       const { msgId, markType, markCount, actType, uid } = mark
 
       const msgItem = currentMessageMap.value?.[String(msgId)]
-      if (msgItem && msgItem.message.messageMarks) {
+      if (msgItem?.message.messageMarks) {
         const currentMarkStat = msgItem.message.messageMarks[String(markType)] || {
           count: 0,
           userMarked: false

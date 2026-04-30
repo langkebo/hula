@@ -114,15 +114,15 @@
 </template>
 
 <script setup lang="ts">
-import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
+import { showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import {
   createDefaultIntegrationsCatalog,
-  useIntegrations,
   type Integration,
   type IntegrationCatalogItem,
-  type IntegrationPermissions
+  type IntegrationPermissions,
+  useIntegrations
 } from '@/composables/useIntegrations'
 
 const { t } = useI18n()

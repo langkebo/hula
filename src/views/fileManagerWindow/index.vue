@@ -22,12 +22,12 @@ import FileContent from '@/components/fileManager/FileContent.vue'
 import SideNavigation from '@/components/fileManager/SideNavigation.vue'
 import UserList from '@/components/fileManager/UserList.vue'
 import {
-  queryFiles,
-  getNavigationItems,
-  type FileQueryParam,
+  type FileManagerNavigationItem,
   type FileManagerTimeGroup,
   type FileManagerUser,
-  type FileManagerNavigationItem
+  type FileQueryParam,
+  getNavigationItems,
+  queryFiles
 } from '@/services/tauriCommand'
 import { createLogger } from '@/utils/Logger'
 

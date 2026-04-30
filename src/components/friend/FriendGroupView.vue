@@ -85,9 +85,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, h } from 'vue'
+import { NIcon, useMessage } from 'naive-ui'
+import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useMessage, NIcon } from 'naive-ui'
 import { matrixFriendService } from '@/services/matrix'
 import type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
 

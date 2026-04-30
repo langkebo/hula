@@ -1,7 +1,7 @@
-import { type Ref } from 'vue'
+import type { Ref } from 'vue'
+import { AppException } from '@/common/exception.ts'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
-import { AppException } from '@/common/exception.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AbstractMessageStrategy, type ReplyRef } from './base'
 

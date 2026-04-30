@@ -2,13 +2,14 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { MsgEnum } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
+import type { FilesMeta } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useImageViewer as useImageViewerStore } from '@/stores/domains/widget/imageViewer'
-import type { FilesMeta } from '@/services/types'
 import { extractFileName } from '@/utils/Formatting'
-import { getFilesMeta } from '@/utils/PathUtil'
 import { createLogger } from '@/utils/Logger'
+import { getFilesMeta } from '@/utils/PathUtil'
+
 const logger = createLogger('ImageViewer')
 
 type WorkerResponse = {

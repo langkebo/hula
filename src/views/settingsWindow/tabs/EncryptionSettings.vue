@@ -152,19 +152,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { NSwitch, NButton, NDivider, NTag, NModal, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { NButton, NDivider, NModal, NSwitch, NTag, useMessage } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('EncryptionSettings')
-import { matrixEncryptionContextService, matrixEncryptionService, matrixVerificationService } from '@/services/matrix'
-import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
-import KeyBackupRestoreDialog from '@/components/encryption/KeyBackupRestoreDialog.vue'
-import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
+
 import CrossSigningDialog from '@/components/encryption/CrossSigningDialog.vue'
+import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
+import KeyBackupRestoreDialog from '@/components/encryption/KeyBackupRestoreDialog.vue'
+import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 import KeyRotationDialog from '@/components/encryption/KeyRotationDialog.vue'
+import { matrixEncryptionContextService, matrixEncryptionService, matrixVerificationService } from '@/services/matrix'
 
 defineOptions({
   name: 'EncryptionSettings'

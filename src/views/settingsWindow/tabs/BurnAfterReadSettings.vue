@@ -144,22 +144,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
-  NSwitch,
-  NDivider,
-  NSelect,
+  NAlert,
   NButton,
-  NSpin,
-  NTag,
-  NModal,
+  NDivider,
   NForm,
   NFormItem,
-  NAlert,
-  useMessage,
-  useDialog
+  NModal,
+  NSelect,
+  NSpin,
+  NSwitch,
+  NTag,
+  useDialog,
+  useMessage
 } from 'naive-ui'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { matrixBurnAfterReadService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 

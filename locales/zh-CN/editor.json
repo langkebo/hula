@@ -11,6 +11,7 @@
   "send_or_newline": "{send} 发送/{newline} 换行",
   "file": "文件",
   "image": "图片",
+  "upload_file": "上传文件",
   "voice": "语音",
   "location": "位置",
   "chat_history": "聊天记录",

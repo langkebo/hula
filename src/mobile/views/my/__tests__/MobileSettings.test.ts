@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import MobileSettings from '../MobileSettings.vue'
 import { MOBILE_ADVANCED_SETTINGS_ITEMS } from '../mobileSettingsConfig'
 import { MOBILE_SETTINGS_LABS_PATH } from '../settingsRoutes'

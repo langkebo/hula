@@ -28,8 +28,8 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn, useThrottleFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import { useThrottleFn, useDebounceFn } from '@vueuse/core'
 
 const { t } = useI18n()
 

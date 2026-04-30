@@ -1,3 +1,4 @@
+import { useI18n } from 'vue-i18n'
 import { MsgEnum, RoomTypeEnum, UserType } from '@/enums'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
@@ -7,7 +8,6 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useBotStore } from '@/stores/domains/user/bot'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { useI18n } from 'vue-i18n'
 
 type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
 

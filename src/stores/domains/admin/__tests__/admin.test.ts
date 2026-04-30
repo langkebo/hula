@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn()
@@ -36,9 +36,9 @@ vi.mock('../../chat/matrix', () => ({
   })
 }))
 
-import { useAdminStore } from '../admin'
 import { invoke } from '@tauri-apps/api/core'
 import { adminService } from '@/services/matrix'
+import { useAdminStore } from '../admin'
 
 describe('AdminStore', () => {
   beforeEach(() => {

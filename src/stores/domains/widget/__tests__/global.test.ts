@@ -1,6 +1,6 @@
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
 import { MittEnum } from '@/enums'
 import { useGlobalStore } from '../global'
 

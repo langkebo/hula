@@ -1,9 +1,9 @@
-import { ref, type Ref } from 'vue'
-import { useMitt } from '@/hooks/useMitt'
+import { type Ref, ref } from 'vue'
 import { MittEnum } from '@/enums'
-import { createLogger } from '@/utils/Logger'
+import { useMitt } from '@/hooks/useMitt'
 import { matrixRoomService } from '@/services/matrix'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ChatMain.GroupNicknameModal')
 

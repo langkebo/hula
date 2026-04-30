@@ -50,13 +50,13 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
-import { ref, onMounted } from 'vue'
-import { showConfirmDialog, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
+import { showConfirmDialog, showToast } from 'vant'
+import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { matrixDeviceService } from '@/services/matrix'
 import type { Device } from '@/services/matrix/user/MatrixDeviceService'
-import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('DeviceManagement')
 

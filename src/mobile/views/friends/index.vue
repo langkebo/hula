@@ -282,6 +282,7 @@
 </style>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
 import { useFriends } from '@/composables/useFriends'
 import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
@@ -291,7 +292,6 @@ import router from '@/router'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 

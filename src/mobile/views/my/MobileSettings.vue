@@ -173,17 +173,17 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { showDialog, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { info } from '@tauri-apps/plugin-log'
-import { useGlobalStore } from '@/stores/domains/widget/global'
+import { showDialog, showToast } from 'vant'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
-import { useLoginFlow } from '@/hooks/useLoginFlow'
-import { useI18n } from 'vue-i18n'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { createLogger } from '@/utils/Logger'
 import { MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
 import { MOBILE_SETTINGS_HELP_ABOUT_PATH, MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from './settingsRoutes'
 

@@ -1,4 +1,4 @@
-import { ConnectionState } from './openclaw/OpenClawService'
+import type { ConnectionState } from './openclaw/OpenClawService'
 
 export type AIProviderType = 'openclaw' | 'trendradar' | 'hula'
 

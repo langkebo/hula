@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
-import { useGlobalStore } from '@/stores/domains/widget/global'
+import { EventType } from '@/services/matrix'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
-import { matrixRoomService, EventType } from '@/services/matrix'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AnnouncementStore')

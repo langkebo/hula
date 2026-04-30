@@ -72,14 +72,14 @@
 import { TrayIcon } from '@tauri-apps/api/tray'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { exit } from '@tauri-apps/plugin-process'
+import { useI18n } from 'vue-i18n'
 import { useWindow } from '@/hooks/useWindow.ts'
 import type { UserState } from '@/services/types'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
-import { isWindows } from '@/utils/PlatformConstants'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
-import { useI18n } from 'vue-i18n'
+import { isWindows } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('Tray')

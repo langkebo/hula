@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { SETTINGS_TABS, normalizeSettingsTab, useSettingsDialogStore } from '../settingsDialog'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { normalizeSettingsTab, SETTINGS_TABS, useSettingsDialogStore } from '../settingsDialog'
 
 describe('settingsDialog', () => {
   beforeEach(() => {

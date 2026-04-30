@@ -1,5 +1,5 @@
-import type { MatrixClient } from 'matrix-js-sdk'
 import { error, info } from '@tauri-apps/plugin-log'
+import type { MatrixClient } from 'matrix-js-sdk'
 import { isValidMatrixRoomId } from '@/utils/inputValidation'
 import type { RoomInfo, RoomState, ShutdownRoomResult } from './AdminTypes'
 

@@ -1,8 +1,8 @@
-import { onAction, onNotificationReceived } from '@tauri-apps/plugin-notification'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { onAction, onNotificationReceived } from '@tauri-apps/plugin-notification'
 import router from '@/router'
-import { hasTauriRuntime } from '@/utils/AppHarness'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('NotificationActions')

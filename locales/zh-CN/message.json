@@ -188,12 +188,16 @@
     "exit": "退出"
   },
   "location": {
+    "share": "位置共享",
+    "send_failed": "发送位置失败",
     "modal": {
       "title": {
         "map_error": "地图错误",
         "location_error": "位置获取失败",
         "default": "选择位置"
       },
+      "share": "位置共享",
+      "send_failed": "发送位置失败",
       "result": {
         "map_error_title": "地图加载失败",
         "location_error_title": "位置获取失败"
@@ -229,6 +233,11 @@
       "position_unavailable": "位置信息不可用",
       "timeout": "获取位置超时"
     }
+  },
+  "beacon": {
+    "share": "发送信标",
+    "started": "信标已启动",
+    "failed": "信标启动失败"
   },
   "update_window": {
     "updating": "更新中",

@@ -1,6 +1,7 @@
 import { readFile } from '@tauri-apps/plugin-fs'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
-import { matrixEncryptionService, matrixMediaService } from '@/services/matrix'
 
 type VoiceUploadResult = Awaited<ReturnType<typeof matrixVoiceService.uploadVoice>>
 

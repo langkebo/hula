@@ -1,9 +1,9 @@
-import { ref, type Ref } from 'vue'
+import { type Ref, ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
 import type { AIModel } from '@/services/matrix'
 import { aiService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
-import type { Message, ConversationMeta } from './useRobotChat'
+import type { ConversationMeta, Message } from './useRobotChat'
 
 const logger = createLogger('AiStreaming')
 const AI_THINKING_PLACEHOLDER = '正在思考中...'
@@ -133,7 +133,7 @@ export const useAiStreaming = ({
             let handled = false
             try {
               const data = JSON.parse(chunk)
-              if (data && data.success && data.data?.receive) {
+              if (data?.success && data.data?.receive) {
                 if (data.data.receive.content) {
                   const incrementalContent = data.data.receive.content
                   if (
@@ -249,7 +249,7 @@ export const useAiStreaming = ({
         lastMessage.content !== AI_THINKING_PLACEHOLDER
           ? lastMessage.content
           : currentAiAccumulatedContent.value
-      if (latest && latest.trim()) {
+      if (latest?.trim()) {
         await aiService.messageSaveGeneratedContent({
           conversationId: currentChat.value.id,
           prompt: lastAiPrompt.value,

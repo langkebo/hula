@@ -34,6 +34,7 @@ import { resolveMatrixEndpointConfig } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ThirdPartyLogin')
+
 import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
 

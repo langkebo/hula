@@ -98,6 +98,7 @@
 <script setup lang="ts">
 import type { LoadingBarProviderInst } from 'naive-ui'
 import { useBotView } from './useBotView'
+
 const HuLaAssistant = defineAsyncComponent(() => import('./HuLaAssistant.vue'))
 
 const loadingBarRef = ref<LoadingBarProviderInst | null>(null)

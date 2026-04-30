@@ -71,12 +71,13 @@ import { useWaveformRenderer } from '@/hooks/useWaveformRenderer'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import type { MsgType, VoiceBody } from '@/services/types'
-import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { extractFileName } from '@/utils/Formatting'
 
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('Voice')
 
 const props = defineProps<{

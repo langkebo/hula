@@ -3,9 +3,9 @@
  * 提供统一的错误处理和上报机制
  */
 
-import { AppException, ErrorType } from './exception'
-import { translateMatrixError, type TranslatedError } from './matrixErrorTranslator'
 import { createLogger } from '@/utils/Logger'
+import { AppException, ErrorType } from './exception'
+import { type TranslatedError, translateMatrixError } from './matrixErrorTranslator'
 
 const logger = createLogger('GlobalErrorHandler')
 

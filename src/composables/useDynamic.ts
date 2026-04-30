@@ -1,4 +1,4 @@
-import { computed, toValue, type MaybeRefOrGetter } from 'vue'
+import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 
 export type DynamicRoadmapStatus = 'planned' | 'in-progress' | 'blocked'
 

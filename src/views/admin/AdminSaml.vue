@@ -58,21 +58,21 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import {
-  NPageHeader,
-  NTabs,
-  NTabPane,
-  NButton,
-  NSpin,
-  NSpace,
   NAlert,
+  NButton,
+  NCard,
   NDescriptions,
   NDescriptionsItem,
-  NCard,
   NEmpty,
+  NPageHeader,
+  NSpace,
+  NSpin,
+  NTabPane,
+  NTabs,
   useMessage
 } from 'naive-ui'
+import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminSaml } from '@/composables/admin/useAdminSaml'
 

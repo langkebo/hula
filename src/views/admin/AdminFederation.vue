@@ -131,11 +131,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, h } from 'vue'
+import { NButton, NSpace, NTag, useDialog, useMessage } from 'naive-ui'
+import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NButton, NSpace, NTag, useMessage, useDialog } from 'naive-ui'
+import { type FederationBlacklistView, useAdminFederation } from '@/composables/admin'
 import type { FederationDestination } from '@/services/matrix'
-import { useAdminFederation, type FederationBlacklistView } from '@/composables/admin'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
 

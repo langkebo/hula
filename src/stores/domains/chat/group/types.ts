@@ -1,7 +1,7 @@
 /**
  * Group Store 类型定义
  */
-import { OnlineEnum } from '@/enums'
+import type { OnlineEnum } from '@/enums'
 
 /**
  * 房间成员

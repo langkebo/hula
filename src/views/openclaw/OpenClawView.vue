@@ -94,10 +94,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { useOpenClaw, ConnectionState } from '@/services/openclaw'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import ConnectionStatus from '@/components/openclaw/ConnectionStatus.vue'
 import ModelSelector from '@/components/openclaw/ModelSelector.vue'
+import { ConnectionState, useOpenClaw } from '@/services/openclaw'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OpenClawView')

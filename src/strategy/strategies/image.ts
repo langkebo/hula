@@ -1,13 +1,13 @@
 import { BaseDirectory, readFile, writeFile } from '@tauri-apps/plugin-fs'
-import { MsgEnum, UploadSceneEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { AppException } from '@/common/exception.ts'
+import { MsgEnum, UploadSceneEnum } from '@/enums'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/hooks/useUpload'
+import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { fixFileMimeType } from '@/utils/FileType'
 import { getMimeTypeFromExtension } from '@/utils/Formatting'
 import { getImageDimensions } from '@/utils/ImageUtils'
 import { isMobile } from '@/utils/PlatformConstants'
-import { AbstractMessageStrategy, type ImageInfo, type ReplyRef, strategyLogger as logger } from './base'
+import { AbstractMessageStrategy, type ImageInfo, strategyLogger as logger, type ReplyRef } from './base'
 
 export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
   // 最大上传图片大小 2MB

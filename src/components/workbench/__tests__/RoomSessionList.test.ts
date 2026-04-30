@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import RoomSessionList from '../RoomSessionList.vue'
 
 const { scrollToMock, themesRefMock, globalStoreMock } = vi.hoisted(() => ({

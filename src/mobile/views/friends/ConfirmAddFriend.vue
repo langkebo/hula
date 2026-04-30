@@ -48,11 +48,11 @@
 </template>
 
 <script setup lang="ts">
+import { useFriends } from '@/composables/useFriends'
+import router from '@/router'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
-import router from '@/router'
 import { useTimerManager } from '@/utils/TimerManager'
-import { useFriends } from '@/composables/useFriends'
 
 const logger = createLogger('ConfirmAddFriend')
 const timerManager = useTimerManager()

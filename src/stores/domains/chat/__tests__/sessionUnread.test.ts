@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { useSessionUnreadStore } from '../sessionUnread'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { SessionItem } from '../chat'
+import { useSessionUnreadStore } from '../sessionUnread'
 
 const makeSession = (overrides: Partial<SessionItem> & { roomId: string }): SessionItem =>
   ({

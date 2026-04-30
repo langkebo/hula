@@ -1,6 +1,6 @@
+import { info, error as logError } from '@tauri-apps/plugin-log'
 import { matrixExtensionEndpoints } from '@/services/backend'
 import { httpClient } from '@/utils/HttpClient'
-import { info, error as logError } from '@tauri-apps/plugin-log'
 
 export interface ApiKey {
   id: string

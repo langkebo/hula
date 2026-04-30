@@ -1,5 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import type { ServerStats, ServerStatus, ServerHealth, ServerVersion } from './AdminTypes'
+import type { ServerHealth, ServerStats, ServerStatus, ServerVersion } from './AdminTypes'
 
 type ServerDomainSdkGetter = () => Promise<unknown>
 

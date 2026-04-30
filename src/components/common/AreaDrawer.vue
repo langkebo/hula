@@ -32,9 +32,10 @@
 import { invoke } from '@tauri-apps/api/core'
 import { areaList as list } from '@vant/area-data'
 import { NDrawer } from 'naive-ui'
-import { AreaList, Area as VantArea } from 'vant'
+import { type AreaList, Area as VantArea } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('AreaDrawer')
 
 interface AreaProps {

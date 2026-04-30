@@ -1,6 +1,6 @@
 import { error } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
 import type { MatrixClientExtended } from '@/types/matrix-extensions'
+import matrixClientService from '../MatrixClientService'
 
 export interface MatrixEncryptionSessionContext {
   userId: string | null

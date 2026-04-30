@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { SPACE_ROUTE_NAMES } from '@/router/spaceNavigation'
 import { getDesktopRoutes } from '@/router/routes/desktop'
+import { SPACE_ROUTE_NAMES } from '@/router/spaceNavigation'
 
 describe('desktopRoutes', () => {
   it('keeps canonical desktop settings aliases and removes camelCase duplicates', () => {

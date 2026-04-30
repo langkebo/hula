@@ -14,8 +14,8 @@ import { MsgEnum } from '@/enums'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { removeTag } from '@/utils/Formatting'
 import { isMobile } from '@/utils/PlatformConstants'
-import { getEditorRange, triggerInputEvent } from './editorDomBasics'
 import type { SelectionRange } from '../useCommon'
+import { getEditorRange, triggerInputEvent } from './editorDomBasics'
 
 const REPLY_NODE_ID = 'replyDiv'
 

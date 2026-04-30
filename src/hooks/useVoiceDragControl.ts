@@ -1,7 +1,8 @@
 import { useThrottleFn } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { isMobile } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { isMobile } from '@/utils/PlatformConstants'
+
 const logger = createLogger('VoiceDragControl')
 
 /**

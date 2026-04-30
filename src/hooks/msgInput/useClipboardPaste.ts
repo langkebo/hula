@@ -1,5 +1,5 @@
 import { readImage, readText } from '@tauri-apps/plugin-clipboard-manager'
-import { nextTick, ref, type Ref } from 'vue'
+import { nextTick, type Ref, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { MsgEnum } from '@/enums'
 import { processClipboardImage } from '@/utils/ImageUtils.ts'

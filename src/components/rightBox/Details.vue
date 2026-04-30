@@ -109,18 +109,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watchEffect } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { NIcon } from 'naive-ui'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
-import { useBadgeStore } from '@/stores/domains/chat/badge'
-import { RoomTypeEnum, UserType } from '@/enums'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { createWebviewWindow } from '@/hooks/useWindow'
-import { resolveMyRoomNickname } from '@/utils/RoomUtils'
-import { createLogger } from '@/utils/Logger'
 import type { PropType } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { RoomTypeEnum, UserType } from '@/enums'
+import { createWebviewWindow } from '@/hooks/useWindow'
+import { useBadgeStore } from '@/stores/domains/chat/badge'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
+import { resolveMyRoomNickname } from '@/utils/RoomUtils'
 
 const logger = createLogger('Details')
 const { t } = useI18n()

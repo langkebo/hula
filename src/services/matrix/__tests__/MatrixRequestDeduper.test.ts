@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { MatrixRequestDeduper, createDedupedFetcher } from '../MatrixRequestDeduper'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createDedupedFetcher, MatrixRequestDeduper } from '../MatrixRequestDeduper'
 
 describe('MatrixRequestDeduper', () => {
   beforeEach(() => {

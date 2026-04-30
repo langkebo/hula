@@ -46,8 +46,8 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import { useWindow } from '@/hooks/useWindow'
 import type { AnnouncementBody } from '@/services/types'
 import { useGlobalStore } from '@/stores/domains/widget/global'

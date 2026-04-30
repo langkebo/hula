@@ -113,6 +113,7 @@ import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Network')
+
 import { darkTheme, lightTheme } from 'naive-ui'
 import router from '@/router'
 import { updateSettings } from '@/services/tauriCommand'

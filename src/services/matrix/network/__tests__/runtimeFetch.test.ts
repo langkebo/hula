@@ -1,6 +1,6 @@
+import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '../runtimeFetch'
-import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
 
 vi.mock('@tauri-apps/plugin-http', () => ({
   fetch: vi.fn()

@@ -72,10 +72,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { showToast } from 'vant'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
 import MobileLayout from '@/mobile/layout/index.vue'
 import { adminService, type ServerStats } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'

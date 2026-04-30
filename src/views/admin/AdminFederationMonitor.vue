@@ -41,8 +41,7 @@
       :placeholder="t('admin.federation_monitor.search_placeholder')"
       clearable
       class="mb-16px"
-      style="max-width: 320px"
-    />
+      style="max-width: 320px" />
 
     <n-data-table
       :columns="columns"
@@ -50,30 +49,28 @@
       :loading="loading"
       :pagination="pagination"
       :row-key="(row: FederationServer) => row.serverName"
-      striped
-    />
+      striped />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, h } from 'vue'
 import {
-  NPageHeader,
-  NDataTable,
+  type DataTableColumns,
   NButton,
-  NInput,
   NCard,
-  NGrid,
+  NDataTable,
   NGi,
+  NGrid,
+  NInput,
+  NPageHeader,
+  NSpace,
   NStatistic,
   NTag,
-  NSpace,
-  useMessage,
-  type DataTableColumns
+  useMessage
 } from 'naive-ui'
+import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { adminService } from '@/services/matrix'
-import { matrixFederationBlacklistService } from '@/services/matrix'
+import { adminService, matrixFederationBlacklistService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminFederationMonitor')

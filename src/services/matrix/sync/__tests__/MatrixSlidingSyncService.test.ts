@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
 import matrixClientService from '../../MatrixClientService'
 import matrixSlidingSyncService from '../MatrixSlidingSyncService'
-import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),

@@ -46,11 +46,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted } from 'vue'
+import { NButton, NSpace, NTag, useMessage } from 'naive-ui'
+import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useMessage, NButton, NSpace, NTag } from 'naive-ui'
-import type { RegistrationToken } from '@/services/matrix'
 import { useAdminRegistrationTokens } from '@/composables/admin'
+import type { RegistrationToken } from '@/services/matrix'
 
 const { t } = useI18n()
 const message = useMessage()

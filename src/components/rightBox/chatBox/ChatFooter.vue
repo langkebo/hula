@@ -229,8 +229,12 @@
 <script setup lang="ts">
 import { open } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
+import { useDebounceFn } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 import { FOOTER_HEIGHT, MAX_FOOTER_HEIGHT, MIN_FOOTER_HEIGHT } from '@/common/constants'
 import LocationModal from '@/components/rightBox/location/LocationModal.vue'
+import type { VoiceRecordPayload } from '@/components/rightBox/VoiceRecorder.vue'
+import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { MittEnum, MobilePanelStateEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import { useChatLayoutGlobal } from '@/hooks/useChatLayout'
 import { type SelectionRange, useCommon } from '@/hooks/useCommon.ts'
@@ -240,23 +244,20 @@ import { useWindow } from '@/hooks/useWindow'
 import type { FriendItem, SessionItem } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useHistoryStore } from '@/stores/domains/chat/history'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useEmojiStore } from '@/stores/domains/chat/emoji'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import type { LocationData } from '@/types/common'
 import FileUtil from '@/utils/FileUtil'
 import { extractFileName, getMimeTypeFromExtension } from '@/utils/Formatting'
-import { isMobile } from '@/utils/PlatformConstants'
-import { useDebounceFn } from '@vueuse/core'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
-import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
-import type { VoiceRecordPayload } from '@/components/rightBox/VoiceRecorder.vue'
+import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('ChatFooter')
 const { t } = useI18n()
 // 移动端组件条件导入
+const Emoticon = defineAsyncComponent(() => import('@/components/rightBox/emoticon/index.vue'))
 const More = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/chat-room/panel/More.vue')) : void 0
 const VoicePanel = isMobile()
   ? defineAsyncComponent(() => import('@/mobile/components/chat-room/panel/VoicePanel.vue'))

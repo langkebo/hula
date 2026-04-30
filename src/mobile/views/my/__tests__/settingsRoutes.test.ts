@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
-  MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH,
-  MOBILE_SETTINGS_RELATIVE_PATHS,
-  MOBILE_SETTINGS_SECURITY_PRIVACY_PATH,
-  MOBILE_SETTINGS_HELP_ABOUT_PATH
-} from '../settingsRoutes'
-import {
   SETTINGS_CANONICAL_ROUTE_SEGMENTS,
   SETTINGS_LABS_CHILD_ROUTE_SEGMENTS
 } from '@/stores/domains/settings/settingsSchema'
+import {
+  MOBILE_SETTINGS_HELP_ABOUT_PATH,
+  MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH,
+  MOBILE_SETTINGS_RELATIVE_PATHS,
+  MOBILE_SETTINGS_SECURITY_PRIVACY_PATH
+} from '../settingsRoutes'
 
 describe('settingsRoutes', () => {
   it('keeps mobile canonical paths aligned with the shared settings schema', () => {

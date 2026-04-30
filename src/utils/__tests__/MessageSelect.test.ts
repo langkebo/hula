@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MsgEnum } from '@/enums'
-import { MULTI_SELECT_BLOCKED_TYPES, isMessageMultiSelectEnabled } from '../MessageSelect'
+import { isMessageMultiSelectEnabled, MULTI_SELECT_BLOCKED_TYPES } from '../MessageSelect'
 
 describe('MessageSelect', () => {
   it('blocks NOTICE, BOT, and RECALL message types', () => {

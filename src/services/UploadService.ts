@@ -1,6 +1,6 @@
+import { error, info } from '@tauri-apps/plugin-log'
+import type { UploadSceneEnum } from '@/enums'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
-import { UploadSceneEnum } from '@/enums'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export interface OssTokenResponse {
   uploadUrl: string

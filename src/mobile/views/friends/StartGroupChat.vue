@@ -91,14 +91,14 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { OnlineEnum } from '@/enums'
-import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { useUserStatusStore } from '@/stores/domains/user/userStatus'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixGroupService } from '@/services/matrix'
 import type { GroupCreateResult } from '@/services/matrix/room/MatrixGroupService'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const userStatusStore = useUserStatusStore()
 const { stateList } = storeToRefs(userStatusStore)

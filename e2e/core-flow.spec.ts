@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test.describe('HuLa Core Flows', () => {
   test('should display login page and perform basic validation', async ({ page }) => {

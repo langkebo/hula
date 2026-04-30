@@ -1,9 +1,9 @@
 import { MessageStatusEnum, MittEnum } from '@/enums'
-import { matrixMessageService } from '@/services/matrix'
+import { useMitt } from '@/hooks/useMitt'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { useChatStore } from '@/stores/domains/chat/chat'
-import { useMitt } from '@/hooks/useMitt'
 
 export type SendWithTrackingOptions = {
   tempMsgId: string

@@ -2,9 +2,9 @@ import { invoke } from '@tauri-apps/api/core'
 import { appCacheDir, join } from '@tauri-apps/api/path'
 import { BaseDirectory, writeFile } from '@tauri-apps/plugin-fs'
 import { AppException } from '@/common/exception'
+import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
 import { removeTempFile } from '@/utils/TempFileManager'
-import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('VideoThumbnail')
 

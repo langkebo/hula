@@ -28,9 +28,9 @@ import {
   enUS,
   type GlobalTheme,
   type GlobalThemeOverrides,
+  lightTheme,
   type NDateLocale,
   type NLocale,
-  lightTheme,
   zhCN
 } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
@@ -38,6 +38,7 @@ import { ThemeEnum } from '@/enums'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('NaiveProvider')
 
 const { notificMax, messageMax } = defineProps<{

@@ -290,23 +290,23 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
-import { useDebounceFn } from '@vueuse/core'
 import { invoke } from '@tauri-apps/api/core'
+import { useDebounceFn } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 import Validation from '@/components/common/Validation.vue'
 import router from '@/router'
-import type { RegisterUserReq, UserInfoType } from '@/services/types'
-import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
-import { useMobileStore } from '@/stores/domains/settings/mobile'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
+import type { RegisterUserReq, UserInfoType } from '@/services/types'
+import { useMobileStore } from '@/stores/domains/settings/mobile'
+import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
+import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
 import { isAndroid, isIOS } from '@/utils/PlatformConstants'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
+import { useLoginFlow } from '../hooks/useLoginFlow'
 import { useMitt } from '../hooks/useMitt'
 import { WsResponseMessageType } from '../services/wsType'
 import { useSettingStore } from '../stores/domains/settings/setting'
-import { useLoginFlow } from '../hooks/useLoginFlow'
-import { useI18n } from 'vue-i18n'
 
 const logger = createLogger('MobileLogin')
 

@@ -1,6 +1,6 @@
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
-import { getOSType } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { getOSType } from '@/utils/PlatformConstants'
 
 const logger = createLogger('Fingerprint')
 

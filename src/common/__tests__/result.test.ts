@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { Ok, Err, ok, err, type Result } from '../result'
+import { describe, expect, it } from 'vitest'
+import { Err, err, Ok, ok, type Result } from '../result'
 
 describe('Result', () => {
   describe('Ok', () => {

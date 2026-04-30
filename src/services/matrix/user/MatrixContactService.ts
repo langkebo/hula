@@ -1,9 +1,9 @@
+import { info, error as logError } from '@tauri-apps/plugin-log'
+import type { MatrixEvent, RoomMember, User } from 'matrix-js-sdk'
+import { matrixFriendService } from '../friends/MatrixFriendService'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
-import { matrixFriendService } from '../friends/MatrixFriendService'
 import { matrixRoomService } from '../room/MatrixRoomService'
-import { info, error as logError } from '@tauri-apps/plugin-log'
-import { User, RoomMember, MatrixEvent } from 'matrix-js-sdk'
 
 export interface UserProfile {
   userId: string

@@ -106,11 +106,11 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import type { CSSProperties } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import 'vue-cropper/dist/index.css'
-import { VueCropper } from 'vue-cropper'
+import type { VueCropper } from 'vue-cropper'
 
 const { t } = useI18n()
 const localImageUrl = ref('')

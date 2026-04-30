@@ -1,5 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import type { ServerNoticeResult, ServerNoticeInfo } from './AdminTypes'
+import type { ServerNoticeInfo, ServerNoticeResult } from './AdminTypes'
 
 type NotificationAdminSdk = {
   sendServerNotice(

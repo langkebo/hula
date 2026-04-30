@@ -25,7 +25,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useDynamic, type DynamicRoadmapStatus } from '@/composables/useDynamic'
+import { type DynamicRoadmapStatus, useDynamic } from '@/composables/useDynamic'
 import { completeRenderSampleOnNextFrame, startRenderSample } from '@/utils/AppHarness'
 
 const route = useRoute()

@@ -4,9 +4,9 @@
  * 管理撤回消息的过期计时器，在到期后自动清理撤回记录
  */
 import { reactive } from 'vue'
+import { createLogger } from '@/utils/Logger'
 import { getTimerWorker } from './timerWorker'
 import { RECALL_EXPIRATION_TIME, type RecalledMessage } from './types'
-import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RecallManager')
 

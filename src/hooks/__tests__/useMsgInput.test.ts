@@ -6,10 +6,11 @@
  * what refs/callbacks get passed into them, and how `send` wraps sendCore
  * with mobile-focus behavior.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, ref } from 'vue'
 
 // ---- Sub-hook mocks ---------------------------------------------------------
 

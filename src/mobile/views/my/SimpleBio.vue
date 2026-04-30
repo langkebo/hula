@@ -63,11 +63,11 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
+import { useI18n } from 'vue-i18n'
 import router from '@/router'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SimpleBio')
 

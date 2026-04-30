@@ -1,6 +1,6 @@
-import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
-import { warn, error as logError } from '@tauri-apps/plugin-log'
+import { error as logError, warn } from '@tauri-apps/plugin-log'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
+import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 
 export interface RequestOptions {
   url: string

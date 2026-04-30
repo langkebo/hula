@@ -45,10 +45,10 @@
 </template>
 
 <script setup lang="ts">
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useI18n } from 'vue-i18n'
 import QRCode from 'qrcode'
+import { useI18n } from 'vue-i18n'
+import { useUserStore } from '@/stores/domains/user/user'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const { t } = useI18n()
 const userStore = useUserStore()

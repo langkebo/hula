@@ -106,9 +106,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { NDivider, NSelect, NSwitch, useMessage } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NSwitch, NDivider, NSelect, useMessage } from 'naive-ui'
 
 defineOptions({
   name: 'SidebarSettings'

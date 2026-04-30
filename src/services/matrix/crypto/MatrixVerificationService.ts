@@ -1,8 +1,8 @@
-import { info, error } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
-import { CryptoEvent, VerificationRequestEvent, VerificationPhase } from 'matrix-js-sdk/crypto'
+import { CryptoEvent, VerificationPhase, VerificationRequestEvent } from 'matrix-js-sdk/crypto'
 import type { CryptoApi, VerificationRequest as SDKVerificationRequest } from '@/types/matrix-extensions'
+import matrixClientService from '../MatrixClientService'
 
 export type VerificationMethod = 'm.sas.v1' | 'm.qr_code.show.v1' | 'm.reciprocate.v1'
 

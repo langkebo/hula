@@ -44,4 +44,4 @@ export interface UserInfo {
 
 export type { UserItem, MessageType }
 
-import { RoomActEnum } from '@/enums'
+import type { RoomActEnum } from '@/enums'

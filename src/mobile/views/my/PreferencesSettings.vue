@@ -143,9 +143,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 const { t } = useI18n()

@@ -29,8 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import { globalFileUploadQueue } from '@/hooks/useFileUploadQueue'
 import { useI18n } from 'vue-i18n'
+import { globalFileUploadQueue } from '@/hooks/useFileUploadQueue'
 
 const { t } = useI18n()
 

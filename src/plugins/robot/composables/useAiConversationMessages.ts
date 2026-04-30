@@ -1,11 +1,11 @@
-import { ref, type Ref } from 'vue'
-import { useMitt } from '@/hooks/useMitt.ts'
-import { useUserStore } from '@/stores/domains/user/user'
+import { type Ref, ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
+import { useMitt } from '@/hooks/useMitt.ts'
+import { isLikelyImageUrl, isLikelyMediaUrl } from '@/plugins/robot/utils/aiMediaUrl'
 import { aiService } from '@/services/matrix'
 import type { AIConversation } from '@/services/matrix/ai/AIService'
+import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
-import { isLikelyImageUrl, isLikelyMediaUrl } from '@/plugins/robot/utils/aiMediaUrl'
 import type { Message } from './useRobotChat'
 
 const logger = createLogger('AiConversationMessages')

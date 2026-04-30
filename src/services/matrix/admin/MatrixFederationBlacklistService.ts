@@ -1,6 +1,6 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export interface FederationBlacklistEntry {
   domain: string

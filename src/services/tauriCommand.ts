@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core'
 import { matrixRuntimeSessionService } from '@/services/matrix'
+import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { useMatrixStore } from '../stores/domains/chat/matrix'
 import { useUserStore } from '../stores/domains/user/user'
-import { ensureAppStateReady } from '@/utils/AppStateReady'
 
 export type Settings = {
   database: {

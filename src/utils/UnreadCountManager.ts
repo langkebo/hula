@@ -4,8 +4,8 @@ import { useDebounceFn } from '@vueuse/core'
 import { sumBy } from 'es-toolkit'
 import { NotificationTypeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
-import { isIOS, isMac } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { isIOS, isMac } from '@/utils/PlatformConstants'
 
 const logger = createLogger('UnreadCountManager')
 

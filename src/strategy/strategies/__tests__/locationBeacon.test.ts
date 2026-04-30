@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { MsgEnum } from '@/enums'
 import { AppException } from '@/common/exception'
-import { LocationMessageStrategyImpl } from '../location'
+import { MsgEnum } from '@/enums'
 import { BeaconMessageStrategyImpl } from '../beacon'
+import { LocationMessageStrategyImpl } from '../location'
 
 describe('LocationMessageStrategyImpl', () => {
   const strategy = new LocationMessageStrategyImpl()

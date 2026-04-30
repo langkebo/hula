@@ -1,4 +1,4 @@
-import { ref, computed, type Ref } from 'vue'
+import { computed, type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix'
 import type { RoomInfo, RoomState } from '@/services/matrix/admin/AdminTypes'
 

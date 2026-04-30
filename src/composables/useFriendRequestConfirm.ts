@@ -1,7 +1,7 @@
-import { computed, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
+import { computed, type MaybeRefOrGetter, ref, toValue, watch } from 'vue'
 import { matrixContactService } from '@/services/matrix'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 type FriendConfirmTarget = {

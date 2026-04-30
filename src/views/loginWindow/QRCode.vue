@@ -82,17 +82,18 @@ import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('QRCode')
+
+import { TauriCommand } from '@/enums'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
-import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { getEnhancedFingerprint } from '@/services/fingerprint'
-import { loginCommand } from '@/services/tauriCommand'
-import { TauriCommand } from '@/enums'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { matrixQrLoginService, type QRLoginResult } from '@/services/matrix'
-import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
+import { loginCommand } from '@/services/tauriCommand'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useTimerManager } from '@/utils/TimerManager'
+import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
 
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()

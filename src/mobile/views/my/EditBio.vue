@@ -32,9 +32,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/domains/user/user'
-import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const userStore = useUserStore()

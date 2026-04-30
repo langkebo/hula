@@ -44,13 +44,13 @@
 </template>
 
 <script setup lang="ts">
+import { NAvatar, NTag } from 'naive-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NAvatar, NTag } from 'naive-ui'
+import EncryptionStatus from '@/components/encryption/EncryptionStatus.vue'
 import { RoomTypeEnum } from '@/enums'
 import { IsAllUserEnum } from '@/services/types'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import EncryptionStatus from '@/components/encryption/EncryptionStatus.vue'
 
 type RoomEncryptionStatus = 'encrypted' | 'unencrypted' | 'unknown' | 'error'
 

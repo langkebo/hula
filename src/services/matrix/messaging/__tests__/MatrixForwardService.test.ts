@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatrixEvent } from 'matrix-js-sdk'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),

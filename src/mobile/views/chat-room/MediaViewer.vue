@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineAsyncComponent } from 'vue'
+import { defineAsyncComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'

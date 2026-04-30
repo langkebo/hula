@@ -35,11 +35,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { MenuPosition } from '@/stores/domains/user/userMenu'
 import UserMenuHeader from './UserMenuHeader.vue'
 import { useUserMenu } from './useUserMenu'
-import type { MenuPosition } from '@/stores/domains/user/userMenu'
 
 defineOptions({
   name: 'UserMenuDropdown'

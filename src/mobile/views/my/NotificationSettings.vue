@@ -112,11 +112,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
-import { matrixPushService, type IPushRule } from '@/services/matrix'
+import { showToast } from 'vant'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { type IPushRule, matrixPushService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('NotificationSettings')

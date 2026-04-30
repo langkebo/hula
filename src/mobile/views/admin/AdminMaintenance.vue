@@ -16,10 +16,7 @@
         </van-cell-group>
 
         <van-cell-group :title="t('admin.experimental_features')">
-          <van-cell
-            v-for="(enabled, key) in admin.experimentalFeatures.value"
-            :key="key"
-            :title="String(key)">
+          <van-cell v-for="(enabled, key) in admin.experimentalFeatures.value" :key="key" :title="String(key)">
             <template #value>
               <van-switch
                 :model-value="Boolean(enabled)"
@@ -42,11 +39,11 @@
 </template>
 
 <script setup lang="ts">
+import { showConfirmDialog, showToast } from 'vant'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { showToast, showConfirmDialog } from 'vant'
-import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminMaintenance } from '@/composables/admin'
+import MobileLayout from '@/mobile/layout/index.vue'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminMaintenance')

@@ -49,13 +49,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
-import { NModal, NButton, NSpin, NForm, NFormItem, NInput, NProgress, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { NButton, NForm, NFormItem, NInput, NModal, NProgress, NSpin, useMessage } from 'naive-ui'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixEncryptionService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
+
 const logger = createLogger('KeyBackupRestore')
 const timerManager = useTimerManager()
 const { t } = useI18n()

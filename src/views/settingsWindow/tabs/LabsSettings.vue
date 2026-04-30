@@ -74,11 +74,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
-import { NSwitch, NButton, NDivider, NSpin, NTag, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
-import { createLogger } from '@/utils/Logger'
+import { NButton, NDivider, NSpin, NSwitch, NTag, useDialog, useMessage } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LabsSettings')
 

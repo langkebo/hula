@@ -8,12 +8,12 @@
  * imported and merged into a complete message set.
  */
 
-import { App } from 'vue'
-import { createI18n } from 'vue-i18n'
+import type { App } from 'vue'
 import type { Locale } from 'vue-i18n'
-import { useSettingStore } from '../stores/domains/settings/setting'
+import { createI18n } from 'vue-i18n'
 import { setDayjsLocale } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
+import { useSettingStore } from '../stores/domains/settings/setting'
 
 const logger = createLogger('I18n')
 

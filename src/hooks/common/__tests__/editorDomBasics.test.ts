@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
-import { getEditorRange, getMessageContentType, triggerInputEvent } from '../editorDomBasics'
 import { MsgEnum } from '@/enums'
+import { getEditorRange, getMessageContentType, triggerInputEvent } from '../editorDomBasics'
 
 describe('getEditorRange', () => {
   beforeEach(() => {

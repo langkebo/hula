@@ -29,12 +29,13 @@
 </template>
 
 <script setup lang="ts">
-import { NResult, NButton, NSpin, NSpace, useMessage } from 'naive-ui'
+import { NButton, NResult, NSpace, NSpin, useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { matrixRuntimeSessionService } from '@/services/matrix'
 import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('OidcCallback')
 
 const { t } = useI18n()

@@ -90,9 +90,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { NDivider, NSelect, NSlider, NSwitch, useMessage } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NSlider, NSwitch, NDivider, NSelect, useMessage } from 'naive-ui'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 defineOptions({

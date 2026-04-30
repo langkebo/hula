@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useUpload, UploadProviderEnum } from '../useUpload'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { UploadProviderEnum, useUpload } from '../useUpload'
 
 vi.mock('@tauri-apps/api/core', () => ({
   Channel: vi.fn(() => ({ onmessage: null })),
@@ -92,7 +92,6 @@ describe('useUpload', () => {
   })
 
   it('should reject file larger than max size', async () => {
-    const { parseFile } = useUpload()
     const largeSize = 600 * 1024 * 1024
     const largeFile = new File(['test'], 'large.txt', { type: 'text/plain' })
     Object.defineProperty(largeFile, 'size', { value: largeSize })

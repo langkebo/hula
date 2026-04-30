@@ -1,6 +1,6 @@
-import { matrixMediaService, matrixEventService } from '@/services/matrix'
+import { error, info } from '@tauri-apps/plugin-log'
+import { matrixEventService, matrixMediaService } from '@/services/matrix'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export interface MatrixUploadOptions {
   onProgress?: (progress: number) => void

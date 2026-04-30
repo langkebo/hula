@@ -1,4 +1,4 @@
-import { computed, ref, type Ref } from 'vue'
+import { computed, type Ref, ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
 import type { AIModel } from '@/services/matrix'
 import { conversationService, modelService } from '@/services/matrix'

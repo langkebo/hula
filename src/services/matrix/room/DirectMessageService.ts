@@ -1,5 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import { Preset, Visibility } from 'matrix-js-sdk'
+import { Preset, type Room, Visibility } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import matrixClientService from '../MatrixClientService'
 
@@ -78,6 +78,13 @@ export class MatrixRoomDirectMessageService {
     }
   }
 
+  private getRoomById(roomId: string): Room | null {
+    const clientWithRooms = this.getClient() as {
+      getRoom?: (targetRoomId: string) => Room | null
+    }
+    return clientWithRooms.getRoom?.(roomId) ?? null
+  }
+
   async setDirectRoom(userId: string, roomId: string): Promise<void> {
     const client = this.getClient()
     try {
@@ -88,8 +95,8 @@ export class MatrixRoomDirectMessageService {
 
         // 13.4.1: 在写回前过滤掉已离开或无效的房间，防止 crypto SDK 报错
         const validRooms = rooms.filter((id) => {
-          const room = (client as any).getRoom(id)
-          return room ? room.getMyMembership() === 'join' : false
+          const room = this.getRoomById(id)
+          return room ? room.getMyMembership?.() === 'join' : false
         })
 
         if (validRooms.length > 0) {

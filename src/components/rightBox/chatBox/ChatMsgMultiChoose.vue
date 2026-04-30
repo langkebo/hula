@@ -149,27 +149,26 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ErrorType } from '@/common/exception'
 import { MergeMessageType, MittEnum, MsgEnum, RoomTypeEnum, TauriCommand } from '@/enums'
+import { useCustomForwardTask } from '@/hooks/useCustomForwardTask'
+import { useImageViewer } from '@/hooks/useImageViewer'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { useChatStore } from '@/stores/domains/chat/chat'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import { matrixForwardService } from '@/services/matrix/messaging/MatrixForwardService'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import type { MessageBody, MessageType } from '@/stores/domains/chat/chat/types'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import type { MsgId } from '@/typings/global'
+import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
-import { useI18n } from 'vue-i18n'
-import type { MsgId } from '@/typings/global'
-import { useCustomForwardTask } from '@/hooks/useCustomForwardTask'
-import { useImageViewer } from '@/hooks/useImageViewer'
 import ChatMultiMsg from './ChatMultiMsg.vue'
 
-import type { MessageBody, MessageType } from '@/stores/domains/chat/chat/types'
-
-import { createLogger } from '@/utils/Logger'
 const logger = createLogger('ChatMsgMultiChoose')
 
 const { t } = useI18n()

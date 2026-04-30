@@ -1,4 +1,4 @@
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import { matrixClientService } from '../MatrixClientService'
 
 export interface Widget {
@@ -106,7 +106,7 @@ class MatrixWidgetService {
         name?: string
         data?: Record<string, unknown>
       }
-      if (content && content.type && content.url) {
+      if (content?.type && content.url) {
         widgets.push({
           id: event.getStateKey() || '',
           type: content.type,

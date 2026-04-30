@@ -1,12 +1,12 @@
 import { useDebounceFn } from '@vueuse/core'
-import { watch, type Ref } from 'vue'
+import { type Ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  WORKBENCH_SESSION_SORTS,
-  WORKBENCH_SESSION_TYPE_FILTERS,
   readSpaceWorkbenchSearch,
   readSpaceWorkbenchSessionSort,
   readSpaceWorkbenchSessionTypeFilter,
+  WORKBENCH_SESSION_SORTS,
+  WORKBENCH_SESSION_TYPE_FILTERS,
   type WorkbenchSessionSort,
   type WorkbenchSessionTypeFilter
 } from '@/router/spaceNavigation'

@@ -23,8 +23,8 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MyMessages')
 const { t } = useI18n()

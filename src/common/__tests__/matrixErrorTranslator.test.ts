@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { translateMatrixError, isRecoverableError, getErrorAction } from '../matrixErrorTranslator'
+import { describe, expect, it } from 'vitest'
+import { getErrorAction, isRecoverableError, translateMatrixError } from '../matrixErrorTranslator'
 
 describe('matrixErrorTranslator', () => {
   it('translates M_FORBIDDEN', () => {

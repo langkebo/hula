@@ -19,7 +19,7 @@
                 <use href="#smiling-face"></use>
               </svg>
             </template>
-            {{ t('message.more_reactions') }}
+            {{ t('home.action.more') }}
           </n-button>
         </template>
         <Emoticon @emojiHandle="handleEmojiSelect" :all="false" />
@@ -31,11 +31,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { MarkEnum } from '@/enums'
-import { matrixReactionService } from '@/services/matrix'
-import Emoticon from '@/components/rightBox/emoticon/index.vue'
-
+import { matrixReactionService } from '@/services/matrix/messaging/MatrixReactionService'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('ReactionPicker')
+const Emoticon = defineAsyncComponent(() => import('@/components/rightBox/emoticon/index.vue'))
 
 const props = defineProps<{
   roomId: string

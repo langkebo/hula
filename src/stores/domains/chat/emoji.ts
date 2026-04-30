@@ -1,16 +1,16 @@
-import { defineStore } from 'pinia'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import pLimit from 'p-limit'
+import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
+import { matrixEmojiService } from '@/services/matrix/messaging/MatrixEmojiService'
 import type { EmojiItem as EmojiItemType } from '@/services/types'
 import { useUserStore } from '@/stores/domains/user/user'
-import { matrixEmojiService } from '@/services/matrix/messaging/MatrixEmojiService'
-import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
-import { md5FromString } from '@/utils/Md5Util'
-import { isMobile } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { md5FromString } from '@/utils/Md5Util'
+import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
+import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('EmojiStore')
 const SUPPORTED_EMOJI_MIME_TYPES = ['image/png', 'image/gif', 'image/webp'] as const

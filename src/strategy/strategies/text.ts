@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify'
+import { AppException } from '@/common/exception.ts'
 import { MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
-import { AppException } from '@/common/exception.ts'
 import { removeTag } from '@/utils/Formatting'
 import { AbstractMessageStrategy, type ReplyRef } from './base'
 

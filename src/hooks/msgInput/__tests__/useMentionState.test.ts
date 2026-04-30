@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import type { UserItem } from '@/services/types.ts'
 import { useMentionState } from '../useMentionState'

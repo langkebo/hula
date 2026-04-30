@@ -3,19 +3,21 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { error, info } from '@tauri-apps/plugin-log'
 import { CallTypeEnum, RTCCallStatus } from '@/enums'
 import { useUserStore } from '@/stores/domains/user/user'
+import { createLogger } from '@/utils/Logger'
+import { TimerManager } from '@/utils/TimerManager'
 import { isMobile } from '../utils/PlatformConstants'
 import { useMitt } from './useMitt'
 import { useTauriListener } from './useTauriListener'
-import { createLogger } from '@/utils/Logger'
-import { TimerManager } from '@/utils/TimerManager'
-import { SignalTypeEnum, type WSRtcCallMsg, type RtcMsgVO } from './webRtc/types'
 import { getIceConfiguration, loadIceServers } from './webRtc/iceServers'
-import { useCallTimer } from './webRtc/useCallTimer'
+import { type RtcMsgVO, SignalTypeEnum, type WSRtcCallMsg } from './webRtc/types'
 import { useCallBell } from './webRtc/useCallBell'
+import { useCallTimer } from './webRtc/useCallTimer'
+import { useCameraSwitch } from './webRtc/useCameraSwitch'
 import { useMediaDevices } from './webRtc/useMediaDevices'
 import { useScreenShare } from './webRtc/useScreenShare'
-import { useCameraSwitch } from './webRtc/useCameraSwitch'
+
 export { SignalTypeEnum, type WSRtcCallMsg } from './webRtc/types'
+
 const logger = createLogger('WebRtc')
 
 const sendMatrixVoipSignal = async (type: string, data: Record<string, unknown>) => {
@@ -569,7 +571,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   // 处理 ICE candidate
   const handleCandidate = async (signal: RTCIceCandidateInit) => {
     try {
-      if (peerConnection.value && peerConnection.value.remoteDescription) {
+      if (peerConnection.value?.remoteDescription) {
         info('添加 candidate')
         await peerConnection.value!.addIceCandidate(signal)
       }

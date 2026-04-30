@@ -48,10 +48,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import ImagePreview from '@/mobile/components/ImagePreview.vue'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import ImagePreview from '@/mobile/components/ImagePreview.vue'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MyAlbum')

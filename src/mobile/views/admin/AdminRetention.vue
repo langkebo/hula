@@ -2,7 +2,10 @@
   <mobile-layout :title="t('admin.retention')" show-back>
     <div class="mobile-admin-retention">
       <van-cell-group inset :title="t('admin.retention_status')">
-        <van-cell v-if="admin.retentionStatus.value" :title="t('admin.status')" :value="String(admin.retentionStatus.value.status ?? '-')" />
+        <van-cell
+          v-if="admin.retentionStatus.value"
+          :title="t('admin.status')"
+          :value="String(admin.retentionStatus.value.status ?? '-')" />
         <van-cell v-else :title="t('admin.status')" value="-" />
         <div class="status-btn">
           <van-button type="primary" :loading="admin.taskLoading.value" block @click="handleRunTask">
@@ -14,9 +17,7 @@
       <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
         <van-cell-group :title="t('admin.retention_policies')">
           <van-swipe-cell v-for="policy in admin.policies.value" :key="policy.roomId">
-            <van-cell
-              :title="policy.roomId"
-              :label="formatPolicy(policy)" />
+            <van-cell :title="policy.roomId" :label="formatPolicy(policy)" />
             <template #right>
               <van-button square type="danger" :text="t('admin.delete')" @click="handleDelete(policy.roomId)" />
             </template>
@@ -30,11 +31,7 @@
         </van-button>
       </div>
 
-      <van-dialog
-        v-model:show="showAddDialog"
-        :title="t('admin.add_policy')"
-        show-cancel-button
-        @confirm="handleAdd">
+      <van-dialog v-model:show="showAddDialog" :title="t('admin.add_policy')" show-cancel-button @confirm="handleAdd">
         <van-field v-model="newRoomId" :label="t('admin.room_id')" :placeholder="'!room:server'" />
         <van-field v-model="newMaxLifetime" :label="t('admin.max_lifetime_ms')" type="digit" />
         <van-field v-model="newMinLifetime" :label="t('admin.min_lifetime_ms')" type="digit" />
@@ -44,12 +41,12 @@
 </template>
 
 <script setup lang="ts">
+import { showToast } from 'vant'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { showToast } from 'vant'
-import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminRetention } from '@/composables/admin'
 import type { RetentionPolicyView } from '@/composables/admin/useAdminRetention'
+import MobileLayout from '@/mobile/layout/index.vue'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminRetention')

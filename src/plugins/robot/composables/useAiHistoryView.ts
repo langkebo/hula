@@ -8,10 +8,10 @@
  * `handleOpenHistory` 由 `mitt('open-generation-history')` 触发，订阅 / 退订
  * 在本 composable 内自管理；调用方仅需透传 `selectedModel` 以便决定默认 tab。
  */
-import { onMounted, onUnmounted, ref, type Ref } from 'vue'
+import { onMounted, onUnmounted, type Ref, ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { aiService } from '@/services/matrix'
 import type { AIModel } from '@/services/matrix'
+import { aiService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 import type { HistoryItem, PaginationState, PreviewItem } from './useRobotChat'
 

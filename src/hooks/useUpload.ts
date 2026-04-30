@@ -1,15 +1,16 @@
 import { Channel, invoke } from '@tauri-apps/api/core'
 import { BaseDirectory, stat, writeFile } from '@tauri-apps/plugin-fs'
 import { createEventHook } from '@vueuse/core'
-import { TauriCommand, UploadSceneEnum } from '@/enums'
+import { TauriCommand, type UploadSceneEnum } from '@/enums'
+import { uploadService } from '@/services/UploadService'
 import { useUserStore } from '@/stores/domains/user/user'
 import { extractFileName } from '@/utils/Formatting'
 import { getImageDimensions } from '@/utils/ImageUtils'
-import { uploadService } from '@/services/UploadService'
-import { isAndroid, isMobile } from '@/utils/PlatformConstants'
-import { getWasmMd5 } from '@/utils/Md5Util'
-import { removeTempFile } from '@/utils/TempFileManager'
 import { createLogger } from '@/utils/Logger'
+import { getWasmMd5 } from '@/utils/Md5Util'
+import { isAndroid, isMobile } from '@/utils/PlatformConstants'
+import { removeTempFile } from '@/utils/TempFileManager'
+
 const logger = createLogger('Upload')
 
 /** 文件信息类型 */

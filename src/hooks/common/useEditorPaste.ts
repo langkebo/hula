@@ -10,11 +10,10 @@
 import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import type { Ref } from 'vue'
 import { LimitEnum, MsgEnum } from '@/enums'
-import { isPathUploadFile, type UploadFile } from '@/utils/FileType'
-import { SUPPORTED_IMAGE_EXTENSIONS, getFileExtension } from '@/utils/FileType'
-import { isMobile } from '@/utils/PlatformConstants'
-import { getImageCache } from '@/utils/PathUtil.ts'
+import { getFileExtension, isPathUploadFile, SUPPORTED_IMAGE_EXTENSIONS, type UploadFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
+import { getImageCache } from '@/utils/PathUtil.ts'
+import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('Common:EditorPaste')
 

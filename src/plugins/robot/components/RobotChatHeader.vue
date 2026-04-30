@@ -152,11 +152,11 @@
 </template>
 
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import type { InputInst } from 'naive-ui'
 import { nextTick, ref, watch } from 'vue'
-import { Icon } from '@iconify/vue'
-import type { ConversationMeta } from '@/plugins/robot/composables/useRobotChat'
 import type { AIProvider } from '@/plugins/robot/composables/useAiProviderConfig'
+import type { ConversationMeta } from '@/plugins/robot/composables/useRobotChat'
 import type { AIModel } from '@/services/matrix'
 
 const props = defineProps<{

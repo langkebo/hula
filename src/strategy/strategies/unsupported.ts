@@ -1,7 +1,7 @@
-import { type Ref } from 'vue'
+import type { Ref } from 'vue'
+import { AppException } from '@/common/exception.ts'
 import { MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
-import { AppException } from '@/common/exception.ts'
 import { AbstractMessageStrategy } from './base'
 
 export class UnsupportedMessageStrategyImpl extends AbstractMessageStrategy {

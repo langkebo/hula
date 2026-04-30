@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SPACE_MANAGE_POWER_LEVEL, canManageSpaceByPowerLevel } from '../spacePermissions'
+import { canManageSpaceByPowerLevel, SPACE_MANAGE_POWER_LEVEL } from '../spacePermissions'
 
 describe('spacePermissions', () => {
   it('returns false when the client, user, or room context is missing', () => {

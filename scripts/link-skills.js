@@ -1,9 +1,10 @@
 // biome-ignore-all lint/suspicious/noConsole: This CLI intentionally writes linking guidance to the terminal.
-import { checkbox } from '@inquirer/prompts'
-import { openSync, promises as fs } from 'fs'
-import path from 'path'
+
 import { ReadStream, WriteStream } from 'node:tty'
 import { styleText } from 'node:util'
+import { checkbox } from '@inquirer/prompts'
+import { promises as fs, openSync } from 'fs'
+import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)

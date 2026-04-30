@@ -265,17 +265,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
-import { NButton, NDivider, NProgress, NRadio, NRadioGroup, NSelect, NSwitch, useMessage } from 'naive-ui'
-import { storeToRefs } from 'pinia'
 import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
 import { open } from '@tauri-apps/plugin-dialog'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useScannerStore } from '@/stores/domains/widget/scanner'
-import { isDesktop } from '@/utils/PlatformConstants'
-import { formatBytes } from '@/utils/Formatting.ts'
+import { NButton, NDivider, NProgress, NRadio, NRadioGroup, NSelect, NSwitch, useMessage } from 'naive-ui'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLanguageOptions } from '@/composables/settings/settingsOptions'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useScannerStore } from '@/stores/domains/widget/scanner'
+import { formatBytes } from '@/utils/Formatting.ts'
+import { isDesktop } from '@/utils/PlatformConstants'
 
 defineOptions({
   name: 'PreferencesSettings'

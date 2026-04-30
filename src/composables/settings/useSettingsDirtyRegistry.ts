@@ -1,14 +1,14 @@
 import {
+  type ComputedRef,
   computed,
+  type InjectionKey,
   inject,
+  type MaybeRefOrGetter,
   onScopeDispose,
   provide,
   ref,
   toValue,
-  watch,
-  type ComputedRef,
-  type InjectionKey,
-  type MaybeRefOrGetter
+  watch
 } from 'vue'
 import type { SettingsTabType } from '@/stores/domains/settings/settingsSchema'
 

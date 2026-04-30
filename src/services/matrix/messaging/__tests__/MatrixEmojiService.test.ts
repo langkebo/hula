@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { matrixEmojiService } from '../MatrixEmojiService'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '../../MatrixClientService'
 import { matrixMediaService } from '../../media/MatrixMediaService'
+import { matrixEmojiService } from '../MatrixEmojiService'
 
 vi.mock('../../MatrixClientService', () => ({
   matrixClientService: {

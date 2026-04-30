@@ -55,10 +55,10 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { useRoute, useRouter } from 'vue-router'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { matrixAnnouncementService } from '@/services/matrix'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('NoticeEdit')
 

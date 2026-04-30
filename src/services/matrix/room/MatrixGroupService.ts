@@ -1,5 +1,5 @@
-import { Preset, Visibility, type ICreateRoomOpts } from 'matrix-js-sdk'
-import { info, warn, error } from '@tauri-apps/plugin-log'
+import { error, info, warn } from '@tauri-apps/plugin-log'
+import { type ICreateRoomOpts, Preset, Visibility } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 import { matrixRoomService } from './MatrixRoomService'
 

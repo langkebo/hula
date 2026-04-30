@@ -4,8 +4,8 @@
  * 提供数据同步功能
  */
 
-import { type MatrixClient, type Room, NotificationCountType } from 'matrix-js-sdk'
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
+import { type MatrixClient, NotificationCountType, type Room } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 
 /**

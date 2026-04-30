@@ -36,12 +36,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { useUserStore } from '@/stores/domains/user/user'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import { useUserStore } from '@/stores/domains/user/user'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const { t } = useI18n()
 const userStore = useUserStore()

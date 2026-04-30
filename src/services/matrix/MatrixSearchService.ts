@@ -1,6 +1,6 @@
-import matrixClientService from './MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import type { SearchEventContext } from '@/types/matrix-api'
+import matrixClientService from './MatrixClientService'
 
 export interface UserSearchResult {
   userId: string

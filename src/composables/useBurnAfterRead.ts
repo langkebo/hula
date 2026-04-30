@@ -1,4 +1,4 @@
-import { ref, computed, onUnmounted } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { matrixBurnAfterReadService } from '@/services/matrix'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { extractAtUserIds, parseHtmlSafely } from '../mentionParser'
+import { describe, expect, it } from 'vitest'
 import type { UserItem } from '@/services/types'
+import { extractAtUserIds, parseHtmlSafely } from '../mentionParser'
 
 const makeUser = (uid: string, name: string, myName?: string): UserItem =>
   ({ uid, name, myName }) as unknown as UserItem

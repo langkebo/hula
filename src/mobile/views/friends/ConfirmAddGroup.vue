@@ -48,11 +48,11 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
+import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 import router from '@/router'
 import { useUserStore } from '@/stores/domains/user/user'
+import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
-import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 
 const logger = createLogger('ConfirmAddGroup')
 const timerManager = useTimerManager()

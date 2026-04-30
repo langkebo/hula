@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
-import type { ComponentPublicInstance } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentPublicInstance } from 'vue'
 import type { DeviceInfo } from '@/services/matrix/user/MatrixAccountService'
 import SessionSettings from '../SessionSettings.vue'
 

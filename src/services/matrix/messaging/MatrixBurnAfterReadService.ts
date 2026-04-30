@@ -1,5 +1,5 @@
-import matrixClientService from '../MatrixClientService'
 import { createLogger } from '@/utils/Logger'
+import matrixClientService from '../MatrixClientService'
 
 const logger = createLogger('BurnAfterRead')
 

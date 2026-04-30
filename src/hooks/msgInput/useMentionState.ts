@@ -1,4 +1,4 @@
-import { computed, ref, watchEffect, type ComputedRef, type Ref } from 'vue'
+import { type ComputedRef, computed, type Ref, ref, watchEffect } from 'vue'
 import type { UserItem } from '@/services/types.ts'
 
 export interface MentionState {

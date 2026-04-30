@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import { audioManager } from '@/utils/AudioManager'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('AudioPlayback')
 
 export type AudioPlaybackReturn = {

@@ -44,10 +44,7 @@
 
       <n-gi span="2">
         <n-card :title="t('admin.maintenance.experimental_features')" size="small">
-          <n-empty
-            v-if="!featureEntries.length"
-            :description="t('admin.maintenance.no_features')"
-            size="small" />
+          <n-empty v-if="!featureEntries.length" :description="t('admin.maintenance.no_features')" size="small" />
           <n-list v-else bordered>
             <n-list-item v-for="entry in featureEntries" :key="entry.key">
               <n-flex align="center" justify="space-between">
@@ -69,27 +66,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, h } from 'vue'
 import {
-  NPageHeader,
+  type DataTableColumns,
   NButton,
   NCard,
-  NGrid,
-  NGi,
   NDataTable,
+  NDatePicker,
   NDescriptions,
   NDescriptionsItem,
   NEmpty,
+  NFlex,
+  NGi,
+  NGrid,
   NList,
   NListItem,
-  NFlex,
+  NPageHeader,
   NSpace,
   NSwitch,
-  NDatePicker,
   NTag,
-  useMessage,
-  type DataTableColumns
+  useMessage
 } from 'naive-ui'
+import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminMaintenance } from '@/composables/admin'
 import { createLogger } from '@/utils/Logger'

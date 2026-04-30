@@ -6,7 +6,7 @@
  * via `UseScreenShareOptions` so the hook stays composable and unit-testable
  * without spinning up a full RTCPeerConnection.
  */
-import { ref, type Ref } from 'vue'
+import { type Ref, ref } from 'vue'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WebRtc:ScreenShare')

@@ -1,7 +1,7 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import {
-  matrixClientService,
-  type ConnectionState as MatrixConnectionState
+  type ConnectionState as MatrixConnectionState,
+  matrixClientService
 } from '@/services/matrix/MatrixClientService'
 
 export type ConnectionState = 'online' | 'offline' | 'reconnecting' | 'error'

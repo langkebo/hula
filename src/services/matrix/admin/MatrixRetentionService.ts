@@ -4,8 +4,8 @@
  * 提供消息保留策略管理功能
  */
 
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
-import { info, error } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
 
 /**

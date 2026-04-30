@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { matrixClientService } from '../MatrixClientService'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatrixCacheManager } from '../MatrixCacheManager'
+import { matrixClientService } from '../MatrixClientService'
 import { MatrixRequestDeduper } from '../MatrixRequestDeduper'
 
 vi.mock('../MatrixClientService', () => ({

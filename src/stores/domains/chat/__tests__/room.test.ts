@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
-import { useRoomStore } from '@/stores/domains/chat/room'
-import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
+import { createPinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MessageStatusEnum, MsgEnum } from '@/enums'
 import matrixEventService from '@/services/matrix/MatrixEventService'
+import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
 import matrixRoomSummaryService from '@/services/matrix/room/MatrixRoomSummaryService'
-import { MsgEnum, MessageStatusEnum } from '@/enums'
+import { useRoomStore } from '@/stores/domains/chat/room'
 
 const { mockRoomService, mockEventService, mockRoomSummaryService, mockMatrixClientService } = vi.hoisted(() => ({
   mockRoomService: {

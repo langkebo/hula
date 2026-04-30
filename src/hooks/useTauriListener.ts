@@ -4,6 +4,7 @@ import { error, info } from '@tauri-apps/plugin-log'
 import { getCurrentInstance, onUnmounted } from 'vue'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('TauriListener')
 
 // 全局监听器管理

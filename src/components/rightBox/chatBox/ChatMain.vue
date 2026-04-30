@@ -215,34 +215,37 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, provide, ref, useTemplateRef, watch, watchPostEffect } from 'vue'
+import type { UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { useDebounceFn, useEventListener, useResizeObserver, useTimeoutFn } from '@vueuse/core'
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, useTemplateRef, watch, watchPostEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import { MittEnum, MsgEnum, ScrollIntentEnum } from '@/enums'
-import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain.ts'
 import { useAutoScrollGuard } from '@/hooks/useAutoScrollGuard'
+import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain.ts'
+
+// 异步加载非首屏或重型组件
+const FileUploadProgress = defineAsyncComponent(() => import('@/components/rightBox/FileUploadProgress.vue'))
+const ThreadPanel = defineAsyncComponent(() => import('@/components/thread/ThreadPanel.vue'))
+
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { usePopover } from '@/hooks/usePopover.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
+import type { Announcement } from '@/stores/domains/chat/announcement'
+import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStore } from '@/stores/domains/user/user'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { audioManager } from '@/utils/AudioManager'
 import { timeToStr } from '@/utils/ComputedTime'
-import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
+import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
-import FileUploadProgress from '@/components/rightBox/FileUploadProgress.vue'
-import ThreadPanel from '@/components/thread/ThreadPanel.vue'
-import { createLogger } from '@/utils/Logger'
-import type { Announcement } from '@/stores/domains/chat/announcement'
-import type { UnlistenFn } from '@tauri-apps/api/event'
 
 const logger = createLogger('ChatMain')
 const timerManager = useTimerManager()

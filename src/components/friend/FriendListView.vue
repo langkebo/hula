@@ -102,16 +102,16 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { OnlineEnum, ThemeEnum } from '@/enums'
-import { useContactStore, type MatrixContact } from '@/stores/domains/chat/contacts'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { FriendStatus } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpecialFriendService'
-import FriendRequestDialog from './FriendRequestDialog.vue'
+import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 import AddFriendDialog from './AddFriendDialog.vue'
 import FriendDetailDrawer from './FriendDetailDrawer.vue'
-import ContextMenu from '@/components/common/ContextMenu.vue'
+import FriendRequestDialog from './FriendRequestDialog.vue'
 
 const { t } = useI18n()
 const contactStore = useContactStore()

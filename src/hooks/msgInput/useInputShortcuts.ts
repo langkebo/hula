@@ -1,8 +1,8 @@
 import { useDebounceFn } from '@vueuse/core'
-import { ref, watch, type ComputedRef, type Ref } from 'vue'
+import { type ComputedRef, type Ref, ref, watch } from 'vue'
 import { MsgEnum } from '@/enums'
-import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { isMac, isWindows } from '@/utils/PlatformConstants'
 
 const logger = createLogger('InputShortcuts')
 

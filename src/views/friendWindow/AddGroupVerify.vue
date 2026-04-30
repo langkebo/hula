@@ -51,11 +51,11 @@
 </template>
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useI18n } from 'vue-i18n'
+import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 import { countGraphemes } from '@/hooks/useCommon.ts'
 import { useUserStore } from '@/stores/domains/user/user'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
-import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 
 const logger = createLogger('AddGroupVerify')
 

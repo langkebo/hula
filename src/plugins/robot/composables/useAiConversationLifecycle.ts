@@ -1,9 +1,9 @@
-import { type Ref } from 'vue'
+import type { Ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
+import router from '@/router'
 import type { AIModel, ChatRole } from '@/services/matrix'
 import { aiService, conversationService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
-import router from '@/router'
 import type { ConversationMeta, Message } from './useRobotChat'
 
 const logger = createLogger('AiConversationLifecycle')

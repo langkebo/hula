@@ -1,8 +1,8 @@
+import type { UserInfo } from './AdminTypes'
 import type { AdminMediaService } from './MediaService'
 import type { AdminRoomService } from './RoomService'
 import type { AdminSecurityService } from './SecurityService'
 import type { AdminUserService } from './UserService'
-import type { UserInfo } from './AdminTypes'
 
 type AdminFacadeDomainDeps = {
   media: AdminMediaService

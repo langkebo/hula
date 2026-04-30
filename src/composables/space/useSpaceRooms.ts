@@ -1,4 +1,4 @@
-import { ref, type Ref } from 'vue'
+import { type Ref, ref } from 'vue'
 import { matrixSpaceService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 

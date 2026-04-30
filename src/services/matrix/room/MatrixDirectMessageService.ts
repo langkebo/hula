@@ -1,13 +1,13 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import type { Room } from 'matrix-js-sdk'
-import {
+import type {
+  CreateDmOptions,
   DirectMessageManager,
-  type CreateDmOptions,
-  type DmPartnerResponse,
-  type DmRoomInfo,
-  type IDirectRoomsMap
+  DmPartnerResponse,
+  DmRoomInfo,
+  IDirectRoomsMap
 } from 'matrix-js-sdk/dm'
 import matrixClientService from '../MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export type { CreateDmOptions, DmPartnerResponse, DmRoomInfo, IDirectRoomsMap }
 

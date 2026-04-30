@@ -22,6 +22,11 @@ const logger = createLogger('MatrixClient')
  */
 export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'ERROR'
 
+type SyncErrorLike = {
+  errcode?: string
+  name?: string
+}
+
 /**
  * Matrix 客户端配置接口
  */
@@ -91,7 +96,7 @@ class MatrixClientService {
     // 增强错误日志
     if (state === 'ERROR') {
       // 13.4.3: 识别限流或超时，避免产生干扰日志。M_LIMIT_EXCEEDED 或 ConnectionError 是同步过程中常见的暂时性问题。
-      const errorData = data as any
+      const errorData = data as SyncErrorLike | undefined
       if (errorData?.errcode === 'M_LIMIT_EXCEEDED' || errorData?.name === 'ConnectionError') {
         logger.warn(`同步暂时受限或超时 (M_LIMIT_EXCEEDED)，SDK 将自动重试: ${state}`)
         return

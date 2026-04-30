@@ -358,58 +358,62 @@
   </div>
 </template>
 <script setup lang="ts">
+import { vOnLongPress } from '@vueuse/components'
 import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BurnMessage from '@/components/burn/BurnMessage.vue'
+import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
 import { MessageStatusEnum, MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain'
 import { useMitt } from '@/hooks/useMitt'
 import { usePopover } from '@/hooks/usePopover'
-import type { MessageType, MessageBody } from '@/stores/domains/chat/chat'
+import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
+import router from '@/router'
+import { matrixEventService } from '@/services/matrix/MatrixEventService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
+import { matrixReactionService } from '@/services/matrix/messaging/MatrixReactionService'
+import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
+import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import { useBadgeStore } from '@/stores/domains/chat/badge'
-import { useGlobalStore } from '@/stores/domains/widget/global'
+import type { MessageBody, MessageType } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
-import { useChatStore } from '@/stores/domains/chat/chat'
-import { useUserStore } from '@/stores/domains/user/user'
-import { matrixMessageService, matrixContactService, matrixReactionService } from '@/services/matrix'
 import { createMacContextSelectionGuard } from '@/utils/MacSelectionGuard'
-import { isMobile } from '@/utils/PlatformConstants'
+import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import {
-  getBodyTranslatedText,
-  getBodyReply,
   getBodyContent,
-  getBodyUrl,
-  getBodySize,
   getBodyMimeType,
+  getBodyReply,
+  getBodySize,
+  getBodyTranslatedText,
+  getBodyUrl,
   toSafeBody
 } from '@/utils/messageBody'
-import { matrixEventService } from '@/services/matrix'
-import Announcement from './Announcement.vue'
-import AudioCall from './AudioCall.vue'
+import { isMobile } from '@/utils/PlatformConstants'
+import { toFriendInfoPage } from '@/utils/RouterUtils'
 import Emoji from './Emoji.vue'
-import File from './File.vue'
 import Image from './Image.vue'
-import Location from './Location.vue'
-import MergeMessage from './MergeMessage.vue'
-import Beacon from './Beacon.vue'
-import LinkPreview from './LinkPreview.vue'
-import BotMessage from './special/BotMessage.vue'
 import RecallMessage from './special/RecallMessage.vue'
 import SystemMessage from './special/SystemMessage.vue'
 import Text from './Text.vue'
-import Video from './Video.vue'
-import VideoCall from './VideoCall.vue'
-import Voice from './Voice.vue'
-import { toFriendInfoPage } from '@/utils/RouterUtils'
-import { vOnLongPress } from '@vueuse/components'
-import BurnMessage from '@/components/burn/BurnMessage.vue'
-import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
-import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
-import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
-import router from '@/router'
+
+// 异步加载次要或重型消息组件
+const Announcement = defineAsyncComponent(() => import('./Announcement.vue'))
+const AudioCall = defineAsyncComponent(() => import('./AudioCall.vue'))
+const Beacon = defineAsyncComponent(() => import('./Beacon.vue'))
+const File = defineAsyncComponent(() => import('./File.vue'))
+const LinkPreview = defineAsyncComponent(() => import('./LinkPreview.vue'))
+const Location = defineAsyncComponent(() => import('./Location.vue'))
+const MergeMessage = defineAsyncComponent(() => import('./MergeMessage.vue'))
+const BotMessage = defineAsyncComponent(() => import('./special/BotMessage.vue'))
+const Video = defineAsyncComponent(() => import('./Video.vue'))
+const VideoCall = defineAsyncComponent(() => import('./VideoCall.vue'))
+const Voice = defineAsyncComponent(() => import('./Voice.vue'))
 
 type ShowablePopover = {
   setShow: (show: boolean) => void

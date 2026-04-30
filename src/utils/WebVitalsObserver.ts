@@ -5,8 +5,8 @@
 
 import type { Metric } from 'web-vitals'
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals'
-import { performanceReporter } from '@/utils/PerformanceReporter'
 import { createLogger } from '@/utils/Logger'
+import { performanceReporter } from '@/utils/PerformanceReporter'
 
 const logger = createLogger('WebVitalsObserver')
 

@@ -1,18 +1,18 @@
-import { matrixExtensionEndpoints } from '@/services/backend'
-import { httpClient } from '@/utils/HttpClient'
-import { matrixClientService } from '../MatrixClientService'
 import { info, error as logError } from '@tauri-apps/plugin-log'
+import { matrixExtensionEndpoints } from '@/services/backend'
 import type {
-  AIModelListResponse,
-  AIImageListResponse,
-  AIImage,
-  AIVideoListResponse,
-  AIVideo,
-  AIAudioListResponse,
   AIAudio,
+  AIAudioListResponse,
   AIChatRoleListResponse,
+  AIImage,
+  AIImageListResponse,
+  AIModelListResponse,
+  AIVideo,
+  AIVideoListResponse,
   AIVoice
 } from '@/types/matrix-api'
+import { httpClient } from '@/utils/HttpClient'
+import { matrixClientService } from '../MatrixClientService'
 
 export interface AIConversation {
   id: string

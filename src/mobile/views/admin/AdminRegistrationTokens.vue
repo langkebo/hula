@@ -36,11 +36,11 @@
 </template>
 
 <script setup lang="ts">
+import { showToast } from 'vant'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { showToast } from 'vant'
-import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminRegistrationTokens } from '@/composables/admin'
+import MobileLayout from '@/mobile/layout/index.vue'
 import type { RegistrationToken } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 

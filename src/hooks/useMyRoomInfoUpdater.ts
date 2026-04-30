@@ -1,7 +1,7 @@
+import { matrixRoomService } from '@/services/matrix'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
-import { matrixRoomService } from '@/services/matrix'
 
 type UpdatePayload = {
   roomId: string

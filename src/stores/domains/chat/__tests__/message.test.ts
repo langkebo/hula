@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum } from '@/enums'
 
 const { globalStoreMock } = vi.hoisted(() => {
@@ -82,7 +82,7 @@ vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
   }
 }))
 
-import { useMessageStore, type MessageType } from '@/stores/domains/chat/message'
+import { type MessageType, useMessageStore } from '@/stores/domains/chat/message'
 
 const createMessage = (id: string, roomId = 'room-1'): MessageType => ({
   message: {

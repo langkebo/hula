@@ -1,10 +1,10 @@
 import type { TransferRenderSourceList, TransferRenderTargetLabel } from 'naive-ui'
 import { NAvatar, NCheckbox } from 'naive-ui'
-import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import { UserType } from '@/enums'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 
 /** 选项接口 */
 interface SelectOption {

@@ -1,57 +1,58 @@
+import { invoke } from '@tauri-apps/api/core'
+import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { ref } from 'vue'
-import matrixClientService from '../MatrixClientService'
-import { info, error, warn } from '@tauri-apps/plugin-log'
-import { invoke } from '@tauri-apps/api/core'
 import { TauriCommand } from '@/enums'
-import { createAdminFacadeDomainMethods } from './AdminFacadeDomainMethods'
+import matrixClientService from '../MatrixClientService'
 import type { AdminFacadeDomainMethods } from './AdminFacadeDomainMethods'
-import { createAdminFacadeOpsMethods } from './AdminFacadeOpsMethods'
+import { createAdminFacadeDomainMethods } from './AdminFacadeDomainMethods'
 import type { AdminFacadeOpsMethods } from './AdminFacadeOpsMethods'
-import { AdminRoomService } from './RoomService'
-import { AdminRegistrationTokensService } from './RegistrationTokensService'
-import { AdminSecurityService } from './SecurityService'
-import { AdminUserService } from './UserService'
-import { AdminServerService } from './ServerService'
+import { createAdminFacadeOpsMethods } from './AdminFacadeOpsMethods'
+import type {
+  FederationDestination,
+  RateLimit,
+  RegistrationToken,
+  RoomInfo,
+  RoomState,
+  ServerHealth,
+  ServerNoticeInfo,
+  ServerNoticeResult,
+  ServerStats,
+  ServerStatus,
+  ServerVersion,
+  ShadowBanStatus,
+  ShutdownRoomResult,
+  UserDevice,
+  UserInfo
+} from './AdminTypes'
+import { AdminApplicationService } from './ApplicationService'
 import { AdminMediaService } from './MediaService'
 import { AdminNotificationService } from './NotificationService'
+import { AdminRegistrationTokensService } from './RegistrationTokensService'
 import { AdminRetentionService } from './RetentionService'
-import { AdminApplicationService } from './ApplicationService'
-import type {
-  ServerStats,
-  ServerStatus,
-  ServerHealth,
-  ServerVersion,
-  UserInfo,
-  UserDevice,
+import { AdminRoomService } from './RoomService'
+import { AdminSecurityService } from './SecurityService'
+import { AdminServerService } from './ServerService'
+import { AdminUserService } from './UserService'
+
+export type {
+  FederationBlacklistEntry,
+  FederationDestination,
   RateLimit,
-  ShadowBanStatus,
+  RegistrationToken,
   RoomInfo,
   RoomState,
-  ShutdownRoomResult,
-  FederationDestination,
-  ServerNoticeResult,
-  ServerNoticeInfo,
-  RegistrationToken
-} from './AdminTypes'
-export type {
-  ServerStats,
-  ServerStatus,
   ServerHealth,
   ServerInfo,
-  ServerVersion,
-  UserInfo,
-  UserDevice,
-  RateLimit,
-  ShadowBanStatus,
-  RoomInfo,
-  RoomState,
-  ShutdownRoomResult,
-  FederationDestination,
-  FederationBlacklistEntry,
-  ServerNoticeResult,
   ServerNoticeInfo,
-  RegistrationToken
+  ServerNoticeResult,
+  ServerStats,
+  ServerStatus,
+  ServerVersion,
+  ShadowBanStatus,
+  ShutdownRoomResult,
+  UserDevice,
+  UserInfo
 } from './AdminTypes'
 
 class AdminFacadeService {

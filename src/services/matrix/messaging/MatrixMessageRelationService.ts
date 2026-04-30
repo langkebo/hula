@@ -1,6 +1,6 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
 
 type RelatesTo = {
   rel_type?: string

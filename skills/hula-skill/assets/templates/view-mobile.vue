@@ -21,10 +21,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import { useExampleStore } from '#/stores/example'
 import type { ExampleItem } from '#/types'
 

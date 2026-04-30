@@ -117,13 +117,13 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { reverseGeocode } from '@/services/mapApi'
-import StaticProxyMap from './StaticProxyMap.vue'
-import { isMac, isWindows } from '@/utils/PlatformConstants'
-import { useI18n } from 'vue-i18n'
-import { createLogger } from '@/utils/Logger'
 import type { LocationData } from '@/types/common'
+import { createLogger } from '@/utils/Logger'
+import { isMac, isWindows } from '@/utils/PlatformConstants'
+import StaticProxyMap from './StaticProxyMap.vue'
 
 const logger = createLogger('LocationModal')
 

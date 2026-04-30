@@ -1,5 +1,5 @@
-import { Room, MatrixEvent, NotificationCountType } from 'matrix-js-sdk'
-import { MsgEnum, MessageStatusEnum } from '@/enums'
+import { type MatrixEvent, NotificationCountType, type Room } from 'matrix-js-sdk'
+import { MessageStatusEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import matrixMessageAdapter from '../messaging/MatrixMessageAdapter'
 

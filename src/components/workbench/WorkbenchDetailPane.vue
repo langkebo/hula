@@ -307,14 +307,14 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InfoPopover from '@/components/common/InfoPopover.vue'
 import MemberList from '@/components/room/MemberList.vue'
-import { createWebviewWindow } from '@/hooks/useWindow'
-import { useSpaceRooms, type SpaceChildRoom } from '@/composables/space/useSpaceRooms'
+import { type SpaceChildRoom, useSpaceRooms } from '@/composables/space/useSpaceRooms'
 import { RoomTypeEnum } from '@/enums'
 import { useLinkSegments } from '@/hooks/useLinkSegments'
+import { createWebviewWindow } from '@/hooks/useWindow'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
-import { useGroupStore, type MatrixGroupInfo, type MatrixRoomMember } from '@/stores/domains/chat/group'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { SessionItem } from '@/stores/domains/chat/chat'
+import { type MatrixGroupInfo, type MatrixRoomMember, useGroupStore } from '@/stores/domains/chat/group'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 
 type SpaceListItem = {
   spaceId: string

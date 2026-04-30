@@ -13,11 +13,11 @@ import { MittEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
-import { useChatStore } from '@/stores/domains/chat/chat'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { matrixSessionService } from '@/services/matrix'
-import { invokeWithErrorHandler } from '../../utils/TauriInvokeHandler'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import type { SessionItem } from '@/stores/domains/chat/chat/session'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { invokeWithErrorHandler } from '../../utils/TauriInvokeHandler'
 
 /**
  * Open the chat session for `uid`. `type` defaults to `2` (single chat).
