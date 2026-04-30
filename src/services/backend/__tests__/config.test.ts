@@ -3,11 +3,13 @@ import {
   getDefaultMatrixEndpointConfig,
   isValidHttpUrl,
   MATRIX_HOMESERVER_STORAGE_KEY,
+  MATRIX_IDENTITY_SERVER_STORAGE_KEY,
   normalizeHttpUrl,
   resolveMatrixEndpointConfig,
   resolveMatrixRuntimeEndpointConfig,
   resolveMatrixRuntimeHomeserverUrl,
-  saveMatrixHomeserverUrl
+  saveMatrixHomeserverUrl,
+  saveMatrixIdentityServerUrl
 } from '../config'
 import type { StorageLike } from '../types'
 
@@ -64,7 +66,7 @@ describe('backend config', () => {
 
   it('validates only http and https urls', () => {
     expect(isValidHttpUrl('https://matrix.example.com')).toBe(true)
-    expect(isValidHttpUrl('http://localhost:28008')).toBe(true)
+    expect(isValidHttpUrl('http://localhost:8008')).toBe(true)
     expect(isValidHttpUrl('ftp://matrix.example.com')).toBe(false)
     expect(isValidHttpUrl('not-a-url')).toBe(false)
   })
@@ -92,13 +94,23 @@ describe('backend config', () => {
     expect(storage.getItem(MATRIX_HOMESERVER_STORAGE_KEY)).toBe('http://matrix.internal')
   })
 
+  it('allows an empty identity server configuration', () => {
+    const storage = createStorage({
+      [MATRIX_IDENTITY_SERVER_STORAGE_KEY]: 'https://identity.example.com'
+    })
+
+    expect(saveMatrixIdentityServerUrl('', storage)).toBe('')
+    expect(storage.getItem(MATRIX_IDENTITY_SERVER_STORAGE_KEY)).toBeNull()
+    expect(getDefaultMatrixEndpointConfig().identityServerUrl).toBe('')
+  })
+
   it('rewrites local homeserver requests only when the current runtime uses the dev proxy', () => {
     withMockWindowLocation(() => {
-      const expectedUrl = import.meta.env.DEV ? 'http://localhost:6130' : 'http://localhost:28008'
-      const expectedLoopbackUrl = import.meta.env.DEV ? 'http://localhost:6130' : 'http://127.0.0.1:28008'
+      const expectedUrl = import.meta.env.DEV ? 'http://localhost:6130' : 'http://localhost:8008'
+      const expectedLoopbackUrl = import.meta.env.DEV ? 'http://localhost:6130' : 'http://127.0.0.1:8008'
 
-      expect(resolveMatrixRuntimeHomeserverUrl('http://localhost:28008')).toBe(expectedUrl)
-      expect(resolveMatrixRuntimeHomeserverUrl('http://127.0.0.1:28008')).toBe(expectedLoopbackUrl)
+      expect(resolveMatrixRuntimeHomeserverUrl('http://localhost:8008')).toBe(expectedUrl)
+      expect(resolveMatrixRuntimeHomeserverUrl('http://127.0.0.1:8008')).toBe(expectedLoopbackUrl)
     })
   })
 
@@ -106,8 +118,8 @@ describe('backend config', () => {
     withMockWindowLocation(() => {
       ;(globalThis.window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {}
 
-      expect(resolveMatrixRuntimeHomeserverUrl('http://localhost:28008')).toBe('http://localhost:28008')
-      expect(resolveMatrixRuntimeHomeserverUrl('http://127.0.0.1:28008')).toBe('http://127.0.0.1:28008')
+      expect(resolveMatrixRuntimeHomeserverUrl('http://localhost:8008')).toBe('http://localhost:8008')
+      expect(resolveMatrixRuntimeHomeserverUrl('http://127.0.0.1:8008')).toBe('http://127.0.0.1:8008')
     })
   })
 

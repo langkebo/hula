@@ -135,12 +135,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import { useDialog, useMessage, type FormInst } from 'naive-ui'
+import { type FormInst, useDialog, useMessage } from 'naive-ui'
+import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { type PermissionRow, useWidgetPermissions, useWidgets } from '@/composables/widget'
+import { openExternalUrl } from '@/hooks/useLinkSegments'
 import type { Widget } from '@/services/matrix/widget/MatrixWidgetService'
-import { useWidgets, useWidgetPermissions, type PermissionRow } from '@/composables/widget'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WidgetManager')
@@ -265,7 +266,7 @@ const handleRemoveWidget = (widget: Widget) => {
 }
 
 const handleOpenWidget = (widget: Widget) => {
-  window.open(widget.url, '_blank')
+  void openExternalUrl(widget.url)
 }
 
 const handleEditPermissions = async (widget: Widget) => {

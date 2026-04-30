@@ -69,13 +69,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
+import dayjs from 'dayjs'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Thread, ThreadDisplayMessage } from '@/services/matrix/messaging/MatrixThreadService'
-import { formatDistanceToNow } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
+import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ThreadView')
@@ -98,10 +97,7 @@ const rootMessage = ref<ThreadDisplayMessage | null>(null)
 const messages = ref<ThreadDisplayMessage[]>([])
 
 const formatTime = (timestamp: number) => {
-  return formatDistanceToNow(new Date(timestamp), {
-    addSuffix: true,
-    locale: zhCN
-  })
+  return dayjs(timestamp).fromNow()
 }
 
 const loadThread = async () => {

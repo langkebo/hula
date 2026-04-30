@@ -6,7 +6,7 @@ use crate::{AppData, configuration::Settings};
 
 #[tauri::command]
 pub async fn get_settings(state: State<'_, AppData>) -> Result<Settings, String> {
-    Ok(state.config.lock().await.clone())
+    Ok(state.config.read().await.clone())
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -21,7 +21,7 @@ pub async fn update_settings(
     state: State<'_, AppData>,
     settings: UpdateSettingsParams,
 ) -> Result<(), String> {
-    let mut config = state.config.lock().await;
+    let mut config = state.config.write().await;
     config.backend.base_url = settings.base_url.clone();
     config.backend.ws_url = settings.ws_url;
     info!("update settings: {:?}", config);

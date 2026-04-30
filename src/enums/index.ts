@@ -233,7 +233,9 @@ export enum StoresEnum {
   /** 配额 */
   QUOTA = 'quota',
   /** 内容审核 */
-  MODERATION = 'moderation'
+  MODERATION = 'moderation',
+  /** 服务端能力探测 */
+  CAPABILITY = 'capability'
 }
 
 /**

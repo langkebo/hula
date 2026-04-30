@@ -101,13 +101,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { showDialog, showToast } from 'vant'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { showToast, showDialog } from 'vant'
+import { type PermissionRow, useWidgetPermissions, useWidgets } from '@/composables/widget'
+import { openExternalUrl } from '@/hooks/useLinkSegments'
 import MobileLayout from '@/mobile/layout/index.vue'
 import type { Widget } from '@/services/matrix/widget/MatrixWidgetService'
-import { useWidgets, useWidgetPermissions, type PermissionRow } from '@/composables/widget'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileWidgetManager')
@@ -191,7 +192,7 @@ const handleAddWidget = async () => {
 }
 
 const handleOpenWidget = (w: Widget) => {
-  window.open(w.url, '_blank')
+  void openExternalUrl(w.url)
 }
 
 const handleRemoveWidget = async (w: Widget) => {

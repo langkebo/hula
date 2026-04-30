@@ -64,9 +64,6 @@ const tags = computed(() => {
 
 const handleClick = () => {
   emit('click', props.news)
-  if (props.news.url) {
-    window.open(props.news.url, '_blank')
-  }
 }
 </script>
 

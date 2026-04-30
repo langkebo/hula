@@ -133,13 +133,11 @@
             class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
             <svg class="size-18px"><use href="#settings"></use></svg>
           </div>
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://gitee.com/llangkebo/hula/"
+          <div
+            @click="openExternalUrl('https://gitee.com/llangkebo/hula/')"
             class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
             <svg class="size-18px"><use href="#github"></use></svg>
-          </a>
+          </div>
         </n-flex>
 
         <n-flex :size="4" align="center">
@@ -199,19 +197,21 @@
 </template>
 
 <script setup lang="ts">
-import { type InputInst, type VirtualListInst } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import type { InputInst, VirtualListInst } from 'naive-ui'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
+import { type ChatRole, type Conversation, chatRoleService, conversationService } from '@/services/matrix'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { conversationService, chatRoleService, type Conversation, type ChatRole } from '@/services/matrix'
 import { formatTimestamp } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('RobotLeft')
 const timerManager = useTimerManager()
+
+import { openExternalUrl } from '@/hooks/useLinkSegments'
 
 const userStore = useUserStore()
 const activeItem = ref<ChatItem | null>(null)
@@ -263,7 +263,7 @@ const fetchConversationList = async (isLoadMore = false) => {
       pageSize: pageSize.value
     })
 
-    if (data && data.list) {
+    if (data?.list) {
       const newChats = data.list.map((item: Conversation) => {
         const parsedCreateTime = Number(item.createTime)
         return {
@@ -622,7 +622,7 @@ onMounted(async () => {
 
   // ✅ 监听添加会话事件
   useMitt.on('add-conversation', (newChat: Conversation) => {
-    if (newChat && newChat.id) {
+    if (newChat?.id) {
       // 检查是否已存在
       const exists = chatList.value.some((chat) => chat.id === newChat.id)
       if (!exists) {

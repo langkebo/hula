@@ -1,8 +1,8 @@
+import { setTheme } from '@tauri-apps/api/app'
+import type { Theme } from '@tauri-apps/api/window'
 import { defineStore } from 'pinia'
 import { CloseBxEnum, ShowModeEnum, StoresEnum, ThemeEnum } from '@/enums'
 import { isMac } from '@/utils/PlatformConstants'
-import { setTheme } from '@tauri-apps/api/app'
-import type { Theme } from '@tauri-apps/api/window'
 
 // 获取平台对应的默认快捷键
 const getDefaultShortcuts = () => {
@@ -180,6 +180,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       lockTimeout: 5
     }
   }),
+  persist: true,
   getters: {
     screenshotShortcut: (state) => state.shortcuts?.screenshot ?? getDefaultShortcuts().screenshot,
     openMainPanelShortcut: (state) => state.shortcuts?.openMainPanel ?? getDefaultShortcuts().openMainPanel,
@@ -680,9 +681,5 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.ensureSecretChatSettings()
       return this.secretChat.enabled && !!this.secretChat.passwordHash
     }
-  },
-  share: {
-    enable: true,
-    initialize: true
   }
 })

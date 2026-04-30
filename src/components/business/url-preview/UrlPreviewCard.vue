@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import {
-  matrixUrlPreviewService,
-  type UrlPreview,
-  simplifyUrl,
-  getDomain
-} from '@/services/matrix/media/MatrixUrlPreviewService'
+import { computed, onMounted, ref } from 'vue'
+import { openExternalUrl } from '@/hooks/useLinkSegments'
+import { matrixUrlPreviewService, simplifyUrl, type UrlPreview } from '@/services/matrix/media/MatrixUrlPreviewService'
 
 interface Props {
   url: string
@@ -23,8 +19,6 @@ const preview = ref<UrlPreview | null>(null)
 const error = ref(false)
 
 const displayUrl = computed(() => simplifyUrl(props.url))
-const domain = computed(() => getDomain(props.url))
-
 onMounted(async () => {
   try {
     preview.value = await matrixUrlPreviewService.getPreview({ url: props.url })
@@ -36,7 +30,7 @@ onMounted(async () => {
 })
 
 const handleClick = () => {
-  window.open(props.url, '_blank')
+  void openExternalUrl(props.url)
 }
 </script>
 

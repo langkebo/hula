@@ -146,12 +146,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useTrendRadar } from '@/services/trendradar'
-import type { TrendRadarNews, TrendRadarTopic, TrendRadarRssArticle } from '@/services/trendradar'
+import { onMounted, ref } from 'vue'
 import NewsCard from '@/components/trendradar/NewsCard.vue'
-import TrendingPanel from '@/components/trendradar/TrendingPanel.vue'
 import SearchPanel from '@/components/trendradar/SearchPanel.vue'
+import TrendingPanel from '@/components/trendradar/TrendingPanel.vue'
+import { openExternalUrl } from '@/hooks/useLinkSegments'
+import type { TrendRadarNews, TrendRadarRssArticle, TrendRadarTopic } from '@/services/trendradar'
+import { useTrendRadar } from '@/services/trendradar'
 
 const emit = defineEmits<{
   (event: 'back'): void
@@ -199,7 +200,7 @@ const handleRetry = async () => {
 
 const handleNewsClick = (news: TrendRadarNews) => {
   if (news.url) {
-    window.open(news.url, '_blank')
+    void openExternalUrl(news.url)
   }
 }
 

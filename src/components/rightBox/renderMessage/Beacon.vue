@@ -40,9 +40,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import type { BeaconBody } from '@/services/types'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { matrixLocationService } from '@/services/matrix'
+import type { BeaconBody } from '@/services/types'
 import { useTimerManager } from '@/utils/TimerManager'
 
 defineOptions({
@@ -155,7 +156,7 @@ const handleBeaconClick = () => {
 
   // 使用 OpenStreetMap 打开地图（无需 API Key）
   const mapsUrl = matrixLocationService.getOpenStreetMapUrl(location)
-  window.open(mapsUrl, '_blank')
+  void openExternalUrl(mapsUrl)
 }
 
 const handleJoinClick = () => {

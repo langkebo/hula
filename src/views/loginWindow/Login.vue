@@ -219,7 +219,10 @@
           <n-input v-model:value="homeserverUrl" :placeholder="DEFAULT_MATRIX_HOMESERVER_URL" clearable />
         </n-form-item>
         <n-form-item label="Identity Server URL">
-          <n-input v-model:value="identityServerUrl" :placeholder="DEFAULT_MATRIX_IDENTITY_SERVER_URL" clearable />
+          <n-input
+            v-model:value="identityServerUrl"
+            :placeholder="DEFAULT_MATRIX_IDENTITY_SERVER_URL || '留空表示不使用 Identity Server'"
+            clearable />
         </n-form-item>
         <n-alert type="info" :bordered="false">修改服务器配置后需要重新登录</n-alert>
         <n-flex justify="end">
@@ -232,26 +235,17 @@
   </n-config-provider>
 </template>
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useNetwork } from '@vueuse/core'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
+import { ThemeEnum } from '@/enums'
 import { useCheckUpdate } from '@/hooks/useCheckUpdate'
 import { type DriverStepConfig, useDriver } from '@/hooks/useDriver'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
-import type { UserInfoType } from '@/services/types.ts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useGuideStore } from '@/stores/domains/settings/guide'
-import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { isCompatibility, isDesktop, isMac } from '@/utils/PlatformConstants'
-import { useLoginFlow } from '@/hooks/useLoginFlow'
-import { formatBottomText } from '@/utils/Formatting'
-import { ThemeEnum } from '@/enums'
 import {
   DEFAULT_MATRIX_HOMESERVER_URL,
   DEFAULT_MATRIX_IDENTITY_SERVER_URL,
@@ -260,9 +254,18 @@ import {
   saveMatrixHomeserverUrl,
   saveMatrixIdentityServerUrl
 } from '@/services/backend'
-import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
+import type { UserInfoType } from '@/services/types.ts'
+import { useGuideStore } from '@/stores/domains/settings/guide'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { AvatarUtils } from '@/utils/AvatarUtils'
+import { formatBottomText } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
+import { isCompatibility, isDesktop, isMac } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
+import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
 
 const { t } = useI18n()
 const logger = createLogger('Login')
@@ -349,20 +352,20 @@ const triggerAutoLogin = () => {
 
 const saveServerConfig = () => {
   const normalizedHomeserverUrl = normalizeHttpUrl(homeserverUrl.value || DEFAULT_MATRIX_HOMESERVER_URL)
-  const normalizedIdentityServerUrl = normalizeHttpUrl(identityServerUrl.value || DEFAULT_MATRIX_IDENTITY_SERVER_URL)
+  const rawIdentityServerUrl = identityServerUrl.value.trim()
 
   if (!isValidHttpUrl(normalizedHomeserverUrl)) {
     window.$message.error('Homeserver 地址格式无效')
     return
   }
 
-  if (!isValidHttpUrl(normalizedIdentityServerUrl)) {
+  if (rawIdentityServerUrl && !isValidHttpUrl(normalizeHttpUrl(rawIdentityServerUrl))) {
     window.$message.error('Identity Server 地址格式无效')
     return
   }
 
   homeserverUrl.value = saveMatrixHomeserverUrl(normalizedHomeserverUrl)
-  identityServerUrl.value = saveMatrixIdentityServerUrl(normalizedIdentityServerUrl)
+  identityServerUrl.value = saveMatrixIdentityServerUrl(rawIdentityServerUrl)
   showServerConfig.value = false
   window.$message.success('服务器配置已保存，重新登录后生效')
 }

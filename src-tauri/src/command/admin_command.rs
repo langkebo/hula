@@ -19,7 +19,7 @@ pub async fn check_admin_status(
         return Err("用户未登录".to_string());
     }
 
-    let config = state.config.lock().await;
+    let config = state.config.read().await;
     let homeserver = config.backend.base_url.clone();
     drop(config);
 

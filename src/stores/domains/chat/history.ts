@@ -25,8 +25,6 @@ export const useHistoryStore = defineStore(
     }
   },
   {
-    share: {
-      enable: true
-    }
+    persist: true
   }
 )

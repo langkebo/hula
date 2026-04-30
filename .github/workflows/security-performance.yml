@@ -13,6 +13,10 @@ permissions:
   security-events: write
   actions: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   security-audit:
     name: Security Audit
@@ -77,19 +81,40 @@ jobs:
       - name: Build project
         run: pnpm build
 
-      - name: Analyze bundle size
+      - name: Generate bundle metrics
+        run: pnpm metrics:bundle
+
+      - name: Summarize bundle baseline
         run: |
           echo "## Bundle Size Analysis" >> $GITHUB_STEP_SUMMARY
           echo "```" >> $GITHUB_STEP_SUMMARY
-          du -sh dist/
-          echo "JS files: $(ls dist/static/js/*.js 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "CSS files: $(ls dist/static/css/*.css 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+          du -sh dist/ >> $GITHUB_STEP_SUMMARY
+          node --input-type=module <<'EOF' >> $GITHUB_STEP_SUMMARY
+          import fs from 'node:fs'
+
+          const metrics = JSON.parse(fs.readFileSync('dist/bundle-metrics.json', 'utf8'))
+          console.log(`Total assets: ${metrics.summary.assetCount}`)
+          console.log(`JS files: ${metrics.summary.jsCount}`)
+          console.log(`CSS files: ${metrics.summary.cssCount}`)
+          console.log(`Total size: ${metrics.summary.totalSizeMB}`)
+          console.log(`JS over 500KB: ${metrics.largeJavaScriptAssets.length}`)
+          EOF
           echo "```" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Top Bundle Assets" >> $GITHUB_STEP_SUMMARY
+          node --input-type=module <<'EOF' >> $GITHUB_STEP_SUMMARY
+          import fs from 'node:fs'
+
+          const metrics = JSON.parse(fs.readFileSync('dist/bundle-metrics.json', 'utf8'))
+          for (const asset of metrics.topAssets.slice(0, 5)) {
+            console.log(`- ${asset.file}: ${asset.sizeKB}`)
+          }
+          EOF
 
       - name: Check for large bundles
         run: |
           echo "## Large Bundle Warning" >> $GITHUB_STEP_SUMMARY
-          large_js=$(find dist/static/js -name "*.js" -size +1M 2>/dev/null)
+          large_js=$(find dist -name "*.js" -size +1M 2>/dev/null)
           if [ -n "$large_js" ]; then
             echo "Found large JS files (>1MB):" >> $GITHUB_STEP_SUMMARY
             echo "$large_js" >> $GITHUB_STEP_SUMMARY
@@ -97,12 +122,14 @@ jobs:
             echo "No large JS files found" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Upload stats.html
+      - name: Upload bundle artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: bundle-stats
-          path: dist/stats.html
+          name: bundle-analysis
+          path: |
+            dist/stats.html
+            dist/bundle-metrics.json
           retention-days: 7
 
   typecheck:

@@ -41,7 +41,7 @@
         "useAltText": "off"
       },
       "complexity": {
-        "useOptionalChain": "off",
+        "useOptionalChain": "warn",
         "useLiteralKeys": "off",
         "useDateNow": "off",
         "noStaticOnlyClass": "off"
@@ -55,7 +55,7 @@
         "noNonNullAssertion": "off",
         "useNamingConvention": "off",
         "useTemplate": "off",
-        "useImportType": "off"
+        "useImportType": "warn"
       },
       "suspicious": {
         "noGlobalIsNan": "off",
@@ -89,7 +89,7 @@
   },
   "assist": {
     "enabled": true,
-    "actions": { "source": { "organizeImports": "off" } }
+    "actions": { "source": { "organizeImports": "on" } }
   },
   "overrides": [
     {

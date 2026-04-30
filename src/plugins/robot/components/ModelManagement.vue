@@ -234,22 +234,19 @@
                 :placeholder="modelPlaceholder"
                 :disabled="!formData.platform"
                 style="flex: 1" />
-              <n-button v-if="modelDocsUrl" text tag="a" :href="modelDocsUrl" target="_blank" type="info">
-                <template #icon>
-                  <Icon icon="mdi:open-in-new" />
-                </template>
-                文档
+              <n-button v-if="modelDocsUrl" text type="info" style="padding: 0" @click="openExternalUrl(modelDocsUrl)">
+                点击查看文档
               </n-button>
             </n-flex>
             <n-text depth="3" style="font-size: 12px">
               {{ modelHint }}
             </n-text>
-            <n-text v-if="modelDocsUrl" depth="3" style="font-size: 12px">
-              文档链接：
-              <n-a :href="modelDocsUrl" target="_blank" style="font-size: 12px">
+            <n-flex v-if="modelDocsUrl" align="center" :size="8" class="mt-4px">
+              <n-text depth="3" style="font-size: 12px">查看文档：</n-text>
+              <n-button text type="info" style="font-size: 12px" @click="openExternalUrl(modelDocsUrl)">
                 {{ modelDocsUrl }}
-              </n-a>
-            </n-text>
+              </n-button>
+            </n-flex>
           </n-flex>
         </n-form-item>
 
@@ -314,17 +311,18 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import type { FormRules, FormInst } from 'naive-ui'
+import type { FormInst, FormRules } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
+import { openExternalUrl } from '@/hooks/useLinkSegments'
+import { apiKeyService, modelService } from '@/services/matrix'
 import type { ApiKey, Platform } from '@/services/matrix/ai/ApiKeyService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { useUserStore } from '@/stores/domains/user/user'
-import { apiKeyService, modelService } from '@/services/matrix'
-import ApiKeyManagement from './ApiKeyManagement.vue'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
-import { useI18n } from 'vue-i18n'
+import ApiKeyManagement from './ApiKeyManagement.vue'
 
 type SelectOption = {
   label: string
@@ -640,7 +638,7 @@ const handlePageChange = (page: number) => {
 const handleKeyIdChange = (keyId: string) => {
   if (keyId) {
     const apiKeyInfo = apiKeyMap.value.get(keyId)
-    if (apiKeyInfo && apiKeyInfo.platform) {
+    if (apiKeyInfo?.platform) {
       // 自动填充平台
       formData.value.platform = apiKeyInfo.platform
       // 清空模型标志，让用户重新输入

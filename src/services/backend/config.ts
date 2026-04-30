@@ -1,12 +1,12 @@
-import type { MatrixEndpointConfig, StorageLike } from './types'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import type { MatrixEndpointConfig, StorageLike } from './types'
 
 export const MATRIX_HOMESERVER_STORAGE_KEY = 'hula-homeserver-url'
 export const MATRIX_IDENTITY_SERVER_STORAGE_KEY = 'hula-identity-server-url'
-export const DEFAULT_MATRIX_HOMESERVER_URL = 'http://localhost:28008'
-export const DEFAULT_MATRIX_IDENTITY_SERVER_URL = 'https://vector.im'
+export const DEFAULT_MATRIX_HOMESERVER_URL = 'http://localhost:8008'
+export const DEFAULT_MATRIX_IDENTITY_SERVER_URL = ''
 const MATRIX_DEV_PROXY_PORT = '6130'
-const MATRIX_DEV_PROXY_TARGET_PORT = '28008'
+const MATRIX_DEV_PROXY_TARGET_PORT = '8008'
 
 function getStorage(storage?: StorageLike): StorageLike | undefined {
   if (storage) {
@@ -21,12 +21,26 @@ function getStorage(storage?: StorageLike): StorageLike | undefined {
 }
 
 export function normalizeHttpUrl(value: string): string {
-  const trimmed = value.trim()
+  let trimmed = value.trim()
   if (!trimmed) {
     return ''
   }
 
+  // 13.4.2: homeserver.base_url 拿到 0.0.0.0 或 :: 时回退到 localhost
+  if (trimmed === '0.0.0.0' || trimmed === '::') {
+    trimmed = 'localhost'
+  }
+
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    try {
+      const url = new URL(trimmed)
+      if (url.hostname === '0.0.0.0' || url.hostname === '::') {
+        url.hostname = 'localhost'
+        trimmed = url.toString()
+      }
+    } catch {
+      // 忽略无效的 URL 格式
+    }
     return trimmed
   }
 
@@ -112,7 +126,15 @@ export function saveMatrixHomeserverUrl(url: string, storage?: StorageLike): str
 }
 
 export function saveMatrixIdentityServerUrl(url: string, storage?: StorageLike): string {
-  const normalizedUrl = normalizeHttpUrl(url)
-  getStorage(storage)?.setItem(MATRIX_IDENTITY_SERVER_STORAGE_KEY, normalizedUrl)
+  const trimmedUrl = url.trim()
+  const targetStorage = getStorage(storage)
+
+  if (!trimmedUrl) {
+    targetStorage?.removeItem(MATRIX_IDENTITY_SERVER_STORAGE_KEY)
+    return ''
+  }
+
+  const normalizedUrl = normalizeHttpUrl(trimmedUrl)
+  targetStorage?.setItem(MATRIX_IDENTITY_SERVER_STORAGE_KEY, normalizedUrl)
   return normalizedUrl
 }

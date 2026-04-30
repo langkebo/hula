@@ -55,7 +55,10 @@
       "assetProtocol": {
         "enable": true,
         "scope": [
-          "**"
+          "$APPDATA/**",
+          "$RESOURCE/**",
+          "$CACHE/**",
+          "$TEMP/**"
         ]
       }
     },

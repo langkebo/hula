@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import type { ComponentPublicInstance } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentPublicInstance } from 'vue'
 import HelpSettings from '../HelpSettings.vue'
 
 const messageSuccessMock = vi.fn()
@@ -190,17 +190,10 @@ describe('HelpSettings', () => {
     vm.handleDownloadUpdate()
     vm.handleFeedback()
 
-    expect(openWindowMock).toHaveBeenNthCalledWith(1, 'https://matrix.org', '_blank')
-    expect(openWindowMock).toHaveBeenNthCalledWith(
-      2,
-      'https://github.com/nichuanfang/nichuanfang.github.io/releases',
-      '_blank'
-    )
-    expect(openWindowMock).toHaveBeenNthCalledWith(
-      3,
-      'https://github.com/nichuanfang/nichuanfang.github.io/issues',
-      '_blank'
-    )
+    expect(openShellMock).toHaveBeenNthCalledWith(1, 'https://matrix.org')
+    expect(openShellMock).toHaveBeenNthCalledWith(2, 'https://github.com/nichuanfang/nichuanfang.github.io/releases')
+    expect(openShellMock).toHaveBeenNthCalledWith(3, 'https://github.com/nichuanfang/nichuanfang.github.io/issues')
+    expect(openWindowMock).not.toHaveBeenCalled()
   })
 
   it('shows info when opening logs is unsupported on web', async () => {

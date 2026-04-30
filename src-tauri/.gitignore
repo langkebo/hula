@@ -3,3 +3,13 @@
 /target/
 local.yaml
 
+# Backup files
+*.rs.bk
+*.bak
+
+# SQLite
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+

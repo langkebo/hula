@@ -119,11 +119,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { NButton, NDivider, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { NButton, NDivider, useMessage } from 'naive-ui'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePlatform } from '@/composables/usePlatform'
+import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('HelpSettings')
@@ -213,15 +214,15 @@ async function handleCheckUpdate() {
 }
 
 function handleDownloadUpdate() {
-  openLink('https://github.com/nichuanfang/nichuanfang.github.io/releases')
+  void openLink('https://github.com/nichuanfang/nichuanfang.github.io/releases')
 }
 
 function openLink(url: string) {
-  window.open(url, '_blank')
+  return openExternalUrl(url)
 }
 
 function handleFeedback() {
-  window.open('https://github.com/nichuanfang/nichuanfang.github.io/issues', '_blank')
+  void openLink('https://github.com/nichuanfang/nichuanfang.github.io/issues')
 }
 
 async function handleOpenLogs() {

@@ -33,6 +33,7 @@ module.exports = {
         'chore' // 对构建过程或辅助工具和库的更改（不影响源文件、测试用例）
       ]
     ],
+    'header-max-length': [2, 'always', 72],
     'subject-case': [0] // subject大小写不做校验
   },
 
@@ -41,7 +42,7 @@ module.exports = {
       type: '选择你要提交的类型 :',
       scope: '选择一个提交范围（可选）:',
       customScope: '请输入自定义的提交范围 :',
-      subject: '填写简短精炼的变更描述 :\n',
+      subject: '填写简短精炼的变更描述 (不超过 72 字符):\n',
       body: '填写更加详细的变更描述（可选）。使用 "|" 换行 :\n',
       breaking: '列举非兼容性重大的变更（可选）。使用 "|" 换行 :\n',
       footerPrefixesSelect: '选择关联issue前缀（可选）:',
@@ -87,9 +88,9 @@ module.exports = {
     allowCustomIssuePrefix: true,
     allowEmptyIssuePrefix: true,
     confirmColorize: true,
-    maxHeaderLength: Infinity,
-    maxSubjectLength: Infinity,
-    minSubjectLength: 0,
+    maxHeaderLength: 72,
+    maxSubjectLength: 72,
+    minSubjectLength: 2,
     scopeOverrides: undefined,
     defaultBody: '',
     defaultIssues: '',
