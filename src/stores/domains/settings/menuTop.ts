@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { PluginEnum, StoresEnum } from '@/enums'
 import { useI18n } from 'vue-i18n'
+import { PluginEnum, StoresEnum } from '@/enums'
 
 export const useMenuTopStore = defineStore(
   StoresEnum.MENUTOP,
@@ -48,9 +48,6 @@ export const useMenuTopStore = defineStore(
     }
   },
   {
-    share: {
-      enable: true,
-      initialize: true
-    }
+    persist: true
   }
 )

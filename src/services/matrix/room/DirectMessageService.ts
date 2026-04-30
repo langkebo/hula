@@ -1,7 +1,7 @@
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import { Preset, Visibility } from 'matrix-js-sdk'
-import matrixClientService from '../MatrixClientService'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import matrixClientService from '../MatrixClientService'
 
 interface DirectRoomsContent {
   [userId: string]: unknown
@@ -85,8 +85,17 @@ export class MatrixRoomDirectMessageService {
       const rooms = directRooms.get(userId) || []
       if (!rooms.includes(roomId)) {
         rooms.push(roomId)
-        directRooms.set(userId, rooms)
-        await client.setAccountData('m.direct', Object.fromEntries(directRooms))
+
+        // 13.4.1: 在写回前过滤掉已离开或无效的房间，防止 crypto SDK 报错
+        const validRooms = rooms.filter((id) => {
+          const room = (client as any).getRoom(id)
+          return room ? room.getMyMembership() === 'join' : false
+        })
+
+        if (validRooms.length > 0) {
+          directRooms.set(userId, validRooms)
+          await client.setAccountData('m.direct', Object.fromEntries(directRooms))
+        }
       }
       info(`[MatrixRoom] 设置直接消息房间成功: ${userId} -> ${roomId}`)
     } catch (err) {

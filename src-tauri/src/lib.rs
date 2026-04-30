@@ -48,6 +48,7 @@ use init::DesktopCustomInit;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
+use std::time::Instant;
 use tauri_plugin_fs::FsExt;
 pub mod command;
 pub mod common;
@@ -90,7 +91,7 @@ use mobiles::splash;
 pub struct AppData {
     db_conn: Arc<RwLock<DatabaseConnection>>,
     user_info: Arc<Mutex<UserInfo>>,
-    pub config: Arc<Mutex<Settings>>,
+    pub config: Arc<RwLock<Settings>>,
     frontend_task: Mutex<bool>,
     backend_task: Mutex<bool>,
     pub write_lock: Arc<Mutex<()>>,
@@ -177,7 +178,7 @@ async fn initialize_app_data(
     (
         Arc<RwLock<DatabaseConnection>>,
         Arc<Mutex<UserInfo>>,
-        Arc<Mutex<Settings>>,
+        Arc<RwLock<Settings>>,
     ),
     CommonError,
 > {
@@ -185,29 +186,45 @@ async fn initialize_app_data(
     use migration::MigratorTrait;
     use tracing::info;
 
+    let init_started_at = Instant::now();
+
     // 加载配置
-    let configuration =
-        Arc::new(Mutex::new(get_configuration(&app_handle).map_err(|e| {
-            anyhow::anyhow!("Failed to load configuration: {}", e)
-        })?));
+    let config_started_at = Instant::now();
+    let configuration = Arc::new(RwLock::new(
+        get_configuration(&app_handle)
+            .map_err(|e| anyhow::anyhow!("Failed to load configuration: {}", e))?,
+    ));
+    info!(
+        "Startup stage completed: configuration loaded in {} ms",
+        config_started_at.elapsed().as_millis()
+    );
 
     // 初始化数据库连接
+    let db_started_at = Instant::now();
     let db: Arc<RwLock<DatabaseConnection>> = Arc::new(RwLock::new(
         configuration
-            .lock()
+            .read()
             .await
             .database
             .connection_string(&app_handle, None)
             .await?,
     ));
+    info!(
+        "Startup stage completed: database connected in {} ms",
+        db_started_at.elapsed().as_millis()
+    );
 
     // 数据库迁移
+    let migration_started_at = Instant::now();
     match Migrator::up(&*db.read().await, None).await {
         Ok(_) => {
-            info!("Database migration completed");
+            info!(
+                "Startup stage completed: database migration in {} ms",
+                migration_started_at.elapsed().as_millis()
+            );
         }
         Err(e) => {
-            eprintln!("Warning: Database migration failed: {}", e);
+            tracing::error!("Critical Error: Database migration failed: {}", e);
         }
     }
 
@@ -218,6 +235,11 @@ async fn initialize_app_data(
         uid: Default::default(),
     };
     let user_info = Arc::new(Mutex::new(user_info));
+
+    info!(
+        "Startup stage completed: app data initialization finished in {} ms",
+        init_started_at.elapsed().as_millis()
+    );
 
     Ok((db, user_info, configuration))
 }
@@ -369,6 +391,10 @@ fn setup_mobile() {
 
 // 公共的 setup 函数
 fn common_setup(app_handle: AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    let setup_started_at = Instant::now();
+    APP_STATE_READY.store(false, Ordering::SeqCst);
+    tracing::info!("Startup stage started: common setup");
+
     let scope = app_handle.fs_scope();
     if let Err(e) = scope.allow_directory("configuration", false) {
         tracing::warn!("Failed to allow configuration directory: {}", e);
@@ -377,34 +403,52 @@ fn common_setup(app_handle: AppHandle) -> Result<(), Box<dyn std::error::Error>>
     #[cfg(desktop)]
     setup_logout_listener(app_handle.clone());
 
-    // 异步初始化应用数据，避免阻塞主线程
-    match tauri::async_runtime::block_on(initialize_app_data(app_handle.clone())) {
-        Ok((db, user_info, settings)) => {
-            // 使用 manage 方法在运行时添加状态
-            app_handle.manage(AppData {
-                db_conn: db.clone(),
-                user_info: user_info.clone(),
-                config: settings,
-                frontend_task: Mutex::new(false),
-                // 后端任务默认完成
-                backend_task: Mutex::new(true),
-                write_lock: Arc::new(Mutex::new(())),
-                stream_tasks: Arc::new(Mutex::new(std::collections::HashMap::new())),
-            });
-            app_handle.manage(OauthServerState::default());
-            APP_STATE_READY.store(true, Ordering::SeqCst);
-            if let Err(e) = app_handle.emit("app-state-ready", ()) {
-                tracing::warn!("Failed to emit app-state-ready event: {}", e);
-            }
-        }
-        Err(e) => {
-            tracing::error!("Failed to initialize application data: {}", e);
-            return Err(format!("Failed to initialize app data: {}", e).into());
-        }
-    }
+    app_handle.manage(OauthServerState::default());
 
     #[cfg(desktop)]
     tray::create_tray(&app_handle)?;
+
+    let init_handle = app_handle.clone();
+    tauri::async_runtime::spawn(async move {
+        let async_started_at = Instant::now();
+        tracing::info!("Startup stage started: async app data initialization");
+
+        match initialize_app_data(init_handle.clone()).await {
+            Ok((db, user_info, settings)) => {
+                init_handle.manage(AppData {
+                    db_conn: db,
+                    user_info,
+                    config: settings,
+                    frontend_task: Mutex::new(false),
+                    // 后端任务默认完成
+                    backend_task: Mutex::new(true),
+                    write_lock: Arc::new(Mutex::new(())),
+                    stream_tasks: Arc::new(Mutex::new(std::collections::HashMap::new())),
+                });
+                APP_STATE_READY.store(true, Ordering::SeqCst);
+                tracing::info!(
+                    "Startup stage completed: app state ready in {} ms",
+                    async_started_at.elapsed().as_millis()
+                );
+
+                if let Err(e) = init_handle.emit("app-state-ready", ()) {
+                    tracing::warn!("Failed to emit app-state-ready event: {}", e);
+                }
+            }
+            Err(e) => {
+                tracing::error!(
+                    "Failed to initialize application data asynchronously: {}",
+                    e
+                );
+                init_handle.exit(1);
+            }
+        }
+    });
+
+    tracing::info!(
+        "Startup stage completed: common setup returned in {} ms",
+        setup_started_at.elapsed().as_millis()
+    );
     Ok(())
 }
 
@@ -413,6 +457,7 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
 {
     use crate::command::admin_command::check_admin_status;
     use crate::command::ai_command::ai_message_cancel_stream;
+    use crate::command::asset_command::allow_asset_path;
     use crate::command::markdown_command::get_readme_html;
     use crate::command::markdown_command::parse_markdown;
     #[cfg(mobile)]
@@ -508,5 +553,6 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         is_app_state_ready,
         switch_user_database,
         check_admin_status,
+        allow_asset_path,
     ]
 }

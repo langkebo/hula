@@ -156,11 +156,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
+import { showToast } from 'vant'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('HelpFeedback')
@@ -205,7 +206,7 @@ function loadVersion() {
 }
 
 function openLink(url: string) {
-  window.open(url, '_blank')
+  void openExternalUrl(url)
 }
 
 async function checkUpdate() {

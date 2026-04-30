@@ -18,7 +18,7 @@
       </div>
       <div class="config-hint">
         <p>{{ t('menu.homeserver_hint') }}</p>
-        <p class="example">{{ t('menu.homeserver_example') }}: http://localhost:28008</p>
+        <p class="example">{{ t('menu.homeserver_example') }}: http://localhost:8008</p>
       </div>
     </div>
     <template #footer>
@@ -31,9 +31,9 @@
 </template>
 
 <script setup lang="ts">
+import { NButton, NInput, NModal } from 'naive-ui'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NModal, NInput, NButton } from 'naive-ui'
 import {
   isValidHttpUrl,
   normalizeHttpUrl,
@@ -41,6 +41,7 @@ import {
   saveMatrixHomeserverUrl
 } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('HomeserverDialog')
 
 const { t } = useI18n()

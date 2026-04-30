@@ -11,45 +11,37 @@ type DownloadObjType = {
   process: number | undefined
 }
 
-// 定义一个下载队列的 store
-export const useDownloadQuenuStore = defineStore('downloadQuenu', () => {
-  // 最多可同时执行下载的任务数量
+// 保持现有 store 行为，仅修正对外命名。
+export const useDownloadQueueStore = defineStore('downloadQueue', () => {
   const maxDownloadCount = 1
-  // 下载队列
-  const quenu = reactive<string[]>([])
-  // 下载对象
+  const queue = reactive<string[]>([])
   const downloadObjMap = reactive<Record<string, DownloadObjType>>({})
 
-  // 添加到下载队列
-  const addQuenuAction = (url: string) => {
-    quenu.push(url)
+  const addQueueAction = (url: string) => {
+    queue.push(url)
   }
 
-  // 从下载队列中移除
-  const removeQuenuAction = (url: string) => {
-    const index = quenu.indexOf(url)
+  const removeQueueAction = (url: string) => {
+    const index = queue.indexOf(url)
     if (index > -1) {
-      quenu.splice(index, 1)
+      queue.splice(index, 1)
     }
   }
 
-  // 出队列
   const dequeue = () => {
-    if (!quenu.length || Object.keys(downloadObjMap).length >= maxDownloadCount) {
+    if (!queue.length || Object.keys(downloadObjMap).length >= maxDownloadCount) {
       return
     }
-    const url = quenu.shift()
+    const url = queue.shift()
     if (url) {
       downloadAction(url)
     }
   }
 
-  // 下载
   const downloadAction = async (url: string) => {
     const { downloadFile, isDownloading, process, onLoaded } = useDownload()
 
     try {
-      // 让用户选择保存路径
       const savePath = (await save({
         filters: [
           {
@@ -57,22 +49,20 @@ export const useDownloadQuenuStore = defineStore('downloadQuenu', () => {
             extensions: ['*']
           }
         ]
-      })) as string // 确保savePath是string类型
+      })) as string
 
       if (!savePath) {
-        // 用户取消了保存对话框
-        removeQuenuAction(url)
+        removeQueueAction(url)
         return
       }
 
       const stopWatcher = watch(process, () => {
-        // 更新下载进度
         downloadObjMap[url] = { url, isDownloading: isDownloading.value, process: process.value }
       })
 
       onLoaded(() => {
-        stopWatcher() // 清除watcher
-        delete downloadObjMap[url] // 下载完成后 删除下载对象
+        stopWatcher()
+        delete downloadObjMap[url]
         dequeue()
       })
 
@@ -80,26 +70,25 @@ export const useDownloadQuenuStore = defineStore('downloadQuenu', () => {
     } catch (error) {
       logger.error('保存失败:', error)
       window.$message.error('保存失败')
-      removeQuenuAction(url)
+      removeQueueAction(url)
     }
   }
 
   const download = (url: string) => {
-    addQuenuAction(url)
+    addQueueAction(url)
     dequeue()
   }
 
-  // 取消下载
   const cancelDownload = (url: string) => {
-    if (quenu.includes(url)) {
-      removeQuenuAction(url)
+    if (queue.includes(url)) {
+      removeQueueAction(url)
     }
   }
 
   return {
-    quenu,
-    addQuenuAction,
-    removeQuenuAction,
+    queue,
+    addQueueAction,
+    removeQueueAction,
     dequeue,
     downloadObjMap,
     download,

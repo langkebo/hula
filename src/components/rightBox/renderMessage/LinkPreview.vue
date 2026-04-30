@@ -4,7 +4,12 @@
     <div
       v-if="showUrl"
       class="text-14px color-[--hula-text-tertiary] mb-8px break-words whitespace-pre-wrap leading-relaxed">
-      <a :href="body?.url" target="_blank" class="color-[--hula-color-primary-500] hover:underline" @click.stop>
+      <a
+        :href="body?.url"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="color-[--hula-color-primary-500] hover:underline"
+        @click.prevent.stop="handleLinkClick">
         {{ body?.url }}
       </a>
     </div>
@@ -44,8 +49,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { LinkPreviewBody } from '@/services/types'
+import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import type { LinkPreviewBody } from '@/services/types'
 
 defineOptions({
   inheritAttrs: false
@@ -86,7 +92,7 @@ const avatarUrl = computed(() => {
 
 const handleLinkClick = () => {
   if (props.body?.url) {
-    window.open(props.body.url, '_blank')
+    void openExternalUrl(props.body.url)
   }
 }
 </script>

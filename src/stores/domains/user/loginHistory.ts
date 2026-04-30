@@ -34,9 +34,6 @@ export const useLoginHistoriesStore = defineStore(
     return { loginHistories, addLoginHistory, updateLoginHistory, removeLoginHistory }
   },
   {
-    share: {
-      enable: true,
-      initialize: true
-    }
+    persist: true
   }
 )

@@ -1,7 +1,7 @@
-import { info, error, warn } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
+import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { MatrixClientExtended, KeyBackupManager, BackupInfo } from '@/types/matrix-extensions'
+import type { BackupInfo, KeyBackupManager, MatrixClientExtended } from '@/types/matrix-extensions'
+import matrixClientService from '../MatrixClientService'
 
 export interface BackupVersionInfo {
   version: string
@@ -154,7 +154,16 @@ class MatrixKeyBackupService {
         count: response.count,
         etag: response.etag
       }
-    } catch (err) {
+    } catch (err: any) {
+      // 13.4.4: /room_keys/version 404 表示尚无备份，是规范允许的语义，静默处理
+      if (
+        err?.httpStatus === 404 ||
+        err?.errcode === 'M_NOT_FOUND' ||
+        (err instanceof Error && err.message.includes('404'))
+      ) {
+        info('[KeyBackup] 尚无密钥备份版本 (404)')
+        return null
+      }
       error(`[KeyBackup] 检查备份失败: ${err}`)
       throw err
     }

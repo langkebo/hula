@@ -1,16 +1,16 @@
 import {
-  MatrixClient,
-  Room,
-  MatrixEvent,
-  SlidingSync,
   createClient,
-  LoginResponse,
-  ICreateRoomOpts
+  type ICreateRoomOpts,
+  type LoginResponse,
+  type MatrixClient,
+  type MatrixEvent,
+  type Room,
+  SlidingSync
 } from 'matrix-js-sdk'
-import { TelemetryManager } from 'matrix-js-sdk/src/telemetry'
-import { PendingEventOrdering, ICreateClientOpts } from '@/types/matrix-js-sdk'
-import { createLogger } from '@/utils/Logger'
+import type { TelemetryManager } from 'matrix-js-sdk/src/telemetry'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
+import { type ICreateClientOpts, PendingEventOrdering } from '@/types/matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 
 // 导入并初始化 Manager 扩展
 import 'matrix-js-sdk/src/manager-extensions'
@@ -90,6 +90,13 @@ class MatrixClientService {
 
     // 增强错误日志
     if (state === 'ERROR') {
+      // 13.4.3: 识别限流或超时，避免产生干扰日志。M_LIMIT_EXCEEDED 或 ConnectionError 是同步过程中常见的暂时性问题。
+      const errorData = data as any
+      if (errorData?.errcode === 'M_LIMIT_EXCEEDED' || errorData?.name === 'ConnectionError') {
+        logger.warn(`同步暂时受限或超时 (M_LIMIT_EXCEEDED)，SDK 将自动重试: ${state}`)
+        return
+      }
+
       logger.error(`同步错误: ${state}`, {
         prevState,
         data,

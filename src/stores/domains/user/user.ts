@@ -1,14 +1,14 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
-import { ref, computed } from 'vue'
-import { StoresEnum, SexEnum } from '@/enums'
-import type { UserInfoType } from '@/services/types'
-import { useMatrixStore } from '../chat/matrix'
+import { SexEnum, StoresEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
+import type { UserInfoType } from '@/services/types'
 import * as PathUtil from '@/utils/PathUtil'
+import { useMatrixStore } from '../chat/matrix'
 import { useGlobalStore } from '../widget/global'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export interface MatrixUserProfile {
   userId: string
@@ -180,9 +180,8 @@ export const useUserStore = defineStore(
     }
   },
   {
-    share: {
-      enable: true,
-      initialize: true
+    persist: {
+      pick: ['userInfo']
     }
   }
 )

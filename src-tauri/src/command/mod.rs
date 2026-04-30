@@ -1,10 +1,11 @@
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager};
 
 use crate::AppData;
 
 pub mod admin_command;
 pub mod ai_command;
 pub mod app_state_command;
+pub mod asset_command;
 pub mod chat_history_command;
 pub mod contact_command;
 pub mod database_command;
@@ -20,12 +21,13 @@ pub mod user_command;
 
 // A custom task for setting the state of a setup task
 #[tauri::command]
-pub async fn set_complete(
-    _app: AppHandle,
-    state: State<'_, AppData>,
-    task: String,
-) -> Result<(), ()> {
+pub async fn set_complete(app: AppHandle, task: String) -> Result<(), ()> {
     tracing::info!("set_complete: {}", task);
+    let Some(state) = app.try_state::<AppData>() else {
+        tracing::warn!("set_complete called before AppData is ready: {}", task);
+        return Ok(());
+    };
+
     match task.as_str() {
         "frontend" => *state.frontend_task.lock().await = true,
         "backend" => *state.backend_task.lock().await = true,

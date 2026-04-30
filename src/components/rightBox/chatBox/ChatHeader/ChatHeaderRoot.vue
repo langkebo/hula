@@ -71,23 +71,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { useChatStore } from '@/stores/domains/chat/chat'
-import { useUserStore } from '@/stores/domains/user/user'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RoomActEnum, RoomTypeEnum } from '@/enums'
+import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
-import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import syncService from '@/services/matrix/sync/MatrixSyncService'
+import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 import ChatHeaderInfo from './ChatHeaderInfo.vue'
-import ChatHeaderToolbar from './ChatHeaderToolbar.vue'
 import ChatHeaderSidebar from './ChatHeaderSidebar.vue'
+import ChatHeaderToolbar from './ChatHeaderToolbar.vue'
 
 const logger = createLogger('ChatHeader')
 const { t } = useI18n()
@@ -336,7 +337,7 @@ const handleStartMeeting = async () => {
       false
     )
 
-    window.open(meetingUrl, '_blank', 'noopener,noreferrer')
+    await openExternalUrl(meetingUrl)
     logger.info('发起会议:', roomId, meetingUrl)
   } catch (error) {
     logger.error('发起会议失败:', error)

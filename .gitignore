@@ -27,6 +27,14 @@ src-tauri/target
 
 /coverage
 
+# Build stats
+dist/stats.html
+dist/bundle-metrics.json
+
+# Temporary optimization artifacts
+tsc*.log
+tmp-dynamic.png
+
 target
 .claude/
 .serena/

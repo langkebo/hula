@@ -18,32 +18,32 @@
 </template>
 
 <script setup lang="ts">
-import { convertFileSrc } from '@tauri-apps/api/core'
+import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { join, resourceDir } from '@tauri-apps/api/path'
 import {
   ACESFilmicToneMapping,
   AmbientLight,
-  AnimationAction,
+  type AnimationAction,
   AnimationClip,
   AnimationMixer,
   Box3,
   Clock,
   DirectionalLight,
   Group,
-  Mesh,
+  type Mesh,
   PerspectiveCamera,
   Scene,
+  SRGBColorSpace,
   Vector3,
-  WebGLRenderer,
-  SRGBColorSpace
+  WebGLRenderer
 } from 'three'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { ensureModelFile } from '@/utils/PathUtil'
-import { isDesktop } from '@/utils/PlatformConstants'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { useAssistantModelPresets } from '@/hooks/useAssistantModelPresets'
 import { createLogger } from '@/utils/Logger'
+import { ensureModelFile } from '@/utils/PathUtil'
+import { isDesktop } from '@/utils/PlatformConstants'
 
 const logger = createLogger('HuLaAssistant')
 
@@ -164,6 +164,14 @@ const resolveModelSource = async () => {
     if (isRemoteSource(props.customModel)) {
       lastResolvedModelSource = props.customModel
       return props.customModel
+    }
+
+    if (isDesktop()) {
+      try {
+        await invoke('allow_asset_path', { path: props.customModel })
+      } catch (error) {
+        logger.warn('申请资产协议访问权限失败', error)
+      }
     }
 
     const localUrl = isDesktop() ? convertFileSrc(props.customModel) : props.customModel

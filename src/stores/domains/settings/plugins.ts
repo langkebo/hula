@@ -100,9 +100,6 @@ export const usePluginsStore = defineStore(
     }
   },
   {
-    share: {
-      enable: true,
-      initialize: true
-    }
+    persist: true
   }
 )

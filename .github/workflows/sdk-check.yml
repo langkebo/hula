@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   sdk-check:
     runs-on: ubuntu-latest
@@ -27,7 +31,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
@@ -81,4 +85,3 @@ jobs:
           echo "Checking for unused dependencies..."
           npx depcheck --ignores="@types/*,@tauri-apps/*,@storybook/*" || true
           echo "Dependency check completed"
-

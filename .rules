@@ -57,7 +57,7 @@ The project supports:
 
 ### Three-Repo Development
 For full local development, you need all three repositories running:
-1. **synapse-rust** - Backend Matrix Homeserver (default port: 28008)
+1. **synapse-rust** - Backend Matrix Homeserver (default port: 8008)
 2. **matrix-js-sdk** - Local SDK (sibling directory `../matrix-js-sdk`)
 3. **hula** - This frontend application
 
@@ -65,7 +65,7 @@ If `pnpm install` fails with SDK linking errors, verify the `matrix-js-sdk` dire
 
 ### Environment Variables
 - `VITE_APP_NAME` - Application name
-- `VITE_HOMESERVER_URL` - Matrix Homeserver URL (default: `http://localhost:28008`)
+- `VITE_HOMESERVER_URL` - Matrix Homeserver URL (default: `http://localhost:8008`)
 - `VITE_PC_URL` - Frontend repository URL
 - `VITE_SERVICE_URL` - Backend (synapse-rust) repository URL
 - `TAURI_ENV_PLATFORM` - Set by Tauri; `windows`/`darwin`/`linux` for desktop, `android`/`ios` for mobile
@@ -328,5 +328,3 @@ HuLa integrates multiple AI providers via `src/services/ai-provider.ts`:
 - **Matrix AI** (`src/services/matrix/ai/`): AI features via Matrix protocol (conversations, models, roles, API keys)
 
 AI provider config is unified under `AIProviderType = ‘openclaw’ | ‘trendradar’ | ‘hula’`. The AI chat UI lives in `src/views/openclaw/OpenClawView.vue`.
-
-

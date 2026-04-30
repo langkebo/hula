@@ -17,7 +17,7 @@
           </div>
           <div class="config-hint">
             <p>{{ t('mobile_setting.homeserver_hint') }}</p>
-            <p class="example">{{ t('mobile_setting.homeserver_example') }}: http://localhost:28008</p>
+            <p class="example">{{ t('mobile_setting.homeserver_example') }}: http://localhost:8008</p>
           </div>
         </div>
 
@@ -32,6 +32,9 @@
 </template>
 
 <script setup lang="ts">
+import { showToast } from 'vant'
+import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   isValidHttpUrl,
   normalizeHttpUrl,
@@ -39,9 +42,6 @@ import {
   saveMatrixHomeserverUrl
 } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
-import { ref, onMounted } from 'vue'
-import { showToast } from 'vant'
-import { useI18n } from 'vue-i18n'
 
 const logger = createLogger('HomeserverSettings')
 

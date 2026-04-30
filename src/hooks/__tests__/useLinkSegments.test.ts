@@ -1,8 +1,11 @@
-import { describe, it, expect, vi } from 'vitest'
-import { extractLinkSegments, normalizeExternalUrl } from '../useLinkSegments'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { extractLinkSegments, normalizeExternalUrl, openExternalUrl } from '../useLinkSegments'
+
+const openShellMock = vi.fn()
+const windowOpenMock = vi.fn()
 
 vi.mock('@tauri-apps/plugin-shell', () => ({
-  open: vi.fn()
+  open: (...args: unknown[]) => openShellMock(...args)
 }))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -14,6 +17,11 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 describe('useLinkSegments', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    window.open = windowOpenMock as typeof window.open
+  })
+
   describe('extractLinkSegments', () => {
     it('returns empty array for empty string', () => {
       expect(extractLinkSegments('')).toEqual([])
@@ -92,6 +100,10 @@ describe('useLinkSegments', () => {
       expect(normalizeExternalUrl('https://example.com')).toBe('https://example.com')
     })
 
+    it('preserves mailto URLs', () => {
+      expect(normalizeExternalUrl('mailto:test@example.com')).toBe('mailto:test@example.com')
+    })
+
     it('adds https to bare domains', () => {
       expect(normalizeExternalUrl('example.com')).toBe('https://example.com')
     })
@@ -103,6 +115,37 @@ describe('useLinkSegments', () => {
     it('handles null/undefined safely', () => {
       expect(normalizeExternalUrl(null as unknown as string)).toBe('')
       expect(normalizeExternalUrl(undefined as unknown as string)).toBe('')
+    })
+
+    it('rejects unsupported protocols', () => {
+      expect(normalizeExternalUrl('javascript:alert(1)')).toBe('')
+      expect(normalizeExternalUrl('file:///tmp/test')).toBe('')
+      expect(normalizeExternalUrl('ftp://example.com')).toBe('')
+    })
+  })
+
+  describe('openExternalUrl', () => {
+    it('opens allowed URLs with shell first', async () => {
+      await openExternalUrl('https://example.com')
+
+      expect(openShellMock).toHaveBeenCalledWith('https://example.com')
+      expect(windowOpenMock).not.toHaveBeenCalled()
+    })
+
+    it('falls back to window.open when shell open fails', async () => {
+      openShellMock.mockRejectedValueOnce(new Error('shell unavailable'))
+
+      await openExternalUrl('example.com')
+
+      expect(windowOpenMock).toHaveBeenCalledWith('https://example.com', '_blank', 'noopener,noreferrer')
+    })
+
+    it('does not open rejected protocols', async () => {
+      const result = await openExternalUrl('javascript:alert(1)')
+
+      expect(result).toBe(false)
+      expect(openShellMock).not.toHaveBeenCalled()
+      expect(windowOpenMock).not.toHaveBeenCalled()
     })
   })
 })

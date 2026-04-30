@@ -1,10 +1,7 @@
 <template>
   <div class="mobile-thread-view">
     <!-- 导航栏 -->
-    <van-nav-bar
-      :title="t('thread.title')"
-      left-arrow
-      @click-left="handleBack">
+    <van-nav-bar :title="t('thread.title')" left-arrow @click-left="handleBack">
       <template #right>
         <span class="reply-count">{{ thread?.replyCount || 0 }} {{ t('thread.replies') }}</span>
       </template>
@@ -13,12 +10,7 @@
     <!-- 根消息 -->
     <div v-if="rootMessage" class="root-message">
       <div class="message-header">
-        <van-image
-          :src="rootMessage.avatarUrl"
-          round
-          width="40"
-          height="40"
-          fit="cover" />
+        <van-image :src="rootMessage.avatarUrl" round width="40" height="40" fit="cover" />
         <div class="message-info">
           <div class="sender-name">{{ rootMessage.senderName }}</div>
           <div class="timestamp">{{ formatTime(rootMessage.timestamp) }}</div>
@@ -41,12 +33,7 @@
         </div>
         <div v-else class="message-list">
           <div v-for="msg in messages" :key="msg.eventId" class="thread-message">
-            <van-image
-              :src="msg.avatarUrl"
-              round
-              width="32"
-              height="32"
-              fit="cover" />
+            <van-image :src="msg.avatarUrl" round width="32" height="32" fit="cover" />
             <div class="message-body">
               <div class="message-header">
                 <span class="sender-name">{{ msg.senderName }}</span>
@@ -67,12 +54,7 @@
         :placeholder="t('thread.reply_placeholder')"
         :autosize="{ minHeight: 40, maxHeight: 100 }"
         rows="1" />
-      <van-button
-        type="primary"
-        size="small"
-        :loading="sending"
-        :disabled="!replyText.trim()"
-        @click="handleSendReply">
+      <van-button type="primary" size="small" :loading="sending" :disabled="!replyText.trim()" @click="handleSendReply">
         {{ t('thread.send') }}
       </van-button>
     </div>
@@ -80,14 +62,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import dayjs from 'dayjs'
+import { showToast } from 'vant'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
-import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import type { Thread, ThreadDisplayMessage } from '@/services/matrix/messaging/MatrixThreadService'
-import { formatDistanceToNow } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
+import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileThreadView')
@@ -109,10 +90,7 @@ const rootMessage = ref<ThreadDisplayMessage | null>(null)
 const messages = ref<ThreadDisplayMessage[]>([])
 
 const formatTime = (timestamp: number) => {
-  return formatDistanceToNow(new Date(timestamp), {
-    addSuffix: true,
-    locale: zhCN
-  })
+  return dayjs(timestamp).fromNow()
 }
 
 const loadThread = async () => {

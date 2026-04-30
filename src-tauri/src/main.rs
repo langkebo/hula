@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 #[cfg(target_os = "linux")]
 use hula_app_lib::utils::linux_runtime_guard as runtime_guard;

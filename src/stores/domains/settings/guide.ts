@@ -28,9 +28,6 @@ export const useGuideStore = defineStore(
     }
   },
   {
-    share: {
-      enable: true,
-      initialize: true
-    }
+    persist: true
   }
 )
