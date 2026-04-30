@@ -90,12 +90,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { NModal, NButton, NSpin, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { NButton, NModal, NSpin, useMessage } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixEncryptionContextService, matrixEncryptionService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('DeviceVerify')
 const { t } = useI18n()
 

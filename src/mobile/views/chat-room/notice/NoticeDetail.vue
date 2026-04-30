@@ -55,14 +55,14 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { useRoute, useRouter } from 'vue-router'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useUserStore } from '@/stores/domains/user/user'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { matrixAnnouncementService } from '@/services/matrix'
 import type { Announcement as MatrixAnnouncement } from '@/services/matrix/room/MatrixAnnouncementService'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { formatTimestamp } from '@/utils/ComputedTime.ts'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('NoticeDetail')
 

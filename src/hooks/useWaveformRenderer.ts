@@ -1,6 +1,7 @@
 import { useThrottleFn } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('WaveformRenderer')
 
 /**

@@ -1,6 +1,6 @@
-import { ref, computed, type Ref } from 'vue'
+import { computed, type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix'
-import type { UserInfo, UserDevice, RateLimit, ShadowBanStatus } from '@/services/matrix/admin/AdminTypes'
+import type { RateLimit, ShadowBanStatus, UserDevice, UserInfo } from '@/services/matrix/admin/AdminTypes'
 
 export interface UseAdminUsersResult {
   // state

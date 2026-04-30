@@ -58,24 +58,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
+import { Icon } from '@iconify/vue'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { NButton, NIcon, NInput, useDialog } from 'naive-ui'
-import { Icon } from '@iconify/vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import SettingsTabNav from './SettingsTabNav.vue'
-import {
-  getSettingsTabLabel,
-  useSettingsDialogStore,
-  type SettingsTabType
-} from '@/stores/domains/settings/settingsDialog'
-import { SETTINGS_TAB_COMPONENT_LOADERS } from './tabComponentLoaders'
 import {
   createSettingsDirtyRegistry,
   provideSettingsDirtyRegistry
 } from '@/composables/settings/useSettingsDirtyRegistry'
 import { useSettingsShell } from '@/composables/settings/useSettingsShell'
 import { usePlatform } from '@/composables/usePlatform'
+import {
+  getSettingsTabLabel,
+  type SettingsTabType,
+  useSettingsDialogStore
+} from '@/stores/domains/settings/settingsDialog'
+import SettingsTabNav from './SettingsTabNav.vue'
+import { SETTINGS_TAB_COMPONENT_LOADERS } from './tabComponentLoaders'
 
 defineOptions({
   name: 'SettingsDialog'

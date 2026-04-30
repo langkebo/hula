@@ -39,12 +39,12 @@
 </template>
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useI18n } from 'vue-i18n'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import { getDisabledOptions, getFilteredOptions, renderLabel, renderSourceList } from '@/layout/center/model.tsx'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import { matrixGroupService } from '@/services/matrix'
-import { useI18n } from 'vue-i18n'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 

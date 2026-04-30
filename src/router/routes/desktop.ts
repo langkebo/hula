@@ -1,5 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { SPACE_ROUTE_NAMES, buildSpaceWorkbenchRoute } from '@/router/spaceNavigation'
+import { buildSpaceWorkbenchRoute, SPACE_ROUTE_NAMES } from '@/router/spaceNavigation'
 
 const FriendsList = () => import('@/views/homeWindow/FriendsList.vue')
 const Message = () => import('@/views/homeWindow/message/index.vue')

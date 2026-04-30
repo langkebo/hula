@@ -1,5 +1,5 @@
-import type { MatrixEvent } from 'matrix-js-sdk'
 import { error, info } from '@tauri-apps/plugin-log'
+import type { MatrixEvent } from 'matrix-js-sdk'
 import { matrixEventService } from '../MatrixEventService'
 import { matrixMessageService } from './MatrixMessageService'
 

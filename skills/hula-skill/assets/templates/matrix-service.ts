@@ -1,5 +1,5 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export interface ExampleItem {
   id: string

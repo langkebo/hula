@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  type FriendSearchResult,
   filterRecommendedUsers,
   resolveFriendSearchAction,
-  sortFriendSearchResults,
-  type FriendSearchResult
+  sortFriendSearchResults
 } from '../useFriendSearch'
 
 describe('useFriendSearch helpers', () => {

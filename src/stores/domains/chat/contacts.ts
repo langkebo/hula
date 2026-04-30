@@ -1,17 +1,18 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import { defineStore } from 'pinia'
-import { ref, shallowRef, computed, triggerRef } from 'vue'
-import { StoresEnum, OnlineEnum } from '@/enums'
-import { useGlobalStore } from '@/stores/domains/widget/global'
+import { computed, ref, shallowRef, triggerRef } from 'vue'
+import { OnlineEnum, StoresEnum } from '@/enums'
+import { EventType } from '@/services/matrix'
 import {
-  matrixFriendService,
   type Friend,
   type FriendRequest,
+  type FriendServiceEventHandler,
   type FriendStatus,
-  type FriendServiceEventHandler
+  matrixFriendService
 } from '@/services/matrix/friends/MatrixFriendService'
-import { matrixDirectMessageService, type DmRoomInfo } from '@/services/matrix/room/MatrixDirectMessageService'
-import { matrixClientService, EventType } from '@/services/matrix'
-import { info, error } from '@tauri-apps/plugin-log'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 
 export interface MatrixContact {
   userId: string

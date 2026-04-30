@@ -1,12 +1,12 @@
-import type { Ref } from 'vue'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import pLimit from 'p-limit'
+import type { Ref } from 'vue'
 import matrixEventService from '@/services/matrix/MatrixEventService'
-import { createLogger } from '@/utils/Logger'
 import type { useGlobalStore } from '@/stores/domains/widget/global'
+import { createLogger } from '@/utils/Logger'
 import type { useSessionStore } from './session'
-import { pageSize, type MessageType } from './types'
+import { type MessageType, pageSize } from './types'
 
 const logger = createLogger('ChatMessageLoading')
 

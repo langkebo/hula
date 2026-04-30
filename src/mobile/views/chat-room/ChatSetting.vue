@@ -235,25 +235,25 @@
 </template>
 
 <script setup lang="ts">
+import { showConfirmDialog } from 'vant'
+import { I18nT, useI18n } from 'vue-i18n'
 import { MittEnum, NotificationTypeEnum, OnlineEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useMyRoomInfoUpdater } from '@/hooks/useMyRoomInfoUpdater'
 import router from '@/router'
+import { matrixRoomNotificationService, matrixRoomService, matrixSessionService } from '@/services/matrix'
 import type { UserItem } from '@/services/types'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
-import { matrixRoomNotificationService, matrixRoomService, matrixSessionService } from '@/services/matrix'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { toFriendInfoPage } from '@/utils/RouterUtils'
-import { useI18n, I18nT } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
-import { showConfirmDialog } from 'vant'
+import { toFriendInfoPage } from '@/utils/RouterUtils'
 
 const logger = createLogger('ChatSetting')
 

@@ -78,31 +78,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted, computed } from 'vue'
+import { Icon } from '@iconify/vue'
 import {
-  NCard,
-  NTabs,
-  NTabPane,
-  NSpace,
-  NSelect,
+  type DataTableColumns,
   NButton,
+  NCard,
   NDataTable,
-  NList,
-  NListItem,
-  NThing,
-  NTag,
-  NModal,
   NForm,
   NFormItem,
   NInput,
-  useMessage,
-  type DataTableColumns
+  NList,
+  NListItem,
+  NModal,
+  NSelect,
+  NSpace,
+  NTabPane,
+  NTabs,
+  NTag,
+  NThing,
+  useMessage
 } from 'naive-ui'
-import { Icon } from '@iconify/vue'
-import { useModerationStore } from '@/stores/domains/chat/moderation'
 import { storeToRefs } from 'pinia'
+import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Report } from '@/services/matrix/admin/MatrixModerationService'
+import { useModerationStore } from '@/stores/domains/chat/moderation'
 
 defineOptions({
   name: 'ModerationPanel'

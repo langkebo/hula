@@ -74,14 +74,15 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
-import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { useContactStore } from '@/stores/domains/chat/contacts'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import UserItem from './UserItem.vue'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+import UserItem from './UserItem.vue'
+
 const logger = createLogger('UserList')
 
 type FileManagerContactItem = MatrixContact & {

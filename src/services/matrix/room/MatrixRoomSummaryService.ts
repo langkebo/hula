@@ -1,5 +1,5 @@
-import { MatrixClient, MatrixEvent, Room, NotificationCountType } from 'matrix-js-sdk'
-import { info, error, warn } from '@tauri-apps/plugin-log'
+import { error, info, warn } from '@tauri-apps/plugin-log'
+import { type MatrixClient, type MatrixEvent, NotificationCountType, type Room } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 import matrixRoomStoreAdapter from './MatrixRoomStoreAdapter'
 

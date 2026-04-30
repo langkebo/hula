@@ -52,15 +52,15 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
+import { onActivated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
+import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { onActivated } from 'vue'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('NoticeList')
 
@@ -112,7 +112,7 @@ const loadAnnouncementList = async () => {
     }
 
     const data = await announcementStore.getGroupAnnouncementList(roomId, 1, 10)
-    if (data && data.records) {
+    if (data?.records) {
       announList.value = sortAnnouncements(data.records)
     }
   } catch (error) {

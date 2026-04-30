@@ -24,10 +24,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { NSpace, NAlert, NButton } from 'naive-ui'
+import { NAlert, NButton, NSpace } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { cryptoHealthMonitor, type CryptoHealthStatus } from '@/services/matrix/crypto/CryptoHealthMonitor'
+import { type CryptoHealthStatus, cryptoHealthMonitor } from '@/services/matrix/crypto/CryptoHealthMonitor'
 
 const { t } = useI18n()
 const loading = ref(false)

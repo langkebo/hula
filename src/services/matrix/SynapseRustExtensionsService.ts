@@ -1,4 +1,4 @@
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import matrixClientService from './MatrixClientService'
 
 export interface SynapseFriendInfo {
@@ -60,6 +60,8 @@ export interface InviteAllowlist {
   allowed_users: string[]
   updated_ts: number
 }
+
+type RoomEphemeralEvent = Record<string, unknown>
 
 export interface StickyEvent {
   event_id: string
@@ -694,10 +696,10 @@ class SynapseRustExtensionsService {
     }
   }
 
-  async getRoomEphemeral(roomId: string, types?: string[]): Promise<any[]> {
+  async getRoomEphemeral(roomId: string, types?: string[]): Promise<RoomEphemeralEvent[]> {
     try {
       const queryParams = types ? `?types=${types.map(encodeURIComponent).join(',')}` : ''
-      const response = await this.request<{ chunk: any[] } | { data?: { chunk: any[] } }>(
+      const response = await this.request<{ chunk: RoomEphemeralEvent[] } | { data?: { chunk: RoomEphemeralEvent[] } }>(
         `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ephemeral${queryParams}`,
         { method: 'GET' }
       )

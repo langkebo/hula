@@ -7,12 +7,12 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import SettingsDialog from './SettingsDialog.vue'
 import {
   normalizeSettingsTab,
-  useSettingsDialogStore,
-  type SettingsTabInput
+  type SettingsTabInput,
+  useSettingsDialogStore
 } from '../../stores/domains/settings/settingsDialog'
+import SettingsDialog from './SettingsDialog.vue'
 
 defineOptions({
   name: 'SettingsWindowPage'

@@ -1,5 +1,5 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export interface IceServerConfig {
   urls: string[]

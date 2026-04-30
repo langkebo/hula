@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -8,8 +8,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   trace: vi.fn()
 }))
 
-import { createLogger, LogLevelPriority } from '../Logger'
 import type { LogLevel } from '../Logger'
+import { createLogger, LogLevelPriority } from '../Logger'
 
 describe('Logger', () => {
   describe('createLogger', () => {

@@ -4,32 +4,33 @@
  */
 /// <reference types="vite/client" />
 
+export type {
+  EmptyObject,
+  ICreateClientOpts,
+  ICreateRoomOpts,
+  IEventRelation,
+  IRequestTokenResponse,
+  ISendEventResponse,
+  LoginResponse,
+  MSC3575RoomData,
+  MSC3575SlidingSyncResponse,
+  PushRuleAction,
+  RegisterResponse
+} from 'matrix-js-sdk'
 // 重新导出官方类型
 export * from 'matrix-js-sdk'
-
 // 补充 SDK 缺失的类型
-export { PendingEventOrdering, Method, ClientPrefix } from 'matrix-js-sdk'
 export {
-  Visibility,
+  ClientPrefix,
+  EventType,
+  Method,
+  NotificationCountType,
+  PendingEventOrdering,
   Preset,
   PushRuleKind,
   ReceiptType,
-  NotificationCountType,
   RoomType,
-  EventType,
+  SlidingSyncState,
   TweakName,
-  SlidingSyncState
-} from 'matrix-js-sdk'
-export type {
-  PushRuleAction,
-  EmptyObject,
-  ICreateRoomOpts,
-  ICreateClientOpts,
-  LoginResponse,
-  IEventRelation,
-  ISendEventResponse,
-  RegisterResponse,
-  IRequestTokenResponse,
-  MSC3575SlidingSyncResponse,
-  MSC3575RoomData
+  Visibility
 } from 'matrix-js-sdk'

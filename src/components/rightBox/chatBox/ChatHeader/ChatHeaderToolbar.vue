@@ -81,11 +81,11 @@
 </template>
 
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Icon } from '@iconify/vue'
-import { isMobile } from '@/utils/PlatformConstants'
 import { RoomTypeEnum } from '@/enums'
+import { isMobile } from '@/utils/PlatformConstants'
 
 const props = defineProps<{
   roomType: RoomTypeEnum | undefined

@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { matrixKeyBackupService } from '../MatrixKeyBackupService'
-import matrixClientService from '../../MatrixClientService'
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { KeyBackupManager, BackupInfo } from '@/types/matrix-extensions'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { BackupInfo, KeyBackupManager } from '@/types/matrix-extensions'
+import matrixClientService from '../../MatrixClientService'
+import { matrixKeyBackupService } from '../MatrixKeyBackupService'
 
 // Mock matrixClientService
 vi.mock('../../MatrixClientService', () => ({

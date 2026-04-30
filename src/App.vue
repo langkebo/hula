@@ -27,57 +27,59 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { exit } from '@tauri-apps/plugin-process'
-import { loadLanguage } from '@/services/i18n'
-import { CallTypeEnum, EventEnum, ThemeEnum, ChangeTypeEnum, MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
+import ConnectionStatusBanner from '@/components/common/ConnectionStatusBanner.vue'
+import { useConnectionStatus } from '@/composables/useConnectionStatus'
+import { CallTypeEnum, ChangeTypeEnum, EventEnum, MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { useWindow } from '@/hooks/useWindow.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
-import { useConnectionStatus } from '@/composables/useConnectionStatus'
-import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { useWindow } from '@/hooks/useWindow.ts'
+import { loadLanguage } from '@/services/i18n'
 import {
   matrixClientService,
   matrixMessageService,
-  matrixReceiptService,
   matrixReactionService,
-  matrixRoomService,
+  matrixReceiptService,
   matrixRoomCreationService,
   matrixRoomDirectMessageService,
   matrixRoomPinsService,
+  matrixRoomService,
   matrixRoomTagsService
 } from '@/services/matrix'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixRoomStateService } from '@/services/matrix/room/StateService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
 import { buildPresenceStorePatch, collectTrackedPresenceUserIds } from '@/utils/presenceStatus'
-import ConnectionStatusBanner from '@/components/common/ConnectionStatusBanner.vue'
+
 const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
 const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))
+
+import { listen } from '@tauri-apps/api/event'
+import { useI18n } from 'vue-i18n'
 import SplashScreen from '@/components/common/SplashScreen.vue'
 import { useBootstrap } from '@/composables/useBootstrap'
-import { unreadCountManager } from '@/utils/UnreadCountManager'
+import { useTauriListener } from '@/hooks/useTauriListener'
+import { updateSettings } from '@/services/tauriCommand.ts'
+import type { MarkItemType, RevokedMsgType, UserItem } from '@/services/types.ts'
 import {
   type LoginSuccessResType,
   type OnStatusChangeType,
   WsResponseMessageType,
   type WsTokenExpire
 } from '@/services/wsType.ts'
+import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useChatStore } from '@/stores/domains/chat/chat'
-import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
-import type { MarkItemType, RevokedMsgType, UserItem } from '@/services/types.ts'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group/types.ts'
-import { listen } from '@tauri-apps/api/event'
-import { useTauriListener } from '@/hooks/useTauriListener'
-import { updateSettings } from '@/services/tauriCommand.ts'
-import { useI18n } from 'vue-i18n'
+import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
+import { unreadCountManager } from '@/utils/UnreadCountManager'
 
 const logger = createLogger('App')
 const mobileRtcCallFloatCell = isMobile()
@@ -369,7 +371,7 @@ useMitt.on(WsResponseMessageType.MSG_MARK_ITEM, async (data: { markList: MarkIte
   logger.debug('收到消息标记更新:', data)
 
   // 确保data.markList是一个数组再传递给updateMarkCount
-  if (data && data.markList && Array.isArray(data.markList)) {
+  if (data?.markList && Array.isArray(data.markList)) {
     await chatStore.updateMarkCount(data.markList)
   } else if (data && !Array.isArray(data)) {
     // 兼容处理：如果直接收到了单个MarkItemType对象

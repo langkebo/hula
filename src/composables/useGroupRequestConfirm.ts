@@ -1,4 +1,4 @@
-import { computed, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
+import { computed, type MaybeRefOrGetter, ref, toValue, watch } from 'vue'
 import { matrixGroupService } from '@/services/matrix'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 

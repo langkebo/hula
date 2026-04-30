@@ -3,9 +3,10 @@ import { join } from '@tauri-apps/api/path'
 import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import type { Ref } from 'vue'
 import type { FilesMeta } from '@/services/types'
+import { createLogger } from '@/utils/Logger'
 import { getFilesMeta, getImageCache } from '@/utils/PathUtil'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
-import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('AudioFileManager')
 
 /**

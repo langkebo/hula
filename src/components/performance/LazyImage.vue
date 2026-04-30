@@ -34,8 +34,8 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { useIntersectionObserver } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 

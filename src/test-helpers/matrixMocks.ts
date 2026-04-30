@@ -8,8 +8,9 @@
  * Each factory returns a plain object cast to `unknown` and re-cast via the
  * helper's return type. Override fields with `overrides` to specialize.
  */
+
+import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { vi } from 'vitest'
-import type { MatrixClient, Room, MatrixEvent } from 'matrix-js-sdk'
 
 type AnyFn = (...args: unknown[]) => unknown
 

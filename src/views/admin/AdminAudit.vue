@@ -8,14 +8,12 @@
             :options="typeOptions"
             :placeholder="t('admin.audit.filter_type')"
             clearable
-            style="width: 160px"
-          />
+            style="width: 160px" />
           <n-input
             v-model:value="filterUserId"
             :placeholder="t('admin.audit.filter_user')"
             clearable
-            style="width: 200px"
-          />
+            style="width: 200px" />
           <n-button @click="loadAuditLogs" :loading="loading">
             {{ t('common.refresh') }}
           </n-button>
@@ -30,8 +28,7 @@
       :pagination="pagination"
       :row-key="(row: AuditEntry) => row.id"
       striped
-      class="mt-16px"
-    />
+      class="mt-16px" />
 
     <n-modal v-model:show="detailVisible" preset="card" :title="t('admin.audit.detail_title')" style="width: 600px">
       <n-descriptions :column="1" bordered label-placement="left" v-if="selectedEntry">
@@ -51,23 +48,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, h } from 'vue'
 import {
-  NPageHeader,
-  NDataTable,
-  NSpace,
+  type DataTableColumns,
   NButton,
-  NInput,
-  NSelect,
-  NModal,
+  NCode,
+  NDataTable,
   NDescriptions,
   NDescriptionsItem,
-  NCode,
-  NTag,
-  type DataTableColumns
+  NInput,
+  NModal,
+  NPageHeader,
+  NSelect,
+  NSpace,
+  NTag
 } from 'naive-ui'
+import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAdminAudit, type AuditEntryView as AuditEntry } from '@/composables/admin'
+import { type AuditEntryView as AuditEntry, useAdminAudit } from '@/composables/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminAudit')

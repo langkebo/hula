@@ -199,7 +199,7 @@ defineExpose({
     }
   },
   scrollToBottom: () => {
-    if (virtualListRef.value && virtualListRef.value.$el) {
+    if (virtualListRef.value?.$el) {
       const scrollContainer = virtualListRef.value.$el
       if (scrollContainer) {
         const scrollHeight = scrollContainer.scrollHeight

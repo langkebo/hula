@@ -1,11 +1,11 @@
-import { computed, onUnmounted, type InjectionKey } from 'vue'
+import { computed, type InjectionKey, nextTick, onUnmounted, ref } from 'vue'
 import { ErrorType } from '@/common/exception'
 import {
+  CallTypeEnum,
   MergeMessageType,
   MittEnum,
   MsgEnum,
   PowerEnum,
-  CallTypeEnum,
   RoleEnum,
   RoomTypeEnum,
   TauriCommand
@@ -16,37 +16,41 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useVideoViewer } from '@/hooks/useVideoViewer'
 import type { RightMouseMessageItem } from '@/services/types.ts'
 import { createLogger } from '@/utils/Logger'
+import { createEmojiList } from './chatMain/emojiMenuData'
 import {
+  clearSelection,
   extractMsgIdFromDataKey,
-  resolveSelectionMessageId,
   getSelectedText,
   hasSelectedText,
-  clearSelection
+  resolveSelectionMessageId
 } from './chatMain/selectionUtils'
-import { useGroupNicknameModal, type GroupNicknameModalPayload } from './chatMain/useGroupNicknameModal'
 import { useChatCopy } from './chatMain/useChatCopy'
 import { useChatFileDownload } from './chatMain/useChatFileDownload'
-import { createEmojiList } from './chatMain/emojiMenuData'
+import { type GroupNicknameModalPayload, useGroupNicknameModal } from './chatMain/useGroupNicknameModal'
+
 const logger = createLogger('ChatMain')
 
 type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<string, unknown>
+
+import { useI18n } from 'vue-i18n'
+import { reportService } from '@/services/matrix/admin/MatrixReportService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
+import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import { isDiffNow } from '@/utils/ComputedTime.ts'
 import { extractFileName } from '@/utils/Formatting'
-import { matrixMessageService, matrixGroupService, reportService } from '@/services/matrix'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useWindow } from './useWindow'
-import { useI18n } from 'vue-i18n'
-import { matrixRoomService } from '@/services/matrix'
 
 type UseChatMainOptions = {
   enableGroupNicknameModal?: boolean

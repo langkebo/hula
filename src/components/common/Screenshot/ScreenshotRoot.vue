@@ -42,19 +42,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { writeImage } from '@tauri-apps/plugin-clipboard-manager'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useCanvasTool } from '@/hooks/useCanvasTool'
+import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 import { ErrorType, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler.ts'
-import ScreenshotMagnifier from './ScreenshotMagnifier.vue'
-import ScreenshotSelection from './ScreenshotSelection.vue'
-import ScreenshotToolbar from './ScreenshotToolbar.vue'
-import type { ScreenConfig, DrawToolType } from './types'
-import { createLogger } from '@/utils/Logger'
+import type ScreenshotMagnifier from './ScreenshotMagnifier.vue'
+import type ScreenshotSelection from './ScreenshotSelection.vue'
+import type ScreenshotToolbar from './ScreenshotToolbar.vue'
+import type { DrawToolType, ScreenConfig } from './types'
 
 const logger = createLogger('Screenshot')
 const { t } = useI18n()

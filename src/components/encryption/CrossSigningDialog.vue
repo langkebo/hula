@@ -123,12 +123,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { NModal, NButton, NTag, NDivider, NSpin, NFlex, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { NButton, NDivider, NFlex, NModal, NSpin, NTag, useMessage } from 'naive-ui'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('CrossSigning')
 
 const { t } = useI18n()

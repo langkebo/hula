@@ -1,9 +1,18 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import { computed } from 'vue'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import type { MatrixCapabilities } from '@/stores/domains/chat/capability'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import { matrixClientService } from './MatrixClientService'
 import { matrixAccountService } from './user/MatrixAccountService'
+
+type MatrixVersionsResponse = {
+  unstable_features?: Record<string, boolean>
+}
+
+type MatrixCapabilitiesResponse = {
+  capabilities?: MatrixCapabilities['capabilities']
+}
 
 /**
  * Matrix 服务端能力探测服务
@@ -31,13 +40,13 @@ export class MatrixCapabilityService {
       // 并发拉取三个核心端点
       const [versions, capabilities, clientConfig] = await Promise.all([
         this.fetchVersions(baseUrl),
-        matrixAccountService.getCapabilities(),
+        matrixAccountService.getCapabilities() as Promise<MatrixCapabilitiesResponse>,
         this.fetchClientConfig(baseUrl)
       ])
 
       store.setCapabilities({
         unstable_features: versions.unstable_features || {},
-        capabilities: (capabilities as any)?.capabilities || {},
+        capabilities: capabilities.capabilities || {},
         client_config: clientConfig || {}
       })
 
@@ -48,25 +57,25 @@ export class MatrixCapabilityService {
     }
   }
 
-  private async fetchVersions(baseUrl: string): Promise<any> {
+  private async fetchVersions(baseUrl: string): Promise<MatrixVersionsResponse> {
     try {
       const url = `${baseUrl}/_matrix/client/versions`
       const response = await getRuntimeAwareFetch()(url)
       if (!response.ok) return {}
-      return await response.json()
+      return (await response.json()) as MatrixVersionsResponse
     } catch {
       return {}
     }
   }
 
-  private async fetchClientConfig(baseUrl: string): Promise<any> {
+  private async fetchClientConfig(baseUrl: string): Promise<MatrixCapabilities['client_config']> {
     try {
       const url = `${baseUrl}/_matrix/client/v1/config/client`
       const response = await getRuntimeAwareFetch()(url)
-      if (!response.ok) return {}
-      return await response.json()
+      if (!response.ok) return {} as MatrixCapabilities['client_config']
+      return (await response.json()) as MatrixCapabilities['client_config']
     } catch {
-      return {}
+      return {} as MatrixCapabilities['client_config']
     }
   }
 }

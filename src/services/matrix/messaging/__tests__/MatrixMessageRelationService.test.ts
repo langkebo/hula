@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { matrixMessageRelationService } from '../MatrixMessageRelationService'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
+import { matrixMessageRelationService } from '../MatrixMessageRelationService'
 
 vi.mock('../../MatrixClientService', () => ({
   default: {

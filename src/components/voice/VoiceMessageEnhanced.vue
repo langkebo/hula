@@ -74,15 +74,16 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { ThemeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
-import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
+import { useI18n } from 'vue-i18n'
+import { ThemeEnum } from '@/enums'
+import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import type { VoiceBody } from '@/services/types'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('VoiceMessageEnhanced')
 
 const { t } = useI18n()

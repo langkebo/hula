@@ -122,19 +122,20 @@
   </div>
 </template>
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { uniq } from 'es-toolkit'
+import { useI18n } from 'vue-i18n'
+import { matrixGroupService } from '@/services/matrix'
 import type { NoticeItem } from '@/services/types.ts'
 import { NoticeType, RequestNoticeAgreeStatus } from '@/services/types.ts'
-import { useContactStore } from '@/stores/domains/chat/contacts'
 import type { FriendRequestItem } from '@/stores/domains/chat/contacts'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
-import { matrixGroupService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
-import { useI18n } from 'vue-i18n'
+
 const logger = createLogger('MobileApplyList')
 const timerManager = useTimerManager()
 

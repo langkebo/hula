@@ -54,8 +54,8 @@
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { isMac } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { isMac } from '@/utils/PlatformConstants'
 
 const logger = createLogger('SecretChatModal')
 

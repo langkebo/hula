@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { createMemoryHistory, createRouter } from 'vue-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, reactive } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import { RoomTypeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 

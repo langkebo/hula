@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('vue', async () => {
   const actual = await vi.importActual('vue')
@@ -26,8 +26,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   trace: vi.fn()
 }))
 
-import { useConnectionStatus } from '../useConnectionStatus'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { useConnectionStatus } from '../useConnectionStatus'
 
 describe('useConnectionStatus', () => {
   beforeEach(() => {

@@ -44,6 +44,7 @@ import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useTimerManager } from '@/utils/TimerManager'
+
 const timerManager = useTimerManager()
 
 const settingStore = useSettingStore()

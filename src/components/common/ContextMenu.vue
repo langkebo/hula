@@ -131,10 +131,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useContextMenu } from '@/hooks/useContextMenu.ts'
 import { useViewport } from '@/hooks/useViewport.ts'
 import { isMobile } from '@/utils/PlatformConstants'
-import { useI18n } from 'vue-i18n'
 
 type MenuContent = unknown
 type ContextMenuItem = OPT.RightMenu<MenuContent>

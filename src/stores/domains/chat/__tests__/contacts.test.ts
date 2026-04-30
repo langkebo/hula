@@ -1,10 +1,10 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useContactStore, type ContactInvite } from '../contacts'
 import { matrixClientService } from '@/services/matrix'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { type ContactInvite, useContactStore } from '../contacts'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),

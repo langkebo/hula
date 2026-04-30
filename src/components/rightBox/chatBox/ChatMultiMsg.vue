@@ -19,13 +19,13 @@ import { MSG_REPLY_TEXT_MAP } from '@/common/message'
 import { EventEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
 import { useChatStore } from '@/stores/domains/chat/chat'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import type { MsgId } from '@/typings/global'
+import { createLogger } from '@/utils/Logger'
 import { getBodyContent } from '@/utils/messageBody'
 
-import { createLogger } from '@/utils/Logger'
 const logger = createLogger('ChatMultiMsg')
 
 const { contentList, msgIds, msgId } = defineProps<{

@@ -92,11 +92,11 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { dirname, join } from '@tauri-apps/api/path'
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { readDir } from '@tauri-apps/plugin-fs'
+import { useI18n } from 'vue-i18n'
 import ActionBar from '@/components/windows/ActionBar.vue'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { useVideoViewer } from '@/stores/domains/widget/videoViewer'
 import { createLogger } from '@/utils/Logger'
-import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const logger = createLogger('VideoViewer')

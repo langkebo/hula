@@ -6,8 +6,9 @@ import { useWindow } from '@/hooks/useWindow'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
-import { isMobile } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { isMobile } from '@/utils/PlatformConstants'
+
 const logger = createLogger('VideoViewer')
 
 /** 视频处理 */
@@ -23,7 +24,7 @@ export const useVideoViewer = () => {
     // 从URL中提取文件名
     const urlParts = url.split('/')
     const filename = urlParts[urlParts.length - 1]
-    if (filename && filename.includes('.')) {
+    if (filename?.includes('.')) {
       return filename
     }
     return 'video.mp4'

@@ -54,7 +54,7 @@ export const useBotStore = defineStore(StoresEnum.BOT, () => {
 
   const setAssistant = (text?: string) => {
     viewType.value = 'assistant'
-    assistantText.value = text && text.trim().length ? text : '正在预览模型'
+    assistantText.value = text?.trim().length ? text : '正在预览模型'
     markdownSource.value = ''
     webUrl.value = ''
   }

@@ -5,9 +5,9 @@
  * 参考 API 契约: device.md
  */
 
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { MatrixClientExtended, AuthDict } from '@/types/matrix-extensions'
+import type { AuthDict, MatrixClientExtended } from '@/types/matrix-extensions'
 import matrixClientService from '../MatrixClientService'
 
 /**

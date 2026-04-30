@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { detectImageFormat, isImageUrl, formatFileSize, compressImage, isImageFile } from '../ImageUtils'
+import { describe, expect, it } from 'vitest'
+import { compressImage, detectImageFormat, formatFileSize, isImageFile, isImageUrl } from '../ImageUtils'
 
 describe('ImageUtils', () => {
   describe('detectImageFormat', () => {

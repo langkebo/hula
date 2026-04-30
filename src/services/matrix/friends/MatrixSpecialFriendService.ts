@@ -1,6 +1,6 @@
+import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import { info, error, warn } from '@tauri-apps/plugin-log'
 
 const SPECIAL_FRIENDS_EVENT_TYPE = 'm.special_friends' as const
 

@@ -97,8 +97,8 @@
 </template>
 
 <script setup lang="ts">
-import { useVoiceRecordRust } from '@/hooks/useVoiceRecordRust'
 import { useI18n } from 'vue-i18n'
+import { useVoiceRecordRust } from '@/hooks/useVoiceRecordRust'
 import { createLogger } from '@/utils/Logger'
 
 export type VoiceRecordPayload = {

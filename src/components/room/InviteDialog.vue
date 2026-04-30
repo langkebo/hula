@@ -69,6 +69,7 @@ import { useI18n } from 'vue-i18n'
 import { matrixRoomService, matrixSearchService } from '@/services/matrix'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('InviteDialog')
 
 const props = defineProps<{

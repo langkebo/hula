@@ -299,28 +299,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { Icon } from '@iconify/vue'
 import {
+  NAlert,
   NButton,
   NDivider,
-  NSpin,
   NEmpty,
-  NSwitch,
-  NSelect,
-  useMessage,
-  NModal,
   NForm,
   NFormItem,
   NInput,
-  NAlert,
-  useDialog
+  NModal,
+  NSelect,
+  NSpin,
+  NSwitch,
+  useDialog,
+  useMessage
 } from 'naive-ui'
-import { Icon } from '@iconify/vue'
-import { matrixAccountService } from '@/services/matrix'
-import { matrixEncryptionService } from '@/services/matrix'
-import { useSettingStore } from '@/stores/domains/settings/setting'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
+import { matrixAccountService, matrixEncryptionService } from '@/services/matrix'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SecuritySettings')

@@ -30,14 +30,13 @@
 </template>
 
 <script setup lang="ts">
+import type { FormInst, UploadCustomRequestOptions } from 'naive-ui'
+import { useMessage } from 'naive-ui'
 import { reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useMessage } from 'naive-ui'
-import { matrixSpaceService, type SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { matrixSpaceService, type SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
 import { createLogger } from '@/utils/Logger'
-
-import type { FormInst, UploadCustomRequestOptions } from 'naive-ui'
 
 const logger = createLogger('CreateSpaceDialog')
 const { t } = useI18n()

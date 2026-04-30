@@ -60,8 +60,8 @@
 
     <van-popup v-model:show="pickRtcCall" position="bottom">
       <div class="flex flex-col items-center justify-center">
-        <div class="w-full text-center py-3" @click="startCall(CallTypeEnum.VIDEO)">视频通话</div>
-        <div class="w-full text-center py-3" @click="startCall(CallTypeEnum.AUDIO)">语音通话</div>
+        <div class="w-full text-center py-3" @click="startVideoCall">视频通话</div>
+        <div class="w-full text-center py-3" @click="startAudioCall">语音通话</div>
         <div class="w-full text-center py-3">取消</div>
       </div>
     </van-popup>
@@ -69,11 +69,12 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
-import { CallTypeEnum, RoomTypeEnum } from '@/enums'
-import { UploaderFileListItem } from 'vant'
+import type { UploaderFileListItem } from 'vant'
+import type { CallTypeEnum } from '@/enums'
+import { CallTypeEnum as CallTypeEnumValue, RoomTypeEnum } from '@/enums'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('More')
 
@@ -132,6 +133,14 @@ const startCall = (callType: CallTypeEnum) => {
       callType: callType
     }
   })
+}
+
+const startVideoCall = () => {
+  startCall(CallTypeEnumValue.VIDEO)
+}
+
+const startAudioCall = () => {
+  startCall(CallTypeEnumValue.AUDIO)
 }
 
 const emit = defineEmits<(e: 'sendFiles', files: File[]) => void>()

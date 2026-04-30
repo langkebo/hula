@@ -32,8 +32,8 @@
 
 <script setup lang="ts">
 import 'vant/es/dialog/style'
-import { invoke } from '@tauri-apps/api/core'
 import { Icon } from '@iconify/vue'
+import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isIOS } from '@/utils/PlatformConstants'

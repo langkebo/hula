@@ -96,6 +96,11 @@ interface BackupVersionsResponse {
   versions?: BackupVersionInfo[]
 }
 
+type MatrixHttpErrorLike = {
+  httpStatus?: number
+  errcode?: string
+}
+
 interface RestoreBackupResult {
   total: number
   imported: number
@@ -154,11 +159,12 @@ class MatrixKeyBackupService {
         count: response.count,
         etag: response.etag
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const matrixError = err as MatrixHttpErrorLike
       // 13.4.4: /room_keys/version 404 表示尚无备份，是规范允许的语义，静默处理
       if (
-        err?.httpStatus === 404 ||
-        err?.errcode === 'M_NOT_FOUND' ||
+        matrixError?.httpStatus === 404 ||
+        matrixError?.errcode === 'M_NOT_FOUND' ||
         (err instanceof Error && err.message.includes('404'))
       ) {
         info('[KeyBackup] 尚无密钥备份版本 (404)')

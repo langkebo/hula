@@ -1,6 +1,6 @@
-import type { MatrixClient, IPusherRequest, IPushRule, IPushRules, PushRuleKind } from 'matrix-js-sdk'
+import { error, info, warn } from '@tauri-apps/plugin-log'
+import type { IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleKind } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import { info, error, warn } from '@tauri-apps/plugin-log'
 
 export interface NotificationRule {
   ruleId: string

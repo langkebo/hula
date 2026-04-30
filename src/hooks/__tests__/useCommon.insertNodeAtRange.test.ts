@@ -4,8 +4,9 @@
  * observable DOM contract so we can later extract it into `useEditorDom`
  * without silently changing behaviour.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
+
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum } from '@/enums'
 
 // Hoisted store mocks — the closures are referenced from vi.mock factories.

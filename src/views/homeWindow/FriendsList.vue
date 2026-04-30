@@ -235,21 +235,21 @@
 </template>
 <script setup lang="ts" name="friendsList">
 import { storeToRefs } from 'pinia'
-import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import { useFriends } from '@/composables/useFriends'
 import { MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow'
+import { buildSpaceWorkbenchRoute } from '@/router/spaceNavigation'
 import type { DetailsContent } from '@/services/types'
 import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { buildSpaceWorkbenchRoute } from '@/router/spaceNavigation'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { unreadCountManager } from '@/utils/UnreadCountManager'
 import { createLogger } from '@/utils/Logger'
+import { unreadCountManager } from '@/utils/UnreadCountManager'
 
 const logger = createLogger('FriendsList')
 const MESSAGE_ROUTE_NAME = 'message'

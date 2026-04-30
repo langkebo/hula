@@ -116,15 +116,15 @@
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
-import { useFriends, type FriendSearchResult } from '@/composables/useFriends'
+import { type FriendSearchResult, useFriends } from '@/composables/useFriends'
 import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
+import router from '@/router'
 import { useBadgeStore } from '@/stores/domains/chat/badge'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isMobile } from '@/utils/PlatformConstants'
-import router from '@/router'
 
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()

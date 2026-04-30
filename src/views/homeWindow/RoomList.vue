@@ -40,21 +40,21 @@
 </template>
 <script lang="ts" setup name="roomList">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { MittEnum, RoomTypeEnum } from '@/enums'
+import { useI18n } from 'vue-i18n'
+import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'
+import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.vue'
+import type RoomSessionList from '@/components/workbench/RoomSessionList.vue'
+import WorkbenchDetailPane from '@/components/workbench/WorkbenchDetailPane.vue'
 import { useMessageSessionFilters } from '@/composables/workbench/useMessageSessionFilters'
-import { useSessionPageSync } from '@/composables/workbench/useSessionPageSync'
 import { useSessionListState } from '@/composables/workbench/useSessionListState'
+import { useSessionPageSync } from '@/composables/workbench/useSessionPageSync'
 import { useWorkbenchSessionQuerySync } from '@/composables/workbench/useWorkbenchSessionQuerySync'
+import { MittEnum, RoomTypeEnum } from '@/enums'
 import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
-import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'
-import { useI18n } from 'vue-i18n'
-import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.vue'
-import RoomSessionList from '@/components/workbench/RoomSessionList.vue'
-import WorkbenchDetailPane from '@/components/workbench/WorkbenchDetailPane.vue'
 
 const { t } = useI18n()
 const appWindow = WebviewWindow.getCurrent()

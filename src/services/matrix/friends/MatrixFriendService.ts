@@ -1,12 +1,12 @@
-import { FriendManager, FriendEvent, type Friend, type FriendRequest } from 'matrix-js-sdk/friend'
+import { type Friend, FriendEvent, type FriendManager, type FriendRequest } from 'matrix-js-sdk/friend'
 
 // Extend FriendStatus for local UI needs
 export type FriendStatus = 'pending' | 'accepted' | 'rejected' | 'favorite' | 'normal' | 'blocked'
 
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export type { Friend, FriendRequest }
 

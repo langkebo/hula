@@ -83,20 +83,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { NAvatar, NButton, NDivider, NForm, NFormItem, NInput, useDialog, useMessage } from 'naive-ui'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NAvatar, NButton, NForm, NFormItem, NInput, NDivider, useMessage, useDialog } from 'naive-ui'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useSettingsTabDirty } from '@/composables/settings/useSettingsDirtyRegistry'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AccountSettings')
+
+import defaultAvatarImg from '@/assets/img/win.png'
+import type { AvatarCropperInstance } from '@/components/common/AvatarCropper.vue'
+import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { matrixAccountService } from '@/services/matrix'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import AvatarCropper from '@/components/common/AvatarCropper.vue'
-import type { AvatarCropperInstance } from '@/components/common/AvatarCropper.vue'
-import defaultAvatarImg from '@/assets/img/win.png'
 
 defineOptions({
   name: 'AccountSettings'
@@ -120,7 +121,7 @@ const defaultAvatar = computed(() => defaultAvatarImg)
 const userId = computed(() => matrixStore.userId || '')
 
 const displayAvatarUrl = computed(() => {
-  if (userAvatar.value && userAvatar.value.startsWith('mxc://')) {
+  if (userAvatar.value?.startsWith('mxc://')) {
     return matrixMediaService.getMediaUrl(userAvatar.value, 160, 160) || userAvatar.value
   }
   return userAvatar.value

@@ -1,5 +1,5 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export interface DeviceInfo {
   deviceId: string

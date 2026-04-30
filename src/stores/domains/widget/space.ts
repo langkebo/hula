@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { matrixSpaceService, type SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
 
 export const useSpaceStore = defineStore('space', () => {

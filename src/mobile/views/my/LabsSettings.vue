@@ -99,9 +99,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { showConfirmDialog, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
+import { showConfirmDialog, showToast } from 'vant'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { createLogger } from '@/utils/Logger'

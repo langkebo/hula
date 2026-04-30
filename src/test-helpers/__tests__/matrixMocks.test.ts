@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-import { createMockMatrixClient, createMockRoom, createMockMatrixEvent } from '../matrixMocks'
+import { describe, expect, it, vi } from 'vitest'
+import { createMockMatrixClient, createMockMatrixEvent, createMockRoom } from '../matrixMocks'
 
 describe('createMockMatrixClient', () => {
   it('returns an object with the most-mocked client methods as vi.fn()', () => {

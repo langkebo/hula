@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import * as sdk from 'matrix-js-sdk'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatrixAuthService } from '../MatrixAuthService'
 
 vi.mock('../../MatrixClientService', () => ({

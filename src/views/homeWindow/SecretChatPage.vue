@@ -48,10 +48,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useSessionStore, type SessionItem } from '@/stores/domains/chat/chat/session'
+import { type SessionItem, useSessionStore } from '@/stores/domains/chat/chat/session'
 
 defineOptions({
   name: 'SecretChatPage'

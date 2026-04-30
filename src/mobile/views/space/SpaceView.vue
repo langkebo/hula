@@ -22,11 +22,7 @@
             <van-empty :description="t('space.empty')" />
           </div>
           <div v-else class="space-grid">
-            <div
-              v-for="space in spaces"
-              :key="space.spaceId"
-              class="space-card"
-              @click="handleSpaceClick(space)">
+            <div v-for="space in spaces" :key="space.spaceId" class="space-card" @click="handleSpaceClick(space)">
               <div class="space-cover">
                 <img v-if="space.avatarUrl" :src="space.avatarUrl" alt="" />
                 <div v-else class="default-cover">
@@ -37,8 +33,14 @@
                 <div class="space-name">{{ space.name }}</div>
                 <div v-if="space.topic" class="space-topic">{{ space.topic }}</div>
                 <div class="space-stats">
-                  <span><van-icon name="friends-o" /> {{ space.memberCount }}</span>
-                  <span><van-icon name="chat-o" /> {{ space.childCount }}</span>
+                  <span>
+                    <van-icon name="friends-o" />
+                    {{ space.memberCount }}
+                  </span>
+                  <span>
+                    <van-icon name="chat-o" />
+                    {{ space.childCount }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -94,8 +96,14 @@
               <div class="detail-name">{{ selectedSpace.name }}</div>
               <div v-if="selectedSpace.topic" class="detail-topic">{{ selectedSpace.topic }}</div>
               <div class="detail-stats">
-                <span><van-icon name="friends-o" /> {{ selectedSpace.memberCount }} {{ t('space.members') }}</span>
-                <span><van-icon name="chat-o" /> {{ selectedSpace.childCount }} {{ t('space.rooms') }}</span>
+                <span>
+                  <van-icon name="friends-o" />
+                  {{ selectedSpace.memberCount }} {{ t('space.members') }}
+                </span>
+                <span>
+                  <van-icon name="chat-o" />
+                  {{ selectedSpace.childCount }} {{ t('space.rooms') }}
+                </span>
               </div>
             </div>
           </div>
@@ -193,13 +201,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { showToast } from 'vant'
+import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useSpace, useSpaceMembers, useSpaceRooms, useSpaces } from '@/composables/space'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
-import { useSpaces, useSpace, useSpaceMembers, useSpaceRooms } from '@/composables/space'
 
 const { t } = useI18n()
 

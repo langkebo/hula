@@ -1,6 +1,6 @@
 import { writeImage, writeText } from '@tauri-apps/plugin-clipboard-manager'
-import { detectImageFormat, imageUrlToUint8Array, isImageUrl } from '@/utils/ImageUtils'
 import { removeTag } from '@/utils/Formatting'
+import { detectImageFormat, imageUrlToUint8Array, isImageUrl } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
 import { getSelectedText } from './selectionUtils'
 

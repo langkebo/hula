@@ -64,13 +64,23 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/colorthief': 'colorthief',
   'node_modules/p-limit': 'p-limit',
   'node_modules/yocto-queue': 'yocto-queue',
+  'node_modules/@tauri-apps/': 'tauri-sdk',
+  'node_modules/@fingerprintjs/': 'fingerprint',
+  'node_modules/markstream-vue': 'markdown-vendor',
+  'node_modules/stream-markdown': 'markdown-vendor',
+  'node_modules/tlbs-map-vue': 'map-vendor',
+  'node_modules/driver.js': 'driver',
 
   // 业务逻辑与大型组件
   'src/enums/index.ts': 'enums',
   'src/utils/TauriInvokeHandler.ts': 'tauri-invoke',
-  'src/mobile/components/ImagePreview.vue': 'image-preview',
   'src/router/index.ts': 'router',
-  'node_modules/hula-emojis': 'hula-emojis'
+  'node_modules/hula-emojis': 'hula-emojis',
+
+  // 聊天域核心组件与逻辑
+  'src/components/rightBox/renderMessage/index.vue': 'render-message',
+  'src/components/rightBox/MsgInput.vue': 'msg-input',
+  'src/components/rightBox/chatBox/': 'chat-domain'
 }
 
 /**

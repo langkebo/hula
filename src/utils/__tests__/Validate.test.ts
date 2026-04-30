@@ -1,18 +1,18 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  validateUsername,
-  validatePassword,
-  validateEmail,
-  validatePhone,
-  validateUrl,
-  validateMatrixId,
-  validateRoomId,
-  validateRoomAlias,
   sanitizeInput,
-  validateFileType,
+  validateAlphaNumeric,
+  validateEmail,
   validateFileSize,
+  validateFileType,
+  validateMatrixId,
+  validatePassword,
+  validatePhone,
+  validateRoomAlias,
+  validateRoomId,
   validateSpecialChar,
-  validateAlphaNumeric
+  validateUrl,
+  validateUsername
 } from '../Validate'
 
 describe('Validate 工具', () => {

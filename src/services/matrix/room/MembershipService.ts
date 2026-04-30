@@ -1,7 +1,7 @@
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import type { Room } from 'matrix-js-sdk'
-import matrixClientService from '../MatrixClientService'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import matrixClientService from '../MatrixClientService'
 
 /**
  * Room membership domain service.

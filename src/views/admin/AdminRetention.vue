@@ -14,7 +14,8 @@
     </n-page-header>
 
     <n-alert v-if="retentionStatus" type="info" class="mb-16px" :show-icon="false">
-      {{ t('admin.retention.status_label') }}: {{ retentionStatus.running ? t('admin.retention.status_running') : t('admin.retention.status_idle') }}
+      {{ t('admin.retention.status_label') }}:
+      {{ retentionStatus.running ? t('admin.retention.status_running') : t('admin.retention.status_idle') }}
     </n-alert>
 
     <n-data-table
@@ -23,8 +24,7 @@
       :loading="loading"
       :pagination="pagination"
       :row-key="(row: RetentionPolicy) => row.roomId"
-      striped
-    />
+      striped />
 
     <n-modal v-model:show="editVisible" preset="dialog" :title="t('admin.retention.edit_title')">
       <n-form :model="editForm" label-placement="left" label-width="120px">
@@ -49,24 +49,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h } from 'vue'
 import {
-  NPageHeader,
-  NDataTable,
-  NSpace,
+  type DataTableColumns,
+  NAlert,
   NButton,
-  NModal,
+  NDataTable,
   NForm,
   NFormItem,
   NInput,
   NInputNumber,
-  NAlert,
+  NModal,
+  NPageHeader,
+  NSpace,
   NTag,
-  useMessage,
-  type DataTableColumns
+  useMessage
 } from 'naive-ui'
+import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAdminRetention, type RetentionPolicyView as RetentionPolicy } from '@/composables/admin'
+import { type RetentionPolicyView as RetentionPolicy, useAdminRetention } from '@/composables/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminRetention')

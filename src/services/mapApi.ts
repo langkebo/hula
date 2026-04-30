@@ -3,9 +3,10 @@
  * 请使用 matrix-js-sdk 的位置功能或第三方地图 SDK
  * 迁移完成后此文件将被删除
  */
-import { httpClient } from '@/utils/HttpClient'
+
 import { matrixExtensionEndpoints } from '@/services/backend'
 import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
+import { httpClient } from '@/utils/HttpClient'
 
 type TransformedCoordinate = {
   lat: number

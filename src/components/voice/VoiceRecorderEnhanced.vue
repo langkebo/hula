@@ -130,9 +130,9 @@
 </template>
 
 <script setup lang="ts">
+import { info, error as logError } from '@tauri-apps/plugin-log'
 import { useI18n } from 'vue-i18n'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()

@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { MatrixClient } from 'matrix-js-sdk'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import matrixClientService from '../../MatrixClientService'
 import { matrixReactionService } from '../MatrixReactionService'
-import type { MatrixClient } from 'matrix-js-sdk'
-import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 vi.mock('../../MatrixClientService', () => ({
   default: {

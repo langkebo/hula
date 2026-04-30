@@ -1,7 +1,7 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixEvent } from 'matrix-js-sdk'
-import matrixClientService from '../MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import matrixClientService from '../MatrixClientService'
 
 export interface ReactionInfo {
   key: string

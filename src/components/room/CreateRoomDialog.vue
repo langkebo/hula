@@ -65,11 +65,11 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import type { FormInst, FormRules, UploadCustomRequestOptions } from 'naive-ui'
-import { matrixRoomService } from '@/services/matrix'
-import { matrixMediaService } from '@/services/matrix'
+import { useI18n } from 'vue-i18n'
+import { matrixMediaService, matrixRoomService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('CreateRoomDialog')
 
 const props = defineProps<{

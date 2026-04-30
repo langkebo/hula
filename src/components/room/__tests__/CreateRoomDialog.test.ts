@@ -1,6 +1,6 @@
-import { mount, flushPromises } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import CreateRoomDialog from '../CreateRoomDialog.vue'
 
 const {

@@ -24,9 +24,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onUnmounted } from 'vue'
-import BurnIndicator from './BurnIndicator.vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
+import BurnIndicator from './BurnIndicator.vue'
 
 const props = defineProps<{
   msgId: string

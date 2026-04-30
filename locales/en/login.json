@@ -188,5 +188,12 @@
     "complete_info_before_register": "Please complete your information before registering.",
     "register_success": "Registration successful.",
     "register_fail": "Registration failed."
-  }
+  },
+  "email_invalid": "Invalid email.",
+  "code_sent_email": "Verification code sent. Please check your email.",
+  "code_send_failed_with_reason": "Failed to send verification code: {reason}",
+  "code_send_failed_retry": "Failed to send verification code. Please try again later.",
+  "complete_info_before_register": "Please complete your information before registering.",
+  "register_success": "Registration successful.",
+  "register_fail": "Registration failed."
 }

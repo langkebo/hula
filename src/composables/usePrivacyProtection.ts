@@ -7,10 +7,10 @@
  * - Web 端显示动态水印
  */
 
-import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { isDesktop } from '@/utils/PlatformConstants'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { createLogger } from '@/utils/Logger'
+import { isDesktop } from '@/utils/PlatformConstants'
 
 const PRIVACY_EVENT_NAME = 'com:hula:privacy' as const
 

@@ -1,7 +1,7 @@
+import { invoke } from '@tauri-apps/api/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { adminService } from '..'
-import { invoke } from '@tauri-apps/api/core'
 
 vi.mock('../../MatrixClientService', () => ({
   default: {

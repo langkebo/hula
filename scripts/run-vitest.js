@@ -1,6 +1,6 @@
 import { spawn } from 'child_process'
-import { fileURLToPath } from 'url'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const vitestEntrypoint = path.resolve(currentDir, '../node_modules/vitest/vitest.mjs')

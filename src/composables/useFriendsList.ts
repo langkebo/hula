@@ -4,8 +4,8 @@ import { OnlineEnum, UserType } from '@/enums'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 
 type GroupListItem = {
   roomId: string

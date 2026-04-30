@@ -39,11 +39,11 @@
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { useWindow } from '@/hooks/useWindow.ts'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
-import { isMac } from '@/utils/PlatformConstants'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
+import { isMac } from '@/utils/PlatformConstants'
 
 const logger = createLogger('RemoteLoginModal')
 

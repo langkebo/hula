@@ -72,8 +72,8 @@
 </template>
 
 <script setup lang="ts">
+import { NAlert, NButton, NCard, NDescriptions, NDescriptionsItem, NPageHeader, NSpin, NTag } from 'naive-ui'
 import { computed, onMounted } from 'vue'
-import { NPageHeader, NButton, NTag, NSpin, NAlert, NCard, NDescriptions, NDescriptionsItem } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useAdminServerLogs } from '@/composables/admin'
 

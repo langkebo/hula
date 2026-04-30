@@ -5,10 +5,10 @@
  * 参考 API 契约: presence.md
  */
 
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
+import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import matrixClientService from '../MatrixClientService'
-import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
 
 /**
  * 在线状态类型

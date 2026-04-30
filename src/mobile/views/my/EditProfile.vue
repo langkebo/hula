@@ -126,15 +126,15 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import router from '@/router'
+import { matrixAccountService } from '@/services/matrix'
 import type { ModifyUserInfoType, UserInfoType } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixAccountService } from '@/services/matrix'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('EditProfile')

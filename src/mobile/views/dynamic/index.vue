@@ -37,8 +37,8 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { type DynamicRoadmapStatus, useDynamic } from '@/composables/useDynamic'
 import router from '@/router'
-import { useDynamic, type DynamicRoadmapStatus } from '@/composables/useDynamic'
 import { completeRenderSampleOnNextFrame, startRenderSample } from '@/utils/AppHarness'
 
 const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()

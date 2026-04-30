@@ -1,4 +1,4 @@
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import type { RegistrationToken } from './AdminTypes'
 
 type SdkAdminManager = {

@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { defineComponent, h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
 import RoomSpaceWorkbench from '../RoomSpaceWorkbench.vue'
 
 const { roomSessionListScrollToIndexMock, viewportWidthMock } = vi.hoisted(() => ({

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { isMessageBody, toMessageBody, getBodyContent, getBodyUrl, getBodyTranslatedText } from '../messageBody'
+import { describe, expect, it } from 'vitest'
+import { getBodyContent, getBodyTranslatedText, getBodyUrl, isMessageBody, toMessageBody } from '../messageBody'
 
 describe('messageBody', () => {
   describe('isMessageBody', () => {

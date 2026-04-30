@@ -77,11 +77,12 @@ import { useImageViewer } from '@/hooks/useImageViewer'
 import type { ImageBody, MsgType } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
-import { isMobile } from '@/utils/PlatformConstants'
-import { extractFileName } from '@/utils/Formatting'
-import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
+import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
+import { isMobile } from '@/utils/PlatformConstants'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
+
 const logger = createLogger('Image')
 
 const ImagePreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/ImagePreview.vue')) : void 0

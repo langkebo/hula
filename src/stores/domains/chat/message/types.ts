@@ -1,7 +1,7 @@
 /**
  * Message Store 类型定义
  */
-import { MsgEnum, MessageStatusEnum } from '@/enums'
+import type { MessageStatusEnum, MsgEnum } from '@/enums'
 
 /**
  * 消息数据结构

@@ -110,18 +110,18 @@
 <script setup lang="ts">
 import { join } from '@tauri-apps/api/path'
 import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener'
+import { useI18n } from 'vue-i18n'
 import { MessageStatusEnum, TauriCommand } from '@/enums'
 import { useDownload } from '@/hooks/useDownload'
 import type { FileBody, FilesMeta, MsgType } from '@/services/types'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useChatStore } from '@/stores/domains/chat/chat'
 import { formatBytes, getFileSuffix } from '@/utils/Formatting'
+import { createLogger } from '@/utils/Logger'
 import { getFilesMeta } from '@/utils/PathUtil'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
-import { useI18n } from 'vue-i18n'
-import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('File')
 const userStore = useUserStore()

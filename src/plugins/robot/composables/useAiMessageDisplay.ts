@@ -1,4 +1,4 @@
-import { type Ref } from 'vue'
+import type { Ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
 import { isLikelyImageUrl } from '@/plugins/robot/utils/aiMediaUrl'
 import type { AIModel } from '@/services/matrix'
@@ -34,7 +34,7 @@ export const useAiMessageDisplay = ({ isAIStreaming }: UseAiMessageDisplayOption
   }
 
   const getAiPlaceholderText = (message: Message) => {
-    if (message.content && message.content.trim()) return message.content
+    if (message.content?.trim()) return message.content
     return isAIStreaming.value ? AI_THINKING_PLACEHOLDER : ''
   }
 

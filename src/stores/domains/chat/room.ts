@@ -1,15 +1,15 @@
-import { defineStore } from 'pinia'
-import { ref, shallowRef, computed, triggerRef } from 'vue'
+import { error, info } from '@tauri-apps/plugin-log'
 import { useDebounceFn } from '@vueuse/core'
-import { info, error } from '@tauri-apps/plugin-log'
-import { StoresEnum, MsgEnum, MessageStatusEnum } from '@/enums'
+import { defineStore } from 'pinia'
+import { computed, ref, shallowRef, triggerRef } from 'vue'
+import { MessageStatusEnum, MsgEnum, StoresEnum } from '@/enums'
 import matrixClientService from '@/services/matrix/MatrixClientService'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
 import matrixSlidingSyncService, { type SlidingSyncUnreadUpdate } from '@/services/matrix/sync/MatrixSlidingSyncService'
-import { LRUCache } from '@/utils/LRUCache'
-import type { RoomInfo, RoomDetail } from '@/services/types'
+import type { RoomDetail, RoomInfo } from '@/services/types'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
+import { LRUCache } from '@/utils/LRUCache'
 
 type TimelineEvent = {
   event_id: string

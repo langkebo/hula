@@ -124,11 +124,7 @@
 
         <div class="flex gap-16px mt-30px px-16px">
           <van-button block @click="goBack">{{ t('mobile_forget_code.button.go_back_setp') }}</van-button>
-          <van-button
-            :loading="submitLoading"
-            block
-            class="gradient-button"
-            @click="submitNewPassword">
+          <van-button :loading="submitLoading" block class="gradient-button" @click="submitNewPassword">
             {{ t('mobile_forget_code.button.submit') }}
           </van-button>
         </div>
@@ -145,12 +141,12 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
-import Validation from '@/components/common/Validation.vue'
-import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
-import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
-import router from '@/router'
 import { useI18n } from 'vue-i18n'
+import Validation from '@/components/common/Validation.vue'
+import router from '@/router'
+import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
+import { createLogger } from '@/utils/Logger'
+import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 
 const logger = createLogger('MobileForgetPassword')
 

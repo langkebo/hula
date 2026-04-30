@@ -163,8 +163,8 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import type { FormRules, FormInst } from 'naive-ui'
-import { apiKeyService, type ApiKey, type ApiKeyBalance, type Platform } from '@/services/matrix'
+import type { FormInst, FormRules } from 'naive-ui'
+import { type ApiKey, type ApiKeyBalance, apiKeyService, type Platform } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ApiKeyManagement')

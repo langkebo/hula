@@ -1,6 +1,6 @@
-import { reactive } from 'vue'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { reactive } from 'vue'
 import { useEmojiStore } from '../emoji'
 
 const { emojiUpload, emojiList } = vi.hoisted(() => ({

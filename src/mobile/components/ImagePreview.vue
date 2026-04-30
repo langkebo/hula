@@ -58,16 +58,16 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
+import type { CSSProperties } from 'vue'
 import { MergeMessageType, MittEnum } from '@/enums'
-import { useChatStore } from '@/stores/domains/chat/chat'
-import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
-import { useFileStore } from '@/stores/domains/widget/file'
 import { useMitt } from '@/hooks/useMitt'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
-import { extractFileName } from '@/utils/Formatting'
 import type { MsgType } from '@/services/types'
-import type { CSSProperties } from 'vue'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useFileStore } from '@/stores/domains/widget/file'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
+import { extractFileName } from '@/utils/Formatting'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ImagePreview')
 

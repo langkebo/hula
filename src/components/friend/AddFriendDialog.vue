@@ -73,7 +73,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
-import { useContactStore, type MatrixContact } from '@/stores/domains/chat/contacts'
+import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 

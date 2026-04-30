@@ -82,8 +82,8 @@
 </template>
 <script setup lang="ts">
 import { openExternalUrl } from '@/hooks/useLinkSegments'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import type { TextBody } from '@/services/types'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { isMobile } from '@/utils/PlatformConstants'
 
 // 标记结构用于描述需特殊渲染的片段区间

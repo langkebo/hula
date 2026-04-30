@@ -91,15 +91,15 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { OnlineEnum } from '@/enums'
-import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { useChatStore } from '@/stores/domains/chat/chat'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixGroupService } from '@/services/matrix'
 import router from '@/router'
+import { matrixGroupService } from '@/services/matrix'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileInviteGroupMember')
 

@@ -191,28 +191,28 @@
   </main>
 </template>
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDebounceFn } from '@vueuse/core'
 import type { InputInst } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import { MittEnum, OnlineEnum, RoleEnum, ThemeEnum, RoomTypeEnum } from '@/enums'
+import { useI18n } from 'vue-i18n'
+import { MittEnum, OnlineEnum, RoleEnum, RoomTypeEnum, ThemeEnum, WsResponseMessageType } from '@/enums'
 import { useChatMain } from '@/hooks/useChatMain.ts'
+import { useLinkSegments } from '@/hooks/useLinkSegments'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { usePopover } from '@/hooks/usePopover.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
-import { useLinkSegments } from '@/hooks/useLinkSegments'
+import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import type { UserItem } from '@/services/types'
-import { WsResponseMessageType } from '@/enums'
-import { useGlobalStore } from '@/stores/domains/widget/global'
+import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { matrixContactService } from '@/services/matrix'
-import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('ChatSidebar')
 
 const { t } = useI18n()

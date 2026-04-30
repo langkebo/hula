@@ -113,14 +113,14 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { onKeyStroke } from '@vueuse/core'
 import dayjs from 'dayjs'
-import { type InputInst } from 'naive-ui'
+import type { InputInst } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { getWeekday } from '@/utils/ComputedTime'
 import { useTimerManager } from '@/utils/TimerManager'
-import { useI18n } from 'vue-i18n'
 
 const appWindow = WebviewWindow.getCurrent()
 const settingStore = useSettingStore()

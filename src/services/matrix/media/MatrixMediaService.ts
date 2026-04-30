@@ -1,15 +1,15 @@
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
-import { matrixClientService } from '../MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
-import { compressImage, isImageFile, formatFileSize } from '@/utils/ImageUtils'
 import {
-  matrixAttachmentEncryptionService,
-  type EncryptedAttachmentFile
-} from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
-import {
-  matrixAttachmentDecryptionService,
-  type MatrixEncryptedAttachmentLike
+  type MatrixEncryptedAttachmentLike,
+  matrixAttachmentDecryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
+import {
+  type EncryptedAttachmentFile,
+  matrixAttachmentEncryptionService
+} from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
+import { compressImage, formatFileSize, isImageFile } from '@/utils/ImageUtils'
+import { matrixClientService } from '../MatrixClientService'
 
 export interface UploadResult {
   contentUri: string

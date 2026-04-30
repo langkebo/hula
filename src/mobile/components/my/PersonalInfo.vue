@@ -147,22 +147,22 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { showDialog } from 'vant'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
 import 'vant/es/dialog/style'
+import { useI18n } from 'vue-i18n'
 import { OnlineEnum, UserType } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
+import { matrixSessionService } from '@/services/matrix'
 import type { UserInfoType, UserItem } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { matrixSessionService } from '@/services/matrix'
-import { useI18n } from 'vue-i18n'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 
 const logger = createLogger('PersonalInfo')
 

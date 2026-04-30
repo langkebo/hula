@@ -1,6 +1,6 @@
-import { info, error } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
+import { error, info } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import matrixClientService from '../MatrixClientService'
 
 /**
  * Room pinned / sticky events domain service.

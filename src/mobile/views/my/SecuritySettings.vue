@@ -150,14 +150,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { showConfirmDialog, showToast, showLoadingToast } from 'vant'
 import { Icon } from '@iconify/vue'
-import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
-import { matrixCryptoService } from '@/services/matrix'
-import { useLoginFlow } from '@/hooks/useLoginFlow'
+import { showConfirmDialog, showLoadingToast, showToast } from 'vant'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
+import { matrixCryptoService } from '@/services/matrix'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SecuritySettings')

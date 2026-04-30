@@ -1,8 +1,8 @@
-import { MsgEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { AppException } from '@/common/exception.ts'
-import { type UploadOptions, type UploadProviderEnum } from '@/hooks/useUpload'
-import { AbstractMessageStrategy, type ReplyRef, strategyLogger as logger } from './base'
+import { MsgEnum } from '@/enums'
+import type { UploadOptions, UploadProviderEnum } from '@/hooks/useUpload'
+import type { MessageType } from '@/stores/domains/chat/chat/message'
+import { AbstractMessageStrategy, strategyLogger as logger, type ReplyRef } from './base'
 
 export class EmojiMessageStrategyImpl extends AbstractMessageStrategy {
   constructor() {

@@ -46,17 +46,18 @@
 </template>
 
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
+import { NAvatar, NButton, NPopover, useMessage } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NAvatar, NButton, NPopover, useMessage } from 'naive-ui'
-import { Icon } from '@iconify/vue'
+import defaultAvatarImg from '@/assets/img/win.png'
+import { matrixAccountService } from '@/services/matrix'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useMatrixStore } from '@/stores/domains/chat/matrix'
-import { matrixAccountService } from '@/services/matrix'
-import defaultAvatarImg from '@/assets/img/win.png'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('UserMenuHeader')
 
 defineOptions({

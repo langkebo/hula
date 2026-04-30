@@ -278,27 +278,29 @@
 import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { onKeyStroke } from '@vueuse/core'
-import { type VirtualListInst } from 'naive-ui'
+import type { VirtualListInst } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
-import { MacOsKeyEnum, MittEnum, RoomTypeEnum, ThemeEnum, WinKeyEnum } from '@/enums'
+import { I18nT, useI18n } from 'vue-i18n'
+import { useSendOptions } from '@/composables/settings/settingsOptions'
+import { MacOsKeyEnum, MittEnum, MobilePanelStateEnum, RoomTypeEnum, ThemeEnum, WinKeyEnum } from '@/enums'
 import { useCommon } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useMsgInput } from '@/hooks/useMsgInput.ts'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { isMac, isMobile } from '@/utils/PlatformConstants'
-import { useSendOptions } from '@/composables/settings/settingsOptions'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { MobilePanelStateEnum } from '@/enums'
-import { useI18n, I18nT } from 'vue-i18n'
-import type { UploadFile } from '@/utils/FileType'
 import type { AIModel, UserItem } from '@/services/types.ts'
-import LocationModal from './location/LocationModal.vue'
-import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService'
-import { createLogger } from '@/utils/Logger'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import type { LocationData } from '@/types/common'
+import { AvatarUtils } from '@/utils/AvatarUtils'
+import type { UploadFile } from '@/utils/FileType'
+import { createLogger } from '@/utils/Logger'
+import { isMac, isMobile } from '@/utils/PlatformConstants'
+
+// 异步加载重型组件
+const LocationModal = defineAsyncComponent(() => import('./location/LocationModal.vue'))
+const VoiceRecorder = defineAsyncComponent(() => import('./VoiceRecorder.vue'))
+const FileUploadModal = defineAsyncComponent(() => import('./FileUploadModal.vue'))
 
 const logger = createLogger('MsgInput')
 
@@ -432,6 +434,7 @@ const handleBeaconClick = async () => {
   try {
     // 请求位置权限并获取当前位置
     const { useGeolocation } = await import('@/hooks/useGeolocation')
+    const { matrixBeaconService } = await import('@/services/matrix/media/MatrixBeaconService')
     const { getCurrentPosition } = useGeolocation()
 
     const position = await getCurrentPosition()
@@ -540,7 +543,7 @@ const disableSelectAll = (e: KeyboardEvent) => {
     const inputDiv = document.getElementById('message-input')
     // 检查输入框是否存在、是否有内容、是否聚焦
     const hasFocus = document.activeElement === inputDiv
-    const hasContent = inputDiv && inputDiv.textContent && inputDiv.textContent.trim().length > 0
+    const hasContent = inputDiv?.textContent && inputDiv.textContent.trim().length > 0
 
     // 只有当输入框没有聚焦或没有内容时才阻止默认行为
     if (!hasFocus || !hasContent) {
@@ -552,10 +555,6 @@ const disableSelectAll = (e: KeyboardEvent) => {
 // 语音录制相关事件处理
 const handleVoiceCancel = () => {
   isVoiceMode.value = false
-}
-
-const handleAitClick = (item: UserItem) => {
-  handleAit(item)
 }
 
 // 使用枚举管理移动端面板状态

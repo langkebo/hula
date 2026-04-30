@@ -93,8 +93,9 @@ import { useDownload } from '@/hooks/useDownload'
 import type { FileBody } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
-import EmptyState from './EmptyState.vue'
 import { createLogger } from '@/utils/Logger'
+import EmptyState from './EmptyState.vue'
+
 const logger = createLogger('FileContent')
 
 type FileItem = {

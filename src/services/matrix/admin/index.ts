@@ -1,20 +1,20 @@
 export { adminService, useAdmin } from './AdminFacadeService'
 export type {
-  ServerStats,
-  ServerStatus,
-  ServerHealth,
-  ServerInfo,
-  ServerVersion,
-  UserInfo,
-  UserDevice,
+  FederationBlacklistEntry,
+  FederationDestination,
   RateLimit,
-  ShadowBanStatus,
+  RegistrationToken,
   RoomInfo,
   RoomState,
-  ShutdownRoomResult,
-  FederationDestination,
-  FederationBlacklistEntry,
-  ServerNoticeResult,
+  ServerHealth,
+  ServerInfo,
   ServerNoticeInfo,
-  RegistrationToken
+  ServerNoticeResult,
+  ServerStats,
+  ServerStatus,
+  ServerVersion,
+  ShadowBanStatus,
+  ShutdownRoomResult,
+  UserDevice,
+  UserInfo
 } from './AdminTypes'

@@ -84,11 +84,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { NButton, NDivider, NSpin, NEmpty, NModal, NForm, NFormItem, NInput, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
-import { matrixAccountService, type DeviceInfo } from '@/services/matrix/user/MatrixAccountService'
+import { NButton, NDivider, NEmpty, NForm, NFormItem, NInput, NModal, NSpin, useDialog, useMessage } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { type DeviceInfo, matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 
 defineOptions({

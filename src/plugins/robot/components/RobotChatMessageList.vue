@@ -171,15 +171,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
-import { useResizeObserver } from '@vueuse/core'
 import { Icon } from '@iconify/vue'
-import { ThemeEnum, AiMsgContentTypeEnum } from '@/enums'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useResizeObserver } from '@vueuse/core'
+import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
+import { AiMsgContentTypeEnum, ThemeEnum } from '@/enums'
+import type { Message } from '@/plugins/robot/composables/useRobotChat'
 import { ROBOT_MARKDOWN_CUSTOM_ID } from '@/plugins/robot/utils/markdown'
 import type { AIModel } from '@/services/matrix'
-import type { Message } from '@/plugins/robot/composables/useRobotChat'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const MarkdownRender = defineAsyncComponent(async () => {
   const { initMarkdownRenderer } = await import('@/plugins/robot/utils/markdown')

@@ -32,18 +32,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h, reactive } from 'vue'
 import {
-  NPageHeader,
-  NDataTable,
-  NSpace,
-  NButton,
+  type DataTableColumns,
   NAlert,
+  NButton,
+  NDataTable,
   NIcon,
+  NPageHeader,
+  NSpace,
   NTag,
-  useMessage,
-  type DataTableColumns
+  useMessage
 } from 'naive-ui'
+import { h, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminSecurity } from '@/composables/admin/useAdminSecurity'
 

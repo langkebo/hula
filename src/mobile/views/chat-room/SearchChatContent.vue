@@ -14,7 +14,14 @@
             <div class="grid grid-cols-3 gap-12px w-full max-w-300px">
               <van-button plain type="primary" size="small" icon="friends-o">{{ t('mobile_chat.members') }}</van-button>
               <van-button plain type="primary" size="small" icon="calendar-o">{{ t('mobile_chat.date') }}</van-button>
-              <van-button plain type="primary" size="small" icon="photo-o" @click="router.push({ name: 'mobileMediaViewer' })">{{ t('mobile_chat.media') }}</van-button>
+              <van-button
+                plain
+                type="primary"
+                size="small"
+                icon="photo-o"
+                @click="router.push({ name: 'mobileMediaViewer' })">
+                {{ t('mobile_chat.media') }}
+              </van-button>
               <van-button plain type="primary" size="small" icon="description">{{ t('mobile_chat.files') }}</van-button>
               <van-button plain type="primary" size="small" icon="link-o">{{ t('mobile_chat.links') }}</van-button>
               <van-button plain type="primary" size="small" icon="music-o">{{ t('mobile_chat.audio') }}</van-button>
@@ -28,8 +35,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 

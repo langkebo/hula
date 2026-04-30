@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { AppException, ErrorType } from '@/common/exception'
-import { Result, ok, err } from '@/common/result'
+import { err, ok, type Result } from '@/common/result'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('TauriInvokeHandler')

@@ -1,13 +1,13 @@
-import type { SlidingSync, SlidingSyncState, MSC3575SlidingSyncResponse, MSC3575RoomData } from '@/types/matrix-js-sdk'
+import { error, info } from '@tauri-apps/plugin-log'
+import type { RoomInfo } from '@/services/types'
+import type { MSC3575RoomData, MSC3575SlidingSyncResponse, SlidingSync, SlidingSyncState } from '@/types/matrix-js-sdk'
 import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 import {
-  SlidingSyncReconnectManager,
   type ReconnectCallbacks,
-  type ReconnectState
+  type ReconnectState,
+  SlidingSyncReconnectManager
 } from './SlidingSyncReconnectManager'
-import { info, error } from '@tauri-apps/plugin-log'
-import type { RoomInfo } from '@/services/types'
 
 export interface SlidingSyncUnreadUpdate {
   roomId: string

@@ -1,3 +1,4 @@
+import { emit } from '@tauri-apps/api/event'
 import {
   type FormInst,
   NAvatar,
@@ -14,7 +15,6 @@ import {
   NTimeline,
   NTimelineItem
 } from 'naive-ui'
-import { emit } from '@tauri-apps/api/event'
 import { EventEnum } from '@/enums'
 import { handRelativeTime } from '@/utils/ComputedTime'
 import './style.scss'
@@ -22,12 +22,12 @@ import { getVersion } from '@tauri-apps/api/app'
 import { confirm } from '@tauri-apps/plugin-dialog'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { check } from '@tauri-apps/plugin-updater'
+import { useI18n } from 'vue-i18n'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { isMac } from '@/utils/PlatformConstants'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+import { isMac } from '@/utils/PlatformConstants'
 import { TimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('LeftModel')

@@ -65,9 +65,9 @@
 </template>
 
 <script setup lang="ts">
+import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import dayjs from 'dayjs'
 
 const { t } = useI18n()
 

@@ -165,13 +165,13 @@
 
 <script setup lang="ts">
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { darkTheme, lightTheme, type FormInst } from 'naive-ui'
+import { darkTheme, type FormInst, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import Validation from '@/components/common/Validation.vue'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
-import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
+import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 
 const settingStore = useSettingStore()
 const logger = createLogger('ForgetPassword')

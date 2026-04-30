@@ -152,11 +152,11 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { showToast } from 'vant'
 import { Icon } from '@iconify/vue'
+import { showToast } from 'vant'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('VoiceVideoSettings')
 const { t } = useI18n()

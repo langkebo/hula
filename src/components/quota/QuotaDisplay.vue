@@ -36,11 +36,11 @@
 </template>
 
 <script setup lang="ts">
+import { NAlert, NCard, NH4, NList, NListItem, NProgress, NSpace, NSpin, NTag, NThing } from 'naive-ui'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NCard, NSpin, NSpace, NProgress, NAlert, NH4, NList, NListItem, NThing, NTag } from 'naive-ui'
 import { useQuotaStore } from '@/stores/domains/admin/quota'
-import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
 

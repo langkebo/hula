@@ -3,8 +3,8 @@ import { appCacheDir, appDataDir, join, resourceDir } from '@tauri-apps/api/path
 import { BaseDirectory, exists, mkdir, readFile, writeFile } from '@tauri-apps/plugin-fs'
 import { type FileTypeResult, fileTypeFromBuffer } from 'file-type'
 import type { FilesMeta } from '@/services/types'
-import { isMobile } from './PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { isMobile } from './PlatformConstants'
 
 const logger = createLogger('PathUtil')
 

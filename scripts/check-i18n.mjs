@@ -5,8 +5,8 @@ const localesDir = path.resolve(process.cwd(), 'locales')
 const baseLocale = 'zh-CN'
 const otherLocales = fs.readdirSync(localesDir).filter(l => l !== baseLocale && !l.startsWith('.'))
 
-function getKeys(obj: any, prefix = ''): string[] {
-  let keys: string[] = []
+function getKeys(obj, prefix = '') {
+  let keys = []
   for (const key in obj) {
     if (typeof obj[key] === 'object' && obj[key] !== null) {
       keys = keys.concat(getKeys(obj[key], `${prefix}${key}.`))

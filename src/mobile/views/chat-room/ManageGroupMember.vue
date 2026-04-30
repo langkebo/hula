@@ -197,15 +197,15 @@
 </template>
 
 <script setup lang="ts">
-import MobileLayout from '#/components/MobileLayout.vue'
-import HeaderBar from '#/components/chat-room/HeaderBar.vue'
 import { type } from '@tauri-apps/plugin-os'
+import { useI18n } from 'vue-i18n'
+import HeaderBar from '#/components/chat-room/HeaderBar.vue'
+import MobileLayout from '#/components/MobileLayout.vue'
 import { OnlineEnum, RoleEnum } from '@/enums'
+import router from '@/router'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import router from '@/router'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ManageGroupMember')

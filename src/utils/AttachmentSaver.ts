@@ -3,8 +3,8 @@ import { writeFile } from '@tauri-apps/plugin-fs'
 import type { useDownload } from '@/hooks/useDownload'
 import { matrixMediaService } from '@/services/matrix'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
-import { extractFileName } from './Formatting'
 import { createLogger } from '@/utils/Logger'
+import { extractFileName } from './Formatting'
 
 const logger = createLogger('AttachmentSaver')
 

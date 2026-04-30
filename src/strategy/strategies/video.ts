@@ -1,15 +1,15 @@
-import { type Ref } from 'vue'
 import { BaseDirectory, readFile, writeFile } from '@tauri-apps/plugin-fs'
-import { MsgEnum, UploadSceneEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
+import type { Ref } from 'vue'
 import { AppException } from '@/common/exception.ts'
+import { MsgEnum, UploadSceneEnum } from '@/enums'
 import { parseInnerText } from '@/hooks/useCommon.ts'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/hooks/useUpload'
+import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { isVideoUrl } from '@/utils/FileType'
 import { isMobile } from '@/utils/PlatformConstants'
-import { generateVideoThumbnail } from '@/utils/VideoThumbnail'
 import { removeTempFile } from '@/utils/TempFileManager'
-import { AbstractMessageStrategy, type ReplyRef, strategyLogger as logger } from './base'
+import { generateVideoThumbnail } from '@/utils/VideoThumbnail'
+import { AbstractMessageStrategy, strategyLogger as logger, type ReplyRef } from './base'
 
 /**
  * 处理视频消息

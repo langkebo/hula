@@ -44,10 +44,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
-import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { Widget } from '@/services/matrix/widget/MatrixWidgetService'
+import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WidgetContainer')

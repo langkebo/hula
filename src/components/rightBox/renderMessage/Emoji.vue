@@ -57,12 +57,12 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { exists } from '@tauri-apps/plugin-fs'
 import { MsgEnum } from '@/enums/index'
 import { useImageViewer } from '@/hooks/useImageViewer'
-import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import type { EmojiBody, MsgType } from '@/services/types'
+import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
+import { createLogger } from '@/utils/Logger'
 import { getRemoteFileSize } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 
-import { createLogger } from '@/utils/Logger'
 const logger = createLogger('Emoji')
 
 const props = defineProps<{

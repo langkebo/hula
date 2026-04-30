@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { defineComponent, h, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 import { useSettingsTabDirty } from '@/composables/settings/useSettingsDirtyRegistry'
 import { useSettingsDialogStore } from '@/stores/domains/settings/settingsDialog'
 import SettingsDialog from '../SettingsDialog.vue'

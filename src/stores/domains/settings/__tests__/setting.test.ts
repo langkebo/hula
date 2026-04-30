@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/api/app', () => ({
   setTheme: vi.fn()
@@ -18,8 +18,8 @@ vi.mock('@/utils/PlatformConstants', () => ({
   isMac: () => false
 }))
 
-import { useSettingStore } from '../setting'
 import { ShowModeEnum, ThemeEnum } from '@/enums'
+import { useSettingStore } from '../setting'
 
 describe('SettingStore', () => {
   beforeEach(() => {

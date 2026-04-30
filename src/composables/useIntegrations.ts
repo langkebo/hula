@@ -1,4 +1,4 @@
-import { computed, getCurrentScope, onScopeDispose, ref, type Ref } from 'vue'
+import { computed, getCurrentScope, onScopeDispose, type Ref, ref } from 'vue'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useIntegrations')

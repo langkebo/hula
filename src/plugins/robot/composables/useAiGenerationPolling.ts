@@ -3,8 +3,8 @@ import { AiMsgContentTypeEnum } from '@/enums'
 import { aiService } from '@/services/matrix'
 import type { AIAudio, AIImage, AIVideo } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
-import type { Message } from './useRobotChat'
 import { usePollingTasks } from './usePollingTasks'
+import type { Message } from './useRobotChat'
 
 const logger = createLogger('AiGenerationPolling')
 const MAX_POLL_DURATION = 5 * 60 * 1000

@@ -60,11 +60,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { showConfirmDialog, showToast } from 'vant'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { showToast, showConfirmDialog } from 'vant'
-import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminUsers } from '@/composables/admin'
+import MobileLayout from '@/mobile/layout/index.vue'
 import type { UserInfo } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 

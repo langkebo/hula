@@ -1,7 +1,7 @@
+import type { ConfigType, Dayjs, OpUnitType } from 'dayjs'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import weekday from 'dayjs/plugin/weekday'
-import type { ConfigType, Dayjs, OpUnitType } from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import 'dayjs/locale/en'
 import { useI18nGlobal } from '@/services/i18n'

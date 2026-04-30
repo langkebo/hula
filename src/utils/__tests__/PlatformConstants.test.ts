@@ -8,7 +8,6 @@ const osMock = vi.hoisted(() => ({
 vi.mock('@tauri-apps/plugin-os', () => osMock)
 
 import {
-  Platform,
   getOSType,
   getOSVersion,
   getPlatformType,
@@ -22,7 +21,8 @@ import {
   isMac26,
   isMobile,
   isWindows,
-  isWindows10
+  isWindows10,
+  Platform
 } from '../PlatformConstants'
 
 initializePlatform()

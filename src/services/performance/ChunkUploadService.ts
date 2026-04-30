@@ -1,4 +1,4 @@
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 
 export interface ChunkUploadOptions {
   file: File
@@ -218,7 +218,7 @@ class ChunkUploadService {
 
   resume(uploadId: string): void {
     const context = this.uploads.get(uploadId)
-    if (context && context.paused) {
+    if (context?.paused) {
       context.paused = false
     }
   }

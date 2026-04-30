@@ -1,8 +1,9 @@
-import type { SettingsTabType } from '@/stores/domains/settings/settingsDialog'
-import { useRouter } from 'vue-router'
 import { useDialog, useMessage } from 'naive-ui'
+import { useRouter } from 'vue-router'
 import { i18n } from '@/services/i18n'
+import type { SettingsTabType } from '@/stores/domains/settings/settingsDialog'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('MenuConfig')
 
 type MenuTranslator = (key: string, named?: Record<string, unknown>) => string

@@ -1,6 +1,6 @@
+import { error } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { matrixClientService } from '../MatrixClientService'
-import { error } from '@tauri-apps/plugin-log'
 
 export interface ServerNotificationPayload {
   title: string

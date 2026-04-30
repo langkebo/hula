@@ -6,12 +6,12 @@ import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import type { FilesMeta, RightMouseMessageItem } from '@/services/types.ts'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useUserStore } from '@/stores/domains/user/user'
+import { createLogger } from '@/utils/Logger'
 import { detectRemoteFileType, getFilesMeta } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
-import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ChatFileDownload')
 

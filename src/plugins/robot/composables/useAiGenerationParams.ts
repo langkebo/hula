@@ -8,13 +8,14 @@
  *
  * 外部仅依赖 `aiService.audioGetVoices` 与 `useUpload`，无需注入。
  */
-import { ref } from 'vue'
+
 import type { UploadFileInfo } from 'naive-ui'
-import { aiService } from '@/services/matrix'
-import type { AIModel } from '@/services/matrix'
-import type { AIVoice } from '@/types/matrix-api'
-import { useUpload, UploadProviderEnum } from '@/hooks/useUpload'
+import { ref } from 'vue'
 import { UploadSceneEnum } from '@/enums'
+import { UploadProviderEnum, useUpload } from '@/hooks/useUpload'
+import type { AIModel } from '@/services/matrix'
+import { aiService } from '@/services/matrix'
+import type { AIVoice } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiGenerationParams')

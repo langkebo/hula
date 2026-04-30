@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { matrixRoomService } from '../MatrixRoomService'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { synapseRustExtensionsService } from '../../SynapseRustExtensionsService'
+import { matrixRoomService } from '../MatrixRoomService'
 
 const originalFetch = globalThis.fetch
 

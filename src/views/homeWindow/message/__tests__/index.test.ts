@@ -1,8 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import MessageView from '../index.vue'
+import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 import { RoomTypeEnum } from '@/enums'
+import MessageView from '../index.vue'
 
 const {
   routerReplaceMock,

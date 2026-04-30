@@ -14,14 +14,14 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import router from '@/router'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import { matrixQrLoginService } from '@/services/matrix'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('MyLayout')

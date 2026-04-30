@@ -54,6 +54,7 @@ import { matrixForwardService, matrixMessageService } from '@/services/matrix'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('ForwardDialog')
 
 const props = defineProps<{

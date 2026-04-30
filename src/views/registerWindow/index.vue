@@ -236,19 +236,20 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import dayjs from 'dayjs'
-import { darkTheme, lightTheme, type FormInst } from 'naive-ui'
+import { darkTheme, type FormInst, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Register')
+
 import PinInput from '@/components/atomic/PinInput.vue'
 import Validation from '@/components/common/Validation.vue'
 import { useWindow } from '@/hooks/useWindow'
+import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import type { RegisterUserReq } from '@/services/types.ts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 

@@ -1,7 +1,7 @@
-import type { MatrixClient, IPusher, IPushRule, IPushRules, PushRuleAction } from 'matrix-js-sdk'
-import { PushRuleKind, TweakName } from 'matrix-js-sdk'
+import { error, info } from '@tauri-apps/plugin-log'
+import type { IPusher, IPushRule, IPushRules, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
+import { PushRuleKind, type TweakName } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
 
 type PushRuleScope = 'global' | string
 
@@ -220,6 +220,6 @@ class MatrixPushService {
   }
 }
 
-export type { IPusher, IPushRules, IPushRule } from 'matrix-js-sdk'
+export type { IPusher, IPushRule, IPushRules } from 'matrix-js-sdk'
 export const matrixPushService = new MatrixPushService()
 export default matrixPushService

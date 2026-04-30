@@ -113,13 +113,13 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { currentMonitor, PhysicalPosition } from '@tauri-apps/api/window'
 import { confirm } from '@tauri-apps/plugin-dialog'
 import { check } from '@tauri-apps/plugin-updater'
+import { useI18n } from 'vue-i18n'
 import { useWindow } from '@/hooks/useWindow.ts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { handRelativeTime } from '@/utils/ComputedTime'
+import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler.ts'
-import { useI18n } from 'vue-i18n'
-import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('CheckUpdate')
 

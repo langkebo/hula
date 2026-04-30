@@ -35,13 +35,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
-import { useUserMenu } from './useUserMenu'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useSettingStore } from '@/stores/domains/settings/setting'
+import { computed } from 'vue'
 import defaultAvatarImg from '@/assets/img/win.png'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
+import { useUserMenu } from './useUserMenu'
+
 const logger = createLogger('UserMenuMobile')
 
 defineOptions({

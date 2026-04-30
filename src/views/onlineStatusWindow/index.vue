@@ -54,13 +54,14 @@
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { createLogger } from '@/utils/Logger'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OnlineStatusWindow')
+
+import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts'
 import type { UserState } from '@/services/types'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
-import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts'
 
 const userStatusStore = useUserStatusStore()
 const { stateList, stateId } = storeToRefs(userStatusStore)

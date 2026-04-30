@@ -109,6 +109,7 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { NTooltip } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import ActionBar from '@/components/windows/ActionBar.vue'
 import { useDownload } from '@/hooks/useDownload'
 import { useImageViewer as useImageViewerHook } from '@/hooks/useImageViewer'
@@ -117,7 +118,6 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import { useImageViewer as useImageViewerStore } from '@/stores/domains/widget/imageViewer'
 import { saveFileAttachmentAs } from '@/utils/AttachmentSaver'
 import { extractFileName } from '@/utils/Formatting'
-import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const { addListener } = useTauriListener()

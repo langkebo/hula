@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixEventService } from '../MatrixEventService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -39,11 +39,11 @@ vi.mock('@/services/offline/OfflineQueueService', () => ({
   }
 }))
 
-import matrixClientService from '../MatrixClientService'
-import { matrixReceiptService } from '../messaging/MatrixReceiptService'
-import { matrixReactionService } from '../messaging/MatrixReactionService'
-import { matrixMessageRelationService } from '../messaging/MatrixMessageRelationService'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import matrixClientService from '../MatrixClientService'
+import { matrixMessageRelationService } from '../messaging/MatrixMessageRelationService'
+import { matrixReactionService } from '../messaging/MatrixReactionService'
+import { matrixReceiptService } from '../messaging/MatrixReceiptService'
 
 describe('MatrixEventService', () => {
   beforeEach(() => {

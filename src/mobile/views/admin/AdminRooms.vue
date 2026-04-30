@@ -41,11 +41,11 @@
 </template>
 
 <script setup lang="ts">
+import { showConfirmDialog, showToast } from 'vant'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { showToast, showConfirmDialog } from 'vant'
-import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminRooms } from '@/composables/admin'
+import MobileLayout from '@/mobile/layout/index.vue'
 import type { RoomInfo } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 

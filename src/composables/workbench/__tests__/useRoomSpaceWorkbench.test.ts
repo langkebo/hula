@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref, type Ref } from 'vue'
+import { defineComponent, nextTick, type Ref, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { RoomTypeEnum } from '@/enums'
 

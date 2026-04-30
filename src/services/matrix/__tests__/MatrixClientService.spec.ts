@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { matrixClientService } from '../MatrixClientService'
 import * as sdk from 'matrix-js-sdk'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { matrixClientService } from '../MatrixClientService'
 
 // Mock tauri plugin log
 vi.mock('@tauri-apps/plugin-log', () => ({

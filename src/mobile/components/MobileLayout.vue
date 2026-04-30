@@ -21,22 +21,21 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum } from '@/enums'
+import { useRoute } from 'vue-router'
+import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum, WsResponseMessageType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import type { MessageType } from '@/stores/domains/chat/chat'
-import { WsResponseMessageType } from '@/enums'
 import { useChatStore } from '@/stores/domains/chat/chat'
-import { useFileStore } from '@/stores/domains/widget/file'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { useFileStore } from '@/stores/domains/widget/file'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { audioManager } from '@/utils/AudioManager'
+import { createLogger } from '@/utils/Logger'
 import { isMobile, isWindows } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
-import { useRoute } from 'vue-router'
 
 const logger = createLogger('MobileLayout')
 interface MobileLayoutProps {

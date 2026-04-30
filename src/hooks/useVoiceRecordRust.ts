@@ -2,12 +2,13 @@ import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plug
 import { startRecording, stopRecording } from 'tauri-plugin-mic-recorder-api'
 import { useUserStore } from '@/stores/domains/user/user'
 import { calculateCompressionRatio, compressAudioToMp3, getAudioInfo } from '@/utils/AudioCompression'
+import { createLogger } from '@/utils/Logger'
 import { getImageCache } from '@/utils/PathUtil.ts'
 import { isMobile } from '@/utils/PlatformConstants'
+import { removeTempFile } from '@/utils/TempFileManager'
 import { UploadSceneEnum } from '../enums'
 import { useUpload } from './useUpload'
-import { removeTempFile } from '@/utils/TempFileManager'
-import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('VoiceRecordRust')
 
 // 导入worker计时器

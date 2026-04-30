@@ -4,7 +4,7 @@
  * 确保主线程阻塞时间 < 50ms
  */
 
-import type { MatrixClientConfig, SyncOptions, LoginResult } from './matrixWorkerTypes'
+import type { LoginResult, MatrixClientConfig, SyncOptions } from './matrixWorkerTypes'
 
 export interface WorkerMessage {
   type: string

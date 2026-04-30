@@ -1,6 +1,6 @@
-import type { MatrixEvent, EventType, IContent } from 'matrix-js-sdk'
+import { error, info } from '@tauri-apps/plugin-log'
+import type { EventType, IContent, MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export interface LocationData {
   latitude: number

@@ -21,9 +21,9 @@
 </template>
 
 <script setup lang="ts">
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { useGroupStore } from '@/stores/domains/chat/group'
 
 interface Props {
   body: { content?: string; [key: string]: unknown }

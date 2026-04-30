@@ -4,9 +4,9 @@
 </template>
 
 <script setup lang="ts">
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { invoke } from '@tauri-apps/api/core'
+import { useLoginFlow } from '@/hooks/useLoginFlow'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 
 const settingStore = useSettingStore()
 const router = useRouter()

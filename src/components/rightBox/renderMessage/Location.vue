@@ -42,10 +42,10 @@
 </template>
 
 <script setup lang="ts">
-import StaticProxyMap from '../location/StaticProxyMap.vue'
 import type { LocationBody } from '@/services/types'
 import { isWindows } from '@/utils/PlatformConstants'
 import LocationModal from '../location/LocationModal.vue'
+import StaticProxyMap from '../location/StaticProxyMap.vue'
 
 defineOptions({
   inheritAttrs: false

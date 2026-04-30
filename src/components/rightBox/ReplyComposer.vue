@@ -15,24 +15,24 @@
           </n-button>
         </div>
         <div class="reply-body">
-          <template v-if="replyTo.msgType === MsgEnum.TEXT">
+          <template v-if="isTextReply(replyTo)">
             <span class="reply-text">{{ replyTo.contentPreview }}</span>
           </template>
-          <template v-else-if="replyTo.msgType === MsgEnum.IMAGE">
+          <template v-else-if="isImageReply(replyTo)">
             <div class="reply-image-preview">
               <img :src="replyTo.thumbnailUrl || replyTo.contentPreview" alt="" />
-              <span class="reply-type-label">{{ t('message.image') }}</span>
+              <span class="reply-type-label">{{ t('editor.image') }}</span>
             </div>
           </template>
-          <template v-else-if="replyTo.msgType === MsgEnum.VIDEO">
+          <template v-else-if="isVideoReply(replyTo)">
             <div class="reply-video-preview">
               <svg class="size-16px">
                 <use href="#video"></use>
               </svg>
-              <span class="reply-type-label">{{ t('message.video') }}</span>
+              <span class="reply-type-label">{{ t('message.video.unknown_video') }}</span>
             </div>
           </template>
-          <template v-else-if="replyTo.msgType === MsgEnum.FILE">
+          <template v-else-if="isFileReply(replyTo)">
             <div class="reply-file-preview">
               <svg class="size-16px">
                 <use href="#file2"></use>
@@ -51,7 +51,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { MsgEnum } from '@/enums'
+import type { MsgEnum } from '@/enums'
+import { MsgEnum as MsgEnumValue } from '@/enums'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 export interface ReplyToInfo {
@@ -76,6 +77,11 @@ const defaultAvatar = computed(() => '/logoD.png')
 const getAvatarUrl = (avatar?: string) => {
   return AvatarUtils.getAvatarUrl(avatar || '')
 }
+
+const isTextReply = (replyTo: ReplyToInfo) => replyTo.msgType === MsgEnumValue.TEXT
+const isImageReply = (replyTo: ReplyToInfo) => replyTo.msgType === MsgEnumValue.IMAGE
+const isVideoReply = (replyTo: ReplyToInfo) => replyTo.msgType === MsgEnumValue.VIDEO
+const isFileReply = (replyTo: ReplyToInfo) => replyTo.msgType === MsgEnumValue.FILE
 
 const handleCancel = () => {
   emit('cancel')

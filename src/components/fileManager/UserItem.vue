@@ -22,9 +22,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
-import { useI18n } from 'vue-i18n'
 
 type FileManagerListItem = Partial<MatrixContact & MatrixGroupInfo> & {
   id?: string

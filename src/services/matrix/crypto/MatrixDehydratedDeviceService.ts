@@ -2,8 +2,9 @@
  * 脱水设备服务 (MSC2987)
  * 允许在不使用密钥的情况下创建和恢复设备
  */
-import { matrixClientService } from '../MatrixClientService'
+
 import { createLogger } from '@/utils/Logger'
+import { matrixClientService } from '../MatrixClientService'
 
 const logger = createLogger('DehydratedDevice')
 

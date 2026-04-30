@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 
 const { globalStoreMock, timerWorkerMock, sessionStoreMock } = vi.hoisted(() => ({

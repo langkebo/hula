@@ -152,9 +152,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { NButton, NDivider, NSelect, NSlider, NSwitch, useMessage } from 'naive-ui'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NSelect, NSlider, NButton, NSwitch, NDivider, useMessage } from 'naive-ui'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('VoiceVideoSettings')

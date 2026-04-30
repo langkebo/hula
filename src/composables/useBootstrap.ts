@@ -1,12 +1,12 @@
 import { createSharedComposable } from '@vueuse/core'
-import { ref, computed } from 'vue'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { isDesktop, isMobile } from '@/utils/PlatformConstants'
+import { computed, ref } from 'vue'
 import { applyLanguagePreference } from '@/services/i18n'
 import { updateSettings } from '@/services/tauriCommand'
-import { initializePlatform } from '@/utils/PlatformConstants'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
+import { initializePlatform, isDesktop, isMobile } from '@/utils/PlatformConstants'
+
 const logger = createLogger('Bootstrap')
 
 export type BootstrapState = 'idle' | 'initializing' | 'ready' | 'error'

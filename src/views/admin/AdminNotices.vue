@@ -44,22 +44,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h } from 'vue'
 import {
-  NPageHeader,
-  NDataTable,
+  type DataTableColumns,
   NButton,
-  NSpace,
-  NModal,
+  NDataTable,
   NForm,
   NFormItem,
   NInput,
-  useMessage,
-  type DataTableColumns
+  NModal,
+  NPageHeader,
+  NSpace,
+  useMessage
 } from 'naive-ui'
+import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { ServerNoticeInfo } from '@/services/matrix'
 import { useAdminNotices } from '@/composables/admin'
+import type { ServerNoticeInfo } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminNotices')

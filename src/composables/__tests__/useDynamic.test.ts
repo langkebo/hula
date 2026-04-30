@@ -1,5 +1,5 @@
-import { computed } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 import { createDefaultDynamicRoadmap, getDynamicRoadmapItem, getDynamicStatusText, useDynamic } from '../useDynamic'
 
 describe('useDynamic', () => {

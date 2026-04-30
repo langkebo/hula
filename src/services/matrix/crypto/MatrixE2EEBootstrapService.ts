@@ -1,11 +1,11 @@
+import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
-import { matrixEncryptionService } from './MatrixEncryptionService'
+import { initializeDeviceService } from '../user/MatrixDeviceService'
 import matrixCryptoService from './MatrixCryptoService'
+import { matrixEncryptionService } from './MatrixEncryptionService'
 import { initializeKeyBackupService } from './MatrixKeyBackupService'
 import { initializeVerificationService } from './MatrixVerificationService'
-import { initializeDeviceService } from '../user/MatrixDeviceService'
-import { formatMatrixError } from '@/common/matrixErrorTranslator'
 
 const logger = createLogger('E2EEBootstrap')
 

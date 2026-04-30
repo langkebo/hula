@@ -1,4 +1,4 @@
-import { ref, type Ref } from 'vue'
+import { type Ref, ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { conversationService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'

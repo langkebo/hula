@@ -95,8 +95,8 @@ import {
   type WorkbenchSessionTypeFilter
 } from '@/router/spaceNavigation'
 import type { SessionItem } from '@/stores/domains/chat/chat'
+import type RoomSessionList from './RoomSessionList.vue'
 import RoomSpaceActionBar from './RoomSpaceActionBar.vue'
-import RoomSessionList from './RoomSessionList.vue'
 import RoomSpaceToolbar from './RoomSpaceToolbar.vue'
 import SpaceListPane from './SpaceListPane.vue'
 import WorkbenchDetailPane from './WorkbenchDetailPane.vue'

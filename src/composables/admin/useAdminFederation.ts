@@ -1,4 +1,4 @@
-import { ref, type Ref } from 'vue'
+import { type Ref, ref } from 'vue'
 import { adminService, matrixFederationBlacklistService } from '@/services/matrix'
 import type { FederationDestination } from '@/services/matrix/admin/AdminTypes'
 

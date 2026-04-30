@@ -1,16 +1,16 @@
-import { ref, watch, type ComputedRef, type Ref } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import pLimit from 'p-limit'
+import type { ComponentPublicInstance } from 'vue'
+import { type ComputedRef, type Ref, ref, watch } from 'vue'
 import type { EmojiItem as EmojiListItem } from '@/services/types'
+import type { useEmojiStore } from '@/stores/domains/chat/emoji'
+import type { useUserStore } from '@/stores/domains/user/user'
+import { createLogger } from '@/utils/Logger'
 import { md5FromString } from '@/utils/Md5Util'
 import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
-import { createLogger } from '@/utils/Logger'
-import type { useEmojiStore } from '@/stores/domains/chat/emoji'
-import type { useUserStore } from '@/stores/domains/user/user'
 
 const logger = createLogger('EmojiLocalCache')
 

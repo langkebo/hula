@@ -1,5 +1,5 @@
+import { type MatrixClient, Preset, type Room, Visibility } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Preset, Visibility, type MatrixClient, type Room } from 'matrix-js-sdk'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),

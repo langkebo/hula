@@ -1,7 +1,7 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
-import { MsgEnum, MessageStatusEnum } from '@/enums'
+import { MessageStatusEnum, MsgEnum } from '@/enums'
+import type { FileBody, ImageBody, MessageBody, TextBody, VideoBody, VoiceBody } from '@/services/types'
 import type { MessageType } from '@/stores/domains/chat/chat'
-import type { MessageBody, TextBody, ImageBody, VideoBody, FileBody, VoiceBody } from '@/services/types'
 
 export interface MatrixMessageAdapter {
   convertMatrixEventToMessageType(event: MatrixEvent, roomId: string): MessageType

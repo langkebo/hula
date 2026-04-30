@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
-import { matrixQuotaService, type QuotaStatus, type QuotaStats, type QuotaAlert } from '@/services/matrix'
+import { matrixQuotaService, type QuotaAlert, type QuotaStats, type QuotaStatus } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('QuotaStore')

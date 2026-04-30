@@ -2,9 +2,10 @@
  * URL 预览服务 (MSC2788)
  * 链接预览功能
  */
-import { matrixClientService } from '../MatrixClientService'
-import { createLogger } from '@/utils/Logger'
+
 import type { MatrixEvent } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
+import { matrixClientService } from '../MatrixClientService'
 
 const logger = createLogger('UrlPreview')
 
@@ -107,7 +108,7 @@ class MatrixUrlPreviewService {
       }
 
       // 如果图片是 mxc:// URL，转换为完整 URL
-      if (result.image && result.image.startsWith('mxc://')) {
+      if (result.image?.startsWith('mxc://')) {
         const mediaApi = this.client.getMediaApiUrl('')
         result.image = mediaApi + '/_matrix/media/r0/download/' + result.image.replace('mxc://', '')
         result.imageUrl = result.image

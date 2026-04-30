@@ -6,8 +6,9 @@
  * The existing message.test.ts already covers index/sort/trim/replace/recall preview/
  * remote loading. This file fills the P0-3 gaps without overlapping those.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum, RoomTypeEnum } from '@/enums'
 
 const { globalStoreMock, sessionStoreMock, groupStoreMock, userStoreMock, timerWorkerMock, sendNotificationMock } =

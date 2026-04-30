@@ -28,9 +28,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onErrorCaptured, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { relaunch } from '@tauri-apps/plugin-process'
+import { computed, onErrorCaptured, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ErrorBoundary')

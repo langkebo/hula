@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { matrixExtensionEndpoints } from '@/services/backend'
 import { httpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('AssistantModelPresets')
 
 export type AssistantModelPreset = {

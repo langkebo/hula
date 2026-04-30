@@ -100,15 +100,15 @@
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { ThemeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { AvatarUtils } from '@/utils/AvatarUtils.ts'
-import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts'
-import { leftHook } from '../hook.ts'
 import UserMenuDropdown from '@/components/userMenu/UserMenuDropdown.vue'
 import { useUserMenu } from '@/components/userMenu/useUserMenu'
+import { ThemeEnum } from '@/enums'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import { AvatarUtils } from '@/utils/AvatarUtils.ts'
+import { leftHook } from '../hook.ts'
 
 const userStore = useUserStore()
 const groupStore = useGroupStore()

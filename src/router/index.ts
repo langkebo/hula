@@ -6,8 +6,6 @@ import {
   type RouteRecordRaw,
   type Router
 } from 'vue-router'
-
-import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
 import { createAuthGuard } from '@/router/authGuard'
 import { getCommonRoutes } from '@/router/routes/common'
 import { getDesktopRoutes } from '@/router/routes/desktop'
@@ -38,7 +36,10 @@ const router: Router = createRouter({
 
 const authGuard = createAuthGuard({
   isMobile,
-  hasAuthenticatedSession: () => matrixRuntimeSessionService.hasAuthenticatedSession(),
+  hasAuthenticatedSession: async () => {
+    const { matrixRuntimeSessionService } = await import('@/services/matrix/auth/MatrixRuntimeSessionService')
+    return matrixRuntimeSessionService.hasAuthenticatedSession()
+  },
   verifyAdminAccess: async () => {
     const { useAdminStore } = await import('@/stores/domains/admin/admin')
     return useAdminStore().verifyAdminAccess()

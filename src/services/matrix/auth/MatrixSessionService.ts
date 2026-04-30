@@ -1,8 +1,8 @@
+import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
-import { info, warn, error } from '@tauri-apps/plugin-log'
 
 interface RoomNotificationSettings {
   shield?: boolean

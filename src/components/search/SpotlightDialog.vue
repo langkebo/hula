@@ -137,18 +137,19 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import type { InputInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import {
-  matrixSearchService,
   type SearchResult as MatrixSearchResult,
+  matrixSearchService,
   type RoomSearchResult,
   type UserSearchResult
 } from '@/services/matrix/MatrixSearchService'
 import { useSpotlightStore } from '@/stores/domains/widget/spotlight'
 import { formatTimestamp } from '@/utils/ComputedTime'
-import { useDebounceFn } from '@vueuse/core'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('SpotlightDialog')
 
 type SpotlightMessageResult = MatrixSearchResult & {

@@ -1,10 +1,10 @@
 import {
+  getSettingsTabLabel,
+  type LegacySettingsTabType,
   SETTINGS_CANONICAL_ROUTE_SEGMENTS,
   SETTINGS_LABS_CHILD_ROUTE_SEGMENTS,
   SETTINGS_LEGACY_TAB_MAP,
   SETTINGS_TABS,
-  getSettingsTabLabel,
-  type LegacySettingsTabType,
   type SettingsTab,
   type SettingsTabTranslator,
   type SettingsTabType

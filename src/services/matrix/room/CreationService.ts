@@ -1,10 +1,10 @@
-import type { Room, RoomMember, ICreateRoomOpts } from 'matrix-js-sdk'
-import { NotificationCountType, Preset, Visibility } from 'matrix-js-sdk'
 import { error, info } from '@tauri-apps/plugin-log'
+import type { ICreateRoomOpts, Room, RoomMember } from 'matrix-js-sdk'
+import { NotificationCountType, Preset, Visibility } from 'matrix-js-sdk'
+import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import type { RoomInfo, RoomMemberInfo } from '@/services/types'
 import matrixClientService from '../MatrixClientService'
 import { matrixRoomMembershipService } from './MembershipService'
-import type { RoomInfo, RoomMemberInfo } from '@/services/types'
-import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 export interface CreateGroupRoomOptions {
   name: string

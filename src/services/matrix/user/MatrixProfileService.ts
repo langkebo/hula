@@ -1,7 +1,7 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
 import type { MatrixClient } from 'matrix-js-sdk'
+import type { Ref } from 'vue'
+import { ref } from 'vue'
 import { matrixClientService } from '../MatrixClientService'
 
 export interface MatrixProfile {

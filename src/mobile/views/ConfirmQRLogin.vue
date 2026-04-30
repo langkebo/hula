@@ -45,10 +45,10 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import dayjs from 'dayjs'
 import router from '@/router'
 import { matrixQrLoginService } from '@/services/matrix'
+import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('ConfirmQRLogin')

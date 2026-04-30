@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import type { ComponentPublicInstance } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentPublicInstance } from 'vue'
 import KeyBackupRestoreDialog from '../KeyBackupRestoreDialog.vue'
 
 const {

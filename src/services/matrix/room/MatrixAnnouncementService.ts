@@ -1,7 +1,7 @@
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
-import { matrixRoomService } from './MatrixRoomService'
 import { matrixMessageService } from '../messaging/MatrixMessageService'
+import { matrixRoomService } from './MatrixRoomService'
 
 export interface Announcement {
   id: string

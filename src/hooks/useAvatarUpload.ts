@@ -1,6 +1,7 @@
 import { UploadSceneEnum } from '@/enums'
-import { UploadProviderEnum, useUpload } from './useUpload'
 import { createLogger } from '@/utils/Logger'
+import { UploadProviderEnum, useUpload } from './useUpload'
+
 const logger = createLogger('AvatarUpload')
 
 export interface AvatarUploadOptions {

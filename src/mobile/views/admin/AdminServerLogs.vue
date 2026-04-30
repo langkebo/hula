@@ -38,11 +38,11 @@
 </template>
 
 <script setup lang="ts">
+import { showToast } from 'vant'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { showToast } from 'vant'
-import MobileLayout from '@/mobile/layout/index.vue'
 import { useAdminServerLogs } from '@/composables/admin'
+import MobileLayout from '@/mobile/layout/index.vue'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminServerLogs')

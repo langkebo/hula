@@ -32,9 +32,9 @@
   </div>
 </template>
 <script setup lang="ts">
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { storeToRefs } from 'pinia'
 import { UserType } from '@/enums'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 
 const globalStore = useGlobalStore()
 const { currentSession } = storeToRefs(globalStore)

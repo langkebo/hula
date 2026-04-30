@@ -1,8 +1,8 @@
-export { useSpaces, type UseSpacesResult } from './useSpaces'
-export { useSpace, type UseSpaceResult } from './useSpace'
-export { useSpaceMembers, type UseSpaceMembersResult } from './useSpaceMembers'
+export { type UseSpaceResult, useSpace } from './useSpace'
+export { type UseSpaceMembersResult, useSpaceMembers } from './useSpaceMembers'
 export {
-  useSpaceRooms,
+  type SpaceChildRoom,
   type UseSpaceRoomsResult,
-  type SpaceChildRoom
+  useSpaceRooms
 } from './useSpaceRooms'
+export { type UseSpacesResult, useSpaces } from './useSpaces'

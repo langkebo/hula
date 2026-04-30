@@ -1,6 +1,6 @@
+import { info, error as logError } from '@tauri-apps/plugin-log'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixMediaService } from '../media/MatrixMediaService'
-import { info, error as logError } from '@tauri-apps/plugin-log'
 
 /**
  * 表情包/贴纸包项

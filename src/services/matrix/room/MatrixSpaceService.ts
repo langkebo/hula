@@ -1,6 +1,6 @@
-import { type Room, Visibility } from 'matrix-js-sdk'
+import { error, info } from '@tauri-apps/plugin-log'
+import type { Room, Visibility } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import { info, error } from '@tauri-apps/plugin-log'
 
 export interface SpaceOptions {
   name: string

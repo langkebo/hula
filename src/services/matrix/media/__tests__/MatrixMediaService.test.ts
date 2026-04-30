@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { matrixMediaService } from '../MatrixMediaService'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
+import { matrixMediaService } from '../MatrixMediaService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),

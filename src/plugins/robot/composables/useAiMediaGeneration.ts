@@ -1,13 +1,13 @@
 import type { Ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
-import type { AIModel } from '@/services/matrix'
-import { aiService } from '@/services/matrix'
-import type { AIAsyncGenerationResponse } from '@/services/matrix/ai/AIService'
 import {
   buildAudioGenerationRequest,
   buildImageGenerationRequest,
   buildVideoGenerationRequest
 } from '@/plugins/robot/composables/useAiGenerationRequests'
+import type { AIModel } from '@/services/matrix'
+import { aiService } from '@/services/matrix'
+import type { AIAsyncGenerationResponse } from '@/services/matrix/ai/AIService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiMediaGeneration')

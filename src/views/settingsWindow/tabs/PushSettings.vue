@@ -79,11 +79,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { NSpin, NEmpty, NButton, NSwitch, NDivider, NTimePicker, useMessage, useDialog } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { NButton, NDivider, NEmpty, NSpin, NSwitch, NTimePicker, useDialog, useMessage } from 'naive-ui'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixPushService, type IPusher, type IPushRules, type PushRuleKind, type IPushRule } from '@/services/matrix'
+import { type IPusher, type IPushRule, type IPushRules, matrixPushService, type PushRuleKind } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PushSettings')

@@ -25,9 +25,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { startRenderSample } from '@/utils/AppHarness'
-import { useI18n } from 'vue-i18n'
 
 type NavItem = {
   label: string

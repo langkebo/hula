@@ -1,7 +1,7 @@
-import type { Room } from 'matrix-js-sdk'
 import { error } from '@tauri-apps/plugin-log'
+import type { Room } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import { synapseRustExtensionsService, type RoomSummary as SynapseRoomSummary } from '../SynapseRustExtensionsService'
+import { type RoomSummary as SynapseRoomSummary, synapseRustExtensionsService } from '../SynapseRustExtensionsService'
 
 export interface MatrixRoomSummary {
   roomId: string

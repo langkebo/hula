@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { MsgEnum } from '@/enums'
 import { AppException } from '@/common/exception'
+import { MsgEnum } from '@/enums'
 import { TextMessageStrategyImpl } from '../text'
 
 describe('TextMessageStrategyImpl', () => {

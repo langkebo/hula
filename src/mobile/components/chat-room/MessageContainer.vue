@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import { useThrottleFn } from '@vueuse/core'
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

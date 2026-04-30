@@ -1,6 +1,6 @@
 import { BaseDirectory, remove } from '@tauri-apps/plugin-fs'
-import { isMobile } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('TempFileManager')
 

@@ -5,8 +5,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, type Ref } from 'vue'
-import type { ScreenConfig, MagnifierConfig } from './types'
+import { computed, type Ref, ref } from 'vue'
+import type { MagnifierConfig, ScreenConfig } from './types'
 
 const props = defineProps<{
   imgCanvas: HTMLCanvasElement | null

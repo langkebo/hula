@@ -1,7 +1,8 @@
 import { BaseDirectory, exists, mkdir, writeFile } from '@tauri-apps/plugin-fs'
 import { createEventHook } from '@vueuse/core'
-import { isMobile } from '@/utils/PlatformConstants'
 import { createLogger } from '@/utils/Logger'
+import { isMobile } from '@/utils/PlatformConstants'
+
 const logger = createLogger('Download')
 
 export const useDownload = () => {

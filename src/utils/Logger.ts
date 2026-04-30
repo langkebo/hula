@@ -1,4 +1,4 @@
-import { info, warn, error, debug, trace } from '@tauri-apps/plugin-log'
+import { debug, error, info, trace, warn } from '@tauri-apps/plugin-log'
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'off'
 

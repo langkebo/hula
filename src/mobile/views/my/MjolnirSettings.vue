@@ -81,7 +81,10 @@
       <van-popup v-model:show="showAddRoomBan" position="bottom" round :style="{ padding: '16px' }">
         <div class="text-16px font-bold mb-12px">{{ t('mobile_mjolnir.add_room_ban') }}</div>
         <van-field v-model="newRoomBan.entity" :label="t('mobile_mjolnir.entity')" :placeholder="'#room:example.com'" />
-        <van-field v-model="newRoomBan.reason" :label="t('mobile_mjolnir.reason')" :placeholder="t('mobile_mjolnir.reason_placeholder')" />
+        <van-field
+          v-model="newRoomBan.reason"
+          :label="t('mobile_mjolnir.reason')"
+          :placeholder="t('mobile_mjolnir.reason_placeholder')" />
         <div class="flex gap-8px mt-12px">
           <van-button block @click="showAddRoomBan = false">{{ t('mobile_mjolnir.cancel') }}</van-button>
           <van-button block type="primary" @click="addBan('room')">{{ t('mobile_mjolnir.add') }}</van-button>
@@ -91,7 +94,10 @@
       <van-popup v-model:show="showAddUserBan" position="bottom" round :style="{ padding: '16px' }">
         <div class="text-16px font-bold mb-12px">{{ t('mobile_mjolnir.add_user_ban') }}</div>
         <van-field v-model="newUserBan.entity" :label="t('mobile_mjolnir.entity')" :placeholder="'@user:example.com'" />
-        <van-field v-model="newUserBan.reason" :label="t('mobile_mjolnir.reason')" :placeholder="t('mobile_mjolnir.reason_placeholder')" />
+        <van-field
+          v-model="newUserBan.reason"
+          :label="t('mobile_mjolnir.reason')"
+          :placeholder="t('mobile_mjolnir.reason_placeholder')" />
         <div class="flex gap-8px mt-12px">
           <van-button block @click="showAddUserBan = false">{{ t('mobile_mjolnir.cancel') }}</van-button>
           <van-button block type="primary" @click="addBan('user')">{{ t('mobile_mjolnir.add') }}</van-button>
@@ -101,7 +107,10 @@
       <van-popup v-model:show="showAddServerBan" position="bottom" round :style="{ padding: '16px' }">
         <div class="text-16px font-bold mb-12px">{{ t('mobile_mjolnir.add_server_ban') }}</div>
         <van-field v-model="newServerBan.entity" :label="t('mobile_mjolnir.entity')" :placeholder="'example.com'" />
-        <van-field v-model="newServerBan.reason" :label="t('mobile_mjolnir.reason')" :placeholder="t('mobile_mjolnir.reason_placeholder')" />
+        <van-field
+          v-model="newServerBan.reason"
+          :label="t('mobile_mjolnir.reason')"
+          :placeholder="t('mobile_mjolnir.reason_placeholder')" />
         <div class="flex gap-8px mt-12px">
           <van-button block @click="showAddServerBan = false">{{ t('mobile_mjolnir.cancel') }}</van-button>
           <van-button block type="primary" @click="addBan('server')">{{ t('mobile_mjolnir.add') }}</van-button>
@@ -112,10 +121,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import { showToast, showDialog } from 'vant'
+import { showDialog, showToast } from 'vant'
+import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 

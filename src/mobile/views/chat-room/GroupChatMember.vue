@@ -48,11 +48,11 @@
 </template>
 
 <script setup lang="ts">
-import { createLogger } from '@/utils/Logger'
 import { useDebounceFn } from '@vueuse/core'
 import type { UserItem } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 
 const logger = createLogger('GroupChatMember')

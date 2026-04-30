@@ -182,14 +182,14 @@
 <script setup lang="ts">
 import HulaEmojis from 'hula-emojis'
 import type { ScrollbarInst, VirtualListInst } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import type { EmojiItem as EmojiListItem } from '@/services/types'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useHistoryStore } from '@/stores/domains/chat/history'
 import { useUserStore } from '@/stores/domains/user/user'
 import { getAllTypeEmojis } from '@/utils/Emoji.ts'
-import { isMobile } from '@/utils/PlatformConstants'
-import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+import { isMobile } from '@/utils/PlatformConstants'
 import { useEmojiLocalCache } from './useEmojiLocalCache'
 import { useEmojiPagination } from './useEmojiPagination'
 

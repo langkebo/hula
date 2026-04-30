@@ -2,9 +2,9 @@
  * MatrixLocationService 单元测试
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 
 vi.mock('@/services/matrix/MatrixClientService')
 

@@ -1,4 +1,4 @@
-import { info, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
 
 /**
@@ -28,7 +28,7 @@ export class MatrixRoomTranslateService {
         throw new Error(`翻译请求失败: ${response.status}`)
       }
       const data = await response.json()
-      if (data && data[0]) {
+      if (data?.[0]) {
         const translatedText = data[0].map((item: unknown[]) => item[0]).join('')
         info(`[MatrixRoom] 翻译成功`)
         return translatedText

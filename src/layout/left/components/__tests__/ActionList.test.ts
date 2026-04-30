@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 import { ShowModeEnum } from '@/enums'
 
 const showMode = ref(ShowModeEnum.TEXT)

@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
-
-import { useMsgInputMentionActions } from '../useMsgInputMentionActions'
 import { MsgEnum } from '@/enums'
+import { useMsgInputMentionActions } from '../useMsgInputMentionActions'
 
 const makeTextNode = (value: string): Node => {
   const node = document.createTextNode(value)

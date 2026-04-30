@@ -1,5 +1,7 @@
 {
   "menu": {
+    "start_group_chat": "Start group chat",
+    "add_contact": "Add contact",
     "pintop": "Pin Top",
     "unpin": "Unpin",
     "read": "Read",

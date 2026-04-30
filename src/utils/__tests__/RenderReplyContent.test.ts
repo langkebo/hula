@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { renderReplyContent } from '../RenderReplyContent'
+import { describe, expect, it } from 'vitest'
 import { MsgEnum, RoomTypeEnum } from '@/enums'
+import { renderReplyContent } from '../RenderReplyContent'
 
 describe('renderReplyContent', () => {
   describe('TEXT messages', () => {

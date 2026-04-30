@@ -5,20 +5,20 @@
  * 不再直接承载底层 Matrix 登录、会话恢复或退出编排实现。
  */
 import { invoke } from '@tauri-apps/api/core'
+import { info as logInfo } from '@tauri-apps/plugin-log'
+import { useNetwork } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { MittEnum } from '@/enums'
+import { resolveMatrixEndpointConfig } from '@/services/backend'
+import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { isDesktop, isMobile } from '@/utils/PlatformConstants'
+import { useI18nGlobal } from '../services/i18n'
+import type { UserInfoType } from '../services/types'
 import { useSettingStore } from '../stores/domains/settings/setting'
 import { useUserStore } from '../stores/domains/user/user'
-import { useMatrixStore } from '@/stores/domains/chat/matrix'
-import { UserInfoType } from '../services/types'
-import { useNetwork } from '@vueuse/core'
 import { useMitt } from './useMitt'
-import { info as logInfo } from '@tauri-apps/plugin-log'
-import { ensureAppStateReady } from '@/utils/AppStateReady'
-import { useI18nGlobal } from '../services/i18n'
-import { resolveMatrixEndpointConfig } from '@/services/backend'
-import { matrixRuntimeSessionService } from '@/services/matrix'
 
 export const useLoginFlow = () => {
   const settingStore = useSettingStore()

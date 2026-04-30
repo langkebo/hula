@@ -1,7 +1,7 @@
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
-import { matrixKeyBackupService } from './MatrixKeyBackupService'
 import { matrixCryptoService } from './MatrixCryptoService'
+import { matrixKeyBackupService } from './MatrixKeyBackupService'
 
 const logger = createLogger('CryptoHealthMonitor')
 

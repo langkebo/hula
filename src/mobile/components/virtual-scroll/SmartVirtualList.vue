@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts" generic="T extends { id?: string | number; [key: string]: any }">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 type ListItem = { id?: string | number; [key: string]: unknown }
 

@@ -4,7 +4,7 @@
  * 基于本地存储维护扫码登录会话，作为新后端适配期间的本地 SDK 桥接层。
  */
 
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { createLogger } from '@/utils/Logger'
 

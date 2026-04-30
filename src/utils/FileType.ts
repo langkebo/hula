@@ -111,7 +111,7 @@ const checkFileType = (
   }
 
   // 优先检查MIME类型
-  if (file.type && file.type.startsWith(mimeTypePrefix)) {
+  if (file.type?.startsWith(mimeTypePrefix)) {
     return true
   }
 

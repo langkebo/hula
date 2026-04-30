@@ -111,12 +111,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { NModal, NButton, NSwitch, NSelect, NDivider, NSpin, NEmpty, NFlex, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import { NButton, NDivider, NEmpty, NFlex, NModal, NSelect, NSpin, NSwitch, useMessage } from 'naive-ui'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionService, type KeyRotationRecord } from '@/services/matrix'
+import { type KeyRotationRecord, matrixEncryptionService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
+
 const logger = createLogger('KeyRotation')
 
 const { t } = useI18n()

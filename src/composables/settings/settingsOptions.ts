@@ -1,7 +1,7 @@
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { MacOsKeyEnum, WinKeyEnum } from '@/enums'
 import { isWindows } from '@/utils/PlatformConstants'
-import { useI18n } from 'vue-i18n'
 
 export function useSendOptions() {
   const { t } = useI18n()

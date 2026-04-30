@@ -1,7 +1,7 @@
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import router from '@/router'
-import { hasTauriRuntime } from '@/utils/AppHarness'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('DeepLink')
@@ -19,7 +19,7 @@ export function parseMatrixDeepLink(url: string): ParsedTarget | null {
     const matrixToMatch = decoded.match(/^https?:\/\/matrix\.to\/#\/([^/?#]+)(?:\/([^?#]+))?/i)
     if (matrixToMatch) {
       const target = matrixToMatch[1]
-      const eventId = matrixToMatch[2] && matrixToMatch[2].startsWith('$') ? matrixToMatch[2] : undefined
+      const eventId = matrixToMatch[2]?.startsWith('$') ? matrixToMatch[2] : undefined
       return classifyTarget(target, eventId)
     }
 
