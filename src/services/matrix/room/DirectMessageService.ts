@@ -85,6 +85,14 @@ export class MatrixRoomDirectMessageService {
     return clientWithRooms.getRoom?.(roomId) ?? null
   }
 
+  private shouldPersistDirectRoom(roomId: string): boolean {
+    const room = this.getRoomById(roomId)
+    if (!room) {
+      return true
+    }
+    return room.getMyMembership?.() === 'join'
+  }
+
   async setDirectRoom(userId: string, roomId: string): Promise<void> {
     const client = this.getClient()
     try {
@@ -94,10 +102,7 @@ export class MatrixRoomDirectMessageService {
         rooms.push(roomId)
 
         // 13.4.1: 在写回前过滤掉已离开或无效的房间，防止 crypto SDK 报错
-        const validRooms = rooms.filter((id) => {
-          const room = this.getRoomById(id)
-          return room ? room.getMyMembership?.() === 'join' : false
-        })
+        const validRooms = rooms.filter((id) => this.shouldPersistDirectRoom(id))
 
         if (validRooms.length > 0) {
           directRooms.set(userId, validRooms)

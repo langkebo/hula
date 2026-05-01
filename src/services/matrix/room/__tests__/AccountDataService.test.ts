@@ -102,15 +102,15 @@ describe('MatrixRoomAccountDataService', () => {
   })
 
   describe('setReadLifetime', () => {
-    it('PUTs { lifetime } to /read_lifetime', async () => {
+    it('PUTs burn config to /burn', async () => {
       const client = makeClient('@me:e', () => undefined)
       getClientMock.mockReturnValueOnce(client)
       await service.setReadLifetime('!r', 5000)
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'PUT',
-        `/_matrix/client/v3/rooms/${encodeURIComponent('!r')}/read_lifetime`,
+        `/_matrix/client/v3/rooms/${encodeURIComponent('!r')}/burn`,
         undefined,
-        { lifetime: 5000 }
+        { enabled: true, burn_after_ms: 5000 }
       )
     })
 
@@ -129,7 +129,7 @@ describe('MatrixRoomAccountDataService', () => {
       const client = makeClient('@me:e', () => ({ services: [{ id: 'a' }] }))
       getClientMock.mockReturnValueOnce(client)
       expect(await service.getExternalServices()).toEqual([{ id: 'a' }])
-      expect(client.http.authedRequest).toHaveBeenCalledWith('GET', '/_matrix/client/v3/external_service/list')
+      expect(client.http.authedRequest).toHaveBeenCalledWith('GET', '/_synapse/admin/v1/external_services')
     })
 
     it('returns [] when backend omits `services`', async () => {
