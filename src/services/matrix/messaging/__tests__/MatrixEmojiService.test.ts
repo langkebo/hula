@@ -1,11 +1,19 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { matrixClientService } from '../../MatrixClientService'
+import matrixClientService from '../../MatrixClientService'
 import { matrixMediaService } from '../../media/MatrixMediaService'
 import { matrixEmojiService } from '../MatrixEmojiService'
 
+const { getClientMock } = vi.hoisted(() => ({
+  getClientMock: vi.fn()
+}))
+
 vi.mock('../../MatrixClientService', () => ({
+  default: {
+    getClient: getClientMock
+  },
   matrixClientService: {
-    getClient: vi.fn()
+    getClient: getClientMock
   }
 }))
 
@@ -33,7 +41,7 @@ describe('MatrixEmojiService', () => {
       getUserId: vi.fn(() => '@user:server'),
       getAccountDataFromServer,
       setAccountData
-    } as any)
+    } as unknown as MatrixClient)
   })
 
   describe('emojiList', () => {

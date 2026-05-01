@@ -1,3 +1,4 @@
+import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -5,13 +6,25 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   error: vi.fn()
 }))
 
+const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(() => null)
+    getClient: () => getClientMock() as MatrixClient | null
   }
 }))
 
-const mockVoiceManager = {
+interface VoiceMessageManagerLike {
+  uploadVoiceMessage: ReturnType<typeof vi.fn>
+  getVoiceMessageInfo: ReturnType<typeof vi.fn>
+  transcribeVoiceMessage: ReturnType<typeof vi.fn>
+}
+
+type MatrixVoiceServiceInternals = {
+  voiceManager: VoiceMessageManagerLike | null
+  observedClient: MatrixClient | null
+}
+
+const mockVoiceManager: VoiceMessageManagerLike = {
   uploadVoiceMessage: vi.fn(),
   getVoiceMessageInfo: vi.fn(),
   transcribeVoiceMessage: vi.fn()
@@ -19,18 +32,19 @@ const mockVoiceManager = {
 
 const mockClient = {
   mxcUrlToHttp: vi.fn((mxcUrl: string) => `https://cdn.example.com/${mxcUrl.replace('mxc://', '')}`),
-  getRoom: vi.fn(() => null)
+  getRoom: vi.fn(() => null as Room | null),
+  getVoiceMessageManager: vi.fn(() => mockVoiceManager)
 }
 
-const matrixClientService = (await import('../../MatrixClientService')).default
+const { default: matrixClientService } = await import('../../MatrixClientService')
 const { matrixVoiceService, isVoiceMessageResult } = await import('../MatrixVoiceService')
 
 describe('MatrixVoiceService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
-    ;(matrixVoiceService as any).voiceManager = mockVoiceManager
-    ;(matrixVoiceService as any).observedClient = mockClient
+    getClientMock.mockReturnValue(mockClient as unknown as MatrixClient)
+    ;(matrixVoiceService as unknown as { voiceManager: unknown }).voiceManager = mockVoiceManager
+    ;(matrixVoiceService as unknown as { observedClient: unknown }).observedClient = mockClient
   })
 
   it('should return sdk upload result instead of forging pseudo mxc url', async () => {
@@ -71,7 +85,7 @@ describe('MatrixVoiceService', () => {
           }
         })
       }))
-    } as any)
+    } as unknown as Room)
 
     const result = await matrixVoiceService.getVoice('!room:example.org', '$event')
 
@@ -117,11 +131,11 @@ describe('MatrixVoiceService', () => {
   })
 
   it('should lazily resolve voice manager from matrix client when cache is empty', async () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValueOnce({
+    getClientMock.mockReturnValueOnce({
       ...mockClient,
       getVoiceMessageManager: vi.fn(() => mockVoiceManager)
-    } as any)
-    ;(matrixVoiceService as any).voiceManager = null
+    } as unknown as MatrixClient)
+    ;(matrixVoiceService as unknown as MatrixVoiceServiceInternals).voiceManager = null
     mockVoiceManager.uploadVoiceMessage.mockResolvedValueOnce({
       eventId: '$lazy',
       url: 'mxc://example.org/lazy'
@@ -148,9 +162,10 @@ describe('MatrixVoiceService', () => {
       getVoiceMessageManager: vi.fn(() => nextVoiceManager)
     }
 
-    vi.mocked(matrixClientService.getClient).mockReturnValue(nextClient as any)
-    ;(matrixVoiceService as any).voiceManager = mockVoiceManager
-    ;(matrixVoiceService as any).observedClient = mockClient
+    getClientMock.mockReturnValue(nextClient as unknown as MatrixClient)
+    ;(matrixVoiceService as unknown as MatrixVoiceServiceInternals).voiceManager = mockVoiceManager
+    ;(matrixVoiceService as unknown as MatrixVoiceServiceInternals).observedClient =
+      mockClient as unknown as MatrixClient
 
     const result = await matrixVoiceService.uploadVoice('!room:example.org', new Blob(['next']))
 
@@ -161,9 +176,9 @@ describe('MatrixVoiceService', () => {
   })
 
   it('should fall back to original mxc url when client is unavailable', () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValueOnce(null)
-    ;(matrixVoiceService as any).voiceManager = null
-    ;(matrixVoiceService as any).observedClient = null
+    getClientMock.mockReturnValueOnce(null)
+    ;(matrixVoiceService as unknown as MatrixVoiceServiceInternals).voiceManager = null
+    ;(matrixVoiceService as unknown as MatrixVoiceServiceInternals).observedClient = null
 
     expect(matrixVoiceService.getPlayableUrl('mxc://example.org/fallback')).toBe('mxc://example.org/fallback')
   })

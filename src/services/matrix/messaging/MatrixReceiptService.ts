@@ -153,10 +153,15 @@ class MatrixReceiptService {
     const room = client.getRoom(roomId)
     if (!room) return 0
 
+    const unreadNotificationCount = room.getUnreadNotificationCount?.(NotificationCountType.Total)
+    if (typeof unreadNotificationCount === 'number' && unreadNotificationCount > 0) {
+      return unreadNotificationCount
+    }
+
     const myUserId = client.getUserId()
     if (!myUserId) return 0
 
-    const receipt = room.getEventReadUpTo(myUserId, false)
+    const receipt = room.getEventReadUpTo?.(myUserId, false)
     if (!receipt) {
       return (
         (room.getUnreadNotificationCount?.(NotificationCountType.Highlight) ?? 0) +

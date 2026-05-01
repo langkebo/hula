@@ -78,11 +78,13 @@ export class MatrixRoomAccountDataService {
     try {
       // synapse-rust 中此接口目前在 admin 命名空间下
       const result = await client.http.authedRequest('GET', '/_synapse/admin/v1/external_services')
-      // 兼容两种响应格式：裸数组或带 data 包装的
+      // 兼容三种响应格式：裸数组、data 包装、services 包装
       const services =
-        result && typeof result === 'object' && 'data' in result
-          ? (result as { data: Array<Record<string, unknown>> }).data
-          : (result as Array<Record<string, unknown>>)
+        result && typeof result === 'object' && 'services' in result
+          ? (result as { services: Array<Record<string, unknown>> }).services
+          : result && typeof result === 'object' && 'data' in result
+            ? (result as { data: Array<Record<string, unknown>> }).data
+            : (result as Array<Record<string, unknown>>)
       return Array.isArray(services) ? services : []
     } catch (err) {
       error(`[MatrixRoom] 获取外部服务列表失败: ${err}`)

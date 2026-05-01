@@ -2,11 +2,23 @@
  * MatrixLocationService 单元测试
  */
 
+import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 
-vi.mock('@/services/matrix/MatrixClientService')
+const { getClientMock } = vi.hoisted(() => ({
+  getClientMock: vi.fn(() => null as MatrixClient | null)
+}))
+
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  default: {
+    getClient: getClientMock
+  },
+  matrixClientService: {
+    getClient: getClientMock
+  }
+}))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -122,7 +134,7 @@ describe('MatrixLocationService', () => {
         getContent: () => ({ msgtype: 'm.text' })
       }
 
-      const result = matrixLocationService.parseLocationEvent(mockEvent as any)
+      const result = matrixLocationService.parseLocationEvent(mockEvent as unknown as MatrixEvent)
 
       expect(result).toBeNull()
     })
