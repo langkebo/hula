@@ -1,5 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
+import { isMessageEventType, MatrixBurnDuration, MatrixEventType, MatrixFormat } from '@/common/matrixConstants'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
@@ -120,11 +121,11 @@ class MatrixEventService {
       }
 
       if (html) {
-        content.format = 'org.matrix.custom.html'
+        content.format = MatrixFormat.HTML
         content.formatted_body = html
       }
 
-      return this.sendEvent(roomId, 'm.room.message', content)
+      return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
       error(`[MatrixEvent] 发送文本消息失败: ${roomId} ${err}`)
       throw err
@@ -151,7 +152,7 @@ class MatrixEventService {
         url: contentUri
       }
 
-      return this.sendEvent(roomId, 'm.room.message', content)
+      return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
       error(`[MatrixEvent] 发送图片消息失败: ${roomId} ${err}`)
       throw err
@@ -176,7 +177,7 @@ class MatrixEventService {
         url: contentUri
       }
 
-      return this.sendEvent(roomId, 'm.room.message', content)
+      return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
       error(`[MatrixEvent] 发送文件消息失败: ${roomId} ${err}`)
       throw err
@@ -215,7 +216,7 @@ class MatrixEventService {
         url: contentUri
       }
 
-      return this.sendEvent(roomId, 'm.room.message', content)
+      return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
       error(`[MatrixEvent] 发送视频消息失败: ${roomId} ${err}`)
       throw err
@@ -241,7 +242,7 @@ class MatrixEventService {
         url: contentUri
       }
 
-      return this.sendEvent(roomId, 'm.room.message', content)
+      return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
       error(`[MatrixEvent] 发送音频消息失败: ${roomId} ${err}`)
       throw err
@@ -271,7 +272,7 @@ class MatrixEventService {
         }
       }
 
-      return this.sendEvent(roomId, 'm.room.message', content)
+      return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
       error(`[MatrixEvent] 发送语音消息失败: ${roomId} ${err}`)
       throw err
@@ -286,7 +287,7 @@ class MatrixEventService {
         geo_uri: geoUri
       }
 
-      return this.sendEvent(roomId, 'm.room.message', content)
+      return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
       error(`[MatrixEvent] 发送位置消息失败: ${roomId} ${err}`)
       throw err
@@ -438,7 +439,7 @@ class MatrixEventService {
 
     const burnAfterReadMeta = content?.['m.burn_after_read'] as { expires_in?: number } | undefined
     const burnAfterRead = !!burnAfterReadMeta
-    const burnExpiresIn = burnAfterReadMeta?.expires_in || 60000
+    const burnExpiresIn = burnAfterReadMeta?.expires_in || MatrixBurnDuration.DEFAULT_MS
     const burnRemainingSeconds = burnAfterRead ? Math.round(burnExpiresIn / 1000) : undefined
 
     return {
@@ -465,7 +466,7 @@ class MatrixEventService {
   async getRoomMessages(roomId: string, limit = 50): Promise<MessageType[]> {
     const rawEvents = await this.getRoomTimeline(roomId, limit)
     return rawEvents
-      .filter((event) => event.getType() === 'm.room.message' || event.getType() === 'm.room.encrypted')
+      .filter((event) => isMessageEventType(event.getType()))
       .map((event) => this.convertEventToMessageType(event))
   }
 
@@ -476,7 +477,7 @@ class MatrixEventService {
   ): Promise<{ messages: MessageType[]; hasMore: boolean }> {
     const rawEvents = await this.paginateTimeline(roomId, direction, limit)
     const messages = rawEvents
-      .filter((event) => event.getType() === 'm.room.message' || event.getType() === 'm.room.encrypted')
+      .filter((event) => isMessageEventType(event.getType()))
       .map((event) => this.convertEventToMessageType(event))
     return { messages, hasMore: rawEvents.length >= limit }
   }
@@ -504,7 +505,7 @@ class MatrixEventService {
 
     const messages: MessageType[] = []
     for (const event of pageEvents) {
-      if (event.getType() === 'm.room.message' || event.getType() === 'm.room.encrypted') {
+      if (isMessageEventType(event.getType())) {
         const msg = this.convertEventToMessage(event, room)
         if (msg) {
           messages.push(msg)

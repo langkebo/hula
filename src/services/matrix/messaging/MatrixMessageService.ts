@@ -1,5 +1,13 @@
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import type { ISendEventResponse, MatrixEvent } from 'matrix-js-sdk'
+import {
+  ERROR_CLIENT_NOT_INITIALIZED_EN,
+  MatrixBurnDuration,
+  MatrixContentField,
+  MatrixEventType,
+  MatrixFormat,
+  MatrixMsgType
+} from '@/common/matrixConstants'
 import { MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { matrixClientService } from '../MatrixClientService'
@@ -70,23 +78,23 @@ class MatrixMessageService {
   private convertMsgTypeToMatrix(msgType: MsgEnum): string {
     switch (msgType) {
       case MsgEnum.TEXT:
-        return 'm.text'
+        return MatrixMsgType.TEXT
       case MsgEnum.IMAGE:
       case MsgEnum.EMOJI:
-        return 'm.image'
+        return MatrixMsgType.IMAGE
       case MsgEnum.VIDEO:
-        return 'm.video'
+        return MatrixMsgType.VIDEO
       case MsgEnum.AUDIO:
       case MsgEnum.VOICE:
-        return 'm.audio'
+        return MatrixMsgType.AUDIO
       case MsgEnum.FILE:
-        return 'm.file'
+        return MatrixMsgType.FILE
       case MsgEnum.LOCATION:
-        return 'm.location'
+        return MatrixMsgType.LOCATION
       case MsgEnum.NOTICE:
-        return 'm.notice'
+        return MatrixMsgType.NOTICE
       default:
-        return 'm.text'
+        return MatrixMsgType.TEXT
     }
   }
 
@@ -106,7 +114,7 @@ class MatrixMessageService {
       case MsgEnum.NOTICE: {
         content.body = (bodyRecord.content as string | undefined) || (typeof body === 'string' ? body : '') || ''
         if (typeof reply.id === 'string') {
-          content['m.relates_to'] = {
+          content[MatrixContentField.RELATES_TO] = {
             'm.in_reply_to': {
               event_id: reply.id
             }
@@ -203,7 +211,7 @@ class MatrixMessageService {
   private findEventByIdAcrossRooms(eventId: string): MatrixEvent | null {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('Matrix client not initialized')
+      throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
     }
 
     for (const room of client.getRooms()) {
@@ -252,10 +260,10 @@ class MatrixMessageService {
       const content = this.buildMatrixContent(payload.msgType, payload.body)
       if (payload.burnAfterRead) {
         content['m.burn_after_read'] = {
-          expires_in: payload.burnExpiresInMs || 60000
+          expires_in: payload.burnExpiresInMs || MatrixBurnDuration.DEFAULT_MS
         }
       }
-      const eventId = await matrixEventService.sendEvent(payload.roomId, 'm.room.message', content)
+      const eventId = await matrixEventService.sendEvent(payload.roomId, MatrixEventType.ROOM_MESSAGE, content)
       info(`[MatrixMessage] Structured message sent to ${payload.roomId}: ${eventId}`)
       return { event_id: eventId } as ISendEventResponse
     }, 'sendStructuredMessage')
@@ -265,9 +273,9 @@ class MatrixMessageService {
     if (!navigator.onLine) {
       const id = offlineQueueService.enqueue('message', roomId, {
         roomId,
-        eventType: 'm.room.message',
+        eventType: MatrixEventType.ROOM_MESSAGE,
         content: {
-          msgtype: 'm.text',
+          msgtype: MatrixMsgType.TEXT,
           body: content
         }
       })
@@ -278,7 +286,7 @@ class MatrixMessageService {
     return this.sendWithRetry(async () => {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const txnId = txId || `m${Date.now()}`
@@ -292,11 +300,11 @@ class MatrixMessageService {
     if (!navigator.onLine) {
       const id = offlineQueueService.enqueue('message', roomId, {
         roomId,
-        eventType: 'm.room.message',
+        eventType: MatrixEventType.ROOM_MESSAGE,
         content: {
-          msgtype: 'm.text',
+          msgtype: MatrixMsgType.TEXT,
           body,
-          format: 'org.matrix.custom.html',
+          format: MatrixFormat.HTML,
           formatted_body: html
         }
       })
@@ -307,7 +315,7 @@ class MatrixMessageService {
     return this.sendWithRetry(async () => {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const txnId = txId || `m${Date.now()}`
@@ -321,7 +329,7 @@ class MatrixMessageService {
     if (!navigator.onLine) {
       const id = offlineQueueService.enqueue('message', roomId, {
         roomId,
-        eventType: 'm.room.message',
+        eventType: MatrixEventType.ROOM_MESSAGE,
         content: {
           msgtype: 'm.emote',
           body: content
@@ -334,7 +342,7 @@ class MatrixMessageService {
     return this.sendWithRetry(async () => {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const txnId = txId || `m${Date.now()}`
@@ -354,7 +362,7 @@ class MatrixMessageService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const txnId = txId || `m${Date.now()}`
@@ -370,7 +378,7 @@ class MatrixMessageService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const { limit = 20, before, after, type, sender } = options || {}
@@ -449,7 +457,7 @@ class MatrixMessageService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const room = client.getRoom(roomId)
@@ -464,7 +472,7 @@ class MatrixMessageService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const room = client.getRoom(roomId)
@@ -498,7 +506,7 @@ class MatrixMessageService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const room = client.getRoom(roomId)
@@ -519,7 +527,7 @@ class MatrixMessageService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const room = client.getRoom(roomId)
@@ -534,7 +542,7 @@ class MatrixMessageService {
       for (const event of events) {
         const hasRead = room.hasUserReadEvent(myUserId!, event.getId()!)
         if (!hasRead) {
-          if (event.sender?.userId !== myUserId && event.getType() === 'm.room.message') {
+          if (event.sender?.userId !== myUserId && event.getType() === MatrixEventType.ROOM_MESSAGE) {
             unreadEvents.push(event)
           }
         }
@@ -564,7 +572,7 @@ class MatrixMessageService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const { roomId, limit = 20, before, after, type, sender, threadId } = options
@@ -640,7 +648,7 @@ class MatrixMessageService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const room = client.getRoom(roomId)
@@ -756,7 +764,7 @@ class MatrixMessageService {
     return this.sendWithRetry(async () => {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        throw new Error(ERROR_CLIENT_NOT_INITIALIZED_EN)
       }
 
       const txnId = txId || `m${Date.now()}`
