@@ -64,7 +64,6 @@ class MatrixTypingService {
     const room = client.getRoom(roomId)
     if (!room) return []
 
-    const _manager = this.getTypingManager()
     const myUserId = client.getUserId()
     const typingUsers: TypingUser[] = []
 
