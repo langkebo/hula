@@ -50,7 +50,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixForwardService, matrixMessageService } from '@/services/matrix'
+import { matrixForwardService } from '@/services/matrix/messaging/MatrixForwardService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'

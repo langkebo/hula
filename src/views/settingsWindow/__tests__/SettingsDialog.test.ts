@@ -73,7 +73,7 @@ vi.mock('naive-ui', () => ({
     template: '<input class="n-input" :value="value" @input="$emit(\'update:value\', $event.target.value)" />'
   },
   useDialog: () => ({
-    warning: (...args: any[]) => dialogWarningMock(...args)
+    warning: (...args: unknown[]) => dialogWarningMock(...args)
   })
 }))
 

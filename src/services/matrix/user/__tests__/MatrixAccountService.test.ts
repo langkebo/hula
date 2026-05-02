@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixAccountService } from '../MatrixAccountService'
@@ -46,7 +47,7 @@ describe('MatrixAccountService', () => {
       setPresence: vi.fn().mockResolvedValue({}),
       http: { authedRequest: vi.fn().mockResolvedValue({}) }
     }
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
   })
 
   describe('updateDisplayName', () => {
@@ -57,7 +58,7 @@ describe('MatrixAccountService', () => {
     })
 
     it('should throw when client not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       await expect(matrixAccountService.updateDisplayName('test')).rejects.toThrow('客户端未初始化')
     })
   })
@@ -87,7 +88,7 @@ describe('MatrixAccountService', () => {
 
       const result = await matrixAccountService.getCapabilities()
       expect(result).toEqual(mockCaps)
-      expect(mockClient.http.authedRequest).toHaveBeenCalledWith('GET', '/_matrix/client/v3/capabilities')
+      expect(mockClient.http.authedRequest).toHaveBeenCalledWith('GET', '/capabilities')
     })
 
     it('should return empty object on error', async () => {

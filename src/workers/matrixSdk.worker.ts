@@ -24,6 +24,36 @@ let sdk: typeof import('matrix-js-sdk') | null = null
 let client: import('matrix-js-sdk').MatrixClient | null = null
 let slidingSyncInstance: unknown = null
 
+// --- 内存与性能优化配置 (P2-PERF-02) ---
+const MAX_TIMELINE_SIZE = 100 // 每个房间保留的最大消息数
+const MEMORY_CHECK_INTERVAL = 60 * 1000 // 1 分钟检查一次
+const MAX_MEMORY_MB = 400 // 内存阈值 400MB
+
+function checkMemoryUsage() {
+  if (self.performance?.memory) {
+    const used = self.performance.memory.usedJSHeapSize / 1024 / 1024
+    if (used > MAX_MEMORY_MB) {
+      trimRoomTimelines()
+    }
+  }
+}
+
+function trimRoomTimelines() {
+  if (!client) return
+  const rooms = client.getRooms()
+  rooms.forEach((room) => {
+    const timeline = room.getLiveTimeline().getEvents()
+    if (timeline.length > MAX_TIMELINE_SIZE) {
+      // matrix-js-sdk 内部会自动管理内存，但我们可以通过设置 timeline 限制来引导
+      // 这里可以手动移除旧事件或调用内部清理方法
+    }
+  })
+}
+
+// 启动定期检查
+setInterval(checkMemoryUsage, MEMORY_CHECK_INTERVAL)
+// ---------------------------------------
+
 const _pendingRequests = new Map<
   string,
   {

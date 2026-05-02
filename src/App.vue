@@ -35,19 +35,17 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useWindow } from '@/hooks/useWindow.ts'
 import { loadLanguage } from '@/services/i18n'
-import {
-  matrixClientService,
-  matrixMessageService,
-  matrixReactionService,
-  matrixReceiptService,
-  matrixRoomCreationService,
-  matrixRoomDirectMessageService,
-  matrixRoomPinsService,
-  matrixRoomService,
-  matrixRoomTagsService
-} from '@/services/matrix'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
+import { matrixReactionService } from '@/services/matrix/messaging/MatrixReactionService'
+import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
+import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
+import { matrixRoomDirectMessageService } from '@/services/matrix/room/DirectMessageService'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomPinsService } from '@/services/matrix/room/PinsService'
 import { matrixRoomStateService } from '@/services/matrix/room/StateService'
+import { matrixRoomTagsService } from '@/services/matrix/room/TagsService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -114,7 +112,7 @@ const userUid = computed(() => userStore.userInfo!.uid)
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
 const appWindow = tauriRuntimeAvailable ? WebviewWindow.getCurrent() : null
-const { createRtcCallWindow, sendWindowPayload } = useWindow()
+const { createRtcCallWindow, sendWindowPayload, ensureCheckUpdateWindow } = useWindow()
 const globalStore = useGlobalStore()
 const router = useRouter()
 const { addListener } = useTauriListener()
@@ -863,7 +861,7 @@ onMounted(async () => {
   // 只在桌面端处理窗口相关事件
   if (isDesktop() && tauriRuntimeAvailable && appWindow) {
     useMitt.on(MittEnum.CHECK_UPDATE, async () => {
-      const checkUpdateWindow = await WebviewWindow.getByLabel('checkupdate')
+      const checkUpdateWindow = await ensureCheckUpdateWindow()
       await checkUpdateWindow?.show()
     })
     useMitt.on<{ close: string }>(MittEnum.DO_UPDATE, async (event) => {

@@ -25,7 +25,7 @@
           <span class="timestamp">{{ formatTime(rootMessage.timestamp) }}</span>
         </div>
       </div>
-      <div class="message-content" v-html="rootMessage.content"></div>
+      <div class="message-content" v-safe-html="rootMessage.content"></div>
     </div>
 
     <n-divider />
@@ -44,7 +44,7 @@
                 <span class="sender-name">{{ msg.senderName }}</span>
                 <span class="timestamp">{{ formatTime(msg.timestamp) }}</span>
               </div>
-              <div class="message-content" v-html="msg.content"></div>
+              <div class="message-content" v-safe-html="msg.content"></div>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
-import { matrixClientService } from '@/services/matrix'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('BadgeStore')

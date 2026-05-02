@@ -56,7 +56,7 @@
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
-import { matrixAnnouncementService } from '@/services/matrix'
+import { matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 

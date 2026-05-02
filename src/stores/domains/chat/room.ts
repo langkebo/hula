@@ -1,5 +1,4 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import { useDebounceFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { MessageStatusEnum, MsgEnum, StoresEnum } from '@/enums'
@@ -34,15 +33,13 @@ type TimelineUpdate = {
   }
 }
 
-const _DEFAULT_ROOM_CACHE_SIZE = 50
-
 export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   // LRU 缓存，用于存储 RoomDetail（限制 50 个房间）
   const roomDetailCache = new LRUCache<string, RoomDetail>(50)
   const roomDetailPending = new Map<string, Promise<RoomDetail | null>>()
 
   // 消息缓存最大房间数
-  const MAX_MESSAGE_CACHE_ROOMS = 20
+  const _MAX_MESSAGE_CACHE_ROOMS = 20
 
   const rooms = shallowRef<Map<string, RoomInfo>>(new Map())
   const currentRoomId = ref<string | null>(null)
@@ -50,38 +47,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   const isLoading = ref(false)
   const isLoadingMore = ref(false)
   const hasMoreMessages = shallowRef<Map<string, boolean>>(new Map())
-
-  /**
-   * 清理消息缓存，保留当前房间和最近活跃的房间
-   */
-  function _pruneMessagesCache(): void {
-    const currentRoom = currentRoomId.value
-    const roomIds = Array.from(messages.value.keys())
-
-    if (roomIds.length <= MAX_MESSAGE_CACHE_ROOMS) return
-
-    // 获取最近活跃的房间（按最后消息时间排序）
-    const recentRoomIds = roomIds
-      .map((roomId) => {
-        const room = rooms.value.get(roomId)
-        return { roomId, lastTime: room?.lastMessageTime ?? 0 }
-      })
-      .sort((a, b) => b.lastTime - a.lastTime)
-      .slice(0, MAX_MESSAGE_CACHE_ROOMS)
-      .map((item) => item.roomId)
-
-    // 删除不在保留列表中的房间消息
-    for (const roomId of roomIds) {
-      if (!recentRoomIds.includes(roomId) && roomId !== currentRoom) {
-        messages.value.delete(roomId)
-        triggerRef(messages)
-        hasMoreMessages.value.delete(roomId)
-        triggerRef(hasMoreMessages)
-      }
-    }
-
-    info(`[RoomStore] 消息缓存清理: ${roomIds.length} -> ${messages.value.size}`)
-  }
+  let listenersInitialized = false
 
   const roomList = computed<RoomInfo[]>(() => {
     return Array.from(rooms.value.values()).sort((a, b) => {
@@ -562,7 +528,11 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   /**
    * 设置事件监听器
    */
-  function setupEventListeners(): void {
+  async function setupEventListeners(): Promise<void> {
+    if (listenersInitialized) {
+      return
+    }
+
     matrixRoomService.onTimelineEvent(({ roomId, eventType, roomInfo, message }) => {
       if (eventType === 'm.room.message' || eventType === 'm.room.encrypted') {
         if (message) {
@@ -606,6 +576,14 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
         loadRooms()
       }
     })
+
+    listenersInitialized = true
+
+    try {
+      await matrixSlidingSyncService.initialize()
+    } catch (err) {
+      error(`[RoomStore] Sliding Sync 服务初始化失败: ${err}`)
+    }
   }
 
   /**
@@ -699,11 +677,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
 
     info(`[RoomStore] 批量加载完成`)
   }
-
-  // 防抖版本的批量加载（用于滚动场景）
-  const _debouncedLoadRoomDetails = useDebounceFn(async (roomIds: string[]) => {
-    await loadRoomDetails(roomIds)
-  }, 300)
 
   /**
    * 清除房间详情缓存

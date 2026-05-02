@@ -17,7 +17,7 @@ const spaceServiceMock = {
   removeChildFromSpace: vi.fn()
 }
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/room/MatrixSpaceService', () => ({
   matrixSpaceService: spaceServiceMock
 }))
 

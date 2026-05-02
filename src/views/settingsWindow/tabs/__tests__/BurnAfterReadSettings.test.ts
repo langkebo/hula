@@ -70,12 +70,12 @@ vi.mock('naive-ui', () => ({
   useDialog: () => ({ warning: vi.fn() })
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/messaging/MatrixBurnAfterReadService', () => ({
   matrixBurnAfterReadService: mockManager
 }))
 
 vi.mock('@/utils/Logger', () => ({
-  createLogger: vi.fn(() => ({ error: vi.fn() }))
+  createLogger: vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }))
 }))
 
 vi.mock('vue-i18n', () => ({

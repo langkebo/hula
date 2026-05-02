@@ -1,6 +1,7 @@
 import { type Ref, ref } from 'vue'
-import { adminService, matrixFederationBlacklistService } from '@/services/matrix'
+import { adminService, matrixFederationBlacklistService } from '@/services/matrix/admin'
 import type { FederationDestination } from '@/services/matrix/admin/AdminTypes'
+import type { FederationBlacklistEntry } from '@/services/matrix/admin/MatrixFederationBlacklistService'
 
 export interface FederationBlacklistView {
   domain: string
@@ -69,12 +70,14 @@ export function useAdminFederation(): UseAdminFederationResult {
     blacklistLoading.value = true
     try {
       const items = await matrixFederationBlacklistService.list()
-      blacklist.value = items.map((e) => ({
-        domain: e.domain,
-        reason: e.reason,
-        addedBy: e.addedBy,
-        addedAt: e.addedAt
-      }))
+      blacklist.value = items.map(
+        (e: FederationBlacklistEntry): FederationBlacklistView => ({
+          domain: e.domain,
+          reason: e.reason,
+          addedBy: e.addedBy,
+          addedAt: e.addedAt
+        })
+      )
     } finally {
       blacklistLoading.value = false
     }

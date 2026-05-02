@@ -5,9 +5,9 @@ import {
   buildImageGenerationRequest,
   buildVideoGenerationRequest
 } from '@/plugins/robot/composables/useAiGenerationRequests'
-import type { AIModel } from '@/services/matrix'
-import { aiService } from '@/services/matrix'
 import type { AIAsyncGenerationResponse } from '@/services/matrix/ai/AIService'
+import { aiService } from '@/services/matrix/ai/AIService'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiMediaGeneration')

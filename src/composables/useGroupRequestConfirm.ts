@@ -1,5 +1,5 @@
 import { computed, type MaybeRefOrGetter, ref, toValue, watch } from 'vue'
-import { matrixGroupService } from '@/services/matrix'
+import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 type GroupConfirmTarget = {

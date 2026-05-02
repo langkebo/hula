@@ -1,9 +1,10 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatrixRequestHelper } from '../MatrixRequestHelper'
 
 vi.mock('../MatrixClientService', () => ({
   matrixClientService: {
-    getClient: vi.fn()
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -22,13 +23,13 @@ describe('MatrixRequestHelper', () => {
     matrixClientService = (await import('../MatrixClientService')).matrixClientService
     mockHttp = { authedRequest: vi.fn().mockResolvedValue({}) }
     vi.mocked(matrixClientService.getClient).mockReturnValue({
-      http: mockHttp
-    } as any)
+      http: mockHttp as unknown as MatrixClient['http']
+    } as unknown as MatrixClient)
   })
 
   describe('safeGet', () => {
     it('should return null when client not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       const result = await MatrixRequestHelper.safeGet('/test')
       expect(result).toBeNull()
     })
@@ -41,8 +42,8 @@ describe('MatrixRequestHelper', () => {
 
     it('should return default value on error', async () => {
       mockHttp.authedRequest.mockRejectedValue(new Error('fail'))
-      const result = await MatrixRequestHelper.safeGet('/test', undefined, { defaultValue: { fallback: true } as any })
-      expect((result as any)?.fallback).toBe(true)
+      const result = await MatrixRequestHelper.safeGet('/test', undefined, { defaultValue: { fallback: true } })
+      expect((result as Record<string, unknown> | null)?.fallback).toBe(true)
     })
 
     it('should throw on error when throwOnError is true', async () => {
@@ -53,7 +54,7 @@ describe('MatrixRequestHelper', () => {
 
   describe('safePost', () => {
     it('should return null when client not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       const result = await MatrixRequestHelper.safePost('/test')
       expect(result).toBeNull()
     })
@@ -78,7 +79,7 @@ describe('MatrixRequestHelper', () => {
 
   describe('safePut', () => {
     it('should return null when client not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       const result = await MatrixRequestHelper.safePut('/test')
       expect(result).toBeNull()
     })
@@ -98,7 +99,7 @@ describe('MatrixRequestHelper', () => {
 
   describe('safeDelete', () => {
     it('should return false when client not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       const result = await MatrixRequestHelper.safeDelete('/test')
       expect(result).toBe(false)
     })

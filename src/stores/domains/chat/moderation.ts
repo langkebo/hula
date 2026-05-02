@@ -2,13 +2,13 @@ import { error, info } from '@tauri-apps/plugin-log'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { StoresEnum } from '@/enums'
-import { matrixModerationService } from '@/services/matrix'
 import type {
   ContentFilter,
   Report,
   ReportFilters,
   UserReputation
 } from '@/services/matrix/admin/MatrixModerationService'
+import { matrixModerationService } from '@/services/matrix/admin/MatrixModerationService'
 
 export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
   const reports = ref<Report[]>([])

@@ -83,7 +83,9 @@ import { Icon } from '@iconify/vue'
 import { NButton, NDivider, NEmpty, NSpin, NSwitch, NTimePicker, useDialog, useMessage } from 'naive-ui'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type IPusher, type IPushRule, type IPushRules, matrixPushService, type PushRuleKind } from '@/services/matrix'
+import type { IPusher, IPushRule, IPushRules } from '@/services/matrix/notifications/MatrixPushService'
+import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
+import type { PushRuleKind } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PushSettings')

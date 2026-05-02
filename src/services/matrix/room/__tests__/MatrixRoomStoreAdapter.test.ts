@@ -1,5 +1,7 @@
+import type { MatrixEvent, Room } from 'matrix-js-sdk'
 import { describe, expect, it, vi } from 'vitest'
-import { MsgEnum } from '@/enums'
+import { MessageStatusEnum, MsgEnum } from '@/enums'
+import type { MessageType } from '@/stores/domains/chat/chat'
 import matrixRoomStoreAdapter from '../MatrixRoomStoreAdapter'
 
 function createEventLike(
@@ -22,6 +24,24 @@ function createEventLike(
   }
 }
 
+function createMessage(overrides: Partial<MessageType['message']>): MessageType {
+  return {
+    fromUser: { uid: '@user:server', username: '@user:server', avatar: '', locPlace: '' },
+    message: {
+      id: '$message',
+      roomId: '!room:id',
+      type: MsgEnum.TEXT,
+      body: {},
+      sendTime: 1,
+      messageMarks: {},
+      status: MessageStatusEnum.SUCCESS,
+      ...overrides
+    },
+    sendTime: 1,
+    loading: false
+  }
+}
+
 describe('MatrixRoomStoreAdapter', () => {
   it('should build room preview for common event types', () => {
     expect(matrixRoomStoreAdapter.getTimelineEventPreview('m.room.message', { body: 'hi', msgtype: 'm.text' })).toBe(
@@ -37,37 +57,13 @@ describe('MatrixRoomStoreAdapter', () => {
 
   it('should build message preview for display messages', () => {
     expect(
-      matrixRoomStoreAdapter.getMessagePreview({
-        fromUser: { uid: '@user:server', username: '@user:server', avatar: '', locPlace: '' },
-        message: {
-          id: '$text',
-          roomId: '!room:id',
-          type: MsgEnum.TEXT,
-          body: { body: 'hello', content: 'hello' },
-          sendTime: 1,
-          messageMarks: {},
-          status: 1 as any
-        },
-        sendTime: 1,
-        loading: false
-      })
+      matrixRoomStoreAdapter.getMessagePreview(
+        createMessage({ id: '$text', body: { body: 'hello', content: 'hello' } })
+      )
     ).toBe('hello')
 
     expect(
-      matrixRoomStoreAdapter.getMessagePreview({
-        fromUser: { uid: '@user:server', username: '@user:server', avatar: '', locPlace: '' },
-        message: {
-          id: '$image',
-          roomId: '!room:id',
-          type: MsgEnum.IMAGE,
-          body: {},
-          sendTime: 1,
-          messageMarks: {},
-          status: 1 as any
-        },
-        sendTime: 1,
-        loading: false
-      })
+      matrixRoomStoreAdapter.getMessagePreview(createMessage({ id: '$image', type: MsgEnum.IMAGE, body: {} }))
     ).toBe('[图片]')
   })
 
@@ -96,7 +92,7 @@ describe('MatrixRoomStoreAdapter', () => {
       getDMInviter: vi.fn(() => '@peer:server')
     }
 
-    const roomInfo = matrixRoomStoreAdapter.convertRoomToRoomInfo(room as any, true)
+    const roomInfo = matrixRoomStoreAdapter.convertRoomToRoomInfo(room as unknown as Room, true)
     const merged = matrixRoomStoreAdapter.applySlidingSyncUnreadCounts(roomInfo, {
       notificationCount: 8,
       highlightCount: 3
@@ -129,7 +125,7 @@ describe('MatrixRoomStoreAdapter', () => {
       roomId: '!room:id',
       content: { body: 'voice.ogg', msgtype: 'm.voice' }
     })
-    const sdkMessage = matrixRoomStoreAdapter.convertMatrixEventToMessage(event as any)
+    const sdkMessage = matrixRoomStoreAdapter.convertMatrixEventToMessage(event as unknown as MatrixEvent)
     const timelineMessage = matrixRoomStoreAdapter.convertTimelineEventToMessage('!room:id', {
       event_id: '$timeline',
       type: 'm.room.member',
@@ -152,22 +148,36 @@ describe('MatrixRoomStoreAdapter', () => {
   })
 
   it('should identify displayable sdk message events', () => {
-    expect(matrixRoomStoreAdapter.isDisplayableMessageEvent(createEventLike({ type: 'm.room.message' }) as any)).toBe(
-      true
-    )
-    expect(matrixRoomStoreAdapter.isDisplayableMessageEvent(createEventLike({ type: 'm.room.encrypted' }) as any)).toBe(
-      true
-    )
-    expect(matrixRoomStoreAdapter.isDisplayableMessageEvent(createEventLike({ type: 'm.room.topic' }) as any)).toBe(
-      false
-    )
+    expect(
+      matrixRoomStoreAdapter.isDisplayableMessageEvent(
+        createEventLike({ type: 'm.room.message' }) as unknown as MatrixEvent
+      )
+    ).toBe(true)
+    expect(
+      matrixRoomStoreAdapter.isDisplayableMessageEvent(
+        createEventLike({ type: 'm.room.encrypted' }) as unknown as MatrixEvent
+      )
+    ).toBe(true)
+    expect(
+      matrixRoomStoreAdapter.isDisplayableMessageEvent(
+        createEventLike({ type: 'm.room.topic' }) as unknown as MatrixEvent
+      )
+    ).toBe(false)
   })
 
   it('should filter unsupported sdk events when converting message lists', () => {
     const messages = matrixRoomStoreAdapter.convertMatrixEventsToMessages([
-      createEventLike({ id: '$m1', type: 'm.room.message', content: { body: 'hello', msgtype: 'm.text' } }) as any,
-      createEventLike({ id: '$ignore', type: 'm.room.topic', content: { topic: 'ignored' } }) as any,
-      createEventLike({ id: '$m2', type: 'm.room.encrypted', content: { body: 'cipher', msgtype: 'm.text' } }) as any
+      createEventLike({
+        id: '$m1',
+        type: 'm.room.message',
+        content: { body: 'hello', msgtype: 'm.text' }
+      }) as unknown as MatrixEvent,
+      createEventLike({ id: '$ignore', type: 'm.room.topic', content: { topic: 'ignored' } }) as unknown as MatrixEvent,
+      createEventLike({
+        id: '$m2',
+        type: 'm.room.encrypted',
+        content: { body: 'cipher', msgtype: 'm.text' }
+      }) as unknown as MatrixEvent
     ])
 
     expect(messages.map((item) => item.message.id)).toEqual(['$m1', '$m2'])

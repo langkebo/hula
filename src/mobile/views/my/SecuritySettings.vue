@@ -156,7 +156,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
-import { matrixCryptoService } from '@/services/matrix'
+import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { createLogger } from '@/utils/Logger'
 

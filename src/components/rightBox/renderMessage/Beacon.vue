@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
-import { matrixLocationService } from '@/services/matrix'
+import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import type { BeaconBody } from '@/services/types'
 import { useTimerManager } from '@/utils/TimerManager'
 

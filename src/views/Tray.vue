@@ -110,6 +110,10 @@ const division = () => {
   return <div class={'h-1px bg-[--hula-border-default] w-full'}></div>
 }
 
+const syncTrayMenuState = async (loggedIn?: boolean) => {
+  globalStore.isTrayMenuShow = typeof loggedIn === 'boolean' ? loggedIn : !!(await WebviewWindow.getByLabel('home'))
+}
+
 const translateStateTitle = (title?: string) => {
   if (!title) return ''
   const key = `auth.onlineStatus.states.${title}`
@@ -189,8 +193,13 @@ const handleTrayResize = async () => {
 onMounted(async () => {
   // 监听系统缩放变化事件，自动调整托盘窗口尺寸
   window.addEventListener('resize-needed', handleTrayResize)
+  await syncTrayMenuState()
 
   if (isWindows()) {
+    appWindow.listen<boolean>('tray_state_sync', async (event) => {
+      await syncTrayMenuState(event.payload)
+    })
+
     homeFocusUnlisten = await appWindow.listen('home_focus', async () => {
       isFocused.value = true
       await stopBlinkTask()

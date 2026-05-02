@@ -157,7 +157,7 @@ import 'vant/es/dialog/style'
 import { useI18n } from 'vue-i18n'
 import { OnlineEnum, UserType } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
-import { matrixSessionService } from '@/services/matrix'
+import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import type { UserInfoType, UserItem } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -312,7 +312,9 @@ const handleDelete = () => {
         window.$message.warning(t('mobile_personal_info.not_found'))
       }
     })
-    .catch(() => {})
+    .catch(() => {
+      /* user cancelled dialog */
+    })
 }
 
 const toEditProfile = () => {

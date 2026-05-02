@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -8,13 +9,13 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() }
+  default: { getClient: () => getClientMock() as MatrixClient }
 }))
 
 const enqueueMock = vi.fn()
 vi.mock('@/services/offline/OfflineQueueService', () => ({
   offlineQueueService: {
-    enqueue: (...args: any[]) => enqueueMock(...args)
+    enqueue: (type: string, status: string, data: unknown) => enqueueMock(type, status, data)
   }
 }))
 
@@ -23,7 +24,7 @@ const { MatrixRoomTagsService } = await import('../TagsService')
 function makeClient(
   userId: string | null,
   httpImpl: (method: string, url: string, qp?: unknown, body?: unknown) => unknown
-) {
+): MatrixClient {
   return {
     getUserId: () => userId,
     http: {
@@ -31,7 +32,7 @@ function makeClient(
         httpImpl(method, url, qp, body)
       )
     }
-  }
+  } as unknown as MatrixClient
 }
 
 describe('MatrixRoomTagsService', () => {

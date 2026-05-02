@@ -1,8 +1,8 @@
-import { invoke } from '@tauri-apps/api/core'
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { ref } from 'vue'
 import { TauriCommand } from '@/enums'
+import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import matrixClientService from '../MatrixClientService'
 import type { AdminFacadeDomainMethods } from './AdminFacadeDomainMethods'
 import { createAdminFacadeDomainMethods } from './AdminFacadeDomainMethods'
@@ -104,19 +104,25 @@ class AdminFacadeService {
         return this.cachedAdminStatus
       }
 
-      const result = await invoke<{ is_admin: boolean; user_id: string }>(TauriCommand.CHECK_ADMIN_STATUS, {
+      const result = await invokeWithResult<{ is_admin: boolean; user_id: string }>(TauriCommand.CHECK_ADMIN_STATUS, {
         userId,
-        accessToken
+        accessToken,
+        homeserverUrl: client.getHomeserverUrl()
       })
 
-      this.cachedAdminStatus = result.is_admin
-      this.adminVerifiedAt = now
-
-      if (!result.is_admin) {
-        warn(`[Admin] 服务端权限验证失败: userId=${result.user_id}, isAdmin=false`)
+      if (result.isErr()) {
+        error(`[Admin] 服务端权限验证异常: ${result.error}`)
+        return false
       }
 
-      return result.is_admin
+      this.cachedAdminStatus = result.value.is_admin
+      this.adminVerifiedAt = now
+
+      if (!result.value.is_admin) {
+        warn(`[Admin] 服务端权限验证失败: userId=${result.value.user_id}, isAdmin=false`)
+      }
+
+      return result.value.is_admin
     } catch (err) {
       error(`[Admin] 服务端权限验证异常: ${err}`)
       return false

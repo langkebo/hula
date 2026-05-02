@@ -1,17 +1,8 @@
 import { MsgEnum } from '@/enums'
-import { AudioCallMessageStrategyImpl } from './audioCall'
 import type { MessageStrategy } from './base'
-import { BeaconMessageStrategyImpl } from './beacon'
-import { EmojiMessageStrategyImpl } from './emoji'
-import { FileMessageStrategyImpl } from './file'
-import { ImageMessageStrategyImpl } from './image'
-import { LinkPreviewMessageStrategyImpl } from './linkPreview'
-import { LocationMessageStrategyImpl } from './location'
+import { strategyLogger } from './base'
 import { TextMessageStrategyImpl } from './text'
 import { UnsupportedMessageStrategyImpl } from './unsupported'
-import { VideoMessageStrategyImpl } from './video'
-import { VideoCallMessageStrategyImpl } from './videoCall'
-import { VoiceMessageStrategyImpl } from './voice'
 
 export { AudioCallMessageStrategyImpl } from './audioCall'
 export * from './base'
@@ -27,40 +18,99 @@ export { VideoMessageStrategyImpl } from './video'
 export { VideoCallMessageStrategyImpl } from './videoCall'
 export { VoiceMessageStrategyImpl } from './voice'
 
-const textMessageStrategy = new TextMessageStrategyImpl()
-const fileMessageStrategy = new FileMessageStrategyImpl()
-const imageMessageStrategy = new ImageMessageStrategyImpl()
-const emojiMessageStrategy = new EmojiMessageStrategyImpl()
-const unsupportedMessageStrategy = new UnsupportedMessageStrategyImpl()
-const videoMessageStrategy = new VideoMessageStrategyImpl()
-const voiceMessageStrategy = new VoiceMessageStrategyImpl()
-const videoCallMessageStrategy = new VideoCallMessageStrategyImpl()
-const audioCallMessageStrategy = new AudioCallMessageStrategyImpl()
-const locationMessageStrategy = new LocationMessageStrategyImpl()
-const beaconMessageStrategy = new BeaconMessageStrategyImpl()
-const linkPreviewMessageStrategy = new LinkPreviewMessageStrategyImpl()
+const strategyCache = new Map<MsgEnum, MessageStrategy>()
 
-export const messageStrategyMap: Record<MsgEnum, MessageStrategy> = {
-  [MsgEnum.FILE]: fileMessageStrategy,
-  [MsgEnum.IMAGE]: imageMessageStrategy,
-  [MsgEnum.TEXT]: textMessageStrategy,
-  [MsgEnum.NOTICE]: unsupportedMessageStrategy,
-  [MsgEnum.MERGE]: unsupportedMessageStrategy,
-  [MsgEnum.EMOJI]: emojiMessageStrategy,
-  [MsgEnum.UNKNOWN]: unsupportedMessageStrategy,
-  [MsgEnum.RECALL]: unsupportedMessageStrategy,
-  [MsgEnum.VOICE]: voiceMessageStrategy,
-  [MsgEnum.VIDEO]: videoMessageStrategy,
-  [MsgEnum.SYSTEM]: unsupportedMessageStrategy,
-  [MsgEnum.MIXED]: unsupportedMessageStrategy,
-  [MsgEnum.AIT]: unsupportedMessageStrategy,
-  [MsgEnum.REPLY]: unsupportedMessageStrategy,
-  [MsgEnum.AI]: unsupportedMessageStrategy,
-  [MsgEnum.BOT]: unsupportedMessageStrategy,
-  [MsgEnum.VIDEO_CALL]: videoCallMessageStrategy,
-  [MsgEnum.AUDIO_CALL]: audioCallMessageStrategy,
-  [MsgEnum.LOCATION]: locationMessageStrategy,
-  [MsgEnum.AUDIO]: voiceMessageStrategy,
-  [MsgEnum.BEACON]: beaconMessageStrategy,
-  [MsgEnum.LINK_PREVIEW]: linkPreviewMessageStrategy
+const UNSUPPORTED_KEYS: MsgEnum[] = [
+  MsgEnum.NOTICE,
+  MsgEnum.MERGE,
+  MsgEnum.UNKNOWN,
+  MsgEnum.RECALL,
+  MsgEnum.SYSTEM,
+  MsgEnum.MIXED,
+  MsgEnum.AIT,
+  MsgEnum.REPLY,
+  MsgEnum.AI,
+  MsgEnum.BOT
+]
+
+type StrategyLoader = () => Promise<{ default: new () => MessageStrategy }>
+
+const lazyStrategies: Partial<Record<MsgEnum, StrategyLoader>> = {
+  [MsgEnum.FILE]: () => import('./file').then((m) => ({ default: m.FileMessageStrategyImpl })),
+  [MsgEnum.IMAGE]: () => import('./image').then((m) => ({ default: m.ImageMessageStrategyImpl })),
+  [MsgEnum.EMOJI]: () => import('./emoji').then((m) => ({ default: m.EmojiMessageStrategyImpl })),
+  [MsgEnum.VOICE]: () => import('./voice').then((m) => ({ default: m.VoiceMessageStrategyImpl })),
+  [MsgEnum.VIDEO]: () => import('./video').then((m) => ({ default: m.VideoMessageStrategyImpl })),
+  [MsgEnum.AUDIO]: () => import('./voice').then((m) => ({ default: m.VoiceMessageStrategyImpl })),
+  [MsgEnum.VIDEO_CALL]: () => import('./videoCall').then((m) => ({ default: m.VideoCallMessageStrategyImpl })),
+  [MsgEnum.AUDIO_CALL]: () => import('./audioCall').then((m) => ({ default: m.AudioCallMessageStrategyImpl })),
+  [MsgEnum.LOCATION]: () => import('./location').then((m) => ({ default: m.LocationMessageStrategyImpl })),
+  [MsgEnum.BEACON]: () => import('./beacon').then((m) => ({ default: m.BeaconMessageStrategyImpl })),
+  [MsgEnum.LINK_PREVIEW]: () => import('./linkPreview').then((m) => ({ default: m.LinkPreviewMessageStrategyImpl }))
 }
+
+function getUnsupportedStrategy(): MessageStrategy {
+  let s = strategyCache.get(MsgEnum.UNKNOWN)
+  if (!s) {
+    s = new UnsupportedMessageStrategyImpl()
+    strategyCache.set(MsgEnum.UNKNOWN, s)
+  }
+  return s
+}
+
+export async function getStrategy(type: MsgEnum): Promise<MessageStrategy> {
+  const cached = strategyCache.get(type)
+  if (cached) return cached
+
+  if (UNSUPPORTED_KEYS.includes(type)) {
+    const s = getUnsupportedStrategy()
+    strategyCache.set(type, s)
+    return s
+  }
+
+  if (type === MsgEnum.TEXT) {
+    const s = new TextMessageStrategyImpl()
+    strategyCache.set(type, s)
+    return s
+  }
+
+  const loader = lazyStrategies[type]
+  if (loader) {
+    const StrategyClass = (await loader()).default
+    const s = new StrategyClass()
+    strategyCache.set(type, s)
+    return s
+  }
+
+  const s = getUnsupportedStrategy()
+  strategyCache.set(type, s)
+  return s
+}
+
+export const messageStrategyMap: Record<MsgEnum, MessageStrategy> = new Proxy({} as Record<MsgEnum, MessageStrategy>, {
+  get(_target, prop: string) {
+    const key = Number(prop) as MsgEnum
+    const cached = strategyCache.get(key)
+    if (cached) return cached
+
+    if (UNSUPPORTED_KEYS.includes(key)) return getUnsupportedStrategy()
+    if (key === MsgEnum.TEXT) {
+      const s = new TextMessageStrategyImpl()
+      strategyCache.set(key, s)
+      return s
+    }
+
+    const loader = lazyStrategies[key]
+    if (loader) {
+      strategyLogger.warn(`同步访问懒加载策略 MsgEnum.${key} 会触发 eager 加载，建议使用 await getStrategy() 代替`)
+      let resolved: MessageStrategy | undefined
+      loader().then((mod) => {
+        resolved = new mod.default()
+        strategyCache.set(key, resolved)
+      })
+      return getUnsupportedStrategy()
+    }
+
+    return getUnsupportedStrategy()
+  }
+})

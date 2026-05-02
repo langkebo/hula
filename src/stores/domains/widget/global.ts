@@ -73,7 +73,8 @@ export const useGlobalStore = defineStore(StoresEnum.GLOBAL, () => {
   type CurrentSessionView = Omit<SessionItem, 'roomId'>
   const stripRoomId = (session?: SessionItem | null): CurrentSessionView | null => {
     if (!session) return null
-    const { roomId: _omit, ...rest } = session
+    const { roomId: omitted, ...rest } = session
+    void omitted
     return rest
   }
   const currentSession = computed((): CurrentSessionView | null => {

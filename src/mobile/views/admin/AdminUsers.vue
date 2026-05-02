@@ -65,7 +65,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminUsers } from '@/composables/admin'
 import MobileLayout from '@/mobile/layout/index.vue'
-import type { UserInfo } from '@/services/matrix'
+import type { UserInfo } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminUsers')

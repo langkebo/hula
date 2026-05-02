@@ -1,6 +1,6 @@
-import { invoke } from '@tauri-apps/api/core'
-import { matrixRuntimeSessionService } from '@/services/matrix'
+import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
+import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useMatrixStore } from '../stores/domains/chat/matrix'
 import { useUserStore } from '../stores/domains/user/user'
 
@@ -42,11 +42,11 @@ export type UpdateSettingsParams = {
 }
 
 export const getSettings = async (): Promise<Settings> => {
-  return await invoke('get_settings')
+  return await invokeWithErrorHandler('get_settings')
 }
 
 export const updateSettings = async (settings: UpdateSettingsParams) => {
-  return await invoke('update_settings', { settings })
+  return await invokeWithErrorHandler('update_settings', { settings })
 }
 
 /**
@@ -56,7 +56,7 @@ export const updateSettings = async (settings: UpdateSettingsParams) => {
  */
 export const switchUserDatabase = async (uid: string): Promise<void> => {
   await ensureAppStateReady()
-  return await invoke('switch_user_database', { uid })
+  return await invokeWithErrorHandler('switch_user_database', { uid })
 }
 
 export type FileQueryParam = {
@@ -111,11 +111,11 @@ export type FileManagerQueryResponse = {
 }
 
 export const queryFiles = async (param: FileQueryParam): Promise<FileManagerQueryResponse> => {
-  return await invoke('query_files', { param })
+  return await invokeWithErrorHandler('query_files', { param })
 }
 
 export const getNavigationItems = async (): Promise<FileManagerNavigationItem[]> => {
-  return await invoke('get_navigation_items')
+  return await invokeWithErrorHandler('get_navigation_items')
 }
 
 export const loginCommand = async (

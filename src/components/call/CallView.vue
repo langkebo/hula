@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixVoIPService } from '@/services/matrix'
+import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 

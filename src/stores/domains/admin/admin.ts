@@ -1,9 +1,9 @@
-import { invoke } from '@tauri-apps/api/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { TauriCommand } from '@/enums'
-import { adminService } from '@/services/matrix'
+import { adminService } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
+import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { useMatrixStore } from '../chat/matrix'
 
 const logger = createLogger('AdminStore')
@@ -33,13 +33,19 @@ export const useAdminStore = defineStore('admin', () => {
         return false
       }
 
-      const result = await invoke<AdminCheckResult>(TauriCommand.CHECK_ADMIN_STATUS, {
+      const result = await invokeWithResult<AdminCheckResult>(TauriCommand.CHECK_ADMIN_STATUS, {
         userId,
-        accessToken
+        accessToken,
+        homeserverUrl: matrixStore.homeserverUrl
       })
 
-      logger.info(`后端管理员验证: userId=${result.user_id}, isAdmin=${result.is_admin}`)
-      return result.is_admin
+      if (result.isErr()) {
+        logger.error(`后端管理员验证失败: ${result.error}`)
+        return false
+      }
+
+      logger.info(`后端管理员验证: userId=${result.value.user_id}, isAdmin=${result.value.is_admin}`)
+      return result.value.is_admin
     } catch (err) {
       logger.error(`后端管理员验证失败: ${err}`)
       return false

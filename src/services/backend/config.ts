@@ -3,10 +3,18 @@ import type { MatrixEndpointConfig, StorageLike } from './types'
 
 export const MATRIX_HOMESERVER_STORAGE_KEY = 'hula-homeserver-url'
 export const MATRIX_IDENTITY_SERVER_STORAGE_KEY = 'hula-identity-server-url'
+export const MATRIX_SESSION_HOMESERVER_STORAGE_KEY = 'hula-session-homeserver-url'
+export const MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY = 'hula-session-identity-server-url'
 export const DEFAULT_MATRIX_HOMESERVER_URL = 'http://localhost:8008'
 export const DEFAULT_MATRIX_IDENTITY_SERVER_URL = ''
 const MATRIX_DEV_PROXY_PORT = '6130'
 const MATRIX_DEV_PROXY_TARGET_PORT = '8008'
+const LEGACY_LOCAL_MATRIX_HOMESERVER_URLS = new Set([
+  'http://localhost:28008',
+  'http://127.0.0.1:28008',
+  'https://localhost:28008',
+  'https://127.0.0.1:28008'
+])
 
 function getStorage(storage?: StorageLike): StorageLike | undefined {
   if (storage) {
@@ -63,12 +71,35 @@ export function getDefaultMatrixEndpointConfig(): MatrixEndpointConfig {
   }
 }
 
+function shouldMigrateLegacyHomeserverUrl(storedHomeserverUrl: string, defaultHomeserverUrl: string): boolean {
+  if (!LEGACY_LOCAL_MATRIX_HOMESERVER_URLS.has(storedHomeserverUrl)) {
+    return false
+  }
+
+  try {
+    const defaultUrl = new URL(defaultHomeserverUrl)
+    return defaultUrl.hostname !== 'localhost' && defaultUrl.hostname !== '127.0.0.1'
+  } catch {
+    return false
+  }
+}
+
 export function resolveMatrixEndpointConfig(storage?: StorageLike): MatrixEndpointConfig {
   const targetStorage = getStorage(storage)
   const defaults = getDefaultMatrixEndpointConfig()
+  const storedHomeserverUrl = targetStorage?.getItem(MATRIX_HOMESERVER_STORAGE_KEY)?.trim()
+
+  if (storedHomeserverUrl && shouldMigrateLegacyHomeserverUrl(storedHomeserverUrl, defaults.homeserverUrl)) {
+    targetStorage?.removeItem(MATRIX_HOMESERVER_STORAGE_KEY)
+
+    return {
+      homeserverUrl: defaults.homeserverUrl,
+      identityServerUrl: targetStorage?.getItem(MATRIX_IDENTITY_SERVER_STORAGE_KEY) || defaults.identityServerUrl
+    }
+  }
 
   return {
-    homeserverUrl: targetStorage?.getItem(MATRIX_HOMESERVER_STORAGE_KEY) || defaults.homeserverUrl,
+    homeserverUrl: storedHomeserverUrl || defaults.homeserverUrl,
     identityServerUrl: targetStorage?.getItem(MATRIX_IDENTITY_SERVER_STORAGE_KEY) || defaults.identityServerUrl
   }
 }
@@ -119,6 +150,28 @@ export function resolveMatrixRuntimeEndpointConfig(storage?: StorageLike): Matri
   }
 }
 
+export function resolveMatrixSessionEndpointConfig(storage?: StorageLike): MatrixEndpointConfig {
+  const targetStorage = getStorage(storage)
+  const runtimeConfig = resolveMatrixRuntimeEndpointConfig(storage)
+  const sessionHomeserverUrl = targetStorage?.getItem(MATRIX_SESSION_HOMESERVER_STORAGE_KEY)?.trim()
+  const sessionIdentityServerUrl = targetStorage?.getItem(MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY)?.trim()
+
+  if (!sessionHomeserverUrl) {
+    return runtimeConfig
+  }
+
+  if (shouldMigrateLegacyHomeserverUrl(sessionHomeserverUrl, runtimeConfig.homeserverUrl)) {
+    targetStorage?.removeItem(MATRIX_SESSION_HOMESERVER_STORAGE_KEY)
+    targetStorage?.removeItem(MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY)
+    return runtimeConfig
+  }
+
+  return {
+    homeserverUrl: resolveMatrixRuntimeHomeserverUrl(sessionHomeserverUrl),
+    identityServerUrl: sessionIdentityServerUrl || runtimeConfig.identityServerUrl
+  }
+}
+
 export function saveMatrixHomeserverUrl(url: string, storage?: StorageLike): string {
   const normalizedUrl = normalizeHttpUrl(url)
   getStorage(storage)?.setItem(MATRIX_HOMESERVER_STORAGE_KEY, normalizedUrl)
@@ -137,4 +190,32 @@ export function saveMatrixIdentityServerUrl(url: string, storage?: StorageLike):
   const normalizedUrl = normalizeHttpUrl(trimmedUrl)
   targetStorage?.setItem(MATRIX_IDENTITY_SERVER_STORAGE_KEY, normalizedUrl)
   return normalizedUrl
+}
+
+export function saveMatrixSessionEndpointConfig(
+  config: MatrixEndpointConfig,
+  storage?: StorageLike
+): MatrixEndpointConfig {
+  const targetStorage = getStorage(storage)
+  const normalizedHomeserverUrl = normalizeHttpUrl(config.homeserverUrl)
+  targetStorage?.setItem(MATRIX_SESSION_HOMESERVER_STORAGE_KEY, normalizedHomeserverUrl)
+
+  const normalizedIdentityServerUrl = config.identityServerUrl ? normalizeHttpUrl(config.identityServerUrl) : ''
+
+  if (normalizedIdentityServerUrl) {
+    targetStorage?.setItem(MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY, normalizedIdentityServerUrl)
+  } else {
+    targetStorage?.removeItem(MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY)
+  }
+
+  return {
+    homeserverUrl: normalizedHomeserverUrl,
+    identityServerUrl: normalizedIdentityServerUrl
+  }
+}
+
+export function clearMatrixSessionEndpointConfig(storage?: StorageLike): void {
+  const targetStorage = getStorage(storage)
+  targetStorage?.removeItem(MATRIX_SESSION_HOMESERVER_STORAGE_KEY)
+  targetStorage?.removeItem(MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY)
 }

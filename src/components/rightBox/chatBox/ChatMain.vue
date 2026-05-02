@@ -62,12 +62,19 @@
             class="scroller flex-1"
             :items="chatStore.chatMessageList"
             :min-item-size="40"
+            :buffer="10"
             key-field="message.id"
             v-slot="{ item, index, active }">
             <DynamicScrollerItem
               :item="item"
               :active="active"
-              :size-dependencies="[item.message.body]"
+              :size-dependencies="[
+                item.message.body,
+                item.message.msgtype,
+                item.message.content?.info?.h?._,
+                item.message.content?.file?._,
+                item.replyEvent
+              ]"
               :data-index="index">
               <n-flex
                 vertical

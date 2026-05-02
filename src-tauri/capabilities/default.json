@@ -221,6 +221,18 @@
         },
         {
           "url": "http://127.0.0.1:**"
+        },
+        {
+          "url": "https://matrix.test"
+        },
+        {
+          "url": "https://matrix.test:**"
+        },
+        {
+          "url": "https://element.test"
+        },
+        {
+          "url": "https://element.test:**"
         }
       ]
     }

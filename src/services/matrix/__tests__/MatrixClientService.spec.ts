@@ -1,3 +1,5 @@
+import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
+import type { MatrixClient } from 'matrix-js-sdk'
 import * as sdk from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '../MatrixClientService'
@@ -5,7 +7,12 @@ import { matrixClientService } from '../MatrixClientService'
 // Mock tauri plugin log
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
+  warn: vi.fn(),
   error: vi.fn()
+}))
+
+vi.mock('@tauri-apps/plugin-http', () => ({
+  fetch: vi.fn()
 }))
 
 // Mock matrix-js-sdk
@@ -33,12 +40,20 @@ vi.mock('matrix-js-sdk', () => {
 })
 
 describe('MatrixClientService', () => {
+  type MatrixClientServiceInternals = {
+    client: MatrixClient | null
+    connectionState: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'ERROR'
+  }
+
+  type LoginCapableClient = MatrixClient & {
+    login: ReturnType<typeof vi.fn>
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.unstubAllGlobals()
-    // Reset service state if possible (may need to cast to any to access private props for testing)
-    ;(matrixClientService as any).client = null
-    ;(matrixClientService as any).connectionState = 'DISCONNECTED'
+    ;(matrixClientService as unknown as MatrixClientServiceInternals).client = null
+    ;(matrixClientService as unknown as MatrixClientServiceInternals).connectionState = 'DISCONNECTED'
   })
 
   it('should be defined', () => {
@@ -65,8 +80,8 @@ describe('MatrixClientService', () => {
   })
 
   it('should handle login successfully', async () => {
-    const mockClient = sdk.createClient({ baseUrl: '' })
-    ;(mockClient.login as any).mockResolvedValue({
+    const mockClient = sdk.createClient({ baseUrl: '' }) as LoginCapableClient
+    mockClient.login.mockResolvedValue({
       user_id: '@user:example.com',
       device_id: 'DEV1',
       access_token: 'token123'
@@ -82,8 +97,8 @@ describe('MatrixClientService', () => {
   })
 
   it('should handle login failure', async () => {
-    const mockClient = sdk.createClient({ baseUrl: '' })
-    ;(mockClient.login as any).mockRejectedValue(new Error('Invalid password'))
+    const mockClient = sdk.createClient({ baseUrl: '' }) as LoginCapableClient
+    mockClient.login.mockRejectedValue(new Error('Invalid password'))
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -103,8 +118,8 @@ describe('MatrixClientService', () => {
   })
 
   it('should fallback to http login when sdk login fails to fetch', async () => {
-    const mockClient = sdk.createClient({ baseUrl: '' })
-    ;(mockClient.login as any).mockRejectedValue(new Error('fetch failed: Load failed'))
+    const mockClient = sdk.createClient({ baseUrl: '' }) as LoginCapableClient
+    mockClient.login.mockRejectedValue(new Error('fetch failed: Load failed'))
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -125,6 +140,45 @@ describe('MatrixClientService', () => {
     expect(result.userId).toBe('@user:example.com')
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:28008/_matrix/client/v3/login',
+      expect.objectContaining({
+        method: 'POST'
+      })
+    )
+  })
+
+  it('should fallback to browser fetch in tauri runtime when native fetch cannot send request', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    const mockClient = sdk.createClient({ baseUrl: '' }) as LoginCapableClient
+    mockClient.login.mockRejectedValue(new Error('fetch failed: error sending request for url'))
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('error sending request for url (https://matrix.test/_matrix/client/v3/login)')
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          user_id: '@ljf:matrix.test',
+          device_id: 'DEV1',
+          access_token: 'token123'
+        })
+      })
+    )
+
+    await matrixClientService.initialize({ homeserverUrl: 'https://matrix.test' })
+
+    const result = await matrixClientService.login('ljf', 'ChangeMe@2026')
+
+    expect(result.success).toBe(true)
+    expect(result.userId).toBe('@ljf:matrix.test')
+    expect(nativeFetch).toHaveBeenCalledWith(
+      'https://matrix.test/_matrix/client/v3/login',
+      expect.objectContaining({
+        method: 'POST'
+      })
+    )
+    expect(fetch).toHaveBeenCalledWith(
+      'https://matrix.test/_matrix/client/v3/login',
       expect.objectContaining({
         method: 'POST'
       })

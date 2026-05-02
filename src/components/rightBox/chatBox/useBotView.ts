@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/core'
 import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { Webview } from '@tauri-apps/api/webview'
@@ -12,6 +11,7 @@ import { type AssistantModelPreset, useAssistantModelPresets } from '@/hooks/use
 import { useBotStore } from '@/stores/domains/user/bot'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
+import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('Bot')
 
@@ -429,7 +429,7 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
         historyStack.value = []
       }
       await destroyExternalWebview()
-      const html = await invoke<string>('get_readme_html', { language: currentLang.value })
+      const html = await invokeWithErrorHandler<string>('get_readme_html', { language: currentLang.value })
       renderedMarkdown.value = sanitizeMarkdown(html)
       currentView.value = { type: 'readme' }
       isViewingLink.value = false
@@ -456,7 +456,7 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
         pushCurrentView()
       }
       await destroyExternalWebview()
-      const html = await invoke<string>('parse_markdown', { filePath })
+      const html = await invokeWithErrorHandler<string>('parse_markdown', { filePath })
       renderedMarkdown.value = sanitizeMarkdown(html)
       isViewingLink.value = false
       currentView.value = { type: 'markdown', source: filePath }
@@ -522,7 +522,9 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
   const initialize = () => {
     Webview.getByLabel(webviewLabel)
       .then((webview) => webview?.close())
-      .catch(() => {})
+      .catch(() => {
+        /* webview may not exist yet */
+      })
 
     window.addEventListener('beforeunload', destroyExternalWebview)
     loadReadme(false, true)

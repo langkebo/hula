@@ -65,8 +65,8 @@ const useMoreList = () => {
     showHomeserverDialog.value = true
   }
 
-  const handleHomeserverSave = (url: string) => {
-    logger.debug('Homeserver saved:', url)
+  const handleHomeserverSave = (endpoint: { homeserverUrl: string; identityServerUrl: string }) => {
+    logger.debug('Homeserver saved:', endpoint)
   }
 
   return {

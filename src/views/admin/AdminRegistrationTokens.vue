@@ -50,7 +50,7 @@ import { NButton, NSpace, NTag, useMessage } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminRegistrationTokens } from '@/composables/admin'
-import type { RegistrationToken } from '@/services/matrix'
+import type { RegistrationToken } from '@/services/matrix/admin'
 
 const { t } = useI18n()
 const message = useMessage()

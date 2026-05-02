@@ -2,10 +2,14 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import NotificationSettings from '../NotificationSettings.vue'
 
-const showToastMock = vi.fn()
-const getPushRulesMock = vi.fn().mockResolvedValue({ global: {} })
-const setPushRuleEnabledMock = vi.fn().mockResolvedValue(undefined)
-const setPushRuleActionsMock = vi.fn().mockResolvedValue(undefined)
+const { showToastMock, getPushRulesMock, setPushRuleEnabledMock, setPushRuleActionsMock } = vi.hoisted(() => {
+  return {
+    showToastMock: vi.fn(),
+    getPushRulesMock: vi.fn().mockResolvedValue({ global: {} }),
+    setPushRuleEnabledMock: vi.fn().mockResolvedValue(undefined),
+    setPushRuleActionsMock: vi.fn().mockResolvedValue(undefined)
+  }
+})
 
 vi.mock('vant', () => ({
   showToast: (...args: any[]) => showToastMock(...args)
@@ -19,7 +23,7 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/notifications/MatrixPushService', () => ({
   matrixPushService: {
     getPushRules: () => getPushRulesMock(),
     setPushRuleEnabled: (...args: any[]) => setPushRuleEnabledMock(...args),

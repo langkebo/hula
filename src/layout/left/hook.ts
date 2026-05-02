@@ -133,7 +133,6 @@ export const leftHook = () => {
 
   /* 打开并且创建modal */
   const handleEditing = () => {
-    // TODO 暂时使用mitt传递参数，不然会导致子组件的响应式丢失 (nyh -> 2024-06-25 09:53:43)
     useMitt.emit(MittEnum.OPEN_EDIT_INFO)
   }
 

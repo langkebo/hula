@@ -26,6 +26,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useRoute } from 'vue-router'
 import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum, WsResponseMessageType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
+import { useWindow } from '@/hooks/useWindow'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -57,6 +58,7 @@ const fileStore = useFileStore()
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
+const { ensureNotifyWindow } = useWindow()
 const userUid = computed(() => userStore.userInfo!.uid)
 const playMessageSound = async () => {
   // 检查是否开启了消息提示音
@@ -224,6 +226,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
         const currentWindow = WebviewWindow.getCurrent()
 
         if (currentWindow.label === 'mobile-home') {
+          await ensureNotifyWindow()
           await emitTo('notify', 'notify_content', data)
         }
       }

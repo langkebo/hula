@@ -38,7 +38,7 @@ vi.mock('@/services/matrix', () => ({
 }))
 
 vi.mock('@/utils/Logger', () => ({
-  createLogger: vi.fn(() => ({ error: vi.fn() }))
+  createLogger: vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }))
 }))
 
 vi.mock('vue-i18n', () => ({

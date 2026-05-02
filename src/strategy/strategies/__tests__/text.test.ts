@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { AppException } from '@/common/exception'
 import { MsgEnum } from '@/enums'
+import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { TextMessageStrategyImpl } from '../text'
 
 describe('TextMessageStrategyImpl', () => {
   const strategy = new TextMessageStrategyImpl()
+  const makeReply = (id: string, content: string, username: string): MessageType =>
+    ({
+      message: { id, body: { content } },
+      fromUser: { username }
+    }) as MessageType
 
   it('uses MsgEnum.TEXT as msgType', () => {
     expect(strategy.msgType).toBe(MsgEnum.TEXT)
@@ -23,19 +29,13 @@ describe('TextMessageStrategyImpl', () => {
   })
 
   it('getMsg attaches reply ref when reply has content', () => {
-    const reply = {
-      message: { id: 'evt-1', body: { content: 'hi' } },
-      fromUser: { username: 'a' }
-    } as any
+    const reply = makeReply('evt-1', 'hi', 'a')
     const msg = strategy.getMsg('hello', reply) as Record<string, unknown>
     expect(msg.reply).toEqual({ content: 'hi', key: 'evt-1' })
   })
 
   it('getMsg sanitizes content via DOMPurify when reply present', () => {
-    const reply = {
-      message: { id: 'r-1', body: { content: 'r' } },
-      fromUser: { username: 'a' }
-    } as any
+    const reply = makeReply('r-1', 'r', 'a')
     const msg = strategy.getMsg('hello world', reply) as Record<string, unknown>
     expect(msg.content).toBe('hello world')
     expect(msg.reply).toEqual({ content: 'r', key: 'r-1' })
@@ -60,10 +60,7 @@ describe('TextMessageStrategyImpl', () => {
   })
 
   it('buildMessageBody propagates full reply object', () => {
-    const reply = {
-      message: { id: 'evt-2', body: { content: 'parent' } },
-      fromUser: { username: 'bob' }
-    } as any
+    const reply = makeReply('evt-2', 'parent', 'bob')
     const body = strategy.buildMessageBody({ type: MsgEnum.TEXT, content: 'child' }, reply)
     expect(body.reply).toEqual({
       body: 'parent',

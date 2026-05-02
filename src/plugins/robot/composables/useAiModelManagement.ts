@@ -1,7 +1,8 @@
 import { computed, type Ref, ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { AIModel } from '@/services/matrix'
-import { conversationService, modelService } from '@/services/matrix'
+import { conversationService } from '@/services/matrix/ai/ConversationService'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
+import { modelService } from '@/services/matrix/ai/ModelService'
 import { createLogger } from '@/utils/Logger'
 import type { PaginationState } from './useRobotChat'
 

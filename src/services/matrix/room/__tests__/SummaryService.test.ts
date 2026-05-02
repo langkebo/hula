@@ -1,4 +1,6 @@
+import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { RoomSummary as SynapseRoomSummary } from '../../SynapseRustExtensionsService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -15,28 +17,34 @@ vi.mock('../../SynapseRustExtensionsService', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() }
+  default: { getClient: () => getClientMock() as MatrixClient }
 }))
 
 const { MatrixRoomSummaryAggregateService } = await import('../SummaryService')
 
-const makeRoom = (overrides: Record<string, unknown> = {}) => ({
-  roomId: '!r:e',
-  name: 'Room',
-  topic: 'topic',
-  getMxcAvatarUrl: () => 'mxc://e/a',
-  getJoinedMembers: () => [{}, {}, {}],
-  getJoinRule: () => 'invite',
-  getCanonicalAlias: () => '#alias:e',
-  currentState: {
-    getStateEvents: vi.fn(() => ({
-      getContent: () => ({ creator: '@owner:e' }),
-      getSender: () => '@owner:e',
-      getTs: () => 1000
-    }))
-  },
-  ...overrides
-})
+const makeRoom = (overrides: Partial<Room> = {}): Room =>
+  ({
+    roomId: '!r:e',
+    name: 'Room',
+    topic: 'topic',
+    getMxcAvatarUrl: () => 'mxc://e/a',
+    getJoinedMembers: () => [{}, {}, {}],
+    getJoinRule: () => 'invite',
+    getCanonicalAlias: () => '#alias:e',
+    currentState: {
+      getStateEvents: vi.fn((type: string) => {
+        if (type === 'm.room.create') {
+          return {
+            getContent: () => ({ creator: '@owner:e' }),
+            getSender: () => '@owner:e',
+            getTs: () => 1000
+          }
+        }
+        return null
+      })
+    },
+    ...overrides
+  }) as unknown as Room
 
 describe('MatrixRoomSummaryAggregateService', () => {
   let service: InstanceType<typeof MatrixRoomSummaryAggregateService>
@@ -50,7 +58,7 @@ describe('MatrixRoomSummaryAggregateService', () => {
   describe('toLocalRoomSummary', () => {
     it('maps Room fields 1:1 with joinRule normalization and isPublic derivation', () => {
       const room = makeRoom({ getJoinRule: () => 'public' })
-      const s = service.toLocalRoomSummary(room as any)
+      const s = service.toLocalRoomSummary(room)
       expect(s).toEqual({
         roomId: '!r:e',
         name: 'Room',
@@ -68,52 +76,65 @@ describe('MatrixRoomSummaryAggregateService', () => {
 
     it('normalizeJoinRule returns null for unknown join rules', () => {
       const room = makeRoom({ getJoinRule: () => 'restricted' })
-      expect(service.toLocalRoomSummary(room as any).joinRule).toBeNull()
+      expect(service.toLocalRoomSummary(room).joinRule).toBeNull()
     })
 
     it('falls back to create-event sender when creator field is missing', () => {
       const room = makeRoom({
         currentState: {
-          getStateEvents: () => ({
+          getStateEvents: vi.fn(() => ({
             getContent: () => ({}),
             getSender: () => '@fallback:e',
             getTs: () => 2000
-          })
-        }
+          }))
+        } as unknown as Room['currentState']
       })
-      expect(service.toLocalRoomSummary(room as any).ownerId).toBe('@fallback:e')
+      expect(service.toLocalRoomSummary(room).ownerId).toBe('@fallback:e')
     })
 
     it('returns null ownerId/createdTs when create event is missing', () => {
       const room = makeRoom({
-        currentState: { getStateEvents: () => null }
+        currentState: { getStateEvents: vi.fn(() => null) } as unknown as Room['currentState']
       })
-      const s = service.toLocalRoomSummary(room as any)
+      const s = service.toLocalRoomSummary(room)
       expect(s.ownerId).toBeNull()
       expect(s.createdTs).toBeNull()
     })
 
     it('topic falls back to null when Room has no topic', () => {
       const room = makeRoom({ topic: undefined })
-      expect(service.toLocalRoomSummary(room as any).topic).toBeNull()
+      expect(service.toLocalRoomSummary(room).topic).toBeNull()
     })
   })
 
   describe('toServerRoomSummary', () => {
     it('prefers server-provided fields, falls back to local Room for owner/createdTs', () => {
       const room = makeRoom()
-      const summary = {
+      const summary: SynapseRoomSummary = {
         room_id: '!r:e',
         name: 'Server Name',
-        topic: null,
-        avatar_url: null,
+        topic: undefined,
+        avatar_url: undefined,
         member_count: 7,
         joined_member_count: 5,
-        heroes: ['@a:e'],
+        heroes: [
+          {
+            user_id: '@a:e',
+            membership: 'join',
+            is_hero: true
+          }
+        ],
         canonical_alias: '#s:e',
-        join_rule: 'public'
+        join_rule: 'public',
+        stats: {
+          room_id: '!r:e',
+          total_events: 0,
+          total_messages: 0,
+          total_media: 0,
+          storage_size: 0
+        }
       }
-      const s = service.toServerRoomSummary(summary as any, room as any)
+      const s = service.toServerRoomSummary(summary, room)
       expect(s.roomId).toBe('!r:e')
       expect(s.name).toBe('Server Name')
       expect(s.memberCount).toBe(7)
@@ -124,15 +145,25 @@ describe('MatrixRoomSummaryAggregateService', () => {
     })
 
     it('falls back to heroes.length when member_count is missing', () => {
-      const summary = {
+      const summary: SynapseRoomSummary = {
         room_id: '!r',
-        name: null,
-        topic: null,
-        avatar_url: null,
-        heroes: ['@a:e', '@b:e'],
-        canonical_alias: null
+        name: undefined,
+        topic: undefined,
+        avatar_url: undefined,
+        heroes: [
+          { user_id: '@a:e', membership: 'join', is_hero: true },
+          { user_id: '@b:e', membership: 'join', is_hero: true }
+        ],
+        canonical_alias: undefined,
+        stats: {
+          room_id: '!r',
+          total_events: 0,
+          total_messages: 0,
+          total_media: 0,
+          storage_size: 0
+        }
       }
-      const s = service.toServerRoomSummary(summary as any, null)
+      const s = service.toServerRoomSummary(summary, null)
       expect(s.memberCount).toBe(2)
       expect(s.joinedCount).toBe(2)
       expect(s.ownerId).toBeNull()
@@ -140,8 +171,22 @@ describe('MatrixRoomSummaryAggregateService', () => {
 
     it('falls back to room.getJoinRule when summary join_rule is absent', () => {
       const room = makeRoom({ getJoinRule: () => 'knock' })
-      const summary = { room_id: '!r', name: null, topic: null, avatar_url: null, heroes: [], canonical_alias: null }
-      expect(service.toServerRoomSummary(summary as any, room as any).joinRule).toBe('knock')
+      const summary: SynapseRoomSummary = {
+        room_id: '!r',
+        name: undefined,
+        topic: undefined,
+        avatar_url: undefined,
+        heroes: [],
+        canonical_alias: undefined,
+        stats: {
+          room_id: '!r',
+          total_events: 0,
+          total_messages: 0,
+          total_media: 0,
+          storage_size: 0
+        }
+      }
+      expect(service.toServerRoomSummary(summary, room).joinRule).toBe('knock')
     })
   })
 

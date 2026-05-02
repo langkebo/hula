@@ -30,7 +30,7 @@ class FakeAudio {
 
 describe('useCallBell', () => {
   beforeEach(() => {
-    vi.stubGlobal('Audio', FakeAudio as any)
+    vi.stubGlobal('Audio', FakeAudio as unknown as typeof Audio)
   })
 
   afterEach(() => {

@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -8,7 +9,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(() => null)
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -65,7 +66,7 @@ describe('MatrixFriendService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     matrixFriendService.stop()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
   })
 
   afterEach(() => {
@@ -139,7 +140,7 @@ describe('MatrixFriendService', () => {
         updateFriendNote,
         setFriendNote
       }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ friendManager: manager } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ friendManager: manager } as unknown as MatrixClient)
 
       await matrixFriendService.setFriendNote('@alice:example.org', 'new note')
 
@@ -148,7 +149,7 @@ describe('MatrixFriendService', () => {
     })
 
     it('should delegate favorite status to special friend service only', async () => {
-      ;(matrixFriendService as any).friendManager = mockFriendManager
+      ;(matrixFriendService as unknown as { friendManager: unknown }).friendManager = mockFriendManager
 
       await matrixFriendService.setFriendStatus('@alice:example.org', 'favorite')
 
@@ -157,7 +158,7 @@ describe('MatrixFriendService', () => {
     })
 
     it('should remove special friend when restoring normal status', async () => {
-      ;(matrixFriendService as any).friendManager = mockFriendManager
+      ;(matrixFriendService as unknown as { friendManager: unknown }).friendManager = mockFriendManager
 
       await matrixFriendService.setFriendStatus('@alice:example.org', 'accepted')
 
@@ -166,7 +167,9 @@ describe('MatrixFriendService', () => {
     })
 
     it('should still delegate non-favorite status updates to friend manager', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ friendManager: mockFriendManager } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        friendManager: mockFriendManager
+      } as unknown as MatrixClient)
 
       await matrixFriendService.setFriendStatus('@alice:example.org', 'blocked')
 
@@ -203,8 +206,8 @@ describe('MatrixFriendService', () => {
       }
 
       vi.mocked(matrixClientService.getClient)
-        .mockReturnValueOnce({ friendManager: oldManager } as any)
-        .mockReturnValue({ friendManager: newManager } as any)
+        .mockReturnValueOnce({ friendManager: oldManager } as unknown as MatrixClient)
+        .mockReturnValue({ friendManager: newManager } as unknown as MatrixClient)
 
       await matrixFriendService.initialize()
       const friends = await matrixFriendService.getFriends()

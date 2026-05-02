@@ -1,5 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import { matrixEventService, matrixMediaService } from '@/services/matrix'
+import { matrixEventService } from '@/services/matrix/MatrixEventService'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 
 export interface MatrixUploadOptions {

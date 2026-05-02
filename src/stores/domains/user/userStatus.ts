@@ -1,7 +1,7 @@
 import Colorthief from 'colorthief'
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
-import { matrixAccountService } from '@/services/matrix'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { mapUserStateToPresence } from '@/utils/userStatus'

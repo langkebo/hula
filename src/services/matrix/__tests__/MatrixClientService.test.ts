@@ -47,11 +47,11 @@ describe('MatrixClientService', () => {
         off: vi.fn()
       }
 
-      ;(matrixClientService as any).client = client
-      ;(matrixClientService as any).observedClient = null
+      ;(matrixClientService as unknown as { client: unknown }).client = client
+      ;(matrixClientService as unknown as { observedClient: unknown }).observedClient = null
 
-      ;(matrixClientService as any).setupEventListeners()
-      ;(matrixClientService as any).setupEventListeners()
+      ;(matrixClientService as unknown as { setupEventListeners: () => void }).setupEventListeners()
+      ;(matrixClientService as unknown as { setupEventListeners: () => void }).setupEventListeners()
 
       expect(client.on).toHaveBeenCalledTimes(3)
       expect(client.off).not.toHaveBeenCalled()
@@ -67,12 +67,12 @@ describe('MatrixClientService', () => {
         off: vi.fn()
       }
 
-      ;(matrixClientService as any).client = oldClient
-      ;(matrixClientService as any).observedClient = null
-      ;(matrixClientService as any).setupEventListeners()
+      ;(matrixClientService as unknown as { client: unknown }).client = oldClient
+      ;(matrixClientService as unknown as { observedClient: unknown }).observedClient = null
+      ;(matrixClientService as unknown as { setupEventListeners: () => void }).setupEventListeners()
 
-      ;(matrixClientService as any).client = newClient
-      ;(matrixClientService as any).setupEventListeners()
+      ;(matrixClientService as unknown as { client: unknown }).client = newClient
+      ;(matrixClientService as unknown as { setupEventListeners: () => void }).setupEventListeners()
 
       expect(oldClient.off).toHaveBeenCalledTimes(3)
       expect(newClient.on).toHaveBeenCalledTimes(3)

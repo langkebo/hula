@@ -24,7 +24,7 @@ const {
   pollAudioStatusMock: vi.fn()
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/ai/AIService', () => ({
   aiService: aiServiceMock
 }))
 vi.mock('@/utils/Logger', () => ({

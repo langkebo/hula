@@ -107,7 +107,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 vi.mock('@/utils/Logger', () => ({
-  createLogger: vi.fn(() => ({ error: loggerErrorMock }))
+  createLogger: vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error: loggerErrorMock }))
 }))
 
 describe('VoiceVideoSettings', () => {

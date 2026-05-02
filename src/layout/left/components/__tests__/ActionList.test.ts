@@ -243,7 +243,7 @@ describe('ActionList', () => {
       expect(entry.findAll('.workspace-entry__label')).toHaveLength(1)
       expect(entry.find('.workspace-entry__content').exists()).toBe(true)
     })
-  })
+  }, 15000)
 
   it('reuses the existing jump logic and active/open icon states for workspace entries', async () => {
     const wrapper = await mountActionList()

@@ -15,7 +15,7 @@ const groupStoreMock = {
   getUserInfo: vi.fn(() => ({
     uid: '@test:server',
     userStateId: '',
-    activeStatus: OnlineEnum.OFFLINE
+    activeStatus: OnlineEnum.ONLINE
   }))
 }
 

@@ -148,7 +148,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import type { PaginationState } from '@/plugins/robot/composables/useRobotChat'
-import type { AIModel } from '@/services/matrix'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
 
 defineProps<{
   show: boolean

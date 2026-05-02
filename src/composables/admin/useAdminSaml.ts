@@ -1,5 +1,8 @@
 import { type Ref, ref } from 'vue'
-import { adminService } from '@/services/matrix'
+import { adminService } from '@/services/matrix/admin'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AdminSaml')
 
 export interface UseAdminSamlResult {
   idpMetadata: Ref<Record<string, unknown>>
@@ -37,7 +40,8 @@ export function useAdminSaml(): UseAdminSamlResult {
       } else if (typeof sp === 'string') {
         spMetadata.value = sp
       }
-    } catch (_e) {
+    } catch (e) {
+      logger.error('加载 SAML 元数据失败', e)
     } finally {
       loading.value = false
     }
@@ -72,7 +76,9 @@ export function useAdminSaml(): UseAdminSamlResult {
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
-    } catch (_e) {}
+    } catch (e) {
+      logger.error('下载 SP 元数据失败', e)
+    }
   }
 
   return {

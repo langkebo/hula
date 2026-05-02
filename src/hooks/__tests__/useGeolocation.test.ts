@@ -13,7 +13,9 @@ vi.mock('@/utils/CoordinateTransform', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: vi.fn(() => ({
-    warn: vi.fn()
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn()
   }))
 }))
 

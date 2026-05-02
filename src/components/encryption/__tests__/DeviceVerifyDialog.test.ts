@@ -74,11 +74,14 @@ vi.mock('@iconify/vue', () => ({
   }
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
   matrixEncryptionContextService: {
     getCurrentSessionContext: getCurrentSessionContextMock,
     getDeviceFingerprint: getDeviceFingerprintMock
-  },
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   matrixEncryptionService: {
     trustDevice: trustDeviceMock
   }
@@ -86,6 +89,8 @@ vi.mock('@/services/matrix', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
     error: vi.fn()
   })
 }))

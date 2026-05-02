@@ -1,9 +1,12 @@
-import { invoke } from '@tauri-apps/api/core'
 import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { EventEnum, SexEnum, TauriCommand } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
-import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
+import {
+  clearMatrixSessionEndpointConfig,
+  resolveMatrixSessionEndpointConfig,
+  saveMatrixSessionEndpointConfig
+} from '@/services/backend/config'
 import { switchUserDatabase } from '@/services/tauriCommand'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -17,6 +20,7 @@ import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMac } from '@/utils/PlatformConstants'
+import { invokeWithErrorHandler, invokeWithResult } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('MatrixRuntimeSessionService')
 
@@ -52,6 +56,13 @@ export interface MatrixPasswordLoginOptions extends MatrixPostLoginBootstrapOpti
   homeserverUrl: string
   identityServerUrl?: string
   deviceName?: string
+  persistTokens?: boolean
+  persistUserInfo?: boolean
+  switchDatabase?: boolean
+}
+
+export interface MatrixSsoLoginOptions extends MatrixPostLoginBootstrapOptions {
+  loginToken: string
   persistTokens?: boolean
   persistUserInfo?: boolean
   switchDatabase?: boolean
@@ -125,13 +136,13 @@ class MatrixRuntimeSessionService {
   }
 
   async getStoredTokens(): Promise<StoredMatrixTokens> {
-    try {
-      await ensureAppStateReady()
-      return await invoke<StoredMatrixTokens>(TauriCommand.GET_USER_TOKENS)
-    } catch (err) {
-      logger.error(`获取存储令牌失败: ${err}`)
+    await ensureAppStateReady()
+    const result = await invokeWithResult<StoredMatrixTokens>(TauriCommand.GET_USER_TOKENS)
+    if (result.isErr()) {
+      logger.error(`获取存储令牌失败: ${result.error}`)
       return { token: null, refreshToken: null }
     }
+    return result.value
   }
 
   async hasAuthenticatedSession(): Promise<boolean> {
@@ -179,7 +190,7 @@ class MatrixRuntimeSessionService {
 
       const matrixStore = useMatrixStore()
       const userStore = useUserStore()
-      const { homeserverUrl, identityServerUrl } = resolveMatrixRuntimeEndpointConfig()
+      const { homeserverUrl, identityServerUrl } = resolveMatrixSessionEndpointConfig()
 
       await ensureAppStateReady()
 
@@ -188,7 +199,7 @@ class MatrixRuntimeSessionService {
       }
 
       if (persistTokens) {
-        await invoke(TauriCommand.UPDATE_TOKEN, {
+        await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
           req: {
             uid,
             token: accessToken,
@@ -214,7 +225,7 @@ class MatrixRuntimeSessionService {
       userStore.initUserInfo(uid, resolvedDisplayName)
 
       if (persistUserInfo) {
-        await invoke(TauriCommand.SAVE_USER_INFO, {
+        await invokeWithErrorHandler(TauriCommand.SAVE_USER_INFO, {
           userInfo: {
             uid
           }
@@ -255,6 +266,7 @@ class MatrixRuntimeSessionService {
       const matrixStore = useMatrixStore()
 
       await ensureAppStateReady()
+      saveMatrixSessionEndpointConfig({ homeserverUrl, identityServerUrl: identityServerUrl || '' })
       await matrixStore.initialize({
         homeserverUrl,
         identityServerUrl,
@@ -263,7 +275,7 @@ class MatrixRuntimeSessionService {
 
       const success = await matrixStore.login(username, password, deviceName)
       if (!success) {
-        throw new Error('登录失败，请检查账号密码')
+        throw new Error(matrixStore.lastError || '登录失败，请检查网络连接或服务器配置')
       }
 
       const uid = matrixStore.userId
@@ -277,7 +289,7 @@ class MatrixRuntimeSessionService {
       }
 
       if (persistTokens) {
-        await invoke(TauriCommand.UPDATE_TOKEN, {
+        await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
           req: {
             uid,
             token: accessToken,
@@ -287,7 +299,7 @@ class MatrixRuntimeSessionService {
       }
 
       if (persistUserInfo) {
-        await invoke(TauriCommand.SAVE_USER_INFO, {
+        await invokeWithErrorHandler(TauriCommand.SAVE_USER_INFO, {
           userInfo: {
             uid
           }
@@ -307,6 +319,83 @@ class MatrixRuntimeSessionService {
       }
     } catch (err) {
       logger.error(`密码登录失败: ${err}`)
+      throw err
+    }
+  }
+
+  async loginWithSsoToken(options: MatrixSsoLoginOptions): Promise<{ uid: string; accessToken: string }> {
+    try {
+      const {
+        loginToken,
+        account,
+        displayName,
+        avatar,
+        client,
+        persistTokens = true,
+        persistUserInfo = true,
+        switchDatabase = true
+      } = options
+
+      if (!loginToken) {
+        throw new Error('缺少 SSO 登录令牌')
+      }
+
+      const matrixStore = useMatrixStore()
+      const { homeserverUrl, identityServerUrl } = resolveMatrixSessionEndpointConfig()
+
+      await ensureAppStateReady()
+      await matrixStore.initialize({
+        homeserverUrl,
+        identityServerUrl,
+        allowInsecureHttp: homeserverUrl.startsWith('http://')
+      })
+
+      const success = await matrixStore.completeSSOLogin(loginToken)
+      if (!success) {
+        throw new Error('SSO 登录失败，请稍后重试')
+      }
+
+      const uid = matrixStore.userId
+      const accessToken = matrixStore.accessToken
+      if (!uid || !accessToken) {
+        throw new Error('SSO 登录成功但会话信息不完整')
+      }
+
+      if (switchDatabase) {
+        await switchUserDatabase(uid)
+      }
+
+      if (persistTokens) {
+        await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
+          req: {
+            uid,
+            token: accessToken,
+            refreshToken: ''
+          }
+        })
+      }
+
+      if (persistUserInfo) {
+        await invokeWithErrorHandler(TauriCommand.SAVE_USER_INFO, {
+          userInfo: {
+            uid
+          }
+        })
+      }
+
+      await this.bootstrapPostLoginState({
+        account,
+        displayName,
+        avatar,
+        client
+      })
+
+      return {
+        uid,
+        accessToken
+      }
+    } catch (err) {
+      logger.error(`SSO 登录失败: ${err}`)
       throw err
     }
   }
@@ -331,6 +420,7 @@ class MatrixRuntimeSessionService {
       this.clearMessageCache()
 
       roomStore.resetState()
+      await roomStore.setupEventListeners()
       groupStore.groupDetails.length = 0
       await roomStore.loadRooms()
 
@@ -345,7 +435,9 @@ class MatrixRuntimeSessionService {
         userStateId: '',
         avatarUpdateTime: 0,
         client: options.client || (isDesktop() ? 'PC' : 'MOBILE'),
-        resume: ''
+        resume: '',
+        homeserverUrl: matrixStore.homeserverUrl || undefined,
+        identityServerUrl: resolveMatrixSessionEndpointConfig().identityServerUrl || undefined
       }
 
       userStore.userInfo = account
@@ -375,8 +467,9 @@ class MatrixRuntimeSessionService {
         localStorage.removeItem('user')
         localStorage.removeItem('TOKEN')
         localStorage.removeItem('REFRESH_TOKEN')
-        await invoke(TauriCommand.REMOVE_TOKENS)
+        await invokeWithErrorHandler(TauriCommand.REMOVE_TOKENS)
       }
+      clearMatrixSessionEndpointConfig()
 
       settingStore.closeAutoLogin()
       userStore.clearUser()

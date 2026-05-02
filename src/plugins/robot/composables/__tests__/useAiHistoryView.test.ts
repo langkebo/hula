@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-const { aiServiceMock, mittMock, infoMock, errorMock } = vi.hoisted(() => ({
+const { aiServiceMock, mittMock, infoMock, errorMock, routerMock } = vi.hoisted(() => ({
   aiServiceMock: {
     imageMyPage: vi.fn(),
     audioMyPage: vi.fn(),
@@ -9,10 +9,19 @@ const { aiServiceMock, mittMock, infoMock, errorMock } = vi.hoisted(() => ({
   },
   mittMock: { on: vi.fn(), off: vi.fn(), emit: vi.fn() },
   infoMock: vi.fn(),
-  errorMock: vi.fn()
+  errorMock: vi.fn(),
+  routerMock: {
+    push: vi.fn()
+  }
 }))
 
-vi.mock('@/services/matrix', () => ({ aiService: aiServiceMock }))
+vi.mock('vue-router', () => ({
+  useRouter: () => routerMock
+}))
+
+vi.mock('@/services/matrix/ai/AIService', () => ({
+  aiService: aiServiceMock
+}))
 vi.mock('@/hooks/useMitt.ts', () => ({ useMitt: mittMock }))
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: infoMock, error: errorMock, warn: vi.fn(), debug: vi.fn() })

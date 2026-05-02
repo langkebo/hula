@@ -1,5 +1,8 @@
 import { type Ref, ref } from 'vue'
-import { adminService } from '@/services/matrix'
+import { adminService } from '@/services/matrix/admin'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('AdminSecurity')
 
 export interface UseAdminSecurityResult {
   auditLogs: Ref<Array<Record<string, unknown>>>
@@ -30,7 +33,8 @@ export function useAdminSecurity(): UseAdminSecurityResult {
         auditLogs.value = result?.logs ?? []
       }
       nextBatch.value = result?.next_batch
-    } catch (_e) {
+    } catch (e) {
+      logger.error('加载审计日志失败', e)
     } finally {
       loading.value = false
     }

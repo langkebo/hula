@@ -4,9 +4,9 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const settingStore = useSettingStore()
 const router = useRouter()
@@ -17,7 +17,7 @@ const init = async () => {
     normalLogin('MOBILE', true, true)
   } else {
     router.push('/mobile/login')
-    await invoke('hide_splash_screen')
+    await invokeSilently('hide_splash_screen')
   }
 }
 

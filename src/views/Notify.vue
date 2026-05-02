@@ -248,6 +248,7 @@ onMounted(async () => {
 
     appWindow.listen('notify_content', async (event: Event<MessageType>) => {
       if (event.payload) {
+        globalStore.setTipVisible(true)
         // 窗口显示将由notify_enter事件触发
 
         // 处理消息内容

@@ -165,7 +165,9 @@ import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
 import KeyBackupRestoreDialog from '@/components/encryption/KeyBackupRestoreDialog.vue'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 import KeyRotationDialog from '@/components/encryption/KeyRotationDialog.vue'
-import { matrixEncryptionContextService, matrixEncryptionService, matrixVerificationService } from '@/services/matrix'
+import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
 
 defineOptions({
   name: 'EncryptionSettings'

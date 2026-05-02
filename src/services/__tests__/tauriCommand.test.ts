@@ -27,7 +27,7 @@ vi.mock('@/utils/AppStateReady', () => ({
   ensureAppStateReady: mockEnsureAppStateReady
 }))
 
-vi.mock('../matrix', () => ({
+vi.mock('../matrix/auth/MatrixRuntimeSessionService', () => ({
   matrixRuntimeSessionService: mockMatrixRuntimeSessionService
 }))
 

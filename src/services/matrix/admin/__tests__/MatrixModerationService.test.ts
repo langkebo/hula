@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -19,7 +20,7 @@ describe('MatrixModerationService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     matrixModerationService.stop()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
   })
 
   it('refreshes moderation manager when matrix client changes', async () => {
@@ -51,8 +52,8 @@ describe('MatrixModerationService', () => {
     }
 
     vi.mocked(matrixClientService.getClient)
-      .mockReturnValueOnce({ moderationManager: oldManager } as any)
-      .mockReturnValue({ moderationManager: newManager } as any)
+      .mockReturnValueOnce({ moderationManager: oldManager } as unknown as MatrixClient)
+      .mockReturnValue({ moderationManager: newManager } as unknown as MatrixClient)
 
     await matrixModerationService.initialize()
     const reports = await matrixModerationService.getReports()

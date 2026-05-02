@@ -1,4 +1,4 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixRoomService } from '../MatrixRoomService'
@@ -17,7 +17,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 describe('MatrixRoomService - Extended Features', () => {
   let mockClient: Partial<MatrixClient>
-  let mockRoom: any
+  let mockRoom: unknown
 
   beforeEach(() => {
     mockRoom = {
@@ -32,7 +32,7 @@ describe('MatrixRoomService - Extended Features', () => {
       joinRoom: vi.fn(),
       createAlias: vi.fn(),
       deleteAlias: vi.fn(),
-      getRoom: vi.fn(() => mockRoom),
+      getRoom: vi.fn(() => mockRoom as Room),
       getEventContext: vi.fn()
     }
 
@@ -50,7 +50,7 @@ describe('MatrixRoomService - Extended Features', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixRoomService.forgetRoom('!room:example.com')).rejects.toThrow('客户端未初始化')
     })
@@ -69,7 +69,7 @@ describe('MatrixRoomService - Extended Features', () => {
 
   describe('knockRoom', () => {
     it('should knock on room with reason', async () => {
-      vi.mocked(mockClient.joinRoom!).mockResolvedValue({ roomId: '!room:example.com' } as any)
+      vi.mocked(mockClient.joinRoom!).mockResolvedValue({ roomId: '!room:example.com' } as unknown as Room)
 
       await matrixRoomService.knockRoom('!room:example.com', 'I would like to join')
 
@@ -133,7 +133,7 @@ describe('MatrixRoomService - Extended Features', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixRoomService.getEventContext('!room', '$event')).rejects.toThrow('客户端未初始化')
     })
@@ -146,7 +146,7 @@ describe('MatrixRoomService - Extended Features', () => {
       mockHttp = { authedRequest: vi.fn(), request: vi.fn() }
       mockClient = {
         ...mockClient,
-        http: mockHttp as any,
+        http: mockHttp as MatrixClient['http'],
         getUserId: vi.fn(() => '@user:example.com'),
         getDeviceId: vi.fn(() => 'DEVICE1'),
         sendStateEvent: vi.fn()
@@ -163,7 +163,7 @@ describe('MatrixRoomService - Extended Features', () => {
             })
           }
         }
-        vi.mocked(mockClient.getRoom!).mockReturnValue(mockRoom)
+        vi.mocked(mockClient.getRoom!).mockReturnValue(mockRoom as Room)
 
         const result = await matrixRoomService.getRoomVersion('!room:example.com')
 
@@ -287,7 +287,7 @@ describe('MatrixRoomService - Extended Features', () => {
             })
           }
         }
-        vi.mocked(mockClient.getRoom!).mockReturnValue(mockRoom)
+        vi.mocked(mockClient.getRoom!).mockReturnValue(mockRoom as Room)
 
         const result = await matrixRoomService.getPinnedEvents('!room:example.com')
 
@@ -302,7 +302,7 @@ describe('MatrixRoomService - Extended Features', () => {
             })
           }
         }
-        vi.mocked(mockClient.getRoom!).mockReturnValue(mockRoom)
+        vi.mocked(mockClient.getRoom!).mockReturnValue(mockRoom as Room)
 
         const result = await matrixRoomService.getPinnedEvents('!room:example.com')
 
@@ -312,7 +312,7 @@ describe('MatrixRoomService - Extended Features', () => {
 
     describe('setPinnedEvents', () => {
       it('should set pinned events via state event', async () => {
-        vi.mocked(mockClient.sendStateEvent!).mockResolvedValue({ event_id: '$event1' } as any)
+        vi.mocked(mockClient.sendStateEvent!).mockResolvedValue({ event_id: '$event1' })
 
         await matrixRoomService.setPinnedEvents('!room:example.com', ['$event1'])
 
@@ -393,7 +393,7 @@ describe('MatrixRoomService - Extended Features', () => {
       })
 
       it('should return empty object when no userId', async () => {
-        vi.mocked(mockClient.getUserId!).mockReturnValue(null as any)
+        vi.mocked(mockClient.getUserId!).mockReturnValue(null)
 
         const result = await matrixRoomService.getTags('!room:example.com')
 

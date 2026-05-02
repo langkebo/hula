@@ -1,3 +1,4 @@
+import type { MatrixClient, SlidingSync } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatrixClientConfig } from '../MatrixClientService'
 import { matrixClientService } from '../MatrixClientService'
@@ -40,6 +41,15 @@ vi.mock('@/services/matrix/network/runtimeFetch', () => ({
 }))
 
 describe('MatrixClientService - SlidingSync 初始化修复', () => {
+  type MatrixClientServiceInternals = {
+    client: MatrixClient | null
+    slidingSyncInstance: SlidingSync | null
+    config: MatrixClientConfig | null
+    observedClient: MatrixClient | null
+    eventListeners: Map<string, Set<(...args: unknown[]) => void>>
+    connectionState: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'ERROR'
+  }
+
   const testConfig: MatrixClientConfig = {
     homeserverUrl: 'http://localhost:28008',
     accessToken: 'test_token_123',
@@ -49,12 +59,12 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(matrixClientService as any).client = null
-    ;(matrixClientService as any).slidingSyncInstance = null
-    ;(matrixClientService as any).config = null
-    ;(matrixClientService as any).observedClient = null
-    ;(matrixClientService as any).eventListeners = new Map()
-    ;(matrixClientService as any).connectionState = 'DISCONNECTED'
+    ;(matrixClientService as unknown as MatrixClientServiceInternals).client = null
+    ;(matrixClientService as unknown as MatrixClientServiceInternals).slidingSyncInstance = null
+    ;(matrixClientService as unknown as MatrixClientServiceInternals).config = null
+    ;(matrixClientService as unknown as MatrixClientServiceInternals).observedClient = null
+    ;(matrixClientService as unknown as MatrixClientServiceInternals).eventListeners = new Map()
+    ;(matrixClientService as unknown as MatrixClientServiceInternals).connectionState = 'DISCONNECTED'
   })
 
   afterEach(async () => {
@@ -90,25 +100,32 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
   })
 
   describe('startClient()', () => {
-    it('应该在 startClient() 时创建 SlidingSync', async () => {
+    it('应该在 startClient() 时创建 SlidingSync 实例', async () => {
       await matrixClientService.initialize(testConfig)
       await matrixClientService.startClient()
 
-      // 现在 SlidingSync 应该已经创建
       const slidingSync = matrixClientService.getSlidingSync()
       expect(slidingSync).toBeTruthy()
     })
 
-    it('应该在 startClient() 时启动 SlidingSync', async () => {
+    it('应该通过 startClient 选项把 SlidingSync 交给 SDK', async () => {
       await matrixClientService.initialize(testConfig)
       await matrixClientService.startClient()
 
+      const client = matrixClientService.getClient()
       const slidingSync = matrixClientService.getSlidingSync() as { start: ReturnType<typeof vi.fn> } | null
-      expect(slidingSync).toBeTruthy()
-      expect(slidingSync?.start).toHaveBeenCalledTimes(1)
+      expect(client?.startClient).toHaveBeenCalledTimes(1)
+      expect(client?.startClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          initialSyncLimit: 20,
+          pendingEventOrdering: 'detached',
+          slidingSync
+        })
+      )
+      expect(slidingSync?.start).not.toHaveBeenCalled()
     })
 
-    it('应该只在有 accessToken 时创建 SlidingSync', async () => {
+    it('应该在没有 accessToken 时不创建 SlidingSync', async () => {
       const configWithoutToken: MatrixClientConfig = {
         homeserverUrl: 'http://localhost:28008'
       }
@@ -116,7 +133,6 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
       await matrixClientService.initialize(configWithoutToken)
       await matrixClientService.startClient()
 
-      // 没有 accessToken，不应该创建 SlidingSync
       const slidingSync = matrixClientService.getSlidingSync()
       expect(slidingSync).toBeNull()
     })
@@ -180,6 +196,31 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
       await matrixClientService.startClient()
 
       expect(matrixClientService.getConnectionState()).toBe('CONNECTED')
+    })
+
+    it('应该在启用 SlidingSync 时仍由 sync 事件驱动连接状态', async () => {
+      await matrixClientService.initialize(testConfig)
+      await matrixClientService.startClient()
+
+      const states: string[] = []
+      matrixClientService.on('connectionState', (data: unknown) => {
+        states.push((data as { state: string }).state)
+      })
+
+      const client = matrixClientService.getClient()
+      const syncListener = vi.mocked(client!.on).mock.calls.find((call) => call[0] === 'sync')?.[1] as
+        | ((state: string, prevState?: string, data?: unknown) => void)
+        | undefined
+
+      syncListener?.('RECONNECTING', 'SYNCING')
+      expect(matrixClientService.getConnectionState()).toBe('RECONNECTING')
+
+      syncListener?.('SYNCING', 'RECONNECTING')
+      expect(matrixClientService.getConnectionState()).toBe('CONNECTED')
+
+      syncListener?.('STOPPED', 'SYNCING')
+      expect(matrixClientService.getConnectionState()).toBe('DISCONNECTED')
+      expect(states).toEqual(['RECONNECTING', 'CONNECTED', 'DISCONNECTED'])
     })
 
     it('应该在初始化异常时设置 ERROR 状态', async () => {

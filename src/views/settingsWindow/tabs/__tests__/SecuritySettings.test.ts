@@ -3,31 +3,68 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import SecuritySettings from '../SecuritySettings.vue'
 
-const messageSuccessMock = vi.fn()
-const messageWarningMock = vi.fn()
-const messageErrorMock = vi.fn()
-const dialogWarningMock = vi.fn()
+const {
+  messageSuccessMock,
+  messageWarningMock,
+  messageErrorMock,
+  dialogWarningMock,
+  getIgnoredUsersMock,
+  setIgnoredUsersMock,
+  isEncryptionAvailableMock,
+  getKeyBackupInfoMock,
+  isSecretChatConfiguredMock,
+  setSecretChatPasswordMock,
+  clearSecretChatPasswordMock,
+  setSecretChatEnabledMock,
+  setSecretChatHideSessionsMock,
+  setSecretChatAutoLockMock,
+  setSecretChatLockTimeoutMock,
+  translationMap
+} = vi.hoisted(() => {
+  const messageSuccessMock = vi.fn()
+  const messageWarningMock = vi.fn()
+  const messageErrorMock = vi.fn()
+  const dialogWarningMock = vi.fn()
 
-const getIgnoredUsersMock = vi.fn().mockResolvedValue([])
-const setIgnoredUsersMock = vi.fn().mockResolvedValue(undefined)
-const isEncryptionAvailableMock = vi.fn().mockResolvedValue(false)
-const getKeyBackupInfoMock = vi.fn().mockResolvedValue(null)
+  const getIgnoredUsersMock = vi.fn().mockResolvedValue([])
+  const setIgnoredUsersMock = vi.fn().mockResolvedValue(undefined)
+  const isEncryptionAvailableMock = vi.fn().mockResolvedValue(false)
+  const getKeyBackupInfoMock = vi.fn().mockResolvedValue(null)
 
-const isSecretChatConfiguredMock = vi.fn().mockReturnValue(false)
-const setSecretChatPasswordMock = vi.fn()
-const clearSecretChatPasswordMock = vi.fn()
-const setSecretChatEnabledMock = vi.fn()
-const setSecretChatHideSessionsMock = vi.fn()
-const setSecretChatAutoLockMock = vi.fn()
-const setSecretChatLockTimeoutMock = vi.fn()
-const translationMap: Record<string, string> = {
-  'setting.security.encryption_status': '加密状态',
-  'setting.security.encryption_disabled_title': '端到端加密未启用',
-  'setting.security.user_already_blocked': '该用户已在屏蔽列表中',
-  'setting.private_chat.clear_confirm_title': '确认清除',
-  'setting.private_chat.password_mismatch': '两次输入的密码不一致',
-  'setting.private_chat.password_too_short': '密码长度不能少于4位'
-}
+  const isSecretChatConfiguredMock = vi.fn().mockReturnValue(false)
+  const setSecretChatPasswordMock = vi.fn()
+  const clearSecretChatPasswordMock = vi.fn()
+  const setSecretChatEnabledMock = vi.fn()
+  const setSecretChatHideSessionsMock = vi.fn()
+  const setSecretChatAutoLockMock = vi.fn()
+  const setSecretChatLockTimeoutMock = vi.fn()
+  const translationMap: Record<string, string> = {
+    'setting.security.encryption_status': '加密状态',
+    'setting.security.encryption_disabled_title': '端到端加密未启用',
+    'setting.security.user_already_blocked': '该用户已在屏蔽列表中',
+    'setting.private_chat.clear_confirm_title': '确认清除',
+    'setting.private_chat.password_mismatch': '两次输入的密码不一致',
+    'setting.private_chat.password_too_short': '密码长度不能少于4位'
+  }
+  return {
+    messageSuccessMock,
+    messageWarningMock,
+    messageErrorMock,
+    dialogWarningMock,
+    getIgnoredUsersMock,
+    setIgnoredUsersMock,
+    isEncryptionAvailableMock,
+    getKeyBackupInfoMock,
+    isSecretChatConfiguredMock,
+    setSecretChatPasswordMock,
+    clearSecretChatPasswordMock,
+    setSecretChatEnabledMock,
+    setSecretChatHideSessionsMock,
+    setSecretChatAutoLockMock,
+    setSecretChatLockTimeoutMock,
+    translationMap
+  }
+})
 
 type SecuritySettingsVm = ComponentPublicInstance & {
   encryptionEnabled: boolean
@@ -76,14 +113,17 @@ vi.mock('@iconify/vue', () => ({
   Icon: { name: 'Icon', template: '<i />', props: ['icon', 'width'] }
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   matrixAccountService: {
-    getIgnoredUsers: () => getIgnoredUsersMock(),
-    setIgnoredUsers: (userIds: string[]) => setIgnoredUsersMock(userIds)
-  },
+    getIgnoredUsers: (...args: unknown[]) => getIgnoredUsersMock(...args),
+    setIgnoredUsers: (...args: unknown[]) => setIgnoredUsersMock(...args)
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   matrixEncryptionService: {
-    isEncryptionAvailable: () => isEncryptionAvailableMock(),
-    getKeyBackupInfo: () => getKeyBackupInfoMock()
+    isEncryptionAvailable: (...args: unknown[]) => isEncryptionAvailableMock(...args),
+    getKeyBackupInfo: (...args: unknown[]) => getKeyBackupInfoMock(...args)
   }
 }))
 

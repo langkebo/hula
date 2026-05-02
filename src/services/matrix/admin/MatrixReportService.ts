@@ -46,6 +46,22 @@ export interface ReportRequest {
 }
 
 /**
+ * 管理端举报条目
+ */
+export interface AdminReport {
+  id: number
+  received_ts: number
+  user_id: string
+  score: number
+  reason: string
+  name: string
+  canonical_alias?: string
+  sender: string
+  event_id: string
+  event_json: Record<string, unknown>
+}
+
+/**
  * 举报服务
  */
 class ReportService {
@@ -146,7 +162,7 @@ class ReportService {
     limit: number = 50,
     from?: string
   ): Promise<{
-    reports: Array<Record<string, unknown>>
+    reports: AdminReport[]
     next_batch?: string
   }> {
     const client = this.getClient()
@@ -156,7 +172,7 @@ class ReportService {
       if (from) queryParams.from = from
       const result = await client.http.authedRequest('GET', '/_synapse/admin/v1/reports', queryParams)
       return {
-        reports: (result as { reports?: Array<Record<string, unknown>> }).reports ?? [],
+        reports: (result as { reports?: AdminReport[] }).reports ?? [],
         next_batch: (result as { next_batch?: string }).next_batch
       }
     } catch (err) {
@@ -165,14 +181,14 @@ class ReportService {
     }
   }
 
-  async getAdminReport(reportId: string): Promise<Record<string, unknown> | null> {
+  async getAdminReport(reportId: string): Promise<AdminReport | null> {
     const client = this.getClient()
     try {
       const result = await client.http.authedRequest(
         'GET',
         `/_synapse/admin/v1/reports/${encodeURIComponent(reportId)}`
       )
-      return result as Record<string, unknown>
+      return result as AdminReport
     } catch (err) {
       error(`[Report] 获取报表详情失败: ${err}`)
       return null

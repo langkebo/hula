@@ -40,6 +40,25 @@
     "gitee": "Login with Gitee",
     "github": "Login with GitHub"
   },
+  "sso": {
+    "title": "Single Sign-On",
+    "oidc": "OIDC Sign-In",
+    "saml": "SAML Sign-In",
+    "cas": "CAS Sign-In"
+  },
+  "oidc": {
+    "processing": "Processing OIDC login...",
+    "error_title": "Login Failed",
+    "success_title": "Login Successful",
+    "login_success": "OIDC login successful",
+    "back_to_login": "Back to Login",
+    "retry": "Retry",
+    "go_home": "Go to Home",
+    "missing_params": "Missing required login parameters (code/state)",
+    "token_exchange_failed": "OIDC token exchange failed",
+    "matrix_token_failed": "Failed to get Matrix access token",
+    "unknown_error": "An unknown error occurred"
+  },
   "qr_code_expired": "QR code expired",
   "qr_code_expired_hint": "Please try again later",
   "qr_code_scan_hint": "Please use HuLa App to scan the QR code",

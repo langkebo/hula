@@ -181,7 +181,16 @@ export const useUserStore = defineStore(
   },
   {
     persist: {
-      pick: ['userInfo']
+      pick: ['userInfo'],
+      serializer: {
+        serialize: (state: Record<string, unknown>) => {
+          const info = state.userInfo as Record<string, unknown> | undefined
+          if (!info) return JSON.stringify(state)
+          const { password: _, phone: __, ...safe } = info
+          return JSON.stringify({ ...state, userInfo: safe })
+        },
+        deserialize: JSON.parse
+      }
     }
   }
 )

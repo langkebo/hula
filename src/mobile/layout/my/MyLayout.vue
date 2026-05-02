@@ -17,7 +17,7 @@
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import router from '@/router'
-import { matrixQrLoginService } from '@/services/matrix'
+import { matrixQrLoginService } from '@/services/matrix/auth/MatrixQrLoginService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'

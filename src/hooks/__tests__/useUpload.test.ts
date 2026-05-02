@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { UploadSceneEnum } from '@/enums'
 import { UploadProviderEnum, useUpload } from '../useUpload'
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -41,14 +42,22 @@ vi.mock('@/utils/TempFileManager', () => ({
 vi.mock('@/utils/Logger', () => ({
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
     error: vi.fn()
   }))
+}))
+
+vi.mock('@/services/renderWorker', () => ({
+  renderWorker: {
+    executeWithTransfer: vi.fn().mockResolvedValue({ hash: 'abc123def456' })
+  }
 }))
 
 describe('useUpload', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    global.window = { $message: { error: vi.fn() } } as any
+    window.$message = { error: vi.fn() } as unknown as Window['$message']
   })
 
   it('should initialize with default values', () => {
@@ -132,18 +141,18 @@ describe('useUpload', () => {
     const { generateHashKey } = useUpload()
     const file = new File(['test'], 'test.txt', { type: 'text/plain' })
 
-    const key = await generateHashKey({ scene: 1 as any, enableDeduplication: true }, file, 'test.txt')
+    const key = await generateHashKey({ scene: UploadSceneEnum.CHAT, enableDeduplication: true }, file, 'test.txt')
 
-    expect(key).toMatch(/^1\/test-user\/[a-f0-9]+\.txt$/)
+    expect(key).toMatch(/^chat\/test-user\/[a-f0-9]+\.txt$/)
   })
 
   it('should generate timestamp key without deduplication', async () => {
     const { generateHashKey } = useUpload()
     const file = new File(['test'], 'test.txt', { type: 'text/plain' })
 
-    const key = await generateHashKey({ scene: 1 as any, enableDeduplication: false }, file, 'test.txt')
+    const key = await generateHashKey({ scene: UploadSceneEnum.CHAT, enableDeduplication: false }, file, 'test.txt')
 
-    expect(key).toMatch(/^1\/\d+_test\.txt$/)
+    expect(key).toMatch(/^chat\/\d+_test\.txt$/)
   })
 
   it('should get upload and download URLs', async () => {

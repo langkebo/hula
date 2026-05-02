@@ -1,7 +1,8 @@
 import { type Ref, ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { ChatRole } from '@/services/matrix'
-import { aiService, conversationService } from '@/services/matrix'
+import { aiService } from '@/services/matrix/ai/AIService'
+import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
+import { conversationService } from '@/services/matrix/ai/ConversationService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiRoleManagement')

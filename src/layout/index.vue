@@ -54,6 +54,7 @@ import { useCheckUpdate } from '@/hooks/useCheckUpdate'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useOverlayController } from '@/hooks/useOverlayController'
+import { useWindow } from '@/hooks/useWindow'
 import type { FilesMeta } from '@/services/types'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -89,6 +90,7 @@ const appWindow = WebviewWindow.getCurrent()
 const loadingPercentage = ref(10)
 const loadingText = ref(t('home.loading.app'))
 const { logout, init } = useLoginFlow()
+const { ensureNotifyWindow } = useWindow()
 // 是否需要阻塞首屏并做初始化同步
 const requiresInitialSync = ref(true)
 const shouldBlockInitialRender = computed(() => requiresInitialSync.value && !hasCachedSessions.value)
@@ -408,6 +410,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
       }
 
       if (WebviewWindow.getCurrent().label === 'home') {
+        await ensureNotifyWindow()
         await emitTo('notify', 'notify_content', data)
       }
     }

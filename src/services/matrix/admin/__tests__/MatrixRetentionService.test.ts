@@ -1,6 +1,13 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { retentionService } from '../MatrixRetentionService'
+
+type RetentionServiceInstance = {
+  getRoomRetention: (roomId: string) => Promise<unknown>
+}
+
+type RetentionServiceConstructor = new () => RetentionServiceInstance
 
 vi.mock('../../MatrixClientService', () => {
   const service = {
@@ -23,7 +30,7 @@ const mockClient = {
   sendStateEvent: vi.fn(),
   redact: vi.fn(),
   getServerRetention: vi.fn()
-} as any
+}
 
 describe('RetentionService', () => {
   beforeEach(() => {
@@ -32,7 +39,7 @@ describe('RetentionService', () => {
   })
 
   it('should throw error when no runtime client is available', async () => {
-    const service = new (retentionService.constructor as any)()
+    const service = new (retentionService.constructor as RetentionServiceConstructor)()
 
     await expect(service.getRoomRetention('!room:example.org')).rejects.toThrow('Client 未初始化')
   })
@@ -42,9 +49,9 @@ describe('RetentionService', () => {
       min_lifetime: 1000,
       max_lifetime: 2000
     })
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
-    const service = new (retentionService.constructor as any)()
+    const service = new (retentionService.constructor as RetentionServiceConstructor)()
     const result = await service.getRoomRetention('!room:example.org')
 
     expect(matrixClientService.getClient).toHaveBeenCalled()

@@ -132,7 +132,7 @@ vi.mock('@/services/backend', () => ({
   })
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/auth/MatrixRuntimeSessionService', () => ({
   matrixRuntimeSessionService: mockMatrixRuntimeSessionService
 }))
 
@@ -178,6 +178,39 @@ describe('useLoginFlow', () => {
       bootstrapAfterRestore: true
     })
     expect(mockMatrixRuntimeSessionService.loginWithPassword).not.toHaveBeenCalled()
+    expect(mockMatrixRuntimeSessionService.completeDesktopLoginTransition).toHaveBeenCalledTimes(1)
+  })
+
+  it('falls back to password login when auto login has no stored token', async () => {
+    mockUserStore.userInfo = {
+      uid: '@alice:example.com',
+      account: 'alice',
+      password: 'secret',
+      avatar: 'mxc://avatar',
+      name: 'Alice',
+      email: ''
+    }
+    mockMatrixRuntimeSessionService.getStoredTokens.mockResolvedValue({
+      token: null,
+      refreshToken: null
+    })
+
+    const { normalLogin } = useLoginFlow()
+
+    await normalLogin('PC', true, true)
+
+    expect(mockMatrixRuntimeSessionService.restoreWithAccessToken).not.toHaveBeenCalled()
+    expect(mockMatrixRuntimeSessionService.loginWithPassword).toHaveBeenCalledWith({
+      username: 'alice',
+      password: 'secret',
+      homeserverUrl: 'https://matrix.example.com',
+      identityServerUrl: 'https://identity.example.com',
+      deviceName: 'HuLa Client',
+      account: 'alice',
+      displayName: 'Alice',
+      avatar: 'mxc://avatar',
+      client: 'PC'
+    })
     expect(mockMatrixRuntimeSessionService.completeDesktopLoginTransition).toHaveBeenCalledTimes(1)
   })
 })

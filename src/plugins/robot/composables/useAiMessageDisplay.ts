@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
 import { isLikelyImageUrl } from '@/plugins/robot/utils/aiMediaUrl'
-import type { AIModel } from '@/services/matrix'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
 import type { Message } from './useRobotChat'
 
 const DEFAULT_AVATAR = 'https://img1.baidu.com/it/u=3613958228,3522035000&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=500'

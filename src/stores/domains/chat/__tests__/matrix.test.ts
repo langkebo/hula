@@ -2,6 +2,32 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 
+const { matrixClientServiceMock, getHomeserverUrlMock, matrixCapabilityServiceMock } = vi.hoisted(() => {
+  const getHomeserverUrlMock = vi.fn(() => 'https://mock.homeserver.com')
+  const getClientMock = vi.fn(() => ({
+    getHomeserverUrl: getHomeserverUrlMock
+  }))
+
+  const matrixClientServiceMock = {
+    getClient: getClientMock,
+    isLoggedIn: vi.fn(() => false),
+    loginWithPassword: vi.fn(),
+    logout: vi.fn(),
+    on: vi.fn(),
+    initialize: vi.fn(),
+    startClient: vi.fn()
+  }
+
+  const matrixCapabilityServiceMock = {
+    refreshCapabilities: vi.fn()
+  }
+  return {
+    matrixClientServiceMock,
+    getHomeserverUrlMock,
+    matrixCapabilityServiceMock
+  }
+})
+
 vi.stubGlobal(
   'Worker',
   class {
@@ -21,15 +47,11 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: vi.fn(() => null),
-    isLoggedIn: vi.fn(() => false),
-    loginWithPassword: vi.fn(),
-    logout: vi.fn(),
-    on: vi.fn(),
-    initialize: vi.fn(),
-    startClient: vi.fn()
-  }
+  matrixClientService: matrixClientServiceMock
+}))
+
+vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
+  matrixCapabilityService: matrixCapabilityServiceMock
 }))
 
 vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
@@ -126,7 +148,6 @@ describe('MatrixStore', () => {
   describe('startClient', () => {
     it('should initialize sub services after client starts', async () => {
       const store = useMatrixStore()
-      const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
       const { initializeDeviceService } = await import('@/services/matrix/user/MatrixDeviceService')
       const { initializeKeyBackupService } = await import('@/services/matrix/crypto/MatrixKeyBackupService')
       const { initializePresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
@@ -134,16 +155,17 @@ describe('MatrixStore', () => {
       const { initializeRoomSummaryService } = await import('@/services/matrix/room/MatrixRoomSummaryService')
 
       store.isInitialized = true
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixClientServiceMock.getClient).mockReturnValue({ getHomeserverUrl: getHomeserverUrlMock } as any)
 
       await store.startClient()
 
-      expect(matrixClientService.startClient).toHaveBeenCalled()
+      expect(matrixClientServiceMock.startClient).toHaveBeenCalled()
       expect(initializeDeviceService).toHaveBeenCalled()
       expect(initializeKeyBackupService).toHaveBeenCalled()
       expect(initializePresenceService).toHaveBeenCalled()
       expect(initializeVerificationService).toHaveBeenCalled()
       expect(initializeRoomSummaryService).toHaveBeenCalled()
+      expect(matrixCapabilityServiceMock.refreshCapabilities).toHaveBeenCalled()
     })
   })
 })

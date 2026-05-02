@@ -1,9 +1,10 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { describe, expect, it, vi } from 'vitest'
 import { matrixMultimediaService } from '../MatrixMultimediaService'
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn()
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -133,7 +134,7 @@ describe('MatrixMultimediaService', () => {
   describe('downloadMedia', () => {
     it('should throw when client not initialized', async () => {
       const { default: matrixClientService } = await import('../../MatrixClientService')
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       await expect(matrixMultimediaService.downloadMedia('mxc://server/abc', 'file.jpg')).rejects.toThrow()
     })
   })

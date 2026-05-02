@@ -1,6 +1,6 @@
-import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { createLogger } from '@/utils/Logger'
+import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('AppStateReady')
 
@@ -45,14 +45,10 @@ export const ensureAppStateReady = async () => {
     return
   }
 
-  try {
-    const readyFlag = await invoke<boolean>('is_app_state_ready')
-    if (readyFlag) {
-      isReady = true
-      return
-    }
-  } catch (error) {
-    logger.warn('is_app_state_ready invoke failed:', error)
+  const result = await invokeWithResult<boolean>('is_app_state_ready')
+  if (result.isOk() && result.value) {
+    isReady = true
+    return
   }
 
   if (!pendingPromise) {

@@ -414,7 +414,8 @@
       "coming_soon": "Feature under development"
     },
     "translate": {
-      "empty": "Nothing to translate"
+      "empty": "Nothing to translate",
+      "failed": "Translation failed, please try again later"
     },
     "file": {
       "missing_local": "File not found locally, please download first",

@@ -5,7 +5,8 @@ import {
   type MatrixClient,
   type MatrixEvent,
   type Room,
-  SlidingSync
+  SlidingSync,
+  type SlidingSync as SlidingSyncInstance
 } from 'matrix-js-sdk'
 import type { TelemetryManager } from 'matrix-js-sdk/src/telemetry'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
@@ -26,6 +27,8 @@ type SyncErrorLike = {
   errcode?: string
   name?: string
 }
+
+type StartClientOptions = Parameters<MatrixClient['startClient']>[0]
 
 /**
  * Matrix 客户端配置接口
@@ -99,26 +102,25 @@ class MatrixClientService {
       const errorData = data as SyncErrorLike | undefined
       if (errorData?.errcode === 'M_LIMIT_EXCEEDED' || errorData?.name === 'ConnectionError') {
         logger.warn(`同步暂时受限或超时 (M_LIMIT_EXCEEDED)，SDK 将自动重试: ${state}`)
-        return
+      } else {
+        logger.error(`同步错误: ${state}`, {
+          prevState,
+          data,
+          homeserverUrl: this.config?.homeserverUrl,
+          userId: this.client?.getUserId(),
+          deviceId: this.client?.getDeviceId(),
+          hasAccessToken: !!this.config?.accessToken,
+          hasSlidingSync: !!this.slidingSyncInstance,
+          connectionState: this.connectionState
+        })
       }
-
-      logger.error(`同步错误: ${state}`, {
-        prevState,
-        data,
-        homeserverUrl: this.config?.homeserverUrl,
-        userId: this.client?.getUserId(),
-        deviceId: this.client?.getDeviceId(),
-        hasAccessToken: !!this.config?.accessToken,
-        hasSlidingSync: !!this.slidingSyncInstance,
-        connectionState: this.connectionState
-      })
     } else {
       logger.info(`同步状态: ${state}`, { prevState })
     }
 
-    // 如果启用了 Sliding Sync，由 SlidingSyncService 统一管理连接状态
-    if (!this.slidingSyncInstance) {
-      this.emit('connectionState', { state })
+    const nextConnectionState = this.mapSyncStateToConnectionState(state)
+    if (nextConnectionState) {
+      this.updateConnectionState(nextConnectionState)
     }
   }
   private readonly roomListener = (room: Room) => {
@@ -218,10 +220,15 @@ class MatrixClientService {
   }
 
   /**
+   * 使用用户名密码登录
+      throw err
+    }
+  }
+
+  /**
    * 创建 Sliding Sync 实例
-   * 私有方法，在 startClient() 时调用
    */
-  private createSlidingSync(): SlidingSync {
+  private createSlidingSync(): SlidingSyncInstance {
     if (!this.client || !this.config) {
       throw new Error('客户端未初始化')
     }
@@ -257,12 +264,6 @@ class MatrixClientService {
 
     logger.info('Sliding Sync 实例已创建')
     return slidingSync
-  }
-
-  /**
-   * 使用用户名密码登录
-      throw err
-    }
   }
 
   /**
@@ -464,25 +465,19 @@ class MatrixClientService {
     }
 
     try {
-      let shouldStartSlidingSync = false
-
-      // 在启动客户端前创建 Sliding Sync 实例
-      // 此时已经有了有效的 accessToken
-      if (!this.slidingSyncInstance && this.config?.accessToken) {
-        this.slidingSyncInstance = this.createSlidingSync()
-        shouldStartSlidingSync = true
-        logger.info('Sliding Sync 已启用')
-      }
-
-      await this.client!.startClient({
+      const startOpts: StartClientOptions = {
         initialSyncLimit: 20,
         pendingEventOrdering: PendingEventOrdering.Detached
-      })
-
-      if (this.slidingSyncInstance && shouldStartSlidingSync) {
-        this.slidingSyncInstance.start()
-        logger.info('Sliding Sync 已启动')
       }
+
+      if (this.config?.accessToken) {
+        this.slidingSyncInstance ??= this.createSlidingSync()
+        startOpts.slidingSync = this.slidingSyncInstance
+      } else {
+        this.slidingSyncInstance = null
+      }
+
+      await this.client!.startClient(startOpts)
 
       this.connectionState = 'CONNECTED'
       this.setupEventListeners()
@@ -525,6 +520,23 @@ class MatrixClientService {
     this.connectionState = state
     this.emit('connectionState', { state })
     logger.info(`连接状态已更新: ${state}`)
+  }
+
+  private mapSyncStateToConnectionState(state: string): ConnectionState | null {
+    switch (state) {
+      case 'PREPARED':
+      case 'SYNCING':
+      case 'CATCHUP':
+        return 'CONNECTED'
+      case 'RECONNECTING':
+        return 'RECONNECTING'
+      case 'ERROR':
+        return 'ERROR'
+      case 'STOPPED':
+        return 'DISCONNECTED'
+      default:
+        return null
+    }
   }
 
   /**

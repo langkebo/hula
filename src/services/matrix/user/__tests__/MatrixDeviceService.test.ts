@@ -1,5 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MatrixClientExtended } from '@/types/matrix-extensions'
 import matrixClientService from '../../MatrixClientService'
 import type { Device } from '../MatrixDeviceService'
 import { matrixDeviceService } from '../MatrixDeviceService'
@@ -12,8 +13,15 @@ vi.mock('../../MatrixClientService', () => ({
 
 describe('MatrixDeviceService', () => {
   let mockClient: Partial<MatrixClient>
-  let mockDeviceManager: any
-  let mockHttp: any
+  let mockDeviceManager: {
+    getDevices: ReturnType<typeof vi.fn>
+    getDevice: ReturnType<typeof vi.fn>
+    updateDevice: ReturnType<typeof vi.fn>
+    deleteDevice: ReturnType<typeof vi.fn>
+    deleteDevices: ReturnType<typeof vi.fn>
+    getDeviceListUpdates: ReturnType<typeof vi.fn>
+  }
+  let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     mockHttp = {
@@ -30,8 +38,10 @@ describe('MatrixDeviceService', () => {
     }
 
     mockClient = {
-      http: mockHttp,
-      getDeviceManager: vi.fn(() => mockDeviceManager),
+      http: mockHttp as unknown as MatrixClient['http'],
+      getDeviceManager: vi.fn(
+        () => mockDeviceManager as unknown as MatrixClientExtended['getDeviceManager'] extends () => infer T ? T : never
+      ),
       getDeviceId: vi.fn(() => 'CURRENT_DEVICE')
     }
 
@@ -45,7 +55,7 @@ describe('MatrixDeviceService', () => {
       mockDeviceManager.getDevices.mockResolvedValue(mockDevices)
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
 
-      const service = new (matrixDeviceService.constructor as any)()
+      const service = new (matrixDeviceService.constructor as unknown as new () => typeof matrixDeviceService)()
       const devices = await service.getDevices()
 
       expect(matrixClientService.getClient).toHaveBeenCalled()

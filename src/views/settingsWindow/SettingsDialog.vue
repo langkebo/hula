@@ -94,7 +94,7 @@ const settingsDialogStore = useSettingsDialogStore()
 const { isDesktop } = usePlatform()
 const { t, tm } = useI18n()
 const resolveSearchKeywords = (tabId: SettingsTabType): string[] => {
-  const value = tm(`setting.dialog.search_terms.${tabId}`)
+  const value = tm(`setting.dialog.search_terms.${tabId}`) as unknown
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
 const { searchQuery, filteredTabs } = useSettingsShell({

@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -8,7 +9,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(() => null)
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -18,11 +19,11 @@ const { matrixVoIPService } = await import('../MatrixVoIPService')
 describe('MatrixVoIPService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(matrixVoIPService as any).calls.clear()
-    ;(matrixVoIPService as any).callHandlers.clear()
-    ;(matrixVoIPService as any).localStream = null
-    ;(matrixVoIPService as any).screenStream = null
-    ;(matrixVoIPService as any).observedClient = null
+    ;(matrixVoIPService as unknown as { calls: Map<string, unknown> }).calls.clear()
+    ;(matrixVoIPService as unknown as { callHandlers: Map<string, unknown> }).callHandlers.clear()
+    ;(matrixVoIPService as unknown as { localStream: unknown }).localStream = null
+    ;(matrixVoIPService as unknown as { screenStream: unknown }).screenStream = null
+    ;(matrixVoIPService as unknown as { observedClient: unknown }).observedClient = null
   })
 
   it('rebinds call listeners and clears runtime calls when matrix client changes', async () => {
@@ -47,7 +48,7 @@ describe('MatrixVoIPService', () => {
       })
     }
 
-    vi.mocked(matrixClientService.getClient).mockReturnValue(oldClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(oldClient as unknown as MatrixClient)
     await matrixVoIPService.initialize()
 
     oldListeners.get('Call.incoming')?.({
@@ -58,7 +59,7 @@ describe('MatrixVoIPService', () => {
 
     expect(matrixVoIPService.getActiveCalls()).toHaveLength(1)
 
-    vi.mocked(matrixClientService.getClient).mockReturnValue(newClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(newClient as unknown as MatrixClient)
     await matrixVoIPService.initialize()
 
     expect(oldClient.off).toHaveBeenCalledWith('Call.incoming', expect.any(Function))

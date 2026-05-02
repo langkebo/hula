@@ -97,7 +97,6 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
@@ -113,6 +112,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatDateGroupLabel } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
+import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('ChatHistory')
 
@@ -314,7 +314,14 @@ const loadMessages = async () => {
       }
     }
 
-    const response = await invoke<ChatHistoryResponse>(TauriCommand.QUERY_CHAT_HISTORY, { param: params })
+    const result = await invokeWithResult<ChatHistoryResponse>(TauriCommand.QUERY_CHAT_HISTORY, { param: params })
+
+    if (result.isErr()) {
+      logger.error('加载聊天记录失败:', result.error)
+      return
+    }
+
+    const response = result.value
 
     if (currentPage.value === 1) {
       messages.value = response.messages

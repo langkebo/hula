@@ -206,7 +206,8 @@ import RobotChatModelPopover from '@/plugins/robot/components/RobotChatModelPopo
 import RobotChatRolePopover from '@/plugins/robot/components/RobotChatRolePopover.vue'
 import type { VideoImageUploadPayload } from '@/plugins/robot/composables/useAiGenerationParams'
 import type { PaginationState } from '@/plugins/robot/composables/useRobotChat'
-import type { AIModel, ChatRole } from '@/services/matrix'
+import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
 
 type SelectOption<T extends string | number> = {
   label: string

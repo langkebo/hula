@@ -11,7 +11,11 @@ vi.mock('../../MatrixClientService', () => ({
 
 describe('MatrixEncryptionService', () => {
   let mockClient: Partial<MatrixClient>
-  let mockCrypto: any
+  let mockCrypto: {
+    bootstrapCrossSigning: ReturnType<typeof vi.fn>
+    getDeviceVerificationStatus: ReturnType<typeof vi.fn>
+    prepareKeyBackupVersion: ReturnType<typeof vi.fn>
+  }
 
   beforeEach(() => {
     mockCrypto = {
@@ -22,7 +26,7 @@ describe('MatrixEncryptionService', () => {
 
     mockClient = {
       isCryptoEnabled: vi.fn(() => true),
-      getCrypto: vi.fn(() => mockCrypto),
+      getCrypto: vi.fn(() => mockCrypto as unknown as MatrixClient['crypto']),
       getUserId: vi.fn(() => '@user:example.com'),
       getDeviceId: vi.fn(() => 'DEVICE_1'),
       getRoom: vi.fn(),
@@ -33,13 +37,13 @@ describe('MatrixEncryptionService', () => {
     vi.mocked(matrixClientService.getClient).mockReset()
     vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
 
-    matrixEncryptionService['crypto'] = null
+    ;(matrixEncryptionService as unknown as { crypto: unknown })['crypto'] = null
   })
 
   describe('initialize', () => {
     it('should initialize with crypto enabled', async () => {
       await matrixEncryptionService.initialize()
-      expect(matrixEncryptionService['crypto']).toBe(mockCrypto)
+      expect((matrixEncryptionService as unknown as { crypto: unknown })['crypto']).toBe(mockCrypto)
     })
 
     it('should handle crypto not enabled', async () => {
@@ -47,11 +51,11 @@ describe('MatrixEncryptionService', () => {
       mockClient.getCrypto = vi.fn(() => undefined)
 
       await matrixEncryptionService.initialize()
-      expect(matrixEncryptionService['crypto']).toBeNull()
+      expect((matrixEncryptionService as unknown as { crypto: unknown })['crypto']).toBeNull()
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null as unknown as MatrixClient)
 
       await expect(matrixEncryptionService.initialize()).rejects.toThrow()
     })
@@ -59,14 +63,14 @@ describe('MatrixEncryptionService', () => {
 
   describe('isEncryptionAvailable', () => {
     it('should return true when crypto is available', async () => {
-      matrixEncryptionService['crypto'] = mockCrypto
+      ;(matrixEncryptionService as unknown as { crypto: unknown })['crypto'] = mockCrypto
 
       const result = await matrixEncryptionService.isEncryptionAvailable()
       expect(result).toBe(true)
     })
 
     it('should return false when crypto is not available', async () => {
-      matrixEncryptionService['crypto'] = null
+      ;(matrixEncryptionService as unknown as { crypto: unknown })['crypto'] = null
       mockClient.getCrypto = vi.fn(() => null)
 
       const result = await matrixEncryptionService.isEncryptionAvailable()
@@ -76,7 +80,7 @@ describe('MatrixEncryptionService', () => {
 
   describe('isRoomEncrypted', () => {
     it('should return false when client is not available', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null as unknown as MatrixClient)
 
       const result = await matrixEncryptionService.isRoomEncrypted('!room:example.com')
       expect(result).toBe(false)
@@ -126,7 +130,7 @@ describe('MatrixEncryptionService', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null as unknown as MatrixClient)
 
       await expect(matrixEncryptionService.enableRoomEncryption('!room:example.com')).rejects.toThrow()
     })
@@ -141,7 +145,7 @@ describe('MatrixEncryptionService', () => {
     })
 
     it('should return null when client is not available', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null as unknown as MatrixClient)
 
       const result = await matrixEncryptionService.getEncryptionSettings('!room:example.com')
       expect(result).toBeNull()
@@ -150,7 +154,7 @@ describe('MatrixEncryptionService', () => {
 
   describe('getCrossSigningInfo', () => {
     it('should return isSetup false when crypto is not available', async () => {
-      matrixEncryptionService['crypto'] = null
+      ;(matrixEncryptionService as unknown as { crypto: unknown })['crypto'] = null
       mockClient.getCrypto = vi.fn(() => null)
 
       const result = await matrixEncryptionService.getCrossSigningInfo()

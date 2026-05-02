@@ -99,7 +99,25 @@ vi.mock('vant', async () => {
     VanList: passthroughStub('van-list'),
     VanButton: passthroughStub('van-button'),
     VanSwitch,
-    VanActionSheet: passthroughStub('van-action-sheet')
+    VanActionSheet: defineComponent({
+      name: 'VanActionSheet',
+      props: {
+        show: {
+          type: Boolean,
+          default: false
+        },
+        title: {
+          type: String,
+          default: ''
+        }
+      },
+      emits: ['update:show'],
+      setup(props, { slots }) {
+        return () =>
+          props.show ? h('div', { 'data-test': 'van-action-sheet' }, [props.title, slots.default?.()]) : null
+      }
+    }),
+    VanField: passthroughStub('van-field')
   }
 })
 
@@ -123,20 +141,29 @@ vi.mock('@/router', () => ({
   default: { push: vi.fn(), back: vi.fn() }
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
   matrixEncryptionContextService: {
     getCurrentSessionContext: getCurrentSessionContextMock,
     prepareKeyBackupVersion: prepareKeyBackupVersionMock
-  },
+  }
+}))
+
+vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
   matrixDeviceService: {
     getCurrentDeviceId: getCurrentDeviceIdMock,
     getDevices: getDevicesMock,
     deleteDevice: deleteDeviceMock
-  },
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixKeyBackupService', () => ({
   matrixKeyBackupService: {
     getBackupVersions: getBackupVersionsMock,
     createBackupVersion: createBackupVersionMock
-  },
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixVerificationService', () => ({
   matrixVerificationService: {
     isDeviceVerified: isDeviceVerifiedMock,
     startSasVerification: startSasVerificationMock

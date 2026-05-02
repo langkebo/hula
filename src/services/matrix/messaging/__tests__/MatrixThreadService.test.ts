@@ -1,6 +1,63 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixThreadService } from '../MatrixThreadService'
+
+// 定义 ThreadingManager 的兼容接口，用于测试 mock
+interface ThreadingManagerCompat {
+  getGlobalThreadList?: (
+    limit?: number,
+    from?: string
+  ) => Promise<{ threads: unknown[]; next_batch?: string; total: number }>
+  createGlobalThread?: (
+    roomId: string,
+    rootEventId: string,
+    content?: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>
+  getSubscribedThreads?: () => Promise<unknown[]>
+  getGlobalUnreadThreads?: () => Promise<unknown[]>
+  createRoomThread?: (
+    roomId: string,
+    rootEventId: string,
+    content?: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>
+  getRoomThreadList?: (
+    roomId: string,
+    limit?: number,
+    from?: string,
+    includeAll?: boolean
+  ) => Promise<{ threads: unknown[]; next_batch?: string }>
+  searchRoomThreads?: (roomId: string, query: string, limit?: number) => Promise<unknown[]>
+  getRoomUnreadThreads?: (roomId: string) => Promise<unknown[]>
+  getRoomThread?: (
+    roomId: string,
+    threadId: string,
+    includeReplies?: boolean,
+    replyLimit?: number
+  ) => Promise<Record<string, unknown> | null>
+  deleteRoomThread?: (roomId: string, threadId: string) => Promise<void>
+  freezeThread?: (roomId: string, threadId: string) => Promise<void>
+  unfreezeThread?: (roomId: string, threadId: string) => Promise<void>
+  addThreadReply?: (
+    roomId: string,
+    threadId: string,
+    content: Record<string, unknown>,
+    inReplyToEventId?: string
+  ) => Promise<Record<string, unknown>>
+  getThreadReplies?: (roomId: string, threadId: string) => Promise<unknown[]>
+  subscribeToThread?: (roomId: string, threadId: string, notificationLevel?: string) => Promise<unknown | null>
+  unsubscribeFromThread?: (roomId: string, threadId: string) => Promise<void>
+  muteThread?: (roomId: string, threadId: string) => Promise<unknown | null>
+  markThreadRead?: (
+    roomId: string,
+    threadId: string,
+    eventId: string,
+    originServerTs: number
+  ) => Promise<Record<string, unknown> | null>
+  getThreadStats?: (roomId: string, threadId: string) => Promise<unknown | null>
+  redactThreadReply?: (roomId: string, eventId: string) => Promise<void>
+  getLegacyRoomThreadList?: (roomId: string) => Promise<unknown[]>
+}
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
@@ -21,8 +78,30 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 describe('MatrixThreadService - REST API Methods', () => {
-  let mockThreadingManager: any
-  let mockClient: any
+  let mockThreadingManager: {
+    getGlobalThreadList: ReturnType<typeof vi.fn>
+    createGlobalThread: ReturnType<typeof vi.fn>
+    getSubscribedThreads: ReturnType<typeof vi.fn>
+    getGlobalUnreadThreads: ReturnType<typeof vi.fn>
+    createRoomThread: ReturnType<typeof vi.fn>
+    getRoomThreadList: ReturnType<typeof vi.fn>
+    searchRoomThreads: ReturnType<typeof vi.fn>
+    getRoomUnreadThreads: ReturnType<typeof vi.fn>
+    getRoomThread: ReturnType<typeof vi.fn>
+    deleteRoomThread: ReturnType<typeof vi.fn>
+    freezeThread: ReturnType<typeof vi.fn>
+    unfreezeThread: ReturnType<typeof vi.fn>
+    addThreadReply: ReturnType<typeof vi.fn>
+    getThreadReplies: ReturnType<typeof vi.fn>
+    subscribeToThread: ReturnType<typeof vi.fn>
+    unsubscribeFromThread: ReturnType<typeof vi.fn>
+    muteThread: ReturnType<typeof vi.fn>
+    markThreadRead: ReturnType<typeof vi.fn>
+    getThreadStats: ReturnType<typeof vi.fn>
+    redactThreadReply: ReturnType<typeof vi.fn>
+    getLegacyRoomThreadList: ReturnType<typeof vi.fn>
+  }
+  let mockClient: Partial<MatrixClient>
 
   beforeEach(() => {
     mockThreadingManager = {
@@ -50,13 +129,13 @@ describe('MatrixThreadService - REST API Methods', () => {
     }
 
     mockClient = {
-      threadingManager: mockThreadingManager,
+      threadingManager: mockThreadingManager as unknown as ThreadingManagerCompat,
       getRoom: vi.fn(() => null),
       getRooms: vi.fn(() => [])
-    }
+    } as unknown as MatrixClient
 
     vi.mocked(matrixClientService.getClient).mockReset()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
   })
 
   describe('getGlobalThreadListViaApi', () => {
@@ -75,7 +154,7 @@ describe('MatrixThreadService - REST API Methods', () => {
     })
 
     it('should return empty when manager unavailable', async () => {
-      mockClient.threadingManager = null
+      ;(mockClient as unknown as { threadingManager: unknown }).threadingManager = null
 
       const result = await matrixThreadService.getGlobalThreadListViaApi()
 
@@ -102,7 +181,7 @@ describe('MatrixThreadService - REST API Methods', () => {
     })
 
     it('should return null when manager unavailable', async () => {
-      mockClient.threadingManager = null
+      ;(mockClient as unknown as { threadingManager: unknown }).threadingManager = null
 
       const result = await matrixThreadService.createGlobalThreadViaApi('!room', '$event')
 
@@ -162,7 +241,7 @@ describe('MatrixThreadService - REST API Methods', () => {
     })
 
     it('should throw when manager unavailable', async () => {
-      mockClient.threadingManager = null
+      ;(mockClient as unknown as { threadingManager: unknown }).threadingManager = null
 
       await expect(matrixThreadService.deleteRoomThreadViaApi('!room', 't1')).rejects.toThrow('ThreadingManager')
     })

@@ -2,19 +2,35 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SecuritySettings from '../SecuritySettings.vue'
 
-const showToastMock = vi.fn()
-const showLoadingToastMock = vi.fn()
-const showConfirmDialogMock = vi.fn().mockResolvedValue(undefined)
-const routerPushMock = vi.fn()
-const logoutMock = vi.fn()
-
-const getDevicesMock = vi.fn().mockResolvedValue([])
-const getIgnoredUsersMock = vi.fn().mockResolvedValue([])
-const changePasswordMock = vi.fn().mockResolvedValue(undefined)
-const deactivateAccountMock = vi.fn().mockResolvedValue(undefined)
-const getCryptoStatusMock = vi.fn().mockResolvedValue(null)
-const setupKeyBackupMock = vi.fn().mockResolvedValue(undefined)
-const exportKeysMock = vi.fn().mockResolvedValue(null)
+const {
+  showToastMock,
+  showLoadingToastMock,
+  showConfirmDialogMock,
+  routerPushMock,
+  logoutMock,
+  getDevicesMock,
+  getIgnoredUsersMock,
+  changePasswordMock,
+  deactivateAccountMock,
+  getCryptoStatusMock,
+  setupKeyBackupMock,
+  exportKeysMock
+} = vi.hoisted(() => {
+  return {
+    showToastMock: vi.fn(),
+    showLoadingToastMock: vi.fn(),
+    showConfirmDialogMock: vi.fn().mockResolvedValue(undefined),
+    routerPushMock: vi.fn(),
+    logoutMock: vi.fn(),
+    getDevicesMock: vi.fn().mockResolvedValue([]),
+    getIgnoredUsersMock: vi.fn().mockResolvedValue([]),
+    changePasswordMock: vi.fn().mockResolvedValue(undefined),
+    deactivateAccountMock: vi.fn().mockResolvedValue(undefined),
+    getCryptoStatusMock: vi.fn().mockResolvedValue(null),
+    setupKeyBackupMock: vi.fn().mockResolvedValue(undefined),
+    exportKeysMock: vi.fn().mockResolvedValue(null)
+  }
+})
 
 vi.mock('vant', () => ({
   showToast: (...args: any[]) => showToastMock(...args),
@@ -47,7 +63,7 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
   matrixCryptoService: {
     getCryptoStatus: () => getCryptoStatusMock(),
     setupKeyBackup: (...args: any[]) => setupKeyBackupMock(...args),

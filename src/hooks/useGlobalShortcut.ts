@@ -1,11 +1,12 @@
-import { invoke } from '@tauri-apps/api/core'
 import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
+import { ensureCaptureWindow as ensureCaptureOverlayWindow } from '@/hooks/useWindow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('GlobalShortcut')
 
@@ -30,6 +31,7 @@ const globalShortcutStates = new Map<string, string>()
 let togglePanelTimeout: ReturnType<typeof setTimeout> | null = null
 let lastToggleTime = 0
 const isMacPlatform = isMac()
+let captureCloseHandlerBound = false
 
 /**
  * 全局快捷键管理 Hook
@@ -44,16 +46,20 @@ export const useGlobalShortcut = () => {
    * 如果不存在则创建，如果存在则确保设置了关闭拦截
    */
   const ensureCaptureWindow = async () => {
-    const captureWindow = await WebviewWindow.getByLabel('capture')
+    const captureWindow = await ensureCaptureOverlayWindow()
 
     if (captureWindow) {
-      // 设置关闭拦截 - 将关闭转为隐藏
-      captureWindow.onCloseRequested(async (event) => {
-        event.preventDefault()
-        await captureWindow.hide()
-        // 触发重置事件，让Screenshot组件重新初始化
-        await captureWindow.emit('capture-reset', {})
-      })
+      if (!captureCloseHandlerBound) {
+        // 设置关闭拦截 - 将关闭转为隐藏
+        captureWindow.onCloseRequested(async (event) => {
+          event.preventDefault()
+          await captureWindow.hide()
+          // 触发重置事件，让Screenshot组件重新初始化
+          await captureWindow.emit('capture-reset', {})
+        })
+        captureCloseHandlerBound = true
+      }
+
       // 初始状态为隐藏
       await captureWindow.hide()
     }
@@ -69,7 +75,7 @@ export const useGlobalShortcut = () => {
       const homeWindow = await WebviewWindow.getByLabel('home')
       if (!homeWindow) return
 
-      const captureWindow = await WebviewWindow.getByLabel('capture')
+      const captureWindow = await ensureCaptureWindow()
       if (!captureWindow) return
 
       // 检查是否需要隐藏home窗口
@@ -89,7 +95,7 @@ export const useGlobalShortcut = () => {
 
       // 在 macOS 上设置窗口级别以覆盖菜单栏
       if (isMacPlatform) {
-        await invoke('set_window_level_above_menubar', { windowLabel: 'capture' })
+        await invokeSilently('set_window_level_above_menubar', { windowLabel: 'capture' })
       }
 
       await captureWindow.show()

@@ -1,3 +1,4 @@
+import type { Highlighter } from 'shiki'
 import { createTask, registerTask } from './workerRegistry'
 
 interface HighlightInput {
@@ -10,7 +11,7 @@ interface HighlightOutput {
   html: string
 }
 
-const highlighters: Record<string, any> = {}
+const highlighters: Record<string, Highlighter> = {}
 
 const highlightTask = createTask<HighlightInput, HighlightOutput>('highlight-code', async (input) => {
   // 动态导入 shiki 以保持 worker 轻量

@@ -82,7 +82,7 @@
           v-else-if="!isViewingLink"
           ref="markdownContainer"
           class="markdown-content markdown-body"
-          v-html="renderedMarkdown"></div>
+          v-safe-html="renderedMarkdown"></div>
 
         <!-- 外部链接 Tauri Webview 容器 -->
         <div v-else ref="webviewContainer" class="external-webview">

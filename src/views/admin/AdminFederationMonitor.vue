@@ -70,7 +70,7 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { adminService, matrixFederationBlacklistService } from '@/services/matrix'
+import { adminService, matrixFederationBlacklistService } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminFederationMonitor')

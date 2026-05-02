@@ -10,10 +10,13 @@ vi.mock('@/services/matrix/media/MatrixVoiceService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   matrixEncryptionService: {
     isRoomEncrypted: vi.fn()
-  },
+  }
+}))
+
+vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
   matrixMediaService: {
     uploadEncryptedFile: vi.fn(),
     getMediaUrl: vi.fn((url: string) => `https://cdn.example/${encodeURIComponent(url)}`)
@@ -21,7 +24,8 @@ vi.mock('@/services/matrix', () => ({
 }))
 
 import { readFile } from '@tauri-apps/plugin-fs'
-import { matrixEncryptionService, matrixMediaService } from '@/services/matrix'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
 import { useVoiceInput } from '../useVoiceInput'
 

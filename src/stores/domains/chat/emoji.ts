@@ -269,7 +269,8 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
     const index = emojiList.value.findIndex((item) => item.id === id)
     if (index !== -1) {
       if (!localUrl) {
-        const { localUrl: _omit, ...rest } = emojiList.value[index]
+        const { localUrl: omitted, ...rest } = emojiList.value[index]
+        void omitted
         emojiList.value[index] = rest as EmojiItemType
       } else {
         emojiList.value[index] = { ...emojiList.value[index], localUrl }

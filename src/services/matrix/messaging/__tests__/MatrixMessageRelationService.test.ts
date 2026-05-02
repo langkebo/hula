@@ -1,10 +1,11 @@
+import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixMessageRelationService } from '../MatrixMessageRelationService'
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn()
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -35,12 +36,12 @@ describe('MatrixMessageRelationService', () => {
         'm.new_content': { body: 'edited', msgtype: 'm.text' },
         'm.relates_to': { rel_type: 'm.replace', event_id: '$0' }
       })
-      expect(matrixMessageRelationService.isEdited(event as any)).toBe(true)
+      expect(matrixMessageRelationService.isEdited(event as unknown as MatrixEvent)).toBe(true)
     })
 
     it('should return false for non-edited event', () => {
       const event = createMockEvent('$1', '@user:server', { body: 'hello', msgtype: 'm.text' })
-      expect(matrixMessageRelationService.isEdited(event as any)).toBe(false)
+      expect(matrixMessageRelationService.isEdited(event as unknown as MatrixEvent)).toBe(false)
     })
   })
 
@@ -51,13 +52,13 @@ describe('MatrixMessageRelationService', () => {
         body: '* edited',
         'm.new_content': newContent
       })
-      expect(matrixMessageRelationService.getEditedContent(event as any)).toEqual(newContent)
+      expect(matrixMessageRelationService.getEditedContent(event as unknown as MatrixEvent)).toEqual(newContent)
     })
 
     it('should return original content for non-edited event', () => {
       const content = { body: 'hello', msgtype: 'm.text' }
       const event = createMockEvent('$1', '@user:server', content)
-      expect(matrixMessageRelationService.getEditedContent(event as any)).toEqual(content)
+      expect(matrixMessageRelationService.getEditedContent(event as unknown as MatrixEvent)).toEqual(content)
     })
   })
 
@@ -67,12 +68,12 @@ describe('MatrixMessageRelationService', () => {
         body: 'reply',
         'm.relates_to': { 'm.in_reply_to': { event_id: '$0' } }
       })
-      expect(matrixMessageRelationService.getReplyToEventId(event as any)).toBe('$0')
+      expect(matrixMessageRelationService.getReplyToEventId(event as unknown as MatrixEvent)).toBe('$0')
     })
 
     it('should return null for non-reply event', () => {
       const event = createMockEvent('$1', '@user:server', { body: 'hello' })
-      expect(matrixMessageRelationService.getReplyToEventId(event as any)).toBeNull()
+      expect(matrixMessageRelationService.getReplyToEventId(event as unknown as MatrixEvent)).toBeNull()
     })
   })
 
@@ -82,7 +83,7 @@ describe('MatrixMessageRelationService', () => {
         body: 'thread reply',
         'm.relates_to': { rel_type: 'm.thread', event_id: '$root' }
       })
-      expect(matrixMessageRelationService.getThreadRootId(event as any)).toBe('$root')
+      expect(matrixMessageRelationService.getThreadRootId(event as unknown as MatrixEvent)).toBe('$root')
     })
 
     it('should return null for non-thread event', () => {
@@ -90,13 +91,13 @@ describe('MatrixMessageRelationService', () => {
         body: 'reply',
         'm.relates_to': { 'm.in_reply_to': { event_id: '$0' } }
       })
-      expect(matrixMessageRelationService.getThreadRootId(event as any)).toBeNull()
+      expect(matrixMessageRelationService.getThreadRootId(event as unknown as MatrixEvent)).toBeNull()
     })
   })
 
   describe('editMessage', () => {
     it('should throw if client not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       await expect(matrixMessageRelationService.editMessage('!r:s', '$e', { body: 'new' })).rejects.toThrow(
         '客户端未初始化'
       )
@@ -106,7 +107,7 @@ describe('MatrixMessageRelationService', () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: vi.fn(() => null),
         getUserId: vi.fn(() => '@me:server')
-      } as any)
+      } as unknown as MatrixClient)
       await expect(matrixMessageRelationService.editMessage('!r:s', '$e', { body: 'new' })).rejects.toThrow(
         '房间不存在'
       )
@@ -116,7 +117,7 @@ describe('MatrixMessageRelationService', () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: vi.fn(() => ({ findEventById: vi.fn(() => null) })),
         getUserId: vi.fn(() => '@me:server')
-      } as any)
+      } as unknown as MatrixClient)
       await expect(matrixMessageRelationService.editMessage('!r:s', '$e', { body: 'new' })).rejects.toThrow(
         '原始消息不存在'
       )
@@ -128,7 +129,7 @@ describe('MatrixMessageRelationService', () => {
           findEventById: vi.fn(() => createMockEvent('$e', '@other:server', { body: 'old' }))
         })),
         getUserId: vi.fn(() => '@me:server')
-      } as any)
+      } as unknown as MatrixClient)
       await expect(matrixMessageRelationService.editMessage('!r:s', '$e', { body: 'new' })).rejects.toThrow(
         '只能编辑自己发送的消息'
       )
@@ -142,7 +143,7 @@ describe('MatrixMessageRelationService', () => {
         })),
         getUserId: vi.fn(() => '@me:server'),
         sendEvent
-      } as any)
+      } as unknown as MatrixClient)
       const result = await matrixMessageRelationService.editMessage('!r:s', '$e', { body: 'new text' })
       expect(result).toBe('$new')
       expect(sendEvent).toHaveBeenCalled()
@@ -151,7 +152,7 @@ describe('MatrixMessageRelationService', () => {
 
   describe('replyToMessage', () => {
     it('should throw if client not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       await expect(matrixMessageRelationService.replyToMessage('!r:s', '$e', { body: 'reply' })).rejects.toThrow(
         '客户端未初始化'
       )
@@ -164,7 +165,7 @@ describe('MatrixMessageRelationService', () => {
           findEventById: vi.fn(() => createMockEvent('$e', '@other:server', { body: 'orig' }))
         })),
         sendEvent
-      } as any)
+      } as unknown as MatrixClient)
       const result = await matrixMessageRelationService.replyToMessage('!r:s', '$e', { body: 'my reply' })
       expect(result).toBe('$reply')
     })
@@ -175,7 +176,7 @@ describe('MatrixMessageRelationService', () => {
       const sendEvent = vi.fn().mockResolvedValue({ event_id: '$thread_reply' })
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         sendEvent
-      } as any)
+      } as unknown as MatrixClient)
       const result = await matrixMessageRelationService.replyInThread('!r:s', '$root', { body: 'thread reply' })
       expect(result).toBe('$thread_reply')
       expect(sendEvent).toHaveBeenCalledWith(
@@ -190,7 +191,7 @@ describe('MatrixMessageRelationService', () => {
 
   describe('getEditHistory', () => {
     it('should return empty array when no client', () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       const result = matrixMessageRelationService.getEditHistory('!r:s', '$e')
       expect(result).toEqual([])
     })
@@ -214,7 +215,7 @@ describe('MatrixMessageRelationService', () => {
             getLiveTimeline: () => ({ getEvents: () => [otherEvent, editEvent] })
           })
         }))
-      } as any)
+      } as unknown as MatrixClient)
 
       const result = matrixMessageRelationService.getEditHistory('!r:s', '$e')
       expect(result).toHaveLength(1)

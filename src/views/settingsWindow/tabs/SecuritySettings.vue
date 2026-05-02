@@ -318,7 +318,8 @@ import {
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
-import { matrixAccountService, matrixEncryptionService } from '@/services/matrix'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 

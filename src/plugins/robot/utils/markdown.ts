@@ -1,4 +1,5 @@
 import type { DefineComponent } from 'vue'
+import { renderWorker } from '@/services/renderWorker'
 
 interface MarkdownCodeBlockNodeData {
   type: 'code_block'
@@ -61,13 +62,47 @@ export async function initMarkdownRenderer() {
     const RobotMarkdownCodeBlockNode = defineComponent({
       name: 'RobotMarkdownCodeBlockNode',
       inheritAttrs: false,
-      setup(_, { attrs, slots }) {
+      props: ['node', 'isDark', 'darkTheme', 'lightTheme'],
+      setup(props, { attrs, slots }) {
+        const highlightedHtml = ref('')
+        const isLoading = ref(true)
+
+        watch(
+          () => [props.node.code, props.node.language, props.isDark],
+          async () => {
+            isLoading.value = true
+            try {
+              const theme = props.isDark ? props.darkTheme : props.lightTheme
+              const { html } = await renderWorker.execute<
+                { code: string; language: string; theme: string },
+                { html: string }
+              >('highlight-code', {
+                code: props.node.code,
+                language: props.node.language,
+                theme: theme || (props.isDark ? 'vitesse-dark' : 'vitesse-light')
+              })
+              highlightedHtml.value = html
+            } catch (_error) {
+              highlightedHtml.value = `<pre><code>${props.node.code}</code></pre>`
+            } finally {
+              isLoading.value = false
+            }
+          },
+          { immediate: true }
+        )
+
         return () =>
           h(
             MarkdownCodeBlockNodeComponent,
             {
               ...(attrs as Partial<MarkdownCodeBlockNodeProps>),
-              ...toolbarOverrides
+              ...toolbarOverrides,
+              node: {
+                ...props.node,
+                // 如果已经有高亮结果，则传入渲染
+                code: highlightedHtml.value || props.node.code
+              },
+              loading: isLoading.value
             } as MarkdownCodeBlockNodeProps,
             slots
           )

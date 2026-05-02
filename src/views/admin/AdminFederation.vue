@@ -135,7 +135,7 @@ import { NButton, NSpace, NTag, useDialog, useMessage } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type FederationBlacklistView, useAdminFederation } from '@/composables/admin'
-import type { FederationDestination } from '@/services/matrix'
+import type { FederationDestination } from '@/services/matrix/admin'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
 

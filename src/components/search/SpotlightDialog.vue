@@ -56,7 +56,7 @@
                     <span class="result-name">{{ result.name }}</span>
                     <span class="result-room">{{ result.roomName }}</span>
                   </div>
-                  <div class="result-preview" v-html="result.previewHtml" />
+                  <div class="result-preview" v-safe-html="result.previewHtml" />
                 </div>
                 <div class="result-time">
                   {{ formatTime(result.timestamp) }}

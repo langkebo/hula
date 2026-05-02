@@ -49,7 +49,6 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/zrender': 'chart-vendor',
 
   // 工具库
-  'node_modules/lodash-es': 'utils-lodash',
   'node_modules/es-toolkit': 'utils-lodash',
   'node_modules/dayjs': 'dayjs',
   'node_modules/axios': 'axios',
@@ -78,6 +77,7 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/hula-emojis': 'hula-emojis',
 
   // 聊天域核心组件与逻辑
+  'src/strategy/strategies/': 'msg-strategies',
   'src/components/rightBox/renderMessage/index.vue': 'render-message',
   'src/components/rightBox/MsgInput.vue': 'msg-input',
   'src/components/rightBox/chatBox/': 'chat-domain'

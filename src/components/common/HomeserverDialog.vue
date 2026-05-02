@@ -35,14 +35,19 @@ import { NButton, NInput, NModal } from 'naive-ui'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
+  discoverAndSaveMatrixEndpoints,
   isValidHttpUrl,
-  normalizeHttpUrl,
   resolveMatrixEndpointConfig,
-  saveMatrixHomeserverUrl
+  saveMatrixIdentityServerUrl
 } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('HomeserverDialog')
+
+type HomeserverEndpointPayload = {
+  homeserverUrl: string
+  identityServerUrl: string
+}
 
 const { t } = useI18n()
 
@@ -51,7 +56,7 @@ const showModal = defineModel<boolean>('show', { default: false })
 const homeserverUrl = ref('')
 const saving = ref(false)
 
-const emit = defineEmits<(e: 'save', url: string) => void>()
+const emit = defineEmits<(e: 'save', endpoint: HomeserverEndpointPayload) => void>()
 
 watch(
   () => showModal.value,
@@ -66,15 +71,19 @@ function handleClose() {
   showModal.value = false
 }
 
+function isPotentialHomeserverInput(value: string): boolean {
+  return isValidHttpUrl(value) || isValidHttpUrl(`http://${value}`) || /^[^/\s]+\.[^/\s]+$/.test(value)
+}
+
 async function handleSave() {
   if (!homeserverUrl.value.trim()) {
     window.$message.error(t('menu.homeserver_empty'))
     return
   }
 
-  const url = normalizeHttpUrl(homeserverUrl.value)
+  const rawValue = homeserverUrl.value.trim()
 
-  if (!isValidHttpUrl(url)) {
+  if (!isPotentialHomeserverInput(rawValue)) {
     window.$message.error(t('menu.homeserver_invalid'))
     return
   }
@@ -82,8 +91,15 @@ async function handleSave() {
   saving.value = true
 
   try {
-    homeserverUrl.value = saveMatrixHomeserverUrl(url)
-    emit('save', url)
+    const discovery = await discoverAndSaveMatrixEndpoints(rawValue, resolveMatrixEndpointConfig())
+    homeserverUrl.value = discovery.homeserverUrl
+    if (!discovery.identityServerUrl) {
+      saveMatrixIdentityServerUrl('')
+    }
+    emit('save', {
+      homeserverUrl: discovery.homeserverUrl,
+      identityServerUrl: discovery.identityServerUrl
+    })
     window.$message.success(t('menu.homeserver_saved'))
     showModal.value = false
   } catch (error) {

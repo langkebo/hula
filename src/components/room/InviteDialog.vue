@@ -66,7 +66,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixRoomService, matrixSearchService } from '@/services/matrix'
+import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 

@@ -47,7 +47,7 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
 import router from '@/router'
-import { matrixQrLoginService } from '@/services/matrix'
+import { matrixQrLoginService } from '@/services/matrix/auth/MatrixQrLoginService'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 

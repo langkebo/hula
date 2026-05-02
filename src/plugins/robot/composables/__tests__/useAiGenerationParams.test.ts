@@ -1,4 +1,7 @@
+import type { UploadFileInfo } from 'naive-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
+import type { VideoImageUploadPayload } from '../useAiGenerationParams'
 
 const { aiServiceMock, uploadMock, fileInfoRef, errorMock } = vi.hoisted(() => ({
   aiServiceMock: {
@@ -9,7 +12,7 @@ const { aiServiceMock, uploadMock, fileInfoRef, errorMock } = vi.hoisted(() => (
   errorMock: vi.fn()
 }))
 
-vi.mock('@/services/matrix', () => ({ aiService: aiServiceMock }))
+vi.mock('@/services/matrix/ai/AIService', () => ({ aiService: aiServiceMock }))
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: errorMock, warn: vi.fn(), debug: vi.fn() })
 }))
@@ -20,6 +23,25 @@ vi.mock('@/hooks/useUpload', () => ({
 vi.mock('@/enums', () => ({ UploadSceneEnum: { CHAT: 'chat' } }))
 
 import { useAiGenerationParams } from '../useAiGenerationParams'
+
+const makeModel = (model = 'tts-1'): AIModel =>
+  ({
+    id: model,
+    name: model,
+    model,
+    platform: 'test',
+    type: 0,
+    sort: 0,
+    status: 1,
+    publicStatus: 1
+  }) as AIModel
+
+const makeUploadPayload = (file: File, overrides: Partial<VideoImageUploadPayload> = {}): VideoImageUploadPayload => ({
+  file: { file } as UploadFileInfo,
+  onFinish: vi.fn(),
+  onError: vi.fn(),
+  ...overrides
+})
 
 const mountWith = <T>(setup: () => T): T => {
   let value!: T
@@ -37,7 +59,7 @@ const mountWith = <T>(setup: () => T): T => {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  ;(window as any).$message = { error: vi.fn(), warning: vi.fn(), success: vi.fn() }
+  window.$message = { error: vi.fn(), warning: vi.fn(), success: vi.fn() } as unknown as Window['$message']
   fileInfoRef.value = { downloadUrl: 'https://cdn/x.png' }
 })
 
@@ -80,7 +102,7 @@ describe('useAiGenerationParams', () => {
   it('loadAudioVoices populates from API response', async () => {
     aiServiceMock.audioGetVoices.mockResolvedValueOnce([{ name: 'tts-1:alice' }, { name: 'bob' }])
     const c = mountWith(() => useAiGenerationParams())
-    await c.loadAudioVoices({ model: 'tts-1' } as any)
+    await c.loadAudioVoices(makeModel('tts-1'))
     expect(c.audioVoiceOptions.value).toEqual([
       { label: 'Alice', value: 'tts-1:alice' },
       { label: 'Bob', value: 'bob' }
@@ -91,22 +113,22 @@ describe('useAiGenerationParams', () => {
   it('loadAudioVoices falls back to Default when API returns empty', async () => {
     aiServiceMock.audioGetVoices.mockResolvedValueOnce([])
     const c = mountWith(() => useAiGenerationParams())
-    await c.loadAudioVoices({ model: 'tts-1' } as any)
+    await c.loadAudioVoices(makeModel('tts-1'))
     expect(c.audioVoiceOptions.value).toEqual([{ label: 'Default', value: 'default' }])
     expect(c.audioParams.value.voice).toBe('default')
   })
 
   it('loadAudioVoices early-exits for null / model-less input', async () => {
     const c = mountWith(() => useAiGenerationParams())
-    await c.loadAudioVoices(null as any)
-    await c.loadAudioVoices({} as any)
+    await c.loadAudioVoices(null as unknown as AIModel)
+    await c.loadAudioVoices({} as AIModel)
     expect(aiServiceMock.audioGetVoices).not.toHaveBeenCalled()
   })
 
   it('loadAudioVoices logs and swallows errors', async () => {
     aiServiceMock.audioGetVoices.mockRejectedValueOnce(new Error('boom'))
     const c = mountWith(() => useAiGenerationParams())
-    await c.loadAudioVoices({ model: 'tts-1' } as any)
+    await c.loadAudioVoices(makeModel('tts-1'))
     expect(errorMock).toHaveBeenCalled()
   })
 
@@ -114,34 +136,36 @@ describe('useAiGenerationParams', () => {
     const c = mountWith(() => useAiGenerationParams())
     const onError = vi.fn()
     const onFinish = vi.fn()
-    await c.handleVideoImageUpload({
-      file: { file: new File([], 'x.gif', { type: 'image/gif' }) } as any,
-      onError,
-      onFinish
-    })
+    await c.handleVideoImageUpload(
+      makeUploadPayload(new File([], 'x.gif', { type: 'image/gif' }), {
+        onError,
+        onFinish
+      })
+    )
     expect(onError).toHaveBeenCalled()
     expect(onFinish).not.toHaveBeenCalled()
-    expect((window as any).$message.error).toHaveBeenCalled()
+    expect(window.$message.error).toHaveBeenCalled()
   })
 
   it('handleVideoImageUpload rejects oversized file', async () => {
     const c = mountWith(() => useAiGenerationParams())
     const big = new File([new Uint8Array(11 * 1024 * 1024)], 'x.png', { type: 'image/png' })
     const onError = vi.fn()
-    await c.handleVideoImageUpload({ file: { file: big } as any, onError, onFinish: vi.fn() })
+    await c.handleVideoImageUpload(makeUploadPayload(big, { onError, onFinish: vi.fn() }))
     expect(onError).toHaveBeenCalled()
-    expect((window as any).$message.error).toHaveBeenCalledWith('图片大小不能超过 10MB')
+    expect(window.$message.error).toHaveBeenCalledWith('图片大小不能超过 10MB')
   })
 
   it('handleVideoImageUpload happy path stores url on success', async () => {
     fileInfoRef.value = { downloadUrl: 'https://cdn/uploaded.png' }
     const c = mountWith(() => useAiGenerationParams())
     const onFinish = vi.fn()
-    await c.handleVideoImageUpload({
-      file: { file: new File([new Uint8Array(8)], 'a.png', { type: 'image/png' }) } as any,
-      onFinish,
-      onError: vi.fn()
-    })
+    await c.handleVideoImageUpload(
+      makeUploadPayload(new File([new Uint8Array(8)], 'a.png', { type: 'image/png' }), {
+        onFinish,
+        onError: vi.fn()
+      })
+    )
     expect(c.videoParams.value.image).toBe('https://cdn/uploaded.png')
     expect(c.videoImagePreview.value).toBe('https://cdn/uploaded.png')
     expect(onFinish).toHaveBeenCalled()
@@ -152,11 +176,12 @@ describe('useAiGenerationParams', () => {
     uploadMock.mockRejectedValueOnce(new Error('net'))
     const c = mountWith(() => useAiGenerationParams())
     const onError = vi.fn()
-    await c.handleVideoImageUpload({
-      file: { file: new File([], 'a.png', { type: 'image/png' }) } as any,
-      onFinish: vi.fn(),
-      onError
-    })
+    await c.handleVideoImageUpload(
+      makeUploadPayload(new File([], 'a.png', { type: 'image/png' }), {
+        onFinish: vi.fn(),
+        onError
+      })
+    )
     expect(onError).toHaveBeenCalled()
     expect(c.isUploadingVideoImage.value).toBe(false)
   })

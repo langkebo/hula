@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ServerNoticeInfo } from '@/services/matrix/admin/AdminTypes'
 import { useAdminNotices } from '../useAdminNotices'
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     getServerNotices: vi.fn().mockResolvedValue({ notices: [] }),
     sendServerNotice: vi.fn().mockResolvedValue({ eventId: '$e' })
   }
 }))
 
-import { adminService } from '@/services/matrix'
+import { adminService } from '@/services/matrix/admin'
 
 describe('useAdminNotices', () => {
   beforeEach(() => {
@@ -16,8 +17,12 @@ describe('useAdminNotices', () => {
   })
 
   it('loadNotices populates ref with default limit', async () => {
+    const notices: ServerNoticeInfo[] = [
+      { userId: '@a:s', content: { body: 'x' } },
+      { userId: '@b:s', content: { body: 'y' } }
+    ]
     vi.mocked(adminService.getServerNotices).mockResolvedValueOnce({
-      notices: [{ userId: '@a:s', content: { body: 'x' } } as any, { userId: '@b:s', content: { body: 'y' } } as any]
+      notices
     })
     const c = useAdminNotices()
     await c.loadNotices()

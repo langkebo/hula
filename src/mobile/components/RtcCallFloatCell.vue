@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { CallTypeEnum, MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
-import { matrixVoIPService } from '@/services/matrix'
+import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useMobileStore } from '@/stores/domains/settings/mobile'
 import { useUserStore } from '@/stores/domains/user/user'

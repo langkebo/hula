@@ -75,11 +75,11 @@
   </n-config-provider>
 </template>
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('QRCode')
 
@@ -87,8 +87,9 @@ import { TauriCommand } from '@/enums'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
+import { saveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { getEnhancedFingerprint } from '@/services/fingerprint'
-import { matrixQrLoginService, type QRLoginResult } from '@/services/matrix'
+import { matrixQrLoginService, type QRLoginResult } from '@/services/matrix/auth/MatrixQrLoginService'
 import { loginCommand } from '@/services/tauriCommand'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -185,13 +186,20 @@ const handleConfirmed = async (res: QRLoginResult) => {
     if (!res.data) {
       throw new Error('missing data in QR login result')
     }
-    await invoke(TauriCommand.UPDATE_TOKEN, {
+    await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
       req: {
         uid: res.data.uid,
         token: res.data.token,
         refreshToken: res.data.refreshToken || ''
       }
     })
+
+    if (res.data.homeserverUrl) {
+      saveMatrixSessionEndpointConfig({
+        homeserverUrl: res.data.homeserverUrl,
+        identityServerUrl: res.data.identityServerUrl || ''
+      })
+    }
 
     await loginCommand({ uid: res.data.uid }).then(() => {
       scanStatus.value = {

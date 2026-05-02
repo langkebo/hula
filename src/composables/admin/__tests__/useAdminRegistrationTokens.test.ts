@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAdminRegistrationTokens } from '../useAdminRegistrationTokens'
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     getRegistrationTokens: vi.fn().mockResolvedValue([]),
     createRegistrationToken: vi.fn().mockResolvedValue({ token: 'new', pending: 0, completed: 0 }),
@@ -10,7 +10,7 @@ vi.mock('@/services/matrix', () => ({
   }
 }))
 
-import { adminService } from '@/services/matrix'
+import { adminService } from '@/services/matrix/admin'
 
 describe('useAdminRegistrationTokens', () => {
   beforeEach(() => {

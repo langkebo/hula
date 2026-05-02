@@ -11,7 +11,7 @@
           重新编辑
         </p>
       </n-flex>
-      <span v-else class="text-12px color-[--hula-text-tertiary] select-none" v-html="recallText"></span>
+      <span v-else class="text-12px color-[--hula-text-tertiary] select-none" v-safe-html="recallText"></span>
     </template>
     <template v-else>
       <n-flex align="center" :size="6">

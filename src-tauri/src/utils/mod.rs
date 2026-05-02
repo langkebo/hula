@@ -1,3 +1,4 @@
+pub mod crypto;
 #[cfg(target_os = "linux")]
 pub mod linux_runtime_guard;
 #[cfg(target_os = "macos")]

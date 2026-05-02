@@ -282,7 +282,6 @@
   <HomeserverDialog v-model:show="showHomeserverDialog" @save="handleHomeserverSave" />
 </template>
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
@@ -293,6 +292,7 @@ import { useMenuTopStore } from '@/stores/domains/settings/menuTop'
 import { usePluginsStore } from '@/stores/domains/settings/plugins'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useItemsBottom, useMoreList } from '../config.tsx'
 import { leftHook } from '../hook.ts'
 import DefinePlugins from './definePlugins/index.vue'
@@ -404,7 +404,7 @@ const handleResize = async (e: Event) => {
 
 /** 调整主界面高度 */
 const setHomeHeight = () => {
-  invoke('set_height', { height: showMode.value === ShowModeEnum.TEXT ? 505 : 423 })
+  invokeSilently('set_height', { height: showMode.value === ShowModeEnum.TEXT ? 505 : 423 })
 }
 
 onMounted(async () => {

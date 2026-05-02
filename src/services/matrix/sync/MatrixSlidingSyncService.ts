@@ -1,13 +1,8 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { RoomInfo } from '@/services/types'
 import type { MSC3575RoomData, MSC3575SlidingSyncResponse, SlidingSync, SlidingSyncState } from '@/types/matrix-js-sdk'
 import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
-import {
-  type ReconnectCallbacks,
-  type ReconnectState,
-  SlidingSyncReconnectManager
-} from './SlidingSyncReconnectManager'
 
 export interface SlidingSyncUnreadUpdate {
   roomId: string
@@ -34,7 +29,6 @@ export class MatrixSlidingSyncService {
   private slidingSync: SlidingSync | null = null
   private _isInitialized: boolean = false
   private callbacks: SlidingSyncCallbacks = {}
-  private reconnectManager = new SlidingSyncReconnectManager()
   private hasCompletedInitialSync = false
   private readonly lifecycleListener = (
     state: SlidingSyncState,
@@ -54,7 +48,11 @@ export class MatrixSlidingSyncService {
   async initialize(): Promise<void> {
     const syncInstance = matrixClientService.getSlidingSync()
     if (!syncInstance) {
-      throw new Error('SlidingSync not initialized in MatrixClientService')
+      this.slidingSync = null
+      this._isInitialized = false
+      this.hasCompletedInitialSync = false
+      info('[SlidingSync] Sliding Sync 未启用，跳过服务初始化')
+      return
     }
 
     if (this.slidingSync && this.slidingSync !== syncInstance) {
@@ -72,46 +70,7 @@ export class MatrixSlidingSyncService {
     this.slidingSync.on(SlidingSyncEvent.Lifecycle, this.lifecycleListener)
     this.slidingSync.on(SlidingSyncEvent.RoomData, this.roomDataListener)
 
-    this.reconnectManager.setReconnectFn(async () => {
-      const client = matrixClientService.getClient()
-      if (client) {
-        ;(client as unknown as { retryImmediately?: () => void }).retryImmediately?.()
-      }
-    })
-
-    this.reconnectManager.registerCallbacks({
-      onStateChange: (state) => {
-        switch (state) {
-          case 'reconnecting':
-            matrixClientService.updateConnectionState('RECONNECTING')
-            break
-          case 'failed':
-            matrixClientService.updateConnectionState('ERROR')
-            break
-          case 'connected':
-            matrixClientService.updateConnectionState('CONNECTED')
-            break
-        }
-      }
-    })
-
     info('[SlidingSync] Service initialized')
-  }
-
-  registerReconnectCallbacks(callbacks: ReconnectCallbacks): void {
-    this.reconnectManager.registerCallbacks(callbacks)
-  }
-
-  getReconnectState(): ReconnectState {
-    return this.reconnectManager.getState()
-  }
-
-  getReconnectRetryCount(): number {
-    return this.reconnectManager.getRetryCount()
-  }
-
-  forceReconnect(): void {
-    this.reconnectManager.forceReconnect()
   }
 
   private detachListeners(instance: SlidingSync): void {
@@ -121,8 +80,11 @@ export class MatrixSlidingSyncService {
 
   private onLifecycle(state: SlidingSyncState, resp: MSC3575SlidingSyncResponse | null, err?: Error) {
     if (err) {
-      error(`[SlidingSync] Lifecycle error: ${err.message}`)
-      this.reconnectManager.onError(err)
+      if (this.isRateLimitError(err)) {
+        warn(`[SlidingSync] Lifecycle rate limited: ${err.message}`)
+      } else {
+        error(`[SlidingSync] Lifecycle error: ${err.message}`)
+      }
       return
     }
 
@@ -132,12 +94,27 @@ export class MatrixSlidingSyncService {
         break
       case 'COMPLETE':
         info('[SlidingSync] Sync complete')
-        this.reconnectManager.onConnected()
         if (resp) {
           this.onSyncComplete(resp)
         }
         break
     }
+  }
+
+  private isRateLimitError(err?: Error): boolean {
+    const candidate = err as Error & {
+      errcode?: string
+      statusCode?: number
+      httpStatus?: number
+    }
+
+    return (
+      candidate?.errcode === 'M_LIMIT_EXCEEDED' ||
+      candidate?.statusCode === 429 ||
+      candidate?.httpStatus === 429 ||
+      candidate?.message.includes('429') === true ||
+      candidate?.message.includes('Rate limited') === true
+    )
   }
 
   private onSyncComplete(resp: MSC3575SlidingSyncResponse) {
@@ -330,7 +307,6 @@ export class MatrixSlidingSyncService {
     if (!this.slidingSync) return
 
     this.detachListeners(this.slidingSync)
-    this.reconnectManager.destroy()
     this.slidingSync = null
     this._isInitialized = false
     this.hasCompletedInitialSync = false

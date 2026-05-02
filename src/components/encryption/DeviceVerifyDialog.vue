@@ -94,7 +94,8 @@ import { Icon } from '@iconify/vue'
 import { NButton, NModal, NSpin, useMessage } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionContextService, matrixEncryptionService } from '@/services/matrix'
+import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('DeviceVerify')

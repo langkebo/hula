@@ -1,6 +1,6 @@
 import { MsgEnum } from '@/enums'
 import { useChatStore } from '@/stores/domains/chat/chat'
-import { messageStrategyMap } from '@/strategy/MessageStrategy'
+import { getStrategy } from '@/strategy/MessageStrategy'
 import { removeTempFile } from '@/utils/TempFileManager'
 
 /**
@@ -57,7 +57,7 @@ export const useCustomForwardTask = () => {
       throw new Error('customForwardTask is missing')
     }
 
-    const messageStrategy = messageStrategyMap[MsgEnum.IMAGE]
+    const messageStrategy = await getStrategy(MsgEnum.IMAGE)
     const replyContext = null
 
     const fileBuffer = task.bytes.slice().buffer

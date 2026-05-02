@@ -1,8 +1,18 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
+import type { UserInfoType } from '@/services/types'
 import { useLoginHistoriesStore } from '../loginHistory'
 
-const make = (account: string, name?: string): any => ({ account, name: name ?? account })
+const make = (account: string, name?: string): UserInfoType =>
+  ({
+    uid: account,
+    account,
+    email: `${account}@example.com`,
+    avatar: '',
+    name: name ?? account,
+    modifyNameChance: 0,
+    sex: 1 as UserInfoType['sex']
+  }) as unknown as UserInfoType
 
 describe('useLoginHistoriesStore', () => {
   beforeEach(() => {

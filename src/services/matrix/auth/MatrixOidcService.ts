@@ -42,6 +42,7 @@ export interface OidcTokenResponse {
 
 const OIDC_DISCOVERY_PATH = '/.well-known/openid-configuration'
 const DEFAULT_OIDC_SCOPES = ['openid', 'profile', 'email']
+const OIDC_HOMESERVER_STORAGE_KEY = 'oidc_homeserver_url'
 
 class MatrixOidcService {
   private discovery: OidcDiscoveryDocument | null = null
@@ -50,7 +51,7 @@ class MatrixOidcService {
   async discoverOidc(homeserverUrl: string): Promise<OidcDiscoveryDocument | null> {
     try {
       info(`[MatrixOidcService] Discovering OIDC for ${homeserverUrl}`)
-      this.homeserverUrl = homeserverUrl
+      this.setHomeserverUrl(homeserverUrl)
 
       const url = `${homeserverUrl}${OIDC_DISCOVERY_PATH}`
 
@@ -71,7 +72,11 @@ class MatrixOidcService {
   }
 
   isOidcEnabled(): boolean {
-    return this.discovery !== null && this.homeserverUrl !== ''
+    return this.discovery !== null && this.resolveHomeserverUrl() !== ''
+  }
+
+  getHomeserverUrl(): string {
+    return this.resolveHomeserverUrl()
   }
 
   async getAuthorizationUrl(params: OidcAuthorizationUrlParams): Promise<string | null> {
@@ -108,6 +113,7 @@ class MatrixOidcService {
   async handleCallback(code: string, state: string): Promise<OidcTokenResponse | null> {
     const savedState = sessionStorage.getItem('oidc_state')
     const codeVerifier = sessionStorage.getItem('oidc_code_verifier')
+    const homeserverUrl = this.resolveHomeserverUrl()
 
     if (!savedState || savedState !== state) {
       logError('[MatrixOidcService] Invalid OIDC state')
@@ -119,10 +125,15 @@ class MatrixOidcService {
       return null
     }
 
+    if (!homeserverUrl) {
+      logError('[MatrixOidcService] Missing homeserver URL for OIDC callback')
+      return null
+    }
+
     try {
       info(`[MatrixOidcService] Exchanging authorization code for tokens`)
 
-      const response = await fetch(`${this.homeserverUrl}/_matrix/client/v3/oidc/token`, {
+      const response = await fetch(`${homeserverUrl}/_matrix/client/v3/oidc/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -176,10 +187,16 @@ class MatrixOidcService {
   }
 
   async logout(): Promise<boolean> {
+    const homeserverUrl = this.resolveHomeserverUrl()
+    if (!homeserverUrl) {
+      logError('[MatrixOidcService] Missing homeserver URL for OIDC logout')
+      return false
+    }
+
     try {
       info(`[MatrixOidcService] Logging out via OIDC`)
 
-      const response = await fetch(`${this.homeserverUrl}/_matrix/client/v3/oidc/logout`, {
+      const response = await fetch(`${homeserverUrl}/_matrix/client/v3/oidc/logout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -239,10 +256,16 @@ class MatrixOidcService {
     oidcAccessToken: string,
     oidcRefreshToken?: string
   ): Promise<{ user_id: string; access_token: string; device_id: string; refresh_token?: string } | null> {
+    const homeserverUrl = this.resolveHomeserverUrl()
+    if (!homeserverUrl) {
+      logError('[MatrixOidcService] Missing homeserver URL for OIDC token exchange')
+      return null
+    }
+
     try {
       info(`[MatrixOidcService] Exchanging OIDC token for Matrix token`)
 
-      const response = await fetch(`${this.homeserverUrl}/_matrix/client/v3/oidc/token`, {
+      const response = await fetch(`${homeserverUrl}/_matrix/client/v3/oidc/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -267,6 +290,24 @@ class MatrixOidcService {
       logError(`[MatrixOidcService] Error exchanging OIDC for Matrix token: ${err}`)
       return null
     }
+  }
+
+  private setHomeserverUrl(homeserverUrl: string): void {
+    this.homeserverUrl = homeserverUrl
+    sessionStorage.setItem(OIDC_HOMESERVER_STORAGE_KEY, homeserverUrl)
+  }
+
+  private resolveHomeserverUrl(): string {
+    if (this.homeserverUrl) {
+      return this.homeserverUrl
+    }
+
+    const storedHomeserverUrl = sessionStorage.getItem(OIDC_HOMESERVER_STORAGE_KEY)?.trim() || ''
+    if (storedHomeserverUrl) {
+      this.homeserverUrl = storedHomeserverUrl
+    }
+
+    return this.homeserverUrl
   }
 }
 

@@ -24,6 +24,7 @@ export const useMatrixStore = defineStore(
     const deviceId = ref<string | null>(null)
     const accessToken = ref<string | null>(null)
     const homeserverUrl = ref<string | null>(null)
+    const lastError = ref<string | null>(null)
     const isInitialized = ref(false)
     const syncState = ref<string | null>(null)
 
@@ -32,6 +33,7 @@ export const useMatrixStore = defineStore(
 
     async function initialize(config: MatrixClientConfig): Promise<void> {
       try {
+        lastError.value = null
         await matrixClientService.initialize(config)
         homeserverUrl.value = config.homeserverUrl
         userId.value = config.userId ?? null
@@ -76,6 +78,7 @@ export const useMatrixStore = defineStore(
 
     async function login(username: string, password: string, deviceName?: string): Promise<boolean> {
       try {
+        lastError.value = null
         connectionState.value = 'CONNECTING'
         const result = await matrixClientService.login(username, password, deviceName)
 
@@ -90,11 +93,13 @@ export const useMatrixStore = defineStore(
           return true
         } else {
           connectionState.value = 'ERROR'
+          lastError.value = result.error ?? '登录失败'
           logger.error('登录失败:', result.error)
           return false
         }
       } catch (error) {
         connectionState.value = 'ERROR'
+        lastError.value = error instanceof Error ? error.message : '登录失败'
         logger.error('登录异常:', error)
         return false
       }
@@ -111,6 +116,7 @@ export const useMatrixStore = defineStore(
 
     async function completeSSOLogin(loginToken: string): Promise<boolean> {
       try {
+        lastError.value = null
         connectionState.value = 'CONNECTING'
         const result = await matrixClientService.completeSSOLogin(loginToken)
 
@@ -125,11 +131,13 @@ export const useMatrixStore = defineStore(
           return true
         } else {
           connectionState.value = 'ERROR'
+          lastError.value = result.error ?? 'SSO 登录失败'
           logger.error('SSO 登录失败:', result.error)
           return false
         }
       } catch (error) {
         connectionState.value = 'ERROR'
+        lastError.value = error instanceof Error ? error.message : 'SSO 登录失败'
         logger.error('SSO 登录异常:', error)
         return false
       }
@@ -137,6 +145,7 @@ export const useMatrixStore = defineStore(
 
     async function loginWithToken(token: string, uid: string): Promise<boolean> {
       try {
+        lastError.value = null
         connectionState.value = 'CONNECTING'
         const result = await matrixClientService.loginWithToken(token, uid)
 
@@ -150,11 +159,13 @@ export const useMatrixStore = defineStore(
           return true
         } else {
           connectionState.value = 'ERROR'
+          lastError.value = result.error ?? 'Token 登录失败'
           logger.error('Token 登录失败:', result.error)
           return false
         }
       } catch (error) {
         connectionState.value = 'ERROR'
+        lastError.value = error instanceof Error ? error.message : 'Token 登录失败'
         logger.error('Token 登录异常:', error)
         return false
       }
@@ -171,6 +182,7 @@ export const useMatrixStore = defineStore(
         accessToken.value = null
         connectionState.value = 'DISCONNECTED'
         syncState.value = null
+        lastError.value = null
         isInitialized.value = false
 
         const { useAdminStore } = await import('../admin/admin')
@@ -200,6 +212,7 @@ export const useMatrixStore = defineStore(
       deviceId,
       accessToken,
       homeserverUrl,
+      lastError,
       isInitialized,
       syncState,
       isLoggedIn,
@@ -217,7 +230,7 @@ export const useMatrixStore = defineStore(
   },
   {
     persist: {
-      pick: ['userId', 'accessToken', 'deviceId', 'homeserverUrl']
+      pick: ['userId', 'deviceId', 'homeserverUrl']
     }
   }
 )

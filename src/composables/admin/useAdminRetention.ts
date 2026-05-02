@@ -1,5 +1,5 @@
 import { type Ref, ref } from 'vue'
-import { adminService } from '@/services/matrix'
+import { adminService } from '@/services/matrix/admin'
 
 export interface RetentionPolicyView {
   roomId: string

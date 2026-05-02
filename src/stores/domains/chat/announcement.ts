@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
-import { EventType } from '@/services/matrix'
 import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { EventType } from '@/services/matrix/sdk'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'

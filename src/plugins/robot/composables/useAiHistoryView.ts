@@ -10,8 +10,8 @@
  */
 import { onMounted, onUnmounted, type Ref, ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
-import type { AIModel } from '@/services/matrix'
-import { aiService } from '@/services/matrix'
+import { aiService } from '@/services/matrix/ai/AIService'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { createLogger } from '@/utils/Logger'
 import type { HistoryItem, PaginationState, PreviewItem } from './useRobotChat'
 
