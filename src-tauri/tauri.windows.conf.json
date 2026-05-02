@@ -70,56 +70,6 @@
         "transparent": true,
         "visible": false,
         "decorations": false
-      },
-      {
-        "label": "tray",
-        "url": "/tray",
-        "resizable": false,
-        "center": false,
-        "visible": false,
-        "width": 130,
-        "height": 44,
-        "alwaysOnTop": true,
-        "skipTaskbar": true,
-        "decorations": false,
-        "transparent": true
-      },
-      {
-        "label": "notify",
-        "url": "/notify",
-        "resizable": false,
-        "center": false,
-        "visible": false,
-        "width": 280,
-        "height": 140,
-        "alwaysOnTop": true,
-        "skipTaskbar": true,
-        "decorations": false,
-        "transparent": true
-      },
-      {
-        "label": "capture",
-        "url": "/capture",
-        "fullscreen": true,
-        "transparent": true,
-        "resizable": false,
-        "skipTaskbar": true,
-        "decorations": false,
-        "visible": false,
-        "hiddenTitle": true
-      },
-      {
-        "label": "checkupdate",
-        "url": "/checkupdate",
-        "resizable": false,
-        "width": 500,
-        "height": 150,
-        "alwaysOnTop": true,
-        "focus": true,
-        "skipTaskbar": true,
-        "visible": false,
-        "decorations": false,
-        "hiddenTitle": true
       }
     ],
     "security": {

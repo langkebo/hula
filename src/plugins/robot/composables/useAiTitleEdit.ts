@@ -1,6 +1,6 @@
 import { type Ref, ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { conversationService } from '@/services/matrix'
+import { conversationService } from '@/services/matrix/ai/ConversationService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiTitleEdit')

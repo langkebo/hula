@@ -79,7 +79,7 @@ describe('MatrixSearchService', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixSearchService.searchMessages('test')).rejects.toThrow()
     })
@@ -96,7 +96,7 @@ describe('MatrixSearchService', () => {
 
   describe('searchUsers', () => {
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixSearchService.searchUsers('test')).rejects.toThrow()
     })

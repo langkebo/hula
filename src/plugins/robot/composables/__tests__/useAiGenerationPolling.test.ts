@@ -12,7 +12,7 @@ const { aiServiceMock, errorMock } = vi.hoisted(() => ({
   errorMock: vi.fn()
 }))
 
-vi.mock('@/services/matrix', () => ({ aiService: aiServiceMock }))
+vi.mock('@/services/matrix/ai/AIService', () => ({ aiService: aiServiceMock }))
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: errorMock, warn: vi.fn(), debug: vi.fn() })
 }))

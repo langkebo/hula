@@ -157,7 +157,7 @@ import type { InputInst } from 'naive-ui'
 import { nextTick, ref, watch } from 'vue'
 import type { AIProvider } from '@/plugins/robot/composables/useAiProviderConfig'
 import type { ConversationMeta } from '@/plugins/robot/composables/useRobotChat'
-import type { AIModel } from '@/services/matrix'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
 
 const props = defineProps<{
   chatTitle: ConversationMeta['title']

@@ -10,6 +10,7 @@
 
 import { info, warn } from '@tauri-apps/plugin-log'
 import { createLogger } from '@/utils/Logger'
+import { performanceReporter } from '@/utils/PerformanceReporter'
 
 const logger = createLogger('RoomPerformance')
 
@@ -29,14 +30,6 @@ export interface RoomPerformanceMetrics {
   // 内存
   memoryUsage: number // 内存使用 (MB)
   cachedItems: number // 缓存项数量
-}
-
-interface PerformanceMemory {
-  usedJSHeapSize: number
-}
-
-interface PerformanceWithMemory extends Performance {
-  memory?: PerformanceMemory
 }
 
 class RoomPerformanceMonitor {
@@ -99,6 +92,7 @@ class RoomPerformanceMonitor {
       case 'room-list-render':
         this.metrics.listRenderTime = value
         info(`[RoomPerf] 列表渲染: ${value.toFixed(2)}ms`)
+        performanceReporter.reportPageRender('room-list', value, 200, 'room-list')
         break
       case 'room-item-render':
         this.metrics.itemRenderTime = value
@@ -178,8 +172,7 @@ class RoomPerformanceMonitor {
    * 尝试获取内存使用情况
    */
   updateMemoryUsage(): void {
-    const performanceWithMemory = performance as PerformanceWithMemory
-    const memory = performanceWithMemory.memory
+    const memory = performance.memory
     if (memory) {
       this.metrics.memoryUsage = Math.round(memory.usedJSHeapSize / 1024 / 1024)
     }

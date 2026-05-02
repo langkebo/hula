@@ -1,10 +1,11 @@
+import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { syncService, useSync } from '../MatrixSyncService'
 
 vi.mock('../../MatrixClientService', () => {
   const service = {
-    getClient: vi.fn()
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 
   return {
@@ -26,15 +27,21 @@ const mockRoom = {
     if (kind === 'Total' || kind === 'total') return 5
     return 0
   })
-} as any
+} as unknown as Room
+
+const mockSync = vi.fn()
+const mockStopClient = vi.fn()
+const mockGetRooms = vi.fn(() => [] as Room[])
+const mockOn = vi.fn()
+const mockOff = vi.fn()
 
 const mockClient = {
-  sync: vi.fn(),
-  stopClient: vi.fn(),
-  getRooms: vi.fn(() => []),
-  on: vi.fn(),
-  off: vi.fn()
-} as any
+  sync: mockSync,
+  stopClient: mockStopClient,
+  getRooms: mockGetRooms,
+  on: mockOn,
+  off: mockOff
+} as unknown as MatrixClient
 
 describe('SyncService', () => {
   beforeEach(() => {
@@ -55,15 +62,15 @@ describe('SyncService', () => {
 
   describe('startSync', () => {
     it('should throw error when client is not initialized', async () => {
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       await expect(service.startSync()).rejects.toThrow('Client 未初始化')
     })
 
     it('should use matrixClientService client when initialize is not called', async () => {
-      mockClient.sync.mockResolvedValueOnce(undefined)
+      mockSync.mockResolvedValueOnce(undefined)
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient)
 
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       await service.startSync({ preset: 'realtime' })
 
       expect(matrixClientService.getClient).toHaveBeenCalled()
@@ -71,18 +78,18 @@ describe('SyncService', () => {
     })
 
     it('should not start sync if already syncing', async () => {
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
-      ;(service as any).syncState.isSyncing = true
+      ;(service as unknown as { syncState: { isSyncing: boolean } }).syncState.isSyncing = true
 
       await service.startSync()
       expect(mockClient.sync).not.toHaveBeenCalled()
     })
 
     it('should start sync successfully', async () => {
-      mockClient.sync.mockResolvedValueOnce(undefined)
+      mockSync.mockResolvedValueOnce(undefined)
 
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       await service.startSync({ preset: 'initialSync' })
@@ -90,9 +97,9 @@ describe('SyncService', () => {
     })
 
     it('should handle sync error', async () => {
-      mockClient.sync.mockRejectedValueOnce(new Error('Sync failed'))
+      mockSync.mockRejectedValueOnce(new Error('Sync failed'))
 
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       await expect(service.startSync()).rejects.toThrow('Sync failed')
@@ -101,12 +108,12 @@ describe('SyncService', () => {
 
   describe('stopSync', () => {
     it('should do nothing when client is not initialized', async () => {
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       await service.stopSync()
     })
 
     it('should stop client', async () => {
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       await service.stopSync()
@@ -127,14 +134,14 @@ describe('SyncService', () => {
 
   describe('getRooms', () => {
     it('should return empty array when client is not initialized', () => {
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       expect(service.getRooms()).toEqual([])
     })
 
     it('should return rooms from client', () => {
-      mockClient.getRooms.mockReturnValueOnce([mockRoom, mockRoom])
+      mockGetRooms.mockReturnValueOnce([mockRoom, mockRoom])
 
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       const rooms = service.getRooms()
@@ -144,13 +151,13 @@ describe('SyncService', () => {
 
   describe('getJoinedRooms', () => {
     it('should filter rooms by join membership', () => {
-      const joinRoom = { getMyMembership: () => 'join' } as any
-      const inviteRoom = { getMyMembership: () => 'invite' } as any
-      const leaveRoom = { getMyMembership: () => 'leave' } as any
+      const joinRoom = { getMyMembership: () => 'join' } as unknown as Room
+      const inviteRoom = { getMyMembership: () => 'invite' } as unknown as Room
+      const leaveRoom = { getMyMembership: () => 'leave' } as unknown as Room
 
-      mockClient.getRooms.mockReturnValueOnce([joinRoom, inviteRoom, leaveRoom, joinRoom])
+      mockGetRooms.mockReturnValueOnce([joinRoom, inviteRoom, leaveRoom, joinRoom])
 
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       const rooms = service.getJoinedRooms()
@@ -160,12 +167,12 @@ describe('SyncService', () => {
 
   describe('getInvitedRooms', () => {
     it('should filter rooms by invite membership', () => {
-      const joinRoom = { getMyMembership: () => 'join' } as any
-      const inviteRoom = { getMyMembership: () => 'invite' } as any
+      const joinRoom = { getMyMembership: () => 'join' } as unknown as Room
+      const inviteRoom = { getMyMembership: () => 'invite' } as unknown as Room
 
-      mockClient.getRooms.mockReturnValueOnce([joinRoom, inviteRoom, inviteRoom])
+      mockGetRooms.mockReturnValueOnce([joinRoom, inviteRoom, inviteRoom])
 
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       const rooms = service.getInvitedRooms()
@@ -175,12 +182,12 @@ describe('SyncService', () => {
 
   describe('getLeftRooms', () => {
     it('should filter rooms by leave membership', () => {
-      const joinRoom = { getMyMembership: () => 'join' } as any
-      const leaveRoom = { getMyMembership: () => 'leave' } as any
+      const joinRoom = { getMyMembership: () => 'join' } as unknown as Room
+      const leaveRoom = { getMyMembership: () => 'leave' } as unknown as Room
 
-      mockClient.getRooms.mockReturnValueOnce([joinRoom, leaveRoom, leaveRoom])
+      mockGetRooms.mockReturnValueOnce([joinRoom, leaveRoom, leaveRoom])
 
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       const rooms = service.getLeftRooms()
@@ -190,7 +197,7 @@ describe('SyncService', () => {
 
   describe('onSync', () => {
     it('should register event listener', () => {
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       const callback = vi.fn()
@@ -202,7 +209,7 @@ describe('SyncService', () => {
 
   describe('offSync', () => {
     it('should remove event listener', () => {
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       const callback = vi.fn()
@@ -217,13 +224,13 @@ describe('SyncService', () => {
         ...mockClient,
         on: vi.fn(),
         off: vi.fn()
-      }
+      } as unknown as MatrixClient
       const newClient = {
         ...mockClient,
         on: vi.fn(),
         off: vi.fn()
-      }
-      const service = new (syncService.constructor as any)()
+      } as unknown as MatrixClient
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       const callback = vi.fn()
 
       vi.mocked(matrixClientService.getClient).mockReturnValue(oldClient)
@@ -251,11 +258,11 @@ describe('SyncService', () => {
           getMyMembership: () => 'invite',
           getUnreadNotificationCount: (kind: string) => (kind === 'highlight' ? 1 : 1)
         }
-      ] as any[]
+      ] as unknown as Room[]
 
-      mockClient.getRooms.mockReturnValueOnce(rooms)
+      mockGetRooms.mockReturnValueOnce(rooms)
 
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       const count = service.getUnreadNotificationCount()
@@ -268,11 +275,11 @@ describe('SyncService', () => {
       const rooms = [
         { getMyMembership: () => 'join', getUnreadNotificationCount: (kind: string) => (kind === 'highlight' ? 2 : 5) },
         { getMyMembership: () => 'join', getUnreadNotificationCount: (kind: string) => (kind === 'highlight' ? 3 : 10) }
-      ] as any[]
+      ] as unknown as Room[]
 
-      mockClient.getRooms.mockReturnValueOnce(rooms)
+      mockGetRooms.mockReturnValueOnce(rooms)
 
-      const service = new (syncService.constructor as any)()
+      const service = new (syncService.constructor as unknown as new () => typeof syncService)()
       service.initialize(mockClient)
 
       const count = service.getUnreadMessageCount()
@@ -284,8 +291,8 @@ describe('SyncService', () => {
 describe('useSync composable', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockClient.sync.mockResolvedValue(undefined)
-    mockClient.getRooms.mockReturnValue([])
+    mockSync.mockResolvedValue(undefined)
+    mockGetRooms.mockReturnValue([])
   })
 
   it('should initialize with default values', () => {

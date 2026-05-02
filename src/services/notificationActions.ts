@@ -22,7 +22,9 @@ async function focusHomeWindow(): Promise<void> {
 function navigateToRoom(roomId: string): void {
   const globalStore = useGlobalStore()
   globalStore.updateCurrentSessionRoomId(roomId)
-  void router.push({ name: 'message' }).catch(() => {})
+  void router.push({ name: 'message' }).catch(() => {
+    /* navigation already in progress */
+  })
 }
 
 export async function installNotificationActionListener(): Promise<void> {

@@ -1,9 +1,10 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NotificationTypeEnum } from '@/enums'
 
 vi.mock('../../MatrixClientService', () => ({
   matrixClientService: {
-    getClient: vi.fn()
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -38,7 +39,7 @@ describe('MatrixRoomNotificationService', () => {
           getAccountData: vi.fn(() => ({ getContent: () => ({}) }))
         })),
         setRoomAccountData
-      } as any)
+      } as unknown as MatrixClient)
 
       await matrixRoomNotificationService.setRoomNotification('!room:server', NotificationTypeEnum.NOT_DISTURB)
 
@@ -53,7 +54,7 @@ describe('MatrixRoomNotificationService', () => {
           getAccountData: vi.fn(() => ({ getContent: () => ({}) }))
         })),
         setRoomAccountData
-      } as any)
+      } as unknown as MatrixClient)
 
       await matrixRoomNotificationService.setRoomNotification('!room:server', NotificationTypeEnum.RECEPTION)
 
@@ -69,7 +70,7 @@ describe('MatrixRoomNotificationService', () => {
           getAccountData: vi.fn(() => ({ getContent: () => ({}) }))
         })),
         setRoomAccountData
-      } as any)
+      } as unknown as MatrixClient)
 
       await matrixRoomNotificationService.setRoomShield('!room:server', true)
       expect(setRoomAccountData).toHaveBeenCalled()

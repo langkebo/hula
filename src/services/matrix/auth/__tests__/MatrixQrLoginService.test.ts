@@ -4,11 +4,19 @@ import { useQRLogin } from '../MatrixQrLoginService'
 const mockMatrixStore = {
   userId: null as string | null,
   accessToken: null as string | null,
-  deviceId: null as string | null
+  deviceId: null as string | null,
+  homeserverUrl: null as string | null
 }
 
 vi.mock('@/stores/domains/chat/matrix', () => ({
   useMatrixStore: vi.fn(() => mockMatrixStore)
+}))
+
+vi.mock('@/services/backend/config', () => ({
+  resolveMatrixSessionEndpointConfig: () => ({
+    homeserverUrl: 'https://session.example.com',
+    identityServerUrl: 'https://identity.example.com'
+  })
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -27,6 +35,7 @@ describe('MatrixQrLoginService', () => {
     mockMatrixStore.userId = null
     mockMatrixStore.accessToken = null
     mockMatrixStore.deviceId = null
+    mockMatrixStore.homeserverUrl = null
   })
 
   it('should generate QR session and enter waiting_scan', async () => {
@@ -54,6 +63,7 @@ describe('MatrixQrLoginService', () => {
     mockMatrixStore.userId = '@user:example.com'
     mockMatrixStore.accessToken = 'token'
     mockMatrixStore.deviceId = 'DEVICE_ID'
+    mockMatrixStore.homeserverUrl = 'https://confirmed.example.com'
 
     const ok = await service.handleConfirm(generated?.qrId)
     const status = await service.checkStatus(generated?.qrId)
@@ -61,5 +71,11 @@ describe('MatrixQrLoginService', () => {
     expect(ok).toBe(true)
     expect(service.status.value).toBe('success')
     expect(status?.userId).toBe('@user:example.com')
+    expect(status?.data).toEqual(
+      expect.objectContaining({
+        homeserverUrl: 'https://confirmed.example.com',
+        identityServerUrl: 'https://identity.example.com'
+      })
+    )
   })
 })

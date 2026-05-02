@@ -35,7 +35,7 @@ vi.mock('@/hooks/useMitt.ts', () => ({
   MittEnum: { LOCATE_SESSION: 'LOCATE_SESSION', TO_SEND_MSG: 'TO_SEND_MSG' }
 }))
 vi.mock('@/router', () => ({ default: routerMock }))
-vi.mock('@/services/matrix', () => ({ matrixSessionService: sessionServiceMock }))
+vi.mock('@/services/matrix/auth/MatrixSessionService', () => ({ matrixSessionService: sessionServiceMock }))
 vi.mock('../../../utils/TauriInvokeHandler', () => ({ invokeWithErrorHandler: invokeMock }))
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
   WebviewWindow: { getCurrent: () => ({ label: 'home' }) }

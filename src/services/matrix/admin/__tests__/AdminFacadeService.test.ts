@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { adminService } from '..'
@@ -159,16 +160,17 @@ describe('adminService facade', () => {
     vi.mocked(matrixClientService.getClient).mockReturnValue({
       getUserId: vi.fn(() => '@admin:server.com'),
       getAccessToken: vi.fn(() => 'token'),
+      getHomeserverUrl: vi.fn(() => 'https://matrix.test'),
       getDomain: vi.fn(() => 'server.com'),
       http: { authedRequest: vi.fn() },
       getAdminManager: vi.fn(() => mockAdminManager)
-    } as any)
-    vi.mocked(invoke).mockResolvedValue({ is_admin: true, user_id: '@admin:server.com' } as any)
+    } as unknown as MatrixClient)
+    vi.mocked(invoke).mockResolvedValue({ is_admin: true, user_id: '@admin:server.com' })
   })
 
   describe('Server Management', () => {
     it('should return fallback stats when runtime client is missing', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       const result = await adminService.getServerStats()
       expect(result).toEqual({
         roomCount: 0,

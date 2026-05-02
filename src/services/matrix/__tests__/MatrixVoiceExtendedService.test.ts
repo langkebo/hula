@@ -17,7 +17,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 describe('MatrixVoiceService - Extended Features', () => {
   let mockClient: Partial<MatrixClient>
-  let mockHttp: any
+  let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     mockHttp = {
@@ -25,7 +25,7 @@ describe('MatrixVoiceService - Extended Features', () => {
     }
 
     mockClient = {
-      http: mockHttp
+      http: mockHttp as unknown as MatrixClient['http']
     }
 
     vi.mocked(matrixClientService.getClient).mockReset()

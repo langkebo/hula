@@ -30,6 +30,7 @@
   "modify_group_nickname": "Modify nickname",
   "add_friend": "Add Friend",
   "report": "Report",
+  "report_success": "Reported successfully, we will process it as soon as possible",
   "ctx_menu_more": "More",
   "context_menu_actions": "Context menu",
   "context_menu_reactions": "Reaction menu",

@@ -1,8 +1,9 @@
 use crate::error::CommonError;
+use crate::utils::crypto;
 use entity::im_user;
 use entity::prelude::ImUserEntity;
 use sea_orm::{ActiveValue::Set, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 /// 更新用户的 is_init 状态
 pub async fn update_user_init_status<C>(
@@ -41,6 +42,12 @@ pub async fn save_user_tokens<C>(
 where
     C: ConnectionTrait,
 {
+    // 对 token 进行加密
+    let encrypted_token = crypto::encrypt(token).map_err(|e| {
+        error!("Failed to encrypt token: {:?}", e);
+        CommonError::UnexpectedError(e)
+    })?;
+
     // 检查用户是否已存在
     let existing_user = ImUserEntity::find()
         .filter(im_user::Column::Id.eq(login_uid))
@@ -66,14 +73,18 @@ where
             "".to_string()
         }
     } else {
-        refresh_token.to_string()
+        // 对新 refresh_token 进行加密
+        crypto::encrypt(refresh_token).map_err(|e| {
+            error!("Failed to encrypt refresh_token: {:?}", e);
+            CommonError::UnexpectedError(e)
+        })?
     };
 
     let user_update = if existing_user.is_some() {
         // 用户存在，更新 token 信息
         im_user::ActiveModel {
             id: Set(login_uid.to_string()),
-            token: Set(Some(token.to_string())),
+            token: Set(Some(encrypted_token)),
             refresh_token: Set(Some(refresh_token_to_save.clone())),
             ..Default::default()
         }
@@ -81,7 +92,7 @@ where
         // 用户不存在，创建新用户并设置 token 信息
         im_user::ActiveModel {
             id: Set(login_uid.to_string()),
-            token: Set(Some(token.to_string())),
+            token: Set(Some(encrypted_token)),
             refresh_token: Set(Some(refresh_token_to_save.clone())),
             is_init: Set(true), // 新用户默认未初始化
             ..Default::default()
@@ -134,7 +145,25 @@ where
 
     match user {
         Some(user) => {
-            if let (Some(token), Some(refresh_token)) = (user.token, user.refresh_token) {
+            if let (Some(enc_token), Some(enc_refresh_token)) = (user.token, user.refresh_token) {
+                // 尝试解密 token
+                let token = crypto::decrypt(&enc_token).unwrap_or_else(|_| {
+                    warn!(
+                        "Failed to decrypt token for {}, assuming plain text (migration)",
+                        login_uid
+                    );
+                    enc_token
+                });
+
+                // 尝试解密 refresh_token
+                let refresh_token = crypto::decrypt(&enc_refresh_token).unwrap_or_else(|_| {
+                    warn!(
+                        "Failed to decrypt refresh_token for {}, assuming plain text (migration)",
+                        login_uid
+                    );
+                    enc_refresh_token
+                });
+
                 Ok(Some((token, refresh_token)))
             } else {
                 Ok(None)

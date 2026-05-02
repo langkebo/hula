@@ -1,12 +1,13 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixEncryptionContextService } from '../MatrixEncryptionContextService'
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(),
-    getUserId: vi.fn(),
-    getDeviceId: vi.fn()
+    getClient: vi.fn(() => null as MatrixClient | null),
+    getUserId: vi.fn(() => null as string | null),
+    getDeviceId: vi.fn(() => null as string | null)
   }
 }))
 
@@ -38,7 +39,7 @@ describe('MatrixEncryptionContextService', () => {
       getStoredDevice: vi.fn()
     }
 
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
     vi.mocked(matrixClientService.getUserId).mockReturnValue('@alice:example.com')
     vi.mocked(matrixClientService.getDeviceId).mockReturnValue('DEVICE123')
   })

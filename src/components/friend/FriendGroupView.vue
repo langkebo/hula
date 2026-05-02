@@ -88,8 +88,8 @@
 import { NIcon, useMessage } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixFriendService } from '@/services/matrix'
 import type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
+import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 
 const { t } = useI18n()
 const message = useMessage()

@@ -411,10 +411,11 @@
       "unknown_error": "复制内容失败，请稍后再试"
     },
     "feature": {
-      "coming_soon": "功能暂开发"
+      "coming_soon": "功能开发中"
     },
     "translate": {
-      "empty": "没有可翻译的内容"
+      "empty": "没有可翻译的内容",
+      "failed": "翻译失败，请稍后重试"
     },
     "file": {
       "missing_local": "暂时找不到本地文件，请先下载后再试~",

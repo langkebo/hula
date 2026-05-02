@@ -1,4 +1,4 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import matrixClientService from '../../MatrixClientService'
@@ -78,7 +78,7 @@ describe('MatrixReactionService', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixReactionService.addReaction('!room', '$event', '👍')).rejects.toThrow()
     })
@@ -92,7 +92,7 @@ describe('MatrixReactionService', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixReactionService.removeReaction('!room', '$reaction')).rejects.toThrow()
     })
@@ -108,7 +108,7 @@ describe('MatrixReactionService', () => {
                 getEvents: vi.fn(() => [])
               }))
             }))
-          }) as any
+          }) as unknown as Room
       )
 
       const result = await matrixReactionService.toggleReaction('!room:example.com', '$event_1', '👍')
@@ -118,7 +118,7 @@ describe('MatrixReactionService', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixReactionService.toggleReaction('!room', '$event', '👍')).rejects.toThrow()
     })

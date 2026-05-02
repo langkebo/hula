@@ -5,7 +5,7 @@ import {
   type ServerStats,
   type ServerStatus,
   type ServerVersion
-} from '@/services/matrix'
+} from '@/services/matrix/admin'
 
 export interface UseAdminServerLogsResult {
   loading: Ref<boolean>

@@ -11,7 +11,10 @@ vi.mock('../../MatrixClientService', () => ({
 
 describe('MatrixVerificationService', () => {
   let mockClient: Partial<MatrixClient>
-  let mockCrypto: any
+  let mockCrypto: {
+    requestDeviceVerification: ReturnType<typeof vi.fn>
+    getDeviceVerificationStatus: ReturnType<typeof vi.fn>
+  }
 
   beforeEach(() => {
     mockCrypto = {
@@ -20,7 +23,7 @@ describe('MatrixVerificationService', () => {
     }
 
     mockClient = {
-      getCrypto: vi.fn(() => mockCrypto),
+      getCrypto: vi.fn(() => mockCrypto as unknown as MatrixClient['crypto']),
       on: vi.fn(), // 添加 on 方法用于事件监听
       off: vi.fn(),
       getUserId: vi.fn(() => '@test:example.com'),
@@ -30,13 +33,13 @@ describe('MatrixVerificationService', () => {
     vi.mocked(matrixClientService.getClient).mockReset()
     vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
     matrixVerificationService.initialize()
-    ;(matrixVerificationService as any).pendingRequests.clear()
-    ;(matrixVerificationService as any).observedClient = mockClient
+    ;(matrixVerificationService as unknown as { pendingRequests: Map<string, unknown> }).pendingRequests.clear()
+    ;(matrixVerificationService as unknown as { observedClient: unknown }).observedClient = mockClient
   })
 
   describe('startSasVerification', () => {
     it('应该在未调用 initialize 时回退到 matrixClientService 并补绑监听', async () => {
-      ;(matrixVerificationService as any).observedClient = null
+      ;(matrixVerificationService as unknown as { observedClient: unknown }).observedClient = null
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
 
       mockCrypto.requestDeviceVerification.mockResolvedValue({

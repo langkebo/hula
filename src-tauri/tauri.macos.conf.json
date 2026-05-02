@@ -77,34 +77,6 @@
         "visible": false,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true
-      },
-      {
-        "label": "capture",
-        "url": "/capture",
-        "fullscreen": false,
-        "transparent": true,
-        "resizable": false,
-        "skipTaskbar": true,
-        "decorations": false,
-        "visible": false,
-        "hiddenTitle": true,
-        "alwaysOnTop": true,
-        "focus": true,
-        "titleBarStyle": "Overlay",
-        "visibleOnAllWorkspaces": true
-      },
-      {
-        "label": "checkupdate",
-        "url": "/checkupdate",
-        "resizable": false,
-        "width": 500,
-        "height": 150,
-        "alwaysOnTop": true,
-        "focus": true,
-        "skipTaskbar": true,
-        "visible": false,
-        "titleBarStyle": "Overlay",
-        "hiddenTitle": true
       }
     ],
     "security": {

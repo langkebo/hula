@@ -1,3 +1,4 @@
+import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -8,13 +9,13 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() }
+  default: { getClient: () => getClientMock() as MatrixClient }
 }))
 
 const convertEventToMessageTypeMock = vi.fn()
 vi.mock('../../MatrixEventService', () => ({
   default: {
-    convertEventToMessageType: (e: unknown) => convertEventToMessageTypeMock(e)
+    convertEventToMessageType: (e: MatrixEvent) => convertEventToMessageTypeMock(e)
   }
 }))
 
@@ -35,22 +36,23 @@ vi.mock('../../messaging/MatrixReceiptService', () => ({
 const convertRoomToRoomInfoMock = vi.fn()
 vi.mock('../CreationService', () => ({
   matrixRoomCreationService: {
-    convertRoomToRoomInfo: (room: unknown) => convertRoomToRoomInfoMock(room)
+    convertRoomToRoomInfo: (room: Room) => convertRoomToRoomInfoMock(room)
   }
 }))
 
 const { MatrixRoomRealtimeService } = await import('../RealtimeService')
 const { RoomTypeEnum } = await import('@/enums')
 
-const makeRoom = (overrides: Record<string, unknown> = {}) => ({
-  roomId: '!r:e',
-  name: 'Room',
-  getMxcAvatarUrl: () => 'mxc://a',
-  getJoinedMemberCount: () => 3,
-  getJoinedMembers: () => [{ userId: '@me:e' }, { userId: '@other:e' }],
-  getLiveTimeline: () => ({ getEvents: () => [{ getTs: () => 999 }] }),
-  ...overrides
-})
+const makeRoom = (overrides: Partial<Room> = {}): Room =>
+  ({
+    roomId: '!r:e',
+    name: 'Room',
+    getMxcAvatarUrl: () => 'mxc://a',
+    getJoinedMemberCount: () => 3,
+    getJoinedMembers: () => [{ userId: '@me:e' }, { userId: '@other:e' }],
+    getLiveTimeline: () => ({ getEvents: () => [{ getTs: () => 999 }] }),
+    ...overrides
+  }) as unknown as Room
 
 describe('MatrixRoomRealtimeService', () => {
   let service: InstanceType<typeof MatrixRoomRealtimeService>
@@ -68,7 +70,7 @@ describe('MatrixRoomRealtimeService', () => {
     it('maps fields and chooses SINGLE type when 2 members', () => {
       getUnreadCountMock.mockReturnValueOnce(7)
       const room = makeRoom({ getJoinedMemberCount: () => 2 })
-      expect(service.convertRoomToSession(room as any)).toEqual({
+      expect(service.convertRoomToSession(room)).toEqual({
         roomId: '!r:e',
         name: 'Room',
         avatar: 'mxc://a',
@@ -81,19 +83,21 @@ describe('MatrixRoomRealtimeService', () => {
     it('chooses GROUP type when !== 2 members', () => {
       getUnreadCountMock.mockReturnValueOnce(0)
       const room = makeRoom()
-      expect(service.convertRoomToSession(room as any).type).toBe(RoomTypeEnum.GROUP)
+      expect(service.convertRoomToSession(room).type).toBe(RoomTypeEnum.GROUP)
     })
 
     it('falls back to "Unknown Room" when name is empty', () => {
       getUnreadCountMock.mockReturnValueOnce(0)
       const room = makeRoom({ name: '' })
-      expect(service.convertRoomToSession(room as any).name).toBe('Unknown Room')
+      expect(service.convertRoomToSession(room).name).toBe('Unknown Room')
     })
 
     it('activeTime=0 when timeline is empty', () => {
       getUnreadCountMock.mockReturnValueOnce(0)
-      const room = makeRoom({ getLiveTimeline: () => ({ getEvents: () => [] }) })
-      expect(service.convertRoomToSession(room as any).activeTime).toBe(0)
+      const room = makeRoom({
+        getLiveTimeline: () => ({ getEvents: () => [] }) as unknown as ReturnType<Room['getLiveTimeline']>
+      })
+      expect(service.convertRoomToSession(room).activeTime).toBe(0)
     })
   })
 
@@ -122,7 +126,7 @@ describe('MatrixRoomRealtimeService', () => {
     it('onTimelineEvent converts room info; message for m.room.message', () => {
       const { on } = setupClient()
       convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
-      convertEventToMessageTypeMock.mockReturnValueOnce({ id: 'm1' } as any)
+      convertEventToMessageTypeMock.mockReturnValueOnce({ id: 'm1' })
       const cb = vi.fn()
       service.onTimelineEvent(cb)
       const handler = on.mock.calls[0][1]
@@ -139,7 +143,7 @@ describe('MatrixRoomRealtimeService', () => {
     it('onTimelineEvent converts message for m.room.encrypted', () => {
       const { on } = setupClient()
       convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
-      convertEventToMessageTypeMock.mockReturnValueOnce({ id: 'enc' } as any)
+      convertEventToMessageTypeMock.mockReturnValueOnce({ id: 'enc' })
       const cb = vi.fn()
       service.onTimelineEvent(cb)
       on.mock.calls[0][1]({ getType: () => 'm.room.encrypted', getContent: () => ({}) }, makeRoom())
@@ -222,7 +226,8 @@ describe('MatrixRoomRealtimeService', () => {
     it('marks isFavorite=true when other member is in specialFriends', () => {
       getUnreadCountMock.mockReturnValue(0)
       const room = makeRoom({
-        getJoinedMembers: () => [{ userId: '@me:e' }, { userId: '@fav:e' }]
+        getJoinedMembers: () =>
+          [{ userId: '@me:e' }, { userId: '@fav:e' }] as unknown as ReturnType<Room['getJoinedMembers']>
       })
       getClientMock.mockReturnValueOnce({
         getUserId: () => '@me:e',
@@ -236,7 +241,8 @@ describe('MatrixRoomRealtimeService', () => {
     it('isFavorite=false when other member is not in specialFriends', () => {
       getUnreadCountMock.mockReturnValue(0)
       const room = makeRoom({
-        getJoinedMembers: () => [{ userId: '@me:e' }, { userId: '@nope:e' }]
+        getJoinedMembers: () =>
+          [{ userId: '@me:e' }, { userId: '@nope:e' }] as unknown as ReturnType<Room['getJoinedMembers']>
       })
       getClientMock.mockReturnValueOnce({
         getUserId: () => '@me:e',
@@ -256,7 +262,7 @@ describe('MatrixRoomRealtimeService', () => {
     it('converts all rooms and passes them through slidingSync', () => {
       const rooms = [makeRoom(), makeRoom({ roomId: '!r2:e' })]
       getClientMock.mockReturnValueOnce({ getRooms: () => rooms })
-      convertRoomToRoomInfoMock.mockImplementation((r: any) => ({ roomId: r.roomId }))
+      convertRoomToRoomInfoMock.mockImplementation((r: Room) => ({ roomId: r.roomId }))
       const out = service.getAllRoomInfos()
       expect(out).toEqual([{ roomId: '!r:e' }, { roomId: '!r2:e' }])
       expect(applySlidingSyncUnreadCountsMock).toHaveBeenCalledWith(out)

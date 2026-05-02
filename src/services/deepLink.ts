@@ -62,7 +62,9 @@ async function handleUrl(url: string): Promise<void> {
   if (target.roomIdOrAlias) {
     const globalStore = useGlobalStore()
     globalStore.updateCurrentSessionRoomId(target.roomIdOrAlias)
-    await router.push({ name: 'message' }).catch(() => {})
+    await router.push({ name: 'message' }).catch(() => {
+      /* navigation already in progress */
+    })
     logger.info(`深链跳转房间: ${target.roomIdOrAlias}`)
     return
   }

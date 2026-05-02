@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixSpaceService } from '../MatrixSpaceService'
@@ -13,13 +14,15 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   error: vi.fn()
 }))
 
+const asMatrixClient = <T extends object>(client: T) => client as unknown as MatrixClient
+
 describe('MatrixSpaceService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   it('should throw when client is not initialized', async () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
     await expect(
       matrixSpaceService.createSpace({
@@ -30,9 +33,7 @@ describe('MatrixSpaceService', () => {
 
   it('should create space successfully', async () => {
     const mockCreateRoom = vi.fn().mockResolvedValue({ room_id: '!space:server' })
-    vi.mocked(matrixClientService.getClient).mockReturnValue({
-      createRoom: mockCreateRoom
-    } as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ createRoom: mockCreateRoom }))
 
     const result = await matrixSpaceService.createSpace({
       name: 'Team Space',
@@ -52,9 +53,7 @@ describe('MatrixSpaceService', () => {
   })
 
   it('should return null when target space room does not exist', async () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValue({
-      getRoom: vi.fn().mockReturnValue(null)
-    } as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ getRoom: vi.fn().mockReturnValue(null) }))
 
     const result = await matrixSpaceService.getSpace('!missing:server')
 
@@ -62,11 +61,13 @@ describe('MatrixSpaceService', () => {
   })
 
   it('should detect space room correctly', () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValue({
-      getRoom: vi.fn().mockReturnValue({
-        isSpaceRoom: vi.fn().mockReturnValue(true)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(
+      asMatrixClient({
+        getRoom: vi.fn().mockReturnValue({
+          isSpaceRoom: vi.fn().mockReturnValue(true)
+        })
       })
-    } as any)
+    )
 
     const result = matrixSpaceService.isSpace('!space:server')
 
@@ -89,9 +90,11 @@ describe('MatrixSpaceService', () => {
       isSpaceRoom: vi.fn().mockReturnValue(false)
     }
 
-    vi.mocked(matrixClientService.getClient).mockReturnValue({
-      getRooms: vi.fn().mockReturnValue([mockSpaceRoom, mockNormalRoom])
-    } as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(
+      asMatrixClient({
+        getRooms: vi.fn().mockReturnValue([mockSpaceRoom, mockNormalRoom])
+      })
+    )
 
     const result = await matrixSpaceService.getUserSpaces()
 
@@ -106,7 +109,7 @@ describe('MatrixSpaceService', () => {
           spaces: [{ space_id: '!space1:server', name: 'Space 1', member_count: 5, child_count: 2 }]
         })
       }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.searchSpacesViaApi('test', 10)
 
@@ -123,7 +126,7 @@ describe('MatrixSpaceService', () => {
       const mockHttp = {
         authedRequest: vi.fn().mockRejectedValue(new Error('Network error'))
       }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.searchSpacesViaApi('test')
 
@@ -135,7 +138,7 @@ describe('MatrixSpaceService', () => {
     it('should get space statistics', async () => {
       const mockStats = { total_spaces: 10, total_members: 50 }
       const mockHttp = { authedRequest: vi.fn().mockResolvedValue(mockStats) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.getSpaceStatistics()
 
@@ -145,7 +148,7 @@ describe('MatrixSpaceService', () => {
 
     it('should return empty object on error', async () => {
       const mockHttp = { authedRequest: vi.fn().mockRejectedValue(new Error('fail')) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.getSpaceStatistics()
 
@@ -160,7 +163,7 @@ describe('MatrixSpaceService', () => {
           spaces: [{ space_id: '!s1:server', name: 'S1', member_count: 3, child_count: 1 }]
         })
       }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.getUserSpacesViaApi()
 
@@ -177,7 +180,7 @@ describe('MatrixSpaceService', () => {
         next_batch: 'batch_token'
       }
       const mockHttp = { authedRequest: vi.fn().mockResolvedValue(mockHierarchy) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.getSpaceHierarchy('!space:server', { limit: 10, maxDepth: 3 })
 
@@ -192,7 +195,7 @@ describe('MatrixSpaceService', () => {
 
     it('should return empty rooms on error', async () => {
       const mockHttp = { authedRequest: vi.fn().mockRejectedValue(new Error('fail')) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.getSpaceHierarchy('!space:server')
 
@@ -207,7 +210,7 @@ describe('MatrixSpaceService', () => {
         children: [{ room_id: '!child1:server', name: 'Child 1' }]
       }
       const mockHttp = { authedRequest: vi.fn().mockResolvedValue(mockSummary) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.getSpaceSummaryWithChildren('!space:server')
 
@@ -218,7 +221,7 @@ describe('MatrixSpaceService', () => {
 
     it('should return null when space data missing', async () => {
       const mockHttp = { authedRequest: vi.fn().mockResolvedValue({}) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.getSpaceSummaryWithChildren('!space:server')
 
@@ -235,7 +238,7 @@ describe('MatrixSpaceService', () => {
         ]
       }
       const mockHttp = { authedRequest: vi.fn().mockResolvedValue(mockPath) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.getSpaceTreePath('!child:server')
 
@@ -245,7 +248,7 @@ describe('MatrixSpaceService', () => {
 
     it('should return empty array on error', async () => {
       const mockHttp = { authedRequest: vi.fn().mockRejectedValue(new Error('fail')) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.getSpaceTreePath('!space:server')
 
@@ -260,7 +263,7 @@ describe('MatrixSpaceService', () => {
           .fn()
           .mockResolvedValue([{ space_id: '!parent:server', name: 'Parent Space', member_count: 8, child_count: 2 }])
       }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp }))
 
       const result = await matrixSpaceService.getRoomParentSpacesViaApi('!room:server')
 

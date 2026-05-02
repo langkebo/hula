@@ -1,14 +1,15 @@
-import { Channel, invoke } from '@tauri-apps/api/core'
+import { Channel } from '@tauri-apps/api/core'
 import { BaseDirectory, stat, writeFile } from '@tauri-apps/plugin-fs'
 import { createEventHook } from '@vueuse/core'
 import { TauriCommand, type UploadSceneEnum } from '@/enums'
+import { renderWorker } from '@/services/renderWorker'
 import { uploadService } from '@/services/UploadService'
 import { useUserStore } from '@/stores/domains/user/user'
 import { extractFileName } from '@/utils/Formatting'
 import { getImageDimensions } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
-import { getWasmMd5 } from '@/utils/Md5Util'
 import { isAndroid, isMobile } from '@/utils/PlatformConstants'
+import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { removeTempFile } from '@/utils/TempFileManager'
 
 const logger = createLogger('Upload')
@@ -49,22 +50,8 @@ export interface UploadOptions {
 const Max = 500 // 单位M
 const MAX_FILE_SIZE = Max * 1024 * 1024 // 最大上传限制
 
-let cryptoJS: {
-  lib: { WordArray: { create: (arr: ArrayBuffer | Uint8Array) => { words: number[]; sigBytes: number } } }
-  MD5: (wordArray: string | { words: number[]; sigBytes: number }) => { toString: () => string }
-} | null = null
-
 const isAbsolutePath = (path: string): boolean => {
   return /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(path)
-}
-
-const loadCryptoJS = async () => {
-  if (!cryptoJS) {
-    const module = await import('crypto-js')
-    const loaded = module.default ?? module
-    cryptoJS = loaded as unknown as NonNullable<typeof cryptoJS>
-  }
-  return cryptoJS
 }
 
 /**
@@ -100,7 +87,7 @@ export const useUpload = () => {
         }
       }
 
-      await invoke(TauriCommand.UPLOAD_FILE_PUT, {
+      await invokeWithErrorHandler(TauriCommand.UPLOAD_FILE_PUT, {
         url: targetUrl,
         path: tempPath,
         baseDir: baseDirName,
@@ -122,26 +109,21 @@ export const useUpload = () => {
     try {
       logger.debug('开始计算MD5哈希值，文件大小:', file.size, 'bytes')
       const arrayBuffer = await file.arrayBuffer()
-      const uint8Array = new Uint8Array(arrayBuffer)
-      let hash: string
+      const platform = isAndroid() ? 'android' : 'other'
 
-      if (isAndroid()) {
-        const CryptoJS = await loadCryptoJS()
-        const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer as ArrayBuffer)
-        hash = CryptoJS.MD5(wordArray).toString()
-      } else {
-        const Md5 = await getWasmMd5()
-        hash = await Md5.digest_u8(uint8Array)
-      }
+      const result = await renderWorker.executeWithTransfer<
+        { buffer: ArrayBuffer; platform: 'android' | 'other' },
+        { hash: string }
+      >('calculate-hash', { buffer: arrayBuffer, platform }, [arrayBuffer])
+
       const endTime = performance.now()
       const duration = (endTime - startTime).toFixed(2)
-      logger.debug(`MD5计算完成，耗时: ${duration}ms，哈希值: ${hash}`)
-      return hash.toLowerCase()
+      logger.debug(`MD5计算完成，耗时: ${duration}ms，哈希值: ${result.hash}`)
+      return result.hash
     } catch (error) {
       const endTime = performance.now()
       const duration = (endTime - startTime).toFixed(2)
       logger.error(`计算文件哈希值失败，耗时: ${duration}ms:`, error)
-      // 如果计算失败，返回时间戳作为备用方案
       return Date.now().toString()
     }
   }
@@ -378,7 +360,7 @@ export const useUpload = () => {
         }
       }
 
-      await invoke(TauriCommand.UPLOAD_FILE_PUT, {
+      await invokeWithErrorHandler(TauriCommand.UPLOAD_FILE_PUT, {
         url: uploadUrl,
         path,
         ...(absolutePath ? {} : { baseDir: baseDirName }),

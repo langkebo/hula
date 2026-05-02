@@ -1,10 +1,11 @@
+import type { IPusher, MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixPushService } from '../MatrixPushService'
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn()
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -20,11 +21,11 @@ describe('MatrixPushService', () => {
   beforeEach(() => {
     mockHttp = { authedRequest: vi.fn().mockResolvedValue({}) }
     vi.mocked(matrixClientService.getClient).mockReturnValue({
-      http: mockHttp,
+      http: mockHttp as unknown as MatrixClient['http'],
       getPushRules: vi.fn().mockResolvedValue({
         global: { room: [{ rule_id: '!room:server', enabled: true }] }
       })
-    } as any)
+    } as unknown as MatrixClient)
   })
 
   describe('getPushers', () => {
@@ -73,7 +74,7 @@ describe('MatrixPushService', () => {
         device_display_name: 'Dev',
         lang: 'en',
         data: { url: 'https://push.example.com' }
-      } as any)
+      } as IPusher)
       expect(mockHttp.authedRequest).toHaveBeenCalled()
       const call = mockHttp.authedRequest.mock.calls[0]
       expect(call[0]).toBe('POST')

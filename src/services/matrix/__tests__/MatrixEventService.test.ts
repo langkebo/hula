@@ -1,4 +1,6 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ReceiptType } from '@/types/matrix-js-sdk'
 import { matrixEventService } from '../MatrixEventService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -9,7 +11,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(() => null),
+    getClient: vi.fn(() => null as MatrixClient | null),
     isLoggedIn: vi.fn(() => false)
   }
 }))
@@ -63,7 +65,7 @@ describe('MatrixEventService', () => {
       const mockClient = {
         sendEvent: vi.fn().mockResolvedValue({ event_id: '$text' })
       }
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
       const result = await matrixEventService.sendTextMessage('!room:id', 'Hello World', '<b>Hello World</b>')
 
@@ -90,7 +92,7 @@ describe('MatrixEventService', () => {
         uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/uploaded-image' }),
         sendEvent: vi.fn().mockResolvedValue({ event_id: '$image' })
       }
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
       const result = await matrixEventService.sendImageMessage('!room:id', file, undefined, 'custom.png')
 
@@ -110,15 +112,42 @@ describe('MatrixEventService', () => {
 
   describe('sendFileMessage', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.sendFileMessage('!room:id', 'mxc://matrix.org/file')).rejects.toThrow(
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+
+      await expect(matrixEventService.sendFileMessage('!room:id', new File([], 'f.txt'))).rejects.toThrow(
         '客户端未初始化'
       )
+    })
+
+    it('should upload local file before sending file message', async () => {
+      const file = new File(['content'], 'demo.txt', { type: 'text/plain' })
+      const mockClient = {
+        uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/uploaded-file' }),
+        sendEvent: vi.fn().mockResolvedValue({ event_id: '$file' })
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+      const result = await matrixEventService.sendFileMessage('!room:id', file)
+
+      expect(mockClient.uploadContent).toHaveBeenCalledWith(file, { type: 'text/plain' })
+      expect(mockClient.sendEvent).toHaveBeenCalledWith('!room:id', 'm.room.message', {
+        msgtype: 'm.file',
+        body: 'demo.txt',
+        info: {
+          size: file.size,
+          mimetype: 'text/plain'
+        },
+        url: 'mxc://matrix.org/uploaded-file'
+      })
+      expect(result).toBe('$file')
     })
   })
 
   describe('sendVideoMessage', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.sendVideoMessage('!room:id', 'mxc://matrix.org/video')).rejects.toThrow(
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+
+      await expect(matrixEventService.sendVideoMessage('!room:id', new File([], 'v.mp4'))).rejects.toThrow(
         '客户端未初始化'
       )
     })
@@ -126,9 +155,34 @@ describe('MatrixEventService', () => {
 
   describe('sendAudioMessage', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.sendAudioMessage('!room:id', 'mxc://matrix.org/audio')).rejects.toThrow(
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+
+      await expect(matrixEventService.sendAudioMessage('!room:id', new File([], 'a.mp3'))).rejects.toThrow(
         '客户端未初始化'
       )
+    })
+
+    it('should upload local file before sending audio message', async () => {
+      const file = new File(['audio'], 'demo.ogg', { type: 'audio/ogg' })
+      const mockClient = {
+        uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/uploaded-audio' }),
+        sendEvent: vi.fn().mockResolvedValue({ event_id: '$audio' })
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+      const result = await matrixEventService.sendAudioMessage('!room:id', file)
+
+      expect(mockClient.uploadContent).toHaveBeenCalledWith(file, { type: 'audio/ogg' })
+      expect(mockClient.sendEvent).toHaveBeenCalledWith('!room:id', 'm.room.message', {
+        msgtype: 'm.audio',
+        body: 'demo.ogg',
+        info: {
+          size: file.size,
+          mimetype: 'audio/ogg'
+        },
+        url: 'mxc://matrix.org/uploaded-audio'
+      })
+      expect(result).toBe('$audio')
     })
   })
 
@@ -163,7 +217,7 @@ describe('MatrixEventService', () => {
     })
 
     it('should delegate read receipts to MatrixReceiptService', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
       vi.mocked(matrixReceiptService.sendReadReceiptByEventId).mockResolvedValue('$event:id')
 
       await matrixEventService.sendMessageReceipt('!room:id', '$event:id')
@@ -180,11 +234,11 @@ describe('MatrixEventService', () => {
         getRoom: vi.fn(() => mockRoom),
         sendReadReceipt: vi.fn().mockResolvedValue(undefined)
       }
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
-      await matrixEventService.sendMessageReceipt('!room:id', '$event:id', 'm.read.private' as any)
+      await matrixEventService.sendMessageReceipt('!room:id', '$event:id', ReceiptType.ReadPrivate)
 
-      expect(mockClient.sendReadReceipt).toHaveBeenCalledWith(mockEvent, 'm.read.private')
+      expect(mockClient.sendReadReceipt).toHaveBeenCalledWith(mockEvent, ReceiptType.ReadPrivate)
     })
   })
 
@@ -208,7 +262,7 @@ describe('MatrixEventService', () => {
     })
 
     it('should delegate replies to MatrixMessageRelationService', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
       vi.mocked(matrixMessageRelationService.replyToMessage).mockResolvedValue('$reply')
 
       const result = await matrixEventService.replyToEvent('!room:id', '$event:id', 'Reply text')
@@ -228,7 +282,7 @@ describe('MatrixEventService', () => {
     })
 
     it('should delegate edits to MatrixMessageRelationService', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
       vi.mocked(matrixMessageRelationService.editMessage).mockResolvedValue('$edited')
 
       const result = await matrixEventService.editEvent('!room:id', '$event:id', 'Edited text')
@@ -246,7 +300,7 @@ describe('MatrixEventService', () => {
     })
 
     it('should delegate reactions to MatrixReactionService', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
       vi.mocked(matrixReactionService.addReaction).mockResolvedValue('$reaction')
 
       const result = await matrixEventService.reactToEvent('!room:id', '$event:id', '👍')

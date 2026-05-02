@@ -54,8 +54,7 @@ import { Icon } from '@iconify/vue'
 import { showConfirmDialog, showToast } from 'vant'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixDeviceService } from '@/services/matrix'
-import type { Device } from '@/services/matrix/user/MatrixDeviceService'
+import { type Device, matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('DeviceManagement')

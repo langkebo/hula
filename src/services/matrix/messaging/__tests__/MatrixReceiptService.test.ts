@@ -1,3 +1,4 @@
+import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixReceiptService } from '../MatrixReceiptService'
 
@@ -9,7 +10,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(() => null)
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -73,22 +74,22 @@ describe('MatrixReceiptService', () => {
   })
 
   it('在客户端未初始化时抛错', async () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
     await expect(
       matrixReceiptService.sendReadReceipt('!room:id', {
         getId: () => '$event'
-      } as any)
+      } as unknown as MatrixEvent)
     ).rejects.toThrow('客户端未初始化')
   })
 
   it('通过 SDK ReadReceiptsManager 发送已读回执', async () => {
     mockReceiptManager.sendReadReceipt.mockResolvedValue(undefined)
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
     const result = await matrixReceiptService.sendReadReceipt('!room:id', {
       getId: () => '$event'
-    } as any)
+    } as unknown as MatrixEvent)
 
     expect(mockReceiptManager.sendReadReceipt).toHaveBeenCalledWith('!room:id', '$event')
     expect(result).toBe('$event')
@@ -96,7 +97,7 @@ describe('MatrixReceiptService', () => {
 
   it('通过 SDK ReadReceiptsManager 设置阅读标记', async () => {
     mockReceiptManager.setReadMarker.mockResolvedValue(undefined)
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
     await matrixReceiptService.sendReadMarker('!room:id', '$event')
 
@@ -111,7 +112,7 @@ describe('MatrixReceiptService', () => {
         ts: 123456
       }
     ])
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
     const receipts = matrixReceiptService.getReadReceipts('!room:id', '$event')
 
@@ -131,7 +132,7 @@ describe('MatrixReceiptService', () => {
       { userId: '@me:matrix.org', eventId: '$event', ts: 1 },
       { userId: '@user1:matrix.org', eventId: '$event', ts: 2 }
     ])
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
     const readers = matrixReceiptService.getEventReaders('!room:id', '$event')
 
@@ -170,10 +171,27 @@ describe('MatrixReceiptService', () => {
       getEvents: vi.fn(() => events)
     })
     mockReceiptManager.sendReadReceipt.mockResolvedValue(undefined)
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
     await matrixReceiptService.markRoomAsRead('!room:id')
 
     expect(mockReceiptManager.sendReadReceipt).toHaveBeenCalledWith('!room:id', '$event-2')
+  })
+
+  it('未找到房间时未读数为 0', () => {
+    mockClient.getRoom.mockReturnValue(null)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+    expect(matrixReceiptService.getUnreadCount('!room:id')).toBe(0)
+  })
+
+  it('优先使用 SDK room.getUnreadNotificationCount', () => {
+    const room = {
+      getUnreadNotificationCount: vi.fn(() => 5)
+    }
+    mockClient.getRoom.mockReturnValue(room as unknown as Room)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+    expect(matrixReceiptService.getUnreadCount('!room:id')).toBe(5)
   })
 })

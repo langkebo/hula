@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
-import { aiService } from '@/services/matrix'
+import { aiService } from '@/services/matrix/ai/AIService'
 import type { AIAudio, AIImage, AIVideo } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
 import { usePollingTasks } from './usePollingTasks'

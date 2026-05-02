@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '../../MatrixClientService'
 import { reportService } from '../MatrixReportService'
@@ -25,7 +26,7 @@ describe('MatrixReportService', () => {
       getRoom: vi.fn().mockReturnValue({
         timeline: [{ getId: vi.fn(() => '$event1') }]
       })
-    } as any)
+    } as unknown as MatrixClient)
   })
 
   describe('reportEvent', () => {

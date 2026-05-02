@@ -18,34 +18,40 @@
 </template>
 
 <script setup lang="ts">
-import { convertFileSrc, invoke } from '@tauri-apps/api/core'
+import { convertFileSrc } from '@tauri-apps/api/core'
 import { join, resourceDir } from '@tauri-apps/api/path'
-import {
-  ACESFilmicToneMapping,
-  AmbientLight,
-  type AnimationAction,
+import type {
+  AnimationAction,
   AnimationClip,
   AnimationMixer,
-  Box3,
   Clock,
-  DirectionalLight,
   Group,
-  type Mesh,
+  Mesh,
   PerspectiveCamera,
   Scene,
-  SRGBColorSpace,
   Vector3,
   WebGLRenderer
 } from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import type { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { useAssistantModelPresets } from '@/hooks/useAssistantModelPresets'
 import { createLogger } from '@/utils/Logger'
 import { ensureModelFile } from '@/utils/PathUtil'
 import { isDesktop } from '@/utils/PlatformConstants'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('HuLaAssistant')
+
+// 动态导入 three.js 核心及插件
+const getThree = async () => {
+  const [three, { OrbitControls }, { DRACOLoader }, { GLTFLoader }] = await Promise.all([
+    import('three'),
+    import('three/examples/jsm/controls/OrbitControls.js'),
+    import('three/examples/jsm/loaders/DRACOLoader.js'),
+    import('three/examples/jsm/loaders/GLTFLoader.js')
+  ])
+  return { ...three, OrbitControls, DRACOLoader, GLTFLoader }
+}
 
 const props = defineProps<{
   active: boolean
@@ -68,7 +74,10 @@ const CAMERA_DISTANCE_FACTOR = 2.2
 const CAMERA_HEIGHT_FACTOR = 0.18
 const DRACO_DECODER_BASE_URL = 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/draco/gltf/'
 
-const clock = new Clock()
+type ThreeRuntimeModule = Awaited<ReturnType<typeof getThree>>
+
+let ThreeModule: ThreeRuntimeModule | null = null
+let clock: Clock | null = null
 
 let renderer: WebGLRenderer | null = null
 let scene: Scene | null = null
@@ -111,26 +120,82 @@ const resolveDracoDecoderPath = async () => {
 }
 
 const ensureDracoLoader = async () => {
+  if (!ThreeModule) {
+    throw new Error('THREE_MODULE_NOT_READY')
+  }
+  const threeModule = ThreeModule
+
   if (!dracoLoader) {
-    dracoLoader = new DRACOLoader()
+    dracoLoader = new threeModule.DRACOLoader()
     dracoLoader.setDecoderConfig({ type: 'wasm' })
     let decoderPath = await resolveDracoDecoderPath()
     dracoLoader.setDecoderPath(decoderPath)
     try {
-      await dracoLoader.preload()
+      dracoLoader.preload()
     } catch (error) {
       if (decoderPath !== DRACO_DECODER_BASE_URL) {
         logger.warn('预加载本地 Draco 解码器失败, 回退 CDN', error)
         dracoDecoderBasePath = DRACO_DECODER_BASE_URL
         decoderPath = DRACO_DECODER_BASE_URL
         dracoLoader.setDecoderPath(decoderPath)
-        await dracoLoader.preload()
+        dracoLoader.preload()
       } else {
         throw error
       }
     }
   }
   return dracoLoader
+}
+
+const initThree = async () => {
+  if (initialized || activating) return
+  activating = true
+
+  try {
+    ThreeModule = await getThree()
+    clock = new ThreeModule.Clock()
+
+    const el = container.value
+    if (!el) throw new Error('CONTAINER_NOT_FOUND')
+
+    const width = el.clientWidth || el.offsetWidth || 1
+    const height = el.clientHeight || el.offsetHeight || 1
+
+    renderer = new ThreeModule.WebGLRenderer({ antialias: true, alpha: true })
+    renderer.outputColorSpace = ThreeModule.SRGBColorSpace
+    renderer.toneMapping = ThreeModule.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1
+    renderer.shadowMap.enabled = true
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setSize(width, height, false)
+    renderer.domElement.style.width = '100%'
+    renderer.domElement.style.height = '100%'
+    renderer.domElement.style.outline = 'none'
+    renderer.domElement.tabIndex = -1
+    el.appendChild(renderer.domElement)
+
+    scene = new ThreeModule.Scene()
+    camera = new ThreeModule.PerspectiveCamera(45, width / height || 1, 0.1, 100)
+    controls = new ThreeModule.OrbitControls(camera, renderer.domElement)
+
+    const ambientLight = new ThreeModule.AmbientLight(0xffffff, 1.1)
+    scene.add(ambientLight)
+    const directionalLight = new ThreeModule.DirectionalLight(0xffffff, 1.4)
+    directionalLight.position.set(4, 6, 3)
+    directionalLight.castShadow = true
+    scene.add(directionalLight)
+
+    await loadModel()
+    initialized = true
+    startLoop()
+    isReady.value = true
+    emit('ready')
+  } catch (error) {
+    logger.error('初始化 HuLa 小管家失败', error)
+    emit('error', error)
+  } finally {
+    activating = false
+  }
 }
 
 const isInvalidBounds = (size: Vector3, center: Vector3) =>
@@ -167,11 +232,7 @@ const resolveModelSource = async () => {
     }
 
     if (isDesktop()) {
-      try {
-        await invoke('allow_asset_path', { path: props.customModel })
-      } catch (error) {
-        logger.warn('申请资产协议访问权限失败', error)
-      }
+      await invokeSilently('allow_asset_path', { path: props.customModel })
     }
 
     const localUrl = isDesktop() ? convertFileSrc(props.customModel) : props.customModel
@@ -199,17 +260,18 @@ const updateRendererSize = () => {
 }
 
 const startLoop = () => {
-  if (!scene || !camera || !renderer) return
+  if (!scene || !camera || !renderer || !clock) return
   if (animationFrameId !== null) return
 
-  clock.start()
+  const currentClock: Clock = clock
+  currentClock.start()
   const currentScene = scene
   const currentCamera = camera
   const currentRenderer = renderer
 
   const loop = () => {
     animationFrameId = requestAnimationFrame(loop)
-    const delta = clock.getDelta()
+    const delta = currentClock.getDelta()
     mixer?.update(delta)
     controls?.update()
     currentRenderer.render(currentScene, currentCamera)
@@ -230,11 +292,12 @@ const startLoop = () => {
 }
 
 const stopLoop = () => {
+  const currentClock = clock
   if (animationFrameId !== null) {
     cancelAnimationFrame(animationFrameId)
     animationFrameId = null
   }
-  clock.stop()
+  currentClock?.stop()
   const el = container.value
   if (el && resizeObserver) {
     resizeObserver.unobserve(el)
@@ -300,13 +363,13 @@ const adjustFraming = (scaledSize: Vector3, centerY: number) => {
 }
 
 const loadModel = async () => {
-  if (!scene) {
+  if (!scene || !ThreeModule) {
     throw new Error('场景尚未初始化')
   }
   loadingProgress.value = 0
   isReady.value = false
   if (!modelWrapper) {
-    modelWrapper = new Group()
+    modelWrapper = new ThreeModule.Group()
     scene.add(modelWrapper)
   }
   if (mixer) {
@@ -316,7 +379,7 @@ const loadModel = async () => {
   }
   availableClips = []
   const modelSource = await resolveModelSource()
-  const loader = new GLTFLoader()
+  const loader = new ThreeModule.GLTFLoader()
   loader.setDRACOLoader(await ensureDracoLoader())
   const result = await new Promise<{ scene: Group; extensions?: string[]; animations: AnimationClip[] }>(
     (resolve, reject) => {
@@ -361,9 +424,9 @@ const loadModel = async () => {
     const type = (child as Mesh).type
     childrenSummary[type] = (childrenSummary[type] || 0) + 1
   })
-  const box = new Box3().setFromObject(loadedModel)
-  const size = box.getSize(new Vector3())
-  const center = box.getCenter(new Vector3())
+  const box = new ThreeModule.Box3().setFromObject(loadedModel)
+  const size = box.getSize(new ThreeModule.Vector3())
+  const center = box.getCenter(new ThreeModule.Vector3())
   const hasInvalidBounds = isInvalidBounds(size, center)
   if (hasInvalidBounds) {
     window.$message?.warning('模型没有几何数据或存在损坏，请检查后重新导入')
@@ -400,10 +463,10 @@ const loadModel = async () => {
 
   availableClips = result.animations
   if (availableClips.length > 0) {
-    mixer = new AnimationMixer(loadedModel)
+    mixer = new ThreeModule.AnimationMixer(loadedModel)
     const preferred =
-      AnimationClip.findByName(availableClips, 'Animation') ||
-      AnimationClip.findByName(availableClips, 'Armature|mixamo.com|Layer0') ||
+      ThreeModule.AnimationClip.findByName(availableClips, 'Animation') ||
+      ThreeModule.AnimationClip.findByName(availableClips, 'Armature|mixamo.com|Layer0') ||
       availableClips[0]
     activeAction = mixer.clipAction(preferred)
     activeAction.reset().play()
@@ -413,70 +476,6 @@ const loadModel = async () => {
   adjustFraming(scaledSize, centerY)
   loadingProgress.value = 100
   isReady.value = true
-  initialized = true
-}
-
-const ensureScene = async () => {
-  const el = container.value
-  if (!el) {
-    throw new Error('未找到 HuLa 小管家容器')
-  }
-
-  if (!renderer) {
-    const width = el.clientWidth || el.offsetWidth || 1
-    const height = el.clientHeight || el.offsetHeight || 1
-
-    renderer = new WebGLRenderer({ antialias: true, alpha: true })
-    renderer.outputColorSpace = SRGBColorSpace
-    renderer.toneMapping = ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1
-    renderer.shadowMap.enabled = true
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.setSize(width, height, false)
-    renderer.domElement.style.width = '100%'
-    renderer.domElement.style.height = '100%'
-    renderer.domElement.style.outline = 'none'
-    renderer.domElement.tabIndex = -1
-    el.appendChild(renderer.domElement)
-
-    scene = new Scene()
-
-    camera = new PerspectiveCamera(45, width / height || 1, 0.1, 100)
-
-    controls = new OrbitControls(camera, renderer.domElement)
-
-    const ambientLight = new AmbientLight(0xffffff, 1.1)
-    scene.add(ambientLight)
-    const directionalLight = new DirectionalLight(0xffffff, 1.4)
-    directionalLight.position.set(4, 6, 3)
-    directionalLight.castShadow = true
-    scene.add(directionalLight)
-  } else if (!el.contains(renderer.domElement)) {
-    el.appendChild(renderer.domElement)
-  }
-
-  if (!initialized) {
-    await loadModel()
-    initialized = true
-  }
-
-  updateRendererSize()
-}
-
-const activate = async () => {
-  if (activating || !props.active) return
-  activating = true
-  try {
-    await nextTick()
-    await ensureScene()
-    startLoop()
-    isReady.value = true
-    emit('ready')
-  } catch (error) {
-    emit('error', error)
-  } finally {
-    activating = false
-  }
 }
 
 const deactivate = () => {
@@ -487,7 +486,7 @@ watch(
   () => props.active,
   (active) => {
     if (active) {
-      void activate()
+      void initThree()
     } else {
       deactivate()
     }
@@ -500,7 +499,7 @@ watch(
   async () => {
     if (!props.active) return
     if (!scene) {
-      await activate()
+      await initThree()
       return
     }
     await loadModel()
@@ -514,7 +513,7 @@ watch(
 
 onMounted(() => {
   if (props.active) {
-    void activate()
+    void initThree()
   }
 })
 

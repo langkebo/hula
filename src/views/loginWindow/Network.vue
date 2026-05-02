@@ -109,17 +109,18 @@
   </n-config-provider>
 </template>
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('Network')
-
 import { darkTheme, lightTheme } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import router from '@/router'
+import { getDefaultMatrixEndpointConfig } from '@/services/backend'
 import { updateSettings } from '@/services/tauriCommand'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { ProxySettings } from '@/typings/global'
+import { createLogger } from '@/utils/Logger'
+import { createEmptyProxySettings, parseStoredProxySettings } from '@/utils/proxySettings'
 import { addSlashToHead } from '@/utils/StringUtils.ts'
+
+const logger = createLogger('Network')
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
@@ -156,30 +157,30 @@ const wsOptions = computed(() => [
 ])
 
 const proxy = ref('api')
-const savedProxy = reactive({
-  apiType: '',
-  apiIp: '',
-  apiPort: '',
-  apiSuffix: '',
-  wsType: '',
-  wsIp: '',
-  wsPort: '',
-  wsSuffix: ''
-})
+const savedProxy = reactive(createEmptyProxySettings())
 
 // 从本地存储加载设置
 onMounted(() => {
   const proxySettings = localStorage.getItem('proxySettings')
   if (proxySettings) {
-    const parse = JSON.parse(proxySettings)
-    savedProxy.apiType = parse.apiType
-    savedProxy.apiIp = parse.apiIp
-    savedProxy.apiPort = parse.apiPort
-    savedProxy.apiSuffix = parse.apiSuffix
-    savedProxy.wsType = parse.wsType
-    savedProxy.wsIp = parse.wsIp
-    savedProxy.wsPort = parse.wsPort
-    savedProxy.wsSuffix = parse.wsSuffix
+    const parsed = parseStoredProxySettings(proxySettings, getDefaultMatrixEndpointConfig().homeserverUrl)
+    if (!parsed) {
+      localStorage.removeItem('proxySettings')
+      return
+    }
+
+    if (JSON.stringify(parsed) !== proxySettings) {
+      localStorage.setItem('proxySettings', JSON.stringify(parsed))
+    }
+
+    savedProxy.apiType = parsed.apiType
+    savedProxy.apiIp = parsed.apiIp
+    savedProxy.apiPort = parsed.apiPort
+    savedProxy.apiSuffix = parsed.apiSuffix
+    savedProxy.wsType = parsed.wsType
+    savedProxy.wsIp = parsed.wsIp
+    savedProxy.wsPort = parsed.wsPort
+    savedProxy.wsSuffix = parsed.wsSuffix
   }
 })
 

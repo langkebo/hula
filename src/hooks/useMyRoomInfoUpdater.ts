@@ -1,4 +1,4 @@
-import { matrixRoomService } from '@/services/matrix'
+import { roomStateService } from '@/services/matrix/room/RoomStateService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -15,7 +15,7 @@ export const useMyRoomInfoUpdater = () => {
   const userStore = useUserStore()
 
   const persistMyRoomInfo = async ({ roomId, myName, remark }: UpdatePayload) => {
-    await matrixRoomService.setMemberDisplayName(roomId, myName)
+    await roomStateService.setMemberDisplayName(roomId, myName)
 
     groupStore.myNameInCurrentGroup = myName
     if (groupStore.countInfo) {

@@ -626,7 +626,7 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/capabilities')
+      const result = await client.http.authedRequest('GET', '/capabilities')
       return result as Record<string, unknown>
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取能力声明失败')

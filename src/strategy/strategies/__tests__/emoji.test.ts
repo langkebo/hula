@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { AppException } from '@/common/exception'
 import { MsgEnum } from '@/enums'
+import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { EmojiMessageStrategyImpl } from '../emoji'
 
 describe('EmojiMessageStrategyImpl', () => {
   const strategy = new EmojiMessageStrategyImpl()
+  const makeReply = (id: string, content: string, username: string): MessageType =>
+    ({
+      message: { id, body: { content } },
+      fromUser: { username }
+    }) as MessageType
 
   it('uses MsgEnum.EMOJI as msgType', () => {
     expect(strategy.msgType).toBe(MsgEnum.EMOJI)
@@ -25,10 +31,7 @@ describe('EmojiMessageStrategyImpl', () => {
   })
 
   it('getMsg attaches reply ref when reply has content', () => {
-    const reply = {
-      message: { id: 'evt-1', body: { content: 'hi' } },
-      fromUser: { username: 'alice' }
-    } as any
+    const reply = makeReply('evt-1', 'hi', 'alice')
     const msg = strategy.getMsg('https://example.com/x.gif', reply) as Record<string, unknown>
     expect(msg.reply).toEqual({ content: 'hi', key: 'evt-1' })
   })
@@ -44,10 +47,7 @@ describe('EmojiMessageStrategyImpl', () => {
   })
 
   it('buildMessageBody propagates reply with full reply object', () => {
-    const reply = {
-      message: { id: 'evt-2', body: { content: 'hi' } },
-      fromUser: { username: 'bob' }
-    } as any
+    const reply = makeReply('evt-2', 'hi', 'bob')
     const body = strategy.buildMessageBody({ type: MsgEnum.EMOJI, url: 'https://x' }, reply)
     expect(body.reply).toEqual({ body: 'hi', id: 'evt-2', username: 'bob', type: MsgEnum.EMOJI })
   })

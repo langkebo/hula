@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -35,7 +36,7 @@ const { matrixQuotaService } = await import('../MatrixQuotaService')
 describe('MatrixQuotaService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
     mockClient.getMediaQuotaManager.mockReturnValue(mockQuotaManager)
   })
 
@@ -77,13 +78,13 @@ describe('MatrixQuotaService', () => {
   })
 
   it('should return null when user storage usage falls back', async () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
     await expect(matrixQuotaService.getUserStorageUsage(false)).resolves.toBeNull()
   })
 
   it('should return true when storage check falls back', async () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
     await expect(matrixQuotaService.hasStorageSpace(1024)).resolves.toBe(true)
   })

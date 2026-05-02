@@ -30,7 +30,11 @@
 <script setup lang="ts">
 import { computed, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { resolveMatrixEndpointConfig } from '@/services/backend'
+import {
+  discoverAndSaveMatrixEndpoints,
+  resolveMatrixEndpointConfig,
+  saveMatrixSessionEndpointConfig
+} from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ThirdPartyLogin')
@@ -42,6 +46,7 @@ export type ThirdPartyLoginContext = Pick<ReturnType<typeof useLoginFlow>, 'load
   giteeLogin?: () => void
   githubLogin?: () => void
   homeserverUrl?: Ref<string>
+  identityServerUrl?: Ref<string>
 }
 
 const props = withDefaults(
@@ -61,7 +66,6 @@ const resolvedContext: ThirdPartyLoginContext & ReturnType<typeof useLoginFlow> 
   ? { ...defaultContext, ...props.loginContext }
   : defaultContext
 
-const thirdPartyLabel = computed(() => t('login.third_party.title'))
 const ssoLabel = computed(() => t('login.sso.title') || 'SSO 登录')
 
 const noop = () => {
@@ -85,9 +89,33 @@ const getHomeserverUrl = (): string => {
   return resolveMatrixEndpointConfig().homeserverUrl
 }
 
+const resolveSsoHomeserverUrl = async (): Promise<string> => {
+  const configuredHomeserverUrl = getHomeserverUrl()
+  const fallbackConfig = resolveMatrixEndpointConfig()
+  const discovery = await discoverAndSaveMatrixEndpoints(configuredHomeserverUrl, fallbackConfig)
+  saveMatrixSessionEndpointConfig({
+    homeserverUrl: discovery.homeserverUrl,
+    identityServerUrl: discovery.identityServerUrl
+  })
+
+  if (resolvedContext.homeserverUrl) {
+    resolvedContext.homeserverUrl.value = discovery.homeserverUrl
+  }
+
+  if (resolvedContext.identityServerUrl) {
+    resolvedContext.identityServerUrl.value = discovery.identityServerUrl
+  }
+
+  return discovery.homeserverUrl
+}
+
+const redirectTo = (url: string): void => {
+  window.location.assign(url)
+}
+
 const handleOidcLogin = async () => {
   try {
-    const homeserverUrl = getHomeserverUrl()
+    const homeserverUrl = await resolveSsoHomeserverUrl()
     const discovery = await matrixOidcService.discoverOidc(homeserverUrl)
 
     if (!discovery) {
@@ -99,7 +127,7 @@ const handleOidcLogin = async () => {
     const authUrl = await matrixOidcService.getAuthorizationUrl({ redirectUri })
 
     if (authUrl) {
-      window.location.href = authUrl
+      redirectTo(authUrl)
     } else {
       window.$message?.error('获取 OIDC 授权 URL 失败')
     }
@@ -109,18 +137,28 @@ const handleOidcLogin = async () => {
   }
 }
 
-const handleSamlLogin = () => {
-  const homeserverUrl = getHomeserverUrl()
-  const redirectUri = encodeURIComponent(window.location.origin)
-  const samlUrl = `${homeserverUrl}/_matrix/client/r0/login/sso/redirect/saml?redirectUrl=${redirectUri}`
-  window.location.href = samlUrl
+const handleSamlLogin = async () => {
+  try {
+    const homeserverUrl = await resolveSsoHomeserverUrl()
+    const redirectUri = encodeURIComponent(`${window.location.origin}/login`)
+    const samlUrl = `${homeserverUrl}/_matrix/client/r0/login/sso/redirect/saml?redirectUrl=${redirectUri}`
+    redirectTo(samlUrl)
+  } catch (error) {
+    logger.error('SAML login error:', error)
+    window.$message?.error('SAML 登录失败')
+  }
 }
 
-const handleCasLogin = () => {
-  const homeserverUrl = getHomeserverUrl()
-  const redirectUri = encodeURIComponent(window.location.origin)
-  const casUrl = `${homeserverUrl}/cas/login?service=${redirectUri}`
-  window.location.href = casUrl
+const handleCasLogin = async () => {
+  try {
+    const homeserverUrl = await resolveSsoHomeserverUrl()
+    const redirectUri = encodeURIComponent(`${window.location.origin}/login`)
+    const casUrl = `${homeserverUrl}/cas/login?service=${redirectUri}`
+    redirectTo(casUrl)
+  } catch (error) {
+    logger.error('CAS login error:', error)
+    window.$message?.error('CAS 登录失败')
+  }
 }
 
 const ssoOptions = computed(() => [

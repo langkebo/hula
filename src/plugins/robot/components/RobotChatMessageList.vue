@@ -177,7 +177,7 @@ import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
 import { AiMsgContentTypeEnum, ThemeEnum } from '@/enums'
 import type { Message } from '@/plugins/robot/composables/useRobotChat'
 import { ROBOT_MARKDOWN_CUSTOM_ID } from '@/plugins/robot/utils/markdown'
-import type { AIModel } from '@/services/matrix'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 

@@ -162,18 +162,17 @@
 
 <script setup lang="ts">
 import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
 import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
-import {
-  matrixDeviceService,
-  matrixEncryptionContextService,
-  matrixKeyBackupService,
-  matrixVerificationService
-} from '@/services/matrix'
+import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
+import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
+import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
 import type { Device } from '@/services/matrix/user/MatrixDeviceService'
+import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 
 const { t } = useI18n()
 
@@ -201,6 +200,8 @@ const backupStatusText = computed(() => {
     ? t('setting.encryption.backup_enabled_desc')
     : t('setting.encryption.backup_disabled_desc')
 })
+
+dayjs.extend(relativeTime)
 
 const formatLastSeen = (timestamp: number) => {
   return dayjs(timestamp).fromNow()

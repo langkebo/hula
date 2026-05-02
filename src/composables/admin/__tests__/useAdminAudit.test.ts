@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAdminAudit } from '../useAdminAudit'
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     getAuditLog: vi.fn().mockResolvedValue({ logs: [] }),
     getAuditEvent: vi.fn().mockResolvedValue(null)
   }
 }))
 
-import { adminService } from '@/services/matrix'
+import { adminService } from '@/services/matrix/admin'
 
 describe('useAdminAudit', () => {
   beforeEach(() => {

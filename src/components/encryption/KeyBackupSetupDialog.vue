@@ -93,7 +93,7 @@ import { Icon } from '@iconify/vue'
 import { NButton, NCheckbox, NInput, NModal, NSpin, useMessage } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionService } from '@/services/matrix'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('KeyBackupSetup')

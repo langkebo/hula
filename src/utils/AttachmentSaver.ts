@@ -1,8 +1,8 @@
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import type { useDownload } from '@/hooks/useDownload'
-import { matrixMediaService } from '@/services/matrix'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { createLogger } from '@/utils/Logger'
 import { extractFileName } from './Formatting'
 

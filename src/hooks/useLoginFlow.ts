@@ -4,7 +4,7 @@
  * 该 composable 仅负责表单状态、平台跳转和触发统一会话服务，
  * 不再直接承载底层 Matrix 登录、会话恢复或退出编排实现。
  */
-import { invoke } from '@tauri-apps/api/core'
+
 import { info as logInfo } from '@tauri-apps/plugin-log'
 import { useNetwork } from '@vueuse/core'
 import { useRouter } from 'vue-router'
@@ -14,6 +14,7 @@ import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntim
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { isDesktop, isMobile } from '@/utils/PlatformConstants'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useI18nGlobal } from '../services/i18n'
 import type { UserInfoType } from '../services/types'
 import { useSettingStore } from '../stores/domains/settings/setting'
@@ -170,7 +171,7 @@ export const useLoginFlow = () => {
       }
 
       if (isMobile()) {
-        await invoke('hide_splash_screen')
+        await invokeSilently('hide_splash_screen')
       }
 
       useMitt.emit(MittEnum.MSG_INIT)

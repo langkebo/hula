@@ -1,56 +1,12 @@
 import { type MatrixEvent, NotificationCountType, type Room } from 'matrix-js-sdk'
-import { MessageStatusEnum, MsgEnum } from '@/enums'
+import { MessageStatusEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import matrixMessageAdapter from '../messaging/MatrixMessageAdapter'
+import { getMessagePreviewByType, getRoomTimelinePreview } from './roomPreviewText'
 
 export interface SlidingSyncUnreadCounts {
   notificationCount?: number
   highlightCount?: number
-}
-
-/**
- * 获取时间线事件预览文字
- */
-function getTimelineEventPreview(eventType: string, content: Record<string, unknown>): string | null {
-  const msgType = typeof content.msgtype === 'string' ? content.msgtype : undefined
-
-  if (msgType === 'm.text' || msgType === 'm.notice') {
-    return typeof content.body === 'string' ? content.body : null
-  }
-  if (msgType === 'm.image') return '[图片]'
-  if (msgType === 'm.video') return '[视频]'
-  if (msgType === 'm.audio' || msgType === 'm.voice') return '[音频]'
-  if (msgType === 'm.file') return '[文件]'
-
-  if (eventType === 'm.room.member') {
-    return content.membership === 'join' ? '加入了房间' : '离开了房间'
-  }
-
-  return typeof content.body === 'string' ? content.body : null
-}
-
-/**
- * 获取消息预览文字
- */
-function getMessagePreview(message: MessageType): string {
-  const body = message.message.body as Record<string, unknown>
-
-  switch (message.message.type) {
-    case MsgEnum.IMAGE:
-      return '[图片]'
-    case MsgEnum.VIDEO:
-      return '[视频]'
-    case MsgEnum.VOICE:
-      return '[音频]'
-    case MsgEnum.FILE:
-      return '[文件]'
-    case MsgEnum.SYSTEM:
-      return body.membership === 'join' ? '加入了房间' : '离开了房间'
-    case MsgEnum.TEXT:
-      return (body.content ?? body.body ?? '') as string
-    default:
-      return '[消息]'
-  }
 }
 
 /**
@@ -65,7 +21,7 @@ function convertRoomToRoomInfo(room: Room, isEncrypted: boolean) {
 
   if (lastEvent) {
     lastMessageTime = lastEvent.getTs()
-    lastMessage = getTimelineEventPreview(lastEvent.getType(), lastEvent.getContent())
+    lastMessage = getRoomTimelinePreview(lastEvent.getType(), lastEvent.getContent())
   }
 
   const isSpaceRoom = typeof room.isSpaceRoom === 'function' ? (room.isSpaceRoom() as boolean) : false
@@ -205,8 +161,9 @@ function convertTimelineEventToMessage(roomId: string, event: Record<string, unk
 }
 
 export const matrixRoomStoreAdapter = {
-  getTimelineEventPreview,
-  getMessagePreview,
+  getTimelineEventPreview: getRoomTimelinePreview,
+  getMessagePreview: (message: MessageType) =>
+    getMessagePreviewByType(message.message.type, message.message.body as Record<string, unknown>),
   convertRoomToRoomInfo,
   applySlidingSyncUnreadCounts,
   isDisplayableMessageEvent,

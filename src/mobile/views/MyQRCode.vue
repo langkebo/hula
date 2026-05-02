@@ -45,10 +45,12 @@
 </template>
 
 <script setup lang="ts">
-import QRCode from 'qrcode'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MyQRCode')
 
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -68,6 +70,7 @@ const qrCodeValue = JSON.stringify({
 onMounted(async () => {
   if (qrCanvasRef.value) {
     try {
+      const QRCode = (await import('qrcode')).default
       await QRCode.toCanvas(qrCanvasRef.value, qrCodeValue, {
         width: 250,
         margin: 2,
@@ -76,7 +79,9 @@ onMounted(async () => {
           light: '#FFFFFF'
         }
       })
-    } catch (err) {}
+    } catch (err) {
+      logger.error('生成二维码失败', err)
+    }
   }
 })
 </script>

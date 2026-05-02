@@ -13,6 +13,7 @@ pub struct AdminCheckResult {
 pub async fn check_admin_status(
     user_id: String,
     access_token: String,
+    homeserver_url: Option<String>,
     state: State<'_, AppData>,
 ) -> Result<AdminCheckResult, String> {
     if user_id.is_empty() || access_token.is_empty() {
@@ -20,7 +21,9 @@ pub async fn check_admin_status(
     }
 
     let config = state.config.read().await;
-    let homeserver = config.backend.base_url.clone();
+    let homeserver = homeserver_url
+        .filter(|url| !url.trim().is_empty())
+        .unwrap_or_else(|| config.backend.base_url.clone());
     drop(config);
 
     let is_admin = verify_admin_via_matrix(&homeserver, &user_id, &access_token).await?;

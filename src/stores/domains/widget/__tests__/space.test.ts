@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
 
 const spaceMock = vi.hoisted(() => ({
   getUserSpaces: vi.fn(),
@@ -13,7 +14,12 @@ vi.mock('@/services/matrix/room/MatrixSpaceService', () => ({
 
 import { useSpaceStore } from '../space'
 
-const sp = (id: string, name = id): any => ({ spaceId: id, name })
+const sp = (id: string, name = id): SpaceInfo => ({
+  spaceId: id,
+  name,
+  memberCount: 0,
+  childCount: 0
+})
 
 describe('useSpaceStore', () => {
   beforeEach(() => {

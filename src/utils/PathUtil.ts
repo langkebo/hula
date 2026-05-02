@@ -1,9 +1,9 @@
-import { invoke } from '@tauri-apps/api/core'
 import { appCacheDir, appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory, exists, mkdir, readFile, writeFile } from '@tauri-apps/plugin-fs'
 import { type FileTypeResult, fileTypeFromBuffer } from 'file-type'
 import type { FilesMeta } from '@/services/types'
 import { createLogger } from '@/utils/Logger'
+import { invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { isMobile } from './PlatformConstants'
 
 const logger = createLogger('PathUtil')
@@ -273,7 +273,11 @@ export async function detectRemoteFileType(options: {
       if (resolvedFileSize === 0) {
         logger.debug('文件大小为 0 字节，尝试使用后缀名检测')
         try {
-          const result = await invoke<FilesMeta>('get_files_meta', { filesPath: [url] })
+          const result = await invokeSilently<FilesMeta>('get_files_meta', { filesPath: [url] })
+          if (!result) {
+            logger.warn(`该资源无法识别类型：${url}`)
+            return void 0
+          }
           const meta = result[0]
 
           return {
@@ -370,7 +374,7 @@ export async function getRemoteFileSize(url: string): Promise<number | null> {
  * metas.forEach(m => console.log(m.file_type))
  */
 export async function getFilesMeta<T>(filesPath: string[]) {
-  return invoke<T>('get_files_meta', {
+  return invokeWithErrorHandler<T>('get_files_meta', {
     filesPath
   })
 }

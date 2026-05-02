@@ -17,7 +17,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 describe('MatrixAccountService - 3PID Management', () => {
   let mockClient: Partial<MatrixClient>
-  let mockHttp: any
+  let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     mockHttp = {
@@ -25,7 +25,7 @@ describe('MatrixAccountService - 3PID Management', () => {
     }
 
     mockClient = {
-      http: mockHttp,
+      http: mockHttp as unknown as MatrixClient['http'],
       addThreePidOnly: vi.fn(),
       bindThreePid: vi.fn(),
       deleteThreePid: vi.fn(),
@@ -56,7 +56,7 @@ describe('MatrixAccountService - 3PID Management', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixAccountService.addThreePid('sid', 'secret')).rejects.toThrow('客户端未初始化')
     })
@@ -77,7 +77,7 @@ describe('MatrixAccountService - 3PID Management', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixAccountService.bindThreePid('sid', 'secret', 'email', 'a@b.com')).rejects.toThrow(
         '客户端未初始化'
@@ -147,7 +147,7 @@ describe('MatrixAccountService - 3PID Management', () => {
         sid: 'msisdn_sid_123',
         msisdn: '+1234567890',
         submit_url: 'https://example.com/submit'
-      } as any)
+      } as unknown as Awaited<ReturnType<MatrixClient['requestAdd3pidMsisdnToken']>>)
 
       const result = await matrixAccountService.requestMsisdnTokenFor3Pid('1', '234567890', 'secret')
 

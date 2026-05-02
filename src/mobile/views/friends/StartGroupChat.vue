@@ -91,8 +91,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { OnlineEnum } from '@/enums'
-import { matrixGroupService } from '@/services/matrix'
-import type { GroupCreateResult } from '@/services/matrix/room/MatrixGroupService'
+import { type GroupCreateResult, matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'

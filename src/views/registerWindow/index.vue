@@ -238,7 +238,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import dayjs from 'dayjs'
 import { darkTheme, type FormInst, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
+import { resolveMatrixRuntimeEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend'
 import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
 import { createLogger } from '@/utils/Logger'
 
@@ -509,6 +509,10 @@ const finishRegistrationAndEnterHome = async (
   const displayName = account
 
   if (registerResult.user_id && registerResult.access_token) {
+    saveMatrixSessionEndpointConfig({
+      homeserverUrl: matrixEndpointConfig.homeserverUrl,
+      identityServerUrl: matrixEndpointConfig.identityServerUrl
+    })
     await matrixRuntimeSessionService.restoreWithAccessToken({
       uid: registerResult.user_id,
       accessToken: registerResult.access_token,

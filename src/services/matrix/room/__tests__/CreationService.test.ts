@@ -1,3 +1,4 @@
+import type { ICreateRoomOpts, MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -10,8 +11,8 @@ const createRoomMock = vi.fn()
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    createRoom: (opts: unknown) => createRoomMock(opts),
-    getClient: () => getClientMock()
+    createRoom: (opts: ICreateRoomOpts) => createRoomMock(opts),
+    getClient: () => getClientMock() as MatrixClient
   }
 }))
 
@@ -25,35 +26,53 @@ vi.mock('../MembershipService', () => ({
 const enqueueMock = vi.fn()
 vi.mock('@/services/offline/OfflineQueueService', () => ({
   offlineQueueService: {
-    enqueue: (...args: any[]) => enqueueMock(...args)
+    enqueue: (type: string, status: string, data: unknown) => enqueueMock(type, status, data)
   }
 }))
 
 const { MatrixRoomCreationService } = await import('../CreationService')
 const { Preset, Visibility, NotificationCountType } = await import('matrix-js-sdk')
 
-const makeRoom = (overrides: Record<string, unknown> = {}) => ({
-  roomId: '!r:e',
-  name: 'RoomName',
-  getLiveTimeline: () => ({ getEvents: () => [] }),
-  getMxcAvatarUrl: () => 'mxc://a/b',
-  getJoinedMembers: () => [
-    {
-      userId: '@u1:e',
-      name: 'U1',
-      getMxcAvatarUrl: () => 'mxc://u1',
-      powerLevel: 0
-    },
-    {
-      userId: '@u2:e',
-      name: 'U2',
-      getMxcAvatarUrl: () => null,
-      powerLevel: 50
+type CreateOptsWithState = ICreateRoomOpts & {
+  initial_state: Array<{ type: string; state_key: string; content: Record<string, unknown> }>
+}
+
+type RoomWithSyncData = Room & {
+  syncData?: {
+    unread_notifications?: {
+      notification_count?: number
+      highlight_count?: number
     }
-  ],
-  getUnreadNotificationCount: vi.fn(),
-  ...overrides
-})
+  }
+}
+
+const makeRoom = (overrides: unknown = {}): Room =>
+  ({
+    roomId: '!r:e',
+    name: 'RoomName',
+    getLiveTimeline: () => ({ getEvents: () => [] }),
+    getMxcAvatarUrl: () => 'mxc://a/b',
+    getJoinedMembers: () => [
+      {
+        userId: '@u1:e',
+        name: 'U1',
+        getMxcAvatarUrl: () => 'mxc://u1',
+        powerLevel: 0
+      },
+      {
+        userId: '@u2:e',
+        name: 'U2',
+        getMxcAvatarUrl: () => null,
+        powerLevel: 50
+      }
+    ],
+    getUnreadNotificationCount: vi.fn(),
+    ...(overrides as Record<string, unknown>)
+  }) as unknown as Room
+
+function hasStateEventType(value: unknown, type: string): boolean {
+  return typeof value === 'object' && value !== null && 'type' in value && (value as { type?: string }).type === type
+}
 
 describe('MatrixRoomCreationService', () => {
   let service: InstanceType<typeof MatrixRoomCreationService>
@@ -129,8 +148,8 @@ describe('MatrixRoomCreationService', () => {
     it('pushes m.room.encryption only when isEncrypted && !isPublic', async () => {
       createRoomMock.mockResolvedValueOnce(makeRoom())
       await service.createGroupRoom({ name: 'G', isEncrypted: true, isPublic: true })
-      const publicOpts = createRoomMock.mock.calls[0][0]
-      expect(publicOpts.initial_state.find((e: any) => e.type === 'm.room.encryption')).toBeUndefined()
+      const publicOpts = createRoomMock.mock.calls[0][0] as CreateOptsWithState
+      expect(publicOpts.initial_state.find((entry) => hasStateEventType(entry, 'm.room.encryption'))).toBeUndefined()
 
       createRoomMock.mockResolvedValueOnce(makeRoom())
       await service.createGroupRoom({ name: 'G', isEncrypted: true })
@@ -145,8 +164,10 @@ describe('MatrixRoomCreationService', () => {
     it('pushes m.room.history_visibility only when non-"shared"', async () => {
       createRoomMock.mockResolvedValueOnce(makeRoom())
       await service.createGroupRoom({ name: 'G', historyVisibility: 'shared' })
-      const sharedOpts = createRoomMock.mock.calls[0][0]
-      expect(sharedOpts.initial_state.find((e: any) => e.type === 'm.room.history_visibility')).toBeUndefined()
+      const sharedOpts = createRoomMock.mock.calls[0][0] as CreateOptsWithState
+      expect(
+        sharedOpts.initial_state.find((entry) => hasStateEventType(entry, 'm.room.history_visibility'))
+      ).toBeUndefined()
 
       createRoomMock.mockResolvedValueOnce(makeRoom())
       await service.createGroupRoom({ name: 'G', historyVisibility: 'world_readable' })
@@ -166,7 +187,7 @@ describe('MatrixRoomCreationService', () => {
 
     it('maps basic fields and derives isDirect from member count when no DMInviter', () => {
       const room = makeRoom()
-      const info = service.convertRoomToRoomInfo(room as any)
+      const info = service.convertRoomToRoomInfo(room)
       expect(info.roomId).toBe('!r:e')
       expect(info.name).toBe('RoomName')
       expect(info.avatarUrl).toBe('mxc://a/b')
@@ -184,7 +205,7 @@ describe('MatrixRoomCreationService', () => {
 
     it('falls back to roomId when room.name is empty', () => {
       const room = makeRoom({ name: '' })
-      expect(service.convertRoomToRoomInfo(room as any).name).toBe('!r:e')
+      expect(service.convertRoomToRoomInfo(room).name).toBe('!r:e')
     })
 
     it('extracts lastMessage/lastMessageTime for m.text events', () => {
@@ -199,7 +220,7 @@ describe('MatrixRoomCreationService', () => {
           ]
         })
       })
-      const info = service.convertRoomToRoomInfo(room as any)
+      const info = service.convertRoomToRoomInfo(room)
       expect(info.lastMessage).toBe('hello')
       expect(info.lastMessageTime).toBe(123)
     })
@@ -223,7 +244,7 @@ describe('MatrixRoomCreationService', () => {
             ]
           })
         })
-        expect(service.convertRoomToRoomInfo(room as any).lastMessage).toBe(expected)
+        expect(service.convertRoomToRoomInfo(room).lastMessage).toBe(expected)
       }
     })
 
@@ -235,7 +256,7 @@ describe('MatrixRoomCreationService', () => {
           ]
         })
       })
-      expect(service.convertRoomToRoomInfo(join as any).lastMessage).toBe('加入了房间')
+      expect(service.convertRoomToRoomInfo(join).lastMessage).toBe('加入了房间')
 
       const leave = makeRoom({
         getLiveTimeline: () => ({
@@ -244,11 +265,11 @@ describe('MatrixRoomCreationService', () => {
           ]
         })
       })
-      expect(service.convertRoomToRoomInfo(leave as any).lastMessage).toBe('离开了房间')
+      expect(service.convertRoomToRoomInfo(leave).lastMessage).toBe('离开了房间')
     })
 
     it('prefers syncData.unread_notifications counts when present', () => {
-      const room = makeRoom() as any
+      const room = makeRoom() as RoomWithSyncData
       room.syncData = { unread_notifications: { notification_count: 5, highlight_count: 2 } }
       const info = service.convertRoomToRoomInfo(room)
       expect(info.unreadCount).toBe(5)
@@ -257,7 +278,7 @@ describe('MatrixRoomCreationService', () => {
     })
 
     it('falls back to room.getUnreadNotificationCount when syncData missing', () => {
-      const room = makeRoom() as any
+      const room = makeRoom()
       room.getUnreadNotificationCount = vi.fn((type?: unknown) => {
         if (type === NotificationCountType.Highlight) return 3
         if (type === NotificationCountType.Total) return 7
@@ -270,7 +291,7 @@ describe('MatrixRoomCreationService', () => {
     })
 
     it('honors isSpaceRoom=true by forcing isDirect=false', () => {
-      const room = makeRoom({ isSpaceRoom: () => true }) as any
+      const room = makeRoom({ isSpaceRoom: () => true })
       expect(service.convertRoomToRoomInfo(room).isDirect).toBe(false)
     })
 
@@ -282,13 +303,13 @@ describe('MatrixRoomCreationService', () => {
           { userId: '@v:e', name: 'V', getMxcAvatarUrl: () => null, powerLevel: 0 },
           { userId: '@w:e', name: 'W', getMxcAvatarUrl: () => null, powerLevel: 0 }
         ]
-      }) as any
+      })
       expect(service.convertRoomToRoomInfo(room).isDirect).toBe(true)
     })
 
     it('returns isEncrypted=true when client.isRoomEncrypted returns true', () => {
       getClientMock.mockReturnValue({ isRoomEncrypted: () => true })
-      expect(service.convertRoomToRoomInfo(makeRoom() as any).isEncrypted).toBe(true)
+      expect(service.convertRoomToRoomInfo(makeRoom()).isEncrypted).toBe(true)
     })
   })
 

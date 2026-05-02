@@ -1,17 +1,47 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const moderationMock = vi.hoisted(() => ({
-  getReports: vi.fn(),
-  resolveReport: vi.fn(),
-  getUserReputation: vi.fn(),
-  setUserReputation: vi.fn(),
-  getContentFilters: vi.fn(),
-  addContentFilter: vi.fn(),
-  removeContentFilter: vi.fn()
+const { moderationMock, getClientMock } = vi.hoisted(() => {
+  const moderationMock = {
+    getReports: vi.fn(),
+    resolveReport: vi.fn(),
+    getUserReputation: vi.fn(),
+    setUserReputation: vi.fn(),
+    getContentFilters: vi.fn(),
+    addContentFilter: vi.fn(),
+    removeContentFilter: vi.fn()
+  }
+
+  const moderationManagerMock = {
+    // Mock the ModerationManager interface
+    start: vi.fn(),
+    stop: vi.fn(),
+    on: vi.fn(),
+    removeAllListeners: vi.fn(),
+    getReports: moderationMock.getReports,
+    resolveReport: moderationMock.resolveReport,
+    getUserReputation: moderationMock.getUserReputation,
+    setUserReputation: moderationMock.setUserReputation,
+    getContentFilters: moderationMock.getContentFilters,
+    addContentFilter: moderationMock.addContentFilter,
+    removeContentFilter: moderationMock.removeContentFilter
+  }
+
+  const getClientMock = vi.fn(() => ({ moderationManager: moderationManagerMock })) // Mock client to return moderationManager
+
+  return {
+    moderationMock,
+    getClientMock
+  }
+})
+
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    getClient: getClientMock
+  }
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/admin/MatrixModerationService', () => ({
   matrixModerationService: moderationMock
 }))
 

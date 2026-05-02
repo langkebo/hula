@@ -41,7 +41,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminRegistrationTokens } from '@/composables/admin'
 import MobileLayout from '@/mobile/layout/index.vue'
-import type { RegistrationToken } from '@/services/matrix'
+import type { RegistrationToken } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminRegistrationTokens')

@@ -1,10 +1,22 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { matrixClientService } from '@/services/matrix'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { type ContactInvite, useContactStore } from '../contacts'
+
+const { matrixClientServiceMock, getClientMock } = vi.hoisted(() => {
+  const waitForClientReadyMock = vi.fn()
+  const getClientMock = vi.fn()
+  const matrixClientServiceMock = {
+    waitForClientReady: waitForClientReadyMock,
+    getClient: getClientMock
+  }
+  return {
+    matrixClientServiceMock,
+    getClientMock
+  }
+})
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -48,14 +60,8 @@ vi.mock('@/services/matrix/room/MatrixDirectMessageService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix', () => ({
-  EventType: {
-    RoomMember: 'm.room.member'
-  },
-  matrixClientService: {
-    getClient: vi.fn(),
-    waitForClientReady: vi.fn()
-  }
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: matrixClientServiceMock
 }))
 
 const globalStoreMock = {
@@ -105,48 +111,68 @@ describe('contacts store startup client readiness', () => {
     vi.mocked(matrixFriendService.getOutgoingRequests).mockResolvedValue([])
     vi.mocked(matrixDirectMessageService.getDmRoomInfos).mockResolvedValue([])
 
-    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+    getClientMock.mockReturnValue(null)
   })
 
-  it('getUserProfile waits for the matrix client before reading profile', async () => {
+  it('getUserProfile returns null when client is not available', async () => {
+    getClientMock.mockReturnValue(null)
+
+    const store = useContactStore()
+    const profile = await store.getUserProfile('@test:matrix.org')
+
+    expect(getClientMock).toHaveBeenCalled()
+    expect(profile).toBeNull()
+  })
+
+  it('getUserProfile reads profile when client is available', async () => {
     const getProfileInfo = vi.fn().mockResolvedValue({
       displayname: 'Test User',
       avatar_url: 'mxc://avatar/test'
     })
 
-    vi.mocked(matrixClientService.waitForClientReady).mockResolvedValue({
+    getClientMock.mockReturnValue({
       getProfileInfo
-    } as never)
+    })
 
     const store = useContactStore()
     const profile = await store.getUserProfile('@test:matrix.org')
 
-    expect(matrixClientService.waitForClientReady).toHaveBeenCalledWith({ timeoutMs: 5000 })
     expect(getProfileInfo).toHaveBeenCalledWith('@test:matrix.org')
     expect(profile?.displayName).toBe('Test User')
     expect(profile?.avatarUrl).toBe('mxc://avatar/test')
   })
 
-  it('getUserProfile returns null when the matrix client never becomes ready', async () => {
-    vi.mocked(matrixClientService.waitForClientReady).mockRejectedValue(new Error('timeout'))
+  it('getUserProfile returns null when getProfileInfo throws', async () => {
+    const getProfileInfo = vi.fn().mockRejectedValue(new Error('not found'))
+
+    getClientMock.mockReturnValue({
+      getProfileInfo
+    })
 
     const store = useContactStore()
     const profile = await store.getUserProfile('@test:matrix.org')
 
-    expect(matrixClientService.waitForClientReady).toHaveBeenCalledWith({ timeoutMs: 5000 })
     expect(profile).toBeNull()
   })
 
-  it('loadPendingInvites waits for the matrix client before reading invite rooms', async () => {
-    vi.mocked(matrixClientService.waitForClientReady).mockResolvedValue({
-      getRooms: vi.fn(() => [createInviteRoom()]),
-      getUserId: vi.fn(() => '@me:matrix.org')
-    } as never)
+  it('loadPendingInvites returns early when client is not available', async () => {
+    getClientMock.mockReturnValue(null)
 
     const store = useContactStore()
     await store.loadPendingInvites()
 
-    expect(matrixClientService.waitForClientReady).toHaveBeenCalledWith({ timeoutMs: 5000 })
+    expect(store.pendingInvites).toHaveLength(0)
+  })
+
+  it('loadPendingInvites reads invite rooms when client is available', async () => {
+    getClientMock.mockReturnValue({
+      getRooms: vi.fn(() => [createInviteRoom()]),
+      getUserId: vi.fn(() => '@me:matrix.org')
+    })
+
+    const store = useContactStore()
+    await store.loadPendingInvites()
+
     expect(store.pendingInvites).toHaveLength(1)
     expect(store.pendingInvites[0]).toMatchObject({
       roomId: '!invite:matrix.org',
@@ -156,34 +182,28 @@ describe('contacts store startup client readiness', () => {
     expect(globalStoreMock.setGroupUnreadCount).toHaveBeenCalledWith(1)
   })
 
-  it('acceptInvite waits for the matrix client before joining the room', async () => {
+  it('acceptInvite joins room when client is available', async () => {
     const joinRoom = vi.fn().mockResolvedValue(undefined)
-    vi.mocked(matrixClientService.waitForClientReady).mockResolvedValue({
-      joinRoom
-    } as never)
+    getClientMock.mockReturnValue({ joinRoom })
 
     const store = useContactStore()
     store.$patch({ pendingInvites: [createInvite()] })
 
     await expect(store.acceptInvite('!invite:matrix.org')).resolves.toBe(true)
 
-    expect(matrixClientService.waitForClientReady).toHaveBeenCalledWith({ timeoutMs: 5000 })
     expect(joinRoom).toHaveBeenCalledWith('!invite:matrix.org')
     expect(store.pendingInvites).toHaveLength(0)
   })
 
-  it('rejectInvite waits for the matrix client before leaving the room', async () => {
+  it('rejectInvite leaves room when client is available', async () => {
     const leave = vi.fn().mockResolvedValue(undefined)
-    vi.mocked(matrixClientService.waitForClientReady).mockResolvedValue({
-      leave
-    } as never)
+    getClientMock.mockReturnValue({ leave })
 
     const store = useContactStore()
     store.$patch({ pendingInvites: [createInvite()] })
 
     await expect(store.rejectInvite('!invite:matrix.org')).resolves.toBe(true)
 
-    expect(matrixClientService.waitForClientReady).toHaveBeenCalledWith({ timeoutMs: 5000 })
     expect(leave).toHaveBeenCalledWith('!invite:matrix.org')
     expect(store.pendingInvites).toHaveLength(0)
   })

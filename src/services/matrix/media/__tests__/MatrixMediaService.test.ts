@@ -1,3 +1,5 @@
+import type { MatrixClient } from 'matrix-js-sdk'
+import type { TelemetryManager } from 'matrix-js-sdk/src/telemetry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
 import { matrixMediaService } from '../MatrixMediaService'
@@ -10,7 +12,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   matrixClientService: {
-    getClient: vi.fn(() => null),
+    getClient: vi.fn(() => null as MatrixClient | null),
     getTelemetry: vi.fn(() => null)
   }
 }))
@@ -61,7 +63,7 @@ describe('MatrixMediaService', () => {
 
   describe('uploadFile', () => {
     it('should throw error when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       const file = new File(['content'], 'test.txt', { type: 'text/plain' })
       await expect(matrixMediaService.uploadFile(file)).rejects.toThrow('客户端未初始化')
@@ -70,7 +72,7 @@ describe('MatrixMediaService', () => {
 
   describe('uploadImage', () => {
     it('should throw error when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       const file = new File(['content'], 'test.png', { type: 'image/png' })
       await expect(matrixMediaService.uploadImage(file)).rejects.toThrow('客户端未初始化')
@@ -79,7 +81,7 @@ describe('MatrixMediaService', () => {
 
   describe('uploadVideo', () => {
     it('should throw error when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       const file = new File(['content'], 'test.mp4', { type: 'video/mp4' })
       await expect(matrixMediaService.uploadVideo(file)).rejects.toThrow('客户端未初始化')
@@ -88,7 +90,7 @@ describe('MatrixMediaService', () => {
 
   describe('uploadAudio', () => {
     it('should throw error when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       const file = new File(['content'], 'test.ogg', { type: 'audio/ogg' })
       await expect(matrixMediaService.uploadAudio(file)).rejects.toThrow('客户端未初始化')
@@ -97,7 +99,7 @@ describe('MatrixMediaService', () => {
 
   describe('uploadBlob', () => {
     it('should throw error when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       const blob = new Blob(['content'], { type: 'application/octet-stream' })
       await expect(matrixMediaService.uploadBlob(blob, 'test.bin', 'application/octet-stream')).rejects.toThrow(
@@ -114,7 +116,7 @@ describe('MatrixMediaService', () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         uploadContent,
         mxcUrlToHttp: vi.fn()
-      } as any)
+      } as unknown as MatrixClient)
 
       const file = new File(['secret-content'], 'secret.txt', { type: 'text/plain' })
       const result = await matrixMediaService.uploadEncryptedFile(file)
@@ -164,14 +166,14 @@ describe('MatrixMediaService', () => {
 
   describe('getMediaUrl', () => {
     it('should return null for invalid mxc url', () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
       expect(matrixMediaService.getMediaUrl('')).toBeNull()
       expect(matrixMediaService.getMediaUrl('https://example.com/image.png')).toBeNull()
     })
 
     it('should throw error when client is not initialized', () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       expect(() => matrixMediaService.getMediaUrl('mxc://matrix.org/abc123')).toThrow('客户端未初始化')
     })
@@ -179,14 +181,14 @@ describe('MatrixMediaService', () => {
 
   describe('getThumbnailUrl', () => {
     it('should return null for invalid mxc url', () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
       expect(matrixMediaService.getThumbnailUrl('', 100, 100)).toBeNull()
       expect(matrixMediaService.getThumbnailUrl('invalid-url', 100, 100)).toBeNull()
     })
 
     it('should throw error when client is not initialized', () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       expect(() => matrixMediaService.getThumbnailUrl('mxc://matrix.org/abc123', 100, 100)).toThrow('客户端未初始化')
     })
@@ -199,10 +201,10 @@ describe('MatrixMediaService', () => {
           content_uri: 'mxc://matrix.org/uploaded123'
         }),
         mxcUrlToHttp: vi.fn().mockReturnValue('https://matrix.org/media/uploaded123')
-      } as any)
+      } as unknown as MatrixClient)
       vi.mocked(matrixClientService.getTelemetry).mockReturnValue({
         trackMediaUploaded: vi.fn()
-      } as any)
+      } as unknown as TelemetryManager)
     })
 
     it('should upload file successfully', async () => {
@@ -227,7 +229,7 @@ describe('MatrixMediaService', () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         uploadContent,
         mxcUrlToHttp: vi.fn().mockReturnValue('https://matrix.org/media/uploaded123')
-      } as any)
+      } as unknown as MatrixClient)
 
       const onProgress = vi.fn()
       const file = new File(['content'], 'test.txt', { type: 'text/plain' })
@@ -253,7 +255,7 @@ describe('MatrixMediaService', () => {
     it('should get media config', async () => {
       const mockConfig = { 'm.upload.size': 52428800 }
       const mockHttp = { authedRequest: vi.fn().mockResolvedValue(mockConfig) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getMediaConfig()
 
@@ -263,7 +265,7 @@ describe('MatrixMediaService', () => {
 
     it('should throw on error', async () => {
       const mockHttp = { authedRequest: vi.fn().mockRejectedValue(new Error('fail')) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
 
       await expect(matrixMediaService.getMediaConfig()).rejects.toThrow('fail')
     })
@@ -272,7 +274,7 @@ describe('MatrixMediaService', () => {
   describe('deleteMedia', () => {
     it('should delete media successfully', async () => {
       const mockHttp = { authedRequest: vi.fn().mockResolvedValue({}) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
 
       const result = await matrixMediaService.deleteMedia('matrix.org', 'media123')
 
@@ -282,7 +284,7 @@ describe('MatrixMediaService', () => {
 
     it('should throw on delete error', async () => {
       const mockHttp = { authedRequest: vi.fn().mockRejectedValue(new Error('forbidden')) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
 
       await expect(matrixMediaService.deleteMedia('matrix.org', 'media123')).rejects.toThrow('forbidden')
     })
@@ -292,7 +294,7 @@ describe('MatrixMediaService', () => {
     it('should get quota alerts', async () => {
       const mockAlerts = { alerts: [{ alert_id: '1', alert_type: 'warning' }] }
       const mockHttp = { authedRequest: vi.fn().mockResolvedValue(mockAlerts) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getQuotaAlerts()
 
@@ -302,7 +304,7 @@ describe('MatrixMediaService', () => {
 
     it('should return empty array on error', async () => {
       const mockHttp = { authedRequest: vi.fn().mockRejectedValue(new Error('fail')) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getQuotaAlerts()
 
@@ -312,7 +314,7 @@ describe('MatrixMediaService', () => {
 
   describe('uploadContentWithId', () => {
     it('should throw error when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       const file = new File(['content'], 'test.txt', { type: 'text/plain' })
       await expect(matrixMediaService.uploadContentWithId('server', 'id', file)).rejects.toThrow('客户端未初始化')
@@ -321,8 +323,8 @@ describe('MatrixMediaService', () => {
     it('should upload content with id successfully', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/named123' })
-      } as any)
-      vi.mocked(matrixClientService.getTelemetry).mockReturnValue(null as any)
+      } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getTelemetry).mockReturnValue(null)
 
       const file = new File(['content'], 'test.txt', { type: 'text/plain' })
       const result = await matrixMediaService.uploadContentWithId('matrix.org', 'named-id', file)

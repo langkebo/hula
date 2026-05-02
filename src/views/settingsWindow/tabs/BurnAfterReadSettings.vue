@@ -160,7 +160,7 @@ import {
 } from 'naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixBurnAfterReadService } from '@/services/matrix'
+import { matrixBurnAfterReadService } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('BurnAfterReadSettings')

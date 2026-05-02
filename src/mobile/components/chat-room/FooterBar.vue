@@ -33,10 +33,10 @@
 <script setup lang="ts">
 import 'vant/es/dialog/style'
 import { Icon } from '@iconify/vue'
-import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isIOS } from '@/utils/PlatformConstants'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import VoicePanel from './panel/VoicePanel.vue'
 
 const { t } = useI18n()
@@ -65,13 +65,13 @@ onMounted(() => {
   }
 
   if (isIOS()) {
-    invoke('set_webview_keyboard_adjustment', { enabled: true })
+    invokeSilently('set_webview_keyboard_adjustment', { enabled: true })
   }
 })
 
 onUnmounted(() => {
   if (isIOS()) {
-    invoke('set_webview_keyboard_adjustment', { enabled: false })
+    invokeSilently('set_webview_keyboard_adjustment', { enabled: false })
   }
 })
 

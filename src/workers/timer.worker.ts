@@ -1,5 +1,8 @@
 // biome-ignore-all lint/suspicious/noConsole: Worker debug logging is intentionally gated and kept in this worker.
 /// <reference lib="webworker" />
+import { createWorkerLogger } from './workerLogger'
+
+const logger = createWorkerLogger('TimerWorker')
 
 /** 修改类型定义以支持字符串和数字类型的key */
 type TimerId = number | string
@@ -44,7 +47,7 @@ const logDebugInfo = (msgId: TimerId, remainingTime: number) => {
 
   // 只在关键时间点打印日志（最后5秒或每10秒）
   if (remainingTime <= 5000 || remainingTime % 10000 < 1000) {
-    console.log(`[Worker Debug] 消息ID: ${msgId}, 剩余时间: ${(remainingTime / 1000).toFixed(1)}秒`)
+    logger.info(`消息ID: ${msgId}, 剩余时间: ${(remainingTime / 1000).toFixed(1)}秒`)
   }
 }
 
@@ -55,7 +58,7 @@ const logDebugInfo = (msgId: TimerId, remainingTime: number) => {
  */
 const safeLog = (message: string, ...args: unknown[]) => {
   if (ENABLE_LOGGING) {
-    console.log(message, ...args)
+    logger.info(message, ...args)
   }
 }
 
@@ -72,7 +75,7 @@ self.onmessage = (e) => {
   switch (type) {
     case 'startReconnectTimer': {
       // 主线程发送重启timer事件, 延时后返回reconnectTimeout事件给主线程
-      console.log('[Timer Worker] 启动重连定时器.....')
+      logger.info('启动重连定时器.....')
       const timerId = setTimeout(() => {
         self.postMessage({
           type: 'reconnectTimeout',

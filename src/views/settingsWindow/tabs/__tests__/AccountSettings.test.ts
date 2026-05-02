@@ -2,23 +2,37 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AccountSettings from '../AccountSettings.vue'
 
-const messageSuccessMock = vi.fn()
-const messageWarningMock = vi.fn()
-const messageErrorMock = vi.fn()
-const dialogWarningMock = vi.fn()
-
-const updateDisplayNameMock = vi.fn().mockResolvedValue(undefined)
-const changePasswordMock = vi.fn().mockResolvedValue(undefined)
-const deactivateAccountMock = vi.fn().mockResolvedValue(undefined)
-const updateAvatarMock = vi.fn().mockResolvedValue(undefined)
-const uploadImageMock = vi.fn().mockResolvedValue({ contentUri: 'mxc://test/avatar' })
-const translationMap: Record<string, string> = {
-  'setting.account.profile': '个人资料',
-  'setting.account.password_incomplete': '请填写完整密码信息',
-  'setting.account.password_mismatch': '两次输入的密码不一致',
-  'setting.account.password_change_failed_with_hint': '密码修改失败，请检查当前密码是否正确',
-  'setting.account.deactivate_confirm_title': '确认停用账户'
-}
+const {
+  updateDisplayNameMock,
+  changePasswordMock,
+  deactivateAccountMock,
+  updateAvatarMock,
+  uploadImageMock,
+  messageSuccessMock,
+  messageWarningMock,
+  messageErrorMock,
+  dialogWarningMock,
+  translationMap
+} = vi.hoisted(() => {
+  return {
+    updateDisplayNameMock: vi.fn().mockResolvedValue(undefined),
+    changePasswordMock: vi.fn().mockResolvedValue(undefined),
+    deactivateAccountMock: vi.fn().mockResolvedValue(undefined),
+    updateAvatarMock: vi.fn().mockResolvedValue(undefined),
+    uploadImageMock: vi.fn().mockResolvedValue({ contentUri: 'mxc://test/avatar' }),
+    messageSuccessMock: vi.fn(),
+    messageWarningMock: vi.fn(),
+    messageErrorMock: vi.fn(),
+    dialogWarningMock: vi.fn(),
+    translationMap: {
+      'setting.account.profile': '个人资料',
+      'setting.account.password_incomplete': '请填写完整密码信息',
+      'setting.account.password_mismatch': '两次输入的密码不一致',
+      'setting.account.password_change_failed_with_hint': '密码修改失败，请检查当前密码是否正确',
+      'setting.account.deactivate_confirm_title': '确认停用账户'
+    } as Record<string, string>
+  }
+})
 
 vi.mock('naive-ui', () => ({
   NAvatar: { name: 'NAvatar', template: '<div class="n-avatar" />', props: ['round', 'size', 'src', 'fallbackSrc'] },
@@ -31,7 +45,11 @@ vi.mock('naive-ui', () => ({
     props: ['value', 'type', 'placeholder', 'disabled', 'maxlength', 'showPasswordOn']
   },
   NDivider: { name: 'NDivider', template: '<hr />' },
-  useMessage: () => ({ success: messageSuccessMock, warning: messageWarningMock, error: messageErrorMock }),
+  useMessage: () => ({
+    success: messageSuccessMock,
+    warning: messageWarningMock,
+    error: messageErrorMock
+  }),
   useDialog: () => ({ warning: dialogWarningMock })
 }))
 
@@ -50,7 +68,7 @@ vi.mock('@/stores/domains/chat/matrix', () => ({
   })
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   matrixAccountService: {
     updateDisplayName: (...args: any[]) => updateDisplayNameMock(...args),
     changePassword: (...args: any[]) => changePasswordMock(...args),

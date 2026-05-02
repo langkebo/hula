@@ -56,7 +56,8 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { type ChatRole, chatRoleService } from '@/services/matrix'
+import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
+import { chatRoleService } from '@/services/matrix/ai/ChatRoleService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ChatRoleSelector')

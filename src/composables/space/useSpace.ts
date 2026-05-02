@@ -1,6 +1,6 @@
 import { type Ref, ref } from 'vue'
-import { matrixSpaceService } from '@/services/matrix'
 import type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
+import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useSpace')

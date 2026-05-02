@@ -29,12 +29,12 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
 import { areaList as list } from '@vant/area-data'
 import { NDrawer } from 'naive-ui'
 import { type AreaList, Area as VantArea } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { createLogger } from '@/utils/Logger'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('AreaDrawer')
 
@@ -64,6 +64,6 @@ const { t } = useI18n()
 
 const onScrollInto = () => {
   logger.debug('into')
-  invoke('trigger_haptic_feedback')
+  invokeSilently('trigger_haptic_feedback')
 }
 </script>

@@ -11,7 +11,7 @@ import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessa
 import type { UserItem, VoiceBody } from '@/services/types.ts'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import type { MessageStrategy } from '@/strategy/MessageStrategy'
-import { messageStrategyMap } from '@/strategy/MessageStrategy.ts'
+import { getStrategy } from '@/strategy/MessageStrategy.ts'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
@@ -324,7 +324,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     }
 
     const contentType = getMessageContentType(messageInputDom) as MsgEnum
-    const messageStrategy = messageStrategyMap[contentType]
+    const messageStrategy = await getStrategy(contentType)
     if (!messageStrategy) {
       window.$message.warning('暂不支持发送类型消息')
       return
@@ -575,7 +575,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       return { file, fileId, tempMsgId }
     })
 
-    const fileStrategy = messageStrategyMap[MsgEnum.FILE]
+    const fileStrategy = await getStrategy(MsgEnum.FILE)
     const replyPayload = reply.value.content
       ? {
           body: reply.value.content,
@@ -623,7 +623,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
             globalFileUploadQueue.updateFileStatus(job.fileId, 'uploading', 0)
           }
 
-          const messageStrategy = messageStrategyMap[MsgEnum.FILE]
+          const messageStrategy = await getStrategy(MsgEnum.FILE)
           if (isPathUploadFile(job.file)) {
             await processGenericPathFile(job.file, tempMsgId, messageStrategy, targetRoomId)
           } else {
@@ -785,7 +785,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     const targetRoomId = globalStore.currentSessionRoomId
     try {
       const tempMsgId = 'T' + Date.now().toString()
-      const messageStrategy = messageStrategyMap[msgType]
+      const messageStrategy = await getStrategy(msgType)
       const msg = (await Promise.resolve(
         messageStrategy.getMsg(content, reply.value as unknown as MessageType)
       )) as Record<string, unknown>

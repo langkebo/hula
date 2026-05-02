@@ -33,10 +33,10 @@ const logger = createLogger('ChatMain')
 type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<string, unknown>
 
 import { useI18n } from 'vue-i18n'
-import { reportService } from '@/services/matrix/admin/MatrixReportService'
+import { matrixAdminService } from '@/services/matrix/admin/MatrixAdminService'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
-import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
+import { roomStateService } from '@/services/matrix/room/RoomStateService'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -315,7 +315,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
 
         item.message.body.translatedText = { provider: settingStore.chatTranslateProvider || 'client', text: '' }
         try {
-          const translatedText = await matrixRoomService.translateText(content, settingStore.chatTranslateProvider)
+          const translatedText = await roomStateService.translateText(content, settingStore.chatTranslateProvider)
           item.message.body.translatedText = {
             provider: settingStore.chatTranslateProvider || 'client',
             text: translatedText || content
@@ -734,7 +734,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         if (!roomId) return
 
         try {
-          await matrixGroupService.removeGroupMember(roomId, targetUid)
+          await roomNavigationService.removeMember(roomId, targetUid)
           // 从群成员列表中移除该用户
           groupStore.removeUserItem(targetUid, roomId)
           window.$message.success(t('menu.remove_from_group_success'))
@@ -789,13 +789,13 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           return
         }
         try {
-          await reportService.reportEvent({
+          await matrixAdminService.reportEvent({
             roomId,
             eventId,
-            reason: 'user_report',
-            explanation: ''
+            reason: 'violation',
+            explanation: 'User reported via chat menu'
           })
-          window.$message.success('举报已提交')
+          window.$message.success(t('menu.report_success'))
         } catch (err) {
           logger.error('举报失败:', err)
           window.$message.error('举报失败，请稍后重试')

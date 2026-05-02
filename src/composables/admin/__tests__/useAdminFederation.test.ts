@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAdminFederation } from '../useAdminFederation'
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     getFederationDestinations: vi.fn().mockResolvedValue([]),
     resetFederationConnection: vi.fn().mockResolvedValue(undefined),
@@ -14,7 +14,7 @@ vi.mock('@/services/matrix', () => ({
   }
 }))
 
-import { adminService, matrixFederationBlacklistService } from '@/services/matrix'
+import { adminService, matrixFederationBlacklistService } from '@/services/matrix/admin'
 
 describe('useAdminFederation', () => {
   beforeEach(() => {

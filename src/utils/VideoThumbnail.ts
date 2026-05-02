@@ -1,9 +1,9 @@
-import { invoke } from '@tauri-apps/api/core'
 import { appCacheDir, join } from '@tauri-apps/api/path'
 import { BaseDirectory, writeFile } from '@tauri-apps/plugin-fs'
 import { AppException } from '@/common/exception'
 import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
+import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { removeTempFile } from '@/utils/TempFileManager'
 
 const logger = createLogger('VideoThumbnail')
@@ -106,43 +106,44 @@ const getLocalVideoThumbnail = async (file: File) => {
 
 // 生成视频缩略图：优先调用 Rust 获取首帧，失败或移动端则回退前端截帧
 export const generateVideoThumbnail = async (file: File): Promise<File> => {
-  try {
-    const tempPath = `temp-video-${Date.now()}-${file.name}`
-    const arrayBuffer = await file.arrayBuffer()
-    const uint8Array = new Uint8Array(arrayBuffer)
+  const tempPath = `temp-video-${Date.now()}-${file.name}`
+  const arrayBuffer = await file.arrayBuffer()
+  const uint8Array = new Uint8Array(arrayBuffer)
 
-    const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
-    await writeFile(tempPath, uint8Array, { baseDir })
-    const fullPath = await join(await appCacheDir(), tempPath)
+  const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+  await writeFile(tempPath, uint8Array, { baseDir })
+  const fullPath = await join(await appCacheDir(), tempPath)
 
-    const thumbnailInfo = await invoke<{
-      thumbnail_base64: string
-      width: number
-      height: number
-      duration: number
-    }>('get_video_thumbnail', {
-      videoPath: fullPath,
-      targetTime: 0.1
-    })
+  const result = await invokeWithResult<{
+    thumbnail_base64: string
+    width: number
+    height: number
+    duration: number
+  }>('get_video_thumbnail', {
+    videoPath: fullPath,
+    targetTime: 0.1
+  })
 
-    const base64Data = thumbnailInfo.thumbnail_base64
-    const binaryString = atob(base64Data)
-    const bytes = new Uint8Array(binaryString.length)
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i)
-    }
-
-    const thumbnailBlob = new Blob([bytes], { type: 'image/jpeg' })
-    const thumbnailFile = new File([thumbnailBlob], 'thumbnail.jpg', { type: 'image/jpeg' })
-
-    await removeTempFile(tempPath, { baseDir })
-
-    return await compressThumbnail(thumbnailFile)
-  } catch (error) {
-    logger.error('Rust 缩略图生成失败，尝试使用前端兜底方案:', error)
-    if (isMobile() || String(error).includes('Command get_video_thumbnail not found')) {
+  if (result.isErr()) {
+    logger.error('Rust 缩略图生成失败，尝试使用前端兜底方案:', result.error)
+    if (isMobile() || String(result.error).includes('Command get_video_thumbnail not found')) {
       return await getLocalVideoThumbnail(file)
     }
-    throw new AppException(`生成视频缩略图失败: ${error}`)
+    throw new AppException(`生成视频缩略图失败: ${result.error}`)
   }
+
+  const thumbnailInfo = result.value
+  const base64Data = thumbnailInfo.thumbnail_base64
+  const binaryString = atob(base64Data)
+  const bytes = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i)
+  }
+
+  const thumbnailBlob = new Blob([bytes], { type: 'image/jpeg' })
+  const thumbnailFile = new File([thumbnailBlob], 'thumbnail.jpg', { type: 'image/jpeg' })
+
+  await removeTempFile(tempPath, { baseDir })
+
+  return await compressThumbnail(thumbnailFile)
 }

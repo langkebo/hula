@@ -1,3 +1,4 @@
+import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 
@@ -18,7 +19,7 @@ const mockClient = {
 
 vi.mock('../../MatrixClientService', () => ({
   matrixClientService: {
-    getClient: vi.fn(() => mockClient)
+    getClient: vi.fn(() => mockClient as unknown as MatrixClient)
   }
 }))
 
@@ -118,7 +119,7 @@ describe('MatrixSessionService', () => {
     mockDirectMessageService.getDMRooms.mockResolvedValueOnce([
       { roomId: '!dm:example.com', invitees: ['@alice:example.com'], inviter: '@alice:example.com' }
     ])
-    mockClient.getRooms.mockReturnValueOnce([room] as any)
+    mockClient.getRooms.mockReturnValueOnce([room] as unknown as Room[])
 
     const result = await matrixSessionService.getSessionList()
 

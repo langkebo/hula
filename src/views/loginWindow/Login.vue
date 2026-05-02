@@ -240,20 +240,22 @@ import { useNetwork } from '@vueuse/core'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { ThemeEnum } from '@/enums'
+import { MittEnum, ThemeEnum } from '@/enums'
 import { useCheckUpdate } from '@/hooks/useCheckUpdate'
 import { type DriverStepConfig, useDriver } from '@/hooks/useDriver'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
+import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
 import {
   DEFAULT_MATRIX_HOMESERVER_URL,
   DEFAULT_MATRIX_IDENTITY_SERVER_URL,
+  discoverAndSaveMatrixEndpoints,
   isValidHttpUrl,
-  normalizeHttpUrl,
   saveMatrixHomeserverUrl,
   saveMatrixIdentityServerUrl
 } from '@/services/backend'
+import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
 import type { UserInfoType } from '@/services/types.ts'
 import { useGuideStore } from '@/stores/domains/settings/guide'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -301,6 +303,7 @@ const loginContext: ThirdPartyLoginContext = {
   giteeLogin: () => {},
   githubLogin: () => {},
   homeserverUrl,
+  identityServerUrl,
   loading,
   loginDisabled
 }
@@ -350,24 +353,45 @@ const triggerAutoLogin = () => {
   normalLogin('PC', true, true)
 }
 
+const isPotentialHomeserverInput = (value: string): boolean => {
+  return isValidHttpUrl(value) || isValidHttpUrl(`http://${value}`) || /^[^/\s]+\.[^/\s]+$/.test(value)
+}
+
 const saveServerConfig = () => {
-  const normalizedHomeserverUrl = normalizeHttpUrl(homeserverUrl.value || DEFAULT_MATRIX_HOMESERVER_URL)
+  const rawHomeserverValue = (homeserverUrl.value || DEFAULT_MATRIX_HOMESERVER_URL).trim()
   const rawIdentityServerUrl = identityServerUrl.value.trim()
 
-  if (!isValidHttpUrl(normalizedHomeserverUrl)) {
+  if (!isPotentialHomeserverInput(rawHomeserverValue)) {
     window.$message.error('Homeserver 地址格式无效')
     return
   }
 
-  if (rawIdentityServerUrl && !isValidHttpUrl(normalizeHttpUrl(rawIdentityServerUrl))) {
+  if (
+    rawIdentityServerUrl &&
+    !isValidHttpUrl(rawIdentityServerUrl) &&
+    !isValidHttpUrl(`http://${rawIdentityServerUrl}`)
+  ) {
     window.$message.error('Identity Server 地址格式无效')
     return
   }
 
-  homeserverUrl.value = saveMatrixHomeserverUrl(normalizedHomeserverUrl)
-  identityServerUrl.value = saveMatrixIdentityServerUrl(rawIdentityServerUrl)
-  showServerConfig.value = false
-  window.$message.success('服务器配置已保存，重新登录后生效')
+  void (async () => {
+    try {
+      const discovery = await discoverAndSaveMatrixEndpoints(rawHomeserverValue, {
+        homeserverUrl: DEFAULT_MATRIX_HOMESERVER_URL,
+        identityServerUrl: rawIdentityServerUrl || DEFAULT_MATRIX_IDENTITY_SERVER_URL
+      })
+      homeserverUrl.value = discovery.homeserverUrl
+      identityServerUrl.value = rawIdentityServerUrl
+        ? saveMatrixIdentityServerUrl(rawIdentityServerUrl)
+        : discovery.identityServerUrl
+      showServerConfig.value = false
+      window.$message.success('服务器配置已保存，重新登录后生效')
+    } catch (error) {
+      logger.error('Failed to save homeserver config', error)
+      window.$message.error('服务器配置保存失败')
+    }
+  })()
 }
 
 const resetServerConfig = () => {
@@ -461,6 +485,46 @@ const cancelLoginTitle = computed(() =>
 )
 
 const isJumpDirectly = ref(false)
+
+const handleSsoLoginCallback = async (): Promise<boolean> => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const loginToken = urlParams.get('loginToken') || urlParams.get('login_token')
+  if (!loginToken) {
+    return false
+  }
+
+  loading.value = true
+  loginText.value = t('login.status.logging_in')
+  loginDisabled.value = true
+
+  try {
+    await matrixRuntimeSessionService.loginWithSsoToken({
+      loginToken,
+      client: isDesktop() ? 'PC' : 'MOBILE'
+    })
+
+    useMitt.emit(MittEnum.MSG_INIT)
+
+    const callbackUrl = new URL(window.location.href)
+    callbackUrl.searchParams.delete('loginToken')
+    callbackUrl.searchParams.delete('login_token')
+    window.history.replaceState({}, '', callbackUrl.toString())
+
+    if (isDesktop()) {
+      await matrixRuntimeSessionService.completeDesktopLoginTransition()
+    } else {
+      await router.push('/mobile/home')
+    }
+    return true
+  } catch (error) {
+    logger.error('Failed to complete SSO login callback', error)
+    window.$message.error('SSO 登录失败')
+    loading.value = false
+    loginDisabled.value = false
+    loginText.value = t('login.button.login.default')
+    return false
+  }
+}
 
 const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url))
 
@@ -643,6 +707,10 @@ onMounted(async () => {
   const currentWindow = getCurrentWebviewWindow()
   if (!isJumpDirectly.value && currentWindow.label === 'login') {
     await currentWindow.show()
+  }
+
+  if (await handleSsoLoginCallback()) {
+    return
   }
 
   if (settingStore.autoLoginEnabled) {

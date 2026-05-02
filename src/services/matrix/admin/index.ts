@@ -18,3 +18,7 @@ export type {
   UserDevice,
   UserInfo
 } from './AdminTypes'
+export { matrixAdminService } from './MatrixAdminService'
+export { matrixFederationBlacklistService } from './MatrixFederationBlacklistService'
+export type { QuotaAlert, QuotaStats, QuotaStatus } from './MatrixQuotaService'
+export { matrixQuotaService } from './MatrixQuotaService'

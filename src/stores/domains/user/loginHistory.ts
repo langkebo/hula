@@ -34,6 +34,20 @@ export const useLoginHistoriesStore = defineStore(
     return { loginHistories, addLoginHistory, updateLoginHistory, removeLoginHistory }
   },
   {
-    persist: true
+    persist: {
+      serializer: {
+        serialize: (state: Record<string, unknown>) => {
+          const sanitized = ((state.loginHistories || []) as Record<string, unknown>[]).map(
+            ({ password: omittedP, phone: omittedPh, ...rest }: Record<string, unknown>) => {
+              void omittedP
+              void omittedPh
+              return rest
+            }
+          )
+          return JSON.stringify({ ...state, loginHistories: sanitized })
+        },
+        deserialize: JSON.parse
+      }
+    }
   }
 )

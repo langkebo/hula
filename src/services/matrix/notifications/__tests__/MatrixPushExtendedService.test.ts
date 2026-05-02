@@ -1,11 +1,11 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { IPusher, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixPushService } from '../MatrixPushService'
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn()
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -17,7 +17,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 describe('MatrixPushService - Extended Features', () => {
   let mockClient: Partial<MatrixClient>
-  let mockHttp: any
+  let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     mockHttp = {
@@ -25,7 +25,7 @@ describe('MatrixPushService - Extended Features', () => {
     }
 
     mockClient = {
-      http: mockHttp,
+      http: mockHttp as unknown as MatrixClient['http'],
       getPushers: vi.fn(),
       setPusher: vi.fn(),
       getPushRules: vi.fn()
@@ -47,7 +47,7 @@ describe('MatrixPushService - Extended Features', () => {
         device_display_name: 'Desktop',
         lang: 'zh',
         data: { url: 'https://push.example.com' }
-      } as any)
+      } as IPusher)
 
       expect(mockHttp.authedRequest).toHaveBeenCalledWith(
         'POST',
@@ -62,9 +62,9 @@ describe('MatrixPushService - Extended Features', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
-      await expect(matrixPushService.registerPusher({} as any)).rejects.toThrow()
+      await expect(matrixPushService.registerPusher({} as unknown as IPusher)).rejects.toThrow()
     })
   })
 
@@ -75,7 +75,7 @@ describe('MatrixPushService - Extended Features', () => {
       await matrixPushService.addPushRule('global', 'room', 'room123', [
         'notify',
         { set_tweak: 'sound', value: 'default' }
-      ] as any)
+      ] as PushRuleAction[])
 
       expect(mockHttp.authedRequest).toHaveBeenCalledWith(
         'PUT',
@@ -94,7 +94,7 @@ describe('MatrixPushService - Extended Features', () => {
         'global',
         'content',
         'rule1',
-        ['notify'] as any,
+        ['notify'] as PushRuleAction[],
         [{ kind: 'event_match', key: 'content.body', pattern: 'hello' }],
         'hello'
       )

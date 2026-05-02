@@ -61,9 +61,10 @@ pnpm metrics:bundle
 
 - `shiki`、`vue-office-*`、`mermaid` 仍是最主要的大体积来源，但已全部通过 `manualChunks` 和 `defineAsyncComponent` 实现隔离与按需加载。
 - 路由主 chunk 和聊天域核心逻辑已显著收敛。
-- 进一步执行了“去 Barrel”优化，核心 Matrix 服务（如 `MatrixAccountService`, `MatrixMediaService`）已实现精确导入，减少了不必要的代码关联。
+- 深度执行了“去 Barrel”优化，建立了 `src/services/matrix/sdk.ts` 专门用于 re-export SDK 符号，彻底切断了 Store/Hook 与主 Barrel 的强制关联。
+- 引入了 `RoomNavigationService`、`RoomStateService` 和 `RoomListService` 等聚合服务，进一步精简了业务层调用逻辑。
 - `naive-ui` (0.89MB) 和 `vendor` (0.84MB) 已独立，虽然体积仍超过 500KB，但不会阻塞首屏核心逻辑。
-- `three` (0.60MB) 仅在 3D 助手启用时加载。
+- i18n 自动化类型生成已上线，开发环境具备全量翻译路径补全。
 
 ## 后续优化建议
 

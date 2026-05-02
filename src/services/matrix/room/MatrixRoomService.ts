@@ -27,7 +27,7 @@ import { matrixRoomTranslateService } from './TranslateService'
  *
  * @example
  * ```typescript
- * import { matrixRoomService } from '@/services/matrix'
+ * import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
  *
  * // 获取所有房间
  * const rooms = await matrixRoomService.getRooms()

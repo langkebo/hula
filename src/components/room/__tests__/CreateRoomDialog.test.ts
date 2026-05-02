@@ -29,17 +29,22 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: vi.fn(() => ({
+    info: vi.fn(),
+    warn: vi.fn(),
     error: loggerErrorMock
   }))
 }))
 
-vi.mock('@/services/matrix', () => ({
-  matrixRoomService: {
-    createGroupRoom: createGroupRoomMock,
-    getServerDomain: getServerDomainMock
-  },
+vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
   matrixMediaService: {
     uploadFile: uploadFileMock
+  }
+}))
+
+vi.mock('@/services/matrix/room/RoomNavigationService', () => ({
+  roomNavigationService: {
+    createGroupRoom: createGroupRoomMock,
+    getServerDomain: getServerDomainMock
   }
 }))
 

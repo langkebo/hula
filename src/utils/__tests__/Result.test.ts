@@ -140,7 +140,7 @@ describe('Result', () => {
     })
 
     it('getOrElse returns default when Err', () => {
-      expect(getOrElse(Err(new Error('x')) as any, 99)).toBe(99)
+      expect(getOrElse<number, Error>(Err(new Error('x')), 99)).toBe(99)
     })
 
     it('unwrap returns value when Ok', () => {

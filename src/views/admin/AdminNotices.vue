@@ -59,7 +59,7 @@ import {
 import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminNotices } from '@/composables/admin'
-import type { ServerNoticeInfo } from '@/services/matrix'
+import type { ServerNoticeInfo } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminNotices')

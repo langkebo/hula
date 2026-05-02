@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDebounceFn } from '@vueuse/core'
 import { sumBy } from 'es-toolkit'
@@ -6,8 +5,9 @@ import { NotificationTypeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { createLogger } from '@/utils/Logger'
 import { isIOS, isMac } from '@/utils/PlatformConstants'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
-const logger = createLogger('UnreadCountManager')
+const _logger = createLogger('UnreadCountManager')
 
 /**
  * 统一的未读计数管理器
@@ -115,11 +115,7 @@ export class UnreadCountManager {
     }
 
     if (isIOS()) {
-      try {
-        await invoke('set_ios_badge', { count: countValue ?? null })
-      } catch (error) {
-        logger.warn('Failed to set iOS badge', error)
-      }
+      await invokeSilently('set_ios_badge', { count: countValue ?? null })
     }
 
     // 更新tipVisible状态，用于控制托盘通知显示

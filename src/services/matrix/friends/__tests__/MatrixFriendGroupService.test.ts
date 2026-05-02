@@ -1,3 +1,5 @@
+import type { MatrixClient } from 'matrix-js-sdk'
+import type { FriendManager } from 'matrix-js-sdk/friend'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import type { FriendGroup } from '../MatrixFriendService'
@@ -16,8 +18,26 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 describe('MatrixFriendService - Group Management', () => {
-  let mockFriendManager: any
-  let mockClient: any
+  let mockFriendManager: {
+    start: ReturnType<typeof vi.fn>
+    stop: ReturnType<typeof vi.fn>
+    removeAllListeners: ReturnType<typeof vi.fn>
+    on: ReturnType<typeof vi.fn>
+    getFriends: ReturnType<typeof vi.fn>
+    getIncomingRequests: ReturnType<typeof vi.fn>
+    getOutgoingRequests: ReturnType<typeof vi.fn>
+    getFriendGroups: ReturnType<typeof vi.fn>
+    createFriendGroup: ReturnType<typeof vi.fn>
+    deleteFriendGroup: ReturnType<typeof vi.fn>
+    renameFriendGroup: ReturnType<typeof vi.fn>
+    addFriendToGroup: ReturnType<typeof vi.fn>
+    removeFriendFromGroup: ReturnType<typeof vi.fn>
+    getFriendsInGroup: ReturnType<typeof vi.fn>
+    getFriendGroupsByUser: ReturnType<typeof vi.fn>
+    getFriendSuggestions: ReturnType<typeof vi.fn>
+    getFriendStatus: ReturnType<typeof vi.fn>
+  }
+  let mockClient: Partial<MatrixClient>
 
   beforeEach(() => {
     mockFriendManager = {
@@ -41,12 +61,12 @@ describe('MatrixFriendService - Group Management', () => {
     }
 
     mockClient = {
-      friendManager: mockFriendManager,
+      friendManager: mockFriendManager as unknown as FriendManager,
       getUserId: vi.fn(() => '@user:example.com')
-    }
+    } as unknown as MatrixClient
 
     vi.mocked(matrixClientService.getClient).mockReset()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
   })
 
   describe('getFriendGroups', () => {

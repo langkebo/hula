@@ -188,12 +188,16 @@
     "exit": "Exit"
   },
   "location": {
+    "share": "Share location",
+    "send_failed": "Failed to send location",
     "modal": {
       "title": {
         "map_error": "Map error",
         "location_error": "Location failed",
         "default": "Pick a location"
       },
+      "share": "Share location",
+      "send_failed": "Failed to send location",
       "result": {
         "map_error_title": "Map failed to load",
         "location_error_title": "Failed to get location"
@@ -229,6 +233,11 @@
       "position_unavailable": "Location unavailable",
       "timeout": "Location request timed out"
     }
+  },
+  "beacon": {
+    "share": "Share beacon",
+    "started": "Beacon started",
+    "failed": "Failed to start beacon"
   },
   "update_window": {
     "updating": "Updating",

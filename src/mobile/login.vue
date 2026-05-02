@@ -290,18 +290,21 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
 import { useDebounceFn } from '@vueuse/core'
+import { showFailToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import Validation from '@/components/common/Validation.vue'
+import { MittEnum } from '@/enums'
 import router from '@/router'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
+import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
 import type { RegisterUserReq, UserInfoType } from '@/services/types'
 import { useMobileStore } from '@/stores/domains/settings/mobile'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import { isAndroid, isIOS } from '@/utils/PlatformConstants'
+import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 import { useLoginFlow } from '../hooks/useLoginFlow'
 import { useMitt } from '../hooks/useMitt'
@@ -385,6 +388,42 @@ const agreementStyle = computed(() => {
   }
   return { bottom: 'var(--safe-area-inset-bottom)' }
 })
+
+const handleSsoLoginCallback = async (): Promise<boolean> => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const loginToken = urlParams.get('loginToken') || urlParams.get('login_token')
+  if (!loginToken) {
+    return false
+  }
+
+  loading.value = true
+  loginText.value = t('login.status.logging_in')
+  loginDisabled.value = true
+
+  try {
+    await matrixRuntimeSessionService.loginWithSsoToken({
+      loginToken,
+      client: 'MOBILE'
+    })
+
+    useMitt.emit(MittEnum.MSG_INIT)
+
+    const callbackUrl = new URL(window.location.href)
+    callbackUrl.searchParams.delete('loginToken')
+    callbackUrl.searchParams.delete('login_token')
+    window.history.replaceState({}, '', callbackUrl.toString())
+
+    await router.push('/mobile/home')
+    return true
+  } catch (error) {
+    logger.error('Failed to complete mobile SSO login callback', error)
+    showFailToast('SSO 登录失败')
+    loading.value = false
+    loginDisabled.value = false
+    loginText.value = t('login.button.login.default')
+    return false
+  }
+}
 
 const stopSendCodeCountdown = () => {
   timerWorker.postMessage({
@@ -687,7 +726,7 @@ const refreshAvatar = useDebounceFn((newAccount: string) => {
 onMounted(async () => {
   window.addEventListener('click', closeMenu, true)
   if (isIOS()) {
-    invoke('set_webview_keyboard_adjustment', { enabled: false })
+    invokeSilently('set_webview_keyboard_adjustment', { enabled: false })
   }
   if (isJumpDirectly.value) {
     loading.value = false
@@ -695,7 +734,11 @@ onMounted(async () => {
     return
   }
 
-  await invoke('hide_splash_screen')
+  await invokeSilently('hide_splash_screen')
+
+  if (await handleSsoLoginCallback()) {
+    return
+  }
 
   useMitt.on(WsResponseMessageType.NO_INTERNET, () => {
     loginDisabled.value = true
@@ -714,7 +757,7 @@ onUnmounted(() => {
   stopSendCodeCountdown()
   timerWorker.terminate()
   if (isIOS()) {
-    invoke('set_webview_keyboard_adjustment', { enabled: false })
+    invokeSilently('set_webview_keyboard_adjustment', { enabled: false })
   }
 })
 </script>

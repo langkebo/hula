@@ -5,6 +5,7 @@
  */
 
 import { computed, ref } from 'vue'
+import { resolveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { createLogger } from '@/utils/Logger'
 
@@ -53,6 +54,8 @@ export interface QRLoginResult {
     token: string
     refreshToken: string
     deviceId?: string
+    homeserverUrl?: string
+    identityServerUrl?: string
   }
 }
 
@@ -85,6 +88,8 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
     accessToken?: string
     refreshToken?: string
     deviceId?: string
+    homeserverUrl?: string
+    identityServerUrl?: string
   }
 
   function createQrId(): string {
@@ -159,7 +164,9 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
               uid: session.userId,
               token: session.accessToken,
               refreshToken: session.refreshToken || '',
-              deviceId: session.deviceId
+              deviceId: session.deviceId,
+              homeserverUrl: session.homeserverUrl,
+              identityServerUrl: session.identityServerUrl
             }
           : undefined
     }
@@ -279,6 +286,7 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
       if (!matrixStore.userId || !matrixStore.accessToken) {
         throw new Error('当前设备未登录，无法确认二维码登录')
       }
+      const { homeserverUrl, identityServerUrl } = resolveMatrixSessionEndpointConfig()
 
       const confirmedSession: StoredQRSession = {
         ...session,
@@ -286,7 +294,9 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
         userId: matrixStore.userId,
         accessToken: matrixStore.accessToken,
         refreshToken: '',
-        deviceId: matrixStore.deviceId || undefined
+        deviceId: matrixStore.deviceId || undefined,
+        homeserverUrl: matrixStore.homeserverUrl || homeserverUrl,
+        identityServerUrl
       }
 
       saveSession(confirmedSession)

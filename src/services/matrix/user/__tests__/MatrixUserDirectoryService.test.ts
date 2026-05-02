@@ -1,8 +1,9 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockClientService } = vi.hoisted(() => ({
   mockClientService: {
-    getClient: vi.fn(() => null)
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -35,7 +36,7 @@ describe('MatrixUserDirectoryService', () => {
         ]
       })
     }
-    mockClientService.getClient.mockReturnValue(client as any)
+    mockClientService.getClient.mockReturnValue(client as unknown as MatrixClient)
 
     const result = await userDirectoryService.searchUsers('alice', 5)
 
@@ -66,9 +67,9 @@ describe('MatrixUserDirectoryService', () => {
         ]
       })
     }
-    mockClientService.getClient.mockReturnValue(newClient as any)
+    mockClientService.getClient.mockReturnValue(newClient as unknown as MatrixClient)
 
-    userDirectoryService.initialize(oldClient as any)
+    userDirectoryService.initialize(oldClient as unknown as MatrixClient)
     const result = await userDirectoryService.searchUsers('bob')
 
     expect(oldClient.searchUserDirectory).not.toHaveBeenCalled()

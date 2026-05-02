@@ -36,10 +36,10 @@ import { showToast } from 'vant'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
+  discoverAndSaveMatrixEndpoints,
   isValidHttpUrl,
-  normalizeHttpUrl,
   resolveMatrixEndpointConfig,
-  saveMatrixHomeserverUrl
+  saveMatrixIdentityServerUrl
 } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
 
@@ -54,6 +54,10 @@ onMounted(() => {
   homeserverUrl.value = resolveMatrixEndpointConfig().homeserverUrl
 })
 
+function isPotentialHomeserverInput(value: string): boolean {
+  return isValidHttpUrl(value) || isValidHttpUrl(`http://${value}`) || /^[^/\s]+\.[^/\s]+$/.test(value)
+}
+
 async function handleSave() {
   if (!homeserverUrl.value.trim()) {
     showToast({
@@ -63,9 +67,9 @@ async function handleSave() {
     return
   }
 
-  const url = normalizeHttpUrl(homeserverUrl.value)
+  const rawValue = homeserverUrl.value.trim()
 
-  if (!isValidHttpUrl(url)) {
+  if (!isPotentialHomeserverInput(rawValue)) {
     showToast({
       type: 'fail',
       message: t('mobile_setting.homeserver_invalid')
@@ -76,7 +80,11 @@ async function handleSave() {
   saving.value = true
 
   try {
-    homeserverUrl.value = saveMatrixHomeserverUrl(url)
+    const discovery = await discoverAndSaveMatrixEndpoints(rawValue, resolveMatrixEndpointConfig())
+    homeserverUrl.value = discovery.homeserverUrl
+    if (!discovery.identityServerUrl) {
+      saveMatrixIdentityServerUrl('')
+    }
     showToast({
       type: 'success',
       message: t('mobile_setting.homeserver_saved')

@@ -51,16 +51,80 @@ class Logger {
   }
 
   private static sanitizePatterns: RegExp[] = [
-    /(?:access_token|Authorization:\s*Bearer\s+)([a-zA-Z0-9_\-.~+/=]{8,})/gi,
-    /(?:syt_)[a-zA-Z0-9_\-.]{10,}/g
+    /(?:access_token|accessToken|id_access_token|token)["']?\s*[:=]\s*["']?([a-zA-Z0-9_\-.~+/=]{8,})/gi,
+    /(?:refresh_token|refreshToken)["']?\s*[:=]\s*["']?([a-zA-Z0-9_\-.~+/=]{8,})/gi,
+    /(?:Authorization:\s*Bearer\s+)([a-zA-Z0-9_\-.~+/=]{8,})/gi,
+    /(?:syt_)[a-zA-Z0-9_\-.]{10,}/g,
+    /(?:password|passwd|pwd|pass)["']?\s*[:=]\s*["']?([^\s"'`,;]{4,})/gi,
+    /(?:phone|mobile|cellphone)["']?\s*[:=]\s*["']?(\d{3})\d{4}(\d{4})/gi,
+    /(?:email|mail)["']?\s*[:=]\s*["']?([a-zA-Z0-9._%+-])([a-zA-Z0-9._%+-]*)@/gi,
+    /(?:recovery_key|recoveryKey|secret_storage_key|secretStorageKey)["']?\s*[:=]\s*["']?([a-zA-Z0-9_\-.~+/=]{8,})/gi,
+    /(?:device_id|deviceId)["']?\s*[:=]\s*["']?([A-Z0-9]{8,})/gi,
+    /(?:session_id|sid|session_key)["']?\s*[:=]\s*["']?([a-zA-Z0-9_\-.~+/=]{8,})/gi
   ]
+
+  private static SENSITIVE_KEYS = [
+    'token',
+    'password',
+    'passwd',
+    'pwd',
+    'pass',
+    'secret',
+    'key',
+    'auth',
+    'session',
+    'sid',
+    'phone',
+    'mobile',
+    'email'
+  ]
+
+  private static redactObject(obj: unknown, depth = 0): unknown {
+    if (depth > 5) return '[DEPTH_EXCEEDED]'
+    if (!obj || typeof obj !== 'object') return obj
+    if (Array.isArray(obj)) return obj.map((item) => Logger.redactObject(item, depth + 1))
+
+    const result: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      const lowerKey = key.toLowerCase()
+      if (Logger.SENSITIVE_KEYS.some((sk) => lowerKey.includes(sk))) {
+        if (typeof value === 'string' && value.length > 4) {
+          if (lowerKey.includes('phone') || lowerKey.includes('mobile')) {
+            result[key] = `${value.slice(0, 3)}****${value.slice(-4)}`
+          } else if (lowerKey.includes('email')) {
+            const [user, domain] = value.split('@')
+            result[key] = `${user?.slice(0, 1)}***@${domain}`
+          } else {
+            result[key] = '[REDACTED]'
+          }
+        } else {
+          result[key] = '[REDACTED]'
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        result[key] = Logger.redactObject(value, depth + 1)
+      } else {
+        result[key] = value
+      }
+    }
+    return result
+  }
 
   private static sanitize(text: string): string {
     let result = text
     for (const pattern of Logger.sanitizePatterns) {
-      result = result.replace(pattern, (match) => {
+      result = result.replace(pattern, (match, ...groups) => {
+        const patternStr = pattern.source.toLowerCase()
+        if (patternStr.includes('phone') || patternStr.includes('mobile')) {
+          return match.replace(groups[0] + groups[1], `${groups[0]}****${groups[1]}`)
+        }
+        if (patternStr.includes('email') || patternStr.includes('mail')) {
+          return match.replace(groups[0] + groups[1], `${groups[0]}***`)
+        }
         if (match.length <= 12) return match
-        return match.slice(0, 8) + '***REDACTED***'
+        // For generic tokens, keep a small prefix if it's long
+        const replacement =
+          match.includes(':') || match.includes('=') ? match.split(/[:=]/)[0] + ': [REDACTED]' : '[REDACTED]'
+        return replacement
       })
     }
     return result
@@ -68,8 +132,11 @@ class Logger {
 
   private formatMessage(level: LogLevel, message: string, ...args: unknown[]): string {
     const timestamp = new Date().toISOString()
+    const redactedArgs = args.map((a) => Logger.redactObject(a))
     const formattedArgs =
-      args.length > 0 ? ` ${args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')}` : ''
+      redactedArgs.length > 0
+        ? ` ${redactedArgs.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')}`
+        : ''
     const raw = `[${timestamp}] [${level.toUpperCase()}] [${this.context}] ${message}${formattedArgs}`
     return Logger.sanitize(raw)
   }

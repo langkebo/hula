@@ -70,7 +70,14 @@ export type {
   OidcUserInfo
 } from './auth/MatrixOidcService'
 export { matrixOidcService } from './auth/MatrixOidcService'
-export * from './auth/MatrixQrLoginService'
+export type {
+  QRCodeResult,
+  QRLoginResult,
+  QRLoginState,
+  QRLoginStatus,
+  UseQRLoginOptions
+} from './auth/MatrixQrLoginService'
+export { matrixQrLoginService, useQRLogin } from './auth/MatrixQrLoginService'
 export type {
   MatrixPasswordLoginOptions,
   MatrixPostLoginBootstrapOptions,
@@ -158,9 +165,17 @@ export type { IPusher, IPushRule, IPushRules } from './notifications/MatrixPushS
 export { matrixPushService } from './notifications/MatrixPushService'
 export { matrixRoomNotificationService } from './notifications/MatrixRoomNotificationService'
 export { matrixServerNotificationService } from './notifications/MatrixServerNotificationService'
-export * from './room'
+export { matrixRoomAccountDataService } from './room/AccountDataService'
+export { matrixRoomAliasesService } from './room/AliasesService'
+export { matrixRoomCreationService } from './room/CreationService'
+export { matrixRoomDirectMessageService } from './room/DirectMessageService'
+export { matrixRoomLifecycleService } from './room/LifecycleService'
+export type { Announcement, AnnouncementContent } from './room/MatrixAnnouncementService'
+export { matrixAnnouncementService } from './room/MatrixAnnouncementService'
 export type { CreateDmOptions, DmRoomInfo, IDirectRoomsMap } from './room/MatrixDirectMessageService'
 export { matrixDirectMessageService } from './room/MatrixDirectMessageService'
+export type { CreateRoomOptions, RoomPowerLevels } from './room/MatrixGroupService'
+export { matrixGroupService } from './room/MatrixGroupService'
 export { matrixRoomService } from './room/MatrixRoomService'
 export { matrixRoomStoreAdapter } from './room/MatrixRoomStoreAdapter'
 export type {
@@ -168,8 +183,25 @@ export type {
   MatrixRoomStats,
   MatrixRoomSummaryInfo
 } from './room/MatrixRoomSummaryService'
-// Room Summary 服务
 export { initializeRoomSummaryService, matrixRoomSummaryService } from './room/MatrixRoomSummaryService'
+export type { SpaceInfo, SpaceOptions } from './room/MatrixSpaceService'
+export { matrixSpaceService } from './room/MatrixSpaceService'
+export { matrixRoomMemberProfileService } from './room/MemberProfileService'
+export { matrixRoomMembershipService } from './room/MembershipService'
+export { matrixRoomMetadataService } from './room/MetadataService'
+export { matrixRoomModerationService } from './room/ModerationService'
+export { matrixRoomPinsService } from './room/PinsService'
+export type { VisibleRoomSession } from './room/RealtimeService'
+export { matrixRoomRealtimeService } from './room/RealtimeService'
+export { roomListService } from './room/RoomListService'
+export { roomNavigationService } from './room/RoomNavigationService'
+export { roomStateService } from './room/RoomStateService'
+export { matrixRoomStateService } from './room/StateService'
+export type { MatrixRoomSummary } from './room/SummaryService'
+export { matrixRoomSummaryAggregateService } from './room/SummaryService'
+export { matrixRoomTagsService } from './room/TagsService'
+export { matrixRoomTimelineService } from './room/TimelineService'
+export { matrixRoomTranslateService } from './room/TranslateService'
 export type {
   BurnStats,
   InviteAllowlist,

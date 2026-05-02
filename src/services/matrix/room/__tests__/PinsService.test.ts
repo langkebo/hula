@@ -1,3 +1,4 @@
+import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -8,13 +9,13 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() }
+  default: { getClient: () => getClientMock() as MatrixClient }
 }))
 
 const enqueueMock = vi.fn()
 vi.mock('@/services/offline/OfflineQueueService', () => ({
   offlineQueueService: {
-    enqueue: (...args: any[]) => enqueueMock(...args)
+    enqueue: (type: string, status: string, data: unknown) => enqueueMock(type, status, data)
   }
 }))
 
@@ -48,7 +49,7 @@ describe('MatrixRoomPinsService', () => {
           }))
         }
       }
-      getClientMock.mockReturnValueOnce({ getRoom: () => room })
+      getClientMock.mockReturnValueOnce({ getRoom: () => room as unknown as Room } as unknown as MatrixClient)
       expect(await service.getPinnedEvents('!r')).toEqual(['$e1', '$e2'])
       expect(room.currentState.getStateEvents).toHaveBeenCalledWith('m.room.pinned_events', '')
     })
@@ -59,7 +60,7 @@ describe('MatrixRoomPinsService', () => {
           getStateEvents: vi.fn(() => ({ getContent: () => ({}) }))
         }
       }
-      getClientMock.mockReturnValueOnce({ getRoom: () => room })
+      getClientMock.mockReturnValueOnce({ getRoom: () => room as unknown as Room } as unknown as MatrixClient)
       expect(await service.getPinnedEvents('!r')).toEqual([])
     })
 
@@ -68,7 +69,7 @@ describe('MatrixRoomPinsService', () => {
         getRoom: () => {
           throw new Error('boom')
         }
-      })
+      } as unknown as MatrixClient)
       expect(await service.getPinnedEvents('!r')).toEqual([])
     })
   })
@@ -76,7 +77,7 @@ describe('MatrixRoomPinsService', () => {
   describe('setPinnedEvents', () => {
     it('sends m.room.pinned_events state event with `pinned` payload', async () => {
       const sendStateEvent = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ sendStateEvent })
+      getClientMock.mockReturnValueOnce({ sendStateEvent } as unknown as MatrixClient)
       await service.setPinnedEvents('!r', ['$e1'])
       expect(sendStateEvent).toHaveBeenCalledWith('!r', 'm.room.pinned_events', { pinned: ['$e1'] }, '')
     })
@@ -84,7 +85,7 @@ describe('MatrixRoomPinsService', () => {
     it('re-throws backend errors', async () => {
       getClientMock.mockReturnValueOnce({
         sendStateEvent: vi.fn().mockRejectedValue(new Error('403'))
-      })
+      } as unknown as MatrixClient)
       await expect(service.setPinnedEvents('!r', [])).rejects.toThrow('403')
     })
 
@@ -99,7 +100,7 @@ describe('MatrixRoomPinsService', () => {
   describe('getStickyEvents', () => {
     it('GETs /sticky_events and returns the payload as-is', async () => {
       const authedRequest = vi.fn().mockResolvedValue({ a: 1 })
-      getClientMock.mockReturnValueOnce({ http: { authedRequest } })
+      getClientMock.mockReturnValueOnce({ http: { authedRequest } } as unknown as MatrixClient)
       expect(await service.getStickyEvents('!r:e')).toEqual({ a: 1 })
       expect(authedRequest).toHaveBeenCalledWith(
         'GET',
@@ -112,7 +113,7 @@ describe('MatrixRoomPinsService', () => {
         http: {
           authedRequest: vi.fn().mockRejectedValue(new Error('500'))
         }
-      })
+      } as unknown as MatrixClient)
       expect(await service.getStickyEvents('!r')).toEqual({})
     })
   })
@@ -120,7 +121,7 @@ describe('MatrixRoomPinsService', () => {
   describe('setStickyEvents', () => {
     it('POSTs /sticky_events with the events body', async () => {
       const authedRequest = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ http: { authedRequest } })
+      getClientMock.mockReturnValueOnce({ http: { authedRequest } } as unknown as MatrixClient)
       await service.setStickyEvents('!r', { x: 1 })
       expect(authedRequest).toHaveBeenCalledWith(
         'POST',
@@ -133,7 +134,7 @@ describe('MatrixRoomPinsService', () => {
     it('re-throws backend errors', async () => {
       getClientMock.mockReturnValueOnce({
         http: { authedRequest: vi.fn().mockRejectedValue(new Error('403')) }
-      })
+      } as unknown as MatrixClient)
       await expect(service.setStickyEvents('!r', {})).rejects.toThrow('403')
     })
 

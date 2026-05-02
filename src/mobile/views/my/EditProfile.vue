@@ -129,7 +129,7 @@
 import { useI18n } from 'vue-i18n'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import router from '@/router'
-import { matrixAccountService } from '@/services/matrix'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import type { ModifyUserInfoType, UserInfoType } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'

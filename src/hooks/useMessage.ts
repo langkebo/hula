@@ -2,9 +2,9 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
-import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
-import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
-import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
+import { roomListService } from '@/services/matrix/room/RoomListService'
+import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
+import { roomStateService } from '@/services/matrix/room/RoomStateService'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -130,7 +130,7 @@ export const useMessage = () => {
       label: (item: SessionItem) => (item.top ? t('menu.unpin') : t('menu.pin')),
       icon: (item: SessionItem) => (item.top ? 'to-bottom' : 'to-top'),
       click: (item: SessionItem) => {
-        matrixSessionService
+        roomListService
           .setSessionTop(item.roomId, !item.top)
           .then(() => {
             // 更新本地会话状态
@@ -182,7 +182,7 @@ export const useMessage = () => {
             click: async () => {
               // 如果当前是屏蔽状态，需要先取消屏蔽
               if (item.shield) {
-                await matrixRoomNotificationService.setRoomShield(item.roomId, false)
+                await roomStateService.setRoomShield(item.roomId, false)
                 chatStore.updateSession(item.roomId, { shield: false })
               }
               await handleNotificationChange(item, NotificationTypeEnum.RECEPTION)
@@ -194,7 +194,7 @@ export const useMessage = () => {
             click: async () => {
               // 如果当前是屏蔽状态，需要先取消屏蔽
               if (item.shield) {
-                await matrixRoomNotificationService.setRoomShield(item.roomId, false)
+                await roomStateService.setRoomShield(item.roomId, false)
                 chatStore.updateSession(item.roomId, { shield: false })
               }
               await handleNotificationChange(item, NotificationTypeEnum.NOT_DISTURB)
@@ -204,7 +204,7 @@ export const useMessage = () => {
             label: () => t('menu.block_group_messages'),
             icon: item.shield ? 'check-small' : '',
             click: async () => {
-              await matrixRoomNotificationService.setRoomShield(item.roomId, !item.shield)
+              await roomStateService.setRoomShield(item.roomId, !item.shield)
 
               // 更新本地会话状态
               chatStore.updateSession(item.roomId, {
@@ -236,7 +236,7 @@ export const useMessage = () => {
       label: (item: SessionItem) => (item.shield ? t('menu.unblock_user_messages') : t('menu.block_user_messages')),
       icon: (item: SessionItem) => (item.shield ? 'message-success' : 'people-unknown'),
       click: async (item: SessionItem) => {
-        await matrixRoomNotificationService.setRoomShield(item.roomId, !item.shield)
+        await roomStateService.setRoomShield(item.roomId, !item.shield)
 
         // 更新本地会话状态
         chatStore.updateSession(item.roomId, {
@@ -304,7 +304,7 @@ export const useMessage = () => {
         }
 
         // 群聊：解散或退出
-        await matrixGroupService.exitGroup(item.roomId)
+        await roomNavigationService.leaveRoom(item.roomId)
         await handleMsgDelete(item.roomId)
         window.$message.success(
           item.operate === SessionOperateEnum.DISSOLUTION_GROUP
@@ -329,7 +329,7 @@ export const useMessage = () => {
 
   const handleNotificationChange = async (item: SessionItem, newType: NotificationTypeEnum) => {
     try {
-      await matrixRoomNotificationService.setRoomNotification(item.roomId, newType)
+      await roomStateService.setRoomNotification(item.roomId, newType)
 
       // 更新本地会话状态
       chatStore.updateSession(item.roomId, {

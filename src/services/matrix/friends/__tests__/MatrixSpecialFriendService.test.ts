@@ -1,3 +1,4 @@
+import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -8,7 +9,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(() => null)
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -17,7 +18,7 @@ const createAccountDataEvent = (specialFriends: string[]) =>
     getContent: () => ({
       special_friends: specialFriends
     })
-  }) as any
+  }) as unknown as MatrixEvent
 
 const { default: matrixClientService } = await import('../../MatrixClientService')
 const { matrixSpecialFriendService } = await import('../MatrixSpecialFriendService')
@@ -27,7 +28,7 @@ describe('MatrixSpecialFriendService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     matrixSpecialFriendService.clearCache()
-    ;(matrixSpecialFriendService as any).observedClient = null
+    ;(matrixSpecialFriendService as unknown as { observedClient: unknown }).observedClient = null
   })
 
   it('warns once and returns an empty list before the matrix client is ready', async () => {
@@ -53,10 +54,10 @@ describe('MatrixSpecialFriendService', () => {
       getAccountData: vi.fn(() => createAccountDataEvent(['@new:example.com']))
     }
 
-    vi.mocked(matrixClientService.getClient).mockReturnValue(oldClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(oldClient as unknown as MatrixClient)
     await expect(matrixSpecialFriendService.getSpecialFriends()).resolves.toEqual(['@old:example.com'])
 
-    vi.mocked(matrixClientService.getClient).mockReturnValue(newClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(newClient as unknown as MatrixClient)
     await expect(matrixSpecialFriendService.getSpecialFriends()).resolves.toEqual(['@new:example.com'])
 
     expect(oldClient.on).toHaveBeenCalledWith('accountData', expect.any(Function))

@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixFederationBlacklistService } from '../MatrixFederationBlacklistService'
 
+type FederationBlacklistServiceInternals = {
+  request: (method: string, path: string, body?: Record<string, unknown>) => Promise<unknown>
+}
+
 vi.mock('../../MatrixClientService', () => ({
   matrixClientService: {
     getClient: vi.fn()
@@ -17,7 +21,7 @@ describe('MatrixFederationBlacklistService', () => {
   let requestSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    requestSpy = vi.spyOn(matrixFederationBlacklistService as any, 'request')
+    requestSpy = vi.spyOn(matrixFederationBlacklistService as unknown as FederationBlacklistServiceInternals, 'request')
   })
 
   describe('list', () => {

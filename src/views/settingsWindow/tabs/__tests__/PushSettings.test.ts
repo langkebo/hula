@@ -3,42 +3,67 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import PushSettings from '../PushSettings.vue'
 
-const messageSuccessMock = vi.fn()
-const messageErrorMock = vi.fn()
-const dialogWarningMock = vi.fn()
-const getPushersMock = vi.fn()
-const getPushRulesMock = vi.fn()
-const subscribePushRulesMock = vi.fn()
-const unregisterPusherMock = vi.fn()
-const setPushRuleEnabledMock = vi.fn()
-const unsubscribeMock = vi.fn()
+const {
+  messageSuccessMock,
+  messageErrorMock,
+  dialogWarningMock,
+  getPushersMock,
+  getPushRulesMock,
+  subscribePushRulesMock,
+  unregisterPusherMock,
+  setPushRuleEnabledMock,
+  unsubscribeMock,
+  translationMap
+} = vi.hoisted(() => {
+  const messageSuccessMock = vi.fn()
+  const messageErrorMock = vi.fn()
+  const dialogWarningMock = vi.fn()
+  const getPushersMock = vi.fn()
+  const getPushRulesMock = vi.fn()
+  const subscribePushRulesMock = vi.fn()
+  const unregisterPusherMock = vi.fn()
+  const setPushRuleEnabledMock = vi.fn()
+  const unsubscribeMock = vi.fn()
 
-const translationMap: Record<string, string> = {
-  'setting.push.devices': '推送设备',
-  'setting.push.noDevices': '暂无已注册的推送设备',
-  'setting.push.rules': '推送规则',
-  'setting.push.master.label': '启用推送通知',
-  'setting.push.master.desc': '全局控制所有推送通知',
-  'setting.push.message.label': '消息推送',
-  'setting.push.message.desc': '接收新消息时发送推送通知',
-  'setting.push.invite.label': '邀请推送',
-  'setting.push.invite.desc': '收到房间邀请时发送推送通知',
-  'setting.push.dnd.title': '推送时间',
-  'setting.push.dnd.label': '勿扰模式',
-  'setting.push.dnd.desc': '在指定时间段内不发送推送通知',
-  'setting.push.dnd.startTime': '开始时间',
-  'setting.push.dnd.endTime': '结束时间',
-  'setting.push.delete.title': '删除推送设备',
-  'setting.push.delete.content': '确定要删除推送设备 "{name}" 吗？删除后将不再接收该设备的推送通知。',
-  'setting.push.delete.confirm': '确定删除',
-  'setting.push.delete.cancel': '取消',
-  'setting.push.delete.success': '推送设备已删除',
-  'setting.push.delete.failed': '删除推送设备失败',
-  'setting.push.fetchFailed': '获取推送设备列表失败',
-  'setting.push.enabled': '已启用',
-  'setting.push.disabled': '已禁用',
-  'setting.push.updateFailed': '推送设置更新失败'
-}
+  const translationMap: Record<string, string> = {
+    'setting.push.devices': '推送设备',
+    'setting.push.noDevices': '暂无已注册的推送设备',
+    'setting.push.rules': '推送规则',
+    'setting.push.master.label': '启用推送通知',
+    'setting.push.master.desc': '全局控制所有推送通知',
+    'setting.push.message.label': '消息推送',
+    'setting.push.message.desc': '接收新消息时发送推送通知',
+    'setting.push.invite.label': '邀请推送',
+    'setting.push.invite.desc': '收到房间邀请时发送推送通知',
+    'setting.push.dnd.title': '推送时间',
+    'setting.push.dnd.label': '勿扰模式',
+    'setting.push.dnd.desc': '在指定时间段内不发送推送通知',
+    'setting.push.dnd.startTime': '开始时间',
+    'setting.push.dnd.endTime': '结束时间',
+    'setting.push.delete.title': '删除推送设备',
+    'setting.push.delete.content': '确定要删除推送设备 "{name}" 吗？删除后将不再接收该设备的推送通知。',
+    'setting.push.delete.confirm': '确定删除',
+    'setting.push.delete.cancel': '取消',
+    'setting.push.delete.success': '推送设备已删除',
+    'setting.push.delete.failed': '删除推送设备失败',
+    'setting.push.fetchFailed': '获取推送设备列表失败',
+    'setting.push.enabled': '已启用',
+    'setting.push.disabled': '已禁用',
+    'setting.push.updateFailed': '推送设置更新失败'
+  }
+  return {
+    messageSuccessMock,
+    messageErrorMock,
+    dialogWarningMock,
+    getPushersMock,
+    getPushRulesMock,
+    subscribePushRulesMock,
+    unregisterPusherMock,
+    setPushRuleEnabledMock,
+    unsubscribeMock,
+    translationMap
+  }
+})
 
 type PushSettingsVm = ComponentPublicInstance & {
   pushers: Array<{ pushkey: string; app_id: string; device_display_name: string }>
@@ -50,6 +75,8 @@ type PushSettingsVm = ComponentPublicInstance & {
   dndEndTime: number | null
   handleDeletePusher: (pusher: { pushkey: string; app_id: string; device_display_name: string }) => void
   handleMasterToggle: (enabled: boolean) => Promise<void>
+  handleMessagePushToggle: (enabled: boolean) => Promise<void>
+  handleInvitePushToggle: (enabled: boolean) => Promise<void>
   handleDndToggle: (enabled: boolean) => void
   handleDndTimeChange: () => void
 }
@@ -90,7 +117,7 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() })
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/notifications/MatrixPushService', () => ({
   matrixPushService: {
     getPushers: (...args: unknown[]) => getPushersMock(...args),
     getPushRules: (...args: unknown[]) => getPushRulesMock(...args),

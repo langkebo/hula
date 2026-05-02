@@ -54,7 +54,7 @@ const createHarness = (sourceSessions: Ref<SessionFixture[]>) => {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: '/message', name: 'message', component: defineComponent({ template: '<div />' }) },
+      { path: '/message', name: 'spaceList', component: defineComponent({ template: '<div />' }) },
       { path: '/other', name: 'other', component: defineComponent({ template: '<div />' }) }
     ]
   })
@@ -116,7 +116,7 @@ describe('useRoomSpaceWorkbench', () => {
     ])
 
     const harness = createHarness(sourceSessions)
-    await harness.router.push({ name: 'message', query: { spaceId: ' s1 ', search: '  beta ' } })
+    await harness.router.push({ name: 'spaceList', query: { spaceId: ' s1 ', search: '  beta ' } })
     const api = await harness.mount()
     const spaceStore = useSpaceStore()
 
@@ -148,7 +148,7 @@ describe('useRoomSpaceWorkbench', () => {
     ])
 
     const harness = createHarness(sourceSessions)
-    await harness.router.push({ name: 'message', query: {} })
+    await harness.router.push({ name: 'spaceList', query: {} })
     const api = await harness.mount()
 
     api.setSelectedSpaceId('  s2 ')
@@ -193,7 +193,7 @@ describe('useRoomSpaceWorkbench', () => {
     ])
 
     const harness = createHarness(sourceSessions)
-    await harness.router.push({ name: 'message', query: { spaceId: 's1', search: 'alpha', type: 'group' } })
+    await harness.router.push({ name: 'spaceList', query: { spaceId: 's1', search: 'alpha', type: 'group' } })
     const api = await harness.mount()
 
     api.ensureRoomVisible('!beta:server')
@@ -222,7 +222,7 @@ describe('useRoomSpaceWorkbench', () => {
     ])
 
     const harness = createHarness(sourceSessions)
-    await harness.router.push({ name: 'message', query: { type: 'group', sort: 'name' } })
+    await harness.router.push({ name: 'spaceList', query: { type: 'group', sort: 'name' } })
     const api = await harness.mount()
 
     expect(api.sessionTypeFilter.value).toBe('group')

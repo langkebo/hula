@@ -1,16 +1,16 @@
-import { invoke } from '@tauri-apps/api/core'
 import { LogicalSize } from '@tauri-apps/api/dpi'
+import type { WebviewOptions } from '@tauri-apps/api/webview'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { type Monitor, primaryMonitor, UserAttentionType } from '@tauri-apps/api/window'
+import { type Monitor, primaryMonitor, UserAttentionType, type WindowOptions } from '@tauri-apps/api/window'
 import { info } from '@tauri-apps/plugin-log'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('useWindow')
-
 import { assign } from 'es-toolkit/compat'
 import { CallTypeEnum, EventEnum, RoomTypeEnum } from '@/enums'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { createLogger } from '@/utils/Logger'
 import { isCompatibility, isDesktop, isMac, isWindows, isWindows10 } from '@/utils/PlatformConstants'
+import { invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
+
+const logger = createLogger('useWindow')
 
 /** 判断是兼容的系统 */
 const isCompatibilityMode = computed(() => isCompatibility())
@@ -18,6 +18,7 @@ const WINDOW_SAFE_PADDING = 32
 const MIN_LOGICAL_WIDTH = 320
 const MIN_LOGICAL_HEIGHT = 200
 const MAC_TRAFFIC_LIGHTS_SPACING = 6
+type DesktopWindowOptions = Omit<WebviewOptions, 'x' | 'y' | 'width' | 'height'> & WindowOptions
 
 const clampSizeToMonitor = (width: number, height: number, monitor?: Monitor | null) => {
   if (!monitor) {
@@ -80,6 +81,58 @@ const detachMacModalOverlay = (label: string) => {
   if (activeMacModalLabels.size === 0) {
     removeMacOverlayElement()
   }
+}
+
+const awaitWindowCreation = async (label: string, webview: WebviewWindow): Promise<WebviewWindow> => {
+  return new Promise((resolve, reject) => {
+    let settled = false
+
+    const resolveWindow = (window: WebviewWindow) => {
+      if (settled) return
+      settled = true
+      resolve(window)
+    }
+
+    const rejectWindow = (error: Error) => {
+      if (settled) return
+      settled = true
+      reject(error)
+    }
+
+    void webview.once('tauri://created', () => {
+      resolveWindow(webview)
+    })
+
+    void webview.once('tauri://error', async () => {
+      const existingWindow = await WebviewWindow.getByLabel(label)
+      if (existingWindow) {
+        resolveWindow(existingWindow)
+        return
+      }
+
+      rejectWindow(new Error(`窗口创建失败: ${label}`))
+    })
+  })
+}
+
+const ensureDesktopWindowInstance = async (
+  label: string,
+  options: DesktopWindowOptions,
+  onCreated?: (window: WebviewWindow) => Promise<void> | void
+) => {
+  if (!isDesktop()) {
+    return null
+  }
+
+  const existingWindow = await WebviewWindow.getByLabel(label)
+  if (existingWindow) {
+    return existingWindow
+  }
+
+  const webview = new WebviewWindow(label, options)
+  const createdWindow = await awaitWindowCreation(label, webview)
+  await onCreated?.(createdWindow)
+  return createdWindow
 }
 
 export const useWindow = () => {
@@ -168,12 +221,10 @@ export const useWindow = () => {
 
     await webview.once('tauri://created', async () => {
       if (isMac()) {
-        try {
-          await invoke('set_macos_traffic_lights_spacing', {
-            windowLabel: label,
-            spacing: MAC_TRAFFIC_LIGHTS_SPACING
-          })
-        } catch {}
+        await invokeSilently('set_macos_traffic_lights_spacing', {
+          windowLabel: label,
+          spacing: MAC_TRAFFIC_LIGHTS_SPACING
+        })
       }
       if (wantCloseWindow) {
         const win = await WebviewWindow.getByLabel(wantCloseWindow)
@@ -203,7 +254,7 @@ export const useWindow = () => {
       return Promise.resolve()
     }
     logger.debug('新窗口的载荷:', payload)
-    return invoke<void>('push_window_payload', {
+    return invokeWithErrorHandler<void>('push_window_payload', {
       label: windowLabel,
       // 这个payload只要是json就能传，不限制字段
       payload
@@ -230,7 +281,7 @@ export const useWindow = () => {
     if (!isDesktop()) {
       return Promise.resolve({} as T)
     }
-    return await invoke<T>('get_window_payload', { label: windowLabel, once })
+    return await invokeWithErrorHandler<T>('get_window_payload', { label: windowLabel, once })
   }
 
   /**
@@ -341,20 +392,14 @@ export const useWindow = () => {
       await modalWindow.setFocus()
 
       if (isMac()) {
-        try {
-          await invoke('set_window_movable', {
-            windowLabel: label,
-            movable: false
-          })
-        } catch (error) {
-          logger.error('设置子窗口不可拖动失败:', error)
-        }
-        try {
-          await invoke('set_macos_traffic_lights_spacing', {
-            windowLabel: label,
-            spacing: MAC_TRAFFIC_LIGHTS_SPACING
-          })
-        } catch {}
+        await invokeSilently('set_window_movable', {
+          windowLabel: label,
+          movable: false
+        })
+        await invokeSilently('set_macos_traffic_lights_spacing', {
+          windowLabel: label,
+          spacing: MAC_TRAFFIC_LIGHTS_SPACING
+        })
         attachMacModalOverlay(label)
       }
     })
@@ -510,6 +555,72 @@ export const useWindow = () => {
     )
   }
 
+  const ensureCaptureWindow = async () => {
+    return ensureDesktopWindowInstance(
+      'capture',
+      {
+        url: '/capture',
+        fullscreen: false,
+        transparent: true,
+        resizable: false,
+        skipTaskbar: true,
+        decorations: false,
+        visible: false,
+        hiddenTitle: true,
+        alwaysOnTop: true,
+        focus: true,
+        titleBarStyle: 'overlay',
+        visibleOnAllWorkspaces: true
+      },
+      async (captureWindow) => {
+        await captureWindow.hide().catch(() => {
+          /* window may already be hidden */
+        })
+      }
+    )
+  }
+
+  const ensureCheckUpdateWindow = async () => {
+    return ensureDesktopWindowInstance(
+      'checkupdate',
+      {
+        title: '检查更新',
+        url: '/checkupdate',
+        resizable: false,
+        width: 500,
+        height: 150,
+        alwaysOnTop: true,
+        focus: true,
+        skipTaskbar: true,
+        visible: false,
+        titleBarStyle: 'overlay',
+        hiddenTitle: true
+      },
+      async (checkUpdateWindow) => {
+        if (isMac()) {
+          await invokeSilently('set_macos_traffic_lights_spacing', {
+            windowLabel: checkUpdateWindow.label,
+            spacing: MAC_TRAFFIC_LIGHTS_SPACING
+          })
+        }
+      }
+    )
+  }
+
+  const ensureNotifyWindow = async () => {
+    return ensureDesktopWindowInstance('notify', {
+      url: '/notify',
+      resizable: false,
+      visible: false,
+      width: 280,
+      height: 140,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      decorations: false,
+      transparent: true
+    })
+  }
+
   return {
     createWebviewWindow,
     createModalWindow,
@@ -519,7 +630,10 @@ export const useWindow = () => {
     sendWindowPayload,
     getWindowPayload,
     startRtcCall,
-    createRtcCallWindow
+    createRtcCallWindow,
+    ensureCaptureWindow,
+    ensureCheckUpdateWindow,
+    ensureNotifyWindow
   }
 }
 
@@ -538,4 +652,19 @@ export async function createWebviewWindow(
 ) {
   const { createWebviewWindow: _create } = useWindow()
   return _create(title, label, width, height, wantCloseWindow, resizable, minW, minH, transparent, visible, queryParams)
+}
+
+export async function ensureCaptureWindow() {
+  const { ensureCaptureWindow: _ensure } = useWindow()
+  return _ensure()
+}
+
+export async function ensureCheckUpdateWindow() {
+  const { ensureCheckUpdateWindow: _ensure } = useWindow()
+  return _ensure()
+}
+
+export async function ensureNotifyWindow() {
+  const { ensureNotifyWindow: _ensure } = useWindow()
+  return _ensure()
 }

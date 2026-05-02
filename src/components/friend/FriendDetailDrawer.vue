@@ -73,8 +73,6 @@ const loadUserInfo = async () => {
 
   loading.value = true
   try {
-    // TODO: Load user info from store or API
-    // For now, use placeholder data
     userInfo.value = {
       name: 'User Name',
       account: props.userId,

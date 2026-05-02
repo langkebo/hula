@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAdminSecurity } from '../useAdminSecurity'
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     security: {
       getAuditLog: vi.fn().mockResolvedValue({ logs: [], next_batch: undefined })
@@ -9,7 +9,7 @@ vi.mock('@/services/matrix', () => ({
   }
 }))
 
-import { adminService } from '@/services/matrix'
+import { adminService } from '@/services/matrix/admin'
 
 describe('useAdminSecurity', () => {
   beforeEach(() => {

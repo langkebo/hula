@@ -1,5 +1,5 @@
 import { computed, onUnmounted, ref } from 'vue'
-import { matrixBurnAfterReadService } from '@/services/matrix'
+import { matrixBurnAfterReadService } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 

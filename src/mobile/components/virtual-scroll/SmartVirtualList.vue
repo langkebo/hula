@@ -66,18 +66,44 @@ const contentRef = ref<HTMLElement | null>(null)
 const scrollTop = ref(0)
 const offset = ref(0)
 const itemHeights = ref<Map<string | number, number>>(new Map())
+const cumulativeHeights = ref<Float64Array>(new Float64Array(0))
 
 const BUFFER = props.buffer
 const ITEM_HEIGHT = props.itemHeight
 
+function rebuildCumulativeHeights(): void {
+  const len = props.items.length
+  const arr = new Float64Array(len)
+  let acc = 0
+  for (let i = 0; i < len; i++) {
+    const id = getId(props.items[i])
+    acc += itemHeights.value.get(id) || ITEM_HEIGHT
+    arr[i] = acc
+  }
+  cumulativeHeights.value = arr
+}
+
 const totalHeight = computed(() => {
   if (props.items.length === 0) return 0
-
-  return props.items.reduce((total, item) => {
-    const id = getId(item)
-    return total + (itemHeights.value.get(id) || ITEM_HEIGHT)
-  }, 0)
+  const arr = cumulativeHeights.value
+  return arr.length > 0 ? arr[arr.length - 1] : 0
 })
+
+function findStartIndex(target: number): number {
+  const arr = cumulativeHeights.value
+  if (arr.length === 0) return 0
+  let lo = 0
+  let hi = arr.length - 1
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1
+    if (arr[mid] < target) {
+      lo = mid + 1
+    } else {
+      hi = mid
+    }
+  }
+  return lo
+}
 
 const visibleCount = computed(() => {
   if (!containerRef.value) return 20
@@ -88,21 +114,8 @@ const visibleCount = computed(() => {
 
 const startIndex = computed(() => {
   if (props.items.length === 0) return 0
-
-  let height = 0
-  let index = 0
-
-  for (let i = 0; i < props.items.length; i++) {
-    const id = getId(props.items[i])
-    height += itemHeights.value.get(id) || ITEM_HEIGHT
-
-    if (height > scrollTop.value - BUFFER * ITEM_HEIGHT) {
-      index = i
-      break
-    }
-  }
-
-  return Math.max(0, index)
+  const target = Math.max(0, scrollTop.value - BUFFER * ITEM_HEIGHT)
+  return Math.max(0, findStartIndex(target))
 })
 
 const endIndex = computed(() => {
@@ -125,20 +138,17 @@ function getId(item: T): string | number {
 }
 
 function calculateOffset(): number {
-  let height = 0
-
-  for (let i = 0; i < startIndex.value; i++) {
-    const id = getId(props.items[i])
-    height += itemHeights.value.get(id) || ITEM_HEIGHT
-  }
-
-  return height
+  const arr = cumulativeHeights.value
+  if (startIndex.value <= 0 || arr.length === 0) return 0
+  const idx = startIndex.value - 1
+  return idx < arr.length ? arr[idx] : 0
 }
 
 function updateItemHeights(): void {
   if (!contentRef.value) return
 
   const children = contentRef.value.children
+  let changed = false
 
   for (let i = 0; i < children.length; i++) {
     const child = children[i] as HTMLElement
@@ -147,8 +157,16 @@ function updateItemHeights(): void {
 
     if (id && index >= startIndex.value && index <= endIndex.value) {
       const height = child.getBoundingClientRect().height
-      itemHeights.value.set(id, height)
+      const prev = itemHeights.value.get(id)
+      if (prev !== height) {
+        itemHeights.value.set(id, height)
+        changed = true
+      }
     }
+  }
+
+  if (changed) {
+    rebuildCumulativeHeights()
   }
 }
 
@@ -215,6 +233,7 @@ watch(
 watch(
   () => props.items.length,
   () => {
+    rebuildCumulativeHeights()
     nextTick(() => {
       updateItemHeights()
     })
@@ -222,6 +241,7 @@ watch(
 )
 
 onMounted(() => {
+  rebuildCumulativeHeights()
   if (phantomRef.value) {
     phantomRef.value.style.height = `${totalHeight.value}px`
   }

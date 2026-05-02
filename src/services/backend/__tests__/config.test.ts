@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
+  clearMatrixSessionEndpointConfig,
   getDefaultMatrixEndpointConfig,
   isValidHttpUrl,
   MATRIX_HOMESERVER_STORAGE_KEY,
   MATRIX_IDENTITY_SERVER_STORAGE_KEY,
+  MATRIX_SESSION_HOMESERVER_STORAGE_KEY,
+  MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY,
   normalizeHttpUrl,
   resolveMatrixEndpointConfig,
   resolveMatrixRuntimeEndpointConfig,
   resolveMatrixRuntimeHomeserverUrl,
+  resolveMatrixSessionEndpointConfig,
   saveMatrixHomeserverUrl,
-  saveMatrixIdentityServerUrl
+  saveMatrixIdentityServerUrl,
+  saveMatrixSessionEndpointConfig
 } from '../config'
 import type { StorageLike } from '../types'
 
@@ -85,6 +90,15 @@ describe('backend config', () => {
     expect(resolveMatrixEndpointConfig(storage).homeserverUrl).toBe('https://matrix.internal')
   })
 
+  it('migrates legacy stored homeserver values back to the env default', () => {
+    const storage = createStorage({
+      [MATRIX_HOMESERVER_STORAGE_KEY]: 'http://localhost:28008'
+    })
+
+    expect(resolveMatrixEndpointConfig(storage).homeserverUrl).toBe(getDefaultMatrixEndpointConfig().homeserverUrl)
+    expect(storage.getItem(MATRIX_HOMESERVER_STORAGE_KEY)).toBeNull()
+  })
+
   it('persists normalized homeserver urls through the shared helper', () => {
     const storage = createStorage()
 
@@ -131,5 +145,51 @@ describe('backend config', () => {
     withMockWindowLocation(() => {
       expect(resolveMatrixRuntimeEndpointConfig(storage).homeserverUrl).toBe('https://matrix.example.com')
     })
+  })
+
+  it('prefers session-bound endpoint config over the global config', () => {
+    const storage = createStorage({
+      [MATRIX_HOMESERVER_STORAGE_KEY]: 'https://matrix.global.example.com',
+      [MATRIX_IDENTITY_SERVER_STORAGE_KEY]: 'https://identity.global.example.com',
+      [MATRIX_SESSION_HOMESERVER_STORAGE_KEY]: 'https://matrix.session.example.com',
+      [MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY]: 'https://identity.session.example.com'
+    })
+
+    expect(resolveMatrixSessionEndpointConfig(storage)).toEqual({
+      homeserverUrl: 'https://matrix.session.example.com',
+      identityServerUrl: 'https://identity.session.example.com'
+    })
+  })
+
+  it('clears legacy session-bound homeserver values and falls back to runtime config', () => {
+    const storage = createStorage({
+      [MATRIX_HOMESERVER_STORAGE_KEY]: 'https://matrix.test',
+      [MATRIX_SESSION_HOMESERVER_STORAGE_KEY]: 'http://localhost:28008',
+      [MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY]: 'https://identity.legacy.example.com'
+    })
+
+    expect(resolveMatrixSessionEndpointConfig(storage)).toEqual({
+      homeserverUrl: 'https://matrix.test',
+      identityServerUrl: ''
+    })
+    expect(storage.getItem(MATRIX_SESSION_HOMESERVER_STORAGE_KEY)).toBeNull()
+    expect(storage.getItem(MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY)).toBeNull()
+  })
+
+  it('persists and clears session-bound endpoint config', () => {
+    const storage = createStorage()
+
+    expect(
+      saveMatrixSessionEndpointConfig({ homeserverUrl: 'matrix.session.internal', identityServerUrl: '' }, storage)
+    ).toEqual({
+      homeserverUrl: 'http://matrix.session.internal',
+      identityServerUrl: ''
+    })
+    expect(storage.getItem(MATRIX_SESSION_HOMESERVER_STORAGE_KEY)).toBe('http://matrix.session.internal')
+    expect(storage.getItem(MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY)).toBeNull()
+
+    clearMatrixSessionEndpointConfig(storage)
+    expect(storage.getItem(MATRIX_SESSION_HOMESERVER_STORAGE_KEY)).toBeNull()
+    expect(storage.getItem(MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY)).toBeNull()
   })
 })

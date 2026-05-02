@@ -1,7 +1,7 @@
-import type { MatrixClient, Room, RoomMember } from 'matrix-js-sdk'
+import { type MatrixClient, NotificationCountType, type Room, type RoomMember } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
-import { matrixRoomSummaryService } from '../MatrixRoomSummaryService'
+import { matrixRoomSummaryService, type RoomSummary } from '../MatrixRoomSummaryService'
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
@@ -10,8 +10,19 @@ vi.mock('../../MatrixClientService', () => ({
 }))
 
 vi.mock('../MatrixRoomStoreAdapter', () => {
+  type SlidingSyncCounts = {
+    notificationCount?: number
+    highlightCount?: number
+  }
+
+  type SnapshotLike = {
+    unreadCount: number
+    highlightCount: number
+    notificationCount: number
+  }
+
   const adapter = {
-    convertRoomToRoomInfo: vi.fn((room: any, isEncrypted: boolean) => {
+    convertRoomToRoomInfo: vi.fn((room: Room, isEncrypted: boolean) => {
       const timeline = room.getLiveTimeline().getEvents()
       const lastEvent = timeline[timeline.length - 1]
 
@@ -22,7 +33,7 @@ vi.mock('../MatrixRoomStoreAdapter', () => {
         lastMessageTime = lastEvent.getTs()
         const content = lastEvent.getContent()
         const eventType = lastEvent.getType()
-        if (content.msgtype === 'm.text') lastMessage = content.body
+        if (content.msgtype === 'm.text' && typeof content.body === 'string') lastMessage = content.body
         else if (eventType === 'm.room.member')
           lastMessage = content.membership === 'join' ? '加入了房间' : '离开了房间'
       }
@@ -33,12 +44,12 @@ vi.mock('../MatrixRoomStoreAdapter', () => {
         avatarUrl: typeof room.getMxcAvatarUrl === 'function' ? room.getMxcAvatarUrl() : null,
         isDirect: !room.isSpaceRoom() && room.getJoinedMembers().length <= 2,
         isEncrypted,
-        unreadCount: room.getUnreadNotificationCount?.('total' as any) || 0,
-        highlightCount: room.getUnreadNotificationCount?.('highlight' as any) || 0,
-        notificationCount: room.getUnreadNotificationCount?.('total' as any) || 0,
+        unreadCount: room.getUnreadNotificationCount?.(NotificationCountType.Total) || 0,
+        highlightCount: room.getUnreadNotificationCount?.(NotificationCountType.Highlight) || 0,
+        notificationCount: room.getUnreadNotificationCount?.(NotificationCountType.Total) || 0,
         lastMessage,
         lastMessageTime,
-        members: room.getJoinedMembers().map((m: any) => ({
+        members: room.getJoinedMembers().map((m: RoomMember) => ({
           userId: m.userId,
           name: m.name || m.userId,
           avatarUrl: typeof m.getMxcAvatarUrl === 'function' ? (m.getMxcAvatarUrl() ?? undefined) : undefined,
@@ -46,7 +57,7 @@ vi.mock('../MatrixRoomStoreAdapter', () => {
         }))
       }
     }),
-    applySlidingSyncUnreadCounts: vi.fn((snapshot: any, counts: any) => {
+    applySlidingSyncUnreadCounts: vi.fn((snapshot: SnapshotLike, counts?: SlidingSyncCounts) => {
       if (!counts) return snapshot
       if (counts.notificationCount !== undefined) {
         snapshot.unreadCount = counts.notificationCount
@@ -60,6 +71,12 @@ vi.mock('../MatrixRoomStoreAdapter', () => {
   }
   return { matrixRoomStoreAdapter: adapter, default: adapter }
 })
+
+type MatrixRoomSummaryServiceInstance = {
+  getRoomSummary: (roomId: string) => Promise<RoomSummary | null>
+}
+
+type MatrixRoomSummaryServiceConstructor = new () => MatrixRoomSummaryServiceInstance
 
 describe('MatrixRoomSummaryService', () => {
   let mockClient: Partial<MatrixClient>
@@ -100,7 +117,7 @@ describe('MatrixRoomSummaryService', () => {
     it('应该在未调用 initialize 时回退到 matrixClientService', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
 
-      const service = new (matrixRoomSummaryService.constructor as any)()
+      const service = new (matrixRoomSummaryService.constructor as MatrixRoomSummaryServiceConstructor)()
       const summary = await service.getRoomSummary('!room123:example.com')
 
       expect(matrixClientService.getClient).toHaveBeenCalled()
@@ -193,7 +210,7 @@ describe('MatrixRoomSummaryService', () => {
         () =>
           ({
             getEvents: vi.fn(() => [mockEvent])
-          }) as any
+          }) as unknown as ReturnType<Room['getLiveTimeline']>
       )
       mockRoom.getJoinedMembers = vi.fn(
         () =>
@@ -204,13 +221,13 @@ describe('MatrixRoomSummaryService', () => {
               powerLevel: 50,
               getMxcAvatarUrl: vi.fn(() => 'mxc://example.com/member')
             }
-          ] as any
+          ] as unknown as ReturnType<Room['getJoinedMembers']>
       )
       mockRoom.getUnreadNotificationCount = vi.fn((kind?: string) => {
         if (kind === 'highlight') return 2
         return 9
       }) as unknown as Room['getUnreadNotificationCount']
-      ;(mockClient.isRoomEncrypted as any).mockReturnValue(true)
+      vi.mocked(mockClient.isRoomEncrypted!).mockReturnValue(true)
 
       const snapshot = matrixRoomSummaryService.getRoomListSnapshot('!room123:example.com')
 
@@ -247,7 +264,7 @@ describe('MatrixRoomSummaryService', () => {
         () =>
           ({
             getEvents: vi.fn(() => [memberEvent])
-          }) as any
+          }) as unknown as ReturnType<Room['getLiveTimeline']>
       )
       mockRoom.isSpaceRoom = vi.fn(() => true)
       mockRoom.getJoinedMembers = vi.fn(
@@ -259,7 +276,7 @@ describe('MatrixRoomSummaryService', () => {
               powerLevel: 0,
               getMxcAvatarUrl: vi.fn(() => undefined)
             }
-          ] as any
+          ] as unknown as ReturnType<Room['getJoinedMembers']>
       )
       mockRoom.getUnreadNotificationCount = vi.fn((kind?: string) => {
         if (kind === 'highlight') return 4
@@ -326,13 +343,13 @@ describe('MatrixRoomSummaryService', () => {
         getEvents: vi.fn(() => [mockEvent, mockEvent])
       }
 
-      mockRoom.getLiveTimeline = vi.fn(() => mockTimeline as any)
-      mockRoom.getJoinedMembers = vi.fn(() => [{}, {}] as any)
+      mockRoom.getLiveTimeline = vi.fn(() => mockTimeline as unknown as ReturnType<Room['getLiveTimeline']>)
+      mockRoom.getJoinedMembers = vi.fn(() => [{}, {}] as unknown as ReturnType<Room['getJoinedMembers']>)
       mockRoom.currentState = {
         getStateEvents: vi.fn(() => ({
           getTs: vi.fn(() => Date.now() - 86400000)
         }))
-      } as any
+      } as unknown as Room['currentState']
 
       const stats = await matrixRoomSummaryService.getRoomStats('!room123:example.com')
 

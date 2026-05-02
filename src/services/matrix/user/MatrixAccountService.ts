@@ -396,7 +396,7 @@ class MatrixAccountService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/capabilities')
+      const result = await client.http.authedRequest('GET', '/capabilities')
       info('[MatrixAccount] 获取能力声明成功')
       return result as Record<string, unknown>
     } catch (err) {

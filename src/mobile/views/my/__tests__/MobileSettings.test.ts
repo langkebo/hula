@@ -24,8 +24,8 @@ vi.mock('vue-router', () => ({
 }))
 
 vi.mock('vant', () => ({
-  showDialog: (...args: any[]) => showDialogMock(...args),
-  showToast: (...args: any[]) => showToastMock(...args)
+  showDialog: (...args: unknown[]) => showDialogMock(...args),
+  showToast: (...args: unknown[]) => showToastMock(...args)
 }))
 
 vi.mock('@iconify/vue', () => ({
@@ -33,7 +33,7 @@ vi.mock('@iconify/vue', () => ({
 }))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
-  info: (...args: any[]) => infoMock(...args)
+  info: (...args: unknown[]) => infoMock(...args)
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -53,8 +53,8 @@ vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({
     themeContent: 'light',
     languagePreference: 'zh-CN',
-    toggleTheme: (...args: any[]) => toggleThemeMock(...args),
-    toggleLogin: (...args: any[]) => toggleLoginMock(...args)
+    toggleTheme: (...args: unknown[]) => toggleThemeMock(...args),
+    toggleLogin: (...args: unknown[]) => toggleLoginMock(...args)
   })
 }))
 

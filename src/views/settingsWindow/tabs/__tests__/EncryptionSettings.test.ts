@@ -79,6 +79,8 @@ const {
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: vi.fn(() => ({
+    info: vi.fn(),
+    warn: vi.fn(),
     error: loggerErrorMock
   }))
 }))
@@ -90,16 +92,22 @@ vi.mock('@iconify/vue', () => ({
   }
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
   matrixEncryptionContextService: {
     getCurrentSessionContext: getCurrentSessionContextMock,
     getCurrentDeviceFingerprint: getCurrentDeviceFingerprintMock
-  },
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   matrixEncryptionService: {
     getKeyBackupInfo: getKeyBackupInfoMock,
     getCrossSigningInfo: getCrossSigningInfoMock,
     getKeyRotationStatus: getKeyRotationStatusMock
-  },
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixVerificationService', () => ({
   matrixVerificationService: {
     isDeviceVerified: isDeviceVerifiedMock
   }

@@ -116,7 +116,8 @@ import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type IPushRule, matrixPushService } from '@/services/matrix'
+import type { IPushRule } from '@/services/matrix/notifications/MatrixPushService'
+import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('NotificationSettings')

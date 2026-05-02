@@ -60,7 +60,7 @@ import { showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { matrixAccountService } from '@/services/matrix'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { createLogger } from '@/utils/Logger'
 

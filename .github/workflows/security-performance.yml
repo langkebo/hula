@@ -40,8 +40,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run npm audit
-        run: pnpm audit --audit-level=moderate
+        run: pnpm audit --audit-level=high
         continue-on-error: true
+
+      - name: Run Rust cargo audit
+        if: hashFiles('src-tauri/Cargo.lock') != ''
+        uses: rustsec/audit-check@v2
+        with:
+          working-directory: src-tauri
 
       - name: Run CodeQL
         uses: github/codeql-action/init@df409f7d9260372bd5f19e5b04e83cb3c43714ae
@@ -83,6 +89,9 @@ jobs:
 
       - name: Generate bundle metrics
         run: pnpm metrics:bundle
+
+      - name: Enforce bundle budget
+        run: BUNDLE_BUDGET_STRICT=1 node scripts/report-bundle-metrics.mjs
 
       - name: Summarize bundle baseline
         run: |

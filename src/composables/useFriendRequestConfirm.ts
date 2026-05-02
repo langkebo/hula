@@ -1,5 +1,5 @@
 import { computed, type MaybeRefOrGetter, ref, toValue, watch } from 'vue'
-import { matrixContactService } from '@/services/matrix'
+import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'

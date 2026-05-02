@@ -1,3 +1,4 @@
+import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -8,7 +9,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   matrixClientService: {
-    getClient: vi.fn(() => null)
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -29,9 +30,14 @@ const mockWidgetsManager = {
   terminateWidgetSession: vi.fn()
 }
 
+type WidgetsManagerLike = typeof mockWidgetsManager
+
 const mockClient = {
-  getWidgetsManager: vi.fn(() => mockWidgetsManager),
-  getRoom: vi.fn(() => null)
+  getWidgetsManager: vi.fn(),
+  getRoom: vi.fn(),
+  sendStateEvent: vi.fn(),
+  getUserId: vi.fn(() => '@user:example.com'),
+  getDomain: vi.fn(() => 'example.com')
 }
 
 const { matrixClientService } = await import('../../MatrixClientService')
@@ -50,8 +56,8 @@ const sdkWidget = (overrides: Record<string, unknown> = {}) => ({
 describe('MatrixWidgetService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
-    mockClient.getWidgetsManager.mockReturnValue(mockWidgetsManager)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+    mockClient.getWidgetsManager.mockReturnValue(mockWidgetsManager as unknown as WidgetsManagerLike)
   })
 
   afterEach(() => {
@@ -88,7 +94,7 @@ describe('MatrixWidgetService', () => {
             : []
         )
       }
-    } as any)
+    } as unknown as Room)
 
     const result = await matrixWidgetService.getWidgets('!room:example.com', false)
 
@@ -104,13 +110,15 @@ describe('MatrixWidgetService', () => {
   })
 
   it('falls back to room state when the manager is unavailable', async () => {
-    mockClient.getWidgetsManager.mockReturnValueOnce(null as any)
+    mockClient.getWidgetsManager.mockReturnValueOnce(null)
     mockClient.getRoom.mockReturnValueOnce({
       currentState: {
         getStateEvents: vi.fn().mockImplementation((eventType: string) =>
           eventType === 'im.vector.modular.widgets'
             ? [
                 {
+                  getId: () => 'widget-state',
+                  getType: () => 'im.vector.modular.widgets',
                   getContent: () => ({
                     type: 'jitsi',
                     url: 'https://meet.example.com',
@@ -122,7 +130,7 @@ describe('MatrixWidgetService', () => {
             : []
         )
       }
-    } as any)
+    } as unknown as Room)
 
     const result = await matrixWidgetService.getWidgets('!room:example.com')
 
@@ -225,7 +233,7 @@ describe('MatrixWidgetService', () => {
   })
 
   it('getWidgetPermissions returns null when the manager is unavailable', async () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
     await expect(matrixWidgetService.getWidgetPermissions('widget-1', false)).resolves.toBeNull()
   })

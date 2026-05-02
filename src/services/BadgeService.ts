@@ -1,6 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import { IsYesEnum } from '@/enums'
-import { matrixClientService } from '@/services/matrix'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { buildBadgeCatalog } from '@/stores/domains/chat/badge'
 import { useUserStore } from '@/stores/domains/user/user'
 

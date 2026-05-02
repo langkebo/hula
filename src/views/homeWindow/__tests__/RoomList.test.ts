@@ -87,7 +87,7 @@ const chatStore = reactive({
 })
 
 vi.mock('@vueuse/core', () => ({
-  useDebounceFn: <T extends (...args: any[]) => any>(fn: T) => fn
+  useDebounceFn: <Args extends unknown[], ReturnValue>(fn: (...args: Args) => ReturnValue) => fn
 }))
 
 vi.mock('vue-router', () => ({

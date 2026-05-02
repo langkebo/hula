@@ -98,7 +98,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
-import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
+import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -148,7 +148,7 @@ const handleCreate = async () => {
 
   creating.value = true
   try {
-    const room = await matrixDirectMessageService.getOrCreateDmRoom(searchResult.value.userId, encrypted.value)
+    const room = await roomNavigationService.getOrCreateDirectMessage(searchResult.value.userId, encrypted.value)
     if (room) {
       emit('created', room)
       visible.value = false

@@ -46,7 +46,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminRooms } from '@/composables/admin'
 import MobileLayout from '@/mobile/layout/index.vue'
-import type { RoomInfo } from '@/services/matrix'
+import type { RoomInfo } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminRooms')

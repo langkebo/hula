@@ -14,7 +14,7 @@ vi.mock('../../MatrixClientService', () => ({
 describe('MatrixKeyBackupService', () => {
   let mockClient: Partial<MatrixClient>
   let mockKeyBackupManager: Partial<KeyBackupManager>
-  let mockHttp: any
+  let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     mockHttp = {
@@ -31,7 +31,7 @@ describe('MatrixKeyBackupService', () => {
     }
 
     mockClient = {
-      http: mockHttp,
+      http: mockHttp as unknown as MatrixClient['http'],
       getKeyBackupManager: vi.fn(() => mockKeyBackupManager as KeyBackupManager)
     }
 
@@ -41,7 +41,7 @@ describe('MatrixKeyBackupService', () => {
 
   describe('checkKeyBackup', () => {
     it('应该在未调用 initialize 时回退到 matrixClientService', async () => {
-      ;(matrixKeyBackupService as any).client = null
+      ;(matrixKeyBackupService as unknown as { client: unknown }).client = null
 
       const mockBackupInfo: BackupInfo = {
         version: 'v1',

@@ -1,8 +1,10 @@
 import type { Ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
-import type { AIModel, ChatRole } from '@/services/matrix'
-import { aiService, conversationService } from '@/services/matrix'
+import { aiService } from '@/services/matrix/ai/AIService'
+import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
+import { conversationService } from '@/services/matrix/ai/ConversationService'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { createLogger } from '@/utils/Logger'
 import type { ConversationMeta, Message } from './useRobotChat'
 

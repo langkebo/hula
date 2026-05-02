@@ -1,7 +1,7 @@
 import { type Ref, ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
-import type { AIModel } from '@/services/matrix'
-import { aiService } from '@/services/matrix'
+import { aiService } from '@/services/matrix/ai/AIService'
+import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { createLogger } from '@/utils/Logger'
 import type { ConversationMeta, Message } from './useRobotChat'
 
@@ -188,7 +188,9 @@ export const useAiStreaming = ({
                     onTokenUsageUpdate(conversation.tokenUsage)
                   }
                 })
-                .catch(() => {})
+                .catch(() => {
+                  /* token usage fetch is best-effort */
+                })
 
               if (!messageList.value[aiMessageIndex].reasoningContent) {
                 aiService
@@ -204,7 +206,9 @@ export const useAiStreaming = ({
                       messageList.value[aiMessageIndex].reasoningContent = last.reasoningContent
                     }
                   })
-                  .catch(() => {})
+                  .catch(() => {
+                    /* reasoning content fetch is best-effort */
+                  })
               }
 
               if (model.id) {

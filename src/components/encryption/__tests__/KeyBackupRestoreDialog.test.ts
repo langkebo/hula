@@ -106,7 +106,7 @@ vi.mock('@iconify/vue', () => ({
   }
 }))
 
-vi.mock('@/services/matrix', () => ({
+vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   matrixEncryptionService: {
     restoreFromBackup: restoreFromBackupMock
   }
@@ -114,6 +114,8 @@ vi.mock('@/services/matrix', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
     error: vi.fn()
   })
 }))

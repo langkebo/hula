@@ -1,5 +1,7 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
+import type { SlidingSync } from '@/types/matrix-js-sdk-augmentations'
 import matrixClientService from '../../MatrixClientService'
 import matrixSlidingSyncService from '../MatrixSlidingSyncService'
 
@@ -11,8 +13,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getSlidingSync: vi.fn(() => null),
-    getClient: vi.fn(() => null),
+    getSlidingSync: vi.fn(() => null as SlidingSync | null),
+    getClient: vi.fn(() => null as MatrixClient | null),
     updateConnectionState: vi.fn()
   }
 }))
@@ -33,10 +35,10 @@ describe('MatrixSlidingSyncService', () => {
       off: vi.fn()
     }
 
-    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(oldSync as any)
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(oldSync as unknown as SlidingSync)
     await matrixSlidingSyncService.initialize()
 
-    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(newSync as any)
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(newSync as unknown as SlidingSync)
     await matrixSlidingSyncService.initialize()
 
     expect(oldSync.on).toHaveBeenCalledTimes(2)
@@ -57,7 +59,7 @@ describe('MatrixSlidingSyncService', () => {
       off: vi.fn()
     }
 
-    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as any)
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as unknown as SlidingSync)
     await matrixSlidingSyncService.initialize()
 
     await new Promise((resolve) => setTimeout(resolve, 10))
@@ -81,7 +83,7 @@ describe('MatrixSlidingSyncService', () => {
       off: vi.fn()
     }
 
-    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as any)
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as unknown as SlidingSync)
     await matrixSlidingSyncService.initialize()
 
     lifecycleCallback('COMPLETE', { rooms: { '!room:1': { timeline: [{}] } } })
@@ -104,7 +106,7 @@ describe('MatrixSlidingSyncService', () => {
       off: vi.fn()
     }
 
-    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as any)
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as unknown as SlidingSync)
     await matrixSlidingSyncService.initialize()
 
     lifecycleCallback('COMPLETE', { rooms: { '!room:1': { timeline: [{}] } } })

@@ -137,7 +137,7 @@
 import { NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, NSwitch, useDialog, useMessage } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixFriendService } from '@/services/matrix'
+import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('FriendsSettings')

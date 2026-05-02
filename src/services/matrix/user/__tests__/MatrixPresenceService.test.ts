@@ -1,4 +1,4 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixPresenceService } from '../MatrixPresenceService'
@@ -12,8 +12,14 @@ vi.mock('../../MatrixClientService', () => ({
 
 describe('MatrixPresenceService', () => {
   let mockClient: Partial<MatrixClient>
-  let mockHttp: any
-  let mockPresenceManager: any
+  let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
+  let mockPresenceManager: {
+    setPresence: ReturnType<typeof vi.fn>
+    getPresence: ReturnType<typeof vi.fn>
+    subscribeToPresence: ReturnType<typeof vi.fn>
+    unsubscribeFromPresence: ReturnType<typeof vi.fn>
+    getPresenceList: ReturnType<typeof vi.fn>
+  }
 
   beforeEach(() => {
     mockHttp = {
@@ -29,8 +35,8 @@ describe('MatrixPresenceService', () => {
     }
 
     mockClient = {
-      http: mockHttp,
-      getPresenceManager: vi.fn(() => mockPresenceManager),
+      http: mockHttp as unknown as MatrixClient['http'],
+      getPresenceManager: vi.fn(() => mockPresenceManager as unknown as PresenceManager),
       getUserId: vi.fn(() => '@user:example.com'),
       on: vi.fn(),
       off: vi.fn()
@@ -52,7 +58,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('should fallback to HTTP API when presenceManager is unavailable', async () => {
-      mockClient.getPresenceManager = vi.fn(() => null as any)
+      mockClient.getPresenceManager = vi.fn(() => null)
       mockHttp.authedRequest.mockResolvedValue({})
 
       await matrixPresenceService.setPresence('unavailable', 'Busy')
@@ -66,7 +72,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       vi.mocked(matrixClientService.waitForClientReady).mockRejectedValue(
         new Error('Matrix client initialization timeout')
       )
@@ -96,7 +102,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('should fallback to HTTP API when presenceManager is unavailable', async () => {
-      mockClient.getPresenceManager = vi.fn(() => null as any)
+      mockClient.getPresenceManager = vi.fn(() => null)
       mockHttp.authedRequest.mockResolvedValue({
         presence: 'offline',
         last_active_ago: 300000
@@ -136,7 +142,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('should fallback to HTTP API', async () => {
-      mockClient.getPresenceManager = vi.fn(() => null as any)
+      mockClient.getPresenceManager = vi.fn(() => null)
       mockHttp.authedRequest.mockResolvedValue({ presences: [] })
 
       await matrixPresenceService.subscribeToPresence(['@a:example.com'])
@@ -202,7 +208,7 @@ describe('MatrixPresenceService', () => {
         off: vi.fn()
       } as MatrixClient
 
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       vi.mocked(matrixClientService.waitForClientReady).mockResolvedValue(readyClient)
 
       matrixPresenceService.onPresenceChange(vi.fn())

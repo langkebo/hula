@@ -36,7 +36,6 @@ const mockClient = {
   getVoiceMessageManager: vi.fn(() => mockVoiceManager)
 }
 
-const { default: matrixClientService } = await import('../../MatrixClientService')
 const { matrixVoiceService, isVoiceMessageResult } = await import('../MatrixVoiceService')
 
 describe('MatrixVoiceService', () => {

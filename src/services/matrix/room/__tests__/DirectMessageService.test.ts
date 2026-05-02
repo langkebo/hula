@@ -19,7 +19,7 @@ vi.mock('../../MatrixClientService', () => ({
 const enqueueMock = vi.fn()
 vi.mock('@/services/offline/OfflineQueueService', () => ({
   offlineQueueService: {
-    enqueue: (...args: any[]) => enqueueMock(...args)
+    enqueue: (...args: unknown[]) => enqueueMock(...args)
   }
 }))
 

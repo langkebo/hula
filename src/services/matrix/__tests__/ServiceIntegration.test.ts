@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatrixCacheManager } from '../MatrixCacheManager'
 import { matrixClientService } from '../MatrixClientService'
@@ -21,12 +22,12 @@ describe('Service Integration Tests', () => {
   beforeEach(() => {
     mockHttp = { authedRequest: vi.fn() }
     vi.mocked(matrixClientService.getClient).mockReturnValue({
-      http: mockHttp,
+      http: mockHttp as unknown as MatrixClient['http'],
       getUserId: vi.fn(() => '@user:server'),
       getDeviceId: vi.fn(() => 'DEVICE1'),
       getDomain: vi.fn(() => 'server'),
       getRoom: vi.fn()
-    } as any)
+    } as unknown as MatrixClient)
     MatrixCacheManager.clear()
     MatrixRequestDeduper.clear()
   })
@@ -114,7 +115,7 @@ describe('Service Integration Tests', () => {
 
   describe('Auth + Room Service Integration', () => {
     it('should handle client not initialized across services', () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       expect(MatrixCacheManager.get('any_key')).toBeNull()
     })

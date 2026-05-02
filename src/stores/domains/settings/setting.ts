@@ -180,7 +180,9 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       lockTimeout: 5
     }
   }),
-  persist: true,
+  persist: {
+    omit: ['lockScreen.password', 'secretChat.passwordHash']
+  },
   getters: {
     screenshotShortcut: (state) => state.shortcuts?.screenshot ?? getDefaultShortcuts().screenshot,
     openMainPanelShortcut: (state) => state.shortcuts?.openMainPanel ?? getDefaultShortcuts().openMainPanel,

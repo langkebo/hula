@@ -30,6 +30,7 @@
   "modify_group_nickname": "修改群昵称",
   "add_friend": "添加好友",
   "report": "举报",
+  "report_success": "举报成功，我们将尽快处理",
   "ctx_menu_more": "更多",
   "context_menu_actions": "操作菜单",
   "context_menu_reactions": "表情菜单",

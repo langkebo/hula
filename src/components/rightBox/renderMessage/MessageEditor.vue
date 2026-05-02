@@ -32,7 +32,7 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import { matrixMessageRelationService } from '@/services/matrix'
+import { matrixMessageRelationService } from '@/services/matrix/messaging/MatrixMessageRelationService'
 
 import { createLogger } from '@/utils/Logger'
 

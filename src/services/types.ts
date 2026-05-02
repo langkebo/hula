@@ -287,6 +287,10 @@ export type UserInfoType = {
   activeStatus?: number
   /** 最近活跃时间戳（毫秒） */
   lastOptTime?: number
+  /** 最近一次成功登录绑定的 homeserver */
+  homeserverUrl?: string
+  /** 最近一次成功登录绑定的 identity server */
+  identityServerUrl?: string
   /** 是否绑定 Gitee */
   linkedGitee?: boolean
   /** 是否绑定 GitHub */

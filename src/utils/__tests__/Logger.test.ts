@@ -47,7 +47,7 @@ describe('Logger', () => {
       const sanitize = getSanitize(createLogger('Test'))
       if (sanitize) {
         const result = sanitize('access_token=abcdefghijklmnop')
-        expect(result).toContain('***REDACTED***')
+        expect(result).toContain('[REDACTED]')
         expect(result).not.toContain('abcdefghijklmnop')
       }
     })
@@ -56,7 +56,7 @@ describe('Logger', () => {
       const sanitize = getSanitize(createLogger('Test'))
       if (sanitize) {
         const result = sanitize('token: syt_abcdefghijklmnop')
-        expect(result).toContain('***REDACTED***')
+        expect(result).toContain('[REDACTED]')
         expect(result).not.toContain('abcdefghijklmnop')
       }
     })
@@ -65,7 +65,7 @@ describe('Logger', () => {
       const sanitize = getSanitize(createLogger('Test'))
       if (sanitize) {
         const result = sanitize('Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.test')
-        expect(result).toContain('***REDACTED***')
+        expect(result).toContain('[REDACTED]')
       }
     })
 

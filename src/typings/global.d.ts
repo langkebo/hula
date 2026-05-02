@@ -4,6 +4,11 @@ declare global {
     $dialog: import('naive-ui').DialogApi
     $notification: import('naive-ui').NotificationApi
     $loadingBar: import('naive-ui').LoadingBarApi
+    hulaChatStore: any
+    hulaGlobalStore: any
+    hulaUserStore: any
+    hulaRouter: any
+    pinia: any
   }
 }
 

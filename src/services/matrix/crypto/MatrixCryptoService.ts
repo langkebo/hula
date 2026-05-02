@@ -405,7 +405,7 @@ class MatrixCryptoService {
   /**
    * 设置密钥备份
    *
-   * @param _passphrase - 密码短语 (暂未使用)
+   * @param passphrase - 密码短语 (暂未使用，保留接口兼容)
    * @throws {Error} 如果客户端未初始化或设置失败
    */
   async setupKeyBackup(_passphrase: string): Promise<void> {
@@ -467,7 +467,7 @@ class MatrixCryptoService {
   /**
    * 导出密钥
    *
-   * @param _passphrase - 密码短语 (暂未使用)
+   * @param passphrase - 密码短语 (暂未使用，保留接口兼容)
    * @returns 导出的密钥数据 (JSON 字符串)
    * @throws {Error} 如果客户端未初始化或导出失败
    */
@@ -494,7 +494,7 @@ class MatrixCryptoService {
    * 导入密钥
    *
    * @param data - 密钥数据 (JSON 字符串)
-   * @param _passphrase - 密码短语 (暂未使用)
+   * @param passphrase - 密码短语 (暂未使用，保留接口兼容)
    * @throws {Error} 如果客户端未初始化或导入失败
    */
   async importKeys(data: string, _passphrase: string): Promise<void> {

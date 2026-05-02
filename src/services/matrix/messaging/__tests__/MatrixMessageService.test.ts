@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixMessageService } from '../MatrixMessageService'
 
@@ -9,7 +10,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   matrixClientService: {
-    getClient: vi.fn(() => null)
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -121,7 +122,7 @@ describe('MatrixMessageService', () => {
 
   it('recallMessage 正常在线时调用 client.redactEvent', async () => {
     const mockClient = { redactEvent: vi.fn().mockResolvedValue({}) }
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
     await matrixMessageService.recallMessage('!room:id', '$event', 'txn-123')
 
@@ -159,7 +160,7 @@ describe('MatrixMessageService', () => {
 
     vi.mocked(matrixClientService.getClient).mockReturnValue({
       getRooms: vi.fn(() => [room1, room2])
-    } as any)
+    } as unknown as MatrixClient)
 
     const result = await matrixMessageService.getMsgListByIds({
       msgIds: ['$event-2', '$event-1', '$missing']

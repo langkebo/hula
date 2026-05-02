@@ -2,7 +2,6 @@ import { error, info } from '@tauri-apps/plugin-log'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { OnlineEnum, StoresEnum } from '@/enums'
-import { EventType } from '@/services/matrix'
 import {
   type Friend,
   type FriendRequest,
@@ -12,6 +11,7 @@ import {
 } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
+import { EventType } from '@/services/matrix/sdk'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 export interface MatrixContact {

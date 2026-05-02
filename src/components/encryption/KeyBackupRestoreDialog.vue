@@ -53,7 +53,7 @@ import { Icon } from '@iconify/vue'
 import { NButton, NForm, NFormItem, NInput, NModal, NProgress, NSpin, useMessage } from 'naive-ui'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionService } from '@/services/matrix'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 

@@ -71,6 +71,32 @@ export const baseConfig: UserConfig = {
       }
     }
   },
+  optimizeDeps: {
+    include: [
+      'vue',
+      'vue-router',
+      'pinia',
+      '@vueuse/core',
+      'naive-ui',
+      'dayjs',
+      'es-toolkit',
+      'dompurify',
+      'mitt',
+      'matrix-js-sdk'
+    ],
+    exclude: [
+      'mermaid',
+      'three',
+      '@vue-office/docx',
+      '@vue-office/excel',
+      '@vue-office/pdf',
+      '@vue-office/pptx',
+      'shiki',
+      'markstream-vue',
+      'tlbs-map-vue',
+      'echarts'
+    ]
+  },
   clearScreen: false,
   server: {
     host: '0.0.0.0',

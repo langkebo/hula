@@ -1,4 +1,6 @@
+import type { IPusherRequest, MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import matrixClientService from '../../MatrixClientService'
 import { matrixNotificationService } from '../MatrixNotificationService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -9,11 +11,9 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(() => null)
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
-
-import matrixClientService from '../../MatrixClientService'
 
 const mockClient = {
   getPushRules: vi.fn(),
@@ -33,7 +33,7 @@ describe('MatrixNotificationService', () => {
 
   describe('initialize', () => {
     it('should throw error when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       await expect(matrixNotificationService.initialize()).rejects.toThrow('客户端未初始化')
     })
 
@@ -42,7 +42,7 @@ describe('MatrixNotificationService', () => {
         getPushRules: vi.fn().mockResolvedValue({
           global: { rule_id: 'global-rule' }
         })
-      } as any)
+      } as unknown as MatrixClient)
 
       await matrixNotificationService.initialize()
       expect(true).toBe(true)
@@ -51,7 +51,7 @@ describe('MatrixNotificationService', () => {
 
   describe('setPushRule', () => {
     it('should throw error when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       const rule = {
         ruleId: 'test-rule',
@@ -68,7 +68,7 @@ describe('MatrixNotificationService', () => {
 
   describe('deletePushRule', () => {
     it('should throw error when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixNotificationService.deletePushRule('test-rule')).rejects.toThrow('客户端未初始化')
     })
@@ -76,9 +76,9 @@ describe('MatrixNotificationService', () => {
 
   describe('setPusher', () => {
     it('should throw error when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
-      await expect(matrixNotificationService.setPusher({ pushkey: 'test-push-key' } as any)).rejects.toThrow(
+      await expect(matrixNotificationService.setPusher({ pushkey: 'test-push-key' } as IPusherRequest)).rejects.toThrow(
         '客户端未初始化'
       )
     })
@@ -97,7 +97,7 @@ describe('MatrixNotificationService', () => {
             override: [{ rule_id: 'old-rule' }]
           }
         })
-      } as any)
+      } as unknown as MatrixClient)
 
       await matrixNotificationService.initialize()
       expect(matrixNotificationService.getPushRules()).toHaveLength(1)
@@ -108,7 +108,7 @@ describe('MatrixNotificationService', () => {
             override: [{ rule_id: 'new-rule' }]
           }
         })
-      } as any)
+      } as unknown as MatrixClient)
 
       expect(matrixNotificationService.getPushRules()).toEqual([])
     })
@@ -136,11 +136,11 @@ describe('MatrixNotificationService', () => {
         })
       }
 
-      vi.mocked(matrixClientService.getClient).mockReturnValue(oldClient as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(oldClient as unknown as MatrixClient)
       await matrixNotificationService.initialize()
       expect(matrixNotificationService.getPushRule('old-rule')?.rule_id).toBe('old-rule')
 
-      vi.mocked(matrixClientService.getClient).mockReturnValue(newClient as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(newClient as unknown as MatrixClient)
       await matrixNotificationService.initialize()
       expect(matrixNotificationService.getPushRule('new-rule')?.rule_id).toBe('new-rule')
       expect(matrixNotificationService.getPushRule('old-rule')).toBeUndefined()
@@ -214,7 +214,7 @@ describe('MatrixNotificationService', () => {
 
   describe('successful operations', () => {
     beforeEach(() => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
     })
 
     it('should set push rule successfully', async () => {
@@ -247,7 +247,7 @@ describe('MatrixNotificationService', () => {
         app_id: 'hula',
         pushkey: 'device-token',
         kind: 'http'
-      } as any
+      } as IPusherRequest
 
       await matrixNotificationService.setPusher(pusher)
       expect(mockClient.setPusher).toHaveBeenCalledWith(pusher)

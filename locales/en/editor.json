@@ -11,6 +11,7 @@
   "send_or_newline": "{send} Send/{newline} Enter",
   "file": "File",
   "image": "Image",
+  "upload_file": "Upload File",
   "voice": "Voice",
   "location": "Location",
   "chat_history": "Chat History",

@@ -1,0 +1,22 @@
+{
+  "media": {
+    "image": "[图片]",
+    "video": "[视频]",
+    "audio": "[音频]",
+    "voice": "[语音]",
+    "file": "[文件]",
+    "emoji": "[表情]",
+    "notice": "[通知]",
+    "merge": "[聊天记录]",
+    "video_call": "[视频通话]",
+    "audio_call": "[语音通话]",
+    "location": "[位置]",
+    "beacon": "[实时位置共享]",
+    "link_preview": "[链接预览]",
+    "message": "[消息]"
+  },
+  "membership": {
+    "join": "加入了房间",
+    "leave": "离开了房间"
+  }
+}

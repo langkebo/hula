@@ -32,8 +32,9 @@
 import { NButton, NResult, NSpace, NSpin, useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { matrixRuntimeSessionService } from '@/services/matrix'
+import { resolveMatrixEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
+import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OidcCallback')
@@ -101,6 +102,15 @@ const handleOidcCallback = async () => {
     }
 
     logger.debug('OIDC login successful, restoring Matrix runtime session...')
+
+    // 将会话绑定到发现的 homeserver
+    const homeserverUrl = matrixOidcService.getHomeserverUrl()
+    if (homeserverUrl) {
+      saveMatrixSessionEndpointConfig({
+        homeserverUrl,
+        identityServerUrl: resolveMatrixEndpointConfig().identityServerUrl
+      })
+    }
 
     await matrixRuntimeSessionService.restoreWithAccessToken({
       uid: matrixTokens.user_id,

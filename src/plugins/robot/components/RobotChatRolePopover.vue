@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import type { ChatRole } from '@/services/matrix'
+import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
 
 defineProps<{
   show: boolean

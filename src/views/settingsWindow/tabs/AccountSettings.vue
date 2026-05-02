@@ -96,8 +96,8 @@ const logger = createLogger('AccountSettings')
 import defaultAvatarImg from '@/assets/img/win.png'
 import type { AvatarCropperInstance } from '@/components/common/AvatarCropper.vue'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
-import { matrixAccountService } from '@/services/matrix'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 
 defineOptions({
   name: 'AccountSettings'

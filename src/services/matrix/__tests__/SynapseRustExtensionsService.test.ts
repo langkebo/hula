@@ -1,8 +1,9 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn()
+    getClient: vi.fn(() => null as MatrixClient | null)
   }
 }))
 
@@ -29,10 +30,10 @@ describe('SynapseRustExtensionsService', () => {
       getHomeserverUrl: vi.fn(() => 'https://matrix.example.com'),
       getAccessToken: vi.fn(() => 'test-token'),
       getUserId: vi.fn(() => '@user:example.com')
-    } as any)
+    } as unknown as MatrixClient)
 
-    ;(synapseRustExtensionsService as any).baseUrl = 'https://matrix.example.com'
-    ;(synapseRustExtensionsService as any).accessToken = 'test-token'
+    ;(synapseRustExtensionsService as unknown as { baseUrl: string }).baseUrl = 'https://matrix.example.com'
+    ;(synapseRustExtensionsService as unknown as { accessToken: string }).accessToken = 'test-token'
   })
 
   describe('getFriends', () => {
@@ -290,7 +291,7 @@ describe('SynapseRustExtensionsService', () => {
   describe('stop', () => {
     it('should clear access token', () => {
       synapseRustExtensionsService.stop()
-      expect((synapseRustExtensionsService as any).accessToken).toBe('')
+      expect((synapseRustExtensionsService as unknown as { accessToken: string }).accessToken).toBe('')
     })
   })
 })

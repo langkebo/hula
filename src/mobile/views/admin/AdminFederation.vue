@@ -86,7 +86,7 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminFederation } from '@/composables/admin'
 import MobileLayout from '@/mobile/layout/index.vue'
-import type { FederationDestination } from '@/services/matrix'
+import type { FederationDestination } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileAdminFederation')

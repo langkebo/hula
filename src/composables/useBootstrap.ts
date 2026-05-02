@@ -1,11 +1,13 @@
 import { createSharedComposable } from '@vueuse/core'
 import { computed, ref } from 'vue'
+import { getDefaultMatrixEndpointConfig } from '@/services/backend'
 import { applyLanguagePreference } from '@/services/i18n'
 import { updateSettings } from '@/services/tauriCommand'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 import { initializePlatform, isDesktop, isMobile } from '@/utils/PlatformConstants'
+import { parseStoredProxySettings } from '@/utils/proxySettings'
 
 const logger = createLogger('Bootstrap')
 
@@ -61,7 +63,17 @@ const useSharedBootstrap = createSharedComposable(() => {
     if (!proxySettingsStr) return
 
     try {
-      const proxySettings = JSON.parse(proxySettingsStr)
+      const proxySettings = parseStoredProxySettings(proxySettingsStr, getDefaultMatrixEndpointConfig().homeserverUrl)
+      if (!proxySettings) {
+        localStorage.removeItem('proxySettings')
+        return
+      }
+
+      const normalizedSettings = JSON.stringify(proxySettings)
+      if (normalizedSettings !== proxySettingsStr) {
+        localStorage.setItem('proxySettings', normalizedSettings)
+      }
+
       const baseUrl =
         proxySettings.apiType + '://' + proxySettings.apiIp + ':' + proxySettings.apiPort + proxySettings.apiSuffix
       const wsUrl =

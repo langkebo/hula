@@ -3,10 +3,21 @@ const fs = require('fs')
 const path = require('path')
 
 /* 获取项目的修改范围 */
-const scopes = fs
-  .readdirSync(path.resolve(__dirname, 'src'), { withFileTypes: true })
-  .filter((dirent) => dirent.isDirectory())
-  .map((dirent) => dirent.name.replace(/s$/, ''))
+const scopes = [
+  'core', // 核心框架/路由/Store
+  'ui', // UI组件/布局/样式
+  'chat', // 聊天相关逻辑
+  'mobile', // 移动端适配
+  'plugin', // 插件系统
+  'hook', // 通用 Hooks
+  'service', // Matrix/后端服务
+  'util', // 工具类
+  'i18n', // 多语言
+  'config', // 项目配置
+  'ci', // CI/CD 流程
+  'test', // 测试相关
+  'tauri' // Rust/Tauri 相关
+]
 
 module.exports = {
   // 继承的规则
@@ -33,8 +44,9 @@ module.exports = {
         'chore' // 对构建过程或辅助工具和库的更改（不影响源文件、测试用例）
       ]
     ],
-    'header-max-length': [2, 'always', 72],
-    'subject-case': [0] // subject大小写不做校验
+    'header-max-length': [2, 'always', 100],
+    'subject-case': [0], // subject大小写不做校验
+    'scope-enum': [2, 'always', scopes]
   },
 
   prompt: {

@@ -1,3 +1,4 @@
+import type { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { synapseRustExtensionsService } from '../../SynapseRustExtensionsService'
@@ -52,9 +53,9 @@ describe('MatrixRoomService', () => {
       const rooms = [{ roomId: '!room:id' }]
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRooms: vi.fn(() => rooms)
-      } as any)
+      } as unknown as MatrixClient)
 
-      await expect(matrixRoomService.getRooms()).resolves.toBe(rooms as any)
+      await expect(matrixRoomService.getRooms()).resolves.toBe(rooms)
     })
   })
 
@@ -66,7 +67,7 @@ describe('MatrixRoomService', () => {
     it('should throw error when room is missing by default', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: vi.fn(() => null)
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getRoom('!missing:room')).rejects.toThrow('房间不存在: !missing:room')
     })
@@ -74,7 +75,7 @@ describe('MatrixRoomService', () => {
     it('should return null when room is missing and throwOnError is false', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: vi.fn(() => null)
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getRoom('!missing:room', false)).resolves.toBeNull()
     })
@@ -88,7 +89,7 @@ describe('MatrixRoomService', () => {
     it('should return homeserver domain from client', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getDomain: vi.fn(() => 'example.com')
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getServerDomain()).resolves.toBe('example.com')
     })
@@ -96,7 +97,7 @@ describe('MatrixRoomService', () => {
     it('should fallback to matrix.org when domain is empty', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getDomain: vi.fn(() => '')
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getServerDomain()).resolves.toBe('matrix.org')
     })
@@ -109,9 +110,9 @@ describe('MatrixRoomService', () => {
 
     it('should delegate room creation to client service', async () => {
       const createdRoom = { roomId: '!created:room' }
-      vi.mocked(matrixClientService.createRoom).mockResolvedValue(createdRoom as any)
+      vi.mocked(matrixClientService.createRoom).mockResolvedValue(createdRoom as unknown as Room)
 
-      await expect(matrixRoomService.createRoom({ name: 'Room' })).resolves.toBe(createdRoom as any)
+      await expect(matrixRoomService.createRoom({ name: 'Room' })).resolves.toBe(createdRoom)
       expect(matrixClientService.createRoom).toHaveBeenCalledWith({ name: 'Room' })
     })
   })
@@ -123,9 +124,9 @@ describe('MatrixRoomService', () => {
 
     it('should delegate join room to client service', async () => {
       const joinedRoom = { roomId: '!joined:room' }
-      vi.mocked(matrixClientService.joinRoom).mockResolvedValue(joinedRoom as any)
+      vi.mocked(matrixClientService.joinRoom).mockResolvedValue(joinedRoom as unknown as Room)
 
-      await expect(matrixRoomService.joinRoom('!room:id')).resolves.toBe(joinedRoom as any)
+      await expect(matrixRoomService.joinRoom('!room:id')).resolves.toBe(joinedRoom)
       expect(matrixClientService.joinRoom).toHaveBeenCalledWith('!room:id')
     })
   })
@@ -148,7 +149,7 @@ describe('MatrixRoomService', () => {
       const createRoom = vi.fn().mockResolvedValue({ room_id: '!dm:id' })
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         createRoom
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.createDirectRoom('@user:matrix.org')).resolves.toBe('!dm:id')
       expect(createRoom).toHaveBeenCalledWith({
@@ -165,11 +166,11 @@ describe('MatrixRoomService', () => {
       const members = [{ userId: '@a:example.com' }, { userId: '@b:example.com' }]
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: vi.fn(() => ({
-          getJoinedMembers: vi.fn(() => members)
+          getJoinedMembers: vi.fn(() => members as unknown as RoomMember[])
         }))
-      } as any)
+      } as unknown as MatrixClient)
 
-      await expect(matrixRoomService.getMembers('!room:id')).resolves.toBe(members as any)
+      await expect(matrixRoomService.getMembers('!room:id')).resolves.toBe(members)
     })
   })
 
@@ -180,7 +181,7 @@ describe('MatrixRoomService', () => {
 
     it('should invite user with client api', async () => {
       const invite = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ invite } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ invite } as unknown as MatrixClient)
 
       await expect(matrixRoomService.inviteUser('!room:id', '@user:matrix.org')).resolves.toBeUndefined()
       expect(invite).toHaveBeenCalledWith('!room:id', '@user:matrix.org')
@@ -194,7 +195,7 @@ describe('MatrixRoomService', () => {
 
     it('should kick user with optional reason', async () => {
       const kick = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ kick } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ kick } as unknown as MatrixClient)
 
       await expect(matrixRoomService.kickUser('!room:id', '@user:matrix.org', 'spam')).resolves.toBeUndefined()
       expect(kick).toHaveBeenCalledWith('!room:id', '@user:matrix.org', 'spam')
@@ -208,7 +209,7 @@ describe('MatrixRoomService', () => {
 
     it('should ban user with optional reason', async () => {
       const ban = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ ban } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ ban } as unknown as MatrixClient)
 
       await expect(matrixRoomService.banUser('!room:id', '@user:matrix.org', 'abuse')).resolves.toBeUndefined()
       expect(ban).toHaveBeenCalledWith('!room:id', '@user:matrix.org', 'abuse')
@@ -222,7 +223,7 @@ describe('MatrixRoomService', () => {
 
     it('should unban user with client api', async () => {
       const unban = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ unban } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ unban } as unknown as MatrixClient)
 
       await expect(matrixRoomService.unbanUser('!room:id', '@user:matrix.org')).resolves.toBeUndefined()
       expect(unban).toHaveBeenCalledWith('!room:id', '@user:matrix.org')
@@ -236,7 +237,7 @@ describe('MatrixRoomService', () => {
 
     it('should set room name with client api', async () => {
       const setRoomName = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ setRoomName } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setRoomName } as unknown as MatrixClient)
 
       await expect(matrixRoomService.setRoomName('!room:id', 'New Room Name')).resolves.toBeUndefined()
       expect(setRoomName).toHaveBeenCalledWith('!room:id', 'New Room Name')
@@ -250,7 +251,7 @@ describe('MatrixRoomService', () => {
 
     it('should set room topic with client api', async () => {
       const setRoomTopic = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ setRoomTopic } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setRoomTopic } as unknown as MatrixClient)
 
       await expect(matrixRoomService.setRoomTopic('!room:id', 'New Topic')).resolves.toBeUndefined()
       expect(setRoomTopic).toHaveBeenCalledWith('!room:id', 'New Topic')
@@ -260,7 +261,7 @@ describe('MatrixRoomService', () => {
   describe('setRoomAvatar', () => {
     it('should set room avatar state event', async () => {
       const sendStateEvent = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ sendStateEvent } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ sendStateEvent } as unknown as MatrixClient)
 
       await expect(matrixRoomService.setRoomAvatar('!room:id', 'mxc://avatar')).resolves.toBeUndefined()
       expect(sendStateEvent).toHaveBeenCalledWith('!room:id', 'm.room.avatar', { url: 'mxc://avatar' }, '')
@@ -273,18 +274,18 @@ describe('MatrixRoomService', () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: vi.fn(() => ({
           currentState: {
-            getStateEvents: vi.fn(() => stateEvents)
+            getStateEvents: vi.fn(() => stateEvents as unknown as MatrixEvent[])
           }
         }))
-      } as any)
+      } as unknown as MatrixClient)
 
-      await expect(matrixRoomService.getRoomState('!room:id')).resolves.toBe(stateEvents as any)
+      await expect(matrixRoomService.getRoomState('!room:id')).resolves.toBe(stateEvents)
     })
 
     it('should throw when room state room is missing', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: vi.fn(() => null)
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getRoomState('!room:id')).rejects.toThrow('房间不存在: !room:id')
     })
@@ -293,7 +294,7 @@ describe('MatrixRoomService', () => {
   describe('setPushRule', () => {
     it('should delete push rule when enabling notifications', async () => {
       const deletePushRule = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ deletePushRule } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ deletePushRule } as unknown as MatrixClient)
 
       await expect(matrixRoomService.setPushRule('!room:id', true)).resolves.toBeUndefined()
       expect(deletePushRule).toHaveBeenCalledWith('global', 'override', '!room:id')
@@ -301,7 +302,7 @@ describe('MatrixRoomService', () => {
 
     it('should add push rule when disabling notifications', async () => {
       const addPushRule = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ addPushRule } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ addPushRule } as unknown as MatrixClient)
 
       await expect(matrixRoomService.setPushRule('!room:id', false)).resolves.toBeUndefined()
       expect(addPushRule).toHaveBeenCalledWith('global', 'override', '!room:id', {
@@ -327,7 +328,7 @@ describe('MatrixRoomService', () => {
             '@charlie:example.com': 'invalid'
           }))
         }))
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getDirectRooms()).resolves.toEqual(
         new Map([
@@ -340,7 +341,7 @@ describe('MatrixRoomService', () => {
     it('should return empty map when account data is missing', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getAccountData: vi.fn(() => null)
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getDirectRooms()).resolves.toEqual(new Map())
     })
@@ -350,7 +351,7 @@ describe('MatrixRoomService', () => {
         getAccountData: vi.fn(() => {
           throw new Error('account data failed')
         })
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getDirectRooms()).rejects.toThrow('account data failed')
     })
@@ -360,7 +361,7 @@ describe('MatrixRoomService', () => {
         getAccountData: vi.fn(() => {
           throw new Error('account data failed')
         })
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getDirectRooms(false)).resolves.toEqual(new Map())
     })
@@ -376,7 +377,7 @@ describe('MatrixRoomService', () => {
           }))
         })),
         setAccountData
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.setDirectRoom('@alice:example.com', '!new:id')).resolves.toBeUndefined()
       expect(setAccountData).toHaveBeenCalledWith('m.direct', {
@@ -393,7 +394,7 @@ describe('MatrixRoomService', () => {
           }))
         })),
         setAccountData
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.setDirectRoom('@alice:example.com', '!existing:id')).resolves.toBeUndefined()
       expect(setAccountData).not.toHaveBeenCalled()
@@ -415,7 +416,7 @@ describe('MatrixRoomService', () => {
           }
         })),
         sendStateEvent
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.setMemberDisplayName('!room:id', 'New Name')).resolves.toBeUndefined()
       expect(sendStateEvent).toHaveBeenCalledWith(
@@ -440,7 +441,7 @@ describe('MatrixRoomService', () => {
             name: 'Fallback Name'
           }))
         }))
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getMemberDisplayName('!room:id', '@user:id')).resolves.toBe('Raw Name')
     })
@@ -448,7 +449,7 @@ describe('MatrixRoomService', () => {
     it('should return null when room is missing', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: vi.fn(() => null)
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getMemberDisplayName('!room:id', '@user:id')).resolves.toBeNull()
     })
@@ -457,7 +458,7 @@ describe('MatrixRoomService', () => {
   describe('setMemberPowerLevel', () => {
     it('should set user power level with client api', async () => {
       const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as unknown as MatrixClient)
 
       await expect(matrixRoomService.setMemberPowerLevel('!room:id', '@user:id', 50)).resolves.toBeUndefined()
       expect(setUserPowerLevel).toHaveBeenCalledWith('@user:id', '!room:id', 50)
@@ -465,7 +466,7 @@ describe('MatrixRoomService', () => {
 
     it('should delegate setMemberAsAdmin and removeMemberAsAdmin to setMemberPowerLevel', async () => {
       const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as unknown as MatrixClient)
 
       await matrixRoomService.setMemberAsAdmin('!room:id', '@user:id')
       await matrixRoomService.removeMemberAsAdmin('!room:id', '@user:id')
@@ -477,37 +478,37 @@ describe('MatrixRoomService', () => {
 
   describe('translateText', () => {
     it('should return translated text when request succeeds', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue([[['你好']]])
-      } as any)
+      } as unknown as Response)
 
       await expect(matrixRoomService.translateText('hello')).resolves.toBe('你好')
     })
 
     it('should return original text when translation response has no data', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue([])
-      } as any)
+      } as unknown as Response)
 
       await expect(matrixRoomService.translateText('hello')).resolves.toBe('hello')
     })
 
     it('should throw when translation request fails by default', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 500
-      } as any)
+      } as unknown as Response)
 
       await expect(matrixRoomService.translateText('hello')).rejects.toThrow('翻译请求失败: 500')
     })
 
     it('should return original text when translation fails and throwOnError is false', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
       globalThis.fetch = vi.fn().mockRejectedValue(new Error('network failed'))
 
       await expect(matrixRoomService.translateText('hello', undefined, false)).resolves.toBe('hello')
@@ -518,7 +519,7 @@ describe('MatrixRoomService', () => {
     it('should use server summary by default', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: vi.fn(() => null)
-      } as any)
+      } as unknown as MatrixClient)
       vi.mocked(synapseRustExtensionsService.getRoomSummary).mockResolvedValue({
         room_id: '!room:id',
         name: 'Server Room',
@@ -563,7 +564,7 @@ describe('MatrixRoomService', () => {
           getCanonicalAlias: vi.fn(() => '#local:example.com'),
           getJoinRule: vi.fn(() => 'invite')
         }))
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getRoomSummary('!room:id', false)).resolves.toMatchObject({
         roomId: '!room:id',
@@ -589,7 +590,7 @@ describe('MatrixRoomService', () => {
           getCanonicalAlias: vi.fn(() => null),
           getJoinRule: vi.fn(() => 'public')
         }))
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getRoomSummary('!room:id')).resolves.toMatchObject({
         roomId: '!room:id',
@@ -607,7 +608,7 @@ describe('MatrixRoomService', () => {
       vi.mocked(synapseRustExtensionsService.getRoomSummary).mockRejectedValue(new Error('summary failed'))
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: vi.fn(() => null)
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getRoomSummary('!room:id', true)).rejects.toThrow('summary failed')
     })
@@ -637,7 +638,7 @@ describe('MatrixRoomService', () => {
 
           return null
         })
-      } as any)
+      } as unknown as MatrixClient)
 
       await expect(matrixRoomService.getRoomSummaries(['!room:a', '!room:b', '!room:missing'])).resolves.toEqual(
         new Map([
@@ -667,7 +668,7 @@ describe('MatrixRoomService', () => {
   describe('unread counters', () => {
     it('should validate room existence before incrementing or clearing unread', async () => {
       const getRoom = vi.fn().mockReturnValue({ roomId: '!room:id' })
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom } as any)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom } as unknown as MatrixClient)
 
       await matrixRoomService.incrementUnread('!room:id', true)
       await matrixRoomService.clearUnread('!room:id')

@@ -1,6 +1,6 @@
 #[cfg(target_os = "windows")]
 use tauri::{
-    Emitter, Manager, PhysicalPosition, Runtime,
+    Emitter, Manager, PhysicalPosition, PhysicalSize, Runtime, WebviewUrl, WebviewWindowBuilder,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
 
@@ -16,6 +16,52 @@ use tauri::{
     Manager, PhysicalPosition, Runtime,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
+
+#[cfg(target_os = "windows")]
+fn ensure_windows_tray_window<R: Runtime>(
+    app: &tauri::AppHandle<R>,
+) -> tauri::Result<tauri::WebviewWindow<R>> {
+    if let Some(window) = app.get_webview_window("tray") {
+        return Ok(window);
+    }
+
+    WebviewWindowBuilder::new(app, "tray", WebviewUrl::App("/tray".into()))
+        .resizable(false)
+        .visible(false)
+        .inner_size(130.0, 44.0)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .decorations(false)
+        .transparent(true)
+        .build()
+}
+
+#[cfg(target_os = "windows")]
+fn show_windows_tray_window<R: Runtime>(
+    app: &tauri::AppHandle<R>,
+    position: PhysicalPosition<f64>,
+) {
+    let tray_window = match ensure_windows_tray_window(app) {
+        Ok(window) => window,
+        Err(error) => {
+            tracing::warn!("Failed to ensure tray window: {}", error);
+            return;
+        }
+    };
+
+    let is_logged_in = app.get_webview_window("home").is_some();
+    let height = if is_logged_in { 356 } else { 44 };
+
+    let _ = app.emit_to("tray", "tray_state_sync", is_logged_in);
+    let _ = tray_window.set_size(PhysicalSize::new(130, height));
+    let _ = tray_window.set_position(PhysicalPosition::new(
+        position.x,
+        position.y - height as f64,
+    ));
+    let _ = tray_window.set_always_on_top(true);
+    let _ = tray_window.show();
+    let _ = tray_window.set_focus();
+}
 
 pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
     #[cfg(target_os = "macos")]
@@ -145,6 +191,15 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
                     }
                     MouseButton::Right if MouseButtonState::Down == button_state => {
                         // 状态栏图标按下右键时显示状态栏菜单
+                        #[cfg(target_os = "windows")]
+                        {
+                            let app_handle = tray.app_handle().clone();
+                            std::thread::spawn(move || {
+                                show_windows_tray_window(&app_handle, position);
+                            });
+                        }
+
+                        #[cfg(not(target_os = "windows"))]
                         if let Some(tray_window) = tray.app_handle().get_webview_window("tray") {
                             if let Ok(outer_size) = tray_window.outer_size() {
                                 if let Err(e) = tray_window.set_position(PhysicalPosition::new(
@@ -171,17 +226,19 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
                     position: _,
                     rect: _,
                 } => {
-                    if let Ok(rect) = tray.rect() {
-                        match tray.app_handle().emit_to("notify", "notify_enter", &rect) {
-                            Ok(_) => {
-                                tracing::info!("notify_enter event sent successfully");
+                    if tray.app_handle().get_webview_window("notify").is_some() {
+                        if let Ok(rect) = tray.rect() {
+                            match tray.app_handle().emit_to("notify", "notify_enter", &rect) {
+                                Ok(_) => {
+                                    tracing::info!("notify_enter event sent successfully");
+                                }
+                                Err(e) => {
+                                    tracing::warn!("Failed to emit notify_enter event: {}", e);
+                                }
                             }
-                            Err(e) => {
-                                tracing::warn!("Failed to emit notify_enter event: {}", e);
-                            }
+                        } else {
+                            tracing::warn!("Failed to get tray rect");
                         }
-                    } else {
-                        tracing::warn!("Failed to get tray rect");
                     }
                 }
                 #[cfg(target_os = "windows")]
@@ -190,8 +247,10 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
                     position: _,
                     rect: _,
                 } => {
-                    if let Err(e) = tray.app_handle().emit_to("notify", "notify_leave", ()) {
-                        tracing::warn!("Failed to emit notify_leave event: {}", e);
+                    if tray.app_handle().get_webview_window("notify").is_some() {
+                        if let Err(e) = tray.app_handle().emit_to("notify", "notify_leave", ()) {
+                            tracing::warn!("Failed to emit notify_leave event: {}", e);
+                        }
                     }
                 }
                 _ => {}

@@ -114,9 +114,12 @@ vi.mock('@/hooks/useMitt.ts', () => ({ useMitt: mittMock }))
 vi.mock('@/stores/domains/user/user', () => ({ useUserStore: () => userStoreMock }))
 vi.mock('@/plugins/robot/utils/tokenEstimator', () => ({ estimateMessageTokens: () => 0 }))
 vi.mock('@/services/matrix', () => ({
-  aiService: aiServiceMock,
   conversationService: conversationServiceMock,
   modelService: modelServiceMock
+}))
+
+vi.mock('@/services/matrix/ai/AIService', () => ({
+  aiService: aiServiceMock
 }))
 vi.mock('@/router', () => ({ default: { push: routerPushMock } }))
 vi.mock('@/utils/Logger', () => ({
