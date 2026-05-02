@@ -1,5 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixEvent } from 'matrix-js-sdk'
+import { MatrixContentField } from '@/common/matrixConstants'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import matrixClientService from '../MatrixClientService'
 
@@ -36,7 +37,7 @@ class MatrixReactionService {
 
     try {
       const content = {
-        'm.relates_to': {
+        [MatrixContentField.RELATES_TO]: {
           rel_type: 'm.annotation',
           event_id: eventId,
           key: emoji
@@ -118,7 +119,7 @@ class MatrixReactionService {
     for (const event of events) {
       if (event.getType() === 'm.reaction') {
         const content = event.getContent() as ReactionContent
-        const relatesTo = content['m.relates_to']
+        const relatesTo = content[MatrixContentField.RELATES_TO]
         if (
           relatesTo?.rel_type === 'm.annotation' &&
           relatesTo.event_id === eventId &&
@@ -149,7 +150,7 @@ class MatrixReactionService {
     for (const event of events) {
       if (event.getType() === 'm.reaction') {
         const content = event.getContent() as ReactionContent
-        const relatesTo = content['m.relates_to']
+        const relatesTo = content[MatrixContentField.RELATES_TO]
         if (relatesTo?.rel_type === 'm.annotation' && relatesTo.event_id === eventId) {
           const key = relatesTo.key
           if (!key) continue
@@ -196,7 +197,7 @@ class MatrixReactionService {
     for (const event of events) {
       if (event.getType() === 'm.reaction') {
         const content = event.getContent() as ReactionContent
-        const relatesTo = content['m.relates_to']
+        const relatesTo = content[MatrixContentField.RELATES_TO]
         if (relatesTo?.rel_type === 'm.annotation' && relatesTo.event_id === eventId) {
           reactions.push(event)
         }

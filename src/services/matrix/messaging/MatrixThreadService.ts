@@ -1,5 +1,12 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { EventType, MatrixEvent, Room } from 'matrix-js-sdk'
+import {
+  MatrixContentField,
+  MatrixEventType,
+  MatrixFormat,
+  MatrixMsgType,
+  MatrixRelType
+} from '@/common/matrixConstants'
 import matrixClientService from '../MatrixClientService'
 import { matrixReceiptService } from './MatrixReceiptService'
 
@@ -182,7 +189,7 @@ class MatrixThreadService {
       avatarUrl: member?.getMxcAvatarUrl() || undefined,
       content: content.body || '',
       timestamp: event.getTs(),
-      inReplyTo: content?.['m.relates_to']?.['m.in_reply_to']?.event_id
+      inReplyTo: content?.[MatrixContentField.RELATES_TO]?.['m.in_reply_to']?.event_id
     }
   }
 
@@ -202,20 +209,20 @@ class MatrixThreadService {
       }
 
       const content: MessageContent = {
-        msgtype: 'm.text',
+        msgtype: MatrixMsgType.TEXT,
         body: initialReply.body,
-        'm.relates_to': {
-          rel_type: 'm.thread',
+        [MatrixContentField.RELATES_TO]: {
+          rel_type: MatrixRelType.THREAD,
           event_id: rootEventId
         }
       }
 
       if (initialReply.html) {
-        content.format = 'org.matrix.custom.html'
+        content.format = MatrixFormat.HTML
         content.formatted_body = initialReply.html
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content)
+      const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE as EventType, content)
       info(`[MatrixThread] 创建线程成功: ${rootEventId}`)
       return response.event_id
     } catch (err) {
@@ -236,20 +243,20 @@ class MatrixThreadService {
 
     try {
       const messageContent: MessageContent = {
-        msgtype: (content.msgtype || 'm.text') as MsgType,
+        msgtype: (content.msgtype || MatrixMsgType.TEXT) as MsgType,
         body: content.body,
-        'm.relates_to': {
-          rel_type: 'm.thread',
+        [MatrixContentField.RELATES_TO]: {
+          rel_type: MatrixRelType.THREAD,
           event_id: threadRootId
         }
       }
 
       if (content.html) {
-        messageContent.format = 'org.matrix.custom.html'
+        messageContent.format = MatrixFormat.HTML
         messageContent.formatted_body = content.html
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, messageContent)
+      const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE as EventType, messageContent)
       info(`[MatrixThread] 发送线程回复成功: ${threadRootId}`)
       return response.event_id
     } catch (err) {
@@ -264,8 +271,6 @@ class MatrixThreadService {
 
     const room = client.getRoom(roomId)
     if (!room) return null
-
-    room.findEventById(threadRootId)
 
     const replies = this.getThreadReplies(roomId, threadRootId)
     const participants = new Set<string>()
@@ -308,9 +313,9 @@ class MatrixThreadService {
 
     for (const event of events) {
       const content = event.getContent() as MessageContent
-      const relatesTo = content['m.relates_to']
+      const relatesTo = content[MatrixContentField.RELATES_TO]
 
-      if (relatesTo?.rel_type === 'm.thread' && relatesTo.event_id === threadRootId) {
+      if (relatesTo?.rel_type === MatrixRelType.THREAD && relatesTo.event_id === threadRootId) {
         replies.push(event)
       }
     }
@@ -345,7 +350,7 @@ class MatrixThreadService {
         sender: reply.getSender()!,
         content: reply.getContent(),
         timestamp: reply.getTs(),
-        inReplyTo: content?.['m.relates_to']?.['m.in_reply_to']?.event_id
+        inReplyTo: content?.[MatrixContentField.RELATES_TO]?.['m.in_reply_to']?.event_id
       })
     }
 
@@ -395,9 +400,9 @@ class MatrixThreadService {
 
     for (const event of events) {
       const content = event.getContent() as MessageContent
-      const relatesTo = content['m.relates_to']
+      const relatesTo = content[MatrixContentField.RELATES_TO]
 
-      if (relatesTo?.rel_type === 'm.thread') {
+      if (relatesTo?.rel_type === MatrixRelType.THREAD) {
         const threadRootId = relatesTo.event_id
         if (!threadRootId) continue
 
@@ -456,9 +461,9 @@ class MatrixThreadService {
 
     for (const e of events) {
       const content = e.getContent() as MessageContent
-      const relatesTo = content['m.relates_to']
+      const relatesTo = content[MatrixContentField.RELATES_TO]
 
-      if (relatesTo?.rel_type === 'm.thread' && relatesTo.event_id === eventId) {
+      if (relatesTo?.rel_type === MatrixRelType.THREAD && relatesTo.event_id === eventId) {
         return true
       }
     }
@@ -468,19 +473,19 @@ class MatrixThreadService {
 
   isInThread(event: MatrixEvent): boolean {
     const content = event.getContent() as MessageContent
-    const relatesTo = content?.['m.relates_to']
-    return relatesTo?.rel_type === 'm.thread'
+    const relatesTo = content?.[MatrixContentField.RELATES_TO]
+    return relatesTo?.rel_type === MatrixRelType.THREAD
   }
 
   isBodyInThread(body: Record<string, unknown>): boolean {
-    const relatesTo = body['m.relates_to'] as { rel_type?: string } | undefined
-    return relatesTo?.rel_type === 'm.thread'
+    const relatesTo = body[MatrixContentField.RELATES_TO] as { rel_type?: string } | undefined
+    return relatesTo?.rel_type === MatrixRelType.THREAD
   }
 
   getThreadRootId(event: MatrixEvent): string | null {
     const content = event.getContent() as MessageContent
-    const relatesTo = content?.['m.relates_to']
-    if (relatesTo?.rel_type === 'm.thread') {
+    const relatesTo = content?.[MatrixContentField.RELATES_TO]
+    if (relatesTo?.rel_type === MatrixRelType.THREAD) {
       return relatesTo.event_id || null
     }
     return null
@@ -531,8 +536,8 @@ class MatrixThreadService {
 
     try {
       await client.sendEvent(roomId, 'm.thread_mute' as EventType, {
-        'm.relates_to': {
-          rel_type: 'm.thread',
+        [MatrixContentField.RELATES_TO]: {
+          rel_type: MatrixRelType.THREAD,
           event_id: threadRootId
         },
         mute: mute
@@ -552,8 +557,8 @@ class MatrixThreadService {
 
     try {
       await client.sendEvent(roomId, 'm.thread_freeze' as EventType, {
-        'm.relates_to': {
-          rel_type: 'm.thread',
+        [MatrixContentField.RELATES_TO]: {
+          rel_type: MatrixRelType.THREAD,
           event_id: threadRootId
         }
       })
@@ -572,8 +577,8 @@ class MatrixThreadService {
 
     try {
       await client.sendEvent(roomId, 'm.thread_unfreeze' as EventType, {
-        'm.relates_to': {
-          rel_type: 'm.thread',
+        [MatrixContentField.RELATES_TO]: {
+          rel_type: MatrixRelType.THREAD,
           event_id: threadRootId
         }
       })
@@ -616,9 +621,13 @@ class MatrixThreadService {
 
       for (const event of events) {
         const content = event.getContent() as MessageContent
-        const relatesTo = content['m.relates_to']
+        const relatesTo = content[MatrixContentField.RELATES_TO]
 
-        if (relatesTo?.rel_type === 'm.thread' && relatesTo.event_id === threadRootId && content.mute === true) {
+        if (
+          relatesTo?.rel_type === MatrixRelType.THREAD &&
+          relatesTo.event_id === threadRootId &&
+          content.mute === true
+        ) {
           return true
         }
       }
@@ -638,10 +647,10 @@ class MatrixThreadService {
 
       for (const event of events) {
         const content = event.getContent() as MessageContent
-        const relatesTo = content['m.relates_to']
+        const relatesTo = content[MatrixContentField.RELATES_TO]
 
         if (
-          relatesTo?.rel_type === 'm.thread' &&
+          relatesTo?.rel_type === MatrixRelType.THREAD &&
           relatesTo.event_id === threadRootId &&
           (content.frozen !== undefined || content.freeze !== undefined)
         ) {

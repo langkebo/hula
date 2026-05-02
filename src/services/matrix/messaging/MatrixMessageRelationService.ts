@@ -1,5 +1,12 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixEvent } from 'matrix-js-sdk'
+import {
+  MatrixContentField,
+  MatrixEventType,
+  MatrixFormat,
+  MatrixMsgType,
+  MatrixRelType
+} from '@/common/matrixConstants'
 import matrixClientService from '../MatrixClientService'
 
 type RelatesTo = {
@@ -34,7 +41,7 @@ export interface ReplyContent {
   body: string
   format?: string
   formatted_body?: string
-  'm.relates_to': {
+  [MatrixContentField.RELATES_TO]: {
     'm.in_reply_to': {
       event_id: string
     }
@@ -99,13 +106,13 @@ class MatrixMessageRelationService {
 
       const content: Record<string, unknown> = {
         ...(originalEvent.getContent() as RelationContent),
-        msgtype: newContent.msgtype || 'm.text',
+        msgtype: newContent.msgtype || MatrixMsgType.TEXT,
         body: `* ${newContent.body}`,
         'm.new_content': {
-          msgtype: newContent.msgtype || 'm.text',
+          msgtype: newContent.msgtype || MatrixMsgType.TEXT,
           body: newContent.body
         },
-        'm.relates_to': {
+        [MatrixContentField.RELATES_TO]: {
           rel_type: 'm.replace',
           event_id: originalEventId
         }
@@ -113,13 +120,13 @@ class MatrixMessageRelationService {
 
       if (newContent.html) {
         const newContentObj = content['m.new_content'] as RelationContent
-        newContentObj.format = 'org.matrix.custom.html'
+        newContentObj.format = MatrixFormat.HTML
         newContentObj.formatted_body = newContent.html
-        content.format = 'org.matrix.custom.html'
+        content.format = MatrixFormat.HTML
         content.formatted_body = `* ${newContent.html}`
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message', content)
+      const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
       info(`[MessageRelation] 编辑消息成功: ${originalEventId}`)
       return response.event_id
     } catch (err) {
@@ -160,13 +167,13 @@ class MatrixMessageRelationService {
           ...originalContent,
           body: newBody
         },
-        'm.relates_to': {
+        [MatrixContentField.RELATES_TO]: {
           rel_type: 'm.replace',
           event_id: originalEventId
         }
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message', content)
+      const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
       info(`[MessageRelation] 编辑媒体消息成功: ${originalEventId}`)
       return response.event_id
     } catch (err) {
@@ -188,7 +195,7 @@ class MatrixMessageRelationService {
 
     for (const event of events) {
       const content = event.getContent() as RelationContent
-      const relatesTo = content['m.relates_to']
+      const relatesTo = content[MatrixContentField.RELATES_TO]
 
       if (relatesTo?.rel_type === 'm.replace' && relatesTo.event_id === eventId) {
         const newContent = content['m.new_content']
@@ -220,7 +227,7 @@ class MatrixMessageRelationService {
 
     for (const event of events) {
       const content = event.getContent() as RelationContent
-      const relatesTo = content['m.relates_to']
+      const relatesTo = content[MatrixContentField.RELATES_TO]
 
       if (relatesTo?.rel_type === 'm.replace' && relatesTo.event_id === eventId) {
         if (event.getTs() > latestTimestamp) {
@@ -255,9 +262,9 @@ class MatrixMessageRelationService {
       }
 
       const messageContent: Record<string, unknown> = {
-        msgtype: content.msgtype || 'm.text',
+        msgtype: content.msgtype || MatrixMsgType.TEXT,
         body: content.body,
-        'm.relates_to': {
+        [MatrixContentField.RELATES_TO]: {
           'm.in_reply_to': {
             event_id: replyToEventId
           }
@@ -265,11 +272,11 @@ class MatrixMessageRelationService {
       }
 
       if (content.html) {
-        messageContent.format = 'org.matrix.custom.html'
+        messageContent.format = MatrixFormat.HTML
         messageContent.formatted_body = content.html
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message', messageContent)
+      const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, messageContent)
       info(`[MessageRelation] 回复消息成功: ${replyToEventId}`)
       return response.event_id
     } catch (err) {
@@ -290,10 +297,10 @@ class MatrixMessageRelationService {
 
     try {
       const messageContent: Record<string, unknown> = {
-        msgtype: content.msgtype || 'm.text',
+        msgtype: content.msgtype || MatrixMsgType.TEXT,
         body: content.body,
-        'm.relates_to': {
-          rel_type: 'm.thread',
+        [MatrixContentField.RELATES_TO]: {
+          rel_type: MatrixRelType.THREAD,
           event_id: threadRootId,
           'm.in_reply_to': {
             event_id: threadRootId
@@ -302,11 +309,11 @@ class MatrixMessageRelationService {
       }
 
       if (content.html) {
-        messageContent.format = 'org.matrix.custom.html'
+        messageContent.format = MatrixFormat.HTML
         messageContent.formatted_body = content.html
       }
 
-      const response = await client.sendEvent(roomId, 'm.room.message', messageContent)
+      const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, messageContent)
       info(`[MessageRelation] 线程回复成功: ${threadRootId}`)
       return response.event_id
     } catch (err) {
@@ -338,7 +345,7 @@ class MatrixMessageRelationService {
         timestamp: event.getTs()
       })
 
-      const relatesTo = content?.['m.relates_to']
+      const relatesTo = content?.[MatrixContentField.RELATES_TO]
       currentEventId = relatesTo?.['m.in_reply_to']?.event_id
       depth++
     }
@@ -359,9 +366,9 @@ class MatrixMessageRelationService {
 
     for (const event of events) {
       const content = event.getContent() as RelationContent
-      const relatesTo = content['m.relates_to']
+      const relatesTo = content[MatrixContentField.RELATES_TO]
 
-      if (relatesTo?.rel_type === 'm.thread' && relatesTo.event_id === threadRootId) {
+      if (relatesTo?.rel_type === MatrixRelType.THREAD && relatesTo.event_id === threadRootId) {
         replies.push(event)
       }
     }
@@ -418,7 +425,7 @@ class MatrixMessageRelationService {
 
     for (const event of events) {
       const content = event.getContent() as RelationContent
-      const relatesTo = content['m.relates_to']
+      const relatesTo = content[MatrixContentField.RELATES_TO]
 
       if (relatesTo?.['m.in_reply_to']?.event_id === eventId) {
         replies.push(event)
@@ -443,13 +450,13 @@ class MatrixMessageRelationService {
 
   getReplyToEventId(event: MatrixEvent): string | null {
     const content = event.getContent() as { 'm.relates_to'?: { 'm.in_reply_to'?: { event_id?: string } } }
-    return content?.['m.relates_to']?.['m.in_reply_to']?.event_id || null
+    return content?.[MatrixContentField.RELATES_TO]?.['m.in_reply_to']?.event_id || null
   }
 
   getThreadRootId(event: MatrixEvent): string | null {
     const content = event.getContent() as { 'm.relates_to'?: { rel_type?: string; event_id?: string } }
-    const relatesTo = content?.['m.relates_to']
-    if (relatesTo?.rel_type === 'm.thread') {
+    const relatesTo = content?.[MatrixContentField.RELATES_TO]
+    if (relatesTo?.rel_type === MatrixRelType.THREAD) {
       return relatesTo.event_id || null
     }
     return null
