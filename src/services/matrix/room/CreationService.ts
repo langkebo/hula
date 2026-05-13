@@ -14,6 +14,7 @@ export interface CreateGroupRoomOptions {
   alias?: string
   isEncrypted?: boolean
   historyVisibility?: 'shared' | 'invited' | 'joined' | 'world_readable'
+  joinRule?: 'invite' | 'knock' | 'public' | 'restricted'
 }
 
 /**
@@ -78,6 +79,14 @@ export class MatrixRoomCreationService {
         type: 'm.room.history_visibility',
         state_key: '',
         content: { history_visibility: options.historyVisibility }
+      })
+    }
+
+    if (options.joinRule && options.joinRule !== 'invite') {
+      createOpts.initial_state!.push({
+        type: 'm.room.join_rules',
+        state_key: '',
+        content: { join_rule: options.joinRule }
       })
     }
 

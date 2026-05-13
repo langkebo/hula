@@ -73,8 +73,7 @@ const { mockRoomService, mockEventService, mockRoomSummaryService, mockMatrixCli
       fromUser: {
         uid: event.getSender?.() ?? '',
         username: event.getSender?.() ?? '',
-        avatar: '',
-        locPlace: ''
+        avatar: ''
       },
       message: {
         id: event.getId?.() ?? '',
@@ -119,6 +118,14 @@ vi.mock('@/services/matrix/room/MatrixRoomSummaryService', () => ({
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   default: mockMatrixClientService
+}))
+
+vi.mock('@/services/matrix/room/TagsService', () => ({
+  matrixRoomTagsService: {
+    getTags: vi.fn(),
+    setTag: vi.fn(),
+    removeTag: vi.fn()
+  }
 }))
 
 vi.mock('@/stores/domains/chat/matrix', () => ({
@@ -642,7 +649,7 @@ describe('RoomStore', () => {
     it('should load message timeline and filter unsupported events', async () => {
       mockEventService.getRoomMessages.mockResolvedValue([
         {
-          fromUser: { uid: '@user:server', username: '@user:server', avatar: '', locPlace: '' },
+          fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
           message: {
             id: '$m1',
             roomId: '!room:id',
@@ -655,7 +662,7 @@ describe('RoomStore', () => {
           sendTime: 100
         },
         {
-          fromUser: { uid: '@user:server', username: '@user:server', avatar: '', locPlace: '' },
+          fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
           message: {
             id: '$m2',
             roomId: '!room:id',
@@ -681,7 +688,7 @@ describe('RoomStore', () => {
       mockEventService.getMoreRoomMessages.mockResolvedValue({
         messages: [
           {
-            fromUser: { uid: '@user:server', username: '@user:server', avatar: '', locPlace: '' },
+            fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
             message: {
               id: '$older',
               roomId: '!room:id',
@@ -701,7 +708,7 @@ describe('RoomStore', () => {
       store.setCurrentRoom('!room:id')
       store.messages.set('!room:id', [
         {
-          fromUser: { uid: '@user:server', username: '@user:server', avatar: '', locPlace: '' },
+          fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
           message: {
             id: '$existing',
             roomId: '!room:id',
@@ -753,7 +760,7 @@ describe('RoomStore', () => {
       const store = useRoomStore()
       store.messages.set('!room:id', [
         {
-          fromUser: { uid: '@user:server', username: '@user:server', avatar: '', locPlace: '' },
+          fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
           message: {
             id: '$event',
             roomId: '!room:id',
@@ -913,7 +920,7 @@ describe('RoomStore', () => {
           members: []
         },
         message: {
-          fromUser: { uid: '@user:server', username: '@user:server', avatar: '', locPlace: '' },
+          fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
           message: {
             id: '$new',
             roomId: '!room:id',
@@ -933,6 +940,75 @@ describe('RoomStore', () => {
       expect(store.rooms.get('!room:id')).toMatchObject({
         name: 'After'
       })
+    })
+  })
+
+  describe('tagsByRoom slice', () => {
+    let tagsServiceMock: typeof import('@/services/matrix/room/TagsService').matrixRoomTagsService
+
+    beforeEach(async () => {
+      tagsServiceMock = (await import('@/services/matrix/room/TagsService')).matrixRoomTagsService
+      vi.mocked(tagsServiceMock.getTags).mockReset()
+      vi.mocked(tagsServiceMock.setTag).mockReset()
+      vi.mocked(tagsServiceMock.removeTag).mockReset()
+    })
+
+    it('starts with empty tagsByRoom map', () => {
+      const store = useRoomStore()
+      expect(store.tagsByRoom).toEqual({})
+      expect(store.getTagsForRoom('!a:s')).toEqual({})
+      expect(store.hasTag('!a:s', 'm.favourite')).toBe(false)
+    })
+
+    it('refreshRoomTags pulls and stores tags', async () => {
+      vi.mocked(tagsServiceMock.getTags).mockResolvedValueOnce({ 'm.favourite': { order: 0 } })
+      const store = useRoomStore()
+
+      const tags = await store.refreshRoomTags('!r:s')
+
+      expect(tags).toEqual({ 'm.favourite': { order: 0 } })
+      expect(store.hasTag('!r:s', 'm.favourite')).toBe(true)
+    })
+
+    it('addRoomTag updates optimistically and persists', async () => {
+      vi.mocked(tagsServiceMock.setTag).mockResolvedValueOnce(undefined)
+      const store = useRoomStore()
+
+      await store.addRoomTag('!r:s', 'm.favourite', 0)
+
+      expect(store.getTagsForRoom('!r:s')).toEqual({ 'm.favourite': { order: 0 } })
+      expect(tagsServiceMock.setTag).toHaveBeenCalledWith('!r:s', 'm.favourite', 0)
+    })
+
+    it('addRoomTag rolls back on failure', async () => {
+      vi.mocked(tagsServiceMock.setTag).mockRejectedValueOnce(new Error('boom'))
+      const store = useRoomStore()
+
+      await expect(store.addRoomTag('!r:s', 'm.favourite')).rejects.toThrow('boom')
+      expect(store.hasTag('!r:s', 'm.favourite')).toBe(false)
+    })
+
+    it('removeRoomTag deletes only the requested tag', async () => {
+      vi.mocked(tagsServiceMock.setTag).mockResolvedValue(undefined)
+      vi.mocked(tagsServiceMock.removeTag).mockResolvedValueOnce(undefined)
+      const store = useRoomStore()
+
+      await store.addRoomTag('!r:s', 'm.favourite')
+      await store.addRoomTag('!r:s', 'm.lowpriority')
+      await store.removeRoomTag('!r:s', 'm.favourite')
+
+      expect(store.hasTag('!r:s', 'm.favourite')).toBe(false)
+      expect(store.hasTag('!r:s', 'm.lowpriority')).toBe(true)
+    })
+
+    it('removeRoomTag rolls back on failure', async () => {
+      vi.mocked(tagsServiceMock.setTag).mockResolvedValueOnce(undefined)
+      vi.mocked(tagsServiceMock.removeTag).mockRejectedValueOnce(new Error('boom'))
+      const store = useRoomStore()
+      await store.addRoomTag('!r:s', 'm.favourite')
+
+      await expect(store.removeRoomTag('!r:s', 'm.favourite')).rejects.toThrow('boom')
+      expect(store.hasTag('!r:s', 'm.favourite')).toBe(true)
     })
   })
 })

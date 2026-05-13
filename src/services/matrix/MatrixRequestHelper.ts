@@ -5,6 +5,7 @@ export interface RequestOptions {
   throwOnError?: boolean
   logPrefix?: string
   defaultValue?: unknown
+  quiet?: boolean
 }
 
 export class MatrixRequestHelper {
@@ -13,10 +14,10 @@ export class MatrixRequestHelper {
     queryParams?: Record<string, string>,
     options: RequestOptions = {}
   ): Promise<T | null> {
-    const { logPrefix = 'MatrixRequest', defaultValue = null } = options
+    const { logPrefix = 'MatrixRequest', defaultValue = null, quiet = false } = options
     const client = matrixClientService.getClient()
     if (!client) {
-      logError(`[${logPrefix}] 客户端未初始化`)
+      if (!quiet) logError(`[${logPrefix}] 客户端未初始化`)
       return defaultValue as T | null
     }
 
@@ -24,7 +25,7 @@ export class MatrixRequestHelper {
       const result = await client.http.authedRequest('GET', path, queryParams)
       return result as T
     } catch (err) {
-      logError(`[${logPrefix}] GET ${path} 失败: ${err}`)
+      if (!quiet) logError(`[${logPrefix}] GET ${path} 失败: ${err}`)
       if (options.throwOnError) throw err
       return defaultValue as T | null
     }
@@ -35,19 +36,19 @@ export class MatrixRequestHelper {
     body?: Record<string, unknown>,
     options: RequestOptions = {}
   ): Promise<T | null> {
-    const { logPrefix = 'MatrixRequest', defaultValue = null } = options
+    const { logPrefix = 'MatrixRequest', defaultValue = null, quiet = false } = options
     const client = matrixClientService.getClient()
     if (!client) {
-      logError(`[${logPrefix}] 客户端未初始化`)
+      if (!quiet) logError(`[${logPrefix}] 客户端未初始化`)
       return defaultValue as T | null
     }
 
     try {
       const result = await client.http.authedRequest('POST', path, undefined, body)
-      info(`[${logPrefix}] POST ${path} 成功`)
+      if (!quiet) info(`[${logPrefix}] POST ${path} 成功`)
       return result as T
     } catch (err) {
-      logError(`[${logPrefix}] POST ${path} 失败: ${err}`)
+      if (!quiet) logError(`[${logPrefix}] POST ${path} 失败: ${err}`)
       if (options.throwOnError) throw err
       return defaultValue as T | null
     }
@@ -58,38 +59,38 @@ export class MatrixRequestHelper {
     body?: Record<string, unknown>,
     options: RequestOptions = {}
   ): Promise<T | null> {
-    const { logPrefix = 'MatrixRequest', defaultValue = null } = options
+    const { logPrefix = 'MatrixRequest', defaultValue = null, quiet = false } = options
     const client = matrixClientService.getClient()
     if (!client) {
-      logError(`[${logPrefix}] 客户端未初始化`)
+      if (!quiet) logError(`[${logPrefix}] 客户端未初始化`)
       return defaultValue as T | null
     }
 
     try {
       const result = await client.http.authedRequest('PUT', path, undefined, body)
-      info(`[${logPrefix}] PUT ${path} 成功`)
+      if (!quiet) info(`[${logPrefix}] PUT ${path} 成功`)
       return result as T
     } catch (err) {
-      logError(`[${logPrefix}] PUT ${path} 失败: ${err}`)
+      if (!quiet) logError(`[${logPrefix}] PUT ${path} 失败: ${err}`)
       if (options.throwOnError) throw err
       return defaultValue as T | null
     }
   }
 
   static async safeDelete<_T = void>(path: string, options: RequestOptions = {}): Promise<boolean> {
-    const { logPrefix = 'MatrixRequest' } = options
+    const { logPrefix = 'MatrixRequest', quiet = false } = options
     const client = matrixClientService.getClient()
     if (!client) {
-      logError(`[${logPrefix}] 客户端未初始化`)
+      if (!quiet) logError(`[${logPrefix}] 客户端未初始化`)
       return false
     }
 
     try {
       await client.http.authedRequest('DELETE', path)
-      info(`[${logPrefix}] DELETE ${path} 成功`)
+      if (!quiet) info(`[${logPrefix}] DELETE ${path} 成功`)
       return true
     } catch (err) {
-      logError(`[${logPrefix}] DELETE ${path} 失败: ${err}`)
+      if (!quiet) logError(`[${logPrefix}] DELETE ${path} 失败: ${err}`)
       if (options.throwOnError) throw err
       return false
     }

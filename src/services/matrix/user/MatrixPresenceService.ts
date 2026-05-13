@@ -159,7 +159,7 @@ class MatrixPresenceService {
       }
 
       if (presenceManager) {
-        await presenceManager.setPresence(userId, presence, statusMsg)
+        await presenceManager.setPresence(presence, statusMsg ?? '')
         info(`[Presence] 设置在线状态成功: ${presence}`)
       } else {
         await client.http.authedRequest(
@@ -191,7 +191,6 @@ class MatrixPresenceService {
 
       if (presenceManager) {
         const presence = await presenceManager.getPresence(userId)
-        info(`[Presence] 获取在线状态成功: ${userId}`)
         return {
           user_id: userId,
           presence: (presence.presence || 'offline') as PresenceState,
@@ -204,13 +203,23 @@ class MatrixPresenceService {
           'GET',
           `/_matrix/client/v3/presence/${encodeURIComponent(userId)}/status`
         )) as Omit<PresenceInfo, 'user_id'>
-        info(`[Presence] 获取在线状态成功: ${userId}`)
         return {
           user_id: userId,
           ...response
         }
       }
     } catch (err) {
+      const isForbidden = this.isForbiddenError(err)
+      if (isForbidden) {
+        info(`[Presence] 无权查看用户 ${userId} 在线状态，降级为离线`)
+        return {
+          user_id: userId,
+          presence: 'offline' as PresenceState,
+          status_msg: null,
+          last_active_ago: undefined,
+          currently_active: undefined
+        }
+      }
       error(`[Presence] 获取在线状态失败: ${userId}, ${formatMatrixError(err)}`)
       throw err
     }
@@ -240,20 +249,32 @@ class MatrixPresenceService {
    *
    * @param userIds 要订阅的用户 ID 列表
    */
-  async subscribeToPresence(userIds: string[]): Promise<PresenceListResponse> {
+  async subscribeToPresence(userIds: string[], unsubscribeUserIds?: string[]): Promise<PresenceListResponse> {
     try {
       const client = await this.getClient()
       const presenceManager = client.getPresenceManager() as PresenceManager | null
 
+      const payload: Record<string, string[]> = { subscribe: userIds }
+      if (unsubscribeUserIds && unsubscribeUserIds.length > 0) {
+        payload.unsubscribe = unsubscribeUserIds
+      }
+
       if (presenceManager) {
         const result = await presenceManager.subscribeToPresence(userIds)
-        info(`[Presence] 订阅在线状态成功: ${userIds.length} 个用户`)
+        info(
+          `[Presence] 订阅在线状态成功: ${userIds.length} 个用户${unsubscribeUserIds ? `, 取消订阅 ${unsubscribeUserIds.length} 个` : ''}`
+        )
         return result as PresenceListResponse
       } else {
-        const response = (await client.http.authedRequest('POST', '/_matrix/client/v3/presence/list', undefined, {
-          subscribe: userIds
-        })) as PresenceListResponse
-        info(`[Presence] 订阅在线状态成功: ${userIds.length} 个用户`)
+        const response = (await client.http.authedRequest(
+          'POST',
+          '/_matrix/client/v3/presence/list',
+          undefined,
+          payload
+        )) as PresenceListResponse
+        info(
+          `[Presence] 订阅在线状态成功: ${userIds.length} 个用户${unsubscribeUserIds ? `, 取消订阅 ${unsubscribeUserIds.length} 个` : ''}`
+        )
         return response
       }
     } catch (err) {
@@ -319,7 +340,8 @@ class MatrixPresenceService {
   }
 
   /**
-   * 批量获取用户在线状态（并行）
+   * 批量获取用户在线状态
+   * 优先使用 presence/list 批量接口，失败时降级为逐个获取
    *
    * @param userIds 用户 ID 列表
    */
@@ -327,23 +349,40 @@ class MatrixPresenceService {
     if (userIds.length === 0) return []
 
     try {
-      // 并行获取所有用户状态
-      const promises = userIds.map((userId) =>
-        this.getPresence(userId).catch((err) => {
-          error(`[Presence] 获取用户 ${userId} 在线状态失败: ${formatMatrixError(err)}`)
-          return null
-        })
-      )
-
-      const results = await Promise.all(promises)
-      const presences = results.filter((p): p is PresenceInfo => p !== null)
-
-      info(`[Presence] 批量获取在线状态成功: ${presences.length}/${userIds.length}`)
-      return presences
+      const batchResult = await this.getBatchPresenceViaList(userIds)
+      if (batchResult.length > 0) {
+        info(`[Presence] 批量获取在线状态成功(批量接口): ${batchResult.length}/${userIds.length}`)
+        return batchResult
+      }
     } catch (err) {
-      error(`[Presence] 批量获取在线状态失败: ${formatMatrixError(err)}`)
-      throw err
+      info(`[Presence] 批量接口获取失败，降级为逐个获取: ${formatMatrixError(err)}`)
     }
+
+    return this.getBatchPresenceIndividually(userIds)
+  }
+
+  /**
+   * 通过 presence/list 批量接口获取在线状态
+   */
+  private async getBatchPresenceViaList(userIds: string[]): Promise<PresenceInfo[]> {
+    const subscribeResult = await this.subscribeToPresence(userIds)
+    if (subscribeResult?.presences?.length) {
+      return subscribeResult.presences
+    }
+    return []
+  }
+
+  /**
+   * 逐个获取用户在线状态（降级方案）
+   */
+  private async getBatchPresenceIndividually(userIds: string[]): Promise<PresenceInfo[]> {
+    const promises = userIds.map((userId) => this.getPresence(userId).catch(() => null))
+
+    const results = await Promise.all(promises)
+    const presences = results.filter((p): p is PresenceInfo => p !== null)
+
+    info(`[Presence] 批量获取在线状态成功(逐个获取): ${presences.length}/${userIds.length}`)
+    return presences
   }
 
   /**
@@ -364,6 +403,22 @@ class MatrixPresenceService {
         this.clientPresenceListener = null
       }
     }
+  }
+
+  /**
+   * 判断是否为 403/M_FORBIDDEN 错误
+   */
+  private isForbiddenError(err: unknown): boolean {
+    if (!err) return false
+    if (typeof err === 'object') {
+      const e = err as Record<string, unknown>
+      if (e.httpStatus === 403 || e.errcode === 'M_FORBIDDEN') return true
+      if (e.cause && typeof e.cause === 'object') {
+        const cause = e.cause as Record<string, unknown>
+        if (cause.httpStatus === 403 || cause.errcode === 'M_FORBIDDEN') return true
+      }
+    }
+    return false
   }
 }
 

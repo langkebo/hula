@@ -116,7 +116,7 @@ export const useGeolocation = () => {
   }
 
   return {
-    state: state.value,
+    state,
     isSupported,
     hasPermission,
     isLoading,

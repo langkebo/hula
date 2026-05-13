@@ -1,3 +1,4 @@
+import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { createLogger } from './Logger'
 
 const logger = createLogger('MatrixDiagnostics')
@@ -29,8 +30,9 @@ export class MatrixDiagnostics {
 
   private async checkVersions(): Promise<DiagnosticResult> {
     try {
-      const response = await fetch(`${this.homeserverUrl}/_matrix/client/versions`)
-      const data = await response.json()
+      const data = matrixWorkerHost.isStarted
+        ? await matrixWorkerHost.getServerVersions(this.homeserverUrl)
+        : await fetch(`${this.homeserverUrl}/_matrix/client/versions`).then((r) => r.json())
 
       if (data.versions && data.versions.length > 0) {
         return {
@@ -57,8 +59,9 @@ export class MatrixDiagnostics {
 
   private async checkLoginFlows(): Promise<DiagnosticResult> {
     try {
-      const response = await fetch(`${this.homeserverUrl}/_matrix/client/v3/login`)
-      const data = await response.json()
+      const data = matrixWorkerHost.isStarted
+        ? await matrixWorkerHost.getLoginFlows(this.homeserverUrl)
+        : await fetch(`${this.homeserverUrl}/_matrix/client/v3/login`).then((r) => r.json())
 
       if (data.flows && data.flows.length > 0) {
         const flowTypes = data.flows.map((f: { type: string }) => f.type)
@@ -91,28 +94,33 @@ export class MatrixDiagnostics {
       '/_matrix/client/unstable/org.matrix.simplified_msc3575/sync'
     ]
 
-    const results = []
+    let results: Array<{ endpoint: string; status: number | 'error'; available: boolean; error?: string }>
 
-    for (const endpoint of endpoints) {
-      try {
-        const response = await fetch(`${this.homeserverUrl}${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
-        })
+    if (matrixWorkerHost.isStarted) {
+      results = await matrixWorkerHost.probeSlidingSyncEndpoints(this.homeserverUrl, endpoints)
+    } else {
+      results = []
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(`${this.homeserverUrl}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          })
 
-        results.push({
-          endpoint,
-          status: response.status,
-          available: response.status !== 404
-        })
-      } catch (error) {
-        results.push({
-          endpoint,
-          status: 'error',
-          available: false,
-          error: String(error)
-        })
+          results.push({
+            endpoint,
+            status: response.status,
+            available: response.status !== 404
+          })
+        } catch (error) {
+          results.push({
+            endpoint,
+            status: 'error',
+            available: false,
+            error: String(error)
+          })
+        }
       }
     }
 
@@ -137,15 +145,18 @@ export class MatrixDiagnostics {
 
   private async checkCORS(): Promise<DiagnosticResult> {
     try {
-      const response = await fetch(`${this.homeserverUrl}/_matrix/client/versions`, {
-        method: 'OPTIONS'
-      })
-
-      const corsHeaders = {
-        'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
-        'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
-        'access-control-allow-headers': response.headers.get('access-control-allow-headers')
-      }
+      const corsHeaders = matrixWorkerHost.isStarted
+        ? await matrixWorkerHost.probeCors(this.homeserverUrl)
+        : await (async () => {
+            const response = await fetch(`${this.homeserverUrl}/_matrix/client/versions`, {
+              method: 'OPTIONS'
+            })
+            return {
+              'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+              'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
+              'access-control-allow-headers': response.headers.get('access-control-allow-headers')
+            }
+          })()
 
       if (corsHeaders['access-control-allow-origin']) {
         return {

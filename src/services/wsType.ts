@@ -81,7 +81,6 @@ export type OnStatusChangeType = {
   uid: string
   type: number
   roomId: string
-  onlineNum: number
   lastOptTime: number
 }
 

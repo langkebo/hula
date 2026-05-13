@@ -37,7 +37,8 @@
       "mjolnir": "Moderation",
       "help_about": "Help & About",
       "friends": "Friends",
-      "burn_after_read": "Burn After Read"
+      "burn_after_read": "Burn After Read",
+      "ai_connection": "AI Connection"
     },
     "search_terms": {
       "account": ["account", "profile", "display-name", "user", "personal"],
@@ -81,7 +82,8 @@
       "mjolnir": ["moderation", "block", "ban", "shield"],
       "help_about": ["help", "about", "updates", "diagnostics", "support", "version"],
       "friends": ["friends", "contacts", "remark", "requests", "groups"],
-      "burn_after_read": ["burn-after-read", "ephemeral", "burn", "timer"]
+      "burn_after_read": ["burn-after-read", "ephemeral", "burn", "timer"],
+      "ai_connection": ["AI", "connection", "MCP", "tools", "openai", "assistant"]
     }
   },
   "footer": {
@@ -1306,5 +1308,33 @@
     "delete_success": "Deleted successfully",
     "delete_failed": "Failed to delete",
     "phone_verify_pending": "Phone verification is under development"
+  },
+  "ai_connection": {
+    "title": "AI Connection Management",
+    "description": "Manage AI service connections and MCP tools. Connection settings sync across devices.",
+    "empty": "No AI connections",
+    "no_tools": "No MCP tools available",
+    "mcp_tools_title": "MCP Tools",
+    "actions": {
+      "create": "Add Connection",
+      "delete": "Delete"
+    },
+    "create_dialog": {
+      "title": "Add AI Connection",
+      "name_label": "Connection Name",
+      "name_placeholder": "e.g. My OpenAI",
+      "name_required": "Please enter a connection name",
+      "type_label": "Connection Type",
+      "type_required": "Please select a connection type",
+      "config_label": "Connection Config",
+      "config_placeholder": "Enter connection config in JSON format",
+      "config_invalid": "Invalid config format, please enter valid JSON"
+    },
+    "messages": {
+      "create_success": "Connection created successfully",
+      "create_failed": "Failed to create connection",
+      "delete_success": "Connection deleted",
+      "delete_failed": "Failed to delete connection"
+    }
   }
 }

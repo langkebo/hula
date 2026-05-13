@@ -1,5 +1,6 @@
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import { matrixClientService } from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 export interface OidcDiscoveryDocument {
   issuer: string
@@ -30,6 +31,7 @@ export interface OidcAuthorizationUrlParams {
   state?: string
   codeChallenge?: string
   codeChallengeMethod?: string
+  clientId?: string
 }
 
 export interface OidcTokenResponse {
@@ -40,7 +42,6 @@ export interface OidcTokenResponse {
   id_token?: string
 }
 
-const OIDC_DISCOVERY_PATH = '/.well-known/openid-configuration'
 const DEFAULT_OIDC_SCOPES = ['openid', 'profile', 'email']
 const OIDC_HOMESERVER_STORAGE_KEY = 'oidc_homeserver_url'
 
@@ -53,7 +54,7 @@ class MatrixOidcService {
       info(`[MatrixOidcService] Discovering OIDC for ${homeserverUrl}`)
       this.setHomeserverUrl(homeserverUrl)
 
-      const url = `${homeserverUrl}${OIDC_DISCOVERY_PATH}`
+      const url = `${homeserverUrl}${MATRIX_PATHS.WELL_KNOWN.OIDC_DISCOVERY}`
 
       const response = await fetch(url)
       if (!response.ok) {
@@ -90,8 +91,10 @@ class MatrixOidcService {
       const codeChallenge =
         params.codeChallenge || (await this.generateCodeChallenge(params.codeChallengeMethod || 'S256'))
 
+      const clientId = params.clientId || this.resolveClientId()
+
       const url = new URL(this.discovery.authorization_endpoint)
-      url.searchParams.set('client_id', 'matrix-client')
+      url.searchParams.set('client_id', clientId)
       url.searchParams.set('response_type', 'code')
       url.searchParams.set('scope', DEFAULT_OIDC_SCOPES.join(' '))
       url.searchParams.set('redirect_uri', params.redirectUri)
@@ -102,7 +105,7 @@ class MatrixOidcService {
       sessionStorage.setItem('oidc_state', state)
       sessionStorage.setItem('oidc_code_verifier', await this.getCodeVerifier())
 
-      info(`[MatrixOidcService] Generated authorization URL`)
+      info(`[MatrixOidcService] Generated authorization URL with client_id: ${clientId}`)
       return url.toString()
     } catch (err) {
       logError(`[MatrixOidcService] Error generating auth URL: ${err}`)
@@ -165,6 +168,15 @@ class MatrixOidcService {
     }
   }
 
+  private getClient() {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      info('[MatrixOidcService] Matrix client not initialized, service unavailable.')
+      return null
+    }
+    return client
+  }
+
   async getUserInfo(): Promise<OidcUserInfo | null> {
     if (!this.discovery) {
       logError('[MatrixOidcService] OIDC not discovered')
@@ -172,11 +184,8 @@ class MatrixOidcService {
     }
 
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        logError('[MatrixOidcService] Matrix client not initialized')
-        return null
-      }
+      const client = this.getClient()
+      if (!client) return null
 
       const userInfo = await client.oidcUserInfo()
       return userInfo as unknown as OidcUserInfo
@@ -187,26 +196,11 @@ class MatrixOidcService {
   }
 
   async logout(): Promise<boolean> {
-    const homeserverUrl = this.resolveHomeserverUrl()
-    if (!homeserverUrl) {
-      logError('[MatrixOidcService] Missing homeserver URL for OIDC logout')
-      return false
-    }
-
     try {
       info(`[MatrixOidcService] Logging out via OIDC`)
 
-      const response = await fetch(`${homeserverUrl}/_matrix/client/v3/oidc/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        logError(`[MatrixOidcService] OIDC logout failed: ${response.status}`)
-        return false
-      }
+      const client = await matrixClientService.waitForClientReady()
+      await client.http.authedRequest('POST', '/_matrix/client/v3/oidc/logout')
 
       info(`[MatrixOidcService] OIDC logout successful`)
       return true
@@ -290,6 +284,10 @@ class MatrixOidcService {
       logError(`[MatrixOidcService] Error exchanging OIDC for Matrix token: ${err}`)
       return null
     }
+  }
+
+  private resolveClientId(): string {
+    return 'matrix-client'
   }
 
   private setHomeserverUrl(homeserverUrl: string): void {

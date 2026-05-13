@@ -257,6 +257,15 @@ class MatrixAIService {
     }
   }
 
+  private getClient() {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      info('[MatrixAI] Matrix client not initialized, service unavailable.')
+      return null
+    }
+    return client
+  }
+
   /**
    * 发送 AI 消息（流式）
    *
@@ -274,7 +283,7 @@ class MatrixAIService {
     useContext?: boolean,
     reasoningEnabled?: boolean
   ): Promise<string> {
-    const client = matrixClientService.getClient()
+    const client = this.getClient()
     if (!client) {
       throw new Error('Matrix client not initialized')
     }

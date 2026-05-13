@@ -6,267 +6,350 @@
       'workbench-detail-pane--narrow': narrow
     }">
     <div class="workbench-detail-pane__header">
-      <span class="text-13px font-600">{{ managePaneTitle }}</span>
-      <template v-if="computedManageMode">
+      <n-flex :size="4" align="center" class="flex-1 min-w-0">
+        <span class="text-13px font-600 truncate">{{ paneTitle }}</span>
+      </n-flex>
+      <template v-if="overlayMode">
+        <button type="button" class="detail-members__toggle" @click="emit('closeOverlay')">
+          {{ t('common.close') }}
+        </button>
+      </template>
+      <template v-else-if="computedManageMode">
         <button type="button" class="detail-members__toggle" @click="emit('closeManagePane')">
           {{ t('common.close') }}
         </button>
       </template>
-      <span v-else class="text-12px color-[--hula-text-tertiary]">
-        {{ t('space.sessions_count', { count: visibleSessionCount }) }}
-      </span>
+      <template v-else>
+        <WorkbenchPaneTabs v-model="activeTab" :tabs="visibleTabs" />
+      </template>
     </div>
 
     <div class="workbench-detail-pane__body">
-      <section
-        v-if="computedManageMode && activeSpace"
-        class="detail-card detail-card--manage"
-        data-test="detail-manage-card">
-        <div class="detail-card__title">{{ manageCardTitle }}</div>
-        <p class="detail-card__hint">{{ activeSpace.name }}</p>
+      <WorkbenchQuickCreate
+        v-if="overlayMode === 'create-room'"
+        @close="emit('closeOverlay')"
+        @created="handleQuickCreateCreated" />
 
-        <n-form label-placement="top" :show-feedback="false" class="detail-manage-form">
-          <n-form-item v-if="computedManageMode === 'invite'" :label="t('space.invite')">
-            <n-input
-              :value="computedInviteUserId"
-              :placeholder="t('space.invite_user_placeholder')"
-              @update:value="emit('update:inviteUserId', $event)" />
-          </n-form-item>
+      <WorkbenchQuickCreate
+        v-else-if="overlayMode === 'create-space'"
+        :is-space-mode="true"
+        @close="emit('closeOverlay')"
+        @created="handleQuickCreateCreated" />
 
-          <template v-else-if="computedManageMode === 'add-room'">
-            <n-form-item :label="t('space.add_room')">
+      <WorkbenchForwardPane
+        v-else-if="overlayMode === 'forward'"
+        :event-id="forwardEventId"
+        :room-id="forwardRoomId"
+        @close="emit('closeOverlay')"
+        @forwarded="handleForwarded" />
+
+      <WorkbenchSearchPane
+        v-else-if="overlayMode === 'search'"
+        @close="emit('closeOverlay')"
+        @message-selected="handleSearchMessageSelected"
+        @room-selected="handleSearchRoomSelected"
+        @user-selected="handleSearchUserSelected" />
+
+      <WorkbenchHistoryPane
+        v-else-if="overlayMode === 'history'"
+        :room-id="historyRoomId"
+        @close="emit('closeOverlay')" />
+
+      <WorkbenchMergedMsgPane
+        v-else-if="overlayMode === 'merged-msg'"
+        :msg-ids="mergedMsgIds"
+        @close="emit('closeOverlay')" />
+
+      <template v-else>
+        <section
+          v-if="computedManageMode && activeSpace"
+          class="detail-card detail-card--manage"
+          data-test="detail-manage-card">
+          <div class="detail-card__title">{{ manageCardTitle }}</div>
+          <p class="detail-card__hint">{{ activeSpace.name }}</p>
+
+          <n-form label-placement="top" :show-feedback="false" class="detail-manage-form">
+            <n-form-item v-if="computedManageMode === 'invite'" :label="t('space.invite')">
               <n-input
-                :value="computedAddRoomId"
-                :placeholder="t('space.add_room_placeholder')"
-                @update:value="emit('update:addRoomId', $event)" />
+                :value="computedInviteUserId"
+                :placeholder="t('space.invite_user_placeholder')"
+                @update:value="emit('update:inviteUserId', $event)" />
             </n-form-item>
-            <n-checkbox :checked="computedAddRoomSuggested" @update:checked="emit('update:addRoomSuggested', $event)">
-              {{ t('space.add_room_suggested') }}
-            </n-checkbox>
-          </template>
 
-          <template v-else-if="computedManageMode === 'settings'">
-            <n-form-item :label="t('space.name')">
-              <n-input
-                :value="computedSettingsName"
-                :placeholder="t('space.name_placeholder')"
-                @update:value="emit('update:settingsName', $event)" />
-            </n-form-item>
-            <n-form-item :label="t('space.topic')">
-              <n-input
-                :value="computedSettingsTopic"
-                type="textarea"
-                :rows="3"
-                :placeholder="t('space.topic_placeholder')"
-                @update:value="emit('update:settingsTopic', $event)" />
-            </n-form-item>
-          </template>
-        </n-form>
+            <template v-else-if="computedManageMode === 'add-room'">
+              <n-form-item :label="t('space.add_room')">
+                <n-input
+                  :value="computedAddRoomId"
+                  :placeholder="t('space.add_room_placeholder')"
+                  @update:value="emit('update:addRoomId', $event)" />
+              </n-form-item>
+              <n-checkbox :checked="computedAddRoomSuggested" @update:checked="emit('update:addRoomSuggested', $event)">
+                {{ t('space.add_room_suggested') }}
+              </n-checkbox>
+            </template>
 
-        <n-flex justify="flex-end" :size="12" class="detail-manage-actions">
-          <n-button @click="emit('closeManagePane')">{{ t('common.cancel') }}</n-button>
-          <n-button
-            type="primary"
-            :loading="computedManageSubmitting"
-            :disabled="!computedCanManageSpace"
-            @click="emit('submitManagePane')">
-            {{ t('common.confirm') }}
-          </n-button>
-        </n-flex>
-      </section>
+            <template v-else-if="computedManageMode === 'settings'">
+              <n-form-item :label="t('space.name')">
+                <n-input
+                  :value="computedSettingsName"
+                  :placeholder="t('space.name_placeholder')"
+                  @update:value="emit('update:settingsName', $event)" />
+              </n-form-item>
+              <n-form-item :label="t('space.topic')">
+                <n-input
+                  :value="computedSettingsTopic"
+                  type="textarea"
+                  :rows="3"
+                  :placeholder="t('space.topic_placeholder')"
+                  @update:value="emit('update:settingsTopic', $event)" />
+              </n-form-item>
+            </template>
+          </n-form>
 
-      <section v-if="selectedSession" class="detail-card" data-test="detail-session-card">
-        <div class="detail-card__title">{{ t('space.detail_session') }}</div>
-        <div class="detail-session">
-          <img
-            class="detail-session__avatar"
-            :src="AvatarUtils.getAvatarUrl(selectedSession.avatar)"
-            :alt="selectedSession.name || t('space.detail_session')" />
-          <div class="min-w-0 flex-1">
-            <div class="detail-session__name">{{ selectedSession.name }}</div>
-            <div class="detail-session__type">
-              {{
-                selectedSession.type === RoomTypeEnum.GROUP
-                  ? t('space.detail_type_group')
-                  : t('space.detail_type_single')
-              }}
-            </div>
-          </div>
-        </div>
+          <n-flex justify="flex-end" :size="12" class="detail-manage-actions">
+            <n-button @click="emit('closeManagePane')">{{ t('common.cancel') }}</n-button>
+            <n-button
+              type="primary"
+              :loading="computedManageSubmitting"
+              :disabled="!computedCanManageSpace"
+              @click="emit('submitManagePane')">
+              {{ t('common.confirm') }}
+            </n-button>
+          </n-flex>
+        </section>
 
-        <dl class="detail-meta">
-          <div class="detail-meta__row">
-            <dt>{{ t('space.detail_last_active') }}</dt>
-            <dd>{{ selectedSession.lastMsgTime || '-' }}</dd>
-          </div>
-          <div class="detail-meta__row">
-            <dt>{{ t('space.detail_unread') }}</dt>
-            <dd>{{ selectedSession.unreadCount ?? 0 }}</dd>
-          </div>
-          <div class="detail-meta__row">
-            <dt>{{ t('space.detail_last_message') }}</dt>
-            <dd class="detail-meta__message">{{ selectedSession.lastMsg || '-' }}</dd>
-          </div>
-        </dl>
-      </section>
-
-      <section v-else class="detail-card detail-card--empty" data-test="detail-session-empty">
-        <div class="detail-card__title">{{ t('space.detail_session') }}</div>
-        <div class="detail-empty__title">{{ t('space.details_empty_title') }}</div>
-        <p class="detail-empty__description">{{ t('space.details_empty_description') }}</p>
-      </section>
-
-      <section class="detail-card" data-test="detail-space-card">
-        <div class="detail-card__title">{{ t('space.detail_space') }}</div>
-        <dl class="detail-meta">
-          <div class="detail-meta__row">
-            <dt>{{ t('space.detail_scope') }}</dt>
-            <dd>{{ activeSpace ? activeSpace.name : t('space.detail_scope_all') }}</dd>
-          </div>
-          <div class="detail-meta__row">
-            <dt>{{ t('space.topic') }}</dt>
-            <dd class="detail-meta__text">
-              {{ activeSpace?.topic || t('space.detail_space_topic_empty') }}
-            </dd>
-          </div>
-          <div class="detail-meta__row">
-            <dt>{{ t('space.members') }}</dt>
-            <dd>{{ activeSpace?.memberCount ?? '-' }}</dd>
-          </div>
-          <div class="detail-meta__row">
-            <dt>{{ t('space.rooms') }}</dt>
-            <dd>{{ activeSpace?.childCount ?? '-' }}</dd>
-          </div>
-          <div class="detail-meta__row">
-            <dt>{{ t('space.detail_visible_sessions') }}</dt>
-            <dd>{{ visibleSessionCount }}</dd>
-          </div>
-          <div class="detail-meta__row">
-            <dt>{{ t('space.detail_total_sessions') }}</dt>
-            <dd>{{ totalSessionCount }}</dd>
-          </div>
-        </dl>
-
-        <div v-if="activeSpace" class="detail-members">
-          <div class="detail-members__title">{{ t('space.detail_space_rooms_preview') }}</div>
-
-          <div v-if="spaceRoomsPreview.length" class="detail-members__grid">
-            <div v-for="room in spaceRoomsPreview" :key="room.roomId" class="detail-member">
-              <img
-                class="detail-space-room__avatar"
-                :src="AvatarUtils.getAvatarUrl(room.avatarUrl || '')"
-                :alt="room.name || room.roomId" />
-              <span class="detail-member__name">
-                {{ room.name || room.roomId }}
-              </span>
-            </div>
-          </div>
-          <div v-else-if="spaceRoomsLoadFailed" class="detail-announcement-state">
-            <span class="detail-card__hint">{{ t('space.detail_space_rooms_load_failed') }}</span>
-            <button type="button" class="detail-announcement__retry" @click="handleRetrySpaceRooms">
-              {{ t('common.retry') }}
-            </button>
-          </div>
-          <p v-else-if="spaceRoomsReady" class="detail-card__hint">{{ t('space.detail_space_rooms_empty') }}</p>
-        </div>
-      </section>
-
-      <section v-if="showGroupInsights" class="detail-card" data-test="detail-group-card">
-        <div class="detail-card__title">{{ t('space.detail_group') }}</div>
-
-        <dl class="detail-meta">
-          <div class="detail-meta__row">
-            <dt>{{ t('space.detail_members_count') }}</dt>
-            <dd>{{ groupMemberCount }}</dd>
-          </div>
-          <div class="detail-meta__row">
-            <dt>{{ t('space.detail_online_members') }}</dt>
-            <dd>{{ groupOnlineCount }}</dd>
-          </div>
-          <div class="detail-meta__row">
-            <dt>{{ t('space.detail_announcement') }}</dt>
-            <dd>
-              <div v-if="announcementLoadFailed" class="detail-announcement-state">
-                <span class="detail-card__hint">{{ t('space.detail_announcement_load_failed') }}</span>
-                <button type="button" class="detail-announcement__retry" @click="handleRetryAnnouncement">
-                  {{ t('common.retry') }}
-                </button>
+        <section v-if="showSummaryTab && selectedSession" class="detail-card" data-test="detail-session-card">
+          <div class="detail-card__title">{{ t('space.detail_session') }}</div>
+          <div class="detail-session">
+            <img
+              class="detail-session__avatar"
+              :src="AvatarUtils.getAvatarUrl(selectedSession.avatar)"
+              :alt="selectedSession.name || t('space.detail_session')" />
+            <div class="min-w-0 flex-1">
+              <div class="detail-session__name">{{ selectedSession.name }}</div>
+              <div class="detail-session__type">
+                {{
+                  selectedSession.type === RoomTypeEnum.GROUP
+                    ? t('space.detail_type_group')
+                    : t('space.detail_type_single')
+                }}
               </div>
-              <div v-else-if="announcementSegments.length" class="detail-announcement">
-                <template
-                  v-for="(segment, index) in announcementSegments"
-                  :key="`ann-seg-${selectedSession?.roomId ?? 'none'}-${index}`">
-                  <button
-                    v-if="segment.isLink"
-                    type="button"
-                    class="detail-announcement__link"
-                    @click="openAnnouncementLink(segment.text)">
-                    {{ segment.text }}
+            </div>
+          </div>
+
+          <dl class="detail-meta">
+            <div class="detail-meta__row">
+              <dt>{{ t('space.detail_last_active') }}</dt>
+              <dd>{{ selectedSession.lastMsgTime || '-' }}</dd>
+            </div>
+            <div class="detail-meta__row">
+              <dt>{{ t('space.detail_unread') }}</dt>
+              <dd>{{ selectedSession.unreadCount ?? 0 }}</dd>
+            </div>
+            <div class="detail-meta__row">
+              <dt>{{ t('space.detail_last_message') }}</dt>
+              <dd class="detail-meta__message">{{ selectedSession.lastMsg || '-' }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section
+          v-if="showSummaryTab && !selectedSession"
+          class="detail-card detail-card--empty"
+          data-test="detail-session-empty">
+          <div class="detail-card__title">{{ t('space.detail_session') }}</div>
+          <div class="detail-empty__title">{{ t('space.details_empty_title') }}</div>
+          <p class="detail-empty__description">{{ t('space.details_empty_description') }}</p>
+        </section>
+
+        <section v-if="showSummaryTab" class="detail-card" data-test="detail-space-card">
+          <div class="detail-card__title">{{ t('space.detail_space') }}</div>
+          <dl class="detail-meta">
+            <div class="detail-meta__row">
+              <dt>{{ t('space.detail_scope') }}</dt>
+              <dd>{{ activeSpace ? activeSpace.name : t('space.detail_scope_all') }}</dd>
+            </div>
+            <div class="detail-meta__row">
+              <dt>{{ t('space.topic') }}</dt>
+              <dd class="detail-meta__text">
+                {{ activeSpace?.topic || t('space.detail_space_topic_empty') }}
+              </dd>
+            </div>
+            <div class="detail-meta__row">
+              <dt>{{ t('space.members') }}</dt>
+              <dd>{{ activeSpace?.memberCount ?? '-' }}</dd>
+            </div>
+            <div class="detail-meta__row">
+              <dt>{{ t('space.rooms') }}</dt>
+              <dd>{{ activeSpace?.childCount ?? '-' }}</dd>
+            </div>
+            <div class="detail-meta__row">
+              <dt>{{ t('space.detail_visible_sessions') }}</dt>
+              <dd>{{ visibleSessionCount }}</dd>
+            </div>
+            <div class="detail-meta__row">
+              <dt>{{ t('space.detail_total_sessions') }}</dt>
+              <dd>{{ totalSessionCount }}</dd>
+            </div>
+          </dl>
+
+          <div v-if="activeSpace" class="detail-members">
+            <div class="detail-members__title">{{ t('space.detail_space_rooms_preview') }}</div>
+
+            <div v-if="spaceRoomsPreview.length" class="detail-members__grid">
+              <div v-for="room in spaceRoomsPreview" :key="room.roomId" class="detail-member">
+                <img
+                  class="detail-space-room__avatar"
+                  :src="AvatarUtils.getAvatarUrl(room.avatarUrl || '')"
+                  :alt="room.name || room.roomId" />
+                <span class="detail-member__name">
+                  {{ room.name || room.roomId }}
+                </span>
+              </div>
+            </div>
+            <div v-else-if="spaceRoomsLoadFailed" class="detail-announcement-state">
+              <span class="detail-card__hint">{{ t('space.detail_space_rooms_load_failed') }}</span>
+              <button type="button" class="detail-announcement__retry" @click="handleRetrySpaceRooms">
+                {{ t('common.retry') }}
+              </button>
+            </div>
+            <p v-else-if="spaceRoomsReady" class="detail-card__hint">{{ t('space.detail_space_rooms_empty') }}</p>
+          </div>
+        </section>
+
+        <section v-if="showActivityTab && showGroupInsights" class="detail-card" data-test="detail-group-card">
+          <div class="detail-card__title">{{ t('space.detail_group') }}</div>
+
+          <dl class="detail-meta">
+            <div class="detail-meta__row">
+              <dt>{{ t('space.detail_members_count') }}</dt>
+              <dd>{{ groupMemberCount }}</dd>
+            </div>
+            <div class="detail-meta__row">
+              <dt>{{ t('space.detail_online_members') }}</dt>
+              <dd>{{ groupOnlineCount }}</dd>
+            </div>
+            <div class="detail-meta__row">
+              <dt>{{ t('space.detail_announcement') }}</dt>
+              <dd>
+                <div v-if="announcementLoadFailed" class="detail-announcement-state">
+                  <span class="detail-card__hint">{{ t('space.detail_announcement_load_failed') }}</span>
+                  <button type="button" class="detail-announcement__retry" @click="handleRetryAnnouncement">
+                    {{ t('common.retry') }}
                   </button>
-                  <span v-else>{{ segment.text }}</span>
-                </template>
-              </div>
-              <span v-else class="detail-card__hint">{{ t('space.detail_announcement_empty') }}</span>
+                </div>
+                <div v-else-if="announcementSegments.length" class="detail-announcement">
+                  <template
+                    v-for="(segment, index) in announcementSegments"
+                    :key="`ann-seg-${selectedSession?.roomId ?? 'none'}-${index}`">
+                    <button
+                      v-if="segment.isLink"
+                      type="button"
+                      class="detail-announcement__link"
+                      @click="openAnnouncementLink(segment.text)">
+                      {{ segment.text }}
+                    </button>
+                    <span v-else>{{ segment.text }}</span>
+                  </template>
+                </div>
+                <span v-else class="detail-card__hint">{{ t('space.detail_announcement_empty') }}</span>
 
-              <div v-if="groupRoomId" class="detail-announcement__actions">
-                <button type="button" class="detail-members__toggle" @click="handleOpenAnnouncement(false)">
-                  {{ t('space.detail_view_all_announcements') }}
-                </button>
-                <button
-                  v-if="canEditAnnouncement"
-                  type="button"
-                  class="detail-members__toggle"
-                  @click="handleOpenAnnouncement(true)">
-                  {{ t('space.detail_edit_announcement') }}
-                </button>
-              </div>
-            </dd>
+                <div v-if="groupRoomId" class="detail-announcement__actions">
+                  <button type="button" class="detail-members__toggle" @click="handleOpenAnnouncement(false)">
+                    {{ t('space.detail_view_all_announcements') }}
+                  </button>
+                  <button
+                    v-if="canEditAnnouncement"
+                    type="button"
+                    class="detail-members__toggle"
+                    @click="handleOpenAnnouncement(true)">
+                    {{ t('space.detail_edit_announcement') }}
+                  </button>
+                </div>
+              </dd>
+            </div>
+          </dl>
+
+          <div class="detail-members">
+            <div class="detail-members__title">{{ t('space.detail_members_preview') }}</div>
+
+            <div v-if="groupMembersPreview.length" class="detail-members__grid">
+              <button
+                v-for="member in groupMembersPreview"
+                :key="member.userId"
+                type="button"
+                class="detail-member"
+                @click="handleMemberClick(member)">
+                <img
+                  class="detail-member__avatar"
+                  :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '')"
+                  :alt="member.displayName || member.name || member.userId" />
+                <span class="detail-member__name">
+                  {{ member.displayName || member.name || member.userId }}
+                </span>
+              </button>
+            </div>
+            <div v-if="groupMembersPreview.length" class="detail-members__actions">
+              <button
+                v-if="hasExpandableMembers"
+                type="button"
+                class="detail-members__toggle detail-members__expand-toggle"
+                @click="showAllMembers = !showAllMembers">
+                {{ showAllMembers ? t('space.detail_members_collapse') : t('space.detail_members_expand') }}
+              </button>
+              <button
+                type="button"
+                class="detail-members__toggle detail-members__directory-toggle"
+                @click="showMemberDirectory = !showMemberDirectory">
+                {{
+                  showMemberDirectory ? t('space.detail_members_hide_directory') : t('space.detail_members_view_all')
+                }}
+              </button>
+            </div>
+            <div v-else-if="memberLoadFailed" class="detail-announcement-state">
+              <span class="detail-card__hint">{{ t('space.detail_members_load_failed') }}</span>
+              <button type="button" class="detail-announcement__retry" @click="handleRetryMembers">
+                {{ t('common.retry') }}
+              </button>
+            </div>
+            <p v-else class="detail-card__hint">{{ t('space.detail_members_empty') }}</p>
+
+            <div v-if="showMemberDirectory && detailMembers.length" class="detail-members__directory">
+              <MemberList
+                :members="
+                  detailMembers.map((m) => ({
+                    userId: m.userId,
+                    displayName: m.displayName ?? undefined,
+                    avatarUrl: m.avatarUrl ?? undefined,
+                    powerLevel: m.powerLevel,
+                    membership: m.membership
+                  }))
+                "
+                @member-click="
+                  (member) => {
+                    const fullMember = detailMembers.find((m) => m.userId === member.userId)
+                    if (fullMember) handleMemberClick(fullMember)
+                  }
+                " />
+            </div>
           </div>
-        </dl>
+        </section>
 
-        <div class="detail-members">
-          <div class="detail-members__title">{{ t('space.detail_members_preview') }}</div>
-
-          <div v-if="groupMembersPreview.length" class="detail-members__grid">
-            <button
-              v-for="member in groupMembersPreview"
-              :key="member.userId"
-              type="button"
-              class="detail-member"
-              @click="handleMemberClick(member)">
-              <img
-                class="detail-member__avatar"
-                :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '')"
-                :alt="member.displayName || member.name || member.userId" />
-              <span class="detail-member__name">
-                {{ member.displayName || member.name || member.userId }}
-              </span>
+        <section v-if="selectedMemberUid" class="detail-card" data-test="detail-member-profile-card">
+          <div class="detail-card__title detail-card__title--row">
+            <span>{{ t('space.detail_member_profile') }}</span>
+            <button type="button" class="detail-members__toggle" @click="clearSelectedMember">
+              {{ t('common.close') }}
             </button>
           </div>
-          <div v-if="groupMembersPreview.length" class="detail-members__actions">
-            <button
-              v-if="hasExpandableMembers"
-              type="button"
-              class="detail-members__toggle detail-members__expand-toggle"
-              @click="showAllMembers = !showAllMembers">
-              {{ showAllMembers ? t('space.detail_members_collapse') : t('space.detail_members_expand') }}
-            </button>
-            <button
-              type="button"
-              class="detail-members__toggle detail-members__directory-toggle"
-              @click="showMemberDirectory = !showMemberDirectory">
-              {{ showMemberDirectory ? t('space.detail_members_hide_directory') : t('space.detail_members_view_all') }}
-            </button>
+          <div class="detail-member-profile">
+            <InfoPopover :uid="selectedMemberUid" :activeStatus="selectedMemberActiveStatus" />
           </div>
-          <div v-else-if="memberLoadFailed" class="detail-announcement-state">
-            <span class="detail-card__hint">{{ t('space.detail_members_load_failed') }}</span>
-            <button type="button" class="detail-announcement__retry" @click="handleRetryMembers">
-              {{ t('common.retry') }}
-            </button>
-          </div>
-          <p v-else class="detail-card__hint">{{ t('space.detail_members_empty') }}</p>
+        </section>
 
-          <div v-if="showMemberDirectory && detailMembers.length" class="detail-members__directory">
+        <section v-if="showMembersTab" class="detail-card" data-test="detail-members-tab">
+          <div class="detail-card__title">{{ t('space.detail_tab_members') }}</div>
+          <div v-if="detailMembers.length" class="detail-members">
             <MemberList
               :members="
                 detailMembers.map((m) => ({
@@ -284,20 +367,15 @@
                 }
               " />
           </div>
-        </div>
-      </section>
-
-      <section v-if="selectedMemberUid" class="detail-card" data-test="detail-member-profile-card">
-        <div class="detail-card__title detail-card__title--row">
-          <span>{{ t('space.detail_member_profile') }}</span>
-          <button type="button" class="detail-members__toggle" @click="clearSelectedMember">
-            {{ t('common.close') }}
-          </button>
-        </div>
-        <div class="detail-member-profile">
-          <InfoPopover :uid="selectedMemberUid" :activeStatus="selectedMemberActiveStatus" />
-        </div>
-      </section>
+          <div v-else-if="memberLoadFailed" class="detail-announcement-state">
+            <span class="detail-card__hint">{{ t('space.detail_members_load_failed') }}</span>
+            <button type="button" class="detail-announcement__retry" @click="handleRetryMembers">
+              {{ t('common.retry') }}
+            </button>
+          </div>
+          <p v-else class="detail-card__hint">{{ t('space.detail_members_empty') }}</p>
+        </section>
+      </template>
     </div>
   </aside>
 </template>
@@ -307,8 +385,15 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InfoPopover from '@/components/common/InfoPopover.vue'
 import MemberList from '@/components/room/MemberList.vue'
+import WorkbenchForwardPane from '@/components/workbench/WorkbenchForwardPane.vue'
+import WorkbenchHistoryPane from '@/components/workbench/WorkbenchHistoryPane.vue'
+import WorkbenchMergedMsgPane from '@/components/workbench/WorkbenchMergedMsgPane.vue'
+import type { PaneTab } from '@/components/workbench/WorkbenchPaneTabs.vue'
+import WorkbenchPaneTabs from '@/components/workbench/WorkbenchPaneTabs.vue'
+import WorkbenchQuickCreate from '@/components/workbench/WorkbenchQuickCreate.vue'
+import WorkbenchSearchPane from '@/components/workbench/WorkbenchSearchPane.vue'
 import { type SpaceChildRoom, useSpaceRooms } from '@/composables/space/useSpaceRooms'
-import { RoomTypeEnum } from '@/enums'
+import { OnlineEnum, RoomTypeEnum } from '@/enums'
 import { useLinkSegments } from '@/hooks/useLinkSegments'
 import { createWebviewWindow } from '@/hooks/useWindow'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
@@ -331,6 +416,7 @@ type SessionListItem = SessionItem & {
 }
 
 type SpaceManageMode = 'invite' | 'add-room' | 'settings'
+type OverlayMode = 'create-room' | 'create-space' | 'forward' | 'search' | 'history' | 'merged-msg'
 
 const props = defineProps<{
   selectedSession: SessionListItem | null
@@ -347,6 +433,11 @@ const props = defineProps<{
   addRoomSuggested?: boolean
   settingsName?: string
   settingsTopic?: string
+  overlayMode?: OverlayMode | null
+  forwardEventId?: string
+  forwardRoomId?: string
+  historyRoomId?: string
+  mergedMsgIds?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -357,11 +448,36 @@ const emit = defineEmits<{
   'update:addRoomSuggested': [value: boolean]
   'update:settingsName': [value: string]
   'update:settingsTopic': [value: string]
+  closeOverlay: []
+  overlayCreated: [data: { roomId?: string; space?: unknown }]
+  overlayForwarded: [roomIds: string[]]
+  overlayMessageSelected: [roomId: string, eventId: string]
+  overlayRoomSelected: [roomId: string]
+  overlayUserSelected: [userId: string]
 }>()
 
 const { t } = useI18n()
 const groupStore = useGroupStore()
 const announcementStore = useAnnouncementStore()
+
+type DetailTabKey = 'summary' | 'members' | 'activity'
+
+const activeTab = ref<DetailTabKey>('summary')
+
+const visibleTabs = computed(() => {
+  const tabs: PaneTab<DetailTabKey>[] = [
+    { key: 'summary', label: t('space.detail_tab_summary') },
+    { key: 'members', label: t('space.detail_tab_members') }
+  ]
+  if (props.selectedSession?.type === RoomTypeEnum.GROUP) {
+    tabs.push({ key: 'activity', label: t('space.detail_tab_activity') })
+  }
+  return tabs
+})
+
+const showSummaryTab = computed(() => activeTab.value === 'summary')
+const showMembersTab = computed(() => activeTab.value === 'members')
+const showActivityTab = computed(() => activeTab.value === 'activity')
 const detailGroupInfo = ref<MatrixGroupInfo | null>(null)
 const detailMembers = ref<MatrixRoomMember[]>([])
 const announcementPreview = ref('')
@@ -393,7 +509,13 @@ const groupMembersPreview = computed(() =>
 const groupMemberCount = computed(
   () => detailGroupInfo.value?.memberCount ?? detailGroupInfo.value?.memberNum ?? detailMembers.value.length
 )
-const groupOnlineCount = computed(() => detailGroupInfo.value?.onlineNum ?? detailMembers.value.length)
+const groupOnlineCount = computed(() => {
+  const hasPresence = detailMembers.value.some((member) => typeof member.activeStatus === 'number')
+  if (!hasPresence) {
+    return detailMembers.value.length
+  }
+  return detailMembers.value.filter((member) => member.activeStatus === OnlineEnum.ONLINE).length
+})
 const canEditAnnouncement = computed(() => showGroupInsights.value && Boolean(announcementStore.isAddAnnoun))
 const computedManageMode = computed(() => props.manageMode ?? null)
 const computedCanManageSpace = computed(() => Boolean(props.canManageSpace))
@@ -416,6 +538,48 @@ const manageCardTitle = computed(() => {
   }
 })
 const managePaneTitle = computed(() => (computedManageMode.value ? manageCardTitle.value : t('space.details_title')))
+
+const paneTitle = computed(() => {
+  if (props.overlayMode) {
+    switch (props.overlayMode) {
+      case 'create-room':
+        return t('room.create.title')
+      case 'create-space':
+        return t('space.create')
+      case 'forward':
+        return t('message.forward.title')
+      case 'search':
+        return t('search.title')
+      case 'history':
+        return t('chatHistory.title')
+      case 'merged-msg':
+        return t('message.merge_msg_title')
+      default:
+        return t('space.details_title')
+    }
+  }
+  return managePaneTitle.value
+})
+
+const handleQuickCreateCreated = (data: { roomId?: string; space?: unknown }) => {
+  emit('overlayCreated', data)
+}
+
+const handleForwarded = (roomIds: string[]) => {
+  emit('overlayForwarded', roomIds)
+}
+
+const handleSearchMessageSelected = (roomId: string, eventId: string) => {
+  emit('overlayMessageSelected', roomId, eventId)
+}
+
+const handleSearchRoomSelected = (roomId: string) => {
+  emit('overlayRoomSelected', roomId)
+}
+
+const handleSearchUserSelected = (userId: string) => {
+  emit('overlayUserSelected', userId)
+}
 
 const handleRetrySpaceRooms = async () => {
   const spaceId = activeSpaceId.value

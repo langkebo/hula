@@ -229,10 +229,13 @@ async function loadFriendGroups() {
 async function loadFriendRequests() {
   loadingRequests.value = true
   try {
-    const [incoming, outgoing] = await Promise.all([
+    const [incomingResult, outgoingResult] = await Promise.allSettled([
       matrixFriendService.getIncomingRequests(),
       matrixFriendService.getOutgoingRequests()
     ])
+
+    const incoming = incomingResult.status === 'fulfilled' ? incomingResult.value : []
+    const outgoing = outgoingResult.status === 'fulfilled' ? outgoingResult.value : []
     incomingRequests.value = (incoming || []).map((r) => ({
       user_id: r.user_id,
       message: r.message

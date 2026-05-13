@@ -71,7 +71,6 @@
 
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { exists } from '@tauri-apps/plugin-fs'
 import { MessageStatusEnum, MsgEnum, TauriCommand } from '@/enums'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import type { ImageBody, MsgType } from '@/services/types'
@@ -80,6 +79,7 @@ import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
+import { safeExistsPath } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
@@ -206,7 +206,7 @@ const ensureEncryptedImageAvailable = async () => {
 
   if (props.body.localPath) {
     try {
-      const localExists = await exists(props.body.localPath)
+      const localExists = await safeExistsPath(props.body.localPath)
       if (localExists) {
         await applyLocalImagePath(props.body.localPath)
         return
@@ -319,7 +319,7 @@ const ensureLocalThumbnail = async () => {
     return
   }
   try {
-    const existsFlag = await exists(localPath)
+    const existsFlag = await safeExistsPath(localPath)
     if (existsFlag) {
       localThumbnailSrc.value = convertFileSrc(localPath)
       return

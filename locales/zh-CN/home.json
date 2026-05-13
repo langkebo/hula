@@ -33,6 +33,14 @@
     "dynamic_short_title": "动态",
     "room_list": "房间列表",
     "room_list_short_title": "房间",
+    "room_detail": {
+      "just_now": "刚刚",
+      "yesterday": "昨天",
+      "mute": "免打扰",
+      "encrypted": "加密聊天",
+      "burn": "阅后即焚",
+      "typing": "正在输入..."
+    },
     "space_list": "空间列表",
     "space_list_short_title": "空间",
     "chatbot": "ChatBot",
@@ -443,6 +451,8 @@
       "view_all": "查看全部"
     },
     "no_more": "没有更多消息",
+    "empty_title": "暂无消息",
+    "empty_desc": "发送第一条消息，开始聊天吧",
     "new_messages": "{count} 条新消息",
     "confirm": "确定",
     "cancel": "取消",

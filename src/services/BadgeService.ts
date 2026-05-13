@@ -2,7 +2,6 @@ import { error, info } from '@tauri-apps/plugin-log'
 import { IsYesEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { buildBadgeCatalog } from '@/stores/domains/chat/badge'
-import { useUserStore } from '@/stores/domains/user/user'
 
 export interface Badge {
   id: string
@@ -20,17 +19,12 @@ class BadgeService {
   private readonly accountDataType = 'io.hula.badge.preference'
 
   private getCurrentUserBadgeState() {
-    const userStore = useUserStore()
-    const ownedIds = [...(userStore.userInfo?.itemIds ?? [])]
-    const defaultWearingId = userStore.userInfo?.wearingItemId
     const client = matrixClientService.getClient()
     const accountData = client?.getAccountData(this.accountDataType as never)
-    const persistedWearingId = accountData?.getContent?.().wearingItemId as string | undefined
-    const wearingItemId = persistedWearingId || defaultWearingId
+    const content = accountData?.getContent?.()
 
-    if (wearingItemId && !ownedIds.includes(wearingItemId)) {
-      ownedIds.push(wearingItemId)
-    }
+    const wearingItemId = content?.wearingItemId as string | undefined
+    const ownedIds = (content?.ownedIds as string[] | undefined) || []
 
     return {
       ownedIds,
@@ -49,7 +43,14 @@ class BadgeService {
         throw new Error('Matrix 客户端未初始化')
       }
 
-      await client.setAccountData(this.accountDataType as never, { wearingItemId: badgeId } as never)
+      const { ownedIds } = this.getCurrentUserBadgeState()
+      await client.setAccountData(
+        this.accountDataType as never,
+        {
+          wearingItemId: badgeId,
+          ownedIds
+        } as never
+      )
       info(`[Badge] 设置徽章成功: ${badgeId}`)
     } catch (err) {
       error(`[Badge] 设置徽章失败: ${err}`)

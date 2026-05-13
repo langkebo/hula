@@ -1,6 +1,8 @@
 import { storeToRefs } from 'pinia'
+import { type ComputedRef, computed, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { OnlineEnum } from '@/enums'
+import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
@@ -10,32 +12,43 @@ export const useOnlineStatus = (uid?: ComputedRef<string | undefined> | Ref<stri
   const { t } = useI18n()
   const userStore = useUserStore()
   const groupStore = useGroupStore()
+  const contactStore = useContactStore()
   const userStatusStore = useUserStatusStore()
   const { currentState } = storeToRefs(userStatusStore)
 
-  // 如果传入了uid参数，使用传入的uid对应的用户信息；否则使用当前登录用户的信息
-  const currentUser = uid
-    ? computed(() => (uid.value ? groupStore.getUserInfo(uid.value) : undefined))
-    : computed(() => {
-        // 没有传入uid时，从groupStore获取当前用户信息以获得activeStatus
-        const currentUid = userStore.userInfo?.uid
-        return currentUid ? groupStore.getUserInfo(currentUid) : undefined
-      })
+  const resolvedUid = computed(() => uid?.value || userStore.userInfo?.uid)
 
-  // userStateId优先从userStore获取（保证响应式更新），如果没有则从currentUser获取
+  const currentUser = computed(() => {
+    const currentUid = resolvedUid.value
+    if (!currentUid) return undefined
+
+    if (userStore.userInfo?.uid === currentUid) {
+      return userStore.userInfo
+    }
+
+    return groupStore.getUserInfo(currentUid) ?? contactStore.getContactByUserId(currentUid) ?? undefined
+  })
+
   const userStateId = uid
-    ? computed(() => currentUser.value?.userStateId)
-    : computed(() => userStore.userInfo?.userStateId)
+    ? computed(() => (currentUser.value as { userStateId?: string } | undefined)?.userStateId)
+    : computed(
+        () =>
+          userStore.userInfo?.userStateId ?? (currentUser.value as { userStateId?: string } | undefined)?.userStateId
+      )
 
-  const activeStatus = computed(() => currentUser.value?.activeStatus ?? OnlineEnum.OFFLINE)
+  const activeStatus = computed(() => {
+    if (!uid) {
+      return userStore.userInfo?.activeStatus ?? currentUser.value?.activeStatus ?? OnlineEnum.OFFLINE
+    }
+
+    return currentUser.value?.activeStatus ?? OnlineEnum.OFFLINE
+  })
 
   const hasCustomState = computed(() => {
     const stateId = userStateId.value
-    // 只有 '0' 表示清空状态（无自定义状态），其他都是自定义状态
     return !!stateId && stateId !== '0'
   })
 
-  // 获取用户的状态信息
   const userStatus = computed(() => {
     if (!userStateId.value) return null
     return userStatusStore.stateList.find((state: { id: string }) => state.id === userStateId.value)

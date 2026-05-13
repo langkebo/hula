@@ -113,8 +113,6 @@ export type GroupDetailReq = {
   avatar: string
   /** 群名称 */
   groupName: string
-  /** 在线人数 */
-  onlineNum: number
   /** 成员角色 1群主 2管理员 3普通成员 4踢出群聊 */
   roleId: number
   /** 房间id */
@@ -168,12 +166,6 @@ export type CacheUserItem = {
   needRefresh?: boolean
   /** 最后更新时间 更新超过 10 分钟异步去更新。 */
   lastModifyTime: number
-  /** 获得的徽章 */
-  itemIds: string[]
-  /** 佩戴的徽章 */
-  wearingItemId: string
-  /** 归属地 */
-  locPlace: string
   /** 头像 */
   avatar: string
   /** 最后一次上下线时间 */
@@ -199,18 +191,12 @@ export type UserItem = {
   name: string
   /** uid */
   uid: string
-  /** 归属地 */
-  locPlace?: string
   /** 角色ID */
   roleId?: number
   /** 账号 */
   account: string
   /** 我的群昵称 */
   myName?: string
-  /** 当前佩戴的徽章 */
-  wearingItemId?: string
-  /** 徽章集合 */
-  itemIds?: string[]
   /** 用户状态 */
   userStateId?: string
   /** 是否绑定 Gitee */
@@ -222,8 +208,6 @@ export type UserItem = {
 }
 
 export type GroupStatisticType = {
-  /** 在线人数 */
-  onlineNum: number
   /** 总人数 */
   totalNum: number
 }
@@ -271,10 +255,6 @@ export type UserInfoType = {
   power?: number
   /** 手机号 */
   phone?: string
-  /** 佩戴的徽章 */
-  wearingItemId?: string
-  /** 徽章集合 */
-  itemIds?: string[]
   /** 用户状态id */
   userStateId: string
   /** 头像更新时间 */
@@ -371,8 +351,6 @@ export type MsgUserType = {
   username: string
   /** 头像 */
   avatar: string
-  /** 归属地 */
-  locPlace: string
   /** 徽章 */
   badge?: {
     /** 徽章地址 */

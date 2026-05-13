@@ -37,7 +37,8 @@
       "mjolnir": "屏蔽管理",
       "help_about": "帮助与关于",
       "friends": "好友管理",
-      "burn_after_read": "阅后即焚"
+      "burn_after_read": "阅后即焚",
+      "ai_connection": "AI 连接"
     },
     "search_terms": {
       "account": ["账号", "账户", "个人资料", "profile", "display-name"],
@@ -81,7 +82,8 @@
       "mjolnir": ["屏蔽", "封禁", "moderation", "block"],
       "help_about": ["帮助", "关于", "更新", "诊断", "help", "about"],
       "friends": ["好友", "联系人", "备注", "contacts", "remark"],
-      "burn_after_read": ["阅后即焚", "ephemeral", "burn", "timer"]
+      "burn_after_read": ["阅后即焚", "ephemeral", "burn", "timer"],
+      "ai_connection": ["AI", "连接", "MCP", "工具", "openai", "assistant"]
     }
   },
   "footer": {
@@ -1306,5 +1308,33 @@
     "delete_success": "删除成功",
     "delete_failed": "删除失败",
     "phone_verify_pending": "手机号验证功能开发中"
+  },
+  "ai_connection": {
+    "title": "AI 连接管理",
+    "description": "管理 AI 服务连接和 MCP 工具。连接配置将跨设备同步。",
+    "empty": "暂无 AI 连接",
+    "no_tools": "暂无可用 MCP 工具",
+    "mcp_tools_title": "MCP 工具",
+    "actions": {
+      "create": "添加连接",
+      "delete": "删除"
+    },
+    "create_dialog": {
+      "title": "添加 AI 连接",
+      "name_label": "连接名称",
+      "name_placeholder": "例如: My OpenAI",
+      "name_required": "请输入连接名称",
+      "type_label": "连接类型",
+      "type_required": "请选择连接类型",
+      "config_label": "连接配置",
+      "config_placeholder": "请输入 JSON 格式的连接配置",
+      "config_invalid": "配置格式无效，请输入有效的 JSON"
+    },
+    "messages": {
+      "create_success": "连接创建成功",
+      "create_failed": "连接创建失败",
+      "delete_success": "连接已删除",
+      "delete_failed": "删除连接失败"
+    }
   }
 }

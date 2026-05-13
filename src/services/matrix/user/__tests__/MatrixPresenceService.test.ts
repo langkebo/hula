@@ -54,7 +54,7 @@ describe('MatrixPresenceService', () => {
 
       await matrixPresenceService.setPresence('online', 'Working')
 
-      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('@user:example.com', 'online', 'Working')
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('online', 'Working')
     })
 
     it('should fallback to HTTP API when presenceManager is unavailable', async () => {

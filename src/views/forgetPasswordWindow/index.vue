@@ -35,6 +35,37 @@
               clearable />
           </n-form-item>
 
+          <!-- 图片验证码 -->
+          <n-form-item v-if="captchaImage" path="captchaCode" :label="t('auth.forget.form.captcha_label')">
+            <n-flex :size="8" align="center">
+              <n-input
+                :allow-input="noSideSpace"
+                class="border-(1px solid var(--hula-text-tertiary)/80) no-indent-input w-160px!"
+                v-model:value="formData.captchaCode"
+                :placeholder="t('auth.forget.form.captcha_placeholder')"
+                spellCheck="false"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                maxlength="6" />
+              <div class="relative cursor-pointer flex-shrink-0" @click="getCaptchaImage">
+                <img
+                  v-if="captchaImageUrl"
+                  :src="captchaImageUrl"
+                  :alt="t('auth.forget.form.captcha_label')"
+                  class="h-34px w-100px rounded-4px border-(1px solid var(--hula-text-tertiary)/30) object-cover" />
+                <n-button v-else size="small" quaternary :loading="captchaLoading">
+                  {{ t('auth.forget.actions.refresh_captcha') }}
+                </n-button>
+                <div
+                  v-if="captchaInCooldown"
+                  class="absolute inset-0 flex items-center justify-center bg-black/30 rounded-4px text-12px text-white">
+                  {{ captchaCooldownRemaining }}s
+                </div>
+              </div>
+            </n-flex>
+          </n-form-item>
+
           <!-- 邮箱验证码 -->
           <n-form-item path="emailCode" :label="t('auth.forget.form.code_label')">
             <n-flex :size="8">
@@ -169,6 +200,7 @@ import { darkTheme, type FormInst, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import Validation from '@/components/common/Validation.vue'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
@@ -190,11 +222,15 @@ const formRef = ref<FormInst | null>(null)
 const formData = ref({
   email: '',
   emailCode: '',
-  uuid: '' // 图片验证码uuid
+  uuid: '',
+  captchaCode: ''
 })
 
 // 图片验证码相关
 const captchaImage = ref('')
+const captchaImageUrl = ref('')
+const captchaLoading = ref(false)
+const captchaVerified = ref(false)
 const sendBtnDisabled = ref(false)
 const emailCodeBtnText = ref(t('auth.forget.actions.send_code'))
 const countDown = ref(60)
@@ -283,12 +319,23 @@ const getCaptchaImage = async () => {
   }
 
   try {
+    captchaLoading.value = true
     lastCaptchaTime.value = Date.now()
     captchaInCooldown.value = true
+    captchaVerified.value = false
 
     const result = await MatrixAuthService.getCaptcha()
     captchaImage.value = result.mxc_url
     formData.value.uuid = result.session
+
+    if (result.mxc_url) {
+      try {
+        const url = matrixMediaService.getMediaUrl(result.mxc_url)
+        captchaImageUrl.value = url || result.mxc_url
+      } catch {
+        captchaImageUrl.value = result.mxc_url
+      }
+    }
 
     timerWorker.postMessage({
       type: 'startTimer',
@@ -299,6 +346,8 @@ const getCaptchaImage = async () => {
     logger.error('获取验证码失败', error)
     window.$message.error(getErrorMessage(error, '获取验证码失败，请稍后重试'))
     captchaInCooldown.value = false
+  } finally {
+    captchaLoading.value = false
   }
 }
 
@@ -312,6 +361,23 @@ const sendEmailCode = async () => {
   if (!/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(formData.value.email)) {
     window.$message.warning(t('auth.forget.messages.email_format'))
     return
+  }
+
+  if (captchaImage.value && !captchaVerified.value && formData.value.captchaCode) {
+    try {
+      const result = await MatrixAuthService.verifyCaptcha(formData.value.uuid, formData.value.captchaCode)
+      if (!result.success) {
+        window.$message.error(t('auth.forget.messages.captcha_invalid'))
+        getCaptchaImage()
+        return
+      }
+      captchaVerified.value = true
+    } catch (error) {
+      logger.error('验证码校验失败', error)
+      window.$message.error(getErrorMessage(error, t('auth.forget.messages.captcha_invalid')))
+      getCaptchaImage()
+      return
+    }
   }
 
   sendingEmailCode.value = true

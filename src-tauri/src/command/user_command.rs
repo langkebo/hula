@@ -1,5 +1,6 @@
 use crate::AppData;
 use crate::repository::im_user_repository;
+use crate::utils::secure_store::SecureStore;
 use chrono::Local;
 use entity::im_user;
 use entity::prelude::ImUserEntity;
@@ -10,7 +11,7 @@ use sea_orm::IntoActiveModel;
 use sea_orm::QueryFilter;
 use serde::{Deserialize, Serialize};
 use tauri::State;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -141,10 +142,19 @@ pub async fn get_user_tokens(state: State<'_, AppData>) -> Result<TokenResponse,
 pub async fn remove_tokens(state: State<'_, AppData>) -> Result<(), String> {
     info!("Removing user token info");
 
-    {
+    let uid = {
         let mut user_info = state.user_info.lock().await;
+        let uid = user_info.uid.clone();
         user_info.token.clear();
         user_info.refresh_token.clear();
+        uid
+    };
+
+    if !uid.is_empty() {
+        let secure_key = format!("matrix_token_{}", uid);
+        if let Err(e) = SecureStore::delete(&secure_key) {
+            warn!("Failed to delete token from secure storage: {}", e);
+        }
     }
 
     info!("Successfully removed user token info");
@@ -182,5 +192,11 @@ pub async fn update_token(
     )
     .await
     .map_err(|e| e.to_string())?;
+
+    let secure_key = format!("matrix_token_{}", req.uid);
+    if let Err(e) = SecureStore::set(&secure_key, &req.token) {
+        warn!("Failed to store token in secure storage: {}", e);
+    }
+
     Ok(())
 }

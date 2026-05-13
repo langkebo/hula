@@ -21,6 +21,12 @@ vi.mock('../MatrixSpecialFriendService', () => ({
   }
 }))
 
+vi.mock('../../SynapseRustExtensionsService', () => ({
+  synapseRustExtensionsService: {
+    getFriends: vi.fn(async () => [])
+  }
+}))
+
 const mockFriendManager = {
   start: vi.fn(),
   stop: vi.fn(),
@@ -61,6 +67,7 @@ vi.mock('matrix-js-sdk/friend', () => ({
 const { default: matrixFriendService } = await import('../MatrixFriendService')
 const { default: matrixClientService } = await import('../../MatrixClientService')
 const { matrixSpecialFriendService } = await import('../MatrixSpecialFriendService')
+const { synapseRustExtensionsService } = await import('../../SynapseRustExtensionsService')
 
 describe('MatrixFriendService', () => {
   beforeEach(() => {
@@ -217,6 +224,46 @@ describe('MatrixFriendService', () => {
       expect(oldManager.removeAllListeners).toHaveBeenCalledTimes(1)
       expect(newManager.start).toHaveBeenCalledTimes(1)
       expect(friends).toEqual([{ user_id: '@new:example.org' }])
+    })
+
+    it('falls back to synapse friend api when friend manager returns empty list', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        friendManager: {
+          ...mockFriendManager,
+          getFriends: vi.fn(async () => []),
+          getIncomingRequests: vi.fn(async () => []),
+          getOutgoingRequests: vi.fn(async () => []),
+          on: vi.fn(),
+          start: vi.fn()
+        }
+      } as unknown as MatrixClient)
+      vi.mocked(synapseRustExtensionsService.getFriends).mockResolvedValueOnce([
+        {
+          user_id: '@ljf:matrix.test',
+          displayname: 'ljf',
+          username: 'ljf',
+          presence: 'online',
+          online: true,
+          avatar_url: undefined,
+          since: 1777851081179,
+          status: 'normal',
+          dm_room_id: undefined,
+          note: undefined
+        }
+      ])
+
+      const friends = await matrixFriendService.getFriends()
+
+      expect(synapseRustExtensionsService.getFriends).toHaveBeenCalledTimes(1)
+      expect(friends).toEqual([
+        expect.objectContaining({
+          user_id: '@ljf:matrix.test',
+          display_name: 'ljf',
+          username: 'ljf',
+          presence: 'online',
+          online: true
+        })
+      ])
     })
   })
 })

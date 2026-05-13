@@ -23,8 +23,8 @@
       :show-indicator="false"
       :height="6"
       :border-radius="3"
-      :color="'var(--hula-color-primary-500)'"
-      :rail-color="'var(--hula-border-strong)'" />
+      :color="'#13987f'"
+      :rail-color="'#d9d9d9'" />
   </div>
 </template>
 

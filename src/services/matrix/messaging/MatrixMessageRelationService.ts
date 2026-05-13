@@ -77,6 +77,31 @@ export interface ThreadInfo {
   }
 }
 
+export interface RelationsResponse {
+  chunk: Array<Record<string, unknown>>
+  next_batch?: string
+  prev_batch?: string
+}
+
+export interface AggregationItem {
+  type: string
+  key: string
+  count: number
+}
+
+export interface AggregationsResponse {
+  chunk: AggregationItem[]
+}
+
+export interface SendRelationResponse {
+  event_id: string
+  room_id: string
+  relates_to: {
+    event_id: string
+    rel_type: string
+  }
+}
+
 class MatrixMessageRelationService {
   async editMessage(
     roomId: string,
@@ -490,6 +515,119 @@ class MatrixMessageRelationService {
       error(`[MessageRelation] 删除消息失败: ${err}`)
       throw err
     }
+  }
+
+  // ============================================
+  // Server-side Relations API (契约 relations.md)
+  // ============================================
+
+  async fetchRelations(
+    roomId: string,
+    eventId: string,
+    options?: { from?: string; to?: string; limit?: number; dir?: 'b' | 'f' }
+  ): Promise<RelationsResponse | null> {
+    const client = matrixClientService.getClient()
+    if (!client) return null
+    try {
+      const queryParams: Record<string, string> = {}
+      if (options?.from) queryParams.from = options.from
+      if (options?.to) queryParams.to = options.to
+      if (options?.limit) queryParams.limit = String(options.limit)
+      if (options?.dir) queryParams.dir = options.dir
+      const result = (await client.http.authedRequest(
+        'GET',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}`,
+        Object.keys(queryParams).length > 0 ? queryParams : undefined
+      )) as RelationsResponse
+      info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${result.chunk?.length ?? 0}`)
+      return result
+    } catch (err) {
+      error(`[MessageRelation] 获取关系列表失败: ${err}`)
+      return null
+    }
+  }
+
+  async fetchRelationsByType(
+    roomId: string,
+    eventId: string,
+    relType: string,
+    options?: { from?: string; to?: string; limit?: number; dir?: 'b' | 'f' }
+  ): Promise<RelationsResponse | null> {
+    const client = matrixClientService.getClient()
+    if (!client) return null
+    try {
+      const queryParams: Record<string, string> = {}
+      if (options?.from) queryParams.from = options.from
+      if (options?.to) queryParams.to = options.to
+      if (options?.limit) queryParams.limit = String(options.limit)
+      if (options?.dir) queryParams.dir = options.dir
+      const result = (await client.http.authedRequest(
+        'GET',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}`,
+        Object.keys(queryParams).length > 0 ? queryParams : undefined
+      )) as RelationsResponse
+      info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${result.chunk?.length ?? 0}`)
+      return result
+    } catch (err) {
+      error(`[MessageRelation] 获取类型关系列表失败: ${err}`)
+      return null
+    }
+  }
+
+  async getAggregations(roomId: string, eventId: string, relType: string): Promise<AggregationsResponse | null> {
+    const client = matrixClientService.getClient()
+    if (!client) return null
+    try {
+      const result = (await client.http.authedRequest(
+        'GET',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/aggregations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}`
+      )) as AggregationsResponse
+      info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
+      return result
+    } catch (err) {
+      error(`[MessageRelation] 获取聚合数据失败: ${err}`)
+      return null
+    }
+  }
+
+  async sendRelation(
+    roomId: string,
+    eventId: string,
+    relType: string,
+    eventType: string,
+    content: Record<string, unknown>,
+    key?: string
+  ): Promise<SendRelationResponse | null> {
+    const client = matrixClientService.getClient()
+    if (!client) return null
+    try {
+      const body: Record<string, unknown> = { ...content }
+      if (key) body.key = key
+      const txnId = `txn_${Date.now()}`
+      const result = (await client.http.authedRequest(
+        'PUT',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}/${encodeURIComponent(txnId)}`,
+        undefined,
+        { ...body, type: eventType }
+      )) as SendRelationResponse
+      info(`[MessageRelation] 发送关系事件成功: ${result.event_id}`)
+      return result
+    } catch (err) {
+      error(`[MessageRelation] 发送关系事件失败: ${err}`)
+      return null
+    }
+  }
+
+  async getEditHistoryViaApi(
+    roomId: string,
+    eventId: string,
+    options?: { from?: string; limit?: number; dir?: 'b' | 'f' }
+  ): Promise<RelationsResponse | null> {
+    return this.fetchRelationsByType(roomId, eventId, 'm.replace', options)
+  }
+
+  async getReactionAggregations(roomId: string, eventId: string): Promise<AggregationsResponse | null> {
+    return this.getAggregations(roomId, eventId, 'm.annotation')
   }
 }
 

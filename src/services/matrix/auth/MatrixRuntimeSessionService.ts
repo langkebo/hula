@@ -1,13 +1,22 @@
 import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { EventEnum, SexEnum, TauriCommand } from '@/enums'
+import { EventEnum, MsgEnum, OnlineEnum, SexEnum, TauriCommand } from '@/enums'
+import { startPresenceHeartbeat, stopPresenceHeartbeat } from '@/hooks/usePresenceHeartbeat'
 import { useWindow } from '@/hooks/useWindow'
 import {
   clearMatrixSessionEndpointConfig,
   resolveMatrixSessionEndpointConfig,
   saveMatrixSessionEndpointConfig
 } from '@/services/backend/config'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
+import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
+import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { switchUserDatabase } from '@/services/tauriCommand'
+import type { RoomInfo } from '@/services/types'
+import { useChatStore } from '@/stores/domains/chat/chat'
+import type { MessageType } from '@/stores/domains/chat/chat/types'
+import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
@@ -20,7 +29,10 @@ import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMac } from '@/utils/PlatformConstants'
+import { buildPresenceStorePatch } from '@/utils/presenceStatus'
 import { invokeWithErrorHandler, invokeWithResult } from '@/utils/TauriInvokeHandler'
+import { toLocalpart } from '@/utils/userIdentity'
+import type { SearchEventDoc, SearchRoomDoc } from '@/workers/matrixWorkerTypes'
 
 const logger = createLogger('MatrixRuntimeSessionService')
 
@@ -116,7 +128,7 @@ class MatrixRuntimeSessionService {
   }
 
   private resolveDisplayName(uid: string, displayName?: string, account?: string): string {
-    return displayName || account || uid.split(':')[0] || uid
+    return displayName || account || toLocalpart(uid) || uid
   }
 
   private clearUserLocalStorage(): void {
@@ -284,6 +296,8 @@ class MatrixRuntimeSessionService {
         throw new Error('登录成功但会话信息不完整')
       }
 
+      const refreshToken = (matrixStore as unknown as { refreshToken?: string }).refreshToken ?? ''
+
       if (switchDatabase) {
         await switchUserDatabase(uid)
       }
@@ -293,7 +307,7 @@ class MatrixRuntimeSessionService {
           req: {
             uid,
             token: accessToken,
-            refreshToken: ''
+            refreshToken
           }
         })
       }
@@ -361,6 +375,8 @@ class MatrixRuntimeSessionService {
         throw new Error('SSO 登录成功但会话信息不完整')
       }
 
+      const refreshToken = (matrixStore as unknown as { refreshToken?: string }).refreshToken ?? ''
+
       if (switchDatabase) {
         await switchUserDatabase(uid)
       }
@@ -370,7 +386,7 @@ class MatrixRuntimeSessionService {
           req: {
             uid,
             token: accessToken,
-            refreshToken: ''
+            refreshToken
           }
         })
       }
@@ -400,8 +416,161 @@ class MatrixRuntimeSessionService {
     }
   }
 
+  /**
+   * 等待 SlidingSync 进入 PREPARED / SYNCING 状态。避免登录后立即调用 `loadRooms`
+   * 时 `client.getRooms()` 还是空数组，导致 UI 永远显示「暂无会话」。
+   */
+  private waitSyncPrepared(timeoutMs = 8000): Promise<void> {
+    return new Promise((resolve) => {
+      let settled = false
+      const off = (data: unknown) => {
+        const state = (data as { state?: string })?.state
+        if (state === 'PREPARED' || state === 'SYNCING') {
+          if (settled) return
+          settled = true
+          matrixClientService.off('sync', off as never)
+          resolve()
+        }
+      }
+      // 当前 sync 状态可能已经是 PREPARED；先检查一次
+      const current = matrixClientService.getConnectionState()
+      if (current === 'CONNECTED') {
+        resolve()
+        return
+      }
+      matrixClientService.on('sync', off as never)
+      setTimeout(() => {
+        if (settled) return
+        settled = true
+        matrixClientService.off('sync', off as never)
+        logger.warn(`waitSyncPrepared 超时 ${timeoutMs}ms，使用当前状态继续 bootstrap`)
+        resolve()
+      }, timeoutMs)
+    })
+  }
+
+  /**
+   * 在登录成功 / token 恢复成功后调用：
+   *   1. 拉取真实的 Matrix /profile（修正 displayname / avatar）
+   *   2. 主动 setPresence('online')
+   *   3. 注册 User.presence 监听，把变化写回 user / contact / group 三个 store
+   *   4. 启动 4 分钟一次的 presence 心跳
+   *   5. 注册 beforeunload，关闭窗口前 setPresence('unavailable')
+   */
+  private async startPresencePipeline(uid: string): Promise<void> {
+    const userStore = useUserStore()
+    const groupStore = useGroupStore()
+    const contactStore = useContactStore()
+
+    try {
+      const profile = await userStore.fetchUserProfile(uid)
+      if (profile && userStore.userInfo) {
+        if (profile.displayName) userStore.userInfo.name = profile.displayName
+        if (profile.avatarUrl) userStore.userInfo.avatar = profile.avatarUrl
+      }
+    } catch (err) {
+      logger.warn(`fetchUserProfile 失败，使用本地 displayName: ${err}`)
+    }
+
+    try {
+      await matrixPresenceService.setPresence('online')
+    } catch (err) {
+      logger.warn(`setPresence(online) 失败：${err}`)
+    }
+
+    if (userStore.userInfo) {
+      userStore.userInfo.activeStatus = OnlineEnum.ONLINE
+      userStore.userInfo.lastOptTime = Date.now()
+    }
+
+    matrixPresenceService.onPresenceChange((presence) => {
+      const patch = buildPresenceStorePatch(presence)
+      if (presence.user_id === uid && userStore.userInfo) {
+        userStore.userInfo.activeStatus = patch.activeStatus
+        userStore.userInfo.lastOptTime = patch.lastOptTime
+      }
+      if (typeof groupStore.updateUserPresence === 'function') {
+        groupStore.updateUserPresence(presence.user_id, {
+          activeStatus: patch.activeStatus,
+          lastOptTime: patch.lastOptTime
+        })
+      }
+      if (typeof contactStore.updateContactPresence === 'function') {
+        contactStore.updateContactPresence(presence.user_id, patch)
+      }
+    })
+
+    startPresenceHeartbeat()
+
+    if (typeof window !== 'undefined' && !this.beforeUnloadRegistered) {
+      window.addEventListener('beforeunload', this.onBeforeUnload)
+      this.beforeUnloadRegistered = true
+    }
+  }
+
+  /**
+   * 初始化 Worker 搜索索引，批量灌入房间信息和已加载的消息
+   * @param uid 当前用户ID
+   */
+  private async bootstrapSearchIndex(_uid: string): Promise<void> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      logger.warn('[bootstrapSearchIndex] Matrix 客户端未初始化，跳过索引初始化')
+      return
+    }
+
+    const roomStore = useRoomStore()
+    const allRooms = roomStore.roomList
+
+    const searchRoomDocs: SearchRoomDoc[] = allRooms.map((roomInfo: RoomInfo) => {
+      // 从 RoomInfo 提取 SearchRoomDoc 所需信息
+      const room = client.getRoom(roomInfo.roomId)
+      return {
+        roomId: roomInfo.roomId,
+        name: roomInfo.name,
+        avatarUrl: roomInfo.avatarUrl || undefined,
+        memberCount: roomInfo.detail?.joinedCount || room?.getJoinedMembers().length || undefined
+      }
+    })
+
+    if (searchRoomDocs.length > 0) {
+      await matrixWorkerHost.bootstrapSearchRooms(searchRoomDocs)
+      logger.info(`[bootstrapSearchIndex] 批量灌入 ${searchRoomDocs.length} 个房间到 Worker 搜索索引`)
+    }
+
+    const searchEventDocs: SearchEventDoc[] = []
+    for (const roomInfo of allRooms) {
+      const roomMessages = roomStore.messages.get(roomInfo.roomId) || []
+      const roomEvents = roomMessages
+        .filter((msg: MessageType) => msg.message.type === MsgEnum.TEXT && typeof msg.message.body === 'string')
+        .map((msg: MessageType) => ({
+          eventId: msg.message.id,
+          roomId: msg.message.roomId,
+          sender: msg.fromUser.uid,
+          timestamp: msg.message.sendTime,
+          msgtype: 'm.text', // Only indexing text messages for now
+          body: msg.message.body as unknown as string
+        }))
+      searchEventDocs.push(...roomEvents)
+    }
+
+    if (searchEventDocs.length > 0) {
+      await matrixWorkerHost.bootstrapSearchEvents(searchEventDocs)
+      logger.info(`[bootstrapSearchIndex] 批量灌入 ${searchEventDocs.length} 条消息到 Worker 搜索索引`)
+    }
+  }
+
+  private beforeUnloadRegistered = false
+  private readonly onBeforeUnload = () => {
+    // 不能 await，浏览器在 beforeunload 内只允许同步发请求；
+    // SDK 的 setPresence 会发起 PUT，浏览器会尽力发出。
+    void matrixPresenceService.setPresence('unavailable').catch(() => {})
+  }
+
   async bootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
     try {
+      const chatStore = useChatStore()
+      const globalStore = useGlobalStore()
       const userStore = useUserStore()
       const loginHistoriesStore = useLoginHistoriesStore()
       const matrixStore = useMatrixStore()
@@ -415,6 +584,8 @@ class MatrixRuntimeSessionService {
       }
 
       await this.ensureClientReadyForBootstrap(options)
+      // 等待 sync 真正 PREPARED，再加载房间，避免 UI 显示「暂无会话」
+      await this.waitSyncPrepared()
 
       this.clearUserLocalStorage()
       this.clearMessageCache()
@@ -423,11 +594,15 @@ class MatrixRuntimeSessionService {
       await roomStore.setupEventListeners()
       groupStore.groupDetails.length = 0
       await roomStore.loadRooms()
+      await chatStore.getSessionList(true)
+      if (!globalStore.currentSessionRoomId && chatStore.sessionList.length > 0) {
+        globalStore.updateCurrentSessionRoomId(chatStore.sessionList[0].roomId)
+      }
 
       const account = {
         uid,
         name: this.resolveDisplayName(uid, options.displayName, options.account),
-        account: options.account || uid,
+        account: toLocalpart(options.account || uid),
         email: '',
         avatar: AvatarUtils.getAvatarUrl(options.avatar),
         modifyNameChance: 0,
@@ -442,6 +617,25 @@ class MatrixRuntimeSessionService {
 
       userStore.userInfo = account
       loginHistoriesStore.addLoginHistory(account)
+
+      // 拉 profile / 上报 presence / 启动心跳
+      await this.startPresencePipeline(uid)
+
+      // 把 Matrix 事件桥接成既有 useMitt + WsResponseMessageType.* 信号，
+      // 让 App.vue 中遗留的监听器（TOKEN_EXPIRED、MSG_RECALL、ROOM_INFO_CHANGE）
+      // 在没有 WS 通道时仍然能收到等价事件。
+      matrixWsBridge.start()
+
+      // 预热 Matrix Worker 宿主：当前仅用于 ping/心跳骨架，后续会逐步把
+      // 重活迁进 worker。失败不应阻塞登录流程，仅记录日志。
+      void matrixWorkerHost.start().catch((err) => {
+        logger.warn(`[login] MatrixWorkerHost 启动失败: ${err}`)
+      })
+
+      // 初始化 Worker 搜索索引
+      await this.bootstrapSearchIndex(uid).catch((err) => {
+        logger.warn(`[login] 初始化 Worker 搜索索引失败: ${err}`)
+      })
 
       void emojiStore.initEmojis().catch(() => {
         logger.warn('[login] 初始化表情失败')
@@ -537,6 +731,31 @@ class MatrixRuntimeSessionService {
     const matrixStore = useMatrixStore()
     const globalStore = useGlobalStore()
     const { resizeWindow, createWebviewWindow } = useWindow()
+
+    // 登出前先把心跳停掉，并把状态告诉服务端，避免被对端继续看到「在线」
+    stopPresenceHeartbeat()
+    matrixWsBridge.stop()
+
+    // 清理搜索索引持久化数据并终止 Worker
+    const cleanupAndTerminate = async () => {
+      try {
+        await matrixWorkerHost.resetSearchIndex()
+      } catch (err) {
+        logger.warn(`登出时清理搜索索引失败: ${err}`)
+      } finally {
+        matrixWorkerHost.terminate('logout')
+      }
+    }
+    void cleanupAndTerminate()
+    if (typeof window !== 'undefined' && this.beforeUnloadRegistered) {
+      window.removeEventListener('beforeunload', this.onBeforeUnload)
+      this.beforeUnloadRegistered = false
+    }
+    try {
+      await matrixPresenceService.setPresence('unavailable')
+    } catch (err) {
+      logger.warn(`登出时 setPresence(unavailable) 失败：${err}`)
+    }
 
     if (resetLocalState) {
       await this.resetLocalSessionState({

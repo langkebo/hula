@@ -95,8 +95,11 @@ class MatrixRoomSummaryService {
   }
 
   async getRoomSummaries(roomIds: string[]): Promise<RoomSummary[]> {
-    const summaries = await Promise.all(roomIds.map((roomId) => this.getRoomSummary(roomId)))
-    return summaries.filter((summary): summary is RoomSummary => summary !== null)
+    const results = await Promise.allSettled(roomIds.map((roomId) => this.getRoomSummary(roomId)))
+    return results
+      .filter((r): r is PromiseFulfilledResult<RoomSummary | null> => r.status === 'fulfilled')
+      .map((r) => r.value)
+      .filter((summary): summary is RoomSummary => summary !== null)
   }
 
   async getAllRoomSummaries(): Promise<RoomSummary[]> {

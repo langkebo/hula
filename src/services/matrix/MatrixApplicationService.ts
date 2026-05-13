@@ -1,6 +1,7 @@
 import { error } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { matrixClientService } from './MatrixClientService'
+import { MATRIX_PATHS } from './paths'
 
 export interface ApplicationServiceNamespace {
   exclusive: boolean
@@ -35,7 +36,7 @@ class MatrixApplicationService {
 
   async register(payload: ApplicationServiceRegistration): Promise<boolean> {
     try {
-      await this.getClient().http.authedRequest('POST', '/_synapse/admin/v1/appservices', undefined, payload)
+      await this.getClient().http.authedRequest('POST', MATRIX_PATHS.ADMIN.APPSERVICES, undefined, payload)
       return true
     } catch (err) {
       error(`[MatrixApplicationService] 注册失败: ${err}`)
@@ -45,7 +46,7 @@ class MatrixApplicationService {
 
   async list(): Promise<RegisteredApplicationService[]> {
     try {
-      const response = (await this.getClient().http.authedRequest('GET', '/_synapse/admin/v1/appservices')) as {
+      const response = (await this.getClient().http.authedRequest('GET', MATRIX_PATHS.ADMIN.APPSERVICES)) as {
         services?: unknown
       }
       return Array.isArray(response.services) ? (response.services as RegisteredApplicationService[]) : []
@@ -57,14 +58,9 @@ class MatrixApplicationService {
 
   async setEnabled(id: string, enabled: boolean): Promise<boolean> {
     try {
-      await this.getClient().http.authedRequest(
-        'PUT',
-        `/_synapse/admin/v1/appservices/${encodeURIComponent(id)}`,
-        undefined,
-        {
-          enabled
-        }
-      )
+      await this.getClient().http.authedRequest('PUT', MATRIX_PATHS.ADMIN.APPSERVICE_BY_ID(id), undefined, {
+        enabled
+      })
       return true
     } catch (err) {
       error(`[MatrixApplicationService] 设置启用状态失败: ${err}`)
@@ -82,10 +78,7 @@ class MatrixApplicationService {
 
   private async getNamespace(id: string, key: 'users' | 'rooms'): Promise<ApplicationServiceNamespace[]> {
     try {
-      const response = (await this.getClient().http.authedRequest(
-        'GET',
-        `/_synapse/admin/v1/appservices/${encodeURIComponent(id)}`
-      )) as {
+      const response = (await this.getClient().http.authedRequest('GET', MATRIX_PATHS.ADMIN.APPSERVICE_BY_ID(id))) as {
         namespaces?: {
           users?: unknown
           rooms?: unknown

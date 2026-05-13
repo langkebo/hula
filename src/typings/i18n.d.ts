@@ -470,6 +470,8 @@ export type I18nKeys = {
       "form": {
         "email_label": "邮箱账号",
         "email_placeholder": "请输入您的邮箱",
+        "captcha_label": "图片验证码",
+        "captcha_placeholder": "请输入图片验证码",
         "code_label": "邮箱验证码",
         "code_placeholder": "请输入邮箱验证码",
         "password_label": "新密码",
@@ -491,10 +493,12 @@ export type I18nKeys = {
       "actions": {
         "send_code": "发送验证码",
         "retry_in": "{seconds}秒后重新获取",
-        "resend": "重新获取"
+        "resend": "重新获取",
+        "refresh_captcha": "刷新验证码"
       },
       "messages": {
         "captcha_cooldown": "请求过于频繁，{seconds}秒后再试",
+        "captcha_invalid": "图片验证码错误，请重新输入",
         "enter_email": "请先输入邮箱",
         "email_format": "请输入正确的邮箱格式",
         "code_sent": "验证码已发送至您的邮箱"
@@ -516,6 +520,7 @@ export type I18nKeys = {
     }
   },
   "chatHistory": {
+    "title": "聊天记录",
     "search": {
       "placeholder": "搜索聊天记录"
     },
@@ -859,7 +864,12 @@ export type I18nKeys = {
     "reconnecting": "正在重新连接...",
     "reconnecting_attempt": "正在重新连接 ({count}/{max})...",
     "failed": "连接失败，请重试",
-    "retry": "重试"
+    "retry": "重试",
+    "diagnose": "运行自检",
+    "diagnose_running": "正在自检...",
+    "diagnose_title": "Matrix 连接自检",
+    "diagnose_no_homeserver": "未配置 Homeserver，无法自检",
+    "diagnose_failed": "自检执行失败：{message}"
   },
   "dm": {
     "list": {
@@ -1217,23 +1227,34 @@ export type I18nKeys = {
       "placeholder": "输入用户ID搜索",
       "message_label": "验证消息",
       "message_placeholder": "我是...",
+      "message_too_long": "验证消息不能超过500个字符",
       "hint": "输入用户ID搜索添加好友",
       "not_found": "未找到该用户",
       "already_friend": "该用户已是你的好友",
       "search_error": "搜索用户失败",
       "send": "发送请求",
       "success": "好友请求已发送",
-      "error": "发送好友请求失败"
+      "error": "发送好友请求失败",
+      "mode_fuzzy": "模糊搜索",
+      "mode_exact": "精确搜索",
+      "suggestions": "推荐好友"
     },
     "detail": {
       "title": "好友详情",
-      "status": "好友状态",
+      "status": "在线状态",
+      "friend_status": "好友类型",
+      "last_seen": "最后活跃",
       "note": "备注",
       "since": "添加时间",
       "note_section": "修改备注",
       "note_placeholder": "设置好友备注",
       "note_saved": "备注已保存",
       "note_error": "保存备注失败",
+      "display_name": "显示名称",
+      "edit_display_name": "修改显示名",
+      "display_name_placeholder": "设置好友显示名称",
+      "display_name_saved": "显示名已保存",
+      "display_name_error": "保存显示名失败",
       "status_section": "设置状态",
       "status_saved": "状态已更新",
       "status_error": "更新状态失败",
@@ -1247,12 +1268,18 @@ export type I18nKeys = {
         "content": "确定要删除该好友吗？删除后聊天记录将保留。"
       },
       "remove_success": "已删除好友",
-      "remove_error": "删除好友失败"
+      "remove_error": "删除好友失败",
+      "just_now": "刚刚",
+      "minutes_ago": "{count}分钟前",
+      "hours_ago": "{count}小时前",
+      "days_ago": "{count}天前"
     },
     "context": {
       "send_message": "发消息",
       "encrypted_chat": "加密聊天",
       "secret_chat": "设为私密好友",
+      "set_note": "设置备注",
+      "set_display_name": "设置显示名",
       "set_favorite": "设为收藏",
       "set_normal": "设为普通",
       "set_blocked": "屏蔽好友",
@@ -1319,6 +1346,14 @@ export type I18nKeys = {
       "dynamic_short_title": "动态",
       "room_list": "房间列表",
       "room_list_short_title": "房间",
+      "room_detail": {
+        "just_now": "刚刚",
+        "yesterday": "昨天",
+        "mute": "免打扰",
+        "encrypted": "加密聊天",
+        "burn": "阅后即焚",
+        "typing": "正在输入..."
+      },
       "space_list": "空间列表",
       "space_list_short_title": "空间",
       "chatbot": "ChatBot",
@@ -1729,6 +1764,8 @@ export type I18nKeys = {
         "view_all": "查看全部"
       },
       "no_more": "没有更多消息",
+      "empty_title": "暂无消息",
+      "empty_desc": "发送第一条消息，开始聊天吧",
       "new_messages": "{count} 条新消息",
       "confirm": "确定",
       "cancel": "取消",
@@ -2018,6 +2055,7 @@ export type I18nKeys = {
     "about": "关于",
     "sign_out": "退出登录",
     "homeserver": "设置服务器",
+    "admin_panel": "管理后台",
     "homeserver_url": "服务器地址",
     "homeserver_placeholder": "请输入 Matrix 服务器地址",
     "homeserver_hint": "设置 Matrix Homeserver 地址以连接到不同的服务器",
@@ -2220,6 +2258,9 @@ export type I18nKeys = {
       "official_popover": "官方群聊认证",
       "bot_popover": "HuLa助手",
       "mention_tag": "[有人@我]",
+      "favorite_tag": "已置顶",
+      "low_priority_tag": "低优先级",
+      "migrated_tag": "已迁移",
       "shield_group": "您已屏蔽群聊",
       "shield_user": "您已屏蔽此人",
       "empty_description": "快和朋友聊天吧！",
@@ -2408,7 +2449,17 @@ export type I18nKeys = {
       "forward_success": "消息转发成功",
       "forward_failed": "消息转发失败",
       "non_text_message": "［非文本消息］"
-    }
+    },
+    "forward": {
+      "title": "转发消息",
+      "search_placeholder": "搜索房间",
+      "no_rooms": "没有可转发的房间",
+      "selected_count": "已选 {count} 个房间",
+      "send": "转发",
+      "success": "已转发到 {count} 个房间",
+      "failed": "转发失败"
+    },
+    "merge_msg_title": "合并消息"
   },
   "message_container": {
     "no_more": "没有更多消息了",
@@ -3254,6 +3305,106 @@ export type I18nKeys = {
     "success": "举报成功，感谢您的反馈",
     "failed": "举报失败，请重试"
   },
+  "room": {
+    "create": {
+      "title": "创建房间",
+      "create": "创建房间",
+      "name": "名称",
+      "name_placeholder": "请输入房间名称",
+      "name_required": "请输入房间名称",
+      "name_length": "房间名称长度为 2-100 个字符",
+      "topic": "简介",
+      "topic_placeholder": "请输入房间简介",
+      "alias": "别名",
+      "alias_placeholder": "请输入房间别名",
+      "avatar": "头像",
+      "avatar_upload_failed": "头像上传失败",
+      "type": "类型",
+      "private": "私有房间",
+      "public": "公开房间",
+      "space": "空间",
+      "room_type_hint": "空间用于组织和分类房间，普通房间用于日常聊天",
+      "encryption": "端到端加密",
+      "encryption_hint": "启用后，消息将进行端到端加密，只有成员能够解密",
+      "history": "历史可见性",
+      "history_placeholder": "选择历史可见性",
+      "history_shared": "所有成员可见",
+      "history_invited": "仅受邀成员可见",
+      "history_joined": "仅已加入成员可见",
+      "history_world_readable": "所有人可见",
+      "join_rule": "加入方式",
+      "join_rule_placeholder": "选择加入方式",
+      "join_rule_invite": "仅邀请",
+      "join_rule_knock": "申请加入",
+      "join_rule_public": "公开加入",
+      "join_rule_restricted": "受限加入",
+      "success": "创建成功",
+      "failed": "创建失败",
+      "creating": "正在创建..."
+    },
+    "join": {
+      "title": "加入房间",
+      "join": "加入",
+      "room_id_or_alias": "房间 ID 或别名",
+      "room_id_or_alias_placeholder": "输入 !roomId:server 或 #alias:server",
+      "room_id_or_alias_required": "请输入房间 ID 或别名",
+      "room_id_or_alias_length": "房间 ID 或别名长度为 3-255 个字符",
+      "reason": "申请理由",
+      "reason_placeholder": "请输入申请理由（可选，仅对需要审批的房间有效）",
+      "format_hint": "支持格式：!roomId:server.com 或 #alias:server.com",
+      "success": "加入成功",
+      "failed": "加入失败",
+      "not_found": "房间不存在",
+      "already_joined": "您已在该房间中",
+      "forbidden": "没有权限加入该房间",
+      "joining": "正在加入..."
+    },
+    "detail": {
+      "no_selection": "选择一个房间查看详情",
+      "overview": "基本信息",
+      "topic": "简介",
+      "no_topic": "暂无简介",
+      "members": "成员",
+      "online": "在线",
+      "visibility": "可见性",
+      "public": "公开",
+      "private": "私有",
+      "encryption": "加密",
+      "encrypted": "已加密",
+      "not_encrypted": "未加密",
+      "actions": "操作",
+      "enter_chat": "进入会话",
+      "settings": "房间设置",
+      "invite": "邀请成员",
+      "announcement": "公告",
+      "load_failed": "加载失败",
+      "id_copied": "已复制房间 ID",
+      "no_data": "暂无数据",
+      "update_success": "房间设置已更新",
+      "update_failed": "房间设置更新失败"
+    },
+    "invitation": {
+      "accept": "接受",
+      "reject": "拒绝",
+      "accept_success": "已接受邀请",
+      "accept_failed": "接受邀请失败",
+      "reject_success": "已拒绝邀请",
+      "reject_failed": "拒绝邀请失败"
+    },
+    "batch": {
+      "selected_count": "已选 {count} 项",
+      "mark_read": "标记已读",
+      "pin": "置顶",
+      "mute": "静音",
+      "leave": "退出"
+    },
+    "state": {
+      "encrypted": "加密房间",
+      "burn_after_read": "阅后即焚",
+      "has_draft": "有草稿",
+      "failed_send": "发送失败"
+    }
+  },
   "room_preview": {
     "media": {
       "image": "[图片]",
@@ -3275,6 +3426,17 @@ export type I18nKeys = {
       "join": "加入了房间",
       "leave": "离开了房间"
     }
+  },
+  "search": {
+    "title": "搜索",
+    "placeholder": "搜索消息、房间或用户...",
+    "all": "全部",
+    "messages": "消息",
+    "rooms": "房间",
+    "users": "用户",
+    "no_results": "未找到相关结果",
+    "recent": "最近搜索",
+    "clear": "清除"
   },
   "setting": {
     "common": {
@@ -3315,7 +3477,8 @@ export type I18nKeys = {
         "mjolnir": "屏蔽管理",
         "help_about": "帮助与关于",
         "friends": "好友管理",
-        "burn_after_read": "阅后即焚"
+        "burn_after_read": "阅后即焚",
+        "ai_connection": "AI 连接"
       },
       "search_terms": {
         "account": [
@@ -3436,6 +3599,14 @@ export type I18nKeys = {
           "ephemeral",
           "burn",
           "timer"
+        ],
+        "ai_connection": [
+          "AI",
+          "连接",
+          "MCP",
+          "工具",
+          "openai",
+          "assistant"
         ]
       }
     },
@@ -4661,6 +4832,34 @@ export type I18nKeys = {
       "delete_success": "删除成功",
       "delete_failed": "删除失败",
       "phone_verify_pending": "手机号验证功能开发中"
+    },
+    "ai_connection": {
+      "title": "AI 连接管理",
+      "description": "管理 AI 服务连接和 MCP 工具。连接配置将跨设备同步。",
+      "empty": "暂无 AI 连接",
+      "no_tools": "暂无可用 MCP 工具",
+      "mcp_tools_title": "MCP 工具",
+      "actions": {
+        "create": "添加连接",
+        "delete": "删除"
+      },
+      "create_dialog": {
+        "title": "添加 AI 连接",
+        "name_label": "连接名称",
+        "name_placeholder": "例如: My OpenAI",
+        "name_required": "请输入连接名称",
+        "type_label": "连接类型",
+        "type_required": "请选择连接类型",
+        "config_label": "连接配置",
+        "config_placeholder": "请输入 JSON 格式的连接配置",
+        "config_invalid": "配置格式无效，请输入有效的 JSON"
+      },
+      "messages": {
+        "create_success": "连接创建成功",
+        "create_failed": "连接创建失败",
+        "delete_success": "连接已删除",
+        "delete_failed": "删除连接失败"
+      }
     }
   },
   "space": {
@@ -4672,6 +4871,11 @@ export type I18nKeys = {
     "filter_all": "全部",
     "filter_group": "群聊",
     "filter_single": "单聊",
+    "engagement_label": "参与状态",
+    "engagement_all": "全部",
+    "engagement_unread": "未读",
+    "engagement_mention": "提及",
+    "engagement_invite": "邀请",
     "sort_label": "排序方式",
     "sort_recent": "最近活跃",
     "sort_name": "名称",
@@ -4693,6 +4897,12 @@ export type I18nKeys = {
     "detail_last_active": "最近活跃",
     "detail_last_message": "最近消息",
     "detail_unread": "未读数",
+    "detail_capabilities": "房间能力",
+    "detail_capability_knock": "申请加入",
+    "detail_capability_restricted": "受限加入",
+    "detail_capability_threading": "线程",
+    "detail_capability_read_receipts": "已读回执",
+    "detail_capability_typing_notifications": "输入提示",
     "detail_group": "群聊详情",
     "detail_members_count": "成员数",
     "detail_online_members": "在线成员",
@@ -4748,7 +4958,24 @@ export type I18nKeys = {
     "add_room_failed": "添加失败",
     "settings_title": "空间设置",
     "settings_success": "保存成功",
-    "settings_failed": "保存失败"
+    "settings_failed": "保存失败",
+    "search_placeholder": "搜索空间",
+    "sessions": "个会话",
+    "pinned": "置顶",
+    "joined": "已加入",
+    "low_priority": "低优先级",
+    "no_results": "未找到匹配的空间",
+    "detail_tab_summary": "概览",
+    "detail_tab_members": "成员",
+    "detail_tab_activity": "动态",
+    "active_filters": "筛选",
+    "clear_all_filters": "清除全部",
+    "pin_space": "置顶",
+    "unpin_space": "取消置顶",
+    "discover": "发现空间",
+    "unread": "未读",
+    "upload_avatar": "上传头像",
+    "avatar": "头像"
   },
   "thread": {
     "title": "消息线程",

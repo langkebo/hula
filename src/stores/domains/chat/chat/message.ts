@@ -27,6 +27,13 @@ import { createMessageRoomIndex } from './messageRoomIndex'
 import { createMessageSortedKeys } from './messageSortedKeys'
 import { createRecallManager } from './recallManager'
 
+type MessageListOptions = {
+  isLast: boolean
+  isLoading: boolean
+  cursor: string
+  hasLoadedOnce?: boolean
+}
+
 export const useChatStore = defineStore(StoresEnum.CHAT, () => {
   const route = useRoute()
   const userStore = useUserStore()
@@ -38,7 +45,7 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
   const messageMap = shallowReactive<Record<string, Record<string, MessageType>>>({})
   const sortedMessageKeys = reactive<Record<string, string[]>>({})
   const sortedMessageKeyIndexes = reactive<Record<string, Record<string, number>>>({})
-  const messageOptions = reactive<Record<string, { isLast: boolean; isLoading: boolean; cursor: string }>>({})
+  const messageOptions = reactive<Record<string, MessageListOptions>>({})
 
   const transientStatuses = new Set<MessageStatusEnum>([
     MessageStatusEnum.PENDING,
@@ -89,13 +96,13 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
       const roomId = globalStore.currentSessionRoomId
       const current = messageOptions[roomId]
       if (current === undefined) {
-        messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '' }
+        messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }
       }
       return messageOptions[roomId]
     },
     set: (val) => {
       const roomId = globalStore.currentSessionRoomId
-      messageOptions[roomId] = val as { isLast: boolean; isLoading: boolean; cursor: string }
+      messageOptions[roomId] = val as MessageListOptions
     }
   })
 

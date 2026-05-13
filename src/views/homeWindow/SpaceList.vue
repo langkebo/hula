@@ -8,6 +8,7 @@
     :selected-space-id="selectedSpaceId"
     :search-keyword="searchKeyword"
     :session-type-filter="sessionTypeFilter"
+    :session-engagement-filter="sessionEngagementFilter"
     :session-sort="sessionSort"
     :active-space="activeSpace"
     :can-manage-active-space="canManageSelectedSpace"
@@ -22,6 +23,11 @@
     :add-room-suggested="addRoomForm.suggested"
     :settings-name="settingsForm.name"
     :settings-topic="settingsForm.topic"
+    :overlay-mode="overlayState.mode"
+    :forward-event-id="overlayState.forwardEventId"
+    :forward-room-id="overlayState.forwardRoomId"
+    :history-room-id="overlayState.historyRoomId"
+    :merged-msg-ids="overlayState.mergedMsgIds"
     :on-retry-network="retrySessions"
     :get-item-classes="getItemClasses"
     :visible-menu="visibleMenu"
@@ -32,6 +38,7 @@
     @update:selected-space-id="setSelectedSpaceId"
     @update:search-keyword="setSearchKeyword"
     @update:session-type-filter="setSessionTypeFilter"
+    @update:session-engagement-filter="setSessionEngagementFilter"
     @update:session-sort="setSessionSort"
     @update:invite-user-id="inviteForm.userId = $event"
     @update:add-room-id="addRoomForm.roomId = $event"
@@ -43,7 +50,13 @@
     @add-space-room="openAddSpaceRoom"
     @open-space-settings="openSpaceSettings"
     @close-manage-pane="closeManagePane"
-    @submit-manage-pane="submitManagePane" />
+    @submit-manage-pane="submitManagePane"
+    @close-overlay="closeOverlay"
+    @overlay-created="handleOverlayCreated"
+    @overlay-forwarded="handleOverlayForwarded"
+    @overlay-message-selected="handleOverlayMessageSelected"
+    @overlay-room-selected="handleOverlayRoomSelected"
+    @overlay-user-selected="handleOverlayUserSelected" />
 </template>
 <script lang="ts" setup name="spaceList">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
@@ -65,6 +78,7 @@ import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
 
 type SpaceManageMode = 'invite' | 'add-room' | 'settings'
+type OverlayMode = 'create-room' | 'create-space' | 'forward' | 'search' | 'history' | 'merged-msg'
 
 const { t } = useI18n()
 const message = useNaiveMessage()
@@ -93,11 +107,13 @@ const {
   activeSpace,
   searchKeyword,
   sessionTypeFilter,
+  sessionEngagementFilter,
   sessionSort,
   filteredSessionList,
   setSelectedSpaceId,
   setSearchKeyword,
   setSessionTypeFilter,
+  setSessionEngagementFilter,
   setSessionSort,
   ensureRoomVisible,
   reloadSpaces,
@@ -109,6 +125,19 @@ const manageMode = ref<SpaceManageMode | null>(null)
 const inviteForm = reactive({ userId: '' })
 const addRoomForm = reactive({ roomId: '', suggested: false })
 const settingsForm = reactive({ name: '', topic: '' })
+const overlayState = reactive<{
+  mode: OverlayMode | null
+  forwardEventId: string
+  forwardRoomId: string
+  historyRoomId: string
+  mergedMsgIds: string[]
+}>({
+  mode: null,
+  forwardEventId: '',
+  forwardRoomId: '',
+  historyRoomId: '',
+  mergedMsgIds: []
+})
 const {
   space: selectedSpaceDetail,
   load: loadSelectedSpace,
@@ -194,7 +223,7 @@ const submitAddSpaceRoom = async () => {
     return
   }
 
-  await Promise.all([reloadSpaces(), reloadActiveSpaceRooms()])
+  await Promise.allSettled([reloadSpaces(), reloadActiveSpaceRooms()])
   message.success(t('space.add_room_success'))
   closeManagePane()
 }
@@ -247,6 +276,50 @@ const submitManagePane = async () => {
     default:
       return
   }
+}
+
+const openOverlay = (mode: OverlayMode, options?: Partial<typeof overlayState>) => {
+  overlayState.mode = mode
+  if (options?.forwardEventId !== undefined) overlayState.forwardEventId = options.forwardEventId
+  if (options?.forwardRoomId !== undefined) overlayState.forwardRoomId = options.forwardRoomId
+  if (options?.historyRoomId !== undefined) overlayState.historyRoomId = options.historyRoomId
+  if (options?.mergedMsgIds !== undefined) overlayState.mergedMsgIds = options.mergedMsgIds
+}
+
+const closeOverlay = () => {
+  overlayState.mode = null
+  overlayState.forwardEventId = ''
+  overlayState.forwardRoomId = ''
+  overlayState.historyRoomId = ''
+  overlayState.mergedMsgIds = []
+}
+
+const handleOverlayCreated = async (data: { roomId?: string; space?: unknown }) => {
+  if (data.roomId) {
+    await reloadActiveSpaceRooms()
+  }
+  if (data.space) {
+    await reloadSpaces()
+  }
+  closeOverlay()
+}
+
+const handleOverlayForwarded = (_roomIds: string[]) => {
+  closeOverlay()
+}
+
+const handleOverlayMessageSelected = (roomId: string, _eventId: string) => {
+  ensureRoomVisible(roomId)
+  closeOverlay()
+}
+
+const handleOverlayRoomSelected = (roomId: string) => {
+  ensureRoomVisible(roomId)
+  closeOverlay()
+}
+
+const handleOverlayUserSelected = (_userId: string) => {
+  closeOverlay()
 }
 
 watch(selectedSpaceId, (spaceId) => {

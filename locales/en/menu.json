@@ -5,6 +5,7 @@
   "about": "About",
   "sign_out": "Sign Out",
   "homeserver": "Server Settings",
+  "admin_panel": "Admin Panel",
   "homeserver_url": "Server URL",
   "homeserver_placeholder": "Enter Matrix server URL",
   "homeserver_hint": "Set the Matrix Homeserver URL to connect to a different server",

@@ -30,7 +30,8 @@ class MatrixBurnAfterReadService {
   private getManager() {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('Matrix client not initialized')
+      logger.warn('[BurnAfterRead] Matrix client not initialized, manager unavailable.')
+      return null
     }
     return client.getBurnAfterReadManager()
   }
@@ -38,6 +39,8 @@ class MatrixBurnAfterReadService {
   async enableBurn(roomId: string, burnAfterMs?: number, throwOnError = false): Promise<BurnSettings | null> {
     try {
       const manager = this.getManager()
+      if (!manager) return null
+
       const settings = await manager.enableBurn(roomId, burnAfterMs)
       logger.info(`阅后即焚已启用: roomId=${roomId}, burnAfterMs=${settings.burn_after_ms}`)
       return {
@@ -54,6 +57,7 @@ class MatrixBurnAfterReadService {
   async disableBurn(roomId: string, throwOnError = false): Promise<BurnSettings | null> {
     try {
       const manager = this.getManager()
+      if (!manager) return null
       const settings = await manager.disableBurn(roomId)
       logger.info(`阅后即焚已禁用: roomId=${roomId}`)
       return {
@@ -70,6 +74,7 @@ class MatrixBurnAfterReadService {
   async getBurnSettings(roomId: string, throwOnError = false): Promise<BurnSettings | null> {
     try {
       const manager = this.getManager()
+      if (!manager) return null
       const settings = await manager.getBurnSettings(roomId)
       return {
         enabled: settings.enabled,
@@ -85,6 +90,7 @@ class MatrixBurnAfterReadService {
   async isBurnEnabled(roomId: string): Promise<boolean> {
     try {
       const manager = this.getManager()
+      if (!manager) return false
       return await manager.isBurnEnabled(roomId)
     } catch {
       return false
@@ -94,6 +100,7 @@ class MatrixBurnAfterReadService {
   async getPendingBurns(roomId: string, throwOnError = false): Promise<BurnPendingEvent[]> {
     try {
       const manager = this.getManager()
+      if (!manager) return []
       const events = await manager.getPendingBurns(roomId)
       return events.map((e: { event_id: string; created_at: number; delete_at: number }) => ({
         eventId: e.event_id,
@@ -110,6 +117,7 @@ class MatrixBurnAfterReadService {
   async markBurnRead(roomId: string, eventId: string, throwOnError = false): Promise<boolean> {
     try {
       const manager = this.getManager()
+      if (!manager) return false
       const result = await manager.markBurnRead(roomId, eventId)
       logger.info(`消息已标记已读，触发焚毁: eventId=${eventId}`)
       return result.marked
@@ -123,6 +131,7 @@ class MatrixBurnAfterReadService {
   async cancelBurn(roomId: string, eventId: string, throwOnError = false): Promise<boolean> {
     try {
       const manager = this.getManager()
+      if (!manager) return false
       const result = await manager.cancelBurn(roomId, eventId)
       logger.info(`已取消焚毁: eventId=${eventId}`)
       return result.cancelled
@@ -136,6 +145,7 @@ class MatrixBurnAfterReadService {
   async setBurnConfig(defaultBurnMs: number, throwOnError = false): Promise<number | null> {
     try {
       const manager = this.getManager()
+      if (!manager) return null
       const result = await manager.setBurnConfig(defaultBurnMs)
       logger.info(`全局默认焚毁时间已设置: ${result.default_burn_ms}ms`)
       return result.default_burn_ms
@@ -149,6 +159,7 @@ class MatrixBurnAfterReadService {
   async getBurnStats(throwOnError = false): Promise<BurnStats> {
     try {
       const manager = this.getManager()
+      if (!manager) return { totalBurned: 0, totalPending: 0, roomsWithBurnEnabled: 0 }
       const stats = await manager.getBurnStats()
       return {
         totalBurned: stats.total_burned,
@@ -171,6 +182,7 @@ class MatrixBurnAfterReadService {
   ): Promise<BurnMessageResponse | null> {
     try {
       const manager = this.getManager()
+      if (!manager) return null
       const result = await manager.sendMessage({
         room_id: roomId,
         content,
@@ -193,6 +205,7 @@ class MatrixBurnAfterReadService {
   async burnMessage(eventId: string, throwOnError = false): Promise<boolean> {
     try {
       const manager = this.getManager()
+      if (!manager) return false
       await manager.burnMessage(eventId)
       logger.info(`消息已焚毁: eventId=${eventId}`)
       return true
@@ -206,6 +219,7 @@ class MatrixBurnAfterReadService {
   async extendBurnTime(eventId: string, additionalTime: number, throwOnError = false): Promise<boolean> {
     try {
       const manager = this.getManager()
+      if (!manager) return false
       await manager.extendBurnTime(eventId, additionalTime)
       logger.info(`焚毁时间已延长: eventId=${eventId}, +${additionalTime}ms`)
       return true

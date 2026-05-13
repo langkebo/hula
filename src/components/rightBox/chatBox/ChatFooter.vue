@@ -5,7 +5,15 @@
     class="h-full flex flex-col relative">
     <!-- 添加遮罩层 -->
     <div
-      v-if="isSingleChat && !isFriend"
+      v-if="isSingleChat && isSessionTargetPending"
+      :style="{ height: `${footerHeight}px` }"
+      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--hula-surface-overlay]">
+      <n-flex align="center" justify="center" class="pb-60px">
+        <span class="text-(14px [--hula-text-tertiary])">正在准备会话...</span>
+      </n-flex>
+    </div>
+    <div
+      v-else-if="isSingleChat && !isFriend"
       :style="{ height: `${footerHeight}px` }"
       class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--hula-surface-overlay]">
       <n-flex align="center" justify="center" class="pb-60px">
@@ -388,11 +396,15 @@ const isSingleChat = computed(() => {
   return globalStore.currentSession?.type === RoomTypeEnum.SINGLE
 })
 
+const isSessionTargetPending = computed(() => {
+  return isSingleChat.value && !detailId.value
+})
+
 /** 是否是好友关系 */
 const isFriend = computed(() => {
   if (!isSingleChat.value) return true
   const target = detailId.value
-  if (!target) return false
+  if (!target) return true
   return contactStore.contactsList.some((contact: FriendItem) => contact.uid === target)
 })
 

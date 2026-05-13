@@ -86,7 +86,7 @@ const markerStyles = {
     width: 25,
     height: 35,
     anchor: { x: 12, y: 35 },
-    color: 'var(--hula-color-danger-500)'
+    color: '#ff4d4f' // 使用固定颜色值，避免 seemly 无法解析 CSS 变量
   }
 }
 

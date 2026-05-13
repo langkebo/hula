@@ -73,11 +73,11 @@ export abstract class AbstractMessageStrategy implements MessageStrategy {
     const currentTime = new Date().getTime()
     const groupStore = useGroupStore()
     return {
+      clientKey: messageId,
       fromUser: {
         uid: userUid.value || '',
         username: groupStore.getUserInfo(userUid.value)?.name || '',
-        avatar: groupStore.getUserInfo(userUid.value)?.avatar || '',
-        locPlace: groupStore.getUserInfo(userUid.value)?.locPlace || ''
+        avatar: groupStore.getUserInfo(userUid.value)?.avatar || ''
       },
       message: {
         id: messageId,

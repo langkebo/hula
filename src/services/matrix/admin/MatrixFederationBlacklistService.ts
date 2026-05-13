@@ -1,6 +1,7 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 export interface FederationBlacklistEntry {
   domain: string
@@ -18,6 +19,8 @@ interface FederationBlacklistListResponse {
   blacklist?: unknown[]
   servers?: unknown[]
 }
+
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 class MatrixFederationBlacklistService {
   private getClient(): MatrixClient {
@@ -53,9 +56,18 @@ class MatrixFederationBlacklistService {
     }
   }
 
-  private async request<TResponse>(method: string, path: string, body?: Record<string, unknown>): Promise<TResponse> {
+  private async request<TResponse>(
+    method: HttpMethod,
+    path: string,
+    body?: Record<string, unknown>
+  ): Promise<TResponse> {
     const client = this.getClient()
-    return client.http.authedRequest({}, method, `/_synapse/admin/v1${path}`, undefined, body) as Promise<TResponse>
+    return client.http.authedRequest(
+      method,
+      `${MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE}${path}`,
+      undefined,
+      method === 'GET' || method === 'DELETE' ? undefined : body
+    ) as Promise<TResponse>
   }
 
   async list(): Promise<FederationBlacklistEntry[]> {

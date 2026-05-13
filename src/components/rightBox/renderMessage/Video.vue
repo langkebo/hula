@@ -155,6 +155,7 @@ import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
 import { extractFileName, formatBytes } from '@/utils/Formatting.ts'
 import { createLogger } from '@/utils/Logger'
+import { safeExistsPath } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
@@ -342,7 +343,7 @@ const ensureLocalVideoThumbnail = async () => {
   if (hasEncryptedThumbnailFile.value && props.body?.thumbUrl) {
     try {
       if (props.body.thumbnailPath) {
-        const existsFlag = await exists(props.body.thumbnailPath)
+        const existsFlag = await safeExistsPath(props.body.thumbnailPath)
         if (existsFlag) {
           localVideoThumbSrc.value = convertFileSrc(props.body.thumbnailPath)
           return
@@ -373,7 +374,7 @@ const ensureLocalVideoThumbnail = async () => {
   }
 
   try {
-    const existsFlag = await exists(localPath)
+    const existsFlag = await safeExistsPath(localPath)
     if (existsFlag) {
       localVideoThumbSrc.value = convertFileSrc(localPath)
       return
@@ -400,7 +401,7 @@ watch(
   async (path) => {
     if (!path) return
     try {
-      const existsFlag = await exists(path)
+      const existsFlag = await safeExistsPath(path)
       if (existsFlag) {
         isVideoDownloaded.value = true
         if (isMobile()) {
@@ -430,7 +431,7 @@ const checkDownloadStatusLazy = async () => {
   if (hasEncryptedFile.value) {
     if (props.body.localPath) {
       try {
-        const existsFlag = await exists(props.body.localPath)
+        const existsFlag = await safeExistsPath(props.body.localPath)
         isVideoDownloaded.value = existsFlag
         return
       } catch (error) {
@@ -560,7 +561,7 @@ const handleOpenVideoViewer = async () => {
           await downloadVideo()
         }
 
-        const localExists = props.body.localPath ? await exists(props.body.localPath) : false
+        const localExists = props.body.localPath ? await safeExistsPath(props.body.localPath) : false
         isVideoDownloaded.value = localExists
         if (!localExists) {
           logger.error('加密视频下载失败，无法打开')

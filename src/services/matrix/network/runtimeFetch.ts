@@ -4,6 +4,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RuntimeFetch')
 const RELAXED_TLS_HOST_SUFFIXES = ['.test', '.localhost', '.local']
+let hasWarnedNativeFetchFallback = false
 
 function withOmittedCredentials(init?: RequestInit): RequestInit {
   return {
@@ -63,7 +64,10 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
         throw error
       }
 
-      logger.warn('Tauri native fetch failed, falling back to browser fetch', error)
+      if (!hasWarnedNativeFetchFallback) {
+        hasWarnedNativeFetchFallback = true
+        logger.warn('Tauri native fetch failed, falling back to browser fetch', error)
+      }
       return await globalThis.fetch(input, withOmittedCredentials(init))
     }
   }) as typeof globalThis.fetch
@@ -84,4 +88,8 @@ export function getRuntimeAwareFetchFn(): typeof globalThis.fetch | undefined {
   }
 
   return getRuntimeAwareFetch()
+}
+
+export function __resetRuntimeFetchWarningForTests(): void {
+  hasWarnedNativeFetchFallback = false
 }

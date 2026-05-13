@@ -1,6 +1,11 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleKind } from 'matrix-js-sdk'
+import { safeJsonParse, validateObject } from '@/utils/typeGuard'
 import matrixClientService from '../MatrixClientService'
+
+let ackEndpointAvailableCache: boolean | null = null
+let ackCheckTimestamp = 0
+const ACK_CHECK_TTL = 5 * 60 * 1000
 
 export interface NotificationRule {
   ruleId: string
@@ -30,6 +35,125 @@ class MatrixNotificationService {
     showPreview: true,
     showSender: true,
     showMessageContent: true
+  }
+
+  private static readonly CONFIG_STORAGE_KEY = 'hula-notification-config'
+  private static readonly ACCOUNT_DATA_TYPE = 'io.hula.notification_settings'
+  private static readonly DND_ACCOUNT_DATA_TYPE = 'io.hula.dnd_settings'
+
+  constructor() {
+    this.loadConfig()
+  }
+
+  private loadConfig(): void {
+    const stored = localStorage.getItem(MatrixNotificationService.CONFIG_STORAGE_KEY)
+    if (!stored) return
+
+    const isValidNotificationConfig = (val: unknown): val is Partial<NotificationConfig> =>
+      validateObject<Record<string, unknown>>(val, [], {
+        enableDesktop: (v) => v === undefined || typeof v === 'boolean',
+        enableSound: (v) => v === undefined || typeof v === 'boolean',
+        enableVibrate: (v) => v === undefined || typeof v === 'boolean',
+        showPreview: (v) => v === undefined || typeof v === 'boolean',
+        showSender: (v) => v === undefined || typeof v === 'boolean',
+        showMessageContent: (v) => v === undefined || typeof v === 'boolean'
+      })
+
+    const defaults: NotificationConfig = {
+      enableDesktop: true,
+      enableSound: true,
+      enableVibrate: true,
+      showPreview: true,
+      showSender: true,
+      showMessageContent: true
+    }
+    const parsed = safeJsonParse(stored, isValidNotificationConfig, defaults)
+    this.config = { ...defaults, ...parsed }
+  }
+
+  private persistConfig(): void {
+    try {
+      localStorage.setItem(MatrixNotificationService.CONFIG_STORAGE_KEY, JSON.stringify(this.config))
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  async syncConfigToAccountData(): Promise<void> {
+    try {
+      const client = this.getClient()
+      await client.setAccountData(
+        MatrixNotificationService.ACCOUNT_DATA_TYPE,
+        this.config as unknown as Record<string, unknown>
+      )
+      info('[MatrixNotification] 通知配置已同步到服务端')
+    } catch (err) {
+      error(`[MatrixNotification] 同步通知配置到服务端失败: ${err}`)
+    }
+  }
+
+  async syncConfigFromAccountData(): Promise<boolean> {
+    try {
+      const client = this.getClient()
+      const event = client.getAccountData(MatrixNotificationService.ACCOUNT_DATA_TYPE)
+      if (event) {
+        const serverConfig = event.getContent() as Partial<NotificationConfig>
+        if (serverConfig && typeof serverConfig === 'object') {
+          this.config = { ...this.config, ...serverConfig }
+          this.persistConfig()
+          info('[MatrixNotification] 从服务端同步通知配置成功')
+          return true
+        }
+      }
+      return false
+    } catch (err) {
+      error(`[MatrixNotification] 从服务端同步通知配置失败: ${err}`)
+      return false
+    }
+  }
+
+  async syncDndToAccountData(settings: {
+    enabled: boolean
+    startTime: number | null
+    endTime: number | null
+  }): Promise<void> {
+    try {
+      const client = this.getClient()
+      await client.setAccountData(MatrixNotificationService.DND_ACCOUNT_DATA_TYPE, settings as Record<string, unknown>)
+      info('[MatrixNotification] DND 设置已同步到服务端')
+    } catch (err) {
+      error(`[MatrixNotification] 同步 DND 设置到服务端失败: ${err}`)
+    }
+  }
+
+  async syncDndFromAccountData(): Promise<{
+    enabled: boolean
+    startTime: number | null
+    endTime: number | null
+  } | null> {
+    try {
+      const client = this.getClient()
+      const event = client.getAccountData(MatrixNotificationService.DND_ACCOUNT_DATA_TYPE)
+      if (event) {
+        const dndSettings = event.getContent() as {
+          enabled?: boolean
+          startTime?: number | null
+          endTime?: number | null
+        }
+        if (dndSettings && typeof dndSettings === 'object') {
+          info('[MatrixNotification] 从服务端同步 DND 设置成功')
+          return {
+            enabled: (dndSettings.enabled ?? false) as boolean,
+            startTime: (dndSettings.startTime ?? null) as number | null,
+            endTime: (dndSettings.endTime ?? null) as number | null
+          }
+        }
+      }
+      return null
+    } catch (err) {
+      error(`[MatrixNotification] 从服务端同步 DND 设置失败: ${err}`)
+      return null
+    }
   }
 
   private syncClientState(): MatrixClient | null {
@@ -83,15 +207,34 @@ class MatrixNotificationService {
     }
   }
 
-  async deletePushRule(ruleId: string): Promise<void> {
+  async deletePushRule(ruleId: string, kind?: PushRuleKind): Promise<void> {
     const client = this.getClient()
     try {
-      await client.deletePushRule('global', 'override', ruleId)
-      info(`[MatrixNotification] 删除推送规则成功: ${ruleId}`)
+      const resolvedKind = kind ?? (await this.findPushRuleKind(client, ruleId))
+      await client.deletePushRule('global', resolvedKind, ruleId)
+      info(`[MatrixNotification] 删除推送规则成功: ${ruleId} (kind: ${resolvedKind})`)
     } catch (err) {
       error(`[MatrixNotification] 删除推送规则失败: ${err}`)
       throw err
     }
+  }
+
+  private async findPushRuleKind(client: MatrixClient, ruleId: string): Promise<PushRuleKind> {
+    try {
+      const rules = await client.getPushRules()
+      const kinds: PushRuleKind[] = ['override', 'content', 'room', 'sender', 'underride']
+      for (const kind of kinds) {
+        const ruleList = ((rules as unknown as Record<string, unknown>)?.[kind] ?? undefined) as unknown as
+          | IPushRule[]
+          | undefined
+        if (ruleList?.some((r) => r.rule_id === ruleId)) {
+          return kind
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return 'override'
   }
 
   async setPusher(pusher: IPusherRequest): Promise<void> {
@@ -120,6 +263,8 @@ class MatrixNotificationService {
       ...this.config,
       ...config
     }
+    this.persistConfig()
+    this.syncConfigToAccountData()
   }
 
   getConfig(): NotificationConfig {
@@ -228,6 +373,60 @@ class MatrixNotificationService {
       error(`[MatrixNotification] 通知确认失败: ${err}`)
       return false
     }
+  }
+
+  async ackNotificationWithFallback(
+    notificationId: string,
+    roomId: string,
+    eventId: string
+  ): Promise<{
+    success: boolean
+    method: 'ack' | 'receipt'
+  }> {
+    const now = Date.now()
+    if (ackEndpointAvailableCache !== null && now - ackCheckTimestamp < ACK_CHECK_TTL) {
+      if (ackEndpointAvailableCache) {
+        const ok = await this.ackNotification(notificationId)
+        return { success: ok, method: 'ack' }
+      }
+      const ok = await this.sendReadReceipt(roomId, eventId)
+      return { success: ok, method: 'receipt' }
+    }
+
+    const ok = await this.ackNotification(notificationId)
+    if (ok) {
+      ackEndpointAvailableCache = true
+      ackCheckTimestamp = now
+      return { success: true, method: 'ack' }
+    }
+
+    info(`[MatrixNotification] ack 端点不可用，回退到已读回执: ${notificationId}`)
+    ackEndpointAvailableCache = false
+    ackCheckTimestamp = now
+    const receiptOk = await this.sendReadReceipt(roomId, eventId)
+    return { success: receiptOk, method: 'receipt' }
+  }
+
+  private async sendReadReceipt(roomId: string, eventId: string): Promise<boolean> {
+    const client = this.getClient()
+    try {
+      await client.http.authedRequest(
+        'POST',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/receipt/m.read/${encodeURIComponent(eventId)}`,
+        undefined,
+        {}
+      )
+      info(`[MatrixNotification] 已读回执发送成功: ${roomId}/${eventId}`)
+      return true
+    } catch (err) {
+      error(`[MatrixNotification] 已读回执发送失败: ${err}`)
+      return false
+    }
+  }
+
+  clearAckCache(): void {
+    ackEndpointAvailableCache = null
+    ackCheckTimestamp = 0
   }
 }
 

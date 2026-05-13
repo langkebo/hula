@@ -74,14 +74,14 @@ describe('adminService facade', () => {
       updateApplicationService: vi.fn().mockResolvedValue(undefined),
       deleteApplicationService: vi.fn().mockResolvedValue(undefined),
       pingApplicationService: vi.fn().mockResolvedValue({ ok: true, duration_ms: 5 }),
-      createSystemNotification: vi.fn().mockResolvedValue({ notification_id: 'n1' }),
-      listSystemNotifications: vi.fn().mockResolvedValue({ notifications: [], next_token: undefined }),
-      getSystemNotification: vi.fn().mockResolvedValue(null),
-      updateSystemNotification: vi.fn().mockResolvedValue(undefined),
-      deleteSystemNotification: vi.fn().mockResolvedValue(undefined),
-      getUserNotificationSettings: vi.fn().mockResolvedValue({}),
-      setUserNotificationSettings: vi.fn().mockResolvedValue(undefined),
-      listUserPushers: vi.fn().mockResolvedValue({ pushers: [] }),
+      createNotification: vi.fn().mockResolvedValue({ notification_id: 'n1' }),
+      listNotifications: vi.fn().mockResolvedValue({ notifications: [], next_token: undefined }),
+      getNotification: vi.fn().mockResolvedValue(null),
+      updateNotification: vi.fn().mockResolvedValue(undefined),
+      deleteNotification: vi.fn().mockResolvedValue(undefined),
+      getUserNotification: vi.fn().mockResolvedValue({}),
+      setUserNotification: vi.fn().mockResolvedValue(undefined),
+      getUserPushers: vi.fn().mockResolvedValue({ pushers: [] }),
       deleteUserPusher: vi.fn().mockResolvedValue(undefined),
       listSpaces: vi.fn().mockResolvedValue({ spaces: [], next_batch: undefined }),
       deleteSpace: vi.fn().mockResolvedValue(undefined),
@@ -719,27 +719,27 @@ describe('adminService facade', () => {
 
   describe('Notification Extended', () => {
     it('should get user notification settings via SDK', async () => {
-      mockAdminManager.getUserNotificationSettings.mockResolvedValue({ enabled: true })
+      mockAdminManager.getUserNotification.mockResolvedValue({ enabled: true })
       const result = await adminService.getUserNotificationSettings('@user:server')
       expect(result?.enabled).toBe(true)
-      expect(mockAdminManager.getUserNotificationSettings).toHaveBeenCalledWith('@user:server')
+      expect(mockAdminManager.getUserNotification).toHaveBeenCalledWith('@user:server')
     })
 
     it('should set user notification settings via SDK', async () => {
       await adminService.setUserNotificationSettings('@user:server', { enabled: false })
-      expect(mockAdminManager.setUserNotificationSettings).toHaveBeenCalledWith('@user:server', { enabled: false })
+      expect(mockAdminManager.setUserNotification).toHaveBeenCalledWith('@user:server', { enabled: false })
     })
 
     it('should get user pushers via SDK', async () => {
-      mockAdminManager.listUserPushers.mockResolvedValue({ pushers: [{ pushkey: 'pk1' }] })
+      mockAdminManager.getUserPushers.mockResolvedValue({ pushers: [{ pushkey: 'pk1' }] })
       const result = await adminService.getUserPushers('@user:server')
       expect(result).toHaveLength(1)
-      expect(mockAdminManager.listUserPushers).toHaveBeenCalledWith('@user:server')
+      expect(mockAdminManager.getUserPushers).toHaveBeenCalledWith('@user:server')
     })
 
     it('should delete user pusher via SDK', async () => {
       await adminService.deleteUserPusher('@user:server', 'pk1', 'app')
-      expect(mockAdminManager.deleteUserPusher).toHaveBeenCalledWith('@user:server', 'pk1', 'app')
+      expect(mockAdminManager.deleteUserPusher).toHaveBeenCalledWith('@user:server', 'pk1')
     })
   })
 
@@ -769,10 +769,10 @@ describe('adminService facade', () => {
 
   describe('System Notifications CRUD', () => {
     it('should create system notification via SDK', async () => {
-      mockAdminManager.createSystemNotification.mockResolvedValue({ notification_id: 'n1' })
+      mockAdminManager.createNotification.mockResolvedValue({ notification_id: 'n1' })
       const result = await adminService.createSystemNotification('hello', 'info', ['@u:s'])
       expect(result.notificationId).toBe('n1')
-      expect(mockAdminManager.createSystemNotification).toHaveBeenCalledWith({
+      expect(mockAdminManager.createNotification).toHaveBeenCalledWith({
         content: 'hello',
         type: 'info',
         target_users: ['@u:s']
@@ -780,18 +780,18 @@ describe('adminService facade', () => {
     })
 
     it('should list system notifications via SDK', async () => {
-      mockAdminManager.listSystemNotifications.mockResolvedValue({
+      mockAdminManager.listNotifications.mockResolvedValue({
         notifications: [{ notification_id: 'n1' }],
         next_token: 't'
       })
       const result = await adminService.getSystemNotifications(5, 'from')
       expect(result.notifications).toHaveLength(1)
-      expect(mockAdminManager.listSystemNotifications).toHaveBeenCalledWith({ limit: 5, from: 'from' })
+      expect(mockAdminManager.listNotifications).toHaveBeenCalledWith('from', 5)
     })
 
     it('should delete system notification via SDK', async () => {
       await adminService.deleteSystemNotification('n1')
-      expect(mockAdminManager.deleteSystemNotification).toHaveBeenCalledWith('n1')
+      expect(mockAdminManager.deleteNotification).toHaveBeenCalledWith('n1')
     })
   })
 

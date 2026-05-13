@@ -62,6 +62,32 @@ interface WidgetsManagerLike {
   listWidgetSessions(widgetId: string): Promise<Record<string, unknown>>
   getWidgetSession(sessionId: string): Promise<SessionApiData>
   terminateWidgetSession(sessionId: string): Promise<void>
+  getWidgetCapabilities?(roomId: string, widgetId: string): Promise<WidgetCapabilitiesResponse>
+  setWidgetCapabilities?(roomId: string, widgetId: string, capabilities: string[]): Promise<WidgetCapabilitiesResponse>
+  sendWidgetMessage?(
+    roomId: string,
+    widgetId: string,
+    body: SendWidgetMessageRequest
+  ): Promise<SendWidgetMessageResponse>
+}
+
+export interface WidgetCapabilitiesResponse {
+  capabilities: string[]
+  widget_id: string
+  room_id: string
+}
+
+export interface SendWidgetMessageRequest {
+  type: string
+  content: Record<string, unknown>
+}
+
+export interface SendWidgetMessageResponse {
+  event_id: string
+  widget_id: string
+  room_id: string
+  type: string
+  content: Record<string, unknown>
 }
 
 class MatrixWidgetService {
@@ -396,6 +422,117 @@ class MatrixWidgetService {
       error(`[MatrixWidgetService] 终止Widget会话失败: ${sessionId} ${err}`)
       if (throwOnError) throw err
       return false
+    }
+  }
+
+  // ============================================
+  // v3 Widget Capabilities & Messaging (契约 widget.md)
+  // ============================================
+
+  async getWidgetCapabilities(
+    roomId: string,
+    widgetId: string,
+    throwOnError = true
+  ): Promise<WidgetCapabilitiesResponse | null> {
+    const manager = this.getManager()
+    if (manager && typeof manager.getWidgetCapabilities === 'function') {
+      try {
+        return await manager.getWidgetCapabilities(roomId, widgetId)
+      } catch (err) {
+        error(`[MatrixWidgetService] 获取Widget能力失败: ${widgetId} ${err}`)
+        if (throwOnError) throw err
+        return null
+      }
+    }
+    const client = matrixClientService.getClient()
+    if (!client) {
+      if (!throwOnError) return null
+      throw new Error('客户端未初始化')
+    }
+    try {
+      const result = (await client.http.authedRequest(
+        'GET',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/capabilities`
+      )) as WidgetCapabilitiesResponse
+      return result
+    } catch (err) {
+      error(`[MatrixWidgetService] 获取Widget能力失败(v3): ${widgetId} ${err}`)
+      if (throwOnError) throw err
+      return null
+    }
+  }
+
+  async setWidgetCapabilities(
+    roomId: string,
+    widgetId: string,
+    capabilities: string[],
+    throwOnError = true
+  ): Promise<WidgetCapabilitiesResponse | null> {
+    const manager = this.getManager()
+    if (manager && typeof manager.setWidgetCapabilities === 'function') {
+      try {
+        return await manager.setWidgetCapabilities(roomId, widgetId, capabilities)
+      } catch (err) {
+        error(`[MatrixWidgetService] 设置Widget能力失败: ${widgetId} ${err}`)
+        if (throwOnError) throw err
+        return null
+      }
+    }
+    const client = matrixClientService.getClient()
+    if (!client) {
+      if (!throwOnError) return null
+      throw new Error('客户端未初始化')
+    }
+    try {
+      const result = (await client.http.authedRequest(
+        'PUT',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/capabilities`,
+        undefined,
+        { capabilities }
+      )) as WidgetCapabilitiesResponse
+      info(`[MatrixWidgetService] 设置Widget能力成功: ${widgetId}`)
+      return result
+    } catch (err) {
+      error(`[MatrixWidgetService] 设置Widget能力失败(v3): ${widgetId} ${err}`)
+      if (throwOnError) throw err
+      return null
+    }
+  }
+
+  async sendWidgetMessage(
+    roomId: string,
+    widgetId: string,
+    message: SendWidgetMessageRequest,
+    throwOnError = true
+  ): Promise<SendWidgetMessageResponse | null> {
+    const manager = this.getManager()
+    if (manager && typeof manager.sendWidgetMessage === 'function') {
+      try {
+        return await manager.sendWidgetMessage(roomId, widgetId, message)
+      } catch (err) {
+        error(`[MatrixWidgetService] 发送Widget消息失败: ${widgetId} ${err}`)
+        if (throwOnError) throw err
+        return null
+      }
+    }
+    const client = matrixClientService.getClient()
+    if (!client) {
+      if (!throwOnError) return null
+      throw new Error('客户端未初始化')
+    }
+    try {
+      const result = (await client.http.authedRequest(
+        'POST',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/send`,
+        undefined,
+        message
+      )) as SendWidgetMessageResponse
+      info(`[MatrixWidgetService] 发送Widget消息成功: ${widgetId}, event_id=${result.event_id}`)
+      return result
+    } catch (err) {
+      error(`[MatrixWidgetService] 发送Widget消息失败(v3): ${widgetId} ${err}`)
+      if (throwOnError) throw err
+      return null
     }
   }
 }

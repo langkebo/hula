@@ -15,10 +15,10 @@ interface MessageLoadingDeps {
   sessionStore: ReturnType<typeof useSessionStore>
 
   messageMap: Record<string, Record<string, MessageType>>
-  messageOptions: Record<string, { isLast: boolean; isLoading: boolean; cursor: string }>
+  messageOptions: Record<string, { isLast: boolean; isLoading: boolean; cursor: string; hasLoadedOnce?: boolean }>
   replyMapping: Record<string, Record<string, string[]>>
 
-  currentMessageOptions: { value: { isLast: boolean; isLoading: boolean; cursor: string } }
+  currentMessageOptions: { value: { isLast: boolean; isLoading: boolean; cursor: string; hasLoadedOnce?: boolean } }
   currentReplyMap: { value: Record<string, string[]> }
   currentMsgReply: Ref<Partial<MessageType>>
 
@@ -55,6 +55,16 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
 
   const getPageMsg = async (size: number, roomId: string, cursor: string = '', _async?: boolean) => {
     try {
+      const currentOptions = messageOptions[roomId] || {
+        isLast: false,
+        isLoading: false,
+        cursor: '',
+        hasLoadedOnce: false
+      }
+      messageOptions[roomId] = {
+        ...currentOptions,
+        isLoading: true
+      }
       const result = await matrixEventService.getPagedRoomMessages(roomId, size, cursor)
 
       if (!messageMap[roomId]) {
@@ -76,11 +86,12 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
       messageOptions[roomId] = {
         isLast: result.isLast,
         isLoading: false,
-        cursor: result.cursor
+        cursor: result.cursor,
+        hasLoadedOnce: true
       }
     } catch (err) {
       logger.error('获取消息失败:', err)
-      messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '' }
+      messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: true }
     }
   }
 
@@ -116,7 +127,7 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
     if (remoteSyncLocks.has(roomId)) return
     remoteSyncLocks.add(roomId)
     try {
-      const opts = messageOptions[roomId] || { isLast: false, isLoading: false, cursor: '' }
+      const opts = messageOptions[roomId] || { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }
       opts.cursor = ''
       messageOptions[roomId] = opts
       await getPageMsg(size, roomId, '')
@@ -140,8 +151,9 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
 
     currentMessageOptions.value = {
       isLast: false,
-      isLoading: false,
-      cursor: ''
+      isLoading: true,
+      cursor: '',
+      hasLoadedOnce: false
     }
 
     if (currentReplyMap.value) {
@@ -157,7 +169,8 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
       currentMessageOptions.value = {
         isLast: false,
         isLoading: false,
-        cursor: ''
+        cursor: '',
+        hasLoadedOnce: true
       }
     }
 
@@ -183,7 +196,8 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
       messageOptions[requestRoomId] = {
         isLast: false,
         isLoading: true,
-        cursor: ''
+        cursor: '',
+        hasLoadedOnce: false
       }
 
       const currentReplyMapping = replyMapping[requestRoomId]
@@ -202,7 +216,8 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         messageOptions[requestRoomId] = {
           isLast: false,
           isLoading: false,
-          cursor: ''
+          cursor: '',
+          hasLoadedOnce: true
         }
       }
     }

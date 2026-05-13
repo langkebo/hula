@@ -33,6 +33,14 @@
     "dynamic_short_title": "Moments",
     "room_list": "Rooms",
     "room_list_short_title": "Rooms",
+    "room_detail": {
+      "just_now": "Just now",
+      "yesterday": "Yesterday",
+      "mute": "Muted",
+      "encrypted": "Encrypted",
+      "burn": "Burn after read",
+      "typing": "typing..."
+    },
     "space_list": "Spaces",
     "space_list_short_title": "Space",
     "chatbot": "ChatBot",
@@ -443,6 +451,8 @@
       "view_all": "View all"
     },
     "no_more": "No more messages",
+    "empty_title": "No messages yet",
+    "empty_desc": "Send your first message to start chatting",
     "new_messages": "{count} new messages",
     "confirm": "Confirm",
     "cancel": "Cancel",

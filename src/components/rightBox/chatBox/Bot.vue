@@ -40,7 +40,7 @@
               @click="openLocalModel">
               导入模型
             </n-button>
-            <n-badge class="mr-14px" value="Beta" :color="'var(--hula-color-beta-500)'">
+            <n-badge class="mr-14px" value="Beta" :color="'#a789d9'">
               <div :class="['assistant-btn', { active: isAssistantView }]" @click="showAssistant()">3D预览</div>
             </n-badge>
             <n-dropdown

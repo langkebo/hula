@@ -12,6 +12,13 @@ export const WORKBENCH_SESSION_TYPE_FILTERS = {
   single: 'single'
 } as const
 
+export const WORKBENCH_SESSION_ENGAGEMENT_FILTERS = {
+  all: 'all',
+  unread: 'unread',
+  mention: 'mention',
+  invite: 'invite'
+} as const
+
 export const WORKBENCH_SESSION_SORTS = {
   recent: 'recent',
   name: 'name'
@@ -19,6 +26,8 @@ export const WORKBENCH_SESSION_SORTS = {
 
 export type WorkbenchSessionTypeFilter =
   (typeof WORKBENCH_SESSION_TYPE_FILTERS)[keyof typeof WORKBENCH_SESSION_TYPE_FILTERS]
+export type WorkbenchSessionEngagementFilter =
+  (typeof WORKBENCH_SESSION_ENGAGEMENT_FILTERS)[keyof typeof WORKBENCH_SESSION_ENGAGEMENT_FILTERS]
 export type WorkbenchSessionSort = (typeof WORKBENCH_SESSION_SORTS)[keyof typeof WORKBENCH_SESSION_SORTS]
 
 export const normalizeSpaceId = (spaceId: unknown): string => (typeof spaceId === 'string' ? spaceId.trim() : '')
@@ -31,6 +40,20 @@ export const normalizeWorkbenchSessionTypeFilter = (value: unknown): WorkbenchSe
   }
 
   return WORKBENCH_SESSION_TYPE_FILTERS.all
+}
+
+export const normalizeWorkbenchSessionEngagementFilter = (value: unknown): WorkbenchSessionEngagementFilter => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : ''
+
+  if (
+    normalized === WORKBENCH_SESSION_ENGAGEMENT_FILTERS.unread ||
+    normalized === WORKBENCH_SESSION_ENGAGEMENT_FILTERS.mention ||
+    normalized === WORKBENCH_SESSION_ENGAGEMENT_FILTERS.invite
+  ) {
+    return normalized
+  }
+
+  return WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
 }
 
 export const normalizeWorkbenchSessionSort = (value: unknown): WorkbenchSessionSort => {
@@ -55,6 +78,10 @@ export const readSpaceWorkbenchSessionTypeFilter = (
   query: LocationQuery | LocationQueryRaw
 ): WorkbenchSessionTypeFilter => normalizeWorkbenchSessionTypeFilter(getQueryValue(query.type))
 
+export const readSpaceWorkbenchSessionEngagementFilter = (
+  query: LocationQuery | LocationQueryRaw
+): WorkbenchSessionEngagementFilter => normalizeWorkbenchSessionEngagementFilter(getQueryValue(query.engagement))
+
 export const readSpaceWorkbenchSessionSort = (query: LocationQuery | LocationQueryRaw): WorkbenchSessionSort =>
   normalizeWorkbenchSessionSort(getQueryValue(query.sort))
 
@@ -65,6 +92,7 @@ export const buildSpaceWorkbenchQuery = (
   const nextSpaceId = normalizeSpaceId(spaceId)
   const nextSearch = readSpaceWorkbenchSearch(query)
   const nextType = readSpaceWorkbenchSessionTypeFilter(query)
+  const nextEngagement = readSpaceWorkbenchSessionEngagementFilter(query)
   const nextSort = readSpaceWorkbenchSessionSort(query)
   const nextQuery: LocationQueryRaw = { ...(query as LocationQueryRaw) }
 
@@ -84,6 +112,12 @@ export const buildSpaceWorkbenchQuery = (
     nextQuery.type = nextType
   } else {
     delete nextQuery.type
+  }
+
+  if (nextEngagement !== WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all) {
+    nextQuery.engagement = nextEngagement
+  } else {
+    delete nextQuery.engagement
   }
 
   if (nextSort !== WORKBENCH_SESSION_SORTS.recent) {

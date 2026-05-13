@@ -6,6 +6,7 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('UrlPreview')
 
@@ -61,7 +62,8 @@ class MatrixUrlPreviewService {
   private get client() {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('Matrix client not initialized')
+      logger.warn('[UrlPreview] Matrix client not initialized, URL preview service unavailable.')
+      return null // Return null if client is not ready
     }
     return client
   }
@@ -77,9 +79,14 @@ class MatrixUrlPreviewService {
   async getPreview(params: UrlPreviewParams): Promise<UrlPreview | null> {
     const { url, timestamp } = params
 
+    const client = this.client // Get the client
+    if (!client) {
+      return null // If client is null, return null preview
+    }
+
     try {
-      const api = this.client.getMediaApiUrl('')
-      let previewUrl = `${api}/_matrix/media/r0/preview_url?url=${encodeURIComponent(url)}`
+      const api = client.getMediaApiUrl('')
+      let previewUrl = `${api}${MATRIX_PATHS.MEDIA.PREVIEW_URL}?url=${encodeURIComponent(url)}`
 
       if (timestamp) {
         previewUrl += `&ts=${timestamp}`
@@ -110,7 +117,7 @@ class MatrixUrlPreviewService {
       // 如果图片是 mxc:// URL，转换为完整 URL
       if (result.image?.startsWith('mxc://')) {
         const mediaApi = this.client.getMediaApiUrl('')
-        result.image = mediaApi + '/_matrix/media/r0/download/' + result.image.replace('mxc://', '')
+        result.image = mediaApi + MATRIX_PATHS.MEDIA.DOWNLOAD_PREFIX + result.image.replace('mxc://', '')
         result.imageUrl = result.image
       }
 
@@ -132,10 +139,11 @@ class MatrixUrlPreviewService {
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize)
       const promises = batch.map((url) => this.getPreview({ url }))
-      const batchResults = await Promise.all(promises)
+      const batchResults = await Promise.allSettled(promises)
 
       batch.forEach((url, index) => {
-        results.set(url, batchResults[index])
+        const result = batchResults[index]
+        results.set(url, result.status === 'fulfilled' ? result.value : null)
       })
     }
 
@@ -181,7 +189,7 @@ class MatrixUrlPreviewService {
     // 排除自身 URL (图片、视频等媒体链接)
     if (excludeSelfUrl) {
       urls = urls.filter((url) => {
-        const isMedia = url.includes('/_matrix/media/')
+        const isMedia = url.includes(MATRIX_PATHS.MEDIA.MEDIA_PREFIX)
         const isMatrixTo = url.includes('matrix.to/')
         return !isMedia && !isMatrixTo
       })

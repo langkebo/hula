@@ -73,11 +73,16 @@ export class AdminRegistrationTokensService {
   }): Promise<RegistrationToken | null> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.createRegistrationToken(
-        options?.token ?? '',
-        options?.usesAllowed,
-        options?.expiryTime
-      )
+      let result: { token: string; uses_allowed?: number; pending?: number; completed?: number; expiry_ts?: number }
+      if (options?.token) {
+        result = await admin.createRegistrationToken({
+          token: options.token,
+          uses_allowed: options.usesAllowed,
+          expiry_ts: options.expiryTime
+        })
+      } else {
+        result = await admin.createRegistrationToken(`hula_${Date.now()}`, options?.usesAllowed, options?.expiryTime)
+      }
       info('[Admin] 注册令牌已创建')
       return {
         token: result.token,

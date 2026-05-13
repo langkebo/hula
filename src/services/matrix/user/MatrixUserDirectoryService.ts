@@ -68,6 +68,16 @@ class UserDirectoryService {
         avatarUrl: user.avatar_url
       }))
     } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      if (
+        errMsg.includes('M_UNAUTHORIZED') ||
+        errMsg.includes('401') ||
+        errMsg.includes('M_FORBIDDEN') ||
+        errMsg.includes('403')
+      ) {
+        info(`[UserDirectory] 用户搜索需要认证 (${errMsg.includes('403') ? '403' : '401'})`)
+        return []
+      }
       error(`[UserDirectory] 搜索用户失败: ${err}`)
       throw err
     }
@@ -95,7 +105,7 @@ class UserDirectoryService {
   async isSearchable(userId: string): Promise<boolean> {
     try {
       const client = this.getClient()
-      const profile = await client.getProfile(userId)
+      const profile = await client.getProfileInfo(userId)
       return !!profile
     } catch {
       return false
@@ -111,18 +121,23 @@ class UserDirectoryService {
   }> {
     const client = this.getClient()
     try {
-      const queryParams: Record<string, string> = { limit: String(limit) }
-      if (from) queryParams.from = from
-      const result = await client.http.authedRequest('POST', '/_matrix/client/v3/user_directory/list', undefined, {
+      const result = await client.http.authedRequest<{
+        results?: Array<{
+          user_id: string
+          display_name?: string
+          avatar_url?: string
+        }>
+        next_batch?: string
+      }>('POST', '/_matrix/client/v3/user_directory/list', undefined, {
         limit,
         from: from || undefined
       })
-      const users = ((result as { results?: Array<Record<string, unknown>> }).results ?? []).map((u) => ({
-        userId: u.user_id as string,
-        displayName: u.display_name as string | undefined,
-        avatarUrl: u.avatar_url as string | undefined
+      const users = (result.results ?? []).map((u) => ({
+        userId: u.user_id,
+        displayName: u.display_name,
+        avatarUrl: u.avatar_url
       }))
-      return { users, next_batch: (result as { next_batch?: string }).next_batch }
+      return { users, next_batch: result.next_batch }
     } catch (err) {
       error(`[UserDirectory] 获取用户目录列表失败: ${err}`)
       return { users: [] }
@@ -132,14 +147,14 @@ class UserDirectoryService {
   async getUserDirectoryProfile(userId: string): Promise<UserDirectorySearchResult | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v3/user_directory/profiles/${encodeURIComponent(userId)}`
-      )
+      const result = await client.http.authedRequest<{
+        display_name?: string
+        avatar_url?: string
+      }>('GET', `/_matrix/client/v3/user_directory/profiles/${encodeURIComponent(userId)}`)
       return {
         userId,
-        displayName: (result as { display_name?: string }).display_name,
-        avatarUrl: (result as { avatar_url?: string }).avatar_url
+        displayName: result.display_name,
+        avatarUrl: result.avatar_url
       }
     } catch (err) {
       error(`[UserDirectory] 获取目录资料失败: ${err}`)

@@ -1,5 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 /**
  * Room timeline / context domain service.
@@ -96,11 +97,10 @@ export class MatrixRoomTimelineService {
   ): Promise<{ event_id: string; origin_server_ts: number } | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`,
-        { ts: String(timestamp), dir }
-      )
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.TIMESTAMP_TO_EVENT(roomId), {
+        ts: String(timestamp),
+        dir
+      })
       return result as { event_id: string; origin_server_ts: number }
     } catch (err) {
       error(`[MatrixRoom] 时间戳反查事件失败: ${err}`)

@@ -26,7 +26,15 @@
                 <use href="#add"></use>
               </svg>
             </template>
-            {{ t('space.create') }}
+            {{ createButtonText }}
+          </n-button>
+          <n-button v-if="showJoinAction" size="small" tertiary @click="emit('joinRoom')">
+            <template #icon>
+              <svg class="size-14px">
+                <use href="#login"></use>
+              </svg>
+            </template>
+            {{ t('room.join') }}
           </n-button>
           <span class="toolbar-summary text-12px color-[--hula-text-tertiary]">
             {{ filteredCount }}/{{ totalCount }}
@@ -72,6 +80,64 @@
           </div>
         </n-flex>
       </n-flex>
+
+      <n-flex align="center" :size="8" wrap>
+        <div class="toolbar-chip-group" role="tablist" :aria-label="t('space.engagement_label')">
+          <button
+            v-for="option in sessionEngagementOptions"
+            :key="option.value"
+            type="button"
+            class="toolbar-chip"
+            :class="{ 'toolbar-chip--active': sessionEngagementFilter === option.value }"
+            role="tab"
+            :aria-selected="sessionEngagementFilter === option.value"
+            :tabindex="sessionEngagementFilter === option.value ? 0 : -1"
+            :data-test="`${testIdPrefix}-engagement-${option.value}`"
+            @click="emit('update:sessionEngagementFilter', option.value)"
+            @keydown="
+              handleChipGroupKeydown($event, sessionEngagementOptions, option.value, updateSessionEngagementFilter)
+            ">
+            {{ option.label }}
+          </button>
+        </div>
+      </n-flex>
+
+      <n-flex v-if="hasActiveFilters" align="center" :size="8" class="toolbar-filter-summary">
+        <span class="text-11px color-[--hula-text-tertiary]">{{ t('space.active_filters') }}:</span>
+        <n-tag
+          v-if="isNonDefaultTypeFilter"
+          size="tiny"
+          closable
+          round
+          :bordered="false"
+          class="toolbar-filter-tag"
+          @close="emit('update:sessionTypeFilter', WORKBENCH_SESSION_TYPE_FILTERS.all)">
+          {{ activeTypeLabel }}
+        </n-tag>
+        <n-tag
+          v-if="isNonDefaultEngagementFilter"
+          size="tiny"
+          closable
+          round
+          :bordered="false"
+          class="toolbar-filter-tag"
+          @close="emit('update:sessionEngagementFilter', WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all)">
+          {{ activeEngagementLabel }}
+        </n-tag>
+        <n-tag
+          v-if="isNonDefaultSort"
+          size="tiny"
+          closable
+          round
+          :bordered="false"
+          class="toolbar-filter-tag"
+          @close="emit('update:sessionSort', WORKBENCH_SESSION_SORTS.recent)">
+          {{ activeSortLabel }}
+        </n-tag>
+        <button type="button" class="toolbar-clear-all" @click="clearAllFilters">
+          {{ t('space.clear_all_filters') }}
+        </button>
+      </n-flex>
     </n-flex>
   </div>
 </template>
@@ -80,8 +146,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
+  WORKBENCH_SESSION_ENGAGEMENT_FILTERS,
   WORKBENCH_SESSION_SORTS,
   WORKBENCH_SESSION_TYPE_FILTERS,
+  type WorkbenchSessionEngagementFilter,
   type WorkbenchSessionSort,
   type WorkbenchSessionTypeFilter
 } from '@/router/spaceNavigation'
@@ -90,17 +158,22 @@ const props = withDefaults(
   defineProps<{
     searchKeyword: string
     sessionTypeFilter: WorkbenchSessionTypeFilter
+    sessionEngagementFilter?: WorkbenchSessionEngagementFilter
     sessionSort: WorkbenchSessionSort
     filteredCount: number
     totalCount: number
     compact?: boolean
     showCreateAction?: boolean
+    showJoinAction?: boolean
+    createButtonText?: string
     rootTestId?: string
     testIdPrefix?: string
   }>(),
   {
     compact: false,
     showCreateAction: true,
+    showJoinAction: false,
+    sessionEngagementFilter: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all,
     testIdPrefix: 'session'
   }
 )
@@ -108,18 +181,29 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:searchKeyword': [value: string]
   'update:sessionTypeFilter': [value: WorkbenchSessionTypeFilter]
+  'update:sessionEngagementFilter': [value: WorkbenchSessionEngagementFilter]
   'update:sessionSort': [value: WorkbenchSessionSort]
   createSpace: []
+  joinRoom: []
 }>()
 
 const { t } = useI18n()
 const showCreateAction = computed(() => props.showCreateAction)
+const showJoinAction = computed(() => props.showJoinAction)
 const testIdPrefix = computed(() => props.testIdPrefix)
+const createButtonText = computed(() => props.createButtonText || t('space.create'))
 
 const sessionTypeOptions = computed(() => [
   { value: WORKBENCH_SESSION_TYPE_FILTERS.all, label: t('space.filter_all') },
   { value: WORKBENCH_SESSION_TYPE_FILTERS.group, label: t('space.filter_group') },
   { value: WORKBENCH_SESSION_TYPE_FILTERS.single, label: t('space.filter_single') }
+])
+
+const sessionEngagementOptions = computed(() => [
+  { value: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all, label: t('space.engagement_all') },
+  { value: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.unread, label: t('space.engagement_unread') },
+  { value: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.mention, label: t('space.engagement_mention') },
+  { value: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.invite, label: t('space.engagement_invite') }
 ])
 
 const sortOptions = computed(() => [
@@ -131,12 +215,37 @@ const sortSummary = computed(() =>
   props.sessionSort === WORKBENCH_SESSION_SORTS.name ? t('space.sort_summary_name') : t('space.sort_summary_recent')
 )
 
+const isNonDefaultTypeFilter = computed(() => props.sessionTypeFilter !== WORKBENCH_SESSION_TYPE_FILTERS.all)
+const isNonDefaultEngagementFilter = computed(
+  () => props.sessionEngagementFilter !== WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
+)
+const isNonDefaultSort = computed(() => props.sessionSort !== WORKBENCH_SESSION_SORTS.recent)
+const hasActiveFilters = computed(
+  () => isNonDefaultTypeFilter.value || isNonDefaultEngagementFilter.value || isNonDefaultSort.value
+)
+
+const activeTypeLabel = computed(
+  () => sessionTypeOptions.value.find((o) => o.value === props.sessionTypeFilter)?.label ?? ''
+)
+const activeEngagementLabel = computed(
+  () => sessionEngagementOptions.value.find((o) => o.value === props.sessionEngagementFilter)?.label ?? ''
+)
+const activeSortLabel = computed(() => sortOptions.value.find((o) => o.value === props.sessionSort)?.label ?? '')
+
+const clearAllFilters = () => {
+  emit('update:sessionTypeFilter', WORKBENCH_SESSION_TYPE_FILTERS.all)
+  emit('update:sessionEngagementFilter', WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all)
+  emit('update:sessionSort', WORKBENCH_SESSION_SORTS.recent)
+}
+
 type ChipOption<T extends string> = {
   value: T
   label: string
 }
 
 const updateSessionTypeFilter = (value: WorkbenchSessionTypeFilter) => emit('update:sessionTypeFilter', value)
+const updateSessionEngagementFilter = (value: WorkbenchSessionEngagementFilter) =>
+  emit('update:sessionEngagementFilter', value)
 const updateSessionSort = (value: WorkbenchSessionSort) => emit('update:sessionSort', value)
 
 const handleChipGroupKeydown = <T extends string>(
@@ -244,6 +353,33 @@ const handleChipGroupKeydown = <T extends string>(
 @media (prefers-reduced-motion: reduce) {
   .toolbar-chip {
     transition: none;
+  }
+}
+
+.toolbar-filter-summary {
+  padding: 6px 10px;
+  background: var(--hula-surface-search);
+  border-radius: 8px;
+}
+
+.toolbar-filter-tag {
+  background: var(--hula-color-primary-100) !important;
+  color: var(--hula-color-primary-600) !important;
+  font-size: 11px;
+}
+
+.toolbar-clear-all {
+  border: 0;
+  background: transparent;
+  color: var(--hula-color-primary-500);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--hula-color-primary-100);
   }
 }
 </style>

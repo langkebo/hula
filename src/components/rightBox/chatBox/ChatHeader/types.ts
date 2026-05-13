@@ -39,7 +39,6 @@ export interface UserInfo {
   uid: string
   name: string
   avatar: string
-  locPlace?: string
 }
 
 export type { UserItem, MessageType }

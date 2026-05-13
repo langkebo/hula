@@ -70,14 +70,12 @@ export const leftHook = () => {
   })
 
   /** 更新缓存里面的用户信息 */
-  const updateCurrentUserCache = (key: 'name' | 'wearingItemId' | 'avatar', value: string | null | undefined) => {
+  const updateCurrentUserCache = (key: 'name' | 'avatar', value: string | null | undefined) => {
     const uid = userStore.userInfo?.uid
     if (!uid) return
     const currentUser = groupStore.getUserInfo(uid) as MatrixRoomMember | null
     if (currentUser) {
-      if (key === 'wearingItemId') {
-        currentUser[key] = value ?? undefined
-      } else if (value) {
+      if (value) {
         currentUser[key] = value
       }
     }
@@ -108,20 +106,11 @@ export const leftHook = () => {
     if (!badge?.id) return
     try {
       await badgeService.setUserBadge(badge.id)
-      // 更新本地缓存中的用户徽章信息
-      const currentUser = userStore.userInfo!.uid && groupStore.getUserInfo(userStore.userInfo!.uid)
-      if (currentUser) {
-        // 更新当前佩戴的徽章ID
-        currentUser.wearingItemId = badge.id
-        // 更新用户信息中的佩戴徽章ID
-        userStore.userInfo!.wearingItemId = badge.id
-        // 更新徽章列表中的佩戴状态
-        editInfo.value.badgeList = editInfo.value.badgeList.map((item) => ({
-          ...item,
-          wearing: item.id === badge.id ? IsYesEnum.YES : IsYesEnum.NO,
-          obtain: item.obtain // 保持原有的obtain状态
-        }))
-      }
+      editInfo.value.badgeList = editInfo.value.badgeList.map((item) => ({
+        ...item,
+        wearing: item.id === badge.id ? IsYesEnum.YES : IsYesEnum.NO,
+        obtain: item.obtain
+      }))
       // 确保在状态更新后再显示成功消息
       nextTick(() => {
         window.$message.success('佩戴成功')

@@ -75,9 +75,6 @@
                     <n-flex vertical justify="center" :size="10" class="flex-1">
                       <n-space align="center" :size="10">
                         <span class="text-(14px [--hula-text-primary])">{{ item.name }}</span>
-                        <template v-for="account in item.itemIds" :key="account">
-                          <img class="size-20px" :src="badgeStore.badgeById(account)?.img" alt="" />
-                        </template>
                       </n-space>
                       <n-flex align="center" :size="10">
                         <span class="text-(12px [--hula-text-secondary])">
@@ -151,7 +148,6 @@ import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { type FriendSearchResult, useFriends } from '@/composables/useFriends'
 import { RoomTypeEnum, ThemeEnum } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
-import { useBadgeStore } from '@/stores/domains/chat/badge'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -159,7 +155,6 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 const { createWebviewWindow } = useWindow()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
-const badgeStore = useBadgeStore()
 const avatarColor = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-inverse)'))
 
 // 定义标签页

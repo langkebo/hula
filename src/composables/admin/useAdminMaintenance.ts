@@ -48,7 +48,7 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
   async function loadAll() {
     loading.value = true
     try {
-      await Promise.all([loadBackups(), loadExperimentalFeatures(), loadMediaStats()])
+      await Promise.allSettled([loadBackups(), loadExperimentalFeatures(), loadMediaStats()])
     } finally {
       loading.value = false
     }

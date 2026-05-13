@@ -1,4 +1,4 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 
@@ -87,7 +87,7 @@ class MatrixSpecialFriendService {
       if (err instanceof Error && err.message === '客户端未初始化') {
         if (!this.hasWarnedBeforeClientReady) {
           this.hasWarnedBeforeClientReady = true
-          warn('[SpecialFriend] Matrix 客户端未就绪，返回空特别关注列表')
+          info('[SpecialFriend] Matrix 客户端未就绪，返回空特别关注列表')
         }
         return []
       }

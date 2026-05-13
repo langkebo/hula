@@ -4,11 +4,13 @@
       <MessageSessionToolbar
         :search-keyword="searchKeyword"
         :session-type-filter="sessionTypeFilter"
+        :session-engagement-filter="sessionEngagementFilter"
         :session-sort="sessionSort"
         :filtered-count="filteredSessionList.length"
         :total-count="sessionList.length"
         @update:search-keyword="setSearchKeyword"
         @update:session-type-filter="setSessionTypeFilter"
+        @update:session-engagement-filter="setSessionEngagementFilter"
         @update:session-sort="setSessionSort" />
     </template>
 
@@ -26,7 +28,7 @@
         :on-msg-click="handleMsgClick"
         :on-msg-dblclick="handleMsgDblclick"
         :on-menu-show="handleMenuShow"
-        :on-retry-network="retryWorkbenchSessions" />
+        :on-retry-network="retrySessions" />
     </template>
   </ListWorkbenchShell>
 </template>
@@ -37,21 +39,18 @@ import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'
 import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.vue'
 import type RoomSessionList from '@/components/workbench/RoomSessionList.vue'
 import { useMessageSessionFilters } from '@/composables/workbench/useMessageSessionFilters'
+import { useSessionListState } from '@/composables/workbench/useSessionListState'
 import { useWorkbenchSessionQuerySync } from '@/composables/workbench/useWorkbenchSessionQuerySync'
-import { MittEnum, MsgEnum, RoomTypeEnum, UserType } from '@/enums'
+import { MittEnum, RoomTypeEnum } from '@/enums' // Removed MsgEnum, UserType
 import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt'
-import { useNetworkStatus } from '@/hooks/useNetworkStatus'
-import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
 import { useTauriListener } from '@/hooks/useTauriListener'
-import { WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
+import { WORKBENCH_SESSION_ENGAGEMENT_FILTERS, WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useBotStore } from '@/stores/domains/user/bot'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
@@ -63,163 +62,41 @@ const appWindow = WebviewWindow.getCurrent()
 const chatStore = useChatStore()
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
-const botStore = useBotStore()
 const { addListener } = useTauriListener()
-const { syncLoading } = storeToRefs(chatStore)
-const botDisplayText = computed(() => botStore.displayText)
-const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
 const { handleMsgClick, handleMsgDelete, handleMsgDblclick, visibleMenu, visibleSpecialMenu } = useMessage()
-// 跟踪当前显示右键菜单的会话ID
-const activeContextMenuRoomId = ref<string | null>(null)
-const networkStatus = useNetworkStatus()
-const networkBanner = computed(() => {
-  if (!networkStatus.browserOnline.value) {
-    return { text: t('home.chat_main.network_offline'), retryable: false }
-  }
 
-  if (networkStatus.isWsConnecting.value) {
-    return { text: t('home.chat_main.network_connecting'), retryable: false }
-  }
-
-  if (networkStatus.wsOnline.value === false) {
-    return { text: t('home.chat_main.network_ws_offline'), retryable: true }
-  }
-
-  return null
-})
-
-const retryWorkbenchSessions = async () => {
-  if (chatStore.syncLoading || chatStore.sessionOptions.isLoading) return
-
-  chatStore.syncLoading = true
-  try {
-    await chatStore.getSessionList(true)
-  } finally {
-    chatStore.syncLoading = false
-  }
-}
-// 未读清空的定时器
-let clearUnreadTimer: number | null = null
-
-type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
-
-// 缓存每个会话的格式化消息，避免重复计算
-const sessionMsgCache = reactive<Record<string, SessionMsgCacheItem>>({})
-// 当会话最后一条消息需要强制刷新时递增，配合 mitt 事件触发重算
-const sessionCacheRefreshKey = ref(0)
-
-// 会话列表
-const sessionList = computed(() => {
-  // 依赖 refreshKey，确保外部缓存失效时触发重算
-  sessionCacheRefreshKey.value
-
-  return (
-    chatStore.sessionList
-      .map((item) => {
-        // 获取最新的头像
-        let latestAvatar = item.avatar
-        if (item.type === RoomTypeEnum.SINGLE && item.detailId) {
-          latestAvatar = groupStore.getUserInfo(item.detailId)?.avatar || item.avatar
-        }
-
-        // 获取群聊备注名称（如果有）
-        let displayName = item.name
-        if (item.type === RoomTypeEnum.GROUP && item.remark) {
-          displayName = item.remark
-        }
-
-        // 获取该会话的所有消息用于检查@我
-        const messages = chatStore.chatMessageListByRoomId(item.roomId)
-
-        // 优化：使用缓存的消息，或者计算新的消息
-        let displayMsg = ''
-        let isAtMe = false
-
-        const lastMsg = messages[messages.length - 1]
-        const cacheKey = item.roomId
-        const cached = sessionMsgCache[cacheKey]
-        const sendTime = lastMsg?.message?.sendTime || 0
-
-        // 如果有消息且缓存不存在或已过期，重新计算
-        if (lastMsg) {
-          const senderName = getMessageSenderName(lastMsg, '', item.roomId, item.type)
-          const shouldRefreshCache = !cached || cached.time < sendTime || cached.senderName !== senderName
-
-          if (shouldRefreshCache) {
-            isAtMe = checkRoomAtMe(
-              item.roomId,
-              item.type,
-              globalStore.currentSessionRoomId!,
-              messages,
-              item.unreadCount
-            )
-            // 获取纯文本消息内容（不包含 @我 标记）
-            displayMsg = formatMessageContent(lastMsg, item.type, senderName, item.roomId)
-
-            // 如果是群系统消息（如成员加入），不再前置发送者昵称
-            if (item.type === RoomTypeEnum.GROUP && lastMsg.message?.type === MsgEnum.SYSTEM && displayMsg) {
-              const separatorIndex = displayMsg.indexOf(':')
-              if (separatorIndex > -1) {
-                displayMsg = displayMsg.slice(separatorIndex + 1)
-              }
-            }
-
-            // 更新缓存（只缓存纯文本消息内容）
-            sessionMsgCache[cacheKey] = {
-              msg: displayMsg,
-              isAtMe,
-              time: sendTime,
-              senderName
-            }
-          } else {
-            displayMsg = cached.msg
-            isAtMe = item.unreadCount > 0 ? cached.isAtMe : false
-          }
-        } else if (cached) {
-          // 使用缓存的值，但如果未读数为0，强制isAtMe为false
-          displayMsg = cached.msg
-          isAtMe = item.unreadCount > 0 ? cached.isAtMe : false
-        }
-
-        if (item.account === UserType.BOT) {
-          displayMsg = botDisplayText.value || displayMsg
-        }
-
-        return {
-          ...item,
-          avatar: latestAvatar,
-          name: displayName,
-          lastMsg: displayMsg || t('message.message_list.default_last_msg'),
-          lastMsgTime: formatTimestamp(item?.activeTime),
-          isAtMe
-        }
-      })
-      // 添加排序逻辑：先按置顶状态排序，再按活跃时间排序
-      .sort((a, b) => {
-        // 1. 先按置顶状态排序（置顶的排在前面）
-        if (a.top && !b.top) return -1
-        if (!a.top && b.top) return 1
-
-        // 2. 在相同置顶状态下，按最后活跃时间降序排序（最新的排在前面）
-        return b.activeTime - a.activeTime
-      })
-  )
-})
+const {
+  sessionList,
+  syncLoading,
+  networkBanner,
+  retrySessions,
+  handleMenuShow,
+  getItemClasses,
+  invalidateSessionCache
+} = useSessionListState()
 
 const {
   searchKeyword,
   sessionTypeFilter,
+  sessionEngagementFilter,
   sessionSort,
   filteredSessionList,
   setSearchKeyword,
   setSessionTypeFilter,
+  setSessionEngagementFilter,
   setSessionSort,
   ensureSessionVisible
 } = useMessageSessionFilters(sessionList)
 
 const sessionListRef = ref<InstanceType<typeof RoomSessionList> | null>(null)
+let clearUnreadTimer: number | null = null // Moved this up
+
 const emptyDescription = computed(() => {
-  if (searchKeyword.value.trim() || sessionTypeFilter.value !== WORKBENCH_SESSION_TYPE_FILTERS.all) {
+  if (
+    searchKeyword.value.trim() ||
+    sessionTypeFilter.value !== WORKBENCH_SESSION_TYPE_FILTERS.all ||
+    sessionEngagementFilter.value !== WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
+  ) {
     return t('space.empty_filtered_sessions')
   }
 
@@ -229,9 +106,11 @@ useWorkbenchSessionQuerySync({
   routeName: MESSAGE_ROUTE_NAME,
   searchKeyword,
   sessionTypeFilter,
+  sessionEngagementFilter,
   sessionSort,
   setSearchKeyword,
   setSessionTypeFilter,
+  setSessionEngagementFilter,
   setSessionSort
 })
 
@@ -293,27 +172,6 @@ watch(
   { immediate: true }
 )
 
-// 处理右键菜单显示状态变化
-const handleMenuShow = (roomId: string, isShow: boolean) => {
-  activeContextMenuRoomId.value = isShow ? roomId : null
-}
-
-// 判断对应样式
-const getItemClasses = (item: SessionItem) => {
-  const isCurrentSession = globalStore.currentSessionRoomId === item.roomId
-  const isContextMenuActive = activeContextMenuRoomId.value === item.roomId
-
-  return {
-    active: isCurrentSession,
-    'active-bot': isCurrentSession && item.account === UserType.BOT,
-    'active-shield': Boolean(isCurrentSession && item.shield),
-    'bg-[--hula-surface-search] rounded-12px relative': Boolean(item.top),
-    'context-menu-active': isContextMenuActive,
-    'context-menu-active-shield': Boolean(item.shield && isContextMenuActive),
-    'active-context-menu': isContextMenuActive && isCurrentSession
-  }
-}
-
 onBeforeMount(async () => {
   // 从联系人页面切换回消息页面的时候自动定位到选中的会话
   useMitt.emit(MittEnum.LOCATE_SESSION, { roomId: globalStore.currentSessionRoomId })
@@ -334,8 +192,7 @@ onMounted(async () => {
   useMitt.on(MittEnum.UPDATE_SESSION_LAST_MSG, (payload?: { roomId?: string }) => {
     const roomId = payload?.roomId
     if (!roomId) return
-    Reflect.deleteProperty(sessionMsgCache, roomId)
-    sessionCacheRefreshKey.value++
+    invalidateSessionCache(roomId)
   })
   useMitt.on(MittEnum.DELETE_SESSION, async (roomId: string) => {
     await handleMsgDelete(roomId)

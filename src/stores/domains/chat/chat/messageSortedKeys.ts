@@ -33,12 +33,34 @@ export const createMessageSortedKeys = (
   }
 
   const getMessageOrder = (msg?: MessageType) => {
-    return Number(msg?.message.id ?? 0)
+    if (!msg) {
+      return 0
+    }
+
+    const sendTime = Number(msg.message.sendTime ?? msg.sendTime ?? 0)
+    if (Number.isFinite(sendTime) && sendTime > 0) {
+      return sendTime
+    }
+
+    const idOrder = Number(msg.message.id ?? 0)
+    return Number.isFinite(idOrder) ? idOrder : 0
   }
 
   const compareMessageKeys = (roomId: string, leftKey: string, rightKey: string) => {
     const roomMessages = messageMap[roomId]
-    return getMessageOrder(roomMessages?.[leftKey]) - getMessageOrder(roomMessages?.[rightKey])
+    const leftNumeric = Number(leftKey)
+    const rightNumeric = Number(rightKey)
+    const bothNumeric = Number.isFinite(leftNumeric) && Number.isFinite(rightNumeric)
+    if (bothNumeric) {
+      return leftNumeric - rightNumeric
+    }
+
+    const orderDiff = getMessageOrder(roomMessages?.[leftKey]) - getMessageOrder(roomMessages?.[rightKey])
+    if (orderDiff !== 0) {
+      return orderDiff
+    }
+
+    return leftKey.localeCompare(rightKey)
   }
 
   const findMessageInsertIndex = (roomId: string, messageKey: string) => {

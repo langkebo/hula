@@ -5,6 +5,7 @@
   "about": "关于",
   "sign_out": "退出登录",
   "homeserver": "设置服务器",
+  "admin_panel": "管理后台",
   "homeserver_url": "服务器地址",
   "homeserver_placeholder": "请输入 Matrix 服务器地址",
   "homeserver_hint": "设置 Matrix Homeserver 地址以连接到不同的服务器",

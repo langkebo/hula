@@ -117,6 +117,7 @@ import { useChatStore } from '@/stores/domains/chat/chat/message'
 import type { MessageType } from '@/stores/domains/chat/message'
 
 const createMessage = (id: string, roomId = 'room-1'): MessageType => ({
+  clientKey: id,
   message: {
     id,
     roomId,
@@ -153,6 +154,39 @@ describe('ChatMessageStore', () => {
     expect(store.getMsgIndex('10')).toBe(0)
     expect(store.getMsgIndex('20')).toBe(1)
     expect(store.getMsgIndex('30')).toBe(2)
+  })
+
+  it('should sort non-numeric event ids by sendTime instead of numeric coercion', async () => {
+    const store = useChatStore()
+
+    await store.pushMsg({
+      clientKey: 'tmp-1',
+      message: {
+        id: '$late:event',
+        roomId: 'room-1',
+        sendTime: 300,
+        type: MsgEnum.TEXT,
+        body: { body: 'late' }
+      },
+      fromUser: { uid: 'user-2', username: 'tester' }
+    })
+
+    await store.pushMsg({
+      clientKey: 'tmp-2',
+      message: {
+        id: '$early:event',
+        roomId: 'room-1',
+        sendTime: 100,
+        type: MsgEnum.TEXT,
+        body: { body: 'early' }
+      },
+      fromUser: { uid: 'user-2', username: 'tester' }
+    })
+
+    expect(store.chatMessageListByRoomId('room-1').map((item) => item.message.id)).toEqual([
+      '$early:event',
+      '$late:event'
+    ])
   })
 
   it('should keep newest messages when trimming redundant room cache', async () => {
@@ -394,6 +428,7 @@ describe('ChatMessageStore', () => {
     expect(matrixEventService.getPagedRoomMessages).toHaveBeenCalledWith('room-1', 20, '')
     expect(store.chatMessageListByRoomId('room-1').map((item) => item.message.id)).toEqual(['101'])
     expect(store.chatMessageListByRoomId('room-2')).toEqual([])
+    expect(store.currentMessageOptions).toMatchObject({ hasLoadedOnce: true, isLoading: false })
     expect(sessionStoreMock.markSessionRead).toHaveBeenCalledWith('room-1')
   })
 
@@ -440,5 +475,6 @@ describe('ChatMessageStore', () => {
     expect(store.chatMessageListByRoomId('room-1').map((item) => item.message.id)).toEqual(['10', '20', '30', '40'])
     expect(store.getMsgIndex('20')).toBe(1)
     expect(store.getMsgIndex('40')).toBe(3)
+    expect(store.currentMessageOptions).toMatchObject({ hasLoadedOnce: true, isLoading: false })
   })
 })

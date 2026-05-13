@@ -97,8 +97,7 @@ function convertMatrixEventToMessage(event: MatrixEvent): MessageType {
     fromUser: {
       uid: event.getSender() ?? '',
       username: event.getSender() ?? '',
-      avatar: '',
-      locPlace: ''
+      avatar: ''
     },
     message: {
       id: event.getId() ?? '',
@@ -138,8 +137,7 @@ function convertTimelineEventToMessage(roomId: string, event: Record<string, unk
     fromUser: {
       uid: event.sender as string,
       username: event.sender as string,
-      avatar: '',
-      locPlace: ''
+      avatar: ''
     },
     message: {
       id: event.event_id as string,

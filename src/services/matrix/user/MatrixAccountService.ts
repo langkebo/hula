@@ -1,4 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
+import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import matrixClientService from '../MatrixClientService'
 
 export interface DeviceInfo {
@@ -393,6 +394,20 @@ class MatrixAccountService {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[MatrixAccount] 客户端未初始化')
+    }
+
+    if (matrixWorkerHost.isStarted) {
+      const accessToken = client.getAccessToken()
+      if (accessToken) {
+        try {
+          const result = await matrixWorkerHost.getCapabilities(client.getHomeserverUrl(), accessToken)
+          info('[MatrixAccount] 获取能力声明成功（worker）')
+          return result
+        } catch (err) {
+          error(`[MatrixAccount] 获取能力声明失败（worker）: ${err}`)
+          return {}
+        }
+      }
     }
 
     try {

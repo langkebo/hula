@@ -162,21 +162,33 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   }
 
   function friendToContact(friend: Friend): MatrixContact {
+    const friendRecord = friend as Friend & {
+      displayname?: string
+      username?: string
+      online?: boolean
+      presence?: string
+      last_active_ts?: number
+    }
+    const displayName = friend.display_name ?? friendRecord.displayname ?? friendRecord.username ?? null
+    const activeStatus =
+      friendRecord.online === true || friendRecord.presence === 'online' ? OnlineEnum.ONLINE : OnlineEnum.OFFLINE
+    const lastOptTime = friend.since ?? friendRecord.last_active_ts ?? Date.now()
+
     return {
       userId: friend.user_id,
       uid: friend.user_id,
-      displayName: friend.display_name ?? null,
-      name: friend.display_name ?? friend.user_id.split(':')[0],
+      displayName,
+      name: displayName ?? friend.user_id.split(':')[0].replace(/^@/, ''),
       avatarUrl: friend.avatar_url ?? null,
       avatar: friend.avatar_url ?? '',
-      account: friend.user_id.split(':')[0],
-      activeStatus: OnlineEnum.ONLINE,
+      account: friend.user_id.split(':')[0].replace(/^@/, ''),
+      activeStatus,
       remark: friend.note ?? '',
-      lastOptTime: friend.since ?? Date.now(),
+      lastOptTime,
       hideMyPosts: false,
       hideTheirPosts: false,
       friendStatus: friend.status as FriendStatus | undefined,
-      since: friend.since,
+      since: lastOptTime,
       note: friend.note,
       directRoomId: friend.dm_room_id
     }
@@ -439,6 +451,33 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     }
   }
 
+  async function setFriendDisplayName(userId: string, displayName: string): Promise<boolean> {
+    try {
+      await matrixFriendService.setFriendDisplayName(userId, displayName)
+      const contact = contactsList.value.find((c) => c.userId === userId)
+      if (contact) {
+        contact.remark = displayName
+        triggerRef(contactsList)
+      }
+      info(`[ContactStore] 设置好友显示名成功: ${userId}`)
+      return true
+    } catch (err) {
+      error(`[ContactStore] 设置好友显示名失败: ${err}`)
+      return false
+    }
+  }
+
+  async function loadFriendSuggestions(): Promise<
+    Array<{ user_id: string; display_name?: string; avatar_url?: string; reason?: string }>
+  > {
+    try {
+      return await matrixFriendService.getFriendSuggestions()
+    } catch (err) {
+      error(`[ContactStore] 获取好友建议失败: ${err}`)
+      return []
+    }
+  }
+
   async function setFriendStatus(userId: string, status: FriendStatus): Promise<boolean> {
     try {
       await matrixFriendService.setFriendStatus(userId, status)
@@ -604,6 +643,8 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     onDeleteFriend,
     deleteContact,
     setFriendNote,
+    setFriendDisplayName,
+    loadFriendSuggestions,
     setFriendStatus,
     loadPendingInvites,
     acceptInvite,

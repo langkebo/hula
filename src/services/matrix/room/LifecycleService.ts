@@ -19,7 +19,24 @@ export class MatrixRoomLifecycleService {
   async getServerDomain(): Promise<string> {
     try {
       const client = this.getClient(false)
-      return client.getDomain() || 'matrix.org'
+      const domain = client.getDomain()
+      if (domain) return domain
+
+      const baseUrl = (client as unknown as { baseUrl?: string }).baseUrl
+      if (baseUrl) {
+        try {
+          const url = new URL(baseUrl)
+          const hostname = url.hostname
+          if (hostname && hostname !== '0.0.0.0' && hostname !== '::') {
+            info(`[MatrixRoom] getDomain() 返回空，从 baseUrl 提取域名: ${hostname}`)
+            return hostname
+          }
+        } catch {
+          // URL 解析失败，继续抛出错误
+        }
+      }
+
+      throw new Error('无法确定服务器域名: getDomain() 返回空且 baseUrl 无法解析')
     } catch (err) {
       error(`[MatrixRoom] 获取服务器域名失败: ${err}`)
       throw err

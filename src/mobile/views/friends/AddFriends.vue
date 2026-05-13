@@ -61,9 +61,6 @@
                       <div class="flex flex-col justify-center gap-10px flex-1">
                         <div class="flex items-center gap-10px">
                           <span class="text-(14px [--hula-text-primary])">{{ item.name }}</span>
-                          <template v-for="account in item.itemIds" :key="account">
-                            <img class="size-20px" :src="badgeStore.badgeById(account)?.img" alt="" />
-                          </template>
                         </div>
                         <div class="flex items-center gap-10px">
                           <span class="text-(12px [--hula-text-secondary])">{{ `账号：${item.account}` }}</span>
@@ -120,7 +117,6 @@ import { type FriendSearchResult, useFriends } from '@/composables/useFriends'
 import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
 import router from '@/router'
-import { useBadgeStore } from '@/stores/domains/chat/badge'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -128,7 +124,6 @@ import { isMobile } from '@/utils/PlatformConstants'
 
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
-const badgeStore = useBadgeStore()
 const tabs = ref([
   { name: 'recommend', label: '推荐' },
   { name: 'user', label: '找好友' },

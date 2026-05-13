@@ -4,6 +4,7 @@ import { computed, reactive, ref, shallowRef, triggerRef } from 'vue'
 import { type NotificationTypeEnum, RoomTypeEnum, StoresEnum } from '@/enums'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
 import { roomListService } from '@/services/matrix/room/RoomListService'
 import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -11,6 +12,12 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SessionStore')
+
+export interface UnreadDetail {
+  total: number
+  highlight: number
+  silent: boolean
+}
 
 export interface SessionItem {
   id?: string
@@ -43,6 +50,61 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
   const sessionMap = shallowRef<Record<string, SessionItem>>({})
   const sessionOptions = reactive({ isLast: false, isLoading: false, cursor: '' })
   const syncLoading = ref(false)
+  const unreadDetail = shallowRef<Record<string, UnreadDetail>>({})
+
+  const writeUnreadDetail = (roomId: string, detail: UnreadDetail | null) => {
+    if (!roomId) return
+    if (!detail) {
+      if (!(roomId in unreadDetail.value)) return
+      const next = { ...unreadDetail.value }
+      delete next[roomId]
+      unreadDetail.value = next
+      return
+    }
+    const previous = unreadDetail.value[roomId]
+    if (
+      previous &&
+      previous.total === detail.total &&
+      previous.highlight === detail.highlight &&
+      previous.silent === detail.silent
+    ) {
+      return
+    }
+    unreadDetail.value = { ...unreadDetail.value, [roomId]: detail }
+  }
+
+  const getUnreadDetail = (roomId: string): UnreadDetail | null => {
+    if (!roomId) return null
+    return unreadDetail.value[roomId] ?? null
+  }
+
+  /**
+   * 拉取最新未读 / 提及计数, 同步到 unreadDetail 与会话项
+   * 契约 GET /_matrix/client/v3/rooms/{room_id}/unread_count
+   */
+  const refreshUnreadDetail = async (roomId: string): Promise<UnreadDetail | null> => {
+    if (!roomId) return null
+    try {
+      const payload = await matrixRoomNotificationService.fetchUnreadCount(roomId)
+      if (!payload) return getUnreadDetail(roomId)
+      const session = resolveSessionByRoomId(roomId)
+      const silent = session?.muteNotification === 1 || !!session?.shield
+      const detail: UnreadDetail = {
+        total: Math.max(0, payload.notification_count | 0),
+        highlight: Math.max(0, payload.highlight_count | 0),
+        silent
+      }
+      writeUnreadDetail(roomId, detail)
+      if (session) {
+        updateSession(roomId, { unreadCount: detail.total })
+        persistUnreadCount(roomId, detail.total)
+      }
+      return detail
+    } catch (err) {
+      logger.error('拉取未读计数失败:', roomId, err)
+      return getUnreadDetail(roomId)
+    }
+  }
 
   const syncPersistedUnreadCounts = (targetSessions: SessionItem[] = sessionList.value) => {
     if (!targetSessions.length) return
@@ -175,8 +237,10 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     if (!roomId) return
     updateSession(roomId, { unreadCount: 0 })
     persistUnreadCount(roomId, 0)
+    writeUnreadDetail(roomId, { total: 0, highlight: 0, silent: getUnreadDetail(roomId)?.silent ?? false })
     try {
       await roomListService.markAsRead(roomId)
+      void refreshUnreadDetail(roomId).catch(() => null)
     } catch (err) {
       logger.error('标记会话已读失败:', err)
     }
@@ -236,11 +300,14 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     sessionMap,
     sessionOptions,
     syncLoading,
+    unreadDetail,
     getSessionList,
     updateSession,
     updateSessionLastActiveTime,
     markSessionRead,
     getSession,
+    getUnreadDetail,
+    refreshUnreadDetail,
     isGroup,
     currentSessionInfo,
     getGroupSessions,

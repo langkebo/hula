@@ -33,6 +33,12 @@
             {{ statusTitle }}
           </span>
         </template>
+        <span v-if="typingText" class="typing-indicator">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          {{ typingText }}
+        </span>
         <EncryptionStatus
           v-if="encryptionStatus"
           :status="encryptionStatus"
@@ -49,6 +55,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EncryptionStatus from '@/components/encryption/EncryptionStatus.vue'
 import { RoomTypeEnum } from '@/enums'
+import { matrixTypingService } from '@/services/matrix/messaging/MatrixTypingService'
 import { IsAllUserEnum } from '@/services/types'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
@@ -65,6 +72,7 @@ const props = defineProps<{
   isBotUser: boolean
   hotFlag?: IsAllUserEnum
   encryptionStatus?: RoomEncryptionStatus | null
+  roomId?: string
 }>()
 
 const { t } = useI18n()
@@ -88,6 +96,11 @@ const avatarStyle = computed(() => {
 
 const channelAvatar = computed(() => {
   return AvatarUtils.getAvatarUrl(props.avatar)
+})
+
+const typingText = computed(() => {
+  if (!props.roomId) return ''
+  return matrixTypingService.getTypingUsersText(props.roomId, 2)
 })
 
 const emit = defineEmits<(e: 'click') => void>()
@@ -169,5 +182,42 @@ const handleClick = () => {
 
 .security-status {
   min-width: 0;
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--hula-color-primary-500);
+}
+
+.typing-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--hula-color-primary-500);
+  animation: typing-bounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typing-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>

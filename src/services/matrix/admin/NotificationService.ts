@@ -3,30 +3,29 @@ import type { ServerNoticeInfo, ServerNoticeResult } from './AdminTypes'
 
 type NotificationAdminSdk = {
   sendServerNotice(
-    userId: string,
-    content?: string | { msgtype: string; body: string; [key: string]: unknown },
-    targets?: string[]
+    arg1: string,
+    arg2?: string | { msgtype: string; body: string; [k: string]: unknown },
+    arg3?: string[]
   ): Promise<{ event_id?: string }>
   getServerNotices?(
     fromOrLimit?: string | number,
     limit?: number
   ): Promise<{ notices?: unknown[]; next_token?: string } | null>
-  getUserNotificationSettings?(userId: string): Promise<Record<string, unknown>>
-  setUserNotificationSettings?(userId: string, settings: Record<string, unknown>): Promise<void>
-  listUserPushers?(userId: string): Promise<{ pushers?: unknown[] }>
-  deleteUserPusher?(userId: string, pushkey: string, appId: string): Promise<void>
-  createSystemNotification?(body: {
-    content: string
-    type?: string
-    target_users?: string[]
-  }): Promise<{ notification_id?: string }>
-  listSystemNotifications?(params: { limit?: number; from?: string }): Promise<{
+  getUserNotification?(userId: string): Promise<Record<string, unknown>>
+  setUserNotification?(userId: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>
+  getUserPushers?(userId: string): Promise<{ pushers?: unknown[] }>
+  deleteUserPusher?(userId: string, pushkey: string): Promise<void>
+  createNotification?(payload: Record<string, unknown>): Promise<{ notification_id?: string; [key: string]: unknown }>
+  listNotifications?(
+    from?: string,
+    limit?: number
+  ): Promise<{
     notifications: Array<Record<string, unknown>>
     next_token?: string
   }>
-  getSystemNotification?(notificationId: string): Promise<Record<string, unknown>>
-  updateSystemNotification?(notificationId: string, updates: Record<string, unknown>): Promise<void>
-  deleteSystemNotification?(notificationId: string): Promise<void>
+  getNotification?(notificationId: string): Promise<Record<string, unknown>>
+  updateNotification?(notificationId: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>
+  deleteNotification?(notificationId: string): Promise<void>
 }
 
 type NotificationDomainSdkGetter = () => Promise<NotificationAdminSdk>
@@ -39,7 +38,7 @@ export class AdminNotificationService {
       const admin = await this.sdkAdmin()
       const result = await admin.sendServerNotice(
         userId,
-        content as { msgtype: string; body: string; [key: string]: unknown }
+        content as { msgtype: string; body: string; [k: string]: unknown }
       )
       info(`[AdminNotification] 服务器通知已发送: ${userId}`)
       return { eventId: result?.event_id }
@@ -73,7 +72,7 @@ export class AdminNotificationService {
   async getUserNotificationSettings(userId: string): Promise<Record<string, unknown> | null> {
     try {
       const admin = await this.sdkAdmin()
-      return (await admin.getUserNotificationSettings?.(userId)) ?? null
+      return (await admin.getUserNotification?.(userId)) ?? null
     } catch (err) {
       error(`[AdminNotification] 获取用户通知设置失败: ${err}`)
       return null
@@ -83,7 +82,7 @@ export class AdminNotificationService {
   async setUserNotificationSettings(userId: string, settings: Record<string, unknown>): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      await admin.setUserNotificationSettings?.(userId, settings)
+      await admin.setUserNotification?.(userId, settings)
       info(`[AdminNotification] 更新用户通知设置: ${userId}`)
     } catch (err) {
       error(`[AdminNotification] 更新用户通知设置失败: ${err}`)
@@ -94,7 +93,7 @@ export class AdminNotificationService {
   async getUserPushers(userId: string): Promise<Array<Record<string, unknown>>> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.listUserPushers?.(userId)
+      const result = await admin.getUserPushers?.(userId)
       return (result?.pushers ?? []) as Array<Record<string, unknown>>
     } catch (err) {
       error(`[AdminNotification] 获取用户 Pushers 失败: ${err}`)
@@ -102,10 +101,10 @@ export class AdminNotificationService {
     }
   }
 
-  async deleteUserPusher(userId: string, pushkey: string, appId: string): Promise<void> {
+  async deleteUserPusher(userId: string, pushkey: string, _appId: string): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      await admin.deleteUserPusher?.(userId, pushkey, appId)
+      await admin.deleteUserPusher?.(userId, pushkey)
       info(`[AdminNotification] 删除用户 Pusher: ${userId}`)
     } catch (err) {
       error(`[AdminNotification] 删除用户 Pusher 失败: ${err}`)
@@ -122,7 +121,7 @@ export class AdminNotificationService {
       const admin = await this.sdkAdmin()
       const body: { content: string; type?: string; target_users?: string[] } = { content, type }
       if (targetUsers) body.target_users = targetUsers
-      const result = await admin.createSystemNotification?.(body)
+      const result = await admin.createNotification?.(body)
       info('[AdminNotification] 创建系统通知成功')
       return { notificationId: result?.notification_id ?? '' }
     } catch (err) {
@@ -137,7 +136,7 @@ export class AdminNotificationService {
   ): Promise<{ notifications: Array<Record<string, unknown>>; nextToken?: string }> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.listSystemNotifications?.({ limit, from })
+      const result = await admin.listNotifications?.(from, limit)
       return {
         notifications: result?.notifications ?? [],
         nextToken: result?.next_token
@@ -151,7 +150,7 @@ export class AdminNotificationService {
   async getSystemNotification(notificationId: string): Promise<Record<string, unknown> | null> {
     try {
       const admin = await this.sdkAdmin()
-      return (await admin.getSystemNotification?.(notificationId)) ?? null
+      return (await admin.getNotification?.(notificationId)) ?? null
     } catch (err) {
       error(`[AdminNotification] 获取系统通知详情失败: ${err}`)
       return null
@@ -161,7 +160,7 @@ export class AdminNotificationService {
   async updateSystemNotification(notificationId: string, updates: Record<string, unknown>): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      await admin.updateSystemNotification?.(notificationId, updates)
+      await admin.updateNotification?.(notificationId, updates)
       info(`[AdminNotification] 更新系统通知: ${notificationId}`)
     } catch (err) {
       error(`[AdminNotification] 更新系统通知失败: ${err}`)
@@ -172,7 +171,7 @@ export class AdminNotificationService {
   async deleteSystemNotification(notificationId: string): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      await admin.deleteSystemNotification?.(notificationId)
+      await admin.deleteNotification?.(notificationId)
       info(`[AdminNotification] 删除系统通知: ${notificationId}`)
     } catch (err) {
       error(`[AdminNotification] 删除系统通知失败: ${err}`)

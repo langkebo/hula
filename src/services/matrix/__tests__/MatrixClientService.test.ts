@@ -53,7 +53,7 @@ describe('MatrixClientService', () => {
       ;(matrixClientService as unknown as { setupEventListeners: () => void }).setupEventListeners()
       ;(matrixClientService as unknown as { setupEventListeners: () => void }).setupEventListeners()
 
-      expect(client.on).toHaveBeenCalledTimes(3)
+      expect(client.on).toHaveBeenCalledTimes(4)
       expect(client.off).not.toHaveBeenCalled()
     })
 
@@ -74,8 +74,8 @@ describe('MatrixClientService', () => {
       ;(matrixClientService as unknown as { client: unknown }).client = newClient
       ;(matrixClientService as unknown as { setupEventListeners: () => void }).setupEventListeners()
 
-      expect(oldClient.off).toHaveBeenCalledTimes(3)
-      expect(newClient.on).toHaveBeenCalledTimes(3)
+      expect(oldClient.off).toHaveBeenCalledTimes(4)
+      expect(newClient.on).toHaveBeenCalledTimes(4)
     })
   })
 })

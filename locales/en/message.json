@@ -78,6 +78,9 @@
     "official_popover": "Official group",
     "bot_popover": "HuLa Assistant",
     "mention_tag": "[Mentioned me]",
+    "favorite_tag": "Pinned",
+    "low_priority_tag": "Low priority",
+    "migrated_tag": "Migrated",
     "shield_group": "Group muted",
     "shield_user": "User muted",
     "empty_description": "Start chatting with friends!",
@@ -266,5 +269,15 @@
     "forward_success": "Messages forwarded",
     "forward_failed": "Failed to forward",
     "non_text_message": "[Non-text message]"
-  }
+  },
+  "forward": {
+    "title": "Forward Message",
+    "search_placeholder": "Search rooms",
+    "no_rooms": "No rooms available for forwarding",
+    "selected_count": "{count} rooms selected",
+    "send": "Forward",
+    "success": "Forwarded to {count} rooms",
+    "failed": "Failed to forward"
+  },
+  "merge_msg_title": "Merged Messages"
 }

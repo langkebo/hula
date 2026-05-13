@@ -146,7 +146,8 @@ const commonTheme: GlobalThemeOverrides = {
     colorChecked: 'var(--hula-color-primary-500)',
     borderChecked: '1px solid var(--hula-color-primary-500)',
     borderFocus: '1px solid var(--hula-color-primary-500)',
-    boxShadowFocus: '0 0 0 2px var(--hula-color-primary-300-alpha)'
+    boxShadowFocus: '0 0 0 2px color-mix(in srgb, var(--hula-color-primary-500) 20%, transparent)',
+    checkMarkColor: '#fff'
   },
   Tag: {
     borderRadius: '4px'
@@ -154,7 +155,17 @@ const commonTheme: GlobalThemeOverrides = {
   Button: {
     borderRadiusMedium: '10px',
     borderRadiusSmall: '6px',
-    colorPrimary: 'var(--hula-color-primary-500)'
+    colorPrimary: 'var(--hula-color-primary-500)',
+    colorHoverPrimary: 'var(--hula-color-primary-400)',
+    colorPressedPrimary: 'var(--hula-color-primary-600)',
+    colorFocusPrimary: 'var(--hula-color-primary-400)',
+    colorDisabledPrimary: 'var(--hula-color-primary-200)',
+    // 显式提供 secondary 颜色，防止 Naive UI 尝试使用 seemly/rgba 解析 CSS 变量
+    colorSecondaryPrimary: 'color-mix(in srgb, var(--hula-color-primary-500) 12%, transparent)',
+    colorSecondaryHoverPrimary: 'color-mix(in srgb, var(--hula-color-primary-500) 18%, transparent)',
+    colorSecondaryPressedPrimary: 'color-mix(in srgb, var(--hula-color-primary-500) 24%, transparent)',
+    textColorTextPrimary: 'var(--hula-color-primary-500)',
+    textColorGhostPrimary: 'var(--hula-color-primary-500)'
   },
   Tabs: {
     tabTextColorSegment: 'var(--hula-text-secondary)',
@@ -178,13 +189,13 @@ const commonTheme: GlobalThemeOverrides = {
   Switch: {
     railColorActive: 'var(--hula-color-primary-500)',
     loadingColor: 'var(--hula-color-primary-500)',
-    boxShadowFocus: '0 0 0 2px var(--hula-color-primary-300-alpha)'
+    boxShadowFocus: '0 0 0 2px color-mix(in srgb, var(--hula-color-primary-500) 20%, transparent)'
   },
   Radio: {
-    boxShadowActive: 'inset 0 0 0 1px var(--hula-color-primary-500)',
-    boxShadowFocus: 'inset 0 0 0 1px var(--hula-color-primary-500),0 0 0 2px var(--hula-color-primary-300-alpha)',
-    boxShadowHover: 'inset 0 0 0 1px var(--hula-color-primary-500)',
-    dotColorActive: 'var(--hula-color-primary-500)'
+    dotColorActive: 'var(--hula-color-primary-500)',
+    buttonBorderColorActive: 'var(--hula-color-primary-500)',
+    buttonTextColorActive: 'var(--hula-color-primary-500)',
+    boxShadowFocus: '0 0 0 2px color-mix(in srgb, var(--hula-color-primary-500) 20%, transparent)'
   },
   Message: {
     iconColorSuccess: 'var(--hula-color-primary-500)',
@@ -205,7 +216,10 @@ const commonTheme: GlobalThemeOverrides = {
   },
   Steps: {
     indicatorBorderColorProcess: 'var(--hula-color-primary-500)',
-    indicatorColorProcess: 'var(--hula-color-primary-300)'
+    indicatorColorProcess: 'var(--hula-color-primary-500)',
+    indicatorTextColorProcess: '#fff',
+    stepHeaderTextColorProcess: 'var(--hula-color-primary-500)',
+    indicatorIconColorProcess: '#fff'
   },
   LoadingBar: {
     colorLoading: 'var(--hula-color-primary-500)'

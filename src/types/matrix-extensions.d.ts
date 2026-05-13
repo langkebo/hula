@@ -178,6 +178,105 @@ export interface KeyBackupManager {
 }
 
 // ============================================
+// Device Trust Manager 扩展 (SDK Manager Layer)
+// ============================================
+
+export type TrustLevel = 'verified' | 'cross_signed' | 'unverified' | 'unknown' | 'blacklisted'
+
+export interface IDeviceTrustInfo {
+  device_id: string
+  user_id: string
+  display_name?: string
+  trust_level: TrustLevel
+  last_seen_ts?: number
+  last_seen_ip?: string
+  is_verified: boolean
+  is_cross_signed: boolean
+  is_blacklisted: boolean
+}
+
+export interface IDeviceVerificationRequest {
+  new_device_id: string
+  device_id: string
+  method?: 'sas' | 'qr_code'
+}
+
+export interface IDeviceVerificationResponse {
+  token: string
+  expires_at: number
+  device_id: string
+  new_device_id: string
+  method: string
+  status: 'pending' | 'approved' | 'rejected' | 'expired'
+}
+
+export interface IVerificationRespondResult {
+  success: boolean
+  message?: string
+}
+
+export interface ISecuritySummary {
+  total_devices: number
+  verified_devices: number
+  unverified_devices: number
+  blacklisted_devices: number
+  cross_signed_devices: number
+  security_score: number
+  recommendations: string[]
+}
+
+export interface DeviceTrustManager {
+  requestVerification(request: IDeviceVerificationRequest): Promise<IDeviceVerificationResponse>
+  respondToVerification(token: string, approved: boolean): Promise<IVerificationRespondResult>
+  getVerificationStatus(token: string): Promise<IDeviceVerificationResponse>
+  getDeviceTrustList(forceRefresh?: boolean): Promise<IDeviceTrustInfo[]>
+  getDeviceTrust(deviceId: string, forceRefresh?: boolean): Promise<IDeviceTrustInfo | null>
+  getSecuritySummary(forceRefresh?: boolean): Promise<ISecuritySummary>
+}
+
+// ============================================
+// Secure Backup Manager 扩展 (SDK Manager Layer)
+// ============================================
+
+export interface SecureBackupInfo {
+  backup_id: string
+  algorithm: string
+  auth_data: Record<string, unknown>
+  created_ts: number
+  key_count?: number
+  version?: string
+}
+
+export interface SecureBackupKeysResponse {
+  count: number
+  message?: string
+}
+
+export interface SecureBackupRestoreResponse {
+  success: boolean
+  key_count: number
+  message?: string
+}
+
+export interface SecureBackupVerifyResponse {
+  valid: boolean
+}
+
+export interface SecureBackupManager {
+  createSecureBackup(passphrase: string): Promise<SecureBackupInfo>
+  getSecureBackup(backupId: string, forceRefresh?: boolean): Promise<SecureBackupInfo>
+  deleteSecureBackup(backupId: string): Promise<void>
+  addKeysToSecureBackup(
+    backupId: string,
+    passphrase: string,
+    sessionKeys: Array<{ session_id: string; session_data: Record<string, unknown> }>
+  ): Promise<SecureBackupKeysResponse>
+  restoreFromSecureBackup(backupId: string, passphrase: string): Promise<SecureBackupRestoreResponse>
+  verifySecureBackup(backupId: string, passphrase: string): Promise<SecureBackupVerifyResponse>
+  clearCache(): void
+}
+
+// ============================================
 // MatrixClient 扩展
 // ============================================
 
@@ -185,6 +284,8 @@ export interface MatrixClientExtended extends MatrixClient {
   getDeviceManager?(): DeviceManager | null
   getCrypto(): CryptoApi | null
   getKeyBackupManager?(): KeyBackupManager | null
+  getDeviceTrustManager?(): DeviceTrustManager | null
+  getSecureBackupManager?(): SecureBackupManager | null
   checkUserTrust?(userId: string): Promise<LegacyUserTrustInfo>
   checkDeviceTrust?(userId: string, deviceId: string): Promise<LegacyDeviceTrustInfo>
   getStoredDevicesForUser?(userId: string): Promise<LegacyStoredDevice[]>

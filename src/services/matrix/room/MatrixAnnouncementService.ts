@@ -32,6 +32,15 @@ interface PinnedEventsContent {
 }
 
 class MatrixAnnouncementService {
+  private getClient() {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      info('[Announcement] Matrix client not initialized, service unavailable.')
+      return null
+    }
+    return client
+  }
+
   private async getRoom(roomId: string) {
     return await matrixRoomService.getRoom(roomId)
   }
@@ -47,10 +56,8 @@ class MatrixAnnouncementService {
 
   private async setPinnedEventIds(roomId: string, eventIds: string[]): Promise<void> {
     await this.getRoom(roomId)
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('Matrix client not initialized')
-    }
+    const client = this.getClient()
+    if (!client) throw new Error('Matrix client not initialized')
     await client.sendStateEvent(roomId, 'm.room.pinned_events', { pinned: eventIds }, '')
   }
 
@@ -95,10 +102,9 @@ class MatrixAnnouncementService {
     try {
       if (options.isPinned) {
         await this.getRoom(roomId)
-        const client = matrixClientService.getClient()
-        if (!client) {
-          throw new Error('Matrix client not initialized')
-        }
+        const client = this.getClient()
+        if (!client) throw new Error('Matrix client not initialized')
+
         await client.sendStateEvent(roomId, 'm.room.topic', { topic: options.content }, '')
         const refreshedRoom = await this.getRoom(roomId)
         const topicEvent = refreshedRoom.currentState.getStateEvents('m.room.topic' as never, '')
@@ -122,10 +128,9 @@ class MatrixAnnouncementService {
     try {
       if (options.isPinned) {
         await this.getRoom(roomId)
-        const client = matrixClientService.getClient()
-        if (!client) {
-          throw new Error('Matrix client not initialized')
-        }
+        const client = this.getClient()
+        if (!client) throw new Error('Matrix client not initialized')
+
         await client.sendStateEvent(roomId, 'm.room.topic', { topic: options.content }, '')
         const refreshedRoom = await this.getRoom(roomId)
         const topicEvent = refreshedRoom.currentState.getStateEvents('m.room.topic' as never, '')
@@ -151,10 +156,9 @@ class MatrixAnnouncementService {
       const room = await this.getRoom(roomId)
       const topicEvent = room.currentState.getStateEvents('m.room.topic' as never, '')
       if (announcementId === 'topic' || announcementId === topicEvent?.getId()) {
-        const client = matrixClientService.getClient()
-        if (!client) {
-          throw new Error('Matrix client not initialized')
-        }
+        const client = this.getClient()
+        if (!client) throw new Error('Matrix client not initialized')
+
         await client.sendStateEvent(roomId, 'm.room.topic', { topic: '' }, '')
         info(`[Announcement] 删除置顶公告: ${roomId}`)
         return

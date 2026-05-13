@@ -89,6 +89,11 @@ import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
 import { saveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { getEnhancedFingerprint } from '@/services/fingerprint'
+import {
+  matrixQrLoginBridgeService,
+  type QrCodeResult,
+  type QrLoginStatusResult
+} from '@/services/matrix/auth/MatrixQrLoginBridgeService'
 import { matrixQrLoginService, type QRLoginResult } from '@/services/matrix/auth/MatrixQrLoginService'
 import { loginCommand } from '@/services/tauriCommand'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -110,6 +115,8 @@ const loading = ref(true)
 const refreshing = ref(false) // 是否正在刷新
 const qrCodeValue = ref('')
 const qrCodeResp = ref()
+const bridgeQrData = ref<QrCodeResult | null>(null)
+const useBridge = ref(false)
 const qrCodeColor = ref('#000000')
 const qrCodeBgColor = ref('#FFFFFF')
 const qrCodeType = ref('canvas' as const)
@@ -234,25 +241,43 @@ const startPolling = () => {
     }
     pollingRequesting.value = true
     try {
-      const res = await matrixQrLoginService.checkStatus()
-      if (!res) {
-        return
-      }
-      switch (res.status) {
-        case 'PENDING':
-          break
-        case 'SCANNED':
-          handleAuth()
-          break
-        case 'CONFIRMED':
-          await handleConfirmed(res)
-          break
-        case 'EXPIRED':
-          clearPolling()
-          handleError('expired')
-          break
-        default:
-          break
+      if (useBridge.value && bridgeQrData.value) {
+        const res = await matrixQrLoginBridgeService.getQrStatus(bridgeQrData.value.transactionId)
+        switch (res.status) {
+          case 'pending':
+            break
+          case 'confirmed':
+            await handleBridgeConfirmed(res)
+            break
+          case 'expired':
+          case 'invalidated':
+            clearPolling()
+            handleError('expired')
+            break
+          default:
+            break
+        }
+      } else {
+        const res = await matrixQrLoginService.checkStatus()
+        if (!res) {
+          return
+        }
+        switch (res.status) {
+          case 'PENDING':
+            break
+          case 'SCANNED':
+            handleAuth()
+            break
+          case 'CONFIRMED':
+            await handleConfirmed(res)
+            break
+          case 'EXPIRED':
+            clearPolling()
+            handleError('expired')
+            break
+          default:
+            break
+        }
       }
     } catch (error) {
       if (!confirmedHandled.value) {
@@ -269,8 +294,25 @@ const startPolling = () => {
 /** 处理二维码显示和刷新 */
 const handleQRCodeLogin = async () => {
   try {
-    qrCodeResp.value = await matrixQrLoginService.generateQR()
-    qrCodeValue.value = JSON.stringify({ type: 'login', qrId: qrCodeResp.value.qrId })
+    // 优先尝试 Bridge Service（SDK 后端交互）
+    try {
+      const qrResult = await matrixQrLoginBridgeService.getQrCode()
+      await matrixQrLoginBridgeService.startQrLogin(qrResult.transactionId)
+      bridgeQrData.value = qrResult
+      useBridge.value = true
+      qrCodeValue.value = JSON.stringify({
+        type: 'login',
+        transactionId: qrResult.transactionId,
+        challenge: qrResult.challenge
+      })
+    } catch {
+      // Bridge 不可用时降级到 localStorage 模式
+      useBridge.value = false
+      bridgeQrData.value = null
+      qrCodeResp.value = await matrixQrLoginService.generateQR()
+      qrCodeValue.value = JSON.stringify({ type: 'login', qrId: qrCodeResp.value.qrId })
+    }
+
     loadTextKey.value = 'scan_hint'
     loading.value = false
     refreshing.value = false
@@ -305,6 +347,35 @@ onUnmounted(() => {
   // 组件卸载时清除轮询
   clearPolling()
 })
+
+/** Bridge Service 确认处理 */
+const handleBridgeConfirmed = async (res: QrLoginStatusResult) => {
+  if (confirmedHandled.value) {
+    return
+  }
+  confirmedHandled.value = true
+  clearPolling()
+  try {
+    if (!res.userId) {
+      throw new Error('missing userId in QR login result')
+    }
+
+    const uid = res.userId
+    await loginCommand({ uid }).then(() => {
+      scanStatus.value = {
+        status: 'success',
+        icon: 'success',
+        textKey: 'success',
+        show: true
+      }
+      loadTextKey.value = 'login'
+    })
+  } catch (error) {
+    logger.error('Bridge QR 登录失败:', error)
+    confirmedHandled.value = false
+    handleError('fetch_failed')
+  }
+}
 
 /** 处理授权场景 */
 const handleAuth = () => {

@@ -1,8 +1,10 @@
 import * as sdk from 'matrix-js-sdk'
 import 'matrix-js-sdk/src/manager-extensions'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
+import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
 import { matrixClientService } from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 export interface MatrixLoginResult {
   user_id: string
@@ -103,9 +105,11 @@ function withClientSecret(result: MatrixEmailTokenResult, clientSecret: string):
 
 function generateClientSecret(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const array = new Uint8Array(43)
+  crypto.getRandomValues(array)
   let result = ''
   for (let i = 0; i < 43; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
+    result += chars.charAt(array[i] % chars.length)
   }
   return result
 }
@@ -388,14 +392,44 @@ async function matrixSubmitEmailToken(
   )
 }
 
-async function matrixGetCaptcha(): Promise<MatrixCaptchaResult> {
-  return postMatrixJson<MatrixCaptchaResult>(
-    '/_matrix/client/v3/register/captcha/send',
-    {
-      length: 4
-    },
-    '获取验证码失败'
-  )
+async function matrixGetCaptcha(options?: {
+  session?: string
+  captchaType?: string
+  length?: number
+}): Promise<MatrixCaptchaResult> {
+  const resolvedSession = options?.session
+  const captchaType = options?.captchaType || 'sms'
+  const length = options?.length || 4
+
+  if (resolvedSession) {
+    return postMatrixJson<MatrixCaptchaResult>(
+      '/_matrix/client/v3/register/captcha/send',
+      { captcha_type: captchaType, length, session: resolvedSession },
+      '获取验证码失败'
+    )
+  }
+
+  try {
+    const initResult = await postMatrixJson<{
+      session?: string
+      flows?: Array<{ type: string; stages?: string[] }>
+    }>('/_matrix/client/v3/register', { type: 'm.login.dummy' }, '获取注册会话失败')
+    const session = initResult.session
+    if (!session) {
+      throw new Error('注册服务未返回有效会话，请联系管理员检查服务器配置')
+    }
+    return postMatrixJson<MatrixCaptchaResult>(
+      '/_matrix/client/v3/register/captcha/send',
+      { captcha_type: captchaType, length, session },
+      '获取验证码失败'
+    )
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err)
+    if (errMsg.includes('422') || errMsg.includes('M_UNKNOWN')) {
+      throw new Error('验证码服务暂不可用，请稍后重试或联系管理员 (服务器未就绪)')
+    }
+    throw err
+  }
 }
 
 async function matrixResetPassword(
@@ -533,8 +567,98 @@ export class MatrixAuthService {
     )
   }
 
-  static async getCaptcha(): Promise<MatrixCaptchaResult> {
-    return matrixGetCaptcha()
+  static async getCaptcha(options?: {
+    session?: string
+    captchaType?: string
+    length?: number
+  }): Promise<MatrixCaptchaResult> {
+    return matrixGetCaptcha(options)
+  }
+
+  static async startRegistrationSession(): Promise<{
+    session: string
+    flows: Array<{ type: string; stages?: string[] }>
+  }> {
+    try {
+      const result = await createTemporaryMatrixClient().registerRequest({})
+      const r = result as unknown as {
+        session?: string
+        flows?: Array<{ type: string; stages?: string[] }>
+      }
+      if (!r.session) {
+        throw new Error('注册服务未返回有效会话')
+      }
+      return { session: r.session, flows: r.flows ?? [] }
+    } catch (err) {
+      const matrixErr = err as {
+        errcode?: string
+        session?: string
+        flows?: Array<{ type: string; stages?: string[] }>
+      }
+      if (matrixErr.session && matrixErr.flows) {
+        return { session: matrixErr.session, flows: matrixErr.flows }
+      }
+      throw normalizeSdkMatrixError(err, '启动注册会话失败')
+    }
+  }
+
+  static async verifyCaptcha(session: string, response: string): Promise<{ success: boolean }> {
+    return postMatrixJson<{ success: boolean }>(
+      '/_matrix/client/v3/register/captcha/verify',
+      { session, response },
+      '验证验证码失败'
+    )
+  }
+
+  static async getCaptchaStatus(session: string): Promise<{ verified: boolean }> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+    try {
+      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/register/captcha/status', { session })
+      return result as { verified: boolean }
+    } catch (_err) {
+      throw new Error('查询验证码状态失败')
+    }
+  }
+
+  static async whoami(): Promise<{ userId: string; deviceId?: string }> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+
+    try {
+      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/account/whoami')
+      const r = result as Record<string, unknown>
+      return {
+        userId: (r.user_id as string) ?? '',
+        deviceId: r.device_id as string | undefined
+      }
+    } catch (err) {
+      throw normalizeSdkMatrixError(err, '获取账户信息失败')
+    }
+  }
+
+  static async cleanupExpiredCaptchas(): Promise<{ cleaned: number }> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('客户端未初始化')
+    }
+
+    try {
+      const result = await client.http.authedRequest(
+        'DELETE',
+        '/_matrix/client/v3/register/captcha/clean',
+        undefined,
+        {}
+      )
+      const r = result as Record<string, unknown>
+      return { cleaned: (r.cleaned as number) ?? 0 }
+    } catch (err) {
+      throw normalizeSdkMatrixError(err, '清理过期验证码失败')
+    }
   }
 
   static async forgetPassword(
@@ -579,6 +703,15 @@ export class MatrixAuthService {
   }
 
   static async getLoginFlows(): Promise<Array<{ type: string; [key: string]: unknown }>> {
+    if (matrixWorkerHost.isStarted) {
+      try {
+        const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
+        const result = await matrixWorkerHost.getLoginFlows(homeserverUrl)
+        return result.flows ?? []
+      } catch (err) {
+        throw normalizeSdkMatrixError(err, '获取登录流程失败')
+      }
+    }
     try {
       const result = await createTemporaryMatrixClient().loginFlows()
       return (result.flows ?? []) as Array<{ type: string; [key: string]: unknown }>
@@ -626,7 +759,7 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/capabilities')
+      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/capabilities')
       return result as Record<string, unknown>
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取能力声明失败')
@@ -742,6 +875,20 @@ export class MatrixAuthService {
       throw new Error('客户端未初始化')
     }
 
+    if (matrixWorkerHost.isStarted) {
+      try {
+        const baseUrl = client.getHomeserverUrl()
+        const accessToken = client.getAccessToken() ?? undefined
+        const result = await matrixWorkerHost.getServerVersions(baseUrl, accessToken)
+        return {
+          versions: result.versions ?? [],
+          unstableFeatures: result.unstable_features ?? {}
+        }
+      } catch (err) {
+        throw normalizeSdkMatrixError(err, '获取服务器版本失败')
+      }
+    }
+
     try {
       const result = await client.http.authedRequest('GET', '/_matrix/client/versions')
       const r = result as Record<string, unknown>
@@ -763,7 +910,7 @@ export class MatrixAuthService {
     try {
       const homeserverUrl = client.getHomeserverUrl()
       const baseUrl = homeserverUrl.replace(/\/_matrix\/client\/?$/, '').replace(/\/$/, '')
-      const response = await getRuntimeAwareFetch()(`${baseUrl}/.well-known/matrix/client`)
+      const response = await getRuntimeAwareFetch()(`${baseUrl}${MATRIX_PATHS.WELL_KNOWN.CLIENT}`)
       if (!response.ok) {
         return {}
       }

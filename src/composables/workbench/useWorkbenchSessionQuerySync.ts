@@ -3,10 +3,13 @@ import { type Ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   readSpaceWorkbenchSearch,
+  readSpaceWorkbenchSessionEngagementFilter,
   readSpaceWorkbenchSessionSort,
   readSpaceWorkbenchSessionTypeFilter,
+  WORKBENCH_SESSION_ENGAGEMENT_FILTERS,
   WORKBENCH_SESSION_SORTS,
   WORKBENCH_SESSION_TYPE_FILTERS,
+  type WorkbenchSessionEngagementFilter,
   type WorkbenchSessionSort,
   type WorkbenchSessionTypeFilter
 } from '@/router/spaceNavigation'
@@ -15,9 +18,11 @@ type UseWorkbenchSessionQuerySyncOptions = {
   routeName: string
   searchKeyword: Ref<string>
   sessionTypeFilter: Ref<WorkbenchSessionTypeFilter>
+  sessionEngagementFilter?: Ref<WorkbenchSessionEngagementFilter>
   sessionSort: Ref<WorkbenchSessionSort>
   setSearchKeyword: (value: string) => void
   setSessionTypeFilter: (value: WorkbenchSessionTypeFilter) => void
+  setSessionEngagementFilter?: (value: WorkbenchSessionEngagementFilter) => void
   setSessionSort: (value: WorkbenchSessionSort) => void
   debounceMs?: number
 }
@@ -27,18 +32,31 @@ export function useWorkbenchSessionQuerySync(options: UseWorkbenchSessionQuerySy
   const router = useRouter()
 
   const syncSessionQuery = async (
-    overrides: { search?: string; type?: WorkbenchSessionTypeFilter; sort?: WorkbenchSessionSort } = {}
+    overrides: {
+      search?: string
+      type?: WorkbenchSessionTypeFilter
+      engagement?: WorkbenchSessionEngagementFilter
+      sort?: WorkbenchSessionSort
+    } = {}
   ) => {
     if (route.name !== options.routeName) return
 
     const nextSearch = (overrides.search ?? options.searchKeyword.value).trim()
     const nextType = overrides.type ?? options.sessionTypeFilter.value
+    const nextEngagement =
+      overrides.engagement ?? options.sessionEngagementFilter?.value ?? WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
     const nextSort = overrides.sort ?? options.sessionSort.value
     const currentSearch = readSpaceWorkbenchSearch(route.query)
     const currentType = readSpaceWorkbenchSessionTypeFilter(route.query)
+    const currentEngagement = readSpaceWorkbenchSessionEngagementFilter(route.query)
     const currentSort = readSpaceWorkbenchSessionSort(route.query)
 
-    if (currentSearch === nextSearch && currentType === nextType && currentSort === nextSort) {
+    if (
+      currentSearch === nextSearch &&
+      currentType === nextType &&
+      currentEngagement === nextEngagement &&
+      currentSort === nextSort
+    ) {
       return
     }
 
@@ -48,6 +66,9 @@ export function useWorkbenchSessionQuerySync(options: UseWorkbenchSessionQuerySy
         ...route.query,
         ...(nextSearch ? { search: nextSearch } : { search: undefined }),
         ...(nextType !== WORKBENCH_SESSION_TYPE_FILTERS.all ? { type: nextType } : { type: undefined }),
+        ...(nextEngagement !== WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
+          ? { engagement: nextEngagement }
+          : { engagement: undefined }),
         ...(nextSort !== WORKBENCH_SESSION_SORTS.recent ? { sort: nextSort } : { sort: undefined })
       }
     })
@@ -78,6 +99,26 @@ export function useWorkbenchSessionQuerySync(options: UseWorkbenchSessionQuerySy
     },
     { immediate: true }
   )
+
+  if (options.sessionEngagementFilter && options.setSessionEngagementFilter) {
+    const engagementRef = options.sessionEngagementFilter
+    const setEngagement = options.setSessionEngagementFilter
+
+    watch(
+      () => route.query.engagement,
+      (value) => {
+        const nextEngagement = readSpaceWorkbenchSessionEngagementFilter({ engagement: value })
+        if (nextEngagement !== engagementRef.value) {
+          setEngagement(nextEngagement)
+        }
+      },
+      { immediate: true }
+    )
+
+    watch(engagementRef, (value) => {
+      void syncSessionQuery({ engagement: value })
+    })
+  }
 
   watch(
     () => route.query.sort,

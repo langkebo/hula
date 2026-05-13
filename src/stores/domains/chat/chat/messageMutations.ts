@@ -26,11 +26,11 @@ interface MessageMutationsDeps {
   messageMap: Record<string, Record<string, MessageType>>
   sortedMessageKeys: Record<string, string[]>
   replyMapping: Record<string, Record<string, string[]>>
-  messageOptions: Record<string, { isLast: boolean; isLoading: boolean; cursor: string }>
+  messageOptions: Record<string, { isLast: boolean; isLoading: boolean; cursor: string; hasLoadedOnce?: boolean }>
   newMsgCount: Record<string, { count: number; isStart: boolean }>
 
   currentMessageMap: ComputedRef<Record<string, MessageType>>
-  currentMessageOptions: { value: { isLast: boolean; isLoading: boolean; cursor: string } }
+  currentMessageOptions: { value: { isLast: boolean; isLoading: boolean; cursor: string; hasLoadedOnce?: boolean } }
   currentReplyMap: { value: Record<string, string[]> }
   currentMsgReply: Ref<Partial<MessageType>>
 
@@ -108,7 +108,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     rebuildReplyMapping(roomId)
 
     if (!messageOptions[roomId]) {
-      messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '' }
+      messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }
     }
 
     if (fallbackCursor) {
@@ -344,7 +344,8 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     const defaultOptions = {
       isLast: true,
       isLoading: false,
-      cursor: ''
+      cursor: '',
+      hasLoadedOnce: false
     }
 
     if (globalStore.currentSessionRoomId === roomId) {

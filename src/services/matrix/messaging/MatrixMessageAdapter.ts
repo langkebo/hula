@@ -21,8 +21,7 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
       fromUser: {
         uid: sender,
         username: senderMember?.name || sender.split(':')[0],
-        avatar: senderMember?.getMxcAvatarUrl?.() || '',
-        locPlace: ''
+        avatar: senderMember?.getMxcAvatarUrl?.() || ''
       },
       message: {
         id: event.getId() || '',

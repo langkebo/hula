@@ -6,12 +6,15 @@ import { RoomTypeEnum } from '@/enums'
 import {
   buildSpaceWorkbenchRoute,
   readSpaceWorkbenchSearch,
+  readSpaceWorkbenchSessionEngagementFilter,
   readSpaceWorkbenchSessionSort,
   readSpaceWorkbenchSessionTypeFilter,
   readSpaceWorkbenchSpaceId,
   SPACE_ROUTE_NAMES,
+  WORKBENCH_SESSION_ENGAGEMENT_FILTERS,
   WORKBENCH_SESSION_SORTS,
   WORKBENCH_SESSION_TYPE_FILTERS,
+  type WorkbenchSessionEngagementFilter,
   type WorkbenchSessionSort,
   type WorkbenchSessionTypeFilter
 } from '@/router/spaceNavigation'
@@ -25,6 +28,9 @@ type FilterableSession = {
   lastMsg?: string
   remark?: string
   account?: string
+  unreadCount?: number
+  highlightCount?: number
+  isInvite?: boolean
 }
 
 const matchesKeyword = (session: FilterableSession, keyword: string) => {
@@ -45,6 +51,9 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
   const searchKeyword = ref(readSpaceWorkbenchSearch(route.query))
   const selectedSpaceId = ref(readSpaceWorkbenchSpaceId(route.query))
   const sessionTypeFilter = ref<WorkbenchSessionTypeFilter>(readSpaceWorkbenchSessionTypeFilter(route.query))
+  const sessionEngagementFilter = ref<WorkbenchSessionEngagementFilter>(
+    readSpaceWorkbenchSessionEngagementFilter(route.query)
+  )
   const sessionSort = ref<WorkbenchSessionSort>(readSpaceWorkbenchSessionSort(route.query))
 
   const { spaces, loading: spaceLoading, load: loadSpaces } = useSpaces()
@@ -60,6 +69,9 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
   const activeSpace = computed(() => spaces.value.find((space) => space.spaceId === selectedSpaceId.value) ?? null)
   const hasActiveSpaceFilter = computed(() => Boolean(selectedSpaceId.value))
   const hasSessionTypeFilter = computed(() => sessionTypeFilter.value !== WORKBENCH_SESSION_TYPE_FILTERS.all)
+  const hasSessionEngagementFilter = computed(
+    () => sessionEngagementFilter.value !== WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
+  )
 
   const matchesSessionType = (session: T) => {
     if (sessionTypeFilter.value === WORKBENCH_SESSION_TYPE_FILTERS.group) {
@@ -72,6 +84,19 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
     return true
   }
 
+  const matchesEngagement = (session: T) => {
+    switch (sessionEngagementFilter.value) {
+      case WORKBENCH_SESSION_ENGAGEMENT_FILTERS.unread:
+        return (session.unreadCount ?? 0) > 0
+      case WORKBENCH_SESSION_ENGAGEMENT_FILTERS.mention:
+        return (session.highlightCount ?? 0) > 0
+      case WORKBENCH_SESSION_ENGAGEMENT_FILTERS.invite:
+        return Boolean(session.isInvite)
+      default:
+        return true
+    }
+  }
+
   const filteredSessionList = computed(() => {
     const filteredSessions = sourceSessions.value.filter((session) => {
       if (hasActiveSpaceFilter.value && !spaceRoomIdSet.value.has(session.roomId)) {
@@ -79,6 +104,10 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
       }
 
       if (!matchesSessionType(session)) {
+        return false
+      }
+
+      if (!matchesEngagement(session)) {
         return false
       }
 
@@ -103,6 +132,7 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
       spaceId?: string
       search?: string
       type?: WorkbenchSessionTypeFilter
+      engagement?: WorkbenchSessionEngagementFilter
       sort?: WorkbenchSessionSort
     } = {}
   ) => {
@@ -111,16 +141,19 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
     const nextSpaceId = overrides.spaceId ?? selectedSpaceId.value
     const nextSearch = overrides.search ?? searchKeyword.value.trim()
     const nextType = overrides.type ?? sessionTypeFilter.value
+    const nextEngagement = overrides.engagement ?? sessionEngagementFilter.value
     const nextSort = overrides.sort ?? sessionSort.value
     const currentSpaceId = readSpaceWorkbenchSpaceId(route.query)
     const currentSearch = readSpaceWorkbenchSearch(route.query)
     const currentType = readSpaceWorkbenchSessionTypeFilter(route.query)
+    const currentEngagement = readSpaceWorkbenchSessionEngagementFilter(route.query)
     const currentSort = readSpaceWorkbenchSessionSort(route.query)
 
     if (
       currentSpaceId === nextSpaceId &&
       currentSearch === nextSearch &&
       currentType === nextType &&
+      currentEngagement === nextEngagement &&
       currentSort === nextSort
     ) {
       return
@@ -131,6 +164,7 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
         ...route.query,
         search: nextSearch,
         type: nextType,
+        engagement: nextEngagement,
         sort: nextSort
       })
     )
@@ -146,6 +180,10 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
 
   const syncQuerySessionTypeFilter = async (value: WorkbenchSessionTypeFilter) => {
     await syncWorkbenchQuery({ type: value })
+  }
+
+  const syncQuerySessionEngagementFilter = async (value: WorkbenchSessionEngagementFilter) => {
+    await syncWorkbenchQuery({ engagement: value })
   }
 
   const syncQuerySessionSort = async (value: WorkbenchSessionSort) => {
@@ -166,6 +204,10 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
 
   const setSessionTypeFilter = (value: WorkbenchSessionTypeFilter) => {
     sessionTypeFilter.value = value
+  }
+
+  const setSessionEngagementFilter = (value: WorkbenchSessionEngagementFilter) => {
+    sessionEngagementFilter.value = value
   }
 
   const setSessionSort = (value: WorkbenchSessionSort) => {
@@ -194,6 +236,10 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
 
     if (hasSessionTypeFilter.value && !matchesSessionType(room)) {
       sessionTypeFilter.value = WORKBENCH_SESSION_TYPE_FILTERS.all
+    }
+
+    if (hasSessionEngagementFilter.value && !matchesEngagement(room)) {
+      sessionEngagementFilter.value = WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
     }
   }
 
@@ -231,6 +277,17 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
   )
 
   watch(
+    () => route.query.engagement,
+    (value) => {
+      const nextEngagement = readSpaceWorkbenchSessionEngagementFilter({ engagement: value })
+      if (nextEngagement !== sessionEngagementFilter.value) {
+        sessionEngagementFilter.value = nextEngagement
+      }
+    },
+    { immediate: true }
+  )
+
+  watch(
     () => route.query.sort,
     (value) => {
       const nextSort = readSpaceWorkbenchSessionSort({ sort: value })
@@ -259,6 +316,10 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
     void syncQuerySessionTypeFilter(value)
   })
 
+  watch(sessionEngagementFilter, (value) => {
+    void syncQuerySessionEngagementFilter(value)
+  })
+
   watch(sessionSort, (value) => {
     void syncQuerySessionSort(value)
   })
@@ -282,12 +343,14 @@ export function useRoomSpaceWorkbench<T extends FilterableSession>(sourceSession
     activeSpace,
     searchKeyword,
     sessionTypeFilter,
+    sessionEngagementFilter,
     sessionSort,
     hasActiveSpaceFilter,
     filteredSessionList,
     setSelectedSpaceId,
     setSearchKeyword,
     setSessionTypeFilter,
+    setSessionEngagementFilter,
     setSessionSort,
     clearSpaceFilter,
     clearSearchKeyword,

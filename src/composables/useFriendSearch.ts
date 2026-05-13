@@ -14,7 +14,6 @@ type BaseSearchResult = {
   account: string
   name: string
   avatar: string
-  itemIds?: string[] | null
   isFavorite?: boolean
 }
 
@@ -96,7 +95,6 @@ export function filterRecommendedUsers(
     account?: string
     name?: string
     avatar?: string
-    itemIds?: string[] | null
   }>,
   favoriteIds: Set<string>,
   keyword = ''
@@ -127,7 +125,6 @@ export function filterRecommendedUsers(
         account: user.account || uid,
         name: user.name || uid,
         avatar: user.avatar || '',
-        itemIds: user.itemIds || null,
         isFavorite: favoriteIds.has(uid)
       }
     })
@@ -265,7 +262,7 @@ export function useFriendSearch() {
 
   const initialize = async () => {
     try {
-      await Promise.all([contactStore.getContactList(true), refreshFavoriteIds()])
+      await Promise.allSettled([contactStore.getContactList(true), refreshFavoriteIds()])
       if (searchType.value === 'recommend') {
         searchResults.value = getRecommendedUsers()
       }

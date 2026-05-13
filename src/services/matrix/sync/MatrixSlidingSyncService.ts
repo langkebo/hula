@@ -1,8 +1,10 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { RoomInfo } from '@/services/types'
 import type { MSC3575RoomData, MSC3575SlidingSyncResponse, SlidingSync, SlidingSyncState } from '@/types/matrix-js-sdk'
 import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('SlidingSync')
 
 export interface SlidingSyncUnreadUpdate {
   roomId: string
@@ -30,6 +32,15 @@ export class MatrixSlidingSyncService {
   private _isInitialized: boolean = false
   private callbacks: SlidingSyncCallbacks = {}
   private hasCompletedInitialSync = false
+  private roomCache: Map<
+    string,
+    {
+      notification_count?: number
+      highlight_count?: number
+      timeline?: unknown[]
+      state?: Record<string, unknown>
+    }
+  > = new Map()
   private readonly lifecycleListener = (
     state: SlidingSyncState,
     resp: MSC3575SlidingSyncResponse | null,
@@ -51,7 +62,7 @@ export class MatrixSlidingSyncService {
       this.slidingSync = null
       this._isInitialized = false
       this.hasCompletedInitialSync = false
-      info('[SlidingSync] Sliding Sync 未启用，跳过服务初始化')
+      logger.info('Sliding Sync 未启用，跳过服务初始化')
       return
     }
 
@@ -66,11 +77,22 @@ export class MatrixSlidingSyncService {
     this.slidingSync = syncInstance
     this._isInitialized = true
     this.hasCompletedInitialSync = false
+    this.roomCache.clear()
 
     this.slidingSync.on(SlidingSyncEvent.Lifecycle, this.lifecycleListener)
     this.slidingSync.on(SlidingSyncEvent.RoomData, this.roomDataListener)
 
-    info('[SlidingSync] Service initialized')
+    logger.info('Service initialized')
+  }
+
+  destroy(): void {
+    if (this.slidingSync) {
+      this.detachListeners(this.slidingSync)
+    }
+    this.slidingSync = null
+    this._isInitialized = false
+    this.hasCompletedInitialSync = false
+    this.roomCache.clear()
   }
 
   private detachListeners(instance: SlidingSync): void {
@@ -81,19 +103,19 @@ export class MatrixSlidingSyncService {
   private onLifecycle(state: SlidingSyncState, resp: MSC3575SlidingSyncResponse | null, err?: Error) {
     if (err) {
       if (this.isRateLimitError(err)) {
-        warn(`[SlidingSync] Lifecycle rate limited: ${err.message}`)
+        logger.warn(`Lifecycle rate limited: ${err.message}`)
       } else {
-        error(`[SlidingSync] Lifecycle error: ${err.message}`)
+        logger.error(`Lifecycle error: ${err.message}`)
       }
       return
     }
 
     switch (state) {
       case 'FINISHED':
-        info('[SlidingSync] Request finished')
+        logger.debug('Request finished')
         break
       case 'COMPLETE':
-        info('[SlidingSync] Sync complete')
+        logger.debug('Sync complete')
         if (resp) {
           this.onSyncComplete(resp)
         }
@@ -150,7 +172,7 @@ export class MatrixSlidingSyncService {
     }
 
     if (shouldRefreshRoomList) {
-      info('[SlidingSync] Room list refresh requested')
+      logger.debug('Room list refresh requested')
       this.callbacks.onRoomListRefresh?.()
     }
 
@@ -158,6 +180,13 @@ export class MatrixSlidingSyncService {
   }
 
   private onRoomData(roomId: string, roomData: MSC3575RoomData) {
+    this.roomCache.set(roomId, {
+      notification_count: roomData.notification_count,
+      highlight_count: roomData.highlight_count,
+      timeline: roomData.timeline,
+      state: roomData.state
+    })
+
     if (roomData.summary) {
       this.callbacks.onRoomUpdate?.(roomId)
     }
@@ -173,8 +202,9 @@ export class MatrixSlidingSyncService {
       ])
     }
 
-    info(`[SlidingSync] Room data updated: ${roomId}`)
+    logger.debug(`Room data updated: ${roomId}`)
   }
+
   private shouldRefreshRoomList(resp: MSC3575SlidingSyncResponse): boolean {
     return Object.values(resp.rooms).some((roomData) => {
       const hasStateDelta = !!roomData.state && Object.keys(roomData.state).length > 0
@@ -197,9 +227,9 @@ export class MatrixSlidingSyncService {
 
     try {
       this.slidingSync.setListRanges('default', [[startIndex, endIndex]])
-      info(`[SlidingSync] Updated visible range: ${startIndex}-${endIndex}`)
+      logger.debug(`Updated visible range: ${startIndex}-${endIndex}`)
     } catch (err) {
-      error(`[SlidingSync] Failed to update visible range: ${err}`)
+      logger.error(`Failed to update visible range: ${err}`)
     }
   }
 
@@ -210,10 +240,10 @@ export class MatrixSlidingSyncService {
       const list = this.slidingSync.getList(listName)
       if (list) {
         list.setSort(sort)
-        info(`[SlidingSync] Set sort for ${listName}: ${sort.join(', ')}`)
+        logger.debug(`Set sort for ${listName}: ${sort.join(', ')}`)
       }
     } catch (err) {
-      error(`[SlidingSync] Failed to set sort: ${err}`)
+      logger.error(`Failed to set sort: ${err}`)
     }
   }
 
@@ -224,10 +254,10 @@ export class MatrixSlidingSyncService {
       const list = this.slidingSync.getList(listName)
       if (list) {
         list.setFilters(filters)
-        info(`[SlidingSync] Set filters for ${listName}`)
+        logger.debug(`Set filters for ${listName}`)
       }
     } catch (err) {
-      error(`[SlidingSync] Failed to set filters: ${err}`)
+      logger.error(`Failed to set filters: ${err}`)
     }
   }
 
@@ -240,13 +270,13 @@ export class MatrixSlidingSyncService {
           timelineLimit: 50,
           invite: true
         })
-        info(`[SlidingSync] Subscribed to room: ${roomId}`)
+        logger.debug(`Subscribed to room: ${roomId}`)
       } else {
         this.slidingSync.unsubscribeFromRoom(roomId)
-        info(`[SlidingSync] Unsubscribed from room: ${roomId}`)
+        logger.debug(`Unsubscribed from room: ${roomId}`)
       }
     } catch (err) {
-      error(`[SlidingSync] Failed to ${subscribe ? 'subscribe' : 'unsubscribe'}: ${err}`)
+      logger.error(`Failed to ${subscribe ? 'subscribe' : 'unsubscribe'}: ${err}`)
     }
   }
 
@@ -269,20 +299,15 @@ export class MatrixSlidingSyncService {
   async getIncrementalUpdate(roomId: string): Promise<SlidingSyncRoomUpdate | null> {
     if (!this.slidingSync) return null
 
-    try {
-      const room = this.slidingSync.getRoom(roomId)
-      if (!room) return null
+    const cached = this.roomCache.get(roomId)
+    if (!cached) return null
 
-      return {
-        roomId,
-        timeline: room.timeline ?? [],
-        state: room.state ?? {},
-        notificationCount: room.notification_count ?? 0,
-        highlightCount: room.highlight_count ?? 0
-      }
-    } catch (err) {
-      error(`[SlidingSync] Failed to get incremental update: ${err}`)
-      return null
+    return {
+      roomId,
+      timeline: cached.timeline ?? [],
+      state: cached.state ?? {},
+      notificationCount: cached.notification_count ?? 0,
+      highlightCount: cached.highlight_count ?? 0
     }
   }
 
@@ -291,29 +316,18 @@ export class MatrixSlidingSyncService {
 
     for (const roomInfo of roomInfos) {
       try {
-        const syncRoom = this.slidingSync.getRoom(roomInfo.roomId)
-        if (syncRoom) {
-          roomInfo.unreadCount = syncRoom.notification_count ?? 0
-          roomInfo.highlightCount = syncRoom.highlight_count ?? 0
-          roomInfo.notificationCount = syncRoom.notification_count ?? 0
+        const cached = this.roomCache.get(roomInfo.roomId)
+        if (cached) {
+          roomInfo.unreadCount = cached.notification_count ?? 0
+          roomInfo.highlightCount = cached.highlight_count ?? 0
+          roomInfo.notificationCount = cached.notification_count ?? 0
         }
-      } catch (err) {
-        error(`[SlidingSync] Failed to apply unread counts for room ${roomInfo.roomId}: ${err}`)
+      } catch {
+        // Silently skip rooms not in cache
       }
     }
   }
-
-  destroy(): void {
-    if (!this.slidingSync) return
-
-    this.detachListeners(this.slidingSync)
-    this.slidingSync = null
-    this._isInitialized = false
-    this.hasCompletedInitialSync = false
-    this.callbacks = {}
-    info('[SlidingSync] Service destroyed')
-  }
 }
 
-const matrixSlidingSyncService = new MatrixSlidingSyncService()
+export const matrixSlidingSyncService = new MatrixSlidingSyncService()
 export default matrixSlidingSyncService

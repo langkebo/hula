@@ -63,8 +63,13 @@ mod vo;
 mod webview_helper;
 
 use crate::command::app_state_command::is_app_state_ready;
+use crate::command::config_command::get_config;
 use crate::command::room_member_command::cursor_page_room_members;
 use crate::command::room_member_command::update_my_room_info;
+use crate::command::secure_storage::check_secure_storage_available;
+use crate::command::secure_storage::delete_secret;
+use crate::command::secure_storage::get_secret;
+use crate::command::secure_storage::set_secret;
 use crate::command::setting_command::get_settings;
 use crate::command::setting_command::update_settings;
 use crate::command::user_command::remove_tokens;
@@ -99,6 +104,20 @@ pub struct AppData {
 }
 
 pub(crate) static APP_STATE_READY: AtomicBool = AtomicBool::new(false);
+
+pub fn get_secure_storage_service_name() -> String {
+    if let Ok(profile_dir) = std::env::var("HULA_PROFILE_DIR") {
+        if !profile_dir.is_empty() {
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+            let mut hasher = DefaultHasher::new();
+            profile_dir.hash(&mut hasher);
+            let hash = hasher.finish();
+            return format!("hula-secure-storage-{:08x}", hash);
+        }
+    }
+    "hula-secure-storage".to_string()
+}
 
 use crate::command::chat_history_command::query_chat_history;
 use crate::command::contact_command::hide_contact_command;
@@ -156,17 +175,36 @@ fn setup_desktop() -> Result<(), CommonError> {
             Ok(())
         })
         .invoke_handler(get_invoke_handlers())
+        .on_webview_event(move |webview_label, event| {
+            tracing::debug!(
+                "[LIFECYCLE] WebView event for {:?}: {:?}",
+                webview_label,
+                event
+            );
+        })
         .build(tauri::generate_context!())
         .map_err(|e| {
             CommonError::RequestError(format!("Failed to build tauri application: {}", e))
         })?
         .run(|app_handle, event| {
+            match &event {
+                tauri::RunEvent::WebviewEvent { label, event, .. } => {
+                    tracing::debug!("[LIFECYCLE] WebView event for {}: {:?}", label, event);
+                }
+                tauri::RunEvent::Resumed => {
+                    tracing::info!("[LIFECYCLE] System resumed from sleep, notifying frontend");
+                    if let Err(e) = app_handle.emit("system-resumed", ()) {
+                        tracing::warn!("Failed to emit system-resumed event: {}", e);
+                    }
+                }
+                tauri::RunEvent::Exit => {
+                    tracing::info!("[LIFECYCLE] Application exiting, cleaning up");
+                }
+                _ => {}
+            }
+
             #[cfg(target_os = "macos")]
             app_event::handle_app_event(&app_handle, event);
-            #[cfg(not(target_os = "macos"))]
-            {
-                let _ = (app_handle, event);
-            }
         });
     Ok(())
 }
@@ -228,11 +266,13 @@ async fn initialize_app_data(
         }
     }
 
-    // 创建用户信息
+    let profile_name = std::env::var("HULA_PROFILE_DIR").unwrap_or_default();
+
     let user_info = UserInfo {
         token: Default::default(),
         refresh_token: Default::default(),
         uid: Default::default(),
+        profile_name,
     };
     let user_info = Arc::new(Mutex::new(user_info));
 
@@ -250,6 +290,7 @@ pub struct UserInfo {
     pub token: String,
     pub refresh_token: String,
     pub uid: String,
+    pub profile_name: String,
 }
 
 pub async fn build_request_client() -> Result<reqwest::Client, CommonError> {
@@ -403,6 +444,22 @@ fn common_setup(app_handle: AppHandle) -> Result<(), Box<dyn std::error::Error>>
     #[cfg(desktop)]
     setup_logout_listener(app_handle.clone());
 
+    let profile_dir = std::env::var("HULA_PROFILE_DIR").unwrap_or_default();
+    if !profile_dir.is_empty() {
+        tracing::info!("[PROFILE] Running with profile directory: {}", profile_dir);
+    } else {
+        tracing::info!("[PROFILE] Running with default profile");
+    }
+
+    // Start homeserver health check for desktop builds
+    #[cfg(desktop)]
+    {
+        let app_handle_clone = app_handle.clone();
+        tauri::async_runtime::spawn(async move {
+            start_homeserver_health_check(app_handle_clone).await;
+        });
+    }
+
     app_handle.manage(OauthServerState::default());
 
     #[cfg(desktop)]
@@ -554,5 +611,71 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         switch_user_database,
         check_admin_status,
         allow_asset_path,
+        get_config,
+        get_secret,
+        set_secret,
+        delete_secret,
+        check_secure_storage_available,
     ]
+}
+
+#[cfg(desktop)]
+async fn start_homeserver_health_check(app_handle: AppHandle) {
+    use std::sync::atomic::{AtomicU32, Ordering};
+    use std::time::Duration;
+
+    static FAILURE_COUNT: AtomicU32 = AtomicU32::new(0);
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(10))
+        .danger_accept_invalid_certs(cfg!(debug_assertions))
+        .build();
+
+    match client {
+        Ok(client) => loop {
+            tokio::time::sleep(Duration::from_secs(60)).await;
+
+            let hs_url = {
+                if let Some(state) = app_handle.try_state::<crate::AppData>() {
+                    let config = state.config.read().await;
+                    config.backend.base_url.clone()
+                } else {
+                    continue;
+                }
+            };
+
+            let health_url = format!("{}/_matrix/client/versions", hs_url.trim_end_matches('/'));
+
+            match client.get(&health_url).send().await {
+                Ok(response) if response.status().is_success() => {
+                    let prev_failures = FAILURE_COUNT.swap(0, Ordering::SeqCst);
+                    if prev_failures > 0 {
+                        tracing::info!(
+                            "[HEALTH] Homeserver recovered after {} consecutive failures",
+                            prev_failures
+                        );
+                    }
+                }
+                Ok(response) => {
+                    let count = FAILURE_COUNT.fetch_add(1, Ordering::SeqCst) + 1;
+                    tracing::warn!(
+                        "[HEALTH] Homeserver returned status {} (failure #{})",
+                        response.status(),
+                        count
+                    );
+                }
+                Err(e) => {
+                    let count = FAILURE_COUNT.fetch_add(1, Ordering::SeqCst) + 1;
+                    tracing::warn!(
+                        "[HEALTH] Homeserver health check failed (failure #{}): {}",
+                        count,
+                        e
+                    );
+                }
+            }
+        },
+        Err(e) => {
+            tracing::error!("[HEALTH] Failed to create health check HTTP client: {}", e);
+        }
+    }
 }

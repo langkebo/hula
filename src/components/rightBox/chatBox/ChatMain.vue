@@ -54,16 +54,30 @@
         <div ref="messageListRef" class="message-list min-h-full flex flex-col">
           <!-- 没有更多消息提示 -->
           <div
-            v-show="chatStore.shouldShowNoMoreMessage"
+            v-show="isMainViewReady && chatStore.shouldShowNoMoreMessage"
             class="flex-center gap-6px h-32px flex-shrink-0 cursor-default select-none">
             <p class="text-(12px --hula-text-tertiary)">{{ t('home.chat_main.no_more') }}</p>
           </div>
+
+          <!-- 空状态 -->
+          <div
+            v-if="isMainViewReady && chatStore.chatMessageList.length === 0"
+            class="flex-center flex-col flex-1 gap-16px py-60px select-none">
+            <n-icon size="64" color="var(--hula-text-tertiary)">
+              <svg><use href="#chat" /></svg>
+            </n-icon>
+            <n-flex vertical align="center" :size="8">
+              <span class="text-16px text-[--hula-text-secondary]">{{ t('home.chat_main.empty_title') }}</span>
+              <span class="text-12px text-[--hula-text-tertiary]">{{ t('home.chat_main.empty_desc') }}</span>
+            </n-flex>
+          </div>
           <DynamicScroller
+            v-if="isMainViewReady"
             class="scroller flex-1"
             :items="chatStore.chatMessageList"
             :min-item-size="40"
             :buffer="10"
-            key-field="message.id"
+            key-field="clientKey"
             v-slot="{ item, index, active }">
             <DynamicScrollerItem
               :item="item"
@@ -112,6 +126,11 @@
               </n-flex>
             </DynamicScrollerItem>
           </DynamicScroller>
+          <div v-else class="message-list-placeholder">
+            <div class="message-skeleton message-skeleton--left"></div>
+            <div class="message-skeleton message-skeleton--right"></div>
+            <div class="message-skeleton message-skeleton--left message-skeleton--short"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -123,8 +142,7 @@
       :style="{ bottom: '24px', right: '50px' }">
       <div class="float-box" :class="{ max: currentNewMsgCount?.count > 99 }" @click="handleFloatButtonClick">
         <n-flex justify="space-between" align="center">
-          <n-icon
-            :color="currentNewMsgCount?.count > 99 ? 'var(--hula-color-danger-500)' : 'var(--hula-color-primary-500)'">
+          <n-icon :color="currentNewMsgCount?.count > 99 ? '#ff4d4f' : '#13987f'">
             <svg>
               <use href="#double-down"></use>
             </svg>
@@ -162,7 +180,7 @@
         <span class="text-14px">{{ tips }}</span>
 
         <n-flex justify="end">
-          <n-button @click="handleConfirm" class="w-78px" color="var(--hula-color-primary-500)">
+          <n-button @click="handleConfirm" class="w-78px" type="primary">
             {{ t('home.chat_main.confirm') }}
           </n-button>
           <n-button @click="modalShow = false" class="w-78px" secondary>{{ t('home.chat_main.cancel') }}</n-button>
@@ -203,10 +221,7 @@
           <n-button @click="groupNicknameModalVisible = false" :disabled="groupNicknameSubmitting" secondary>
             {{ t('home.chat_main.cancel') }}
           </n-button>
-          <n-button
-            color="var(--hula-color-primary-500)"
-            :loading="groupNicknameSubmitting"
-            @click="handleGroupNicknameConfirm">
+          <n-button type="primary" :loading="groupNicknameSubmitting" @click="handleGroupNicknameConfirm">
             {{ t('home.chat_main.confirm') }}
           </n-button>
         </n-flex>
@@ -345,6 +360,17 @@ const newMsgCountLabel = computed(() => {
   return currentNewMsgCount.value.count > 99 ? '99+' : String(currentNewMsgCount.value.count)
 })
 const currentRoomId = computed(() => globalStore.currentSessionRoomId ?? null)
+const isMainViewReady = computed(() => {
+  if (!currentRoomId.value) {
+    return false
+  }
+
+  const currentSessionInfo = chatStore.currentSessionInfo
+  const hasSessionBound = currentSessionInfo?.roomId === currentRoomId.value
+  const hasLoadedCurrentRoom = chatStore.currentMessageOptions?.hasLoadedOnce === true
+
+  return hasSessionBound && hasLoadedCurrentRoom
+})
 const networkBanner = computed(() => {
   if (!networkStatus.browserOnline.value) {
     return { text: t('home.chat_main.network_offline') }
@@ -541,7 +567,8 @@ watch(
 // 1. 监听房间切换，触发初始化滚动意图
 watch(
   () => [currentRoomId.value] as const,
-  ([newRoomId], [oldRoomId]) => {
+  ([newRoomId], oldValue) => {
+    const [oldRoomId] = oldValue ?? [undefined]
     // 只有在房间切换且DOM就绪时才触发初始化意图
     if (newRoomId && newRoomId !== oldRoomId) {
       suppressTopLoadMore.value = true
@@ -999,6 +1026,50 @@ onUnmounted(() => {
 .message-item {
   contain: layout style;
   will-change: auto;
+}
+
+.message-list-placeholder {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 20px 28px;
+}
+
+.message-skeleton {
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--hula-surface-panel) 88%, var(--hula-text-tertiary) 12%) 0%,
+    color-mix(in srgb, var(--hula-surface-panel) 78%, var(--hula-text-tertiary) 22%) 50%,
+    color-mix(in srgb, var(--hula-surface-panel) 88%, var(--hula-text-tertiary) 12%) 100%
+  );
+  background-size: 200% 100%;
+  animation: chat-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.message-skeleton--left {
+  width: min(320px, 78%);
+}
+
+.message-skeleton--right {
+  width: min(260px, 64%);
+  margin-left: auto;
+}
+
+.message-skeleton--short {
+  width: min(200px, 52%);
+}
+
+@keyframes chat-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 // 拖拽时禁用鼠标事件，避免不必要的监听损耗

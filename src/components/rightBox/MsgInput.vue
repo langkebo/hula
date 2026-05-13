@@ -110,13 +110,13 @@
           class="flex-shrink-0 max-h-52px p-4px pr-12px border-t border-[--hula-border-default] flex justify-end mb-4px">
           <n-button-group size="small">
             <n-button
-              color="var(--hula-color-primary-500)"
+              type="primary"
               :disabled="props.isAIMode && props.isAIStreaming ? false : disabledSend"
               class="w-65px"
               @click="handleDesktopSend">
               {{ props.isAIMode && props.isAIStreaming ? '停止思考' : t('editor.send') }}
             </n-button>
-            <n-button color="var(--hula-color-primary-500)" class="p-[0_6px]">
+            <n-button type="primary" class="p-[0_6px]">
               <template #icon>
                 <n-popselect
                   v-model:show="arrow"
@@ -246,7 +246,7 @@
             class="flex-shrink-0 max-h-62px h-full border-t border-[--hula-border-default] flex items-center justify-end">
             <n-button-group size="small" :class="isMobile() ? 'h-full' : 'pr-20px'">
               <n-button
-                color="var(--hula-color-primary-500)"
+                type="primary"
                 :disabled="props.isAIMode && props.isAIStreaming ? false : disabledSend"
                 class="w-3rem h-full"
                 @click="handleMobileSend">
@@ -287,6 +287,7 @@ import { MacOsKeyEnum, MittEnum, MobilePanelStateEnum, RoomTypeEnum, ThemeEnum, 
 import { useCommon } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useMsgInput } from '@/hooks/useMsgInput.ts'
+import { matrixTypingService } from '@/services/matrix/messaging/MatrixTypingService'
 import type { AIModel, UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -368,6 +369,14 @@ const {
 /** 表单提交处理函数 */
 const handleFormSubmit = async (e: Event) => {
   e.preventDefault()
+  // 发送前停止输入状态
+  if (currentSessionRoomId.value && isTyping.value) {
+    isTyping.value = false
+    if (typingTimeout.value) {
+      clearTimeout(typingTimeout.value)
+    }
+    matrixTypingService.stopTyping(currentSessionRoomId.value)
+  }
   await send()
 }
 
@@ -416,9 +425,31 @@ watch(personList, (newList) => {
 //     selectedAIKey.value = newList[0].uid
 //   }
 // })
+const typingTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+const isTyping = ref(false)
+
 const handleInternalInput = (e: Event) => {
   handleInput(e)
   selfEmitter('input', e)
+
+  // 输入状态检测
+  if (currentSessionRoomId.value && !isTyping.value) {
+    isTyping.value = true
+    matrixTypingService.startTyping(currentSessionRoomId.value, 30000)
+  }
+
+  // 清除之前的定时器
+  if (typingTimeout.value) {
+    clearTimeout(typingTimeout.value)
+  }
+
+  // 设置新的定时器，停止输入后发送停止输入通知
+  typingTimeout.value = setTimeout(() => {
+    if (currentSessionRoomId.value && isTyping.value) {
+      isTyping.value = false
+      matrixTypingService.stopTyping(currentSessionRoomId.value)
+    }
+  }, 3000)
 }
 
 // 显示文件弹窗的回调函数

@@ -1,6 +1,8 @@
-import { error as logError } from '@tauri-apps/plugin-log'
+import { error as logError, warn as logWarn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
+import endpointCapabilityService from '../EndpointCapabilityService'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 interface VoiceUploadParams {
   roomId: string
@@ -215,9 +217,13 @@ class MatrixVoiceService {
     }
 
     try {
-      const path = roomId
-        ? `/_matrix/client/v1/voice/room/${encodeURIComponent(roomId)}/stats`
-        : '/_matrix/client/v1/voice/stats'
+      const path = roomId ? MATRIX_PATHS.VOICE.ROOM_STATS(roomId) : MATRIX_PATHS.VOICE.STATS
+      const available = await endpointCapabilityService.check('GET', path)
+      if (!available) {
+        logWarn('[MatrixVoiceService] 语音统计端点不可用')
+        return { totalDuration: 0, totalMessages: 0, averageDuration: 0 }
+      }
+
       const result = (await client.http.authedRequest('GET', path)) as Record<string, unknown>
       return {
         totalDuration: (result.total_duration as number) ?? 0,
@@ -239,10 +245,14 @@ class MatrixVoiceService {
     }
 
     try {
-      const result = (await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v1/voice/user/${encodeURIComponent(userId)}/stats`
-      )) as Record<string, unknown>
+      const path = MATRIX_PATHS.VOICE.USER_STATS(userId)
+      const available = await endpointCapabilityService.check('GET', path)
+      if (!available) {
+        logWarn('[MatrixVoiceService] 用户语音统计端点不可用')
+        return { totalDuration: 0, totalMessages: 0 }
+      }
+
+      const result = (await client.http.authedRequest('GET', path)) as Record<string, unknown>
       return {
         totalDuration: (result.total_duration as number) ?? 0,
         totalMessages: (result.total_messages as number) ?? 0
@@ -263,10 +273,11 @@ class MatrixVoiceService {
     }
 
     try {
-      const result = (await client.http.authedRequest('GET', '/_matrix/client/v1/voice/config')) as Record<
-        string,
-        unknown
-      >
+      const available = await endpointCapabilityService.check('GET', MATRIX_PATHS.VOICE.CONFIG)
+      if (!available) {
+        return { maxDuration: 300, allowedFormats: ['audio/webm', 'audio/ogg', 'audio/mp4'], autoTranscribe: false }
+      }
+      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.VOICE.CONFIG)) as Record<string, unknown>
       return {
         maxDuration: (result.max_duration as number) ?? 300,
         allowedFormats: (result.allowed_formats as string[]) ?? ['audio/webm', 'audio/ogg', 'audio/mp4'],
@@ -283,7 +294,13 @@ class MatrixVoiceService {
       throw new Error('MatrixClient 未初始化')
     }
     try {
-      await client.http.authedRequest('DELETE', `/_matrix/client/v1/voice/${encodeURIComponent(messageId)}`)
+      const path = MATRIX_PATHS.VOICE.CONTENT(messageId)
+      const available = await endpointCapabilityService.check('DELETE', path)
+      if (!available) {
+        logWarn('[MatrixVoiceService] 语音删除端点不可用')
+        return
+      }
+      await client.http.authedRequest('DELETE', path)
     } catch (err) {
       logError(`[MatrixVoiceService] 删除语音失败: ${messageId} ${err}`)
       throw err
@@ -304,10 +321,15 @@ class MatrixVoiceService {
     }
 
     try {
-      const result = (await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v1/voice/room/${encodeURIComponent(roomId)}?limit=${limit}&offset=${offset}`
-      )) as Record<string, unknown>
+      const path = MATRIX_PATHS.VOICE.ROOM_LIST(roomId)
+      const available = await endpointCapabilityService.check('GET', path)
+      if (!available) {
+        return { voices: [], total: 0 }
+      }
+      const result = (await client.http.authedRequest('GET', `${path}?limit=${limit}&offset=${offset}`)) as Record<
+        string,
+        unknown
+      >
       return {
         voices:
           (result.voices as Array<{ event_id: string; sender: string; duration: number; timestamp: number }>) ?? [],
@@ -332,10 +354,15 @@ class MatrixVoiceService {
     }
 
     try {
-      const result = (await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v1/voice/user/${encodeURIComponent(userId)}?limit=${limit}&offset=${offset}`
-      )) as Record<string, unknown>
+      const path = MATRIX_PATHS.VOICE.USER_LIST(userId)
+      const available = await endpointCapabilityService.check('GET', path)
+      if (!available) {
+        return { voices: [], total: 0 }
+      }
+      const result = (await client.http.authedRequest('GET', `${path}?limit=${limit}&offset=${offset}`)) as Record<
+        string,
+        unknown
+      >
       return {
         voices:
           (result.voices as Array<{ event_id: string; room_id: string; duration: number; timestamp: number }>) ?? [],
@@ -353,7 +380,12 @@ class MatrixVoiceService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', `/_matrix/client/v1/voice/${encodeURIComponent(messageId)}`)
+      const path = MATRIX_PATHS.VOICE.CONTENT(messageId)
+      const available = await endpointCapabilityService.check('GET', path)
+      if (!available) {
+        return null
+      }
+      const result = await client.http.authedRequest('GET', path)
       return result as Record<string, unknown>
     } catch {
       return null
@@ -367,7 +399,13 @@ class MatrixVoiceService {
     }
 
     try {
-      const result = (await client.http.authedRequest('POST', '/_matrix/client/v1/voice/convert', undefined, {
+      const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.CONVERT)
+      if (!available) {
+        logWarn('[MatrixVoiceService] 语音转换端点不可用')
+        return null
+      }
+
+      const result = (await client.http.authedRequest('POST', MATRIX_PATHS.VOICE.CONVERT, undefined, {
         message_id: messageId,
         target_format: targetFormat
       })) as Record<string, unknown>
@@ -387,16 +425,20 @@ class MatrixVoiceService {
     }
 
     try {
+      const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.OPTIMIZE)
+      if (!available) {
+        logWarn('[MatrixVoiceService] 语音优化端点不可用')
+        return null
+      }
+
       const body: Record<string, unknown> = { message_id: messageId }
       if (options?.bitrate) body.bitrate = options.bitrate
       if (options?.sample_rate) body.sample_rate = options.sample_rate
 
-      const result = (await client.http.authedRequest(
-        'POST',
-        '/_matrix/client/v1/voice/optimize',
-        undefined,
-        body
-      )) as Record<string, unknown>
+      const result = (await client.http.authedRequest('POST', MATRIX_PATHS.VOICE.OPTIMIZE, undefined, body)) as Record<
+        string,
+        unknown
+      >
       return { url: (result.url as string) ?? '', size: (result.size as number) ?? 0 }
     } catch {
       return null
@@ -413,12 +455,18 @@ class MatrixVoiceService {
     }
 
     try {
+      const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.TRANSCRIPTION)
+      if (!available) {
+        logWarn('[MatrixVoiceService] 语音转文字端点不可用')
+        return null
+      }
+
       const body: Record<string, unknown> = { message_id: messageId }
       if (lang) body.lang = lang
 
       const result = (await client.http.authedRequest(
         'POST',
-        '/_matrix/client/v1/voice/transcription',
+        MATRIX_PATHS.VOICE.TRANSCRIPTION,
         undefined,
         body
       )) as Record<string, unknown>

@@ -22,7 +22,7 @@ const createAccountDataEvent = (specialFriends: string[]) =>
 
 const { default: matrixClientService } = await import('../../MatrixClientService')
 const { matrixSpecialFriendService } = await import('../MatrixSpecialFriendService')
-const { warn, error } = await import('@tauri-apps/plugin-log')
+const { info, error } = await import('@tauri-apps/plugin-log')
 
 describe('MatrixSpecialFriendService', () => {
   beforeEach(() => {
@@ -31,14 +31,14 @@ describe('MatrixSpecialFriendService', () => {
     ;(matrixSpecialFriendService as unknown as { observedClient: unknown }).observedClient = null
   })
 
-  it('warns once and returns an empty list before the matrix client is ready', async () => {
+  it('logs once and returns an empty list before the matrix client is ready', async () => {
     vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
     await expect(matrixSpecialFriendService.getSpecialFriends()).resolves.toEqual([])
     await expect(matrixSpecialFriendService.getSpecialFriends()).resolves.toEqual([])
 
-    expect(warn).toHaveBeenCalledTimes(1)
-    expect(warn).toHaveBeenCalledWith('[SpecialFriend] Matrix 客户端未就绪，返回空特别关注列表')
+    expect(info).toHaveBeenCalledTimes(1)
+    expect(info).toHaveBeenCalledWith('[SpecialFriend] Matrix 客户端未就绪，返回空特别关注列表')
     expect(error).not.toHaveBeenCalled()
   })
 

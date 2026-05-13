@@ -3,6 +3,8 @@ import { MittEnum, ModalEnum, PluginEnum } from '@/enums'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
+import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
+import { useAdminStore } from '@/stores/domains/admin/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LeftConfig')
@@ -73,57 +75,78 @@ const useMoreList = () => {
     showHomeserverDialog,
     openHomeserverDialog,
     handleHomeserverSave,
-    moreList: computed<OPT.L.MoreList[]>(() => [
-      {
-        label: t('menu.homeserver'),
-        icon: 'server',
-        click: openHomeserverDialog
-      },
-      {
-        label: t('menu.check_update'),
-        icon: 'arrow-circle-up',
-        click: () => {
-          useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
-            type: ModalEnum.CHECK_UPDATE
-          })
+    moreList: computed<OPT.L.MoreList[]>(() => {
+      const adminStore = useAdminStore()
+      const hasAdminApi = matrixCapabilityService.hasCapability('admin-api')
+      const items: OPT.L.MoreList[] = [
+        {
+          label: t('menu.homeserver'),
+          icon: 'server',
+          click: openHomeserverDialog
         }
-      },
-      {
-        label: t('menu.lock_screen'),
-        icon: 'lock',
-        click: () => {
-          useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
-            type: ModalEnum.LOCK_SCREEN
-          })
-        }
-      },
-      {
-        label: t('menu.settings'),
-        icon: 'settings',
-        click: async () => {
-          await createWebviewWindow('设置', 'settings', 840, 840, '', true, 840, 600)
-        }
-      },
-      {
-        label: t('menu.about'),
-        icon: 'info',
-        click: async () => {
-          await createWebviewWindow('关于', 'about', 360, 480)
-        }
-      },
-      {
-        label: t('menu.sign_out'),
-        icon: 'power',
-        click: async () => {
-          try {
-            await logout()
-          } catch (error) {
-            logger.error('退出登录失败:', error)
-            window.$message.error('退出登录失败，请重试')
+      ]
+
+      if (hasAdminApi && adminStore.canAccessAdmin) {
+        items.push({
+          label: t('menu.admin_panel'),
+          icon: 'shield',
+          click: async () => {
+            const { useRouter } = await import('vue-router')
+            const router = useRouter()
+            router.push('/admin')
+          }
+        })
+      }
+
+      items.push(
+        {
+          label: t('menu.check_update'),
+          icon: 'arrow-circle-up',
+          click: () => {
+            useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
+              type: ModalEnum.CHECK_UPDATE
+            })
+          }
+        },
+        {
+          label: t('menu.lock_screen'),
+          icon: 'lock',
+          click: () => {
+            useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
+              type: ModalEnum.LOCK_SCREEN
+            })
+          }
+        },
+        {
+          label: t('menu.settings'),
+          icon: 'settings',
+          click: async () => {
+            await createWebviewWindow('设置', 'settings', 840, 840, '', true, 840, 600)
+          }
+        },
+        {
+          label: t('menu.about'),
+          icon: 'info',
+          click: async () => {
+            await createWebviewWindow('关于', 'about', 360, 480)
+          }
+        },
+        {
+          label: t('menu.sign_out'),
+          icon: 'power',
+          click: async () => {
+            try {
+              await logout()
+            } catch (error) {
+              logger.error('退出登录失败:', error)
+              window.$message.error('退出登录失败，请重试')
+            }
           }
         }
-      }
-    ])
+      )
+
+      return items
+    })
   }
 }
 
@@ -137,15 +160,6 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
     isAdd: true,
     dot: false,
     progress: 0,
-    size: {
-      width: 600,
-      height: 800,
-      minWidth: 600,
-      minHeight: 550
-    },
-    window: {
-      resizable: true
-    },
     miniShow: false
   },
   {

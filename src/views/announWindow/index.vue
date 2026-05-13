@@ -238,20 +238,11 @@ const announcementStore = useAnnouncementStore()
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
-/** 判断当前用户是否拥有id为6的徽章 并且是频道 */
-const hasBadge6 = computed(() => {
-  // 只有当 roomId 为 "1" 时才进行徽章判断（频道）
-  if (roomId.value !== '1') return false
-
-  const currentUser = groupStore.getUserInfo(userStore.userInfo!.uid)!
-  return currentUser?.itemIds?.includes('6')
-})
 const isAdmin = computed(() => {
   const LordId = groupStore.currentLordId
   const adminUserTds = groupStore.adminUidList
   const uid = useUserStore().userInfo?.uid
-  // 由于 uid 可能为 undefined，需要进行类型检查，确保其为 string 类型
-  if (uid && (uid === LordId || adminUserTds.includes(uid) || hasBadge6.value)) {
+  if (uid && (uid === LordId || adminUserTds.includes(uid))) {
     return true
   }
   return false

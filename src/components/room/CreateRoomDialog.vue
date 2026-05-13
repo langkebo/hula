@@ -25,14 +25,16 @@
         </n-upload>
       </n-form-item>
 
-      <n-form-item :label="t('room.create.type')" path="isPublic">
-        <n-radio-group v-model:value="formData.isPublic">
-          <n-radio :value="false">{{ t('room.create.private') }}</n-radio>
-          <n-radio :value="true">{{ t('room.create.public') }}</n-radio>
+      <n-form-item :label="t('room.create.type')" path="roomType">
+        <n-radio-group v-model:value="formData.roomType">
+          <n-radio value="room">{{ t('room.create.public') }}</n-radio>
+          <n-radio value="private_room">{{ t('room.create.private') }}</n-radio>
+          <n-radio value="space">{{ t('room.create.space') }}</n-radio>
         </n-radio-group>
       </n-form-item>
+      <div class="text-12px color-[--hula-text-tertiary] mb-16px">{{ t('room.create.room_type_hint') }}</div>
 
-      <n-form-item v-if="formData.isPublic" :label="t('room.create.alias')" path="alias">
+      <n-form-item v-if="isPublic" :label="t('room.create.alias')" path="alias">
         <n-input-group>
           <n-input-group-label>#</n-input-group-label>
           <n-input v-model:value="formData.alias" :placeholder="t('room.create.alias_placeholder')" />
@@ -50,6 +52,13 @@
           v-model:value="formData.historyVisibility"
           :options="historyOptions"
           :placeholder="t('room.create.history_placeholder')" />
+      </n-form-item>
+
+      <n-form-item v-if="formData.roomType !== 'space'" :label="t('room.create.join_rule')" path="joinRule">
+        <n-select
+          v-model:value="formData.joinRule"
+          :options="joinRuleOptions"
+          :placeholder="t('room.create.join_rule_placeholder')" />
       </n-form-item>
     </n-form>
 
@@ -92,11 +101,14 @@ const formData = reactive({
   name: '',
   topic: '',
   avatarUrl: '',
-  isPublic: false,
+  roomType: 'room' as 'room' | 'private_room' | 'space',
   alias: '',
   isEncrypted: false,
-  historyVisibility: 'shared' as 'shared' | 'invited' | 'joined' | 'world_readable'
+  historyVisibility: 'shared' as 'shared' | 'invited' | 'joined' | 'world_readable',
+  joinRule: 'invite' as 'invite' | 'knock' | 'public' | 'restricted'
 })
+
+const isPublic = computed(() => formData.roomType === 'room')
 
 const rules: FormRules = {
   name: [
@@ -110,6 +122,13 @@ const historyOptions = [
   { label: t('room.create.history_invited'), value: 'invited' },
   { label: t('room.create.history_joined'), value: 'joined' },
   { label: t('room.create.history_world_readable'), value: 'world_readable' }
+]
+
+const joinRuleOptions = [
+  { label: t('room.create.join_rule_invite'), value: 'invite' },
+  { label: t('room.create.join_rule_knock'), value: 'knock' },
+  { label: t('room.create.join_rule_public'), value: 'public' },
+  { label: t('room.create.join_rule_restricted'), value: 'restricted' }
 ]
 
 const loadServerDomain = async () => {
@@ -147,10 +166,11 @@ const handleCreate = async () => {
       name: formData.name,
       topic: formData.topic,
       avatarUrl: formData.avatarUrl || undefined,
-      isPublic: formData.isPublic,
+      isPublic: formData.roomType === 'room',
       alias: formData.alias || undefined,
       isEncrypted: formData.isEncrypted,
-      historyVisibility: formData.historyVisibility
+      historyVisibility: formData.historyVisibility,
+      joinRule: formData.joinRule
     })
 
     window.$message?.success(t('room.create.success'))
@@ -169,10 +189,11 @@ const resetForm = () => {
   formData.name = ''
   formData.topic = ''
   formData.avatarUrl = ''
-  formData.isPublic = false
+  formData.roomType = 'room'
   formData.alias = ''
   formData.isEncrypted = false
   formData.historyVisibility = 'shared'
+  formData.joinRule = 'invite'
 }
 
 watch(

@@ -1,131 +1,108 @@
 <template>
-  <!-- 好友详情 -->
-  <n-flex v-if="content.type === RoomTypeEnum.SINGLE" vertical align="center" :size="30" class="mt-60px">
-    <n-image
-      object-fit="cover"
-      show-toolbar-tooltip
-      preview-disabled
-      width="146"
-      height="146"
-      style="border: 2px solid var(--hula-text-inverse)"
-      class="rounded-50% select-none cursor-pointer"
-      :src="AvatarUtils.getAvatarUrl(item.avatar)"
-      @dblclick="openImageViewer"
-      alt="" />
+  <div class="details-panel">
+    <section v-if="content.type === RoomTypeEnum.SINGLE" class="single-details">
+      <div class="single-details__hero">
+        <n-avatar
+          round
+          :size="148"
+          class="single-details__avatar"
+          :src="AvatarUtils.getAvatarUrl(singleAvatar)"
+          @dblclick="openImageViewer" />
+        <h2 class="single-details__name">{{ singleName }}</h2>
+        <p class="single-details__uid">{{ singleUid }}</p>
+        <p class="single-details__signature">{{ singleSignature }}</p>
 
-    <span class="text-(20px [--hula-text-primary])">{{ item.name }}</span>
-
-    <template v-if="!isBotUser">
-      <span class="text-(12px --hula-text-tertiary)">{{ t('home.chat_details.single.empty_signature') }}</span>
-
-      <n-flex
-        align="center"
-        justify="space-between"
-        :size="30"
-        class="text-(14px [--hula-text-secondary]) select-none cursor-default">
-        <span>
-          {{
-            t('home.chat_details.single.region', {
-              place: item.locPlace || t('home.chat_details.single.unknown')
-            })
-          }}
-        </span>
-        <n-flex align="center">
-          <span>{{ t('home.chat_details.single.badge_label') }}</span>
-          <template v-for="badge in item.itemIds" :key="badge">
-            <n-popover trigger="hover">
-              <template #trigger>
-                <img class="size-34px" :src="badgeStore.badgeById(badge)?.img" alt="" />
-              </template>
-              <span>{{ badgeStore.badgeById(badge)?.describe }}</span>
-            </n-popover>
-          </template>
-        </n-flex>
-      </n-flex>
-      <!-- 选项按钮 -->
-      <n-flex align="center" justify="space-between" :size="60">
-        <n-icon-wrapper
-          v-for="(opt, index) in footerOptions"
-          :key="index"
-          :size="60"
-          :border-radius="10"
-          :color="'var(--hula-text-primary)'"
-          @click="opt.onClick">
-          <n-tooltip>
-            <template #trigger>
-              <n-icon :size="24" :component="opt.icon" />
-            </template>
-            {{ opt.label }}
-          </n-tooltip>
-        </n-icon-wrapper>
-      </n-flex>
-    </template>
-  </n-flex>
-
-  <!-- 群组详情 -->
-  <n-flex v-else-if="content.type === RoomTypeEnum.GROUP" vertical align="center" :size="20" class="mt-30px">
-    <!-- 群头像 -->
-    <n-image
-      object-fit="cover"
-      show-toolbar-tooltip
-      preview-disabled
-      width="120"
-      height="120"
-      style="border: 2px solid var(--hula-text-inverse)"
-      class="rounded-12px select-none cursor-pointer"
-      :src="AvatarUtils.getAvatarUrl(item.avatar)"
-      @dblclick="openImageViewer"
-      alt="" />
-
-    <!-- 群名称 -->
-    <span class="text-(18px [--hula-text-primary])">{{ item.name }}</span>
-
-    <!-- 群公告 -->
-    <div v-if="announcementContent" class="announcement-container">
-      <div class="announcement-header">
-        <span class="text-14px">{{ t('home.chat_details.group.announcement.label') }}</span>
-        <n-button text type="primary" size="small" @click="handleOpenAnnouncement">
-          {{ t('home.chat_details.group.announcement.view_all') }}
-        </n-button>
+        <div class="single-details__meta">
+          <span>{{ t('home.chat_details.single.region', { place: t('home.chat_details.single.unknown') }) }}</span>
+          <span>账号：{{ singleAccount }}</span>
+        </div>
       </div>
-      <div class="announcement-content">{{ announcementContent }}</div>
-    </div>
 
-    <!-- 群成员 -->
-    <div class="member-section">
-      <div class="member-header">
-        <span>{{ t('home.chat_details.group.members', { count: memberCount }) }}</span>
+      <div v-if="!isBotUser" class="single-details__actions">
+        <button class="single-details__action" type="button" @click="handleSendMessage">
+          <span class="single-details__action-icon">
+            <svg><use href="#message" /></svg>
+          </span>
+          <span class="single-details__action-label">{{ t('home.chat_details.actions.message') }}</span>
+        </button>
+
+        <button class="single-details__action" type="button" @click="handleVoiceCall">
+          <span class="single-details__action-icon">
+            <svg><use href="#phone" /></svg>
+          </span>
+          <span class="single-details__action-label">{{ t('home.chat_details.single.footer.audio_call') }}</span>
+        </button>
+
+        <button class="single-details__action" type="button" @click="handleVideoCall">
+          <span class="single-details__action-icon">
+            <svg><use href="#video" /></svg>
+          </span>
+          <span class="single-details__action-label">{{ t('home.chat_details.single.footer.video_call') }}</span>
+        </button>
       </div>
-      <n-grid :cols="4" :x-gap="12" :y-gap="12">
-        <n-gi v-for="member in displayMembers" :key="member.uid">
-          <div class="member-item" @click="handleMemberClick(member)">
-            <n-avatar :src="AvatarUtils.getAvatarUrl(member.avatar)" :size="40" />
-            <span class="member-name">{{ member.name }}</span>
-          </div>
-        </n-gi>
-      </n-grid>
-    </div>
-  </n-flex>
+    </section>
+
+    <n-flex v-else-if="content.type === RoomTypeEnum.GROUP" vertical align="center" :size="20" class="group-details">
+      <n-image
+        object-fit="cover"
+        show-toolbar-tooltip
+        preview-disabled
+        width="120"
+        height="120"
+        style="border: 2px solid var(--hula-text-inverse)"
+        class="rounded-12px select-none cursor-pointer"
+        :src="AvatarUtils.getAvatarUrl(item.avatar)"
+        @dblclick="openImageViewer"
+        alt="" />
+
+      <span class="text-(18px [--hula-text-primary])">{{ item.name }}</span>
+
+      <div v-if="announcementContent" class="announcement-container">
+        <div class="announcement-header">
+          <span class="text-14px">{{ t('home.chat_details.group.announcement.label') }}</span>
+          <n-button text type="primary" size="small" @click="handleOpenAnnouncement">
+            {{ t('home.chat_details.group.announcement.window_title') }}
+          </n-button>
+        </div>
+        <div class="announcement-content">{{ announcementContent }}</div>
+      </div>
+
+      <div class="member-section">
+        <div class="member-header">
+          <span>{{ t('home.chat_details.group.members.count', { count: memberCount }) }}</span>
+        </div>
+        <n-grid :cols="4" :x-gap="12" :y-gap="12">
+          <n-gi v-for="member in displayMembers" :key="member.uid">
+            <div class="member-item" @click="handleMemberClick(member)">
+              <n-avatar :src="AvatarUtils.getAvatarUrl(member.avatar)" :size="40" />
+              <span class="member-name">{{ member.name }}</span>
+            </div>
+          </n-gi>
+        </n-grid>
+      </div>
+    </n-flex>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { NIcon } from 'naive-ui'
 import type { PropType } from 'vue'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RoomTypeEnum, UserType } from '@/enums'
-import { createWebviewWindow } from '@/hooks/useWindow'
-import { useBadgeStore } from '@/stores/domains/chat/badge'
+import { CallTypeEnum, RoomTypeEnum, UserType } from '@/enums'
+import { openMsgSession } from '@/hooks/session/openMsgSession'
+import { useWindow } from '@/hooks/useWindow'
+import type { MatrixContact } from '@/stores/domains/chat/contacts'
+import { useContactStore } from '@/stores/domains/chat/contacts'
 import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
-import { resolveMyRoomNickname } from '@/utils/RoomUtils'
 
 const logger = createLogger('Details')
 const { t } = useI18n()
 const groupStore = useGroupStore()
-const badgeStore = useBadgeStore()
+const contactStore = useContactStore()
+const { createWebviewWindow, startRtcCall } = useWindow()
 
 const props = defineProps({
   content: {
@@ -140,22 +117,61 @@ const item = ref<
     myName?: string
     account?: string
     uid?: string
-    locPlace?: string
-    itemIds?: string[]
     [key: string]: unknown
   }
 >({})
 const announcementContent = ref('')
-const remarkSnapshot = ref('')
-const nicknameSnapshot = ref('')
+
+const contactInfo = computed<Partial<MatrixContact>>(() => {
+  if (props.content.type !== RoomTypeEnum.SINGLE || !props.content.uid) {
+    return {}
+  }
+  return contactStore.getContactByUserId(props.content.uid) ?? {}
+})
+
+const singleName = computed(() => contactInfo.value.name || contactInfo.value.displayName || '未知用户')
+const singleUid = computed(() => contactInfo.value.uid || props.content.uid || '')
+const singleAccount = computed(
+  () => contactInfo.value.account || singleUid.value.replace(/^@/, '').split(':')[0] || '未知'
+)
+const singleAvatar = computed(() => contactInfo.value.avatar || contactInfo.value.avatarUrl || '')
+const singleSignature = computed(() => contactInfo.value.statusMessage || t('home.chat_details.single.empty_signature'))
+
+const isBotUser = computed(() => {
+  if (props.content.type !== RoomTypeEnum.SINGLE || !contactInfo.value.uid) return false
+  return contactInfo.value.account === UserType.BOT
+})
+
+watch(
+  () => [props.content.type, props.content.uid] as const,
+  async ([type, uid]) => {
+    if (!uid) {
+      item.value = {}
+      announcementContent.value = ''
+      return
+    }
+
+    if (type !== RoomTypeEnum.GROUP) {
+      item.value = {}
+      announcementContent.value = ''
+      return
+    }
+
+    try {
+      const response = await groupStore.loadGroupInfo(uid)
+      item.value = (response as typeof item.value) || {}
+      await fetchAnnouncement(uid)
+    } catch (error) {
+      logger.error('获取群组详情失败:', error)
+      item.value = {}
+      announcementContent.value = ''
+    }
+  },
+  { immediate: true }
+)
 
 const fetchAnnouncement = async (_roomId: string) => {
-  try {
-    announcementContent.value = ''
-  } catch (error) {
-    logger.error('获取群公告失败:', error)
-    announcementContent.value = ''
-  }
+  announcementContent.value = ''
 }
 
 const handleOpenAnnouncement = async () => {
@@ -168,33 +184,33 @@ const handleOpenAnnouncement = async () => {
   )
 }
 
-const displayNickname = computed(() =>
-  resolveMyRoomNickname({ roomId: item.value?.roomId, myName: item.value?.myName })
-)
-
-const isBotUser = computed(() => {
-  if (props.content.type !== RoomTypeEnum.SINGLE || !item.value?.uid) return false
-  return groupStore.getUserInfo(item.value.uid)?.account === UserType.BOT
-})
-
-watchEffect(async () => {
-  if (!props.content.uid) {
-    item.value = {}
-    remarkSnapshot.value = ''
-    nicknameSnapshot.value = ''
-    announcementContent.value = ''
-  } else {
-    try {
-      const response = await groupStore.loadGroupInfo(props.content.uid)
-      item.value = (response as typeof item.value) || {}
-    } catch (e) {
-      logger.error('获取群组详情失败:', e)
-    }
-  }
-})
-
 const memberCount = computed(() => groupStore.userList.length || 0)
 const displayMembers = computed(() => groupStore.userList.slice(0, 8))
+
+const ensureDirectSessionReady = async () => {
+  if (!singleUid.value) {
+    window.$message?.warning?.(t('home.chat_details.single.friend_info_missing'))
+    return false
+  }
+
+  await openMsgSession(singleUid.value, RoomTypeEnum.SINGLE)
+  await nextTick()
+  return true
+}
+
+const handleSendMessage = async () => {
+  await ensureDirectSessionReady()
+}
+
+const handleVoiceCall = async () => {
+  if (!(await ensureDirectSessionReady())) return
+  await startRtcCall(CallTypeEnum.AUDIO)
+}
+
+const handleVideoCall = async () => {
+  if (!(await ensureDirectSessionReady())) return
+  await startRtcCall(CallTypeEnum.VIDEO)
+}
 
 const handleMemberClick = (member: { uid?: string; userId?: string }) => {
   logger.debug('点击成员:', member.uid ?? member.userId)
@@ -203,21 +219,122 @@ const handleMemberClick = (member: { uid?: string; userId?: string }) => {
 const openImageViewer = () => {
   logger.debug('打开图片查看器')
 }
-
-const footerOptions = computed(() => [
-  {
-    icon: undefined,
-    label: t('home.chat_details.single.send_message'),
-    onClick: () => handleSendMessage()
-  }
-])
-
-const handleSendMessage = () => {
-  logger.debug('发送消息')
-}
 </script>
 
 <style scoped lang="scss">
+.details-panel {
+  height: 100%;
+  padding: 24px 20px;
+  box-sizing: border-box;
+}
+
+.single-details {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+
+.single-details__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.single-details__avatar {
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.single-details__name {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  color: var(--hula-text-primary);
+  font-weight: 600;
+}
+
+.single-details__uid {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--hula-text-tertiary);
+}
+
+.single-details__signature {
+  margin: 0;
+  max-width: 360px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--hula-text-secondary);
+}
+
+.single-details__meta {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--hula-text-secondary);
+}
+
+.single-details__actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 34px;
+}
+
+.single-details__action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--hula-text-secondary);
+}
+
+.single-details__action:hover .single-details__action-icon {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(29, 163, 134, 0.22);
+}
+
+.single-details__action-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hula-color-primary-500);
+  color: #fff;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.single-details__action-label {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--hula-text-secondary);
+}
+
+.group-details {
+  margin-top: 30px;
+}
+
 .announcement-container {
   width: 100%;
   padding: 12px;
@@ -238,6 +355,7 @@ const handleSendMessage = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }

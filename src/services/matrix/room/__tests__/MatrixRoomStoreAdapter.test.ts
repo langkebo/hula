@@ -26,7 +26,7 @@ function createEventLike(
 
 function createMessage(overrides: Partial<MessageType['message']>): MessageType {
   return {
-    fromUser: { uid: '@user:server', username: '@user:server', avatar: '', locPlace: '' },
+    fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
     message: {
       id: '$message',
       roomId: '!room:id',

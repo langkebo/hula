@@ -2,6 +2,7 @@ import { useI18n } from 'vue-i18n'
 import { MsgEnum, RoomTypeEnum, UserType } from '@/enums'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
+import matrixClientService from '@/services/matrix/MatrixClientService'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -121,13 +122,20 @@ export const useSessionListState = () => {
           displayMsg = botDisplayText.value || displayMsg
         }
 
+        const client = matrixClientService.getClient()
+        const room = client?.getRoom(item.roomId)
+        const isEncrypted = room ? client!.isRoomEncrypted(item.roomId) : false
+        const isBurnAfterRead = !!room?.currentState?.getStateEvents('m.burn_after_read')?.length
+
         return {
           ...item,
           avatar: latestAvatar,
           name: displayName,
           lastMsg: displayMsg || t('message.message_list.default_last_msg'),
           lastMsgTime: formatTimestamp(item?.activeTime),
-          isAtMe
+          isAtMe,
+          isEncrypted,
+          isBurnAfterRead
         }
       })
       .sort((a, b) => {

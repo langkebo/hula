@@ -38,7 +38,8 @@ const DEFAULT_CONFIG = {
     'sup',
     'sub',
     'details',
-    'summary'
+    'summary',
+    'mark'
   ],
   ALLOWED_ATTR: [
     'href',

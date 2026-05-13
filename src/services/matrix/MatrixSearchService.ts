@@ -1,6 +1,8 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { SearchEventContext } from '@/types/matrix-api'
+import type { SearchMessageHit } from '@/workers/matrixWorkerTypes'
 import matrixClientService from './MatrixClientService'
+import matrixWorkerHost from './MatrixWorkerHost'
 
 export interface UserSearchResult {
   userId: string
@@ -49,7 +51,79 @@ interface MatrixSearchResponse {
   }
 }
 
+export type SearchSource = 'remote' | 'local' | 'hybrid'
+
+export interface SearchMessagesOptions {
+  roomId?: string
+  limit?: number
+  beforeLimit?: number
+  afterLimit?: number
+  source?: SearchSource
+}
+
 class MatrixSearchService {
+  private buildMessageSearchParams(query: string, options?: SearchMessagesOptions): Record<string, unknown> {
+    return {
+      search_categories: {
+        room_events: {
+          search_term: query,
+          filter: {
+            limit: options?.limit || 20,
+            rooms: options?.roomId ? [options.roomId] : undefined
+          },
+          order_by: 'recent',
+          event_context: {
+            before_limit: options?.beforeLimit || 3,
+            after_limit: options?.afterLimit || 3,
+            include_profile: true
+          }
+        }
+      }
+    }
+  }
+
+  private async searchMessagesRemote(query: string, options?: SearchMessagesOptions): Promise<SearchResult[]> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('[MatrixSearch] 客户端未初始化')
+    }
+
+    const response = await client.search(this.buildMessageSearchParams(query, options))
+    return this.parseSearchResults(response)
+  }
+
+  private mapWorkerMessageResults(results: SearchMessageHit[]): SearchResult[] {
+    const client = matrixClientService.getClient()
+
+    return results.map((result) => ({
+      roomId: result.roomId,
+      eventId: result.eventId,
+      sender: result.sender,
+      content: {
+        body: result.preview,
+        msgtype: 'm.text'
+      },
+      timestamp: result.timestamp,
+      roomName: client?.getRoom(result.roomId)?.name || result.roomId
+    }))
+  }
+
+  private async searchMessagesLocal(query: string, options?: SearchMessagesOptions): Promise<SearchResult[]> {
+    if (!matrixWorkerHost.isStarted) {
+      return []
+    }
+
+    const response = await matrixWorkerHost.querySearchIndex({
+      term: query,
+      scope: 'messages',
+      roomId: options?.roomId,
+      limit: options?.limit || 20,
+      offset: 0
+    })
+
+    return this.mapWorkerMessageResults(response.messages || [])
+  }
+
   private toUserSearchResults(
     results: Array<{ user_id: string; display_name?: string; avatar_url?: string }>
   ): UserSearchResult[] {
@@ -72,43 +146,32 @@ class MatrixSearchService {
     }))
   }
 
-  async searchMessages(
-    query: string,
-    options?: {
-      roomId?: string
-      limit?: number
-      beforeLimit?: number
-      afterLimit?: number
-    }
-  ): Promise<SearchResult[]> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixSearch] 客户端未初始化')
-    }
+  async searchMessages(query: string, options?: SearchMessagesOptions): Promise<SearchResult[]> {
+    const source = options?.source || 'remote'
 
     try {
-      const searchParams: Record<string, unknown> = {
-        search_categories: {
-          room_events: {
-            search_term: query,
-            filter: {
-              limit: options?.limit || 20,
-              rooms: options?.roomId ? [options.roomId] : undefined
-            },
-            order_by: 'recent',
-            event_context: {
-              before_limit: options?.beforeLimit || 3,
-              after_limit: options?.afterLimit || 3,
-              include_profile: true
-            }
-          }
-        }
+      if (source === 'local') {
+        const localResults = await this.searchMessagesLocal(query, options)
+        info(`[MatrixSearch] 本地搜索完成: "${query}" 找到 ${localResults.length} 条结果`)
+        return localResults
       }
 
-      const response = await client.search(searchParams)
-      const results = this.parseSearchResults(response)
+      if (source === 'hybrid') {
+        const localResults = await this.searchMessagesLocal(query, options)
+        const limit = options?.limit || 20
+        if (localResults.length >= limit) {
+          info(`[MatrixSearch] 混合搜索命中本地索引: "${query}" 找到 ${localResults.length} 条结果`)
+          return localResults
+        }
 
-      info(`[MatrixSearch] 搜索完成: "${query}" 找到 ${results.length} 条结果`)
+        const remoteResults = await this.searchMessagesRemote(query, options)
+        info(`[MatrixSearch] 混合搜索回退远程: "${query}" 找到 ${remoteResults.length} 条结果`)
+        return remoteResults
+      }
+
+      const results = await this.searchMessagesRemote(query, options)
+
+      info(`[MatrixSearch] 远程搜索完成: "${query}" 找到 ${results.length} 条结果`)
       return results
     } catch (err) {
       error(`[MatrixSearch] 搜索失败: ${err}`)
@@ -171,6 +234,16 @@ class MatrixSearchService {
       info(`[MatrixSearch] 用户搜索完成: "${query}" 找到 ${results.length} 个用户`)
       return results
     } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      if (
+        errMsg.includes('M_UNAUTHORIZED') ||
+        errMsg.includes('401') ||
+        errMsg.includes('M_FORBIDDEN') ||
+        errMsg.includes('403')
+      ) {
+        info(`[MatrixSearch] 用户搜索需要认证 (${errMsg.includes('403') ? '403' : '401'})`)
+        return []
+      }
       error(`[MatrixSearch] 用户搜索失败: ${err}`)
       throw err
     }

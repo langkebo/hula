@@ -43,6 +43,14 @@ vi.mock('@/components/common/ContextMenu.vue', () => ({
   }
 }))
 
+vi.mock('../HulaRoomListItem.vue', () => ({
+  default: {
+    name: 'HulaRoomListItem',
+    props: ['item'],
+    template: '<div data-test="HulaRoomListItem">{{ item?.name }}</div>'
+  }
+}))
+
 vi.mock('@/utils/AvatarUtils', () => ({
   AvatarUtils: {
     getAvatarUrl: vi.fn(() => '')

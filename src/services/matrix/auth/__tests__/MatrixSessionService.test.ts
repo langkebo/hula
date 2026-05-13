@@ -156,11 +156,14 @@ describe('MatrixSessionService', () => {
   })
 
   it('should create dm detail fallback when direct room is not cached locally', async () => {
+    vi.useFakeTimers()
     mockDirectMessageService.getDmForUser.mockResolvedValueOnce(null)
     mockDirectMessageService.createDm.mockResolvedValueOnce('!new:example.com')
-    mockClient.getRoom.mockReturnValueOnce(null)
+    mockClient.getRoom.mockReturnValue(null)
 
-    const result = await matrixSessionService.getSessionDetailWithFriends('@bob:example.com')
+    const promise = matrixSessionService.getSessionDetailWithFriends('@bob:example.com')
+    await vi.advanceTimersByTimeAsync(3100)
+    const result = await promise
 
     expect(mockDirectMessageService.getDmForUser).toHaveBeenCalledWith('@bob:example.com', false)
     expect(mockDirectMessageService.createDm).toHaveBeenCalledWith('@bob:example.com')
@@ -178,5 +181,47 @@ describe('MatrixSessionService', () => {
       account: '@bob:example.com',
       id: '@bob:example.com'
     })
+
+    vi.useRealTimers()
+  })
+
+  it('should wait for the newly created dm room to appear before building session detail', async () => {
+    vi.useFakeTimers()
+    const room = createRoom({
+      roomId: '!new:example.com',
+      name: 'Bob',
+      avatar: 'mxc://example.com/bob',
+      unreadCount: 1,
+      events: [createEvent(1711000000000, 'hi')]
+    })
+    mockDirectMessageService.getDmForUser.mockResolvedValueOnce(null)
+    mockDirectMessageService.createDm.mockResolvedValueOnce('!new:example.com')
+    mockDirectMessageService.getDmRoomInfo.mockResolvedValueOnce({
+      roomId: '!new:example.com',
+      invitees: ['@bob:example.com']
+    })
+    mockClient.getRoom.mockReturnValueOnce(null).mockReturnValueOnce(null).mockReturnValueOnce(room)
+
+    const promise = matrixSessionService.getSessionDetailWithFriends('@bob:example.com')
+    await vi.advanceTimersByTimeAsync(300)
+    const result = await promise
+
+    expect(result).toEqual({
+      id: '@bob:example.com',
+      roomId: '!new:example.com',
+      name: 'Bob',
+      avatar: 'mxc://example.com/bob',
+      type: RoomTypeEnum.SINGLE,
+      unreadCount: 1,
+      activeTime: 1711000000000,
+      top: false,
+      shield: false,
+      muteNotification: NotificationTypeEnum.RECEPTION,
+      detailId: '@bob:example.com',
+      account: '@bob:example.com',
+      text: 'hi'
+    })
+
+    vi.useRealTimers()
   })
 })

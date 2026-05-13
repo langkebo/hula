@@ -103,7 +103,7 @@
                   <n-button
                     style="color: #fff"
                     v-if="item.wearing === IsYesEnum.NO"
-                    color="var(--hula-color-primary-500)"
+                    type="primary"
                     @click="toggleWarningBadge(item)">
                     {{ t('home.profile_edit.badge.wear') }}
                   </n-button>
@@ -125,7 +125,7 @@
         <n-button
           style="color: #fff"
           :disabled="editInfo.content.name === localUserInfo.name"
-          color="var(--hula-color-primary-500)"
+          type="primary"
           @click="saveEditInfo(localUserInfo as ModifyUserInfoType)">
           {{ t('home.profile_edit.actions.save') }}
         </n-button>

@@ -31,6 +31,12 @@ export const baseConfig: UserConfig = {
       'matrix-js-sdk/space': fileURLToPath(new URL('../../../matrix-js-sdk/src/space/index.ts', import.meta.url)),
       'matrix-js-sdk/admin': fileURLToPath(new URL('../../../matrix-js-sdk/src/admin/index.ts', import.meta.url)),
       'matrix-js-sdk/beacon': fileURLToPath(new URL('../../../matrix-js-sdk/src/beacon/index.ts', import.meta.url)),
+      'matrix-js-sdk/client': fileURLToPath(new URL('../../../matrix-js-sdk/src/client.ts', import.meta.url)),
+      'matrix-js-sdk/sync': fileURLToPath(new URL('../../../matrix-js-sdk/src/sync.ts', import.meta.url)),
+      'matrix-js-sdk/models/room': fileURLToPath(new URL('../../../matrix-js-sdk/src/models/room.ts', import.meta.url)),
+      'matrix-js-sdk/models/room-state': fileURLToPath(
+        new URL('../../../matrix-js-sdk/src/models/room-state.ts', import.meta.url)
+      ),
       'matrix-js-sdk/models': fileURLToPath(new URL('../../../matrix-js-sdk/src/models/index.ts', import.meta.url)),
       'matrix-js-sdk/http-api': fileURLToPath(new URL('../../../matrix-js-sdk/src/http-api/index.ts', import.meta.url)),
       'matrix-js-sdk/manager-extensions': fileURLToPath(
@@ -75,6 +81,29 @@ export const baseConfig: UserConfig = {
     cssCodeSplit: true,
     minify: 'esbuild',
     chunkSizeWarningLimit: 500,
+    modulePreload: {
+      polyfill: true,
+      resolveDependencies: (_filename, deps) => {
+        const heavyChunks = [
+          'shiki-core',
+          'shiki-themes',
+          'shiki-langs',
+          'shiki-engine',
+          'mermaid',
+          'mermaid-deps',
+          'three',
+          'chart-vendor',
+          'vue-office',
+          'vue-demi'
+        ]
+        return deps.filter((dep) => {
+          if (heavyChunks.some((chunk) => dep.includes(chunk))) {
+            return false
+          }
+          return true
+        })
+      }
+    },
     sourcemap: false,
     rollupOptions: {
       output: {

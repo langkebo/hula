@@ -54,7 +54,7 @@
             </svg>
           </div>
           <!-- 最小化 -->
-          <div v-if="minW" @click="appWindow.minimize()" class="hover-box">
+          <div v-if="showMinimizeButton" @click="handleMinimize" class="hover-box">
             <svg
               :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
               class="size-24px opacity-66 cursor-pointer">
@@ -146,10 +146,12 @@ import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
 import { useAlwaysOnTopStore } from '@/stores/domains/settings/alwaysOnTop'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { isCompatibility, isMac, isWindows } from '@/utils/PlatformConstants'
 
 const { t } = useI18n()
-const appWindow = WebviewWindow.getCurrent()
+const tauriRuntimeAvailable = hasTauriRuntime()
+const appWindow = tauriRuntimeAvailable ? WebviewWindow.getCurrent() : null
 const {
   topWinLabel,
   proxy = false,
@@ -188,6 +190,7 @@ const alwaysOnTopStatus = computed(() => {
   if (topWinLabel === void 0) return false
   return getWindowTop(topWinLabel)
 })
+const showMinimizeButton = computed(() => minW && tauriRuntimeAvailable)
 
 // macOS 关闭按钮拦截的 unlisten 函数
 let unlistenCloseRequested: (() => void) | null = null
@@ -203,7 +206,7 @@ const handleEscKeyDown = (event: KeyboardEvent) => {
 
 watchEffect((onCleanup) => {
   tipsRef.type = tips.value.type
-  if (alwaysOnTopStatus.value) {
+  if (appWindow && alwaysOnTopStatus.value) {
     appWindow.setAlwaysOnTop(alwaysOnTopStatus.value as boolean)
   }
   if (escClose.value && isWindows()) {
@@ -217,7 +220,14 @@ watchEffect((onCleanup) => {
 })
 
 /** 恢复窗口大小 */
+const handleMinimize = async () => {
+  if (!appWindow) return
+  await appWindow.minimize()
+}
+
+/** 恢复窗口大小 */
 const restoreWindow = async () => {
+  if (!appWindow) return
   if (windowMaximized.value) {
     await appWindow.unmaximize()
   } else {
@@ -238,7 +248,7 @@ const shrinkWindow = async () => {
 
 /** 设置窗口置顶 */
 const handleAlwaysOnTop = async () => {
-  if (topWinLabel !== void 0) {
+  if (appWindow && topWinLabel !== void 0) {
     const isTop = !alwaysOnTopStatus.value
     setWindowTop(topWinLabel, isTop)
     await appWindow.setAlwaysOnTop(isTop)
@@ -256,13 +266,17 @@ const handleConfirm = async () => {
     await emit(EventEnum.EXIT)
   } else {
     await nextTick(() => {
-      appWindow.hide()
+      appWindow?.hide()
     })
   }
 }
 
 // 统一更新窗口放大状态（仅 macOS 视为“最大化或全屏”；其他平台仅“最大化”）
 const updateWindowMaximized = async () => {
+  if (!appWindow) {
+    windowMaximized.value = false
+    return
+  }
   const maximized = await appWindow.isMaximized()
   if (isMac()) {
     const fullscreen = await appWindow.isFullscreen()
@@ -274,6 +288,7 @@ const updateWindowMaximized = async () => {
 
 /** 处理关闭窗口事件 */
 const handleCloseWin = async () => {
+  if (!appWindow) return
   if (appWindow.label === 'home') {
     if (!tips.value.notTips) {
       tipsRef.show = true
@@ -303,6 +318,7 @@ const handleCloseWin = async () => {
 useMitt.on('handleCloseWin', handleCloseWin)
 
 onMounted(async () => {
+  if (!appWindow) return
   // 初始化状态
   await updateWindowMaximized()
 

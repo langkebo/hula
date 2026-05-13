@@ -6,7 +6,7 @@
   </div>
   <div class="flex-x-center gap-28px mt-16px">
     <div
-      v-for="item in ssoOptions"
+      v-for="item in visibleSsoOptions"
       :key="item.key"
       :title="item.label"
       :aria-label="item.label"
@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type Ref } from 'vue'
+import { computed, onMounted, type Ref, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   discoverAndSaveMatrixEndpoints,
@@ -40,6 +40,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('ThirdPartyLogin')
 
 import { useLoginFlow } from '@/hooks/useLoginFlow'
+import { matrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
 
 export type ThirdPartyLoginContext = Pick<ReturnType<typeof useLoginFlow>, 'loading' | 'loginDisabled'> & {
@@ -75,6 +76,51 @@ const noop = () => {
 const ssoDisabled = computed(
   () => resolvedContext.loading.value || resolvedContext.loginDisabled.value || props.extraDisabled
 )
+
+const availableFlows = ref<Set<string>>(new Set())
+const flowsLoading = ref(false)
+const flowsError = ref<string | null>(null)
+
+const SSO_FLOW_MAP: Record<string, string> = {
+  oidc: 'm.login.sso',
+  saml: 'm.login.sso',
+  cas: 'm.login.cas'
+}
+
+async function detectAvailableFlows(): Promise<void> {
+  flowsLoading.value = true
+  flowsError.value = null
+  try {
+    const flows = await matrixAuthService.getLoginFlows()
+    const flowTypes = new Set(flows.map((f) => f.type))
+    availableFlows.value = flowTypes
+    logger.info('检测到可用登录流:', [...flowTypes])
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    flowsError.value = msg
+    logger.warn('获取登录流失败，将显示所有SSO选项:', msg)
+  } finally {
+    flowsLoading.value = false
+  }
+}
+
+onMounted(() => {
+  detectAvailableFlows()
+})
+
+function isSsoFlowAvailable(key: string): boolean {
+  if (flowsLoading.value || flowsError.value) {
+    return true
+  }
+  const flowType = SSO_FLOW_MAP[key]
+  if (!flowType) {
+    return true
+  }
+  if (availableFlows.value.size === 0) {
+    return true
+  }
+  return availableFlows.value.has(flowType)
+}
 
 const getHomeserverUrl = (): string => {
   try {
@@ -114,6 +160,10 @@ const redirectTo = (url: string): void => {
 }
 
 const handleOidcLogin = async () => {
+  if (!isSsoFlowAvailable('oidc')) {
+    window.$message?.info('OIDC 单点登录服务暂未配置，请使用账号密码登录')
+    return
+  }
   try {
     const homeserverUrl = await resolveSsoHomeserverUrl()
     const discovery = await matrixOidcService.discoverOidc(homeserverUrl)
@@ -138,6 +188,10 @@ const handleOidcLogin = async () => {
 }
 
 const handleSamlLogin = async () => {
+  if (!isSsoFlowAvailable('saml')) {
+    window.$message?.info('SAML 单点登录服务暂未配置，请使用账号密码登录')
+    return
+  }
   try {
     const homeserverUrl = await resolveSsoHomeserverUrl()
     const redirectUri = encodeURIComponent(`${window.location.origin}/login`)
@@ -150,6 +204,10 @@ const handleSamlLogin = async () => {
 }
 
 const handleCasLogin = async () => {
+  if (!isSsoFlowAvailable('cas')) {
+    window.$message?.info('CAS 单点登录服务暂未配置，请使用账号密码登录')
+    return
+  }
   try {
     const homeserverUrl = await resolveSsoHomeserverUrl()
     const redirectUri = encodeURIComponent(`${window.location.origin}/login`)
@@ -167,35 +225,42 @@ const ssoOptions = computed(() => [
     label: t('login.sso.oidc') || 'OIDC 单点登录',
     icon: 'OIDC',
     style: 'color-[--color-primary] dark:color-[--color-primary]80',
-    action: handleOidcLogin
+    action: handleOidcLogin,
+    available: isSsoFlowAvailable('oidc')
   },
   {
     key: 'saml',
     label: t('login.sso.saml') || 'SAML 单点登录',
     icon: 'SAML',
     style: 'color-#303030 dark:color-#fefefe90',
-    action: handleSamlLogin
+    action: handleSamlLogin,
+    available: isSsoFlowAvailable('saml')
   },
   {
     key: 'cas',
     label: t('login.sso.cas') || 'CAS 单点登录',
     icon: 'CAS',
     style: 'color-[--color-danger] dark:color-[--color-danger]80',
-    action: handleCasLogin
+    action: handleCasLogin,
+    available: isSsoFlowAvailable('cas')
   },
   {
     key: 'gitee',
     label: t('login.third_party.gitee'),
     icon: '#gitee-login',
     style: 'color-[--color-danger] dark:color-[--color-danger]80',
-    action: resolvedContext.giteeLogin || noop
+    action: resolvedContext.giteeLogin || noop,
+    available: true
   },
   {
     key: 'github',
     label: t('login.third_party.github'),
     icon: '#github-login',
     style: 'color-#303030 dark:color-#fefefe90',
-    action: resolvedContext.githubLogin || noop
+    action: resolvedContext.githubLogin || noop,
+    available: true
   }
 ])
+
+const visibleSsoOptions = computed(() => ssoOptions.value.filter((item) => item.available))
 </script>
