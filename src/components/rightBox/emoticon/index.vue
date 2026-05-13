@@ -180,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import HulaEmojis from 'hula-emojis'
+import type { HulaEmojiData } from 'hula-emojis'
 import type { ScrollbarInst, VirtualListInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import type { EmojiItem as EmojiListItem } from '@/services/types'
@@ -234,7 +234,7 @@ const { setEmoji, setLastEmojiTabIndex } = useHistoryStore()
 const emojiStore = useEmojiStore()
 const userStore = useUserStore()
 const { t } = useI18n()
-const emojisBbs = HulaEmojis.MihoyoBbs
+const emojisBbs = shallowRef<HulaEmojiData>()
 const activeIndex = ref(lastEmojiTabIndex.value)
 const isFavoritesView = computed(() => activeIndex.value === -1)
 const isSeriesView = computed(() => activeIndex.value > 0)
@@ -247,7 +247,8 @@ const tabList = computed<TabItem[]>(() => {
     { id: 0, type: 'icon', name: t('emoticon.tabs.emoji'), icon: '#face' },
     { id: -1, type: 'icon', name: t('emoticon.tabs.favorites'), icon: '#heart' }
   ]
-  const seriesItems: TabItem[] = emojisBbs.series.map((series, index) => ({
+  if (!emojisBbs.value) return baseItems
+  const seriesItems: TabItem[] = emojisBbs.value.series.map((series, index) => ({
     id: index + 1,
     type: 'series',
     name: series.name,
@@ -256,7 +257,9 @@ const tabList = computed<TabItem[]>(() => {
   return [...baseItems, ...seriesItems]
 })
 
-const currentSeries = computed(() => (activeIndex.value > 0 ? emojisBbs.series[activeIndex.value - 1] : null))
+const currentSeries = computed(() =>
+  activeIndex.value > 0 && emojisBbs.value ? emojisBbs.value.series[activeIndex.value - 1] : null
+)
 
 const reversedEmojiList = computed(() => [...emojiStore.emojiList].reverse())
 
@@ -438,6 +441,8 @@ const selectSeries = (index: number) => {
 }
 
 onMounted(async () => {
+  const { default: HulaEmojis } = await import('hula-emojis')
+  emojisBbs.value = HulaEmojis.MihoyoBbs
   await emojiStore.getEmojiList()
   scheduleHydrateFavorites()
 })

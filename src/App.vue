@@ -146,6 +146,11 @@ const preventDrag = (e: MouseEvent) => {
   }
 }
 const preventGlobalContextMenu = (event: MouseEvent) => event.preventDefault()
+const handleGlobalKeydown = (e: KeyboardEvent) => {
+  if (e.ctrlKey && (e.key === 'f' || e.key === 'r' || e.key === 'g' || e.key === 'j')) {
+    e.preventDefault()
+  }
+}
 
 type VideoCallRequestPayload = {
   callerUid: string
@@ -830,9 +835,8 @@ onMounted(async () => {
     })
   }
   // 判断是否是桌面端，桌面端需要调整样式
-  isDesktop() && import('@/styles/scss/global/desktop.scss')
-  // 判断是否是移动端，移动端需要加载安全区域适配样式
-  isMobile() && import('@/styles/scss/global/mobile.scss')
+  isDesktop() && import('@/styles/scss/global/desktop.scss').catch((e) => logger.warn('加载桌面端样式失败:', e))
+  isMobile() && import('@/styles/scss/global/mobile.scss').catch((e) => logger.warn('加载移动端样式失败:', e))
 
   if (isDesktop()) {
     await import('@/styles/scss/theme/simple.scss')
@@ -853,11 +857,7 @@ onMounted(async () => {
   /** 开发环境不禁止 */
   if (process.env.NODE_ENV !== 'development') {
     /** 禁用浏览器默认的快捷键 */
-    window.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && (e.key === 'f' || e.key === 'r' || e.key === 'g' || e.key === 'j')) {
-        e.preventDefault()
-      }
-    })
+    window.addEventListener('keydown', handleGlobalKeydown)
     /** 禁止右键菜单 */
     window.addEventListener('contextmenu', preventGlobalContextMenu, false)
   }
@@ -890,6 +890,9 @@ onUnmounted(async () => {
   }
   window.removeEventListener('contextmenu', preventGlobalContextMenu, false)
   window.removeEventListener('dragstart', preventDrag)
+  if (process.env.NODE_ENV !== 'development') {
+    window.removeEventListener('keydown', handleGlobalKeydown)
+  }
 
   // 只在桌面端的主窗口中清理全局快捷键
   if (isDesktop() && appWindow?.label === 'home') {
@@ -956,23 +959,24 @@ watch(
 
 /** 监听会话变化 */
 useMitt.on(MittEnum.MSG_INIT, async () => {
-  watchEffect(async () => {
-    const sessionRoomId = globalStore.currentSessionRoomId
-    const sessionType = globalStore.currentSession?.type
-
-    if (!sessionRoomId || sessionType !== RoomTypeEnum.GROUP) {
-      return
-    }
-
-    try {
-      const result = await groupStore.switchSession({ roomId: sessionRoomId })
-      if (result?.success) {
-        await announcementStore.loadGroupAnnouncements()
+  watch(
+    () => [globalStore.currentSessionRoomId, globalStore.currentSession?.type] as const,
+    async ([sessionRoomId, sessionType]) => {
+      if (!sessionRoomId || sessionType !== RoomTypeEnum.GROUP) {
+        return
       }
-    } catch (error) {
-      logger.error('会话切换处理失败:', error)
-    }
-  })
+
+      try {
+        const result = await groupStore.switchSession({ roomId: sessionRoomId })
+        if (result?.success) {
+          await announcementStore.loadGroupAnnouncements()
+        }
+      } catch (error) {
+        logger.error('会话切换处理失败:', error)
+      }
+    },
+    { immediate: true }
+  )
 })
 
 // 初始化的时候需要加载一次用户在localStorage中保存的代理设置

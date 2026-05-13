@@ -698,7 +698,7 @@ const acceptCall = async () => {
 }
 
 // 监听视频状态变化，自动更新视频显示
-watch([hasLocalVideo, hasRemoteVideo, localStream, remoteStream], assignVideoStreams, { deep: true })
+watch([hasLocalVideo, hasRemoteVideo, localStream, remoteStream], assignVideoStreams)
 
 // 监听远程流变化，自动设置音频
 watch(

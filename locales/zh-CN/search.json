@@ -1,0 +1,11 @@
+{
+  "title": "搜索",
+  "placeholder": "搜索消息、房间或用户...",
+  "all": "全部",
+  "messages": "消息",
+  "rooms": "房间",
+  "users": "用户",
+  "no_results": "未找到相关结果",
+  "recent": "最近搜索",
+  "clear": "清除"
+}

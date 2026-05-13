@@ -1,4 +1,4 @@
-import { NaiveUiResolver, VantResolver } from 'unplugin-vue-components/resolvers'
+import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { mergeConfig, type UserConfig } from 'vite'
 import { getComponentsDirs, getComponentsDtsPath, getComponentsGlobs } from './components'
@@ -17,7 +17,7 @@ export const desktopConfig: UserConfig = mergeConfig(baseConfig, {
     Components({
       dirs: getComponentsDirs('windows'), // 桌面端通用目录
       globs: getComponentsGlobs('windows'),
-      resolvers: [NaiveUiResolver(), VantResolver()],
+      resolvers: [NaiveUiResolver()],
       dts: getComponentsDtsPath('windows')
     })
   ]

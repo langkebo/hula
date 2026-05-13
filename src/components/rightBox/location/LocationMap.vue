@@ -23,8 +23,11 @@
 </template>
 
 <script setup lang="ts">
-import TlbsMap, { MultiMarker as TlbsMultiMarker } from 'tlbs-map-vue'
+import { defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+const TlbsMap = defineAsyncComponent(() => import('tlbs-map-vue').then((m) => m.default))
+const TlbsMultiMarker = defineAsyncComponent(() => import('tlbs-map-vue').then((m) => m.MultiMarker))
 
 type LocationData = {
   latitude: number
