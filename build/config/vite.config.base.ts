@@ -18,13 +18,30 @@ export const baseConfig: UserConfig = {
       '#': fileURLToPath(new URL('../../src/mobile', import.meta.url)),
       '~': fileURLToPath(new URL('../../', import.meta.url)),
       'stream-monaco': fileURLToPath(new URL('../empty-module.js', import.meta.url)),
-      'monaco-editor': fileURLToPath(new URL('../empty-module.js', import.meta.url))
+      'monaco-editor': fileURLToPath(new URL('../empty-module.js', import.meta.url)),
+      'matrix-js-sdk/src': fileURLToPath(new URL('../../../matrix-js-sdk/src', import.meta.url)),
+      'matrix-js-sdk/friend': fileURLToPath(new URL('../../../matrix-js-sdk/src/friend/index.ts', import.meta.url)),
+      'matrix-js-sdk/crypto': fileURLToPath(new URL('../../../matrix-js-sdk/src/crypto-api/index.ts', import.meta.url)),
+      'matrix-js-sdk/dm': fileURLToPath(new URL('../../../matrix-js-sdk/src/dm/index.ts', import.meta.url)),
+      'matrix-js-sdk/voice': fileURLToPath(new URL('../../../matrix-js-sdk/src/voice/index.ts', import.meta.url)),
+      'matrix-js-sdk/notification': fileURLToPath(
+        new URL('../../../matrix-js-sdk/src/notification/index.ts', import.meta.url)
+      ),
+      'matrix-js-sdk/push': fileURLToPath(new URL('../../../matrix-js-sdk/src/push/index.ts', import.meta.url)),
+      'matrix-js-sdk/space': fileURLToPath(new URL('../../../matrix-js-sdk/src/space/index.ts', import.meta.url)),
+      'matrix-js-sdk/admin': fileURLToPath(new URL('../../../matrix-js-sdk/src/admin/index.ts', import.meta.url)),
+      'matrix-js-sdk/beacon': fileURLToPath(new URL('../../../matrix-js-sdk/src/beacon/index.ts', import.meta.url)),
+      'matrix-js-sdk/models': fileURLToPath(new URL('../../../matrix-js-sdk/src/models/index.ts', import.meta.url)),
+      'matrix-js-sdk/http-api': fileURLToPath(new URL('../../../matrix-js-sdk/src/http-api/index.ts', import.meta.url)),
+      'matrix-js-sdk/manager-extensions': fileURLToPath(
+        new URL('../../../matrix-js-sdk/src/manager-extensions/index.ts', import.meta.url)
+      ),
+      'matrix-js-sdk': fileURLToPath(new URL('../../../matrix-js-sdk/src/index.ts', import.meta.url))
     }
   },
   css: {
     preprocessorOptions: {
       scss: {
-        api: 'modern-compiler',
         additionalData: '@use "@/styles/scss/global/variable.scss" as *;'
       }
     }
@@ -58,9 +75,6 @@ export const baseConfig: UserConfig = {
     cssCodeSplit: true,
     minify: 'esbuild',
     chunkSizeWarningLimit: 500,
-    esbuild: {
-      target: 'es2020'
-    },
     sourcemap: false,
     rollupOptions: {
       output: {

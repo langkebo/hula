@@ -179,7 +179,7 @@ const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTh
 const { t } = useI18n()
 
 // 导入Web Worker
-const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url))
+const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url), { type: 'module' })
 
 // 步骤状态
 const currentStep = ref(1)

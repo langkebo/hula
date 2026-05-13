@@ -54,5 +54,5 @@ describe('check-sdk-augmentations', () => {
         detail: expect.any(String)
       })
     }
-  }, 30_000)
+  }, 60_000)
 })

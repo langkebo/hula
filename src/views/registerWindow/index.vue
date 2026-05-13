@@ -306,7 +306,7 @@ const sendCodeCooldown = ref(0)
 /** 验证码倒计时消息ID */
 const EMAIL_TIMER_ID = 'register_window_email_timer'
 /** 倒计时定时器 Worker */
-const timerWorker = new Worker(new URL('@/workers/timer.worker.ts', import.meta.url))
+const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url), { type: 'module' })
 /** 发送验证码按钮文本 */
 const btnText = computed(() => {
   if (loading.value) {

@@ -150,7 +150,7 @@ import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 
 const logger = createLogger('MobileForgetPassword')
 
-const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url))
+const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url), { type: 'module' })
 
 const { t } = useI18n()
 

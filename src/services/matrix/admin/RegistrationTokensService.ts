@@ -11,7 +11,11 @@ type SdkAdminManager = {
       expiry_ts?: number
     }>
   >
-  createRegistrationToken(body: { token?: string; uses_allowed?: number; expiry_ts?: number }): Promise<{
+  createRegistrationToken(
+    tokenOrPayload: string | { token: string; uses_allowed?: number; expiry_ts?: number },
+    usesAllowed?: number,
+    expiryTs?: number
+  ): Promise<{
     token: string
     uses_allowed?: number
     pending?: number
@@ -69,11 +73,11 @@ export class AdminRegistrationTokensService {
   }): Promise<RegistrationToken | null> {
     try {
       const admin = await this.sdkAdmin()
-      const body: { token?: string; uses_allowed?: number; expiry_ts?: number } = {}
-      if (options?.token) body.token = options.token
-      if (options?.usesAllowed !== undefined) body.uses_allowed = options.usesAllowed
-      if (options?.expiryTime !== undefined) body.expiry_ts = options.expiryTime
-      const result = await admin.createRegistrationToken(body)
+      const result = await admin.createRegistrationToken(
+        options?.token ?? '',
+        options?.usesAllowed,
+        options?.expiryTime
+      )
       info('[Admin] 注册令牌已创建')
       return {
         token: result.token,

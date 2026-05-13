@@ -61,11 +61,7 @@ describe('AdminRegistrationTokensService', () => {
       expiry_ts: 123
     })
     const result = await service.create({ token: 'new', usesAllowed: 3, expiryTime: 123 })
-    expect(admin.createRegistrationToken).toHaveBeenCalledWith({
-      token: 'new',
-      uses_allowed: 3,
-      expiry_ts: 123
-    })
+    expect(admin.createRegistrationToken).toHaveBeenCalledWith('new', 3, 123)
     expect(result).toEqual({
       token: 'new',
       usesAllowed: 3,
@@ -78,7 +74,7 @@ describe('AdminRegistrationTokensService', () => {
   it('create omits undefined fields from the body', async () => {
     admin.createRegistrationToken.mockResolvedValueOnce({ token: 'auto' })
     await service.create()
-    expect(admin.createRegistrationToken).toHaveBeenCalledWith({})
+    expect(admin.createRegistrationToken).toHaveBeenCalledWith('', undefined, undefined)
   })
 
   it('create returns null on backend error', async () => {
