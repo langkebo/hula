@@ -165,7 +165,7 @@ const highlightTask = createTask<HighlightInput, HighlightOutput>('highlight-cod
 
   if (!preloaded) {
     preloaded = true
-    preloadCommon()
+    await preloadCommon()
   }
 
   await Promise.allSettled([ensureLanguage(langKey), ensureTheme(themeKey)])

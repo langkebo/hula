@@ -32,6 +32,13 @@ function readRequestedPlatform(): Platform | null {
   return null
 }
 
+function resolveTauriPlatform(): Platform | null {
+  const envPlatform = import.meta.env.TAURI_ENV_PLATFORM
+  if (envPlatform === 'android' || envPlatform === 'ios') return 'mobile'
+  if (envPlatform === 'windows' || envPlatform === 'darwin' || envPlatform === 'linux') return 'desktop'
+  return null
+}
+
 function detectPlatform(): PlatformInfo {
   if (platformCache.value) {
     return platformCache.value
@@ -40,7 +47,9 @@ function detectPlatform(): PlatformInfo {
   const requestedPlatform = readRequestedPlatform()
   const isTauri = hasTauriRuntime()
   const isMobileUserAgent = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-  const platform: Platform = requestedPlatform ?? (isTauri ? 'desktop' : isMobileUserAgent ? 'mobile' : 'desktop')
+  const tauriPlatform = resolveTauriPlatform()
+  const platform: Platform =
+    requestedPlatform ?? tauriPlatform ?? (isTauri ? 'desktop' : isMobileUserAgent ? 'mobile' : 'desktop')
   const isDesktop = platform === 'desktop'
   const isMobile = platform === 'mobile'
 

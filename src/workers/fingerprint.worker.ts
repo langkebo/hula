@@ -75,8 +75,7 @@ const generateFingerprint = async (data: {
     const combinedFingerprint = JSON.stringify({
       browserFingerprint: data.browserFingerprint,
       deviceInfo: data.deviceInfo,
-      browserFeatures,
-      timestamp: Date.now()
+      browserFeatures
     })
 
     // 4. 使用 SHA-256 生成最终指纹
