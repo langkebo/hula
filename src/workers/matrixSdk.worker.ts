@@ -79,13 +79,23 @@ function checkMemoryUsage() {
 function trimRoomTimelines() {
   if (!client) return
   const rooms = client.getRooms()
-  rooms.forEach((room) => {
-    const timeline = room.getLiveTimeline().getEvents()
-    if (timeline.length > MAX_TIMELINE_SIZE) {
-      // matrix-js-sdk 内部会自动管理内存，但我们可以通过设置 timeline 限制来引导
-      // 这里可以手动移除旧事件或调用内部清理方法
+  for (const room of rooms) {
+    const events = room.getLiveTimeline().getEvents()
+    if (events.length <= MAX_TIMELINE_SIZE) continue
+    const excess = events.length - MAX_TIMELINE_SIZE
+    for (let i = 0; i < excess; i++) {
+      const event = events[i]
+      if (!event) break
+      const eventId = event.getId()
+      if (!eventId) continue
+      try {
+        room.removeEvent(eventId)
+      } catch {
+        events.splice(i, 1)
+        i--
+      }
     }
-  })
+  }
 }
 
 function normalizeSearchText(value: string): string {
@@ -370,9 +380,11 @@ function handleSearchStats(): SearchIndexStats {
 }
 
 // 启动定期检查
+let memoryCheckIntervalId: ReturnType<typeof setInterval> | null = null
+
 async function init() {
   await loadSearchIndexFromDB()
-  setInterval(checkMemoryUsage, MEMORY_CHECK_INTERVAL)
+  memoryCheckIntervalId = setInterval(checkMemoryUsage, MEMORY_CHECK_INTERVAL)
 }
 
 void init()
@@ -517,6 +529,10 @@ async function handleStartClient(): Promise<void> {
 }
 
 async function handleStopClient(): Promise<void> {
+  if (memoryCheckIntervalId !== null) {
+    clearInterval(memoryCheckIntervalId)
+    memoryCheckIntervalId = null
+  }
   if (client) {
     client.stopClient()
   }

@@ -8,7 +8,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { extractFileName } from '@/utils/Formatting'
 import { getImageDimensions } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
-import { isAndroid, isMobile } from '@/utils/PlatformConstants'
+import { isMobile } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { removeTempFile } from '@/utils/TempFileManager'
 
@@ -109,12 +109,12 @@ export const useUpload = () => {
     try {
       logger.debug('开始计算MD5哈希值，文件大小:', file.size, 'bytes')
       const arrayBuffer = await file.arrayBuffer()
-      const platform = isAndroid() ? 'android' : 'other'
 
-      const result = await renderWorker.executeWithTransfer<
-        { buffer: ArrayBuffer; platform: 'android' | 'other' },
-        { hash: string }
-      >('calculate-hash', { buffer: arrayBuffer, platform }, [arrayBuffer])
+      const result = await renderWorker.executeWithTransfer<{ buffer: ArrayBuffer }, { hash: string }>(
+        'calculate-hash',
+        { buffer: arrayBuffer },
+        [arrayBuffer]
+      )
 
       const endTime = performance.now()
       const duration = (endTime - startTime).toFixed(2)
