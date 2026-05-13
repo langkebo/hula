@@ -326,6 +326,20 @@ export type I18nKeys = {
       "summarize_response": "请提供需要总结的内容，我会提取关键信息并为你生成简洁的摘要。",
       "code_response": "请告诉我你需要什么功能的代码，我会帮你编写。支持多种编程语言，如 Python、JavaScript、TypeScript 等。",
       "default_response": "我是 AI 助手，很高兴为你服务！请问有什么可以帮助你的？"
+    },
+    "bot": {
+      "back": "返回",
+      "import_model": "导入模型",
+      "lang_zh": "中文",
+      "lang_en": "English",
+      "preview_3d": "3D预览",
+      "open_in_browser": "在浏览器中打开",
+      "webview_fallback": "当前环境不支持内嵌浏览器, 已尝试在系统浏览器打开",
+      "local_model": "本地模型",
+      "select_model": "选择模型",
+      "previewing_model": "正在预览模型",
+      "select_model_failed": "选择模型文件失败，请重试",
+      "load_failed": "加载失败,请稍后重试"
     }
   },
   "announcement": {
@@ -1029,7 +1043,9 @@ export type I18nKeys = {
     },
     "burn_after_read": "阅后即焚",
     "burn_after_read_enabled": "阅后即焚已开启",
-    "burn_after_read_disabled": "阅后即焚已关闭"
+    "burn_after_read_disabled": "阅后即焚已关闭",
+    "preparing_session": "正在准备会话...",
+    "recently_used": "最近使用"
   },
   "emoticon": {
     "recent": {
@@ -2046,7 +2062,27 @@ export type I18nKeys = {
     "code_send_failed_retry": "验证码发送失败，请稍后再试",
     "complete_info_before_register": "请完善信息后再注册",
     "register_success": "注册成功",
-    "register_fail": "注册失败"
+    "register_fail": "注册失败",
+    "server_config": {
+      "title": "服务器配置",
+      "identity_placeholder": "留空表示不使用 Identity Server",
+      "restart_hint": "修改服务器配置后需要重新登录",
+      "reset": "重置默认",
+      "cancel": "取消",
+      "save": "保存",
+      "homeserver_invalid": "Homeserver 地址格式无效",
+      "identity_invalid": "Identity Server 地址格式无效",
+      "save_success": "服务器配置已保存，重新登录后生效",
+      "save_failed": "服务器配置保存失败",
+      "reset_success": "已恢复默认服务器配置"
+    },
+    "sso_login_failed": "SSO 登录失败",
+    "remote_login": {
+      "unknown_ip": "未知IP",
+      "title": "异地登录提醒"
+    },
+    "service_agreement_title": "服务协议",
+    "privacy_policy_title": "隐私保护指引"
   },
   "menu": {
     "check_update": "检查更新",

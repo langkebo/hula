@@ -1,0 +1,11 @@
+{
+  "title": "Search",
+  "placeholder": "Search messages, rooms, or users...",
+  "all": "All",
+  "messages": "Messages",
+  "rooms": "Rooms",
+  "users": "Users",
+  "no_results": "No results found",
+  "recent": "Recent Searches",
+  "clear": "Clear"
+}

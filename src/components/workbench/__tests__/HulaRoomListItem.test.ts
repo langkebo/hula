@@ -1,0 +1,174 @@
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { RoomTypeEnum } from '@/enums'
+import HulaRoomListItem from '../HulaRoomListItem.vue'
+
+const { globalStoreMock, roomStoreMock, sessionStoreMock, groupStoreMock, settingStoreMock } = vi.hoisted(() => ({
+  globalStoreMock: {
+    unreadReady: true
+  },
+  roomStoreMock: {
+    getTagsForRoom: vi.fn(() => ({}))
+  },
+  sessionStoreMock: {
+    getUnreadDetail: vi.fn<(roomId: string) => { total: number; highlight: number; silent: boolean } | null>(() => null)
+  },
+  groupStoreMock: {
+    getUserInfo: vi.fn(() => null)
+  },
+  settingStoreMock: {
+    themeContent: 'light'
+  }
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key
+  })
+}))
+
+vi.mock('@/components/common/ContextMenu.vue', () => ({
+  default: {
+    name: 'ContextMenu',
+    props: ['content'],
+    template: '<div data-test="context-menu"><slot /></div>'
+  }
+}))
+
+vi.mock('@/stores/domains/widget/global', () => ({
+  useGlobalStore: () => globalStoreMock
+}))
+
+vi.mock('@/stores/domains/chat/room', () => ({
+  useRoomStore: () => roomStoreMock
+}))
+
+vi.mock('@/stores/domains/chat/chat/session', () => ({
+  useSessionStore: () => sessionStoreMock
+}))
+
+vi.mock('@/stores/domains/chat/group', () => ({
+  useGroupStore: () => groupStoreMock
+}))
+
+vi.mock('@/stores/domains/settings/setting', () => ({
+  useSettingStore: () => settingStoreMock
+}))
+
+vi.mock('@/utils/AvatarUtils', () => ({
+  AvatarUtils: {
+    getAvatarUrl: vi.fn(() => '')
+  }
+}))
+
+vi.mock('naive-ui', async () => {
+  const { defineComponent, h } = await import('vue')
+
+  const NTag = defineComponent({
+    name: 'NTag',
+    setup(_, { slots }) {
+      return () => h('span', { 'data-test': 'NTag' }, slots.default?.())
+    }
+  })
+
+  const NBadge = defineComponent({
+    name: 'NBadge',
+    props: {
+      value: {
+        type: Number,
+        default: 0
+      },
+      show: {
+        type: Boolean,
+        default: false
+      }
+    },
+    setup(props) {
+      return () =>
+        h('div', { 'data-test': 'NBadge', 'data-value': String(props.value), 'data-show': String(props.show) })
+    }
+  })
+
+  const passthrough = (name: string) =>
+    defineComponent({
+      name,
+      setup(_, { slots }) {
+        return () => h('div', { 'data-test': name }, slots.default?.())
+      }
+    })
+
+  return {
+    NAvatar: passthrough('NAvatar'),
+    NBadge,
+    NButton: passthrough('NButton'),
+    NFlex: passthrough('NFlex'),
+    NIcon: passthrough('NIcon'),
+    NTag,
+    NTooltip: passthrough('NTooltip')
+  }
+})
+
+const createProps = (overrides: Record<string, unknown> = {}) => ({
+  item: {
+    roomId: '!room:example.com',
+    name: '产品群',
+    avatar: '',
+    type: RoomTypeEnum.GROUP,
+    unreadCount: 1,
+    activeTime: Date.now(),
+    notificationCount: 1,
+    highlightCount: 0,
+    lastMsg: 'hello',
+    lastMsgTime: '10:00',
+    ...overrides
+  },
+  classes: {},
+  menu: [],
+  specialMenu: []
+})
+
+describe('HulaRoomListItem', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    globalStoreMock.unreadReady = true
+    roomStoreMock.getTagsForRoom.mockReturnValue({})
+    sessionStoreMock.getUnreadDetail.mockReturnValue(null)
+    groupStoreMock.getUserInfo.mockReturnValue(null)
+    settingStoreMock.themeContent = 'light'
+  })
+
+  it('renders favorite and low-priority tags from room tags', () => {
+    roomStoreMock.getTagsForRoom.mockReturnValue({
+      'm.favourite': { order: 0 },
+      'm.lowpriority': { order: 1 }
+    })
+
+    const wrapper = mount(HulaRoomListItem, {
+      props: createProps()
+    })
+
+    expect(wrapper.text()).toContain('message.message_list.favorite_tag')
+    expect(wrapper.text()).toContain('message.message_list.low_priority_tag')
+  })
+
+  it('prefers unread detail for mention state and badge count', () => {
+    sessionStoreMock.getUnreadDetail.mockReturnValue({
+      total: 5,
+      highlight: 2,
+      silent: false
+    })
+
+    const wrapper = mount(HulaRoomListItem, {
+      props: createProps({
+        notificationCount: 1,
+        highlightCount: 0
+      })
+    })
+    const badges = wrapper.findAll('[data-test="NBadge"]')
+    const unreadBadge = badges.at(-1)
+
+    expect(wrapper.text()).toContain('message.message_list.mention_tag')
+    expect(unreadBadge?.attributes('data-value')).toBe('5')
+    expect(unreadBadge?.attributes('data-show')).toBe('true')
+  })
+})

@@ -168,6 +168,18 @@ svg {
   --admin-health-ok-text: var(--hula-admin-health-ok-text);
   --admin-health-err-bg: var(--hula-admin-health-err-bg);
   --admin-health-err-text: var(--hula-admin-health-err-text);
+  // 登录窗口
+  --login-avatar-border: #fff;
+  --login-avatar-bg: var(--hula-surface-panel);
+  --login-dropdown-bg: rgba(253, 253, 253, 0.6);
+  --login-dropdown-border: rgba(70, 70, 70, 0.1);
+  --login-divider-color: #ccc;
+  // 窗口关闭按钮
+  --action-close-hover-bg: #c22b1c;
+  --action-close-hover-icon: var(--hula-text-inverse);
+  // 徽标
+  --badge-danger-bg: var(--hula-color-danger-500);
+  --badge-danger-text: var(--hula-text-inverse);
 }
 
 html[data-theme='dark'] {
@@ -279,6 +291,18 @@ html[data-theme='dark'] {
   --admin-health-ok-text: var(--hula-admin-health-ok-text);
   --admin-health-err-bg: var(--hula-admin-health-err-bg);
   --admin-health-err-text: var(--hula-admin-health-err-text);
+  // 登录窗口
+  --login-avatar-border: #606060;
+  --login-avatar-bg: var(--hula-surface-search);
+  --login-dropdown-bg: rgba(72, 72, 78, 0.6);
+  --login-dropdown-border: rgba(255, 255, 255, 0.1);
+  --login-divider-color: #707070;
+  // 窗口关闭按钮
+  --action-close-hover-bg: #c22b1c;
+  --action-close-hover-icon: var(--hula-text-inverse);
+  // 徽标
+  --badge-danger-bg: var(--hula-color-danger-500);
+  --badge-danger-text: var(--hula-text-inverse);
 }
 /**! end */
 // 线性动画
