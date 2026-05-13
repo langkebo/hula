@@ -1,5 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
 
 /**
@@ -9,13 +9,7 @@ import { MATRIX_PATHS } from '../paths'
  * and per-room call session lookup.
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
-export class MatrixRoomTimelineService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('[MatrixRoom] 客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomTimelineService extends BaseMatrixService {
   async getEventContext(
     roomId: string,
     eventId: string,

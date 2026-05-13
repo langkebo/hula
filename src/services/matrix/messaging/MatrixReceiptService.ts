@@ -2,6 +2,7 @@ import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, MatrixEvent, ReadReceiptsManager, Room } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { NotificationCountType } from '@/types/matrix-js-sdk'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 const ROOM_READY_TIMEOUT_MS = 3000
@@ -27,19 +28,11 @@ export interface ReadReceipt {
   displayName?: string
 }
 
-class MatrixReceiptService {
+class MatrixReceiptService extends BaseMatrixService {
   private cachedClient: MatrixClient | null = null
   private cachedManager: ReadReceiptsManager | null = null
   private pendingMarkAsReadTasks = new Map<string, PendingMarkAsReadTask>()
   private loggedDroppedReceiptRooms = new Set<string>()
-
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixReceipt] 客户端未初始化')
-    }
-    return client
-  }
 
   private getRoomIfAvailable(roomId: string): Room | null {
     return this.getClient().getRoom(roomId) ?? null

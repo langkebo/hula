@@ -1,4 +1,3 @@
-import * as lamejs from '@breezystack/lamejs'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AudioCompression')
@@ -45,7 +44,7 @@ export async function compressAudioToMp3(audioBuffer: ArrayBuffer, config: Audio
     const samples = convertToInt16Array(resampledBuffer, finalConfig.channels)
 
     // 使用lamejs进行MP3编码
-    const mp3Data = encodeToMp3(samples, finalConfig)
+    const mp3Data = await encodeToMp3(samples, finalConfig)
 
     // 创建MP3 Blob - 将 Int8Array 转换为 Uint8Array
     const uint8Arrays = mp3Data
@@ -150,7 +149,8 @@ function mixToMono(audioBuffer: AudioBuffer): Float32Array {
 /**
  * 使用lamejs将音频数据编码为MP3
  */
-function encodeToMp3(samples: Int16Array, config: Required<AudioCompressionConfig>): Uint8Array[] {
+async function encodeToMp3(samples: Int16Array, config: Required<AudioCompressionConfig>): Promise<Uint8Array[]> {
+  const lamejs = await import('@breezystack/lamejs')
   const mp3Data: Uint8Array[] = []
   const mp3encoder = new lamejs.Mp3Encoder(config.channels, config.sampleRate, config.bitRate)
   const sampleBlockSize = 1152 // lamejs推荐的块大小

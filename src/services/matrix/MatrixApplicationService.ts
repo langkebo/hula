@@ -1,6 +1,5 @@
 import { error } from '@tauri-apps/plugin-log'
-import type { MatrixClient } from 'matrix-js-sdk'
-import { matrixClientService } from './MatrixClientService'
+import { BaseMatrixService } from './BaseMatrixService'
 import { MATRIX_PATHS } from './paths'
 
 export interface ApplicationServiceNamespace {
@@ -25,15 +24,7 @@ export interface RegisteredApplicationService {
   url: string
 }
 
-class MatrixApplicationService {
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client
-  }
-
+class MatrixApplicationService extends BaseMatrixService {
   async register(payload: ApplicationServiceRegistration): Promise<boolean> {
     try {
       await this.getClient().http.authedRequest('POST', MATRIX_PATHS.ADMIN.APPSERVICES, undefined, payload)

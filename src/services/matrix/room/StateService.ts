@@ -1,6 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 /**
  * Room state domain service.
@@ -8,13 +8,7 @@ import matrixClientService from '../MatrixClientService'
  * Covers room name / topic / avatar / state events / push rules.
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
-export class MatrixRoomStateService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomStateService extends BaseMatrixService {
   async setRoomName(roomId: string, name: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('state', roomId, { roomId, type: 'name', content: name })

@@ -8,6 +8,7 @@ export type {
 } from './ai/MatrixAIConnectionService'
 export { matrixAIConnectionService } from './ai/MatrixAIConnectionService'
 export { MatrixAuthService } from './auth/MatrixAuthService'
+export { BaseMatrixService } from './BaseMatrixService'
 export type { ConnectionState, MatrixClientConfig } from './MatrixClientService'
 export { matrixClientService } from './MatrixClientService'
 export const matrixAuthService = new MatrixAuthService()

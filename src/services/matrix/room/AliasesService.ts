@@ -1,5 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 /**
  * Room aliases domain service.
@@ -7,13 +7,7 @@ import matrixClientService from '../MatrixClientService'
  * Canonical + alternative aliases are read from the local Room state cache.
  * Writes go through `createAlias` / `deleteAlias` on the client.
  */
-export class MatrixRoomAliasesService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('[MatrixRoom] 客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomAliasesService extends BaseMatrixService {
   async getAliases(roomId: string): Promise<string[]> {
     const client = this.getClient()
     try {

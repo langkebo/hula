@@ -1,5 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 interface MemberEventContent {
   displayname?: string
@@ -14,13 +14,7 @@ interface MemberEventContent {
  * Covers per-room displayname and power-level / admin role management.
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
-export class MatrixRoomMemberProfileService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomMemberProfileService extends BaseMatrixService {
   async setMemberDisplayName(roomId: string, displayName: string): Promise<void> {
     const client = this.getClient()
     try {
@@ -57,8 +51,7 @@ export class MatrixRoomMemberProfileService {
 
   async getMemberDisplayName(roomId: string, userId: string): Promise<string | null> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) throw new Error('客户端未初始化')
+      const client = this.getClient()
       const room = client.getRoom(roomId) ?? null
       if (!room) return null
 

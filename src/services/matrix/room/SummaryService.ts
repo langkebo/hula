@@ -1,6 +1,6 @@
 import { error } from '@tauri-apps/plugin-log'
 import type { Room } from 'matrix-js-sdk'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import { type RoomSummary as SynapseRoomSummary, synapseRustExtensionsService } from '../SynapseRustExtensionsService'
 
 export interface MatrixRoomSummary {
@@ -31,13 +31,7 @@ export interface MatrixRoomLiteSummary {
  * `Room` state fallback, plus a lite batched variant used by lists.
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
-export class MatrixRoomSummaryAggregateService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomSummaryAggregateService extends BaseMatrixService {
   private getRoomTopic(room: Room): string | null {
     return room.topic ?? null
   }

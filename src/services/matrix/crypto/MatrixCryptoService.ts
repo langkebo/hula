@@ -1,5 +1,4 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
-import type { MatrixClient } from 'matrix-js-sdk'
 import type {
   CryptoApi,
   DeviceTrustManager,
@@ -12,8 +11,8 @@ import type {
   SecureBackupRestoreResponse,
   VerificationRequest
 } from '@/types/matrix-extensions'
+import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
-import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 
 export interface DeviceInfo {
@@ -161,16 +160,8 @@ export interface QrCodeScanResponse {
   state: string
 }
 
-class MatrixCryptoService {
+class MatrixCryptoService extends BaseMatrixService {
   private crypto: CryptoApi | null = null
-
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client
-  }
 
   private getExtendedClient(): MatrixClientExtended {
     return this.getClient() as unknown as MatrixClientExtended

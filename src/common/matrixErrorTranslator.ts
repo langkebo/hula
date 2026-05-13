@@ -2,6 +2,9 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixErrorTranslator')
 
+/**
+ * @deprecated Use `AppError` from `@/common/errors` instead. This interface will be removed in a future version.
+ */
 export interface TranslatedError {
   userMessage: string
   level: 'toast' | 'dialog' | 'page'
@@ -112,6 +115,9 @@ const UNKNOWN_ERROR: TranslatedError = {
   action: 'none'
 }
 
+/**
+ * @deprecated Use `toAppError()` from `@/common/errors` instead. This function will be removed in a future version.
+ */
 export function translateMatrixError(err: unknown): TranslatedError {
   if (!err) return UNKNOWN_ERROR
 
@@ -159,10 +165,16 @@ export function translateMatrixError(err: unknown): TranslatedError {
   return UNKNOWN_ERROR
 }
 
+/**
+ * @deprecated Use `isRetryable()` from `@/common/errors` instead.
+ */
 export function isRecoverableError(err: unknown): boolean {
   return translateMatrixError(err).recoverable
 }
 
+/**
+ * @deprecated Use `toAppError()` and inspect the resulting `AppError` directly.
+ */
 export function getErrorAction(err: unknown): TranslatedError['action'] {
   return translateMatrixError(err).action
 }

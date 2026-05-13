@@ -1,5 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
 
 /**
@@ -9,13 +9,7 @@ import { MATRIX_PATHS } from '../paths'
  * read-lifetime (阅后即焚), and the external-service registry list.
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
-export class MatrixRoomAccountDataService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('[MatrixRoom] 客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomAccountDataService extends BaseMatrixService {
   async getRoomAccountData(roomId: string, eventType: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {

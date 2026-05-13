@@ -60,11 +60,17 @@ export class MatrixCapabilityService {
   }
 
   canUseSlidingSync(): boolean {
-    return this.hasCapability('sliding-sync')
+    const store = useCapabilityStore()
+    return store.hasUnstable('org.matrix.msc3575').value || store.hasUnstable('org.matrix.simplified_msc3575').value
   }
 
   canUseE2EE(): boolean {
-    return this.hasCapability('e2ee')
+    const store = useCapabilityStore()
+    const encryptionCapability = store.capabilities['m.room.encryption'] as { enabled?: boolean } | undefined
+    if (encryptionCapability?.enabled === false) {
+      return false
+    }
+    return true
   }
 
   canUseVoip(): boolean {

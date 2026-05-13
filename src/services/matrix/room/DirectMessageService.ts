@@ -1,7 +1,7 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import { Preset, type Room, Visibility } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 interface DirectRoomsContent {
   [userId: string]: unknown
@@ -14,13 +14,7 @@ interface DirectRoomsContent {
  * new DM rooms into the mapping.
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
-export class MatrixRoomDirectMessageService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomDirectMessageService extends BaseMatrixService {
   private parseDirectRoomsContent(content: DirectRoomsContent): Map<string, string[]> {
     const directRooms = new Map<string, string[]>()
 

@@ -1,5 +1,5 @@
 import { error } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 /**
  * Room metadata domain service.
@@ -9,13 +9,7 @@ import matrixClientService from '../MatrixClientService'
  * authedRequest endpoints).
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
-export class MatrixRoomMetadataService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('[MatrixRoom] 客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomMetadataService extends BaseMatrixService {
   async getRoomVersion(roomId: string): Promise<string | null> {
     const client = this.getClient()
     try {

@@ -1,5 +1,4 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import type { MatrixClient } from 'matrix-js-sdk'
 import {
   type MatrixEncryptedAttachmentLike,
   matrixAttachmentDecryptionService
@@ -9,7 +8,8 @@ import {
   matrixAttachmentEncryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import { compressImage, formatFileSize, isImageFile } from '@/utils/ImageUtils'
-import { matrixClientService } from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
+import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 
 export interface UploadResult {
@@ -44,7 +44,7 @@ const DEFAULT_COMPRESS_OPTIONS: CompressOptions = {
   maxSizeKB: 1024
 }
 
-class MatrixMediaServiceClass {
+class MatrixMediaServiceClass extends BaseMatrixService {
   private compressOptions: CompressOptions = { ...DEFAULT_COMPRESS_OPTIONS }
   private enableCompression = true
 
@@ -82,14 +82,6 @@ class MatrixMediaServiceClass {
 
   setEnableCompression(enable: boolean) {
     this.enableCompression = enable
-  }
-
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client
   }
 
   private resolveDownloadUrl(mediaUrl: string): string {

@@ -1,11 +1,11 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
+import type { MatrixEvent, Room } from 'matrix-js-sdk'
 import { isMessageEventType, MatrixBurnDuration, MatrixEventType, MatrixFormat } from '@/common/matrixConstants'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
 import { ReceiptType } from '@/types/matrix-js-sdk'
-import matrixClientService from './MatrixClientService'
+import { BaseMatrixService } from './BaseMatrixService'
 import matrixMessageAdapter from './messaging/MatrixMessageAdapter'
 import { matrixMessageRelationService } from './messaging/MatrixMessageRelationService'
 import { matrixReactionService } from './messaging/MatrixReactionService'
@@ -40,15 +40,7 @@ interface VoiceInfo {
 type EventContent = Record<string, unknown>
 type MessageSendSource = File | string
 
-class MatrixEventService {
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client
-  }
-
+class MatrixEventService extends BaseMatrixService {
   private extractEventId(response: unknown): string {
     if (
       typeof response === 'object' &&
