@@ -358,7 +358,7 @@ const sendCodeCountdown = ref(0)
 const emailSessionId = ref('')
 const emailClientSecret = ref('')
 const MOBILE_EMAIL_TIMER_ID = 'mobile_register_email_timer'
-const timerWorker = new Worker(new URL('@/workers/timer.worker.ts', import.meta.url))
+const timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url), { type: 'module' })
 const { normalLogin, loading, loginText, loginDisabled, info: userInfo } = useLoginFlow()
 
 const showLoginPassword = ref(false)

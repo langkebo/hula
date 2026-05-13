@@ -4,12 +4,12 @@ import type { ServerNoticeInfo, ServerNoticeResult } from './AdminTypes'
 type NotificationAdminSdk = {
   sendServerNotice(
     userId: string,
-    content: { msgtype?: string; body: string; [key: string]: unknown }
+    content?: string | { msgtype: string; body: string; [key: string]: unknown },
+    targets?: string[]
   ): Promise<{ event_id?: string }>
   getServerNotices?(
-    limit?: number,
-    from?: string,
-    throwOnError?: boolean
+    fromOrLimit?: string | number,
+    limit?: number
   ): Promise<{ notices?: unknown[]; next_token?: string } | null>
   getUserNotificationSettings?(userId: string): Promise<Record<string, unknown>>
   setUserNotificationSettings?(userId: string, settings: Record<string, unknown>): Promise<void>
@@ -37,7 +37,10 @@ export class AdminNotificationService {
   async sendServerNotice(userId: string, content: Record<string, unknown>): Promise<ServerNoticeResult> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.sendServerNotice(userId, content as { body: string; [key: string]: unknown })
+      const result = await admin.sendServerNotice(
+        userId,
+        content as { msgtype: string; body: string; [key: string]: unknown }
+      )
       info(`[AdminNotification] 服务器通知已发送: ${userId}`)
       return { eventId: result?.event_id }
     } catch (err) {
@@ -49,7 +52,7 @@ export class AdminNotificationService {
   async getServerNotices(limit = 50): Promise<{ notices: ServerNoticeInfo[] } | null> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.getServerNotices?.(limit, undefined, false)
+      const result = await admin.getServerNotices?.(undefined, limit)
       if (!result) return null
       return {
         notices: (result.notices ?? []).map((raw) => {

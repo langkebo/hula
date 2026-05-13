@@ -48,7 +48,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
 
       // 初始化worker计时器
       if (!timerWorker) {
-        timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url))
+        timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url), { type: 'module' })
 
         // 监听worker消息
         timerWorker.onmessage = (e) => {

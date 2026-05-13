@@ -30,7 +30,7 @@ export const useThumbnailCacheStore = defineStore(StoresEnum.THUMBNAIL_CACHE, ()
   const queue: Task[] = []
   let active = 0
   const statusMap = shallowRef<Record<string, Task>>({})
-  const worker = new Worker(new URL('@/workers/imageDownloader.ts', import.meta.url))
+  const worker = new Worker(new URL('@/workers/imageDownloader.ts', import.meta.url), { type: 'module' })
   const waiterMap = new Map<string, Array<(path: string | null) => void>>()
 
   const notifyWaiters = (url: string, path: string | null) => {

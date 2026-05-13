@@ -229,7 +229,7 @@ const isDraggingFiles = ref(false)
 const tauriFileDropUnlisteners: UnlistenFn[] = []
 
 // 导入Web Worker
-const timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url))
+const timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url), { type: 'module' })
 
 timerWorker.onerror = (error) => {
   logger.error('Worker Error', error)
