@@ -29,7 +29,6 @@ export interface MessageType {
     uid: string
     username?: string
     avatar?: string
-    locPlace?: string
   }
   timeBlock?: number
   uploadProgress?: number

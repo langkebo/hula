@@ -111,6 +111,28 @@ export function parseJSON<T = unknown>(json: string, defaultValue?: T): T | null
   }
 }
 
+export function safeJsonParse<T>(json: string, validator: (val: unknown) => val is T, defaultValue: T): T {
+  try {
+    const parsed: unknown = JSON.parse(json)
+    return validator(parsed) ? parsed : defaultValue
+  } catch {
+    return defaultValue
+  }
+}
+
+export function validateObject<T extends Record<string, unknown>>(
+  value: unknown,
+  requiredKeys: (keyof T)[],
+  keyValidators?: Partial<Record<keyof T, (val: unknown) => boolean>>
+): value is T {
+  if (!isObject(value)) return false
+  for (const key of requiredKeys) {
+    if (!(key in value)) return false
+    if (keyValidators?.[key] && !keyValidators[key]!((value as Record<string, unknown>)[key as string])) return false
+  }
+  return true
+}
+
 export function stringifyJSON(value: unknown, defaultValue = '{}'): string {
   try {
     return JSON.stringify(value)

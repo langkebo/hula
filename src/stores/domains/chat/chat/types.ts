@@ -46,6 +46,7 @@ export interface MessageBody {
 }
 
 export interface MessageType {
+  clientKey?: string
   message: {
     id: string
     roomId: string
@@ -64,7 +65,6 @@ export interface MessageType {
     uid: string
     username?: string
     avatar?: string
-    locPlace?: string
   }
   timeBlock?: number
   uploadProgress?: number

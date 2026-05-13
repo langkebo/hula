@@ -9,11 +9,13 @@
       :compact="isCompactLayout"
       :search-keyword="searchKeyword"
       :session-type-filter="sessionTypeFilter"
+      :session-engagement-filter="sessionEngagementFilter"
       :session-sort="sessionSort"
       :filtered-count="sessionList.length"
       :total-count="totalCount"
       @update:search-keyword="emit('update:searchKeyword', $event)"
       @update:session-type-filter="emit('update:sessionTypeFilter', $event)"
+      @update:session-engagement-filter="emit('update:sessionEngagementFilter', $event)"
       @update:session-sort="emit('update:sessionSort', $event)"
       @create-space="emit('createSpace')" />
 
@@ -72,13 +74,26 @@
             :add-room-suggested="addRoomSuggested"
             :settings-name="settingsName"
             :settings-topic="settingsTopic"
+            :overlay-mode="overlayMode"
+            :forward-event-id="forwardEventId"
+            :forward-room-id="forwardRoomId"
+            :history-room-id="historyRoomId"
+            :merged-msg-ids="mergedMsgIds"
             @close-manage-pane="emit('closeManagePane')"
             @submit-manage-pane="emit('submitManagePane')"
             @update:invite-user-id="emit('update:inviteUserId', $event)"
             @update:add-room-id="emit('update:addRoomId', $event)"
             @update:add-room-suggested="emit('update:addRoomSuggested', $event)"
             @update:settings-name="emit('update:settingsName', $event)"
-            @update:settings-topic="emit('update:settingsTopic', $event)" />
+            @update:settings-topic="emit('update:settingsTopic', $event)"
+            @close-overlay="emit('closeOverlay')"
+            @overlay-created="emit('overlayCreated', $event)"
+            @overlay-forwarded="emit('overlayForwarded', $event)"
+            @overlay-message-selected="
+              (roomId: string, eventId: string) => emit('overlayMessageSelected', roomId, eventId)
+            "
+            @overlay-room-selected="emit('overlayRoomSelected', $event)"
+            @overlay-user-selected="emit('overlayUserSelected', $event)" />
         </div>
       </div>
     </div>
@@ -90,7 +105,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useViewport } from '@/hooks/useViewport'
 import {
+  WORKBENCH_SESSION_ENGAGEMENT_FILTERS,
   WORKBENCH_SESSION_TYPE_FILTERS,
+  type WorkbenchSessionEngagementFilter,
   type WorkbenchSessionSort,
   type WorkbenchSessionTypeFilter
 } from '@/router/spaceNavigation'
@@ -114,41 +131,54 @@ type SessionListItem = SessionItem & {
 }
 
 type SpaceManageMode = 'invite' | 'add-room' | 'settings'
+type OverlayMode = 'create-room' | 'create-space' | 'forward' | 'search' | 'history' | 'merged-msg'
 
-const props = defineProps<{
-  sessionList: SessionListItem[]
-  totalCount: number
-  spaces: SpaceListItem[]
-  spaceLoading: boolean
-  selectedSpaceId: string
-  searchKeyword: string
-  sessionTypeFilter: WorkbenchSessionTypeFilter
-  sessionSort: WorkbenchSessionSort
-  activeSpace: SpaceListItem | null
-  canManageActiveSpace: boolean
-  selectedSession: SessionListItem | null
-  syncLoading: boolean
-  sessionLoading: boolean
-  networkBanner: { text: string; retryable?: boolean } | null
-  manageMode?: SpaceManageMode | null
-  manageSubmitting?: boolean
-  inviteUserId?: string
-  addRoomId?: string
-  addRoomSuggested?: boolean
-  settingsName?: string
-  settingsTopic?: string
-  getItemClasses: (item: SessionItem) => Record<string, boolean>
-  visibleMenu: (item: SessionItem) => OPT.RightMenu[]
-  visibleSpecialMenu: (item: SessionItem) => OPT.RightMenu[]
-  onMsgClick: (item: SessionItem) => void | Promise<void>
-  onMsgDblclick: (item: SessionItem) => void
-  onMenuShow: (roomId: string, isShow: boolean) => void
-  onRetryNetwork?: () => void | Promise<void>
-}>()
+const props = withDefaults(
+  defineProps<{
+    sessionList: SessionListItem[]
+    totalCount: number
+    spaces: SpaceListItem[]
+    spaceLoading: boolean
+    selectedSpaceId: string
+    searchKeyword: string
+    sessionTypeFilter: WorkbenchSessionTypeFilter
+    sessionEngagementFilter?: WorkbenchSessionEngagementFilter
+    sessionSort: WorkbenchSessionSort
+    activeSpace: SpaceListItem | null
+    canManageActiveSpace: boolean
+    selectedSession: SessionListItem | null
+    syncLoading: boolean
+    sessionLoading: boolean
+    networkBanner: { text: string; retryable?: boolean } | null
+    manageMode?: SpaceManageMode | null
+    manageSubmitting?: boolean
+    inviteUserId?: string
+    addRoomId?: string
+    addRoomSuggested?: boolean
+    settingsName?: string
+    settingsTopic?: string
+    overlayMode?: OverlayMode | null
+    forwardEventId?: string
+    forwardRoomId?: string
+    historyRoomId?: string
+    mergedMsgIds?: string[]
+    getItemClasses: (item: SessionItem) => Record<string, boolean>
+    visibleMenu: (item: SessionItem) => OPT.RightMenu[]
+    visibleSpecialMenu: (item: SessionItem) => OPT.RightMenu[]
+    onMsgClick: (item: SessionItem) => void | Promise<void>
+    onMsgDblclick: (item: SessionItem) => void
+    onMenuShow: (roomId: string, isShow: boolean) => void
+    onRetryNetwork?: () => void | Promise<void>
+  }>(),
+  {
+    sessionEngagementFilter: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
+  }
+)
 
 const emit = defineEmits<{
   'update:searchKeyword': [value: string]
   'update:sessionTypeFilter': [value: WorkbenchSessionTypeFilter]
+  'update:sessionEngagementFilter': [value: WorkbenchSessionEngagementFilter]
   'update:sessionSort': [value: WorkbenchSessionSort]
   'update:selectedSpaceId': [value: string]
   createSpace: []
@@ -162,6 +192,12 @@ const emit = defineEmits<{
   'update:addRoomSuggested': [value: boolean]
   'update:settingsName': [value: string]
   'update:settingsTopic': [value: string]
+  closeOverlay: []
+  overlayCreated: [data: { roomId?: string; space?: unknown }]
+  overlayForwarded: [roomIds: string[]]
+  overlayMessageSelected: [roomId: string, eventId: string]
+  overlayRoomSelected: [roomId: string]
+  overlayUserSelected: [userId: string]
 }>()
 
 const sessionListRef = ref<InstanceType<typeof RoomSessionList> | null>(null)
@@ -175,7 +211,8 @@ const emptyDescription = computed(() => {
   if (
     props.selectedSpaceId ||
     props.searchKeyword.trim() ||
-    props.sessionTypeFilter !== WORKBENCH_SESSION_TYPE_FILTERS.all
+    props.sessionTypeFilter !== WORKBENCH_SESSION_TYPE_FILTERS.all ||
+    props.sessionEngagementFilter !== WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
   ) {
     return t('space.empty_filtered_sessions')
   }

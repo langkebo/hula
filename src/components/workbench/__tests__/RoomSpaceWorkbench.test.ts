@@ -185,7 +185,12 @@ vi.mock('../WorkbenchDetailPane.vue', () => ({
       addRoomId: { type: String, default: '' },
       addRoomSuggested: { type: Boolean, default: false },
       settingsName: { type: String, default: '' },
-      settingsTopic: { type: String, default: '' }
+      settingsTopic: { type: String, default: '' },
+      overlayMode: { type: String, default: null },
+      forwardEventId: { type: String, default: '' },
+      forwardRoomId: { type: String, default: '' },
+      historyRoomId: { type: String, default: '' },
+      mergedMsgIds: { type: Array, default: () => [] }
     },
     emits: [
       'closeManagePane',
@@ -194,7 +199,13 @@ vi.mock('../WorkbenchDetailPane.vue', () => ({
       'update:addRoomId',
       'update:addRoomSuggested',
       'update:settingsName',
-      'update:settingsTopic'
+      'update:settingsTopic',
+      'closeOverlay',
+      'overlayCreated',
+      'overlayForwarded',
+      'overlayMessageSelected',
+      'overlayRoomSelected',
+      'overlayUserSelected'
     ],
     setup(props, { emit }) {
       return () =>
@@ -206,6 +217,7 @@ vi.mock('../WorkbenchDetailPane.vue', () => ({
           h('span', { 'data-test': 'detail-session-name' }, props.selectedSession?.name ?? ''),
           h('span', { 'data-test': 'detail-space-name' }, props.activeSpace?.name ?? ''),
           h('span', { 'data-test': 'detail-manage-mode' }, props.manageMode ?? ''),
+          h('span', { 'data-test': 'detail-overlay-mode' }, props.overlayMode ?? ''),
           h(
             'button',
             { type: 'button', 'data-test': 'detail-close-manage', onClick: () => emit('closeManagePane') },
@@ -260,6 +272,56 @@ vi.mock('../WorkbenchDetailPane.vue', () => ({
               onClick: () => emit('update:settingsTopic', 'New Topic')
             },
             'topic'
+          ),
+          h(
+            'button',
+            { type: 'button', 'data-test': 'detail-close-overlay', onClick: () => emit('closeOverlay') },
+            'close-overlay'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'detail-overlay-created',
+              onClick: () => emit('overlayCreated', { roomId: '!new:server' })
+            },
+            'overlay-created'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'detail-overlay-forwarded',
+              onClick: () => emit('overlayForwarded', ['!room1:server'])
+            },
+            'overlay-forwarded'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'detail-overlay-msg-selected',
+              onClick: () => emit('overlayMessageSelected', '!room:server', '$event1')
+            },
+            'overlay-msg-selected'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'detail-overlay-room-selected',
+              onClick: () => emit('overlayRoomSelected', '!room:server')
+            },
+            'overlay-room-selected'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'detail-overlay-user-selected',
+              onClick: () => emit('overlayUserSelected', '@user:server')
+            },
+            'overlay-user-selected'
           )
         ])
     }
@@ -293,6 +355,11 @@ const createProps = (overrides: Partial<WorkbenchProps> = {}): WorkbenchProps =>
   addRoomSuggested: false,
   settingsName: '',
   settingsTopic: '',
+  overlayMode: null,
+  forwardEventId: '',
+  forwardRoomId: '',
+  historyRoomId: '',
+  mergedMsgIds: [],
   getItemClasses: () => ({}),
   visibleMenu: () => [],
   visibleSpecialMenu: () => [],
@@ -445,5 +512,39 @@ describe('RoomSpaceWorkbench', () => {
     expect(wrapper.emitted('update:addRoomSuggested')).toEqual([[true]])
     expect(wrapper.emitted('update:settingsName')).toEqual([['New Space']])
     expect(wrapper.emitted('update:settingsTopic')).toEqual([['New Topic']])
+  })
+
+  it('passes overlayMode and related props to the detail pane', () => {
+    const wrapper = mountWorkbench({
+      overlayMode: 'create-room',
+      forwardEventId: '$event1',
+      forwardRoomId: '!room:server',
+      historyRoomId: '!history:server',
+      mergedMsgIds: ['$m1', '$m2']
+    })
+
+    expect(wrapper.get('[data-test="detail-overlay-mode"]').text()).toBe('create-room')
+  })
+
+  it('forwards overlay events from the detail pane', async () => {
+    const wrapper = mountWorkbench({
+      overlayMode: 'forward',
+      forwardEventId: '$event1',
+      forwardRoomId: '!room:server'
+    })
+
+    await wrapper.get('[data-test="detail-close-overlay"]').trigger('click')
+    await wrapper.get('[data-test="detail-overlay-created"]').trigger('click')
+    await wrapper.get('[data-test="detail-overlay-forwarded"]').trigger('click')
+    await wrapper.get('[data-test="detail-overlay-msg-selected"]').trigger('click')
+    await wrapper.get('[data-test="detail-overlay-room-selected"]').trigger('click')
+    await wrapper.get('[data-test="detail-overlay-user-selected"]').trigger('click')
+
+    expect(wrapper.emitted('closeOverlay')).toEqual([[]])
+    expect(wrapper.emitted('overlayCreated')).toEqual([[{ roomId: '!new:server' }]])
+    expect(wrapper.emitted('overlayForwarded')).toEqual([[['!room1:server']]])
+    expect(wrapper.emitted('overlayMessageSelected')).toEqual([['!room:server', '$event1']])
+    expect(wrapper.emitted('overlayRoomSelected')).toEqual([['!room:server']])
+    expect(wrapper.emitted('overlayUserSelected')).toEqual([['@user:server']])
   })
 })

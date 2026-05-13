@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockClientService = {
-  getClient: vi.fn()
+  getClient: vi.fn(),
+  getUserId: vi.fn()
 }
 
 const mockDirectMessageService = {
@@ -12,6 +13,10 @@ const mockDirectMessageService = {
 
 const mockFriendService = {
   sendFriendRequest: vi.fn()
+}
+
+const mockSynapseExtensionsService = {
+  searchFriends: vi.fn()
 }
 
 const mockRoomService = {
@@ -41,6 +46,10 @@ vi.mock('../../friends/MatrixFriendService', () => ({
   matrixFriendService: mockFriendService
 }))
 
+vi.mock('../../SynapseRustExtensionsService', () => ({
+  synapseRustExtensionsService: mockSynapseExtensionsService
+}))
+
 vi.mock('../../room/MatrixRoomService', () => ({
   matrixRoomService: mockRoomService
 }))
@@ -50,6 +59,7 @@ const { matrixContactService } = await import('../MatrixContactService')
 describe('MatrixContactService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockClientService.getUserId.mockReturnValue('@testuser:test.com') // Add default mock value
   })
 
   afterEach(() => {
@@ -63,6 +73,44 @@ describe('MatrixContactService', () => {
 
     expect(mockDirectMessageService.getOrCreateDmRoom).toHaveBeenCalledWith('@alice:example.com')
     expect(result).toEqual({ roomId: '!dm:example.com' })
+  })
+
+  it('searchUsers returns an empty list when matrix client is not initialized', async () => {
+    mockClientService.getClient.mockReturnValue(null)
+    mockSynapseExtensionsService.searchFriends.mockResolvedValue([])
+
+    await expect(matrixContactService.searchUsers('alice')).resolves.toEqual([])
+    await expect(matrixContactService.searchFriend('alice')).resolves.toEqual([])
+  })
+
+  it('searchUsers prefers friends/search exact mode and returns mapped profile', async () => {
+    mockClientService.getClient.mockReturnValue({
+      getUserId: vi.fn(() => '@self:matrix.test')
+    })
+    mockSynapseExtensionsService.searchFriends
+      .mockResolvedValueOnce([
+        {
+          user_id: '@ljf1:matrix.test',
+          username: 'ljf1',
+          displayname: 'LJF One',
+          avatar_url: 'mxc://avatar/1'
+        }
+      ])
+      .mockResolvedValueOnce([])
+
+    const result = await matrixContactService.searchUsers('ljf1')
+
+    expect(mockSynapseExtensionsService.searchFriends).toHaveBeenCalledWith('ljf1', {
+      limit: 10,
+      mode: 'exact'
+    })
+    expect(result).toEqual([
+      {
+        userId: '@ljf1:matrix.test',
+        displayName: 'LJF One',
+        avatarUrl: 'mxc://avatar/1'
+      }
+    ])
   })
 
   it('getDMRooms maps direct message room ids', async () => {
@@ -80,11 +128,14 @@ describe('MatrixContactService', () => {
   it('sendAddFriendRequest delegates to friend service without creating a dm', async () => {
     mockFriendService.sendFriendRequest.mockResolvedValueOnce(undefined)
     mockDirectMessageService.getDmForUser.mockResolvedValueOnce(null)
+    mockClientService.getClient.mockReturnValue({
+      getUserId: vi.fn(() => '@self:matrix.test')
+    })
 
-    const result = await matrixContactService.sendAddFriendRequest('@alice:example.com', 'hello')
+    const result = await matrixContactService.sendAddFriendRequest('alice', 'hello')
 
-    expect(mockFriendService.sendFriendRequest).toHaveBeenCalledWith('@alice:example.com', 'hello')
-    expect(mockDirectMessageService.getDmForUser).toHaveBeenCalledWith('@alice:example.com', false)
+    expect(mockFriendService.sendFriendRequest).toHaveBeenCalledWith('@alice:test.com', 'hello')
+    expect(mockDirectMessageService.getDmForUser).toHaveBeenCalledWith('@alice:test.com', false)
     expect(mockDirectMessageService.getOrCreateDmRoom).not.toHaveBeenCalled()
     expect(result).toEqual({ roomId: '' })
   })
@@ -151,5 +202,11 @@ describe('MatrixContactService', () => {
     const result = await matrixContactService.getUserByIds(['@missing:example.com'])
 
     expect(result).toEqual([])
+  })
+
+  it('getUserByIds returns an empty list when matrix client is not initialized', async () => {
+    mockClientService.getClient.mockReturnValue(null)
+
+    await expect(matrixContactService.getUserByIds(['@missing:example.com'])).resolves.toEqual([])
   })
 })

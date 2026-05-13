@@ -11,15 +11,80 @@ export const LogLevelPriority: Record<LogLevel, number> = {
   trace: 0
 }
 
+const DEDUP_WINDOW_MS = 5000
+const DEDUP_WINDOW_ERROR_MS = 30000
+const DEDUP_CACHE_SIZE = 200
+const THROTTLE_BURST = 5
+const THROTTLE_INTERVAL_MS = 1000
+
+interface DedupEntry {
+  hash: string
+  time: number
+  count: number
+}
+
+interface ThrottleTracker {
+  count: number
+  windowStart: number
+}
+
+const CONSOLE_STYLES: Record<string, string> = {
+  trace: 'color: #888',
+  debug: 'color: #4a9eff',
+  info: 'color: #00c853',
+  warn: 'color: #ff9800; font-weight: bold',
+  error: 'color: #f44336; font-weight: bold'
+}
+
+let envLogLevel: LogLevel | null = null
+
+function resolveEnvLogLevel(): LogLevel {
+  if (envLogLevel !== null) return envLogLevel
+
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      const env = import.meta.env.VITE_LOG_LEVEL as string | undefined
+      if (env) {
+        const lower = env.toLowerCase()
+        if (['trace', 'debug', 'info', 'warn', 'error', 'off'].includes(lower)) {
+          envLogLevel = lower as LogLevel
+          return envLogLevel
+        }
+      }
+    }
+  } catch {}
+
+  envLogLevel = 'info'
+  return envLogLevel
+}
+
+function resolveDefaultLevel(): LogLevel {
+  const env = resolveEnvLogLevel()
+  if (env !== 'info') return env
+
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env?.PROD) {
+      return 'warn'
+    }
+  } catch {}
+
+  return 'info'
+}
+
 class Logger {
   private context: string
-  private level: LogLevel = 'info'
-  private static globalLevel: LogLevel = 'info'
-  private static logToConsole: boolean = import.meta.env.DEV
+  private level: LogLevel
+  private static globalLevel: LogLevel | null = null
+  private static logToConsole: boolean = true
   private static logToTauri: boolean = true
+  private static dedupCache: DedupEntry[] = []
+  private static throttleTrackers: Map<string, ThrottleTracker> = new Map()
+  private static dedupEnabled: boolean = import.meta.env?.PROD !== true
+  private static throttleEnabled: boolean = import.meta.env?.PROD !== true
 
   constructor(context: string = 'App') {
     this.context = context
+    this.level = resolveDefaultLevel()
   }
 
   static setGlobalLevel(level: LogLevel): void {
@@ -27,7 +92,7 @@ class Logger {
   }
 
   static getGlobalLevel(): LogLevel {
-    return Logger.globalLevel
+    return Logger.globalLevel ?? resolveDefaultLevel()
   }
 
   static setLogToConsole(enabled: boolean): void {
@@ -38,16 +103,88 @@ class Logger {
     Logger.logToTauri = enabled
   }
 
+  static setDedupEnabled(enabled: boolean): void {
+    Logger.dedupEnabled = enabled
+  }
+
+  static setThrottleEnabled(enabled: boolean): void {
+    Logger.throttleEnabled = enabled
+  }
+
   setLevel(level: LogLevel): this {
     this.level = level
     return this
   }
 
+  getLevel(): LogLevel {
+    return this.level
+  }
+
   private shouldLog(level: LogLevel): boolean {
     const currentPriority = LogLevelPriority[this.level]
-    const globalPriority = LogLevelPriority[Logger.globalLevel]
+    const globalLevel = Logger.globalLevel ?? resolveDefaultLevel()
+    const globalPriority = LogLevelPriority[globalLevel]
     const messagePriority = LogLevelPriority[level]
     return messagePriority >= Math.max(currentPriority, globalPriority)
+  }
+
+  private static simpleHash(str: string): string {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      const chr = str.charCodeAt(i)
+      hash = (hash << 5) - hash + chr
+      hash |= 0
+    }
+    return hash.toString(36)
+  }
+
+  private isDuplicate(level: LogLevel, message: string): boolean {
+    if (!Logger.dedupEnabled) return false
+
+    const hash = Logger.simpleHash(`${this.context}:${level}:${message}`)
+    const now = Date.now()
+    const windowMs = level === 'error' ? DEDUP_WINDOW_ERROR_MS : DEDUP_WINDOW_MS
+
+    const existing = Logger.dedupCache.find((e) => e.hash === hash)
+    if (existing) {
+      if (now - existing.time < windowMs) {
+        existing.count++
+        if (existing.count === 2 || existing.count % 50 === 0) {
+          return false
+        }
+        return true
+      }
+      existing.time = now
+      existing.count = 1
+      return false
+    }
+
+    Logger.dedupCache.unshift({ hash, time: now, count: 1 })
+    if (Logger.dedupCache.length > DEDUP_CACHE_SIZE) {
+      Logger.dedupCache.length = DEDUP_CACHE_SIZE
+    }
+    return false
+  }
+
+  private isThrottled(level: LogLevel): boolean {
+    if (!Logger.throttleEnabled) return false
+    if (level === 'error' || level === 'warn') return false
+
+    const now = Date.now()
+    const key = `__global_${level}`
+    const tracker = Logger.throttleTrackers.get(key)
+
+    if (!tracker || now - tracker.windowStart > THROTTLE_INTERVAL_MS) {
+      Logger.throttleTrackers.set(key, { count: 1, windowStart: now })
+      return false
+    }
+
+    if (tracker.count >= THROTTLE_BURST) {
+      return true
+    }
+
+    tracker.count++
+    return false
   }
 
   private static sanitizePatterns: RegExp[] = [
@@ -112,18 +249,17 @@ class Logger {
   private static sanitize(text: string): string {
     let result = text
     for (const pattern of Logger.sanitizePatterns) {
-      result = result.replace(pattern, (match, ...groups) => {
+      result = result.replace(pattern, (_match, ...groups) => {
         const patternStr = pattern.source.toLowerCase()
         if (patternStr.includes('phone') || patternStr.includes('mobile')) {
-          return match.replace(groups[0] + groups[1], `${groups[0]}****${groups[1]}`)
+          return _match.replace(groups[0] + groups[1], `${groups[0]}****${groups[1]}`)
         }
         if (patternStr.includes('email') || patternStr.includes('mail')) {
-          return match.replace(groups[0] + groups[1], `${groups[0]}***`)
+          return _match.replace(groups[0] + groups[1], `${groups[0]}***`)
         }
-        if (match.length <= 12) return match
-        // For generic tokens, keep a small prefix if it's long
+        if (_match.length <= 12) return _match
         const replacement =
-          match.includes(':') || match.includes('=') ? match.split(/[:=]/)[0] + ': [REDACTED]' : '[REDACTED]'
+          _match.includes(':') || _match.includes('=') ? _match.split(/[:=]/)[0] + ': [REDACTED]' : '[REDACTED]'
         return replacement
       })
     }
@@ -141,10 +277,27 @@ class Logger {
     return Logger.sanitize(raw)
   }
 
-  private formatConsoleMessage(level: LogLevel, message: string, ...args: unknown[]): [string, ...unknown[]] {
-    const timestamp = new Date().toISOString()
-    const prefix = `[${timestamp}] [${level.toUpperCase()}] [${this.context}]`
-    return [`${prefix} ${message}`, ...args]
+  private writeConsole(level: LogLevel, message: string, ...args: unknown[]): void {
+    if (!Logger.logToConsole) return
+
+    const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false })
+    const style = CONSOLE_STYLES[level] || ''
+    const prefix = `%c[${timestamp}] [${level.toUpperCase()}] [${this.context}]`
+
+    const _consoleArgs: unknown[] = [prefix, style, message, ...args]
+
+    switch (level) {
+      case 'trace':
+        break
+      case 'debug':
+        break
+      case 'info':
+        break
+      case 'warn':
+        break
+      case 'error':
+        break
+    }
   }
 
   private async logToTauriPlugin(level: LogLevel, formattedMessage: string): Promise<void> {
@@ -168,28 +321,17 @@ class Logger {
           await error(formattedMessage)
           break
       }
-    } catch {
-      // Tauri log plugin may not be available in some environments
-    }
+    } catch {}
   }
 
   private logWithLevel(level: LogLevel, message: string, ...args: unknown[]): void {
     if (!this.shouldLog(level)) return
 
-    if (Logger.logToConsole) {
-      const [_consoleMessage, ..._consoleArgs] = this.formatConsoleMessage(level, message, ...args)
-      switch (level) {
-        case 'trace':
-        case 'debug':
-          break
-        case 'info':
-          break
-        case 'warn':
-          break
-        case 'error':
-          break
-      }
-    }
+    if (this.isDuplicate(level, message)) return
+
+    if (this.isThrottled(level)) return
+
+    this.writeConsole(level, message, ...args)
 
     const formattedMessage = this.formatMessage(level, message, ...args)
     this.logToTauriPlugin(level, formattedMessage)
@@ -211,8 +353,8 @@ class Logger {
     this.logWithLevel('warn', message, ...args)
   }
 
-  error(message: string, error?: unknown, ...args: unknown[]): void {
-    const errorArgs = error !== undefined ? [error, ...args] : args
+  error(message: string, errorObj?: unknown, ...args: unknown[]): void {
+    const errorArgs = errorObj !== undefined ? [errorObj, ...args] : args
     this.logWithLevel('error', message, ...errorArgs)
   }
 
@@ -226,13 +368,24 @@ class Logger {
     return childLogger
   }
 
-  time(_label: string): void {
-    if (Logger.logToConsole && this.shouldLog('debug')) {
+  time(label: string): void {
+    if (this.shouldLog('debug')) {
+      const key = `__time_${this.context}_${label}`
+      ;(console as unknown as Record<string, unknown>)[key] = performance.now()
+      if (Logger.logToConsole) {
+      }
     }
   }
 
-  timeEnd(_label: string): void {
-    if (Logger.logToConsole && this.shouldLog('debug')) {
+  timeEnd(label: string): void {
+    if (this.shouldLog('debug')) {
+      const key = `__time_${this.context}_${label}`
+      const start = (console as unknown as Record<string, unknown>)[key] as number | undefined
+      if (start !== undefined && Logger.logToConsole) {
+        const _elapsed = (performance.now() - start).toFixed(1)
+
+        delete (console as unknown as Record<string, unknown>)[key]
+      }
     }
   }
 
@@ -246,9 +399,25 @@ class Logger {
     }
   }
 
-  table(_data: unknown, _columns?: string[]): void {
+  table(_data: unknown, columns?: string[]): void {
     if (Logger.logToConsole && this.shouldLog('debug')) {
+      if (columns) {
+      } else {
+      }
     }
+  }
+}
+
+export function configureLogger(options: { level?: LogLevel; logToConsole?: boolean; logToTauri?: boolean }): void {
+  if (options.level !== undefined) {
+    Logger.setGlobalLevel(options.level)
+    envLogLevel = options.level
+  }
+  if (options.logToConsole !== undefined) {
+    Logger.setLogToConsole(options.logToConsole)
+  }
+  if (options.logToTauri !== undefined) {
+    Logger.setLogToTauri(options.logToTauri)
   }
 }
 

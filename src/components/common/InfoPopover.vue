@@ -1,11 +1,10 @@
 <template>
   <!-- 个人信息框 -->
-  <n-flex vertical :size="26" class="size-fit box-border rounded-8px relative min-h-[300px] select-none cursor-default">
-    <!-- 背景 -->
+  <n-flex vertical :size="26" class="size-fit box-border rounded-8px relative min-h-[260px] select-none cursor-default">
+    <!-- 背景：使用中性图，避免依赖未实现的 wearingItemId 协议 -->
     <img
-      class="absolute rounded-t-8px z-2 top-0 left-0 w-full h-100px"
-      :class="groupStore.getUserInfo(uid)?.wearingItemId === '6' ? 'object-contain developer-cover' : 'object-cover'"
-      :src="groupStore.getUserInfo(uid)?.wearingItemId === '6' ? '/hula.png' : '/img/dispersion-bg.png'"
+      class="absolute rounded-t-8px z-2 top-0 left-0 w-full h-100px object-cover"
+      src="/img/dispersion-bg.png"
       alt="" />
     <div class="h-20px"></div>
     <n-flex vertical :size="20" class="size-full p-10px box-border z-10 relative">
@@ -73,12 +72,6 @@
           </n-popover>
         </template>
 
-        <div
-          v-if="groupStore.getUserInfo(uid)?.wearingItemId === '6'"
-          class="absolute top-72px left-142px bg-[--bate-bg] border-(1px solid [--bate-color]) text-(12px [--bate-color] center) p-8px rounded-full">
-          {{ t('home.profile_card.developer_badge') }}
-        </div>
-
         <n-flex align="center" :size="8">
           <p
             class="text-(18px [--hula-text-secondary]) w-fit"
@@ -91,11 +84,9 @@
                 -apple-system,
                 sans-serif;
             ">
-            {{ groupStore.getUserInfo(uid)?.name }}
+            {{ displayName }}
           </p>
-          <span
-            v-if="groupNickname && groupNickname !== groupStore.getUserInfo(uid)?.name"
-            class="text-(13px [--hula-text-secondary])">
+          <span v-if="groupNickname && groupNickname !== displayName" class="text-(13px [--hula-text-secondary])">
             ({{ groupNickname }})
           </span>
         </n-flex>
@@ -104,7 +95,7 @@
         <n-flex align="center" :size="10">
           <n-flex align="center" :size="12">
             <p class="text-[--info-text-color]">{{ t('home.profile_card.labels.account') }}</p>
-            <span class="text-(12px [--hula-text-secondary])">{{ `${groupStore.getUserInfo(uid)?.account}` }}</span>
+            <span class="text-(12px [--hula-text-secondary])">{{ displayAccount }}</span>
 
             <n-tooltip trigger="hover">
               <template #trigger>
@@ -116,76 +107,8 @@
               </template>
               <span>{{ t('home.profile_card.tooltip.copy_account') }}</span>
             </n-tooltip>
-
-            <!-- Gitee/GitHub/GitCode 标识 -->
-            <n-tooltip v-if="linkedGitee">
-              <template #trigger>
-                <svg class="size-18px color-[--hula-color-danger-500]"><use href="#gitee-login"></use></svg>
-              </template>
-              <span>{{ t('home.profile_card.tooltip.bound_gitee') }}</span>
-            </n-tooltip>
-            <n-tooltip v-if="linkedGithub">
-              <template #trigger>
-                <svg class="size-18px color-[--hula-text-primary]"><use href="#github-login"></use></svg>
-              </template>
-              <span>{{ t('home.profile_card.tooltip.bound_github') }}</span>
-            </n-tooltip>
           </n-flex>
         </n-flex>
-      </n-flex>
-
-      <!-- 地址 -->
-      <n-flex align="center" :size="26" class="select-none">
-        <span class="text-[--info-text-color]">{{ t('home.profile_card.labels.location') }}</span>
-        <span class="text-(13px [--hula-text-secondary])">
-          {{ groupStore.getUserInfo(uid)?.locPlace || t('home.profile_card.location_unknown') }}
-        </span>
-      </n-flex>
-      <!-- 获得的徽章 -->
-      <n-flex v-if="groupStore.getUserInfo(uid)?.itemIds" :size="26" class="select-none">
-        <span class="text-[--info-text-color]">{{ t('home.profile_card.labels.badges') }}</span>
-        <n-flex :size="8">
-          <template v-for="id in groupStore.getUserInfo(uid)?.itemIds" :key="id">
-            <div class="relative inline-flex flex-col items-center">
-              <n-skeleton v-if="!badgeLoadedMap[id]" text :repeat="1" :width="38" :height="38" circle />
-              <div v-show="badgeLoadedMap[id]" class="relative">
-                <n-avatar
-                  round
-                  :width="38"
-                  :height="38"
-                  :src="badgeStore.badgeById(id)?.img"
-                  :color="badgeAvatarColor"
-                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                  @load="badgeLoadedMap[id] = true"
-                  @error="badgeLoadedMap[id] = true" />
-                <n-popover trigger="hover" :show-arrow="false" placement="top">
-                  <template #trigger>
-                    <svg
-                      class="absolute -top-2px -right-2px size-12px bg-[--avatar-border-color] rounded-full cursor-pointer shadow-sm p-1px">
-                      <use href="#tips"></use>
-                    </svg>
-                  </template>
-                  <span class="text-12px">{{ badgeStore.badgeById(id)?.describe }}</span>
-                </n-popover>
-              </div>
-            </div>
-          </template>
-        </n-flex>
-      </n-flex>
-      <!-- 动态 -->
-      <n-flex :size="40" class="select-none">
-        <span class="text-[--info-text-color]">{{ t('home.profile_card.labels.activities') }}</span>
-        <n-image-group>
-          <n-flex :size="6" :wrap="false">
-            <n-image
-              v-for="n in 4"
-              :key="n"
-              preview-disabled
-              class="rounded-8px"
-              width="50"
-              src="https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg" />
-          </n-flex>
-        </n-image-group>
       </n-flex>
 
       <n-flex justify="center" align="center" :size="40">
@@ -209,7 +132,6 @@ import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import { leftHook } from '@/layout/left/hook'
-import { useBadgeStore } from '@/stores/domains/chat/badge'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -219,6 +141,7 @@ import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { resolveDisplayActiveStatus } from '@/utils/presenceStatus'
+import { toLocalpart } from '@/utils/userIdentity'
 
 const { t } = useI18n()
 
@@ -229,9 +152,6 @@ const { uid, activeStatus } = defineProps<{
 const { createWebviewWindow } = useWindow()
 const settingStore = useSettingStore()
 const avatarColor = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-inverse)'))
-const badgeAvatarColor = computed(() =>
-  settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-disabled)'
-)
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
@@ -239,41 +159,38 @@ const { openContent } = leftHook()
 const contactStore = useContactStore()
 const userStatusStore = useUserStatusStore()
 const userStore = useUserStore()
-const userUid = computed(() => userStore.userInfo!.uid)
-const badgeStore = useBadgeStore()
-const { stateList } = storeToRefs(userStatusStore)
+const userUid = computed(() => userStore.userInfo?.uid ?? '')
 
-const resolvedUserInfo = computed(() => groupStore.getUserInfo(uid) ?? null)
-/** 头像加载状态 */
-const badgeLoadedMap = ref<Record<string, boolean>>({})
-const avatarSrc = computed(() => AvatarUtils.getAvatarUrl((resolvedUserInfo.value?.avatar as string) || ''))
 /** 是否是当前登录的用户 */
 const isCurrentUserUid = computed(() => userUid.value === uid)
 
-const providerFieldMap = {
-  gitee: 'linkedGitee',
-  github: 'linkedGithub'
-} as const
+/**
+ * 解析当前 uid 的资料：优先 groupStore（房间内成员），
+ * 若是自己且不在任何房间，则回退到 userStore.userInfo，
+ * 否则再回退到 contactStore（好友列表）。
+ * 之前直接用 groupStore.getUserInfo(uid)，自己一旦没有房间会全为空。
+ */
+const resolvedUserInfo = computed(() => {
+  const fromGroup = groupStore.getUserInfo(uid)
+  if (fromGroup) return fromGroup
+  if (isCurrentUserUid.value && userStore.userInfo) return userStore.userInfo
+  return contactStore.getContactByUserId?.(uid) ?? null
+})
 
-type OAuthProvider = keyof typeof providerFieldMap
+const avatarSrc = computed(() => AvatarUtils.getAvatarUrl((resolvedUserInfo.value?.avatar as string) || ''))
 
-const resolveLinkedState = (provider: OAuthProvider) => {
-  const fieldKey = providerFieldMap[provider]
-  const resolvedInfo = resolvedUserInfo.value
-  const fallbackInfo = isCurrentUserUid.value ? userStore.userInfo : undefined
+/** 显示用 displayName / account（带兜底，避免 null/MXID 直接外露）
+ *  resolvedUserInfo 联合类型里 `displayName` 仅在 MatrixRoomMember 上存在，
+ *  这里用 `as` 兜底类型差异。
+ */
+const displayName = computed(() => {
+  const info = resolvedUserInfo.value as { name?: string; displayName?: string | null } | null
+  return info?.name || info?.displayName || toLocalpart(uid) || uid
+})
+const displayAccount = computed(() => resolvedUserInfo.value?.account || toLocalpart(uid))
 
-  return (
-    resolvedInfo?.[fieldKey] ??
-    fallbackInfo?.[fieldKey] ??
-    resolvedInfo?.oauthProviders?.includes(provider) ??
-    fallbackInfo?.oauthProviders?.includes(provider) ??
-    false
-  )
-}
+const { stateList } = storeToRefs(userStatusStore)
 
-/** 绑定标识（带当前用户信息兜底，同时兼容 oauthProviders 列表） */
-const linkedGitee = computed(() => resolveLinkedState('gitee'))
-const linkedGithub = computed(() => resolveLinkedState('github'))
 /** 是否是我的好友 */
 const isMyFriend = computed(() => !!contactStore.contactsList.find((item) => item.uid === uid))
 /** 是否为群聊 */
@@ -301,7 +218,7 @@ const displayActiveStatus = computed(() => {
 
 // 计算当前用户状态图标
 const statusIcon = computed(() => {
-  const userStateId = resolvedUserInfo.value?.userStateId
+  const userStateId = (resolvedUserInfo.value as { userStateId?: string } | null)?.userStateId
 
   // 如果在线且有特殊状态
   if (userStateId && userStateId !== '1') {
@@ -315,7 +232,7 @@ const statusIcon = computed(() => {
 
 // 计算当前状态的标题
 const currentStateTitle = computed(() => {
-  const userStateId = resolvedUserInfo.value?.userStateId
+  const userStateId = (resolvedUserInfo.value as { userStateId?: string } | null)?.userStateId
 
   if (userStateId && userStateId !== '1') {
     const state = stateList.value.find((s: { id: string }) => s.id === userStateId)
@@ -336,7 +253,7 @@ const openEditInfo = () => {
 
 // 处理复制账号
 const handleCopy = () => {
-  const account = groupStore.getUserInfo(uid)?.account
+  const account = displayAccount.value
   if (account) {
     navigator.clipboard.writeText(account)
     window.$message.success(t('home.profile_card.notification.copy_success', { account }))

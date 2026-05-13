@@ -21,7 +21,35 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     }
   })
 
-  // 3. 启动信息打印
+  // 3. 让 dev 代理目标跟随 VITE_HOMESERVER_URL，支持自签名 https
+  //    例：VITE_HOMESERVER_URL=https://matrix.test 时，自动走代理 + 关掉 TLS 校验。
+  //    Tauri 运行时由 runtimeFetch.ts 的 .test 域名白名单处理；这里只影响浏览器 dev。
+  const homeserverTarget = config.VITE_HOMESERVER_URL?.trim() || 'http://localhost:8008'
+  const isHttps = homeserverTarget.startsWith('https://')
+  viteConfig = mergeConfig(viteConfig, {
+    server: {
+      proxy: {
+        '/_matrix': {
+          target: homeserverTarget,
+          changeOrigin: true,
+          ws: true,
+          secure: !isHttps
+        },
+        '/_synapse': {
+          target: homeserverTarget,
+          changeOrigin: true,
+          secure: !isHttps
+        },
+        '/.well-known/matrix': {
+          target: homeserverTarget,
+          changeOrigin: true,
+          secure: !isHttps
+        }
+      }
+    }
+  })
+
+  // 4. 启动信息打印
   const host = isPC ? 'localhost' : getLocalIP() || '127.0.0.1'
   atStartup(config, mode, host)()
 

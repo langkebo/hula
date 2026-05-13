@@ -6,7 +6,7 @@
         <div
           v-if="isMac()"
           @click="modalVisible = false"
-          class="mac-close location-modal__mac-close size-13px shadow-inner rounded-50% mt-6px select-none absolute left-6px">
+          class="mac-close location-modal__mac-close size-13px shadow-inner rounded-50% mt-6px select-none absolute left-6px cursor-pointer z-10">
           <svg class="hidden location-modal__mac-close-icon size-7px select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
@@ -16,7 +16,7 @@
 
         <svg
           v-if="isWindows()"
-          class="size-14px cursor-pointer pt-6px select-none absolute right-6px"
+          class="size-14px cursor-pointer pt-6px select-none absolute right-6px z-10"
           @click="modalVisible = false">
           <use href="#close"></use>
         </svg>
@@ -144,44 +144,56 @@ const props = withDefaults(defineProps<LocationModalProps>(), {
 const emit = defineEmits<LocationModalEmits>()
 
 // 地理位置Hook
-const { state: locationState, getLocationWithTransform } = useGeolocation()
+const { state: locationState, getLocationWithTransform, clearError } = useGeolocation()
 
 // 响应式状态
 const modalVisible = computed({
   get: () => props.visible,
-  set: (value: boolean) => emit('update:visible', value)
+  set: (value: boolean) => {
+    if (!value) {
+      handleClose()
+    }
+    emit('update:visible', value)
+  }
 })
 
 const selectedLocation = ref<LocationData | null>(null)
 const mapLoading = ref(false)
 const mapError = ref<string | null>(null)
 const sendingLocation = ref(false)
-// no api key required for StaticProxyMap
 
 const { t } = useI18n()
 
 // 计算属性
 const modalTitle = computed(() => {
   if (mapError.value) return t('message.location.modal.title.map_error')
-  if (locationState.error) return t('message.location.modal.title.location_error')
+  if (locationState.value.error) return t('message.location.modal.title.location_error')
   return t('message.location.modal.title.default')
 })
 
 const showActionButtons = computed(() => {
-  return !mapLoading.value && !locationState.loading && selectedLocation.value !== null && !mapError.value
+  return !mapLoading.value && !locationState.value.loading && selectedLocation.value !== null && !mapError.value
 })
+
+// 处理关闭
+const handleClose = () => {
+  clearError()
+  selectedLocation.value = null
+  mapError.value = null
+  mapLoading.value = false
+  emit('cancel')
+}
 
 // 获取位置
 const getLocation = async () => {
   try {
     mapError.value = null
+    clearError()
 
     // 获取位置信息
-    const [result] = await Promise.all([
-      getLocationWithTransform({
-        enableHighAccuracy: true
-      })
-    ])
+    const result = await getLocationWithTransform({
+      enableHighAccuracy: true
+    })
 
     // 获取地址信息
     const geocodeResult = await reverseGeocode(result.transformed.lat, result.transformed.lng).catch((error) => {

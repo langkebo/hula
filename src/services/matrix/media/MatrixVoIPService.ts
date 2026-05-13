@@ -2,6 +2,10 @@ import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
 
+let turnAvailableCache: boolean | null = null
+let turnCheckTimestamp = 0
+const TURN_CHECK_TTL = 5 * 60 * 1000
+
 interface VoIPCall {
   callId: string
   roomId: string
@@ -528,6 +532,114 @@ class MatrixVoIPService {
     } catch {
       return { audio: [], video: [] }
     }
+  }
+
+  async getTurnServer(): Promise<{ username: string; password: string; uris: string[]; ttl: number }> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error('[VoIP] 客户端未初始化')
+    }
+
+    try {
+      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/voip/turnServer')
+      const r = result as Record<string, unknown>
+      info('[VoIP] 获取 TURN 服务器配置成功')
+      return {
+        username: (r.username as string) ?? '',
+        password: (r.password as string) ?? '',
+        uris: (r.uris as string[]) ?? [],
+        ttl: (r.ttl as number) ?? 3600
+      }
+    } catch (err) {
+      error(`[VoIP] 获取 TURN 服务器配置失败: ${err}`)
+      throw err
+    }
+  }
+
+  async checkTurnAvailability(): Promise<{
+    available: boolean
+    reason?: string
+    turnServer?: { username: string; password: string; uris: string[]; ttl: number }
+  }> {
+    const now = Date.now()
+    if (turnAvailableCache !== null && now - turnCheckTimestamp < TURN_CHECK_TTL) {
+      return { available: turnAvailableCache }
+    }
+
+    const client = matrixClientService.getClient()
+    if (!client) {
+      turnAvailableCache = false
+      turnCheckTimestamp = now
+      return { available: false, reason: '客户端未初始化' }
+    }
+
+    try {
+      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/voip/turnServer')
+      const r = result as Record<string, unknown>
+      const uris = (r.uris as string[]) ?? []
+
+      if (uris.length === 0) {
+        turnAvailableCache = false
+        turnCheckTimestamp = now
+        warn('[VoIP] TURN 服务器未配置')
+        return { available: false, reason: 'TURN 服务器未部署，语音通话可能在 NAT 环境下不可用' }
+      }
+
+      info('[VoIP] TURN 服务器可用')
+      turnAvailableCache = true
+      turnCheckTimestamp = now
+      return {
+        available: true,
+        turnServer: {
+          username: (r.username as string) ?? '',
+          password: (r.password as string) ?? '',
+          uris,
+          ttl: (r.ttl as number) ?? 3600
+        }
+      }
+    } catch (err) {
+      turnAvailableCache = false
+      turnCheckTimestamp = now
+      const errMsg = err instanceof Error ? err.message : String(err)
+      warn(`[VoIP] TURN 服务器检测失败: ${errMsg}`)
+      return { available: false, reason: 'TURN 服务检测失败，语音通话功能可能受限' }
+    }
+  }
+
+  async checkVoipAvailability(): Promise<{
+    voipAvailable: boolean
+    turnAvailable: boolean
+    message?: string
+  }> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      return { voipAvailable: false, turnAvailable: false, message: '客户端未初始化' }
+    }
+
+    const turnStatus = await this.checkTurnAvailability()
+
+    if (!client.voipHandler) {
+      return {
+        voipAvailable: false,
+        turnAvailable: turnStatus.available,
+        message: 'VoIP 模块不可用'
+      }
+    }
+
+    if (!turnStatus.available) {
+      return {
+        voipAvailable: true,
+        turnAvailable: false,
+        message: turnStatus.reason || 'TURN 服务暂不可用，语音通话功能受限'
+      }
+    }
+
+    return { voipAvailable: true, turnAvailable: true }
+  }
+
+  clearTurnCache(): void {
+    turnAvailableCache = null
+    turnCheckTimestamp = 0
   }
 }
 

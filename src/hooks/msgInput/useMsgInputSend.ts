@@ -32,7 +32,6 @@ interface ReplyState {
 interface UserSummary {
   name?: string
   avatar?: string
-  locPlace?: string
 }
 
 interface GlobalStoreLike {
@@ -700,8 +699,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
         fromUser: {
           uid: String(userUid.value || 0),
           username: userInfo?.name || '',
-          avatar: userInfo?.avatar || '',
-          locPlace: userInfo?.locPlace || ''
+          avatar: userInfo?.avatar || ''
         },
         message: {
           id: tempMsgId,

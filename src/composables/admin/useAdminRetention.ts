@@ -58,7 +58,7 @@ export function useAdminRetention(): UseAdminRetentionResult {
   async function loadAll() {
     loading.value = true
     try {
-      await Promise.all([loadPolicies(), loadStatus()])
+      await Promise.allSettled([loadPolicies(), loadStatus()])
     } finally {
       loading.value = false
     }

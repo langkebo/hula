@@ -1,5 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 /**
  * Room account-data / reporting / retention domain service.
@@ -48,10 +49,7 @@ export class MatrixRoomAccountDataService {
   async getReportScannerInfo(roomId: string, eventId: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/scanner_info`
-      )
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO(roomId, eventId))
       return result as Record<string, unknown>
     } catch (err) {
       error(`[MatrixRoom] 获取内容扫描信息失败: ${err}`)
@@ -75,21 +73,21 @@ export class MatrixRoomAccountDataService {
 
   async getExternalServices(): Promise<Array<Record<string, unknown>>> {
     const client = this.getClient()
-    try {
-      // synapse-rust 中此接口目前在 admin 命名空间下
-      const result = await client.http.authedRequest('GET', '/_synapse/admin/v1/external_services')
-      // 兼容三种响应格式：裸数组、data 包装、services 包装
-      const services =
-        result && typeof result === 'object' && 'services' in result
-          ? (result as { services: Array<Record<string, unknown>> }).services
-          : result && typeof result === 'object' && 'data' in result
-            ? (result as { data: Array<Record<string, unknown>> }).data
-            : (result as Array<Record<string, unknown>>)
-      return Array.isArray(services) ? services : []
-    } catch (err) {
-      error(`[MatrixRoom] 获取外部服务列表失败: ${err}`)
-      return []
+    const adminPaths = [MATRIX_PATHS.ADMIN.EXTERNAL_SERVICES, MATRIX_PATHS.ADMIN.MATRIX_EXTERNAL_SERVICES]
+    for (const path of adminPaths) {
+      try {
+        const result = await client.http.authedRequest('GET', path)
+        const services =
+          result && typeof result === 'object' && 'services' in result
+            ? (result as { services: Array<Record<string, unknown>> }).services
+            : result && typeof result === 'object' && 'data' in result
+              ? (result as { data: Array<Record<string, unknown>> }).data
+              : (result as Array<Record<string, unknown>>)
+        return Array.isArray(services) ? services : []
+      } catch {}
     }
+    error('[MatrixRoom] 获取外部服务列表失败: Admin API not available')
+    return []
   }
 }
 

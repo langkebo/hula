@@ -916,6 +916,7 @@ declare module 'matrix-js-sdk' {
     remove(): Promise<void>
     retry(): Promise<void>
     getRelation(): { rel_type?: string; event_id?: string } | undefined
+    getAssociatedId(): string | null
     status: unknown
     localTimestamp: number
     direction: unknown
@@ -927,7 +928,7 @@ declare module 'matrix-js-sdk' {
     getEvents(): MatrixEvent[]
   }
 
-  export class Room {
+  export interface Room {
     roomId: string
     name: string
     topic: string
@@ -945,7 +946,7 @@ declare module 'matrix-js-sdk' {
     getMembers(): RoomMember[]
     getJoinedMembers(): RoomMember[]
     getName(): string
-    getAvatarUrl(): string
+    getAvatarUrl(baseUrl?: string, width?: number, height?: number, resizeMethod?: string): string
     getMxcAvatarUrl(): string | null
     getCanonicalAlias(): string | null
     getAltAliases(): string[]
@@ -961,6 +962,7 @@ declare module 'matrix-js-sdk' {
     getTypingUsers(): string[]
     getInvitedMemberCount(): number
     getJoinedMemberCount(): number
+    canInvite(userId: string): boolean
     getThread(eventId: string): unknown
     getThreads(): unknown[]
     getLiveTimeline(): EventTimeline

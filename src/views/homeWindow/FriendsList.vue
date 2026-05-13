@@ -102,12 +102,12 @@
                     :size="44"
                     class="grayscale"
                     :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
-                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)!.avatar!)"
+                    :src="AvatarUtils.getAvatarUrl(resolveContactAvatar(item))"
                     :color="avatarColor"
                     :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
                   <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
                     <span class="text-14px leading-tight flex-1 truncate">
-                      {{ groupStore.getUserInfo(item.uid)!.name }}
+                      {{ resolveContactName(item) }}
                     </span>
                     <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
                       [
@@ -159,12 +159,12 @@
                     :size="44"
                     class="grayscale"
                     :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
-                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)!.avatar!)"
+                    :src="AvatarUtils.getAvatarUrl(resolveContactAvatar(item))"
                     :color="avatarColor"
                     :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
                   <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
                     <span class="text-14px leading-tight flex-1 truncate">
-                      {{ groupStore.getUserInfo(item.uid)!.name }}
+                      {{ resolveContactName(item) }}
                     </span>
                     <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
                       [
@@ -215,12 +215,12 @@
                     style="border: 1px solid var(--avatar-border-color)"
                     :size="44"
                     class="grayscale"
-                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)!.avatar!)"
+                    :src="AvatarUtils.getAvatarUrl(resolveContactAvatar(item))"
                     :color="avatarColor"
                     :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
                   <n-flex vertical justify="space-between" class="h-fit flex-1 truncate">
                     <span class="text-14px leading-tight flex-1 truncate">
-                      {{ groupStore.getUserInfo(item.uid)!.name }}
+                      {{ resolveContactName(item) }}
                     </span>
                     <div class="text leading-tight text-12px">[{{ t('home.friends_list.status.blocked') }}]</div>
                   </n-flex>
@@ -234,7 +234,6 @@
   </n-tabs>
 </template>
 <script setup lang="ts" name="friendsList">
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useFriends } from '@/composables/useFriends'
@@ -243,13 +242,13 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow'
 import { buildSpaceWorkbenchRoute } from '@/router/spaceNavigation'
 import type { DetailsContent } from '@/services/types'
+import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
-import { unreadCountManager } from '@/utils/UnreadCountManager'
 
 const logger = createLogger('FriendsList')
 const MESSAGE_ROUTE_NAME = 'message'
@@ -284,6 +283,14 @@ const {
   setSelectedItem,
   clearSelectedItem
 } = useFriends()
+
+const resolveGroupMember = (uid: string) => groupStore.getUserInfo(uid)
+
+const resolveContactName = (item: MatrixContact) =>
+  item.name || item.displayName || resolveGroupMember(item.uid)?.name || item.account || item.uid
+
+const resolveContactAvatar = (item: MatrixContact) =>
+  item.avatar || item.avatarUrl || resolveGroupMember(item.uid)?.avatar || ''
 
 const addPanels = ref({
   show: false,
@@ -373,13 +380,12 @@ const handleOpenSecretChat = () => {
   router.push('/secretChat')
 }
 
-/** 获取联系人数据 */
-const fetchContactData = async () => {
+/** 初始化联系人数据与订阅，避免好友列表依赖其他页面先挂载 */
+const initializeContactData = async () => {
   try {
-    // 同时获取好友列表和群聊列表
-    await Promise.all([contactStore.getContactList()])
+    await contactStore.initialize()
   } catch (error) {
-    logger.error('获取联系人数据失败:', error)
+    logger.error('初始化联系人数据失败:', error)
   }
 }
 
@@ -403,7 +409,7 @@ watch(
 
 /** 组件挂载时获取数据 */
 onMounted(async () => {
-  await fetchContactData()
+  await initializeContactData()
 })
 
 onUnmounted(() => {

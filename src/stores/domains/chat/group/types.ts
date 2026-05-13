@@ -22,10 +22,7 @@ export interface MatrixRoomMember {
   roleId: number
   lastOptTime: number
   myName?: string
-  locPlace?: string
   userStateId?: string
-  wearingItemId?: string
-  itemIds?: string[]
   linkedGitee?: boolean
   linkedGithub?: boolean
   oauthProviders?: ('gitee' | 'github')[]
@@ -43,7 +40,6 @@ export interface MatrixGroupInfo {
   topic: string | null
   memberCount: number
   memberNum?: number
-  onlineNum?: number
   isEncrypted: boolean
   isPublic: boolean
   creator: string | null

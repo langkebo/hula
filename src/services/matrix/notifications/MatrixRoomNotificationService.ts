@@ -1,4 +1,6 @@
 import { NotificationTypeEnum } from '@/enums'
+import { MatrixRequestDeduper } from '@/services/matrix/MatrixRequestDeduper'
+import { MatrixRequestHelper } from '@/services/matrix/MatrixRequestHelper'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixPushService } from './MatrixPushService'
@@ -6,12 +8,24 @@ import { matrixPushService } from './MatrixPushService'
 const logger = createLogger('MatrixRoomNotification')
 const ROOM_NOTIFICATION_SETTINGS_EVENT = 'hula.room.notification_settings'
 
+/**
+ * 契约: GET /_matrix/client/v3/rooms/{room_id}/unread_count
+ * 顶层稳定字段 - notification_count, highlight_count
+ */
+export interface RoomUnreadCountPayload {
+  notification_count: number
+  highlight_count: number
+}
+
 interface RoomNotificationSettings {
   shield?: boolean
   muteNotification?: NotificationTypeEnum
 }
 
 class MatrixRoomNotificationService {
+  private isUnreadCountSupported = true
+  private hasLoggedUnreadCountFallback = false
+
   private getClient() {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -59,6 +73,44 @@ class MatrixRoomNotificationService {
   async setRoomShield(roomId: string, shield: boolean): Promise<void> {
     await this.saveRoomSettings(roomId, { shield })
     logger.info('房间屏蔽状态已更新:', roomId, shield)
+  }
+
+  /**
+   * 拉取房间最新未读 / 提及计数
+   * 契约 GET /_matrix/client/v3/rooms/{room_id}/unread_count
+   */
+  async fetchUnreadCount(roomId: string): Promise<RoomUnreadCountPayload | null> {
+    if (!roomId || !this.isUnreadCountSupported) return null
+
+    return MatrixRequestDeduper.dedupe(`room-unread-count:${roomId}`, async () => {
+      const path = MatrixRequestHelper.buildRoomPath(roomId, 'unread_count')
+
+      try {
+        const result = await MatrixRequestHelper.safeGet<Partial<RoomUnreadCountPayload>>(path, undefined, {
+          logPrefix: 'RoomUnreadCount',
+          throwOnError: true,
+          quiet: true // 初始尝试静默，如果失败且为 404 则标记为不支持
+        })
+
+        if (!result) return null
+        return {
+          notification_count: Number(result.notification_count ?? 0) || 0,
+          highlight_count: Number(result.highlight_count ?? 0) || 0
+        }
+      } catch (err: unknown) {
+        // 如果返回 404 (M_NOT_FOUND 或 类似)，说明服务端不支持该扩展接口
+        if ((err as { httpStatus?: number })?.httpStatus === 404 || String(err).includes('404')) {
+          this.isUnreadCountSupported = false
+          if (!this.hasLoggedUnreadCountFallback) {
+            this.hasLoggedUnreadCountFallback = true
+            logger.info(`[MatrixRoomNotification] 服务端不支持 unread_count 接口，已降级为本地计数: ${roomId}`)
+          }
+        } else {
+          logger.error(`[MatrixRoomNotification] 获取未读计数失败: ${roomId}`, err)
+        }
+        return null
+      }
+    })
   }
 }
 

@@ -5,5 +5,5 @@ export {
   ROOM_MESSAGE_CACHE_LIMIT,
   useChatStore
 } from './message'
-export type { SessionItem } from './session'
+export type { SessionItem, UnreadDetail } from './session'
 export { useSessionStore } from './session'

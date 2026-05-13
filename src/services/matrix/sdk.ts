@@ -7,22 +7,57 @@
 
 export type {
   IContent,
+  ICreateClientOpts,
   ICreateRoomOpts,
+  ILoginRequest,
   IPusher,
+  IPusherRequest,
   IPushRule,
   IPushRules,
+  IRegisterRequest,
+  IRequestTokenResponse,
   ISendEventResponse,
+  LoginResponse,
   MatrixClient,
   MatrixEvent,
+  MSC3575RoomData,
+  MSC3575SlidingSyncResponse,
+  PresenceManager,
+  PushRuleAction,
+  ReadReceiptsManager,
   Room,
   RoomMember,
-  SearchResponse
+  RoomState,
+  SearchResponse,
+  TypingManager,
+  User
 } from 'matrix-js-sdk'
 export {
+  createClient,
   Direction,
   EventType,
+  IndexedDBStore,
+  MemoryStore,
+  Method,
   NotificationCountType,
+  PendingEventOrdering,
   Preset,
   PushRuleKind,
+  ReceiptType,
+  RoomType,
+  SlidingSync,
+  SlidingSyncEvent,
+  SlidingSyncState,
+  TweakName,
   Visibility
 } from 'matrix-js-sdk'
+export type { AdminManager } from 'matrix-js-sdk/admin'
+export { ClientEvent } from 'matrix-js-sdk/client'
+export { CryptoEvent, VerificationPhase, VerificationRequestEvent } from 'matrix-js-sdk/crypto'
+export type { Friend, FriendRequest } from 'matrix-js-sdk/friend'
+export { FriendEvent, FriendManager } from 'matrix-js-sdk/friend'
+export { RoomEvent } from 'matrix-js-sdk/models/room'
+export { RoomStateEvent } from 'matrix-js-sdk/models/room-state'
+export type { PushManager } from 'matrix-js-sdk/push'
+export type { ISyncStateData } from 'matrix-js-sdk/sync'
+export { SyncState } from 'matrix-js-sdk/sync'

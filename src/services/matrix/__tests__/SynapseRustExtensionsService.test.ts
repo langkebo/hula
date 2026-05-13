@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(() => null as MatrixClient | null)
+    getClient: vi.fn(() => null as MatrixClient | null),
+    getHomeserverUrl: vi.fn(() => null as string | null),
+    getAccessToken: vi.fn(() => null as string | null),
+    waitForClientReady: vi.fn()
   }
 }))
 
@@ -13,18 +16,31 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
+vi.mock('../network/runtimeFetch', () => ({
+  getRuntimeAwareFetch: vi.fn()
+}))
+
 describe('SynapseRustExtensionsService', () => {
   let synapseRustExtensionsService: typeof import('../SynapseRustExtensionsService').synapseRustExtensionsService
   let matrixClientService: typeof import('../MatrixClientService').default
+  let getRuntimeAwareFetch: typeof import('../network/runtimeFetch').getRuntimeAwareFetch
 
   const mockFetch = vi.fn()
 
   beforeEach(async () => {
     vi.clearAllMocks()
     mockFetch.mockReset()
-    vi.stubGlobal('fetch', mockFetch)
     synapseRustExtensionsService = (await import('../SynapseRustExtensionsService')).synapseRustExtensionsService
     matrixClientService = (await import('../MatrixClientService')).default
+    getRuntimeAwareFetch = (await import('../network/runtimeFetch')).getRuntimeAwareFetch
+    vi.mocked(getRuntimeAwareFetch).mockReturnValue(mockFetch)
+    vi.mocked(matrixClientService.getHomeserverUrl).mockReturnValue('https://matrix.example.com')
+    vi.mocked(matrixClientService.getAccessToken).mockReturnValue('test-token')
+    vi.mocked(matrixClientService.waitForClientReady).mockResolvedValue({
+      getHomeserverUrl: vi.fn(() => 'https://matrix.example.com'),
+      getAccessToken: vi.fn(() => 'test-token'),
+      getUserId: vi.fn(() => '@user:example.com')
+    } as unknown as MatrixClient)
 
     vi.mocked(matrixClientService.getClient).mockReturnValue({
       getHomeserverUrl: vi.fn(() => 'https://matrix.example.com'),
@@ -54,6 +70,22 @@ describe('SynapseRustExtensionsService', () => {
       })
       const result = await synapseRustExtensionsService.getFriends()
       expect(result).toEqual([])
+    })
+  })
+
+  describe('searchFriends', () => {
+    it('should reuse configured homeserver and token before client becomes ready', async () => {
+      ;(synapseRustExtensionsService as unknown as { baseUrl: string }).baseUrl = ''
+      ;(synapseRustExtensionsService as unknown as { accessToken: string }).accessToken = ''
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ results: [{ user_id: '@ljf1:server', username: 'ljf1' }] })
+      })
+
+      const result = await synapseRustExtensionsService.searchFriends('ljf1', { mode: 'exact' })
+
+      expect(matrixClientService.waitForClientReady).not.toHaveBeenCalled()
+      expect(result).toEqual([{ user_id: '@ljf1:server', username: 'ljf1' }])
     })
   })
 

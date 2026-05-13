@@ -10,6 +10,7 @@ import {
 } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import { compressImage, formatFileSize, isImageFile } from '@/utils/ImageUtils'
 import { matrixClientService } from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 export interface UploadResult {
   contentUri: string
@@ -108,7 +109,25 @@ class MatrixMediaServiceClass {
   }
 
   async downloadFileBytes(mediaUrl: string): Promise<Uint8Array> {
-    const response = await fetch(this.resolveDownloadUrl(mediaUrl))
+    const client = this.getClient()
+    const downloadUrl = this.resolveDownloadUrl(mediaUrl)
+
+    const accessToken = client.getAccessToken()
+    if (accessToken && downloadUrl.startsWith(client.getHomeserverUrl())) {
+      let response = await fetch(downloadUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      })
+      if (!response.ok) {
+        const separator = downloadUrl.includes('?') ? '&' : '?'
+        response = await fetch(`${downloadUrl}${separator}access_token=${encodeURIComponent(accessToken)}`)
+      }
+      if (!response.ok) {
+        throw new Error(`下载失败: ${response.status} ${response.statusText}`)
+      }
+      return new Uint8Array(await response.arrayBuffer())
+    }
+
+    const response = await fetch(downloadUrl)
     if (!response.ok) {
       throw new Error(`下载失败: ${response.status} ${response.statusText}`)
     }
@@ -348,7 +367,7 @@ class MatrixMediaServiceClass {
   async getMediaConfig(): Promise<{ 'm.upload.size'?: number; [key: string]: unknown }> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/media/v3/config')
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.CONFIG)
       info('[MatrixMedia] 获取上传配置成功')
       return result as { 'm.upload.size'?: number; [key: string]: unknown }
     } catch (err) {
@@ -362,7 +381,7 @@ class MatrixMediaServiceClass {
     try {
       await client.http.authedRequest(
         'POST',
-        `/_matrix/media/v3/delete/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`
+        MATRIX_PATHS.MEDIA.DELETE(encodeURIComponent(serverName), encodeURIComponent(mediaId))
       )
       info(`[MatrixMedia] 媒体删除成功: ${serverName}/${mediaId}`)
       return true
@@ -375,7 +394,7 @@ class MatrixMediaServiceClass {
   async getQuotaAlerts(): Promise<Array<Record<string, unknown>>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/media/v1/quota/alerts')
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.QUOTA_ALERTS)
       info('[MatrixMedia] 获取配额告警成功')
       return (result as { alerts?: Array<Record<string, unknown>> }).alerts ?? []
     } catch (err) {
@@ -384,58 +403,135 @@ class MatrixMediaServiceClass {
     }
   }
 
+  async checkQuota(): Promise<{ limit: number; used: number; remaining: number } | null> {
+    const client = this.getClient()
+    try {
+      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.QUOTA_CHECK)) as Record<string, unknown>
+      return {
+        limit: (result.limit as number) ?? 0,
+        used: (result.used as number) ?? 0,
+        remaining: (result.remaining as number) ?? 0
+      }
+    } catch (err) {
+      error(`[MatrixMedia] 配额检查失败: ${err}`)
+      return null
+    }
+  }
+
+  async getQuotaStats(): Promise<{
+    storageBytes: number
+    mediaCount: number
+    limitBytes: number
+  } | null> {
+    const client = this.getClient()
+    try {
+      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.QUOTA_STATS)) as Record<string, unknown>
+      return {
+        storageBytes: (result.storage_bytes as number) ?? 0,
+        mediaCount: (result.media_count as number) ?? 0,
+        limitBytes: (result.limit_bytes as number) ?? 0
+      }
+    } catch (err) {
+      error(`[MatrixMedia] 获取配额统计失败: ${err}`)
+      return null
+    }
+  }
+
+  async getAuthenticatedMediaConfig(): Promise<{
+    authenticated_media: boolean
+    [key: string]: unknown
+  } | null> {
+    const client = this.getClient()
+    try {
+      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.CLIENT_MEDIA_CONFIG)) as Record<
+        string,
+        unknown
+      >
+      info('[MatrixMedia] 获取认证媒体配置成功')
+      return {
+        authenticated_media: (result.authenticated_media as boolean) ?? false,
+        ...result
+      }
+    } catch (err) {
+      error(`[MatrixMedia] 获取认证媒体配置失败: ${err}`)
+      return null
+    }
+  }
+
+  private withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
+    let timer: ReturnType<typeof setTimeout>
+    return Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(errorMessage)), ms)
+      })
+    ]).finally(() => clearTimeout(timer))
+  }
+
   private getImageDimensions(file: File): Promise<{ width: number; height: number }> {
-    return new Promise((resolve, reject) => {
-      const img = new Image()
-      img.onload = () => {
-        resolve({
-          width: img.naturalWidth,
-          height: img.naturalHeight
-        })
-        URL.revokeObjectURL(img.src)
-      }
-      img.onerror = () => {
-        reject(new Error('无法加载图片'))
-        URL.revokeObjectURL(img.src)
-      }
-      img.src = URL.createObjectURL(file)
-    })
+    return this.withTimeout(
+      new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => {
+          resolve({
+            width: img.naturalWidth,
+            height: img.naturalHeight
+          })
+          URL.revokeObjectURL(img.src)
+        }
+        img.onerror = () => {
+          reject(new Error('无法加载图片'))
+          URL.revokeObjectURL(img.src)
+        }
+        img.src = URL.createObjectURL(file)
+      }),
+      10000,
+      '获取图片尺寸超时'
+    )
   }
 
   private getVideoMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
-    return new Promise((resolve, reject) => {
-      const video = document.createElement('video')
-      video.preload = 'metadata'
-      video.onloadedmetadata = () => {
-        resolve({
-          width: video.videoWidth,
-          height: video.videoHeight,
-          duration: Math.round(video.duration * 1000)
-        })
-        URL.revokeObjectURL(video.src)
-      }
-      video.onerror = () => {
-        reject(new Error('无法加载视频'))
-        URL.revokeObjectURL(video.src)
-      }
-      video.src = URL.createObjectURL(file)
-    })
+    return this.withTimeout(
+      new Promise((resolve, reject) => {
+        const video = document.createElement('video')
+        video.preload = 'metadata'
+        video.onloadedmetadata = () => {
+          resolve({
+            width: video.videoWidth,
+            height: video.videoHeight,
+            duration: Math.round(video.duration * 1000)
+          })
+          URL.revokeObjectURL(video.src)
+        }
+        video.onerror = () => {
+          reject(new Error('无法加载视频'))
+          URL.revokeObjectURL(video.src)
+        }
+        video.src = URL.createObjectURL(file)
+      }),
+      10000,
+      '获取视频元数据超时'
+    )
   }
 
   private getAudioDuration(file: File): Promise<number> {
-    return new Promise((resolve, reject) => {
-      const audio = new Audio()
-      audio.preload = 'metadata'
-      audio.onloadedmetadata = () => {
-        resolve(Math.round(audio.duration * 1000))
-        URL.revokeObjectURL(audio.src)
-      }
-      audio.onerror = () => {
-        reject(new Error('无法加载音频'))
-        URL.revokeObjectURL(audio.src)
-      }
-      audio.src = URL.createObjectURL(file)
-    })
+    return this.withTimeout(
+      new Promise((resolve, reject) => {
+        const audio = new Audio()
+        audio.preload = 'metadata'
+        audio.onloadedmetadata = () => {
+          resolve(Math.round(audio.duration * 1000))
+          URL.revokeObjectURL(audio.src)
+        }
+        audio.onerror = () => {
+          reject(new Error('无法加载音频'))
+          URL.revokeObjectURL(audio.src)
+        }
+        audio.src = URL.createObjectURL(file)
+      }),
+      10000,
+      '获取音频时长超时'
+    )
   }
 }
 

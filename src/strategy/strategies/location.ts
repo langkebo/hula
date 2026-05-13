@@ -91,8 +91,7 @@ export class LocationMessageStrategyImpl extends AbstractMessageStrategy {
       fromUser: {
         uid: userUid.value || '',
         username: userInfo?.name || '',
-        avatar: userInfo?.avatar || '',
-        locPlace: userInfo?.locPlace || ''
+        avatar: userInfo?.avatar || ''
       },
       message: {
         id: messageId,

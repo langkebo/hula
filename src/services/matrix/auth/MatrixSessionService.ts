@@ -44,6 +44,9 @@ type MatrixClientWithTags = MatrixClient & {
   removeRoomTag?: (roomId: string, tagName: string) => Promise<unknown>
 }
 
+const DIRECT_ROOM_READY_TIMEOUT_MS = 3000
+const DIRECT_ROOM_READY_POLL_INTERVAL_MS = 100
+
 class MatrixSessionService {
   private getClient(): MatrixClient {
     const client = matrixClientService.getClient()
@@ -139,7 +142,7 @@ class MatrixSessionService {
     const client = this.getClient()
     const existingRoomId = await matrixDirectMessageService.getDmForUser(userId, false)
     const roomId = existingRoomId ?? (await matrixDirectMessageService.createDm(userId))
-    const room = client.getRoom(roomId)
+    const room = (await this.waitForRoomAvailable(roomId)) ?? client.getRoom(roomId)
 
     if (room) {
       const dmRoomInfo = await matrixDirectMessageService.getDmRoomInfo(roomId, false)
@@ -160,6 +163,26 @@ class MatrixSessionService {
       account: userId,
       id: userId
     }
+  }
+
+  private async waitForRoomAvailable(roomId: string): Promise<Room | null> {
+    const client = this.getClient()
+    let room = client.getRoom(roomId)
+    if (room) {
+      return room
+    }
+
+    const deadline = Date.now() + DIRECT_ROOM_READY_TIMEOUT_MS
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, DIRECT_ROOM_READY_POLL_INTERVAL_MS))
+      room = client.getRoom(roomId)
+      if (room) {
+        return room
+      }
+    }
+
+    info(`[MatrixSession] 目标会话在等待窗口内仍未同步到本地房间列表，先返回占位会话: ${roomId}`)
+    return null
   }
 
   private buildSessionFromRoom(

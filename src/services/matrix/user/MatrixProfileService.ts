@@ -10,11 +10,6 @@ export interface MatrixProfile {
   avatarUrl?: string
 }
 
-interface MatrixProfileResponse {
-  displayname?: string
-  avatar_url?: string
-}
-
 interface UploadContentResponse {
   content_uri: string
 }
@@ -41,14 +36,19 @@ class MatrixProfileService {
   async getProfile(userId: string): Promise<MatrixProfile> {
     try {
       const client = this.ensureClient()
-      const profile = (await client.getProfile(userId)) as MatrixProfileResponse
+      const profile = await client.getProfileInfo(userId)
       return {
         userId,
         displayname: profile.displayname,
         avatarUrl: profile.avatar_url
       }
-    } catch (err) {
-      error(`[ProfileService] 获取资料失败: ${userId}, ${err}`)
+    } catch (err: unknown) {
+      // 13.4.3: 降级处理 404 (M_NOT_FOUND)，这在 Matrix 中是常见现象（例如用户未设置资料或用户不存在）
+      if ((err as { httpStatus?: number })?.httpStatus === 404 || String(err).includes('404')) {
+        warn(`[ProfileService] 用户资料不存在: ${userId}`)
+      } else {
+        error(`[ProfileService] 获取资料失败: ${userId}, ${err}`)
+      }
       throw err
     }
   }

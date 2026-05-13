@@ -1,15 +1,29 @@
 import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '../runtimeFetch'
+import { __resetRuntimeFetchWarningForTests, getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '../runtimeFetch'
+
+const { warnMock } = vi.hoisted(() => ({
+  warnMock: vi.fn()
+}))
 
 vi.mock('@tauri-apps/plugin-http', () => ({
   fetch: vi.fn()
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => ({
+    warn: warnMock,
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
+  })
 }))
 
 describe('runtimeFetch', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.unstubAllGlobals()
+    __resetRuntimeFetchWarningForTests()
   })
 
   it('uses browser fetch outside tauri runtime', async () => {
@@ -83,6 +97,21 @@ describe('runtimeFetch', () => {
       credentials: 'omit',
       method: 'POST'
     })
+    expect(warnMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('warns only once for repeated native fetch fallback failures', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    const browserFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', browserFetch)
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('native fetch failed'))
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await runtimeFetch('https://matrix.test/_matrix/client/v3/login')
+    await runtimeFetch('https://matrix.test/_matrix/client/v3/capabilities')
+
+    expect(browserFetch).toHaveBeenCalledTimes(2)
+    expect(warnMock).toHaveBeenCalledTimes(1)
   })
 
   it('preserves explicit credentials when provided', async () => {

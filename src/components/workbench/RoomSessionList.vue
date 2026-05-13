@@ -30,106 +30,20 @@
         :item-size="80"
         key-field="roomId"
         v-slot="{ item }">
-        <ContextMenu
-          :class="getItemClasses(item)"
-          :data-key="item.roomId"
+        <HulaRoomListItem
+          :item="item"
+          :classes="getItemClasses(item)"
           :menu="visibleMenu(item)"
           :special-menu="visibleSpecialMenu(item)"
-          :content="item"
-          class="msg-box w-full h-75px mb-5px"
+          :batch-mode="batchMode"
+          :batch-selected="resolvedBatchIds.has(item.roomId)"
           @click="onMsgClick(item)"
           @dblclick="onMsgDblclick(item)"
-          @select="$event.click(item)"
-          @menu-show="onMenuShow(item.roomId, $event)">
-          <n-flex :size="10" align="center" class="h-75px pl-6px pr-8px flex-1">
-            <n-avatar
-              style="border: 1px solid var(--avatar-border-color)"
-              :size="44"
-              :color="avatarColor"
-              :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-              :src="AvatarUtils.getAvatarUrl(item.avatar)"
-              round />
-
-            <n-flex class="h-fit flex-1 truncate" justify="space-between" vertical>
-              <n-flex :size="4" align="center" class="flex-1 truncate" justify="space-between">
-                <n-flex :size="0" align="center" class="leading-tight flex-1 truncate">
-                  <span class="text-14px leading-tight flex-1 truncate">{{ item.name }}</span>
-                  <n-popover trigger="hover" v-if="item.hotFlag === IsAllUserEnum.Yes">
-                    <template #trigger>
-                      <svg
-                        :style="getOfficialIconStyle(item.roomId)"
-                        class="size-20px select-none outline-none cursor-pointer">
-                        <use href="#auth"></use>
-                      </svg>
-                    </template>
-                    <span>{{ t('message.message_list.official_popover') }}</span>
-                  </n-popover>
-
-                  <n-popover trigger="hover" v-if="item.account === UserType.BOT">
-                    <template #trigger>
-                      <svg class="size-20px select-none outline-none cursor-pointer color-[--hula-color-primary-500]">
-                        <use href="#authenticationUser"></use>
-                      </svg>
-                    </template>
-                    <span>{{ t('message.message_list.bot_popover') }}</span>
-                  </n-popover>
-                </n-flex>
-                <span
-                  v-if="item.account !== UserType.BOT"
-                  :style="getTimeStyle(item)"
-                  class="text text-10px w-fit truncate text-right">
-                  {{ item.lastMsgTime }}
-                </span>
-              </n-flex>
-
-              <n-flex align="center" justify="space-between">
-                <template v-if="item.isAtMe">
-                  <span class="text flex-1 leading-tight text-12px truncate">
-                    <span class="text-[--hula-color-danger-500] mr-4px">
-                      {{ t('message.message_list.mention_tag') }}
-                    </span>
-                    <span>{{ String(item.lastMsg || '').replace(':', '：') }}</span>
-                  </span>
-                </template>
-                <template v-else-if="item.shield">
-                  <span class="text flex-1 leading-tight text-12px truncate">
-                    <span :style="getShieldTextStyle(item.roomId)">
-                      {{
-                        item.type === RoomTypeEnum.GROUP
-                          ? t('message.message_list.shield_group')
-                          : t('message.message_list.shield_user')
-                      }}
-                    </span>
-                  </span>
-                </template>
-                <template v-else>
-                  <span :class="['text flex-1 leading-tight text-12px truncate']">
-                    <span :style="getPreviewTextStyle(item)">
-                      {{ String(item.lastMsg || t('message.message_list.default_last_msg')).replace(':', '：') }}
-                    </span>
-                  </span>
-                </template>
-
-                <template v-if="item.shield">
-                  <svg :style="getShieldAccentStyle(item.roomId)" class="size-14px">
-                    <use href="#forbid"></use>
-                  </svg>
-                </template>
-                <template v-else-if="item.muteNotification === 1 && !item.unreadCount">
-                  <svg :style="getMutedIconStyle(item.roomId)" class="size-14px">
-                    <use href="#close-remind"></use>
-                  </svg>
-                </template>
-                <n-badge
-                  v-else
-                  :max="99"
-                  :value="item.unreadCount"
-                  :show="globalStore.unreadReady && item.unreadCount > 0"
-                  :color="item.muteNotification === 1 ? mutedBadgeColor : undefined" />
-              </n-flex>
-            </n-flex>
-          </n-flex>
-        </ContextMenu>
+          @select="(e: any) => handleSelect(item as SessionItem, e)"
+          @accept-invite="onAcceptInvite?.($event)"
+          @reject-invite="onRejectInvite?.($event)"
+          @batch-toggle="handleBatchToggle"
+          @menu-show="onMenuShow as unknown as () => void" />
       </RecycleScroller>
     </div>
 
@@ -163,25 +77,23 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { RecycleScroller } from 'vue-virtual-scroller'
-import ContextMenu from '@/components/common/ContextMenu.vue'
-import { RoomTypeEnum, ThemeEnum, UserType } from '@/enums'
-import { IsAllUserEnum } from '@/services/types'
+import HulaRoomListItem from '@/components/workbench/HulaRoomListItem.vue'
 import type { SessionItem } from '@/stores/domains/chat/chat'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 
 type SessionListItem = SessionItem & {
   lastMsg?: string
   lastMsgTime?: string
   isAtMe?: boolean
+  highlightCount?: number
+  notificationCount?: number
+  isTombstoned?: boolean
+  membership?: 'join' | 'leave' | 'invite' | 'ban'
 }
 
 const { t } = useI18n()
 const globalStore = useGlobalStore()
-const settingStore = useSettingStore()
 const msgScrollbar = useTemplateRef<HTMLElement>('msg-scrollbar')
-const mutedBadgeColor = 'var(--hula-text-disabled)'
 const props = defineProps<{
   sessionList: SessionListItem[]
   syncLoading: boolean
@@ -195,43 +107,28 @@ const props = defineProps<{
   onMsgDblclick: (item: SessionItem) => void
   onMenuShow: (roomId: string, isShow: boolean) => void
   onRetryNetwork?: () => void | Promise<void>
+  onAcceptInvite?: (item: SessionListItem) => void | Promise<void>
+  onRejectInvite?: (item: SessionListItem) => void | Promise<void>
+  batchMode?: boolean
+  batchSelectedIds?: Set<string>
 }>()
 
-const avatarColor = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-inverse)'))
+const emit = defineEmits<{
+  batchToggle: [roomId: string]
+  batchSelectAll: []
+  batchClear: []
+}>()
+
+const resolvedBatchIds = computed(() => props.batchSelectedIds ?? new Set<string>())
+
+const handleBatchToggle = (roomId: string) => {
+  emit('batchToggle', roomId)
+}
 const showRetryAction = computed(() => Boolean(props.networkBanner?.retryable && props.onRetryNetwork))
 
-const getOfficialIconStyle = (roomId: string) => ({
-  color: globalStore.currentSessionRoomId === roomId ? 'var(--hula-color-primary-100)' : 'var(--hula-color-primary-500)'
-})
-
-const getShieldAccentStyle = (roomId: string) => ({
-  color: globalStore.currentSessionRoomId === roomId ? 'var(--hula-color-danger-500)' : 'var(--hula-text-tertiary)'
-})
-
-const getMutedIconStyle = (roomId: string) => ({
-  color: globalStore.currentSessionRoomId === roomId ? 'var(--hula-text-inverse)' : 'var(--hula-text-tertiary)'
-})
-
-const getPreviewTextStyle = (item: SessionListItem) =>
-  item.account === UserType.BOT ? { color: 'var(--hula-text-secondary)' } : undefined
-
-const getTimeStyle = (item: SessionListItem) => {
-  if (!(item.shield && globalStore.currentSessionRoomId === item.roomId)) {
-    return undefined
-  }
-
-  return {
-    color: 'var(--hula-color-danger-500)',
-    opacity: '0.9'
-  }
+const handleSelect = (item: SessionItem, menuItem: OPT.RightMenu<SessionItem>) => {
+  menuItem.click?.(item)
 }
-
-const getShieldTextStyle = (roomId: string) => ({
-  color:
-    globalStore.currentSessionRoomId === roomId
-      ? 'color-mix(in srgb, var(--hula-color-danger-500) 90%, transparent)'
-      : 'var(--hula-text-tertiary)'
-})
 
 const scrollToIndex = async (index: number) => {
   if (index < 0) return

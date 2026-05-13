@@ -144,7 +144,7 @@
                         class="grayscale"
                         :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE }"
                         :size="26"
-                        :color="'var(--hula-surface-panel)'"
+                        :color="'#ffffff'"
                         :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                         :src="AvatarUtils.getAvatarUrl(item.avatar)"
                         @load="userLoadedMap[item.uid] = true"
@@ -226,13 +226,11 @@ const announcementStore = useAnnouncementStore()
 const { clearAnnouncements } = announcementStore
 // 当前加载的群聊ID
 // 如果成员列表未完全加载，使用当前列表的在线人数，避免与头像显示不一致
-const onlineCountDisplay = computed(() => {
-  const totalOnline = groupStore.countInfo?.onlineNum ?? 0
-  const loadedOnline =
+const onlineCountDisplay = computed(
+  () =>
     groupStore.onlineCountMap[globalStore.currentSessionRoomId] ??
     groupStore.userList.filter((m) => m.activeStatus === OnlineEnum.ONLINE).length
-  return groupStore.userListOptions.isLast ? totalOnline : loadedOnline
-})
+)
 const isGroup = computed(() => globalStore.currentSession?.type === RoomTypeEnum.GROUP)
 // 公告相关计算属性
 const { announcementContent, announNum, announError, isAddAnnoun } = storeToRefs(announcementStore)
@@ -443,10 +441,7 @@ onMounted(async () => {
         roleId: u.roleId ?? 0,
         lastOptTime: u.lastOptTime,
         myName: u.myName,
-        locPlace: u.locPlace,
-        userStateId: u.userStateId,
-        wearingItemId: u.wearingItemId,
-        itemIds: u.itemIds
+        userStateId: u.userStateId
       }))
       groupStore.updateMemberCache(currentRoom, matrixMembers)
     }

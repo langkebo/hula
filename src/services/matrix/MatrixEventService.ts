@@ -414,8 +414,7 @@ class MatrixEventService {
       fromUser: {
         uid: event.getSender() ?? '',
         username: event.getSender() ?? '',
-        avatar: '',
-        locPlace: ''
+        avatar: ''
       },
       message: {
         id: event.getId() ?? '',

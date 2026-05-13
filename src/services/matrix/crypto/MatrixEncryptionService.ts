@@ -2,6 +2,7 @@ import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { MatrixClientExtended, MatrixHttpApi } from '@/types/matrix-extensions'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 export interface EncryptionSettings {
   algorithm: string
@@ -641,7 +642,7 @@ class MatrixEncryptionService {
     try {
       const response = (await (client.http as MatrixHttpApi).request(
         'GET',
-        '/_matrix/client/v1/keys/rotation/status'
+        MATRIX_PATHS.CRYPTO.KEY_ROTATION_STATUS
       )) as RotationStatusResponse
       return {
         enabled: response.enabled ?? true,
@@ -662,7 +663,7 @@ class MatrixEncryptionService {
     try {
       const response = (await (client.http as MatrixHttpApi).request(
         'GET',
-        '/_matrix/client/v1/keys/rotation/check'
+        MATRIX_PATHS.CRYPTO.KEY_ROTATION_CHECK
       )) as RotationStatusResponse
       return response.needs_rotation ?? false
     } catch (err) {
@@ -680,7 +681,7 @@ class MatrixEncryptionService {
     try {
       const response = (await (client.http as MatrixHttpApi).request(
         'POST',
-        '/_matrix/client/v1/keys/rotation/rotate'
+        MATRIX_PATHS.CRYPTO.KEY_ROTATION_ROTATE
       )) as RotateKeysResponse
       info('[Encryption] 密钥轮换成功')
       return {
@@ -706,7 +707,7 @@ class MatrixEncryptionService {
     try {
       const response = (await (client.http as MatrixHttpApi).request(
         'GET',
-        `/_matrix/client/v1/keys/rotation/history/${encodeURIComponent(deviceId)}`
+        MATRIX_PATHS.CRYPTO.KEY_ROTATION_HISTORY(encodeURIComponent(deviceId))
       )) as RotationHistoryResponse
       return (response.rotations ?? []).map((r) => ({
         keyId: r.key_id ?? '',
@@ -728,7 +729,7 @@ class MatrixEncryptionService {
     try {
       const response = (await (client.http as MatrixHttpApi).request(
         'POST',
-        '/_matrix/client/v1/keys/rotation/revoke',
+        MATRIX_PATHS.CRYPTO.KEY_ROTATION_REVOKE,
         undefined,
         { device_id: deviceId, key_ids: keyIds }
       )) as RevokeKeysResponse
@@ -747,7 +748,7 @@ class MatrixEncryptionService {
     }
 
     try {
-      await (client.http as MatrixHttpApi).request('PUT', '/_matrix/client/v1/keys/rotation/config', undefined, {
+      await (client.http as MatrixHttpApi).request('PUT', MATRIX_PATHS.CRYPTO.KEY_ROTATION_CONFIG, undefined, {
         enabled,
         interval_days: intervalDays
       })

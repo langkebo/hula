@@ -127,7 +127,7 @@ router.isReady().then(() => {
   const measures = performance.getEntriesByType('measure')
   if (import.meta.env.DEV) {
     measures.forEach((measure) => {
-      logger.info(`性能指标 [${measure.name}]: ${measure.duration.toFixed(2)}ms`)
+      logger.debug(`性能指标 [${measure.name}]: ${measure.duration.toFixed(2)}ms`)
     })
   }
 })

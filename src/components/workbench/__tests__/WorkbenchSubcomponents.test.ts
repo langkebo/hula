@@ -605,7 +605,7 @@ describe('WorkbenchDetailPane', () => {
     expect(filledWrapper.text()).toContain('Frontend Room')
     expect(filledWrapper.text()).toContain('space.detail_group')
     expect(filledWrapper.text()).toContain('12')
-    expect(filledWrapper.text()).toContain('5')
+    expect(filledWrapper.text()).toContain('2')
     expect(filledWrapper.text()).toContain('Alice')
     expect(filledWrapper.text()).toContain('Bob')
     expect(groupStoreMock.loadGroupInfo).toHaveBeenCalledWith('!alpha:server')

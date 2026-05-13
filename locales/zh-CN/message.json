@@ -78,6 +78,9 @@
     "official_popover": "官方群聊认证",
     "bot_popover": "HuLa助手",
     "mention_tag": "[有人@我]",
+    "favorite_tag": "已置顶",
+    "low_priority_tag": "低优先级",
+    "migrated_tag": "已迁移",
     "shield_group": "您已屏蔽群聊",
     "shield_user": "您已屏蔽此人",
     "empty_description": "快和朋友聊天吧！",
@@ -266,5 +269,15 @@
     "forward_success": "消息转发成功",
     "forward_failed": "消息转发失败",
     "non_text_message": "［非文本消息］"
-  }
+  },
+  "forward": {
+    "title": "转发消息",
+    "search_placeholder": "搜索房间",
+    "no_rooms": "没有可转发的房间",
+    "selected_count": "已选 {count} 个房间",
+    "send": "转发",
+    "success": "已转发到 {count} 个房间",
+    "failed": "转发失败"
+  },
+  "merge_msg_title": "合并消息"
 }

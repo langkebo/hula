@@ -20,6 +20,12 @@ export { matrixRoomModerationService } from './ModerationService'
 export { matrixRoomPinsService } from './PinsService'
 export type { VisibleRoomSession } from './RealtimeService'
 export { matrixRoomRealtimeService } from './RealtimeService'
+export type {
+  RoomCapabilitiesPayload,
+  StableRoomCapabilityName,
+  StableRoomFeatureName
+} from './RoomCapabilitiesService'
+export { ROOM_CAPABILITY_NAMES, ROOM_FEATURE_NAMES, roomCapabilitiesService } from './RoomCapabilitiesService'
 export { roomListService } from './RoomListService'
 // 聚合服务 (P1-1 重构)
 export { roomNavigationService } from './RoomNavigationService'

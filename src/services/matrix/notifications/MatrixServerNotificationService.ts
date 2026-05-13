@@ -1,6 +1,7 @@
 import { error } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { matrixClientService } from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 export interface ServerNotificationPayload {
   title: string
@@ -41,17 +42,17 @@ class MatrixServerNotificationService {
   }
 
   async createNotification(payload: ServerNotificationPayload): Promise<ServerNotification | null> {
-    return this.request<ServerNotification>('POST', '/_synapse/admin/v1/server_notifications', payload)
+    return this.request<ServerNotification>('POST', MATRIX_PATHS.ADMIN.SERVER_NOTIFICATIONS, payload)
   }
 
   async getNotification(id: number): Promise<ServerNotification | null> {
-    return this.request<ServerNotification>('GET', `/_synapse/admin/v1/server_notifications/${id}`)
+    return this.request<ServerNotification>('GET', MATRIX_PATHS.ADMIN.SERVER_NOTIFICATION_BY_ID(String(id)))
   }
 
   async listActive(): Promise<ServerNotification[]> {
     const response = await this.request<{ notifications?: unknown }>(
       'GET',
-      '/_synapse/admin/v1/server_notifications/active'
+      MATRIX_PATHS.ADMIN.SERVER_NOTIFICATIONS_ACTIVE
     )
     return response && Array.isArray(response.notifications) ? (response.notifications as ServerNotification[]) : []
   }
@@ -59,7 +60,7 @@ class MatrixServerNotificationService {
   async markAsRead(id: number): Promise<boolean> {
     const response = await this.request<Record<string, unknown>>(
       'POST',
-      `/_synapse/admin/v1/server_notifications/${id}/read`
+      MATRIX_PATHS.ADMIN.SERVER_NOTIFICATION_READ(String(id))
     )
     return response !== null
   }
@@ -67,7 +68,7 @@ class MatrixServerNotificationService {
   async dismiss(id: number): Promise<boolean> {
     const response = await this.request<Record<string, unknown>>(
       'POST',
-      `/_synapse/admin/v1/server_notifications/${id}/dismiss`
+      MATRIX_PATHS.ADMIN.SERVER_NOTIFICATION_DISMISS(String(id))
     )
     return response !== null
   }
@@ -75,7 +76,7 @@ class MatrixServerNotificationService {
   async delete(id: number): Promise<boolean> {
     const response = await this.request<Record<string, unknown>>(
       'DELETE',
-      `/_synapse/admin/v1/server_notifications/${id}`
+      MATRIX_PATHS.ADMIN.SERVER_NOTIFICATION_BY_ID(String(id))
     )
     return response !== null
   }
@@ -83,7 +84,7 @@ class MatrixServerNotificationService {
   async listTemplates(): Promise<NotificationTemplate[]> {
     const response = await this.request<{ templates?: unknown }>(
       'GET',
-      '/_synapse/admin/v1/server_notifications/templates'
+      MATRIX_PATHS.ADMIN.SERVER_NOTIFICATION_TEMPLATES
     )
     return response && Array.isArray(response.templates) ? (response.templates as NotificationTemplate[]) : []
   }

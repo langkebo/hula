@@ -5,6 +5,7 @@ import { MessageStatusEnum, MsgEnum, StoresEnum } from '@/enums'
 import matrixClientService from '@/services/matrix/MatrixClientService'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomTagsService } from '@/services/matrix/room/TagsService'
 import matrixSlidingSyncService, { type SlidingSyncUnreadUpdate } from '@/services/matrix/sync/MatrixSlidingSyncService'
 import type { RoomDetail, RoomInfo } from '@/services/types'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
@@ -47,6 +48,9 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   const isLoading = ref(false)
   const isLoadingMore = ref(false)
   const hasMoreMessages = shallowRef<Map<string, boolean>>(new Map())
+  // 房间标签缓存: account_data m.tag + matrixRoomTagsService 写入
+  // 结构 - { [roomId]: { [tagName]: { order? } } }
+  const tagsByRoom = shallowRef<Record<string, Record<string, { order?: number }>>>({})
   let listenersInitialized = false
 
   const roomList = computed<RoomInfo[]>(() => {
@@ -188,8 +192,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
           fromUser: {
             uid: event.sender ?? '',
             username: event.sender ?? '',
-            avatar: '',
-            locPlace: ''
+            avatar: ''
           },
           message: {
             id: event.event_id ?? '',
@@ -660,7 +663,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     const batchSize = 3
     for (let i = 0; i < uncachedIds.length; i += batchSize) {
       const batch = uncachedIds.slice(i, i + batchSize)
-      await Promise.all(
+      await Promise.allSettled(
         batch.map(async (roomId) => {
           const detail = await loadRoomDetail(roomId)
           if (detail) {
@@ -735,6 +738,62 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     }
   }
 
+  // 标签相关 - 计划 §5.1 tagsByRoom 切片
+  function setTagsForRoom(roomId: string, tags: Record<string, { order?: number }>): void {
+    if (!roomId) return
+    const previous = tagsByRoom.value[roomId]
+    const next = { ...tags }
+    if (previous && JSON.stringify(previous) === JSON.stringify(next)) return
+    tagsByRoom.value = { ...tagsByRoom.value, [roomId]: next }
+  }
+
+  function getTagsForRoom(roomId: string): Record<string, { order?: number }> {
+    return tagsByRoom.value[roomId] ?? {}
+  }
+
+  function hasTag(roomId: string, tag: string): boolean {
+    const tags = tagsByRoom.value[roomId]
+    return !!tags && tag in tags
+  }
+
+  async function refreshRoomTags(roomId: string): Promise<Record<string, { order?: number }>> {
+    if (!roomId) return {}
+    const tags = await matrixRoomTagsService.getTags(roomId)
+    setTagsForRoom(roomId, tags)
+    return tags
+  }
+
+  async function addRoomTag(roomId: string, tag: string, order?: number): Promise<void> {
+    if (!roomId || !tag) return
+    const previous = getTagsForRoom(roomId)
+    // 乐观更新
+    setTagsForRoom(roomId, { ...previous, [tag]: order !== undefined ? { order } : {} })
+    try {
+      await matrixRoomTagsService.setTag(roomId, tag, order)
+    } catch (err) {
+      // 失败回滚
+      setTagsForRoom(roomId, previous)
+      error(`[RoomStore] 写入标签失败, 已回滚: ${roomId}/${tag}`)
+      throw err
+    }
+  }
+
+  async function removeRoomTag(roomId: string, tag: string): Promise<void> {
+    if (!roomId || !tag) return
+    const previous = getTagsForRoom(roomId)
+    if (!(tag in previous)) return
+    const next = { ...previous }
+    delete next[tag]
+    setTagsForRoom(roomId, next)
+    try {
+      await matrixRoomTagsService.removeTag(roomId, tag)
+    } catch (err) {
+      setTagsForRoom(roomId, previous)
+      error(`[RoomStore] 移除标签失败, 已回滚: ${roomId}/${tag}`)
+      throw err
+    }
+  }
+
   return {
     rooms,
     currentRoomId,
@@ -742,6 +801,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     isLoading,
     isLoadingMore,
     hasMoreMessages,
+    tagsByRoom,
     roomList,
     currentRoom,
     currentMessages,
@@ -767,6 +827,12 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     pruneCache,
     getCacheStats,
     handleIncrementalUpdate,
-    handleBatchIncrementalUpdate
+    handleBatchIncrementalUpdate,
+    setTagsForRoom,
+    getTagsForRoom,
+    hasTag,
+    refreshRoomTags,
+    addRoomTag,
+    removeRoomTag
   }
 })

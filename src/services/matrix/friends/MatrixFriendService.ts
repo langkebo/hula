@@ -6,6 +6,8 @@ export type FriendStatus = 'pending' | 'accepted' | 'rejected' | 'favorite' | 'n
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
+import { type SynapseFriendInfo, synapseRustExtensionsService } from '../SynapseRustExtensionsService'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
 
 export type { Friend, FriendRequest }
@@ -35,6 +37,7 @@ class MatrixFriendService {
   private friendManager: FriendManager | null = null
   private observedClient: MatrixClient | null = null
   private managerStarted = false
+  private hasLoggedMissingFriendManager = false
   private eventListeners: Map<string, Set<FriendServiceEventHandler>> = new Map()
   private syncState: FriendSyncState = {
     friends: [],
@@ -44,11 +47,15 @@ class MatrixFriendService {
 
   async initialize(): Promise<void> {
     try {
-      const manager = await this.ensureFriendManager()
+      const manager = await this.ensureFriendManager(false)
       if (!manager) {
-        error('[MatrixFriend] FriendManager 未在客户端上找到')
+        if (!this.hasLoggedMissingFriendManager) {
+          this.hasLoggedMissingFriendManager = true
+          info('[MatrixFriend] FriendManager 未在客户端上找到，已降级到好友 REST 接口')
+        }
         return
       }
+      this.hasLoggedMissingFriendManager = false
       info('[MatrixFriend] FriendService 初始化完成')
     } catch (err) {
       error(`[MatrixFriend] 初始化失败: ${err}`)
@@ -57,8 +64,21 @@ class MatrixFriendService {
   }
 
   private getFriendManager(client: MatrixClient): FriendManager | null {
-    const clientWithFriendManager = client as unknown as Record<string, unknown>
-    const friendManager = clientWithFriendManager.friendManager
+    // 优先使用 SDK 注册的 getFriendManager() 方法
+    const clientWithMethods = client as unknown as Record<string, unknown>
+    if (typeof clientWithMethods.getFriendManager === 'function') {
+      try {
+        const manager = clientWithMethods.getFriendManager()
+        if (manager && typeof (manager as FriendManager).start === 'function') {
+          return manager as FriendManager
+        }
+      } catch {
+        // getFriendManager() 可能抛出异常
+      }
+    }
+
+    // 回退：检查直接挂载的 friendManager 属性
+    const friendManager = clientWithMethods.friendManager
     return friendManager &&
       typeof friendManager === 'object' &&
       typeof (friendManager as FriendManager).start === 'function'
@@ -129,6 +149,41 @@ class MatrixFriendService {
 
   private getRequestUserId(request: FriendRequest): string {
     return request.user_id ?? ''
+  }
+
+  private normalizeFriend(friend: Friend | SynapseFriendInfo): Friend {
+    const source = friend as Friend & {
+      displayname?: string
+      username?: string
+      online?: boolean
+      presence?: string
+      last_active_ts?: number
+    }
+
+    return {
+      ...source,
+      user_id: source.user_id,
+      display_name: source.display_name ?? source.displayname ?? source.username,
+      avatar_url: source.avatar_url,
+      since: source.since ?? source.last_active_ts,
+      note: source.note,
+      status: source.status,
+      dm_room_id: source.dm_room_id,
+      // 保留后端真实字段，供上层做 presence 初始值兜底
+      ...(source.online !== undefined ? { online: source.online } : {}),
+      ...(source.presence ? { presence: source.presence } : {}),
+      ...(source.username ? { username: source.username } : {})
+    } as Friend
+  }
+
+  private async getFriendsByFallbackApi(): Promise<Friend[]> {
+    try {
+      const friends = await synapseRustExtensionsService.getFriends()
+      return friends.map((friend) => this.normalizeFriend(friend))
+    } catch (err) {
+      error(`[MatrixFriend] 回退好友列表接口失败: ${err}`)
+      return []
+    }
   }
 
   private toUserId(value: unknown): string | null {
@@ -205,12 +260,16 @@ class MatrixFriendService {
   private async updateSyncState(): Promise<void> {
     if (!this.friendManager) return
     try {
-      const [friends, incomingRequests, outgoingRequests] = await Promise.all([
+      const results = await Promise.allSettled([
         this.friendManager.getFriends(),
         this.friendManager.getIncomingRequests(),
         this.friendManager.getOutgoingRequests()
       ])
-      this.syncState = { friends, incomingRequests, outgoingRequests }
+      this.syncState = {
+        friends: results[0].status === 'fulfilled' ? results[0].value : this.syncState.friends,
+        incomingRequests: results[1].status === 'fulfilled' ? results[1].value : this.syncState.incomingRequests,
+        outgoingRequests: results[2].status === 'fulfilled' ? results[2].value : this.syncState.outgoingRequests
+      }
     } catch (err) {
       error(`[MatrixFriend] 更新同步状态失败: ${err}`)
     }
@@ -218,10 +277,16 @@ class MatrixFriendService {
 
   async getFriends(): Promise<Friend[]> {
     try {
-      return (await this.ensureFriendManager(false))?.getFriends() ?? []
-    } catch (err) {
-      error(`[MatrixFriend] 获取好友列表失败: ${err}`)
+      const manager = await this.ensureFriendManager(false)
+      if (manager) {
+        const friends = await manager.getFriends()
+        return friends.map((friend) => this.normalizeFriend(friend))
+      }
+      info('[MatrixFriend] FriendManager 不可用，返回空好友列表')
       return []
+    } catch (err) {
+      error(`[MatrixFriend] 获取好友列表失败，回退到 REST API: ${err}`)
+      return await this.getFriendsByFallbackApi()
     }
   }
 
@@ -290,10 +355,14 @@ class MatrixFriendService {
   }
 
   async sendFriendRequest(userId: string, reason?: string): Promise<void> {
-    const manager = await this.requireFriendManager()
+    const manager = await this.ensureFriendManager(false)
 
     try {
-      await manager.sendFriendRequest(userId, reason)
+      if (manager) {
+        await manager.sendFriendRequest(userId, reason)
+      } else {
+        await synapseRustExtensionsService.sendFriendRequest(userId, reason)
+      }
       info(`[MatrixFriend] 发送好友请求成功: ${userId}`)
     } catch (err) {
       error(`[MatrixFriend] 发送好友请求失败: ${err}`)
@@ -302,14 +371,13 @@ class MatrixFriendService {
   }
 
   async acceptFriendRequest(userId: string): Promise<void> {
-    const manager = await this.requireFriendManager()
-
     try {
+      const manager = await this.requireFriendManager()
       await manager.acceptFriendRequest(userId)
       info(`[MatrixFriend] 接受好友请求成功: ${userId}`)
-    } catch (err) {
-      error(`[MatrixFriend] 接受好友请求失败: ${err}`)
-      throw err
+    } catch {
+      await synapseRustExtensionsService.acceptFriendRequest(userId)
+      info(`[MatrixFriend] 接受好友请求成功(REST降级): ${userId}`)
     }
   }
 
@@ -326,26 +394,24 @@ class MatrixFriendService {
   }
 
   async rejectFriendRequest(userId: string): Promise<void> {
-    const manager = await this.requireFriendManager()
-
     try {
+      const manager = await this.requireFriendManager()
       await manager.rejectFriendRequest(userId)
       info(`[MatrixFriend] 拒绝好友请求成功: ${userId}`)
-    } catch (err) {
-      error(`[MatrixFriend] 拒绝好友请求失败: ${err}`)
-      throw err
+    } catch {
+      await synapseRustExtensionsService.declineFriendRequest(userId)
+      info(`[MatrixFriend] 拒绝好友请求成功(REST降级): ${userId}`)
     }
   }
 
   async removeFriend(userId: string): Promise<void> {
-    const manager = await this.requireFriendManager()
-
     try {
+      const manager = await this.requireFriendManager()
       await manager.removeFriend(userId)
       info(`[MatrixFriend] 删除好友成功: ${userId}`)
-    } catch (err) {
-      error(`[MatrixFriend] 删除好友失败: ${err}`)
-      throw err
+    } catch {
+      await synapseRustExtensionsService.removeFriend(userId)
+      info(`[MatrixFriend] 删除好友成功(REST降级): ${userId}`)
     }
   }
 
@@ -361,9 +427,8 @@ class MatrixFriendService {
   }
 
   async setFriendNote(userId: string, note: string): Promise<void> {
-    const manager = await this.requireFriendManager()
-
     try {
+      const manager = await this.requireFriendManager()
       if (typeof manager.updateFriendNote === 'function') {
         await manager.updateFriendNote(userId, note)
       } else if (typeof manager.setFriendNote === 'function') {
@@ -373,9 +438,9 @@ class MatrixFriendService {
       }
 
       info(`[MatrixFriend] 设置好友笔记成功: ${userId}`)
-    } catch (err) {
-      error(`[MatrixFriend] 设置好友笔记失败: ${err}`)
-      throw err
+    } catch {
+      await synapseRustExtensionsService.setFriendNote(userId, note)
+      info(`[MatrixFriend] 设置好友笔记成功(REST降级): ${userId}`)
     }
   }
 
@@ -604,19 +669,58 @@ class MatrixFriendService {
   }
 
   async getFriendStatus(userId: string): Promise<FriendStatus | null> {
-    const manager = await this.requireFriendManager()
+    const manager = await this.ensureFriendManager(false)
 
     try {
-      if (typeof manager.getFriendStatus !== 'function') {
-        info(`[MatrixFriend] FriendManager 不支持获取好友状态: ${userId}`)
-        return null
+      if (manager && typeof manager.getFriendStatus === 'function') {
+        const status = await manager.getFriendStatus(userId)
+        info(`[MatrixFriend] 获取好友状态成功: ${userId}`)
+        return (status as FriendStatus | undefined) ?? null
       }
-      const status = await manager.getFriendStatus(userId)
-      info(`[MatrixFriend] 获取好友状态成功: ${userId}`)
-      return (status as FriendStatus | undefined) ?? null
     } catch (err) {
-      error(`[MatrixFriend] 获取好友状态失败: ${err}`)
-      throw err
+      error(`[MatrixFriend] FriendManager 获取好友状态失败，回退到 REST API: ${err}`)
+    }
+
+    try {
+      const result = await synapseRustExtensionsService.checkFriendship(userId)
+      return result ? 'accepted' : null
+    } catch (restErr) {
+      error(`[MatrixFriend] REST API 获取好友状态也失败: ${restErr}`)
+      return null
+    }
+  }
+
+  async getFriendStatusInfo(userId: string): Promise<Record<string, unknown> | null> {
+    const client = matrixClientService.getClient()
+    if (!client) return null
+    try {
+      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.FRIENDS.STATUS(userId))) as Record<
+        string,
+        unknown
+      >
+      return result
+    } catch (err) {
+      error(`[MatrixFriend] 获取好友状态详情失败: ${userId}, ${err}`)
+      return null
+    }
+  }
+
+  async searchFriendsViaApi(
+    query: string,
+    options?: { mode?: 'fuzzy' | 'exact'; limit?: number }
+  ): Promise<Array<{ user_id: string; display_name?: string; avatar_url?: string }>> {
+    try {
+      const results = await synapseRustExtensionsService.searchFriends(query, options)
+      return results.map((r) => ({
+        user_id: r.user_id,
+        display_name:
+          ((r as unknown as Record<string, unknown>).display_name as string | undefined) ??
+          ((r as unknown as Record<string, unknown>).displayname as string | undefined),
+        avatar_url: r.avatar_url
+      }))
+    } catch (err) {
+      error(`[MatrixFriend] REST 搜索好友失败: ${err}`)
+      return []
     }
   }
 

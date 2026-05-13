@@ -262,6 +262,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatBottomText } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
@@ -704,9 +705,11 @@ onMounted(async () => {
     startTour()
   }
 
-  const currentWindow = getCurrentWebviewWindow()
-  if (!isJumpDirectly.value && currentWindow.label === 'login') {
-    await currentWindow.show()
+  if (hasTauriRuntime()) {
+    const currentWindow = getCurrentWebviewWindow()
+    if (!isJumpDirectly.value && currentWindow.label === 'login') {
+      await currentWindow.show()
+    }
   }
 
   if (await handleSsoLoginCallback()) {

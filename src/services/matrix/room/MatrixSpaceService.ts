@@ -1,6 +1,9 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { Room, Visibility } from 'matrix-js-sdk'
+import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
+import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 export interface SpaceOptions {
   name: string
@@ -186,8 +189,37 @@ class SpaceService {
       )) as { members?: Array<{ user_id: string }> }
       return (result.members ?? []).map((m) => m.user_id)
     } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
+        info(`[Space] v3/spaces/members 不可用，回退到 hierarchy 端点: ${spaceId}`)
+        return this.getSpaceMembersViaHierarchy(spaceId)
+      }
       error(`[Space] 获取 Space 成员失败: ${err}`)
       return []
+    }
+  }
+
+  private async getSpaceMembersViaHierarchy(spaceId: string): Promise<string[]> {
+    const client = this.getClient()
+    try {
+      const room = client.getRoom(spaceId)
+      if (room) {
+        return room.getJoinedMembers().map((m) => m.userId)
+      }
+      const memberEvents = await client.getRoomMembers(spaceId)
+      return memberEvents.map((m) => m.userId)
+    } catch (hierarchyErr) {
+      info(`[Space] SDK getRoomMembers 也失败，尝试标准 /members 端点: ${hierarchyErr}`)
+      try {
+        const result = (await client.http.authedRequest(
+          'GET',
+          `/_matrix/client/v3/rooms/${encodeURIComponent(spaceId)}/members`
+        )) as { chunk?: Array<{ user_id?: string; sender?: string; state_key?: string }> }
+        return (result.chunk ?? []).map((e) => e.state_key ?? e.user_id ?? e.sender ?? '').filter(Boolean)
+      } catch (finalErr) {
+        error(`[Space] 所有回退端点均失败: ${finalErr}`)
+        return []
+      }
     }
   }
 
@@ -200,6 +232,14 @@ class SpaceService {
       )) as { members?: Array<Record<string, unknown>> }
       return result.members ?? []
     } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
+        info(`[Space] v3/spaces/members API 不可用，回退到 SDK 本地数据: ${spaceId}`)
+        const room = client.getRoom(spaceId)
+        if (room) {
+          return room.getJoinedMembers().map((m) => ({ user_id: m.userId, displayname: m.name || m.userId }))
+        }
+      }
       error(`[Space] 通过API获取 Space 成员失败: ${err}`)
       return []
     }
@@ -221,8 +261,26 @@ class SpaceService {
     return this.getUserSpaces()
   }
 
-  async searchSpaces(_query: string, _limit = 10): Promise<SpaceInfo[]> {
-    return []
+  async searchSpaces(query: string, limit = 10): Promise<SpaceInfo[]> {
+    if (!query.trim()) return []
+    try {
+      const apiResults = await this.searchSpacesViaApi(query, limit)
+      if (apiResults.length > 0) return apiResults
+    } catch {
+      // fallback below
+    }
+    const client = this.getClient()
+    try {
+      const allSpaces = client.getRooms().filter((room) => room.isSpaceRoom())
+      const q = query.toLowerCase()
+      return allSpaces
+        .filter((room) => (room.name || '').toLowerCase().includes(q))
+        .slice(0, limit)
+        .map((room) => this.roomToSpaceInfo(room))
+    } catch (err) {
+      error(`[Space] 本地搜索空间失败: ${err}`)
+      return []
+    }
   }
 
   async getSpaceRooms(spaceId: string): Promise<Array<{ roomId: string; name: string; avatarUrl?: string }>> {
@@ -256,6 +314,27 @@ class SpaceService {
       )) as { rooms?: Array<Record<string, unknown>> }
       return result.rooms ?? []
     } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
+        info(`[Space] v3/spaces/rooms 不可用，回退到 hierarchy 端点: ${spaceId}`)
+        try {
+          const hierarchy = await this.getSpaceHierarchy(spaceId, { limit: 100 })
+          return hierarchy.rooms.filter((r) => r.room_id !== spaceId)
+        } catch (hierarchyErr) {
+          info(`[Space] hierarchy 也失败，回退到标准 /state 端点: ${hierarchyErr}`)
+          try {
+            const stateEvents = (await client.http.authedRequest(
+              'GET',
+              `/_matrix/client/v3/rooms/${encodeURIComponent(spaceId)}/state`
+            )) as Array<Record<string, unknown>>
+            return stateEvents
+              .filter((e) => e.type === 'm.space.child' && e.state_key)
+              .map((e) => ({ room_id: e.state_key, via: (e.content as Record<string, unknown>)?.via ?? [] }))
+          } catch (finalErr) {
+            error(`[Space] 所有回退端点均失败: ${finalErr}`)
+          }
+        }
+      }
       error(`[Space] 通过API获取 Space 房间列表失败: ${err}`)
       return []
     }
@@ -443,7 +522,7 @@ class SpaceService {
 
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v1/spaces/${encodeURIComponent(spaceId)}/hierarchy`,
+        MATRIX_PATHS.SPACE.HIERARCHY(spaceId),
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )
       return result as { rooms: Array<Record<string, unknown>>; next_batch?: string }
@@ -470,7 +549,7 @@ class SpaceService {
 
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v1/spaces/${encodeURIComponent(spaceId)}/hierarchy/v1`,
+        MATRIX_PATHS.SPACE.HIERARCHY_V1(spaceId),
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )
       return result as { rooms: Array<Record<string, unknown>>; next_batch?: string }
@@ -543,6 +622,129 @@ class SpaceService {
     } catch (err) {
       error(`[Space] 获取房间所属空间失败: ${roomId}, ${err}`)
       return []
+    }
+  }
+
+  async getRoomSpaceInfo(roomId: string): Promise<SpaceInfo | null> {
+    const client = this.getClient()
+    try {
+      const result = (await client.http.authedRequest(
+        'GET',
+        `/_matrix/client/v3/spaces/room/${encodeURIComponent(roomId)}`
+      )) as Record<string, unknown>
+      if (!result || !result.space_id) return null
+      return {
+        spaceId: result.space_id as string,
+        name: (result.name as string) || '',
+        topic: (result.topic as string) || undefined,
+        avatarUrl: (result.avatar_url as string) || undefined,
+        memberCount: (result.member_count as number) ?? 0,
+        childCount: (result.child_count as number) ?? 0
+      }
+    } catch (err) {
+      error(`[Space] 获取房间空间信息失败: ${roomId}, ${err}`)
+      return null
+    }
+  }
+
+  async checkSpaceRequiresAuth(spaceId: string): Promise<{
+    requiresAuth: boolean
+    accessible: boolean
+    reason?: string
+  }> {
+    const client = this.getClient()
+    if (!client) {
+      return { requiresAuth: true, accessible: false, reason: '客户端未初始化，需要登录后浏览空间' }
+    }
+
+    try {
+      await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.ROOM_HIERARCHY(spaceId), {
+        max_depth: '1'
+      })
+      return { requiresAuth: false, accessible: true }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      if (errMsg.includes('M_UNAUTHORIZED') || errMsg.includes('401')) {
+        info(`[Space] 空间 ${spaceId} 需要登录后才能访问`)
+        return { requiresAuth: true, accessible: false, reason: '该空间需要登录后才能浏览' }
+      }
+      if (errMsg.includes('M_FORBIDDEN') || errMsg.includes('403')) {
+        return { requiresAuth: true, accessible: false, reason: '您没有权限访问该空间' }
+      }
+      if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
+        return { requiresAuth: false, accessible: false, reason: '空间不存在或已被删除' }
+      }
+      error(`[Space] 检查空间可访问性失败: ${err}`)
+      return { requiresAuth: false, accessible: false, reason: '空间访问检测失败' }
+    }
+  }
+
+  async getSpaceHierarchyPublic(
+    spaceId: string,
+    options?: { from?: string; limit?: number; maxDepth?: number; suggestedOnly?: boolean }
+  ): Promise<{
+    rooms: Array<Record<string, unknown>>
+    next_batch?: string
+    requiresAuth?: boolean
+    authMessage?: string
+  }> {
+    const client = this.getClient()
+    if (!client) {
+      try {
+        const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
+        const queryParams: Record<string, string> = {}
+        if (options?.from) queryParams.from = options.from
+        if (options?.limit) queryParams.limit = String(options.limit)
+        if (options?.maxDepth) queryParams.max_depth = String(options.maxDepth)
+        if (options?.suggestedOnly) queryParams.suggested_only = String(options.suggestedOnly)
+
+        const qs = Object.keys(queryParams).length > 0 ? '?' + new URLSearchParams(queryParams).toString() : ''
+        const response = await getRuntimeAwareFetch()(
+          `${homeserverUrl}${MATRIX_PATHS.SPACE.ROOM_HIERARCHY(spaceId)}${qs}`
+        )
+
+        if (response.status === 401) {
+          info(`[Space] 匿名访问空间 ${spaceId} 需要登录`)
+          return { rooms: [], requiresAuth: true, authMessage: '请登录后浏览空间内容' }
+        }
+        if (response.status === 403) {
+          return { rooms: [], requiresAuth: true, authMessage: '您没有权限访问该空间' }
+        }
+        if (!response.ok) {
+          return { rooms: [] }
+        }
+
+        return (await response.json()) as { rooms: Array<Record<string, unknown>>; next_batch?: string }
+      } catch (err) {
+        error(`[Space] 匿名获取空间层级失败: ${err}`)
+        return { rooms: [] }
+      }
+    }
+
+    try {
+      const queryParams: Record<string, string> = {}
+      if (options?.from) queryParams.from = options.from
+      if (options?.limit) queryParams.limit = String(options.limit)
+      if (options?.maxDepth) queryParams.max_depth = String(options.maxDepth)
+      if (options?.suggestedOnly) queryParams.suggested_only = String(options.suggestedOnly)
+
+      const result = await client.http.authedRequest(
+        'GET',
+        MATRIX_PATHS.SPACE.ROOM_HIERARCHY(spaceId),
+        Object.keys(queryParams).length > 0 ? queryParams : undefined
+      )
+      return result as { rooms: Array<Record<string, unknown>>; next_batch?: string }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      if (errMsg.includes('M_UNAUTHORIZED') || errMsg.includes('401')) {
+        info(`[Space] 访问空间 ${spaceId} 需要登录`)
+        return { rooms: [], requiresAuth: true, authMessage: '请登录后浏览空间内容' }
+      }
+      if (errMsg.includes('M_FORBIDDEN') || errMsg.includes('403')) {
+        return { rooms: [], requiresAuth: true, authMessage: '您没有权限访问该空间' }
+      }
+      error(`[Space] 获取空间层级失败: ${spaceId}, ${err}`)
+      return { rooms: [] }
     }
   }
 

@@ -63,7 +63,6 @@
 </template>
 
 <script setup lang="ts">
-import { exists } from '@tauri-apps/plugin-fs'
 import { useAudioFileManager } from '@/hooks/useAudioFileManager'
 import { useAudioPlayback } from '@/hooks/useAudioPlayback'
 import { useVoiceDragControl } from '@/hooks/useVoiceDragControl'
@@ -77,6 +76,7 @@ import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { extractFileName } from '@/utils/Formatting'
 
 import { createLogger } from '@/utils/Logger'
+import { safeExistsPath } from '@/utils/PathUtil'
 
 const logger = createLogger('Voice')
 
@@ -245,7 +245,7 @@ onMounted(async () => {
     if (hasEncryptedFile.value && rawAudioUrl.value) {
       if (props.body.localPath) {
         try {
-          const localExists = await exists(props.body.localPath)
+          const localExists = await safeExistsPath(props.body.localPath)
           if (localExists) {
             localEncryptedAudioPath.value = props.body.localPath
           }

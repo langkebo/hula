@@ -2,7 +2,11 @@
  * Beacon 服务 (MSC3489)
  * 位置信标功能
  */
+
+import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+
+const logger = createLogger('MatrixBeaconService')
 
 type BeaconInfoContent = {
   description?: string
@@ -73,10 +77,11 @@ export interface UpdateBeaconLocationParams {
 }
 
 class MatrixBeaconService {
-  private get client() {
+  private getClient() {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('Matrix client not initialized')
+      logger.warn('Matrix client not initialized, beacon service unavailable.')
+      return null
     }
     return client
   }
@@ -86,6 +91,8 @@ class MatrixBeaconService {
    */
   async createBeacon(params: CreateBeaconParams): Promise<BeaconInfo> {
     const { roomId, description, timeout = 3600000 } = params
+    const client = this.getClient()
+    if (!client) throw new Error('Matrix client not initialized')
 
     const content = {
       msgtype: 'm.beacon_info',
@@ -96,12 +103,12 @@ class MatrixBeaconService {
       }
     }
 
-    const response = await this.client.sendEvent(roomId, 'm.beacon_info', content)
+    const response = await client.sendEvent(roomId, 'm.beacon_info', content)
     if (!response) {
       throw new Error('Failed to send beacon event')
     }
 
-    const userId = this.client.getUserId()
+    const userId = client.getUserId()
     if (!userId) {
       throw new Error('User not logged in')
     }
@@ -122,7 +129,9 @@ class MatrixBeaconService {
    */
   async getBeaconInfo(roomId: string, eventId: string): Promise<BeaconInfo | null> {
     try {
-      const event = await this.client.getRoomEvent(roomId, eventId)
+      const client = this.getClient()
+      if (!client) return null
+      const event = await client.getRoomEvent(roomId, eventId)
       const content = event.getContent() as BeaconEventContent
 
       if (!content || !content.beacon_info) return null
@@ -146,7 +155,9 @@ class MatrixBeaconService {
    */
   async getActiveBeacons(roomId: string): Promise<BeaconInfo[]> {
     try {
-      const result = await this.client.search({
+      const client = this.getClient()
+      if (!client) return []
+      const result = await client.search({
         room_ids: [roomId],
         filter: {
           types: ['m.beacon_info']
@@ -185,6 +196,8 @@ class MatrixBeaconService {
    */
   async updateBeaconLocation(params: UpdateBeaconLocationParams): Promise<BeaconLocation> {
     const { roomId, beaconInfoEventId, latitude, longitude, uncertainty, altitude, speed, bearing } = params
+    const client = this.getClient()
+    if (!client) throw new Error('Matrix client not initialized')
 
     const content = {
       msgtype: 'm.beacon',
@@ -197,13 +210,19 @@ class MatrixBeaconService {
           accuracy: uncertainty,
           altitude,
           speed,
-          bearing,
-          description: ''
+          bearing
         }
+      },
+      'm.relates_to': {
+        rel_type: 'm.reference',
+        event_id: beaconInfoEventId
       }
     }
 
-    const response = await this.client.sendEvent(roomId, 'm.beacon', content)
+    const response = await client.sendEvent(roomId, 'm.beacon', content)
+    if (!response) {
+      throw new Error('Failed to send beacon location event')
+    }
 
     return {
       event_id: response.event_id,
@@ -227,7 +246,9 @@ class MatrixBeaconService {
     limit: number = 50
   ): Promise<BeaconLocation[]> {
     try {
-      const result = await this.client.search({
+      const client = this.getClient()
+      if (!client) return []
+      const result = await client.search({
         room_ids: [roomId],
         filter: {
           types: ['m.beacon']
@@ -268,18 +289,26 @@ class MatrixBeaconService {
   }
 
   /**
-   * 停止信标 (更新 beacon_info live 为 false)
+   * 停止信标
    */
-  async stopBeacon(roomId: string, eventId: string): Promise<boolean> {
+  async stopBeacon(roomId: string, beaconInfoEventId: string): Promise<boolean> {
     try {
-      const event = await this.client.getRoomEvent(roomId, eventId)
+      const client = this.getClient()
+      if (!client) return false
+      const event = await client.getRoomEvent(roomId, beaconInfoEventId)
       const content = event.getContent() as BeaconEventContent
 
       if (!content || !content.beacon_info) return false
 
-      content.beacon_info.live = false
+      const updatedContent = {
+        ...content,
+        beacon_info: {
+          ...content.beacon_info,
+          live: false
+        }
+      }
 
-      await this.client.sendEvent(roomId, 'm.beacon_info', content)
+      await client.sendEvent(roomId, 'm.beacon_info', updatedContent)
       return true
     } catch {
       return false
@@ -291,7 +320,9 @@ class MatrixBeaconService {
    */
   async deleteBeacon(roomId: string, eventId: string): Promise<boolean> {
     try {
-      await this.client.redactEvent(roomId, eventId, undefined, { reason: 'Beacon deleted' })
+      const client = this.getClient()
+      if (!client) return false
+      await client.redactEvent(roomId, eventId, undefined, { reason: 'Beacon deleted' })
       return true
     } catch {
       return false

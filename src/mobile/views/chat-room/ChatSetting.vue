@@ -418,12 +418,6 @@ async function handleExit() {
   }
 }
 
-const hasBadge6 = computed(() => {
-  if (globalStore.currentSessionRoomId !== '1') return false
-  const currentUser = groupStore.getUserInfo(userStore.userInfo!.uid!)!
-  return currentUser?.itemIds?.includes('6')
-})
-
 const clickInfo = () => {
   if (isGroup) {
     openAvatarCropper()
@@ -444,7 +438,7 @@ const handleLoadGroupAnnoun = async () => {
       logger.error('当前会话没有roomId')
       return
     }
-    isAddAnnoun.value = isLord.value || isAdmin.value || hasBadge6.value!
+    isAddAnnoun.value = isLord.value || isAdmin.value
     const data = await announcementStore.getGroupAnnouncementList(roomId, 1, 10)
     if (data) {
       announList.value = data.records

@@ -258,7 +258,7 @@ useMitt.on(
 
 useMitt.on(WsResponseMessageType.NOTIFY_EVENT, async () => {
   await contactStore.getApplyUnReadCount()
-  await Promise.all([contactStore.getApplyPage('friend', true), contactStore.getApplyPage('group', true)])
+  await Promise.allSettled([contactStore.getApplyPage('friend', true), contactStore.getApplyPage('group', true)])
 })
 
 // 处理自己被移除
@@ -361,7 +361,7 @@ useMitt.on(
 
     groupStore.addGroupDetail(param.roomId)
     // 更新群内的总人数
-    groupStore.updateGroupNumber(param.roomId, param.totalNum, param.onlineNum)
+    groupStore.updateGroupNumber(param.roomId, param.totalNum)
   }
 )
 
@@ -457,7 +457,6 @@ useMitt.on(WsResponseMessageType.ONLINE, async (onStatusChangeType: OnStatusChan
   if (onStatusChangeType.type === 1) {
     groupStore.updateOnlineNum({
       roomId: onStatusChangeType.roomId,
-      onlineNum: onStatusChangeType.onlineNum,
       isAdd: true
     })
     groupStore.updateUserItem(
@@ -504,7 +503,6 @@ useMitt.on(WsResponseMessageType.OFFLINE, async (onStatusChangeType: OnStatusCha
   if (onStatusChangeType.type === 1) {
     groupStore.updateOnlineNum({
       roomId: onStatusChangeType.roomId,
-      onlineNum: onStatusChangeType.onlineNum,
       isAdd: false
     })
     groupStore.updateUserItem(
@@ -698,19 +696,24 @@ onMounted(async () => {
     switch (op.type) {
       case 'message': {
         const payload = op.payload as Record<string, unknown>
+        const localEventId = `local-${op.id}`
         if (payload.eventType && payload.content) {
-          // 处理 MatrixEventService.sendEvent 的离线入队
           const { roomId, eventType, content } = payload as {
             roomId: string
             eventType: string
             content: Record<string, unknown>
           }
-          await matrixClientService.getClient()?.sendEvent(roomId, eventType, content)
+          const client = matrixClientService.getClient()
+          if (client) {
+            const sendResult = await client.sendEvent(roomId, eventType, content)
+            matrixMessageService.registerSentMessage(localEventId, sendResult.event_id)
+          }
         } else {
-          // 处理 MatrixMessageService.sendStructuredMessage 的旧格式（如果有）
-          // 或者如果是嵌套在 payload.payload 中
           const structuredPayload = (payload.payload || payload) as SendMessagePayload
-          await matrixMessageService.sendStructuredMessage(structuredPayload)
+          const result = await matrixMessageService.sendStructuredMessage(structuredPayload)
+          if (result?.event_id) {
+            matrixMessageService.registerSentMessage(localEventId, result.event_id)
+          }
         }
         break
       }

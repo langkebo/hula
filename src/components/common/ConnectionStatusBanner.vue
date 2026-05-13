@@ -37,16 +37,25 @@
         <button v-if="state === 'error'" class="connection-status-banner__retry" @click="$emit('retry')">
           {{ t('connection.retry') }}
         </button>
+        <button
+          v-if="state === 'error'"
+          class="connection-status-banner__retry"
+          :disabled="diagnosing"
+          @click="onDiagnose">
+          {{ diagnosing ? t('connection.diagnose_running') : t('connection.diagnose') }}
+        </button>
       </div>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { NSpin } from 'naive-ui'
-import { computed } from 'vue'
+import { NSpin, useDialog, useMessage } from 'naive-ui'
+import { computed, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ConnectionState } from '@/composables/useConnectionStatus'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { type DiagnosticResult, MatrixDiagnostics } from '@/utils/MatrixDiagnostics'
 
 const props = withDefaults(
   defineProps<{
@@ -65,6 +74,11 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+const dialog = useDialog()
+const message = useMessage()
+const matrixStore = useMatrixStore()
+
+const diagnosing = ref(false)
 
 const showBanner = computed(() => props.state !== 'online')
 
@@ -83,6 +97,38 @@ const statusText = computed(() => {
       return ''
   }
 })
+
+const renderResults = (results: DiagnosticResult[]) =>
+  h(
+    'ul',
+    { style: 'margin:0;padding-left:18px;line-height:1.6;font-size:13px;' },
+    results.map((r) => {
+      const icon = r.status === 'success' ? '✅' : r.status === 'warning' ? '⚠️' : '❌'
+      return h('li', { key: r.name }, `${icon} ${r.name}: ${r.message}`)
+    })
+  )
+
+const onDiagnose = async () => {
+  if (diagnosing.value) return
+  const homeserverUrl = matrixStore.homeserverUrl
+  if (!homeserverUrl) {
+    message.warning(t('connection.diagnose_no_homeserver'))
+    return
+  }
+  diagnosing.value = true
+  try {
+    const results = await new MatrixDiagnostics(homeserverUrl).runAll()
+    dialog.info({
+      title: t('connection.diagnose_title'),
+      content: () => renderResults(results),
+      positiveText: 'OK'
+    })
+  } catch (err) {
+    message.error(t('connection.diagnose_failed', { message: String(err) }))
+  } finally {
+    diagnosing.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -143,6 +189,11 @@ const statusText = computed(() => {
 
 .connection-status-banner__retry:hover {
   background: var(--hula-surface-inverse-hover);
+}
+
+.connection-status-banner__retry:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .connection-banner-enter-active,

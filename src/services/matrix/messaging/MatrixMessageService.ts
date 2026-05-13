@@ -1,5 +1,5 @@
 import { info, error as logError } from '@tauri-apps/plugin-log'
-import type { ISendEventResponse, MatrixEvent } from 'matrix-js-sdk'
+import type { ISendEventResponse, MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import {
   ERROR_CLIENT_NOT_INITIALIZED_EN,
   MatrixBurnDuration,
@@ -71,6 +71,29 @@ const MESSAGE_SEND_RETRY_DELAY_MS = 1000
 const MESSAGE_SEND_RETRY_BACKOFF = 2
 
 class MatrixMessageService {
+  private localToRemoteEventIdMap: Map<string, string> = new Map()
+
+  isLocalEventId(eventId: string): boolean {
+    return eventId.startsWith('local-')
+  }
+
+  getRemoteEventId(localEventId: string): string | undefined {
+    return this.localToRemoteEventIdMap.get(localEventId)
+  }
+
+  resolveEventId(eventId: string): string {
+    if (this.isLocalEventId(eventId)) {
+      return this.getRemoteEventId(eventId) ?? eventId
+    }
+    return eventId
+  }
+
+  registerSentMessage(localEventId: string, remoteEventId: string): void {
+    if (this.isLocalEventId(localEventId)) {
+      this.localToRemoteEventIdMap.set(localEventId, remoteEventId)
+      info(`[MatrixMessage] 已注册本地→远程事件 ID 映射: ${localEventId} -> ${remoteEventId}`)
+    }
+  }
   private asRecord(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
   }
@@ -264,6 +287,9 @@ class MatrixMessageService {
         }
       }
       const eventId = await matrixEventService.sendEvent(payload.roomId, MatrixEventType.ROOM_MESSAGE, content)
+      if (payload.id && this.isLocalEventId(payload.id)) {
+        this.registerSentMessage(payload.id, eventId)
+      }
       info(`[MatrixMessage] Structured message sent to ${payload.roomId}: ${eventId}`)
       return { event_id: eventId } as ISendEventResponse
     }, 'sendStructuredMessage')
@@ -353,9 +379,14 @@ class MatrixMessageService {
   }
 
   async recallMessage(roomId: string, eventId: string, txId?: string): Promise<void> {
+    const resolvedId = this.resolveEventId(eventId)
+    if (this.isLocalEventId(resolvedId)) {
+      throw new Error('Cannot recall a message that has not been sent yet (local ID)')
+    }
+
     if (!navigator.onLine) {
-      offlineQueueService.enqueue('redact', roomId, { roomId, eventId })
-      info(`[MatrixMessage] 离线状态，已将撤回消息操作入队: ${roomId}/${eventId}`)
+      offlineQueueService.enqueue('redact', roomId, { roomId, eventId: resolvedId })
+      info(`[MatrixMessage] 离线状态，已将撤回消息操作入队: ${roomId}/${resolvedId}`)
       return
     }
 
@@ -366,8 +397,8 @@ class MatrixMessageService {
       }
 
       const txnId = txId || `m${Date.now()}`
-      await client.redactEvent(roomId, eventId, txnId)
-      info(`[MatrixMessage] Message redacted in ${roomId}: ${eventId}`)
+      await client.redactEvent(roomId, resolvedId, txnId)
+      info(`[MatrixMessage] Message redacted in ${roomId}: ${resolvedId}`)
     } catch (err) {
       logError(`[MatrixMessage] Failed to recall message: ${err}`)
       throw err
@@ -441,11 +472,15 @@ class MatrixMessageService {
   }
 
   async editMessage(roomId: string, eventId: string, newContent: string): Promise<ISendEventResponse> {
+    const resolvedId = this.resolveEventId(eventId)
+    if (this.isLocalEventId(resolvedId)) {
+      throw new Error('Cannot edit a message that has not been sent yet (local ID)')
+    }
     try {
-      const newEventId = await matrixMessageRelationService.editMessage(roomId, eventId, {
+      const newEventId = await matrixMessageRelationService.editMessage(roomId, resolvedId, {
         body: newContent
       })
-      info(`[MatrixMessage] Message edited in ${roomId}: ${eventId}`)
+      info(`[MatrixMessage] Message edited in ${roomId}: ${resolvedId}`)
       return { event_id: newEventId } as ISendEventResponse
     } catch (err) {
       logError(`[MatrixMessage] Failed to edit message: ${err}`)
@@ -608,12 +643,22 @@ class MatrixMessageService {
         if (beforeIndex > 0) {
           startIndex = Math.max(0, beforeIndex - limit)
           endIndex = beforeIndex
+        } else if (beforeIndex < 0 && events.length < limit) {
+          const serverEvents = await this.fetchServerMessages(client, roomId, before, limit, 'b')
+          events = [...serverEvents, ...events]
+          startIndex = 0
+          endIndex = Math.min(events.length, limit)
         }
       } else if (after) {
         const afterIndex = events.findIndex((e) => e.getId() === after)
         if (afterIndex >= 0) {
           startIndex = afterIndex + 1
           endIndex = Math.min(events.length, startIndex + limit)
+        } else if (afterIndex < 0 && events.length < limit) {
+          const serverEvents = await this.fetchServerMessages(client, roomId, after, limit, 'f')
+          events = [...events, ...serverEvents]
+          startIndex = 0
+          endIndex = Math.min(events.length, limit)
         }
       }
 
@@ -627,6 +672,27 @@ class MatrixMessageService {
     } catch (err) {
       logError(`[MatrixMessage] Failed to get message list: ${err}`)
       throw err
+    }
+  }
+
+  private async fetchServerMessages(
+    client: MatrixClient,
+    roomId: string,
+    fromToken: string,
+    limit: number,
+    dir: 'b' | 'f'
+  ): Promise<MatrixEvent[]> {
+    try {
+      const response = (await client.http.authedRequest(
+        'GET',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages`,
+        { from: fromToken, limit: String(limit), dir }
+      )) as Record<string, unknown>
+      const chunk = response.chunk
+      return Array.isArray(chunk) ? (chunk as MatrixEvent[]) : []
+    } catch (err) {
+      logError(`[MatrixMessage] Failed to fetch server messages: ${err}`)
+      return []
     }
   }
 
@@ -734,18 +800,18 @@ class MatrixMessageService {
    */
   async markMsgs(roomId: string, eventIds: string[]): Promise<number> {
     try {
-      let successCount = 0
-      for (const eventId of eventIds) {
-        try {
-          await matrixReceiptService.sendReadReceiptByEventId(roomId, eventId)
-          successCount++
-        } catch {
-          logError(`[MatrixMessage] Failed to mark message ${eventId} as read`)
-        }
-      }
+      const resolvedIds = eventIds.map((id) => this.resolveEventId(id)).filter((id) => !this.isLocalEventId(id))
+      if (resolvedIds.length === 0) return 0
 
-      info(`[MatrixMessage] Marked ${successCount}/${eventIds.length} messages as read in ${roomId}`)
-      return successCount
+      const latestEventId = resolvedIds[resolvedIds.length - 1]
+      try {
+        await matrixReceiptService.sendReadReceiptByEventId(roomId, latestEventId)
+        info(`[MatrixMessage] Marked ${resolvedIds.length} messages as read in ${roomId} (latest: ${latestEventId})`)
+        return resolvedIds.length
+      } catch {
+        logError(`[MatrixMessage] Failed to mark latest message ${latestEventId} as read`)
+        return 0
+      }
     } catch (err) {
       logError(`[MatrixMessage] Failed to mark messages as read: ${err}`)
       throw err

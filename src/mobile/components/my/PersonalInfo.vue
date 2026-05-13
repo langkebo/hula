@@ -40,31 +40,6 @@
             <img class="w-14px h-14px dark:invert" src="@/assets/mobile/my/qr-code.webp" alt="" />
           </span>
         </div>
-        <Transition name="medal-fade">
-          <div
-            v-if="props.isShow"
-            ref="medalBox"
-            style="transform: translateZ(0)"
-            class="relative w-118px overflow-hidden">
-            <img class="block w-full" src="@/assets/mobile/my/my-medal.webp" alt="" />
-            <div class="text-10px absolute inset-0 flex ps-2 items-center justify-around text-white font-medium">
-              <span class="flex items-center">
-                <div v-if="(userStore.userInfo?.itemIds?.length ?? 0) > 0">
-                  <span class="font-bold">{{ t('mobile_personal_info.unlocked_count_park.text1') }}</span>
-                  <span class="medal-number">{{ userStore.userInfo?.itemIds?.length }}</span>
-                  <span class="font-bold">{{ t('mobile_personal_info.unlocked_count_park.text2') }}</span>
-                </div>
-                <span v-else>{{ t('mobile_personal_info.no_medal') }}</span>
-              </span>
-
-              <span class="flex ms-3">
-                <svg class="iconpark-icon block w-5 h-5">
-                  <use href="#right"></use>
-                </svg>
-              </span>
-            </div>
-          </div>
-        </Transition>
       </div>
     </div>
   </div>

@@ -7,6 +7,7 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
 import { createLogger } from '@/utils/Logger'
+import { safeExistsPath } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('VideoViewer')
@@ -76,7 +77,7 @@ export const useVideoViewer = () => {
     }
 
     try {
-      const existsFlag = await exists(localPath)
+      const existsFlag = await safeExistsPath(localPath)
       return existsFlag ? localPath : null
     } catch (error) {
       logger.warn('检查持久化视频路径失败:', error)

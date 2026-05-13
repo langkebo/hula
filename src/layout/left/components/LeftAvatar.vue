@@ -15,7 +15,7 @@
         <n-avatar
           :size="34"
           :src="avatarSrc"
-          :color="settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-surface-elevated)'"
+          :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#ffffff'"
           :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
           round />
 
@@ -38,7 +38,7 @@
           <n-avatar
             :src="avatarSrc"
             round
-            :color="settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-surface-elevated)'"
+            :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#ffffff'"
             :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
             class="size-68px text-20px select-none cursor-default" />
 
@@ -118,7 +118,7 @@ const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(userStore.userInfo?.av
 const currentUserLocation = computed(() => {
   const uid = userStore.userInfo?.uid
   if (!uid) return ''
-  return groupStore.getUserInfo(uid)?.locPlace ?? ''
+  return ((groupStore.getUserInfo(uid) as unknown as Record<string, unknown> | undefined)?.locPlace as string) ?? ''
 })
 const { shrinkStatus, infoShow, themeColor, openContent, handleEditing } = leftHook()
 const { statusIcon, statusTitle, statusBgColor } = useOnlineStatus()

@@ -7,13 +7,16 @@ import {
   buildSpaceWorkbenchRoute,
   normalizeSpaceId,
   normalizeWorkbenchSearch,
+  normalizeWorkbenchSessionEngagementFilter,
   normalizeWorkbenchSessionSort,
   normalizeWorkbenchSessionTypeFilter,
   readSpaceWorkbenchSearch,
+  readSpaceWorkbenchSessionEngagementFilter,
   readSpaceWorkbenchSessionSort,
   readSpaceWorkbenchSessionTypeFilter,
   readSpaceWorkbenchSpaceId,
   SPACE_ROUTE_NAMES,
+  WORKBENCH_SESSION_ENGAGEMENT_FILTERS,
   WORKBENCH_SESSION_SORTS,
   WORKBENCH_SESSION_TYPE_FILTERS
 } from '@/router/spaceNavigation'
@@ -96,6 +99,34 @@ describe('spaceNavigation', () => {
     expect(readSpaceWorkbenchSessionSort({ sort: ' name ' })).toBe(WORKBENCH_SESSION_SORTS.name)
     expect(readSpaceWorkbenchSessionSort({ sort: [' recent ', 'name'] })).toBe(WORKBENCH_SESSION_SORTS.recent)
     expect(readSpaceWorkbenchSessionSort({})).toBe(WORKBENCH_SESSION_SORTS.recent)
+  })
+
+  it('serializes and reads the engagement filter axis', () => {
+    expect(normalizeWorkbenchSessionEngagementFilter(' mention ')).toBe(WORKBENCH_SESSION_ENGAGEMENT_FILTERS.mention)
+    expect(normalizeWorkbenchSessionEngagementFilter('UNREAD')).toBe(WORKBENCH_SESSION_ENGAGEMENT_FILTERS.unread)
+    expect(normalizeWorkbenchSessionEngagementFilter('invite')).toBe(WORKBENCH_SESSION_ENGAGEMENT_FILTERS.invite)
+    expect(normalizeWorkbenchSessionEngagementFilter('unknown')).toBe(WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all)
+    expect(normalizeWorkbenchSessionEngagementFilter(undefined)).toBe(WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all)
+
+    expect(readSpaceWorkbenchSessionEngagementFilter({ engagement: ' mention ' })).toBe(
+      WORKBENCH_SESSION_ENGAGEMENT_FILTERS.mention
+    )
+    expect(readSpaceWorkbenchSessionEngagementFilter({ engagement: ['unread', 'mention'] })).toBe(
+      WORKBENCH_SESSION_ENGAGEMENT_FILTERS.unread
+    )
+    expect(readSpaceWorkbenchSessionEngagementFilter({})).toBe(WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all)
+
+    expect(
+      buildSpaceWorkbenchQuery('!space:server', {
+        engagement: ' mention '
+      })
+    ).toEqual({ spaceId: '!space:server', engagement: 'mention' })
+
+    expect(
+      buildSpaceWorkbenchQuery('!space:server', {
+        engagement: 'all'
+      })
+    ).toEqual({ spaceId: '!space:server' })
   })
 
   it('redirects desktop legacy space routes into the dedicated space workbench', () => {

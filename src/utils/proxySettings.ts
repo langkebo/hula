@@ -1,4 +1,5 @@
 import type { ProxySettings } from '@/typings/global'
+import { safeJsonParse, validateObject } from '@/utils/typeGuard'
 
 const LEGACY_PROXY_PORT = '28008'
 const LEGACY_PROXY_HOSTS = new Set(['localhost', '127.0.0.1'])
@@ -74,7 +75,19 @@ export function parseStoredProxySettings(value: string | null, defaultHomeserver
     return null
   }
 
-  const parsed = JSON.parse(value) as Partial<ProxySettings>
+  const isValidProxySettings = (val: unknown): val is Partial<ProxySettings> =>
+    validateObject<Record<string, unknown>>(val, [], {
+      apiType: (v) => v === undefined || typeof v === 'string',
+      apiIp: (v) => v === undefined || typeof v === 'string',
+      apiPort: (v) => v === undefined || typeof v === 'string',
+      apiSuffix: (v) => v === undefined || typeof v === 'string',
+      wsType: (v) => v === undefined || typeof v === 'string',
+      wsIp: (v) => v === undefined || typeof v === 'string',
+      wsPort: (v) => v === undefined || typeof v === 'string',
+      wsSuffix: (v) => v === undefined || typeof v === 'string'
+    })
+
+  const parsed = safeJsonParse(value, isValidProxySettings, createEmptyProxySettings())
   const merged = {
     ...createEmptyProxySettings(),
     ...parsed

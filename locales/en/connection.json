@@ -3,5 +3,10 @@
   "reconnecting": "Reconnecting...",
   "reconnecting_attempt": "Reconnecting ({count}/{max})...",
   "failed": "Connection failed, please retry",
-  "retry": "Retry"
+  "retry": "Retry",
+  "diagnose": "Run self-check",
+  "diagnose_running": "Running...",
+  "diagnose_title": "Matrix Connection Self-check",
+  "diagnose_no_homeserver": "No Homeserver configured, cannot self-check",
+  "diagnose_failed": "Self-check failed: {message}"
 }

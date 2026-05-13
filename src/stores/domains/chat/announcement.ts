@@ -35,14 +35,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
     const isLord = groupStore.isCurrentLord(userStore.userInfo.uid) ?? false
     const isAdmin = groupStore.isAdmin(userStore.userInfo.uid) ?? false
 
-    const hasBadge6 = () => {
-      if (globalStore.currentSessionRoomId !== '1') return false
-
-      const currentUser = groupStore.getUserInfo(userStore.userInfo!.uid)
-      return currentUser?.itemIds?.includes('6') ?? false
-    }
-
-    return isLord || isAdmin || hasBadge6()
+    return isLord || isAdmin
   })
 
   const clearAnnouncements = () => {

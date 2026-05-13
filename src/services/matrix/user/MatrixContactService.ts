@@ -1,9 +1,12 @@
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import type { MatrixEvent, RoomMember, User } from 'matrix-js-sdk'
+import { ERROR_CLIENT_NOT_INITIALIZED_EN } from '@/common/matrixConstants'
+import { normalizeMatrixUserId, toLocalpart } from '@/utils/userIdentity'
 import { matrixFriendService } from '../friends/MatrixFriendService'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
 import { matrixRoomService } from '../room/MatrixRoomService'
+import { synapseRustExtensionsService } from '../SynapseRustExtensionsService'
 
 export interface UserProfile {
   userId: string
@@ -24,6 +27,20 @@ export interface DirectChatResult {
 }
 
 class MatrixContactService {
+  private hasLoggedSearchBeforeClientReady = false
+
+  private isClientNotReadyError(err: unknown): boolean {
+    return err instanceof Error && err.message === ERROR_CLIENT_NOT_INITIALIZED_EN
+  }
+
+  private getCurrentMatrixUserId(): string {
+    return matrixClientService.getUserId() || matrixClientService.getClient()?.getUserId?.() || ''
+  }
+
+  private normalizeTargetUserId(value: string): string {
+    return normalizeMatrixUserId(value, this.getCurrentMatrixUserId())
+  }
+
   private toUserItem(user: Partial<User> & { userId?: string }, fallbackUserId: string): UserItem {
     return {
       uid: user.userId || fallbackUserId,
@@ -39,11 +56,49 @@ class MatrixContactService {
   }
 
   async searchUsers(query: string, limit = 10): Promise<UserProfile[]> {
+    const trimmedQuery = query.trim()
+    if (!trimmedQuery) {
+      return []
+    }
+
     try {
+      const normalizedUserId = this.normalizeTargetUserId(trimmedQuery)
+      const exactKeyword = toLocalpart(normalizedUserId) || trimmedQuery
+
+      const exactMatches = await synapseRustExtensionsService.searchFriends(exactKeyword, {
+        limit,
+        mode: 'exact'
+      })
+      if (exactMatches.length > 0) {
+        return exactMatches.map((user) => ({
+          userId: user.user_id,
+          displayName: user.displayname ?? user.username ?? undefined,
+          avatarUrl: user.avatar_url ?? undefined
+        }))
+      }
+
+      const fallbackMatches = await synapseRustExtensionsService.searchFriends(trimmedQuery, {
+        limit,
+        mode: 'fuzzy'
+      })
+      if (fallbackMatches.length > 0) {
+        return fallbackMatches.map((user) => ({
+          userId: user.user_id,
+          displayName: user.displayname ?? user.username ?? undefined,
+          avatarUrl: user.avatar_url ?? undefined
+        }))
+      }
+
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        if (!this.hasLoggedSearchBeforeClientReady) {
+          this.hasLoggedSearchBeforeClientReady = true
+          info('[MatrixContact] Matrix client 未就绪，返回空搜索结果')
+        }
+        return []
       }
+
+      this.hasLoggedSearchBeforeClientReady = false
 
       const response = await client.searchUserDirectory({
         term: query,
@@ -56,6 +111,13 @@ class MatrixContactService {
         avatarUrl: user.avatar_url ?? undefined
       }))
     } catch (err) {
+      if (this.isClientNotReadyError(err)) {
+        if (!this.hasLoggedSearchBeforeClientReady) {
+          this.hasLoggedSearchBeforeClientReady = true
+          info('[MatrixContact] Matrix client 未就绪，返回空搜索结果')
+        }
+        return []
+      }
       logError(`[MatrixContact] Failed to search users: ${err}`)
       throw err
     }
@@ -168,7 +230,7 @@ class MatrixContactService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('Matrix client not initialized')
+        return []
       }
 
       const users: UserItem[] = []
@@ -206,8 +268,9 @@ class MatrixContactService {
 
   async sendAddFriendRequest(userId: string, reason?: string): Promise<DirectChatResult> {
     try {
-      await matrixFriendService.sendFriendRequest(userId, reason)
-      const roomId = (await matrixDirectMessageService.getDmForUser(userId, false)) ?? ''
+      const normalizedUserId = this.normalizeTargetUserId(userId)
+      await matrixFriendService.sendFriendRequest(normalizedUserId, reason)
+      const roomId = (await matrixDirectMessageService.getDmForUser(normalizedUserId, false)) ?? ''
       return { roomId }
     } catch (err) {
       logError(`[MatrixContact] Failed to send friend request: ${err}`)

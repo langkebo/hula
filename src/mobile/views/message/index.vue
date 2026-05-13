@@ -37,11 +37,7 @@
               {{ userStore.userInfo?.name ? userStore.userInfo.name : t('mobile_home.noname') }}
             </p>
             <p class="text-(10px [--hula-text-primary])">
-              {{
-                userStore.userInfo?.uid
-                  ? groupStore.getUserInfo(userStore.userInfo!.uid)?.locPlace || t('mobile_home.china')
-                  : t('mobile_home.china')
-              }}
+              {{ t('mobile_home.china') }}
             </p>
           </div>
         </div>

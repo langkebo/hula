@@ -44,3 +44,53 @@ export interface WorkerResponse {
 }
 
 export type WorkerRequestHandler = (message: WorkerMessage) => Promise<WorkerResponse>
+
+export interface SearchRoomDoc {
+  roomId: string
+  name: string
+  avatarUrl?: string
+  memberCount?: number
+}
+
+export interface SearchEventDoc {
+  eventId: string
+  roomId: string
+  sender: string
+  timestamp: number
+  msgtype?: string
+  body: string
+}
+
+export interface SearchQueryPayload {
+  term: string
+  scope: 'messages' | 'rooms'
+  roomId?: string
+  limit?: number
+  offset?: number
+}
+
+export interface SearchMessageHit {
+  eventId: string
+  roomId: string
+  sender: string
+  timestamp: number
+  preview: string
+  score: number
+}
+
+export interface SearchRoomHit {
+  roomId: string
+  roomName: string
+  score: number
+}
+
+export interface SearchQueryResult {
+  messages?: SearchMessageHit[]
+  rooms?: SearchRoomHit[]
+}
+
+export interface SearchIndexStats {
+  rooms: number
+  events: number
+  tokens: number
+}

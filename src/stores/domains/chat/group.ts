@@ -8,6 +8,7 @@ import { Direction, EventType, type RoomMember } from '@/services/matrix/sdk'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
+import { toLocalpart } from '@/utils/userIdentity'
 
 const logger = createLogger('GroupStore')
 
@@ -27,10 +28,7 @@ export interface MatrixRoomMember {
   roleId: number
   lastOptTime: number
   myName?: string
-  locPlace?: string
   userStateId?: string
-  wearingItemId?: string
-  itemIds?: string[]
   linkedGitee?: boolean
   linkedGithub?: boolean
   oauthProviders?: ('gitee' | 'github')[]
@@ -45,7 +43,6 @@ export interface MatrixGroupInfo {
   topic: string | null
   memberCount: number
   memberNum?: number
-  onlineNum?: number
   isEncrypted: boolean
   isPublic: boolean
   creator: string | null
@@ -56,6 +53,8 @@ export interface MatrixGroupInfo {
   roleId: number
   account: string
   myName: string
+  joinRule?: string
+  onlineCount?: number
 }
 
 export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
@@ -217,8 +216,8 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       const matrixMembers: MatrixRoomMember[] = members.map((m: RoomMember) => ({
         userId: m.userId,
         uid: m.userId,
-        displayName: m.name || m.userId.split(':')[0],
-        name: m.name || m.userId.split(':')[0],
+        displayName: m.name || toLocalpart(m.userId),
+        name: m.name || toLocalpart(m.userId),
         avatarUrl: m.getMxcAvatarUrl?.() || null,
         avatar: m.getMxcAvatarUrl?.() || '',
         membership: (m.membership || 'leave') as MatrixRoomMember['membership'],
@@ -226,9 +225,11 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
         isModerator: m.powerLevel >= 50,
         isCreator: m.powerLevel >= 100,
         roleId: m.powerLevel >= 100 ? 0 : m.powerLevel >= 50 ? 1 : 2,
-        activeStatus: OnlineEnum.ONLINE,
+        // 默认 OFFLINE，让真实的 presence 同步流（applyPresenceToStores / User.presence 事件）来更新；
+        // 之前硬编码 ONLINE 会让 UI 永远显示绿点，与服务端状态脱节。
+        activeStatus: OnlineEnum.OFFLINE,
         lastOptTime: Date.now(),
-        account: m.userId.split(':')[0]
+        account: toLocalpart(m.userId)
       }))
 
       membersMap[roomId] = matrixMembers
@@ -269,7 +270,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
             ?.topic as string) || null,
         memberCount: room.getJoinedMembers().length,
         memberNum: room.getJoinedMembers().length,
-        onlineNum: room.getJoinedMembers().length,
+        // onlineNum 留空由 presence 同步流填写；不要用 memberCount 冒充
         isEncrypted: client.isRoomEncrypted(roomId),
         isPublic: room.currentState.getStateEvents(EventType.RoomJoinRules, '')?.getContent()?.join_rule === 'public',
         creator,
@@ -454,8 +455,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
         hasUpdated = true
         if (groupInfoMap[roomId]) {
           groupInfoMap[roomId] = {
-            ...groupInfoMap[roomId],
-            onlineNum: membersMap[roomId].filter((member) => member.activeStatus === OnlineEnum.ONLINE).length
+            ...groupInfoMap[roomId]
           }
         }
       }
@@ -474,29 +474,27 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     }
   }
 
-  function updateOnlineNum(options: { uid?: string; roomId?: string; onlineNum?: number; isAdd?: boolean }): void {
-    const { uid, roomId, onlineNum, isAdd } = options
+  function updateOnlineNum(options: { uid?: string; roomId?: string; isAdd?: boolean }): void {
+    const { uid, roomId, isAdd } = options
     const targetRoomId = roomId || globalStore.currentSessionRoomId
 
     if (!targetRoomId || !membersMap[targetRoomId]) return
 
     if (uid) {
       membersMap[targetRoomId] = membersMap[targetRoomId].map((m) =>
-        m.userId === uid || m.uid === uid
-          ? { ...m, activeStatus: onlineNum !== undefined && onlineNum > 0 ? OnlineEnum.ONLINE : OnlineEnum.OFFLINE }
-          : m
+        m.userId === uid || m.uid === uid ? { ...m, activeStatus: isAdd ? OnlineEnum.ONLINE : OnlineEnum.OFFLINE } : m
       )
-    } else if (isAdd && onlineNum !== undefined) {
+    } else if (isAdd) {
       membersMap[targetRoomId] = membersMap[targetRoomId].map((m) => ({
         ...m,
-        activeStatus: onlineNum > 0 ? OnlineEnum.ONLINE : OnlineEnum.OFFLINE
+        activeStatus: isAdd ? OnlineEnum.ONLINE : OnlineEnum.OFFLINE
       }))
     }
   }
 
-  function updateGroupNumber(roomId: string, totalNum: number, onlineNum: number): void {
+  function updateGroupNumber(roomId: string, totalNum: number): void {
     if (groupInfoMap[roomId]) {
-      groupInfoMap[roomId] = { ...groupInfoMap[roomId], memberNum: totalNum, onlineNum }
+      groupInfoMap[roomId] = { ...groupInfoMap[roomId], memberNum: totalNum }
     }
   }
 

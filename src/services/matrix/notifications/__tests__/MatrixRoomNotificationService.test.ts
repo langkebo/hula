@@ -76,4 +76,35 @@ describe('MatrixRoomNotificationService', () => {
       expect(setRoomAccountData).toHaveBeenCalled()
     })
   })
+
+  describe('fetchUnreadCount', () => {
+    it('returns notification + highlight from /unread_count', async () => {
+      const authedRequest = vi.fn().mockResolvedValue({ notification_count: 5, highlight_count: 2 })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: { authedRequest }
+      } as unknown as MatrixClient)
+
+      const result = await matrixRoomNotificationService.fetchUnreadCount('!u:server')
+
+      expect(authedRequest).toHaveBeenCalledTimes(1)
+      expect(result).toEqual({ notification_count: 5, highlight_count: 2 })
+    })
+
+    it('coerces missing fields to zero', async () => {
+      const authedRequest = vi.fn().mockResolvedValue({})
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: { authedRequest }
+      } as unknown as MatrixClient)
+
+      const result = await matrixRoomNotificationService.fetchUnreadCount('!z:server')
+
+      expect(result).toEqual({ notification_count: 0, highlight_count: 0 })
+    })
+
+    it('returns null when client is missing', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+      const result = await matrixRoomNotificationService.fetchUnreadCount('!n:server')
+      expect(result).toBeNull()
+    })
+  })
 })

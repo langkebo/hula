@@ -18,8 +18,12 @@ vi.mock('../../MatrixClientService', () => ({
   matrixClientService: mockClientService
 }))
 
+const mockProfileInfo = {
+  getProfileInfo: vi.fn()
+}
+
 const mockClient = {
-  getProfile: vi.fn(),
+  getProfileManager: vi.fn(() => mockProfileInfo),
   setDisplayName: vi.fn(),
   setAvatarUrl: vi.fn(),
   uploadContent: vi.fn()
@@ -49,7 +53,7 @@ describe('ProfileService', () => {
     })
 
     it('should return user profile', async () => {
-      mockClient.getProfile.mockResolvedValueOnce({
+      mockProfileInfo.getProfileInfo.mockResolvedValueOnce({
         displayname: 'Test User',
         avatar_url: 'mxc://matrix.org/avatar123'
       })
@@ -65,7 +69,7 @@ describe('ProfileService', () => {
     })
 
     it('should fallback to matrixClientService client when explicit initialize is skipped', async () => {
-      mockClient.getProfile.mockResolvedValueOnce({
+      mockProfileInfo.getProfileInfo.mockResolvedValueOnce({
         displayname: 'Fallback User',
         avatar_url: 'mxc://matrix.org/fallback'
       })
@@ -83,29 +87,33 @@ describe('ProfileService', () => {
 
     it('should refresh cached client when matrixClientService returns a new client', async () => {
       const oldClient = {
-        getProfile: vi.fn().mockResolvedValue({
-          displayname: 'Old User',
-          avatar_url: 'mxc://matrix.org/old'
-        })
+        getProfileManager: vi.fn(() => ({
+          getProfileInfo: vi.fn().mockResolvedValue({
+            displayname: 'Old User',
+            avatar_url: 'mxc://matrix.org/old'
+          })
+        }))
       }
       const newClient = {
-        getProfile: vi.fn().mockResolvedValue({
-          displayname: 'New User',
-          avatar_url: 'mxc://matrix.org/new'
-        })
+        getProfileManager: vi.fn(() => ({
+          getProfileInfo: vi.fn().mockResolvedValue({
+            displayname: 'New User',
+            avatar_url: 'mxc://matrix.org/new'
+          })
+        }))
       }
       mockClientService.getClient.mockReturnValue(newClient as unknown as MatrixClient)
 
       profileService.initialize(oldClient as unknown as MatrixClient)
       const result = await profileService.getProfile('@switch:matrix.org')
 
-      expect(oldClient.getProfile).not.toHaveBeenCalled()
-      expect(newClient.getProfile).toHaveBeenCalledWith('@switch:matrix.org')
+      expect(oldClient.getProfileManager).not.toHaveBeenCalled()
+      expect(newClient.getProfileManager).toHaveBeenCalled()
       expect(result.displayname).toBe('New User')
     })
 
     it('should throw on getProfile error', async () => {
-      mockClient.getProfile.mockRejectedValueOnce(new Error('User not found'))
+      mockProfileInfo.getProfileInfo.mockRejectedValueOnce(new Error('User not found'))
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.getProfile('@unknown:matrix.org')).rejects.toThrow('User not found')
@@ -119,7 +127,7 @@ describe('ProfileService', () => {
     })
 
     it('should return display name', async () => {
-      mockClient.getProfile.mockResolvedValueOnce({
+      mockProfileInfo.getProfileInfo.mockResolvedValueOnce({
         displayname: 'Test User'
       })
 
@@ -130,7 +138,7 @@ describe('ProfileService', () => {
     })
 
     it('should return undefined on error', async () => {
-      mockClient.getProfile.mockRejectedValueOnce(new Error('Network error'))
+      mockProfileInfo.getProfileInfo.mockRejectedValueOnce(new Error('Network error'))
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       const result = await profileService.getDisplayName('@user:matrix.org')
@@ -145,7 +153,7 @@ describe('ProfileService', () => {
     })
 
     it('should return avatar url', async () => {
-      mockClient.getProfile.mockResolvedValueOnce({
+      mockProfileInfo.getProfileInfo.mockResolvedValueOnce({
         avatar_url: 'mxc://matrix.org/avatar123'
       })
 
@@ -156,7 +164,7 @@ describe('ProfileService', () => {
     })
 
     it('should return undefined on error', async () => {
-      mockClient.getProfile.mockRejectedValueOnce(new Error('Network error'))
+      mockProfileInfo.getProfileInfo.mockRejectedValueOnce(new Error('Network error'))
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       const result = await profileService.getAvatarUrl('@user:matrix.org')
@@ -238,7 +246,7 @@ describe('ProfileService', () => {
 describe('useProfile composable', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockClient.getProfile.mockResolvedValue({
+    mockProfileInfo.getProfileInfo.mockResolvedValue({
       displayname: 'Test User',
       avatar_url: 'mxc://matrix.org/avatar123'
     })

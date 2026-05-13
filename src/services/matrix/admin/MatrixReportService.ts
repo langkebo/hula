@@ -8,6 +8,7 @@ import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { ref } from 'vue'
 import { matrixClientService } from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 /**
  * 举报原因
@@ -64,6 +65,17 @@ export interface AdminReport {
 /**
  * 举报服务
  */
+export interface ReportRoomResponse {
+  report_id: string
+}
+
+export interface ScannerInfo {
+  scanner_id: string
+  scan_result: string
+  confidence: number
+  scanned_at: number
+}
+
 class ReportService {
   private client: MatrixClient | null = null
 
@@ -137,23 +149,69 @@ class ReportService {
   /**
    * 举报房间
    */
-  async reportRoom(roomId: string, reason: string, explanation?: string): Promise<void> {
+  async reportRoom(roomId: string, reason: string, description?: string): Promise<ReportRoomResponse | null> {
     const client = this.getClient()
 
     try {
-      const room = client.getRoom(roomId)
-      if (room && room.timeline.length > 0) {
-        const event = room.timeline[0]
-        await this.reportEvent({
-          roomId,
-          eventId: event.getId() || '',
-          reason,
-          explanation
-        })
-      }
+      const result = (await client.http.authedRequest(
+        'POST',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/report`,
+        undefined,
+        { reason, description }
+      )) as ReportRoomResponse
+      info(`[Report] 举报房间成功: ${roomId}, report_id=${result.report_id}`)
+      return result
     } catch (err) {
-      error(`[Report] 举报房间失败: ${err}`)
+      error(`[Report] v3 举报房间失败，回退到事件举报: ${err}`)
+      try {
+        const room = client.getRoom(roomId)
+        if (room && room.timeline.length > 0) {
+          const event = room.timeline[0]
+          await this.reportEvent({
+            roomId,
+            eventId: event.getId() || '',
+            reason,
+            explanation: description
+          })
+          return { report_id: '' }
+        }
+      } catch (fallbackErr) {
+        error(`[Report] 回退举报房间也失败: ${fallbackErr}`)
+      }
       throw err
+    }
+  }
+
+  async scoreReport(roomId: string, eventId: string, score: number): Promise<void> {
+    const client = this.getClient()
+    if (score < -100 || score > 0) {
+      throw new Error('[Report] 评分必须在 -100 到 0 之间')
+    }
+    try {
+      await client.http.authedRequest(
+        'PUT',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/score`,
+        undefined,
+        { score }
+      )
+      info(`[Report] 举报评分成功: ${roomId}/${eventId}, score=${score}`)
+    } catch (err) {
+      error(`[Report] 举报评分失败: ${err}`)
+      throw err
+    }
+  }
+
+  async getScannerInfo(roomId: string, eventId: string): Promise<ScannerInfo | null> {
+    const client = this.getClient()
+    try {
+      const result = (await client.http.authedRequest(
+        'GET',
+        MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO(roomId, eventId)
+      )) as ScannerInfo
+      return result
+    } catch (err) {
+      error(`[Report] 获取扫描器信息失败: ${err}`)
+      return null
     }
   }
 
@@ -170,7 +228,7 @@ class ReportService {
       const queryParams: Record<string, string> = { limit: String(limit) }
       if (roomId) queryParams.room_id = roomId
       if (from) queryParams.from = from
-      const result = await client.http.authedRequest('GET', '/_synapse/admin/v1/reports', queryParams)
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ADMIN.REPORTS, queryParams)
       return {
         reports: (result as { reports?: AdminReport[] }).reports ?? [],
         next_batch: (result as { next_batch?: string }).next_batch
@@ -184,10 +242,7 @@ class ReportService {
   async getAdminReport(reportId: string): Promise<AdminReport | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest(
-        'GET',
-        `/_synapse/admin/v1/reports/${encodeURIComponent(reportId)}`
-      )
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
       return result as AdminReport
     } catch (err) {
       error(`[Report] 获取报表详情失败: ${err}`)
@@ -198,7 +253,7 @@ class ReportService {
   async dismissReport(reportId: string): Promise<boolean> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest('DELETE', `/_synapse/admin/v1/reports/${encodeURIComponent(reportId)}`)
+      await client.http.authedRequest('DELETE', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
       info(`[Report] 驳回报表成功: ${reportId}`)
       return true
     } catch (err) {

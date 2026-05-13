@@ -215,9 +215,9 @@ const handleSearch = useDebounceFn(async () => {
 
   isSearching.value = true
   try {
-    const [messages, rooms, users] = await Promise.all([
+    const [messagesResult, roomsResult, usersResult] = await Promise.allSettled([
       searchType.value === 'all' || searchType.value === 'messages'
-        ? matrixSearchService.searchMessages(query)
+        ? matrixSearchService.searchMessages(query, { source: 'hybrid' })
         : Promise.resolve([]),
       searchType.value === 'all' || searchType.value === 'rooms'
         ? matrixSearchService.searchRooms(query)
@@ -226,6 +226,10 @@ const handleSearch = useDebounceFn(async () => {
         ? matrixSearchService.searchUsers(query)
         : Promise.resolve([])
     ])
+
+    const messages = messagesResult.status === 'fulfilled' ? messagesResult.value : []
+    const rooms = roomsResult.status === 'fulfilled' ? roomsResult.value : []
+    const users = usersResult.status === 'fulfilled' ? usersResult.value : []
 
     messageResults.value = messages.map((result) => ({
       ...result,

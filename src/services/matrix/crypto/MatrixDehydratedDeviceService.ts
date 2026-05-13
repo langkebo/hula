@@ -5,6 +5,7 @@
 
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('DehydratedDevice')
 
@@ -28,10 +29,11 @@ export interface ClaimDehydratedDeviceParams {
 }
 
 class MatrixDehydratedDeviceService {
-  private get client() {
+  private getClient() {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('Matrix client not initialized')
+      logger.warn('Matrix client not initialized, dehydrated device service unavailable.')
+      return null
     }
     return client
   }
@@ -42,24 +44,20 @@ class MatrixDehydratedDeviceService {
    */
   async createDevice(params: CreateDehydratedDeviceParams): Promise<DehydratedDevice | null> {
     const { initialDeviceDisplayName, deviceData } = params
+    const client = this.getClient()
+    if (!client) return null
 
     try {
-      const response = (await this.client.http.authedRequest(
-        {},
-        'POST',
-        '/_matrix/client/v1/dehydrated_device',
-        undefined,
-        {
-          body: JSON.stringify({
-            device_data: deviceData || {},
-            initial_device_display_name: initialDeviceDisplayName
-          })
-        }
-      )) as { device_id: string; device_data?: Record<string, unknown>; expires_at?: number }
+      const response = (await client.http.authedRequest({}, 'POST', MATRIX_PATHS.DEHYDRATED_DEVICE.BASE, undefined, {
+        body: JSON.stringify({
+          device_data: deviceData || {},
+          initial_device_display_name: initialDeviceDisplayName
+        })
+      })) as { device_id: string; device_data?: Record<string, unknown>; expires_at?: number }
 
       return {
         deviceId: response.device_id,
-        userId: this.client.getUserId() || '',
+        userId: client.getUserId() || '',
         initialDeviceDisplayName,
         deviceData: response.device_data,
         createdAt: Date.now(),
@@ -75,11 +73,13 @@ class MatrixDehydratedDeviceService {
    * 获取脱水设备信息
    */
   async getDevice(deviceId: string): Promise<DehydratedDevice | null> {
+    const client = this.getClient()
+    if (!client) return null
     try {
-      const response = (await this.client.http.authedRequest(
+      const response = (await client.http.authedRequest(
         {},
         'GET',
-        `/_matrix/client/v1/dehydrated_device/${deviceId}`,
+        MATRIX_PATHS.DEHYDRATED_DEVICE.BY_ID(deviceId),
         undefined
       )) as {
         device_id: string
@@ -91,7 +91,7 @@ class MatrixDehydratedDeviceService {
 
       return {
         deviceId: response.device_id,
-        userId: this.client.getUserId() || '',
+        userId: client.getUserId() || '',
         initialDeviceDisplayName: response.initial_device_display_name,
         deviceData: response.device_data,
         createdAt: response.created_at,
@@ -107,13 +107,10 @@ class MatrixDehydratedDeviceService {
    * 获取用户所有脱水设备
    */
   async getDevices(): Promise<DehydratedDevice[]> {
+    const client = this.getClient()
+    if (!client) return []
     try {
-      const response = (await this.client.http.authedRequest(
-        {},
-        'GET',
-        '/_matrix/client/v1/dehydrated_device',
-        undefined
-      )) as {
+      const response = (await client.http.authedRequest({}, 'GET', MATRIX_PATHS.DEHYDRATED_DEVICE.BASE, undefined)) as {
         devices: Array<{
           device_id: string
           initial_device_display_name?: string
@@ -127,7 +124,7 @@ class MatrixDehydratedDeviceService {
       for (const device of response.devices || []) {
         devices.push({
           deviceId: device.device_id,
-          userId: this.client.getUserId() || '',
+          userId: client.getUserId() || '',
           initialDeviceDisplayName: device.initial_device_display_name,
           deviceData: device.device_data,
           createdAt: device.created_at,
@@ -150,11 +147,13 @@ class MatrixDehydratedDeviceService {
     deviceId: string,
     signingPubKey: string
   ): Promise<{ accessToken: string; deviceId: string } | null> {
+    const client = this.getClient()
+    if (!client) return null
     try {
-      const response = (await this.client.http.authedRequest(
+      const response = (await client.http.authedRequest(
         {},
         'POST',
-        `/_matrix/client/v1/dehydrated_device/${deviceId}/claim`,
+        MATRIX_PATHS.DEHYDRATED_DEVICE.CLAIM(deviceId),
         undefined,
         {
           body: JSON.stringify({
@@ -177,8 +176,10 @@ class MatrixDehydratedDeviceService {
    * 更新脱水设备数据
    */
   async updateDeviceData(deviceId: string, deviceData: Record<string, unknown>): Promise<boolean> {
+    const client = this.getClient()
+    if (!client) return false
     try {
-      await this.client.http.authedRequest({}, 'PUT', `/_matrix/client/v1/dehydrated_device/${deviceId}`, undefined, {
+      await client.http.authedRequest({}, 'PUT', MATRIX_PATHS.DEHYDRATED_DEVICE.BY_ID(deviceId), undefined, {
         body: JSON.stringify({
           device_data: deviceData
         })
@@ -195,8 +196,10 @@ class MatrixDehydratedDeviceService {
    * 删除脱水设备
    */
   async deleteDevice(deviceId: string): Promise<boolean> {
+    const client = this.getClient()
+    if (!client) return false
     try {
-      await this.client.http.authedRequest({}, 'DELETE', `/_matrix/client/v1/dehydrated_device/${deviceId}`, undefined)
+      await client.http.authedRequest({}, 'DELETE', MATRIX_PATHS.DEHYDRATED_DEVICE.BY_ID(deviceId), undefined)
 
       return true
     } catch (error) {
@@ -210,11 +213,13 @@ class MatrixDehydratedDeviceService {
    * 用于获取脱水设备的初始状态
    */
   async getDeviceEvent(deviceId: string): Promise<Record<string, unknown> | null> {
+    const client = this.getClient()
+    if (!client) return null
     try {
-      const response = await this.client.http.authedRequest(
+      const response = await client.http.authedRequest(
         {},
         'GET',
-        `/_matrix/client/v1/dehydrated_device/${deviceId}/initial_device`,
+        MATRIX_PATHS.DEHYDRATED_DEVICE.INITIAL_DEVICE(deviceId),
         undefined
       )
 

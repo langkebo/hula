@@ -8,6 +8,7 @@ import { computed, ref } from 'vue'
 import { resolveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { createLogger } from '@/utils/Logger'
+import { safeJsonParse, validateObject } from '@/utils/typeGuard'
 
 const logger = createLogger('QRLogin')
 const STORAGE_KEY_PREFIX = 'matrix_qr_login_session:'
@@ -136,13 +137,29 @@ export function useQRLogin(options: UseQRLoginOptions = {}) {
       return null
     }
 
-    try {
-      return normalizeSession(JSON.parse(raw) as StoredQRSession)
-    } catch (error) {
-      logger.warn('解析二维码登录会话失败:', error)
+    const isValidQRSession = (val: unknown): val is StoredQRSession =>
+      validateObject<Record<string, unknown>>(val, ['qrId', 'status', 'createdAt', 'expireAt'], {
+        qrId: (v) => typeof v === 'string',
+        status: (v) => typeof v === 'string' && ['PENDING', 'SCANNED', 'CONFIRMED', 'EXPIRED'].includes(v as string),
+        createdAt: (v) => typeof v === 'number',
+        expireAt: (v) => typeof v === 'number'
+      })
+
+    const nullSession: StoredQRSession = {
+      qrId: '',
+      status: 'EXPIRED',
+      createdAt: 0,
+      expireAt: 0,
+      ip: '',
+      deviceType: '',
+      locPlace: ''
+    }
+    const parsed = safeJsonParse(raw, isValidQRSession, nullSession)
+    if (parsed.qrId === '') {
       localStorage.removeItem(getStorageKey(targetQrId))
       return null
     }
+    return normalizeSession(parsed)
   }
 
   function mapSessionToResult(session: StoredQRSession): QRLoginResult {

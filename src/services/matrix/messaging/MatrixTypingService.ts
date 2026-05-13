@@ -9,6 +9,10 @@ export interface TypingUser {
   lastTyped: number
 }
 
+export interface BatchTypingResult {
+  [roomId: string]: TypingUser[]
+}
+
 class MatrixTypingService {
   private cachedClient: MatrixClient | null = null
   private cachedManager: TypingManager | null = null
@@ -52,9 +56,7 @@ class MatrixTypingService {
   }
 
   stopTyping(roomId: string): void {
-    this.sendTypingNotification(roomId, false).catch(() => {
-      // 忽略客户端未初始化或网络错误
-    })
+    this.sendTypingNotification(roomId, false).catch(() => {})
   }
 
   getTypingUsers(roomId: string): TypingUser[] {
@@ -67,12 +69,7 @@ class MatrixTypingService {
     const myUserId = client.getUserId()
     const typingUsers: TypingUser[] = []
 
-    // TypingManager.getTypingUsers returns an array of { userId, timeout }
-    // We need to fetch this from the manager or from the room's ephemeral state
-    // For now, let's use the manager if possible, otherwise fall back to the previous logic but safer
     try {
-      // Typing notifications are ephemeral events, they are not in currentState
-      // They are usually stored in the room object directly by the SDK
       const userIds = room.getTypingUsers()
 
       for (const userId of userIds) {
@@ -93,6 +90,17 @@ class MatrixTypingService {
     return typingUsers
   }
 
+  getBatchTyping(roomIds: string[]): BatchTypingResult {
+    const result: BatchTypingResult = {}
+    for (const roomId of roomIds) {
+      const users = this.getTypingUsers(roomId)
+      if (users.length > 0) {
+        result[roomId] = users
+      }
+    }
+    return result
+  }
+
   getTypingUsersText(roomId: string, maxDisplay: number = 3): string {
     const typingUsers = this.getTypingUsers(roomId)
     if (typingUsers.length === 0) return ''
@@ -104,7 +112,7 @@ class MatrixTypingService {
     } else if (typingUsers.length === 2) {
       return `${displayNames[0]} 和 ${displayNames[1]} 正在输入...`
     } else if (typingUsers.length <= maxDisplay) {
-      const last = displayNames.pop()
+      const last = displayNames.pop()!
       return `${displayNames.join('、')} 和 ${last} 正在输入...`
     } else {
       return `${displayNames.join('、')} 和其他 ${typingUsers.length - maxDisplay} 人正在输入...`
@@ -116,6 +124,10 @@ class MatrixTypingService {
     return typingUsers.some((u) => u.userId === userId)
   }
 
+  isRoomTyping(roomId: string): boolean {
+    return this.getTypingUsers(roomId).length > 0
+  }
+
   cleanup(): void {
     const manager = this.cachedManager
     const roomIds = [...this.activeTypingRooms]
@@ -124,9 +136,7 @@ class MatrixTypingService {
     manager?.clearAllTimers()
 
     for (const roomId of roomIds) {
-      void Promise.resolve(manager?.stopTyping(roomId)).catch(() => {
-        // 忽略清理期间的网络错误
-      })
+      void Promise.resolve(manager?.stopTyping(roomId)).catch(() => {})
     }
   }
 }

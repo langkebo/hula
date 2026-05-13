@@ -42,7 +42,7 @@ const useSharedBootstrap = createSharedComposable(() => {
       initializePlatform()
 
       await setLoading('恢复配置...', 30)
-      await Promise.all([restoreProxySettings(), restoreTheme(), restoreLanguage()])
+      await Promise.allSettled([restoreProxySettings(), restoreTheme(), restoreLanguage()])
 
       await setLoading('检查会话...', 80)
       await checkSession()

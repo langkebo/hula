@@ -3,5 +3,10 @@
   "reconnecting": "正在重新连接...",
   "reconnecting_attempt": "正在重新连接 ({count}/{max})...",
   "failed": "连接失败，请重试",
-  "retry": "重试"
+  "retry": "重试",
+  "diagnose": "运行自检",
+  "diagnose_running": "正在自检...",
+  "diagnose_title": "Matrix 连接自检",
+  "diagnose_no_homeserver": "未配置 Homeserver，无法自检",
+  "diagnose_failed": "自检执行失败：{message}"
 }

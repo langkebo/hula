@@ -132,8 +132,8 @@ const hashPassword = (password: string): string => {
 export const useSettingStore = defineStore(StoresEnum.SETTING, {
   state: (): STO.Setting => ({
     themes: {
-      content: '',
-      pattern: ThemeEnum.OS
+      content: ThemeEnum.LIGHT,
+      pattern: ThemeEnum.LIGHT
     },
     escClose: true,
     showMode: ShowModeEnum.ICON,
@@ -184,49 +184,52 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     omit: ['lockScreen.password', 'secretChat.passwordHash']
   },
   getters: {
-    screenshotShortcut: (state) => state.shortcuts?.screenshot ?? getDefaultShortcuts().screenshot,
-    openMainPanelShortcut: (state) => state.shortcuts?.openMainPanel ?? getDefaultShortcuts().openMainPanel,
-    themeContent: (state) => state.themes?.content ?? ThemeEnum.LIGHT,
-    themePattern: (state) => state.themes?.pattern ?? ThemeEnum.LIGHT,
-    languagePreference: (state) => state.page?.lang ?? 'AUTO',
-    pageFontFamily: (state) => state.page?.fonts ?? 'PingFang',
-    pageShadowEnabled: (state) => state.page?.shadow ?? true,
-    pageBlurEnabled: (state) => state.page?.blur ?? true,
-    autoLoginEnabled: (state) => state.login?.autoLogin ?? false,
-    autoStartupEnabled: (state) => state.login?.autoStartup ?? false,
-    secretChatEnabled: (state) => state.secretChat?.enabled ?? false,
-    secretChatHideSessions: (state) => state.secretChat?.hideSessions ?? false,
-    secretChatAutoLock: (state) => state.secretChat?.autoLock ?? false,
-    secretChatLockTimeout: (state) => state.secretChat?.lockTimeout ?? 5,
-    sendMessageShortcut: (state) => state.chat?.sendKey ?? 'Enter',
-    messageDoubleClickEnabled: (state) => state.chat?.isDouble ?? true,
-    chatTranslateProvider: (state) => state.chat?.translate ?? 'youdao',
-    globalShortcutEnabled: (state) => state.shortcuts?.globalEnabled ?? false,
-    screenshotConcealEnabled: (state) => state.screenshot?.isConceal ?? false,
-    messageSoundEnabled: (state) => state.notification?.messageSound ?? true,
-    notificationVolume: (state) => normalizeNotificationVolume(state.notification?.volume),
-    messageConfirmEnabled: (state) => state.preferences?.messageConfirm ?? false,
-    linkPreviewEnabled: (state) => state.preferences?.linkPreview ?? true,
-    emojiConvertEnabled: (state) => state.preferences?.emojiConvert ?? true,
-    emojiSize: (state) => normalizeEmojiSize(state.preferences?.emojiSize),
-    burnDefaultEnabled: (state) => state.preferences?.burnDefaultEnabled ?? false,
-    burnDefaultDuration: (state) => normalizeBurnDefaultDuration(state.preferences?.burnDefaultDuration),
-    burnShowCountdownEnabled: (state) => state.preferences?.burnShowCountdown ?? true,
-    threadAutoSubscribeEnabled: (state) => state.preferences?.threadAutoSubscribe ?? true,
-    threadShowInRoomEnabled: (state) => state.preferences?.threadShowInRoom ?? true,
-    threadNotificationLevel: (state) => normalizeThreadNotificationLevel(state.preferences?.threadNotificationLevel),
-    spaceAutoJoinRoomsEnabled: (state) => state.preferences?.spaceAutoJoinRooms ?? false,
-    spaceShowSubspacesEnabled: (state) => state.preferences?.spaceShowSubspaces ?? true,
-    spaceDefaultNotification: (state) => normalizeSpaceDefaultNotification(state.preferences?.spaceDefaultNotification),
-    sendReadReceiptsEnabled: (state) => state.preferences?.sendReadReceipts ?? true,
-    sendTypingNotificationsEnabled: (state) => state.preferences?.sendTypingNotifications ?? true
+    screenshotShortcut: (state: STO.Setting) => state.shortcuts?.screenshot ?? getDefaultShortcuts().screenshot,
+    openMainPanelShortcut: (state: STO.Setting) =>
+      state.shortcuts?.openMainPanel ?? getDefaultShortcuts().openMainPanel,
+    themeContent: (state: STO.Setting) => state.themes?.content ?? ThemeEnum.LIGHT,
+    themePattern: (state: STO.Setting) => state.themes?.pattern ?? ThemeEnum.LIGHT,
+    languagePreference: (state: STO.Setting) => state.page?.lang ?? 'AUTO',
+    pageFontFamily: (state: STO.Setting) => state.page?.fonts ?? 'PingFang',
+    pageShadowEnabled: (state: STO.Setting) => state.page?.shadow ?? true,
+    pageBlurEnabled: (state: STO.Setting) => state.page?.blur ?? true,
+    autoLoginEnabled: (state: STO.Setting) => state.login?.autoLogin ?? false,
+    autoStartupEnabled: (state: STO.Setting) => state.login?.autoStartup ?? false,
+    secretChatEnabled: (state: STO.Setting) => state.secretChat?.enabled ?? false,
+    secretChatHideSessions: (state: STO.Setting) => state.secretChat?.hideSessions ?? false,
+    secretChatAutoLock: (state: STO.Setting) => state.secretChat?.autoLock ?? false,
+    secretChatLockTimeout: (state: STO.Setting) => state.secretChat?.lockTimeout ?? 5,
+    sendMessageShortcut: (state: STO.Setting) => state.chat?.sendKey ?? 'Enter',
+    messageDoubleClickEnabled: (state: STO.Setting) => state.chat?.isDouble ?? true,
+    chatTranslateProvider: (state: STO.Setting) => state.chat?.translate ?? 'youdao',
+    globalShortcutEnabled: (state: STO.Setting) => state.shortcuts?.globalEnabled ?? false,
+    screenshotConcealEnabled: (state: STO.Setting) => state.screenshot?.isConceal ?? false,
+    messageSoundEnabled: (state: STO.Setting) => state.notification?.messageSound ?? true,
+    notificationVolume: (state: STO.Setting) => normalizeNotificationVolume(state.notification?.volume),
+    messageConfirmEnabled: (state: STO.Setting) => state.preferences?.messageConfirm ?? false,
+    linkPreviewEnabled: (state: STO.Setting) => state.preferences?.linkPreview ?? true,
+    emojiConvertEnabled: (state: STO.Setting) => state.preferences?.emojiConvert ?? true,
+    emojiSize: (state: STO.Setting) => normalizeEmojiSize(state.preferences?.emojiSize),
+    burnDefaultEnabled: (state: STO.Setting) => state.preferences?.burnDefaultEnabled ?? false,
+    burnDefaultDuration: (state: STO.Setting) => normalizeBurnDefaultDuration(state.preferences?.burnDefaultDuration),
+    burnShowCountdownEnabled: (state: STO.Setting) => state.preferences?.burnShowCountdown ?? true,
+    threadAutoSubscribeEnabled: (state: STO.Setting) => state.preferences?.threadAutoSubscribe ?? true,
+    threadShowInRoomEnabled: (state: STO.Setting) => state.preferences?.threadShowInRoom ?? true,
+    threadNotificationLevel: (state: STO.Setting) =>
+      normalizeThreadNotificationLevel(state.preferences?.threadNotificationLevel),
+    spaceAutoJoinRoomsEnabled: (state: STO.Setting) => state.preferences?.spaceAutoJoinRooms ?? false,
+    spaceShowSubspacesEnabled: (state: STO.Setting) => state.preferences?.spaceShowSubspaces ?? true,
+    spaceDefaultNotification: (state: STO.Setting) =>
+      normalizeSpaceDefaultNotification(state.preferences?.spaceDefaultNotification),
+    sendReadReceiptsEnabled: (state: STO.Setting) => state.preferences?.sendReadReceipts ?? true,
+    sendTypingNotificationsEnabled: (state: STO.Setting) => state.preferences?.sendTypingNotifications ?? true
   },
   actions: {
     /** 初始化主题 */
     initTheme(theme: string) {
       const nextPattern = theme === ThemeEnum.OS ? ThemeEnum.OS : normalizeTheme(theme)
       const nextContent = theme === ThemeEnum.OS ? resolveOsTheme() : normalizeTheme(theme)
-      this.$patch((state) => {
+      this.$patch((state: STO.Setting) => {
         state.themes.pattern = nextPattern
         state.themes.content = nextContent
       })
@@ -239,7 +242,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       setTheme(Object.is(theme, 'os') ? null : (theme as Theme))
       if (theme === ThemeEnum.OS) {
         const os = resolveOsTheme()
-        this.$patch((state) => {
+        this.$patch((state: STO.Setting) => {
           state.themes.pattern = ThemeEnum.OS
           state.themes.content = os
         })
@@ -248,7 +251,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
         return
       }
       const nextTheme = normalizeTheme(theme)
-      this.$patch((state) => {
+      this.$patch((state: STO.Setting) => {
         state.themes.pattern = nextTheme
         state.themes.content = nextTheme
       })
@@ -260,7 +263,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       if (this.themes.pattern !== ThemeEnum.OS) return
       const os = resolveOsTheme()
       if (this.themes.content !== os) {
-        this.$patch((state) => {
+        this.$patch((state: STO.Setting) => {
           state.themes.content = os
         })
       }
@@ -276,7 +279,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       }
       const nextTheme = normalizeTheme(this.themes.pattern || this.themes.content)
       if (this.themes.pattern !== nextTheme || this.themes.content !== nextTheme) {
-        this.$patch((state) => {
+        this.$patch((state: STO.Setting) => {
           state.themes.pattern = nextTheme
           state.themes.content = nextTheme
         })
@@ -285,7 +288,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       setDocumentTheme(nextTheme)
     },
     /** 确保主题状态已初始化且可安全使用 */
-    ensureThemeReady(preferredTheme: string = ThemeEnum.OS) {
+    ensureThemeReady(preferredTheme: string = ThemeEnum.LIGHT) {
       if (!this.themes.content) {
         this.initTheme(preferredTheme)
         return

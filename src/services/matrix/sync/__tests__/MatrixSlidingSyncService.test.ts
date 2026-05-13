@@ -6,6 +6,7 @@ import matrixClientService from '../../MatrixClientService'
 import matrixSlidingSyncService from '../MatrixSlidingSyncService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
+  debug: vi.fn(),
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()

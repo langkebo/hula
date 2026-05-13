@@ -4,12 +4,19 @@
       <MessageSessionToolbar
         :search-keyword="searchKeyword"
         :session-type-filter="sessionTypeFilter"
+        :session-engagement-filter="sessionEngagementFilter"
         :session-sort="sessionSort"
         :filtered-count="filteredRoomSessionList.length"
         :total-count="roomSessionList.length"
+        :show-create-action="true"
+        :show-join-action="true"
+        :create-button-text="t('room.create.create')"
         @update:search-keyword="setSearchKeyword"
         @update:session-type-filter="setSessionTypeFilter"
-        @update:session-sort="setSessionSort" />
+        @update:session-engagement-filter="setSessionEngagementFilter"
+        @update:session-sort="setSessionSort"
+        @create-room="handleCreateRoom"
+        @join-room="handleJoinRoom" />
     </template>
 
     <template #default>
@@ -34,13 +41,30 @@
         :selected-session="selectedRoomSession"
         :active-space="null"
         :visible-session-count="filteredRoomSessionList.length"
-        :total-session-count="roomSessionList.length" />
+        :total-session-count="roomSessionList.length"
+        :overlay-mode="overlayState.mode"
+        :forward-event-id="overlayState.forwardEventId"
+        :forward-room-id="overlayState.forwardRoomId"
+        :history-room-id="overlayState.historyRoomId"
+        :merged-msg-ids="overlayState.mergedMsgIds"
+        @close-overlay="closeOverlay"
+        @overlay-created="handleOverlayCreated"
+        @overlay-forwarded="handleOverlayForwarded"
+        @overlay-message-selected="handleOverlayMessageSelected"
+        @overlay-room-selected="handleOverlayRoomSelected"
+        @overlay-user-selected="handleOverlayUserSelected" />
     </template>
   </ListWorkbenchShell>
+
+  <CreateRoomDialog v-model:visible="showCreateRoomDialog" @created="handleRoomCreated" />
+
+  <JoinRoomDialog v-model:visible="showJoinRoomDialog" @joined="handleRoomJoined" />
 </template>
 <script lang="ts" setup name="roomList">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
+import CreateRoomDialog from '@/components/room/CreateRoomDialog.vue'
+import JoinRoomDialog from '@/components/room/JoinRoomDialog.vue'
 import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'
 import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.vue'
 import type RoomSessionList from '@/components/workbench/RoomSessionList.vue'
@@ -54,7 +78,7 @@ import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useTauriListener } from '@/hooks/useTauriListener'
-import { WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
+import { WORKBENCH_SESSION_ENGAGEMENT_FILTERS, WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
 
 const { t } = useI18n()
 const appWindow = WebviewWindow.getCurrent()
@@ -72,25 +96,79 @@ const {
   invalidateSessionCache
 } = useSessionListState()
 
+type OverlayMode = 'create-room' | 'create-space' | 'forward' | 'search' | 'history' | 'merged-msg'
+
+const overlayState = reactive<{
+  mode: OverlayMode | null
+  forwardEventId: string
+  forwardRoomId: string
+  historyRoomId: string
+  mergedMsgIds: string[]
+}>({
+  mode: null,
+  forwardEventId: '',
+  forwardRoomId: '',
+  historyRoomId: '',
+  mergedMsgIds: []
+})
+
+const closeOverlay = () => {
+  overlayState.mode = null
+  overlayState.forwardEventId = ''
+  overlayState.forwardRoomId = ''
+  overlayState.historyRoomId = ''
+  overlayState.mergedMsgIds = []
+}
+
+const handleOverlayCreated = (_data: { roomId?: string; space?: unknown }) => {
+  closeOverlay()
+}
+
+const handleOverlayForwarded = (_roomIds: string[]) => {
+  closeOverlay()
+}
+
+const handleOverlayMessageSelected = (roomId: string, _eventId: string) => {
+  ensureSessionVisible(roomId)
+  closeOverlay()
+}
+
+const handleOverlayRoomSelected = (roomId: string) => {
+  ensureSessionVisible(roomId)
+  closeOverlay()
+}
+
+const handleOverlayUserSelected = (_userId: string) => {
+  closeOverlay()
+}
+
 const roomSessionList = computed(() => sessionList.value.filter((item) => item.type === RoomTypeEnum.GROUP))
 const {
   searchKeyword,
   sessionTypeFilter,
+  sessionEngagementFilter,
   sessionSort,
   filteredSessionList: filteredRoomSessionList,
   ensureSessionVisible,
   setSearchKeyword,
   setSessionTypeFilter,
+  setSessionEngagementFilter,
   setSessionSort
 } = useMessageSessionFilters(roomSessionList)
 const sessionListRef = ref<InstanceType<typeof RoomSessionList> | null>(null)
 const ROOM_LIST_ROUTE_NAME = 'roomList'
+const showCreateRoomDialog = ref(false)
+const showJoinRoomDialog = ref(false)
 
 const selectedRoomSession = computed(
   () => roomSessionList.value.find((item) => item.roomId === globalStore.currentSessionRoomId) ?? null
 )
 const emptyDescription = computed(() => {
-  if (searchKeyword.value.trim() || sessionTypeFilter.value !== WORKBENCH_SESSION_TYPE_FILTERS.all) {
+  if (
+    searchKeyword.value.trim() ||
+    sessionTypeFilter.value !== WORKBENCH_SESSION_TYPE_FILTERS.all ||
+    sessionEngagementFilter.value !== WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
+  ) {
     return t('space.empty_filtered_sessions')
   }
 
@@ -102,11 +180,33 @@ useWorkbenchSessionQuerySync({
   routeName: ROOM_LIST_ROUTE_NAME,
   searchKeyword,
   sessionTypeFilter,
+  sessionEngagementFilter,
   sessionSort,
   setSearchKeyword,
   setSessionTypeFilter,
+  setSessionEngagementFilter,
   setSessionSort
 })
+
+const handleCreateRoom = () => {
+  showCreateRoomDialog.value = true
+}
+
+const handleJoinRoom = () => {
+  showJoinRoomDialog.value = true
+}
+
+const handleRoomCreated = (roomId: string) => {
+  if (roomId) {
+    openMsgSession(roomId, RoomTypeEnum.GROUP)
+  }
+}
+
+const handleRoomJoined = (roomId: string) => {
+  if (roomId) {
+    openMsgSession(roomId, RoomTypeEnum.GROUP)
+  }
+}
 
 onBeforeMount(async () => {
   useMitt.emit(MittEnum.LOCATE_SESSION, { roomId: globalStore.currentSessionRoomId })

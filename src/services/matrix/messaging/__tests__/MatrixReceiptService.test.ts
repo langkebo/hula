@@ -20,6 +20,7 @@ vi.mock('@/services/offline/OfflineQueueService', () => ({
   }
 }))
 
+import { info, warn } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import matrixClientService from '../../MatrixClientService'
 
@@ -45,7 +46,18 @@ describe('MatrixReceiptService', () => {
   }
 
   beforeEach(() => {
+    const pendingTasks = (matrixReceiptService as any).pendingMarkAsReadTasks as Map<
+      string,
+      { timer: ReturnType<typeof setTimeout> | null }
+    >
+    pendingTasks?.forEach((task) => {
+      if (task.timer) {
+        clearTimeout(task.timer)
+      }
+    })
+    pendingTasks?.clear()
     vi.clearAllMocks()
+    vi.useRealTimers()
 
     mockReceiptManager = {
       sendReadReceipt: vi.fn(),
@@ -176,6 +188,84 @@ describe('MatrixReceiptService', () => {
     await matrixReceiptService.markRoomAsRead('!room:id')
 
     expect(mockReceiptManager.sendReadReceipt).toHaveBeenCalledWith('!room:id', '$event-2')
+  })
+
+  it('房间延迟出现在 SDK 中时会等待后再发送已读回执', async () => {
+    vi.useFakeTimers()
+    const events = [{ getId: () => '$event-1' }, { getId: () => '$event-2' }]
+    mockRoom.getLiveTimeline.mockReturnValue({
+      getEvents: vi.fn(() => events)
+    })
+    mockReceiptManager.sendReadReceipt.mockResolvedValue(undefined)
+    mockClient.getRoom.mockReturnValueOnce(null).mockReturnValueOnce(null).mockReturnValue(mockRoom)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+    const pending = matrixReceiptService.markRoomAsRead('!room:id')
+    await vi.advanceTimersByTimeAsync(200)
+    await pending
+
+    expect(mockClient.getRoom).toHaveBeenCalledTimes(3)
+    expect(mockReceiptManager.sendReadReceipt).toHaveBeenCalledWith('!room:id', '$event-2')
+  })
+
+  it('房间始终不存在时会转入后台补偿队列', async () => {
+    vi.useFakeTimers()
+    mockClient.getRoom.mockReturnValue(null)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+    const pending = matrixReceiptService.markRoomAsRead('!room:id')
+    await vi.advanceTimersByTimeAsync(3000)
+    await pending
+
+    expect((matrixReceiptService as any).pendingMarkAsReadTasks.size).toBe(1)
+    expect(mockReceiptManager.sendReadReceipt).not.toHaveBeenCalled()
+  })
+
+  it('房间稍后可用时会自动补发一次已读回执', async () => {
+    vi.useFakeTimers()
+    const events = [{ getId: () => '$event-1' }, { getId: () => '$event-2' }]
+    mockRoom.getLiveTimeline.mockReturnValue({
+      getEvents: vi.fn(() => events)
+    })
+    let currentRoom: typeof mockRoom | null = null
+    mockClient.getRoom.mockImplementation(() => currentRoom as unknown as Room)
+    mockReceiptManager.sendReadReceipt.mockResolvedValue(undefined)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+    const pending = matrixReceiptService.markRoomAsRead('!room:id')
+    await vi.advanceTimersByTimeAsync(3000)
+    await pending
+
+    expect(mockReceiptManager.sendReadReceipt).not.toHaveBeenCalled()
+
+    currentRoom = mockRoom
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(mockReceiptManager.sendReadReceipt).toHaveBeenCalledTimes(1)
+    expect(mockReceiptManager.sendReadReceipt).toHaveBeenCalledWith('!room:id', '$event-2')
+    expect((matrixReceiptService as any).pendingMarkAsReadTasks.size).toBe(0)
+  })
+
+  it('重复触发已读时只保留一个后台补偿任务并在最终超时后告警一次', async () => {
+    vi.useFakeTimers()
+    mockClient.getRoom.mockReturnValue(null)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+    const first = matrixReceiptService.markRoomAsRead('!room:id')
+    await vi.advanceTimersByTimeAsync(3000)
+    await first
+
+    const second = matrixReceiptService.markRoomAsRead('!room:id')
+    await vi.advanceTimersByTimeAsync(3000)
+    await second
+
+    expect((matrixReceiptService as any).pendingMarkAsReadTasks.size).toBe(1)
+
+    await vi.advanceTimersByTimeAsync(15000)
+
+    expect((matrixReceiptService as any).pendingMarkAsReadTasks.size).toBe(0)
+    expect(vi.mocked(warn)).not.toHaveBeenCalled()
+    expect(vi.mocked(info)).toHaveBeenCalledWith('[MatrixReceipt] 房间长时间未就绪，已跳过本次已读补发: !room:id')
   })
 
   it('未找到房间时未读数为 0', () => {

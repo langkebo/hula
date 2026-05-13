@@ -1,16 +1,38 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { error, info, warn } from '@tauri-apps/plugin-log'
+import endpointCapabilityService from './EndpointCapabilityService'
 import matrixClientService from './MatrixClientService'
+import { getRuntimeAwareFetch } from './network/runtimeFetch'
+import { MATRIX_PATHS } from './paths'
 
 export interface SynapseFriendInfo {
   user_id: string
   display_name?: string
+  displayname?: string
+  username?: string
   avatar_url?: string
   since: number
   status?: string
+  presence?: string
+  online?: boolean
   last_active?: number
+  last_active_ts?: number
   note?: string
   dm_room_id?: string
   is_private?: boolean
+}
+
+function normalizeFriendInfo(friend: SynapseFriendInfo): SynapseFriendInfo {
+  const displayName = friend.display_name || friend.displayname || friend.username || friend.user_id
+  return {
+    ...friend,
+    display_name: displayName,
+    displayname: displayName,
+    username: friend.username || displayName
+  }
+}
+
+function normalizeFriendInfoList(friends: SynapseFriendInfo[]): SynapseFriendInfo[] {
+  return friends.map(normalizeFriendInfo)
 }
 
 export interface SynapseFriendRequest {
@@ -25,6 +47,20 @@ export interface SynapseFriendRequest {
 export interface SynapsePendingRequests {
   incoming: SynapseFriendRequest[]
   outgoing: SynapseFriendRequest[]
+}
+
+export interface SynapseFriendSearchResult {
+  user_id: string
+  username?: string
+  displayname?: string
+  avatar_url?: string
+  presence?: string
+  online?: boolean
+  last_active_ts?: number
+  last_seen_ts?: number
+  created_ts?: number
+  match_score?: number
+  match_type?: string
 }
 
 export interface SynapseCreateDmResult {
@@ -119,22 +155,54 @@ export interface RoomSummaryState {
 class SynapseRustExtensionsService {
   private baseUrl: string = ''
   private accessToken: string = ''
+  private hasLoggedFriendsBeforeClientReady = false
+  private endpointAvailability: Map<string, boolean> = new Map()
+
+  async checkEndpointAvailability(endpoint: string): Promise<boolean> {
+    const cached = this.endpointAvailability.get(endpoint)
+    if (cached !== undefined) return cached
+
+    try {
+      await this.ensureInitialized()
+      const url = `${this.baseUrl}${endpoint}`
+      const runtimeFetch = getRuntimeAwareFetch()
+      const response = await runtimeFetch(url, {
+        method: 'HEAD',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`
+        }
+      })
+      const available = response.ok || response.status === 405
+      this.endpointAvailability.set(endpoint, available)
+      return available
+    } catch {
+      this.endpointAvailability.set(endpoint, false)
+      return false
+    }
+  }
 
   async initialize(): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
+    const baseUrlFromConfig = matrixClientService.getHomeserverUrl?.() || ''
+    const accessTokenFromConfig = matrixClientService.getAccessToken?.() || ''
 
-    this.baseUrl = client.getHomeserverUrl()
-    this.accessToken = client.getAccessToken() || ''
-
-    if (!this.accessToken) {
-      error('[SynapseRust] 未获取到访问令牌')
+    if (baseUrlFromConfig && accessTokenFromConfig) {
+      this.baseUrl = baseUrlFromConfig
+      this.accessToken = accessTokenFromConfig
       return
     }
 
-    info('[SynapseRust] SynapseRustExtensionsService 初始化完成')
+    const client = await matrixClientService.waitForClientReady({
+      timeoutMs: 5000
+    })
+
+    const baseUrl = client.getHomeserverUrl()
+    const accessToken = client.getAccessToken() || ''
+    if (!baseUrl || !accessToken) {
+      throw new Error('客户端未初始化')
+    }
+
+    this.baseUrl = baseUrl
+    this.accessToken = accessToken
   }
 
   private async ensureInitialized(): Promise<void> {
@@ -150,8 +218,9 @@ class SynapseRustExtensionsService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     await this.ensureInitialized()
     const url = `${this.baseUrl}${endpoint}`
+    const runtimeFetch = getRuntimeAwareFetch()
 
-    const response = await fetch(url, {
+    const response = await runtimeFetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -160,14 +229,30 @@ class SynapseRustExtensionsService {
       }
     })
 
-    const data = await response.json()
+    const text = await response.text()
 
     if (!response.ok) {
-      error(`[SynapseRust] API 请求失败: ${endpoint}`, data)
-      throw new Error(data.message || data.error || 'API 请求失败')
+      let parsed: Record<string, unknown> = {}
+      try {
+        parsed = text ? JSON.parse(text) : {}
+      } catch {
+        parsed = { error: text || `HTTP ${response.status}` }
+      }
+      error(`[SynapseRust] API 请求失败: ${endpoint}`, parsed)
+      throw new Error((parsed.message as string) || (parsed.error as string) || `API 请求失败 (${response.status})`)
     }
 
-    return data as T
+    if (!text || text.trim() === '') {
+      warn(`[SynapseRust] ${endpoint} 返回空响应体`)
+      return {} as T
+    }
+
+    try {
+      return JSON.parse(text) as T
+    } catch {
+      warn(`[SynapseRust] ${endpoint} 返回非 JSON 响应: ${text.substring(0, 200)}`)
+      return {} as T
+    }
   }
 
   private unwrapMaybeWrappedData<T>(
@@ -179,27 +264,67 @@ class SynapseRustExtensionsService {
     }
 
     if (response && typeof response === 'object' && 'data' in response) {
-      return (response as { data?: T }).data
+      const wrapped = response as { data?: T; status?: string }
+      if (wrapped.data !== undefined) {
+        return wrapped.data
+      }
+      if (wrapped.status === 'ok' && wrapped.data === undefined) {
+        warn('[SynapseRust] 响应 status=ok 但缺少 data 字段，尝试将整个响应作为数据返回')
+        const { data: _, status: __, code: ___, message: ____, ...rest } = wrapped as Record<string, unknown>
+        if (Object.keys(rest).length > 0) {
+          return rest as unknown as T
+        }
+        return undefined
+      }
     }
 
     return response as T
   }
 
+  private friendEndpointAvailable: boolean | null = null
+
+  private async isFriendEndpointAvailable(): Promise<boolean> {
+    if (this.friendEndpointAvailable !== null) return this.friendEndpointAvailable
+    this.friendEndpointAvailable = await endpointCapabilityService.check('GET', MATRIX_PATHS.FRIENDS.LIST)
+    return this.friendEndpointAvailable
+  }
+
   async getFriends(): Promise<SynapseFriendInfo[]> {
     try {
-      const response = await this.request<{ friends?: SynapseFriendInfo[]; data?: SynapseFriendInfo[] }>(
-        '/_matrix/client/v1/friends',
-        {
-          method: 'GET'
-        }
-      )
-      // 兼容多种响应格式
-      if (response && typeof response === 'object') {
-        if ('friends' in response) return response.friends || []
-        if ('data' in response) return response.data || []
+      if (!(await this.isFriendEndpointAvailable())) {
+        warn('[SynapseRust] 好友端点不可用')
+        return []
       }
-      return (Array.isArray(response) ? response : []) as SynapseFriendInfo[]
+
+      const response = await this.request<{
+        friends?: SynapseFriendInfo[]
+        items?: SynapseFriendInfo[]
+        data?: SynapseFriendInfo[]
+      }>(MATRIX_PATHS.FRIENDS.LIST, {
+        method: 'GET'
+      })
+      if (response && typeof response === 'object') {
+        const arrayField = response.items ?? response.friends ?? response.data
+        if (Array.isArray(arrayField)) {
+          return normalizeFriendInfoList(arrayField)
+        }
+        if (Array.isArray(response)) {
+          return response
+        }
+      }
+      this.hasLoggedFriendsBeforeClientReady = false
+      return normalizeFriendInfoList((Array.isArray(response) ? response : []) as SynapseFriendInfo[])
     } catch (err) {
+      if (
+        err instanceof Error &&
+        (err.message === 'MatrixClient 未在指定时间内就绪' || err.message === '客户端未初始化')
+      ) {
+        if (!this.hasLoggedFriendsBeforeClientReady) {
+          this.hasLoggedFriendsBeforeClientReady = true
+          info('[SynapseRust] Matrix 客户端未就绪，返回空好友列表')
+        }
+        return []
+      }
       error(`[SynapseRust] 获取好友列表失败: ${err}`)
       return []
     }
@@ -213,18 +338,19 @@ class SynapseRustExtensionsService {
     status: string
   }> {
     try {
+      if (!(await this.isFriendEndpointAvailable())) return { request_id: 0, status: 'unavailable' }
       const response = await this.request<{
         request_id?: number
         status?: string
         data?: { request_id: number; status: string }
-      }>('/_matrix/client/v1/friends/request', {
+      }>(MATRIX_PATHS.FRIENDS.REQUEST, {
         method: 'POST',
         body: JSON.stringify({ user_id: userId, message })
       })
 
       let data: { request_id: number; status: string } | undefined
       if (response && typeof response === 'object') {
-        if ('data' in response) {
+        if ('data' in response && response.data) {
           data = response.data
         } else if ('request_id' in response) {
           data = { request_id: response.request_id!, status: response.status || 'pending' }
@@ -239,15 +365,61 @@ class SynapseRustExtensionsService {
     }
   }
 
+  async searchFriends(
+    query: string,
+    options: { limit?: number; mode?: 'exact' | 'fuzzy' } = {}
+  ): Promise<SynapseFriendSearchResult[]> {
+    const trimmedQuery = query.trim()
+    if (!trimmedQuery) {
+      return []
+    }
+    if (!(await this.isFriendEndpointAvailable())) return []
+
+    try {
+      const searchParams = new URLSearchParams({
+        q: trimmedQuery,
+        limit: String(options.limit ?? 20),
+        mode: options.mode ?? 'fuzzy'
+      })
+      const response = await this.request<{
+        results?: SynapseFriendSearchResult[]
+        data?: SynapseFriendSearchResult[]
+      }>(`${MATRIX_PATHS.FRIENDS.SEARCH}?${searchParams.toString()}`, { method: 'GET' })
+
+      if (response && typeof response === 'object') {
+        const arrayField = response.results ?? response.data
+        if (Array.isArray(arrayField)) return arrayField
+      }
+
+      return Array.isArray(response) ? response : []
+    } catch (err) {
+      if (
+        err instanceof Error &&
+        (err.message === 'MatrixClient 未在指定时间内就绪' || err.message === '客户端未初始化')
+      ) {
+        if (!this.hasLoggedFriendsBeforeClientReady) {
+          this.hasLoggedFriendsBeforeClientReady = true
+          info('[SynapseRust] Matrix 客户端未就绪，返回空好友搜索结果')
+        }
+        return []
+      }
+
+      this.hasLoggedFriendsBeforeClientReady = false
+      error(`[SynapseRust] 搜索好友失败: ${err}`)
+      return []
+    }
+  }
+
   async getPendingRequests(): Promise<SynapsePendingRequests> {
     try {
-      const [incomingResponse, outgoingResponse] = await Promise.all([
+      if (!(await this.isFriendEndpointAvailable())) return { incoming: [], outgoing: [] }
+      const [incomingResult, outgoingResult] = await Promise.allSettled([
         this.request<{ requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }>(
-          '/_matrix/client/v1/friends/requests/incoming',
+          MATRIX_PATHS.FRIENDS.INCOMING_REQUESTS,
           { method: 'GET' }
         ),
         this.request<{ requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }>(
-          '/_matrix/client/v1/friends/requests/outgoing',
+          MATRIX_PATHS.FRIENDS.OUTGOING_REQUESTS,
           { method: 'GET' }
         )
       ])
@@ -255,11 +427,14 @@ class SynapseRustExtensionsService {
       const extractRequests = (response: unknown): SynapseFriendRequest[] => {
         if (response && typeof response === 'object') {
           const res = response as { requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }
-          if ('requests' in res) return res.requests || []
-          if ('data' in res) return res.data || []
+          const arrayField = res.requests ?? res.data
+          if (Array.isArray(arrayField)) return arrayField
         }
         return Array.isArray(response) ? response : []
       }
+
+      const incomingResponse = incomingResult.status === 'fulfilled' ? incomingResult.value : null
+      const outgoingResponse = outgoingResult.status === 'fulfilled' ? outgoingResult.value : null
 
       return {
         incoming: extractRequests(incomingResponse),
@@ -276,18 +451,19 @@ class SynapseRustExtensionsService {
     room_id: string
   }> {
     try {
+      if (!(await this.isFriendEndpointAvailable())) return { status: 'unavailable', room_id: '' }
       const response = await this.request<{
         status?: string
         room_id?: string
         data?: { status: string; room_id: string }
-      }>(`/_matrix/client/v1/friends/request/${encodeURIComponent(userId)}/accept`, {
+      }>(MATRIX_PATHS.FRIENDS.ACCEPT(encodeURIComponent(userId)), {
         method: 'POST',
         body: JSON.stringify({})
       })
 
       let data: { status: string; room_id: string } | undefined
       if (response && typeof response === 'object') {
-        if ('data' in response) {
+        if ('data' in response && response.data) {
           data = response.data
         } else if ('status' in response) {
           data = { status: response.status!, room_id: response.room_id || '' }
@@ -304,7 +480,8 @@ class SynapseRustExtensionsService {
 
   async declineFriendRequest(userId: string): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v1/friends/request/${encodeURIComponent(userId)}/reject`, {
+      if (!(await this.isFriendEndpointAvailable())) return
+      await this.request(MATRIX_PATHS.FRIENDS.REJECT(encodeURIComponent(userId)), {
         method: 'POST',
         body: JSON.stringify({})
       })
@@ -317,7 +494,8 @@ class SynapseRustExtensionsService {
 
   async removeFriend(userId: string): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v1/friends/${encodeURIComponent(userId)}`, {
+      if (!(await this.isFriendEndpointAvailable())) return
+      await this.request(MATRIX_PATHS.FRIENDS.REMOVE(encodeURIComponent(userId)), {
         method: 'DELETE'
       })
       info(`[SynapseRust] 删除好友成功: ${userId}`)
@@ -329,7 +507,8 @@ class SynapseRustExtensionsService {
 
   async setFriendNote(userId: string, note: string): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v1/friends/${encodeURIComponent(userId)}/note`, {
+      if (!(await this.isFriendEndpointAvailable())) return
+      await this.request(MATRIX_PATHS.FRIENDS.NOTE(encodeURIComponent(userId)), {
         method: 'PUT',
         body: JSON.stringify({ note })
       })
@@ -342,8 +521,9 @@ class SynapseRustExtensionsService {
 
   async checkFriendship(userId: string): Promise<boolean> {
     try {
+      if (!(await this.isFriendEndpointAvailable())) return false
       const response = await this.request<SynapseCheckFriendshipResult | { data?: SynapseCheckFriendshipResult }>(
-        `/_matrix/client/v1/friends/check/${encodeURIComponent(userId)}`,
+        MATRIX_PATHS.FRIENDS.CHECK(encodeURIComponent(userId)),
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -357,7 +537,7 @@ class SynapseRustExtensionsService {
   async createPrivateDm(userId: string, isPrivate = true): Promise<SynapseCreateDmResult> {
     try {
       const response = await this.request<SynapseCreateDmResult | { data?: SynapseCreateDmResult }>(
-        `/_matrix/client/v1/friends/dm/${encodeURIComponent(userId)}`,
+        MATRIX_PATHS.FRIENDS.DM(encodeURIComponent(userId)),
         {
           method: 'POST',
           body: JSON.stringify({ is_private: isPrivate })
@@ -375,7 +555,7 @@ class SynapseRustExtensionsService {
   async getDmRoom(userId: string): Promise<SynapseDmInfo> {
     try {
       const response = await this.request<SynapseDmInfo | { data?: SynapseDmInfo }>(
-        `/_matrix/client/v1/friends/dm/${encodeURIComponent(userId)}`,
+        MATRIX_PATHS.FRIENDS.DM(encodeURIComponent(userId)),
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -388,7 +568,7 @@ class SynapseRustExtensionsService {
 
   async getBurnStats(): Promise<BurnStats> {
     try {
-      const response = await this.request<BurnStats | { data?: BurnStats }>('/_matrix/client/v1/user/burn/stats', {
+      const response = await this.request<BurnStats | { data?: BurnStats }>('/_matrix/client/v3/user/burn/stats', {
         method: 'GET'
       })
       const data = this.unwrapMaybeWrappedData(response)
@@ -405,11 +585,11 @@ class SynapseRustExtensionsService {
    * @param roomId 房间 ID
    * @param enabled 是否启用
    */
-  async enableBurnAfterRead(roomId: string, enabled: boolean = true): Promise<void> {
+  async enableBurnAfterRead(roomId: string, enabled: boolean = true, burnAfterMs?: number): Promise<void> {
     try {
       await this.request(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/burn`, {
         method: 'PUT',
-        body: JSON.stringify({ enabled })
+        body: JSON.stringify({ enabled, ...(burnAfterMs !== undefined && { burn_after_ms: burnAfterMs }) })
       })
       info(`[SynapseRust] ${enabled ? '启用' : '禁用'}阅后即焚成功: roomId=${roomId}`)
     } catch (err) {
@@ -574,10 +754,16 @@ class SynapseRustExtensionsService {
 
   async getStickyEvents(roomId: string): Promise<StickyEvent[]> {
     try {
-      const response = await this.request<{ events: StickyEvent[] } | { data?: { events: StickyEvent[] } }>(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`,
-        { method: 'GET' }
-      )
+      const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`
+      const available = await endpointCapabilityService.check('GET', path)
+      if (!available) {
+        warn('[SynapseRust] 粘性事件端点不可用')
+        return []
+      }
+
+      const response = await this.request<{ events: StickyEvent[] } | { data?: { events: StickyEvent[] } }>(path, {
+        method: 'GET'
+      })
       const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 获取粘性事件成功: roomId=${roomId}`)
       return data?.events || []
@@ -617,10 +803,14 @@ class SynapseRustExtensionsService {
 
   async getRoomSummary(roomId: string, throwOnError = true): Promise<RoomSummary | null> {
     try {
-      const response = await this.request<RoomSummary | { data?: RoomSummary }>(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary`,
-        { method: 'GET' }
-      )
+      const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary`
+      const available = await endpointCapabilityService.check('GET', path)
+      if (!available) {
+        warn('[SynapseRust] 房间摘要端点不可用')
+        return null
+      }
+
+      const response = await this.request<RoomSummary | { data?: RoomSummary }>(path, { method: 'GET' })
       const data = this.unwrapMaybeWrappedData(response)
       info(`[SynapseRust] 获取房间摘要成功: roomId=${roomId}`)
       return data || null
@@ -698,9 +888,16 @@ class SynapseRustExtensionsService {
 
   async getRoomEphemeral(roomId: string, types?: string[]): Promise<RoomEphemeralEvent[]> {
     try {
+      const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ephemeral`
+      const available = await endpointCapabilityService.check('GET', path)
+      if (!available) {
+        warn('[SynapseRust] 房间临时事件端点不可用')
+        return []
+      }
+
       const queryParams = types ? `?types=${types.map(encodeURIComponent).join(',')}` : ''
       const response = await this.request<{ chunk: RoomEphemeralEvent[] } | { data?: { chunk: RoomEphemeralEvent[] } }>(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ephemeral${queryParams}`,
+        `${path}${queryParams}`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -716,7 +913,7 @@ class SynapseRustExtensionsService {
     try {
       const response = await this.request<
         { captcha_id: string; expires_in: number } | { data?: { captcha_id: string; expires_in: number } }
-      >('/_matrix/client/r0/register/captcha/send', {
+      >('/_matrix/client/v3/register/captcha/send', {
         method: 'POST',
         body: JSON.stringify({ target: mobile, captcha_type: captchaType })
       })
@@ -735,7 +932,7 @@ class SynapseRustExtensionsService {
   async verifyCaptcha(captchaId: string, code: string): Promise<boolean> {
     try {
       const response = await this.request<{ verified: boolean } | { data?: { verified: boolean } }>(
-        '/_matrix/client/r0/register/captcha/verify',
+        '/_matrix/client/v3/register/captcha/verify',
         {
           method: 'POST',
           body: JSON.stringify({ captcha_id: captchaId, code })
@@ -753,7 +950,7 @@ class SynapseRustExtensionsService {
   async getCaptchaStatus(captchaId: string): Promise<Record<string, unknown>> {
     try {
       const response = await this.request<Record<string, unknown> | { data?: Record<string, unknown> }>(
-        `/_matrix/client/r0/register/captcha/status?captcha_id=${encodeURIComponent(captchaId)}`,
+        `/_matrix/client/v3/register/captcha/status?captcha_id=${encodeURIComponent(captchaId)}`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)

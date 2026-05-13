@@ -83,6 +83,7 @@ import { Icon } from '@iconify/vue'
 import { NButton, NDivider, NEmpty, NSpin, NSwitch, NTimePicker, useDialog, useMessage } from 'naive-ui'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import type { IPusher, IPushRule, IPushRules } from '@/services/matrix/notifications/MatrixPushService'
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
 import type { PushRuleKind } from '@/services/matrix/sdk'
@@ -120,8 +121,8 @@ const dndEndTime = ref<number | null>(null)
 let unsubscribePushRules: (() => void) | null = null
 
 onMounted(async () => {
-  await Promise.all([fetchPushers(), fetchPushRules()])
-  loadDndSettings()
+  await Promise.allSettled([fetchPushers(), fetchPushRules()])
+  await loadDndSettings()
   unsubscribePushRules = matrixPushService.subscribePushRules(handlePushRulesUpdate)
 })
 
@@ -190,7 +191,15 @@ function loadSavedSettings() {
   }
 }
 
-function loadDndSettings() {
+async function loadDndSettings() {
+  const serverDnd = await matrixNotificationService.syncDndFromAccountData()
+  if (serverDnd) {
+    dndEnabled.value = serverDnd.enabled
+    dndStartTime.value = serverDnd.startTime
+    dndEndTime.value = serverDnd.endTime
+    return
+  }
+
   const savedDnd = localStorage.getItem('hula-push-dnd')
   if (savedDnd !== null) {
     dndEnabled.value = savedDnd === 'true'
@@ -270,6 +279,11 @@ async function handleInvitePushToggle(enabled: boolean) {
 
 function handleDndToggle(enabled: boolean) {
   localStorage.setItem('hula-push-dnd', enabled.toString())
+  matrixNotificationService.syncDndToAccountData({
+    enabled,
+    startTime: dndStartTime.value,
+    endTime: dndEndTime.value
+  })
   message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
 }
 
@@ -280,6 +294,11 @@ function handleDndTimeChange() {
   if (dndEndTime.value !== null) {
     localStorage.setItem('hula-push-dnd-end', dndEndTime.value.toString())
   }
+  matrixNotificationService.syncDndToAccountData({
+    enabled: dndEnabled.value,
+    startTime: dndStartTime.value,
+    endTime: dndEndTime.value
+  })
 }
 </script>
 

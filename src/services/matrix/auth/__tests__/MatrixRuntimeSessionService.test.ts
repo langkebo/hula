@@ -38,6 +38,11 @@ const mockRoomStore = {
   loadRooms: vi.fn()
 }
 
+const mockChatStore = {
+  sessionList: [] as Array<{ roomId: string }>,
+  getSessionList: vi.fn()
+}
+
 const mockLoginHistoriesStore = {
   addLoginHistory: vi.fn()
 }
@@ -104,8 +109,18 @@ vi.mock('@/stores/domains/chat/group', () => ({
   useGroupStore: () => mockGroupStore
 }))
 
+vi.mock('@/stores/domains/chat/contacts', () => ({
+  useContactStore: () => ({
+    updateContactPresence: vi.fn()
+  })
+}))
+
 vi.mock('@/stores/domains/chat/room', () => ({
   useRoomStore: () => mockRoomStore
+}))
+
+vi.mock('@/stores/domains/chat/chat', () => ({
+  useChatStore: () => mockChatStore
 }))
 
 vi.mock('@/stores/domains/user/loginHistory', () => ({
@@ -157,6 +172,45 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
+vi.mock('@/hooks/usePresenceHeartbeat', () => ({
+  startPresenceHeartbeat: vi.fn(),
+  stopPresenceHeartbeat: vi.fn()
+}))
+
+vi.mock('@/services/matrix/MatrixWsBridge', () => ({
+  matrixWsBridge: {
+    start: vi.fn(),
+    stop: vi.fn()
+  }
+}))
+
+vi.mock('@/services/matrix/MatrixWorkerHost', () => ({
+  matrixWorkerHost: {
+    start: vi.fn().mockResolvedValue(undefined),
+    terminate: vi.fn(),
+    get isStarted() {
+      return false
+    }
+  }
+}))
+
+vi.mock('@/services/matrix/user/MatrixPresenceService', () => ({
+  matrixPresenceService: {
+    setPresence: vi.fn().mockResolvedValue(undefined),
+    onPresenceChange: vi.fn()
+  }
+}))
+
+vi.mock('@/services/matrix/MatrixClientService', () => {
+  const stub = {
+    getClient: vi.fn(() => null),
+    getConnectionState: vi.fn(() => 'CONNECTED'),
+    on: vi.fn(),
+    off: vi.fn()
+  }
+  return { matrixClientService: stub, default: stub }
+})
+
 const { matrixRuntimeSessionService } = await import('../MatrixRuntimeSessionService')
 
 describe('MatrixRuntimeSessionService', () => {
@@ -185,6 +239,8 @@ describe('MatrixRuntimeSessionService', () => {
     mockRoomStore.resetState.mockReset()
     mockRoomStore.setupEventListeners.mockResolvedValue(undefined)
     mockRoomStore.loadRooms.mockResolvedValue(undefined)
+    mockChatStore.sessionList = [{ roomId: '!room:example.com' }]
+    mockChatStore.getSessionList.mockResolvedValue(undefined)
     mockLoginHistoriesStore.addLoginHistory.mockReset()
     mockEmojiStore.initEmojis.mockResolvedValue(undefined)
     mockEmojiStore.prefetchEmojiToLocal.mockResolvedValue(undefined)
@@ -237,6 +293,8 @@ describe('MatrixRuntimeSessionService', () => {
     expect(mockRoomStore.loadRooms).toHaveBeenCalled()
     expect(mockRoomStore.resetState).toHaveBeenCalled()
     expect(mockRoomStore.setupEventListeners).toHaveBeenCalled()
+    expect(mockChatStore.getSessionList).toHaveBeenCalledWith(true)
+    expect(mockGlobalStore.updateCurrentSessionRoomId).toHaveBeenCalledWith('!room:example.com')
     expect(mockLoginHistoriesStore.addLoginHistory).toHaveBeenCalledWith(
       expect.objectContaining({
         uid: '@alice:example.com',
@@ -345,6 +403,8 @@ describe('MatrixRuntimeSessionService', () => {
     expect(mockRoomStore.resetState).toHaveBeenCalled()
     expect(mockRoomStore.loadRooms).toHaveBeenCalled()
     expect(mockRoomStore.setupEventListeners).toHaveBeenCalled()
+    expect(mockChatStore.getSessionList).toHaveBeenCalledWith(true)
+    expect(mockGlobalStore.updateCurrentSessionRoomId).toHaveBeenCalledWith('!room:example.com')
   })
 
   it('restores matrix client before bootstrapping when current window client is missing', async () => {
@@ -386,6 +446,8 @@ describe('MatrixRuntimeSessionService', () => {
     expect(mockRoomStore.resetState).toHaveBeenCalled()
     expect(mockRoomStore.loadRooms).toHaveBeenCalled()
     expect(mockRoomStore.setupEventListeners).toHaveBeenCalled()
+    expect(mockChatStore.getSessionList).toHaveBeenCalledWith(true)
+    expect(mockGlobalStore.updateCurrentSessionRoomId).toHaveBeenCalledWith('!room:example.com')
   })
 
   it('resets local state and completes desktop logout flow', async () => {

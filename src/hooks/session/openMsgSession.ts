@@ -10,14 +10,17 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { MittEnum } from '@/enums'
-import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { useChatStore } from '@/stores/domains/chat/chat'
-import type { SessionItem } from '@/stores/domains/chat/chat/session'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { invokeWithErrorHandler } from '../../utils/TauriInvokeHandler'
+
+const SESSION_READY_TIMEOUT_MS = 1500
+const SESSION_READY_POLL_INTERVAL_MS = 100
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
  * Open the chat session for `uid`. `type` defaults to `2` (single chat).
@@ -34,12 +37,6 @@ import { invokeWithErrorHandler } from '../../utils/TauriInvokeHandler'
 export const openMsgSession = async (uid: string, type: number = 2) => {
   const chatStore = useChatStore()
   const globalStore = useGlobalStore()
-  const { handleMsgClick } = useMessage()
-
-  const label = WebviewWindow.getCurrent().label
-  if (router.currentRoute.value.name !== '/message' && label === 'home') {
-    router.push('/message')
-  }
 
   info('打开消息会话')
   const res = await matrixSessionService.getSessionDetailWithFriends({ id: uid, roomType: type })
@@ -54,14 +51,41 @@ export const openMsgSession = async (uid: string, type: number = 2) => {
     window.$message.error('显示会话失败')
   }
 
-  const existingSession = chatStore.getSession(res.roomId)
+  let existingSession = chatStore.getSession(res.roomId)
   if (!existingSession) {
     chatStore.updateSessionLastActiveTime(res.roomId)
     await chatStore.getSessionList(true)
+    existingSession = chatStore.getSession(res.roomId)
   }
+
+  if (!existingSession) {
+    chatStore.addSession?.(res)
+    existingSession = chatStore.getSession(res.roomId)
+  }
+
+  if (!existingSession) {
+    const deadline = Date.now() + SESSION_READY_TIMEOUT_MS
+    while (Date.now() < deadline) {
+      await sleep(SESSION_READY_POLL_INTERVAL_MS)
+      await chatStore.getSessionList(true)
+      existingSession = chatStore.getSession(res.roomId)
+      if (existingSession) {
+        break
+      }
+    }
+  }
+
   globalStore.updateCurrentSessionRoomId(res.roomId)
 
+  const label = WebviewWindow.getCurrent().label
+  if (router.currentRoute.value.path !== '/message' && label === 'home') {
+    await router.push('/message')
+  }
+
+  // Explicitly hide the details panel to ensure the chat view is shown
+  useMitt.emit(MittEnum.DETAILS_SHOW, { detailsShow: false, context: undefined })
+  chatStore.markSessionRead?.(res.roomId)
+
   useMitt.emit(MittEnum.LOCATE_SESSION, { roomId: res.roomId })
-  handleMsgClick(res as unknown as SessionItem)
   useMitt.emit(MittEnum.TO_SEND_MSG, { url: 'message' })
 }

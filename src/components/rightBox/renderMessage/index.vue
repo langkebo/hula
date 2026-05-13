@@ -96,25 +96,6 @@
                 align="center"
                 v-if="isGroup"
                 :style="isMe ? 'flex-direction: row-reverse' : ''">
-                <!-- 用户徽章 -->
-                <n-popover
-                  v-if="
-                    globalStore.currentSessionRoomId === '1' &&
-                    badgeStore.badgeById(groupStore.getUserInfo(fromUser.uid)?.wearingItemId)?.img
-                  "
-                  trigger="hover">
-                  <template #trigger>
-                    <n-avatar
-                      class="select-none"
-                      :size="18"
-                      round
-                      :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                      :src="badgeStore.badgeById(groupStore.getUserInfo(fromUser.uid)?.wearingItemId)?.img" />
-                  </template>
-                  <span>
-                    {{ badgeStore.badgeById(groupStore.getUserInfo(fromUser.uid)?.wearingItemId)?.describe }}
-                  </span>
-                </n-popover>
                 <!-- 用户名 -->
                 <span
                   :class="[
@@ -124,8 +105,6 @@
                   @click.stop="handleMentionUser">
                   {{ senderDisplayName }}
                 </span>
-                <!-- 消息归属地 -->
-                <span v-if="senderLocPlace" class="text-(12px --hula-text-tertiary)">({{ senderLocPlace }})</span>
               </n-flex>
             </ContextMenu>
             <!-- 群主 -->
@@ -374,7 +353,6 @@ import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageS
 import { matrixReactionService } from '@/services/matrix/messaging/MatrixReactionService'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
-import { useBadgeStore } from '@/stores/domains/chat/badge'
 import type { MessageBody, MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -473,7 +451,6 @@ const chatMainApi = injectedChatMain ?? useChatMain()
 const { optionsList, report, activeBubble, handleItemType, emojiList, specialMenuList, handleMsgClick } = chatMainApi
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
-const badgeStore = useBadgeStore()
 const resolvingUserSet = new Set<string>()
 const isMultiSelectDisabled = computed(() => !isMessageMultiSelectEnabled(props.message.message.type))
 const bubbleMaxWidth = computed(() => {
@@ -569,14 +546,6 @@ watchEffect(() => {
   if (!senderDisplayName.value || senderDisplayName.value === '未知用户') {
     ensureSenderInfo(props.fromUser.uid)
   }
-})
-
-const senderLocPlace = computed(() => {
-  const storeLocPlace = groupStore.getUserInfo(props.fromUser.uid)?.locPlace
-  if (storeLocPlace) {
-    return storeLocPlace
-  }
-  return props.message.fromUser.locPlace || ''
 })
 
 import { createLogger } from '@/utils/Logger'

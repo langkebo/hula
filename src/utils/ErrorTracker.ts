@@ -61,6 +61,11 @@ class ErrorTracker {
   }
 
   private installGlobalHandlers(): void {
+    if (typeof window === 'undefined') {
+      logger.warn('[ErrorTracker] 当前环境不支持 window，跳过全局处理器安装')
+      return
+    }
+
     this.originalOnError = window.onerror
     window.onerror = (message, source, lineno, colno, error) => {
       this.trackError('unhandled', error ?? new Error(String(message)), {
@@ -169,11 +174,13 @@ class ErrorTracker {
   }
 
   terminate(): void {
-    if (this.originalOnError) {
-      window.onerror = this.originalOnError
-    }
-    if (this.originalOnUnhandledRejection) {
-      window.onunhandledrejection = this.originalOnUnhandledRejection
+    if (typeof window !== 'undefined') {
+      if (this.originalOnError) {
+        window.onerror = this.originalOnError
+      }
+      if (this.originalOnUnhandledRejection) {
+        window.onunhandledrejection = this.originalOnUnhandledRejection
+      }
     }
     this.errors.clear()
     this.initialized = false

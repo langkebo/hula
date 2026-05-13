@@ -60,7 +60,7 @@ import { useImageViewer } from '@/hooks/useImageViewer'
 import type { EmojiBody, MsgType } from '@/services/types'
 import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { createLogger } from '@/utils/Logger'
-import { getRemoteFileSize } from '@/utils/PathUtil'
+import { getRemoteFileSize, safeExistsPath } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('Emoji')
@@ -116,7 +116,7 @@ const ensureLocalEmoji = async () => {
     return
   }
   try {
-    const existsFlag = await exists(localPath)
+    const existsFlag = await safeExistsPath(localPath)
     if (existsFlag) {
       localEmojiSrc.value = convertFileSrc(localPath)
       return

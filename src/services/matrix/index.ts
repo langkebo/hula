@@ -1,5 +1,12 @@
 import { MatrixAuthService } from './auth/MatrixAuthService'
 
+export type {
+  AIConnectionInfo,
+  CallMcpToolRequest,
+  CreateAIConnectionRequest,
+  McpTool
+} from './ai/MatrixAIConnectionService'
+export { matrixAIConnectionService } from './ai/MatrixAIConnectionService'
 export { MatrixAuthService } from './auth/MatrixAuthService'
 export type { ConnectionState, MatrixClientConfig } from './MatrixClientService'
 export { matrixClientService } from './MatrixClientService'
@@ -70,6 +77,8 @@ export type {
   OidcUserInfo
 } from './auth/MatrixOidcService'
 export { matrixOidcService } from './auth/MatrixOidcService'
+export type { QrCodeResult, QrLoginStatusResult } from './auth/MatrixQrLoginBridgeService'
+export { matrixQrLoginBridgeService } from './auth/MatrixQrLoginBridgeService'
 export type {
   QRCodeResult,
   QRLoginResult,

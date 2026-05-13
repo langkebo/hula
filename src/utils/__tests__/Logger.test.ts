@@ -9,7 +9,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 import type { LogLevel } from '../Logger'
-import { createLogger, LogLevelPriority } from '../Logger'
+import { configureLogger, createLogger, LogLevelPriority } from '../Logger'
 
 describe('Logger', () => {
   describe('createLogger', () => {
@@ -36,8 +36,15 @@ describe('Logger', () => {
     })
   })
 
+  describe('configureLogger', () => {
+    it('sets global log level', () => {
+      configureLogger({ level: 'error' })
+      const logger = createLogger('Test')
+      expect(logger).toBeDefined()
+    })
+  })
+
   describe('sanitize', () => {
-    // Access Logger's private static sanitize via constructor chain
     function getSanitize(instance: ReturnType<typeof createLogger>) {
       const ctor = Object.getPrototypeOf(instance).constructor
       return ctor.sanitize as ((text: string) => string) | undefined
@@ -92,6 +99,12 @@ describe('Logger', () => {
       const result = logger.setLevel('warn')
       expect(result).toBe(logger)
     })
+
+    it('getLevel returns current level', () => {
+      const logger = createLogger('Level')
+      logger.setLevel('error')
+      expect(logger.getLevel()).toBe('error')
+    })
   })
 
   describe('child logger', () => {
@@ -120,6 +133,24 @@ describe('Logger', () => {
       expect(typeof logger.group).toBe('function')
       expect(typeof logger.groupEnd).toBe('function')
       expect(typeof logger.table).toBe('function')
+    })
+  })
+
+  describe('deduplication', () => {
+    it('should not crash on repeated identical messages', () => {
+      const logger = createLogger('DedupTest')
+      logger.setLevel('info')
+      for (let i = 0; i < 100; i++) {
+        expect(() => logger.info('repeated message')).not.toThrow()
+      }
+    })
+
+    it('should not crash on repeated error messages', () => {
+      const logger = createLogger('DedupTest')
+      logger.setLevel('error')
+      for (let i = 0; i < 100; i++) {
+        expect(() => logger.error('repeated error')).not.toThrow()
+      }
     })
   })
 })

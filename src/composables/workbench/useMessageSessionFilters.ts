@@ -1,8 +1,10 @@
 import { computed, type MaybeRefOrGetter, ref, toValue } from 'vue'
 import { RoomTypeEnum } from '@/enums'
 import {
+  WORKBENCH_SESSION_ENGAGEMENT_FILTERS,
   WORKBENCH_SESSION_SORTS,
   WORKBENCH_SESSION_TYPE_FILTERS,
+  type WorkbenchSessionEngagementFilter,
   type WorkbenchSessionSort,
   type WorkbenchSessionTypeFilter
 } from '@/router/spaceNavigation'
@@ -15,6 +17,9 @@ type FilterableSession = {
   lastMsg?: string
   remark?: string
   account?: string
+  unreadCount?: number
+  highlightCount?: number
+  isInvite?: boolean
 }
 
 const matchesKeyword = (session: FilterableSession, keyword: string) => {
@@ -30,6 +35,7 @@ const matchesKeyword = (session: FilterableSession, keyword: string) => {
 export function useMessageSessionFilters<T extends FilterableSession>(sourceSessions: MaybeRefOrGetter<T[]>) {
   const searchKeyword = ref('')
   const sessionTypeFilter = ref<WorkbenchSessionTypeFilter>(WORKBENCH_SESSION_TYPE_FILTERS.all)
+  const sessionEngagementFilter = ref<WorkbenchSessionEngagementFilter>(WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all)
   const sessionSort = ref<WorkbenchSessionSort>(WORKBENCH_SESSION_SORTS.recent)
 
   const keyword = computed(() => searchKeyword.value.trim().toLocaleLowerCase())
@@ -46,9 +52,26 @@ export function useMessageSessionFilters<T extends FilterableSession>(sourceSess
     return true
   }
 
+  const matchesEngagement = (session: T) => {
+    switch (sessionEngagementFilter.value) {
+      case WORKBENCH_SESSION_ENGAGEMENT_FILTERS.unread:
+        return (session.unreadCount ?? 0) > 0
+      case WORKBENCH_SESSION_ENGAGEMENT_FILTERS.mention:
+        return (session.highlightCount ?? 0) > 0
+      case WORKBENCH_SESSION_ENGAGEMENT_FILTERS.invite:
+        return Boolean(session.isInvite)
+      default:
+        return true
+    }
+  }
+
   const filteredSessionList = computed(() => {
     const filteredSessions = toValue(sourceSessions).filter((session) => {
       if (!matchesSessionType(session)) {
+        return false
+      }
+
+      if (!matchesEngagement(session)) {
         return false
       }
 
@@ -76,6 +99,10 @@ export function useMessageSessionFilters<T extends FilterableSession>(sourceSess
     sessionTypeFilter.value = value
   }
 
+  const setSessionEngagementFilter = (value: WorkbenchSessionEngagementFilter) => {
+    sessionEngagementFilter.value = value
+  }
+
   const setSessionSort = (value: WorkbenchSessionSort) => {
     sessionSort.value = value
   }
@@ -91,16 +118,25 @@ export function useMessageSessionFilters<T extends FilterableSession>(sourceSess
     if (sessionTypeFilter.value !== WORKBENCH_SESSION_TYPE_FILTERS.all && !matchesSessionType(targetSession)) {
       sessionTypeFilter.value = WORKBENCH_SESSION_TYPE_FILTERS.all
     }
+
+    if (
+      sessionEngagementFilter.value !== WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all &&
+      !matchesEngagement(targetSession)
+    ) {
+      sessionEngagementFilter.value = WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
+    }
   }
 
   return {
     searchKeyword,
     sessionTypeFilter,
+    sessionEngagementFilter,
     sessionSort,
     filteredSessionList,
     ensureSessionVisible,
     setSearchKeyword,
     setSessionTypeFilter,
+    setSessionEngagementFilter,
     setSessionSort
   }
 }

@@ -24,6 +24,79 @@ export const getUserDataRootAbsoluteDir = async (): Promise<string> => {
   return await join(baseDirPath, USER_DATA)
 }
 
+const normalizePath = (value: string): string => value.replace(/\\/g, '/')
+
+const trimLeadingSlash = (value: string): string => value.replace(/^\/+/, '')
+
+const getScopedBaseDirCandidates = async (): Promise<Array<{ baseDir: BaseDirectory; absoluteBasePath: string }>> => {
+  if (isMobile()) {
+    return [
+      {
+        baseDir: BaseDirectory.AppData,
+        absoluteBasePath: normalizePath(await appDataDir())
+      }
+    ]
+  }
+
+  return [
+    {
+      baseDir: BaseDirectory.AppCache,
+      absoluteBasePath: normalizePath(await appCacheDir())
+    },
+    {
+      baseDir: BaseDirectory.Resource,
+      absoluteBasePath: normalizePath(await resourceDir())
+    }
+  ]
+}
+
+const resolveScopedPathCandidate = async (
+  filePath: string
+): Promise<{ relativePath: string; baseDir: BaseDirectory } | null> => {
+  const normalizedPath = normalizePath(filePath)
+  const candidates = await getScopedBaseDirCandidates()
+
+  for (const candidate of candidates) {
+    if (!normalizedPath.startsWith(candidate.absoluteBasePath)) {
+      continue
+    }
+
+    const relativePath = trimLeadingSlash(normalizedPath.slice(candidate.absoluteBasePath.length))
+    if (!relativePath) {
+      continue
+    }
+
+    return {
+      relativePath,
+      baseDir: candidate.baseDir
+    }
+  }
+
+  return null
+}
+
+export const safeExistsPath = async (filePath: string): Promise<boolean> => {
+  if (!filePath) {
+    return false
+  }
+
+  const scopedCandidate = await resolveScopedPathCandidate(filePath)
+  if (scopedCandidate) {
+    return await exists(scopedCandidate.relativePath, { baseDir: scopedCandidate.baseDir })
+  }
+
+  try {
+    return await exists(filePath)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('forbidden path')) {
+      logger.info(`[safeExistsPath] 跳过未授权路径检查: ${filePath}`)
+      return false
+    }
+    throw error
+  }
+}
+
 // 远程文件类型探测结果与进行中的 Promise 缓存，避免重复请求同一资源
 const remoteFileTypeResultCache = new Map<string, FileTypeResult | undefined>()
 const remoteFileTypePromiseCache = new Map<string, Promise<FileTypeResult | undefined>>()

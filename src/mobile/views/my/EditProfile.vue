@@ -217,10 +217,10 @@ const toEditBio = () => {
   router.push('/mobile/mobileMy/editBio')
 }
 
-const updateCurrentUserCache = (key: 'name' | 'wearingItemId' | 'avatar', value: string) => {
+const updateCurrentUserCache = (key: 'name' | 'avatar', value: string) => {
   const currentUser = userStore.userInfo!.uid && groupStore.getUserInfo(userStore.userInfo!.uid)
   if (currentUser) {
-    currentUser[key] = value
+    ;(currentUser as unknown as Record<string, unknown>)[key] = value
   }
 }
 
