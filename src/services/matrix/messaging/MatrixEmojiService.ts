@@ -1,5 +1,5 @@
 import { info, error as logError } from '@tauri-apps/plugin-log'
-import { matrixClientService } from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixMediaService } from '../media/MatrixMediaService'
 
 /**
@@ -83,18 +83,7 @@ const DEFAULT_PACK_ID = 'default'
  * await service.emojiDelete('emoji_id');
  * ```
  */
-class MatrixEmojiService {
-  /**
-   * 获取客户端实例
-   */
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('Matrix 客户端未初始化')
-    }
-    return client
-  }
-
+class MatrixEmojiService extends BaseMatrixService {
   /**
    * 获取用户的表情包/贴纸包列表
    *

@@ -1,7 +1,7 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
-import { matrixClientService } from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
 
 interface RoomNotificationSettings {
@@ -47,15 +47,7 @@ type MatrixClientWithTags = MatrixClient & {
 const DIRECT_ROOM_READY_TIMEOUT_MS = 3000
 const DIRECT_ROOM_READY_POLL_INTERVAL_MS = 100
 
-class MatrixSessionService {
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client
-  }
-
+class MatrixSessionService extends BaseMatrixService {
   async getSessionList(): Promise<SessionInfo[]> {
     try {
       const client = this.getClient()

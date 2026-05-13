@@ -1,6 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 /**
  * Room pinned / sticky events domain service.
@@ -9,13 +9,7 @@ import matrixClientService from '../MatrixClientService'
  * `sticky` is a synapse-rust extension exposed via authedRequest.
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
-export class MatrixRoomPinsService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('[MatrixRoom] 客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomPinsService extends BaseMatrixService {
   async getPinnedEvents(roomId: string): Promise<string[]> {
     const client = this.getClient()
     try {

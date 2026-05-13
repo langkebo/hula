@@ -1,5 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 /**
  * Room invite moderation domain service.
@@ -8,13 +8,7 @@ import matrixClientService from '../MatrixClientService'
  * exposed under `/_matrix/client/v3/rooms/{roomId}/invite_{blocklist,allowlist}`.
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
-export class MatrixRoomModerationService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('[MatrixRoom] 客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomModerationService extends BaseMatrixService {
   async getInviteBlocklist(roomId: string): Promise<string[]> {
     const client = this.getClient()
     try {

@@ -6,8 +6,8 @@
  */
 
 import { error, info } from '@tauri-apps/plugin-log'
-import type { MatrixClient } from 'matrix-js-sdk'
 import type { AuthDict, MatrixClientExtended } from '@/types/matrix-extensions'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 /**
@@ -72,18 +72,7 @@ export interface DeviceListUpdatesRequest {
 /**
  * 设备管理服务
  */
-class MatrixDeviceService {
-  /**
-   * 获取客户端实例
-   */
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('MatrixClient 未初始化')
-    }
-    return client
-  }
-
+class MatrixDeviceService extends BaseMatrixService {
   /**
    * 获取当前用户的所有设备
    *

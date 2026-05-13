@@ -1,6 +1,5 @@
 import { error } from '@tauri-apps/plugin-log'
-import type { MatrixClient } from 'matrix-js-sdk'
-import { matrixClientService } from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
 
 export interface ServerNotificationPayload {
@@ -23,15 +22,7 @@ export interface NotificationTemplate {
   content: string
 }
 
-class MatrixServerNotificationService {
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client
-  }
-
+class MatrixServerNotificationService extends BaseMatrixService {
   private async request<T>(method: string, path: string, body?: object): Promise<T | null> {
     try {
       return (await this.getClient().http.authedRequest(method, path, undefined, body)) as T

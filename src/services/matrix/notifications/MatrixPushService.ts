@@ -1,19 +1,11 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { IPusher, IPushRule, IPushRules, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
 import { PushRuleKind, type TweakName } from 'matrix-js-sdk'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 type PushRuleScope = 'global' | string
 
-class MatrixPushService {
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixPush] 客户端未初始化')
-    }
-    return client
-  }
-
+class MatrixPushService extends BaseMatrixService {
   async getPushers(): Promise<IPusher[]> {
     const client = this.getClient()
     try {

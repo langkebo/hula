@@ -1,6 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 /**
  * Room tags domain service.
@@ -8,13 +8,7 @@ import matrixClientService from '../MatrixClientService'
  * Extracted from `MatrixRoomService` as part of the P1-1 split. The facade
  * keeps method signatures for backwards compatibility and forwards here.
  */
-export class MatrixRoomTagsService {
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) throw new Error('[MatrixRoom] 客户端未初始化')
-    return client
-  }
-
+export class MatrixRoomTagsService extends BaseMatrixService {
   async getTags(roomId: string): Promise<Record<string, { order?: number }>> {
     const client = this.getClient()
     try {

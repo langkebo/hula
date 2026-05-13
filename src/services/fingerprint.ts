@@ -1,4 +1,3 @@
-import FingerprintJS from '@fingerprintjs/fingerprintjs'
 import { createLogger } from '@/utils/Logger'
 import { getOSType } from '@/utils/PlatformConstants'
 
@@ -49,6 +48,7 @@ export const getEnhancedFingerprint = async (): Promise<string> => {
       logger.debug(`收集设备信息耗时: ${deviceInfoTime.toFixed(2)}ms`)
 
       const fpStart = performance.now()
+      const FingerprintJS = (await import('@fingerprintjs/fingerprintjs')).default
       const fp = await FingerprintJS.load()
       const fpResult = await fp.get({
         debug: false

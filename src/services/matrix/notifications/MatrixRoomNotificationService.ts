@@ -2,7 +2,7 @@ import { NotificationTypeEnum } from '@/enums'
 import { MatrixRequestDeduper } from '@/services/matrix/MatrixRequestDeduper'
 import { MatrixRequestHelper } from '@/services/matrix/MatrixRequestHelper'
 import { createLogger } from '@/utils/Logger'
-import { matrixClientService } from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixPushService } from './MatrixPushService'
 
 const logger = createLogger('MatrixRoomNotification')
@@ -22,17 +22,9 @@ interface RoomNotificationSettings {
   muteNotification?: NotificationTypeEnum
 }
 
-class MatrixRoomNotificationService {
+class MatrixRoomNotificationService extends BaseMatrixService {
   private isUnreadCountSupported = true
   private hasLoggedUnreadCountFallback = false
-
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixRoomNotification] 客户端未初始化')
-    }
-    return client
-  }
 
   private getRoomSettings(roomId: string): RoomNotificationSettings {
     const client = this.getClient()

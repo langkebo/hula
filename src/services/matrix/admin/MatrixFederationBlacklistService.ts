@@ -1,6 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import type { MatrixClient } from 'matrix-js-sdk'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
 
 export interface FederationBlacklistEntry {
@@ -22,15 +21,7 @@ interface FederationBlacklistListResponse {
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
-class MatrixFederationBlacklistService {
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client
-  }
-
+class MatrixFederationBlacklistService extends BaseMatrixService {
   private toEntry(value: unknown): FederationBlacklistEntry | null {
     if (typeof value !== 'object' || value === null) {
       return null

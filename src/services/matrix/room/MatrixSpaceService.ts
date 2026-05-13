@@ -2,7 +2,7 @@ import { error, info } from '@tauri-apps/plugin-log'
 import type { Room, Visibility } from 'matrix-js-sdk'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
 
 export interface SpaceOptions {
@@ -21,7 +21,7 @@ export interface SpaceInfo {
   childCount: number
 }
 
-class SpaceService {
+class SpaceService extends BaseMatrixService {
   private roomToSpaceInfo(room: Room): SpaceInfo {
     return {
       spaceId: room.roomId,
@@ -31,14 +31,6 @@ class SpaceService {
       memberCount: room.getJoinedMembers().length,
       childCount: this.getSpaceChildIds(room).length
     }
-  }
-
-  private getClient() {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client
   }
 
   async createSpace(options: SpaceOptions): Promise<SpaceInfo | null> {

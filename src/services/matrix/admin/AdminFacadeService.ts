@@ -3,7 +3,7 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { ref } from 'vue'
 import { TauriCommand } from '@/enums'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import type { AdminFacadeDomainMethods } from './AdminFacadeDomainMethods'
 import { createAdminFacadeDomainMethods } from './AdminFacadeDomainMethods'
 import type { AdminFacadeOpsMethods } from './AdminFacadeOpsMethods'
@@ -55,7 +55,7 @@ export type {
   UserInfo
 } from './AdminTypes'
 
-class AdminFacadeService {
+class AdminFacadeService extends BaseMatrixService {
   private adminVerifiedAt = 0
   private readonly ADMIN_VERIFY_INTERVAL = 2 * 60 * 1000
   private cachedAdminStatus = false
@@ -78,14 +78,6 @@ class AdminFacadeService {
 
   initialize(): void {
     info('[Admin] 服务已初始化')
-  }
-
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    return client
   }
 
   private async verifyServerSidePermission(): Promise<boolean> {
