@@ -89,12 +89,9 @@ export const baseConfig: UserConfig = {
           'shiki-themes',
           'shiki-langs',
           'shiki-engine',
-          'mermaid',
-          'mermaid-deps',
           'three',
           'chart-vendor',
-          'vue-office',
-          'vue-demi'
+          'vue-office'
         ]
         return deps.filter((dep) => {
           if (heavyChunks.some((chunk) => dep.includes(chunk))) {
@@ -128,7 +125,6 @@ export const baseConfig: UserConfig = {
       'matrix-js-sdk'
     ],
     exclude: [
-      'mermaid',
       'three',
       '@vue-office/docx',
       '@vue-office/excel',

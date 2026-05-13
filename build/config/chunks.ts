@@ -29,8 +29,7 @@ export const manualChunkConfig: Record<string, string> = {
   'src/workers/MatrixSdkWorkerService': 'matrix-sdk-worker',
   'src/workers/matrixWorkerTypes': 'matrix-sdk-worker',
 
-  // 编辑器与渲染增强 (Shiki, Mermaid, Katex)
-  'node_modules/mermaid': 'mermaid',
+  // 编辑器与渲染增强 (Shiki, Katex)
   'node_modules/@shikijs/themes': 'shiki-themes',
   'node_modules/@shikijs/core': 'shiki-core',
   'node_modules/@shikijs/engine-': 'shiki-engine',
@@ -42,14 +41,6 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/shiki/engine/': 'shiki-engine',
   'node_modules/shiki/core': 'shiki-core',
   'node_modules/shiki/': 'shiki-core',
-  'node_modules/cytoscape': 'mermaid-deps',
-  'node_modules/katex': 'mermaid-deps',
-  'node_modules/@mermaid-js/': 'mermaid-deps',
-  'node_modules/dagre': 'mermaid-deps',
-  'node_modules/layout-base': 'mermaid-deps',
-  'node_modules/cose-base': 'mermaid-deps',
-  'node_modules/langium': 'mermaid-deps',
-  'node_modules/chevrotain': 'mermaid-deps',
 
   // 图形与 3D
   'node_modules/three': 'three',
@@ -60,7 +51,6 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/es-toolkit': 'utils-lodash',
   'node_modules/dayjs': 'dayjs',
   'node_modules/axios': 'axios',
-  'node_modules/crypto-js': 'crypto',
   'node_modules/digest-wasm': 'crypto',
   'node_modules/idb': 'idb',
   'node_modules/qrcode': 'qrcode',
@@ -74,7 +64,6 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/@tauri-apps/': 'tauri-sdk',
   'node_modules/@fingerprintjs/': 'fingerprint',
   'node_modules/markstream-vue': 'markdown-vendor',
-  'node_modules/stream-markdown': 'markdown-vendor',
   'node_modules/tlbs-map-vue': 'map-vendor',
   'node_modules/driver.js': 'driver',
 
