@@ -82,8 +82,8 @@ vi.mock('@/services/matrix/auth/MatrixOidcService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/auth/MatrixRuntimeSessionService', () => ({
-  matrixRuntimeSessionService: {
+vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
+  sessionOrchestrator: {
     restoreWithAccessToken: restoreWithAccessTokenMock,
     applyDesktopLoginState: applyDesktopLoginStateMock
   }

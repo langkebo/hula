@@ -82,8 +82,8 @@ vi.mock('@/enums', async (importOriginal) => {
   }
 })
 
-vi.mock('@/services/matrix/auth/MatrixRuntimeSessionService', () => ({
-  matrixRuntimeSessionService: {
+vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
+  sessionOrchestrator: {
     loginWithSsoToken: loginWithSsoTokenMock
   }
 }))

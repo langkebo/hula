@@ -5,6 +5,7 @@
         :state="connectionState"
         :retry-count="connectionRetryCount"
         @retry="handleConnectionRetry" />
+      <NetworkStatusBar />
       <SplashScreen
         v-if="showSplash"
         :visible="showSplash"
@@ -28,6 +29,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { exit } from '@tauri-apps/plugin-process'
 import ConnectionStatusBanner from '@/components/common/ConnectionStatusBanner.vue'
+import NetworkStatusBar from '@/components/common/NetworkStatusBar.vue'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { CallTypeEnum, ChangeTypeEnum, EventEnum, MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'

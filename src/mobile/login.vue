@@ -297,7 +297,7 @@ import Validation from '@/components/common/Validation.vue'
 import { MittEnum } from '@/enums'
 import router from '@/router'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
-import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
+import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import type { RegisterUserReq, UserInfoType } from '@/services/types'
 import { useMobileStore } from '@/stores/domains/settings/mobile'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
@@ -401,7 +401,7 @@ const handleSsoLoginCallback = async (): Promise<boolean> => {
   loginDisabled.value = true
 
   try {
-    await matrixRuntimeSessionService.loginWithSsoToken({
+    await sessionOrchestrator.loginWithSsoToken({
       loginToken,
       client: 'MOBILE'
     })

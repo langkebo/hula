@@ -34,7 +34,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { resolveMatrixEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
-import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
+import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OidcCallback')
@@ -112,7 +112,7 @@ const handleOidcCallback = async () => {
       })
     }
 
-    await matrixRuntimeSessionService.restoreWithAccessToken({
+    await sessionOrchestrator.restoreWithAccessToken({
       uid: matrixTokens.user_id,
       accessToken: matrixTokens.access_token,
       refreshToken: matrixTokens.refresh_token,
@@ -120,7 +120,7 @@ const handleOidcCallback = async () => {
       client: 'PC',
       bootstrapAfterRestore: true
     })
-    await matrixRuntimeSessionService.applyDesktopLoginState()
+    await sessionOrchestrator.applyDesktopLoginState()
 
     status.value = 'success'
     message.success(t('login.oidc.login_success'))

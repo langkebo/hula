@@ -10,7 +10,7 @@ import { useNetwork } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { MittEnum } from '@/enums'
 import { resolveMatrixEndpointConfig } from '@/services/backend'
-import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
+import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { isDesktop, isMobile } from '@/utils/PlatformConstants'
@@ -56,15 +56,15 @@ export const useLoginFlow = () => {
       return
     }
 
-    await matrixRuntimeSessionService.applyDesktopLoginState()
+    await sessionOrchestrator.applyDesktopLoginState()
   }
 
   const logout = async () => {
-    await matrixRuntimeSessionService.logoutCurrentSession()
+    await sessionOrchestrator.logoutCurrentSession()
   }
 
   const init = async () => {
-    await matrixRuntimeSessionService.bootstrapPostLoginState({
+    await sessionOrchestrator.bootstrapPostLoginState({
       account: info.value.account || userStore.userInfo?.account || userStore.userInfo?.email,
       displayName: info.value.name || userStore.userInfo?.name,
       avatar: info.value.avatar || userStore.userInfo?.avatar,
@@ -75,7 +75,7 @@ export const useLoginFlow = () => {
 
   const routerOrOpenHomeWindow = async () => {
     if (isDesktop()) {
-      await matrixRuntimeSessionService.completeDesktopLoginTransition()
+      await sessionOrchestrator.completeDesktopLoginTransition()
     } else {
       router?.push('/mobile/home')
     }
@@ -116,9 +116,9 @@ export const useLoginFlow = () => {
 
     try {
       if (auto && uid) {
-        const tokens = await matrixRuntimeSessionService.getStoredTokens()
+        const tokens = await sessionOrchestrator.getStoredTokens()
         if (tokens.token) {
-          await matrixRuntimeSessionService.restoreWithAccessToken({
+          await sessionOrchestrator.restoreWithAccessToken({
             uid,
             accessToken: tokens.token,
             refreshToken: tokens.refreshToken ?? undefined,
@@ -136,7 +136,7 @@ export const useLoginFlow = () => {
             throw new Error('缺少访问令牌和密码，无法自动登录')
           }
 
-          await matrixRuntimeSessionService.loginWithPassword({
+          await sessionOrchestrator.loginWithPassword({
             username: account,
             password,
             homeserverUrl: homeserverUrl.value,
@@ -149,7 +149,7 @@ export const useLoginFlow = () => {
           })
         }
       } else {
-        await matrixRuntimeSessionService.loginWithPassword({
+        await sessionOrchestrator.loginWithPassword({
           username: account,
           password,
           homeserverUrl: homeserverUrl.value,
@@ -177,7 +177,7 @@ export const useLoginFlow = () => {
       useMitt.emit(MittEnum.MSG_INIT)
 
       if (isDesktop()) {
-        await matrixRuntimeSessionService.completeDesktopLoginTransition()
+        await sessionOrchestrator.completeDesktopLoginTransition()
       } else {
         await routerOrOpenHomeWindow()
       }
