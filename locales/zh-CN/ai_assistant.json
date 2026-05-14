@@ -58,5 +58,19 @@
     "summarize_response": "请提供需要总结的内容，我会提取关键信息并为你生成简洁的摘要。",
     "code_response": "请告诉我你需要什么功能的代码，我会帮你编写。支持多种编程语言，如 Python、JavaScript、TypeScript 等。",
     "default_response": "我是 AI 助手，很高兴为你服务！请问有什么可以帮助你的？"
+  },
+  "bot": {
+    "back": "返回",
+    "import_model": "导入模型",
+    "lang_zh": "中文",
+    "lang_en": "English",
+    "preview_3d": "3D预览",
+    "open_in_browser": "在浏览器中打开",
+    "webview_fallback": "当前环境不支持内嵌浏览器, 已尝试在系统浏览器打开",
+    "local_model": "本地模型",
+    "select_model": "选择模型",
+    "previewing_model": "正在预览模型",
+    "select_model_failed": "选择模型文件失败，请重试",
+    "load_failed": "加载失败,请稍后重试"
   }
 }

@@ -1,5 +1,11 @@
 {
   "no_more": "No more messages",
   "loading": "Loading...",
-  "new_messages": " new messages"
+  "new_messages": " new messages",
+  "copy_translation": "Copy Translation",
+  "unknown_user": "Unknown User",
+  "resend_success": "Message resent successfully",
+  "resend_failed": "Failed to resend message. Please try again.",
+  "copy_success": "Copied successfully",
+  "emoji_already_marked": "Emoji already marked"
 }

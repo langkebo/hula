@@ -214,5 +214,25 @@
   "code_send_failed_retry": "Failed to send verification code. Please try again later.",
   "complete_info_before_register": "Please complete your information before registering.",
   "register_success": "Registration successful.",
-  "register_fail": "Registration failed."
+  "register_fail": "Registration failed.",
+  "server_config": {
+    "title": "Server Configuration",
+    "identity_placeholder": "Leave empty to disable Identity Server",
+    "restart_hint": "You need to log in again after changing the server configuration",
+    "reset": "Reset to Default",
+    "cancel": "Cancel",
+    "save": "Save",
+    "homeserver_invalid": "Invalid Homeserver URL format",
+    "identity_invalid": "Invalid Identity Server URL format",
+    "save_success": "Server configuration saved. Please log in again.",
+    "save_failed": "Failed to save server configuration",
+    "reset_success": "Server configuration has been reset to default"
+  },
+  "sso_login_failed": "SSO login failed",
+  "remote_login": {
+    "unknown_ip": "Unknown IP",
+    "title": "Remote Login Alert"
+  },
+  "service_agreement_title": "Terms of Service",
+  "privacy_policy_title": "Privacy Policy"
 }

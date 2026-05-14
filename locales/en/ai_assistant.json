@@ -58,5 +58,19 @@
     "summarize_response": "Please provide the content you want summarized, and I'll extract the key points for you.",
     "code_response": "Please tell me what kind of code you need, and I'll help you write it. I support multiple programming languages like Python, JavaScript, TypeScript, etc.",
     "default_response": "I'm an AI assistant, happy to help you! What can I assist you with today?"
+  },
+  "bot": {
+    "back": "Back",
+    "import_model": "Import Model",
+    "lang_zh": "Chinese",
+    "lang_en": "English",
+    "preview_3d": "3D Preview",
+    "open_in_browser": "Open in Browser",
+    "webview_fallback": "Embedded browser is not supported in this environment. Opened in system browser instead.",
+    "local_model": "Local Model",
+    "select_model": "Select Model",
+    "previewing_model": "Previewing model",
+    "select_model_failed": "Failed to select model file. Please try again.",
+    "load_failed": "Load failed. Please try again later."
   }
 }

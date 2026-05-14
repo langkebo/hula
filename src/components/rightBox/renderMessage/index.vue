@@ -243,7 +243,7 @@
                           <use href="#copy"></use>
                         </svg>
                       </template>
-                      <span>复制翻译</span>
+                      <span>{{ t('message_container.copy_translation') }}</span>
                     </n-tooltip>
                   </n-flex>
                   <svg class="size-10px cursor-pointer" @click="messageBody.translatedText = null">
@@ -348,9 +348,6 @@ import { useMitt } from '@/hooks/useMitt'
 import { usePopover } from '@/hooks/usePopover'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
 import router from '@/router'
-import { matrixEventService } from '@/services/matrix/MatrixEventService'
-import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
-import { matrixReactionService } from '@/services/matrix/messaging/MatrixReactionService'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import type { MessageBody, MessageType } from '@/stores/domains/chat/chat'
@@ -361,17 +358,8 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { createMacContextSelectionGuard } from '@/utils/MacSelectionGuard'
+import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
-import {
-  getBodyContent,
-  getBodyMimeType,
-  getBodyReply,
-  getBodySize,
-  getBodyTranslatedText,
-  getBodyUrl,
-  toSafeBody
-} from '@/utils/messageBody'
 import { isMobile } from '@/utils/PlatformConstants'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 import Emoji from './Emoji.vue'
@@ -379,8 +367,9 @@ import Image from './Image.vue'
 import RecallMessage from './special/RecallMessage.vue'
 import SystemMessage from './special/SystemMessage.vue'
 import Text from './Text.vue'
+import { useMessageActions } from './useMessageActions'
+import { useMessageContextMenu } from './useMessageContextMenu'
 
-// 异步加载次要或重型消息组件
 const Announcement = defineAsyncComponent(() => import('./Announcement.vue'))
 const AudioCall = defineAsyncComponent(() => import('./AudioCall.vue'))
 const Beacon = defineAsyncComponent(() => import('./Beacon.vue'))
@@ -400,6 +389,8 @@ type ShowablePopover = {
 const isShowablePopover = (value: unknown): value is ShowablePopover => {
   return typeof value === 'object' && value !== null && 'setShow' in value && typeof value.setShow === 'function'
 }
+
+const logger = createLogger('RenderMessage')
 
 const ThreadIndicator = computed(() => (isMobile() ? ThreadIndicatorMobile : ThreadIndicatorDesktop))
 
@@ -425,7 +416,6 @@ const emit = defineEmits(['jump2Reply'])
 const { t } = useI18n()
 const globalStore = useGlobalStore()
 
-// 安全获取消息 body - 直接返回 MessageBody 类型
 const messageBody = computed((): MessageBody => {
   const body = props.message?.message?.body
   if (typeof body === 'object' && body !== null) {
@@ -442,7 +432,6 @@ const setInfoPopoverRef = (messageId: string, el: unknown) => {
 }
 
 const userStore = useUserStore()
-// 响应式状态变量
 const activeReply = ref<string>('')
 const hoverMsgId = ref<string>('')
 const settingStore = useSettingStore()
@@ -459,6 +448,23 @@ const bubbleMaxWidth = computed(() => {
   }
   return props.isGroup ? '32vw' : '50vw'
 })
+
+const isMe = computed(() => {
+  return props.fromUser?.uid === userStore.userInfo!.uid
+})
+
+const {
+  handleRetry,
+  handleCopyTranslation,
+  isSingleLineEmojis,
+  cancelReplyEmoji,
+  getEmojiCount,
+  hasUserMarkedEmoji,
+  handleEmojiSelect
+} = useMessageActions({ isMe, emojiList })
+
+const { recordSelectionBeforeContext, handleContextMenuSelection, longPressOption, handleLongPress } =
+  useMessageContextMenu({ activeBubble })
 
 const isThreadReply = computed(() => {
   const msg = props.message?.message
@@ -477,10 +483,6 @@ const handleOpenThread = (eventId: string) => {
 
 defineExpose({ isThreadReply, handleOpenThread })
 
-const { recordSelectionBeforeContext, handleContextMenuSelection } = createMacContextSelectionGuard({
-  lockSelector: '.chat-message-max-width'
-})
-
 const handleAvatarClick = (uid: string, msgId: string) => {
   if (isMobile()) {
     toFriendInfoPage(uid)
@@ -496,7 +498,6 @@ const handleMentionUser = () => {
   useMitt.emit(MittEnum.AT, targetUid)
 }
 
-// 获取用户头像
 const getAvatarSrc = computed(() => (uid: string) => {
   const isCurrentUser = uid === userStore.userInfo?.uid
   const storeUser = groupStore.getUserInfo(uid)
@@ -518,7 +519,7 @@ const senderDisplayName = computed(() => {
     return storeUser.myName || storeUser.name || ''
   }
 
-  return props.message.fromUser.username || '未知用户'
+  return props.message.fromUser.username || t('message_container.unknown_user')
 })
 
 const ensureSenderInfo = async (uid: string) => {
@@ -532,7 +533,6 @@ const ensureSenderInfo = async (uid: string) => {
     const users = await matrixContactService.getUserByIds([uid])
     const user = Array.isArray(users) ? users[0] : null
     if (user?.uid) {
-      // 将缺失用户信息写入消息所属的房间，避免污染其他房间或丢弃结果
       groupStore.updateUserItem(user.uid, user, roomId)
     }
   } catch (error) {
@@ -543,14 +543,10 @@ const ensureSenderInfo = async (uid: string) => {
 }
 
 watchEffect(() => {
-  if (!senderDisplayName.value || senderDisplayName.value === '未知用户') {
+  if (!senderDisplayName.value || senderDisplayName.value === t('message_container.unknown_user')) {
     ensureSenderInfo(props.fromUser.uid)
   }
 })
-
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('RenderMessage')
 
 const componentMap: Partial<Record<MsgEnum, Component>> = {
   [MsgEnum.TEXT]: Text,
@@ -583,297 +579,19 @@ const isSpecialMsgType = (type: number): boolean => {
   )
 }
 
-// 判断表情反应是否只有一行
-const isSingleLineEmojis = (item: MessageType): boolean => {
-  if (!item || !item.fromUser || !item.message) return false
-
-  // 计算有多少个表情反应
-  let emojiCount = 0
-  for (const emoji of emojiList.value) {
-    if (getEmojiCount(item, emoji.value) > 0) {
-      emojiCount++
-    }
-  }
-
-  // 如果表情数量小于等于3个，认为是一行
-  // 这个阈值可以根据实际UI调整
-  return isMe.value && emojiCount <= 5
-}
-
-// 取消表情反应
-const cancelReplyEmoji = async (item: MessageType, type: number): Promise<void> => {
-  if (!item || !item.message || !item.message.messageMarks) return
-
-  // 检查该表情是否已被当前用户标记
-  const userMarked = item.message.messageMarks[String(type)]?.userMarked
-
-  // 只有当用户已标记时才发送取消请求
-  if (userMarked) {
-    try {
-      await matrixReactionService.toggleReaction(item.message.roomId, item.message.id, String(type))
-    } catch (error) {
-      logger.error('取消表情标记失败:', error)
-    }
-  }
-}
-
-/**
- * 根据表情类型获取对应的计数
- * @param item 消息项
- * @param emojiType 表情类型值
- * @returns 计数值
- */
-const getEmojiCount = (item: MessageType, emojiType: number): number => {
-  if (!item || !item.message || !item.message.messageMarks) return 0
-
-  // messageMarks 是一个对象，键是表情类型，值是包含 count 和 userMarked 的对象
-  // 如果存在该表情类型的统计数据，返回其计数值，否则返回0
-  return item.message.messageMarks[String(emojiType)]?.count || 0
-}
-
-// 是否是当前登录用户标记
-const hasUserMarkedEmoji = (item: MessageType, emojiType: number) => {
-  if (!item || !item.message || !item.message.messageMarks) return false
-
-  return item.message.messageMarks[String(emojiType)]?.userMarked
-}
-
-const handleRetry = async (item: MessageType): Promise<void> => {
-  if (!item?.message) return
-
-  const { id, roomId, body: rawBody, type } = item.message
-  const msgBody = toSafeBody(rawBody)
-
-  chatStore.updateMsg({
-    msgId: id,
-    status: MessageStatusEnum.SENDING
-  })
-
-  try {
-    let eventId: string
-
-    switch (type) {
-      case MsgEnum.TEXT:
-        eventId = await matrixEventService.sendTextMessage(roomId, msgBody.text || '')
-        break
-      case MsgEnum.IMAGE:
-        if (msgBody.url) {
-          eventId = await matrixEventService.sendImageMessage(roomId, msgBody.url, {
-            size: msgBody.size || 0,
-            mimetype: msgBody.mimetype || 'image/png',
-            width: msgBody.width,
-            height: msgBody.height
-          })
-        } else {
-          throw new Error('图片URL不存在')
-        }
-        break
-      case MsgEnum.VIDEO:
-        if (msgBody.url) {
-          eventId = await matrixEventService.sendVideoMessage(
-            roomId,
-            msgBody.url,
-            {
-              size: msgBody.size || 0,
-              mimetype: msgBody.mimetype || 'video/mp4',
-              width: msgBody.width,
-              height: msgBody.height
-            },
-            msgBody.filename,
-            msgBody.thumbnail,
-            {
-              width: msgBody.thumbnailInfo?.w || 0,
-              height: msgBody.thumbnailInfo?.h || 0,
-              size: msgBody.thumbnailInfo?.size || 0
-            }
-          )
-        } else {
-          throw new Error('视频URL不存在')
-        }
-        break
-      case MsgEnum.AUDIO:
-        if (msgBody.url) {
-          eventId = await matrixEventService.sendAudioMessage(
-            roomId,
-            msgBody.url,
-            {
-              size: msgBody.size || 0,
-              mimetype: msgBody.mimetype || 'audio/ogg',
-              duration: msgBody.duration
-            },
-            msgBody.filename
-          )
-        } else {
-          throw new Error('音频URL不存在')
-        }
-        break
-      case MsgEnum.FILE:
-        if (msgBody.url) {
-          eventId = await matrixEventService.sendFileMessage(
-            roomId,
-            msgBody.url,
-            {
-              size: msgBody.size || 0,
-              mimetype: msgBody.mimetype || 'application/octet-stream'
-            },
-            msgBody.filename
-          )
-        } else {
-          throw new Error('文件URL不存在')
-        }
-        break
-      default:
-        throw new Error(`不支持的消息类型: ${type}`)
-    }
-
-    chatStore.updateMsg({
-      msgId: id,
-      status: MessageStatusEnum.SUCCESS,
-      newMsgId: eventId
-    })
-
-    window.$message.success('消息重发成功')
-  } catch (error) {
-    logger.error('消息重发失败:', error)
-
-    chatStore.updateMsg({
-      msgId: id,
-      status: MessageStatusEnum.FAILED
-    })
-
-    window.$message.error('消息重发失败，请重试')
-  }
-}
-
-// 处理复制翻译文本
-const handleCopyTranslation = (text: string) => {
-  if (text) {
-    navigator.clipboard.writeText(text)
-    window.$message.success('复制成功')
-  }
-}
-
 const hasBubble = (type: MsgEnum) => {
   return !(type === MsgEnum.RECALL || type === MsgEnum.SYSTEM || type === MsgEnum.BOT)
 }
 
-const isMe = computed(() => {
-  return props.fromUser?.uid === userStore.userInfo!.uid
-})
-
-// 解决mac右键会选中文本的问题
-const closeMenu = (event: MouseEvent) => {
-  if (event.target instanceof HTMLElement && !event.target.matches('.bubble, .bubble-oneself')) {
-    activeBubble.value = ''
-  }
-}
-
-// 处理表情回应
-const handleEmojiSelect = async (
-  context: { label: string; value: number; title: string },
-  item: MessageType
-): Promise<void> => {
-  if (!item || !item.message) return
-
-  if (!item.message.messageMarks) {
-    item.message.messageMarks = {}
-  }
-
-  // 检查该表情是否已被当前用户标记
-  const userMarked = item.message.messageMarks[String(context.value)]?.userMarked
-  // 只给没有标记过的图标标记
-  if (!userMarked) {
-    try {
-      await matrixReactionService.toggleReaction(item.message.roomId, item.message.id, String(context.value))
-    } catch (error) {
-      logger.error('标记表情失败:', error)
-    }
-  } else {
-    window.$message.warning('该表情已标记')
-  }
-}
-
 useMitt.on(`${MittEnum.INFO_POPOVER}-Main`, (event: { uid: string }) => {
   const messageId = event.uid
-
-  // 首先设置 selectKey 以显示 InfoPopover 组件
   selectKey.value = messageId
-
-  // 如果有对应的 popover 引用，则显示 popover
   const popover = infoPopoverRefs[messageId]
   if (popover) {
     popover.setShow(true)
     handlePopoverUpdate(messageId)
   }
 })
-
-onMounted(() => {
-  window.addEventListener('click', closeMenu, true)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('click', closeMenu, true)
-})
-
-/**
- * 长按事件（开始）
- */
-
-const longPressOption = computed(() => ({
-  delay: 700,
-  modifiers: {
-    // 只在移动端阻止默认行为，桌面端允许文本选中
-    prevent: isMobile(),
-    stop: isMobile()
-  },
-  reset: true,
-  windowResize: true,
-  windowScroll: true,
-  immediate: true,
-  updateTiming: 'sync'
-}))
-
-const handleLongPress = (e: PointerEvent, _menu: unknown) => {
-  if (!isMobile()) return
-
-  // 1. 阻止默认行为（防止系统菜单出现）
-  e.preventDefault()
-  e.stopPropagation()
-
-  // // 2. 获取目标元素
-  const target = e.target as HTMLElement
-
-  const preventClick = (event: Event) => {
-    event.stopPropagation()
-    event.preventDefault()
-    document.removeEventListener('click', preventClick, true)
-    document.removeEventListener('pointerup', preventClick, true)
-  }
-
-  // 3. 添加临时事件监听器，阻止后续点击事件
-  document.addEventListener('click', preventClick, true)
-  document.addEventListener('pointerup', preventClick, true)
-
-  // 4. 模拟右键点击事件
-  const contextMenuEvent = new MouseEvent('contextmenu', {
-    bubbles: true,
-    cancelable: true,
-    clientX: e.clientX,
-    clientY: e.clientY,
-    button: 2 // 明确指定右键
-  })
-
-  target.dispatchEvent(contextMenuEvent)
-
-  setTimeout(() => {
-    document.removeEventListener('click', preventClick, true)
-    document.removeEventListener('pointerup', preventClick, true)
-  }, 300)
-}
-
-/**
- * 长按事件（结束）
- */
 </script>
 <style scoped lang="scss">
 @use '@/styles/scss/render-message';

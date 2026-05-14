@@ -4,11 +4,11 @@
     <div class="language-switcher">
       <div v-if="canGoBack" class="back-btn flex-shrink-0" @click="goBack">
         <svg class="rotate-180"><use href="#right"></use></svg>
-        返回
+        {{ t('ai_assistant.bot.back') }}
       </div>
       <div v-if="showAssistantMinimalToolbar" class="assistant-compact-toolbar">
         <n-button v-if="canImportLocalModel" size="small" strong secondary class="import-btn" @click="openLocalModel">
-          导入模型
+          {{ t('ai_assistant.bot.import_model') }}
         </n-button>
         <n-dropdown
           v-if="isAssistantView"
@@ -27,8 +27,12 @@
         <!-- 语言切换器 (仅在查看 README 时显示) -->
         <div v-if="!isViewingLink" class="flex-y-center w-full justify-between">
           <div class="flex-center gap-12px">
-            <div :class="['lang-btn', { active: currentLang === 'zh' }]" @click="switchLanguage('zh')">中文</div>
-            <div :class="['lang-btn', { active: currentLang === 'en' }]" @click="switchLanguage('en')">English</div>
+            <div :class="['lang-btn', { active: currentLang === 'zh' }]" @click="switchLanguage('zh')">
+              {{ t('ai_assistant.bot.lang_zh') }}
+            </div>
+            <div :class="['lang-btn', { active: currentLang === 'en' }]" @click="switchLanguage('en')">
+              {{ t('ai_assistant.bot.lang_en') }}
+            </div>
           </div>
           <div class="flex-center">
             <n-button
@@ -38,10 +42,12 @@
               secondary
               class="import-btn"
               @click="openLocalModel">
-              导入模型
+              {{ t('ai_assistant.bot.import_model') }}
             </n-button>
             <n-badge class="mr-14px" value="Beta" :color="'#a789d9'">
-              <div :class="['assistant-btn', { active: isAssistantView }]" @click="showAssistant()">3D预览</div>
+              <div :class="['assistant-btn', { active: isAssistantView }]" @click="showAssistant()">
+                {{ t('ai_assistant.bot.preview_3d') }}
+              </div>
             </n-badge>
             <n-dropdown
               v-if="isAssistantView"
@@ -62,7 +68,7 @@
         <div v-if="isViewingLink" class="page-title">{{ currentUrl }}</div>
         <div v-if="isViewingLink" class="open-in-browser-btn" @click="openInBrowser">
           <svg class="size-16px"><use href="#share"></use></svg>
-          在浏览器中打开
+          {{ t('ai_assistant.bot.open_in_browser') }}
         </div>
       </template>
     </div>
@@ -87,7 +93,7 @@
         <!-- 外部链接 Tauri Webview 容器 -->
         <div v-else ref="webviewContainer" class="external-webview">
           <div v-if="!canEmbedWebview" class="external-webview__fallback">
-            当前环境不支持内嵌浏览器, 已尝试在系统浏览器打开
+            {{ t('ai_assistant.bot.webview_fallback') }}
           </div>
         </div>
       </n-loading-bar-provider>
@@ -97,7 +103,10 @@
 
 <script setup lang="ts">
 import type { LoadingBarProviderInst } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import { useBotView } from './useBotView'
+
+const { t } = useI18n()
 
 const HuLaAssistant = defineAsyncComponent(() => import('./HuLaAssistant.vue'))
 

@@ -107,11 +107,11 @@
         </svg>
         <n-flex vertical :size="20" class="p-[22px_10px_10px_22px] select-none">
           <span class="text-16px">{{ t('components.actionBar.close_prompt.title') }}</span>
-          <label class="text-(14px #707070) flex gap-6px lh-16px items-center">
+          <label class="text-(14px [--hula-text-secondary]) flex gap-6px lh-16px items-center">
             <n-radio :checked="tipsRef.type === CloseBxEnum.HIDE" @change="tipsRef.type = CloseBxEnum.HIDE" />
             <span>{{ t('components.actionBar.close_prompt.hide_to_tray') }}</span>
           </label>
-          <label class="text-(14px #707070) flex gap-6px lh-16px items-center">
+          <label class="text-(14px [--hula-text-secondary]) flex gap-6px lh-16px items-center">
             <n-radio :checked="tipsRef.type === CloseBxEnum.CLOSE" @change="tipsRef.type = CloseBxEnum.CLOSE" />
             <span>{{ t('components.actionBar.close_prompt.exit_app') }}</span>
           </label>
@@ -369,7 +369,7 @@ defineExpose({
 }
 
 .action-close {
-  @apply w-28px h-24px flex-center cursor-pointer hover:bg-#c22b1c svg:hover:color-[#fff];
+  @apply w-28px h-24px flex-center cursor-pointer hover:bg-[--action-close-hover-bg] svg:hover:color-[--action-close-hover-icon];
 }
 
 .n-modal {

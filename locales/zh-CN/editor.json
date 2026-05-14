@@ -22,5 +22,7 @@
   },
   "burn_after_read": "阅后即焚",
   "burn_after_read_enabled": "阅后即焚已开启",
-  "burn_after_read_disabled": "阅后即焚已关闭"
+  "burn_after_read_disabled": "阅后即焚已关闭",
+  "preparing_session": "正在准备会话...",
+  "recently_used": "最近使用"
 }

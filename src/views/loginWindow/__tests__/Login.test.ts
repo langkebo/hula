@@ -154,8 +154,8 @@ vi.mock('@/services/backend', () => ({
   saveMatrixIdentityServerUrl: vi.fn((value: string) => value)
 }))
 
-vi.mock('@/services/matrix/auth/MatrixRuntimeSessionService', () => ({
-  matrixRuntimeSessionService: {
+vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
+  sessionOrchestrator: {
     loginWithSsoToken: loginWithSsoTokenMock,
     completeDesktopLoginTransition: completeDesktopLoginTransitionMock
   }
@@ -198,6 +198,10 @@ vi.mock('@/utils/AvatarUtils', () => ({
   AvatarUtils: {
     getAvatarUrl: vi.fn(() => '')
   }
+}))
+
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
 }))
 
 vi.mock('@/utils/Formatting', () => ({
@@ -300,7 +304,7 @@ describe('Login', () => {
       client: 'PC'
     })
     expect(completeDesktopLoginTransitionMock).not.toHaveBeenCalled()
-    expect(window.$message.error).toHaveBeenCalledWith('SSO 登录失败')
+    expect(window.$message.error).toHaveBeenCalledWith('login.sso_login_failed')
     expect(loginLoadingRef.value).toBe(false)
     expect(loginDisabledRef.value).toBe(false)
     expect(loginTextRef.value).toBe('登录')

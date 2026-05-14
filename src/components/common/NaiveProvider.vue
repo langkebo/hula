@@ -147,7 +147,7 @@ const commonTheme: GlobalThemeOverrides = {
     borderChecked: '1px solid var(--hula-color-primary-500)',
     borderFocus: '1px solid var(--hula-color-primary-500)',
     boxShadowFocus: '0 0 0 2px color-mix(in srgb, var(--hula-color-primary-500) 20%, transparent)',
-    checkMarkColor: '#fff'
+    checkMarkColor: 'var(--hula-text-inverse)'
   },
   Tag: {
     borderRadius: '4px'
@@ -217,9 +217,9 @@ const commonTheme: GlobalThemeOverrides = {
   Steps: {
     indicatorBorderColorProcess: 'var(--hula-color-primary-500)',
     indicatorColorProcess: 'var(--hula-color-primary-500)',
-    indicatorTextColorProcess: '#fff',
+    indicatorTextColorProcess: 'var(--hula-text-inverse)',
     stepHeaderTextColorProcess: 'var(--hula-color-primary-500)',
-    indicatorIconColorProcess: '#fff'
+    indicatorIconColorProcess: 'var(--hula-text-inverse)'
   },
   LoadingBar: {
     colorLoading: 'var(--hula-color-primary-500)'
@@ -245,6 +245,10 @@ const darkThemeOverrides: GlobalThemeOverrides = {
   Scrollbar: {
     color: 'color-mix(in srgb, var(--hula-text-inverse) 20%, transparent)',
     colorHover: 'color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)'
+  },
+  Skeleton: {
+    color: 'color-mix(in srgb, var(--hula-border-strong) 40%, transparent)',
+    colorEnd: 'color-mix(in srgb, var(--hula-border-default) 15%, transparent)'
   }
 }
 

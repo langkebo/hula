@@ -22,5 +22,7 @@
   },
   "burn_after_read": "Burn After Read",
   "burn_after_read_enabled": "Burn after read enabled",
-  "burn_after_read_disabled": "Burn after read disabled"
+  "burn_after_read_disabled": "Burn after read disabled",
+  "preparing_session": "Preparing session...",
+  "recently_used": "Recently Used"
 }
