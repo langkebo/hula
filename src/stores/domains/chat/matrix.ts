@@ -1,17 +1,12 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
-import { initializeKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
-import { initializeVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
 import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
 import {
   type ConnectionState,
   type MatrixClientConfig,
   matrixClientService
 } from '@/services/matrix/MatrixClientService'
-import { initializeRoomSummaryService } from '@/services/matrix/room/MatrixRoomSummaryService'
-import { initializeDeviceService } from '@/services/matrix/user/MatrixDeviceService'
-import { initializePresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixStore')
@@ -58,24 +53,6 @@ export const useMatrixStore = defineStore(
       }
     }
 
-    function initializeSubServices(): void {
-      try {
-        initializeDeviceService()
-        initializeKeyBackupService()
-        initializePresenceService()
-        const client = matrixClientService.getClient()
-        if (client) {
-          initializeVerificationService()
-          initializeRoomSummaryService(client)
-        }
-        // 并发刷新服务端能力
-        matrixCapabilityService.refreshCapabilities()
-        logger.info('子服务初始化完成')
-      } catch (error) {
-        logger.error('子服务初始化失败:', error)
-      }
-    }
-
     async function login(username: string, password: string, deviceName?: string): Promise<boolean> {
       try {
         lastError.value = null
@@ -89,7 +66,7 @@ export const useMatrixStore = defineStore(
           connectionState.value = 'CONNECTED'
 
           await matrixClientService.startClient()
-          initializeSubServices()
+          matrixCapabilityService.refreshCapabilities()
           return true
         } else {
           connectionState.value = 'ERROR'
@@ -127,7 +104,7 @@ export const useMatrixStore = defineStore(
           connectionState.value = 'CONNECTED'
 
           await matrixClientService.startClient()
-          initializeSubServices()
+          matrixCapabilityService.refreshCapabilities()
           return true
         } else {
           connectionState.value = 'ERROR'
@@ -155,7 +132,7 @@ export const useMatrixStore = defineStore(
           connectionState.value = 'CONNECTED'
 
           await matrixClientService.startClient()
-          initializeSubServices()
+          matrixCapabilityService.refreshCapabilities()
           return true
         } else {
           connectionState.value = 'ERROR'
@@ -195,7 +172,7 @@ export const useMatrixStore = defineStore(
         throw new Error('客户端未初始化')
       }
       await matrixClientService.startClient()
-      initializeSubServices()
+      matrixCapabilityService.refreshCapabilities()
     }
 
     async function stopClient(): Promise<void> {

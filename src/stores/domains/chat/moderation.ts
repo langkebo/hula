@@ -4,11 +4,12 @@ import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { StoresEnum } from '@/enums'
 import type {
   ContentFilter,
+  CreateContentFilterRequest,
   Report,
   ReportFilters,
   UserReputation
-} from '@/services/matrix/admin/MatrixModerationService'
-import { matrixModerationService } from '@/services/matrix/admin/MatrixModerationService'
+} from '@/services/matrix/admin'
+import { adminService } from '@/services/matrix/admin'
 
 export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
   const reports = ref<Report[]>([])
@@ -29,7 +30,7 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
     errorState.value = null
     try {
       currentFilters.value = filters ?? {}
-      reports.value = await matrixModerationService.getReports(filters)
+      reports.value = await adminService.getModerationReports(filters)
       info(`[ModerationStore] 获取举报列表成功: ${reports.value.length} 条`)
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : '获取举报列表失败'
@@ -48,7 +49,7 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
     loading.value = true
     errorState.value = null
     try {
-      await matrixModerationService.resolveReport(reportId, { action, notes })
+      await adminService.resolveModerationReport(reportId, { action, notes })
       const index = reports.value.findIndex((r) => r.id === reportId)
       if (index !== -1) {
         reports.value[index].status = 'resolved'
@@ -67,7 +68,7 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
 
   async function fetchUserReputation(userId: string): Promise<UserReputation | null> {
     try {
-      const reputation = await matrixModerationService.getUserReputation(userId)
+      const reputation = await adminService.getUserReputation(userId)
       userReputations.value.set(userId, reputation)
       triggerRef(userReputations)
       info(`[ModerationStore] 获取用户信誉成功: ${userId} -> ${reputation.level}`)
@@ -80,7 +81,7 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
 
   async function setUserReputation(userId: string, score: number): Promise<boolean> {
     try {
-      await matrixModerationService.setUserReputation(userId, score)
+      await adminService.setUserReputation(userId, score)
       const reputation = userReputations.value.get(userId)
       if (reputation) {
         reputation.score = score
@@ -98,22 +99,18 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
 
   async function fetchContentFilters(): Promise<void> {
     try {
-      contentFilters.value = await matrixModerationService.getContentFilters()
+      contentFilters.value = await adminService.getContentFilters()
       info(`[ModerationStore] 获取内容过滤器成功: ${contentFilters.value.length} 条`)
     } catch (e) {
       error(`[ModerationStore] 获取内容过滤器失败: ${e}`)
     }
   }
 
-  async function addContentFilter(filter: {
-    type: 'keyword' | 'regex' | 'image_hash'
-    pattern: string
-    action: 'flag' | 'block' | 'quarantine'
-  }): Promise<ContentFilter | null> {
+  async function addContentFilter(filter: CreateContentFilterRequest): Promise<ContentFilter | null> {
     loading.value = true
     errorState.value = null
     try {
-      const newFilter = await matrixModerationService.addContentFilter(filter)
+      const newFilter = await adminService.addContentFilter(filter)
       contentFilters.value.push(newFilter)
       info(`[ModerationStore] 添加内容过滤器成功: ${newFilter.id}`)
       return newFilter
@@ -129,7 +126,7 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
 
   async function removeContentFilter(filterId: string): Promise<boolean> {
     try {
-      await matrixModerationService.removeContentFilter(filterId)
+      await adminService.removeContentFilter(filterId)
       contentFilters.value = contentFilters.value.filter((f) => f.id !== filterId)
       info(`[ModerationStore] 移除内容过滤器成功: ${filterId}`)
       return true
