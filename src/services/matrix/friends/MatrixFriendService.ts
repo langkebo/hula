@@ -280,10 +280,14 @@ class MatrixFriendService {
       const manager = await this.ensureFriendManager(false)
       if (manager) {
         const friends = await manager.getFriends()
-        return friends.map((friend) => this.normalizeFriend(friend))
+        if (friends.length > 0) {
+          return friends.map((friend) => this.normalizeFriend(friend))
+        }
+        info('[MatrixFriend] FriendManager 返回空列表，尝试从回退 API 获取')
+      } else {
+        info('[MatrixFriend] FriendManager 不可用，尝试从回退 API 获取')
       }
-      info('[MatrixFriend] FriendManager 不可用，返回空好友列表')
-      return []
+      return await this.getFriendsByFallbackApi()
     } catch (err) {
       error(`[MatrixFriend] 获取好友列表失败，回退到 REST API: ${err}`)
       return await this.getFriendsByFallbackApi()

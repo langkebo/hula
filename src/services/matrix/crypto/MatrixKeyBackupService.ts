@@ -579,11 +579,4 @@ class MatrixKeyBackupService {
 
 export const matrixKeyBackupService = new MatrixKeyBackupService()
 
-export function initializeKeyBackupService(): void {
-  const client = matrixClientService.getClient()
-  if (client) {
-    matrixKeyBackupService.initialize(client)
-  }
-}
-
 export default matrixKeyBackupService

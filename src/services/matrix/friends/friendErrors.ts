@@ -1,4 +1,5 @@
-import { formatMatrixError, type TranslatedError, translateMatrixError } from '@/common/matrixErrorTranslator'
+import { type AppError, toAppError } from '@/common/errors'
+import { formatMatrixError } from '@/common/matrixErrorTranslator'
 
 export type FriendAction =
   | 'initialize'
@@ -18,8 +19,8 @@ export interface FriendDomainError extends Error {
   action: FriendAction
   userMessageKey: string
   recoverable: boolean
-  level: TranslatedError['level']
-  resolutionAction: TranslatedError['action']
+  level: 'toast' | 'dialog' | 'page'
+  resolutionAction: 'retry' | 'relogin' | 'check_network' | 'none'
   cause: unknown
 }
 
@@ -37,8 +38,26 @@ const DEFAULT_ACTION_MESSAGE_KEY: Record<FriendAction, string> = {
   subscribePresence: 'error.matrix.network'
 }
 
+function appErrorToLevel(appError: AppError): 'toast' | 'dialog' | 'page' {
+  if (appError.kind === 'auth') return 'dialog'
+  if (appError.kind === 'fatal') return 'dialog'
+  return 'toast'
+}
+
+function appErrorToAction(appError: AppError): 'retry' | 'relogin' | 'check_network' | 'none' {
+  if (appError.kind === 'auth') return 'relogin'
+  if (appError.kind === 'retryable') return 'retry'
+  return 'none'
+}
+
+function isRecoverable(appError: AppError): boolean {
+  if (appError.kind === 'retryable') return true
+  if (appError.kind === 'auth') return appError.recoverable
+  return false
+}
+
 export const createFriendDomainError = (action: FriendAction, err: unknown): FriendDomainError => {
-  const translated = translateMatrixError(err)
+  const appError = toAppError(err)
   const fallbackMessageKey = DEFAULT_ACTION_MESSAGE_KEY[action]
   const domainError = new Error(formatMatrixError(err)) as FriendDomainError
 
@@ -48,10 +67,10 @@ export const createFriendDomainError = (action: FriendAction, err: unknown): Fri
     (err as { errcode?: string; code?: string } | null)?.code ||
     'FRIEND_UNKNOWN'
   domainError.action = action
-  domainError.userMessageKey = translated.userMessage || fallbackMessageKey
-  domainError.recoverable = translated.recoverable
-  domainError.level = translated.level
-  domainError.resolutionAction = translated.action
+  domainError.userMessageKey = appError.i18nKey || appError.message || fallbackMessageKey
+  domainError.recoverable = isRecoverable(appError)
+  domainError.level = appErrorToLevel(appError)
+  domainError.resolutionAction = appErrorToAction(appError)
   domainError.cause = err
 
   return domainError

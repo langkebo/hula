@@ -8,7 +8,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { AuthDict, MatrixClientExtended } from '@/types/matrix-extensions'
 import { BaseMatrixService } from '../BaseMatrixService'
-import matrixClientService from '../MatrixClientService'
 
 /**
  * 设备信息接口
@@ -332,16 +331,5 @@ class MatrixDeviceService extends BaseMatrixService {
  * 单例实例
  */
 export const matrixDeviceService = new MatrixDeviceService()
-
-/**
- * 初始化设备服务
- */
-export function initializeDeviceService(): void {
-  const client = matrixClientService.getClient()
-  if (!client) {
-    return
-  }
-  info('[DeviceService] 服务已就绪')
-}
 
 export default matrixDeviceService
