@@ -4,8 +4,8 @@
  */
 
 import { createLogger } from '@/utils/Logger'
+import { type AppError, toAppError } from './errors'
 import { AppException, ErrorType } from './exception'
-import { type TranslatedError, translateMatrixError } from './matrixErrorTranslator'
 
 const logger = createLogger('GlobalErrorHandler')
 
@@ -95,10 +95,11 @@ class GlobalErrorHandler {
   /**
    * 处理 Matrix SDK 错误，返回用户友好的翻译结果
    */
-  public handleMatrixError(error: unknown, context?: Record<string, unknown>): TranslatedError {
-    const translated = translateMatrixError(error)
-    this.handleError(error, { ...context, matrixErrorLevel: translated.level })
-    return translated
+  public handleMatrixError(error: unknown, context?: Record<string, unknown>): AppError {
+    const appError = toAppError(error)
+    const level = appError.kind === 'auth' ? 'dialog' : appError.kind === 'fatal' ? 'dialog' : 'toast'
+    this.handleError(error, { ...context, matrixErrorLevel: level })
+    return appError
   }
 
   /**
