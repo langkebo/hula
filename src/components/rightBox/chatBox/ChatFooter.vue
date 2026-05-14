@@ -9,7 +9,7 @@
       :style="{ height: `${footerHeight}px` }"
       class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--hula-surface-overlay]">
       <n-flex align="center" justify="center" class="pb-60px">
-        <span class="text-(14px [--hula-text-tertiary])">正在准备会话...</span>
+        <span class="text-(14px [--hula-text-tertiary])">{{ t('editor.preparing_session') }}</span>
       </n-flex>
     </div>
     <div
@@ -65,7 +65,7 @@
                   </svg>
                 </template>
                 <div v-if="recentEmojis.length > 0" class="p-4px">
-                  <div class="text-xs text-[--hula-text-tertiary] mb-4px">最近使用</div>
+                  <div class="text-xs text-[--hula-text-tertiary] mb-4px">{{ t('editor.recently_used') }}</div>
                   <div class="flex flex-wrap gap-8px max-w-212px">
                     <div
                       v-for="(emoji, index) in recentEmojis"

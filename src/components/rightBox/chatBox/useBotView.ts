@@ -7,6 +7,7 @@ import { openUrl } from '@tauri-apps/plugin-opener'
 import DOMPurify from 'dompurify'
 import type { DropdownOption } from 'naive-ui'
 import { computed, nextTick, type Ref, ref, shallowRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { type AssistantModelPreset, useAssistantModelPresets } from '@/hooks/useAssistantModelPresets'
 import { useBotStore } from '@/stores/domains/user/bot'
 import { createLogger } from '@/utils/Logger'
@@ -39,6 +40,7 @@ interface UseBotViewOptions {
 
 export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBotViewOptions) => {
   const botStore = useBotStore()
+  const { t } = useI18n()
 
   const currentLang = ref<'zh' | 'en'>('zh')
   const renderedMarkdown = ref('')
@@ -105,14 +107,14 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
 
   const selectedModelLabel = computed(() => {
     if (selectedModelKey.value === 'local') {
-      return '本地模型'
+      return t('ai_assistant.bot.local_model')
     }
     const preset = findPresetByKey(selectedModelKey.value)
     if (preset) {
       return formatPresetLabel(preset)
     }
     const first = assistantModelPresets.value[0]
-    return first ? formatPresetLabel(first) : '选择模型'
+    return first ? formatPresetLabel(first) : t('ai_assistant.bot.select_model')
   })
 
   const applyFirstPreset = (options?: { force?: boolean }) => {
@@ -235,7 +237,7 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
   const showAssistant = async (recordHistory = true, preserveCustomModel = false) => {
     await fetchAssistantModelPresets(assistantModelPresets.value.length <= 1)
     if (currentView.value.type === 'assistant') {
-      botStore.setAssistant('正在预览模型')
+      botStore.setAssistant(t('ai_assistant.bot.previewing_model'))
       if (preserveCustomModel) {
         await nextTick()
       }
@@ -253,7 +255,7 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
     isViewingLink.value = false
     currentUrl.value = ''
     currentView.value = { type: 'assistant' }
-    botStore.setAssistant('正在预览模型')
+    botStore.setAssistant(t('ai_assistant.bot.previewing_model'))
     await nextTick()
   }
 
@@ -269,7 +271,7 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
       await showAssistant(true, true)
     } catch (error) {
       logger.error('选择本地模型失败:', error)
-      window.$message?.error('选择模型文件失败，请重试')
+      window.$message?.error(t('ai_assistant.bot.select_model_failed'))
     }
   }
 
@@ -441,7 +443,7 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
       botStore.setReadme(currentLang.value)
     } catch (error) {
       logger.error('加载 README 失败:', error)
-      renderedMarkdown.value = '<p>加载失败,请稍后重试</p>'
+      renderedMarkdown.value = `<p>${t('ai_assistant.bot.load_failed')}</p>`
       if (recordHistory) {
         historyStack.value.pop()
       }

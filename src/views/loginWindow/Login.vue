@@ -9,8 +9,8 @@
       <!-- 头像 -->
       <n-flex justify="center" class="w-full pt-12px" data-tauri-drag-region>
         <n-avatar
-          class="welcome size-80px rounded-50% border-(2px solid #fff) dark:border-(2px solid #606060)"
-          :color="settingStore.themeContent === ThemeEnum.DARK ? '#282828' : '#fff'"
+          class="welcome size-80px rounded-50% border-(2px solid [--login-avatar-border])"
+          :color="'var(--login-avatar-bg)'"
           :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
           :src="AvatarUtils.getAvatarUrl(loginInfo.avatar)" />
       </n-flex>
@@ -32,12 +32,10 @@
           clearable>
           <template #suffix>
             <n-flex v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
-              <svg
-                v-if="!arrowStatus"
-                class="down w-18px h-18px color-#505050 dark:color-[--hula-text-tertiary] cursor-pointer">
+              <svg v-if="!arrowStatus" class="down w-18px h-18px color-[--hula-text-secondary] cursor-pointer">
                 <use href="#down"></use>
               </svg>
-              <svg v-else class="down w-18px h-18px color-#505050 dark:color-[--hula-text-tertiary] cursor-pointer">
+              <svg v-else class="down w-18px h-18px color-[--hula-text-secondary] cursor-pointer">
                 <use href="#up"></use>
               </svg>
             </n-flex>
@@ -46,9 +44,9 @@
 
         <!-- 账号选择框-->
         <div
-          style="border: 1px solid rgba(70, 70, 70, 0.1)"
+          style="border: 1px solid var(--login-dropdown-border)"
           v-if="loginHistories.length > 0 && arrowStatus"
-          class="account-box absolute w-260px max-h-140px bg-#fdfdfd98 dark:bg-#48484e98 backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border">
+          class="account-box absolute w-260px max-h-140px bg-[--login-dropdown-bg] backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border">
           <n-scrollbar style="max-height: 120px" trigger="none">
             <n-flex
               vertical
@@ -57,9 +55,12 @@
               @click="giveAccount(item)"
               class="p-8px cursor-pointer hover:bg-[--hula-text-tertiary]20 dark:hover:bg-[--hula-text-tertiary]30 hover:rounded-6px">
               <div class="flex-between-center">
-                <n-avatar :src="AvatarUtils.getAvatarUrl(item.avatar)" color="#fff" class="size-28px rounded-50%" />
-                <p class="text-14px color-#505050 dark:color-#fefefe">{{ item.account }}</p>
-                <svg @click.stop="delAccount(item)" class="w-12px h-12px dark:color-#fefefe">
+                <n-avatar
+                  :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                  :color="'var(--login-avatar-bg)'"
+                  class="size-28px rounded-50%" />
+                <p class="text-14px color-[--hula-text-secondary]">{{ item.account }}</p>
+                <svg @click.stop="delAccount(item)" class="w-12px h-12px color-[--hula-text-secondary]">
                   <use href="#close"></use>
                 </svg>
               </div>
@@ -103,7 +104,7 @@
           :loading="loading"
           :disabled="loginDisabled"
           tertiary
-          style="color: #fff"
+          style="color: var(--hula-text-inverse)"
           class="gradient-button w-full mt-8px mb-10px"
           @click="normalLogin('PC', true, false)">
           <span>{{ loginText }}</span>
@@ -122,7 +123,7 @@
           <n-avatar
             round
             :size="110"
-            :color="settingStore.themeContent === ThemeEnum.DARK ? '#282828' : '#fff'"
+            :color="'var(--login-avatar-bg)'"
             :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
             :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')" />
         </n-flex>
@@ -139,7 +140,7 @@
           :loading="loading"
           :disabled="loginDisabled"
           tertiary
-          style="color: #fff"
+          style="color: var(--hula-text-inverse)"
           class="gradient-button w-200px mt-12px mb-40px"
           @click="triggerAutoLogin">
           <span>{{ loginText }}</span>
@@ -183,7 +184,7 @@
         <n-popover
           trigger="click"
           id="moreShow"
-          class="bg-#fdfdfd98! dark:bg-#48484e98! backdrop-blur-sm"
+          class="bg-[--login-dropdown-bg]! backdrop-blur-sm"
           v-model:show="moreShow"
           :show-checkmark="false"
           :show-arrow="false">
@@ -213,7 +214,11 @@
       </div>
     </div>
 
-    <n-modal v-model:show="showServerConfig" preset="card" title="服务器配置" :style="{ width: '400px' }">
+    <n-modal
+      v-model:show="showServerConfig"
+      preset="card"
+      :title="t('login.server_config.title')"
+      :style="{ width: '400px' }">
       <n-flex vertical :size="12">
         <n-form-item label="Homeserver URL">
           <n-input v-model:value="homeserverUrl" :placeholder="DEFAULT_MATRIX_HOMESERVER_URL" clearable />
@@ -221,14 +226,14 @@
         <n-form-item label="Identity Server URL">
           <n-input
             v-model:value="identityServerUrl"
-            :placeholder="DEFAULT_MATRIX_IDENTITY_SERVER_URL || '留空表示不使用 Identity Server'"
+            :placeholder="DEFAULT_MATRIX_IDENTITY_SERVER_URL || t('login.server_config.identity_placeholder')"
             clearable />
         </n-form-item>
-        <n-alert type="info" :bordered="false">修改服务器配置后需要重新登录</n-alert>
+        <n-alert type="info" :bordered="false">{{ t('login.server_config.restart_hint') }}</n-alert>
         <n-flex justify="end">
-          <n-button @click="resetServerConfig">重置默认</n-button>
-          <n-button @click="showServerConfig = false">取消</n-button>
-          <n-button type="primary" @click="saveServerConfig">保存</n-button>
+          <n-button @click="resetServerConfig">{{ t('login.server_config.reset') }}</n-button>
+          <n-button @click="showServerConfig = false">{{ t('login.server_config.cancel') }}</n-button>
+          <n-button type="primary" @click="saveServerConfig">{{ t('login.server_config.save') }}</n-button>
         </n-flex>
       </n-flex>
     </n-modal>
@@ -255,7 +260,7 @@ import {
   saveMatrixHomeserverUrl,
   saveMatrixIdentityServerUrl
 } from '@/services/backend'
-import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
+import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import type { UserInfoType } from '@/services/types.ts'
 import { useGuideStore } from '@/stores/domains/settings/guide'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -363,7 +368,7 @@ const saveServerConfig = () => {
   const rawIdentityServerUrl = identityServerUrl.value.trim()
 
   if (!isPotentialHomeserverInput(rawHomeserverValue)) {
-    window.$message.error('Homeserver 地址格式无效')
+    window.$message.error(t('login.server_config.homeserver_invalid'))
     return
   }
 
@@ -372,7 +377,7 @@ const saveServerConfig = () => {
     !isValidHttpUrl(rawIdentityServerUrl) &&
     !isValidHttpUrl(`http://${rawIdentityServerUrl}`)
   ) {
-    window.$message.error('Identity Server 地址格式无效')
+    window.$message.error(t('login.server_config.identity_invalid'))
     return
   }
 
@@ -387,10 +392,10 @@ const saveServerConfig = () => {
         ? saveMatrixIdentityServerUrl(rawIdentityServerUrl)
         : discovery.identityServerUrl
       showServerConfig.value = false
-      window.$message.success('服务器配置已保存，重新登录后生效')
+      window.$message.success(t('login.server_config.save_success'))
     } catch (error) {
       logger.error('Failed to save homeserver config', error)
-      window.$message.error('服务器配置保存失败')
+      window.$message.error(t('login.server_config.save_failed'))
     }
   })()
 }
@@ -398,7 +403,7 @@ const saveServerConfig = () => {
 const resetServerConfig = () => {
   homeserverUrl.value = saveMatrixHomeserverUrl(DEFAULT_MATRIX_HOMESERVER_URL)
   identityServerUrl.value = saveMatrixIdentityServerUrl(DEFAULT_MATRIX_IDENTITY_SERVER_URL)
-  window.$message.success('已恢复默认服务器配置')
+  window.$message.success(t('login.server_config.reset_success'))
 }
 
 const cancelAutoLoginAndShowManual = () => {
@@ -499,7 +504,7 @@ const handleSsoLoginCallback = async (): Promise<boolean> => {
   loginDisabled.value = true
 
   try {
-    await matrixRuntimeSessionService.loginWithSsoToken({
+    await sessionOrchestrator.loginWithSsoToken({
       loginToken,
       client: isDesktop() ? 'PC' : 'MOBILE'
     })
@@ -512,14 +517,14 @@ const handleSsoLoginCallback = async (): Promise<boolean> => {
     window.history.replaceState({}, '', callbackUrl.toString())
 
     if (isDesktop()) {
-      await matrixRuntimeSessionService.completeDesktopLoginTransition()
+      await sessionOrchestrator.completeDesktopLoginTransition()
     } else {
       await router.push('/mobile/home')
     }
     return true
   } catch (error) {
     logger.error('Failed to complete SSO login callback', error)
-    window.$message.error('SSO 登录失败')
+    window.$message.error(t('login.sso_login_failed'))
     loading.value = false
     loginDisabled.value = false
     loginText.value = t('login.button.login.default')
@@ -594,9 +599,9 @@ const openRemoteLoginModal = async (ip?: string) => {
   if (!isDesktop()) {
     return
   }
-  const payloadIp = ip ?? '未知IP'
+  const payloadIp = ip ?? t('login.remote_login.unknown_ip')
   await createModalWindow(
-    '异地登录提醒',
+    t('login.remote_login.title'),
     'modal-remoteLogin',
     350,
     310,
@@ -664,11 +669,11 @@ const removeStoredAccount = () => {
 }
 
 const openServiceAgreement = async () => {
-  await createModalWindow('服务协议', 'modal-serviceAgreement', 600, 600, 'login')
+  await createModalWindow(t('login.service_agreement_title'), 'modal-serviceAgreement', 600, 600, 'login')
 }
 
 const openPrivacyAgreement = async () => {
-  await createModalWindow('隐私保护指引', 'modal-privacyAgreement', 600, 600, 'login')
+  await createModalWindow(t('login.privacy_policy_title'), 'modal-privacyAgreement', 600, 600, 'login')
 }
 
 const closeMenu = (event: MouseEvent) => {
