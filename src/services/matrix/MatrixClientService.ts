@@ -747,8 +747,8 @@ class MatrixClientService {
       logger.error(`[TokenRefresh] 刷新访问令牌失败: ${err}`)
       logger.warn('[TokenRefresh] Session expired, clearing stored session')
       try {
-        const { matrixRuntimeSessionService } = await import('./auth/MatrixRuntimeSessionService')
-        await matrixRuntimeSessionService.logoutCurrentSession({ resetLocalState: true, preserveTokens: false })
+        const { sessionOrchestrator } = await import('./auth/SessionOrchestrator')
+        await sessionOrchestrator.logoutCurrentSession({ resetLocalState: true, preserveTokens: false })
       } catch {
         // Ignore cleanup errors
       }

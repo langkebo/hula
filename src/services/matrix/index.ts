@@ -20,31 +20,43 @@ export type { PushRuleKind, RoomMember } from 'matrix-js-sdk'
 // ============================================================
 export { Direction, EventType, Preset } from 'matrix-js-sdk'
 export type {
+  AdminReport,
+  ContentFilter,
+  CreateContentFilterRequest,
   FederationBlacklistEntry,
   FederationDestination,
+  QuotaAlert,
+  QuotaConfig,
+  QuotaStats,
+  QuotaStatus,
   RateLimit,
   RegistrationToken,
+  Report,
+  ReportFilters,
+  ReportReason,
+  ReportRequest,
+  ReportRoomResponse,
+  ResolveReportRequest,
+  RetentionPolicy,
   RoomInfo,
+  RoomRetention,
   RoomState,
+  ScannerInfo,
   ServerHealth,
   ServerInfo,
   ServerNoticeInfo,
   ServerNoticeResult,
+  ServerQuota,
   ServerStats,
   ServerStatus,
   ServerVersion,
   ShadowBanStatus,
   ShutdownRoomResult,
   UserDevice,
-  UserInfo
+  UserInfo,
+  UserReputation
 } from './admin'
 export { adminService, useAdmin } from './admin'
-export { matrixFederationBlacklistService } from './admin/MatrixFederationBlacklistService'
-export { matrixModerationService } from './admin/MatrixModerationService'
-export type { QuotaAlert, QuotaStats, QuotaStatus } from './admin/MatrixQuotaService'
-export { matrixQuotaService } from './admin/MatrixQuotaService'
-export { reportService } from './admin/MatrixReportService'
-export { retentionService } from './admin/MatrixRetentionService'
 export type {
   AIAsyncGenerationResponse,
   AIConversation,
@@ -91,12 +103,15 @@ export { matrixQrLoginService, useQRLogin } from './auth/MatrixQrLoginService'
 export type {
   MatrixPasswordLoginOptions,
   MatrixPostLoginBootstrapOptions,
+  PresenceUpdate,
   RestoreMatrixRuntimeSessionOptions,
+  SessionStorePort,
   StoredMatrixTokens
 } from './auth/MatrixRuntimeSessionService'
-export { matrixRuntimeSessionService } from './auth/MatrixRuntimeSessionService'
+export { MatrixRuntimeSessionService } from './auth/MatrixRuntimeSessionService'
 export type { SessionDetail, SessionInfo } from './auth/MatrixSessionService'
 export { matrixSessionService } from './auth/MatrixSessionService'
+export { sessionOrchestrator } from './auth/SessionOrchestrator'
 export { matrixCryptoService } from './crypto/MatrixCryptoService'
 export { matrixDehydratedDeviceService } from './crypto/MatrixDehydratedDeviceService'
 export type { MatrixEncryptionSessionContext, PreparedKeyBackupVersion } from './crypto/MatrixEncryptionContextService'
@@ -114,7 +129,7 @@ export type {
   VerifyResult
 } from './crypto/MatrixKeyBackupService'
 // Key Backup 服务
-export { initializeKeyBackupService, matrixKeyBackupService } from './crypto/MatrixKeyBackupService'
+export { matrixKeyBackupService } from './crypto/MatrixKeyBackupService'
 export type {
   SasVerification,
   VerificationCancelReason,
@@ -123,7 +138,7 @@ export type {
   VerificationState
 } from './crypto/MatrixVerificationService'
 // Verification 服务
-export { initializeVerificationService, matrixVerificationService } from './crypto/MatrixVerificationService'
+export { matrixVerificationService } from './crypto/MatrixVerificationService'
 export { matrixFriendService } from './friends/MatrixFriendService'
 export { matrixSpecialFriendService } from './friends/MatrixSpecialFriendService'
 export { matrixApplicationService } from './MatrixApplicationService'
@@ -193,7 +208,7 @@ export type {
   MatrixRoomStats,
   MatrixRoomSummaryInfo
 } from './room/MatrixRoomSummaryService'
-export { initializeRoomSummaryService, matrixRoomSummaryService } from './room/MatrixRoomSummaryService'
+export { matrixRoomSummaryService } from './room/MatrixRoomSummaryService'
 export type { SpaceInfo, SpaceOptions } from './room/MatrixSpaceService'
 export { matrixSpaceService } from './room/MatrixSpaceService'
 export { matrixRoomMemberProfileService } from './room/MemberProfileService'
@@ -236,10 +251,10 @@ export type {
   DeviceUpdateResponse
 } from './user/MatrixDeviceService'
 // Device 服务
-export { initializeDeviceService, matrixDeviceService } from './user/MatrixDeviceService'
+export { matrixDeviceService } from './user/MatrixDeviceService'
 export type { PresenceInfo, PresenceListResponse, PresenceState } from './user/MatrixPresenceService'
 // Presence 服务
-export { initializePresenceService, matrixPresenceService } from './user/MatrixPresenceService'
+export { matrixPresenceService } from './user/MatrixPresenceService'
 export { profileService } from './user/MatrixProfileService'
 export { userDirectoryService } from './user/MatrixUserDirectoryService'
 export type { Widget } from './widget/MatrixWidgetService'

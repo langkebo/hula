@@ -1,7 +1,6 @@
 import { type Ref, ref } from 'vue'
-import { adminService, matrixFederationBlacklistService } from '@/services/matrix/admin'
-import type { FederationDestination } from '@/services/matrix/admin/AdminTypes'
-import type { FederationBlacklistEntry } from '@/services/matrix/admin/MatrixFederationBlacklistService'
+import type { FederationBlacklistEntry, FederationDestination } from '@/services/matrix/admin'
+import { adminService } from '@/services/matrix/admin'
 
 export interface FederationBlacklistView {
   domain: string
@@ -28,13 +27,6 @@ export interface UseAdminFederationResult {
   removeFromBlacklist: (domain: string) => Promise<boolean>
 }
 
-/**
- * Admin federation composable.
- *
- * Owns state + orchestration for the admin federation surface so that
- * desktop (`src/views/admin/AdminFederation.vue`) and mobile (pending)
- * render the same business logic.
- */
 export function useAdminFederation(): UseAdminFederationResult {
   const destinations = ref<FederationDestination[]>([])
   const destinationsLoading = ref(false)
@@ -69,7 +61,7 @@ export function useAdminFederation(): UseAdminFederationResult {
   async function loadBlacklist() {
     blacklistLoading.value = true
     try {
-      const items = await matrixFederationBlacklistService.list()
+      const items = await adminService.getFederationBlacklist()
       blacklist.value = items.map(
         (e: FederationBlacklistEntry): FederationBlacklistView => ({
           domain: e.domain,
@@ -84,13 +76,13 @@ export function useAdminFederation(): UseAdminFederationResult {
   }
 
   async function addToBlacklist(domain: string, reason?: string): Promise<boolean> {
-    const ok = await matrixFederationBlacklistService.add({ domain, reason })
+    const ok = await adminService.addToFederationBlacklist(domain, reason)
     if (ok) await loadBlacklist()
     return ok
   }
 
   async function removeFromBlacklist(domain: string): Promise<boolean> {
-    const ok = await matrixFederationBlacklistService.remove(domain)
+    const ok = await adminService.removeFromFederationBlacklist(domain)
     if (ok) await loadBlacklist()
     return ok
   }

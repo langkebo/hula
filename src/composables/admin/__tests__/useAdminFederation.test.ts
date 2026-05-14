@@ -5,16 +5,14 @@ vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     getFederationDestinations: vi.fn().mockResolvedValue([]),
     resetFederationConnection: vi.fn().mockResolvedValue(undefined),
-    reconnectFederation: vi.fn().mockResolvedValue(undefined)
-  },
-  matrixFederationBlacklistService: {
-    list: vi.fn().mockResolvedValue([]),
-    add: vi.fn().mockResolvedValue(true),
-    remove: vi.fn().mockResolvedValue(true)
+    reconnectFederation: vi.fn().mockResolvedValue(undefined),
+    getFederationBlacklist: vi.fn().mockResolvedValue([]),
+    addToFederationBlacklist: vi.fn().mockResolvedValue(true),
+    removeFromFederationBlacklist: vi.fn().mockResolvedValue(true)
   }
 }))
 
-import { adminService, matrixFederationBlacklistService } from '@/services/matrix/admin'
+import { adminService } from '@/services/matrix/admin'
 
 describe('useAdminFederation', () => {
   beforeEach(() => {
@@ -46,7 +44,7 @@ describe('useAdminFederation', () => {
   })
 
   it('loadBlacklist normalizes entries', async () => {
-    vi.mocked(matrixFederationBlacklistService.list).mockResolvedValueOnce([
+    vi.mocked(adminService.getFederationBlacklist).mockResolvedValueOnce([
       { domain: 'spam.tld', reason: 'abuse', addedBy: '@a:s', addedAt: 1 }
     ])
     const c = useAdminFederation()
@@ -58,23 +56,23 @@ describe('useAdminFederation', () => {
     const c = useAdminFederation()
     const ok = await c.addToBlacklist('spam.tld', 'abuse')
     expect(ok).toBe(true)
-    expect(matrixFederationBlacklistService.add).toHaveBeenCalledWith({ domain: 'spam.tld', reason: 'abuse' })
-    expect(matrixFederationBlacklistService.list).toHaveBeenCalledTimes(1)
+    expect(adminService.addToFederationBlacklist).toHaveBeenCalledWith('spam.tld', 'abuse')
+    expect(adminService.getFederationBlacklist).toHaveBeenCalledTimes(1)
   })
 
   it('addToBlacklist does not refresh when backend rejects', async () => {
-    vi.mocked(matrixFederationBlacklistService.add).mockResolvedValueOnce(false)
+    vi.mocked(adminService.addToFederationBlacklist).mockResolvedValueOnce(false)
     const c = useAdminFederation()
     const ok = await c.addToBlacklist('spam.tld')
     expect(ok).toBe(false)
-    expect(matrixFederationBlacklistService.list).not.toHaveBeenCalled()
+    expect(adminService.getFederationBlacklist).not.toHaveBeenCalled()
   })
 
   it('removeFromBlacklist refreshes when successful', async () => {
     const c = useAdminFederation()
     await c.removeFromBlacklist('spam.tld')
-    expect(matrixFederationBlacklistService.remove).toHaveBeenCalledWith('spam.tld')
-    expect(matrixFederationBlacklistService.list).toHaveBeenCalledTimes(1)
+    expect(adminService.removeFromFederationBlacklist).toHaveBeenCalledWith('spam.tld')
+    expect(adminService.getFederationBlacklist).toHaveBeenCalledTimes(1)
   })
 
   it('selectDestination sets the ref', () => {

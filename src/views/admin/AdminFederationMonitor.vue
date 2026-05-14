@@ -70,7 +70,7 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { adminService, matrixFederationBlacklistService } from '@/services/matrix/admin'
+import { adminService } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminFederationMonitor')
@@ -157,7 +157,7 @@ async function reconnect(serverName: string) {
 async function loadData() {
   loading.value = true
   try {
-    const blacklist = await matrixFederationBlacklistService.list()
+    const blacklist = await adminService.getFederationBlacklist()
     const blockedServers = Array.isArray(blacklist) ? blacklist : []
 
     const servers: FederationServer[] = []

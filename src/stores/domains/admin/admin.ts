@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { TauriCommand } from '@/enums'
-import { adminService, matrixAdminService } from '@/services/matrix/admin'
+import { adminService } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { useMatrixStore } from '../chat/matrix'
@@ -25,7 +25,7 @@ export const useAdminStore = defineStore('admin', () => {
 
   async function checkAdminViaBackend(): Promise<boolean> {
     try {
-      const adminApiAvailable = await matrixAdminService.checkAdminApiAvailability()
+      const adminApiAvailable = await adminService.checkAdminApiAvailability()
       if (!adminApiAvailable) {
         logger.warn('后端 Admin API 不可用，跳过管理员验证')
         return true

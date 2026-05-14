@@ -88,8 +88,10 @@ export interface FederationDestination {
 }
 
 export interface FederationBlacklistEntry {
-  serverName: string
+  domain: string
   reason?: string
+  addedBy?: string
+  addedAt?: number
 }
 
 export interface ServerNoticeResult {
@@ -108,4 +110,156 @@ export interface RegistrationToken {
   pending: number
   completed: number
   expiryTime?: number
+}
+
+export enum ReportReason {
+  Sexual = 'sexual',
+  Violence = 'violence',
+  HateSpeech = 'hate_speech',
+  SelfHarm = 'self_harm',
+  Terrorism = 'terrorism',
+  Spam = 'spam',
+  Violation = 'violation',
+  Other = 'other'
+}
+
+export interface ReportRequest {
+  roomId: string
+  eventId: string
+  reason: string
+  explanation?: string
+}
+
+export interface AdminReport {
+  id: number
+  received_ts: number
+  user_id: string
+  score: number
+  reason: string
+  name: string
+  canonical_alias?: string
+  sender: string
+  event_id: string
+  event_json: Record<string, unknown>
+}
+
+export interface ReportRoomResponse {
+  report_id: string
+}
+
+export interface ScannerInfo {
+  scanner_id: string
+  scan_result: string
+  confidence: number
+  scanned_at: number
+}
+
+export interface Report {
+  id: string
+  eventId: string
+  roomId: string
+  reporterUserId: string
+  reportedUserId: string
+  reason: string
+  score: number
+  status: 'open' | 'resolved' | 'dismissed'
+  createdAt: number
+  resolvedAt?: number
+  resolvedBy?: string
+  resolution?: string
+}
+
+export interface ReportFilters {
+  status?: 'open' | 'resolved' | 'dismissed'
+  roomId?: string
+  reporterUserId?: string
+  reportedUserId?: string
+  from?: number
+  to?: number
+  limit?: number
+  offset?: number
+}
+
+export interface UserReputation {
+  userId: string
+  score: number
+  level: 'good' | 'neutral' | 'warning' | 'bad'
+  reportCount: number
+  lastReportAt?: number
+  restrictions: string[]
+}
+
+export interface ContentFilter {
+  id: string
+  type: 'keyword' | 'regex' | 'image_hash'
+  pattern: string
+  action: 'flag' | 'block' | 'quarantine'
+  enabled: boolean
+  createdAt: number
+  updatedAt: number
+  hitCount: number
+}
+
+export interface CreateContentFilterRequest {
+  type: 'keyword' | 'regex' | 'image_hash'
+  pattern: string
+  action: 'flag' | 'block' | 'quarantine'
+}
+
+export interface ResolveReportRequest {
+  action: 'dismiss' | 'warn' | 'mute' | 'ban'
+  notes?: string
+}
+
+export interface QuotaStatus {
+  used: number
+  limit: number
+  remaining: number
+  percentage: number
+  exceeded: boolean
+}
+
+export interface QuotaStats {
+  totalFiles: number
+  totalSize: number
+  byType: Record<string, { count: number; size: number }>
+  byRoom: Record<string, { count: number; size: number }>
+  lastUpdated: number
+}
+
+export interface QuotaAlert {
+  id: string
+  type: 'warning' | 'critical' | 'exceeded'
+  message: string
+  threshold: number
+  currentValue: number
+  createdAt: number
+  acknowledged: boolean
+}
+
+export interface QuotaConfig {
+  id: string
+  name: string
+  defaultQuota: number
+  maxQuota: number
+  warningThreshold: number
+  criticalThreshold: number
+  enabled: boolean
+}
+
+export interface ServerQuota {
+  totalUsed: number
+  totalLimit: number
+  userCount: number
+  averageUsage: number
+}
+
+export interface RetentionPolicy {
+  min_lifetime?: number
+  max_lifetime?: number
+}
+
+export interface RoomRetention {
+  roomId: string
+  policy?: RetentionPolicy
 }
