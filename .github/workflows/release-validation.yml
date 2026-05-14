@@ -1,0 +1,126 @@
+name: Release Validation
+
+on:
+  push:
+    branches: [release/**]
+    tags: ['v*']
+  pull_request:
+    branches: [release/**]
+  workflow_dispatch:
+    inputs:
+      sdk_repo:
+        description: 'matrix-js-sdk repository (owner/repo). Leave blank to use vars.MATRIX_JS_SDK_REPO.'
+        required: false
+        default: ''
+      synapse_rust_repo:
+        description: 'synapse-rust repository (owner/repo). Leave blank to use vars.SYNAPSE_RUST_REPO.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  tarball-validation:
+    name: SDK Tarball Release Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        with:
+          egress-policy: audit
+
+      - name: Resolve sibling repository slugs
+        id: repos
+        run: |
+          SDK_REPO="${{ github.event.inputs.sdk_repo }}"
+          SYNAPSE_REPO="${{ github.event.inputs.synapse_rust_repo }}"
+          SDK_REPO="${SDK_REPO:-${{ vars.MATRIX_JS_SDK_REPO }}}"
+          SYNAPSE_REPO="${SYNAPSE_REPO:-${{ vars.SYNAPSE_RUST_REPO }}}"
+          if [ -z "$SDK_REPO" ]; then
+            echo "::error::matrix-js-sdk repo slug not configured. Set vars.MATRIX_JS_SDK_REPO or supply workflow_dispatch input sdk_repo."
+            exit 1
+          fi
+          if [ -z "$SYNAPSE_REPO" ]; then
+            echo "::error::synapse-rust repo slug not configured. Set vars.SYNAPSE_RUST_REPO or supply workflow_dispatch input synapse_rust_repo."
+            exit 1
+          fi
+          echo "sdk_repo=$SDK_REPO" >> "$GITHUB_OUTPUT"
+          echo "synapse_repo=$SYNAPSE_REPO" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout hula
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: hula
+
+      - name: Read pinned commits
+        id: pin
+        working-directory: hula
+        run: |
+          SDK_COMMIT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('meta/sdk-pin.json','utf8')).sdk_commit||'')")
+          SYNAPSE_COMMIT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('meta/sdk-pin.json','utf8')).synapse_rust_commit||'')")
+          if [ -z "$SDK_COMMIT" ]; then
+            echo "::error::meta/sdk-pin.json has no sdk_commit; run pnpm sdk:pin:refresh on a dev branch first."
+            exit 1
+          fi
+          echo "sdk_commit=$SDK_COMMIT" >> "$GITHUB_OUTPUT"
+          echo "synapse_commit=$SYNAPSE_COMMIT" >> "$GITHUB_OUTPUT"
+          echo "Pinned matrix-js-sdk commit:  $SDK_COMMIT"
+          echo "Pinned synapse-rust commit:  ${SYNAPSE_COMMIT:-(none)}"
+
+      - name: Checkout matrix-js-sdk at pinned commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ${{ steps.repos.outputs.sdk_repo }}
+          ref: ${{ steps.pin.outputs.sdk_commit }}
+          path: matrix-js-sdk
+
+      - name: Checkout synapse-rust at pinned commit (informational)
+        if: steps.pin.outputs.synapse_commit != ''
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ${{ steps.repos.outputs.synapse_repo }}
+          ref: ${{ steps.pin.outputs.synapse_commit }}
+          path: synapse-rust
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 10
+
+      - name: Swap SDK to tarball mode
+        working-directory: hula
+        run: pnpm sdk:pack:apply
+
+      - name: Install against packed tarball
+        working-directory: hula
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Verify SDK pin
+        working-directory: hula
+        run: pnpm verify:sdk-pin
+
+      - name: Run release gate chain
+        working-directory: hula
+        run: pnpm check:release
+
+      - name: Upload SDK tarball artifact
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: matrix-js-sdk-tarball
+          path: |
+            hula/vendor/matrix-js-sdk.tgz
+            hula/meta/sdk-pin.json
+          if-no-files-found: warn
+          retention-days: 30

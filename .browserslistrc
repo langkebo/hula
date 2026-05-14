@@ -1,0 +1,11 @@
+[desktop]
+chrome >= 90
+edge >= 90
+firefox >= 90
+safari >= 15
+
+[web]
+chrome >= 80
+edge >= 80
+firefox >= 80
+safari >= 14
