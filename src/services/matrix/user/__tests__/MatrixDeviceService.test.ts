@@ -5,11 +5,13 @@ import matrixClientService from '../../MatrixClientService'
 import type { Device } from '../MatrixDeviceService'
 import { matrixDeviceService } from '../MatrixDeviceService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn()
+vi.mock('../../MatrixClientService', () => {
+  const getClient = vi.fn()
+  return {
+    default: { getClient },
+    matrixClientService: { getClient }
   }
-}))
+})
 
 describe('MatrixDeviceService', () => {
   let mockClient: Partial<MatrixClient>

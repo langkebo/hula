@@ -84,18 +84,14 @@ describe('MatrixMessageService', () => {
     expect(result).toBe(false)
   })
 
-  it('markMsgs 逐条转调并返回成功数量', async () => {
-    vi.mocked(matrixReceiptService.sendReadReceiptByEventId)
-      .mockResolvedValueOnce('$event-1')
-      .mockRejectedValueOnce(new Error('send failed'))
-      .mockResolvedValueOnce('$event-3')
+  it('markMsgs 使用最后一条消息发送已读回执并返回总数', async () => {
+    vi.mocked(matrixReceiptService.sendReadReceiptByEventId).mockResolvedValue('$event-3')
 
     const result = await matrixMessageService.markMsgs('!room:id', ['$event-1', '$event-2', '$event-3'])
 
-    expect(matrixReceiptService.sendReadReceiptByEventId).toHaveBeenNthCalledWith(1, '!room:id', '$event-1')
-    expect(matrixReceiptService.sendReadReceiptByEventId).toHaveBeenNthCalledWith(2, '!room:id', '$event-2')
-    expect(matrixReceiptService.sendReadReceiptByEventId).toHaveBeenNthCalledWith(3, '!room:id', '$event-3')
-    expect(result).toBe(2)
+    expect(matrixReceiptService.sendReadReceiptByEventId).toHaveBeenCalledTimes(1)
+    expect(matrixReceiptService.sendReadReceiptByEventId).toHaveBeenCalledWith('!room:id', '$event-3')
+    expect(result).toBe(3)
   })
 
   it('addReaction 通过 MatrixReactionService 发送反应', async () => {

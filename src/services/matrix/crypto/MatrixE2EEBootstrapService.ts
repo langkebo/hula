@@ -1,11 +1,8 @@
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
-import { initializeDeviceService } from '../user/MatrixDeviceService'
 import matrixCryptoService from './MatrixCryptoService'
 import { matrixEncryptionService } from './MatrixEncryptionService'
-import { initializeKeyBackupService } from './MatrixKeyBackupService'
-import { initializeVerificationService } from './MatrixVerificationService'
 
 const logger = createLogger('E2EEBootstrap')
 
@@ -37,12 +34,6 @@ class MatrixE2EEBootstrapService {
       await matrixCryptoService.initializeCrypto()
       await matrixEncryptionService.initialize()
 
-      // 2. 初始化子服务
-      initializeDeviceService()
-      initializeKeyBackupService()
-      initializeVerificationService()
-
-      // 3. 校验并确保基本配置正确
       await this.validateAndSetupE2EE()
 
       this.isInitialized = true

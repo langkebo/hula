@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixCryptoService } from '../MatrixCryptoService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn(() => null as MatrixClient | null)
+vi.mock('../../MatrixClientService', () => {
+  const getClient = vi.fn(() => null as MatrixClient | null)
+  return {
+    default: { getClient },
+    matrixClientService: { getClient }
   }
-}))
+})
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -20,6 +22,14 @@ describe('MatrixCryptoService', () => {
     vi.clearAllMocks()
     ;(matrixCryptoService as unknown as { crypto: unknown }).crypto = null
   })
+
+  const createClient = (overrides: Record<string, unknown> = {}) =>
+    ({
+      http: {
+        authedRequest: vi.fn()
+      },
+      ...overrides
+    }) as unknown as MatrixClient
 
   describe('initializeCrypto', () => {
     it('should initialize when crypto is enabled', async () => {
@@ -57,12 +67,16 @@ describe('MatrixCryptoService', () => {
     })
 
     it('should return crypto status', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getCrypto: vi.fn(() => ({
-          isCrossSigningReady: vi.fn(() => Promise.resolve(true)),
-          isKeyBackupKeyStored: vi.fn(() => Promise.resolve(true))
-        }))
-      } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          getCrypto: vi.fn(() => ({
+            isCrossSigningReady: vi.fn(() => Promise.resolve(true))
+          })),
+          getKeyBackupManager: vi.fn(() => ({
+            checkKeyBackup: vi.fn(() => Promise.resolve({ version: '1' }))
+          }))
+        })
+      )
       const result = await matrixCryptoService.getCryptoStatus()
       expect(result?.crossSigningReady).toBe(true)
       expect(result?.keyBackupEnabled).toBe(true)
@@ -99,10 +113,14 @@ describe('MatrixCryptoService', () => {
     })
 
     it('should return encrypted status', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getRoom: vi.fn(() => ({})),
-        isRoomEncrypted: vi.fn(() => true)
-      } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          getCrypto: vi.fn(() => ({})),
+          getRoom: vi.fn(() => ({
+            hasEncryptionStateEvent: () => true
+          }))
+        })
+      )
       const result = await matrixCryptoService.isRoomEncrypted('!room:server')
       expect(result).toBe(true)
     })
@@ -115,12 +133,9 @@ describe('MatrixCryptoService', () => {
         sendStateEvent
       } as unknown as MatrixClient)
       await matrixCryptoService.enableEncryption('!room:server')
-      expect(sendStateEvent).toHaveBeenCalledWith(
-        '!room:server',
-        'm.room.encryption',
-        { algorithm: 'm.megolm.v1.aes-sha2' },
-        ''
-      )
+      expect(sendStateEvent).toHaveBeenCalledWith('!room:server', 'm.room.encryption', {
+        algorithm: 'm.megolm.v1.aes-sha2'
+      })
     })
   })
 
@@ -144,12 +159,14 @@ describe('MatrixCryptoService', () => {
     })
 
     it('should return cross signing status from crypto', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getCrypto: vi.fn(() => ({
-          getCrossSigningStatus: vi.fn(() => Promise.resolve({ privateKeysCached: true }))
-        })),
-        isCrossSigningReady: vi.fn(() => Promise.resolve(true))
-      } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          getCrypto: vi.fn(() => ({
+            getCrossSigningStatus: vi.fn(() => Promise.resolve({ crossSigningPrivateKeysInStorage: true })),
+            isCrossSigningReady: vi.fn(() => Promise.resolve(true))
+          }))
+        })
+      )
       const result = await matrixCryptoService.getCrossSigningStatus()
       expect(result.privateKeysCached).toBe(true)
       expect(result.crossSigningVerified).toBe(true)
@@ -166,11 +183,12 @@ describe('MatrixCryptoService', () => {
     })
 
     it('should return empty string when exportRoomKeys not available', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getCrypto: vi.fn(() => ({}))
-      } as unknown as MatrixClient)
-      const result = await matrixCryptoService.exportKeys('pass')
-      expect(result).toBe('')
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          getCrypto: vi.fn(() => ({}))
+        })
+      )
+      await expect(matrixCryptoService.exportKeys('pass')).rejects.toThrow('exportRoomKeys')
     })
 
     it('should export keys as JSON', async () => {
@@ -188,38 +206,54 @@ describe('MatrixCryptoService', () => {
 
   describe('uploadKeys', () => {
     it('should return empty counts when method not available', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          http: { authedRequest: vi.fn(() => Promise.resolve({})) }
+        })
+      )
       const result = await matrixCryptoService.uploadKeys()
       expect(result.oneTimeKeyCounts).toEqual({})
     })
 
     it('should upload keys and return counts', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        uploadKeys: vi.fn(() => Promise.resolve({ one_time_key_counts: { signed_curve25519: 50 } }))
-      } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          http: {
+            authedRequest: vi.fn(() => Promise.resolve({ one_time_key_counts: { signed_curve25519: 50 } }))
+          }
+        })
+      )
       const result = await matrixCryptoService.uploadKeys({ key: 'value' })
       expect(result.oneTimeKeyCounts.signed_curve25519).toBe(50)
     })
 
     it('should throw on error', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        uploadKeys: vi.fn(() => Promise.reject(new Error('fail')))
-      } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          http: { authedRequest: vi.fn(() => Promise.reject(new Error('fail'))) }
+        })
+      )
       await expect(matrixCryptoService.uploadKeys()).rejects.toThrow('fail')
     })
   })
 
   describe('queryKeys', () => {
     it('should return empty when method not available', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          http: { authedRequest: vi.fn(() => Promise.resolve({})) }
+        })
+      )
       const result = await matrixCryptoService.queryKeys(['@user:server'])
       expect(result).toEqual({})
     })
 
     it('should query keys for users', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        queryKeys: vi.fn(() => Promise.resolve({ device_keys: {} }))
-      } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          http: { authedRequest: vi.fn(() => Promise.resolve({ device_keys: {} })) }
+        })
+      )
       const result = await matrixCryptoService.queryKeys(['@user:server'])
       expect(result).toBeDefined()
     })
@@ -227,15 +261,21 @@ describe('MatrixCryptoService', () => {
 
   describe('claimKeys', () => {
     it('should return empty when method not available', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          http: { authedRequest: vi.fn(() => Promise.resolve({})) }
+        })
+      )
       const result = await matrixCryptoService.claimKeys({})
       expect(result).toEqual({})
     })
 
     it('should claim keys', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        claimKeys: vi.fn(() => Promise.resolve({ one_time_keys: {} }))
-      } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          http: { authedRequest: vi.fn(() => Promise.resolve({ one_time_keys: {} })) }
+        })
+      )
       const result = await matrixCryptoService.claimKeys({ '@user:server': { DEV1: 'signed_curve25519' } })
       expect(result).toBeDefined()
     })

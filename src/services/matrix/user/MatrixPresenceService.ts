@@ -427,12 +427,4 @@ class MatrixPresenceService {
  */
 export const matrixPresenceService = new MatrixPresenceService()
 
-/**
- * 初始化在线状态服务
- */
-export function initializePresenceService(): void {
-  matrixPresenceService['ensurePresenceListenerRegistered']()
-  info('[Presence] 服务已就绪')
-}
-
 export default matrixPresenceService

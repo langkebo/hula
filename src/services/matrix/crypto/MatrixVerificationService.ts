@@ -325,7 +325,3 @@ class VerificationService {
 }
 
 export const matrixVerificationService = new VerificationService()
-
-export function initializeVerificationService(): void {
-  matrixVerificationService.initialize()
-}
