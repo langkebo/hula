@@ -1,8 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { getUserMock } = vi.hoisted(() => ({
-  getUserMock: vi.fn()
+const { getUserMock, checkAdminApiAvailabilityMock } = vi.hoisted(() => ({
+  getUserMock: vi.fn(),
+  checkAdminApiAvailabilityMock: vi.fn(() => Promise.resolve(true))
 }))
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -19,7 +20,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('@/services/matrix/admin', () => ({
   adminService: {
-    getUser: getUserMock
+    getUser: getUserMock,
+    checkAdminApiAvailability: checkAdminApiAvailabilityMock
   }
 }))
 

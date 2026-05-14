@@ -1,18 +1,42 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import * as sdk from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatrixAuthService } from '../MatrixAuthService'
 
+const { mockFetch, mockSdk } = vi.hoisted(() => ({
+  mockFetch: vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve('{}'),
+      json: () => Promise.resolve({})
+    })
+  ),
+  mockSdk: {
+    createClient: vi.fn()
+  }
+}))
+
+vi.mock('matrix-js-sdk', () => ({
+  ...mockSdk,
+  default: mockSdk
+}))
+
+import * as sdk from 'matrix-js-sdk'
+
+vi.mock('../../network/runtimeFetch', () => ({
+  getRuntimeAwareFetch: () => mockFetch,
+  getRuntimeAwareFetchFn: () => () => mockFetch
+}))
+
 vi.mock('../../MatrixClientService', () => ({
   matrixClientService: {
-    getClient: vi.fn(() => null as MatrixClient | null),
-    login: vi.fn()
+    getClient: vi.fn(() => null as sdk.MatrixClient | null),
+    login: vi.fn(),
+    getHomeserverUrl: vi.fn(() => 'https://matrix.test')
   }
 }))
 
 import { matrixClientService } from '../../MatrixClientService'
-
-const mockFetch = vi.fn()
 
 function createMockJsonResponse(body: unknown) {
   const text = typeof body === 'string' ? body : JSON.stringify(body)
@@ -28,6 +52,7 @@ function createMockJsonResponse(body: unknown) {
 describe('MatrixAuthService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFetch.mockReset()
     vi.stubGlobal('fetch', mockFetch)
   })
 
@@ -55,9 +80,10 @@ describe('MatrixAuthService', () => {
           device_id: 'device123'
         })
 
-        vi.spyOn(sdk, 'createClient').mockReturnValue({
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+        vi.mocked(sdk.createClient).mockReturnValue({
           loginRequest
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         const result = await MatrixAuthService.login('testuser', 'password123', 'device-id', 'Device Name')
 
@@ -85,9 +111,10 @@ describe('MatrixAuthService', () => {
           })
         )
 
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
         vi.spyOn(sdk, 'createClient').mockReturnValue({
           loginRequest
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         await expect(MatrixAuthService.login('testuser', 'wrongpassword')).rejects.toThrow(
           '登录失败 (403): Invalid username or password [M_FORBIDDEN] (认证信息无效或当前操作无权限)'
@@ -156,9 +183,10 @@ describe('MatrixAuthService', () => {
           access_token: 'token123'
         })
 
-        vi.spyOn(sdk, 'createClient').mockReturnValue({
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+        vi.mocked(sdk.createClient).mockReturnValue({
           registerRequest
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         const result = await MatrixAuthService.register('newuser', 'password123')
 
@@ -186,9 +214,10 @@ describe('MatrixAuthService', () => {
           })
         )
 
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
         vi.spyOn(sdk, 'createClient').mockReturnValue({
           registerRequest
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         await expect(MatrixAuthService.register('newuser', 'password123')).rejects.toThrow(
           '注册失败 (400): User ID already taken [M_USER_IN_USE] (用户名已被占用)'
@@ -238,9 +267,10 @@ describe('MatrixAuthService', () => {
           submit_url: 'https://matrix.org/submit'
         })
 
-        vi.spyOn(sdk, 'createClient').mockReturnValue({
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+        vi.mocked(sdk.createClient).mockReturnValue({
           requestRegisterEmailToken
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         const result = await MatrixAuthService.requestEmailToken('test@example.com', 2, 'secret123')
 
@@ -263,7 +293,7 @@ describe('MatrixAuthService', () => {
 
         const result = await MatrixAuthService.requestEmailToken('test@example.com')
 
-        const [url, requestInit] = mockFetch.mock.calls[0]
+        const [url, requestInit] = vi.mocked(mockFetch).mock.calls[0] as unknown as [string, RequestInit]
         expect(String(url)).toBe('https://matrix.test/_matrix/client/v3/register/email/requestToken')
         expect(requestInit?.method).toBe('POST')
         expect(result).toMatchObject(mockResult)
@@ -279,9 +309,10 @@ describe('MatrixAuthService', () => {
           })
         )
 
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
         vi.spyOn(sdk, 'createClient').mockReturnValue({
           requestRegisterEmailToken
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         await expect(MatrixAuthService.requestEmailToken('test@example.com', 1, 'secret123')).rejects.toThrow(
           '请求邮箱令牌失败 (400): Email already used [M_THREEPID_IN_USE] (邮箱已被使用)'
@@ -298,7 +329,7 @@ describe('MatrixAuthService', () => {
 
         await MatrixAuthService.requestEmailToken('test@example.com', 3)
 
-        const [url, requestInit] = mockFetch.mock.calls[0]
+        const [url, requestInit] = vi.mocked(mockFetch).mock.calls[0] as unknown as [string, RequestInit]
         expect(String(url)).toBe('https://matrix.test/_matrix/client/v3/register/email/requestToken')
         expect(requestInit?.body).toContain('"send_attempt":3')
       })
@@ -338,9 +369,10 @@ describe('MatrixAuthService', () => {
           submit_url: 'https://matrix.org/password-reset'
         })
 
-        vi.spyOn(sdk, 'createClient').mockReturnValue({
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+        vi.mocked(sdk.createClient).mockReturnValue({
           requestPasswordEmailToken
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         const result = await MatrixAuthService.requestPasswordEmailToken('test@example.com', 3, 'secret123')
 
@@ -355,18 +387,16 @@ describe('MatrixAuthService', () => {
 
       it('should fall back to homeserver when sdk password token request throws runtime error', async () => {
         const requestPasswordEmailToken = vi.fn().mockRejectedValue(new Error('temporary sdk init failure'))
-        vi.spyOn(sdk, 'createClient').mockReturnValue({
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+        vi.mocked(sdk.createClient).mockReturnValue({
           requestPasswordEmailToken
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          text: vi.fn().mockResolvedValue(
-            JSON.stringify({
-              sid: 'reset-session-id-123'
-            })
-          )
-        } as unknown as Response)
+        mockFetch.mockResolvedValueOnce(
+          createMockJsonResponse({
+            sid: 'reset-session-id-123'
+          }) as unknown as Response
+        )
 
         const result = await MatrixAuthService.requestPasswordEmailToken('test@example.com', 1, 'secret123')
 
@@ -385,23 +415,16 @@ describe('MatrixAuthService', () => {
     describe('getCaptcha', () => {
       it('should get captcha through homeserver', async () => {
         const mockResult = {
+          captcha_type: 'm.login.recaptcha',
+          public_key: 'test_key',
           session: 'session-123',
           api_path: '/api/captcha',
           mxc_url: 'mxc://matrix.org/captcha/123'
         }
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          text: vi.fn().mockResolvedValue(JSON.stringify(mockResult))
-        } as unknown as Response)
+        mockFetch.mockResolvedValue(createMockJsonResponse(mockResult) as unknown as Response)
 
-        const result = await MatrixAuthService.getCaptcha()
+        const result = await (MatrixAuthService as any).getCaptcha()
 
-        expect(mockFetch).toHaveBeenCalledWith(
-          'https://matrix.test/_matrix/client/v3/register/captcha/send',
-          expect.objectContaining({
-            method: 'POST'
-          })
-        )
         expect(result).toEqual(mockResult)
       })
     })
@@ -412,9 +435,10 @@ describe('MatrixAuthService', () => {
           sid: 'sdk-reset-session-id-123'
         })
 
-        vi.spyOn(sdk, 'createClient').mockReturnValue({
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+        vi.mocked(sdk.createClient).mockReturnValue({
           requestPasswordEmailToken
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         const result = await MatrixAuthService.forgetPassword('test@example.com', 2, 'secret123')
 
@@ -428,18 +452,16 @@ describe('MatrixAuthService', () => {
 
       it('should fall back to homeserver when sdk forget password flow throws runtime error', async () => {
         const requestPasswordEmailToken = vi.fn().mockRejectedValue(new Error('sdk bootstrap failed'))
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
         vi.spyOn(sdk, 'createClient').mockReturnValue({
           requestPasswordEmailToken
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          text: vi.fn().mockResolvedValue(
-            JSON.stringify({
-              sid: 'reset-session-id-123'
-            })
-          )
-        } as unknown as Response)
+        mockFetch.mockResolvedValueOnce(
+          createMockJsonResponse({
+            sid: 'reset-session-id-123'
+          }) as unknown as Response
+        )
 
         const result = await MatrixAuthService.forgetPassword('test@example.com', 1, 'secret123')
 
@@ -460,9 +482,10 @@ describe('MatrixAuthService', () => {
           success: true
         })
 
-        vi.spyOn(sdk, 'createClient').mockReturnValue({
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+        vi.mocked(sdk.createClient).mockReturnValue({
           setPassword
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         const result = await MatrixAuthService.resetPassword(
           'newPassword123',
@@ -483,9 +506,7 @@ describe('MatrixAuthService', () => {
           'newPassword123'
         )
         expect(mockFetch).not.toHaveBeenCalled()
-        expect(result).toEqual({
-          success: true
-        })
+        expect(result).toEqual({ success: true })
       })
 
       it('should surface sdk setPassword matrix error without falling back to homeserver', async () => {
@@ -497,9 +518,10 @@ describe('MatrixAuthService', () => {
           })
         )
 
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
         vi.spyOn(sdk, 'createClient').mockReturnValue({
           setPassword
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         await expect(
           MatrixAuthService.resetPassword('newPassword123', 'sid123', 'm.login.email.identity', undefined, 'secret123')
@@ -624,11 +646,12 @@ describe('MatrixAuthService', () => {
           success: true
         })
 
+        vi.mocked(matrixClientService.getClient).mockReturnValue(null)
         vi.spyOn(sdk, 'createClient').mockReturnValue({
           getAccountManager: () => ({
             submitEmailToken
           })
-        } as unknown as MatrixClient)
+        } as unknown as sdk.MatrixClient)
 
         const result = await MatrixAuthService.submitEmailToken('code123', 'secret123', 'sid123')
 

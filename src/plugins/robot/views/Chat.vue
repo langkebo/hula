@@ -97,7 +97,7 @@
   <n-modal
     v-model:show="showHistoryModal"
     preset="card"
-    title="生成历史"
+    :title="t('ai_assistant.robot.generation_history')"
     style="width: 90%; max-width: 1200px"
     :bordered="false">
     <!-- 类型切换按钮 -->
@@ -107,19 +107,19 @@
           <template #icon>
             <Icon icon="mdi:image" />
           </template>
-          图片
+          {{ t('ai_assistant.robot.image') }}
         </n-button>
         <n-button :type="historyType === 'audio' ? 'primary' : 'default'" @click="switchHistoryType('audio')">
           <template #icon>
             <Icon icon="mdi:music" />
           </template>
-          音频
+          {{ t('ai_assistant.robot.audio') }}
         </n-button>
         <n-button :type="historyType === 'video' ? 'primary' : 'default'" @click="switchHistoryType('video')">
           <template #icon>
             <Icon icon="mdi:video" />
           </template>
-          视频
+          {{ t('ai_assistant.robot.video') }}
         </n-button>
       </n-button-group>
     </template>
@@ -138,11 +138,11 @@
                 @click="handlePreviewImage(item)" />
               <div v-else-if="item.status === 10" class="preview-placeholder">
                 <n-spin size="large" />
-                <p class="text-12px text-#909090 mt-8px">生成中...</p>
+                <p class="text-12px text-#909090 mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
               </div>
               <div v-else class="preview-placeholder error">
                 <Icon icon="mdi:alert-circle-outline" class="text-48px text-#d5304f" />
-                <p class="text-12px text-#d5304f mt-8px">生成失败</p>
+                <p class="text-12px text-#d5304f mt-8px">{{ t('ai_assistant.robot.generation_failed') }}</p>
               </div>
             </div>
 
@@ -150,15 +150,15 @@
             <div v-else-if="historyType === 'audio'" class="media-preview">
               <div v-if="item.status === 20 && item.audioUrl" class="audio-preview">
                 <Icon icon="mdi:music-circle" class="text-64px text-#1890ff" />
-                <p class="text-12px text-#1890ff mt-8px">点击播放</p>
+                <p class="text-12px text-#1890ff mt-8px">{{ t('ai_assistant.robot.click_to_play') }}</p>
               </div>
               <div v-else-if="item.status === 10" class="preview-placeholder">
                 <n-spin size="large" />
-                <p class="text-12px text-#909090 mt-8px">生成中...</p>
+                <p class="text-12px text-#909090 mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
               </div>
               <div v-else class="preview-placeholder error">
                 <Icon icon="mdi:alert-circle-outline" class="text-48px text-#d5304f" />
-                <p class="text-12px text-#d5304f mt-8px">生成失败</p>
+                <p class="text-12px text-#d5304f mt-8px">{{ t('ai_assistant.robot.generation_failed') }}</p>
               </div>
             </div>
 
@@ -166,15 +166,15 @@
             <div v-else class="media-preview">
               <div v-if="item.status === 20 && item.videoUrl" class="video-preview" @click="handlePreviewVideo(item)">
                 <Icon icon="mdi:play-circle" class="text-64px text-white" />
-                <p class="text-12px text-white mt-8px">点击播放</p>
+                <p class="text-12px text-white mt-8px">{{ t('ai_assistant.robot.click_to_play') }}</p>
               </div>
               <div v-else-if="item.status === 10" class="preview-placeholder">
                 <n-spin size="large" />
-                <p class="text-12px text-#909090 mt-8px">生成中...</p>
+                <p class="text-12px text-#909090 mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
               </div>
               <div v-else class="preview-placeholder error">
                 <Icon icon="mdi:alert-circle-outline" class="text-48px text-#d5304f" />
-                <p class="text-12px text-#d5304f mt-8px">生成失败</p>
+                <p class="text-12px text-#d5304f mt-8px">{{ t('ai_assistant.robot.generation_failed') }}</p>
               </div>
             </div>
 
@@ -186,7 +186,7 @@
           </div>
         </div>
       </div>
-      <n-empty v-else description="暂无生成记录" class="py-40px" />
+      <n-empty v-else :description="t('ai_assistant.robot.no_generation_records')" class="py-40px" />
     </n-spin>
 
     <!-- 分页 -->
@@ -200,16 +200,20 @@
   </n-modal>
 
   <!-- 图片预览弹窗 -->
-  <n-modal v-model:show="showImagePreview" preset="card" title="图片预览" style="width: 90%; max-width: 1000px">
+  <n-modal
+    v-model:show="showImagePreview"
+    preset="card"
+    :title="t('ai_assistant.robot.image_preview')"
+    style="width: 90%; max-width: 1000px">
     <div v-if="previewItem" class="preview-container">
       <img :src="previewItem.picUrl" :alt="previewItem.prompt" class="preview-image" />
       <div class="preview-info mt-16px">
         <p class="text-14px">
-          <strong>提示词：</strong>
+          <strong>{{ t('ai_assistant.robot.prompt_label') }}</strong>
           {{ previewItem.prompt }}
         </p>
         <p class="text-12px text-#909090 mt-8px">
-          <strong>尺寸：</strong>
+          <strong>{{ t('ai_assistant.robot.size_label') }}</strong>
           {{ previewItem.width }} × {{ previewItem.height }}
         </p>
       </div>
@@ -217,16 +221,20 @@
   </n-modal>
 
   <!-- 视频预览弹窗 -->
-  <n-modal v-model:show="showVideoPreview" preset="card" title="视频预览" style="width: 90%; max-width: 1000px">
+  <n-modal
+    v-model:show="showVideoPreview"
+    preset="card"
+    :title="t('ai_assistant.robot.video_preview')"
+    style="width: 90%; max-width: 1000px">
     <div v-if="previewItem" class="preview-container">
       <video :src="previewItem.videoUrl" controls class="preview-video" />
       <div class="preview-info mt-16px">
         <p class="text-14px">
-          <strong>提示词：</strong>
+          <strong>{{ t('ai_assistant.robot.prompt_label') }}</strong>
           {{ previewItem.prompt }}
         </p>
         <p class="text-12px text-#909090 mt-8px">
-          <strong>尺寸：</strong>
+          <strong>{{ t('ai_assistant.robot.size_label') }}</strong>
           {{ previewItem.width }} × {{ previewItem.height }}
         </p>
       </div>
@@ -236,12 +244,14 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import RobotChatHeader from '@/plugins/robot/components/RobotChatHeader.vue'
 import RobotChatInputPanel from '@/plugins/robot/components/RobotChatInputPanel.vue'
 import RobotChatMessageList from '@/plugins/robot/components/RobotChatMessageList.vue'
 import { useRobotChat } from '@/plugins/robot/composables/useRobotChat'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
+const { t } = useI18n()
 const settingStore = useSettingStore()
 const MsgInputRef = ref<{ clearInput?: () => void }>()
 

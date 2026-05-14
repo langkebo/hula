@@ -221,7 +221,7 @@
               :loading="registerLoading"
               :disabled="!isEmailCodeComplete"
               tertiary
-              style="color: #fff"
+              style="color: var(--hula-text-inverse)"
               class="w-full gradient-button"
               @click="register">
               {{ t('auth.register.actions.submit') }}

@@ -2,6 +2,7 @@ import { type Ref, ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { isLikelyImageUrl, isLikelyMediaUrl } from '@/plugins/robot/utils/aiMediaUrl'
+import { useI18nGlobal } from '@/services/i18n'
 import type { AIConversation } from '@/services/matrix/ai/AIService'
 import { aiService } from '@/services/matrix/ai/AIService'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -63,6 +64,7 @@ export const useAiConversationMessages = ({
   ensureLocalAiVideo,
   ensureLocalAiAudio
 }: UseAiConversationMessagesOptions) => {
+  const { t } = useI18nGlobal()
   const userStore = useUserStore()
   const loadingMessages = ref(false)
 
@@ -189,7 +191,7 @@ export const useAiConversationMessages = ({
       await aiService.messageDelete({ id: messageId })
       messageList.value.splice(index, 1)
       bumpMessageRenderVersion()
-      window.$message.success('消息已删除')
+      window.$message.success(t('ai_assistant.robot.message_deleted'))
 
       currentChat.value.messageCount = Math.max((currentChat.value.messageCount || 0) - 1, 0)
       const latestEntry = messageList.value[messageList.value.length - 1]

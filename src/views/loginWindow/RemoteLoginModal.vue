@@ -26,7 +26,11 @@
               登录，如非本人登录，请尽快修改密码，建议联系管理员
             </div>
           </n-flex>
-          <n-button style="color: #fff" class="w-full" color="var(--color-primary)" @click="handleConfirm">
+          <n-button
+            style="color: var(--hula-text-inverse)"
+            class="w-full"
+            color="var(--color-primary)"
+            @click="handleConfirm">
             知道了
           </n-button>
         </div>

@@ -4,8 +4,8 @@
     <div class="current-role" @click="showRoleList = !showRoleList">
       <n-avatar :src="currentRole?.avatar" :size="40" round />
       <div class="role-info">
-        <div class="role-name">{{ currentRole?.name || '选择角色' }}</div>
-        <div class="role-desc">{{ currentRole?.description || '点击选择角色' }}</div>
+        <div class="role-name">{{ currentRole?.name || t('ai_assistant.robot.select_role') }}</div>
+        <div class="role-desc">{{ currentRole?.description || t('ai_assistant.robot.click_to_select_role') }}</div>
       </div>
       <Icon icon="mdi:chevron-down" class="expand-icon" :class="{ expanded: showRoleList }" :size="20" />
     </div>
@@ -17,12 +17,12 @@
           <div class="role-list">
             <!-- 管理按钮 -->
             <div class="role-list-header">
-              <span class="header-title">选择角色</span>
+              <span class="header-title">{{ t('ai_assistant.robot.select_role') }}</span>
               <n-button text @click="handleOpenManagement">
                 <template #icon>
                   <Icon icon="mdi:cog" />
                 </template>
-                管理角色
+                {{ t('ai_assistant.robot.manage_role') }}
               </n-button>
             </div>
 
@@ -44,8 +44,10 @@
             <!-- 空状态 -->
             <div v-if="roleList.length === 0" class="empty-state">
               <Icon icon="mdi:account-circle" :size="48" class="empty-icon" />
-              <div class="empty-text">暂无角色</div>
-              <n-button size="small" type="primary" @click="handleOpenManagement">创建第一个角色</n-button>
+              <div class="empty-text">{{ t('ai_assistant.robot.no_roles') }}</div>
+              <n-button size="small" type="primary" @click="handleOpenManagement">
+                {{ t('ai_assistant.robot.create_first_role') }}
+              </n-button>
             </div>
           </div>
         </n-scrollbar>
@@ -56,11 +58,13 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
 import { chatRoleService } from '@/services/matrix/ai/ChatRoleService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ChatRoleSelector')
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue?: ChatRole

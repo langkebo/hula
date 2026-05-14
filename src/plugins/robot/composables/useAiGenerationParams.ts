@@ -10,9 +10,10 @@
  */
 
 import type { UploadFileInfo } from 'naive-ui'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { UploadSceneEnum } from '@/enums'
 import { UploadProviderEnum, useUpload } from '@/hooks/useUpload'
+import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
 import type { AIVoice } from '@/types/matrix-api'
@@ -30,50 +31,51 @@ const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 
 export const useAiGenerationParams = () => {
+  const { t } = useI18nGlobal()
   const imageParams = ref({
     size: '1024x1024'
   })
-  const imageSizeOptions = [
-    { label: '1024x1024 (正方形)', value: '1024x1024' },
-    { label: '1024x1792 (竖屏)', value: '1024x1792' },
-    { label: '1792x1024 (横屏)', value: '1792x1024' }
-  ]
+  const imageSizeOptions = computed(() => [
+    { label: `1024x1024 (${t('ai_assistant.robot.size_square')})`, value: '1024x1024' },
+    { label: `1024x1792 (${t('ai_assistant.robot.size_portrait')})`, value: '1024x1792' },
+    { label: `1792x1024 (${t('ai_assistant.robot.size_landscape')})`, value: '1792x1024' }
+  ])
 
   const videoParams = ref({
     size: '1280x720',
     duration: 5,
     image: null as string | null
   })
-  const videoSizeOptions = [
-    { label: '1280x720 (横屏)', value: '1280x720' },
-    { label: '720x1280 (竖屏)', value: '720x1280' },
-    { label: '960x960 (正方形)', value: '960x960' }
-  ]
-  const videoDurationOptions = [
-    { label: '5秒', value: 5 },
-    { label: '10秒', value: 10 }
-  ]
+  const videoSizeOptions = computed(() => [
+    { label: `1280x720 (${t('ai_assistant.robot.size_landscape')})`, value: '1280x720' },
+    { label: `720x1280 (${t('ai_assistant.robot.size_portrait')})`, value: '720x1280' },
+    { label: `960x960 (${t('ai_assistant.robot.size_square')})`, value: '960x960' }
+  ])
+  const videoDurationOptions = computed(() => [
+    { label: t('ai_assistant.robot.duration_seconds', { seconds: 5 }), value: 5 },
+    { label: t('ai_assistant.robot.duration_seconds', { seconds: 10 }), value: 10 }
+  ])
 
   const audioParams = ref({
     voice: 'alloy',
     speed: 1.0
   })
   const audioVoiceOptions = ref([
-    { label: 'Alloy (中性)', value: 'alloy' },
-    { label: 'Echo (男性)', value: 'echo' },
-    { label: 'Fable (男性)', value: 'fable' },
-    { label: 'Onyx (男性)', value: 'onyx' },
-    { label: 'Nova (女性)', value: 'nova' },
-    { label: 'Shimmer (女性)', value: 'shimmer' }
+    { label: `Alloy (${t('ai_assistant.robot.voice_neutral')})`, value: 'alloy' },
+    { label: `Echo (${t('ai_assistant.robot.voice_male')})`, value: 'echo' },
+    { label: `Fable (${t('ai_assistant.robot.voice_male')})`, value: 'fable' },
+    { label: `Onyx (${t('ai_assistant.robot.voice_male')})`, value: 'onyx' },
+    { label: `Nova (${t('ai_assistant.robot.voice_female')})`, value: 'nova' },
+    { label: `Shimmer (${t('ai_assistant.robot.voice_female')})`, value: 'shimmer' }
   ])
-  const audioSpeedOptions = [
-    { label: '0.5x (慢速)', value: 0.5 },
+  const audioSpeedOptions = computed(() => [
+    { label: `0.5x (${t('ai_assistant.robot.speed_slow')})`, value: 0.5 },
     { label: '0.75x', value: 0.75 },
-    { label: '1.0x (正常)', value: 1.0 },
+    { label: `1.0x (${t('ai_assistant.robot.speed_normal')})`, value: 1.0 },
     { label: '1.25x', value: 1.25 },
-    { label: '1.5x (快速)', value: 1.5 },
-    { label: '2.0x (极快)', value: 2.0 }
-  ]
+    { label: `1.5x (${t('ai_assistant.robot.speed_fast')})`, value: 1.5 },
+    { label: `2.0x (${t('ai_assistant.robot.speed_extreme')})`, value: 2.0 }
+  ])
 
   const videoImageFileRef = ref<{ clear?: () => void } | null>(null)
   const videoImagePreview = ref<string | null>(null)
@@ -120,13 +122,13 @@ export const useAiGenerationParams = () => {
     }
 
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      window.$message.error('只支持 JPG、PNG、WEBP 格式的图片')
+      window.$message.error(t('ai_assistant.robot.image_format_not_supported'))
       payload.onError()
       return
     }
 
     if (file.size > MAX_IMAGE_SIZE) {
-      window.$message.error('图片大小不能超过 10MB')
+      window.$message.error(t('ai_assistant.robot.image_size_exceeded'))
       payload.onError()
       return
     }
@@ -141,7 +143,7 @@ export const useAiGenerationParams = () => {
 
       const uploadedUrl = fileInfo.value?.downloadUrl
       if (!uploadedUrl) {
-        throw new Error('未获取到图片URL')
+        throw new Error(t('ai_assistant.robot.image_url_not_found'))
       }
 
       videoParams.value.image = uploadedUrl

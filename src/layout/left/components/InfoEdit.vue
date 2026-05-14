@@ -101,7 +101,7 @@
               <div class="tip">
                 <template v-if="item.obtain === IsYesEnum.YES">
                   <n-button
-                    style="color: #fff"
+                    style="color: var(--hula-text-inverse)"
                     v-if="item.wearing === IsYesEnum.NO"
                     type="primary"
                     @click="toggleWarningBadge(item)">
@@ -123,7 +123,7 @@
       </n-flex>
       <n-flex class="p-12px" align="center" justify="center">
         <n-button
-          style="color: #fff"
+          style="color: var(--hula-text-inverse)"
           :disabled="editInfo.content.name === localUserInfo.name"
           type="primary"
           @click="saveEditInfo(localUserInfo as ModifyUserInfoType)">

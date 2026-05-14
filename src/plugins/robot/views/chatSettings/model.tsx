@@ -9,6 +9,9 @@ import {
   NSlider,
   NSwitch
 } from 'naive-ui'
+import { useI18nGlobal } from '@/services/i18n'
+
+const { t } = useI18nGlobal()
 
 /** 单独设置数字输入框的主题 */
 const commonTheme: GlobalThemeOverrides = {
@@ -105,8 +108,8 @@ export const Switch = defineComponent(
     return () => (
       <NSwitch v-model:value={v.value} class={'text-(12px [--hula-text-secondary])'} size={'small'}>
         {{
-          checked: () => '开启',
-          unchecked: () => '关闭'
+          checked: () => t('ai_assistant.robot.on'),
+          unchecked: () => t('ai_assistant.robot.off')
         }}
       </NSwitch>
     )

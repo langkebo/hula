@@ -95,24 +95,24 @@
                     <template #icon>
                       <Icon icon="mdi:delete" />
                     </template>
-                    删除
+                    {{ t('ai_assistant.robot.delete') }}
                   </n-button>
                 </template>
-                <p>确定要删除模型 "{{ model.name }}" 吗？</p>
-                <p class="text-red-500">删除后将无法恢复！</p>
+                <p>{{ t('ai_assistant.robot.confirm_delete_model', { name: model.name }) }}</p>
+                <p class="text-red-500">{{ t('ai_assistant.robot.irreversible_warning') }}</p>
               </n-popconfirm>
             </n-flex>
           </div>
 
           <div class="model-card-body">
             <n-descriptions :column="3" size="small" bordered>
-              <n-descriptions-item label="温度参数">
+              <n-descriptions-item :label="t('ai_assistant.robot.temperature_param')">
                 {{ model.temperature ?? '-' }}
               </n-descriptions-item>
-              <n-descriptions-item label="最大Token">
+              <n-descriptions-item :label="t('ai_assistant.robot.max_token')">
                 {{ model.maxTokens ?? '-' }}
               </n-descriptions-item>
-              <n-descriptions-item label="最大上下文">
+              <n-descriptions-item :label="t('ai_assistant.robot.max_context')">
                 {{ model.maxContexts ?? '-' }}
               </n-descriptions-item>
             </n-descriptions>
@@ -464,19 +464,19 @@ const loadPlatformList = async () => {
   } catch (error) {
     // 如果加载失败，使用默认值
     platformOptions.value = [
-      { label: 'OpenAI', value: 'OpenAI' },
-      { label: 'DeepSeek', value: 'DeepSeek' }
+      { label: t('ai_assistant.robot.openai_default'), value: 'OpenAI' },
+      { label: t('ai_assistant.robot.deepseek_default'), value: 'DeepSeek' }
     ]
     platformModelInfo.value = {
       OpenAI: {
         examples: 'gpt-4, gpt-4-turbo, gpt-3.5-turbo',
         docs: 'https://platform.openai.com/docs/models',
-        hint: '请前往 OpenAI 官网查看可用模型列表'
+        hint: t('ai_assistant.robot.openai_hint')
       },
       DeepSeek: {
         examples: 'deepseek-chat, deepseek-reasoner, deepseek-coder',
         docs: 'https://platform.deepseek.com/api-docs',
-        hint: '请前往 DeepSeek 官网查看可用模型列表'
+        hint: t('ai_assistant.robot.deepseek_hint')
       }
     }
   }

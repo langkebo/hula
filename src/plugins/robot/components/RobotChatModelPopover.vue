@@ -10,23 +10,23 @@
       <div class="flex items-center gap-6px cursor-pointer">
         <svg><use href="#model"></use></svg>
         <span class="text-(12px [--hula-text-primary])">
-          {{ selectedModel ? selectedModel.name : '选择模型' }}
+          {{ selectedModel ? selectedModel.name : t('ai_assistant.robot.select_model') }}
         </span>
       </div>
     </template>
     <div class="model-selector">
       <div class="model-header">
-        <span class="model-title">选择模型</span>
+        <span class="model-title">{{ t('ai_assistant.robot.select_model') }}</span>
         <n-flex :size="8">
           <n-button size="small" @click="emit('open-management')">
             <template #icon>
               <Icon icon="mdi:cog" />
             </template>
-            管理
+            {{ t('ai_assistant.robot.manage_short') }}
           </n-button>
           <n-input
             :value="modelSearch"
-            placeholder="搜索模型..."
+            :placeholder="t('ai_assistant.robot.search_model')"
             clearable
             size="small"
             style="width: 140px"
@@ -41,11 +41,11 @@
       <div class="model-list">
         <div v-if="modelLoading" class="loading-container">
           <n-spin size="small" />
-          <span class="loading-text">加载中...</span>
+          <span class="loading-text">{{ t('ai_assistant.robot.loading') }}</span>
         </div>
 
         <div v-else-if="filteredModels.length === 0" class="empty-container">
-          <n-empty description="暂无模型数据" size="small">
+          <n-empty :description="t('ai_assistant.robot.no_model_data')" size="small">
             <template #icon>
               <Icon icon="mdi:package-variant-closed" class="text-24px color-#909090" />
             </template>
@@ -54,7 +54,7 @@
 
         <div v-else class="models-container">
           <div v-if="officialModels.length > 0">
-            <div class="model-section-title">官方模型</div>
+            <div class="model-section-title">{{ t('ai_assistant.robot.official_models') }}</div>
             <div
               v-for="model in officialModels"
               :key="model.id"
@@ -69,24 +69,42 @@
               <div class="model-info">
                 <div class="model-name">
                   {{ model.name }}
-                  <n-tag v-if="model.type === 1" size="tiny" type="info" class="ml-4px">文字</n-tag>
-                  <n-tag v-else-if="model.type === 2" size="tiny" type="success" class="ml-4px">图片</n-tag>
-                  <n-tag v-else-if="model.type === 3" size="tiny" type="primary" class="ml-4px">音频</n-tag>
-                  <n-tag v-else-if="model.type === 4" size="tiny" type="warning" class="ml-4px">视频</n-tag>
-                  <n-tag v-else-if="model.type === 5" size="tiny" type="default" class="ml-4px">向量</n-tag>
-                  <n-tag v-else-if="model.type === 6" size="tiny" type="default" class="ml-4px">重排序</n-tag>
-                  <n-tag v-else-if="model.type === 7" size="tiny" type="warning" class="ml-4px">文生视频</n-tag>
-                  <n-tag v-else-if="model.type === 8" size="tiny" type="error" class="ml-4px">图生视频</n-tag>
+                  <n-tag v-if="model.type === 1" size="tiny" type="info" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_chat') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 2" size="tiny" type="success" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_image') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 3" size="tiny" type="primary" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_audio') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 4" size="tiny" type="warning" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_video') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 5" size="tiny" type="default" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_vector') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 6" size="tiny" type="default" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_rerank') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 7" size="tiny" type="warning" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_text2video') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 8" size="tiny" type="error" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_image2video') }}
+                  </n-tag>
                 </div>
-                <div class="model-description">{{ model.description || '暂无描述' }}</div>
+                <div class="model-description">{{ model.description || t('ai_assistant.robot.no_description') }}</div>
                 <div class="model-meta">
                   <span class="model-provider">{{ model.platform }}</span>
                   <span class="model-version">v{{ model.model }}</span>
                 </div>
               </div>
               <div class="model-status">
-                <n-tag v-if="model.status === 0" type="success" size="small">可用</n-tag>
-                <n-tag v-else type="error" size="small">不可用</n-tag>
+                <n-tag v-if="model.status === 0" type="success" size="small">
+                  {{ t('ai_assistant.robot.available') }}
+                </n-tag>
+                <n-tag v-else type="error" size="small">{{ t('ai_assistant.robot.unavailable') }}</n-tag>
               </div>
             </div>
           </div>
@@ -94,7 +112,7 @@
           <div v-if="officialModels.length > 0 && userModels.length > 0" class="model-divider"></div>
 
           <div v-if="userModels.length > 0">
-            <div class="model-section-title">自建模型</div>
+            <div class="model-section-title">{{ t('ai_assistant.robot.custom_models') }}</div>
             <div
               v-for="model in userModels"
               :key="model.id"
@@ -109,24 +127,42 @@
               <div class="model-info">
                 <div class="model-name">
                   {{ model.name }}
-                  <n-tag v-if="model.type === 1" size="tiny" type="info" class="ml-4px">文字</n-tag>
-                  <n-tag v-else-if="model.type === 2" size="tiny" type="success" class="ml-4px">图片</n-tag>
-                  <n-tag v-else-if="model.type === 3" size="tiny" type="primary" class="ml-4px">音频</n-tag>
-                  <n-tag v-else-if="model.type === 4" size="tiny" type="warning" class="ml-4px">视频</n-tag>
-                  <n-tag v-else-if="model.type === 5" size="tiny" type="default" class="ml-4px">向量</n-tag>
-                  <n-tag v-else-if="model.type === 6" size="tiny" type="default" class="ml-4px">重排序</n-tag>
-                  <n-tag v-else-if="model.type === 7" size="tiny" type="warning" class="ml-4px">文生视频</n-tag>
-                  <n-tag v-else-if="model.type === 8" size="tiny" type="error" class="ml-4px">图生视频</n-tag>
+                  <n-tag v-if="model.type === 1" size="tiny" type="info" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_chat') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 2" size="tiny" type="success" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_image') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 3" size="tiny" type="primary" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_audio') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 4" size="tiny" type="warning" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_video') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 5" size="tiny" type="default" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_vector') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 6" size="tiny" type="default" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_rerank') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 7" size="tiny" type="warning" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_text2video') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 8" size="tiny" type="error" class="ml-4px">
+                    {{ t('ai_assistant.robot.model_type_image2video') }}
+                  </n-tag>
                 </div>
-                <div class="model-description">{{ model.description || '暂无描述' }}</div>
+                <div class="model-description">{{ model.description || t('ai_assistant.robot.no_description') }}</div>
                 <div class="model-meta">
                   <span class="model-provider">{{ model.platform }}</span>
                   <span class="model-version">v{{ model.model }}</span>
                 </div>
               </div>
               <div class="model-status">
-                <n-tag v-if="model.status === 0" type="success" size="small">可用</n-tag>
-                <n-tag v-else type="error" size="small">不可用</n-tag>
+                <n-tag v-if="model.status === 0" type="success" size="small">
+                  {{ t('ai_assistant.robot.available') }}
+                </n-tag>
+                <n-tag v-else type="error" size="small">{{ t('ai_assistant.robot.unavailable') }}</n-tag>
               </div>
             </div>
           </div>
@@ -147,8 +183,11 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import type { PaginationState } from '@/plugins/robot/composables/useRobotChat'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
+
+const { t } = useI18n()
 
 defineProps<{
   show: boolean

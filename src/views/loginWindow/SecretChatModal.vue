@@ -31,7 +31,7 @@
           </n-form>
 
           <n-button
-            style="color: #fff"
+            style="color: var(--hula-text-inverse)"
             class="w-full"
             color="var(--color-primary)"
             size="large"

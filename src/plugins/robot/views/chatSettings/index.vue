@@ -2,8 +2,8 @@
   <div
     class="flex border-b-(1px solid [--hula-border-default]) truncate p-[14px_20px] justify-between items-center gap-50px">
     <n-flex :size="10" vertical class="truncate">
-      <p class="text-(22px [--hula-text-primary]) truncate font-500">设置</p>
-      <p class="text-(14px #909090)">所有设置选项</p>
+      <p class="text-(22px [--hula-text-primary]) truncate font-500">{{ t('ai_assistant.robot.settings') }}</p>
+      <p class="text-(14px #909090)">{{ t('ai_assistant.robot.all_settings') }}</p>
     </n-flex>
 
     <n-flex class="min-w-fit">
@@ -40,11 +40,13 @@
   </n-scrollbar>
 </template>
 <script setup lang="tsx">
+import { useI18n } from 'vue-i18n'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { content } from './config.tsx'
 
+const { t } = useI18n()
 const settingStore = useSettingStore()
 const handleClose = () => {
   router.push('/chat').then(() => {

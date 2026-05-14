@@ -89,7 +89,8 @@ const normalizeSpaceDefaultNotification = (value?: string): 'all_messages' | 'me
 const normalizeTheme = (theme: string) => {
   if (theme === ThemeEnum.DARK) return ThemeEnum.DARK
   if (theme === ThemeEnum.LIGHT) return ThemeEnum.LIGHT
-  return ThemeEnum.LIGHT
+  if (theme === ThemeEnum.OS) return ThemeEnum.OS
+  return ThemeEnum.OS
 }
 
 const resolveOsTheme = () => {
@@ -133,7 +134,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
   state: (): STO.Setting => ({
     themes: {
       content: ThemeEnum.LIGHT,
-      pattern: ThemeEnum.LIGHT
+      pattern: ThemeEnum.OS
     },
     escClose: true,
     showMode: ShowModeEnum.ICON,
@@ -288,9 +289,9 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       setDocumentTheme(nextTheme)
     },
     /** 确保主题状态已初始化且可安全使用 */
-    ensureThemeReady(preferredTheme: string = ThemeEnum.LIGHT) {
+    ensureThemeReady(preferredTheme?: string) {
       if (!this.themes.content) {
-        this.initTheme(preferredTheme)
+        this.initTheme(preferredTheme || this.themes.pattern || ThemeEnum.OS)
         return
       }
       this.normalizeThemeState()
