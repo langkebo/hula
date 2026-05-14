@@ -1,8 +1,8 @@
 <template>
   <div class="flex-center cursor-default gap-12px text-12px color-[--hula-text-tertiary]">
-    <span class="h-px w-60px bg-#dadada dark:bg-#3a3a3a"></span>
+    <span class="h-px w-60px bg-[--login-third-party-divider-color]"></span>
     <span>{{ ssoLabel }}</span>
-    <span class="h-px w-60px bg-#dadada dark:bg-#3a3a3a"></span>
+    <span class="h-px w-60px bg-[--login-third-party-divider-color]"></span>
   </div>
   <div class="flex-x-center gap-28px mt-16px">
     <div

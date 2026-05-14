@@ -164,7 +164,7 @@
         @click="cancelAutoLoginAndShowManual">
         {{ cancelLoginLabel }}
       </div>
-      <div class="w-1px h-14px bg-#ccc dark:bg-#707070 justify-self-center"></div>
+      <div class="w-1px h-14px bg-[--login-divider-color] justify-self-center"></div>
       <div
         class="color-[--color-primary] cursor-pointer justify-self-start text-left"
         :title="removeAccountTitle"
@@ -179,7 +179,7 @@
         @click="router.push('/qrCode')">
         {{ qrCodeLabel }}
       </div>
-      <div class="w-1px h-14px bg-#ccc dark:bg-#707070 justify-self-center"></div>
+      <div class="w-1px h-14px bg-[--login-divider-color] justify-self-center"></div>
       <div class="justify-self-start text-left">
         <n-popover
           trigger="click"
