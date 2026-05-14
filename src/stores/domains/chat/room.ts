@@ -3,11 +3,11 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { MessageStatusEnum, MsgEnum, StoresEnum } from '@/enums'
 import matrixClientService from '@/services/matrix/MatrixClientService'
-import matrixEventService from '@/services/matrix/MatrixEventService'
 import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
 import { matrixRoomTagsService } from '@/services/matrix/room/TagsService'
 import matrixSlidingSyncService, { type SlidingSyncUnreadUpdate } from '@/services/matrix/sync/MatrixSlidingSyncService'
 import type { RoomDetail, RoomInfo } from '@/services/types'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
 import { LRUCache } from '@/utils/LRUCache'
 
@@ -35,21 +35,12 @@ type TimelineUpdate = {
 }
 
 export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
-  // LRU 缓存，用于存储 RoomDetail（限制 50 个房间）
   const roomDetailCache = new LRUCache<string, RoomDetail>(50)
   const roomDetailPending = new Map<string, Promise<RoomDetail | null>>()
 
-  // 消息缓存最大房间数
-  const _MAX_MESSAGE_CACHE_ROOMS = 20
-
   const rooms = shallowRef<Map<string, RoomInfo>>(new Map())
   const currentRoomId = ref<string | null>(null)
-  const messages = shallowRef<Map<string, MessageType[]>>(new Map())
   const isLoading = ref(false)
-  const isLoadingMore = ref(false)
-  const hasMoreMessages = shallowRef<Map<string, boolean>>(new Map())
-  // 房间标签缓存: account_data m.tag + matrixRoomTagsService 写入
-  // 结构 - { [roomId]: { [tagName]: { order? } } }
   const tagsByRoom = shallowRef<Record<string, Record<string, { order?: number }>>>({})
   let listenersInitialized = false
 
@@ -66,11 +57,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     return rooms.value.get(currentRoomId.value) ?? null
   })
 
-  const currentMessages = computed(() => {
-    if (!currentRoomId.value) return []
-    return messages.value.get(currentRoomId.value) ?? []
-  })
-
   const directRooms = computed<RoomInfo[]>(() => {
     return roomList.value.filter((room) => room.isDirect)
   })
@@ -79,11 +65,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     return roomList.value.filter((room) => !room.isDirect)
   })
 
-  /**
-   * 加载房间列表（支持 Sliding Sync 增量更新）
-   *
-   * @throws {Error} 如果客户端未初始化或加载失败
-   */
   async function loadRooms(): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -107,13 +88,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     }
   }
 
-  /**
-   * 处理 Sliding Sync 增量更新
-   * 对应后端增量推送，前端增量更新 UI
-   *
-   * @param roomId - 房间 ID
-   * @param roomData - 增量数据
-   */
   interface TimelineEvent {
     type?: string
     content?: Record<string, unknown>
@@ -134,7 +108,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     const existingRoom = rooms.value.get(roomId)
     if (!existingRoom) return
 
-    // 更新未读计数
     if (roomData.notification_count !== undefined) {
       existingRoom.unreadCount = roomData.notification_count
       existingRoom.highlightCount = roomData.highlight_count ?? 0
@@ -155,7 +128,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       }
     }
 
-    // 处理新消息
     if (roomData.timeline && roomData.timeline.length > 0) {
       const latestEvent = roomData.timeline[roomData.timeline.length - 1]
       if (latestEvent) {
@@ -178,8 +150,8 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
         existingRoom.lastMessageTime = (latestEvent.origin_server_ts as number | null) ?? null
       }
 
-      const existingMessages = messages.value.get(roomId) ?? []
-      const newMessages: MessageType[] = roomData.timeline.map((event: TimelineEvent) => {
+      const chatStore = useChatStore()
+      for (const event of roomData.timeline) {
         const msgtype = event.content?.msgtype as string | undefined
         let msgEnum = MsgEnum.TEXT
         if (msgtype === 'm.image') msgEnum = MsgEnum.IMAGE
@@ -188,7 +160,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
         else if (msgtype === 'm.file') msgEnum = MsgEnum.FILE
         else if (event.type === 'm.room.member') msgEnum = MsgEnum.SYSTEM
 
-        return {
+        const msg: MessageType = {
           fromUser: {
             uid: event.sender ?? '',
             username: event.sender ?? '',
@@ -205,9 +177,8 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
           },
           sendTime: (event.origin_server_ts as number | null) ?? 0
         }
-      })
-      messages.value.set(roomId, [...existingMessages, ...newMessages])
-      triggerRef(messages)
+        chatStore.pushMsg(msg)
+      }
     }
 
     rooms.value.set(roomId, existingRoom)
@@ -215,11 +186,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     info(`[RoomStore] 处理增量更新: ${roomId}`)
   }
 
-  /**
-   * 增量更新多个房间
-   *
-   * @param updates - 增量更新数据
-   */
   async function handleBatchIncrementalUpdate(updates: Record<string, TimelineUpdate>): Promise<void> {
     for (const [roomId, roomData] of Object.entries(updates)) {
       await handleIncrementalUpdate(roomId, roomData)
@@ -227,13 +193,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     info(`[RoomStore] 批量增量更新完成: ${Object.keys(updates).length} 个房间`)
   }
 
-  /**
-   * 创建房间
-   *
-   * @param options - 房间创建选项
-   * @returns 创建的房间信息
-   * @throws {Error} 如果创建失败
-   */
   async function createRoom(options: {
     name?: string
     topic?: string
@@ -283,13 +242,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     }
   }
 
-  /**
-   * 加入房间
-   *
-   * @param roomId - 房间 ID
-   * @returns 加入的房间信息
-   * @throws {Error} 如果加入失败
-   */
   async function joinRoom(roomId: string): Promise<RoomInfo> {
     try {
       const roomInfo = await matrixRoomService.joinRoomAndGetInfo(roomId)
@@ -303,21 +255,12 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     }
   }
 
-  /**
-   * 离开房间
-   *
-   * @param roomId - 房间 ID
-   * @throws {Error} 如果离开失败
-   */
   async function leaveRoom(roomId: string): Promise<void> {
     try {
       await matrixRoomService.leaveRoom(roomId)
       rooms.value.delete(roomId)
       triggerRef(rooms)
-      messages.value.delete(roomId)
-      triggerRef(messages)
-      hasMoreMessages.value.delete(roomId)
-      triggerRef(hasMoreMessages)
+      useChatStore().clearRoomMessages(roomId)
       if (currentRoomId.value === roomId) {
         currentRoomId.value = null
       }
@@ -328,178 +271,10 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     }
   }
 
-  /**
-   * 设置当前房间
-   *
-   * @param roomId - 房间 ID 或 null
-   */
   function setCurrentRoom(roomId: string | null): void {
     currentRoomId.value = roomId
   }
 
-  /**
-   * 加载房间消息
-   *
-   * @param roomId - 房间 ID
-   * @param limit - 消息数量限制
-   * @returns 消息列表
-   * @throws {Error} 如果加载失败
-   */
-  async function loadMessages(roomId: string, limit = 50): Promise<MessageType[]> {
-    try {
-      const messageList = await matrixEventService.getRoomMessages(roomId, limit)
-
-      messages.value.set(roomId, messageList)
-      triggerRef(messages)
-      hasMoreMessages.value.set(roomId, messageList.length >= limit)
-      triggerRef(hasMoreMessages)
-      info(`[RoomStore] 加载消息成功: ${messageList.length} 条消息`)
-      return messageList
-    } catch (err) {
-      error(`[RoomStore] 加载消息失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 加载更多消息
-   *
-   * @param limit - 消息数量限制
-   * @returns 消息列表
-   * @throws {Error} 如果加载失败
-   */
-  async function loadMoreMessages(limit = 50): Promise<MessageType[]> {
-    if (!currentRoomId.value) return []
-
-    isLoadingMore.value = true
-    try {
-      const { messages: newMessages, hasMore } = await matrixEventService.getMoreRoomMessages(
-        currentRoomId.value,
-        'b',
-        limit
-      )
-
-      const existingMessages = messages.value.get(currentRoomId.value) ?? []
-      messages.value.set(currentRoomId.value, [...newMessages, ...existingMessages])
-      triggerRef(messages)
-      hasMoreMessages.value.set(currentRoomId.value, hasMore)
-      triggerRef(hasMoreMessages)
-      info(`[RoomStore] 加载更多消息成功: ${newMessages.length} 条消息`)
-      return newMessages
-    } catch (err) {
-      error(`[RoomStore] 加载更多消息失败: ${err}`)
-      throw err
-    } finally {
-      isLoadingMore.value = false
-    }
-  }
-
-  /**
-   * 发送消息
-   *
-   * @param roomId - 房间 ID
-   * @param content - 消息内容
-   * @returns 事件 ID
-   * @throws {Error} 如果发送失败
-   */
-  async function sendMessage(
-    roomId: string,
-    content: {
-      type: 'text' | 'image' | 'video' | 'audio' | 'file'
-      text?: string
-      html?: string
-      file?: File
-    }
-  ): Promise<string> {
-    try {
-      let eventId: string
-
-      switch (content.type) {
-        case 'text':
-          eventId = await matrixEventService.sendTextMessage(roomId, content.text ?? '', content.html)
-          break
-        case 'image':
-          if (!content.file) throw new Error('缺少图片文件')
-          eventId = await matrixEventService.sendImageMessage(roomId, content.file)
-          break
-        case 'video':
-          if (!content.file) throw new Error('缺少视频文件')
-          eventId = await matrixEventService.sendVideoMessage(roomId, content.file)
-          break
-        case 'audio':
-          if (!content.file) throw new Error('缺少音频文件')
-          eventId = await matrixEventService.sendAudioMessage(roomId, content.file)
-          break
-        case 'file':
-          if (!content.file) throw new Error('缺少文件')
-          eventId = await matrixEventService.sendFileMessage(roomId, content.file)
-          break
-        default:
-          throw new Error(`不支持的消息类型: ${content.type}`)
-      }
-
-      info(`[RoomStore] 发送消息成功: ${eventId}`)
-      return eventId
-    } catch (err) {
-      error(`[RoomStore] 发送消息失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 撤回消息
-   *
-   * @param roomId - 房间 ID
-   * @param eventId - 事件 ID
-   * @param reason - 撤回原因
-   * @throws {Error} 如果撤回失败
-   */
-  async function redactMessage(roomId: string, eventId: string, reason?: string): Promise<void> {
-    try {
-      await matrixEventService.redactEvent(roomId, eventId, reason)
-      const messageList = messages.value.get(roomId)
-      if (messageList) {
-        const index = messageList.findIndex((msg: MessageType) => msg.message.id === eventId)
-        if (index !== -1) {
-          messageList[index].message.type = MsgEnum.RECALL
-        }
-      }
-      info(`[RoomStore] 撤回消息成功: ${eventId}`)
-    } catch (err) {
-      error(`[RoomStore] 撤回消息失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 标记消息已读
-   *
-   * @param roomId - 房间 ID
-   * @param eventId - 事件 ID
-   * @throws {Error} 如果标记失败
-   */
-  async function markAsRead(roomId: string, eventId: string): Promise<void> {
-    try {
-      await matrixEventService.sendMessageReceipt(roomId, eventId)
-      const roomInfo = rooms.value.get(roomId)
-      if (roomInfo) {
-        roomInfo.unreadCount = 0
-        roomInfo.highlightCount = 0
-        roomInfo.notificationCount = 0
-      }
-      info(`[RoomStore] 标记已读成功: ${eventId}`)
-    } catch (err) {
-      error(`[RoomStore] 标记已读失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 更新房间信息
-   *
-   * @param roomId - 房间 ID
-   * @param updates - 更新内容
-   */
   function updateRoom(roomId: string, updates: Partial<RoomInfo>): void {
     const roomInfo = rooms.value.get(roomId)
     if (roomInfo) {
@@ -508,39 +283,16 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     }
   }
 
-  /**
-   * 添加消息到房间
-   *
-   * @param roomId - 房间 ID
-   * @param message - 消息对象
-   */
-  function addMessage(roomId: string, message: MessageType): void {
-    const messageList = messages.value.get(roomId) ?? []
-    messageList.push(message)
-    messages.value.set(roomId, messageList)
-    triggerRef(messages)
-
-    const roomInfo = rooms.value.get(roomId)
-    if (roomInfo) {
-      const body = message.message.body
-      roomInfo.lastMessage = message.message.type === MsgEnum.TEXT && typeof body === 'string' ? body : '[消息]'
-      roomInfo.lastMessageTime = message.sendTime ?? null
-    }
-  }
-
-  /**
-   * 设置事件监听器
-   */
   async function setupEventListeners(): Promise<void> {
     if (listenersInitialized) {
       return
     }
 
+    const chatStore = useChatStore()
+
     matrixRoomService.onTimelineEvent(({ roomId, eventType, roomInfo, message }) => {
-      if (eventType === 'm.room.message' || eventType === 'm.room.encrypted') {
-        if (message) {
-          addMessage(roomId, message)
-        }
+      if ((eventType === 'm.room.message' || eventType === 'm.room.encrypted') && message) {
+        chatStore.pushMsg(message)
       }
 
       rooms.value.set(roomId, roomInfo)
@@ -589,13 +341,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     }
   }
 
-  /**
-   * 加载房间详情（按需加载，带缓存）
-   * 对应后端 RoomSummaryService.get_summary()
-   *
-   * @param roomId - 房间 ID
-   * @returns 房间详情
-   */
   async function loadRoomDetail(roomId: string): Promise<RoomDetail | null> {
     const cached = roomDetailCache.get(roomId)
     if (cached) {
@@ -642,14 +387,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     return promise
   }
 
-  /**
-   * 批量加载房间详情（带缓存检查）
-   * 优化性能：只加载未缓存的房间
-   *
-   * @param roomIds - 房间 ID 数组
-   */
   async function loadRoomDetails(roomIds: string[]): Promise<void> {
-    // 过滤出需要加载的房间（未缓存的）
     const uncachedIds = roomIds.filter((id) => !roomDetailCache.has(id))
 
     if (uncachedIds.length === 0) {
@@ -659,7 +397,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
 
     info(`[RoomStore] 开始批量加载 ${uncachedIds.length} 个房间详情`)
 
-    // 并行加载（限制并发数为 3）
     const batchSize = 3
     for (let i = 0; i < uncachedIds.length; i += batchSize) {
       const batch = uncachedIds.slice(i, i + batchSize)
@@ -681,11 +418,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     info(`[RoomStore] 批量加载完成`)
   }
 
-  /**
-   * 清除房间详情缓存
-   *
-   * @param roomId - 房间 ID（不传则清除所有）
-   */
   function clearRoomDetailCache(roomId?: string): void {
     if (roomId) {
       roomDetailCache.delete(roomId)
@@ -696,41 +428,22 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     }
   }
 
-  /**
-   * 重置房间相关状态，避免账号切换或登录恢复时残留旧数据。
-   */
   function resetState(): void {
     rooms.value = new Map()
-    messages.value = new Map()
-    hasMoreMessages.value = new Map()
     currentRoomId.value = null
     isLoading.value = false
-    isLoadingMore.value = false
     clearRoomDetailCache()
     triggerRef(rooms)
-    triggerRef(messages)
-    triggerRef(hasMoreMessages)
     info('[RoomStore] 房间状态已重置')
   }
 
-  /**
-   * 清理过期缓存（内存优化）
-   * 移除最旧的缓存项，保留最近的 N 个
-   *
-   * @param keepCount - 保留的缓存数量
-   */
   function pruneCache(keepCount: number = 20): void {
     const currentSize = roomDetailCache.size
     if (currentSize <= keepCount) return
 
-    // LRU 缓存的实现会自动移除最旧的项
-    // 这里只是记录日志
     info(`[RoomStore] 缓存裁剪: ${currentSize} -> ${keepCount}`)
   }
 
-  /**
-   * 获取缓存统计信息
-   */
   function getCacheStats(): { size: number; keys: string[] } {
     return {
       size: roomDetailCache.size,
@@ -738,7 +451,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     }
   }
 
-  // 标签相关 - 计划 §5.1 tagsByRoom 切片
   function setTagsForRoom(roomId: string, tags: Record<string, { order?: number }>): void {
     if (!roomId) return
     const previous = tagsByRoom.value[roomId]
@@ -766,12 +478,10 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   async function addRoomTag(roomId: string, tag: string, order?: number): Promise<void> {
     if (!roomId || !tag) return
     const previous = getTagsForRoom(roomId)
-    // 乐观更新
     setTagsForRoom(roomId, { ...previous, [tag]: order !== undefined ? { order } : {} })
     try {
       await matrixRoomTagsService.setTag(roomId, tag, order)
     } catch (err) {
-      // 失败回滚
       setTagsForRoom(roomId, previous)
       error(`[RoomStore] 写入标签失败, 已回滚: ${roomId}/${tag}`)
       throw err
@@ -797,14 +507,10 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   return {
     rooms,
     currentRoomId,
-    messages,
     isLoading,
-    isLoadingMore,
-    hasMoreMessages,
     tagsByRoom,
     roomList,
     currentRoom,
-    currentMessages,
     directRooms,
     groupRooms,
     loadRooms,
@@ -812,13 +518,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     joinRoom,
     leaveRoom,
     setCurrentRoom,
-    loadMessages,
-    loadMoreMessages,
-    sendMessage,
-    redactMessage,
-    markAsRead,
     updateRoom,
-    addMessage,
     setupEventListeners,
     loadRoomDetail,
     loadRoomDetails,

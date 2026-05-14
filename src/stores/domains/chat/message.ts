@@ -1,3 +1,5 @@
+// Migration: useMessageStore 已废弃，所有功能已委托给 useChatStore（./chat/message）。
+// 新代码请直接使用 useChatStore，本文件仅作为过渡兼容保留。
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 import { StoresEnum } from '@/enums'
@@ -16,6 +18,10 @@ import {
 export type { MessageType, MessageBody, RecalledMessage, CustomForwardTask }
 export { pageSize, ROOM_MESSAGE_CACHE_LIMIT, RECALL_EXPIRATION_TIME }
 
+/**
+ * @deprecated 请使用 useChatStore 替代。本 store 仅作为 useChatStore 的透传代理，
+ * 所有状态和方法均委托给 useChatStore，将在后续版本中移除。
+ */
 export const useMessageStore = defineStore(StoresEnum.MESSAGE, () => {
   const chatStore = useChatStore()
 

@@ -3,8 +3,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { SexEnum, StoresEnum } from '@/enums'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
+import { profileService } from '@/services/matrix/user/MatrixProfileService'
 import type { UserInfoType } from '@/services/types'
 import * as PathUtil from '@/utils/PathUtil'
 import { toLocalpart } from '@/utils/userIdentity'
@@ -49,12 +49,6 @@ export const useUserStore = defineStore(
     })
 
     async function fetchUserProfile(userId?: string): Promise<MatrixUserProfile | null> {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        error('[UserStore] 客户端未初始化')
-        return null
-      }
-
       const targetUserId = userId || matrixStore.userId
       if (!targetUserId) {
         error('[UserStore] 用户ID不存在')
@@ -62,48 +56,12 @@ export const useUserStore = defineStore(
       }
 
       try {
-        let displayName: string | null = null
-        let avatarUrl: string | null = null
+        const profile = await profileService.getProfile(targetUserId)
 
-        const clientAny = client as unknown as Record<string, unknown>
-
-        // 优先使用 ProfileManager
-        const profileManager = clientAny.getProfileManager as
-          | (() => { getProfileInfo: (userId: string) => Promise<{ displayname?: string; avatar_url?: string }> })
-          | undefined
-        const pm = profileManager?.()
-        if (pm) {
-          const profile = await pm.getProfileInfo(targetUserId)
-          displayName = profile?.displayname ?? null
-          avatarUrl = profile?.avatar_url ?? null
-        } else {
-          // 回退到标准 Matrix Client API
-          const profileUrl = `/_matrix/client/v3/profile/${encodeURIComponent(targetUserId)}`
-          const httpFn = clientAny.http as
-            | { authedRequest: <T>(method: string, path: string, ...args: unknown[]) => Promise<T> }
-            | undefined
-          if (httpFn?.authedRequest) {
-            const profile = await httpFn.authedRequest<{ displayname?: string; avatar_url?: string }>('GET', profileUrl)
-            displayName = profile?.displayname ?? null
-            avatarUrl = profile?.avatar_url ?? null
-          } else {
-            // 最终回退：使用 getProfileInfo（标准 SDK 方法）
-            const getProfileInfo = clientAny.getProfileInfo as
-              | ((userId: string) => Promise<{ displayname?: string; avatar_url?: string }>)
-              | undefined
-            if (getProfileInfo) {
-              const profile = await getProfileInfo.call(client, targetUserId)
-              displayName = profile?.displayname ?? null
-              avatarUrl = profile?.avatar_url ?? null
-            } else {
-              throw new Error('MatrixClient 未提供可用的 profile 查询方法')
-            }
-          }
-        }
         const userProfile: MatrixUserProfile = {
           userId: targetUserId,
-          displayName,
-          avatarUrl
+          displayName: profile.displayname ?? null,
+          avatarUrl: profile.avatarUrl ?? null
         }
 
         if (!userId || userId === matrixStore.userId) {
@@ -119,14 +77,8 @@ export const useUserStore = defineStore(
     }
 
     async function updateDisplayName(displayName: string): Promise<boolean> {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        error('[UserStore] 客户端未初始化')
-        return false
-      }
-
       try {
-        await client.setDisplayName(displayName)
+        await profileService.setDisplayName(displayName)
         if (matrixProfile.value) {
           matrixProfile.value.displayName = displayName
         }
@@ -139,18 +91,12 @@ export const useUserStore = defineStore(
     }
 
     async function updateAvatar(avatarUrl: string): Promise<boolean> {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        error('[UserStore] 客户端未初始化')
-        return false
-      }
-
       try {
-        await client.setAvatarUrl(avatarUrl)
+        await profileService.setAvatarUrl(avatarUrl)
         if (matrixProfile.value) {
           matrixProfile.value.avatarUrl = avatarUrl
         }
-        info(`[UserStore] 更新头像成功`)
+        info('[UserStore] 更新头像成功')
         return true
       } catch (err) {
         error(`[UserStore] 更新头像失败: ${formatMatrixError(err)}`)
