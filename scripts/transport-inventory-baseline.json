@@ -1,0 +1,16 @@
+{
+  "generatedAt": "2026-05-04T14:55:38.052Z",
+  "violationCount": 19,
+  "perFile": [
+    {
+      "kind": "inlineMatrixUri",
+      "file": "src/services/matrix/crypto/MatrixDehydratedDeviceService.ts",
+      "count": 8
+    },
+    {
+      "kind": "inlineMatrixUri",
+      "file": "src/services/matrix/media/MatrixVoiceService.ts",
+      "count": 11
+    }
+  ]
+}
