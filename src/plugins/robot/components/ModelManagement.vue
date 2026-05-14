@@ -2,7 +2,7 @@
   <n-modal
     v-model:show="showModal"
     preset="card"
-    title="模型管理"
+    :title="t('ai_assistant.robot.model_management')"
     style="width: 800px"
     :bordered="false"
     :segmented="{ content: 'soft', footer: 'soft' }">
@@ -11,19 +11,19 @@
         <template #icon>
           <Icon icon="mdi:plus" />
         </template>
-        新增模型
+        {{ t('ai_assistant.robot.add_model') }}
       </n-button>
     </template>
 
     <!-- 模型列表 -->
     <n-spin :show="loading">
       <div v-if="modelList.length === 0" class="empty-container">
-        <n-empty description="暂无模型数据" size="large">
+        <n-empty :description="t('ai_assistant.robot.no_models')" size="large">
           <template #icon>
             <Icon icon="mdi:package-variant-closed" class="text-48px color-#909090" />
           </template>
           <template #extra>
-            <n-button type="primary" @click="handleAdd">新增第一个模型</n-button>
+            <n-button type="primary" @click="handleAdd">{{ t('ai_assistant.robot.add_first_model') }}</n-button>
           </template>
         </n-empty>
       </div>
@@ -37,22 +37,42 @@
                 <n-flex align="center" :size="8">
                   <span class="model-name">{{ model.name }}</span>
                   <n-tag :type="model.status === 0 ? 'success' : 'error'" size="small">
-                    {{ model.status === 0 ? '可用' : '不可用' }}
+                    {{ model.status === 0 ? t('ai_assistant.robot.available') : t('ai_assistant.robot.unavailable') }}
                   </n-tag>
-                  <n-tag v-if="model.publicStatus === 0" type="info" size="small">公开</n-tag>
-                  <n-tag v-else type="warning" size="small">私有</n-tag>
-                  <n-tag v-if="model.type === 1" type="info" size="small">对话</n-tag>
-                  <n-tag v-else-if="model.type === 2" type="success" size="small">图片</n-tag>
-                  <n-tag v-else-if="model.type === 3" type="primary" size="small">音频</n-tag>
-                  <n-tag v-else-if="model.type === 4" type="warning" size="small">视频</n-tag>
-                  <n-tag v-else-if="model.type === 5" type="default" size="small">向量</n-tag>
-                  <n-tag v-else-if="model.type === 6" type="default" size="small">重排序</n-tag>
-                  <n-tag v-else-if="model.type === 7" type="warning" size="small">文生视频</n-tag>
-                  <n-tag v-else-if="model.type === 8" type="error" size="small">图生视频</n-tag>
+                  <n-tag v-if="model.publicStatus === 0" type="info" size="small">
+                    {{ t('ai_assistant.robot.public') }}
+                  </n-tag>
+                  <n-tag v-else type="warning" size="small">{{ t('ai_assistant.robot.private') }}</n-tag>
+                  <n-tag v-if="model.type === 1" type="info" size="small">
+                    {{ t('ai_assistant.robot.model_type_chat') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 2" type="success" size="small">
+                    {{ t('ai_assistant.robot.model_type_image') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 3" type="primary" size="small">
+                    {{ t('ai_assistant.robot.model_type_audio') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 4" type="warning" size="small">
+                    {{ t('ai_assistant.robot.model_type_video') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 5" type="default" size="small">
+                    {{ t('ai_assistant.robot.model_type_vector') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 6" type="default" size="small">
+                    {{ t('ai_assistant.robot.model_type_rerank') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 7" type="warning" size="small">
+                    {{ t('ai_assistant.robot.model_type_text2video') }}
+                  </n-tag>
+                  <n-tag v-else-if="model.type === 8" type="error" size="small">
+                    {{ t('ai_assistant.robot.model_type_image2video') }}
+                  </n-tag>
                 </n-flex>
                 <div class="model-meta">
-                  <span class="meta-item">平台: {{ model.platform }}</span>
-                  <span class="meta-item">模型: {{ model.model }}</span>
+                  <span class="meta-item">
+                    {{ t('ai_assistant.robot.platform_label', { platform: model.platform }) }}
+                  </span>
+                  <span class="meta-item">{{ t('ai_assistant.robot.model_label', { model: model.model }) }}</span>
                 </div>
               </div>
             </n-flex>
@@ -62,14 +82,14 @@
                 <template #icon>
                   <Icon icon="mdi:pencil" />
                 </template>
-                编辑
+                {{ t('ai_assistant.robot.edit') }}
               </n-button>
               <!-- 只有创建人才显示删除按钮（公开和私有模型都可以删除） -->
               <n-popconfirm
                 v-if="isModelCreator(model)"
                 @positive-click="handleDelete(model.id)"
-                positive-text="删除"
-                negative-text="取消">
+                :positive-text="t('ai_assistant.robot.delete')"
+                :negative-text="t('ai_assistant.robot.cancel')">
                 <template #trigger>
                   <n-button size="small" type="error">
                     <template #icon>
@@ -115,7 +135,7 @@
   <n-modal
     v-model:show="showEditModal"
     preset="card"
-    :title="editingModel ? '编辑模型' : '新增模型'"
+    :title="editingModel ? t('ai_assistant.robot.edit_model') : t('ai_assistant.robot.add_model')"
     style="width: 750px"
     :bordered="false"
     :segmented="{ content: 'soft', footer: 'soft' }">
@@ -127,28 +147,31 @@
         label-placement="left"
         label-width="120px"
         style="padding-right: 12px">
-        <n-form-item label="API 密钥" path="keyId">
+        <n-form-item :label="t('ai_assistant.robot.api_key_label')" path="keyId">
           <n-flex :size="8" style="width: 100%">
             <n-select
               v-model:value="formData.keyId"
               :options="apiKeyOptions"
-              placeholder="请选择 API 密钥"
+              :placeholder="t('ai_assistant.robot.select_api_key')"
               style="flex: 1"
               @update:value="handleKeyIdChange" />
             <n-button @click="handleOpenApiKeyManagement">
               <template #icon>
                 <Icon icon="mdi:cog" />
               </template>
-              管理
+              {{ t('ai_assistant.robot.manage') }}
             </n-button>
           </n-flex>
         </n-form-item>
 
-        <n-form-item label="平台" path="platform">
-          <n-input v-model:value="formData.platform" placeholder="根据API密钥自动设置" disabled />
+        <n-form-item :label="t('ai_assistant.robot.platform_label_select')" path="platform">
+          <n-input
+            v-model:value="formData.platform"
+            :placeholder="t('ai_assistant.robot.platform_auto_set')"
+            disabled />
         </n-form-item>
 
-        <n-form-item label="模型头像" path="avatar">
+        <n-form-item :label="t('ai_assistant.robot.model_avatar')" path="avatar">
           <n-flex :size="12" align="center" style="width: 100%">
             <n-avatar :key="formData.avatar" :src="formData.avatar" :size="60" round fallback-src="">
               <Icon v-if="!formData.avatar" icon="mdi:account-circle" :size="40" />
@@ -312,6 +335,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import type { FormInst, FormRules } from 'naive-ui'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
@@ -353,6 +377,7 @@ type ValidationValue = number | null | undefined | ''
 
 const logger = createLogger('ModelManagement')
 const timerManager = useTimerManager()
+const { t } = useI18n()
 
 const showModal = defineModel<boolean>({ default: false })
 const emit = defineEmits<{

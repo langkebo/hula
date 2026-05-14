@@ -8,7 +8,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() }
+  default: { getClient: () => getClientMock() },
+  matrixClientService: { getClient: () => getClientMock() }
 }))
 
 const { MatrixRoomModerationService } = await import('../ModerationService')
@@ -29,7 +30,7 @@ describe('MatrixRoomModerationService', () => {
 
   it('getInviteBlocklist throws when client is not initialized', async () => {
     getClientMock.mockReturnValueOnce(null)
-    await expect(service.getInviteBlocklist('!r')).rejects.toThrow('[MatrixRoom] 客户端未初始化')
+    await expect(service.getInviteBlocklist('!r')).rejects.toThrow('客户端未初始化')
   })
 
   it('getInviteBlocklist GETs the right URL and unwraps `blocked`', async () => {

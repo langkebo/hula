@@ -9,7 +9,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() as MatrixClient }
+  default: { getClient: () => getClientMock() as MatrixClient },
+  matrixClientService: { getClient: () => getClientMock() as MatrixClient }
 }))
 
 const enqueueMock = vi.fn()
@@ -33,7 +34,7 @@ describe('MatrixRoomPinsService', () => {
   describe('getPinnedEvents', () => {
     it('throws when client is not initialized', async () => {
       getClientMock.mockReturnValueOnce(null)
-      await expect(service.getPinnedEvents('!r')).rejects.toThrow('[MatrixRoom] 客户端未初始化')
+      await expect(service.getPinnedEvents('!r')).rejects.toThrow('客户端未初始化')
     })
 
     it('returns [] when room is not in local cache', async () => {

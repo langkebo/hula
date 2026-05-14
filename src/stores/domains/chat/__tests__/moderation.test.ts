@@ -1,10 +1,10 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { moderationMock, getClientMock } = vi.hoisted(() => {
-  const moderationMock = {
-    getReports: vi.fn(),
-    resolveReport: vi.fn(),
+const { adminServiceMock, getClientMock } = vi.hoisted(() => {
+  const adminServiceMock = {
+    getModerationReports: vi.fn(),
+    resolveModerationReport: vi.fn(),
     getUserReputation: vi.fn(),
     setUserReputation: vi.fn(),
     getContentFilters: vi.fn(),
@@ -13,24 +13,23 @@ const { moderationMock, getClientMock } = vi.hoisted(() => {
   }
 
   const moderationManagerMock = {
-    // Mock the ModerationManager interface
     start: vi.fn(),
     stop: vi.fn(),
     on: vi.fn(),
     removeAllListeners: vi.fn(),
-    getReports: moderationMock.getReports,
-    resolveReport: moderationMock.resolveReport,
-    getUserReputation: moderationMock.getUserReputation,
-    setUserReputation: moderationMock.setUserReputation,
-    getContentFilters: moderationMock.getContentFilters,
-    addContentFilter: moderationMock.addContentFilter,
-    removeContentFilter: moderationMock.removeContentFilter
+    getReports: adminServiceMock.getModerationReports,
+    resolveReport: adminServiceMock.resolveModerationReport,
+    getUserReputation: adminServiceMock.getUserReputation,
+    setUserReputation: adminServiceMock.setUserReputation,
+    getContentFilters: adminServiceMock.getContentFilters,
+    addContentFilter: adminServiceMock.addContentFilter,
+    removeContentFilter: adminServiceMock.removeContentFilter
   }
 
-  const getClientMock = vi.fn(() => ({ moderationManager: moderationManagerMock })) // Mock client to return moderationManager
+  const getClientMock = vi.fn(() => ({ moderationManager: moderationManagerMock }))
 
   return {
-    moderationMock,
+    adminServiceMock,
     getClientMock
   }
 })
@@ -41,8 +40,8 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/admin/MatrixModerationService', () => ({
-  matrixModerationService: moderationMock
+vi.mock('@/services/matrix/admin/AdminFacadeService', () => ({
+  adminService: adminServiceMock
 }))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -63,7 +62,7 @@ const makeReport = (id: string, status: 'open' | 'resolved' | 'dismissed' = 'ope
 describe('useModerationStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    Object.values(moderationMock).forEach((fn) => fn.mockReset())
+    Object.values(adminServiceMock).forEach((fn) => fn.mockReset())
   })
 
   it('initializes empty', () => {
@@ -76,7 +75,7 @@ describe('useModerationStore', () => {
   })
 
   it('fetchReports populates reports and clears error', async () => {
-    moderationMock.getReports.mockResolvedValue([
+    adminServiceMock.getModerationReports.mockResolvedValue([
       makeReport('r1', 'open'),
       makeReport('r2', 'resolved'),
       makeReport('r3', 'dismissed')
@@ -94,7 +93,7 @@ describe('useModerationStore', () => {
   })
 
   it('fetchReports captures error message on failure', async () => {
-    moderationMock.getReports.mockRejectedValue(new Error('boom'))
+    adminServiceMock.getModerationReports.mockRejectedValue(new Error('boom'))
     const store = useModerationStore()
     await store.fetchReports()
     expect(store.error).toBe('boom')
@@ -102,18 +101,18 @@ describe('useModerationStore', () => {
   })
 
   it('resolveReport flips matching report to resolved', async () => {
-    moderationMock.getReports.mockResolvedValue([makeReport('r1', 'open')])
-    moderationMock.resolveReport.mockResolvedValue(undefined)
+    adminServiceMock.getModerationReports.mockResolvedValue([makeReport('r1', 'open')])
+    adminServiceMock.resolveModerationReport.mockResolvedValue(undefined)
     const store = useModerationStore()
     await store.fetchReports()
     const ok = await store.resolveReport('r1', 'warn', 'note')
     expect(ok).toBe(true)
     expect(store.reports[0].status).toBe('resolved')
-    expect(moderationMock.resolveReport).toHaveBeenCalledWith('r1', { action: 'warn', notes: 'note' })
+    expect(adminServiceMock.resolveModerationReport).toHaveBeenCalledWith('r1', { action: 'warn', notes: 'note' })
   })
 
   it('resolveReport returns false on failure', async () => {
-    moderationMock.resolveReport.mockRejectedValue(new Error('nope'))
+    adminServiceMock.resolveModerationReport.mockRejectedValue(new Error('nope'))
     const store = useModerationStore()
     const ok = await store.resolveReport('r1', 'ban')
     expect(ok).toBe(false)
@@ -121,7 +120,7 @@ describe('useModerationStore', () => {
   })
 
   it('fetchUserReputation caches reputation', async () => {
-    moderationMock.getUserReputation.mockResolvedValue({ level: 'good', score: 80 })
+    adminServiceMock.getUserReputation.mockResolvedValue({ level: 'good', score: 80 })
     const store = useModerationStore()
     const rep = await store.fetchUserReputation('@a:x')
     expect(rep?.score).toBe(80)
@@ -129,15 +128,15 @@ describe('useModerationStore', () => {
   })
 
   it('fetchUserReputation returns null on failure', async () => {
-    moderationMock.getUserReputation.mockRejectedValue(new Error('x'))
+    adminServiceMock.getUserReputation.mockRejectedValue(new Error('x'))
     const store = useModerationStore()
     const rep = await store.fetchUserReputation('@a:x')
     expect(rep).toBeNull()
   })
 
   it('setUserReputation updates cached score when present', async () => {
-    moderationMock.getUserReputation.mockResolvedValue({ level: 'good', score: 50 })
-    moderationMock.setUserReputation.mockResolvedValue(undefined)
+    adminServiceMock.getUserReputation.mockResolvedValue({ level: 'good', score: 50 })
+    adminServiceMock.setUserReputation.mockResolvedValue(undefined)
     const store = useModerationStore()
     await store.fetchUserReputation('@a:x')
     const ok = await store.setUserReputation('@a:x', 90)
@@ -146,7 +145,7 @@ describe('useModerationStore', () => {
   })
 
   it('setUserReputation returns false on failure', async () => {
-    moderationMock.setUserReputation.mockRejectedValue(new Error('fail'))
+    adminServiceMock.setUserReputation.mockRejectedValue(new Error('fail'))
     const store = useModerationStore()
     const ok = await store.setUserReputation('@a:x', 1)
     expect(ok).toBe(false)
@@ -154,7 +153,7 @@ describe('useModerationStore', () => {
   })
 
   it('fetchContentFilters loads list', async () => {
-    moderationMock.getContentFilters.mockResolvedValue([
+    adminServiceMock.getContentFilters.mockResolvedValue([
       { id: 'f1', enabled: true } as any,
       { id: 'f2', enabled: false } as any
     ])
@@ -165,7 +164,7 @@ describe('useModerationStore', () => {
   })
 
   it('addContentFilter appends new filter', async () => {
-    moderationMock.addContentFilter.mockResolvedValue({ id: 'new', enabled: true } as any)
+    adminServiceMock.addContentFilter.mockResolvedValue({ id: 'new', enabled: true } as any)
     const store = useModerationStore()
     const created = await store.addContentFilter({ type: 'keyword', pattern: 'p', action: 'flag' })
     expect(created?.id).toBe('new')
@@ -173,7 +172,7 @@ describe('useModerationStore', () => {
   })
 
   it('addContentFilter returns null on failure', async () => {
-    moderationMock.addContentFilter.mockRejectedValue(new Error('bad'))
+    adminServiceMock.addContentFilter.mockRejectedValue(new Error('bad'))
     const store = useModerationStore()
     const created = await store.addContentFilter({ type: 'keyword', pattern: 'p', action: 'flag' })
     expect(created).toBeNull()
@@ -181,8 +180,8 @@ describe('useModerationStore', () => {
   })
 
   it('removeContentFilter removes by id', async () => {
-    moderationMock.getContentFilters.mockResolvedValue([{ id: 'a', enabled: true } as any])
-    moderationMock.removeContentFilter.mockResolvedValue(undefined)
+    adminServiceMock.getContentFilters.mockResolvedValue([{ id: 'a', enabled: true } as any])
+    adminServiceMock.removeContentFilter.mockResolvedValue(undefined)
     const store = useModerationStore()
     await store.fetchContentFilters()
     const ok = await store.removeContentFilter('a')
@@ -191,7 +190,7 @@ describe('useModerationStore', () => {
   })
 
   it('removeContentFilter returns false on failure', async () => {
-    moderationMock.removeContentFilter.mockRejectedValue(new Error('x'))
+    adminServiceMock.removeContentFilter.mockRejectedValue(new Error('x'))
     const store = useModerationStore()
     const ok = await store.removeContentFilter('a')
     expect(ok).toBe(false)
@@ -199,7 +198,7 @@ describe('useModerationStore', () => {
   })
 
   it('clearError clears error state', async () => {
-    moderationMock.getReports.mockRejectedValue(new Error('e'))
+    adminServiceMock.getModerationReports.mockRejectedValue(new Error('e'))
     const store = useModerationStore()
     await store.fetchReports()
     expect(store.error).toBe('e')
@@ -208,9 +207,9 @@ describe('useModerationStore', () => {
   })
 
   it('$reset clears everything', async () => {
-    moderationMock.getReports.mockResolvedValue([makeReport('r1')])
-    moderationMock.getContentFilters.mockResolvedValue([{ id: 'a', enabled: true } as any])
-    moderationMock.getUserReputation.mockResolvedValue({ level: 'ok', score: 1 })
+    adminServiceMock.getModerationReports.mockResolvedValue([makeReport('r1')])
+    adminServiceMock.getContentFilters.mockResolvedValue([{ id: 'a', enabled: true } as any])
+    adminServiceMock.getUserReputation.mockResolvedValue({ level: 'ok', score: 1 })
     const store = useModerationStore()
     await store.fetchReports({ status: 'open' } as any)
     await store.fetchContentFilters()

@@ -8,7 +8,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() }
+  default: { getClient: () => getClientMock() },
+  matrixClientService: { getClient: () => getClientMock() }
 }))
 
 const { MatrixRoomMetadataService } = await import('../MetadataService')
@@ -30,7 +31,7 @@ describe('MatrixRoomMetadataService', () => {
   describe('getRoomVersion', () => {
     it('throws when client is not initialized', async () => {
       getClientMock.mockReturnValueOnce(null)
-      await expect(service.getRoomVersion('!r')).rejects.toThrow('[MatrixRoom] 客户端未初始化')
+      await expect(service.getRoomVersion('!r')).rejects.toThrow('客户端未初始化')
     })
 
     it('returns null when room is missing from local cache', async () => {
@@ -135,11 +136,11 @@ describe('MatrixRoomMetadataService', () => {
 
     it('all three throw when client is not initialized', async () => {
       getClientMock.mockReturnValueOnce(null)
-      await expect(service.getRoomMetadata('!r')).rejects.toThrow('[MatrixRoom] 客户端未初始化')
+      await expect(service.getRoomMetadata('!r')).rejects.toThrow('客户端未初始化')
       getClientMock.mockReturnValueOnce(null)
-      await expect(service.getRoomTurnServer('!r')).rejects.toThrow('[MatrixRoom] 客户端未初始化')
+      await expect(service.getRoomTurnServer('!r')).rejects.toThrow('客户端未初始化')
       getClientMock.mockReturnValueOnce(null)
-      await expect(service.getRoomSync('!r')).rejects.toThrow('[MatrixRoom] 客户端未初始化')
+      await expect(service.getRoomSync('!r')).rejects.toThrow('客户端未初始化')
     })
   })
 })

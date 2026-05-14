@@ -12,8 +12,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
+vi.mock('../../MatrixClientService', () => {
+  const mock = {
     getClient: vi.fn(() => null),
     isLoggedIn: vi.fn(() => false),
     createRoom: vi.fn(() => {
@@ -26,7 +26,8 @@ vi.mock('../../MatrixClientService', () => ({
       throw new Error('客户端未初始化')
     })
   }
-}))
+  return { default: mock, matrixClientService: mock }
+})
 
 vi.mock('../../SynapseRustExtensionsService', () => ({
   synapseRustExtensionsService: {

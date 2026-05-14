@@ -1,12 +1,11 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MessageStatusEnum, MsgEnum } from '@/enums'
-import matrixEventService from '@/services/matrix/MatrixEventService'
+import { MsgEnum } from '@/enums'
 import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
 import matrixRoomSummaryService from '@/services/matrix/room/MatrixRoomSummaryService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 
-const { mockRoomService, mockEventService, mockRoomSummaryService, mockMatrixClientService } = vi.hoisted(() => ({
+const { mockRoomService, mockRoomSummaryService, mockMatrixClientService, mockChatStore } = vi.hoisted(() => ({
   mockRoomService: {
     getRoomSummary: vi.fn(),
     getRooms: vi.fn(),
@@ -57,36 +56,6 @@ const { mockRoomService, mockEventService, mockRoomSummaryService, mockMatrixCli
     getAllRoomInfos: vi.fn(),
     joinRoomAndGetInfo: vi.fn()
   },
-  mockEventService: {
-    getRoomTimeline: vi.fn(),
-    paginateTimeline: vi.fn(),
-    sendTextMessage: vi.fn(),
-    sendImageMessage: vi.fn(),
-    sendVideoMessage: vi.fn(),
-    sendAudioMessage: vi.fn(),
-    sendFileMessage: vi.fn(),
-    redactEvent: vi.fn(),
-    sendMessageReceipt: vi.fn(),
-    getRoomMessages: vi.fn(),
-    getMoreRoomMessages: vi.fn(),
-    convertEventToMessageType: vi.fn((event: any) => ({
-      fromUser: {
-        uid: event.getSender?.() ?? '',
-        username: event.getSender?.() ?? '',
-        avatar: ''
-      },
-      message: {
-        id: event.getId?.() ?? '',
-        roomId: event.getRoomId?.() ?? '',
-        type: MsgEnum.TEXT,
-        body: { content: event.getContent?.()?.body ?? '' },
-        sendTime: event.getTs?.() ?? 0,
-        messageMarks: {},
-        status: MessageStatusEnum.SUCCESS
-      },
-      sendTime: event.getTs?.() ?? 0
-    }))
-  },
   mockRoomSummaryService: {
     getRoomListSnapshot: vi.fn(),
     getAllRoomListSnapshots: vi.fn()
@@ -95,6 +64,10 @@ const { mockRoomService, mockEventService, mockRoomSummaryService, mockMatrixCli
     getClient: vi.fn(),
     on: vi.fn(),
     off: vi.fn()
+  },
+  mockChatStore: {
+    pushMsg: vi.fn(),
+    clearRoomMessages: vi.fn()
   }
 }))
 
@@ -106,10 +79,6 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
   default: mockRoomService
-}))
-
-vi.mock('@/services/matrix/MatrixEventService', () => ({
-  default: mockEventService
 }))
 
 vi.mock('@/services/matrix/room/MatrixRoomSummaryService', () => ({
@@ -132,34 +101,9 @@ vi.mock('@/stores/domains/chat/matrix', () => ({
   useMatrixStore: vi.fn()
 }))
 
-function createMockEvent(
-  overrides: Partial<{
-    id: string
-    roomId: string
-    type: string
-    sender: string
-    content: Record<string, unknown>
-    ts: number
-  }> = {}
-) {
-  const event = {
-    id: overrides.id ?? '$event',
-    roomId: overrides.roomId ?? '!room:id',
-    type: overrides.type ?? 'm.room.message',
-    sender: overrides.sender ?? '@user:server',
-    content: overrides.content ?? { body: 'hello', msgtype: 'm.text' },
-    ts: overrides.ts ?? 1000
-  }
-
-  return {
-    getId: vi.fn(() => event.id),
-    getRoomId: vi.fn(() => event.roomId),
-    getType: vi.fn(() => event.type),
-    getSender: vi.fn(() => event.sender),
-    getContent: vi.fn(() => event.content),
-    getTs: vi.fn(() => event.ts)
-  }
-}
+vi.mock('@/stores/domains/chat/chat', () => ({
+  useChatStore: () => mockChatStore
+}))
 
 function createMockRoom(
   overrides: Partial<{
@@ -172,7 +116,6 @@ function createMockRoom(
       powerLevel?: number
       getMxcAvatarUrl?: () => string | undefined
     }>
-    events: ReturnType<typeof createMockEvent>[]
     counts: { all: number; highlight: number; notification: number }
     isSpace: boolean
     dmInviter?: string
@@ -186,14 +129,13 @@ function createMockRoom(
       getMxcAvatarUrl: () => 'mxc://avatar/user'
     }
   ]
-  const events = overrides.events ?? [createMockEvent()]
   const counts = overrides.counts ?? { all: 1, highlight: 0, notification: 1 }
 
   return {
     roomId: overrides.roomId ?? '!room:id',
     name: overrides.name ?? 'Test Room',
     getLiveTimeline: vi.fn(() => ({
-      getEvents: vi.fn(() => events)
+      getEvents: vi.fn(() => [])
     })),
     getMxcAvatarUrl: vi.fn(() => overrides.avatarUrl ?? 'mxc://room/avatar'),
     getJoinedMembers: vi.fn(() => members),
@@ -232,11 +174,6 @@ describe('RoomStore', () => {
       expect(store.currentRoomId).toBeNull()
     })
 
-    it('should have empty messages map initially', () => {
-      const store = useRoomStore()
-      expect(store.messages.size).toBe(0)
-    })
-
     it('should not be loading initially', () => {
       const store = useRoomStore()
       expect(store.isLoading).toBe(false)
@@ -254,13 +191,6 @@ describe('RoomStore', () => {
     it('should return null when no current room', () => {
       const store = useRoomStore()
       expect(store.currentRoom).toBeNull()
-    })
-  })
-
-  describe('currentMessages', () => {
-    it('should return empty array when no current room', () => {
-      const store = useRoomStore()
-      expect(store.currentMessages).toEqual([])
     })
   })
 
@@ -456,8 +386,11 @@ describe('RoomStore', () => {
         lastMessage: '[图片]',
         lastMessageTime: 123
       })
-      expect(store.messages.get('!room:id')).toHaveLength(1)
-      expect(store.messages.get('!room:id')?.[0]?.message.type).toBe(MsgEnum.IMAGE)
+      expect(mockChatStore.pushMsg).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.objectContaining({ type: MsgEnum.IMAGE })
+        })
+      )
     })
 
     it('should render member events with room preview text', async () => {
@@ -494,7 +427,11 @@ describe('RoomStore', () => {
         lastMessage: '加入了房间',
         lastMessageTime: 456
       })
-      expect(store.messages.get('!room:id')?.[0]?.message.type).toBe(MsgEnum.SYSTEM)
+      expect(mockChatStore.pushMsg).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.objectContaining({ type: MsgEnum.SYSTEM })
+        })
+      )
     })
 
     it('should map voice events to voice messages and audio preview text', async () => {
@@ -532,7 +469,11 @@ describe('RoomStore', () => {
         lastMessage: '[音频]',
         lastMessageTime: 789
       })
-      expect(store.messages.get('!room:id')?.[0]?.message.type).toBe(MsgEnum.VOICE)
+      expect(mockChatStore.pushMsg).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.objectContaining({ type: MsgEnum.VOICE })
+        })
+      )
     })
   })
 
@@ -632,179 +573,13 @@ describe('RoomStore', () => {
 
       const store = useRoomStore()
       await store.joinRoom('!join:room')
-      store.messages.set('!join:room', [])
-      store.hasMoreMessages.set('!join:room', true)
       store.setCurrentRoom('!join:room')
 
       await store.leaveRoom('!join:room')
 
       expect(store.rooms.has('!join:room')).toBe(false)
-      expect(store.messages.has('!join:room')).toBe(false)
-      expect(store.hasMoreMessages.has('!join:room')).toBe(false)
+      expect(mockChatStore.clearRoomMessages).toHaveBeenCalledWith('!join:room')
       expect(store.currentRoomId).toBeNull()
-    })
-  })
-
-  describe('message loading and sending', () => {
-    it('should load message timeline and filter unsupported events', async () => {
-      mockEventService.getRoomMessages.mockResolvedValue([
-        {
-          fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
-          message: {
-            id: '$m1',
-            roomId: '!room:id',
-            type: MsgEnum.TEXT,
-            body: { content: 'hello' },
-            sendTime: 100,
-            messageMarks: {},
-            status: MessageStatusEnum.SUCCESS
-          },
-          sendTime: 100
-        },
-        {
-          fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
-          message: {
-            id: '$m2',
-            roomId: '!room:id',
-            type: MsgEnum.TEXT,
-            body: { content: 'cipher' },
-            sendTime: 200,
-            messageMarks: {},
-            status: MessageStatusEnum.SUCCESS
-          },
-          sendTime: 200
-        }
-      ])
-
-      const store = useRoomStore()
-      const result = await store.loadMessages('!room:id', 2)
-
-      expect(result).toHaveLength(2)
-      expect(store.messages.get('!room:id')).toHaveLength(2)
-      expect(store.hasMoreMessages.get('!room:id')).toBe(true)
-    })
-
-    it('should load more messages for current room', async () => {
-      mockEventService.getMoreRoomMessages.mockResolvedValue({
-        messages: [
-          {
-            fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
-            message: {
-              id: '$older',
-              roomId: '!room:id',
-              type: MsgEnum.TEXT,
-              body: { content: 'older' },
-              sendTime: 10,
-              messageMarks: {},
-              status: MessageStatusEnum.SUCCESS
-            },
-            sendTime: 10
-          }
-        ],
-        hasMore: false
-      })
-
-      const store = useRoomStore()
-      store.setCurrentRoom('!room:id')
-      store.messages.set('!room:id', [
-        {
-          fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
-          message: {
-            id: '$existing',
-            roomId: '!room:id',
-            type: MsgEnum.TEXT,
-            body: { body: 'existing', content: 'existing', msgtype: 'm.text' },
-            sendTime: 20,
-            messageMarks: {},
-            status: 1 as any
-          },
-          sendTime: 20,
-          loading: false
-        }
-      ])
-
-      const result = await store.loadMoreMessages(1)
-
-      expect(result).toHaveLength(1)
-      expect(store.messages.get('!room:id')?.map((item) => item.message.id)).toEqual(['$older', '$existing'])
-      expect(store.isLoadingMore).toBe(false)
-    })
-
-    it('should route sendMessage by message type', async () => {
-      vi.mocked(matrixEventService.sendTextMessage).mockResolvedValue('$text')
-      vi.mocked(matrixEventService.sendImageMessage).mockResolvedValue('$image')
-      vi.mocked(matrixEventService.sendAudioMessage).mockResolvedValue('$audio')
-
-      const store = useRoomStore()
-
-      await expect(store.sendMessage('!room:id', { type: 'text', text: 'hello' })).resolves.toBe('$text')
-      await expect(
-        store.sendMessage('!room:id', { type: 'image', file: new File(['x'], 'a.png', { type: 'image/png' }) })
-      ).resolves.toBe('$image')
-      await expect(
-        store.sendMessage('!room:id', { type: 'audio', file: new File(['x'], 'a.mp3', { type: 'audio/mpeg' }) })
-      ).resolves.toBe('$audio')
-    })
-
-    it('should validate required file payloads when sending media', async () => {
-      const store = useRoomStore()
-
-      await expect(store.sendMessage('!room:id', { type: 'image' })).rejects.toThrow('缺少图片文件')
-      await expect(store.sendMessage('!room:id', { type: 'video' })).rejects.toThrow('缺少视频文件')
-      await expect(store.sendMessage('!room:id', { type: 'audio' })).rejects.toThrow('缺少音频文件')
-      await expect(store.sendMessage('!room:id', { type: 'file' })).rejects.toThrow('缺少文件')
-    })
-
-    it('should redact message and mark it as recall', async () => {
-      vi.mocked(matrixEventService.redactEvent).mockResolvedValue(undefined)
-      const store = useRoomStore()
-      store.messages.set('!room:id', [
-        {
-          fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
-          message: {
-            id: '$event',
-            roomId: '!room:id',
-            type: MsgEnum.TEXT,
-            body: { body: 'hello', content: 'hello', msgtype: 'm.text' },
-            sendTime: 1,
-            messageMarks: {},
-            status: 1 as any
-          },
-          sendTime: 1,
-          loading: false
-        }
-      ])
-
-      await store.redactMessage('!room:id', '$event', '撤回')
-
-      expect(matrixEventService.redactEvent).toHaveBeenCalledWith('!room:id', '$event', '撤回')
-      expect(store.messages.get('!room:id')?.[0]?.message.type).toBe(MsgEnum.RECALL)
-    })
-
-    it('should mark room as read after sending receipt', async () => {
-      vi.mocked(matrixEventService.sendMessageReceipt).mockResolvedValue(undefined)
-      const store = useRoomStore()
-      store.rooms.set('!room:id', {
-        roomId: '!room:id',
-        name: 'Room',
-        avatarUrl: null,
-        isDirect: false,
-        isEncrypted: false,
-        unreadCount: 9,
-        highlightCount: 4,
-        notificationCount: 9,
-        lastMessage: null,
-        lastMessageTime: null,
-        members: []
-      })
-
-      await store.markAsRead('!room:id', '$event')
-
-      expect(store.rooms.get('!room:id')).toMatchObject({
-        unreadCount: 0,
-        highlightCount: 0,
-        notificationCount: 0
-      })
     })
   })
 
@@ -928,7 +703,7 @@ describe('RoomStore', () => {
             body: { content: 'hello' },
             sendTime: 2000,
             messageMarks: {},
-            status: MessageStatusEnum.SUCCESS
+            status: 1
           },
           sendTime: 2000
         }
@@ -936,7 +711,11 @@ describe('RoomStore', () => {
 
       callbacks.name?.('!room:id', 'After')
 
-      expect(store.messages.get('!room:id')).toHaveLength(1)
+      expect(mockChatStore.pushMsg).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.objectContaining({ id: '$new' })
+        })
+      )
       expect(store.rooms.get('!room:id')).toMatchObject({
         name: 'After'
       })

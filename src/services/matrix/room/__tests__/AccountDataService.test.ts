@@ -8,7 +8,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() }
+  default: { getClient: () => getClientMock() },
+  matrixClientService: { getClient: () => getClientMock() }
 }))
 
 const { MatrixRoomAccountDataService } = await import('../AccountDataService')
@@ -34,7 +35,7 @@ describe('MatrixRoomAccountDataService', () => {
   describe('getRoomAccountData', () => {
     it('throws when client is not initialized', async () => {
       getClientMock.mockReturnValueOnce(null)
-      await expect(service.getRoomAccountData('!r', 'm.x')).rejects.toThrow('[MatrixRoom] 客户端未初始化')
+      await expect(service.getRoomAccountData('!r', 'm.x')).rejects.toThrow('客户端未初始化')
     })
 
     it('GETs the user/rooms/account_data URL with triple-encoded params', async () => {

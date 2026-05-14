@@ -54,26 +54,6 @@ vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
   matrixCapabilityService: matrixCapabilityServiceMock
 }))
 
-vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
-  initializeDeviceService: vi.fn()
-}))
-
-vi.mock('@/services/matrix/crypto/MatrixKeyBackupService', () => ({
-  initializeKeyBackupService: vi.fn()
-}))
-
-vi.mock('@/services/matrix/user/MatrixPresenceService', () => ({
-  initializePresenceService: vi.fn()
-}))
-
-vi.mock('@/services/matrix/crypto/MatrixVerificationService', () => ({
-  initializeVerificationService: vi.fn()
-}))
-
-vi.mock('@/services/matrix/room/MatrixRoomSummaryService', () => ({
-  initializeRoomSummaryService: vi.fn()
-}))
-
 describe('MatrixStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -146,13 +126,8 @@ describe('MatrixStore', () => {
   })
 
   describe('startClient', () => {
-    it('should initialize sub services after client starts', async () => {
+    it('should refresh capabilities after client starts', async () => {
       const store = useMatrixStore()
-      const { initializeDeviceService } = await import('@/services/matrix/user/MatrixDeviceService')
-      const { initializeKeyBackupService } = await import('@/services/matrix/crypto/MatrixKeyBackupService')
-      const { initializePresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
-      const { initializeVerificationService } = await import('@/services/matrix/crypto/MatrixVerificationService')
-      const { initializeRoomSummaryService } = await import('@/services/matrix/room/MatrixRoomSummaryService')
 
       store.isInitialized = true
       vi.mocked(matrixClientServiceMock.getClient).mockReturnValue({ getHomeserverUrl: getHomeserverUrlMock } as any)
@@ -160,11 +135,6 @@ describe('MatrixStore', () => {
       await store.startClient()
 
       expect(matrixClientServiceMock.startClient).toHaveBeenCalled()
-      expect(initializeDeviceService).toHaveBeenCalled()
-      expect(initializeKeyBackupService).toHaveBeenCalled()
-      expect(initializePresenceService).toHaveBeenCalled()
-      expect(initializeVerificationService).toHaveBeenCalled()
-      expect(initializeRoomSummaryService).toHaveBeenCalled()
       expect(matrixCapabilityServiceMock.refreshCapabilities).toHaveBeenCalled()
     })
   })

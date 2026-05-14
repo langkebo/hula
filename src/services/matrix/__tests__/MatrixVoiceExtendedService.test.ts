@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../MatrixClientService'
 import { matrixVoiceService } from '../media/MatrixVoiceService'
 
-vi.mock('../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn()
+vi.mock('../MatrixClientService', () => {
+  const getClient = vi.fn()
+  return {
+    default: { getClient },
+    matrixClientService: { getClient }
   }
-}))
+})
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),

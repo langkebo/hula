@@ -17,35 +17,37 @@ export const MATRIX_PATHS = {
   ROOM: {
     CREATE: '/_matrix/client/v3/createRoom',
     CREATE_PRIVATE: '/_matrix/client/v3/rooms/create_private',
-    MESSAGES: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/messages`,
-    STATE: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/state`,
-    MEMBERS: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/members`,
+    MESSAGES: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages`,
+    STATE: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state`,
+    MEMBERS: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`,
     SEND_EVENT: (roomId: string, eventType: string, txnId: string) =>
-      `/_matrix/client/v3/rooms/${roomId}/send/${eventType}/${txnId}`,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/${encodeURIComponent(txnId)}`,
     RECEIPT: (roomId: string, receiptType: string, eventId: string) =>
-      `/_matrix/client/v3/rooms/${roomId}/receipt/${receiptType}/${eventId}`,
-    TYPING: (roomId: string, userId: string) => `/_matrix/client/v3/rooms/${roomId}/typing/${userId}`,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/receipt/${encodeURIComponent(receiptType)}/${encodeURIComponent(eventId)}`,
+    TYPING: (roomId: string, userId: string) =>
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/typing/${encodeURIComponent(userId)}`,
     REDACT: (roomId: string, eventId: string, txnId: string) =>
-      `/_matrix/client/v3/rooms/${roomId}/redact/${eventId}/${txnId}`,
-    INVITE: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/invite`,
-    JOIN: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/join`,
-    LEAVE: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/leave`,
-    CONTEXT: (roomId: string, eventId: string) => `/_matrix/client/v3/rooms/${roomId}/context/${eventId}`,
-    TAGS: (roomId: string) => `/_matrix/client/v3/user/{userId}/rooms/${roomId}/tags`,
-    INVITE_BLOCKLIST: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/invite_blocklist`,
-    INVITE_ALLOWLIST: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/invite_allowlist`,
-    STICKY_EVENTS: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/sticky_events`,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/${encodeURIComponent(txnId)}`,
+    INVITE: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite`,
+    JOIN: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/join`,
+    LEAVE: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/leave`,
+    CONTEXT: (roomId: string, eventId: string) =>
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(eventId)}`,
+    TAGS: (roomId: string) => `/_matrix/client/v3/user/{userId}/rooms/${encodeURIComponent(roomId)}/tags`,
+    INVITE_BLOCKLIST: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_blocklist`,
+    INVITE_ALLOWLIST: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_allowlist`,
+    STICKY_EVENTS: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`,
     STICKY_EVENT_BY_TYPE: (roomId: string, eventType: string) =>
-      `/_matrix/client/v3/rooms/${roomId}/sticky_events/${eventType}`,
-    ANTI_SCREENSHOT: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/anti_screenshot`,
-    SUMMARY: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/summary`,
-    SUMMARY_MEMBERS: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/summary/members`,
-    SUMMARY_STATE: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/summary/state`,
-    SUMMARY_STATS: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/summary/stats`,
-    EPHEMERAL: (roomId: string) => `/_matrix/client/v3/rooms/${roomId}/ephemeral`,
-    TIMESTAMP_TO_EVENT: (roomId: string) => `/_matrix/client/v1/rooms/${roomId}/timestamp_to_event`,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events/${encodeURIComponent(eventType)}`,
+    ANTI_SCREENSHOT: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/anti_screenshot`,
+    SUMMARY: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary`,
+    SUMMARY_MEMBERS: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/members`,
+    SUMMARY_STATE: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/state`,
+    SUMMARY_STATS: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/stats`,
+    EPHEMERAL: (roomId: string) => `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ephemeral`,
+    TIMESTAMP_TO_EVENT: (roomId: string) => `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`,
     REPORT_SCANNER_INFO: (roomId: string, eventId: string) =>
-      `/_matrix/client/v1/rooms/${roomId}/report/${eventId}/scanner_info`
+      `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/scanner_info`
   },
   BURN: {
     STATS: '/_matrix/client/v3/user/burn/stats',
@@ -109,31 +111,34 @@ export const MATRIX_PATHS = {
     KEY_ROTATION_STATUS: '/_matrix/client/v1/keys/rotation/status',
     KEY_ROTATION_CHECK: '/_matrix/client/v1/keys/rotation/check',
     KEY_ROTATION_ROTATE: '/_matrix/client/v1/keys/rotation/rotate',
-    KEY_ROTATION_HISTORY: (deviceId: string) => `/_matrix/client/v1/keys/rotation/history/${deviceId}`,
+    KEY_ROTATION_HISTORY: (deviceId: string) =>
+      `/_matrix/client/v1/keys/rotation/history/${encodeURIComponent(deviceId)}`,
     KEY_ROTATION_REVOKE: '/_matrix/client/v1/keys/rotation/revoke',
     KEY_ROTATION_CONFIG: '/_matrix/client/v1/keys/rotation/config'
   },
   DEHYDRATED_DEVICE: {
     BASE: '/_matrix/client/v1/dehydrated_device',
-    BY_ID: (deviceId: string) => `/_matrix/client/v1/dehydrated_device/${deviceId}`,
-    CLAIM: (deviceId: string) => `/_matrix/client/v1/dehydrated_device/${deviceId}/claim`,
-    INITIAL_DEVICE: (deviceId: string) => `/_matrix/client/v1/dehydrated_device/${deviceId}/initial_device`
+    BY_ID: (deviceId: string) => `/_matrix/client/v1/dehydrated_device/${encodeURIComponent(deviceId)}`,
+    CLAIM: (deviceId: string) => `/_matrix/client/v1/dehydrated_device/${encodeURIComponent(deviceId)}/claim`,
+    INITIAL_DEVICE: (deviceId: string) =>
+      `/_matrix/client/v1/dehydrated_device/${encodeURIComponent(deviceId)}/initial_device`
   },
   SPACE: {
-    HIERARCHY: (spaceId: string) => `/_matrix/client/v1/spaces/${spaceId}/hierarchy`,
-    HIERARCHY_V1: (spaceId: string) => `/_matrix/client/v1/spaces/${spaceId}/hierarchy/v1`,
-    ROOM_HIERARCHY: (spaceId: string) => `/_matrix/client/v1/rooms/${spaceId}/hierarchy`
+    HIERARCHY: (spaceId: string) => `/_matrix/client/v1/spaces/${encodeURIComponent(spaceId)}/hierarchy`,
+    HIERARCHY_V1: (spaceId: string) => `/_matrix/client/v1/spaces/${encodeURIComponent(spaceId)}/hierarchy/v1`,
+    ROOM_HIERARCHY: (spaceId: string) => `/_matrix/client/v1/rooms/${encodeURIComponent(spaceId)}/hierarchy`
   },
   AI: {
     CONNECTIONS: '/_matrix/client/v1/ai/connections',
-    CONNECTION_BY_ID: (id: string) => `/_matrix/client/v1/ai/connections/${id}`,
+    CONNECTION_BY_ID: (id: string) => `/_matrix/client/v1/ai/connections/${encodeURIComponent(id)}`,
     MCP_TOOLS: '/_matrix/client/v1/mcp/tools',
     MCP_TOOLS_CALL: '/_matrix/client/v1/mcp/tools/call'
   },
   SYNC: {
     SYNC: '/_matrix/client/v3/sync',
-    FILTER: (userId: string) => `/_matrix/client/v3/user/${userId}/filter`,
-    FILTER_BY_ID: (userId: string, filterId: string) => `/_matrix/client/v3/user/${userId}/filter/${filterId}`,
+    FILTER: (userId: string) => `/_matrix/client/v3/user/${encodeURIComponent(userId)}/filter`,
+    FILTER_BY_ID: (userId: string, filterId: string) =>
+      `/_matrix/client/v3/user/${encodeURIComponent(userId)}/filter/${encodeURIComponent(filterId)}`,
     SLIDING_SYNC: '/_matrix/client/unstable/org.matrix.msc3575/sync'
   },
   NOTIFICATION: {
@@ -144,7 +149,8 @@ export const MATRIX_PATHS = {
   MEDIA: {
     UPLOAD: '/_matrix/media/v3/upload',
     CONFIG: '/_matrix/media/v3/config',
-    DELETE: (serverName: string, mediaId: string) => `/_matrix/media/v3/delete/${serverName}/${mediaId}`,
+    DELETE: (serverName: string, mediaId: string) =>
+      `/_matrix/media/v3/delete/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`,
     QUOTA_ALERTS: '/_matrix/media/v1/quota/alerts',
     QUOTA_CHECK: '/_matrix/media/v1/quota/check',
     QUOTA_STATS: '/_matrix/media/v1/quota/stats',
@@ -154,11 +160,11 @@ export const MATRIX_PATHS = {
     MEDIA_PREFIX: '/_matrix/media/'
   },
   USER: {
-    PROFILE: (userId: string) => `/_matrix/client/v3/profile/${userId}`,
-    DISPLAYNAME: (userId: string) => `/_matrix/client/v3/profile/${userId}/displayname`,
-    AVATAR: (userId: string) => `/_matrix/client/v3/profile/${userId}/avatar_url`,
+    PROFILE: (userId: string) => `/_matrix/client/v3/profile/${encodeURIComponent(userId)}`,
+    DISPLAYNAME: (userId: string) => `/_matrix/client/v3/profile/${encodeURIComponent(userId)}/displayname`,
+    AVATAR: (userId: string) => `/_matrix/client/v3/profile/${encodeURIComponent(userId)}/avatar_url`,
     DIRECTORY_SEARCH: '/_matrix/client/v3/user_directory/search',
-    PRESENCE: (userId: string) => `/_matrix/client/v3/presence/${userId}/status`,
+    PRESENCE: (userId: string) => `/_matrix/client/v3/presence/${encodeURIComponent(userId)}/status`,
     DEVICES: '/_matrix/client/v3/devices',
     TURN_SERVER: '/_matrix/client/v3/voip/turnServer',
     PUBLIC_ROOMS: '/_matrix/client/v3/publicRooms'
@@ -168,7 +174,7 @@ export const MATRIX_PATHS = {
     SERVER_INFO: '/_synapse/admin/v1/server',
     SERVER_VERSION: '/_synapse/admin/v1/server_version',
     WHOAMI: '/_synapse/admin/v1/whoami',
-    WHOIS: (userId: string) => `/_synapse/admin/v1/whois/${userId}`,
+    WHOIS: (userId: string) => `/_synapse/admin/v1/whois/${encodeURIComponent(userId)}`,
     USERS: '/_synapse/admin/v2/users',
     ROOMS: '/_synapse/admin/v1/rooms',
     REGISTRATION_TOKENS: '/_synapse/admin/v1/registration_tokens',
@@ -176,27 +182,28 @@ export const MATRIX_PATHS = {
     CAPTCHA_CLEANUP: '/_synapse/admin/v1/captcha/cleanup',
     EXTERNAL_SERVICES: '/_synapse/admin/v1/external_services',
     REPORTS: '/_synapse/admin/v1/reports',
-    REPORT_BY_ID: (reportId: string) => `/_synapse/admin/v1/reports/${reportId}`,
+    REPORT_BY_ID: (reportId: string) => `/_synapse/admin/v1/reports/${encodeURIComponent(reportId)}`,
     SERVER_NOTIFICATIONS: '/_synapse/admin/v1/server_notifications',
-    SERVER_NOTIFICATION_BY_ID: (id: string) => `/_synapse/admin/v1/server_notifications/${id}`,
+    SERVER_NOTIFICATION_BY_ID: (id: string) => `/_synapse/admin/v1/server_notifications/${encodeURIComponent(id)}`,
     SERVER_NOTIFICATIONS_ACTIVE: '/_synapse/admin/v1/server_notifications/active',
-    SERVER_NOTIFICATION_READ: (id: string) => `/_synapse/admin/v1/server_notifications/${id}/read`,
-    SERVER_NOTIFICATION_DISMISS: (id: string) => `/_synapse/admin/v1/server_notifications/${id}/dismiss`,
+    SERVER_NOTIFICATION_READ: (id: string) => `/_synapse/admin/v1/server_notifications/${encodeURIComponent(id)}/read`,
+    SERVER_NOTIFICATION_DISMISS: (id: string) =>
+      `/_synapse/admin/v1/server_notifications/${encodeURIComponent(id)}/dismiss`,
     SERVER_NOTIFICATION_TEMPLATES: '/_synapse/admin/v1/server_notifications/templates',
     APPSERVICES: '/_synapse/admin/v1/appservices',
-    APPSERVICE_BY_ID: (id: string) => `/_synapse/admin/v1/appservices/${id}`,
+    APPSERVICE_BY_ID: (id: string) => `/_synapse/admin/v1/appservices/${encodeURIComponent(id)}`,
     MATRIX_WHOAMI: '/_matrix/admin/v1/whoami',
     MATRIX_EXTERNAL_SERVICES: '/_matrix/admin/v1/external_services'
   },
   VOICE: {
     CONFIG: '/_matrix/client/v1/voice/config',
     STATS: '/_matrix/client/v1/voice/stats',
-    ROOM_STATS: (roomId: string) => `/_matrix/client/v1/voice/room/${roomId}/stats`,
+    ROOM_STATS: (roomId: string) => `/_matrix/client/v1/voice/room/${encodeURIComponent(roomId)}/stats`,
     UPLOAD: '/_matrix/client/v1/voice/upload',
-    ROOM_LIST: (roomId: string) => `/_matrix/client/v1/voice/room/${roomId}`,
-    USER_LIST: (userId: string) => `/_matrix/client/v1/voice/user/${userId}`,
-    USER_STATS: (userId: string) => `/_matrix/client/v1/voice/user/${userId}/stats`,
-    CONTENT: (messageId: string) => `/_matrix/client/v1/voice/${messageId}`,
+    ROOM_LIST: (roomId: string) => `/_matrix/client/v1/voice/room/${encodeURIComponent(roomId)}`,
+    USER_LIST: (userId: string) => `/_matrix/client/v1/voice/user/${encodeURIComponent(userId)}`,
+    USER_STATS: (userId: string) => `/_matrix/client/v1/voice/user/${encodeURIComponent(userId)}/stats`,
+    CONTENT: (messageId: string) => `/_matrix/client/v1/voice/${encodeURIComponent(messageId)}`,
     CONVERT: '/_matrix/client/v1/voice/convert',
     OPTIMIZE: '/_matrix/client/v1/voice/optimize',
     TRANSCRIPTION: '/_matrix/client/v1/voice/transcription'
