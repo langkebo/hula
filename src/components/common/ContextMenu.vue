@@ -28,7 +28,12 @@
         <!-- 普通右键菜单 -->
         <div
           v-if="!isMobile() && showMenu && !(emoji && emoji.length > 0 && showAllEmojis)"
+          ref="menuRef"
           class="context-menu select-none"
+          tabindex="0"
+          role="menu"
+          :aria-activedescendant="focusedIndex >= 0 ? `menu-item-${focusedIndex}` : undefined"
+          @keydown="handleMenuKeydown"
           :style="{
             left: `${pos.posX}px`,
             top: `${pos.posY}px`
@@ -39,15 +44,24 @@
             class="menu-list">
             <div v-for="(item, index) in visibleMenu" :key="index">
               <!-- 禁止的菜单选项需要禁止点击事件  -->
-              <div class="menu-item-disabled" v-if="item.disabled" @click.prevent="$event.preventDefault()">
+              <div
+                v-if="item.disabled"
+                id="`menu-item-${index}`"
+                class="menu-item-disabled"
+                role="menuitem"
+                aria-disabled="true"
+                @click.prevent="$event.preventDefault()">
                 <div class="menu-item-content">
                   <svg><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
                   <p class="h-24px">{{ getMenuItemProp(item, 'label') }}</p>
                 </div>
               </div>
               <div
+                :id="`menu-item-${index}`"
                 class="menu-item"
-                :class="{ 'menu-item-danger': isDangerousItem(item) }"
+                :class="{ 'menu-item-danger': isDangerousItem(item), 'menu-item-focused': focusedIndex === index }"
+                role="menuitem"
+                :tabindex="focusedIndex === index ? 0 : -1"
                 v-else
                 @click="handleClick(item)"
                 @mouseenter="handleMouseEnter(item, index)"
@@ -62,15 +76,21 @@
               </div>
             </div>
             <!-- 判断是否有特别的菜单项才需要分割线 -->
-            <div v-if="visibleSpecialMenu.length > 0" class="flex-col-y-center gap-6px">
+            <div v-if="visibleSpecialMenu.length > 0" class="flex-col-y-center gap-6px" role="separator">
               <!-- 分割线（只有当常规菜单存在时才显示） -->
               <div
                 v-if="visibleMenu && visibleMenu.length > 0"
                 class="h-1px bg-[--hula-border-default] m-[2px_8px]"></div>
               <div
                 @click="handleClick(item)"
+                :id="`menu-item-${visibleMenu.length + index}`"
                 class="menu-item"
-                :class="{ 'menu-item-danger': isDangerousItem(item) }"
+                :class="{
+                  'menu-item-danger': isDangerousItem(item),
+                  'menu-item-focused': focusedIndex === visibleMenu.length + index
+                }"
+                role="menuitem"
+                :tabindex="focusedIndex === visibleMenu.length + index ? 0 : -1"
                 v-for="(item, index) in visibleSpecialMenu"
                 :key="index">
                 <svg><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
@@ -166,6 +186,74 @@ const props = withDefaults(defineProps<Props>(), {
 
 // 控制是否显示全部表情
 const showAllEmojis = ref(false)
+
+// 键盘导航状态
+const focusedIndex = ref(-1)
+const menuRef = ref<HTMLElement | null>(null)
+
+const allMenuItems = computed(() => {
+  const items: ContextMenuItem[] = []
+  if (visibleMenu.value) {
+    items.push(...visibleMenu.value)
+  }
+  if (visibleSpecialMenu.value) {
+    items.push(...visibleSpecialMenu.value)
+  }
+  return items
+})
+
+const handleMenuKeydown = (e: KeyboardEvent) => {
+  const totalItems = allMenuItems.value.length
+  if (totalItems === 0) return
+
+  switch (e.key) {
+    case 'ArrowDown': {
+      e.preventDefault()
+      let nextIndex = focusedIndex.value + 1
+      while (nextIndex < totalItems && allMenuItems.value[nextIndex]?.disabled) {
+        nextIndex++
+      }
+      if (nextIndex >= totalItems) {
+        nextIndex = 0
+        while (nextIndex < totalItems && allMenuItems.value[nextIndex]?.disabled) {
+          nextIndex++
+        }
+      }
+      focusedIndex.value = nextIndex < totalItems ? nextIndex : -1
+      break
+    }
+    case 'ArrowUp': {
+      e.preventDefault()
+      let prevIndex = focusedIndex.value - 1
+      while (prevIndex >= 0 && allMenuItems.value[prevIndex]?.disabled) {
+        prevIndex--
+      }
+      if (prevIndex < 0) {
+        prevIndex = totalItems - 1
+        while (prevIndex >= 0 && allMenuItems.value[prevIndex]?.disabled) {
+          prevIndex--
+        }
+      }
+      focusedIndex.value = prevIndex >= 0 ? prevIndex : -1
+      break
+    }
+    case 'Enter': {
+      e.preventDefault()
+      if (focusedIndex.value >= 0 && focusedIndex.value < allMenuItems.value.length) {
+        const item = allMenuItems.value[focusedIndex.value]
+        if (!item.disabled) {
+          handleClick(item)
+        }
+      }
+      break
+    }
+    case 'Escape': {
+      e.preventDefault()
+      showMenu.value = false
+      break
+    }
+  }
+}
 
 // 计算要显示的表情列表
 const displayedEmojis = computed(() => {
@@ -295,6 +383,14 @@ watch(
       activeSubmenu.value = []
       // 重置表情显示状态
       showAllEmojis.value = false
+      // 重置键盘导航状态
+      focusedIndex.value = -1
+    } else {
+      // 菜单显示时自动聚焦并初始化键盘导航
+      nextTick(() => {
+        focusedIndex.value = -1
+        menuRef.value?.focus()
+      })
     }
   }
 )
@@ -523,7 +619,8 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     @include menu-item();
     display: flex;
     align-items: center;
-    &:hover {
+    &:hover,
+    &.menu-item-focused {
       background-color: var(--hula-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;

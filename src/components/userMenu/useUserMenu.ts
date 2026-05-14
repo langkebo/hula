@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { isDesktop } from '@/composables/usePlatform'
-import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
+import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import { type SettingsTabType, useSettingsDialogStore } from '@/stores/domains/settings/settingsDialog'
 import { type MenuPosition, type MenuTrigger, useUserMenuStore } from '@/stores/domains/user/userMenu'
 import { createLogger } from '@/utils/Logger'
@@ -47,7 +47,7 @@ export function useUserMenu() {
   async function handleLogout() {
     const loading = message.loading(t('menu.user_menu.dialogs.logout.loading'), { duration: 0 })
     try {
-      await matrixRuntimeSessionService.logoutCurrentSession()
+      await sessionOrchestrator.logoutCurrentSession()
       message.success(t('menu.user_menu.dialogs.logout.success'))
       window.location.reload()
     } catch (error) {

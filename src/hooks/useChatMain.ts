@@ -33,7 +33,7 @@ const logger = createLogger('ChatMain')
 type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<string, unknown>
 
 import { useI18n } from 'vue-i18n'
-import { matrixAdminService } from '@/services/matrix/admin/MatrixAdminService'
+import { adminService } from '@/services/matrix/admin'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
 import { roomStateService } from '@/services/matrix/room/RoomStateService'
@@ -789,7 +789,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           return
         }
         try {
-          await matrixAdminService.reportEvent({
+          await adminService.reportEvent({
             roomId,
             eventId,
             reason: 'violation',

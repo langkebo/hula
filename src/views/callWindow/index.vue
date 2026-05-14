@@ -8,8 +8,8 @@
       <n-avatar
         :size="56"
         :src="avatarSrc"
-        :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#fff'"
-        :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+        :color="cssVar('--avatar-fallback-color')"
+        :fallback-src="cssVar('--avatar-fallback-src')"
         class="rounded-12px shadow-md" />
       <!-- 通话类型指示器 -->
       <div class="absolute -bottom-2px -right-2px w-20px h-20px rounded-full bg-blue-500 flex-center shadow-lg">
@@ -218,8 +218,8 @@
         <n-avatar
           :size="140"
           :src="avatarSrc"
-          :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#fff'"
-          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+          :color="cssVar('--avatar-fallback-color')"
+          :fallback-src="cssVar('--avatar-fallback-src')"
           class="rounded-22px mb-16px" />
 
         <!-- 用户名 -->
@@ -381,15 +381,16 @@ import { LogicalPosition, LogicalSize, PhysicalPosition, PhysicalSize } from '@t
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { primaryMonitor } from '@tauri-apps/api/window'
 import { info } from '@tauri-apps/plugin-log'
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import type ActionBar from '@/components/windows/ActionBar.vue'
-import { CallTypeEnum, RTCCallStatus, ThemeEnum } from '@/enums'
+import { CallTypeEnum, RTCCallStatus } from '@/enums'
 import { useWebRtc } from '@/hooks/useWebRtc'
 import router from '@/router'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { cssVar } from '@/utils/CssUtils'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
@@ -397,7 +398,6 @@ import { CallResponseStatus } from '../../services/wsType'
 
 const { t } = useI18n()
 const logger = createLogger('CallWindow')
-const settingStore = useSettingStore()
 const route = useRoute()
 
 const resolveCallType = (value?: string | null): CallTypeEnum => {

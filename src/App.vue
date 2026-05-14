@@ -37,19 +37,66 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useWindow } from '@/hooks/useWindow.ts'
 import { loadLanguage } from '@/services/i18n'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
-import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
-import { matrixReactionService } from '@/services/matrix/messaging/MatrixReactionService'
-import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
-import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
-import { matrixRoomDirectMessageService } from '@/services/matrix/room/DirectMessageService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
-import { matrixRoomPinsService } from '@/services/matrix/room/PinsService'
-import { matrixRoomStateService } from '@/services/matrix/room/StateService'
-import { matrixRoomTagsService } from '@/services/matrix/room/TagsService'
-import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
-import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+
+function createLazyLoader<T, K extends keyof T>(importFn: () => Promise<T>, key: K): () => Promise<T[K]> {
+  let cached: T[K] | undefined
+  let loaded = false
+  return async () => {
+    if (!loaded) {
+      const mod = await importFn()
+      cached = mod[key]
+      loaded = true
+    }
+    return cached as T[K]
+  }
+}
+
+const getMatrixClientService = createLazyLoader(
+  () => import('@/services/matrix/MatrixClientService'),
+  'matrixClientService'
+)
+const getMatrixPresenceService = createLazyLoader(
+  () => import('@/services/matrix/user/MatrixPresenceService'),
+  'matrixPresenceService'
+)
+const getMatrixMessageService = createLazyLoader(
+  () => import('@/services/matrix/messaging/MatrixMessageService'),
+  'matrixMessageService'
+)
+const getMatrixReceiptService = createLazyLoader(
+  () => import('@/services/matrix/messaging/MatrixReceiptService'),
+  'matrixReceiptService'
+)
+const getMatrixReactionService = createLazyLoader(
+  () => import('@/services/matrix/messaging/MatrixReactionService'),
+  'matrixReactionService'
+)
+const getMatrixRoomStateService = createLazyLoader(
+  () => import('@/services/matrix/room/StateService'),
+  'matrixRoomStateService'
+)
+const getMatrixRoomService = createLazyLoader(
+  () => import('@/services/matrix/room/MatrixRoomService'),
+  'matrixRoomService'
+)
+const getMatrixRoomCreationService = createLazyLoader(
+  () => import('@/services/matrix/room/CreationService'),
+  'matrixRoomCreationService'
+)
+const getMatrixRoomDirectMessageService = createLazyLoader(
+  () => import('@/services/matrix/room/DirectMessageService'),
+  'matrixRoomDirectMessageService'
+)
+const getMatrixRoomTagsService = createLazyLoader(
+  () => import('@/services/matrix/room/TagsService'),
+  'matrixRoomTagsService'
+)
+const getMatrixRoomPinsService = createLazyLoader(
+  () => import('@/services/matrix/room/PinsService'),
+  'matrixRoomPinsService'
+)
+
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -206,18 +253,18 @@ useMitt.on(WsResponseMessageType.LOGIN_SUCCESS, async (data: LoginSuccessResType
 
   // 设置在线状态到服务器
   try {
-    await matrixClientService.waitForClientReady({
+    const clientService = await getMatrixClientService()
+    await clientService.waitForClientReady({
       timeoutMs: 5000
     })
-    await matrixPresenceService.setPresence('online')
+    const presenceService = await getMatrixPresenceService()
+    await presenceService.setPresence('online')
     logger.info('[Login] 在线状态已设置为 online')
 
-    // 立即同步在线状态，确保显示更新
     await syncAvatarPresence()
 
-    // 注册实时 presence 事件监听，替代轮询
     if (!unsubscribePresenceListener) {
-      unsubscribePresenceListener = matrixPresenceService.onPresenceChange((presence) => {
+      unsubscribePresenceListener = presenceService.onPresenceChange((presence) => {
         const patch = buildPresenceStorePatch(presence)
         contactStore.updateContactPresence(presence.user_id, patch)
         groupStore.updateUserPresence(presence.user_id, {
@@ -588,17 +635,23 @@ const applyPresenceToStores = async () => {
     members: groupStore.allUserInfo
   })
 
-  if (!trackedUserIds.length || !matrixClientService.getClient()) {
+  if (!trackedUserIds.length) {
     return
   }
 
+  const clientService = await getMatrixClientService()
+  if (!clientService.getClient()) {
+    return
+  }
+
+  const presenceService = await getMatrixPresenceService()
   const nextSubscribedUserIds = trackedUserIds.filter((userId) => !subscribedPresenceUserIds.has(userId))
   if (nextSubscribedUserIds.length) {
-    await matrixPresenceService.subscribeToPresence(nextSubscribedUserIds)
+    await presenceService.subscribeToPresence(nextSubscribedUserIds)
     nextSubscribedUserIds.forEach((userId) => subscribedPresenceUserIds.add(userId))
   }
 
-  const presences = await matrixPresenceService.getBatchPresence(trackedUserIds)
+  const presences = await presenceService.getBatchPresence(trackedUserIds)
   const now = Date.now()
 
   presences.forEach((presence) => {
@@ -699,7 +752,19 @@ const requestNetworkPermissionForIOS = async () => {
 onMounted(async () => {
   await bootstrap()
 
+  const { offlineQueueService } = await import('@/services/offline/OfflineQueueService')
   offlineQueueService.setReplayFn(async (op) => {
+    const clientService = await getMatrixClientService()
+    const messageService = await getMatrixMessageService()
+    const receiptService = await getMatrixReceiptService()
+    const reactionService = await getMatrixReactionService()
+    const roomStateService = await getMatrixRoomStateService()
+    const roomService = await getMatrixRoomService()
+    const roomCreationService = await getMatrixRoomCreationService()
+    const roomDirectMessageService = await getMatrixRoomDirectMessageService()
+    const roomTagsService = await getMatrixRoomTagsService()
+    const roomPinsService = await getMatrixRoomPinsService()
+
     switch (op.type) {
       case 'message': {
         const payload = op.payload as Record<string, unknown>
@@ -710,28 +775,28 @@ onMounted(async () => {
             eventType: string
             content: Record<string, unknown>
           }
-          const client = matrixClientService.getClient()
+          const client = clientService.getClient()
           if (client) {
             const sendResult = await client.sendEvent(roomId, eventType, content)
-            matrixMessageService.registerSentMessage(localEventId, sendResult.event_id)
+            messageService.registerSentMessage(localEventId, sendResult.event_id)
           }
         } else {
           const structuredPayload = (payload.payload || payload) as SendMessagePayload
-          const result = await matrixMessageService.sendStructuredMessage(structuredPayload)
+          const result = await messageService.sendStructuredMessage(structuredPayload)
           if (result?.event_id) {
-            matrixMessageService.registerSentMessage(localEventId, result.event_id)
+            messageService.registerSentMessage(localEventId, result.event_id)
           }
         }
         break
       }
       case 'receipt': {
         const { roomId, eventId } = op.payload as { roomId: string; eventId: string }
-        await matrixReceiptService.sendReadReceiptByEventId(roomId, eventId)
+        await receiptService.sendReadReceiptByEventId(roomId, eventId)
         break
       }
       case 'reaction': {
         const { roomId, eventId, emoji } = op.payload as { roomId: string; eventId: string; emoji: string }
-        await matrixReactionService.addReaction(roomId, eventId, emoji)
+        await reactionService.addReaction(roomId, eventId, emoji)
         break
       }
       case 'state': {
@@ -741,11 +806,11 @@ onMounted(async () => {
           content: string
         }
         if (type === 'name') {
-          await matrixRoomStateService.setRoomName(roomId, content)
+          await roomStateService.setRoomName(roomId, content)
         } else if (type === 'topic') {
-          await matrixRoomStateService.setRoomTopic(roomId, content)
+          await roomStateService.setRoomTopic(roomId, content)
         } else if (type === 'avatar') {
-          await matrixRoomStateService.setRoomAvatar(roomId, content)
+          await roomStateService.setRoomAvatar(roomId, content)
         }
         break
       }
@@ -755,12 +820,12 @@ onMounted(async () => {
           eventId: string
           reason?: string
         }
-        await matrixClientService.getClient()?.redactEvent(roomId, eventId, undefined, { reason })
+        await clientService.getClient()?.redactEvent(roomId, eventId, undefined, { reason })
         break
       }
       case 'push_rule': {
         const { roomId, enabled } = op.payload as { roomId: string; enabled: boolean }
-        await matrixRoomStateService.setPushRule(roomId, enabled)
+        await roomStateService.setPushRule(roomId, enabled)
         break
       }
       case 'membership': {
@@ -771,28 +836,28 @@ onMounted(async () => {
           reason?: string
         }
         if (payload.type === 'join') {
-          await matrixRoomService.joinRoom(payload.roomId)
+          await roomService.joinRoom(payload.roomId)
         } else if (payload.type === 'leave') {
-          await matrixRoomService.leaveRoom(payload.roomId)
+          await roomService.leaveRoom(payload.roomId)
         } else if (payload.type === 'invite' && payload.userId) {
-          await matrixRoomService.inviteUser(payload.roomId, payload.userId)
+          await roomService.inviteUser(payload.roomId, payload.userId)
         } else if (payload.type === 'kick' && payload.userId) {
-          await matrixRoomService.kickUser(payload.roomId, payload.userId, payload.reason)
+          await roomService.kickUser(payload.roomId, payload.userId, payload.reason)
         } else if (payload.type === 'ban' && payload.userId) {
-          await matrixRoomService.banUser(payload.roomId, payload.userId, payload.reason)
+          await roomService.banUser(payload.roomId, payload.userId, payload.reason)
         } else if (payload.type === 'unban' && payload.userId) {
-          await matrixRoomService.unbanUser(payload.roomId, payload.userId)
+          await roomService.unbanUser(payload.roomId, payload.userId)
         }
         break
       }
       case 'creation': {
         const { options } = op.payload as { options: Record<string, unknown> }
-        await matrixRoomCreationService.createRoom(options)
+        await roomCreationService.createRoom(options)
         break
       }
       case 'dm_creation': {
         const { userId } = op.payload as { userId: string }
-        await matrixRoomDirectMessageService.createDirectRoom(userId)
+        await roomDirectMessageService.createDirectRoom(userId)
         break
       }
       case 'tag': {
@@ -803,9 +868,9 @@ onMounted(async () => {
           action: 'set' | 'remove'
         }
         if (action === 'set') {
-          await matrixRoomTagsService.setTag(roomId, tag, order)
+          await roomTagsService.setTag(roomId, tag, order)
         } else {
-          await matrixRoomTagsService.removeTag(roomId, tag)
+          await roomTagsService.removeTag(roomId, tag)
         }
         break
       }
@@ -817,9 +882,9 @@ onMounted(async () => {
           events?: Record<string, unknown>
         }
         if (payload.type === 'pinned' && payload.eventIds) {
-          await matrixRoomPinsService.setPinnedEvents(payload.roomId, payload.eventIds)
+          await roomPinsService.setPinnedEvents(payload.roomId, payload.eventIds)
         } else if (payload.type === 'sticky' && payload.events) {
-          await matrixRoomPinsService.setStickyEvents(payload.roomId, payload.events)
+          await roomPinsService.setStickyEvents(payload.roomId, payload.events)
         }
         break
       }

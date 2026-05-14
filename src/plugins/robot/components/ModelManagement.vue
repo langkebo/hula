@@ -181,11 +181,13 @@
                 <template #icon>
                   <Icon icon="mdi:upload" />
                 </template>
-                {{ formData.avatar ? '更换头像' : '上传头像' }}
+                {{ formData.avatar ? t('ai_assistant.robot.change_avatar') : t('ai_assistant.robot.upload_avatar') }}
               </n-button>
               <span v-if="formData.avatar" class="text-(12px #909090)">
-                已上传
-                <n-button text type="error" size="tiny" @click="formData.avatar = ''">清除</n-button>
+                {{ t('ai_assistant.robot.uploaded') }}
+                <n-button text type="error" size="tiny" @click="formData.avatar = ''">
+                  {{ t('ai_assistant.robot.clear') }}
+                </n-button>
               </span>
             </n-flex>
           </n-flex>
@@ -197,49 +199,49 @@
             @change="handleFileChange" />
         </n-form-item>
 
-        <n-form-item label="模型类型" path="type">
+        <n-form-item :label="t('ai_assistant.robot.model_type_label')" path="type">
           <n-flex :size="8" style="flex-wrap: wrap">
             <n-button :type="formData.type === 1 ? 'primary' : 'default'" size="small" @click="formData.type = 1">
               <template #icon>
                 <Icon icon="mdi:message-text" />
               </template>
-              对话
+              {{ t('ai_assistant.robot.model_type_chat') }}
             </n-button>
             <n-button :type="formData.type === 2 ? 'primary' : 'default'" size="small" @click="formData.type = 2">
               <template #icon>
                 <Icon icon="mdi:image" />
               </template>
-              图片
+              {{ t('ai_assistant.robot.model_type_image') }}
             </n-button>
             <n-button :type="formData.type === 3 ? 'primary' : 'default'" size="small" @click="formData.type = 3">
               <template #icon>
                 <Icon icon="mdi:microphone" />
               </template>
-              音频
+              {{ t('ai_assistant.robot.model_type_audio') }}
             </n-button>
             <n-button :type="formData.type === 7 ? 'primary' : 'default'" size="small" @click="formData.type = 7">
               <template #icon>
                 <Icon icon="mdi:video-outline" />
               </template>
-              文生视频
+              {{ t('ai_assistant.robot.model_type_text2video') }}
             </n-button>
             <n-button :type="formData.type === 8 ? 'primary' : 'default'" size="small" @click="formData.type = 8">
               <template #icon>
                 <Icon icon="mdi:video-image" />
               </template>
-              图生视频
+              {{ t('ai_assistant.robot.model_type_image2video') }}
             </n-button>
           </n-flex>
         </n-form-item>
 
-        <n-form-item label="模型名称" path="name">
+        <n-form-item :label="t('ai_assistant.robot.model_name')" path="name">
           <n-input
             v-model:value="formData.name"
-            placeholder="请输入模型名称，例如: GPT-4"
+            :placeholder="t('ai_assistant.robot.model_name_placeholder')"
             @update:value="handleNameChange" />
         </n-form-item>
 
-        <n-form-item label="模型标志" path="model">
+        <n-form-item :label="t('ai_assistant.robot.model_flag')" path="model">
           <n-flex vertical :size="4" style="width: 100%">
             <n-flex :size="8" style="width: 100%">
               <n-select
@@ -258,14 +260,14 @@
                 :disabled="!formData.platform"
                 style="flex: 1" />
               <n-button v-if="modelDocsUrl" text type="info" style="padding: 0" @click="openExternalUrl(modelDocsUrl)">
-                点击查看文档
+                {{ t('ai_assistant.robot.view_docs') }}
               </n-button>
             </n-flex>
             <n-text depth="3" style="font-size: 12px">
               {{ modelHint }}
             </n-text>
             <n-flex v-if="modelDocsUrl" align="center" :size="8" class="mt-4px">
-              <n-text depth="3" style="font-size: 12px">查看文档：</n-text>
+              <n-text depth="3" style="font-size: 12px">{{ t('ai_assistant.robot.view_docs_label') }}</n-text>
               <n-button text type="info" style="font-size: 12px" @click="openExternalUrl(modelDocsUrl)">
                 {{ modelDocsUrl }}
               </n-button>
@@ -273,44 +275,51 @@
           </n-flex>
         </n-form-item>
 
-        <n-form-item label="状态" path="status">
-          <n-select v-model:value="formData.status" :options="statusOptions" placeholder="请选择状态" />
+        <n-form-item :label="t('ai_assistant.robot.status_label')" path="status">
+          <n-select
+            v-model:value="formData.status"
+            :options="statusOptions"
+            :placeholder="t('ai_assistant.robot.select_status')" />
         </n-form-item>
 
-        <n-form-item label="排序值" path="sort">
-          <n-input-number v-model:value="formData.sort" :min="0" placeholder="数值越小越靠前" style="width: 100%" />
+        <n-form-item :label="t('ai_assistant.robot.sort_value')" path="sort">
+          <n-input-number
+            v-model:value="formData.sort"
+            :min="0"
+            :placeholder="t('ai_assistant.robot.sort_hint')"
+            style="width: 100%" />
         </n-form-item>
 
-        <n-form-item label="温度参数" path="temperature">
+        <n-form-item :label="t('ai_assistant.robot.temperature_param')" path="temperature">
           <n-input-number
             v-model:value="formData.temperature"
             :min="0"
             :max="2"
             :step="0.1"
-            placeholder="0-2之间，控制随机性（可选）"
+            :placeholder="t('ai_assistant.robot.temperature_hint')"
             style="width: 100%" />
         </n-form-item>
 
-        <n-form-item label="最大Token数" path="maxTokens">
+        <n-form-item :label="t('ai_assistant.robot.max_token')" path="maxTokens">
           <n-input-number
             v-model:value="formData.maxTokens"
             :min="1"
-            placeholder="单条回复的最大Token数（可选）"
+            :placeholder="t('ai_assistant.robot.max_token_hint')"
             style="width: 100%" />
         </n-form-item>
 
-        <n-form-item label="最大上下文数" path="maxContexts">
+        <n-form-item :label="t('ai_assistant.robot.max_context')" path="maxContexts">
           <n-input-number
             v-model:value="formData.maxContexts"
             :min="1"
-            placeholder="上下文的最大Message数量（可选）"
+            :placeholder="t('ai_assistant.robot.max_context_hint')"
             style="width: 100%" />
         </n-form-item>
 
-        <n-form-item label="是否公开" path="publicStatus">
+        <n-form-item :label="t('ai_assistant.robot.is_public')" path="publicStatus">
           <n-switch :value="formData.publicStatus === 0" @update:value="handlePublicStatusChange">
-            <template #checked>公开</template>
-            <template #unchecked>私有</template>
+            <template #checked>{{ t('ai_assistant.robot.public') }}</template>
+            <template #unchecked>{{ t('ai_assistant.robot.private') }}</template>
           </n-switch>
         </n-form-item>
       </n-form>
@@ -318,9 +327,9 @@
 
     <template #footer>
       <n-flex justify="end" :size="12">
-        <n-button @click="showEditModal = false">取消</n-button>
+        <n-button @click="showEditModal = false">{{ t('ai_assistant.robot.cancel') }}</n-button>
         <n-button type="primary" @click="handleSubmit" :loading="submitting">
-          {{ editingModel ? '保存' : '创建' }}
+          {{ editingModel ? t('ai_assistant.robot.save') : t('ai_assistant.robot.create') }}
         </n-button>
       </n-flex>
     </template>
@@ -509,22 +518,22 @@ const modelDocsUrl = computed(() => {
 // 计算属性：模型输入框的占位符
 const modelPlaceholder = computed(() => {
   if (!formData.value.platform) {
-    return '请先选择平台'
+    return t('ai_assistant.robot.select_platform_first')
   }
   const info = platformModelInfo.value[formData.value.platform]
   if (modelExamples.value.length > 0) {
-    return '请选择或输入模型标志'
+    return t('ai_assistant.robot.select_or_input_model')
   }
-  return info ? `例如: ${info.examples}` : '请输入模型标志'
+  return info ? `例如: ${info.examples}` : t('ai_assistant.robot.input_model_flag')
 })
 
 // 计算属性：模型输入提示
 const modelHint = computed(() => {
   if (!formData.value.platform) {
-    return '请先选择平台后再填写模型标志'
+    return t('ai_assistant.robot.select_platform_before_model')
   }
   const info = platformModelInfo.value[formData.value.platform]
-  return info ? info.hint : '请填写正确的模型标志'
+  return info ? info.hint : t('ai_assistant.robot.fill_model_flag')
 })
 
 // 监听模型输入变化，自动保存到后端
@@ -554,7 +563,7 @@ watch(
         await apiKeyService.addPlatformModel(formData.value.platform, newModel)
         // 重新加载平台列表，更新示例
         await loadPlatformList()
-        window.$message?.success('模型已添加到示例列表')
+        window.$message?.success(t('ai_assistant.robot.model_added_to_examples'))
       } catch (error) {
         logger.error('保存模型失败:', error)
         // 静默失败，不影响用户操作
@@ -565,21 +574,21 @@ watch(
 
 // 状态选项
 const statusOptions = [
-  { label: '可用', value: 0 },
-  { label: '不可用', value: 1 }
+  { label: t('ai_assistant.robot.available'), value: 0 },
+  { label: t('ai_assistant.robot.unavailable'), value: 1 }
 ]
 
 // 表单验证规则
 const formRules: FormRules = {
-  keyId: [{ required: true, message: '请选择 API 密钥', trigger: 'change' }],
-  name: [{ required: true, message: '请输入模型名称', trigger: 'blur' }],
-  model: [{ required: true, message: '请输入模型标志', trigger: 'blur' }],
-  platform: [{ required: true, message: '请选择平台', trigger: 'change' }],
+  keyId: [{ required: true, message: t('ai_assistant.robot.select_api_key_required'), trigger: 'change' }],
+  name: [{ required: true, message: t('ai_assistant.robot.input_model_name_required'), trigger: 'blur' }],
+  model: [{ required: true, message: t('ai_assistant.robot.input_model_flag_required'), trigger: 'blur' }],
+  platform: [{ required: true, message: t('ai_assistant.robot.select_platform_required'), trigger: 'change' }],
   type: [
     {
       required: true,
       type: 'number',
-      message: '请选择模型类型',
+      message: t('ai_assistant.robot.select_model_type_required'),
       trigger: 'change',
       validator: (_rule: unknown, value: ValidationValue) => {
         return value !== undefined && value !== null && value !== ''
@@ -590,7 +599,7 @@ const formRules: FormRules = {
     {
       required: true,
       type: 'number',
-      message: '请输入排序值',
+      message: t('ai_assistant.robot.input_sort_required'),
       trigger: 'blur',
       validator: (_rule: unknown, value: ValidationValue) => {
         return value !== undefined && value !== null && value !== ''
@@ -601,7 +610,7 @@ const formRules: FormRules = {
     {
       required: true,
       type: 'number',
-      message: '请选择状态',
+      message: t('ai_assistant.robot.select_status_required'),
       trigger: 'change',
       validator: (_rule: unknown, value: ValidationValue) => {
         return value !== undefined && value !== null && value !== ''
@@ -648,7 +657,7 @@ const loadModelList = async () => {
     pagination.value.total = data.total || 0
   } catch (error) {
     logger.error('加载模型列表失败:', error)
-    window.$message.error('加载模型列表失败')
+    window.$message.error(t('ai_assistant.robot.load_models_failed'))
   } finally {
     loading.value = false
   }
@@ -718,7 +727,7 @@ const {
     await nextTick()
     formData.value.avatar = downloadUrl
     await nextTick()
-    window.$message.success('头像上传成功')
+    window.$message.success(t('ai_assistant.robot.avatar_upload_success'))
   }
 })
 
@@ -769,10 +778,10 @@ const handleSubmit = async () => {
     if (editingModel.value) {
       submitData.id = editingModel.value.id
       await modelService.update(submitData)
-      window.$message.success('模型更新成功')
+      window.$message.success(t('ai_assistant.robot.model_updated'))
     } else {
       await modelService.update(submitData)
-      window.$message.success('模型创建成功')
+      window.$message.success(t('ai_assistant.robot.model_created'))
     }
 
     showEditModal.value = false
@@ -785,7 +794,7 @@ const handleSubmit = async () => {
       return
     }
     logger.error('保存模型失败:', error)
-    window.$message.error('保存模型失败')
+    window.$message.error(t('ai_assistant.robot.save_model_failed'))
   } finally {
     submitting.value = false
   }
@@ -795,13 +804,13 @@ const handleSubmit = async () => {
 const handleDelete = async (id: string) => {
   try {
     await modelService.delete({ id })
-    window.$message.success('模型删除成功')
+    window.$message.success(t('ai_assistant.robot.model_deleted'))
     loadModelList()
     // 通知父组件刷新
     emit('refresh')
   } catch (error) {
     logger.error('删除模型失败:', error)
-    window.$message.error('删除模型失败')
+    window.$message.error(t('ai_assistant.robot.delete_model_failed'))
   }
 }
 

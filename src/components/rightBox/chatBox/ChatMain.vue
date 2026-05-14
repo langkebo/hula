@@ -51,7 +51,7 @@
         @mouseenter="showScrollbar = true"
         @mouseleave="showScrollbar = false">
         <!-- 消息列表 -->
-        <div ref="messageListRef" class="message-list min-h-full flex flex-col">
+        <div ref="messageListRef" role="log" aria-live="polite" class="message-list min-h-full flex flex-col">
           <!-- 没有更多消息提示 -->
           <div
             v-show="isMainViewReady && chatStore.shouldShowNoMoreMessage"

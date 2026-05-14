@@ -86,6 +86,8 @@ declare global {
   const watchEffect: typeof import('vue').watchEffect
   const watchPostEffect: typeof import('vue').watchPostEffect
   const watchSyncEffect: typeof import('vue').watchSyncEffect
+  const cssVar: typeof import('@/utils/CssUtils')['cssVar']
+  const getCssVar: typeof import('@/utils/CssUtils')['getCssVar']
 }
 // for type re-export
 declare global {

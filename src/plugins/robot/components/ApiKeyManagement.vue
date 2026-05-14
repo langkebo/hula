@@ -2,7 +2,7 @@
   <n-modal
     v-model:show="showModal"
     preset="card"
-    title="API 密钥管理"
+    :title="t('ai_assistant.robot.api_key_management')"
     style="width: 900px"
     :bordered="false"
     :segmented="{ content: 'soft', footer: 'soft' }">
@@ -11,19 +11,19 @@
         <template #icon>
           <Icon icon="mdi:plus" />
         </template>
-        新增密钥
+        {{ t('ai_assistant.robot.add_api_key') }}
       </n-button>
     </template>
 
     <!-- 密钥列表 -->
     <n-spin :show="loading">
       <div v-if="apiKeyList.length === 0" class="empty-container">
-        <n-empty description="暂无 API 密钥" size="large">
+        <n-empty :description="t('ai_assistant.robot.no_api_keys')" size="large">
           <template #icon>
             <Icon icon="mdi:key-variant" class="text-48px color-#909090" />
           </template>
           <template #extra>
-            <n-button type="primary" @click="handleAdd">新增第一个密钥</n-button>
+            <n-button type="primary" @click="handleAdd">{{ t('ai_assistant.robot.add_first_key') }}</n-button>
           </template>
         </n-empty>
       </div>
@@ -37,14 +37,20 @@
                 <n-flex align="center" :size="8">
                   <span class="api-key-name">{{ apiKey.name }}</span>
                   <n-tag :type="apiKey.status === 0 ? 'success' : 'error'" size="small">
-                    {{ apiKey.status === 0 ? '可用' : '不可用' }}
+                    {{ apiKey.status === 0 ? t('ai_assistant.robot.available') : t('ai_assistant.robot.unavailable') }}
                   </n-tag>
-                  <n-tag v-if="apiKey.publicStatus" type="info" size="small">公开</n-tag>
-                  <n-tag v-else type="warning" size="small">私有</n-tag>
+                  <n-tag v-if="apiKey.publicStatus" type="info" size="small">
+                    {{ t('ai_assistant.robot.public') }}
+                  </n-tag>
+                  <n-tag v-else type="warning" size="small">{{ t('ai_assistant.robot.private') }}</n-tag>
                 </n-flex>
                 <div class="api-key-meta">
-                  <span class="meta-item">平台: {{ apiKey.platform }}</span>
-                  <span class="meta-item">密钥: {{ maskApiKey(apiKey.apiKey) }}</span>
+                  <span class="meta-item">
+                    {{ t('ai_assistant.robot.platform_label', { platform: apiKey.platform }) }}
+                  </span>
+                  <span class="meta-item">
+                    {{ t('ai_assistant.robot.key_label', { key: maskApiKey(apiKey.apiKey) }) }}
+                  </span>
                 </div>
               </div>
             </n-flex>
@@ -58,41 +64,41 @@
                 <template #icon>
                   <Icon icon="mdi:cash-multiple" />
                 </template>
-                查询余额
+                {{ t('ai_assistant.robot.query_balance') }}
               </n-button>
               <!-- 只有私有密钥才显示编辑按钮 -->
               <n-button v-if="!apiKey.publicStatus" size="small" @click="handleEdit(apiKey)">
                 <template #icon>
                   <Icon icon="mdi:pencil" />
                 </template>
-                编辑
+                {{ t('ai_assistant.robot.edit') }}
               </n-button>
               <!-- 只有私有密钥才显示删除按钮 -->
               <n-popconfirm
                 v-if="!apiKey.publicStatus"
                 @positive-click="handleDelete(apiKey.id)"
-                positive-text="删除"
-                negative-text="取消">
+                :positive-text="t('ai_assistant.robot.delete')"
+                :negative-text="t('ai_assistant.robot.cancel')">
                 <template #trigger>
                   <n-button size="small" type="error">
                     <template #icon>
                       <Icon icon="mdi:delete" />
                     </template>
-                    删除
+                    {{ t('ai_assistant.robot.delete') }}
                   </n-button>
                 </template>
-                <p>确定要删除密钥 "{{ apiKey.name }}" 吗？</p>
-                <p class="text-red-500">删除后将无法恢复！</p>
+                <p>{{ t('ai_assistant.robot.confirm_delete_key', { name: apiKey.name }) }}</p>
+                <p class="text-red-500">{{ t('ai_assistant.robot.irreversible_warning') }}</p>
               </n-popconfirm>
             </n-flex>
           </div>
 
           <div v-if="apiKey.url || balanceMap[apiKey.id]" class="api-key-card-body">
             <n-descriptions :column="1" size="small" bordered>
-              <n-descriptions-item v-if="apiKey.url" label="API 地址">
+              <n-descriptions-item v-if="apiKey.url" :label="t('ai_assistant.robot.api_address')">
                 {{ apiKey.url }}
               </n-descriptions-item>
-              <n-descriptions-item v-if="balanceMap[apiKey.id]" label="账户余额">
+              <n-descriptions-item v-if="balanceMap[apiKey.id]" :label="t('ai_assistant.robot.account_balance')">
                 <n-flex align="center" :size="8">
                   <span class="text-primary font-600 text-16px">
                     {{ balanceMap[apiKey.id].balanceInfos[0].totalBalance || '0' }}
@@ -120,41 +126,47 @@
   <n-modal
     v-model:show="showEditModal"
     preset="card"
-    :title="editingApiKey ? '编辑密钥' : '新增密钥'"
+    :title="editingApiKey ? t('ai_assistant.robot.edit_api_key') : t('ai_assistant.robot.new_api_key')"
     style="width: 600px"
     :bordered="false"
     :segmented="{ content: 'soft', footer: 'soft' }">
     <n-form ref="formRef" :model="formData" :rules="formRules" label-placement="left" label-width="100px">
-      <n-form-item label="密钥名称" path="name">
-        <n-input v-model:value="formData.name" placeholder="请输入密钥名称，例如: OpenAI 主账号" />
+      <n-form-item :label="t('ai_assistant.robot.key_name')" path="name">
+        <n-input v-model:value="formData.name" :placeholder="t('ai_assistant.robot.key_name_placeholder')" />
       </n-form-item>
 
-      <n-form-item label="API 密钥" path="apiKey">
+      <n-form-item :label="t('ai_assistant.robot.api_key_input')" path="apiKey">
         <n-input
           v-model:value="formData.apiKey"
           type="password"
           show-password-on="click"
-          placeholder="请输入 API 密钥" />
+          :placeholder="t('ai_assistant.robot.api_key_input_placeholder')" />
       </n-form-item>
 
-      <n-form-item label="平台" path="platform">
-        <n-select v-model:value="formData.platform" :options="platformOptions" placeholder="请选择平台" />
+      <n-form-item :label="t('ai_assistant.robot.platform_label_select')" path="platform">
+        <n-select
+          v-model:value="formData.platform"
+          :options="platformOptions"
+          :placeholder="t('ai_assistant.robot.select_platform')" />
       </n-form-item>
 
-      <n-form-item label="API 地址" path="url">
-        <n-input v-model:value="formData.url" placeholder="可选，例如: https://api.openai.com/v1" />
+      <n-form-item :label="t('ai_assistant.robot.api_address')" path="url">
+        <n-input v-model:value="formData.url" :placeholder="t('ai_assistant.robot.api_address_placeholder')" />
       </n-form-item>
 
-      <n-form-item label="状态" path="status">
-        <n-select v-model:value="formData.status" :options="statusOptions" placeholder="请选择状态" />
+      <n-form-item :label="t('ai_assistant.robot.status_label')" path="status">
+        <n-select
+          v-model:value="formData.status"
+          :options="statusOptions"
+          :placeholder="t('ai_assistant.robot.select_status')" />
       </n-form-item>
     </n-form>
 
     <template #footer>
       <n-flex justify="end" :size="12">
-        <n-button @click="showEditModal = false">取消</n-button>
+        <n-button @click="showEditModal = false">{{ t('ai_assistant.robot.cancel') }}</n-button>
         <n-button type="primary" @click="handleSubmit" :loading="submitting">
-          {{ editingApiKey ? '保存' : '创建' }}
+          {{ editingApiKey ? t('ai_assistant.robot.save') : t('ai_assistant.robot.create') }}
         </n-button>
       </n-flex>
     </template>
@@ -164,11 +176,13 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import type { FormInst, FormRules } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import type { ApiKey, ApiKeyBalance, Platform } from '@/services/matrix/ai/ApiKeyService'
 import { apiKeyService } from '@/services/matrix/ai/ApiKeyService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ApiKeyManagement')
+const { t } = useI18n()
 
 const hasValidationErrors = (value: unknown): value is { errors: unknown } => {
   return typeof value === 'object' && value !== null && 'errors' in value
@@ -221,7 +235,7 @@ const loadPlatformList = async () => {
         value: item.platform
       }))
     } else {
-      logger.warn('平台列表数据格式不正确:', data)
+      logger.warn(t('ai_assistant.robot.platform_list_format_error'), data)
       platformOptions.value = []
     }
   } catch (error) {
@@ -235,20 +249,20 @@ const loadPlatformList = async () => {
 
 // 状态选项
 const statusOptions = [
-  { label: '可用', value: 0 },
-  { label: '不可用', value: 1 }
+  { label: t('ai_assistant.robot.available'), value: 0 },
+  { label: t('ai_assistant.robot.unavailable'), value: 1 }
 ]
 
 // 表单验证规则
 const formRules: FormRules = {
-  name: [{ required: true, message: '请输入密钥名称', trigger: 'blur' }],
-  apiKey: [{ required: true, message: '请输入 API 密钥', trigger: 'blur' }],
-  platform: [{ required: true, message: '请选择平台', trigger: 'change' }],
+  name: [{ required: true, message: t('ai_assistant.robot.input_key_name_required'), trigger: 'blur' }],
+  apiKey: [{ required: true, message: t('ai_assistant.robot.input_api_key_required'), trigger: 'blur' }],
+  platform: [{ required: true, message: t('ai_assistant.robot.select_platform_required_key'), trigger: 'change' }],
   status: [
     {
       required: true,
       type: 'number',
-      message: '请选择状态',
+      message: t('ai_assistant.robot.select_status_required_key'),
       trigger: 'change',
       validator: (_rule: unknown, value: unknown) => {
         return value !== undefined && value !== null && value !== ''
@@ -276,7 +290,7 @@ const loadApiKeyList = async () => {
     pagination.value.total = data.total || 0
   } catch (error) {
     logger.error('加载 API 密钥列表失败:', error)
-    window.$message.error('加载 API 密钥列表失败')
+    window.$message.error(t('ai_assistant.robot.load_keys_failed'))
   } finally {
     loading.value = false
   }
@@ -338,11 +352,11 @@ const handleSubmit = async () => {
         id: editingApiKey.value.id
       } as ApiKey
       await apiKeyService.update(updateData)
-      window.$message.success('密钥更新成功')
+      window.$message.success(t('ai_assistant.robot.key_updated'))
     } else {
       // 创建
       await apiKeyService.create(submitData as ApiKey)
-      window.$message.success('密钥创建成功')
+      window.$message.success(t('ai_assistant.robot.key_created'))
     }
 
     showEditModal.value = false
@@ -353,7 +367,7 @@ const handleSubmit = async () => {
       return
     }
     logger.error('保存密钥失败:', error)
-    window.$message.error('保存密钥失败')
+    window.$message.error(t('ai_assistant.robot.save_key_failed'))
   } finally {
     submitting.value = false
   }
@@ -363,12 +377,12 @@ const handleSubmit = async () => {
 const handleDelete = async (id: string) => {
   try {
     await apiKeyService.delete({ id })
-    window.$message.success('密钥删除成功')
+    window.$message.success(t('ai_assistant.robot.key_deleted'))
     loadApiKeyList()
     emit('refresh')
   } catch (error) {
     logger.error('删除密钥失败:', error)
-    window.$message.error('删除密钥失败')
+    window.$message.error(t('ai_assistant.robot.delete_key_failed'))
   }
 }
 
@@ -378,10 +392,10 @@ const handleQueryBalance = async (id: string) => {
     balanceLoadingMap.value[id] = true
     const data = await apiKeyService.balance({ id })
     balanceMap.value[id] = data
-    window.$message.success('余额查询成功')
+    window.$message.success(t('ai_assistant.robot.balance_query_success'))
   } catch (error) {
     logger.error('查询余额失败:', error)
-    window.$message.error('查询余额失败')
+    window.$message.error(t('ai_assistant.robot.balance_query_failed'))
   } finally {
     balanceLoadingMap.value[id] = false
   }

@@ -15,7 +15,7 @@
               Beta
             </div>
           </n-flex>
-          <p class="text-(12px #909090)">建立一个属于自己AI</p>
+          <p class="text-(12px #909090)">{{ t('ai_assistant.robot.subtitle_desc') }}</p>
         </n-flex>
         <svg class="size-44px color-#13987f opacity-20"><use href="#GPT"></use></svg>
       </n-flex>
@@ -26,7 +26,7 @@
           <n-avatar bordered round :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)" :size="48" />
           <n-flex vertical>
             <p class="text-(14px [--hula-text-primary]) font-500">{{ userStore.userInfo!.name }}</p>
-            <p class="text-(12px #909090)">剩余：28天过期</p>
+            <p class="text-(12px #909090)">{{ t('ai_assistant.robot.expire_days', { days: 28 }) }}</p>
           </n-flex>
         </n-flex>
 
@@ -44,7 +44,7 @@
         <!-- 加载状态 -->
         <div v-if="loading && pageNo === 1" class="flex justify-center items-center py-20px">
           <n-spin size="small" />
-          <span class="ml-10px text-(12px #909090)">加载中...</span>
+          <span class="ml-10px text-(12px #909090)">{{ t('ai_assistant.robot.loading') }}</span>
         </div>
 
         <!-- 空状态 -->
@@ -52,7 +52,7 @@
           v-else-if="chatList.length === 0"
           class="flex flex-col items-center justify-center py-20px text-(12px #909090)">
           <svg class="size-40px mb-10px opacity-50"><use href="#empty"></use></svg>
-          <p>暂无会话，点击下方按钮开始新的聊天</p>
+          <p>{{ t('ai_assistant.robot.no_conversation') }}</p>
         </div>
 
         <TransitionGroup
@@ -77,7 +77,7 @@
                     v-if="editingItemId !== item.id"
                     style="width: calc(100% - 20px)"
                     class="text-(14px [--hula-text-primary]) truncate font-500 select-none">
-                    {{ item.title || `会话 ${index + 1}` }}
+                    {{ item.title || t('ai_assistant.robot.conversation_title', { index: index + 1 }) }}
                   </n-ellipsis>
                   <n-input
                     v-else
@@ -85,7 +85,7 @@
                     ref="inputInstRef"
                     v-model:value="item.title"
                     clearable
-                    placeholder="输入标题"
+                    :placeholder="t('ai_assistant.robot.input_title')"
                     type="text"
                     size="tiny"
                     spellCheck="false"
@@ -101,7 +101,7 @@
                   </svg>
                 </n-flex>
                 <n-flex justify="space-between" align="center" :size="0" class="text-(12px #909090)">
-                  <p>{{ item.messageCount || 0 }}条对话</p>
+                  <p>{{ t('ai_assistant.robot.message_count', { count: item.messageCount || 0 }) }}</p>
                   <p>{{ formatTimestamp(item.createTime) }}</p>
                 </n-flex>
               </div>
@@ -111,14 +111,16 @@
 
         <!-- 加载更多 -->
         <div v-if="hasMore" class="flex justify-center items-center py-16px">
-          <n-button v-if="!loadingMore" size="small" tertiary @click="loadMore">加载更多</n-button>
+          <n-button v-if="!loadingMore" size="small" tertiary @click="loadMore">
+            {{ t('ai_assistant.robot.load_more') }}
+          </n-button>
           <n-spin v-else size="small" />
-          <span v-if="loadingMore" class="ml-10px text-(12px #909090)">加载中...</span>
+          <span v-if="loadingMore" class="ml-10px text-(12px #909090)">{{ t('ai_assistant.robot.loading') }}</span>
         </div>
 
         <!-- 没有更多数据 -->
         <div v-else-if="chatList.length > 0" class="flex justify-center items-center py-16px text-(12px #909090)">
-          <span>没有更多会话了</span>
+          <span>{{ t('ai_assistant.robot.no_more_conversations') }}</span>
         </div>
       </n-scrollbar>
     </n-flex>
@@ -144,19 +146,19 @@
           <div
             @click="openHistory"
             class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
-            title="生成历史">
+            :title="t('ai_assistant.robot.generation_history')">
             <Icon icon="mdi:history" class="text-18px" />
           </div>
           <div
             @click="openModelManagement"
             class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
-            title="管理模型">
+            :title="t('ai_assistant.robot.manage_model')">
             <Icon icon="mdi:robot-outline" class="text-18px" />
           </div>
           <div
             @click="openRoleManagement"
             class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
-            title="管理角色">
+            :title="t('ai_assistant.robot.manage_role')">
             <Icon icon="mdi:account-cog" class="text-18px" />
           </div>
         </n-flex>
@@ -165,13 +167,15 @@
       <!-- 操作按钮行 -->
       <n-flex :size="4" align="center" justify="space-between">
         <!-- 提示信息或新建按钮 -->
-        <div v-if="!hasRoles" class="flex-1 text-(11px #d5304f) text-center">请先创建角色</div>
+        <div v-if="!hasRoles" class="flex-1 text-(11px #d5304f) text-center">
+          {{ t('ai_assistant.robot.create_role_first') }}
+        </div>
         <div
           v-else
           @click="add"
           class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) select-none text-(12px [--hula-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
           <svg class="size-15px pb-2px"><use href="#plus"></use></svg>
-          <p>新的聊天</p>
+          <p>{{ t('ai_assistant.robot.new_chat') }}</p>
         </div>
 
         <n-popconfirm v-model:show="showDeleteConfirm">
@@ -179,17 +183,21 @@
             <svg class="size-22px"><use href="#explosion"></use></svg>
           </template>
           <template #action>
-            <n-button size="small" tertiary @click.stop="showDeleteConfirm = false">取消</n-button>
-            <n-button size="small" type="error" @click.stop="deleteAllChats">删除</n-button>
+            <n-button size="small" tertiary @click.stop="showDeleteConfirm = false">
+              {{ t('ai_assistant.robot.cancel') }}
+            </n-button>
+            <n-button size="small" type="error" @click.stop="deleteAllChats">
+              {{ t('ai_assistant.robot.delete') }}
+            </n-button>
           </template>
           <template #trigger>
             <div
               class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) select-none text-(12px [--hula-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
               <svg class="size-15px pb-2px"><use href="#delete"></use></svg>
-              <p>全部删除</p>
+              <p>{{ t('ai_assistant.robot.delete_all') }}</p>
             </div>
           </template>
-          你确定要删除全部会话吗？
+          {{ t('ai_assistant.robot.confirm_delete_all') }}
         </n-popconfirm>
       </n-flex>
     </n-flex>
@@ -199,6 +207,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import type { InputInst, VirtualListInst } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
@@ -211,6 +220,7 @@ import { formatTimestamp } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
+const { t } = useI18n()
 const logger = createLogger('RobotLeft')
 const timerManager = useTimerManager()
 
@@ -271,7 +281,7 @@ const fetchConversationList = async (isLoadMore = false) => {
         const parsedCreateTime = Number(item.createTime)
         return {
           id: item.id,
-          title: item.title || `会话 ${item.id}`,
+          title: item.title || t('ai_assistant.robot.conversation_title', { index: item.id }),
           createTime: Number.isFinite(parsedCreateTime) ? parsedCreateTime : Date.now(),
           messageCount: item.messageCount || 0,
           isPinned: item.isPinned || false,
@@ -307,7 +317,7 @@ const fetchConversationList = async (isLoadMore = false) => {
     }
   } catch (error) {
     logger.error('获取会话列表失败:', error)
-    window.$message.error('获取会话列表失败')
+    window.$message.error(t('ai_assistant.robot.fetch_conversations_failed'))
   } finally {
     loading.value = false
     loadingMore.value = false
@@ -339,7 +349,7 @@ const refreshConversationList = async () => {
 
 const menuList = ref<OPT.RightMenu[]>([
   {
-    label: '置顶',
+    label: () => t('ai_assistant.robot.pin'),
     icon: 'topping',
     click: (item: ChatItem) => {
       const index = chatList.value.findIndex((e) => e.id === item.id)
@@ -351,14 +361,14 @@ const menuList = ref<OPT.RightMenu[]>([
     }
   },
   {
-    label: '打开独立聊天窗口',
+    label: () => t('ai_assistant.robot.open_standalone_window'),
     icon: 'freezing-line-column',
     click: (item: ChatItem) => {
       logger.debug('打开独立窗口:', item)
     }
   },
   {
-    label: '重命名',
+    label: () => t('ai_assistant.robot.rename'),
     icon: 'edit',
     click: (item: ChatItem) => {
       renameChat(item)
@@ -368,7 +378,7 @@ const menuList = ref<OPT.RightMenu[]>([
 
 const specialMenuList = ref<OPT.RightMenu[]>([
   {
-    label: '删除',
+    label: () => t('ai_assistant.robot.delete'),
     icon: 'delete',
     click: (item: ChatItem) => {
       deleteChat(item)
@@ -435,7 +445,7 @@ const openHistory = () => {
 const add = async () => {
   // 检查是否有可用角色
   if (!hasRoles.value || !firstAvailableRoleId.value) {
-    window.$message.warning('请先创建角色')
+    window.$message.warning(t('ai_assistant.robot.create_role_first'))
     openRoleManagement()
     return
   }
@@ -444,14 +454,14 @@ const add = async () => {
     const data = await conversationService.create({
       roleId: firstAvailableRoleId.value,
       knowledgeId: undefined,
-      title: '新的会话'
+      title: t('ai_assistant.robot.new_conversation_title')
     })
 
     if (data) {
       const rawCreateTime = Number(data.createTime)
       const newChat: ChatItem = {
         id: data.id,
-        title: data.title || '新的会话',
+        title: data.title || t('ai_assistant.robot.new_conversation_title'),
         createTime: Number.isFinite(rawCreateTime) ? rawCreateTime : Date.now(),
         messageCount: data.messageCount || 0,
         isPinned: data.isPinned || data.pinned || false,
@@ -470,11 +480,11 @@ const add = async () => {
       // 激活新会话
       handleActive(newChat)
 
-      window.$message.success('会话创建成功')
+      window.$message.success(t('ai_assistant.robot.conversation_created'))
     }
   } catch (error) {
     logger.error('创建会话失败:', error)
-    window.$message.error('创建会话失败')
+    window.$message.error(t('ai_assistant.robot.create_conversation_failed'))
   }
 }
 
@@ -503,11 +513,11 @@ const deleteChat = async (item: ChatItem) => {
         }
       }
 
-      window.$message.success('会话删除成功')
+      window.$message.success(t('ai_assistant.robot.conversation_deleted'))
     }
   } catch (error) {
     logger.error('删除会话失败:', error)
-    window.$message.error('删除会话失败')
+    window.$message.error(t('ai_assistant.robot.delete_conversation_failed'))
   }
 }
 
@@ -515,7 +525,7 @@ const deleteChat = async (item: ChatItem) => {
 const deleteAllChats = async () => {
   try {
     if (chatList.value.length === 0) {
-      window.$message.warning('没有会话可删除')
+      window.$message.warning(t('ai_assistant.robot.no_conversations_to_delete'))
       showDeleteConfirm.value = false
       return
     }
@@ -531,10 +541,10 @@ const deleteAllChats = async () => {
     // 跳转到欢迎页
     router.push('/welcome')
 
-    window.$message.success('全部会话已删除')
+    window.$message.success(t('ai_assistant.robot.all_conversations_deleted'))
   } catch (error) {
     logger.error('删除全部会话失败:', error)
-    window.$message.error('删除全部会话失败')
+    window.$message.error(t('ai_assistant.robot.delete_all_failed'))
   }
 }
 
@@ -551,7 +561,7 @@ const handleBlur = async (item: ChatItem, index: number) => {
   editingItemId.value = null
 
   const trimmedTitle = item.title?.trim() || ''
-  const fallbackTitle = `会话 ${item.id}`
+  const fallbackTitle = t('ai_assistant.robot.conversation_title', { index: item.id })
   const nextTitle = trimmedTitle !== '' ? trimmedTitle : fallbackTitle
 
   if (originalTitle.value === nextTitle) {
@@ -573,7 +583,7 @@ const handleBlur = async (item: ChatItem, index: number) => {
     })
 
     originalTitle.value = nextTitle
-    window.$message.success(`已重命名为 ${nextTitle}`)
+    window.$message.success(t('ai_assistant.robot.renamed_to', { name: nextTitle }))
     useMitt.emit('left-chat-title', { id: item.id, title: nextTitle })
     useMitt.emit('update-chat-title', { id: item.id, title: nextTitle })
   } catch (error) {

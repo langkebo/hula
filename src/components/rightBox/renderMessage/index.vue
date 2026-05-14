@@ -259,14 +259,23 @@
               <n-icon v-if="message.message.status === MessageStatusEnum.SENDING" class="text-gray-400">
                 <img class="size-16px" src="@/assets/img/loading-one.svg" alt="" />
               </n-icon>
-              <n-icon
-                v-if="message.message.status === MessageStatusEnum.FAILED"
-                class="text-[--hula-color-danger-500] cursor-pointer"
-                @click.stop="handleRetry(message)">
-                <svg class="size-16px">
-                  <use href="#cloudError"></use>
-                </svg>
-              </n-icon>
+              <n-tooltip v-if="message.message.status === MessageStatusEnum.FAILED" trigger="hover">
+                <template #trigger>
+                  <div class="flex items-center gap-2px">
+                    <n-icon class="text-[--hula-color-danger-500] cursor-pointer" @click.stop="handleRetry(message)">
+                      <svg class="size-16px">
+                        <use href="#cloudError"></use>
+                      </svg>
+                    </n-icon>
+                    <span
+                      class="text-(10px [--hula-color-danger-500]) cursor-pointer whitespace-nowrap"
+                      @click.stop="handleRetry(message)">
+                      {{ t('message_container.retry') }}
+                    </span>
+                  </div>
+                </template>
+                <span>{{ t('message_container.send_failed_retry') }}</span>
+              </n-tooltip>
             </div>
           </ContextMenu>
 

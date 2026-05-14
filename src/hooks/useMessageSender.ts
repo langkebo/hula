@@ -1,5 +1,6 @@
 import { MessageStatusEnum, MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
@@ -22,7 +23,10 @@ export const useMessageSender = () => {
   const sendWithTracking = async (options: SendWithTrackingOptions) => {
     const { tempMsgId, payload, updateSessionActive = true, scrollOnUpdate = true, onSuccess, onError } = options
 
-    if (!navigator.onLine) {
+    const matrixState = matrixClientService.getConnectionState()
+    const canSend = navigator.onLine && matrixState === 'CONNECTED'
+
+    if (!canSend) {
       offlineQueueService.enqueue('message', payload.roomId, {
         tempMsgId,
         payload,
