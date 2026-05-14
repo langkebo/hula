@@ -62,7 +62,8 @@ export const baseConfig: UserConfig = {
         'vue',
         'vue-router',
         'pinia',
-        { 'naive-ui': ['useDialog', 'useMessage', 'useNotification', 'useLoadingBar', 'useModal'] }
+        { 'naive-ui': ['useDialog', 'useMessage', 'useNotification', 'useLoadingBar', 'useModal'] },
+        { '@/utils/CssUtils': ['cssVar', 'getCssVar'] }
       ],
       dts: 'src/typings/auto-imports.d.ts'
     }),

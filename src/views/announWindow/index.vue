@@ -85,8 +85,8 @@
                       round
                       :size="28"
                       :src="avatarSrc(announcement.uid)"
-                      :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#fff'"
-                      :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
+                      :color="cssVar('--avatar-fallback-color')"
+                      :fallback-src="cssVar('--avatar-fallback-src')" />
                     <n-flex vertical :size="4">
                       <div class="text-(12px [--hula-text-secondary])">
                         {{ groupStore.getUserInfo(announcement.uid)?.name }}
@@ -187,17 +187,17 @@
 import { emitTo } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { ThemeEnum } from '@/enums'
 import { extractLinkSegments, openExternalUrl } from '@/hooks/useLinkSegments'
 import { matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
+import { cssVar } from '@/utils/CssUtils'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Announcement')
@@ -236,7 +236,6 @@ const announcementStates = ref<Record<string, { showDeleteConfirm: boolean; dele
 const groupStore = useGroupStore()
 const announcementStore = useAnnouncementStore()
 const userStore = useUserStore()
-const settingStore = useSettingStore()
 const { t } = useI18n()
 const isAdmin = computed(() => {
   const LordId = groupStore.currentLordId

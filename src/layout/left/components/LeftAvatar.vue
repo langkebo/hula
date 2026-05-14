@@ -15,8 +15,8 @@
         <n-avatar
           :size="34"
           :src="avatarSrc"
-          :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#ffffff'"
-          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+          :color="cssVar('--avatar-fallback-color')"
+          :fallback-src="cssVar('--avatar-fallback-src')"
           round />
 
         <div
@@ -38,8 +38,8 @@
           <n-avatar
             :src="avatarSrc"
             round
-            :color="settingStore.themeContent === ThemeEnum.DARK ? '' : '#ffffff'"
-            :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+            :color="cssVar('--avatar-fallback-color')"
+            :fallback-src="cssVar('--avatar-fallback-src')"
             class="size-68px text-20px select-none cursor-default" />
 
           <n-flex :size="10" class="text-[--hula-text-primary]" justify="center" vertical>
@@ -99,21 +99,20 @@
     @item-click="handleMenuItemClick" />
 </template>
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import UserMenuDropdown from '@/components/userMenu/UserMenuDropdown.vue'
 import { useUserMenu } from '@/components/userMenu/useUserMenu'
-import { ThemeEnum } from '@/enums'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils.ts'
+import { cssVar } from '@/utils/CssUtils'
 import { leftHook } from '../hook.ts'
 
 const userStore = useUserStore()
 const groupStore = useGroupStore()
 const { t } = useI18n()
-const settingStore = useSettingStore()
 const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar as string))
 const currentUserLocation = computed(() => {
   const uid = userStore.userInfo?.uid

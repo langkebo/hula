@@ -1,5 +1,11 @@
 <template>
-  <div class="hula-room-list-item" :class="itemClasses" @click="handleClick" @contextmenu="handleContextMenu">
+  <div
+    role="listitem"
+    :aria-label="ariaLabel"
+    class="hula-room-list-item"
+    :class="itemClasses"
+    @click="handleClick"
+    @contextmenu="handleContextMenu">
     <n-flex align="center" :size="10">
       <n-badge :dot="isFavorite" color="#f0a020" :offset="[-4, 4]">
         <n-avatar
@@ -165,6 +171,13 @@ const itemClasses = computed(() => ({
   'hula-room-list-item--encrypted': isEncrypted.value,
   'hula-room-list-item--burn': isBurnAfterRead.value
 }))
+
+const ariaLabel = computed(() => {
+  const parts: string[] = [displayName.value]
+  if (lastMessageText.value) parts.push(lastMessageText.value)
+  if (badgeCount.value > 0) parts.push(`${badgeCount.value}条未读`)
+  return parts.join('，')
+})
 
 const handleClick = () => {
   emit('click', props.item)

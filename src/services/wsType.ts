@@ -3,7 +3,7 @@
  * 请使用 matrix-js-sdk 的同步机制
  * 迁移完成后此文件将被删除
  */
-import type { UserInfoType } from '@/services/types.ts'
+import type { UserInfoType } from '@/services/types'
 
 export enum WsResponseMessageType {
   NO_INTERNET = 'noInternet',
