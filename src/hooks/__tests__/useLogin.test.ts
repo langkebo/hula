@@ -35,7 +35,7 @@ const mockMatrixStore = reactive({
   logout: vi.fn()
 })
 
-const mockMatrixRuntimeSessionService = {
+const mockSessionOrchestrator = {
   getStoredTokens: vi.fn(),
   restoreWithAccessToken: vi.fn(),
   loginWithPassword: vi.fn(),
@@ -132,8 +132,8 @@ vi.mock('@/services/backend', () => ({
   })
 }))
 
-vi.mock('@/services/matrix/auth/MatrixRuntimeSessionService', () => ({
-  matrixRuntimeSessionService: mockMatrixRuntimeSessionService
+vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
+  sessionOrchestrator: mockSessionOrchestrator
 }))
 
 const { useLoginFlow } = await import('../useLoginFlow')
@@ -152,13 +152,13 @@ describe('useLoginFlow', () => {
     }
     mockMatrixStore.userId = ''
     mockEnsureAppStateReady.mockResolvedValue(undefined)
-    mockMatrixRuntimeSessionService.getStoredTokens.mockResolvedValue({
+    mockSessionOrchestrator.getStoredTokens.mockResolvedValue({
       token: 'access-token',
       refreshToken: 'refresh-token'
     })
-    mockMatrixRuntimeSessionService.restoreWithAccessToken.mockResolvedValue(undefined)
-    mockMatrixRuntimeSessionService.loginWithPassword.mockResolvedValue(undefined)
-    mockMatrixRuntimeSessionService.completeDesktopLoginTransition.mockResolvedValue(undefined)
+    mockSessionOrchestrator.restoreWithAccessToken.mockResolvedValue(undefined)
+    mockSessionOrchestrator.loginWithPassword.mockResolvedValue(undefined)
+    mockSessionOrchestrator.completeDesktopLoginTransition.mockResolvedValue(undefined)
   })
 
   it('prefers restoring stored token session during auto login', async () => {
@@ -166,8 +166,8 @@ describe('useLoginFlow', () => {
 
     await normalLogin('PC', true, true)
 
-    expect(mockMatrixRuntimeSessionService.getStoredTokens).toHaveBeenCalledTimes(1)
-    expect(mockMatrixRuntimeSessionService.restoreWithAccessToken).toHaveBeenCalledWith({
+    expect(mockSessionOrchestrator.getStoredTokens).toHaveBeenCalledTimes(1)
+    expect(mockSessionOrchestrator.restoreWithAccessToken).toHaveBeenCalledWith({
       uid: '@alice:example.com',
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
@@ -177,8 +177,8 @@ describe('useLoginFlow', () => {
       client: 'PC',
       bootstrapAfterRestore: true
     })
-    expect(mockMatrixRuntimeSessionService.loginWithPassword).not.toHaveBeenCalled()
-    expect(mockMatrixRuntimeSessionService.completeDesktopLoginTransition).toHaveBeenCalledTimes(1)
+    expect(mockSessionOrchestrator.loginWithPassword).not.toHaveBeenCalled()
+    expect(mockSessionOrchestrator.completeDesktopLoginTransition).toHaveBeenCalledTimes(1)
   })
 
   it('falls back to password login when auto login has no stored token', async () => {
@@ -190,7 +190,7 @@ describe('useLoginFlow', () => {
       name: 'Alice',
       email: ''
     }
-    mockMatrixRuntimeSessionService.getStoredTokens.mockResolvedValue({
+    mockSessionOrchestrator.getStoredTokens.mockResolvedValue({
       token: null,
       refreshToken: null
     })
@@ -199,8 +199,8 @@ describe('useLoginFlow', () => {
 
     await normalLogin('PC', true, true)
 
-    expect(mockMatrixRuntimeSessionService.restoreWithAccessToken).not.toHaveBeenCalled()
-    expect(mockMatrixRuntimeSessionService.loginWithPassword).toHaveBeenCalledWith({
+    expect(mockSessionOrchestrator.restoreWithAccessToken).not.toHaveBeenCalled()
+    expect(mockSessionOrchestrator.loginWithPassword).toHaveBeenCalledWith({
       username: 'alice',
       password: 'secret',
       homeserverUrl: 'https://matrix.example.com',
@@ -211,6 +211,6 @@ describe('useLoginFlow', () => {
       avatar: 'mxc://avatar',
       client: 'PC'
     })
-    expect(mockMatrixRuntimeSessionService.completeDesktopLoginTransition).toHaveBeenCalledTimes(1)
+    expect(mockSessionOrchestrator.completeDesktopLoginTransition).toHaveBeenCalledTimes(1)
   })
 })

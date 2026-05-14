@@ -8,23 +8,14 @@ import {
   resolveMatrixSessionEndpointConfig,
   saveMatrixSessionEndpointConfig
 } from '@/services/backend/config'
+import type { MatrixClientConfig } from '@/services/matrix/MatrixClientService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { switchUserDatabase } from '@/services/tauriCommand'
-import type { RoomInfo } from '@/services/types'
-import { useChatStore } from '@/stores/domains/chat/chat'
+import type { RoomInfo, UserInfoType } from '@/services/types'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
-import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useEmojiStore } from '@/stores/domains/chat/emoji'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { useMatrixStore } from '@/stores/domains/chat/matrix'
-import { useRoomStore } from '@/stores/domains/chat/room'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
@@ -88,16 +79,80 @@ export interface LogoutMatrixRuntimeSessionOptions extends ResetMatrixRuntimeSes
   resetLocalState?: boolean
 }
 
-class MatrixRuntimeSessionService {
-  private async ensureClientReadyForBootstrap(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
-    const matrixStore = useMatrixStore()
-    const userStore = useUserStore()
+export interface PresenceUpdate {
+  activeStatus: OnlineEnum
+  lastOptTime: number
+}
 
-    if (matrixStore.getClient()) {
+export interface SessionStorePort {
+  matrix: {
+    getClient(): unknown
+    getUserId(): string | null | undefined
+    isLoggedIn(): boolean
+    isInitialized(): boolean
+    getLastError(): string | undefined
+    getAccessToken(): string | undefined
+    getRefreshToken(): string | undefined
+    getHomeserverUrl(): string | undefined
+    initialize(config: MatrixClientConfig): Promise<void>
+    login(username: string, password: string, deviceName?: string): Promise<boolean>
+    completeSSOLogin(loginToken: string): Promise<boolean>
+    loginWithToken(accessToken: string, userId: string): Promise<boolean>
+    logout(): Promise<void>
+  }
+  user: {
+    getUserInfo(): UserInfoType | undefined
+    initUserInfo(uid: string, displayName: string): void
+    setUserInfo(info: UserInfoType): void
+    clearUser(): void
+    fetchUserProfile(uid: string): Promise<{ displayName?: string; avatarUrl?: string } | null>
+    updateProfileFields(fields: Partial<Pick<UserInfoType, 'name' | 'avatar' | 'activeStatus' | 'lastOptTime'>>): void
+  }
+  room: {
+    getRoomList(): RoomInfo[]
+    getMessages(roomId: string): MessageType[]
+    resetState(): void
+    setupEventListeners(): Promise<void>
+    loadRooms(): Promise<void>
+  }
+  chat: {
+    getSessionList(refresh: boolean): Promise<void>
+    getSessionListValue(): Array<{ roomId: string }>
+  }
+  group: {
+    clearGroupDetails(): void
+    clearMembersMap(): void
+    updateUserPresence(userId: string, presence: PresenceUpdate): void
+  }
+  contact: {
+    updateContactPresence(userId: string, patch: PresenceUpdate & { presence?: string; statusMessage?: string }): void
+  }
+  global: {
+    getCurrentSessionRoomId(): string | undefined
+    updateCurrentSessionRoomId(roomId: string): void
+    setTrayMenuShow(show: boolean): void
+  }
+  loginHistory: {
+    addLoginHistory(account: UserInfoType): void
+  }
+  emoji: {
+    initEmojis(): Promise<void>
+    prefetchEmojiToLocal(): Promise<void>
+  }
+  setting: {
+    closeAutoLogin(): void
+  }
+}
+
+class MatrixRuntimeSessionService {
+  constructor(private readonly port: SessionStorePort) {}
+
+  private async ensureClientReadyForBootstrap(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
+    if (this.port.matrix.getClient()) {
       return
     }
 
-    const uid = matrixStore.userId ?? userStore.userInfo?.uid ?? ''
+    const uid = this.port.matrix.getUserId() ?? this.port.user.getUserInfo()?.uid ?? ''
     if (!uid) {
       return
     }
@@ -107,19 +162,17 @@ class MatrixRuntimeSessionService {
       throw new Error('缺少访问令牌，无法恢复登录会话')
     }
 
+    const userInfo = this.port.user.getUserInfo()
     const restoredClient =
-      options.client ||
-      (userStore.userInfo?.client === 'PC' || userStore.userInfo?.client === 'MOBILE'
-        ? userStore.userInfo.client
-        : undefined)
+      options.client || (userInfo?.client === 'PC' || userInfo?.client === 'MOBILE' ? userInfo.client : undefined)
 
     await this.restoreWithAccessToken({
       uid,
       accessToken: tokens.token,
       refreshToken: tokens.refreshToken ?? undefined,
-      displayName: options.displayName || userStore.userInfo?.name,
-      account: options.account || userStore.userInfo?.account || userStore.userInfo?.email,
-      avatar: options.avatar || userStore.userInfo?.avatar,
+      displayName: options.displayName || userInfo?.name,
+      account: options.account || userInfo?.account || userInfo?.email,
+      avatar: options.avatar || userInfo?.avatar,
       client: restoredClient,
       persistTokens: false,
       persistUserInfo: false,
@@ -140,10 +193,7 @@ class MatrixRuntimeSessionService {
   }
 
   private clearMessageCache(): void {
-    const groupStore = useGroupStore()
-    for (const key of Object.keys(groupStore.membersMap)) {
-      delete groupStore.membersMap[key]
-    }
+    this.port.group.clearMembersMap()
     logger.debug('Message cache has been cleared')
   }
 
@@ -159,12 +209,11 @@ class MatrixRuntimeSessionService {
 
   async hasAuthenticatedSession(): Promise<boolean> {
     try {
-      const matrixStore = useMatrixStore()
-      if (matrixStore.isLoggedIn) {
+      if (this.port.matrix.isLoggedIn()) {
         return true
       }
 
-      if (matrixStore.isInitialized) {
+      if (this.port.matrix.isInitialized()) {
         return false
       }
 
@@ -200,8 +249,6 @@ class MatrixRuntimeSessionService {
         throw new Error('缺少访问令牌，无法恢复登录会话')
       }
 
-      const matrixStore = useMatrixStore()
-      const userStore = useUserStore()
       const { homeserverUrl, identityServerUrl } = resolveMatrixSessionEndpointConfig()
 
       await ensureAppStateReady()
@@ -220,7 +267,7 @@ class MatrixRuntimeSessionService {
         })
       }
 
-      await matrixStore.initialize({
+      await this.port.matrix.initialize({
         homeserverUrl,
         identityServerUrl,
         accessToken,
@@ -228,13 +275,13 @@ class MatrixRuntimeSessionService {
         allowInsecureHttp: homeserverUrl.startsWith('http://')
       })
 
-      const success = await matrixStore.loginWithToken(accessToken, uid)
+      const success = await this.port.matrix.loginWithToken(accessToken, uid)
       if (!success) {
         throw new Error('基于访问令牌恢复 Matrix 会话失败')
       }
 
       const resolvedDisplayName = this.resolveDisplayName(uid, displayName, account)
-      userStore.initUserInfo(uid, resolvedDisplayName)
+      this.port.user.initUserInfo(uid, resolvedDisplayName)
 
       if (persistUserInfo) {
         await invokeWithErrorHandler(TauriCommand.SAVE_USER_INFO, {
@@ -275,28 +322,26 @@ class MatrixRuntimeSessionService {
         switchDatabase = true
       } = options
 
-      const matrixStore = useMatrixStore()
-
       await ensureAppStateReady()
       saveMatrixSessionEndpointConfig({ homeserverUrl, identityServerUrl: identityServerUrl || '' })
-      await matrixStore.initialize({
+      await this.port.matrix.initialize({
         homeserverUrl,
         identityServerUrl,
         allowInsecureHttp: homeserverUrl.startsWith('http://')
       })
 
-      const success = await matrixStore.login(username, password, deviceName)
+      const success = await this.port.matrix.login(username, password, deviceName)
       if (!success) {
-        throw new Error(matrixStore.lastError || '登录失败，请检查网络连接或服务器配置')
+        throw new Error(this.port.matrix.getLastError() || '登录失败，请检查网络连接或服务器配置')
       }
 
-      const uid = matrixStore.userId
-      const accessToken = matrixStore.accessToken
+      const uid = this.port.matrix.getUserId()
+      const accessToken = this.port.matrix.getAccessToken()
       if (!uid || !accessToken) {
         throw new Error('登录成功但会话信息不完整')
       }
 
-      const refreshToken = (matrixStore as unknown as { refreshToken?: string }).refreshToken ?? ''
+      const refreshToken = this.port.matrix.getRefreshToken() ?? ''
 
       if (switchDatabase) {
         await switchUserDatabase(uid)
@@ -354,28 +399,27 @@ class MatrixRuntimeSessionService {
         throw new Error('缺少 SSO 登录令牌')
       }
 
-      const matrixStore = useMatrixStore()
       const { homeserverUrl, identityServerUrl } = resolveMatrixSessionEndpointConfig()
 
       await ensureAppStateReady()
-      await matrixStore.initialize({
+      await this.port.matrix.initialize({
         homeserverUrl,
         identityServerUrl,
         allowInsecureHttp: homeserverUrl.startsWith('http://')
       })
 
-      const success = await matrixStore.completeSSOLogin(loginToken)
+      const success = await this.port.matrix.completeSSOLogin(loginToken)
       if (!success) {
         throw new Error('SSO 登录失败，请稍后重试')
       }
 
-      const uid = matrixStore.userId
-      const accessToken = matrixStore.accessToken
+      const uid = this.port.matrix.getUserId()
+      const accessToken = this.port.matrix.getAccessToken()
       if (!uid || !accessToken) {
         throw new Error('SSO 登录成功但会话信息不完整')
       }
 
-      const refreshToken = (matrixStore as unknown as { refreshToken?: string }).refreshToken ?? ''
+      const refreshToken = this.port.matrix.getRefreshToken() ?? ''
 
       if (switchDatabase) {
         await switchUserDatabase(uid)
@@ -416,10 +460,6 @@ class MatrixRuntimeSessionService {
     }
   }
 
-  /**
-   * 等待 SlidingSync 进入 PREPARED / SYNCING 状态。避免登录后立即调用 `loadRooms`
-   * 时 `client.getRooms()` 还是空数组，导致 UI 永远显示「暂无会话」。
-   */
   private waitSyncPrepared(timeoutMs = 8000): Promise<void> {
     return new Promise((resolve) => {
       let settled = false
@@ -432,7 +472,6 @@ class MatrixRuntimeSessionService {
           resolve()
         }
       }
-      // 当前 sync 状态可能已经是 PREPARED；先检查一次
       const current = matrixClientService.getConnectionState()
       if (current === 'CONNECTED') {
         resolve()
@@ -449,24 +488,16 @@ class MatrixRuntimeSessionService {
     })
   }
 
-  /**
-   * 在登录成功 / token 恢复成功后调用：
-   *   1. 拉取真实的 Matrix /profile（修正 displayname / avatar）
-   *   2. 主动 setPresence('online')
-   *   3. 注册 User.presence 监听，把变化写回 user / contact / group 三个 store
-   *   4. 启动 4 分钟一次的 presence 心跳
-   *   5. 注册 beforeunload，关闭窗口前 setPresence('unavailable')
-   */
   private async startPresencePipeline(uid: string): Promise<void> {
-    const userStore = useUserStore()
-    const groupStore = useGroupStore()
-    const contactStore = useContactStore()
-
     try {
-      const profile = await userStore.fetchUserProfile(uid)
-      if (profile && userStore.userInfo) {
-        if (profile.displayName) userStore.userInfo.name = profile.displayName
-        if (profile.avatarUrl) userStore.userInfo.avatar = profile.avatarUrl
+      const profile = await this.port.user.fetchUserProfile(uid)
+      if (profile) {
+        const fields: Partial<Pick<UserInfoType, 'name' | 'avatar'>> = {}
+        if (profile.displayName) fields.name = profile.displayName
+        if (profile.avatarUrl) fields.avatar = profile.avatarUrl
+        if (Object.keys(fields).length > 0) {
+          this.port.user.updateProfileFields(fields)
+        }
       }
     } catch (err) {
       logger.warn(`fetchUserProfile 失败，使用本地 displayName: ${err}`)
@@ -478,26 +509,24 @@ class MatrixRuntimeSessionService {
       logger.warn(`setPresence(online) 失败：${err}`)
     }
 
-    if (userStore.userInfo) {
-      userStore.userInfo.activeStatus = OnlineEnum.ONLINE
-      userStore.userInfo.lastOptTime = Date.now()
-    }
+    this.port.user.updateProfileFields({
+      activeStatus: OnlineEnum.ONLINE,
+      lastOptTime: Date.now()
+    })
 
     matrixPresenceService.onPresenceChange((presence) => {
       const patch = buildPresenceStorePatch(presence)
-      if (presence.user_id === uid && userStore.userInfo) {
-        userStore.userInfo.activeStatus = patch.activeStatus
-        userStore.userInfo.lastOptTime = patch.lastOptTime
-      }
-      if (typeof groupStore.updateUserPresence === 'function') {
-        groupStore.updateUserPresence(presence.user_id, {
+      if (presence.user_id === uid) {
+        this.port.user.updateProfileFields({
           activeStatus: patch.activeStatus,
           lastOptTime: patch.lastOptTime
         })
       }
-      if (typeof contactStore.updateContactPresence === 'function') {
-        contactStore.updateContactPresence(presence.user_id, patch)
-      }
+      this.port.group.updateUserPresence(presence.user_id, {
+        activeStatus: patch.activeStatus,
+        lastOptTime: patch.lastOptTime
+      })
+      this.port.contact.updateContactPresence(presence.user_id, patch)
     })
 
     startPresenceHeartbeat()
@@ -508,10 +537,6 @@ class MatrixRuntimeSessionService {
     }
   }
 
-  /**
-   * 初始化 Worker 搜索索引，批量灌入房间信息和已加载的消息
-   * @param uid 当前用户ID
-   */
   private async bootstrapSearchIndex(_uid: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -519,11 +544,9 @@ class MatrixRuntimeSessionService {
       return
     }
 
-    const roomStore = useRoomStore()
-    const allRooms = roomStore.roomList
+    const allRooms = this.port.room.getRoomList()
 
     const searchRoomDocs: SearchRoomDoc[] = allRooms.map((roomInfo: RoomInfo) => {
-      // 从 RoomInfo 提取 SearchRoomDoc 所需信息
       const room = client.getRoom(roomInfo.roomId)
       return {
         roomId: roomInfo.roomId,
@@ -540,7 +563,7 @@ class MatrixRuntimeSessionService {
 
     const searchEventDocs: SearchEventDoc[] = []
     for (const roomInfo of allRooms) {
-      const roomMessages = roomStore.messages.get(roomInfo.roomId) || []
+      const roomMessages = this.port.room.getMessages(roomInfo.roomId) || []
       const roomEvents = roomMessages
         .filter((msg: MessageType) => msg.message.type === MsgEnum.TEXT && typeof msg.message.body === 'string')
         .map((msg: MessageType) => ({
@@ -548,7 +571,7 @@ class MatrixRuntimeSessionService {
           roomId: msg.message.roomId,
           sender: msg.fromUser.uid,
           timestamp: msg.message.sendTime,
-          msgtype: 'm.text', // Only indexing text messages for now
+          msgtype: 'm.text',
           body: msg.message.body as unknown as string
         }))
       searchEventDocs.push(...roomEvents)
@@ -562,44 +585,33 @@ class MatrixRuntimeSessionService {
 
   private beforeUnloadRegistered = false
   private readonly onBeforeUnload = () => {
-    // 不能 await，浏览器在 beforeunload 内只允许同步发请求；
-    // SDK 的 setPresence 会发起 PUT，浏览器会尽力发出。
     void matrixPresenceService.setPresence('unavailable').catch(() => {})
   }
 
   async bootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
     try {
-      const chatStore = useChatStore()
-      const globalStore = useGlobalStore()
-      const userStore = useUserStore()
-      const loginHistoriesStore = useLoginHistoriesStore()
-      const matrixStore = useMatrixStore()
-      const roomStore = useRoomStore()
-      const groupStore = useGroupStore()
-      const emojiStore = useEmojiStore()
-      const uid = matrixStore.userId ?? userStore.userInfo?.uid ?? ''
+      const uid = this.port.matrix.getUserId() ?? this.port.user.getUserInfo()?.uid ?? ''
 
       if (!uid) {
         throw new Error('缺少用户ID，无法初始化登录状态')
       }
 
       await this.ensureClientReadyForBootstrap(options)
-      // 等待 sync 真正 PREPARED，再加载房间，避免 UI 显示「暂无会话」
       await this.waitSyncPrepared()
 
       this.clearUserLocalStorage()
       this.clearMessageCache()
 
-      roomStore.resetState()
-      await roomStore.setupEventListeners()
-      groupStore.groupDetails.length = 0
-      await roomStore.loadRooms()
-      await chatStore.getSessionList(true)
-      if (!globalStore.currentSessionRoomId && chatStore.sessionList.length > 0) {
-        globalStore.updateCurrentSessionRoomId(chatStore.sessionList[0].roomId)
+      this.port.room.resetState()
+      await this.port.room.setupEventListeners()
+      this.port.group.clearGroupDetails()
+      await this.port.room.loadRooms()
+      await this.port.chat.getSessionList(true)
+      if (!this.port.global.getCurrentSessionRoomId() && this.port.chat.getSessionListValue().length > 0) {
+        this.port.global.updateCurrentSessionRoomId(this.port.chat.getSessionListValue()[0].roomId)
       }
 
-      const account = {
+      const account: UserInfoType = {
         uid,
         name: this.resolveDisplayName(uid, options.displayName, options.account),
         account: toLocalpart(options.account || uid),
@@ -611,37 +623,30 @@ class MatrixRuntimeSessionService {
         avatarUpdateTime: 0,
         client: options.client || (isDesktop() ? 'PC' : 'MOBILE'),
         resume: '',
-        homeserverUrl: matrixStore.homeserverUrl || undefined,
+        homeserverUrl: this.port.matrix.getHomeserverUrl() || undefined,
         identityServerUrl: resolveMatrixSessionEndpointConfig().identityServerUrl || undefined
       }
 
-      userStore.userInfo = account
-      loginHistoriesStore.addLoginHistory(account)
+      this.port.user.setUserInfo(account)
+      this.port.loginHistory.addLoginHistory(account)
 
-      // 拉 profile / 上报 presence / 启动心跳
       await this.startPresencePipeline(uid)
 
-      // 把 Matrix 事件桥接成既有 useMitt + WsResponseMessageType.* 信号，
-      // 让 App.vue 中遗留的监听器（TOKEN_EXPIRED、MSG_RECALL、ROOM_INFO_CHANGE）
-      // 在没有 WS 通道时仍然能收到等价事件。
       matrixWsBridge.start()
 
-      // 预热 Matrix Worker 宿主：当前仅用于 ping/心跳骨架，后续会逐步把
-      // 重活迁进 worker。失败不应阻塞登录流程，仅记录日志。
       void matrixWorkerHost.start().catch((err) => {
         logger.warn(`[login] MatrixWorkerHost 启动失败: ${err}`)
       })
 
-      // 初始化 Worker 搜索索引
       await this.bootstrapSearchIndex(uid).catch((err) => {
         logger.warn(`[login] 初始化 Worker 搜索索引失败: ${err}`)
       })
 
-      void emojiStore.initEmojis().catch(() => {
+      void this.port.emoji.initEmojis().catch(() => {
         logger.warn('[login] 初始化表情失败')
       })
 
-      void emojiStore.prefetchEmojiToLocal().catch(() => {
+      void this.port.emoji.prefetchEmojiToLocal().catch(() => {
         logger.warn('[login] 预热表情缓存失败')
       })
     } catch (err) {
@@ -653,9 +658,6 @@ class MatrixRuntimeSessionService {
   async resetLocalSessionState(options: ResetMatrixRuntimeSessionOptions = {}): Promise<void> {
     try {
       const { preserveTokens = false } = options
-      const globalStore = useGlobalStore()
-      const settingStore = useSettingStore()
-      const userStore = useUserStore()
 
       if (!preserveTokens) {
         localStorage.removeItem('user')
@@ -665,9 +667,9 @@ class MatrixRuntimeSessionService {
       }
       clearMatrixSessionEndpointConfig()
 
-      settingStore.closeAutoLogin()
-      userStore.clearUser()
-      globalStore.updateCurrentSessionRoomId('')
+      this.port.setting.closeAutoLogin()
+      this.port.user.clearUser()
+      this.port.global.updateCurrentSessionRoomId('')
 
       if (isMac()) {
         const homeWindow = await WebviewWindow.getByLabel('home')
@@ -687,10 +689,9 @@ class MatrixRuntimeSessionService {
         return
       }
 
-      const globalStore = useGlobalStore()
       const { resizeWindow } = useWindow()
 
-      globalStore.isTrayMenuShow = true
+      this.port.global.setTrayMenuShow(true)
       await resizeWindow('tray', 130, 356)
     } catch (err) {
       logger.error(`应用桌面端登录状态失败: ${err}`)
@@ -728,15 +729,11 @@ class MatrixRuntimeSessionService {
 
   async logoutCurrentSession(options: LogoutMatrixRuntimeSessionOptions = {}): Promise<void> {
     const { resetLocalState = true, preserveTokens = false } = options
-    const matrixStore = useMatrixStore()
-    const globalStore = useGlobalStore()
     const { resizeWindow, createWebviewWindow } = useWindow()
 
-    // 登出前先把心跳停掉，并把状态告诉服务端，避免被对端继续看到「在线」
     stopPresenceHeartbeat()
     matrixWsBridge.stop()
 
-    // 清理搜索索引持久化数据并终止 Worker
     const cleanupAndTerminate = async () => {
       try {
         await matrixWorkerHost.resetSearchIndex()
@@ -762,13 +759,13 @@ class MatrixRuntimeSessionService {
         preserveTokens
       })
     } else {
-      globalStore.updateCurrentSessionRoomId('')
+      this.port.global.updateCurrentSessionRoomId('')
     }
 
-    await matrixStore.logout()
+    await this.port.matrix.logout()
 
     if (isDesktop()) {
-      globalStore.isTrayMenuShow = false
+      this.port.global.setTrayMenuShow(false)
       try {
         await createWebviewWindow('登录', 'login', 320, 448, undefined, false, 320, 448)
         await emit(EventEnum.LOGOUT)
@@ -787,4 +784,4 @@ class MatrixRuntimeSessionService {
   }
 }
 
-export const matrixRuntimeSessionService = new MatrixRuntimeSessionService()
+export { MatrixRuntimeSessionService }

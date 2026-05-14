@@ -239,7 +239,7 @@ import dayjs from 'dayjs'
 import { darkTheme, type FormInst, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { resolveMatrixRuntimeEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend'
-import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
+import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Register')
@@ -513,7 +513,7 @@ const finishRegistrationAndEnterHome = async (
       homeserverUrl: matrixEndpointConfig.homeserverUrl,
       identityServerUrl: matrixEndpointConfig.identityServerUrl
     })
-    await matrixRuntimeSessionService.restoreWithAccessToken({
+    await sessionOrchestrator.restoreWithAccessToken({
       uid: registerResult.user_id,
       accessToken: registerResult.access_token,
       refreshToken: registerResult.refresh_token,
@@ -525,7 +525,7 @@ const finishRegistrationAndEnterHome = async (
       bootstrapAfterRestore: true
     })
   } else {
-    await matrixRuntimeSessionService.loginWithPassword({
+    await sessionOrchestrator.loginWithPassword({
       username: account,
       password: info.password,
       homeserverUrl: matrixEndpointConfig.homeserverUrl,
@@ -538,7 +538,7 @@ const finishRegistrationAndEnterHome = async (
     })
   }
 
-  await matrixRuntimeSessionService.completeDesktopLoginTransition()
+  await sessionOrchestrator.completeDesktopLoginTransition()
 }
 
 const startSendCodeCountdown = () => {

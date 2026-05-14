@@ -159,8 +159,8 @@ vi.mock('@/services/backend', () => ({
   saveMatrixSessionEndpointConfig: saveMatrixSessionEndpointConfigMock
 }))
 
-vi.mock('@/services/matrix/auth/MatrixRuntimeSessionService', () => ({
-  matrixRuntimeSessionService: {
+vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
+  sessionOrchestrator: {
     restoreWithAccessToken: restoreWithAccessTokenMock,
     loginWithPassword: vi.fn(),
     completeDesktopLoginTransition: completeDesktopLoginTransitionMock

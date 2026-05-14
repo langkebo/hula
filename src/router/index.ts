@@ -37,8 +37,8 @@ const router: Router = createRouter({
 const authGuard = createAuthGuard({
   isMobile,
   hasAuthenticatedSession: async () => {
-    const { matrixRuntimeSessionService } = await import('@/services/matrix/auth/MatrixRuntimeSessionService')
-    return matrixRuntimeSessionService.hasAuthenticatedSession()
+    const { sessionOrchestrator } = await import('@/services/matrix/auth/SessionOrchestrator')
+    return sessionOrchestrator.hasAuthenticatedSession()
   },
   verifyAdminAccess: async () => {
     const { useAdminStore } = await import('@/stores/domains/admin/admin')
