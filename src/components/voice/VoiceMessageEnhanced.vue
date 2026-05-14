@@ -77,17 +77,14 @@
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import { useI18n } from 'vue-i18n'
-import { ThemeEnum } from '@/enums'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import type { VoiceBody } from '@/services/types'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('VoiceMessageEnhanced')
 
 const { t } = useI18n()
-const settingStore = useSettingStore()
 const userStore = useUserStore()
 
 const props = defineProps<{
@@ -115,9 +112,12 @@ const showTranscription = ref(false)
 
 const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
-const isDarkMode = computed(() => settingStore.themeContent === ThemeEnum.DARK)
 const isCurrentUser = computed(() => props.fromUserUid === userStore.userInfo?.uid)
-const iconColor = computed(() => (isCurrentUser.value ? '#fff' : isDarkMode.value ? '#fff' : '#000'))
+const iconColor = computed(() =>
+  isCurrentUser.value
+    ? '#fff'
+    : getComputedStyle(document.documentElement).getPropertyValue('--voice-icon-color-other').trim() || '#000'
+)
 
 const waveformWidth = computed(() => {
   const baseWidth = 120

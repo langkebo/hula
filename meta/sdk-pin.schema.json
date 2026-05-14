@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HuLa SDK Pin",
+  "description": "Release-branch pin that binds the HuLa frontend to a specific matrix-js-sdk artifact and (transitively) to a synapse-rust commit. Enforced by scripts/verify-sdk-pin.mjs.",
+  "type": "object",
+  "required": [
+    "sdk_package_name",
+    "sdk_version",
+    "sdk_commit",
+    "sdk_mode",
+    "ledger_schema",
+    "synapse_rust_commit",
+    "pinned_at",
+    "pinned_by"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "comment": { "type": "string" },
+    "sdk_package_name": { "const": "matrix-js-sdk" },
+    "sdk_version": {
+      "type": "string",
+      "description": "SemVer from matrix-js-sdk/package.json at pin time. May be empty on dev branches."
+    },
+    "sdk_commit": {
+      "type": "string",
+      "pattern": "^([0-9a-f]{7,40}|)$",
+      "description": "Git SHA of the matrix-js-sdk checkout."
+    },
+    "sdk_mode": { "enum": ["link", "tarball", "registry"] },
+    "ledger_schema": { "const": "1" },
+    "synapse_rust_commit": {
+      "type": "string",
+      "pattern": "^([0-9a-f]{7,40}|)$"
+    },
+    "tarball_sha256": {
+      "type": "string",
+      "pattern": "^(sha256-[A-Fa-f0-9]{64}|)$"
+    },
+    "pinned_at": {
+      "type": "string",
+      "description": "ISO-8601 UTC timestamp, empty on dev branches."
+    },
+    "pinned_by": { "type": "string" }
+  },
+  "additionalProperties": false
+}
