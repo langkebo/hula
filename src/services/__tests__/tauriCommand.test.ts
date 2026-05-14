@@ -13,7 +13,7 @@ const mockUserStore = {
   }
 }
 
-const mockMatrixRuntimeSessionService = {
+const mockSessionOrchestrator = {
   getStoredTokens: vi.fn(),
   restoreWithAccessToken: vi.fn(),
   completeDesktopLoginTransition: vi.fn()
@@ -27,8 +27,8 @@ vi.mock('@/utils/AppStateReady', () => ({
   ensureAppStateReady: mockEnsureAppStateReady
 }))
 
-vi.mock('../matrix/auth/MatrixRuntimeSessionService', () => ({
-  matrixRuntimeSessionService: mockMatrixRuntimeSessionService
+vi.mock('../matrix/auth/SessionOrchestrator', () => ({
+  sessionOrchestrator: mockSessionOrchestrator
 }))
 
 vi.mock('../../stores/domains/chat/matrix', () => ({
@@ -47,12 +47,12 @@ describe('loginCommand', () => {
     mockMatrixStore.userId = ''
     mockUserStore.userInfo = null
     mockEnsureAppStateReady.mockResolvedValue(undefined)
-    mockMatrixRuntimeSessionService.getStoredTokens.mockResolvedValue({
+    mockSessionOrchestrator.getStoredTokens.mockResolvedValue({
       token: 'access-token',
       refreshToken: 'refresh-token'
     })
-    mockMatrixRuntimeSessionService.restoreWithAccessToken.mockResolvedValue(undefined)
-    mockMatrixRuntimeSessionService.completeDesktopLoginTransition.mockResolvedValue(undefined)
+    mockSessionOrchestrator.restoreWithAccessToken.mockResolvedValue(undefined)
+    mockSessionOrchestrator.completeDesktopLoginTransition.mockResolvedValue(undefined)
   })
 
   it('restores the desktop session with stored tokens and completes transition', async () => {
@@ -63,8 +63,8 @@ describe('loginCommand', () => {
     })
 
     expect(mockEnsureAppStateReady).toHaveBeenCalledTimes(1)
-    expect(mockMatrixRuntimeSessionService.getStoredTokens).toHaveBeenCalledTimes(1)
-    expect(mockMatrixRuntimeSessionService.restoreWithAccessToken).toHaveBeenCalledWith({
+    expect(mockSessionOrchestrator.getStoredTokens).toHaveBeenCalledTimes(1)
+    expect(mockSessionOrchestrator.restoreWithAccessToken).toHaveBeenCalledWith({
       uid: '@alice:example.com',
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
@@ -73,7 +73,7 @@ describe('loginCommand', () => {
       client: 'PC',
       bootstrapAfterRestore: true
     })
-    expect(mockMatrixRuntimeSessionService.completeDesktopLoginTransition).toHaveBeenCalledTimes(1)
+    expect(mockSessionOrchestrator.completeDesktopLoginTransition).toHaveBeenCalledTimes(1)
   })
 
   it('falls back to store uid when caller does not provide one', async () => {
@@ -83,7 +83,7 @@ describe('loginCommand', () => {
 
     await loginCommand({})
 
-    expect(mockMatrixRuntimeSessionService.restoreWithAccessToken).toHaveBeenCalledWith(
+    expect(mockSessionOrchestrator.restoreWithAccessToken).toHaveBeenCalledWith(
       expect.objectContaining({
         uid: '@bob:example.com'
       })
@@ -94,12 +94,12 @@ describe('loginCommand', () => {
     mockUserStore.userInfo = {
       uid: '@carol:example.com'
     }
-    mockMatrixRuntimeSessionService.getStoredTokens.mockResolvedValue({
+    mockSessionOrchestrator.getStoredTokens.mockResolvedValue({
       token: '',
       refreshToken: ''
     })
 
     await expect(loginCommand({})).rejects.toThrow('缺少访问令牌，无法恢复登录会话')
-    expect(mockMatrixRuntimeSessionService.restoreWithAccessToken).not.toHaveBeenCalled()
+    expect(mockSessionOrchestrator.restoreWithAccessToken).not.toHaveBeenCalled()
   })
 })

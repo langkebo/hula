@@ -1,24 +1,38 @@
 export { adminService, useAdmin } from './AdminFacadeService'
 export type {
+  AdminReport,
+  ContentFilter,
+  CreateContentFilterRequest,
   FederationBlacklistEntry,
   FederationDestination,
+  QuotaAlert,
+  QuotaConfig,
+  QuotaStats,
+  QuotaStatus,
   RateLimit,
   RegistrationToken,
+  Report,
+  ReportFilters,
+  ReportReason,
+  ReportRequest,
+  ReportRoomResponse,
+  ResolveReportRequest,
+  RetentionPolicy,
   RoomInfo,
+  RoomRetention,
   RoomState,
+  ScannerInfo,
   ServerHealth,
   ServerInfo,
   ServerNoticeInfo,
   ServerNoticeResult,
+  ServerQuota,
   ServerStats,
   ServerStatus,
   ServerVersion,
   ShadowBanStatus,
   ShutdownRoomResult,
   UserDevice,
-  UserInfo
+  UserInfo,
+  UserReputation
 } from './AdminTypes'
-export { matrixAdminService } from './MatrixAdminService'
-export { matrixFederationBlacklistService } from './MatrixFederationBlacklistService'
-export type { QuotaAlert, QuotaStats, QuotaStatus } from './MatrixQuotaService'
-export { matrixQuotaService } from './MatrixQuotaService'

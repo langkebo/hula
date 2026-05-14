@@ -1,4 +1,3 @@
-import { matrixRuntimeSessionService } from '@/services/matrix/auth/MatrixRuntimeSessionService'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useMatrixStore } from '../stores/domains/chat/matrix'
@@ -135,13 +134,14 @@ export const loginCommand = async (
     throw new Error('缺少用户ID，无法恢复登录会话')
   }
 
-  const tokens = await matrixRuntimeSessionService.getStoredTokens()
+  const { sessionOrchestrator } = await import('@/services/matrix/auth/SessionOrchestrator')
+  const tokens = await sessionOrchestrator.getStoredTokens()
 
   if (!tokens.token) {
     throw new Error('缺少访问令牌，无法恢复登录会话')
   }
 
-  await matrixRuntimeSessionService.restoreWithAccessToken({
+  await sessionOrchestrator.restoreWithAccessToken({
     uid,
     accessToken: tokens.token,
     refreshToken: tokens.refreshToken ?? undefined,
@@ -151,5 +151,5 @@ export const loginCommand = async (
     bootstrapAfterRestore: true
   })
 
-  await matrixRuntimeSessionService.completeDesktopLoginTransition()
+  await sessionOrchestrator.completeDesktopLoginTransition()
 }

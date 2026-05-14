@@ -101,7 +101,7 @@ import {
 import { storeToRefs } from 'pinia'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Report } from '@/services/matrix/admin/MatrixModerationService'
+import type { Report } from '@/services/matrix/admin'
 import { useModerationStore } from '@/stores/domains/chat/moderation'
 
 defineOptions({

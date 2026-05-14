@@ -1,12 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
-import {
-  matrixQuotaService,
-  type QuotaAlert,
-  type QuotaStats,
-  type QuotaStatus
-} from '@/services/matrix/admin/MatrixQuotaService'
+import type { QuotaAlert, QuotaStats, QuotaStatus } from '@/services/matrix/admin'
+import { adminService } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('QuotaStore')
@@ -29,7 +25,7 @@ export const useQuotaStore = defineStore(StoresEnum.QUOTA, () => {
     loading.value = true
     error.value = null
     try {
-      quotaStatus.value = await matrixQuotaService.checkQuota()
+      quotaStatus.value = await adminService.checkQuota()
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch quota status'
     } finally {
@@ -41,7 +37,7 @@ export const useQuotaStore = defineStore(StoresEnum.QUOTA, () => {
     loading.value = true
     error.value = null
     try {
-      quotaStats.value = await matrixQuotaService.getQuotaStats()
+      quotaStats.value = await adminService.getQuotaStats()
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch quota stats'
     } finally {
@@ -51,7 +47,7 @@ export const useQuotaStore = defineStore(StoresEnum.QUOTA, () => {
 
   async function fetchAlerts() {
     try {
-      alerts.value = await matrixQuotaService.getQuotaAlerts()
+      alerts.value = await adminService.getQuotaAlerts()
     } catch (e) {
       logger.error('获取配额告警失败:', e)
     }
