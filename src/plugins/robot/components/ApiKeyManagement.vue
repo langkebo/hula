@@ -241,8 +241,8 @@ const loadPlatformList = async () => {
   } catch (error) {
     // 如果加载失败，使用默认值
     platformOptions.value = [
-      { label: 'SiliconFlow (硅基流动)', value: 'SiliconFlow' },
-      { label: 'Gitee AI', value: 'GiteeAI' }
+      { label: t('ai_assistant.robot.siliconflow_label'), value: 'SiliconFlow' },
+      { label: t('ai_assistant.robot.gitee_ai_label'), value: 'GiteeAI' }
     ]
   }
 }

@@ -10,11 +10,18 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../../MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: vi.fn(() => null as MatrixClient | null),
-    getTelemetry: vi.fn(() => null)
+const { mockMatrixClientService } = vi.hoisted(() => ({
+  mockMatrixClientService: {
+    getClient: vi.fn(() => null),
+    getTelemetry: vi.fn(() => null),
+    getHomeserverUrl: vi.fn(() => 'https://matrix.test'),
+    getAccessToken: vi.fn(() => 'token123')
   }
+}))
+
+vi.mock('../../MatrixClientService', () => ({
+  matrixClientService: mockMatrixClientService,
+  default: mockMatrixClientService
 }))
 
 vi.mock('@/utils/ImageUtils', () => ({
@@ -26,8 +33,10 @@ vi.mock('@/utils/ImageUtils', () => ({
 import { matrixClientService } from '../../MatrixClientService'
 
 const mockClient = {
+  getHomeserverUrl: vi.fn(() => 'https://matrix.test'),
+  getAccessToken: vi.fn(() => 'token123'),
   uploadContent: vi.fn(),
-  mxcUrlToHttp: vi.fn()
+  mxcUrlToHttp: vi.fn((url: string) => url.replace('mxc://', 'https://matrix.test/_matrix/media/r0/download/'))
 }
 
 describe('MatrixMediaService', () => {
@@ -143,6 +152,7 @@ describe('MatrixMediaService', () => {
 
   describe('downloadEncryptedFileBytes', () => {
     it('should download ciphertext and decrypt it back to plaintext', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
       const sourceFile = new File(['secret-content'], 'secret.txt', { type: 'text/plain' })
       const encryptedPayload = await matrixAttachmentEncryptionService.encryptAttachment(sourceFile)
       const ciphertext = await encryptedPayload.encryptedData.arrayBuffer()

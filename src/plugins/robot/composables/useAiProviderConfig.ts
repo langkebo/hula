@@ -1,4 +1,5 @@
 import { ref, watch } from 'vue'
+import { useI18nGlobal } from '@/services/i18n'
 import { useOpenClaw } from '@/services/openclaw'
 import { useSiliconFlow } from '@/services/siliconflow'
 import { useTrendRadar } from '@/services/trendradar'
@@ -21,6 +22,7 @@ export interface UseAiProviderConfigOptions {
 
 export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
   const { fetchModelList, modelList } = options
+  const { t } = useI18nGlobal()
 
   const aiProvider = ref<AIProvider>('openclaw')
 
@@ -113,7 +115,7 @@ export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
           })
         } catch (e) {
           logger.error('OpenClaw 连接失败:', e)
-          window.$message.error('OpenClaw 连接失败，请确保 Gateway 已启动')
+          window.$message.error(t('ai_assistant.robot.openclaw_connection_failed_gateway'))
         }
       }
     } else if (provider === 'trendradar') {

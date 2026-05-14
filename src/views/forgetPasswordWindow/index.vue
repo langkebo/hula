@@ -1,7 +1,7 @@
 <template>
   <n-config-provider
     :theme="naiveTheme"
-    class="size-full bg-#fff dark:bg-#202020 rounded-8px select-none cursor-default">
+    class="size-full bg-[--login-surface-bg] rounded-8px select-none cursor-default">
     <!--顶部操作栏-->
     <ActionBar :max-w="false" :shrink="false" />
 
@@ -95,7 +95,7 @@
             :loading="verifyLoading"
             :disabled="nextDisabled"
             tertiary
-            style="color: #fff"
+            style="color: var(--hula-text-inverse)"
             @click="verifyEmail"
             class="mt-10px w-full gradient-button">
             {{ t('auth.forget.buttons.next') }}
@@ -169,7 +169,7 @@
             <n-button
               :loading="submitLoading"
               tertiary
-              style="color: #fff"
+              style="color: var(--hula-text-inverse)"
               @click="submitNewPassword"
               class="flex-1 gradient-button">
               {{ t('auth.forget.buttons.submit') }}

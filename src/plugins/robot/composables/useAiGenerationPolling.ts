@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
 import type { AIAudio, AIImage, AIVideo } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
@@ -42,7 +43,7 @@ interface PollGenerationOptions<T extends PollingRecord> {
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message
   if (typeof error === 'string') return error
-  return '未知错误'
+  return useI18nGlobal().t('ai_assistant.robot.unknown_error')
 }
 
 export const useAiGenerationPolling = ({
@@ -54,6 +55,7 @@ export const useAiGenerationPolling = ({
   ensureLocalAiAudio,
   getCurrentAudioInfo
 }: UseAiGenerationPollingOptions) => {
+  const { t } = useI18nGlobal()
   const pollingTasks = usePollingTasks()
 
   const markMessageFailed = (messageIndex: number, content: string) => {
@@ -112,7 +114,7 @@ export const useAiGenerationPolling = ({
         }
       } catch (error) {
         logger.error(errorLogLabel, error)
-        markMessageFailed(messageIndex, `查询状态失败: ${getErrorMessage(error)}`)
+        markMessageFailed(messageIndex, t('ai_assistant.robot.query_status_failed', { error: getErrorMessage(error) }))
         pollingTasks.stop(taskId)
       }
     }
@@ -138,9 +140,9 @@ export const useAiGenerationPolling = ({
       interval: 3000,
       conversationId: currentChat.value.id,
       messageIndex,
-      timeoutContent: '图片生成超时，请重试',
-      timeoutToast: '图片生成超时，已停止轮询',
-      missingContent: '图片生成失败: 记录不存在',
+      timeoutContent: t('ai_assistant.robot.image_generation_timeout_retry'),
+      timeoutToast: t('ai_assistant.robot.image_generation_timeout_stopped'),
+      missingContent: t('ai_assistant.robot.image_generation_failed_no_record'),
       errorLogLabel: '轮询图片状态失败:',
       fetchRecords: () => aiService.imageMyListByIds({ ids: imageId.toString() }),
       handleSuccess: (image) => {
@@ -159,11 +161,14 @@ export const useAiGenerationPolling = ({
           }
         }
         void ensureLocalAiImage(image.picUrl || image.url, messageIndex)
-        window.$message.success('图片生成成功')
+        window.$message.success(t('ai_assistant.robot.image_generation_success'))
         bumpMessageRenderVersion()
       },
-      resolveFailureContent: (image) => `图片生成失败: ${image.errorMessage || '未知错误'}`,
-      failureToast: '图片生成失败'
+      resolveFailureContent: (image) =>
+        t('ai_assistant.robot.image_generation_failed_error', {
+          error: image.errorMessage || t('ai_assistant.robot.unknown_error')
+        }),
+      failureToast: t('ai_assistant.robot.image_generation_failed')
     })
   }
 
@@ -180,9 +185,9 @@ export const useAiGenerationPolling = ({
       interval: 5000,
       conversationId: currentChat.value.id,
       messageIndex,
-      timeoutContent: '视频生成超时，请重试',
-      timeoutToast: '视频生成超时，已停止轮询',
-      missingContent: '视频生成失败: 记录不存在',
+      timeoutContent: t('ai_assistant.robot.video_generation_timeout_retry'),
+      timeoutToast: t('ai_assistant.robot.video_generation_timeout_stopped'),
+      missingContent: t('ai_assistant.robot.video_generation_failed_no_record'),
       errorLogLabel: '轮询视频状态失败:',
       fetchRecords: () => aiService.videoMyListByIds({ ids: videoId.toString() }),
       handleSuccess: (video) => {
@@ -204,8 +209,11 @@ export const useAiGenerationPolling = ({
         window.$message.success('视频生成成功')
         bumpMessageRenderVersion()
       },
-      resolveFailureContent: (video) => `视频生成失败: ${video.errorMessage || '未知错误'}`,
-      failureToast: '视频生成失败'
+      resolveFailureContent: (video) =>
+        t('ai_assistant.robot.video_generation_failed_error', {
+          error: video.errorMessage || t('ai_assistant.robot.unknown_error')
+        }),
+      failureToast: t('ai_assistant.robot.video_generation_failed')
     })
   }
 
@@ -237,11 +245,14 @@ export const useAiGenerationPolling = ({
           }
         }
         void ensureLocalAiAudio(audio.audioUrl || audio.url, messageIndex)
-        window.$message.success('音频生成成功')
+        window.$message.success(t('ai_assistant.robot.audio_generation_success'))
         bumpMessageRenderVersion()
       },
-      resolveFailureContent: (audio) => `音频生成失败: ${audio.errorMessage || '未知错误'}`,
-      failureToast: '音频生成失败'
+      resolveFailureContent: (audio) =>
+        t('ai_assistant.robot.audio_generation_failed_error', {
+          error: audio.errorMessage || t('ai_assistant.robot.unknown_error')
+        }),
+      failureToast: t('ai_assistant.robot.audio_generation_failed')
     })
   }
 

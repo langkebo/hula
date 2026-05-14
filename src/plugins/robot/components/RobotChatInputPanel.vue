@@ -34,21 +34,21 @@
           v-model:value="imageParams.size"
           :options="imageSizeOptions"
           size="small"
-          placeholder="图片尺寸"
+          :placeholder="t('ai_assistant.robot.image_size')"
           style="width: 150px" />
         <n-select
           v-if="selectedModel && (selectedModel.type === 4 || selectedModel.type === 7 || selectedModel.type === 8)"
           v-model:value="videoParams.size"
           :options="videoSizeOptions"
           size="small"
-          placeholder="视频尺寸"
+          :placeholder="t('ai_assistant.robot.video_size')"
           style="width: 150px" />
         <n-select
           v-if="selectedModel && (selectedModel.type === 4 || selectedModel.type === 7 || selectedModel.type === 8)"
           v-model:value="videoParams.duration"
           :options="videoDurationOptions"
           size="small"
-          placeholder="视频时长"
+          :placeholder="t('ai_assistant.robot.video_duration')"
           style="width: 100px" />
 
         <n-select
@@ -56,14 +56,14 @@
           v-model:value="audioParams.voice"
           :options="audioVoiceOptions"
           size="small"
-          placeholder="选择语音"
+          :placeholder="t('ai_assistant.robot.select_voice')"
           style="width: 150px" />
         <n-select
           v-if="selectedModel && selectedModel.type === 3"
           v-model:value="audioParams.speed"
           :options="audioSpeedOptions"
           size="small"
-          placeholder="播放速度"
+          :placeholder="t('ai_assistant.robot.playback_speed')"
           style="width: 120px" />
 
         <n-popover v-if="selectedModel && selectedModel.type === 8" trigger="hover" :show-arrow="false" placement="top">
@@ -97,7 +97,13 @@
                       <polyline points="21 15 16 10 5 21"></polyline>
                     </svg>
                   </template>
-                  {{ isUploadingVideoImage ? '上传中...' : videoImagePreview ? '已上传' : '参考图' }}
+                  {{
+                    isUploadingVideoImage
+                      ? t('ai_assistant.robot.uploading')
+                      : videoImagePreview
+                        ? t('ai_assistant.robot.uploaded')
+                        : t('ai_assistant.robot.reference_image')
+                  }}
                 </n-button>
               </n-upload>
               <n-button
@@ -138,15 +144,21 @@
               <img :src="videoImagePreview" style="max-width: 100%; border-radius: 4px" />
             </div>
             <div style="font-size: 12px; color: #666">
-              <div v-if="isUploadingVideoImage" style="color: #18a058">⏳ 正在上传参考图片...</div>
+              <div v-if="isUploadingVideoImage" style="color: #18a058">
+                {{ t('ai_assistant.robot.uploading_reference_image') }}
+              </div>
               <div v-else>
-                {{ videoImagePreview ? '参考图片已上传，点击按钮可重新上传' : '上传参考图片用于图生视频' }}
+                {{
+                  videoImagePreview
+                    ? t('ai_assistant.robot.reference_image_uploaded')
+                    : t('ai_assistant.robot.upload_reference_image')
+                }}
                 <br />
-                支持格式: JPG、PNG、WEBP
+                {{ t('ai_assistant.robot.supported_formats') }}
                 <br />
-                最大大小: 10MB
+                {{ t('ai_assistant.robot.max_size_10mb') }}
                 <br />
-                <span style="color: #999; font-size: 11px">图片将上传到服务端对象存储</span>
+                <span style="color: #999; font-size: 11px">{{ t('ai_assistant.robot.image_upload_to_storage') }}</span>
               </div>
             </div>
           </div>
@@ -169,20 +181,21 @@
           <n-popover trigger="hover" :show-arrow="false" placement="top">
             <template #trigger>
               <p class="text-(12px #707070) cursor-default select-none pr-6px">
-                Token 使用 {{ serverTokenUsage ?? conversationTokens }} / {{ selectedModel?.maxTokens || 0 }}
+                {{ t('ai_assistant.robot.token_usage') }} {{ serverTokenUsage ?? conversationTokens }} /
+                {{ selectedModel?.maxTokens || 0 }}
               </p>
             </template>
-            <span>按会话累计 Token 进行限制，达到上限后将拒绝继续生成</span>
+            <span>{{ t('ai_assistant.robot.token_limit_hint') }}</span>
           </n-popover>
           <n-popover trigger="hover" :show-arrow="false" placement="top">
             <template #trigger>
               <n-switch :value="reasoningEnabled" size="small" @update:value="emit('update:reasoning-enabled', $event)">
-                <template #checked>深度思考</template>
-                <template #unchecked>关闭</template>
+                <template #checked>{{ t('ai_assistant.robot.deep_thinking') }}</template>
+                <template #unchecked>{{ t('ai_assistant.robot.close') }}</template>
               </n-switch>
             </template>
-            <span v-if="supportsReasoning">开启后将优先展示思考过程</span>
-            <span v-else>该模型不支持深度思考</span>
+            <span v-if="supportsReasoning">{{ t('ai_assistant.robot.deep_thinking_enabled_hint') }}</span>
+            <span v-else>{{ t('ai_assistant.robot.deep_thinking_unsupported') }}</span>
           </n-popover>
         </div>
       </n-flex>
@@ -201,6 +214,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import MsgInput from '@/components/rightBox/MsgInput.vue'
 import RobotChatModelPopover from '@/plugins/robot/components/RobotChatModelPopover.vue'
 import RobotChatRolePopover from '@/plugins/robot/components/RobotChatRolePopover.vue'
@@ -208,6 +222,8 @@ import type { VideoImageUploadPayload } from '@/plugins/robot/composables/useAiG
 import type { PaginationState } from '@/plugins/robot/composables/useRobotChat'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
+
+const { t } = useI18n()
 
 type SelectOption<T extends string | number> = {
   label: string

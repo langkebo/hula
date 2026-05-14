@@ -11,30 +11,30 @@
         <n-avatar v-if="selectedRole" :src="selectedRole.avatar" :size="24" round :fallback-src="getDefaultAvatar()" />
         <Icon v-else icon="mdi:account-circle" class="text-24px color-#909090" />
         <span class="text-(12px [--hula-text-primary])">
-          {{ selectedRole ? selectedRole.name : '选择角色' }}
+          {{ selectedRole ? selectedRole.name : t('ai_assistant.robot.select_role') }}
         </span>
         <Icon icon="mdi:chevron-down" class="text-16px color-#909090" />
       </div>
     </template>
     <div class="role-selector">
       <div class="role-header">
-        <span class="role-title">选择角色</span>
+        <span class="role-title">{{ t('ai_assistant.robot.select_role') }}</span>
         <n-button size="small" @click="emit('open-management')">
           <template #icon>
             <Icon icon="mdi:cog" />
           </template>
-          管理
+          {{ t('ai_assistant.robot.manage_short') }}
         </n-button>
       </div>
 
       <div class="role-list">
         <div v-if="roleLoading" class="loading-container">
           <n-spin size="small" />
-          <span class="loading-text">加载中...</span>
+          <span class="loading-text">{{ t('ai_assistant.robot.loading') }}</span>
         </div>
 
         <div v-else-if="roleList.length === 0" class="empty-container">
-          <n-empty description="暂无角色数据" size="small">
+          <n-empty :description="t('ai_assistant.robot.no_role_data')" size="small">
             <template #icon>
               <Icon icon="mdi:account-off" class="text-24px color-#909090" />
             </template>
@@ -52,7 +52,9 @@
             <n-flex vertical :size="2" class="flex-1 min-w-0">
               <n-flex align="center" :size="8">
                 <span class="role-name">{{ role.name }}</span>
-                <n-tag v-if="role.status === 0" size="tiny" type="success">可用</n-tag>
+                <n-tag v-if="role.status === 0" size="tiny" type="success">
+                  {{ t('ai_assistant.robot.available') }}
+                </n-tag>
               </n-flex>
               <span class="role-desc">{{ role.description }}</span>
             </n-flex>
@@ -69,7 +71,10 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
+
+const { t } = useI18n()
 
 defineProps<{
   show: boolean

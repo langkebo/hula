@@ -7,14 +7,14 @@
         v-if="!isEdit"
         @click="emit('edit')"
         class="leading-6 text-(18px [--hula-text-primary]) truncate font-500 hover:underline cursor-pointer">
-        {{ chatTitle || '新的会话' }}
+        {{ chatTitle || t('ai_assistant.robot.new_conversation_title') }}
       </p>
       <n-input
         v-else
         ref="titleInputRef"
         :value="chatTitle"
         clearable
-        placeholder="输入标题"
+        :placeholder="t('ai_assistant.robot.input_title')"
         type="text"
         size="small"
         spellCheck="false"
@@ -28,7 +28,10 @@
 
       <n-flex align="center" :size="8" class="mt-4px">
         <n-tag v-if="aiProvider === 'openclaw'" :type="isOpenClawConnected ? 'success' : 'error'" size="small">
-          OpenClaw {{ isOpenClawConnected ? '已连接' : '未连接' }}
+          OpenClaw
+          {{
+            isOpenClawConnected ? t('ai_assistant.robot.status.connected') : t('ai_assistant.robot.status.disconnected')
+          }}
         </n-tag>
 
         <n-select
@@ -44,11 +47,11 @@
           :options="openClawModels.map((m) => ({ label: m, value: m }))"
           size="tiny"
           style="width: 180px"
-          placeholder="选择模型"
+          :placeholder="t('ai_assistant.robot.select_model')"
           @update:value="emit('update:open-claw-current-model', $event)" />
 
         <div v-if="aiProvider === 'hula'" class="flex items-center gap-6px">
-          <span class="text-(11px #909090)">当前模型:</span>
+          <span class="text-(11px #909090)">{{ t('ai_assistant.robot.current_model') }}</span>
           <n-tag
             v-if="selectedModel"
             size="small"
@@ -60,17 +63,33 @@
               <Icon icon="mdi:robot" class="text-14px" />
             </template>
           </n-tag>
-          <n-tag v-if="selectedModel && selectedModel.publicStatus === 0" size="small" type="info">官网模型</n-tag>
-          <n-tag v-else-if="selectedModel" size="small" type="warning">自建模型</n-tag>
-          <n-tag v-if="selectedModel && selectedModel.type === 1" size="small" type="info">文字</n-tag>
-          <n-tag v-if="selectedModel && selectedModel.type === 2" size="small" type="success">图片</n-tag>
-          <n-tag v-if="selectedModel && selectedModel.type === 3" size="small" type="info">音频</n-tag>
-          <n-tag v-if="selectedModel && selectedModel.type === 4" size="small" type="warning">视频</n-tag>
-          <n-tag v-if="selectedModel && selectedModel.type === 7" size="small" type="warning">文生视频</n-tag>
-          <n-tag v-if="selectedModel && selectedModel.type === 8" size="small" type="success">图生视频</n-tag>
+          <n-tag v-if="selectedModel && selectedModel.publicStatus === 0" size="small" type="info">
+            {{ t('ai_assistant.robot.official_model') }}
+          </n-tag>
+          <n-tag v-else-if="selectedModel" size="small" type="warning">
+            {{ t('ai_assistant.robot.custom_model') }}
+          </n-tag>
+          <n-tag v-if="selectedModel && selectedModel.type === 1" size="small" type="info">
+            {{ t('ai_assistant.robot.model_type_chat') }}
+          </n-tag>
+          <n-tag v-if="selectedModel && selectedModel.type === 2" size="small" type="success">
+            {{ t('ai_assistant.robot.model_type_image') }}
+          </n-tag>
+          <n-tag v-if="selectedModel && selectedModel.type === 3" size="small" type="info">
+            {{ t('ai_assistant.robot.model_type_audio') }}
+          </n-tag>
+          <n-tag v-if="selectedModel && selectedModel.type === 4" size="small" type="warning">
+            {{ t('ai_assistant.robot.model_type_video') }}
+          </n-tag>
+          <n-tag v-if="selectedModel && selectedModel.type === 7" size="small" type="warning">
+            {{ t('ai_assistant.robot.model_type_text2video') }}
+          </n-tag>
+          <n-tag v-if="selectedModel && selectedModel.type === 8" size="small" type="success">
+            {{ t('ai_assistant.robot.model_type_image2video') }}
+          </n-tag>
 
           <n-tag v-if="remainingUsage !== null" size="small" :type="remainingUsageTagType" round>
-            剩余次数: {{ remainingUsageDisplay }}
+            {{ t('ai_assistant.robot.remaining_usage', { count: remainingUsageDisplay }) }}
           </n-tag>
 
           <n-tag
@@ -79,14 +98,14 @@
             type="warning"
             class="cursor-pointer"
             @click="emit('model-click')">
-            未选择模型
+            {{ t('ai_assistant.robot.no_model_selected') }}
             <template #icon>
               <Icon icon="mdi:robot-off" class="text-14px" />
             </template>
           </n-tag>
         </div>
 
-        <p class="text-(11px #707070)">共{{ messageCount }}条对话</p>
+        <p class="text-(11px #707070)">{{ t('ai_assistant.robot.conversation_count', { count: messageCount }) }}</p>
       </n-flex>
     </n-flex>
 
@@ -97,7 +116,7 @@
             <svg><use href="#plus"></use></svg>
           </div>
         </template>
-        <p>新建会话</p>
+        <p>{{ t('ai_assistant.robot.new_conversation_btn') }}</p>
       </n-popover>
 
       <n-popover trigger="hover" :show-arrow="false" placement="bottom">
@@ -106,7 +125,7 @@
             <svg><use href="#edit"></use></svg>
           </div>
         </template>
-        <p>编辑标题</p>
+        <p>{{ t('ai_assistant.robot.edit_title') }}</p>
       </n-popover>
 
       <n-popover
@@ -117,24 +136,30 @@
         style="padding: 16px; width: 280px"
         @update:show="emit('update:show-delete-chat-confirm', $event)">
         <template #trigger>
-          <div class="right-btn right-btn-danger" title="删除会话">
+          <div class="right-btn right-btn-danger" :title="t('ai_assistant.robot.delete_conversation')">
             <svg><use href="#delete"></use></svg>
           </div>
         </template>
         <n-flex vertical :size="12">
-          <p class="text-(14px [--hula-text-primary]) font-500">确定要删除当前会话吗？</p>
-          <p class="text-(12px #d5304f)">删除后将无法恢复！</p>
+          <p class="text-(14px [--hula-text-primary]) font-500">
+            {{ t('ai_assistant.robot.confirm_delete_conversation') }}
+          </p>
+          <p class="text-(12px #d5304f)">{{ t('ai_assistant.robot.irreversible_warning') }}</p>
 
           <n-checkbox
             :checked="deleteWithMessages"
             size="small"
             @update:checked="emit('update:delete-with-messages', $event)">
-            <span class="text-(12px [--hula-text-primary])">同时删除会话中的所有消息</span>
+            <span class="text-(12px [--hula-text-primary])">{{ t('ai_assistant.robot.delete_with_messages') }}</span>
           </n-checkbox>
 
           <n-flex justify="end" :size="8">
-            <n-button size="small" @click="emit('update:show-delete-chat-confirm', false)">取消</n-button>
-            <n-button size="small" type="error" @click="emit('delete-chat')">确定删除</n-button>
+            <n-button size="small" @click="emit('update:show-delete-chat-confirm', false)">
+              {{ t('ai_assistant.robot.cancel') }}
+            </n-button>
+            <n-button size="small" type="error" @click="emit('delete-chat')">
+              {{ t('ai_assistant.robot.confirm_delete_btn') }}
+            </n-button>
           </n-flex>
         </n-flex>
       </n-popover>
@@ -145,7 +170,7 @@
             <svg><use href="#Sharing"></use></svg>
           </div>
         </template>
-        <p>分享</p>
+        <p>{{ t('ai_assistant.robot.share') }}</p>
       </n-popover>
     </n-flex>
   </div>
@@ -155,9 +180,12 @@
 import { Icon } from '@iconify/vue'
 import type { InputInst } from 'naive-ui'
 import { nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { AIProvider } from '@/plugins/robot/composables/useAiProviderConfig'
 import type { ConversationMeta } from '@/plugins/robot/composables/useRobotChat'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   chatTitle: ConversationMeta['title']
@@ -191,7 +219,7 @@ const emit = defineEmits<{
 
 const providerOptions: Array<{ label: string; value: AIProvider }> = [
   { label: 'OpenClaw', value: 'openclaw' },
-  { label: 'HuLa 后端', value: 'hula' }
+  { label: t('ai_assistant.robot.hula_backend'), value: 'hula' }
 ]
 
 const titleInputRef = ref<InputInst | null>(null)

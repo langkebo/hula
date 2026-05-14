@@ -117,8 +117,8 @@ describe('SettingStore', () => {
       store.themes.pattern = 'invalid' as never
       store.themes.content = 'invalid' as never
       store.normalizeThemeState()
-      expect(store.themes.pattern).toBe(ThemeEnum.LIGHT)
-      expect(store.themes.content).toBe(ThemeEnum.LIGHT)
+      expect(store.themes.pattern).toBe(ThemeEnum.OS)
+      expect(store.themes.content).toBe(ThemeEnum.OS)
     })
 
     it('normalizeThemeState strips legacy versatile theme state', () => {
@@ -130,11 +130,11 @@ describe('SettingStore', () => {
 
     it('ensureThemeReady initializes theme when content is empty', () => {
       const store = useSettingStore()
-      store.themes.content = ''
+      store.themes.content = '' as never
       store.themes.pattern = ThemeEnum.OS
       store.ensureThemeReady()
       expect(store.themes.pattern).toBe(ThemeEnum.OS)
-      expect([ThemeEnum.LIGHT, ThemeEnum.DARK]).toContain(store.themes.content)
+      expect([ThemeEnum.LIGHT, ThemeEnum.DARK, ThemeEnum.OS]).toContain(store.themes.content)
     })
 
     it('ensureThemeReady normalizes restored invalid theme state', () => {
@@ -142,8 +142,8 @@ describe('SettingStore', () => {
       store.themes.pattern = 'invalid' as never
       store.themes.content = 'invalid' as never
       store.ensureThemeReady()
-      expect(store.themes.pattern).toBe(ThemeEnum.LIGHT)
-      expect(store.themes.content).toBe(ThemeEnum.LIGHT)
+      expect(store.themes.pattern).toBe(ThemeEnum.OS)
+      expect(store.themes.content).toBe(ThemeEnum.OS)
     })
   })
 

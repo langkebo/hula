@@ -5,13 +5,13 @@ import {
   buildImageGenerationRequest,
   buildVideoGenerationRequest
 } from '@/plugins/robot/composables/useAiGenerationRequests'
+import { useI18nGlobal } from '@/services/i18n'
 import type { AIAsyncGenerationResponse } from '@/services/matrix/ai/AIService'
 import { aiService } from '@/services/matrix/ai/AIService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiMediaGeneration')
-const AI_THINKING_PLACEHOLDER = '正在思考中...'
 
 interface MediaGenerationMessage {
   type: 'user' | 'assistant'
@@ -86,7 +86,7 @@ const extractGenerationTaskId = (result: AIAsyncGenerationResponse) => {
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message
   if (typeof error === 'string') return error
-  return '未知错误'
+  return useI18nGlobal().t('ai_assistant.robot.unknown_error')
 }
 
 const getExceededTokenBudget = (model: AIModel, conversationTokens: number) => {
@@ -100,6 +100,7 @@ const appendGenerationMessages = (
   msgType: AiMsgContentTypeEnum,
   bumpMessageRenderVersion: () => void
 ) => {
+  const { t } = useI18nGlobal()
   messageList.value.push({
     type: 'user',
     content: prompt,
@@ -111,7 +112,7 @@ const appendGenerationMessages = (
   messageList.value.push({
     type: 'assistant',
     msgType,
-    content: AI_THINKING_PLACEHOLDER,
+    content: t('ai_assistant.robot.thinking'),
     createTime: Date.now(),
     isGenerating: true
   })
@@ -120,17 +121,27 @@ const appendGenerationMessages = (
   return aiMessageIndex
 }
 
-const handleGenerationError = (messageList: Ref<MediaGenerationMessage[]>, label: string, error: unknown) => {
+const handleGenerationError = (
+  messageList: Ref<MediaGenerationMessage[]>,
+  label: string,
+  mediaTypeKey: string,
+  error: unknown
+) => {
+  const { t } = useI18nGlobal()
   logger.error(`${label}生成失败:`, error)
   const lastMessage = messageList.value[messageList.value.length - 1]
   if (lastMessage?.isGenerating) {
-    lastMessage.content = `${label}生成失败: ${getErrorMessage(error)}`
+    lastMessage.content = t('ai_assistant.robot.generation_failed_with_error', {
+      label: t(mediaTypeKey),
+      error: getErrorMessage(error)
+    })
     lastMessage.isGenerating = false
   }
-  window.$message.error(`${label}生成失败，请检查网络连接`)
+  window.$message.error(t('ai_assistant.robot.generation_failed_network', { label: t(mediaTypeKey) }))
 }
 
 export const useAiMediaGeneration = (options: UseAiMediaGenerationOptions) => {
+  const { t } = useI18nGlobal()
   const {
     currentChat,
     conversationTokens,
@@ -149,7 +160,7 @@ export const useAiMediaGeneration = (options: UseAiMediaGenerationOptions) => {
   const guardTokenBudget = (model: AIModel) => {
     const exceededTokenBudget = getExceededTokenBudget(model, conversationTokens.value)
     if (exceededTokenBudget === null) return false
-    window.$message.warning(`本会话 Token 已用完（${exceededTokenBudget}），请新建会话或更换模型`)
+    window.$message.warning(t('ai_assistant.robot.token_budget_exceeded', { budget: exceededTokenBudget }))
     return true
   }
 
@@ -186,7 +197,7 @@ export const useAiMediaGeneration = (options: UseAiMediaGenerationOptions) => {
       )
       clearInput()
     } catch (error) {
-      handleGenerationError(messageList, '图片', error)
+      handleGenerationError(messageList, '图片', 'ai_assistant.robot.model_type_image', error)
     }
   }
 
@@ -222,7 +233,7 @@ export const useAiMediaGeneration = (options: UseAiMediaGenerationOptions) => {
       clearInput()
       clearVideoImage()
     } catch (error) {
-      handleGenerationError(messageList, '视频', error)
+      handleGenerationError(messageList, '视频', 'ai_assistant.robot.model_type_video', error)
     }
   }
 
@@ -250,7 +261,7 @@ export const useAiMediaGeneration = (options: UseAiMediaGenerationOptions) => {
       void pollAudioStatus(audioId, aiMessageIndex, prompt, model.name)
       clearInput()
     } catch (error) {
-      handleGenerationError(messageList, '音频', error)
+      handleGenerationError(messageList, '音频', 'ai_assistant.robot.model_type_audio', error)
     }
   }
 

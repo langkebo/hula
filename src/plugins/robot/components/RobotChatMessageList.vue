@@ -21,18 +21,20 @@
                 :type="selectedModel.status === 0 ? 'success' : 'error'"
                 size="tiny"
                 class="ml-8px">
-                {{ selectedModel.status === 0 ? '可用' : '不可用' }}
+                {{
+                  selectedModel.status === 0 ? t('ai_assistant.robot.available') : t('ai_assistant.robot.unavailable')
+                }}
               </n-tag>
             </p>
             <div class="bubble select-text text-14px">
-              <p>{{ `你好，我是${selectedModel?.name || ''}，很高兴为您服务。` }}</p>
+              <p>{{ t('ai_assistant.robot.greeting', { name: selectedModel?.name || '' }) }}</p>
             </div>
           </n-flex>
         </div>
 
         <div v-if="loadingMessages" class="flex justify-center items-center py-20px text-(12px #909090)">
           <n-spin size="small" />
-          <span class="ml-10px">加载消息中...</span>
+          <span class="ml-10px">{{ t('ai_assistant.robot.loading_messages') }}</span>
         </div>
 
         <div
@@ -62,20 +64,18 @@
                 :size="8"
                 class="select-none text-(12px #909090)"
                 :class="message.type === 'user' ? 'flex-row-reverse' : ''">
-                <p>{{ message.type === 'user' ? '我' : selectedModel ? selectedModel.name : 'AI' }}</p>
+                <p>
+                  {{ message.type === 'user' ? t('ai_assistant.robot.me') : selectedModel ? selectedModel.name : 'AI' }}
+                </p>
                 <n-popconfirm
                   v-if="message.id"
                   @positive-click="emit('delete-message', message.id, index)"
-                  positive-text="删除"
-                  negative-text="取消">
+                  :positive-text="t('ai_assistant.robot.delete')"
+                  :negative-text="t('ai_assistant.robot.cancel')">
                   <template #trigger>
-                    <div
-                      class="delete-btn opacity-0 group-hover:opacity-100 cursor-pointer text-#909090 hover:text-#d5304f transition-all"
-                      title="删除消息">
-                      <svg class="w-14px h-14px"><use href="#delete"></use></svg>
-                    </div>
+                    <Icon icon="mdi:delete-outline" class="text-14px cursor-pointer hover:text-red-500" />
                   </template>
-                  <p>确定要删除这条消息吗？</p>
+                  {{ t('ai_assistant.robot.confirm_delete_message') }}
                 </n-popconfirm>
               </n-flex>
               <div :class="getMessageBubbleClass(message)" class="select-text text-14px" style="white-space: pre-wrap">
@@ -87,7 +87,7 @@
                     <template v-if="isRenderableAiImage(message)">
                       <img
                         :src="message.content"
-                        alt="生成的图片"
+                        :alt="t('ai_assistant.robot.generated_image')"
                         class="max-w-400px max-h-400px rounded-8px cursor-pointer"
                         @click="emit('preview-image', message.content)" />
                     </template>
@@ -106,7 +106,7 @@
                         controls
                         class="max-w-600px max-h-400px rounded-8px"
                         preload="metadata">
-                        您的浏览器不支持视频播放
+                        {{ t('ai_assistant.robot.browser_no_video') }}
                       </video>
                     </template>
                     <template v-else>
@@ -118,7 +118,7 @@
                   <template v-else-if="message.msgType === AiMsgContentTypeEnum.AUDIO">
                     <template v-if="isLikelyMediaUrl(message.content)">
                       <audio :src="message.content" controls class="w-300px" preload="metadata">
-                        您的浏览器不支持音频播放
+                        {{ t('ai_assistant.robot.browser_no_audio') }}
                       </audio>
                     </template>
                     <template v-else>
@@ -134,7 +134,9 @@
                         class="reasoning-content p-12px rounded-8px bg-[#f5f5f5] dark:bg-[#2a2a2a] border-(1px solid #e0e0e0) dark:border-(1px solid #404040)">
                         <div class="flex items-center gap-6px mb-8px">
                           <Icon icon="mdi:brain" class="text-16px text-[#1890ff]" />
-                          <span class="text-12px text-[#666] dark:text-[#aaa] font-500">思考过程</span>
+                          <span class="text-12px text-[#666] dark:text-[#aaa] font-500">
+                            {{ t('ai_assistant.robot.thinking_process') }}
+                          </span>
                         </div>
                         <div class="code-block-wrapper" :class="isDarkTheme ? 'code-block-dark' : 'code-block-light'">
                           <MarkdownRender
@@ -174,12 +176,15 @@
 import { Icon } from '@iconify/vue'
 import { useResizeObserver } from '@vueuse/core'
 import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { AiMsgContentTypeEnum, ThemeEnum } from '@/enums'
 import type { Message } from '@/plugins/robot/composables/useRobotChat'
 import { ROBOT_MARKDOWN_CUSTOM_ID } from '@/plugins/robot/utils/markdown'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+
+const { t } = useI18n()
 
 const MarkdownRender = defineAsyncComponent(async () => {
   const { initMarkdownRenderer } = await import('@/plugins/robot/utils/markdown')

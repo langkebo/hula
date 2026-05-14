@@ -2,7 +2,7 @@
   <n-modal
     v-model:show="showModal"
     preset="card"
-    title="角色管理"
+    :title="t('ai_assistant.robot.role_management')"
     style="width: 1000px"
     :bordered="false"
     :segmented="{ content: 'soft', footer: 'soft' }">
@@ -11,7 +11,7 @@
         <template #icon>
           <Icon icon="mdi:plus" />
         </template>
-        新增角色
+        {{ t('ai_assistant.robot.add_role') }}
       </n-button>
     </template>
 
@@ -19,12 +19,12 @@
     <n-scrollbar style="max-height: calc(80vh - 140px)">
       <n-spin :show="loading">
         <div v-if="roleList.length === 0" class="empty-container">
-          <n-empty description="暂无角色" size="large">
+          <n-empty :description="t('ai_assistant.robot.no_roles')" size="large">
             <template #icon>
               <Icon icon="mdi:account-circle" class="text-48px color-#909090" />
             </template>
             <template #extra>
-              <n-button type="primary" @click="handleAdd">新增第一个角色</n-button>
+              <n-button type="primary" @click="handleAdd">{{ t('ai_assistant.robot.add_first_role') }}</n-button>
             </template>
           </n-empty>
         </div>
@@ -38,14 +38,18 @@
                   <n-flex align="center" :size="8">
                     <span class="role-name">{{ role.name }}</span>
                     <n-tag :type="role.status === 0 ? 'success' : 'error'" size="small">
-                      {{ role.status === 0 ? '可用' : '不可用' }}
+                      {{ role.status === 0 ? t('ai_assistant.robot.available') : t('ai_assistant.robot.unavailable') }}
                     </n-tag>
-                    <n-tag v-if="role.publicStatus" type="info" size="small">公开</n-tag>
-                    <n-tag v-else type="warning" size="small">私有</n-tag>
+                    <n-tag v-if="role.publicStatus" type="info" size="small">
+                      {{ t('ai_assistant.robot.public') }}
+                    </n-tag>
+                    <n-tag v-else type="warning" size="small">{{ t('ai_assistant.robot.private') }}</n-tag>
                   </n-flex>
                   <div class="role-meta">
-                    <span class="meta-item">类别: {{ role.category }}</span>
-                    <span class="meta-item">排序: {{ role.sort }}</span>
+                    <span class="meta-item">
+                      {{ t('ai_assistant.robot.category_label', { category: role.category }) }}
+                    </span>
+                    <span class="meta-item">{{ t('ai_assistant.robot.sort_label', { sort: role.sort }) }}</span>
                   </div>
                 </div>
               </n-flex>
@@ -55,34 +59,34 @@
                   <template #icon>
                     <Icon icon="mdi:pencil" />
                   </template>
-                  编辑
+                  {{ t('ai_assistant.robot.edit') }}
                 </n-button>
                 <!-- 只有创建人才显示删除按钮 -->
                 <n-popconfirm
                   v-if="isRoleCreator(role)"
                   @positive-click="handleDelete(role.id)"
-                  positive-text="删除"
-                  negative-text="取消">
+                  :positive-text="t('ai_assistant.robot.delete')"
+                  :negative-text="t('ai_assistant.robot.cancel')">
                   <template #trigger>
                     <n-button size="small" type="error">
                       <template #icon>
                         <Icon icon="mdi:delete" />
                       </template>
-                      删除
+                      {{ t('ai_assistant.robot.delete') }}
                     </n-button>
                   </template>
-                  <p>确定要删除角色 "{{ role.name }}" 吗？</p>
-                  <p class="text-red-500">删除后将无法恢复！</p>
+                  <p>{{ t('ai_assistant.robot.confirm_delete_role', { name: role.name }) }}</p>
+                  <p class="text-red-500">{{ t('ai_assistant.robot.irreversible_warning') }}</p>
                 </n-popconfirm>
               </n-flex>
             </div>
 
             <div class="role-card-body">
               <n-descriptions :column="1" size="small" bordered>
-                <n-descriptions-item label="角色描述">
+                <n-descriptions-item :label="t('ai_assistant.robot.role_description')">
                   {{ role.description }}
                 </n-descriptions-item>
-                <n-descriptions-item label="角色设定">
+                <n-descriptions-item :label="t('ai_assistant.robot.role_setting')">
                   {{ role.systemMessage }}
                 </n-descriptions-item>
               </n-descriptions>
@@ -105,7 +109,7 @@
   <n-modal
     v-model:show="showEditModal"
     preset="card"
-    :title="editingRole ? '编辑角色' : '新增角色'"
+    :title="editingRole ? t('ai_assistant.robot.edit_role') : t('ai_assistant.robot.add_role')"
     style="width: 700px"
     :bordered="false"
     :segmented="{ content: 'soft', footer: 'soft' }">
@@ -117,11 +121,11 @@
         label-placement="left"
         label-width="100px"
         style="padding-right: 12px">
-        <n-form-item label="角色名称" path="name">
-          <n-input v-model:value="formData.name" placeholder="请输入角色名称，例如: 通用 AI 助手" />
+        <n-form-item :label="t('ai_assistant.robot.role_name')" path="name">
+          <n-input v-model:value="formData.name" :placeholder="t('ai_assistant.robot.role_name_placeholder')" />
         </n-form-item>
 
-        <n-form-item label="角色头像" path="avatar">
+        <n-form-item :label="t('ai_assistant.robot.role_avatar')" path="avatar">
           <n-flex :size="12" align="center" style="width: 100%">
             <n-avatar :key="formData.avatar" :src="formData.avatar" :size="60" round fallback-src="">
               <Icon v-if="!formData.avatar" icon="mdi:account-circle" :size="40" />
@@ -131,11 +135,13 @@
                 <template #icon>
                   <Icon icon="mdi:upload" />
                 </template>
-                {{ formData.avatar ? '更换头像' : '上传头像' }}
+                {{ formData.avatar ? t('ai_assistant.robot.change_avatar') : t('ai_assistant.robot.upload_avatar') }}
               </n-button>
               <span v-if="formData.avatar" class="text-(12px #909090)">
-                已上传
-                <n-button text type="error" size="tiny" @click="formData.avatar = ''">清除</n-button>
+                {{ t('ai_assistant.robot.uploaded') }}
+                <n-button text type="error" size="tiny" @click="formData.avatar = ''">
+                  {{ t('ai_assistant.robot.clear') }}
+                </n-button>
               </span>
             </n-flex>
           </n-flex>
@@ -148,61 +154,68 @@
             @change="handleFileChange" />
         </n-form-item>
 
-        <n-form-item label="角色类别" path="category">
+        <n-form-item :label="t('ai_assistant.robot.role_category')" path="category">
           <n-select
             v-model:value="formData.category"
             :options="categoryOptions"
-            placeholder="请选择角色类别"
+            :placeholder="t('ai_assistant.robot.select_role_category')"
             filterable
             tag />
         </n-form-item>
 
-        <n-form-item label="模型" path="modelId">
+        <n-form-item :label="t('ai_assistant.robot.model_label_short')" path="modelId">
           <n-select
             v-model:value="formData.modelId"
             :options="modelOptions"
-            placeholder="可选，不选则使用默认模型"
+            :placeholder="t('ai_assistant.robot.model_optional')"
             clearable />
         </n-form-item>
 
-        <n-form-item label="排序值" path="sort">
-          <n-input-number v-model:value="formData.sort" :min="0" placeholder="数值越小越靠前" style="width: 100%" />
+        <n-form-item :label="t('ai_assistant.robot.sort_value')" path="sort">
+          <n-input-number
+            v-model:value="formData.sort"
+            :min="0"
+            :placeholder="t('ai_assistant.robot.sort_hint')"
+            style="width: 100%" />
         </n-form-item>
 
-        <n-form-item label="状态" path="status">
-          <n-select v-model:value="formData.status" :options="statusOptions" placeholder="请选择状态" />
+        <n-form-item :label="t('ai_assistant.robot.status_label')" path="status">
+          <n-select
+            v-model:value="formData.status"
+            :options="statusOptions"
+            :placeholder="t('ai_assistant.robot.select_status')" />
         </n-form-item>
 
-        <n-form-item label="是否公开" path="publicStatus">
+        <n-form-item :label="t('ai_assistant.robot.is_public')" path="publicStatus">
           <n-switch v-model:value="formData.publicStatus">
-            <template #checked>公开</template>
-            <template #unchecked>私有</template>
+            <template #checked>{{ t('ai_assistant.robot.public') }}</template>
+            <template #unchecked>{{ t('ai_assistant.robot.private') }}</template>
           </n-switch>
         </n-form-item>
 
-        <n-form-item label="角色描述" path="description">
+        <n-form-item :label="t('ai_assistant.robot.role_description')" path="description">
           <n-input
             v-model:value="formData.description"
             type="textarea"
             :rows="3"
-            placeholder="请输入角色描述，例如: 一个通用的 AI 助手，可以帮助你解决各种问题" />
+            :placeholder="t('ai_assistant.robot.role_description_placeholder')" />
         </n-form-item>
 
-        <n-form-item label="角色设定" path="systemMessage">
+        <n-form-item :label="t('ai_assistant.robot.role_setting')" path="systemMessage">
           <n-input
             v-model:value="formData.systemMessage"
             type="textarea"
             :rows="5"
-            placeholder="请输入角色设定，例如: 你是一个友好、专业的 AI 助手，总是以积极的态度帮助用户解决问题..." />
+            :placeholder="t('ai_assistant.robot.role_setting_placeholder')" />
         </n-form-item>
       </n-form>
     </n-scrollbar>
 
     <template #footer>
       <n-flex justify="end" :size="12">
-        <n-button @click="showEditModal = false">取消</n-button>
+        <n-button @click="showEditModal = false">{{ t('ai_assistant.robot.cancel') }}</n-button>
         <n-button type="primary" @click="handleSubmit" :loading="submitting">
-          {{ editingRole ? '保存' : '创建' }}
+          {{ editingRole ? t('ai_assistant.robot.save') : t('ai_assistant.robot.create') }}
         </n-button>
       </n-flex>
     </template>
@@ -228,6 +241,7 @@ import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('ChatRoleManagement')
+const { t } = useI18n()
 const timerManager = useTimerManager()
 
 const showModal = defineModel<boolean>({ default: false })
@@ -274,16 +288,16 @@ type SelectOption = { label: string; value: string | number }
 
 // 类别选项（默认选项）
 const categoryOptions = ref<SelectOption[]>([
-  { label: 'AI助手', value: 'AI助手' },
-  { label: '写作', value: '写作' },
-  { label: '编程开发', value: '编程开发' },
-  { label: '学习教育', value: '学习教育' },
-  { label: '生活娱乐', value: '生活娱乐' },
-  { label: '商务办公', value: '商务办公' },
-  { label: '创意设计', value: '创意设计' },
-  { label: '数据分析', value: '数据分析' },
-  { label: '翻译', value: '翻译' },
-  { label: '其他', value: '其他' }
+  { label: t('ai_assistant.robot.category_ai_assistant'), value: 'AI助手' },
+  { label: t('ai_assistant.robot.category_writing'), value: '写作' },
+  { label: t('ai_assistant.robot.category_programming'), value: '编程开发' },
+  { label: t('ai_assistant.robot.category_education'), value: '学习教育' },
+  { label: t('ai_assistant.robot.category_entertainment'), value: '生活娱乐' },
+  { label: t('ai_assistant.robot.category_business'), value: '商务办公' },
+  { label: t('ai_assistant.robot.category_creative'), value: '创意设计' },
+  { label: t('ai_assistant.robot.category_data_analysis'), value: '数据分析' },
+  { label: t('ai_assistant.robot.category_translation'), value: '翻译' },
+  { label: t('ai_assistant.robot.category_other'), value: '其他' }
 ])
 
 // 模型选项
@@ -291,33 +305,33 @@ const modelOptions = ref<SelectOption[]>([])
 
 // 状态选项
 const statusOptions = [
-  { label: '可用', value: 0 },
-  { label: '不可用', value: 1 }
+  { label: t('ai_assistant.robot.available'), value: 0 },
+  { label: t('ai_assistant.robot.unavailable'), value: 1 }
 ]
 
 // 表单验证规则
 const formRules: FormRules = {
-  name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
-  avatar: [{ required: true, message: '请上传角色头像', trigger: 'blur' }],
-  category: [{ required: true, message: '请选择角色类别', trigger: 'change' }],
+  name: [{ required: true, message: t('ai_assistant.robot.input_role_name_required'), trigger: 'blur' }],
+  avatar: [{ required: true, message: t('ai_assistant.robot.input_role_avatar_required'), trigger: 'blur' }],
+  category: [{ required: true, message: t('ai_assistant.robot.select_role_category_required'), trigger: 'change' }],
   sort: [
     {
       required: true,
       type: 'number',
-      message: '请输入排序值',
+      message: t('ai_assistant.robot.input_sort_required'),
       trigger: 'blur',
       validator: (_rule: unknown, value: unknown) => {
         return value !== undefined && value !== null && value !== ''
       }
     }
   ],
-  description: [{ required: true, message: '请输入角色描述', trigger: 'blur' }],
-  systemMessage: [{ required: true, message: '请输入角色设定', trigger: 'blur' }],
+  description: [{ required: true, message: t('ai_assistant.robot.input_role_description_required'), trigger: 'blur' }],
+  systemMessage: [{ required: true, message: t('ai_assistant.robot.input_role_setting_required'), trigger: 'blur' }],
   publicStatus: [
     {
       required: true,
       type: 'boolean',
-      message: '请选择是否公开',
+      message: t('ai_assistant.robot.select_is_public_required'),
       trigger: 'change',
       validator: (_rule: unknown, value: unknown) => {
         return value !== undefined && value !== null
@@ -328,7 +342,7 @@ const formRules: FormRules = {
     {
       required: true,
       type: 'number',
-      message: '请选择状态',
+      message: t('ai_assistant.robot.select_status_required'),
       trigger: 'change',
       validator: (_rule: unknown, value: unknown) => {
         return value !== undefined && value !== null && value !== ''
@@ -352,7 +366,7 @@ const {
 
     await nextTick()
 
-    window.$message.success('头像上传成功')
+    window.$message.success(t('ai_assistant.robot.avatar_upload_success'))
   }
 })
 
@@ -382,7 +396,7 @@ const loadModelList = async () => {
     }))
   } catch (error) {
     logger.error('加载模型列表失败:', error)
-    window.$message.error('加载模型列表失败')
+    window.$message.error(t('ai_assistant.robot.load_models_failed'))
   }
 }
 
@@ -398,7 +412,7 @@ const loadRoleList = async () => {
     pagination.value.total = data.total || 0
   } catch (error) {
     logger.error('加载角色列表失败:', error)
-    window.$message.error('加载角色列表失败')
+    window.$message.error(t('ai_assistant.robot.load_role_list_failed'))
   } finally {
     loading.value = false
   }
@@ -460,11 +474,11 @@ const handleSubmit = async () => {
         id: editingRole.value.id,
         ...submitData
       })
-      window.$message.success('角色更新成功')
+      window.$message.success(t('ai_assistant.robot.role_updated'))
     } else {
       // 创建
       await chatRoleService.create(submitData as ChatRole)
-      window.$message.success('角色创建成功')
+      window.$message.success(t('ai_assistant.robot.role_created'))
     }
 
     showEditModal.value = false
@@ -479,7 +493,7 @@ const handleSubmit = async () => {
       return
     }
     logger.error('保存角色失败:', error)
-    window.$message.error('保存角色失败')
+    window.$message.error(t('ai_assistant.robot.save_role_failed'))
   } finally {
     submitting.value = false
   }
@@ -506,14 +520,14 @@ const resetForm = () => {
 const handleDelete = async (id: string) => {
   try {
     await chatRoleService.delete({ id })
-    window.$message.success('角色删除成功')
+    window.$message.success(t('ai_assistant.robot.role_deleted'))
     loadRoleList()
     emit('refresh')
     // 通知左侧刷新角色状态
     useMitt.emit('refresh-roles')
   } catch (error) {
     logger.error('删除角色失败:', error)
-    window.$message.error('删除角色失败')
+    window.$message.error(t('ai_assistant.robot.delete_role_failed'))
   }
 }
 

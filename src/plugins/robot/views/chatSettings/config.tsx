@@ -1,9 +1,12 @@
 import { NFlex } from 'naive-ui'
 import type { VNode } from 'vue'
 import { MacOsKeyEnum, WinKeyEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
 import { isWindows } from '@/utils/PlatformConstants'
 import pkg from '~/package.json'
 import { Button, Input, InputNumber, Select, Slider, Switch } from './model.tsx'
+
+const { t } = useI18nGlobal()
 
 const key = computed(() => {
   return `${isWindows() ? WinKeyEnum.CTRL : MacOsKeyEnum['⌘']}`
@@ -22,12 +25,12 @@ type ChatConfig = {
 export const content: ChatConfig = {
   system: [
     {
-      title: `当前版本：v${pkg.version}`,
-      description: '已是最新版本',
-      features: <Button title={'检查更新'} icon={'refresh'} />
+      title: t('ai_assistant.robot.current_version', { version: pkg.version }),
+      description: t('ai_assistant.robot.already_latest'),
+      features: <Button title={t('ai_assistant.robot.check_update')} icon={'refresh'} />
     },
     {
-      title: '发送键',
+      title: t('ai_assistant.robot.send_key'),
       features: (
         <Select
           content={[
@@ -38,73 +41,73 @@ export const content: ChatConfig = {
       )
     },
     {
-      title: '主题',
+      title: t('ai_assistant.robot.theme'),
       features: (
         <Select
           content={[
-            { label: '亮色', value: 'light' },
-            { label: '暗黑模式', value: 'dark' },
-            { label: '跟随系统', value: 'auto' }
+            { label: t('ai_assistant.robot.light_theme'), value: 'light' },
+            { label: t('ai_assistant.robot.dark_mode'), value: 'dark' },
+            { label: t('ai_assistant.robot.follow_system'), value: 'auto' }
           ]}
         />
       )
     },
     {
-      title: '字体大小',
-      description: '聊天内容的字体大小',
+      title: t('ai_assistant.robot.font_size'),
+      description: t('ai_assistant.robot.font_size_desc'),
       features: <Slider min={12} max={20} value={14} />
     },
     {
-      title: '自动生成标题',
-      description: '根据对话内容生成合适的标题',
+      title: t('ai_assistant.robot.auto_generate_title'),
+      description: t('ai_assistant.robot.auto_generate_title_desc'),
       features: <Switch active={false} />
     }
   ],
   record: [
     {
-      title: '云端数据',
-      description: '还没有进行同步',
-      features: <Button title={'配置'} icon={'setting-config'} />
+      title: t('ai_assistant.robot.cloud_data'),
+      description: t('ai_assistant.robot.not_synced'),
+      features: <Button title={t('ai_assistant.robot.configure')} icon={'setting-config'} />
     },
     {
-      title: '本地数据',
-      description: '1 次对话，0条消息，0条提示词，0个身份',
+      title: t('ai_assistant.robot.local_data'),
+      description: t('ai_assistant.robot.local_data_desc'),
       features: (
         <NFlex align={'center'}>
-          <Button title={'导入'} icon={'Export'} />
-          <Button title={'导出'} icon={'Importing'} />
+          <Button title={t('ai_assistant.robot.import_data')} icon={'Export'} />
+          <Button title={t('ai_assistant.robot.export_data')} icon={'Importing'} />
         </NFlex>
       )
     }
   ],
   identity: [
     {
-      title: '身份启动页',
-      description: '新建聊天时，展示身份启动页',
+      title: t('ai_assistant.robot.identity_start_page'),
+      description: t('ai_assistant.robot.identity_start_page_desc'),
       features: <Switch active={true} />
     },
     {
-      title: '隐藏内置身份',
-      description: '在所有身份列表中隐藏内置身份',
+      title: t('ai_assistant.robot.hide_builtin_identity'),
+      description: t('ai_assistant.robot.hide_builtin_identity_desc'),
       features: <Switch active={false} />
     }
   ],
   cueWords: [
     {
-      title: '禁用提示词自动补全',
-      description: '在输入框开头输入/即可触发自动补全',
+      title: t('ai_assistant.robot.disable_prompt_autocomplete'),
+      description: t('ai_assistant.robot.disable_prompt_autocomplete_desc'),
       features: <Switch active={false} />
     },
     {
-      title: '自定义提示词列表',
-      description: '内置 285 条，用户定义0条',
-      features: <Button title={'编辑'} icon={'edit'} />
+      title: t('ai_assistant.robot.custom_prompt_list'),
+      description: t('ai_assistant.robot.custom_prompt_list_desc'),
+      features: <Button title={t('ai_assistant.robot.edit_btn')} icon={'edit'} />
     }
   ],
   APIAddress: [
     {
-      title: '模型服务商',
-      description: '切换不同的服务商',
+      title: t('ai_assistant.robot.model_provider'),
+      description: t('ai_assistant.robot.switch_provider_desc'),
       features: (
         <Select
           content={[
@@ -116,19 +119,19 @@ export const content: ChatConfig = {
       )
     },
     {
-      title: '接口地址',
-      description: '除默认地址外，必须包含 http(s)://',
+      title: t('ai_assistant.robot.api_endpoint'),
+      description: t('ai_assistant.robot.api_endpoint_desc'),
       features: <Input value={'www.baidu.com'} />
     },
     {
-      title: 'API Key',
-      description: '使用自定义 OpenAI key 统过密码访问限制',
+      title: t('ai_assistant.robot.api_key_custom'),
+      description: t('ai_assistant.robot.api_key_custom_desc'),
       features: <Input value={'123456'} isPassword={true} />
     }
   ],
   model: [
     {
-      title: '模型(model)',
+      title: t('ai_assistant.robot.model_label_simple'),
       features: (
         <Select
           content={[
@@ -141,66 +144,66 @@ export const content: ChatConfig = {
       )
     },
     {
-      title: '随机性(temperature)',
-      description: '值越大，回复越随机',
+      title: t('ai_assistant.robot.randomness'),
+      description: t('ai_assistant.robot.randomness_desc'),
       features: <Slider min={0} max={10} value={5} />
     },
     {
-      title: '核采样(top_p)',
-      description: '与随机性类似，但不要和随机性一起更改',
+      title: t('ai_assistant.robot.top_p'),
+      description: t('ai_assistant.robot.top_p_desc'),
       features: <Slider min={0} max={10} value={5} />
     },
     {
-      title: '单次回复限制(max_tokens)',
-      description: '单次交互所用的最大 Token 数',
+      title: t('ai_assistant.robot.max_tokens_limit'),
+      description: t('ai_assistant.robot.max_tokens_limit_desc'),
       features: <InputNumber value={4000} min={2000} max={10000} />
     },
     {
-      title: '话题新鲜度(presence_penalty)',
-      description: '值越大，越有可能扩展到新话题',
+      title: t('ai_assistant.robot.presence_penalty'),
+      description: t('ai_assistant.robot.presence_penalty_desc'),
       features: <Slider min={0} max={10} value={5} />
     },
     {
-      title: '频率惩罚度(frequency_penalty)',
-      description: '值越大，越有可能降低重复字词',
+      title: t('ai_assistant.robot.frequency_penalty'),
+      description: t('ai_assistant.robot.frequency_penalty_desc'),
       features: <Slider min={0} max={10} value={5} />
     },
     {
-      title: '注入系统级提示信息',
-      description: '强制给每次请求的消息列表开头添加一个模拟 ChatGPT 的系统提示',
+      title: t('ai_assistant.robot.inject_system_prompt'),
+      description: t('ai_assistant.robot.inject_system_prompt_desc'),
       features: <Switch active={false} />
     },
     {
-      title: '用户输入预处理',
-      description: '用户最新的一条消息会埴充到此模板',
+      title: t('ai_assistant.robot.user_input_preprocess'),
+      description: t('ai_assistant.robot.user_input_preprocess_desc'),
       features: <Input value={'input'} />
     },
     {
-      title: '附带历史消息数',
-      description: '每次请求携带的历史消息数',
+      title: t('ai_assistant.robot.history_message_count'),
+      description: t('ai_assistant.robot.history_message_count_desc'),
       features: <Slider min={0} max={10} value={5} />
     },
     {
-      title: '历史消息长度压缩阈值',
-      description: '当未压缩的历史消息超过该值时，将进行压缩',
+      title: t('ai_assistant.robot.history_compress_threshold'),
+      description: t('ai_assistant.robot.history_compress_threshold_desc'),
       features: <InputNumber value={1000} min={0} max={5000} />
     },
     {
-      title: '历史摘要',
-      description: '自动压缩聊天记录并作为上下文发送',
+      title: t('ai_assistant.robot.history_summary'),
+      description: t('ai_assistant.robot.history_summary_desc'),
       features: <Switch active={true} />
     }
   ],
   clear: [
     {
-      title: '重置所有设置',
-      description: '重置所有设置项回默认值',
-      features: <Button title={'立即重置'} isSecondary={true} />
+      title: t('ai_assistant.robot.reset_all_settings'),
+      description: t('ai_assistant.robot.reset_all_settings_desc'),
+      features: <Button title={t('ai_assistant.robot.reset_now')} isSecondary={true} />
     },
     {
-      title: '清除所有数据',
-      description: '清除所有聊天、设置数据',
-      features: <Button title={'立即清除'} isSecondary={true} />
+      title: t('ai_assistant.robot.clear_all_data'),
+      description: t('ai_assistant.robot.clear_all_data_desc'),
+      features: <Button title={t('ai_assistant.robot.clear_now')} isSecondary={true} />
     }
   ]
 }

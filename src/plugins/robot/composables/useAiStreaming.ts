@@ -1,12 +1,12 @@
 import { type Ref, ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { createLogger } from '@/utils/Logger'
 import type { ConversationMeta, Message } from './useRobotChat'
 
 const logger = createLogger('AiStreaming')
-const AI_THINKING_PLACEHOLDER = '正在思考中...'
 
 interface ConversationUsage {
   tokenUsage?: number
@@ -45,6 +45,7 @@ export const useAiStreaming = ({
   sendOpenClawMessage,
   onTokenUsageUpdate
 }: UseAiStreamingOptions) => {
+  const { t } = useI18nGlobal()
   const isAIStreaming = ref(false)
   const currentAiRequestId = ref<string | null>(null)
   const currentAiAccumulatedContent = ref('')
@@ -52,7 +53,7 @@ export const useAiStreaming = ({
 
   const handleOpenClawSend = async (content: string) => {
     if (!isOpenClawConnected.value) {
-      window.$message.warning('OpenClaw 未连接，请检查 Gateway')
+      window.$message.warning(t('ai_assistant.robot.openclaw_not_connected'))
       return
     }
 
@@ -80,7 +81,9 @@ export const useAiStreaming = ({
       }
     } catch (error) {
       logger.error('OpenClaw 发送失败:', error)
-      messageList.value[aiMessageIndex].content = `发送失败: ${error instanceof Error ? error.message : '未知错误'}`
+      messageList.value[aiMessageIndex].content = t('ai_assistant.robot.send_failed_with_error', {
+        error: error instanceof Error ? error.message : t('ai_assistant.robot.unknown_error')
+      })
     } finally {
       isAIStreaming.value = false
     }
@@ -92,11 +95,11 @@ export const useAiStreaming = ({
       currentAiAccumulatedContent.value = ''
       const tokenBudget = Number(model?.maxTokens || 0)
       if (tokenBudget > 0 && conversationTokens.value >= tokenBudget) {
-        window.$message.warning(`本会话 Token 已用完（${tokenBudget}），请新建会话或更换模型`)
+        window.$message.warning(t('ai_assistant.robot.token_budget_exceeded', { budget: tokenBudget }))
         return
       }
 
-      window.$message.loading('AI思考中...', { duration: 0 })
+      window.$message.loading(t('ai_assistant.robot.ai_thinking'), { duration: 0 })
       messageList.value.push({
         type: 'user',
         msgType: AiMsgContentTypeEnum.TEXT,
@@ -107,7 +110,7 @@ export const useAiStreaming = ({
       messageList.value.push({
         type: 'assistant',
         msgType: AiMsgContentTypeEnum.TEXT,
-        content: AI_THINKING_PLACEHOLDER,
+        content: t('ai_assistant.robot.thinking'),
         createTime: Date.now()
       })
       bumpMessageRenderVersion()
@@ -137,7 +140,7 @@ export const useAiStreaming = ({
                 if (data.data.receive.content) {
                   const incrementalContent = data.data.receive.content
                   if (
-                    messageList.value[aiMessageIndex].content === AI_THINKING_PLACEHOLDER &&
+                    messageList.value[aiMessageIndex].content === t('ai_assistant.robot.thinking') &&
                     accumulatedContent === ''
                   ) {
                     messageList.value[aiMessageIndex].content = ''
@@ -162,7 +165,10 @@ export const useAiStreaming = ({
 
             if (!handled) {
               const incrementalContent = chunk || ''
-              if (messageList.value[aiMessageIndex].content === AI_THINKING_PLACEHOLDER && accumulatedContent === '') {
+              if (
+                messageList.value[aiMessageIndex].content === t('ai_assistant.robot.thinking') &&
+                accumulatedContent === ''
+              ) {
                 messageList.value[aiMessageIndex].content = ''
               }
               accumulatedContent += incrementalContent
@@ -230,7 +236,7 @@ export const useAiStreaming = ({
       msgInputRef.value?.clearInput?.()
     } catch (error) {
       logger.error('AI消息发送失败:', error)
-      window.$message.error('发送失败，请检查网络连接')
+      window.$message.error(t('ai_assistant.robot.send_failed_network'))
     } finally {
       window.$message.destroyAll()
     }
@@ -243,14 +249,14 @@ export const useAiStreaming = ({
       await aiService.messageCancelStream(currentAiRequestId.value)
       await new Promise((resolve) => setTimeout(resolve, 180))
       const lastMessage = messageList.value[messageList.value.length - 1]
-      if (lastMessage && lastMessage.type === 'assistant' && lastMessage.content === AI_THINKING_PLACEHOLDER) {
+      if (lastMessage && lastMessage.type === 'assistant' && lastMessage.content === t('ai_assistant.robot.thinking')) {
         lastMessage.content = ''
       }
       const latest =
         lastMessage &&
         lastMessage.type === 'assistant' &&
         lastMessage.content &&
-        lastMessage.content !== AI_THINKING_PLACEHOLDER
+        lastMessage.content !== t('ai_assistant.robot.thinking')
           ? lastMessage.content
           : currentAiAccumulatedContent.value
       if (latest?.trim()) {
@@ -260,10 +266,10 @@ export const useAiStreaming = ({
           generatedContent: latest
         })
       }
-      window.$message.success('已停止生成')
+      window.$message.success(t('ai_assistant.robot.generation_stopped'))
     } catch (error) {
       logger.error('停止生成失败:', error)
-      window.$message.error('停止生成失败')
+      window.$message.error(t('ai_assistant.robot.stop_generation_failed'))
     } finally {
       isAIStreaming.value = false
       currentAiRequestId.value = null

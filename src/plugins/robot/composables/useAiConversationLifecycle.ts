@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
+import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
 import { conversationService } from '@/services/matrix/ai/ConversationService'
@@ -57,14 +58,15 @@ export const useAiConversationLifecycle = ({
   loadAudioVoices,
   loadMessages
 }: UseAiConversationLifecycleOptions) => {
+  const { t } = useI18nGlobal()
   const handleCreateNewChat = async () => {
     if (!selectedRole.value?.id) {
-      window.$message.warning('请先选择角色')
+      window.$message.warning(t('ai_assistant.robot.select_role_first'))
       return
     }
 
     const roleId = selectedRole.value.id
-    const roleName = selectedRole.value.name || '新的会话'
+    const roleName = selectedRole.value.name || t('ai_assistant.robot.new_conversation_title')
 
     try {
       const data = await conversationService.create({
@@ -74,7 +76,7 @@ export const useAiConversationLifecycle = ({
       })
 
       if (data) {
-        window.$message.success('会话创建成功')
+        window.$message.success(t('ai_assistant.robot.conversation_created'))
         const rawCreateTime = Number(data.createTime)
         useMitt.emit('add-conversation', {
           id: data.id || data,
@@ -99,7 +101,7 @@ export const useAiConversationLifecycle = ({
 
   const handleDeleteChat = async () => {
     if (!currentChat.value.id || currentChat.value.id === '0') {
-      window.$message.warning('请先选择一个会话')
+      window.$message.warning(t('ai_assistant.robot.select_conversation_first'))
       showDeleteChatConfirm.value = false
       return
     }
@@ -114,7 +116,11 @@ export const useAiConversationLifecycle = ({
       }
 
       await conversationService.delete({ conversationIdList: [currentChat.value.id] })
-      window.$message.success(deleteWithMessages.value ? '会话及消息已删除' : '会话删除成功')
+      window.$message.success(
+        deleteWithMessages.value
+          ? t('ai_assistant.robot.conversation_and_messages_deleted')
+          : t('ai_assistant.robot.conversation_delete_success')
+      )
       showDeleteChatConfirm.value = false
       deleteWithMessages.value = false
       currentChat.value = {
@@ -130,7 +136,7 @@ export const useAiConversationLifecycle = ({
       useMitt.emit('refresh-conversations')
     } catch (error) {
       logger.error('删除会话失败:', error)
-      window.$message.error('删除会话失败')
+      window.$message.error(t('ai_assistant.robot.delete_conversation_failed'))
       showDeleteChatConfirm.value = false
     }
   }
@@ -145,7 +151,7 @@ export const useAiConversationLifecycle = ({
 
   const handleChatActive = async (event: ChatActivePayload) => {
     const { title, id, messageCount, roleId, modelId, createTime } = event
-    currentChat.value.title = title || `新的聊天${currentChat.value.id}`
+    currentChat.value.title = title || t('ai_assistant.robot.new_chat_with_id', { id: currentChat.value.id })
     currentChat.value.id = id
     currentChat.value.messageCount = messageCount ?? 0
     currentChat.value.createTime = createTime ?? currentChat.value.createTime ?? Date.now()

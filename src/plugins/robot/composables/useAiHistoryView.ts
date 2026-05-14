@@ -10,6 +10,7 @@
  */
 import { onMounted, onUnmounted, type Ref, ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
+import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { createLogger } from '@/utils/Logger'
@@ -22,6 +23,7 @@ export interface UseAiHistoryViewOptions {
 }
 
 export const useAiHistoryView = ({ selectedModel }: UseAiHistoryViewOptions) => {
+  const { t } = useI18nGlobal()
   const showHistoryModal = ref(false)
   const historyType = ref<'image' | 'video' | 'audio'>('image')
   const historyLoading = ref(false)
@@ -60,7 +62,7 @@ export const useAiHistoryView = ({ selectedModel }: UseAiHistoryViewOptions) => 
       historyPagination.value.total = data.total || 0
     } catch (error) {
       logger.error('加载历史记录失败:', error)
-      window.$message.error('加载历史记录失败')
+      window.$message.error(t('ai_assistant.robot.load_history_failed'))
     } finally {
       historyLoading.value = false
     }

@@ -16,6 +16,7 @@ import { useAiStreaming } from '@/plugins/robot/composables/useAiStreaming'
 import { useAiTitleEdit } from '@/plugins/robot/composables/useAiTitleEdit'
 import { isLikelyMediaUrl } from '@/plugins/robot/utils/aiMediaUrl'
 import { estimateMessageTokens } from '@/plugins/robot/utils/tokenEstimator'
+import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
 import { useUserStore } from '@/stores/domains/user/user'
 import type { AIAudio, AIImage, AIVideo } from '@/types/matrix-api'
@@ -89,6 +90,7 @@ export interface UseRobotChatOptions {
 
 export const useRobotChat = (options: UseRobotChatOptions) => {
   const { msgInputRef } = options
+  const { t } = useI18nGlobal()
   const userStore = useUserStore()
 
   const currentChat = ref<ConversationMeta>({
@@ -101,7 +103,7 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
   const remainingUsage = ref<number | null>(null)
   const remainingUsageDisplay = computed(() => {
     if (remainingUsage.value === null) return ''
-    if (remainingUsage.value === -1) return '无限'
+    if (remainingUsage.value === -1) return t('ai_assistant.robot.unlimited')
     return String(remainingUsage.value)
   })
   const remainingUsageTagType = computed(() => {
@@ -137,10 +139,10 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     handleVideoImageUpload
   } = useAiGenerationParams()
 
-  const features = ref([
-    { icon: 'model', label: '模型' },
-    { icon: 'voice', label: '语音输入' },
-    { icon: 'plugins2', label: '插件' }
+  const features = computed(() => [
+    { icon: 'model', label: t('ai_assistant.robot.feature_model') },
+    { icon: 'voice', label: t('ai_assistant.robot.feature_voice_input') },
+    { icon: 'plugins2', label: t('ai_assistant.robot.feature_plugins') }
   ])
   const otherFeatures = computed(() => features.value.filter((item) => item.icon !== 'model'))
 
@@ -322,7 +324,7 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     }
 
     if (!selectedModel.value) {
-      window.$message.warning('请先选择AI模型')
+      window.$message.warning(t('ai_assistant.robot.select_model_first'))
       return
     }
 
@@ -343,7 +345,7 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
       return
     }
 
-    window.$message.warning('不支持的模型类型')
+    window.$message.warning(t('ai_assistant.robot.unsupported_model_type'))
   }
 
   watch(

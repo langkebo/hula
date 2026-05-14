@@ -1,11 +1,13 @@
 import { type Ref, ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
+import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
 import { conversationService } from '@/services/matrix/ai/ConversationService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiRoleManagement')
+const { t } = useI18nGlobal()
 
 interface UseAiRoleManagementOptions {
   currentChat: Ref<{ id: string }>
@@ -27,7 +29,7 @@ export const useAiRoleManagement = ({ currentChat }: UseAiRoleManagementOptions)
       }
     } catch (error) {
       logger.error('加载角色列表失败:', error)
-      window.$message.error('加载角色列表失败')
+      window.$message.error(t('ai_assistant.robot.load_role_list_failed'))
     } finally {
       roleLoading.value = false
     }
@@ -45,12 +47,12 @@ export const useAiRoleManagement = ({ currentChat }: UseAiRoleManagementOptions)
           modelId: role.modelId || undefined
         })
       } else {
-        window.$message.success(`已选择角色: ${role.name}`)
+        window.$message.success(t('ai_assistant.robot.role_selected', { name: role.name }))
       }
     } catch (error) {
       logger.error('切换角色失败:', error)
       window.$message.destroyAll()
-      window.$message.error('切换角色失败')
+      window.$message.error(t('ai_assistant.robot.switch_role_failed'))
     }
   }
 

@@ -1,5 +1,6 @@
 import { computed, type Ref, ref } from 'vue'
 import { useMitt } from '@/hooks/useMitt.ts'
+import { useI18nGlobal } from '@/services/i18n'
 import { conversationService } from '@/services/matrix/ai/ConversationService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { modelService } from '@/services/matrix/ai/ModelService'
@@ -21,6 +22,7 @@ export const useAiModelManagement = ({
   loadAudioVoices,
   loadRemainingUsage
 }: UseAiModelManagementOptions) => {
+  const { t } = useI18nGlobal()
   const showModelPopover = ref(false)
   const modelLoading = ref(false)
   const modelSearch = ref('')
@@ -68,7 +70,7 @@ export const useAiModelManagement = ({
       modelPagination.value.total = data.total || 0
     } catch (error) {
       logger.error('获取模型列表失败:', error)
-      window.$message.error('获取模型列表失败')
+      window.$message.error(t('ai_assistant.robot.fetch_model_list_failed'))
     } finally {
       modelLoading.value = false
     }
@@ -108,10 +110,10 @@ export const useAiModelManagement = ({
       } catch (error) {
         logger.error('切换模型失败:', error)
         window.$message.destroyAll()
-        window.$message.error('切换模型失败')
+        window.$message.error(t('ai_assistant.robot.switch_model_failed'))
       }
     } else {
-      window.$message.success(`已选择模型: ${model.name}`)
+      window.$message.success(t('ai_assistant.robot.model_selected', { name: model.name }))
     }
 
     useMitt.emit('model-selected', model)
