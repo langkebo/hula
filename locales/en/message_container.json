@@ -7,5 +7,7 @@
   "resend_success": "Message resent successfully",
   "resend_failed": "Failed to resend message. Please try again.",
   "copy_success": "Copied successfully",
-  "emoji_already_marked": "Emoji already marked"
+  "emoji_already_marked": "Emoji already marked",
+  "retry": "Retry",
+  "send_failed_retry": "Send failed. Click to retry."
 }

@@ -29,6 +29,8 @@ export interface QueuedOperation {
 
 const STORAGE_KEY = 'hula-offline-queue'
 const MAX_RETRIES = 3
+const BASE_DELAY = 1000
+const MAX_DELAY = 30000
 
 export class OfflineQueueService {
   private queue: QueuedOperation[] = []
@@ -84,19 +86,29 @@ export class OfflineQueueService {
 
     for (const op of pending) {
       op.status = 'processing'
-      try {
-        await this.replayFn(op)
-        succeeded++
-        this.removeOperation(op.id)
-      } catch (err) {
-        op.retryCount++
-        if (op.retryCount >= op.maxRetries) {
-          op.status = 'failed'
-          failed++
-          logger.error(`操作 ${op.id} 达到最大重试次数，标记为失败`)
-        } else {
-          op.status = 'pending'
-          logger.warn(`操作 ${op.id} 重放失败 (${op.retryCount}/${op.maxRetries}): ${err}`)
+      let success = false
+
+      for (let attempt = 0; attempt < op.maxRetries && !success; attempt++) {
+        if (attempt > 0) {
+          const delay = Math.min(BASE_DELAY * 2 ** (attempt - 1), MAX_DELAY)
+          logger.info(`操作 ${op.id} 等待 ${delay}ms 后重试 (第 ${attempt} 次)`)
+          await new Promise((resolve) => setTimeout(resolve, delay))
+        }
+
+        try {
+          await this.replayFn(op)
+          succeeded++
+          this.removeOperation(op.id)
+          success = true
+        } catch (err) {
+          op.retryCount = attempt + 1
+          if (op.retryCount >= op.maxRetries) {
+            op.status = 'failed'
+            failed++
+            logger.error(`操作 ${op.id} 达到最大重试次数，标记为失败`)
+          } else {
+            logger.warn(`操作 ${op.id} 重放失败 (${op.retryCount}/${op.maxRetries}): ${err}`)
+          }
         }
       }
     }

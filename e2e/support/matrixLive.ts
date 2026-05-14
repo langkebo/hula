@@ -196,14 +196,14 @@ const loginWithPasswordApi = async (page: Page, env: MatrixLiveEnv, actor: Matri
 
   await page.evaluate(
     async (options: Record<string, string>) => {
-      const modulePath = '/src/services/matrix/auth/MatrixRuntimeSessionService.ts'
-      const { matrixRuntimeSessionService } = (await import(/* @vite-ignore */ modulePath)) as {
-        matrixRuntimeSessionService: {
+      const modulePath = '/src/services/matrix/auth/SessionOrchestrator.ts'
+      const { sessionOrchestrator } = (await import(/* @vite-ignore */ modulePath)) as {
+        sessionOrchestrator: {
           loginWithPassword: (options: Record<string, unknown>) => Promise<unknown>
         }
       }
 
-      await matrixRuntimeSessionService.loginWithPassword({
+      await sessionOrchestrator.loginWithPassword({
         username: options.username,
         password: options.password,
         homeserverUrl: options.homeserverUrl,
@@ -232,14 +232,14 @@ const restoreWithAccessToken = async (page: Page, env: MatrixLiveEnv, actor: Mat
 
   await page.evaluate(
     async (options: Record<string, string>) => {
-      const modulePath = '/src/services/matrix/auth/MatrixRuntimeSessionService.ts'
-      const { matrixRuntimeSessionService } = (await import(/* @vite-ignore */ modulePath)) as {
-        matrixRuntimeSessionService: {
+      const modulePath = '/src/services/matrix/auth/SessionOrchestrator.ts'
+      const { sessionOrchestrator } = (await import(/* @vite-ignore */ modulePath)) as {
+        sessionOrchestrator: {
           restoreWithAccessToken: (options: Record<string, unknown>) => Promise<unknown>
         }
       }
 
-      await matrixRuntimeSessionService.restoreWithAccessToken({
+      await sessionOrchestrator.restoreWithAccessToken({
         uid: options.userId,
         accessToken: options.accessToken,
         refreshToken: options.refreshToken || undefined,

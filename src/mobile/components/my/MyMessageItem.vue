@@ -4,7 +4,10 @@
       :class="props.message.type === 'reply' || props.message.type === 'comment' ? [''] : ['custom-border-b-1']"
       class="w-full py-5px grid grid-cols-[40px_1fr_40px] gap-10px items-center">
       <div>
-        <img class="w-40px h-40px rounded-full object-cover" src="#" @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+        <img
+          class="w-40px h-40px rounded-full object-cover"
+          src="#"
+          @error="($event.target as HTMLImageElement).src = '/logo.png'" />
       </div>
       <div class="flex flex-col gap-10px">
         <div class="text-14px text-#333 font-bold">苏小研</div>

@@ -7,5 +7,7 @@
   "resend_success": "消息重发成功",
   "resend_failed": "消息重发失败，请重试",
   "copy_success": "复制成功",
-  "emoji_already_marked": "该表情已标记"
+  "emoji_already_marked": "该表情已标记",
+  "retry": "重试",
+  "send_failed_retry": "发送失败，点击重试"
 }

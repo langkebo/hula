@@ -4,9 +4,6 @@
  */
 /// <reference types="vite/client" />
 
-// ==================== 重新导出官方类型 ====================
-export * from 'matrix-js-sdk'
-
 declare module 'matrix-js-sdk' {
   // ==================== 补充 SDK 缺失的类型 ====================
 
@@ -163,12 +160,24 @@ declare module 'matrix-js-sdk' {
     [key: string]: unknown
   }
 
+  export interface SlidingSyncList {
+    ranges: number[][]
+    sort: string[]
+    timeline_limit: number
+    required_state: Array<[string, string]>
+  }
+
+  export interface SlidingSyncRoomSubscription {
+    timeline_limit: number
+    required_state: Array<[string, string]>
+  }
+
   export class SlidingSync {
     constructor(
       proxyBaseUrl: string,
-      lists: Map<string, unknown>,
-      roomSubscriptionInfo: Record<string, unknown>,
-      client: unknown,
+      lists: Map<string, SlidingSyncList>,
+      roomSubscriptionInfo: SlidingSyncRoomSubscription,
+      client: MatrixClient,
       timeoutMS: number
     )
     start(): void
