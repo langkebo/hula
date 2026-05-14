@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixPushService } from '../MatrixPushService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn(() => null as MatrixClient | null)
+vi.mock('../../MatrixClientService', () => {
+  const getClient = vi.fn(() => null as MatrixClient | null)
+  return {
+    default: { getClient },
+    matrixClientService: { getClient }
   }
-}))
+})
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),

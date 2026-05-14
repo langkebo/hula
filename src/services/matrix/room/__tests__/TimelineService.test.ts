@@ -8,7 +8,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() }
+  default: { getClient: () => getClientMock() },
+  matrixClientService: { getClient: () => getClientMock() }
 }))
 
 const { MatrixRoomTimelineService } = await import('../TimelineService')
@@ -30,7 +31,7 @@ describe('MatrixRoomTimelineService', () => {
   describe('getEventContext', () => {
     it('throws when client is not initialized', async () => {
       getClientMock.mockReturnValueOnce(null)
-      await expect(service.getEventContext('!r', '$e')).rejects.toThrow('[MatrixRoom] 客户端未初始化')
+      await expect(service.getEventContext('!r', '$e')).rejects.toThrow('客户端未初始化')
     })
 
     it('forwards to client.getEventContext with the limit option', async () => {

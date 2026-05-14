@@ -205,6 +205,13 @@ class SynapseRustExtensionsService {
     this.accessToken = accessToken
   }
 
+  clear(): void {
+    this.baseUrl = ''
+    this.accessToken = ''
+    this.endpointAvailability.clear()
+    this.friendEndpointAvailable = null
+  }
+
   private async ensureInitialized(): Promise<void> {
     if (!this.baseUrl || !this.accessToken) {
       await this.initialize()

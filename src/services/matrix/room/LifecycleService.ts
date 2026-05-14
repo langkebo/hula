@@ -1,4 +1,4 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { error, info, warn } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
 
 /**
@@ -32,11 +32,13 @@ export class MatrixRoomLifecycleService {
             return hostname
           }
         } catch {
-          // URL 解析失败，继续抛出错误
+          // URL 解析失败
         }
       }
 
-      throw new Error('无法确定服务器域名: getDomain() 返回空且 baseUrl 无法解析')
+      // 允许回退到默认值以保证基本运行
+      warn('[MatrixRoom] 无法确定服务器域名，回退到默认值 matrix.org')
+      return 'matrix.org'
     } catch (err) {
       error(`[MatrixRoom] 获取服务器域名失败: ${err}`)
       throw err

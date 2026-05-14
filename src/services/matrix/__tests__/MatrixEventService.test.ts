@@ -9,12 +9,14 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn(() => null as MatrixClient | null),
-    isLoggedIn: vi.fn(() => false)
+vi.mock('../MatrixClientService', () => {
+  const getClient = vi.fn(() => null as MatrixClient | null)
+  const isLoggedIn = vi.fn(() => false)
+  return {
+    default: { getClient, isLoggedIn },
+    matrixClientService: { getClient, isLoggedIn }
   }
-}))
+})
 
 vi.mock('../messaging/MatrixReceiptService', () => ({
   matrixReceiptService: {

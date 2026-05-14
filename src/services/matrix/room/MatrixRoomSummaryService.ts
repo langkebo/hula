@@ -382,8 +382,4 @@ class MatrixRoomSummaryService {
 
 export const matrixRoomSummaryService = new MatrixRoomSummaryService()
 
-export function initializeRoomSummaryService(client: MatrixClient): void {
-  matrixRoomSummaryService.initialize(client)
-}
-
 export default matrixRoomSummaryService

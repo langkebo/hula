@@ -8,7 +8,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() }
+  default: { getClient: () => getClientMock() },
+  matrixClientService: { getClient: () => getClientMock() }
 }))
 
 const { MatrixRoomAliasesService } = await import('../AliasesService')

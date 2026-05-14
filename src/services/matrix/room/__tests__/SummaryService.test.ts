@@ -17,7 +17,8 @@ vi.mock('../../SynapseRustExtensionsService', () => ({
 
 const getClientMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() as MatrixClient }
+  default: { getClient: () => getClientMock() as MatrixClient },
+  matrixClientService: { getClient: () => getClientMock() as MatrixClient }
 }))
 
 const { MatrixRoomSummaryAggregateService } = await import('../SummaryService')
