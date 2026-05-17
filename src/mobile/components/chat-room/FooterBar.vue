@@ -83,7 +83,7 @@ defineExpose({ root })
   position: relative;
 
   svg {
-    color: #13987f;
+    color: var(--color-primary);
     transition: color 0.3s ease;
   }
 
@@ -96,7 +96,7 @@ defineExpose({ root })
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background-color: #13987f;
+    background-color: var(--color-primary);
     animation: pulse 1.5s infinite;
   }
 }

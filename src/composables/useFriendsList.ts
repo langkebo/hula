@@ -53,12 +53,16 @@ export function buildNormalContacts(
   contacts: MatrixContact[],
   specialContacts: MatrixContact[],
   blockedContacts: MatrixContact[],
+  hiddenContacts: MatrixContact[],
   isBotUser: (uid: string) => boolean
 ): MatrixContact[] {
   const specialIds = new Set(specialContacts.map((contact) => contact.uid))
   const blockedIds = new Set(blockedContacts.map((contact) => contact.uid))
+  const hiddenIds = new Set(hiddenContacts.map((contact) => contact.uid))
   return sortNormalContacts(
-    contacts.filter((contact) => !specialIds.has(contact.uid) && !blockedIds.has(contact.uid)),
+    contacts.filter(
+      (contact) => !specialIds.has(contact.uid) && !blockedIds.has(contact.uid) && !hiddenIds.has(contact.uid)
+    ),
     isBotUser
   )
 }
@@ -81,8 +85,15 @@ export function useFriendsList() {
     () => specialContacts.value.filter((item: MatrixContact) => item.activeStatus === OnlineEnum.ONLINE).length
   )
   const blockedContacts = computed(() => sortBlockedContactsByTime(contactStore.blockedContacts))
+  const hiddenContacts = computed(() => contactStore.hiddenContacts)
   const normalContacts = computed(() =>
-    buildNormalContacts(contactStore.contactsList, specialContacts.value, blockedContacts.value, isBotUser)
+    buildNormalContacts(
+      contactStore.contactsList,
+      specialContacts.value,
+      blockedContacts.value,
+      hiddenContacts.value,
+      isBotUser
+    )
   )
   const normalOnlineCount = computed(() => Math.max(onlineCount.value - specialOnlineCount.value, 0))
   const contactUnreadCount = computed(() => globalStore.contactUnreadCount)

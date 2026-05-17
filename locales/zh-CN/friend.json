@@ -3,14 +3,19 @@
     "title": "好友列表",
     "search": "搜索好友",
     "empty": "暂无好友",
+    "capability_unavailable_title": "当前服务端未开启好友能力",
+    "capability_unavailable_description": "请联系管理员开启好友能力后再使用好友列表与请求功能。",
     "online": "在线",
-    "offline": "离线"
+    "offline": "离线",
+    "friend_list_label": "好友列表",
+    "new_request_announcement": "收到 {count} 条新的好友请求"
   },
   "filter": {
     "all": "全部",
     "favorite": "收藏",
     "normal": "普通",
-    "blocked": "已屏蔽"
+    "blocked": "已屏蔽",
+    "hidden": "已隐藏"
   },
   "status": {
     "normal": "普通好友",
@@ -20,6 +25,8 @@
   },
   "request": {
     "title": "好友请求",
+    "search": "搜索好友请求",
+    "result_count": "“{keyword}” 共匹配到 {count} 条请求",
     "incoming": "收到请求",
     "outgoing": "发送请求",
     "accept": "接受",
@@ -27,7 +34,8 @@
     "cancel": "撤销",
     "empty": {
       "incoming": "暂无好友请求",
-      "outgoing": "暂无发送中的请求"
+      "outgoing": "暂无发送中的请求",
+      "search": "没有匹配的好友请求"
     },
     "success": {
       "accept": "已接受好友请求",
@@ -50,6 +58,8 @@
     "not_found": "未找到该用户",
     "already_friend": "该用户已是你的好友",
     "search_error": "搜索用户失败",
+    "result_found": "找到用户：{user}",
+    "result_empty": "没有找到与 “{keyword}” 匹配的用户",
     "send": "发送请求",
     "success": "好友请求已发送",
     "error": "发送好友请求失败",
@@ -87,6 +97,7 @@
     },
     "remove_success": "已删除好友",
     "remove_error": "删除好友失败",
+    "notFound": "未找到该好友信息",
     "just_now": "刚刚",
     "minutes_ago": "{count}分钟前",
     "hours_ago": "{count}小时前",
@@ -111,10 +122,22 @@
     "accept": "接受",
     "reject": "拒绝"
   },
+  "search": {
+    "history": "最近搜索",
+    "clear_history": "清空历史",
+    "clear_current": "清除搜索",
+    "searching": "正在更新搜索结果...",
+    "result_count": "“{keyword}” 共匹配到 {count} 位好友",
+    "filter_result_count": "{filter} 共 {count} 位好友",
+    "empty_title": "未找到匹配的好友",
+    "empty_description": "没有找到与 “{keyword}” 相关的好友，试试其他关键词。"
+  },
   "group": {
     "title": "好友分组",
     "search": "搜索分组",
     "empty": "暂无分组",
+    "empty_search": "没有匹配的分组",
+    "result_count": "“{keyword}” 共匹配到 {count} 个分组",
     "create": "创建分组",
     "name_placeholder": "请输入分组名称",
     "member_count": "{count} 位成员",

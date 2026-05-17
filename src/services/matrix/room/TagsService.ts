@@ -34,7 +34,7 @@ export class MatrixRoomTagsService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const userId = client.getUserId()
-      if (!userId) throw new Error('用户未登录')
+      if (!userId) throw new Error(this.t('matrix_error.common.user_not_logged_in'))
       const content: Record<string, unknown> = {}
       if (order !== undefined) content.order = order
       await client.http.authedRequest(
@@ -59,7 +59,7 @@ export class MatrixRoomTagsService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const userId = client.getUserId()
-      if (!userId) throw new Error('用户未登录')
+      if (!userId) throw new Error(this.t('matrix_error.common.user_not_logged_in'))
       await client.http.authedRequest(
         'DELETE',
         `/_matrix/client/v3/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/tags/${encodeURIComponent(tag)}`

@@ -2,8 +2,10 @@ import { BaseDirectory, readFile } from '@tauri-apps/plugin-fs'
 import pLimit from 'p-limit'
 import type { ComputedRef, Ref } from 'vue'
 import { nextTick } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { LimitEnum, MessageStatusEnum, MittEnum, MsgEnum, UploadSceneEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
+import { useI18nGlobal } from '@/services/i18n'
 import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
@@ -140,6 +142,8 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     isBurnAfterRead,
     burnDuration
   } = options
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
 
   const processGenericFile = async (
     file: File,
@@ -228,7 +232,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
   ): Promise<void> => {
     const MAX_UPLOAD_SIZE = 500 * 1024 * 1024
     if (file.size > MAX_UPLOAD_SIZE) {
-      throw new Error('文件大小不能超过500MB')
+      throw new Error(t('hooks.msg_input.file_size_exceeded'))
     }
 
     const msg = {
@@ -318,14 +322,14 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
   const send = async () => {
     const targetRoomId = globalStore.currentSessionRoomId
     if (messageInputDom.value.querySelectorAll('img').length > LimitEnum.COM_COUNT) {
-      window.$message.warning(`一次性只能上传${LimitEnum.COM_COUNT}个文件或图片`)
+      showFeedback(t('hooks.msg_input.upload_limit', { count: LimitEnum.COM_COUNT }), 'warning')
       return
     }
 
     const contentType = getMessageContentType(messageInputDom) as MsgEnum
     const messageStrategy = await getStrategy(contentType)
     if (!messageStrategy) {
-      window.$message.warning('暂不支持发送类型消息')
+      showFeedback(t('hooks.msg_input.type_not_supported'), 'warning')
       return
     }
 
@@ -644,7 +648,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
             status: MessageStatusEnum.FAILED
           })
 
-          window.$message.error(`${job.file.name} 发送失败`)
+          showFeedback(t('hooks.msg_input.file_send_failed', { fileName: job.file.name }), 'error')
         }
       })
     )

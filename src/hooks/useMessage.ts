@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import { roomListService } from '@/services/matrix/room/RoomListService'
@@ -9,6 +10,7 @@ import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useRoomStore } from '@/stores/domains/chat/room'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -33,11 +35,13 @@ const logger = createLogger('Message')
 
 export const useMessage = () => {
   const { t } = useI18n()
+  const { showFeedback } = useActionFeedback()
   const globalStore = useGlobalStore()
   const chatStore = useChatStore()
   const settingStore = useSettingStore()
   const contactStore = useContactStore()
   const groupStore = useGroupStore()
+  const roomStore = useRoomStore()
   const userStore = useUserStore()
   const BOT_ALLOWED_MENU_INDEXES = new Set([0, 1, 2, 3])
 
@@ -133,14 +137,42 @@ export const useMessage = () => {
         roomListService
           .setSessionTop(item.roomId, !item.top)
           .then(() => {
-            // 更新本地会话状态
             chatStore.updateSession(item.roomId, { top: !item.top })
-            window.$message.success(
-              item.top ? t('message.message_menu.unpin_success') : t('message.message_menu.pin_success')
+            showFeedback(
+              item.top ? t('message.message_menu.unpin_success') : t('message.message_menu.pin_success'),
+              'success'
             )
           })
           .catch(() => {
-            window.$message.error(item.top ? t('message.message_menu.unpin_fail') : t('message.message_menu.pin_fail'))
+            showFeedback(item.top ? t('message.message_menu.unpin_fail') : t('message.message_menu.pin_fail'), 'error')
+          })
+      }
+    },
+    {
+      label: (item: SessionItem) =>
+        roomStore.hasTag(item.roomId, 'm.lowpriority') ? t('menu.remove_low_priority') : t('menu.set_low_priority'),
+      icon: 'arrow-down',
+      click: (item: SessionItem) => {
+        const hasLow = roomStore.hasTag(item.roomId, 'm.lowpriority')
+        const action = hasLow
+          ? roomStore.removeRoomTag(item.roomId, 'm.lowpriority')
+          : roomStore.addRoomTag(item.roomId, 'm.lowpriority')
+        action
+          .then(() => {
+            showFeedback(
+              hasLow
+                ? t('message.message_menu.remove_low_priority_success')
+                : t('message.message_menu.set_low_priority_success'),
+              'success'
+            )
+          })
+          .catch(() => {
+            showFeedback(
+              hasLow
+                ? t('message.message_menu.remove_low_priority_fail')
+                : t('message.message_menu.set_low_priority_fail'),
+              'error'
+            )
           })
       }
     },
@@ -149,7 +181,7 @@ export const useMessage = () => {
       icon: 'copy',
       click: (item: SessionItem) => {
         navigator.clipboard.writeText(item.account ?? '')
-        window.$message.success(t('message.message_menu.copy_success', { account: item.account ?? '' }))
+        showFeedback(t('message.message_menu.copy_success', { account: item.account ?? '' }), 'success')
       }
     },
     {
@@ -211,8 +243,9 @@ export const useMessage = () => {
                 shield: !item.shield
               })
 
-              window.$message.success(
-                item.shield ? t('message.message_menu.unshield_success') : t('message.message_menu.shield_success')
+              showFeedback(
+                item.shield ? t('message.message_menu.unshield_success') : t('message.message_menu.shield_success'),
+                'success'
               )
             }
           }
@@ -243,8 +276,9 @@ export const useMessage = () => {
           shield: !item.shield
         })
 
-        window.$message.success(
-          item.shield ? t('message.message_menu.unshield_success') : t('message.message_menu.shield_success')
+        showFeedback(
+          item.shield ? t('message.message_menu.unshield_success') : t('message.message_menu.shield_success'),
+          'success'
         )
       },
       // 只在单聊时显示
@@ -265,9 +299,9 @@ export const useMessage = () => {
         try {
           await invokeWithErrorHandler('hide_contact_command', { data: { roomId: item.roomId, hide: newHideState } })
           chatStore.updateSession(item.roomId, { hide: newHideState })
-          window.$message.success(newHideState ? t('menu.secret_chat_success') : t('menu.secret_chat_cancel'))
+          showFeedback(newHideState ? t('menu.secret_chat_success') : t('menu.secret_chat_cancel'), 'success')
         } catch (e) {
-          window.$message.error(String(e))
+          showFeedback(String(e), 'error')
         }
       }
     },
@@ -289,16 +323,17 @@ export const useMessage = () => {
           if (!item.detailId) return
           await contactStore.onDeleteFriend(item.detailId)
           await handleMsgDelete(item.roomId)
-          window.$message.success(t('message.message_menu.delete_friend_success'))
+          showFeedback(t('message.message_menu.delete_friend_success'), 'success')
           return
         }
 
         // 群聊：检查是否是频道
         if (item.roomId === '1') {
-          window.$message.warning(
+          showFeedback(
             item.operate === SessionOperateEnum.DISSOLUTION_GROUP
               ? t('message.message_menu.cannot_dissolve_channel')
-              : t('message.message_menu.cannot_quit_channel')
+              : t('message.message_menu.cannot_quit_channel'),
+            'warning'
           )
           return
         }
@@ -306,10 +341,11 @@ export const useMessage = () => {
         // 群聊：解散或退出
         await roomNavigationService.leaveRoom(item.roomId)
         await handleMsgDelete(item.roomId)
-        window.$message.success(
+        showFeedback(
           item.operate === SessionOperateEnum.DISSOLUTION_GROUP
             ? t('message.message_menu.dissolve_group_success')
-            : t('message.message_menu.quit_group_success')
+            : t('message.message_menu.quit_group_success'),
+          'success'
         )
       },
       visible: (item: SessionItem) => {
@@ -353,9 +389,9 @@ export const useMessage = () => {
           chatStore.updateTotalUnreadCount()
           break
       }
-      window.$message.success(message)
+      showFeedback(message, 'success')
     } catch (e) {
-      window.$message.error(String(e))
+      showFeedback(String(e), 'error')
     }
   }
 

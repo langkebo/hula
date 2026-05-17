@@ -21,7 +21,7 @@
               :label="formatDeviceLabel(device)">
               <template #icon>
                 <div class="w-40px h-40px rounded-full bg-gray-100 mr-12px flex items-center justify-center">
-                  <Icon :icon="getDeviceIcon(device)" :width="20" color="#666" />
+                  <Icon :icon="getDeviceIcon(device)" :width="20" color="var(--hula-text-secondary)" />
                 </div>
               </template>
               <template #right-icon>

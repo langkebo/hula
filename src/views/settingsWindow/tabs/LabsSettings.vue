@@ -75,9 +75,10 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NSpin, NSwitch, NTag, useDialog, useMessage } from 'naive-ui'
+import { NButton, NDivider, NSpin, NSwitch, NTag, useDialog } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LabsSettings')
@@ -92,7 +93,7 @@ interface LabFeatureState {
   enabled: boolean
 }
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const { t } = useI18n()
 
@@ -203,27 +204,34 @@ function handleToggleFeature(featureId: string, value: boolean) {
   saveFeatures()
 
   if (value) {
-    message.success(t('setting.labs.feedback.feature_enabled', { name: getFeatureName(featureId) }))
+    showFeedback(t('setting.labs.feedback.feature_enabled', { name: getFeatureName(featureId) }), 'success')
   } else {
-    message.info(t('setting.labs.feedback.feature_disabled', { name: getFeatureName(featureId) }))
+    showFeedback(t('setting.labs.feedback.feature_disabled', { name: getFeatureName(featureId) }), 'info')
   }
 }
 
 function handleDebugModeChange(value: boolean) {
   localStorage.setItem('hula-debug-mode', value.toString())
-  message.success(t(value ? 'setting.labs.feedback.debug_mode_enabled' : 'setting.labs.feedback.debug_mode_disabled'))
+  showFeedback(
+    t(value ? 'setting.labs.feedback.debug_mode_enabled' : 'setting.labs.feedback.debug_mode_disabled'),
+    'success'
+  )
 }
 
 function handlePerformanceChange(value: boolean) {
   localStorage.setItem('hula-show-performance', value.toString())
-  message.success(
-    t(value ? 'setting.labs.feedback.performance_metrics_shown' : 'setting.labs.feedback.performance_metrics_hidden')
+  showFeedback(
+    t(value ? 'setting.labs.feedback.performance_metrics_shown' : 'setting.labs.feedback.performance_metrics_hidden'),
+    'success'
   )
 }
 
 function handleDevToolsChange(value: boolean) {
   localStorage.setItem('hula-enable-devtools', value.toString())
-  message.success(t(value ? 'setting.labs.feedback.devtools_enabled' : 'setting.labs.feedback.devtools_disabled'))
+  showFeedback(
+    t(value ? 'setting.labs.feedback.devtools_enabled' : 'setting.labs.feedback.devtools_disabled'),
+    'success'
+  )
 }
 
 function handleResetLabs() {
@@ -237,7 +245,7 @@ function handleResetLabs() {
         feature.enabled = ['custom-status', 'reactions'].includes(feature.id)
       })
       saveFeatures()
-      message.success(t('setting.labs.feedback.reset_success'))
+      showFeedback(t('setting.labs.feedback.reset_success'), 'success')
     }
   })
 }

@@ -1,12 +1,6 @@
-/**
- * Matrix 同步服务
- *
- * 提供数据同步功能
- */
-
 import { error, info } from '@tauri-apps/plugin-log'
 import { type MatrixClient, NotificationCountType, type Room } from 'matrix-js-sdk'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 /**
  * 同步选项
@@ -45,8 +39,7 @@ export interface SyncState {
 /**
  * 同步服务
  */
-class SyncService {
-  private client: MatrixClient | null = null
+class SyncService extends BaseMatrixService {
   private observedClient: MatrixClient | null = null
   private syncState: SyncState = {
     currentIdx: 0,
@@ -65,15 +58,17 @@ class SyncService {
         this.observedClient.off(event, callback)
       }
     }
-    this.client = client
+    this.setFallbackClient(client)
     this.observedClient = null
-    this.getClient()
+    this.getInternalClient()
     info('[Sync] 服务已初始化')
   }
 
-  private getClient(): MatrixClient | null {
-    const client = matrixClientService.getClient() || this.client
-    if (!client) {
+  private getInternalClient(): MatrixClient | null {
+    let client: MatrixClient
+    try {
+      client = this.getClient()
+    } catch {
       return null
     }
 
@@ -84,7 +79,6 @@ class SyncService {
         }
       }
 
-      this.client = client
       for (const [event, callback] of this.syncListeners.entries()) {
         client.on(event, callback)
       }
@@ -98,9 +92,9 @@ class SyncService {
    * 开始同步
    */
   async startSync(options?: SyncOptions): Promise<void> {
-    const client = this.getClient()
+    const client = this.getInternalClient()
     if (!client) {
-      throw new Error('Client 未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     if (this.syncState.isSyncing) {
@@ -127,7 +121,7 @@ class SyncService {
    * 停止同步
    */
   async stopSync(): Promise<void> {
-    const client = this.getClient()
+    const client = this.getInternalClient()
     if (!client) {
       return
     }
@@ -152,7 +146,7 @@ class SyncService {
    * 获取房间列表
    */
   getRooms(): Room[] {
-    const client = this.getClient()
+    const client = this.getInternalClient()
     if (!client) {
       return []
     }
@@ -168,7 +162,7 @@ class SyncService {
   }
 
   async getJoinedRoomIds(): Promise<string[]> {
-    const client = this.getClient()
+    const client = this.getInternalClient()
     if (!client) return []
     try {
       const result = await client.http.authedRequest('GET', '/_matrix/client/v3/joined_rooms')
@@ -205,7 +199,7 @@ class SyncService {
 
     this.syncListeners.set(event, callback)
 
-    const client = this.getClient()
+    const client = this.getInternalClient()
     if (client && this.observedClient === client && existingCallback !== callback) {
       client.on(event, callback)
     }

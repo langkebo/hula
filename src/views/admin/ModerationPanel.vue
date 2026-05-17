@@ -95,21 +95,21 @@ import {
   NTabPane,
   NTabs,
   NTag,
-  NThing,
-  useMessage
+  NThing
 } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Report } from '@/services/matrix/admin'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useModerationStore } from '@/stores/domains/chat/moderation'
+import type { Report } from '@/types/matrix-services'
 
 defineOptions({
   name: 'ModerationPanel'
 })
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const moderationStore = useModerationStore()
 const { openReports, enabledFilters, loading } = storeToRefs(moderationStore)
 
@@ -191,28 +191,28 @@ function handleFilterChange() {
 async function handleResolveReport(reportId: string, action: 'dismiss' | 'warn' | 'mute' | 'ban') {
   const success = await moderationStore.resolveReport(reportId, action)
   if (success) {
-    message.success(t('moderation.toast.reportResolved', { action }))
+    showFeedback(t('moderation.toast.reportResolved', { action }), 'success')
     fetchReports()
   }
 }
 
 async function handleAddFilter() {
   if (!filterForm.value.pattern) {
-    message.error(t('moderation.toast.patternRequired'))
+    showFeedback(t('moderation.toast.patternRequired'), 'error')
     return
   }
   const result = await moderationStore.addContentFilter(filterForm.value)
   if (result) {
     showAddFilterModal.value = false
     filterForm.value = { type: 'keyword', pattern: '', action: 'flag' }
-    message.success(t('moderation.toast.filterAdded'))
+    showFeedback(t('moderation.toast.filterAdded'), 'success')
   }
 }
 
 async function handleRemoveFilter(filterId: string) {
   const success = await moderationStore.removeContentFilter(filterId)
   if (success) {
-    message.success(t('moderation.toast.filterRemoved'))
+    showFeedback(t('moderation.toast.filterRemoved'), 'success')
   }
 }
 

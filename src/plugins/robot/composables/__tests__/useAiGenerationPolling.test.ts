@@ -3,18 +3,22 @@ import { ref } from 'vue'
 import { AiMsgContentTypeEnum } from '@/enums'
 import type { Message } from '../useRobotChat'
 
-const { aiServiceMock, errorMock } = vi.hoisted(() => ({
+const { aiServiceMock, errorMock, showFeedbackMock } = vi.hoisted(() => ({
   aiServiceMock: {
     imageMyListByIds: vi.fn(),
     videoMyListByIds: vi.fn(),
     audioMyListByIds: vi.fn()
   },
-  errorMock: vi.fn()
+  errorMock: vi.fn(),
+  showFeedbackMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix/ai/AIService', () => ({ aiService: aiServiceMock }))
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: errorMock, warn: vi.fn(), debug: vi.fn() })
+}))
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({ showFeedback: showFeedbackMock })
 }))
 
 import { useAiGenerationPolling } from '../useAiGenerationPolling'
@@ -35,15 +39,6 @@ describe('useAiGenerationPolling', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-25T00:00:00Z'))
     vi.clearAllMocks()
-    ;(window as any).$message = {
-      create: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-      loading: vi.fn(),
-      warning: vi.fn(),
-      success: vi.fn(),
-      destroyAll: vi.fn()
-    }
   })
 
   afterEach(() => {
@@ -89,7 +84,7 @@ describe('useAiGenerationPolling', () => {
     })
     expect(ensureLocalAiImage).toHaveBeenCalledWith('https://cdn/image.png', 0)
     expect(bumpMessageRenderVersion).toHaveBeenCalledTimes(1)
-    expect(window.$message.success).toHaveBeenCalledWith('图片生成成功')
+    expect(showFeedbackMock).toHaveBeenCalledWith('图片生成成功', 'success')
   })
 
   it('pollVideoStatus writes failure content and stops polling on failed status', async () => {
@@ -115,7 +110,7 @@ describe('useAiGenerationPolling', () => {
 
     expect(messageList.value[0].content).toBe('视频生成失败: quota exceeded')
     expect(messageList.value[0].isGenerating).toBe(false)
-    expect(window.$message.error).toHaveBeenCalledWith('视频生成失败')
+    expect(showFeedbackMock).toHaveBeenCalledWith('视频生成失败', 'error')
     expect(clearIntervalSpy).toHaveBeenCalled()
   })
 
@@ -154,7 +149,7 @@ describe('useAiGenerationPolling', () => {
       }
     })
     expect(ensureLocalAiAudio).toHaveBeenCalledWith('https://cdn/audio.mp3', 0)
-    expect(window.$message.success).toHaveBeenCalledWith('音频生成成功')
+    expect(showFeedbackMock).toHaveBeenCalledWith('音频生成成功', 'success')
   })
 
   it('pollImageStatus marks timeout after max duration and warns user', async () => {
@@ -176,7 +171,7 @@ describe('useAiGenerationPolling', () => {
 
     expect(messageList.value[0].content).toBe('图片生成超时，请重试')
     expect(messageList.value[0].isGenerating).toBe(false)
-    expect(window.$message.warning).toHaveBeenCalledWith('图片生成超时，已停止轮询')
+    expect(showFeedbackMock).toHaveBeenCalledWith('图片生成超时，已停止轮询', 'warning')
   })
 
   it('pollAudioStatus writes query failure when polling request throws', async () => {
@@ -218,8 +213,7 @@ describe('useAiGenerationPolling', () => {
     expect(messageList.value[0].content).toBe('视频生成失败: 记录不存在')
     expect(messageList.value[0].isGenerating).toBe(false)
     expect(clearIntervalSpy).toHaveBeenCalled()
-    expect(window.$message.error).not.toHaveBeenCalled()
-    expect(window.$message.warning).not.toHaveBeenCalled()
+    expect(showFeedbackMock).not.toHaveBeenCalled()
   })
 
   it('pollImageStatus keeps polling while record stays in pending status', async () => {
@@ -246,7 +240,7 @@ describe('useAiGenerationPolling', () => {
     await polling.pollImageStatus(17, 0, 'pending image', 1024, 1024, 'flux')
     expect(messageList.value[0].content).toBe('正在思考中...')
     expect(messageList.value[0].isGenerating).toBe(true)
-    expect(window.$message.success).not.toHaveBeenCalled()
+    expect(showFeedbackMock).not.toHaveBeenCalled()
 
     await vi.advanceTimersByTimeAsync(3000)
 
@@ -259,6 +253,6 @@ describe('useAiGenerationPolling', () => {
     })
     expect(ensureLocalAiImage).toHaveBeenCalledWith('https://cdn/final-image.png', 0)
     expect(bumpMessageRenderVersion).toHaveBeenCalledTimes(1)
-    expect(window.$message.success).toHaveBeenCalledWith('图片生成成功')
+    expect(showFeedbackMock).toHaveBeenCalledWith('图片生成成功', 'success')
   })
 })

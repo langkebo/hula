@@ -7,12 +7,12 @@
       :to="item.path"
       :data-testid="item.testId"
       class="tab-item flex flex-col flex-1 items-center no-underline relative"
-      :class="route.path === item.path ? 'color-[--tab-bar-icon-color]' : 'text-#000 dark:text-white/80'"
+      :class="route.path === item.path ? 'color-[--tab-bar-icon-color]' : 'text-[--hula-text-primary]'"
       @click="handleNavigate(item.path)">
       <van-badge
         class="flex flex-col w-55% flex-1 relative items-center"
         :offset="[-6, 6]"
-        color="#c14053"
+        color="var(--hula-color-danger-500)"
         :content="getUnReadCount(item.label) || ''"
         :max="99">
         <svg class="w-22px h-22px">

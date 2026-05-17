@@ -1,3 +1,4 @@
+import { useI18nGlobal } from '@/services/i18n'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useMatrixStore } from '../stores/domains/chat/matrix'
@@ -131,14 +132,14 @@ export const loginCommand = async (
 
   const uid = info.uid || userStore.userInfo?.uid || matrixStore.userId || ''
   if (!uid) {
-    throw new Error('缺少用户ID，无法恢复登录会话')
+    throw new Error(useI18nGlobal().t('matrix_error.auth.user_id_missing'))
   }
 
   const { sessionOrchestrator } = await import('@/services/matrix/auth/SessionOrchestrator')
   const tokens = await sessionOrchestrator.getStoredTokens()
 
   if (!tokens.token) {
-    throw new Error('缺少访问令牌，无法恢复登录会话')
+    throw new Error(useI18nGlobal().t('matrix_error.auth.access_token_missing'))
   }
 
   await sessionOrchestrator.restoreWithAccessToken({

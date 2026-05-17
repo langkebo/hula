@@ -1,16 +1,21 @@
 <template>
   <div class="hula-message-meta" :class="{ 'is-me': isMe }">
     <div class="meta-row">
-      <!-- 在线状态 -->
       <div v-if="!isMe && senderPresence" class="presence-indicator" :title="senderPresenceText">
         <div class="presence-dot" :class="senderPresence" />
       </div>
 
-      <!-- 时间戳 -->
       <span class="timestamp">{{ formattedTime }}</span>
 
-      <!-- 已读回执 (简易版) -->
-      <div v-if="isMe && receipts.length" class="receipts-preview">
+      <span v-if="isSending" class="status-pill status-pill--sending">
+        <span class="status-dot status-dot--sending" />
+      </span>
+
+      <button v-else-if="showRetry" type="button" class="retry-button" @click="emit('retry')">
+        {{ t('message_container.retry') }}
+      </button>
+
+      <div v-if="receipts.length" class="receipts-preview">
         <n-tooltip trigger="hover">
           <template #trigger>
             <div class="receipts-count">
@@ -28,7 +33,6 @@
       </div>
     </div>
 
-    <!-- 输入中指示器 (仅针对房间级别，但可显示在最新消息旁) -->
     <div v-if="isLastMessage && typingUsers.length" class="typing-indicator">
       <span class="typing-text">{{ typingText }}</span>
       <div class="typing-dots">
@@ -43,9 +47,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useTyping } from '@/composables/chat/useTyping'
+import { MessageStatusEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix'
-import { matrixTypingService } from '@/services/matrix/messaging/MatrixTypingService'
-import type { MatrixEvent } from '@/services/matrix/sdk'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
+import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
 import { formatTimestamp } from '@/utils/ComputedTime'
 
 interface ReceiptInfo {
@@ -54,48 +60,44 @@ interface ReceiptInfo {
   avatarUrl: string
 }
 
-interface MatrixReceipt {
-  userId: string
-  data: {
-    ts: number
-    threadId?: string
-  }
-}
-
 const props = defineProps<{
   messageId: string
   roomId: string
   senderId: string
   timestamp: number
   isMe: boolean
+  status?: MessageStatusEnum
   isLastMessage?: boolean
 }>()
+const emit = defineEmits<{ retry: [] }>()
 
 const { t } = useI18n()
 
 const formattedTime = computed(() => formatTimestamp(props.timestamp, true))
 
-// 获取已读回执
+const isSending = computed(
+  () => props.isMe && (props.status === MessageStatusEnum.PENDING || props.status === MessageStatusEnum.SENDING)
+)
+const showRetry = computed(() => props.isMe && props.status === MessageStatusEnum.FAILED)
+const resolvedMessageId = computed(() => matrixMessageService.resolveEventId(props.messageId))
+
 const receipts = computed<ReceiptInfo[]>(() => {
-  const room = matrixClientService.getClient()?.getRoom(props.roomId)
-  if (!room) return []
+  if (!props.isMe || isSending.value || showRetry.value) return []
+  if (matrixMessageService.isLocalEventId(resolvedMessageId.value)) return []
 
-  const eventReceipts = (
-    room as unknown as { getReceiptsForEvent: (e: unknown) => MatrixReceipt[] }
-  ).getReceiptsForEvent({
-    getType() {
-      return 'm.read'
-    }
-  } as unknown as MatrixEvent)
+  const client = matrixClientService.getClient()
+  const myUserId = client?.getUserId()
 
-  return eventReceipts.map((r: MatrixReceipt) => ({
-    userId: r.userId,
-    displayName: room.getMember(r.userId)?.name || r.userId,
-    avatarUrl: room.getMember(r.userId)?.getMxcAvatarUrl() || ''
-  }))
+  return matrixReceiptService
+    .getReadReceipts(props.roomId, resolvedMessageId.value)
+    .filter((receipt) => receipt.userId !== myUserId)
+    .map((receipt) => ({
+      userId: receipt.userId,
+      displayName: receipt.displayName || receipt.userId,
+      avatarUrl: receipt.avatarUrl ?? ''
+    }))
 })
 
-// 获取发送者在线状态
 const senderPresence = computed(() => {
   const user = matrixClientService.getClient()?.getUser(props.senderId)
   return (user as unknown as { presence?: string })?.presence
@@ -106,9 +108,13 @@ const senderPresenceText = computed(() => {
   return t(`auth.onlineStatus.states.${senderPresence.value}`)
 })
 
-// 获取正在输入的用户
+const { getTypingUsers } = useTyping()
+
 const typingUsers = computed<string[]>(() => {
-  return matrixTypingService.getTypingUsers(props.roomId).map((user) => user.userId)
+  const myUserId = matrixClientService.getClient()?.getUserId()
+  return getTypingUsers(props.roomId)
+    .map((user) => user.userId)
+    .filter((userId) => userId && userId !== myUserId)
 })
 
 const typingText = computed(() => {
@@ -142,6 +148,7 @@ const typingText = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .presence-dot {
@@ -159,6 +166,37 @@ const typingText = computed(() => {
   &.offline {
     background: var(--hula-text-disabled);
   }
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.status-dot--sending {
+  color: var(--hula-color-primary-500);
+  animation: status-pulse 1.2s ease-in-out infinite;
+}
+
+.retry-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--hula-color-danger-500);
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.retry-button:hover {
+  color: var(--hula-color-danger-600, var(--hula-color-danger-500));
 }
 
 .receipts-count {
@@ -209,6 +247,18 @@ const typingText = computed(() => {
     &:nth-child(3) {
       animation-delay: 0.4s;
     }
+  }
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

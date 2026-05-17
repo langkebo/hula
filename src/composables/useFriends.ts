@@ -2,12 +2,15 @@ import { useDebounceFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, type MaybeRefOrGetter, ref, toValue, watch } from 'vue'
 import { OnlineEnum, UserType } from '@/enums'
-import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import { type FriendGroup, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { type GroupSearchResult, matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
 import type { UserProfile } from '@/services/matrix/user/MatrixContactService'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
+
+export type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
+
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
@@ -473,6 +476,30 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
     return true
   }
 
+  const getFriendSuggestions = async () => {
+    return await matrixFriendService.getFriendSuggestions()
+  }
+
+  const searchFriendsViaApi = async (query: string, options?: { mode?: 'fuzzy' | 'exact'; limit?: number }) => {
+    return await matrixFriendService.searchFriendsViaApi(query, options)
+  }
+
+  const getFriendGroups = async (): Promise<FriendGroup[]> => {
+    return await matrixFriendService.getFriendGroups()
+  }
+
+  const createFriendGroup = async (name: string): Promise<FriendGroup> => {
+    return await matrixFriendService.createFriendGroup(name)
+  }
+
+  const renameFriendGroup = async (groupId: string, name: string): Promise<void> => {
+    await matrixFriendService.renameFriendGroup(groupId, name)
+  }
+
+  const deleteFriendGroup = async (groupId: string): Promise<void> => {
+    await matrixFriendService.deleteFriendGroup(groupId)
+  }
+
   // ============================================================================
   // Return
   // ============================================================================
@@ -519,6 +546,16 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
     isFriend,
     isCurrentUser,
     isInGroup,
-    isBotUser
+    isBotUser,
+
+    // Friend Suggestions & Search
+    getFriendSuggestions,
+    searchFriendsViaApi,
+
+    // Friend Groups
+    getFriendGroups,
+    createFriendGroup,
+    renameFriendGroup,
+    deleteFriendGroup
   }
 }

@@ -22,5 +22,6 @@
     "message": "Are you sure you want to delete {count} other devices?",
     "confirm": "Delete",
     "cancel": "Cancel"
-  }
+  },
+  "verification_started": "Verification started, Transaction ID: {transactionId}"
 }

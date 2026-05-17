@@ -83,17 +83,17 @@ import {
   NPageHeader,
   NSpace,
   NSwitch,
-  NTag,
-  useMessage
+  NTag
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminMaintenance } from '@/composables/admin'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminMaintenance')
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 
 const maintenance = useAdminMaintenance()
 const backups = maintenance.backups
@@ -159,27 +159,27 @@ async function loadData() {
     await maintenance.loadAll()
   } catch (err) {
     logger.error('加载维护信息失败:', err)
-    message.error(t('admin.maintenance.load_failed'))
+    showFeedback(t('admin.maintenance.load_failed'), 'error')
   }
 }
 
 async function handlePurge() {
   try {
     const result = await maintenance.purgeMediaCache(purgeBeforeTs.value ?? undefined)
-    message.success(t('admin.maintenance.purge_success', { count: result.deleted }))
+    showFeedback(t('admin.maintenance.purge_success', { count: result.deleted }), 'success')
   } catch (err) {
     logger.error('清理媒体缓存失败:', err)
-    message.error(t('admin.maintenance.purge_failed'))
+    showFeedback(t('admin.maintenance.purge_failed'), 'error')
   }
 }
 
 async function handleToggleFeature(feature: string, enabled: boolean) {
   try {
     await maintenance.setExperimentalFeature(feature, enabled)
-    message.success(t('admin.maintenance.feature_updated'))
+    showFeedback(t('admin.maintenance.feature_updated'), 'success')
   } catch (err) {
     logger.error('设置实验特性失败:', err)
-    message.error(t('admin.maintenance.feature_failed'))
+    showFeedback(t('admin.maintenance.feature_failed'), 'error')
   }
 }
 

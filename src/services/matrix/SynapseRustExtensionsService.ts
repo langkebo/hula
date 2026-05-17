@@ -1,8 +1,16 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
+import { BaseMatrixService } from './BaseMatrixService'
 import endpointCapabilityService from './EndpointCapabilityService'
-import matrixClientService from './MatrixClientService'
+import * as MatrixClientServiceModule from './MatrixClientService'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
 import { MATRIX_PATHS } from './paths'
+
+const matrixClientServiceExports = MatrixClientServiceModule as Record<string, unknown>
+const matrixClientService = (
+  'default' in matrixClientServiceExports
+    ? matrixClientServiceExports['default']
+    : matrixClientServiceExports['matrixClientService']
+) as typeof import('./MatrixClientService').matrixClientService
 
 export interface SynapseFriendInfo {
   user_id: string
@@ -152,7 +160,7 @@ export interface RoomSummaryState {
   content: Record<string, unknown>
 }
 
-class SynapseRustExtensionsService {
+class SynapseRustExtensionsService extends BaseMatrixService {
   private baseUrl: string = ''
   private accessToken: string = ''
   private hasLoggedFriendsBeforeClientReady = false
@@ -198,7 +206,7 @@ class SynapseRustExtensionsService {
     const baseUrl = client.getHomeserverUrl()
     const accessToken = client.getAccessToken() || ''
     if (!baseUrl || !accessToken) {
-      throw new Error('客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     this.baseUrl = baseUrl
@@ -218,7 +226,7 @@ class SynapseRustExtensionsService {
     }
 
     if (!this.baseUrl || !this.accessToken) {
-      throw new Error('SynapseRustExtensionsService 未初始化')
+      throw new Error(this.t('matrix_error.extensions.not_initialized'))
     }
   }
 
@@ -246,7 +254,11 @@ class SynapseRustExtensionsService {
         parsed = { error: text || `HTTP ${response.status}` }
       }
       error(`[SynapseRust] API 请求失败: ${endpoint}`, parsed)
-      throw new Error((parsed.message as string) || (parsed.error as string) || `API 请求失败 (${response.status})`)
+      throw new Error(
+        (parsed.message as string) ||
+          (parsed.error as string) ||
+          this.t('matrix_error.extensions.api_request_failed_with_status', { status: response.status })
+      )
     }
 
     if (!text || text.trim() === '') {
@@ -267,7 +279,7 @@ class SynapseRustExtensionsService {
   ): T | undefined {
     if (response && typeof response === 'object' && 'status' in response && response.status === 'error') {
       const errorResponse = response as { message?: string }
-      throw new Error(errorResponse.message || '请求失败')
+      throw new Error(errorResponse.message || this.t('matrix_error.common.request_failed'))
     }
 
     if (response && typeof response === 'object' && 'data' in response) {
@@ -688,7 +700,7 @@ class SynapseRustExtensionsService {
       const roomId = data?.room_id
 
       if (!roomId) {
-        throw new Error('创建房间失败：未返回房间 ID')
+        throw new Error(this.t('matrix_error.room.create_failed_no_id'))
       }
 
       // 启用阅后即焚和防截屏

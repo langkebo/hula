@@ -145,20 +145,20 @@ import { emitTo } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { type FriendSearchResult, useFriends } from '@/composables/useFriends'
 import { RoomTypeEnum, ThemeEnum } from '@/enums'
-import { useWindow } from '@/hooks/useWindow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
-const { createWebviewWindow } = useWindow()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const avatarColor = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-inverse)'))
 
 // 定义标签页
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const tabs = computed(() => [
   { name: 'recommend', label: t('home.search_window.tabs.recommend') },
   { name: 'user', label: t('home.search_window.tabs.user') }
@@ -188,7 +188,7 @@ const currentSearchPlaceholder = computed(() =>
 // 处理复制账号
 const handleCopy = (account: string) => {
   navigator.clipboard.writeText(account)
-  window.$message.success(t('home.search_window.notification.copy_success', { account }))
+  showFeedback(t('home.search_window.notification.copy_success', { account }), 'success')
 }
 
 // 处理清空按钮点击
@@ -196,7 +196,7 @@ const handleSearchClear = () => {
   try {
     clearSearch()
   } catch (error) {
-    window.$message.error(t('home.search_window.notification.search_fail'))
+    showFeedback(t('home.search_window.notification.search_fail'), 'error')
   }
 }
 
@@ -234,7 +234,6 @@ const handleButtonClick = (item: FriendSearchResult) => {
 
 // 处理添加好友
 const handleAddFriend = async (item: FriendSearchResult) => {
-  await createWebviewWindow(t('home.search_window.modal.add_friend'), 'addFriendVerify', 380, 300, '', false, 380, 300)
   globalStore.openAddFriendModal(item.uid)
 }
 

@@ -43,10 +43,14 @@ vi.mock('naive-ui', () => {
   }
 })
 
-vi.mock('pinia', () => ({
-  storeToRefs: (store: Record<string, unknown>) =>
-    Object.fromEntries(Object.entries(store).map(([key, value]) => [key, ref(value)]))
-}))
+vi.mock('pinia', async (importOriginal) => {
+  const actual = (await importOriginal()) as any
+  return {
+    ...actual,
+    storeToRefs: (store: Record<string, unknown>) =>
+      Object.fromEntries(Object.entries(store).map(([key, value]) => [key, ref(value)]))
+  }
+})
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -74,11 +78,15 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
-vi.mock('@/enums', () => ({
-  TauriCommand: {
-    UPDATE_TOKEN: 'update_token'
+vi.mock('@/enums', async (importOriginal) => {
+  const actual = (await importOriginal()) as any
+  return {
+    ...actual,
+    TauriCommand: {
+      UPDATE_TOKEN: 'update_token'
+    }
   }
-}))
+})
 
 vi.mock('@/hooks/useLoginFlow', () => ({
   useLoginFlow: () => ({

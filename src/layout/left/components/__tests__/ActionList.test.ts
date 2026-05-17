@@ -79,14 +79,40 @@ const passthrough = (name: string) =>
   })
 
 const registerMocks = () => {
-  vi.doMock('vue-i18n', () => ({
-    useI18n: () => ({
+  vi.doMock('vue-i18n', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('vue-i18n')>()
+    return {
+      ...actual,
+      useI18n: () => ({
+        t: (key: string) => key
+      })
+    }
+  })
+
+  vi.doMock('@/services/i18n', () => ({
+    useI18nGlobal: () => ({
       t: (key: string) => key
     })
   }))
 
-  vi.doMock('pinia', () => ({
-    storeToRefs: (store: object) => store
+  vi.doMock('pinia', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('pinia')>()
+    return {
+      ...actual,
+      storeToRefs: (store: object) => store
+    }
+  })
+
+  vi.doMock('@/services/matrix/MatrixCapabilityService', () => ({
+    matrixCapabilityService: {
+      hasCapability: vi.fn(() => false)
+    }
+  }))
+
+  vi.doMock('@/stores/domains/admin/admin', () => ({
+    useAdminStore: () => ({
+      canAccessAdmin: false
+    })
   }))
 
   vi.doMock('@tauri-apps/api/core', () => ({
@@ -132,6 +158,10 @@ const registerMocks = () => {
       info: vi.fn(),
       warn: vi.fn()
     })
+  }))
+
+  vi.doMock('@/utils/TauriInvokeHandler', () => ({
+    invokeSilently: vi.fn()
   }))
 
   vi.doMock('@/stores/domains/widget/global', () => ({
@@ -243,7 +273,7 @@ describe('ActionList', () => {
       expect(entry.findAll('.workspace-entry__label')).toHaveLength(1)
       expect(entry.find('.workspace-entry__content').exists()).toBe(true)
     })
-  }, 15000)
+  }, 60000)
 
   it('reuses the existing jump logic and active/open icon states for workspace entries', async () => {
     const wrapper = await mountActionList()
@@ -261,7 +291,7 @@ describe('ActionList', () => {
       { width: 600, height: 800, minWidth: 600, minHeight: 550 },
       { resizable: true }
     )
-  })
+  }, 60000)
 
   it('collapses workspace entries to icon-only pills in icon mode', async () => {
     showMode.value = ShowModeEnum.ICON

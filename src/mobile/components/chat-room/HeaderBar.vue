@@ -6,7 +6,7 @@
       </svg>
       <div
         v-show="props.msgCount ? (props.msgCount > 0 ? true : false) : false"
-        class="rounded-15px flex items-center bg-#C7DBD9 px-7px text-14px min-h-20px">
+        class="rounded-15px flex items-center bg-[--hula-color-primary-100] px-7px text-14px min-h-20px">
         {{ formattedMsgCount }}
       </div>
     </div>
@@ -15,7 +15,9 @@
         <div class="truncate whitespace-nowrap overflow-hidden text-foreground text-ellipsis w-full text-center">
           {{ props.roomName }}
         </div>
-        <svg v-if="props.isOfficial" class="w-18px h-18px iconpark-icon text-#1A9B83"><use href="#auth"></use></svg>
+        <svg v-if="props.isOfficial" class="w-18px h-18px iconpark-icon text-[--color-primary]">
+          <use href="#auth"></use>
+        </svg>
       </div>
     </div>
     <div class="w-full h-full flex items-center">

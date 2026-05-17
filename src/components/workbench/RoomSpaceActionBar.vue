@@ -4,8 +4,30 @@
     :class="{ 'room-space-action-bar--compact': compact }">
     <n-flex align="center" justify="space-between" :size="12" wrap>
       <n-flex vertical :size="4" class="min-w-0">
+        <nav class="room-space-action-bar__breadcrumb" :aria-label="t('space.title')">
+          <ol class="room-space-action-bar__breadcrumb-list">
+            <li
+              v-for="(item, index) in normalizedBreadcrumbItems"
+              :key="item.spaceId"
+              class="room-space-action-bar__breadcrumb-item">
+              <button
+                v-if="index < normalizedBreadcrumbItems.length - 1"
+                type="button"
+                class="room-space-action-bar__breadcrumb-link truncate text-14px font-500"
+                @click="emit('selectBreadcrumb', item.spaceId)">
+                {{ item.name }}
+              </button>
+              <span v-else class="truncate text-14px font-500" aria-current="page">{{ item.name }}</span>
+              <span
+                v-if="index < normalizedBreadcrumbItems.length - 1"
+                aria-hidden="true"
+                class="room-space-action-bar__breadcrumb-separator">
+                /
+              </span>
+            </li>
+          </ol>
+        </nav>
         <n-flex align="center" :size="6">
-          <span class="truncate text-14px font-500">{{ spaceName }}</span>
           <n-tag v-if="isPublicSpace" size="tiny" :bordered="false" class="action-bar-visibility-tag">
             {{ t('space.public') }}
           </n-tag>
@@ -95,7 +117,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-defineProps<{
+const props = defineProps<{
+  breadcrumbItems?: Array<{ spaceId: string; name: string }>
   spaceName: string
   roomCount: number
   sessionCount: number
@@ -107,6 +130,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
+  selectBreadcrumb: [spaceId: string]
   discover: []
   invite: []
   addRoom: []
@@ -115,6 +139,21 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const normalizedBreadcrumbItems = computed(() => {
+  if (props.breadcrumbItems?.length) {
+    return props.breadcrumbItems.map((item) => ({
+      spaceId: item.spaceId,
+      name: item.name || props.spaceName
+    }))
+  }
+
+  return [
+    {
+      spaceId: '',
+      name: props.spaceName
+    }
+  ]
+})
 </script>
 
 <style scoped lang="scss">
@@ -124,6 +163,38 @@ const { t } = useI18n()
 
 .room-space-action-bar--compact {
   padding: 10px;
+}
+
+.room-space-action-bar__breadcrumb {
+  min-width: 0;
+}
+
+.room-space-action-bar__breadcrumb-list {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.room-space-action-bar__breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.room-space-action-bar__breadcrumb-link {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.room-space-action-bar__breadcrumb-separator {
+  margin: 0 6px;
+  color: var(--hula-text-tertiary);
 }
 
 .action-bar-visibility-tag {

@@ -1,5 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { TelemetryManager } from 'matrix-js-sdk/src/telemetry'
+import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
 import { matrixMediaService } from '../MatrixMediaService'

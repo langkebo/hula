@@ -6,8 +6,9 @@
           <div class="flex flex-col flex-1 p-20px gap-20px">
             <div class="flex items-center">
               <div class="py-15px flex gap-10px w-full items-center justify-end">
-                <div class="bg-#E7EFE6 dark:bg-gray/20 flex flex-wrap ps-2 items-center rounded-full gap-1 h-24px px-2">
-                  <span class="w-12px h-12px rounded-15px bg-#079669"></span>
+                <div
+                  class="bg-[--hula-color-primary-100] flex flex-wrap ps-2 items-center rounded-full gap-1 h-24px px-2">
+                  <span class="w-12px h-12px rounded-15px bg-[--color-online]"></span>
                   <span style="font-size: 12px">
                     {{ t('mobile_my.online') }}
                   </span>
@@ -134,6 +135,6 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 .text-bold-style {
   font-size: 14px;
   font-family: $font-family-system, $font-family-windows, $font-family-sans;
-  color: #757775;
+  color: var(--hula-text-tertiary);
 }
 </style>

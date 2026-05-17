@@ -98,6 +98,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useVoiceRecordRust } from '@/hooks/useVoiceRecordRust'
 import { createLogger } from '@/utils/Logger'
 
@@ -111,6 +112,7 @@ export type VoiceRecordPayload = {
 
 const logger = createLogger('VoiceRecorder')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 // 事件定义
 const emit = defineEmits<{
@@ -150,7 +152,7 @@ const {
     createAudioElement()
   },
   onError: () => {
-    window.$message?.error(t('message.voice_recorder.error'))
+    showFeedback(t('message.voice_recorder.error'), 'error')
     isProcessing.value = false
   }
 })

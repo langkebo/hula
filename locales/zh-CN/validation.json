@@ -1,0 +1,23 @@
+{
+  "username_min_length": "用户名至少需要3个字符",
+  "username_max_length": "用户名不能超过20个字符",
+  "username_invalid_chars": "用户名只能包含字母、数字、下划线和连字符",
+  "password_min_length": "密码至少需要8个字符",
+  "password_max_length": "密码不能超过128个字符",
+  "password_strength": "密码需要包含字母和数字",
+  "email_required": "邮箱不能为空",
+  "email_invalid": "邮箱格式不正确",
+  "phone_required": "手机号码不能为空",
+  "phone_invalid": "手机号码格式不正确",
+  "url_required": "URL不能为空",
+  "url_invalid": "URL格式不正确",
+  "matrix_id_required": "Matrix ID 不能为空",
+  "matrix_id_invalid": "Matrix ID 格式不正确，格式应为 @user:server",
+  "room_id_required": "房间 ID 不能为空",
+  "room_id_invalid": "房间 ID 格式不正确",
+  "room_alias_required": "房间别名不能为空",
+  "room_alias_invalid": "房间别名格式不正确",
+  "file_type_required": "文件类型不能为空",
+  "file_type_unsupported": "不支持的文件类型，允许的类型: {types}",
+  "file_size_exceeded": "文件大小不能超过 {maxSize}MB"
+}

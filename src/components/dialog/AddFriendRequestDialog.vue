@@ -41,12 +41,14 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useFriends } from '@/composables/useFriends'
 import { countGraphemes } from '@/hooks/useCommon'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
 
@@ -65,7 +67,7 @@ const { userInfo, avatarSrc, requestMsg, syncDefaultMessage, submitRequest } = u
 const addFriend = async () => {
   const submitted = await submitRequest()
   if (!submitted) return
-  window.$message.success(t('message.friend_verify.toast_success'))
+  showFeedback(t('message.friend_verify.toast_success'), 'success')
   handleClose()
 }
 

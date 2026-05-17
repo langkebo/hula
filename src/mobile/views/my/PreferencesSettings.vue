@@ -7,7 +7,9 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-gray-500 mb-8px">{{ t('mobile_preferences.message_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mb-8px">
+            {{ t('mobile_preferences.message_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell
@@ -16,16 +18,18 @@
               is-link
               @click="showSendKeyPicker = true">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:keyboard-return" :width="20" color="#1890ff" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:keyboard-return" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_preferences.message_confirm')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-green-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:check-circle" :width="20" color="#52c41a" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-success-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:check-circle" :width="20" color="var(--hula-color-success-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -35,8 +39,9 @@
 
             <van-cell :title="t('mobile_preferences.link_preview')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-purple-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:link-variant" :width="20" color="#722ed1" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:link-variant" :width="20" color="var(--hula-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -46,8 +51,9 @@
 
             <van-cell :title="t('mobile_preferences.emoji_convert')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-yellow-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:emoticon" :width="20" color="#faad14" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-warning-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:emoticon" :width="20" color="var(--hula-color-warning-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -56,13 +62,16 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_preferences.burn_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_preferences.burn_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_preferences.burn_default')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:timer-outline" :width="20" color="#fa8c16" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-warning-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:timer-outline" :width="20" color="var(--hula-color-warning-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -84,13 +93,16 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_preferences.thread_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_preferences.thread_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_preferences.thread_auto_subscribe')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-cyan-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:forum" :width="20" color="#13c2c2" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:forum" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -105,13 +117,16 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_preferences.privacy_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_preferences.privacy_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_preferences.send_read_receipts')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-indigo-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:eye-check" :width="20" color="#597ef7" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:eye-check" :width="20" color="var(--hula-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>

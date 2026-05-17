@@ -46,11 +46,12 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import type { Widget } from '@/services/matrix/widget/MatrixWidgetService'
-import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
+import { useWidgets, type Widget } from '@/composables/widget'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WidgetContainer')
+
+const { createWidgetSession, terminateWidgetSession } = useWidgets(() => props.roomId)
 
 const props = defineProps<{
   widget: Widget
@@ -85,7 +86,7 @@ function buildIframeUrl(baseUrl: string, sid: string | null, token: string | nul
 const initSession = async () => {
   sessionLoading.value = true
   try {
-    const response = (await matrixWidgetService.createWidgetSession(props.widget.id, undefined, false)) as {
+    const response = (await createWidgetSession(props.widget.id, undefined, false)) as {
       session_id?: string
       sessionId?: string
       access_token?: string
@@ -109,7 +110,7 @@ const terminateSession = async () => {
   const sid = sessionId.value
   if (!sid) return
   try {
-    await matrixWidgetService.terminateWidgetSession(sid, false)
+    await terminateWidgetSession(sid, false)
     logger.info('[WidgetContainer] 会话已终止:', sid)
   } catch (error) {
     logger.warn('[WidgetContainer] 终止会话失败:', error)

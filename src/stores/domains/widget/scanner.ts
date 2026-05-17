@@ -2,6 +2,7 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import { listen } from '@tauri-apps/api/event'
 import { appCacheDir } from '@tauri-apps/api/path'
 import { defineStore } from 'pinia'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { StoresEnum } from '@/enums'
 import { createLogger } from '@/utils/Logger'
 import { getUserDataRootAbsoluteDir } from '@/utils/PathUtil'
@@ -33,6 +34,7 @@ type DirectoryInfo = {
  * 提供扫描、取消扫描、清理资源等功能
  */
 export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
+  const { showFeedback } = useActionFeedback()
   const pathType = ref<'default' | 'custom'>('default')
   const defaultDirectory = ref<string>('')
   const customDirectory = ref<string>('')
@@ -117,7 +119,7 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
       }
     } catch (error) {
       logger.error('初始化扫描器失败:', error)
-      window.$message?.error('初始化扫描器失败')
+      showFeedback('初始化扫描器失败', 'error')
     }
   }
 
@@ -140,7 +142,7 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
 
   const startScan = async () => {
     if (!currentDirectory.value) {
-      window.$message?.warning('请先选择目录')
+      showFeedback('请先选择目录', 'warning')
       return
     }
 

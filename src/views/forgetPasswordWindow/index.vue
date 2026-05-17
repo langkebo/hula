@@ -199,6 +199,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, type FormInst, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import Validation from '@/components/common/Validation.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -209,6 +210,7 @@ const settingStore = useSettingStore()
 const logger = createLogger('ForgetPassword')
 const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 // 导入Web Worker
 const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url), { type: 'module' })
@@ -314,7 +316,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 // 获取图片验证码
 const getCaptchaImage = async () => {
   if (captchaInCooldown.value) {
-    window.$message.warning(t('auth.forget.messages.captcha_cooldown', { seconds: captchaCooldownRemaining.value }))
+    showFeedback(t('auth.forget.messages.captcha_cooldown', { seconds: captchaCooldownRemaining.value }), 'warning')
     return
   }
 
@@ -344,7 +346,7 @@ const getCaptchaImage = async () => {
     })
   } catch (error) {
     logger.error('获取验证码失败', error)
-    window.$message.error(getErrorMessage(error, '获取验证码失败，请稍后重试'))
+    showFeedback(getErrorMessage(error, '获取验证码失败，请稍后重试'), 'error')
     captchaInCooldown.value = false
   } finally {
     captchaLoading.value = false
@@ -354,12 +356,12 @@ const getCaptchaImage = async () => {
 // 发送邮箱验证码
 const sendEmailCode = async () => {
   if (!formData.value.email) {
-    window.$message.warning(t('auth.forget.messages.enter_email'))
+    showFeedback(t('auth.forget.messages.enter_email'), 'warning')
     return
   }
 
   if (!/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(formData.value.email)) {
-    window.$message.warning(t('auth.forget.messages.email_format'))
+    showFeedback(t('auth.forget.messages.email_format'), 'warning')
     return
   }
 
@@ -367,14 +369,14 @@ const sendEmailCode = async () => {
     try {
       const result = await MatrixAuthService.verifyCaptcha(formData.value.uuid, formData.value.captchaCode)
       if (!result.success) {
-        window.$message.error(t('auth.forget.messages.captcha_invalid'))
+        showFeedback(t('auth.forget.messages.captcha_invalid'), 'error')
         getCaptchaImage()
         return
       }
       captchaVerified.value = true
     } catch (error) {
       logger.error('验证码校验失败', error)
-      window.$message.error(getErrorMessage(error, t('auth.forget.messages.captcha_invalid')))
+      showFeedback(getErrorMessage(error, t('auth.forget.messages.captcha_invalid')), 'error')
       getCaptchaImage()
       return
     }
@@ -392,7 +394,7 @@ const sendEmailCode = async () => {
     emailVerified.value = false
     emailSendAttempt.value += 1
 
-    window.$message.success(t('auth.forget.messages.code_sent'))
+    showFeedback(t('auth.forget.messages.code_sent'), 'success')
 
     sendBtnDisabled.value = true
     countDown.value = 60
@@ -405,7 +407,7 @@ const sendEmailCode = async () => {
     })
   } catch (error) {
     logger.error('发送验证码失败', error)
-    window.$message.error(getErrorMessage(error, '发送验证码失败，请稍后重试'))
+    showFeedback(getErrorMessage(error, '发送验证码失败，请稍后重试'), 'error')
     getCaptchaImage()
   } finally {
     sendingEmailCode.value = false
@@ -435,7 +437,7 @@ const verifyEmail = async () => {
     currentStep.value = 2
   } catch (error) {
     logger.error('表单验证失败', error)
-    window.$message.error(getErrorMessage(error, '邮箱验证码校验失败，请稍后重试'))
+    showFeedback(getErrorMessage(error, '邮箱验证码校验失败，请稍后重试'), 'error')
   } finally {
     verifyLoading.value = false
   }
@@ -471,7 +473,7 @@ const submitNewPassword = async () => {
     stepStatus.value = 'finish'
   } catch (error) {
     logger.error('重置密码失败', error)
-    window.$message.error(getErrorMessage(error, '重置密码失败，请稍后重试'))
+    showFeedback(getErrorMessage(error, '重置密码失败，请稍后重试'), 'error')
   } finally {
     submitLoading.value = false
   }

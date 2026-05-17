@@ -1,28 +1,41 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { chatStoreMock, globalStoreMock, mittMock, sessionServiceMock, invokeMock, routerMock, infoMock } = vi.hoisted(
-  () => ({
-    chatStoreMock: {
-      getSession: vi.fn(),
-      markSessionRead: vi.fn(),
-      updateSessionLastActiveTime: vi.fn(),
-      getSessionList: vi.fn(async () => []),
-      addSession: vi.fn()
-    },
-    globalStoreMock: { updateCurrentSessionRoomId: vi.fn() },
-    mittMock: { emit: vi.fn() },
-    sessionServiceMock: { getSessionDetailWithFriends: vi.fn() },
-    invokeMock: vi.fn(async () => undefined),
-    routerMock: {
-      currentRoute: { value: { name: 'message', path: '/message' } },
-      push: vi.fn()
-    },
-    infoMock: vi.fn()
-  })
-)
+const {
+  chatStoreMock,
+  globalStoreMock,
+  mittMock,
+  sessionServiceMock,
+  invokeMock,
+  routerMock,
+  infoMock,
+  showFeedbackMock
+} = vi.hoisted(() => ({
+  chatStoreMock: {
+    getSession: vi.fn(),
+    markSessionRead: vi.fn(),
+    updateSessionLastActiveTime: vi.fn(),
+    getSessionList: vi.fn(async () => []),
+    addSession: vi.fn()
+  },
+  globalStoreMock: { updateCurrentSessionRoomId: vi.fn() },
+  mittMock: { emit: vi.fn() },
+  sessionServiceMock: { getSessionDetailWithFriends: vi.fn() },
+  invokeMock: vi.fn(async () => undefined),
+  routerMock: {
+    currentRoute: { value: { name: 'message', path: '/message' } },
+    push: vi.fn()
+  },
+  infoMock: vi.fn(),
+  showFeedbackMock: vi.fn()
+}))
 
 vi.mock('@/stores/domains/chat/chat', () => ({ useChatStore: () => chatStoreMock }))
 vi.mock('@/stores/domains/widget/global', () => ({ useGlobalStore: () => globalStoreMock }))
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
+}))
 vi.mock('@/hooks/useMitt.ts', () => ({
   useMitt: mittMock,
   MittEnum: { LOCATE_SESSION: 'LOCATE_SESSION', TO_SEND_MSG: 'TO_SEND_MSG' }
@@ -39,7 +52,6 @@ import { openMsgSession } from '../openMsgSession'
 
 beforeEach(() => {
   vi.clearAllMocks()
-  ;(window as any).$message = { error: vi.fn() }
   routerMock.currentRoute.value.name = 'message'
   routerMock.currentRoute.value.path = '/message'
   chatStoreMock.getSession.mockReturnValue({ roomId: 'room-1' })
@@ -97,7 +109,7 @@ describe('openMsgSession', () => {
   it('toasts and bails when session detail is null', async () => {
     sessionServiceMock.getSessionDetailWithFriends.mockResolvedValueOnce(null)
     await openMsgSession('uid-1')
-    expect((window as any).$message.error).toHaveBeenCalledWith('获取会话详情失败')
+    expect(showFeedbackMock).toHaveBeenCalledWith('获取会话详情失败', 'error')
     expect(globalStoreMock.updateCurrentSessionRoomId).not.toHaveBeenCalled()
   })
 
@@ -105,27 +117,27 @@ describe('openMsgSession', () => {
     invokeMock.mockRejectedValueOnce(new Error('fail'))
     await openMsgSession('uid-1')
     expect(invokeMock).toHaveBeenCalledWith('hide_contact_command', { data: { roomId: 'room-1', hide: false } })
-    expect((window as any).$message.error).toHaveBeenCalledWith('显示会话失败')
+    expect(showFeedbackMock).toHaveBeenCalledWith('显示会话失败', 'error')
     // Still proceeds to focus the session
     expect(globalStoreMock.updateCurrentSessionRoomId).toHaveBeenCalledWith('room-1')
   })
 
   it('refreshes session list when the session is new', async () => {
-    chatStoreMock.getSession.mockReturnValueOnce(undefined)
+    chatStoreMock.getSession.mockImplementation(() => undefined)
     await openMsgSession('uid-1')
     expect(chatStoreMock.updateSessionLastActiveTime).toHaveBeenCalledWith('room-1')
     expect(chatStoreMock.getSessionList).toHaveBeenCalledWith(true)
   })
 
   it('adds a fallback session when the refreshed list still does not contain the room', async () => {
-    chatStoreMock.getSession.mockReturnValue(undefined)
+    chatStoreMock.getSession.mockImplementation(() => undefined)
     await openMsgSession('uid-1')
     expect(chatStoreMock.addSession).toHaveBeenCalledWith({ roomId: 'room-1' })
     expect(globalStoreMock.updateCurrentSessionRoomId).toHaveBeenCalledWith('room-1')
   })
 
   it('skips list refresh when session already exists', async () => {
-    chatStoreMock.getSession.mockReturnValueOnce({ roomId: 'room-1' })
+    chatStoreMock.getSession.mockImplementation(() => ({ roomId: 'room-1' }))
     await openMsgSession('uid-1')
     expect(chatStoreMock.updateSessionLastActiveTime).not.toHaveBeenCalled()
     expect(chatStoreMock.getSessionList).not.toHaveBeenCalled()
@@ -133,6 +145,51 @@ describe('openMsgSession', () => {
 
   it('hides details, emits LOCATE_SESSION + TO_SEND_MSG, and marks the session read on success', async () => {
     await openMsgSession('uid-1')
+    expect(mittMock.emit).toHaveBeenCalledWith('detailsShow', { detailsShow: false, context: undefined })
+    expect(mittMock.emit).toHaveBeenCalledWith('locateSession', { roomId: 'room-1' })
+    expect(mittMock.emit).toHaveBeenCalledWith('toSendMsg', { url: 'message' })
+    expect(chatStoreMock.markSessionRead).toHaveBeenCalledWith('room-1')
+  })
+})
+
+describe('openMsgSessionByRoomId', () => {
+  it('guards against empty roomId', async () => {
+    const { openMsgSessionByRoomId } = await import('../openMsgSession')
+    await openMsgSessionByRoomId('')
+    expect(infoMock).not.toHaveBeenCalled()
+    expect(chatStoreMock.getSession).not.toHaveBeenCalled()
+  })
+
+  it('calls focusSessionRoom with the given roomId', async () => {
+    const { openMsgSessionByRoomId } = await import('../openMsgSession')
+    chatStoreMock.getSession.mockReturnValueOnce({ roomId: 'room-known' })
+    await openMsgSessionByRoomId('room-known')
+    expect(infoMock).toHaveBeenCalledWith('按 roomId 打开消息会话: room-known')
+    expect(chatStoreMock.getSession).toHaveBeenCalledWith('room-known')
+    expect(globalStoreMock.updateCurrentSessionRoomId).toHaveBeenCalledWith('room-known')
+  })
+
+  it('polls session list until session is available then focuses', async () => {
+    const { openMsgSessionByRoomId } = await import('../openMsgSession')
+    routerMock.currentRoute.value.name = 'friendsList'
+    routerMock.currentRoute.value.path = '/friendsList'
+    let callCount = 0
+    chatStoreMock.getSession.mockImplementation(() => {
+      callCount++
+      return callCount < 3 ? undefined : { roomId: 'room-poll' }
+    })
+    chatStoreMock.getSessionList.mockResolvedValue([])
+
+    await openMsgSessionByRoomId('room-poll')
+
+    expect(chatStoreMock.getSession).toHaveBeenCalledTimes(3)
+    expect(globalStoreMock.updateCurrentSessionRoomId).toHaveBeenCalledWith('room-poll')
+    expect(routerMock.push).toHaveBeenCalledWith('/message')
+  })
+
+  it('emits mitt events after focusing session', async () => {
+    const { openMsgSessionByRoomId } = await import('../openMsgSession')
+    await openMsgSessionByRoomId('room-1')
     expect(mittMock.emit).toHaveBeenCalledWith('detailsShow', { detailsShow: false, context: undefined })
     expect(mittMock.emit).toHaveBeenCalledWith('locateSession', { roomId: 'room-1' })
     expect(mittMock.emit).toHaveBeenCalledWith('toSendMsg', { url: 'message' })

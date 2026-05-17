@@ -46,14 +46,14 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NSpace, NTag, useMessage } from 'naive-ui'
+import { NButton, NSpace, NTag } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAdminRegistrationTokens } from '@/composables/admin'
-import type { RegistrationToken } from '@/services/matrix/admin'
+import { type RegistrationToken, useAdminRegistrationTokens } from '@/composables/admin'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 
 const registrationTokens = useAdminRegistrationTokens()
 const loading = registrationTokens.loading
@@ -128,7 +128,7 @@ async function loadTokens() {
   try {
     await registrationTokens.loadTokens()
   } catch {
-    message.error(t('admin.registration_tokens.load_failed'))
+    showFeedback(t('admin.registration_tokens.load_failed'), 'error')
   }
 }
 
@@ -139,24 +139,24 @@ async function handleCreateToken() {
     if (createForm.value.usesAllowed !== null) options.usesAllowed = createForm.value.usesAllowed
     if (createForm.value.expiryTime !== null) options.expiryTime = createForm.value.expiryTime
     await registrationTokens.createToken(options)
-    message.success(t('admin.registration_tokens.create_success'))
+    showFeedback(t('admin.registration_tokens.create_success'), 'success')
     showCreateDialog.value = false
     createForm.value = { token: '', usesAllowed: null, expiryTime: null }
   } catch {
-    message.error(t('admin.registration_tokens.create_failed'))
+    showFeedback(t('admin.registration_tokens.create_failed'), 'error')
   }
 }
 
 function handleEditToken(_row: RegistrationToken) {
-  message.info(t('admin.registration_tokens.edit_hint'))
+  showFeedback(t('admin.registration_tokens.edit_hint'), 'info')
 }
 
 async function handleDeleteToken(token: string) {
   try {
     await registrationTokens.deleteToken(token)
-    message.success(t('admin.registration_tokens.delete_success'))
+    showFeedback(t('admin.registration_tokens.delete_success'), 'success')
   } catch {
-    message.error(t('admin.registration_tokens.delete_failed'))
+    showFeedback(t('admin.registration_tokens.delete_failed'), 'error')
   }
 }
 

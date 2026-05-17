@@ -177,12 +177,14 @@
 import { Icon } from '@iconify/vue'
 import type { FormInst, FormRules } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { ApiKey, ApiKeyBalance, Platform } from '@/services/matrix/ai/ApiKeyService'
 import { apiKeyService } from '@/services/matrix/ai/ApiKeyService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ApiKeyManagement')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 const hasValidationErrors = (value: unknown): value is { errors: unknown } => {
   return typeof value === 'object' && value !== null && 'errors' in value
@@ -290,7 +292,7 @@ const loadApiKeyList = async () => {
     pagination.value.total = data.total || 0
   } catch (error) {
     logger.error('加载 API 密钥列表失败:', error)
-    window.$message.error(t('ai_assistant.robot.load_keys_failed'))
+    showFeedback(t('ai_assistant.robot.load_keys_failed'), 'error')
   } finally {
     loading.value = false
   }
@@ -352,11 +354,11 @@ const handleSubmit = async () => {
         id: editingApiKey.value.id
       } as ApiKey
       await apiKeyService.update(updateData)
-      window.$message.success(t('ai_assistant.robot.key_updated'))
+      showFeedback(t('ai_assistant.robot.key_updated'), 'success')
     } else {
       // 创建
       await apiKeyService.create(submitData as ApiKey)
-      window.$message.success(t('ai_assistant.robot.key_created'))
+      showFeedback(t('ai_assistant.robot.key_created'), 'success')
     }
 
     showEditModal.value = false
@@ -367,7 +369,7 @@ const handleSubmit = async () => {
       return
     }
     logger.error('保存密钥失败:', error)
-    window.$message.error(t('ai_assistant.robot.save_key_failed'))
+    showFeedback(t('ai_assistant.robot.save_key_failed'), 'error')
   } finally {
     submitting.value = false
   }
@@ -377,12 +379,12 @@ const handleSubmit = async () => {
 const handleDelete = async (id: string) => {
   try {
     await apiKeyService.delete({ id })
-    window.$message.success(t('ai_assistant.robot.key_deleted'))
+    showFeedback(t('ai_assistant.robot.key_deleted'), 'success')
     loadApiKeyList()
     emit('refresh')
   } catch (error) {
     logger.error('删除密钥失败:', error)
-    window.$message.error(t('ai_assistant.robot.delete_key_failed'))
+    showFeedback(t('ai_assistant.robot.delete_key_failed'), 'error')
   }
 }
 
@@ -392,10 +394,10 @@ const handleQueryBalance = async (id: string) => {
     balanceLoadingMap.value[id] = true
     const data = await apiKeyService.balance({ id })
     balanceMap.value[id] = data
-    window.$message.success(t('ai_assistant.robot.balance_query_success'))
+    showFeedback(t('ai_assistant.robot.balance_query_success'), 'success')
   } catch (error) {
     logger.error('查询余额失败:', error)
-    window.$message.error(t('ai_assistant.robot.balance_query_failed'))
+    showFeedback(t('ai_assistant.robot.balance_query_failed'), 'error')
   } finally {
     balanceLoadingMap.value[id] = false
   }

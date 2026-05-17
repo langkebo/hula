@@ -60,7 +60,11 @@
                         {{ groupStore.getUserInfo(item.uid)?.name }}
                       </span>
                       <div class="text-12px text-gray-500 flex items-center gap-4px truncate">
-                        <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
+                        <n-badge
+                          :color="
+                            item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
+                          "
+                          dot />
                         {{
                           item.activeStatus === OnlineEnum.ONLINE
                             ? t('home.friends_list.status.online')
@@ -129,7 +133,7 @@
               class="w-full flex items-center px-12px"
               :class="[
                 'cursor-pointer select-none transition-colors duration-150',
-                selectedList.includes(item.uid) ? 'bg-#13987f18' : ''
+                selectedList.includes(item.uid) ? 'bg-[--hula-color-primary-100]' : ''
               ]">
               <template #default>
                 <div class="flex items-center gap-10px px-8px py-10px">
@@ -146,7 +150,11 @@
                       {{ groupStore.getUserInfo(item.uid)?.name }}
                     </span>
                     <div class="text-11px text-[--hula-text-secondary] flex items-center gap-4px truncate">
-                      <n-badge :color="item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
+                      <n-badge
+                        :color="
+                          item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
+                        "
+                        dot />
                       {{
                         item.activeStatus === OnlineEnum.ONLINE
                           ? t('home.friends_list.status.online')
@@ -201,6 +209,7 @@ import { type } from '@tauri-apps/plugin-os'
 import { useI18n } from 'vue-i18n'
 import HeaderBar from '#/components/chat-room/HeaderBar.vue'
 import MobileLayout from '#/components/MobileLayout.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum, RoleEnum } from '@/enums'
 import router from '@/router'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -222,6 +231,7 @@ const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
 const dialog = useDialog()
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 const keyword = ref('')
 const selectedList = ref<string[]>([])
@@ -270,12 +280,12 @@ const handleClose = () => {
 
 const validateRemoval = () => {
   if (globalStore.currentSessionRoomId === '1') {
-    window.$message.warning(t('home.manage_group_member.channel_not_allowed'))
+    showFeedback(t('home.manage_group_member.channel_not_allowed'), 'warning')
     return false
   }
 
   if (selectedList.value.length === 0) {
-    window.$message.warning(t('home.manage_group_member.select_member_warning'))
+    showFeedback(t('home.manage_group_member.select_member_warning'), 'warning')
     return false
   }
 
@@ -297,13 +307,13 @@ const handleRemove = async () => {
   try {
     await groupStore.removeGroupMembers(members, globalStore.currentSessionRoomId)
 
-    window.$message.success(t('home.manage_group_member.remove_success', { count }))
+    showFeedback(t('home.manage_group_member.remove_success', { count }), 'success')
     selectedList.value = []
     handleClose()
     return true
   } catch (error) {
     logger.error('踢出失败:', error)
-    window.$message.error(t('home.manage_group_member.remove_failed'))
+    showFeedback(t('home.manage_group_member.remove_failed'), 'error')
     return false
   } finally {
     isLoading.value = false
@@ -335,7 +345,7 @@ const calculateScrollHeight = () => {
 onMounted(async () => {
   // 如果是频道（roomId === '1'），直接返回上一页
   if (globalStore.currentSessionRoomId === '1') {
-    window.$message.warning(t('home.manage_group_member.channel_manage_unsupported'))
+    showFeedback(t('home.manage_group_member.channel_manage_unsupported'), 'warning')
     handleClose()
     return
   }

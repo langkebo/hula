@@ -318,6 +318,7 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     updateTotalUnreadCount,
     requestUnreadCountUpdate,
     clearUnreadCount,
-    syncPersistedUnreadCounts
+    syncPersistedUnreadCounts,
+    writeUnreadDetail
   }
 })

@@ -50,9 +50,10 @@
 </template>
 
 <script setup lang="ts">
-import { NSpin, useDialog, useMessage } from 'naive-ui'
+import { NSpin, useDialog } from 'naive-ui'
 import { computed, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { ConnectionState } from '@/composables/useConnectionStatus'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { type DiagnosticResult, MatrixDiagnostics } from '@/utils/MatrixDiagnostics'
@@ -75,7 +76,7 @@ defineEmits<{
 
 const { t } = useI18n()
 const dialog = useDialog()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const matrixStore = useMatrixStore()
 
 const diagnosing = ref(false)
@@ -112,7 +113,7 @@ const onDiagnose = async () => {
   if (diagnosing.value) return
   const homeserverUrl = matrixStore.homeserverUrl
   if (!homeserverUrl) {
-    message.warning(t('connection.diagnose_no_homeserver'))
+    showFeedback(t('connection.diagnose_no_homeserver'), 'warning')
     return
   }
   diagnosing.value = true
@@ -124,7 +125,7 @@ const onDiagnose = async () => {
       positiveText: 'OK'
     })
   } catch (err) {
-    message.error(t('connection.diagnose_failed', { message: String(err) }))
+    showFeedback(t('connection.diagnose_failed', { message: String(err) }), 'error')
   } finally {
     diagnosing.value = false
   }

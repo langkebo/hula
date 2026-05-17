@@ -13,21 +13,21 @@ export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
     titleKey: 'mobile_setting.voice_video',
     path: '/mobile/mobileMy/voiceVideo',
     icon: 'mdi:video',
-    iconColor: '#20c997',
-    iconBackgroundColor: '#e6fffb'
+    iconColor: 'var(--hula-color-success-500)',
+    iconBackgroundColor: 'var(--hula-color-success-100)'
   },
   {
     titleKey: 'mobile_setting.labs',
     path: MOBILE_SETTINGS_LABS_PATH,
     icon: 'mdi:flask',
-    iconColor: '#eb2f96',
-    iconBackgroundColor: '#fff0f6'
+    iconColor: 'var(--hula-color-beta-500)',
+    iconBackgroundColor: 'var(--hula-color-beta-100)'
   },
   {
     titleKey: 'mobile_setting.homeserver',
     path: '/mobile/mobileMy/homeserver',
     icon: 'mdi:server',
-    iconColor: '#1890ff',
-    iconBackgroundColor: '#e6f7ff'
+    iconColor: 'var(--hula-color-info-500)',
+    iconBackgroundColor: 'var(--hula-color-info-100)'
   }
 ]

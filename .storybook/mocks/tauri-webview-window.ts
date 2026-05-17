@@ -44,4 +44,5 @@ export function configureWebviewWindowMock(options: Partial<typeof defaultState>
 }
 
 export const getCurrentWindow = () => WebviewWindow.getCurrent()
+export const getCurrentWebviewWindow = () => WebviewWindow.getCurrent()
 export const WebviewWindow = webviewWindowMock

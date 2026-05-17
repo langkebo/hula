@@ -41,7 +41,8 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useRoomActions } from '@/composables/room/useRoomActions'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('JoinRoomDialog')
@@ -56,6 +57,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const formRef = ref<FormInst>()
 const joining = ref(false)
 
@@ -71,6 +73,8 @@ const rules: FormRules = {
   ]
 }
 
+const { joinRoom } = useRoomActions()
+
 const handleJoin = async () => {
   try {
     await formRef.value?.validate()
@@ -80,8 +84,8 @@ const handleJoin = async () => {
 
   joining.value = true
   try {
-    const room = await matrixRoomService.joinRoom(formData.roomIdOrAlias)
-    window.$message?.success(t('room.join.success'))
+    const room = await joinRoom(formData.roomIdOrAlias)
+    showFeedback(t('room.join.success'), 'success')
     emit('joined', room?.roomId || formData.roomIdOrAlias)
     emit('update:visible', false)
     resetForm()
@@ -89,13 +93,13 @@ const handleJoin = async () => {
     logger.error('加入房间失败:', error)
     const err = error as { errcode?: string; error?: string }
     if (err?.errcode === 'M_NOT_FOUND') {
-      window.$message?.error(t('room.join.not_found'))
+      showFeedback(t('room.join.not_found'), 'error')
     } else if (err?.errcode === 'M_ALREADY_JOINED' || err?.error?.includes('already')) {
-      window.$message?.warning(t('room.join.already_joined'))
+      showFeedback(t('room.join.already_joined'), 'warning')
     } else if (err?.errcode === 'M_FORBIDDEN') {
-      window.$message?.error(t('room.join.forbidden'))
+      showFeedback(t('room.join.forbidden'), 'error')
     } else {
-      window.$message?.error(t('room.join.failed'))
+      showFeedback(t('room.join.failed'), 'error')
     }
   } finally {
     joining.value = false

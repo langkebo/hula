@@ -1,6 +1,7 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleKind } from 'matrix-js-sdk'
 import { safeJsonParse, validateObject } from '@/utils/typeGuard'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 let ackEndpointAvailableCache: boolean | null = null
@@ -25,7 +26,7 @@ export interface NotificationConfig {
   showMessageContent: boolean
 }
 
-class MatrixNotificationService {
+class MatrixNotificationService extends BaseMatrixService {
   private pushRules: IPushRule[] = []
   private observedClient: MatrixClient | null = null
   private config: NotificationConfig = {
@@ -42,6 +43,7 @@ class MatrixNotificationService {
   private static readonly DND_ACCOUNT_DATA_TYPE = 'io.hula.dnd_settings'
 
   constructor() {
+    super()
     this.loadConfig()
   }
 
@@ -81,7 +83,7 @@ class MatrixNotificationService {
 
   async syncConfigToAccountData(): Promise<void> {
     try {
-      const client = this.getClient()
+      const client = this.getNotificationClient()
       await client.setAccountData(
         MatrixNotificationService.ACCOUNT_DATA_TYPE,
         this.config as unknown as Record<string, unknown>
@@ -94,7 +96,7 @@ class MatrixNotificationService {
 
   async syncConfigFromAccountData(): Promise<boolean> {
     try {
-      const client = this.getClient()
+      const client = this.getNotificationClient()
       const event = client.getAccountData(MatrixNotificationService.ACCOUNT_DATA_TYPE)
       if (event) {
         const serverConfig = event.getContent() as Partial<NotificationConfig>
@@ -118,7 +120,7 @@ class MatrixNotificationService {
     endTime: number | null
   }): Promise<void> {
     try {
-      const client = this.getClient()
+      const client = this.getNotificationClient()
       await client.setAccountData(MatrixNotificationService.DND_ACCOUNT_DATA_TYPE, settings as Record<string, unknown>)
       info('[MatrixNotification] DND 设置已同步到服务端')
     } catch (err) {
@@ -132,7 +134,7 @@ class MatrixNotificationService {
     endTime: number | null
   } | null> {
     try {
-      const client = this.getClient()
+      const client = this.getNotificationClient()
       const event = client.getAccountData(MatrixNotificationService.DND_ACCOUNT_DATA_TYPE)
       if (event) {
         const dndSettings = event.getContent() as {
@@ -165,10 +167,10 @@ class MatrixNotificationService {
     return client
   }
 
-  private getClient(): MatrixClient {
+  private getNotificationClient(): MatrixClient {
     const client = this.syncClientState()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
     return client
   }
@@ -186,7 +188,7 @@ class MatrixNotificationService {
 
   async initialize(): Promise<void> {
     try {
-      const client = this.getClient()
+      const client = this.getNotificationClient()
       const rules = await client.getPushRules()
       this.pushRules = this.flattenRules(rules)
       info('[MatrixNotification] 初始化完成')
@@ -197,7 +199,7 @@ class MatrixNotificationService {
   }
 
   async setPushRule(rule: NotificationRule): Promise<void> {
-    const client = this.getClient()
+    const client = this.getNotificationClient()
     try {
       await client.setPushRule('global', rule.kind as PushRuleKind, rule.ruleId, rule.actions)
       info(`[MatrixNotification] 设置推送规则成功: ${rule.ruleId}`)
@@ -208,7 +210,7 @@ class MatrixNotificationService {
   }
 
   async deletePushRule(ruleId: string, kind?: PushRuleKind): Promise<void> {
-    const client = this.getClient()
+    const client = this.getNotificationClient()
     try {
       const resolvedKind = kind ?? (await this.findPushRuleKind(client, ruleId))
       await client.deletePushRule('global', resolvedKind, ruleId)
@@ -238,7 +240,7 @@ class MatrixNotificationService {
   }
 
   async setPusher(pusher: IPusherRequest): Promise<void> {
-    const client = this.getClient()
+    const client = this.getNotificationClient()
     try {
       await client.setPusher(pusher)
       info('[MatrixNotification] 设置 pusher 成功')
@@ -347,7 +349,7 @@ class MatrixNotificationService {
     notifications: Array<Record<string, unknown>>
     next_token?: string
   }> {
-    const client = this.getClient()
+    const client = this.getNotificationClient()
     try {
       const queryParams: Record<string, string> = { limit: String(limit) }
       if (from) queryParams.from = from
@@ -361,7 +363,7 @@ class MatrixNotificationService {
   }
 
   async ackNotification(notificationId: string): Promise<boolean> {
-    const client = this.getClient()
+    const client = this.getNotificationClient()
     try {
       await client.http.authedRequest(
         'POST',
@@ -408,7 +410,7 @@ class MatrixNotificationService {
   }
 
   private async sendReadReceipt(roomId: string, eventId: string): Promise<boolean> {
-    const client = this.getClient()
+    const client = this.getNotificationClient()
     try {
       await client.http.authedRequest(
         'POST',

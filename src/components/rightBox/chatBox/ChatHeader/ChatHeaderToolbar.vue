@@ -2,7 +2,7 @@
   <div class="chat-header-toolbar">
     <n-tooltip trigger="hover" :delay="500">
       <template #trigger>
-        <n-button quaternary circle size="small" @click="handleVideoCall">
+        <n-button quaternary circle size="small" aria-label="视频通话" @click="handleVideoCall">
           <template #icon>
             <n-icon size="20">
               <svg><use href="#video"></use></svg>
@@ -15,7 +15,7 @@
 
     <n-tooltip trigger="hover" :delay="500">
       <template #trigger>
-        <n-button quaternary circle size="small" @click="handleVoiceCall">
+        <n-button quaternary circle size="small" aria-label="语音通话" @click="handleVoiceCall">
           <template #icon>
             <n-icon size="20">
               <svg><use href="#phone"></use></svg>
@@ -28,7 +28,13 @@
 
     <n-tooltip trigger="hover" :delay="500">
       <template #trigger>
-        <n-button quaternary circle size="small" :loading="meetingLoading" @click="handleStartMeeting">
+        <n-button
+          quaternary
+          circle
+          size="small"
+          aria-label="发起会议"
+          :loading="meetingLoading"
+          @click="handleStartMeeting">
           <template #icon>
             <n-icon size="20">
               <Icon icon="mdi:video-plus" />
@@ -41,7 +47,7 @@
 
     <n-tooltip v-if="!isMobile" trigger="hover" :delay="500">
       <template #trigger>
-        <n-button quaternary circle size="small" @click="handleScreenShare">
+        <n-button quaternary circle size="small" aria-label="屏幕共享" @click="handleScreenShare">
           <template #icon>
             <n-icon size="20">
               <svg><use href="#screen-share"></use></svg>
@@ -54,7 +60,7 @@
 
     <n-tooltip v-if="isGroup" trigger="hover" :delay="500">
       <template #trigger>
-        <n-button quaternary circle size="small" @click="handleShowQRCode">
+        <n-button quaternary circle size="small" aria-label="群二维码" @click="handleShowQRCode">
           <template #icon>
             <n-icon size="20">
               <svg><use href="#qr-code"></use></svg>
@@ -67,7 +73,7 @@
 
     <n-tooltip trigger="hover" :delay="500">
       <template #trigger>
-        <n-button quaternary circle size="small" @click="handleToggleSidebar">
+        <n-button quaternary circle size="small" aria-label="更多选项" @click="handleToggleSidebar">
           <template #icon>
             <n-icon size="20">
               <svg><use href="#menu"></use></svg>

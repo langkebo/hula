@@ -3,13 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
 import type { VideoImageUploadPayload } from '../useAiGenerationParams'
 
-const { aiServiceMock, uploadMock, fileInfoRef, errorMock } = vi.hoisted(() => ({
+const { aiServiceMock, uploadMock, fileInfoRef, errorMock, showFeedbackMock } = vi.hoisted(() => ({
   aiServiceMock: {
     audioGetVoices: vi.fn()
   },
   uploadMock: vi.fn(async () => undefined),
   fileInfoRef: { value: { downloadUrl: '' } },
-  errorMock: vi.fn()
+  errorMock: vi.fn(),
+  showFeedbackMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix/ai/AIService', () => ({ aiService: aiServiceMock }))
@@ -21,6 +22,9 @@ vi.mock('@/hooks/useUpload', () => ({
   UploadProviderEnum: { DEFAULT: 'default' }
 }))
 vi.mock('@/enums', () => ({ UploadSceneEnum: { CHAT: 'chat' } }))
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({ showFeedback: showFeedbackMock })
+}))
 
 import { useAiGenerationParams } from '../useAiGenerationParams'
 
@@ -59,7 +63,6 @@ const mountWith = <T>(setup: () => T): T => {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  window.$message = { error: vi.fn(), warning: vi.fn(), success: vi.fn() } as unknown as Window['$message']
   fileInfoRef.value = { downloadUrl: 'https://cdn/x.png' }
 })
 
@@ -75,10 +78,10 @@ describe('useAiGenerationParams', () => {
 
   it('option arrays are pre-populated', () => {
     const c = mountWith(() => useAiGenerationParams())
-    expect(c.imageSizeOptions).toHaveLength(3)
-    expect(c.videoSizeOptions).toHaveLength(3)
-    expect(c.videoDurationOptions).toHaveLength(2)
-    expect(c.audioSpeedOptions).toHaveLength(6)
+    expect(c.imageSizeOptions.value).toHaveLength(3)
+    expect(c.videoSizeOptions.value).toHaveLength(3)
+    expect(c.videoDurationOptions.value).toHaveLength(2)
+    expect(c.audioSpeedOptions.value).toHaveLength(6)
   })
 
   it('clearVideoImage resets image + preview + delegates to file ref', () => {
@@ -144,7 +147,7 @@ describe('useAiGenerationParams', () => {
     )
     expect(onError).toHaveBeenCalled()
     expect(onFinish).not.toHaveBeenCalled()
-    expect(window.$message.error).toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('只支持 JPG、PNG、WEBP 格式的图片', 'error')
   })
 
   it('handleVideoImageUpload rejects oversized file', async () => {
@@ -153,7 +156,7 @@ describe('useAiGenerationParams', () => {
     const onError = vi.fn()
     await c.handleVideoImageUpload(makeUploadPayload(big, { onError, onFinish: vi.fn() }))
     expect(onError).toHaveBeenCalled()
-    expect(window.$message.error).toHaveBeenCalledWith('图片大小不能超过 10MB')
+    expect(showFeedbackMock).toHaveBeenCalledWith('图片大小不能超过 10MB', 'error')
   })
 
   it('handleVideoImageUpload happy path stores url on success', async () => {

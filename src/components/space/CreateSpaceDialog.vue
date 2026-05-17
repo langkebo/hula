@@ -31,16 +31,17 @@
 
 <script setup lang="ts">
 import type { FormInst, UploadCustomRequestOptions } from 'naive-ui'
-import { useMessage } from 'naive-ui'
 import { reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { type SpaceInfo, useSpaces } from '@/composables/space'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import { matrixSpaceService, type SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('CreateSpaceDialog')
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
+const { create: createSpace } = useSpaces()
 
 const props = defineProps<{
   visible: boolean
@@ -89,22 +90,22 @@ const handleSubmit = async () => {
   try {
     loading.value = true
     await formRef.value?.validate()
-    const createdSpace = await matrixSpaceService.createSpace({
+    const createdSpace = await createSpace({
       name: formData.name,
       topic: formData.topic,
       avatarUrl: formData.avatarUrl
     })
     if (!createdSpace) {
-      message.error(t('space.create_failed'))
+      showFeedback(t('space.create_failed'), 'error')
       return
     }
-    message.success(t('space.create_success'))
+    showFeedback(t('space.create_success'), 'success')
     emit('created', createdSpace)
     resetForm()
     emit('update:visible', false)
   } catch (error) {
     logger.error('[CreateSpaceDialog] 创建空间失败:', error)
-    message.error(t('space.create_failed'))
+    showFeedback(t('space.create_failed'), 'error')
   } finally {
     loading.value = false
   }

@@ -97,6 +97,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { ThemeEnum } from '@/enums'
 import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
@@ -104,6 +105,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const contactStore = useContactStore()
 const settingStore = useSettingStore()
 
@@ -155,7 +157,7 @@ const handleCreate = async () => {
       resetForm()
     }
   } catch (err) {
-    window.$message.error(t('dm.create.error'))
+    showFeedback(t('dm.create.error'), 'error')
   } finally {
     creating.value = false
   }

@@ -22,6 +22,50 @@ export interface SpaceInfo {
 }
 
 class SpaceService extends BaseMatrixService {
+  private normalizeSpaceTreePathItems(
+    items: Array<{ space_id: string; name: string }>
+  ): Array<{ space_id: string; name: string }> {
+    const dedupedItems: Array<{ space_id: string; name: string }> = []
+
+    for (const item of items) {
+      if (!item.space_id) continue
+      if (dedupedItems.some((candidate) => candidate.space_id === item.space_id)) continue
+      dedupedItems.push({
+        space_id: item.space_id,
+        name: item.name || ''
+      })
+    }
+
+    return dedupedItems
+  }
+
+  private async getSpaceTreePathViaParents(spaceId: string): Promise<Array<{ space_id: string; name: string }>> {
+    try {
+      const parentSpaces = await this.getRoomParentSpacesViaApi(spaceId)
+      if (!parentSpaces.length) {
+        return []
+      }
+
+      const directParent = parentSpaces[0]
+      const parentPath = await this.getSpaceTreePathViaParents(directParent.spaceId)
+
+      return this.normalizeSpaceTreePathItems([
+        ...parentPath,
+        {
+          space_id: directParent.spaceId,
+          name: directParent.name || ''
+        },
+        {
+          space_id: spaceId,
+          name: (await this.getSpace(spaceId))?.name || ''
+        }
+      ])
+    } catch (err) {
+      error(`[Space] 通过父空间回退树路径失败: ${spaceId}, ${err}`)
+      return []
+    }
+  }
+
   private roomToSpaceInfo(room: Room): SpaceInfo {
     return {
       spaceId: room.roomId,
@@ -198,7 +242,7 @@ class SpaceService extends BaseMatrixService {
       if (room) {
         return room.getJoinedMembers().map((m) => m.userId)
       }
-      const memberEvents = await client.getRoomMembers(spaceId)
+      const memberEvents = client.getRoomMembers(spaceId)
       return memberEvents.map((m) => m.userId)
     } catch (hierarchyErr) {
       info(`[Space] SDK getRoomMembers 也失败，尝试标准 /members 端点: ${hierarchyErr}`)
@@ -589,10 +633,10 @@ class SpaceService extends BaseMatrixService {
         'GET',
         `/_matrix/client/v3/spaces/${encodeURIComponent(spaceId)}/tree_path`
       )) as { path?: Array<{ space_id: string; name: string }> }
-      return result.path ?? []
+      return this.normalizeSpaceTreePathItems(result.path ?? [])
     } catch (err) {
-      error(`[Space] 获取空间树路径失败: ${spaceId}, ${err}`)
-      return []
+      info(`[Space] tree_path 不可用，回退到 parents 链路: ${spaceId}, ${err}`)
+      return await this.getSpaceTreePathViaParents(spaceId)
     }
   }
 

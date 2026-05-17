@@ -183,6 +183,7 @@
 import type { HulaEmojiData } from 'hula-emojis'
 import type { ScrollbarInst, VirtualListInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { EmojiItem as EmojiListItem } from '@/services/types'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useHistoryStore } from '@/stores/domains/chat/history'
@@ -234,6 +235,7 @@ const { setEmoji, setLastEmojiTabIndex } = useHistoryStore()
 const emojiStore = useEmojiStore()
 const userStore = useUserStore()
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const emojisBbs = shallowRef<HulaEmojiData>()
 const activeIndex = ref(lastEmojiTabIndex.value)
 const isFavoritesView = computed(() => activeIndex.value === -1)
@@ -369,13 +371,13 @@ const handleContextMenu = (event: MouseEvent, item: EmojiListItem) => {
 const deleteMyEmoji = async (id: string) => {
   try {
     await emojiStore.deleteEmoji(id)
-    window.$message.success(t('emoticon.favorites.deleteSuccess'))
+    showFeedback(t('emoticon.favorites.deleteSuccess'), 'success')
     activeMenuId.value = ''
     localUrlCache.clear()
     emojiUrlToLocalMap.clear()
   } catch (error) {
     logger.error('删除表情失败:', error)
-    window.$message.error(t('emoticon.favorites.deleteFail'))
+    showFeedback(t('emoticon.favorites.deleteFail'), 'error')
   }
 }
 

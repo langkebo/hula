@@ -69,24 +69,24 @@ import {
   NSpace,
   NSpin,
   NTabPane,
-  NTabs,
-  useMessage
+  NTabs
 } from 'naive-ui'
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminSaml } from '@/composables/admin/useAdminSaml'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const { idpMetadata, spMetadata, loading, refreshing, loadMetadata, refreshMetadata, downloadSpMetadata } =
   useAdminSaml()
 
 async function handleRefreshMetadata() {
   try {
     await refreshMetadata()
-    message.success(t('admin.saml.refresh_success'))
+    showFeedback(t('admin.saml.refresh_success'), 'success')
   } catch (err) {
-    message.error(t('admin.saml.refresh_failed'))
+    showFeedback(t('admin.saml.refresh_failed'), 'error')
   }
 }
 

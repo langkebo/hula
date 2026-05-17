@@ -1,4 +1,5 @@
 import { type Ref, ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import { roomStateService } from '@/services/matrix/room/RoomStateService'
@@ -32,6 +33,7 @@ type Options = {
  */
 export const useGroupNicknameModal = ({ userUid, t, enableMitt = false }: Options) => {
   const groupStore = useGroupStore()
+  const { showFeedback } = useActionFeedback()
 
   const groupNicknameModalVisible = ref(false)
   const groupNicknameValue = ref('')
@@ -65,7 +67,7 @@ export const useGroupNicknameModal = ({ userUid, t, enableMitt = false }: Option
 
     const { roomId, currentUid } = groupNicknameContext.value
     if (!roomId) {
-      window.$message?.error(t('home.chat_main.group_nickname.error.invalid_room'))
+      showFeedback(t('home.chat_main.group_nickname.error.invalid_room'), 'error')
       return
     }
 

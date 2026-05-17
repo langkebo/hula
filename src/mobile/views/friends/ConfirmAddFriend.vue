@@ -48,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useFriends } from '@/composables/useFriends'
 import router from '@/router'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -56,6 +57,7 @@ import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('ConfirmAddFriend')
 const timerManager = useTimerManager()
+const { showFeedback } = useActionFeedback()
 
 const userStore = useUserStore()
 const { userInfo, avatarSrc, requestMsg, syncDefaultMessage, submitRequest } = useFriends({
@@ -67,7 +69,7 @@ const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
 const addFriend = async () => {
   const submitted = await submitRequest()
   if (!submitted) return
-  window.$message.success('已发送好友申请')
+  showFeedback('已发送好友申请', 'success')
   timerManager.setTimeout(() => {
     router.push('/mobile/message')
   }, 2000)

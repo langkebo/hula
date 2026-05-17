@@ -5,7 +5,7 @@
       :hidden-right="true"
       :enable-default-background="false"
       :enable-shadow="false"
-      room-name="发起群聊" />
+      :room-name="t('mobile_chat_setting.start_group_chat')" />
 
     <!-- 顶部搜索框 -->
     <div class="px-16px mt-10px flex gap-3">
@@ -24,7 +24,9 @@
         </van-field>
       </div>
       <div class="flex justify-end items-center">
-        <van-button size="small" type="primary" plain round @click="doSearch">搜索</van-button>
+        <van-button size="small" type="primary" plain round @click="doSearch">
+          {{ t('mobile_chat_setting.search_button') }}
+        </van-button>
       </div>
     </div>
 
@@ -43,8 +45,8 @@
               :class="[
                 'cursor-pointer select-none transition-colors duration-150',
                 selectedList.includes(item.uid)
-                  ? 'bg-[#f5f5f5] dark:bg-[#404040] border-blue-300'
-                  : 'hover:bg-[#f5f5f5] dark:hover:bg-[#404040] border-gray-200'
+                  ? 'bg-[--hula-surface-panel-muted] border-blue-300'
+                  : 'hover:bg-[--hula-surface-panel-muted] border-gray-200'
               ]">
               <template #default>
                 <div class="flex items-center gap-10px px-8px py-10px">
@@ -66,9 +68,16 @@
                         <span
                           class="inline-block size-8px rounded-full"
                           :style="{
-                            backgroundColor: item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'
+                            backgroundColor:
+                              item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
                           }"></span>
-                        <span>{{ item.activeStatus === OnlineEnum.ONLINE ? '在线' : '离线' }}</span>
+                        <span>
+                          {{
+                            item.activeStatus === OnlineEnum.ONLINE
+                              ? t('mobile_contact.status.online')
+                              : t('mobile_contact.status.offline')
+                          }}
+                        </span>
                       </template>
                     </div>
                   </div>
@@ -90,6 +99,8 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
 import { type GroupCreateResult, matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -99,6 +110,8 @@ import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
+const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const userStatusStore = useUserStatusStore()
 const { stateList } = storeToRefs(userStatusStore)
 const groupStore = useGroupStore()
@@ -148,7 +161,7 @@ const filteredContacts = computed(() => {
 
 const createGroup = async () => {
   if (selectedList.value.length < 2) {
-    window.$message.success('两个人无法建群哦')
+    showFeedback('两个人无法建群哦', 'warning')
     return
   }
 
@@ -178,9 +191,9 @@ const createGroup = async () => {
     }
 
     resetCreateGroupState()
-    window.$message.success('创建群聊成功')
+    showFeedback('创建群聊成功', 'success')
   } catch (error) {
-    window.$message.error('创建群聊失败')
+    showFeedback(t('mobile_chat_setting.create_group_failed'), 'error')
   }
 }
 

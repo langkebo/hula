@@ -13,8 +13,10 @@
             <svg class="size-48px text-[--primary-color]">
               <use href="#lock"></use>
             </svg>
-            <span class="text-(14px [--hula-text-primary]) font-bold">私密聊天</span>
-            <div class="text-(13px [--hula-text-tertiary]) text-center px-8px leading-relaxed">请输入私密聊天密码</div>
+            <span class="text-(14px [--hula-text-primary]) font-bold">{{ t('login.secret_chat.title') }}</span>
+            <div class="text-(13px [--hula-text-tertiary]) text-center px-8px leading-relaxed">
+              {{ t('login.secret_chat.description') }}
+            </div>
           </n-flex>
 
           <n-form ref="formRef" :model="formValue" :rules="rules" class="w-full px-8px">
@@ -22,7 +24,7 @@
               <n-input
                 v-model:value="formValue.password"
                 type="password"
-                placeholder="请输入密码"
+                :placeholder="t('login.secret_chat.password_placeholder')"
                 size="large"
                 @keyup.enter="handleConfirm"
                 show-password-on="click"
@@ -38,7 +40,7 @@
             @click="handleConfirm"
             :loading="loading"
             :disabled="!formValue.password">
-            确认
+            {{ t('login.secret_chat.confirm') }}
           </n-button>
 
           <div v-if="errorMsg" class="text-(12px #b02525) text-center">
@@ -53,11 +55,13 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, lightTheme } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 
 const logger = createLogger('SecretChatModal')
+const { t } = useI18n()
 
 const settingStore = useSettingStore()
 const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
@@ -72,7 +76,7 @@ const formValue = reactive({
 const rules = {
   password: {
     required: true,
-    message: '请输入密码',
+    message: t('login.secret_chat.password_required'),
     trigger: 'blur'
   }
 }
@@ -83,7 +87,7 @@ let unlistenClose: (() => void) | undefined
 
 const handleConfirm = async () => {
   if (!formValue.password) {
-    errorMsg.value = '请输入密码'
+    errorMsg.value = t('login.secret_chat.password_required')
     return
   }
 
@@ -96,11 +100,11 @@ const handleConfirm = async () => {
       await currentWindow?.close()
       parentWindow?.emit('secret-chat-unlocked')
     } else {
-      errorMsg.value = '密码错误'
+      errorMsg.value = t('login.secret_chat.password_incorrect')
       formValue.password = ''
     }
   } catch (error) {
-    errorMsg.value = '验证失败'
+    errorMsg.value = t('login.secret_chat.verify_failed')
     logger.error('私密聊天密码验证失败:', error)
   } finally {
     loading.value = false

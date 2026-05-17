@@ -47,7 +47,7 @@ describe('OfflineQueueService', () => {
     expect(service.getPendingCount()).toBe(0)
   })
 
-  it('handles replay failures with retry', async () => {
+  it('marks replay failures as failed after exhausting in-call retries', async () => {
     let _callCount = 0
     service.setReplayFn(async () => {
       _callCount++
@@ -57,9 +57,9 @@ describe('OfflineQueueService', () => {
 
     const result = await service.replayAll()
     expect(result.succeeded).toBe(0)
-    expect(result.failed).toBe(0)
-    expect(service.getQueue()[0].retryCount).toBe(1)
-    expect(service.getQueue()[0].status).toBe('pending')
+    expect(result.failed).toBe(1)
+    expect(service.getQueue()[0].retryCount).toBe(3)
+    expect(service.getQueue()[0].status).toBe('failed')
   })
 
   it('marks operations as failed after max retries', async () => {
@@ -95,7 +95,7 @@ describe('OfflineQueueService', () => {
         throw new Error('fail')
       }
     })
-    const _failId = service.enqueue('message', '!room:fail', { text: 'fail' })
+    service.enqueue('message', '!room:fail', { text: 'fail' })
     service.enqueue('message', '!room:ok', { text: 'ok' })
 
     // Exhaust all retries for the fail item

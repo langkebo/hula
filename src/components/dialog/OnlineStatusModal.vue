@@ -50,6 +50,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import type { UserState } from '@/services/types'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
@@ -63,6 +64,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const userStatusStore = useUserStatusStore()
 const { stateList } = storeToRefs(userStatusStore)
 const { currentState, statusIcon, statusTitle, statusBgColor, hasCustomState } = useOnlineStatus()
@@ -92,10 +94,10 @@ const handleResetState = () => handleActive(resetState.value)
 const handleActive = async (item: UserState) => {
   try {
     await userStatusStore.changeCurrentUserState(item)
-    window.$message?.success(t('auth.onlineStatus.messages.success'))
+    showFeedback(t('auth.onlineStatus.messages.success'), 'success')
     visible.value = false
   } catch (error) {
-    window.$message?.error(t('auth.onlineStatus.messages.error'))
+    showFeedback(t('auth.onlineStatus.messages.error'), 'error')
   }
 }
 </script>

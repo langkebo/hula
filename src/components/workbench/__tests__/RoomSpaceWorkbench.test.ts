@@ -3,14 +3,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import RoomSpaceWorkbench from '../RoomSpaceWorkbench.vue'
 
-const { roomSessionListScrollToIndexMock, viewportWidthMock } = vi.hoisted(() => ({
+const { roomSessionListScrollToIndexMock, viewportWidthMock, announceMock } = vi.hoisted(() => ({
   roomSessionListScrollToIndexMock: vi.fn(),
-  viewportWidthMock: { value: 1600 }
+  viewportWidthMock: { value: 1600 },
+  announceMock: vi.fn()
 }))
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key
+  })
+}))
+
+vi.mock('@/composables/common/useAriaLive', () => ({
+  useAriaLive: () => ({
+    announce: announceMock
   })
 }))
 
@@ -26,18 +33,29 @@ vi.mock('../RoomSpaceToolbar.vue', () => ({
     name: 'RoomSpaceToolbarStub',
     props: {
       compact: { type: Boolean, default: false },
+      batchMode: { type: Boolean, default: false },
       searchKeyword: { type: String, default: '' },
       sessionTypeFilter: { type: String, default: 'all' },
       sessionSort: { type: String, default: 'recent' },
       filteredCount: { type: Number, default: 0 },
       totalCount: { type: Number, default: 0 }
     },
-    emits: ['update:searchKeyword', 'update:sessionTypeFilter', 'update:sessionSort', 'createSpace'],
+    emits: ['update:searchKeyword', 'update:sessionTypeFilter', 'update:sessionSort', 'toggleBatchMode', 'createSpace'],
     setup(props, { emit }) {
       return () =>
         h('div', { 'data-test': 'toolbar' }, [
           h('span', { 'data-test': 'toolbar-compact' }, String(props.compact)),
+          h('span', { 'data-test': 'toolbar-batch-mode' }, String(props.batchMode)),
           h('span', { 'data-test': 'toolbar-summary' }, `${props.filteredCount}/${props.totalCount}`),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'toolbar-batch',
+              onClick: () => emit('toggleBatchMode')
+            },
+            'batch'
+          ),
           h(
             'button',
             {
@@ -116,20 +134,35 @@ vi.mock('../RoomSpaceActionBar.vue', () => ({
     name: 'RoomSpaceActionBarStub',
     props: {
       compact: { type: Boolean, default: false },
+      breadcrumbItems: { type: Array, default: () => [] },
       spaceName: { type: String, default: '' },
       roomCount: { type: Number, default: 0 },
       sessionCount: { type: Number, default: 0 },
       canManageSpace: { type: Boolean, default: false }
     },
-    emits: ['invite', 'addRoom', 'settings'],
+    emits: ['selectBreadcrumb', 'invite', 'addRoom', 'settings'],
     setup(props, { emit }) {
       return () =>
         h('div', { 'data-test': 'action-bar' }, [
           h('span', { 'data-test': 'action-bar-compact' }, String(props.compact)),
           h(
             'span',
+            { 'data-test': 'action-bar-breadcrumb-count' },
+            String((props.breadcrumbItems as unknown[]).length)
+          ),
+          h(
+            'span',
             { 'data-test': 'action-bar-title' },
             `${props.spaceName}:${props.roomCount}:${props.sessionCount}:${String(props.canManageSpace)}`
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'breadcrumb-select',
+              onClick: () => emit('selectBreadcrumb', 'space-root')
+            },
+            'breadcrumb-select'
           ),
           h('button', { type: 'button', 'data-test': 'invite', onClick: () => emit('invite') }, 'invite'),
           h('button', { type: 'button', 'data-test': 'add-room', onClick: () => emit('addRoom') }, 'add-room'),
@@ -145,9 +178,12 @@ vi.mock('../RoomSessionList.vue', () => ({
     props: {
       sessionList: { type: Array, default: () => [] },
       emptyDescription: { type: String, default: '' },
-      onRetryNetwork: { type: Function, default: undefined }
+      onRetryNetwork: { type: Function, default: undefined },
+      batchMode: { type: Boolean, default: false },
+      batchSelectedIds: { type: Object, default: () => new Set() }
     },
-    setup(props, { expose }) {
+    emits: ['batchToggle'],
+    setup(props, { expose, emit }) {
       expose({
         scrollToIndex: roomSessionListScrollToIndexMock
       })
@@ -156,6 +192,17 @@ vi.mock('../RoomSessionList.vue', () => ({
         h('div', { 'data-test': 'session-list' }, [
           h('span', { 'data-test': 'session-empty' }, props.emptyDescription),
           h('span', { 'data-test': 'session-count' }, String(props.sessionList.length)),
+          h('span', { 'data-test': 'session-batch-mode' }, String(props.batchMode)),
+          h('span', { 'data-test': 'session-batch-selected' }, String((props.batchSelectedIds as Set<string>).size)),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'session-batch-toggle',
+              onClick: () => emit('batchToggle', '!alpha:server')
+            },
+            'batch-toggle'
+          ),
           h(
             'button',
             {
@@ -170,12 +217,68 @@ vi.mock('../RoomSessionList.vue', () => ({
   })
 }))
 
+vi.mock('../HulaSpaceTree.vue', () => ({
+  default: defineComponent({
+    name: 'HulaSpaceTreeStub',
+    props: {
+      spaceId: { type: String, default: '' },
+      selectedSpaceId: { type: String, default: '' },
+      loader: { type: Function, default: undefined }
+    },
+    emits: ['select'],
+    setup(props, { emit }) {
+      return () =>
+        h('div', { 'data-test': 'space-tree' }, [
+          h('span', { 'data-test': 'space-tree-space-id' }, props.spaceId),
+          h('span', { 'data-test': 'space-tree-selected' }, props.selectedSpaceId),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'space-tree-select',
+              onClick: () => emit('select', { spaceId: 'space-child', name: 'Child Space', childCount: 1 })
+            },
+            'select-child'
+          )
+        ])
+    }
+  })
+}))
+
+vi.mock('../RoomBatchActionBar.vue', () => ({
+  default: defineComponent({
+    name: 'RoomBatchActionBarStub',
+    props: {
+      visible: { type: Boolean, default: false },
+      selectedCount: { type: Number, default: 0 },
+      totalCount: { type: Number, default: 0 }
+    },
+    emits: ['toggleAll', 'markRead', 'pin', 'mute', 'leave', 'close'],
+    setup(props, { emit }) {
+      return () =>
+        h('div', { 'data-test': 'batch-bar' }, [
+          h('span', { 'data-test': 'batch-visible' }, String(props.visible)),
+          h('span', { 'data-test': 'batch-selected-count' }, String(props.selectedCount)),
+          h('span', { 'data-test': 'batch-total-count' }, String(props.totalCount)),
+          h('button', { type: 'button', 'data-test': 'batch-toggle-all', onClick: () => emit('toggleAll') }, 'all'),
+          h('button', { type: 'button', 'data-test': 'batch-mark-read', onClick: () => emit('markRead') }, 'read'),
+          h('button', { type: 'button', 'data-test': 'batch-pin', onClick: () => emit('pin') }, 'pin'),
+          h('button', { type: 'button', 'data-test': 'batch-mute', onClick: () => emit('mute') }, 'mute'),
+          h('button', { type: 'button', 'data-test': 'batch-leave', onClick: () => emit('leave') }, 'leave'),
+          h('button', { type: 'button', 'data-test': 'batch-close', onClick: () => emit('close') }, 'close')
+        ])
+    }
+  })
+}))
+
 vi.mock('../WorkbenchDetailPane.vue', () => ({
   default: defineComponent({
     name: 'WorkbenchDetailPaneStub',
     props: {
       compact: { type: Boolean, default: false },
       narrow: { type: Boolean, default: false },
+      drawerMode: { type: Boolean, default: false },
+      drawerVisible: { type: Boolean, default: false },
       selectedSession: { type: Object, default: null },
       activeSpace: { type: Object, default: null },
       visibleSessionCount: { type: Number, default: 0 },
@@ -200,6 +303,7 @@ vi.mock('../WorkbenchDetailPane.vue', () => ({
       'update:addRoomSuggested',
       'update:settingsName',
       'update:settingsTopic',
+      'closeDrawer',
       'closeOverlay',
       'overlayCreated',
       'overlayForwarded',
@@ -212,6 +316,8 @@ vi.mock('../WorkbenchDetailPane.vue', () => ({
         h('div', { 'data-test': 'detail-pane' }, [
           h('span', { 'data-test': 'detail-compact' }, String(props.compact)),
           h('span', { 'data-test': 'detail-narrow' }, String(props.narrow)),
+          h('span', { 'data-test': 'detail-drawer-mode' }, String(props.drawerMode)),
+          h('span', { 'data-test': 'detail-drawer-visible' }, String(props.drawerVisible)),
           h('span', { 'data-test': 'detail-visible-count' }, String(props.visibleSessionCount)),
           h('span', { 'data-test': 'detail-total-count' }, String(props.totalSessionCount)),
           h('span', { 'data-test': 'detail-session-name' }, props.selectedSession?.name ?? ''),
@@ -272,6 +378,11 @@ vi.mock('../WorkbenchDetailPane.vue', () => ({
               onClick: () => emit('update:settingsTopic', 'New Topic')
             },
             'topic'
+          ),
+          h(
+            'button',
+            { type: 'button', 'data-test': 'detail-close-drawer', onClick: () => emit('closeDrawer') },
+            'close-drawer'
           ),
           h(
             'button',
@@ -360,6 +471,7 @@ const createProps = (overrides: Partial<WorkbenchProps> = {}): WorkbenchProps =>
   forwardRoomId: '',
   historyRoomId: '',
   mergedMsgIds: [],
+  spaceTreeLoader: undefined,
   getItemClasses: () => ({}),
   visibleMenu: () => [],
   visibleSpecialMenu: () => [],
@@ -405,6 +517,7 @@ describe('RoomSpaceWorkbench', () => {
     await wrapper.get('[data-test="toolbar-search"]').trigger('click')
     await wrapper.get('[data-test="toolbar-type"]').trigger('click')
     await wrapper.get('[data-test="toolbar-sort"]').trigger('click')
+    await wrapper.get('[data-test="toolbar-batch"]').trigger('click')
     await wrapper.get('[data-test="toolbar-create"]').trigger('click')
     await wrapper.get('[data-test="space-select"]').trigger('click')
 
@@ -413,9 +526,23 @@ describe('RoomSpaceWorkbench', () => {
     expect(wrapper.emitted('update:sessionSort')).toEqual([['name']])
     expect(wrapper.emitted('createSpace')).toEqual([[]])
     expect(wrapper.emitted('update:selectedSpaceId')).toEqual([['space-2']])
+    expect(wrapper.get('[data-test="toolbar-batch-mode"]').text()).toBe('true')
     expect(wrapper.get('[data-test="toolbar-summary"]').text()).toBe('1/3')
     expect(wrapper.get('[data-test="detail-visible-count"]').text()).toBe('1')
     expect(wrapper.get('[data-test="detail-total-count"]').text()).toBe('3')
+  })
+
+  it('renders the space tree for the selected space and forwards tree navigation', async () => {
+    const wrapper = mountWorkbench({
+      selectedSpaceId: 'space-1',
+      activeSpace: { spaceId: 'space-1', name: 'Space One', childCount: 2 }
+    })
+
+    expect(wrapper.get('[data-test="space-tree-space-id"]').text()).toBe('space-1')
+    expect(wrapper.text()).toContain('space.space_tree_label')
+
+    await wrapper.get('[data-test="space-tree-select"]').trigger('click')
+    expect(wrapper.emitted('update:selectedSpaceId')).toContainEqual(['space-child'])
   })
 
   it('shows the action bar only for an active space and forwards its actions', async () => {
@@ -440,6 +567,21 @@ describe('RoomSpaceWorkbench', () => {
     expect(wrapper.emitted('inviteSpaceMember')).toEqual([[]])
     expect(wrapper.emitted('addSpaceRoom')).toEqual([[]])
     expect(wrapper.emitted('openSpaceSettings')).toEqual([[]])
+  })
+
+  it('forwards breadcrumb selection from the action bar to the parent interface', async () => {
+    const wrapper = mountWorkbench({
+      activeSpace: { spaceId: 'space-child', name: 'Child Space', childCount: 2 },
+      spaceBreadcrumbItems: [
+        { spaceId: 'space-root', name: 'Root Space' },
+        { spaceId: 'space-child', name: 'Child Space' }
+      ]
+    })
+
+    expect(wrapper.get('[data-test="action-bar-breadcrumb-count"]').text()).toBe('2')
+
+    await wrapper.get('[data-test="breadcrumb-select"]').trigger('click')
+    expect(wrapper.emitted('update:selectedSpaceId')).toContainEqual(['space-root'])
   })
 
   it('exposes scrollToSessionIndex through the session list ref', async () => {
@@ -468,7 +610,8 @@ describe('RoomSpaceWorkbench', () => {
     viewportWidthMock.value = 1180
 
     const wrapper = mountWorkbench({
-      activeSpace: { spaceId: 'space-1', name: 'Space One', childCount: 2 }
+      activeSpace: { spaceId: 'space-1', name: 'Space One', childCount: 2 },
+      selectedSession: { roomId: '!alpha:server', name: 'Alpha', type: 2, unreadCount: 0, activeTime: 1 } as never
     })
 
     expect(wrapper.classes()).toContain('room-space-workbench--compact')
@@ -479,6 +622,47 @@ describe('RoomSpaceWorkbench', () => {
     expect(wrapper.get('[data-test="action-bar-compact"]').text()).toBe('true')
     expect(wrapper.get('[data-test="detail-compact"]').text()).toBe('true')
     expect(wrapper.get('[data-test="detail-narrow"]').text()).toBe('true')
+    expect(wrapper.get('[data-test="detail-drawer-mode"]').text()).toBe('true')
+    expect(wrapper.get('[data-test="detail-drawer-visible"]').text()).toBe('false')
+    expect(wrapper.find('[data-test="workbench-detail-toggle"]').exists()).toBe(true)
+  })
+
+  it('opens and closes the detail drawer in narrow layout', async () => {
+    const wrapper = mountWorkbench({
+      layoutModeOverride: 'narrow',
+      activeSpace: { spaceId: 'space-1', name: 'Space One', childCount: 2 },
+      selectedSession: { roomId: '!alpha:server', name: 'Alpha', type: 2, unreadCount: 0, activeTime: 1 } as never
+    })
+
+    expect(wrapper.get('[data-test="detail-drawer-visible"]').text()).toBe('false')
+
+    await wrapper.get('[data-test="workbench-detail-toggle"]').trigger('click')
+    expect(wrapper.classes()).toContain('room-space-workbench--detail-open')
+    expect(wrapper.get('[data-test="detail-drawer-visible"]').text()).toBe('true')
+
+    await wrapper.get('[data-test="detail-close-drawer"]').trigger('click')
+    expect(wrapper.get('[data-test="detail-drawer-visible"]').text()).toBe('false')
+  })
+
+  it('auto-opens the detail drawer for manage and overlay modes in narrow layout', async () => {
+    const manageWrapper = mountWorkbench({
+      layoutModeOverride: 'narrow',
+      activeSpace: { spaceId: 'space-1', name: 'Space One', childCount: 2 },
+      manageMode: 'settings'
+    })
+
+    await flushPromises()
+    expect(manageWrapper.get('[data-test="detail-drawer-visible"]').text()).toBe('true')
+
+    const overlayWrapper = mountWorkbench({
+      layoutModeOverride: 'narrow',
+      overlayMode: 'forward',
+      forwardEventId: '$event1',
+      forwardRoomId: '!room:server'
+    })
+
+    await flushPromises()
+    expect(overlayWrapper.get('[data-test="detail-drawer-visible"]').text()).toBe('true')
   })
 
   it('passes the retry handler into the session list', async () => {
@@ -546,5 +730,73 @@ describe('RoomSpaceWorkbench', () => {
     expect(wrapper.emitted('overlayMessageSelected')).toEqual([['!room:server', '$event1']])
     expect(wrapper.emitted('overlayRoomSelected')).toEqual([['!room:server']])
     expect(wrapper.emitted('overlayUserSelected')).toEqual([['@user:server']])
+  })
+
+  it('manages batch mode state and forwards batch actions', async () => {
+    const wrapper = mountWorkbench({
+      sessionList: [
+        { roomId: '!alpha:server', name: 'Alpha' } as never,
+        { roomId: '!beta:server', name: 'Beta' } as never
+      ]
+    })
+
+    expect(wrapper.get('[data-test="batch-visible"]').text()).toBe('false')
+
+    await wrapper.get('[data-test="toolbar-batch"]').trigger('click')
+    expect(wrapper.get('[data-test="toolbar-batch-mode"]').text()).toBe('true')
+    expect(wrapper.get('[data-test="batch-visible"]').text()).toBe('true')
+    expect(wrapper.get('[data-test="session-batch-mode"]').text()).toBe('true')
+    expect(announceMock).toHaveBeenCalledWith('room.batch.enter_announcement', 'polite')
+
+    await wrapper.get('[data-test="session-batch-toggle"]').trigger('click')
+    expect(wrapper.get('[data-test="batch-selected-count"]').text()).toBe('1')
+    expect(wrapper.get('[data-test="session-batch-selected"]').text()).toBe('1')
+
+    await wrapper.get('[data-test="batch-toggle-all"]').trigger('click')
+    expect(wrapper.get('[data-test="batch-selected-count"]').text()).toBe('2')
+    expect(announceMock).toHaveBeenCalledWith('room.batch.select_all_announcement', 'polite')
+
+    await wrapper.get('[data-test="batch-mark-read"]').trigger('click')
+    expect(wrapper.emitted('batchMarkRead')).toEqual([[['!alpha:server', '!beta:server']]])
+    expect(wrapper.get('[data-test="batch-visible"]').text()).toBe('false')
+    expect(announceMock).toHaveBeenCalledWith('room.batch.exit_announcement', 'polite')
+
+    await wrapper.get('[data-test="toolbar-batch"]').trigger('click')
+    await wrapper.get('[data-test="session-batch-toggle"]').trigger('click')
+    await wrapper.get('[data-test="batch-pin"]').trigger('click')
+    expect(wrapper.emitted('batchPin')).toEqual([[['!alpha:server']]])
+
+    await wrapper.get('[data-test="toolbar-batch"]').trigger('click')
+    await wrapper.get('[data-test="session-batch-toggle"]').trigger('click')
+    await wrapper.get('[data-test="batch-mute"]').trigger('click')
+    expect(wrapper.emitted('batchMute')).toEqual([[['!alpha:server']]])
+
+    await wrapper.get('[data-test="toolbar-batch"]').trigger('click')
+    await wrapper.get('[data-test="session-batch-toggle"]').trigger('click')
+    await wrapper.get('[data-test="batch-leave"]').trigger('click')
+    expect(wrapper.emitted('batchLeave')).toEqual([[['!alpha:server']]])
+
+    await wrapper.get('[data-test="toolbar-batch"]').trigger('click')
+    await wrapper.get('[data-test="session-batch-toggle"]').trigger('click')
+    await wrapper.get('[data-test="batch-close"]').trigger('click')
+    expect(wrapper.get('[data-test="batch-visible"]').text()).toBe('false')
+    expect(wrapper.get('[data-test="batch-selected-count"]').text()).toBe('0')
+    expect(announceMock).toHaveBeenLastCalledWith('room.batch.exit_announcement', 'polite')
+  })
+
+  it('announces when batch selections are cleared via toggle all', async () => {
+    const wrapper = mountWorkbench({
+      sessionList: [
+        { roomId: '!alpha:server', name: 'Alpha' } as never,
+        { roomId: '!beta:server', name: 'Beta' } as never
+      ]
+    })
+
+    await wrapper.get('[data-test="toolbar-batch"]').trigger('click')
+    await wrapper.get('[data-test="batch-toggle-all"]').trigger('click')
+    await wrapper.get('[data-test="batch-toggle-all"]').trigger('click')
+
+    expect(wrapper.get('[data-test="batch-selected-count"]').text()).toBe('0')
+    expect(announceMock).toHaveBeenCalledWith('room.batch.clear_selection_announcement', 'polite')
   })
 })

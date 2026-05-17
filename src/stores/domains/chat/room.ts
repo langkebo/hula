@@ -8,6 +8,7 @@ import { matrixRoomTagsService } from '@/services/matrix/room/TagsService'
 import matrixSlidingSyncService, { type SlidingSyncUnreadUpdate } from '@/services/matrix/sync/MatrixSlidingSyncService'
 import type { RoomDetail, RoomInfo } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
 import { LRUCache } from '@/utils/LRUCache'
 
@@ -314,6 +315,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
 
     matrixSlidingSyncService.registerCallbacks({
       onUnreadCountsUpdate: (updates: SlidingSyncUnreadUpdate[]) => {
+        const sessionStore = useSessionStore()
         for (const update of updates) {
           const roomInfo = rooms.value.get(update.roomId)
           if (roomInfo) {
@@ -322,13 +324,30 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
             roomInfo.notificationCount = update.notificationCount
             rooms.value.set(update.roomId, roomInfo)
           }
+          sessionStore.updateSession(update.roomId, { unreadCount: update.unreadCount })
+          sessionStore.writeUnreadDetail(update.roomId, {
+            total: update.notificationCount ?? update.unreadCount,
+            highlight: update.highlightCount ?? 0,
+            silent: sessionStore.getUnreadDetail(update.roomId)?.silent ?? false
+          })
         }
       },
       onRoomUpdate: (roomId: string) => {
         updateRoom(roomId, {})
+        const roomInfo = rooms.value.get(roomId)
+        if (roomInfo) {
+          const sessionStore = useSessionStore()
+          sessionStore.updateSession(roomId, {
+            name: roomInfo.name,
+            avatar: roomInfo.avatarUrl ?? undefined,
+            unreadCount: roomInfo.unreadCount
+          })
+        }
+        refreshRoomTags(roomId).catch(() => {})
       },
       onRoomListRefresh: () => {
         loadRooms()
+        batchRefreshTags().catch(() => {})
       }
     })
 
@@ -472,7 +491,15 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     if (!roomId) return {}
     const tags = await matrixRoomTagsService.getTags(roomId)
     setTagsForRoom(roomId, tags)
+    const sessionStore = useSessionStore()
+    const isTop = 'm.favourite' in tags
+    sessionStore.updateSession(roomId, { top: isTop })
     return tags
+  }
+
+  async function batchRefreshTags(): Promise<void> {
+    const roomIds = Array.from(rooms.value.keys())
+    await Promise.allSettled(roomIds.map((id) => refreshRoomTags(id)))
   }
 
   async function addRoomTag(roomId: string, tag: string, order?: number): Promise<void> {
@@ -481,6 +508,10 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     setTagsForRoom(roomId, { ...previous, [tag]: order !== undefined ? { order } : {} })
     try {
       await matrixRoomTagsService.setTag(roomId, tag, order)
+      if (tag === 'm.favourite') {
+        const sessionStore = useSessionStore()
+        sessionStore.updateSession(roomId, { top: true })
+      }
     } catch (err) {
       setTagsForRoom(roomId, previous)
       error(`[RoomStore] 写入标签失败, 已回滚: ${roomId}/${tag}`)
@@ -497,6 +528,10 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     setTagsForRoom(roomId, next)
     try {
       await matrixRoomTagsService.removeTag(roomId, tag)
+      if (tag === 'm.favourite') {
+        const sessionStore = useSessionStore()
+        sessionStore.updateSession(roomId, { top: false })
+      }
     } catch (err) {
       setTagsForRoom(roomId, previous)
       error(`[RoomStore] 移除标签失败, 已回滚: ${roomId}/${tag}`)

@@ -90,14 +90,17 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NCheckbox, NInput, NModal, NSpin, useMessage } from 'naive-ui'
+import { NButton, NCheckbox, NInput, NModal, NSpin } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useEncryption } from '@/composables/encryption'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('KeyBackupSetup')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
+const encryption = useEncryption()
 
 defineOptions({
   name: 'KeyBackupSetupDialog'
@@ -111,8 +114,6 @@ const emit = defineEmits<{
   (e: 'update:show', value: boolean): void
   (e: 'success'): void
 }>()
-
-const message = useMessage()
 
 const visible = computed({
   get: () => props.show,
@@ -167,12 +168,12 @@ async function startSetup() {
   step.value = 'create'
 
   try {
-    const key = await matrixEncryptionService.setupKeyBackup()
+    const key = await encryption.setupKeyBackup()
     recoveryKey.value = key
     step.value = 'showKey'
   } catch (error) {
     logger.error('Failed to create secure backup:', error)
-    message.error(t('encryption.backup_setup_dialog.create_failed'))
+    showFeedback(t('encryption.backup_setup_dialog.create_failed'), 'error')
     step.value = 'intro'
   } finally {
     loading.value = false
@@ -182,8 +183,8 @@ async function startSetup() {
 function copyKey() {
   navigator.clipboard
     .writeText(recoveryKey.value)
-    .then(() => message.success(t('encryption.backup.copy_success')))
-    .catch(() => message.error(t('encryption.backup_setup_dialog.copy_manual')))
+    .then(() => showFeedback(t('encryption.backup.copy_success'), 'success'))
+    .catch(() => showFeedback(t('encryption.backup_setup_dialog.copy_manual'), 'error'))
 }
 
 function downloadKey() {
@@ -196,7 +197,7 @@ function downloadKey() {
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
-  message.success(t('encryption.backup.download_success'))
+  showFeedback(t('encryption.backup.download_success'), 'success')
 }
 
 function confirmSetup() {
@@ -205,22 +206,22 @@ function confirmSetup() {
 
 async function verifyKeyInput() {
   if (verifyKey.value.trim() !== recoveryKey.value) {
-    message.error(t('encryption.backup_setup_dialog.key_mismatch'))
+    showFeedback(t('encryption.backup_setup_dialog.key_mismatch'), 'error')
     return
   }
 
   loading.value = true
   try {
-    const backupInfo = await matrixEncryptionService.getKeyBackupInfo()
+    const backupInfo = await encryption.getKeyBackupInfo()
     if (backupInfo) {
       step.value = 'success'
-      message.success(t('encryption.backup_setup_dialog.verify_success'))
+      showFeedback(t('encryption.backup_setup_dialog.verify_success'), 'success')
     } else {
-      message.error(t('encryption.backup_setup_dialog.verify_failed'))
+      showFeedback(t('encryption.backup_setup_dialog.verify_failed'), 'error')
     }
   } catch (error) {
     logger.error('Failed to verify backup setup:', error)
-    message.error(t('encryption.backup_setup_dialog.verify_failed'))
+    showFeedback(t('encryption.backup_setup_dialog.verify_failed'), 'error')
   } finally {
     loading.value = false
   }

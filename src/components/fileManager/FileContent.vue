@@ -367,7 +367,7 @@ const convertToFileBody = (file: FileItem): FileBody => {
 
 <style scoped lang="scss">
 .time-group {
-  @apply sticky top-10px z-10 flex items-center justify-between p-12px rounded-6px text-[--hula-text-primary] bg-#e3e3e380 dark:bg-#30303080 backdrop-blur-md;
+  @apply sticky top-10px z-10 flex items-center justify-between p-12px rounded-6px text-[--hula-text-primary] bg-[--time-group-bg] backdrop-blur-md;
 }
 
 .file-meta-info {

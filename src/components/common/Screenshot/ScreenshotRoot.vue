@@ -14,7 +14,6 @@
       :is-image-loaded="isImageLoaded" />
 
     <ScreenshotSelection
-      ref="selectionRef"
       :visible="showButtonGroup"
       :selection-area-style="selectionAreaStyle"
       :current-draw-tool="currentDrawTool"
@@ -47,17 +46,18 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { writeImage } from '@tauri-apps/plugin-clipboard-manager'
 import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useCanvasTool } from '@/hooks/useCanvasTool'
 import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 import { ErrorType, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler.ts'
 import type ScreenshotMagnifier from './ScreenshotMagnifier.vue'
-import type ScreenshotSelection from './ScreenshotSelection.vue'
 import type ScreenshotToolbar from './ScreenshotToolbar.vue'
 import type { DrawToolType, ScreenConfig } from './types'
 
 const logger = createLogger('Screenshot')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const appWindow = WebviewWindow.getCurrent()
 
 const imgCanvas = ref<HTMLCanvasElement | null>(null)
@@ -73,7 +73,6 @@ const overlayMaskColor =
   cssVars.getPropertyValue('--hula-surface-overlay').trim()
 
 const magnifierRef = ref<InstanceType<typeof ScreenshotMagnifier> | null>(null)
-const selectionRef = ref<InstanceType<typeof ScreenshotSelection> | null>(null)
 const toolbarRef = ref<InstanceType<typeof ScreenshotToolbar> | null>(null)
 
 let drawTools: ReturnType<typeof useCanvasTool> | null = null
@@ -637,26 +636,26 @@ const confirmSelection = async () => {
 
               try {
                 await writeImage(buffer)
-                window.$message?.success(t('message.screenshot.save_success'))
+                showFeedback(t('message.screenshot.save_success'), 'success')
               } catch (clipboardError) {
                 logger.error('Failed to copy screenshot to clipboard:', clipboardError)
-                window.$message?.error(t('message.screenshot.save_failed'))
+                showFeedback(t('message.screenshot.save_failed'), 'error')
               }
 
               await resetScreenshot()
             } catch (error) {
-              window.$message?.error(t('message.screenshot.save_failed'))
+              showFeedback(t('message.screenshot.save_failed'), 'error')
               await resetScreenshot()
             }
           } else {
-            window.$message?.error(t('message.screenshot.save_failed'))
+            showFeedback(t('message.screenshot.save_failed'), 'error')
             await resetScreenshot()
           }
         }, 'image/png')
       }
     } catch (error) {
       logger.error('Canvas operation failed:', error)
-      window.$message?.error(t('message.screenshot.save_failed'))
+      showFeedback(t('message.screenshot.save_failed'), 'error')
       await resetScreenshot()
     }
   }

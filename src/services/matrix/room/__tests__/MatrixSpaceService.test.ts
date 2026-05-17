@@ -256,6 +256,51 @@ describe('MatrixSpaceService', () => {
 
       expect(result).toEqual([])
     })
+
+    it('should fall back to parent spaces when tree_path is unavailable', async () => {
+      const mockGetRoom = vi.fn((roomId: string) => {
+        if (roomId === '!child:server') {
+          return {
+            roomId,
+            name: 'Child',
+            topic: '',
+            getMxcAvatarUrl: vi.fn().mockReturnValue(undefined),
+            getJoinedMembers: vi.fn().mockReturnValue([]),
+            currentState: {
+              getStateEvents: vi.fn().mockReturnValue([])
+            }
+          }
+        }
+
+        return null
+      })
+      const mockHttp = {
+        authedRequest: vi.fn((...args: unknown[]) => {
+          const path = args[1] as string
+          if (path === '/_matrix/client/v3/spaces/!child%3Aserver/tree_path') {
+            return Promise.reject(new Error('tree_path unavailable'))
+          }
+
+          if (path === '/_matrix/client/v3/spaces/room/!child%3Aserver/parents') {
+            return Promise.resolve([{ space_id: '!root:server', name: 'Root Space', member_count: 8, child_count: 2 }])
+          }
+
+          if (path === '/_matrix/client/v3/spaces/room/!root%3Aserver/parents') {
+            return Promise.resolve([])
+          }
+
+          throw new Error(`Unexpected path: ${path}`)
+        })
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ http: mockHttp, getRoom: mockGetRoom }))
+
+      const result = await matrixSpaceService.getSpaceTreePath('!child:server')
+
+      expect(result).toEqual([
+        { space_id: '!root:server', name: 'Root Space' },
+        { space_id: '!child:server', name: 'Child' }
+      ])
+    })
   })
 
   describe('getRoomParentSpacesViaApi', () => {

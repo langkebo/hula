@@ -106,15 +106,16 @@
 </template>
 
 <script setup lang="ts">
-import { NDivider, NSelect, NSwitch, useMessage } from 'naive-ui'
+import { NDivider, NSelect, NSwitch } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 
 defineOptions({
   name: 'SidebarSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 
 const STORAGE_KEY = 'hula-sidebar-settings'
@@ -203,8 +204,9 @@ function handleToggle(key: string) {
     showFriends: showFriends.value,
     showThreads: showThreads.value
   }
-  message.success(
-    stateMap[key] ? t('setting.sidebar.feedback.shown', { label }) : t('setting.sidebar.feedback.hidden', { label })
+  showFeedback(
+    stateMap[key] ? t('setting.sidebar.feedback.shown', { label }) : t('setting.sidebar.feedback.hidden', { label }),
+    'success'
   )
 }
 
@@ -223,28 +225,33 @@ function handleLayoutToggle(key: string) {
     showDrag: showDrag.value,
     showIconsOnly: showIconsOnly.value
   }
-  message.success(
-    stateMap[key] ? t('setting.sidebar.feedback.enabled', { label }) : t('setting.sidebar.feedback.disabled', { label })
+  showFeedback(
+    stateMap[key]
+      ? t('setting.sidebar.feedback.enabled', { label })
+      : t('setting.sidebar.feedback.disabled', { label }),
+    'success'
   )
 }
 
 function handleSortChange(value: string) {
   sortBy.value = value
   saveSettings()
-  message.success(
+  showFeedback(
     t('setting.sidebar.feedback.sort_changed', {
       label: sortOptions.value.find((o) => o.value === value)?.label || value
-    })
+    }),
+    'success'
   )
 }
 
 function handleItemSizeChange(value: string) {
   itemSize.value = value
   saveSettings()
-  message.success(
+  showFeedback(
     t('setting.sidebar.feedback.size_changed', {
       label: itemSizeOptions.value.find((o) => o.value === value)?.label || value
-    })
+    }),
+    'success'
   )
 }
 </script>

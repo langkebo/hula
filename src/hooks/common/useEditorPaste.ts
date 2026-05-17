@@ -25,7 +25,7 @@ export type UseEditorPasteOptions = {
   userUid: Ref<string | undefined>
   triggerInputEvent: (element: HTMLElement) => void
   insertNode: (type: MsgEnum, dom: InsertNodeData, target: HTMLElement) => void
-  /** Optional toast surface; defaults to `window.$message`. */
+  /** Optional feedback surface; defaults to the global message bridge. */
   notify?: {
     warning: (msg: string) => void
     error?: (msg: string) => void

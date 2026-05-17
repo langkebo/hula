@@ -347,6 +347,7 @@ import type { FormInst, FormRules } from 'naive-ui'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
 import type { ApiKey, Platform } from '@/services/matrix/ai/ApiKeyService'
@@ -387,6 +388,7 @@ type ValidationValue = number | null | undefined | ''
 const logger = createLogger('ModelManagement')
 const timerManager = useTimerManager()
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 const showModal = defineModel<boolean>({ default: false })
 const emit = defineEmits<{
@@ -563,7 +565,7 @@ watch(
         await apiKeyService.addPlatformModel(formData.value.platform, newModel)
         // 重新加载平台列表，更新示例
         await loadPlatformList()
-        window.$message?.success(t('ai_assistant.robot.model_added_to_examples'))
+        showFeedback(t('ai_assistant.robot.model_added_to_examples'), 'success')
       } catch (error) {
         logger.error('保存模型失败:', error)
         // 静默失败，不影响用户操作
@@ -657,7 +659,7 @@ const loadModelList = async () => {
     pagination.value.total = data.total || 0
   } catch (error) {
     logger.error('加载模型列表失败:', error)
-    window.$message.error(t('ai_assistant.robot.load_models_failed'))
+    showFeedback(t('ai_assistant.robot.load_models_failed'), 'error')
   } finally {
     loading.value = false
   }
@@ -727,7 +729,7 @@ const {
     await nextTick()
     formData.value.avatar = downloadUrl
     await nextTick()
-    window.$message.success(t('ai_assistant.robot.avatar_upload_success'))
+    showFeedback(t('ai_assistant.robot.avatar_upload_success'), 'success')
   }
 })
 
@@ -778,10 +780,10 @@ const handleSubmit = async () => {
     if (editingModel.value) {
       submitData.id = editingModel.value.id
       await modelService.update(submitData)
-      window.$message.success(t('ai_assistant.robot.model_updated'))
+      showFeedback(t('ai_assistant.robot.model_updated'), 'success')
     } else {
       await modelService.update(submitData)
-      window.$message.success(t('ai_assistant.robot.model_created'))
+      showFeedback(t('ai_assistant.robot.model_created'), 'success')
     }
 
     showEditModal.value = false
@@ -794,7 +796,7 @@ const handleSubmit = async () => {
       return
     }
     logger.error('保存模型失败:', error)
-    window.$message.error(t('ai_assistant.robot.save_model_failed'))
+    showFeedback(t('ai_assistant.robot.save_model_failed'), 'error')
   } finally {
     submitting.value = false
   }
@@ -804,13 +806,13 @@ const handleSubmit = async () => {
 const handleDelete = async (id: string) => {
   try {
     await modelService.delete({ id })
-    window.$message.success(t('ai_assistant.robot.model_deleted'))
+    showFeedback(t('ai_assistant.robot.model_deleted'), 'success')
     loadModelList()
     // 通知父组件刷新
     emit('refresh')
   } catch (error) {
     logger.error('删除模型失败:', error)
-    window.$message.error(t('ai_assistant.robot.delete_model_failed'))
+    showFeedback(t('ai_assistant.robot.delete_model_failed'), 'error')
   }
 }
 

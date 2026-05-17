@@ -50,16 +50,19 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NForm, NFormItem, NInput, NModal, NProgress, NSpin, useMessage } from 'naive-ui'
+import { NButton, NForm, NFormItem, NInput, NModal, NProgress, NSpin } from 'naive-ui'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useEncryption } from '@/composables/encryption'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('KeyBackupRestore')
 const timerManager = useTimerManager()
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
+const encryption = useEncryption()
 
 defineOptions({
   name: 'KeyBackupRestoreDialog'
@@ -73,8 +76,6 @@ const emit = defineEmits<{
   (e: 'update:show', value: boolean): void
   (e: 'success'): void
 }>()
-
-const message = useMessage()
 
 const visible = computed({
   get: () => props.show,
@@ -103,7 +104,7 @@ function resetState() {
 
 async function handleRestore() {
   if (!formData.recoveryKey.trim()) {
-    message.warning(t('encryption.recovery_key_required'))
+    showFeedback(t('encryption.recovery_key_required'), 'warning')
     return
   }
 
@@ -119,7 +120,7 @@ async function handleRestore() {
       }
     }, 200)
 
-    const result = await matrixEncryptionService.restoreFromBackup(formData.recoveryKey.trim())
+    const result = await encryption.restoreFromBackup(formData.recoveryKey.trim())
 
     timerManager.clearInterval(progressInterval)
     restoreProgress.value = 100
@@ -129,7 +130,7 @@ async function handleRestore() {
       message: t('encryption.backup_restore_dialog.restore_result_success', { imported: result.imported })
     }
 
-    message.success(t('encryption.restore_success'))
+    showFeedback(t('encryption.restore_success'), 'success')
 
     timerManager.setTimeout(() => {
       visible.value = false
@@ -143,7 +144,7 @@ async function handleRestore() {
       success: false,
       message: t('encryption.backup_restore_dialog.restore_result_failed')
     }
-    message.error(t('encryption.restore_backup_failed'))
+    showFeedback(t('encryption.restore_backup_failed'), 'error')
   } finally {
     if (progressInterval !== null) {
       timerManager.clearInterval(progressInterval)

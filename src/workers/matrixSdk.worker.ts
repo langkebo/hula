@@ -4,6 +4,7 @@
  * 确保主线程阻塞时间 < 50ms
  */
 
+import { useI18nGlobal } from '@/services/i18n'
 import type {
   LoginResult,
   MatrixClientConfig,
@@ -16,7 +17,6 @@ import type {
   SearchRoomHit,
   SyncOptions
 } from './matrixWorkerTypes'
-
 import {
   clearAllSearchData,
   deleteEventFromDB,
@@ -490,7 +490,7 @@ async function handleInitialize(payload: MatrixClientConfig): Promise<void> {
 
 async function handleLogin(payload: { username: string; password: string; deviceName?: string }): Promise<LoginResult> {
   if (!client) {
-    throw new Error('客户端未初始化')
+    throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
   }
 
   const loginResponse = await client.login('m.login.password', {
@@ -518,7 +518,7 @@ async function handleLogin(payload: { username: string; password: string; device
 
 async function handleStartClient(): Promise<void> {
   if (!client) {
-    throw new Error('客户端未初始化')
+    throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
   }
   client.startClient({
     pendingEventOrdering: 'detached' as const,
@@ -544,7 +544,7 @@ async function handleGetClient(): Promise<unknown> {
 
 async function handleSyncOnce(options?: SyncOptions): Promise<void> {
   if (!client) {
-    throw new Error('客户端未初始化')
+    throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
   }
   await client.syncOnce(options as Record<string, unknown>)
 }
@@ -561,7 +561,7 @@ interface ServerVersionsResult {
 
 async function handleGetServerVersions(payload: GetServerVersionsPayload): Promise<ServerVersionsResult> {
   if (!payload?.baseUrl) {
-    throw new Error('baseUrl 不能为空')
+    throw new Error(useI18nGlobal().t('matrix_error.client.base_url_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
   const url = `${trimmed}/_matrix/client/versions`
@@ -595,7 +595,7 @@ interface LoginFlowsResult {
 
 async function handleGetLoginFlows(payload: GetLoginFlowsPayload): Promise<LoginFlowsResult> {
   if (!payload?.baseUrl) {
-    throw new Error('baseUrl 不能为空')
+    throw new Error(useI18nGlobal().t('matrix_error.client.base_url_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
   const url = `${trimmed}/_matrix/client/v3/login`
@@ -623,7 +623,7 @@ interface SlidingSyncProbeResult {
 
 async function handleProbeSlidingSyncEndpoints(payload: ProbeSlidingSyncPayload): Promise<SlidingSyncProbeResult[]> {
   if (!payload?.baseUrl) {
-    throw new Error('baseUrl 不能为空')
+    throw new Error(useI18nGlobal().t('matrix_error.client.base_url_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
   const endpoints = Array.isArray(payload.endpoints) ? payload.endpoints : []
@@ -668,7 +668,7 @@ interface CorsProbeResult {
 
 async function handleProbeCors(payload: ProbeCorsPayload): Promise<CorsProbeResult> {
   if (!payload?.baseUrl) {
-    throw new Error('baseUrl 不能为空')
+    throw new Error(useI18nGlobal().t('matrix_error.client.base_url_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
   const response = await fetch(`${trimmed}/_matrix/client/versions`, { method: 'OPTIONS' })
@@ -686,10 +686,10 @@ interface GetCapabilitiesPayload {
 
 async function handleGetCapabilities(payload: GetCapabilitiesPayload): Promise<Record<string, unknown>> {
   if (!payload?.baseUrl) {
-    throw new Error('baseUrl 不能为空')
+    throw new Error(useI18nGlobal().t('matrix_error.client.base_url_required'))
   }
   if (!payload?.accessToken) {
-    throw new Error('accessToken 不能为空')
+    throw new Error(useI18nGlobal().t('matrix_error.client.access_token_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
   const url = `${trimmed}/_matrix/client/v3/capabilities`

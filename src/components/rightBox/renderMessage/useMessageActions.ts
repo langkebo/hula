@@ -1,5 +1,6 @@
 import type { ComputedRef } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import type { EmojiMenuItem } from '@/hooks/chatMain/emojiMenuData'
 import { matrixEventService } from '@/services/matrix/MatrixEventService'
@@ -19,6 +20,7 @@ type UseMessageActionsOptions = {
 export const useMessageActions = (options: UseMessageActionsOptions) => {
   const { isMe, emojiList } = options
   const { t } = useI18n()
+  const { showFeedback } = useActionFeedback()
   const chatStore = useChatStore()
 
   const handleRetry = async (item: MessageType): Promise<void> => {
@@ -115,7 +117,7 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
         newMsgId: eventId
       })
 
-      window.$message.success(t('message_container.resend_success'))
+      showFeedback(t('message_container.resend_success'), 'success')
     } catch (error) {
       logger.error('消息重发失败:', error)
 
@@ -124,14 +126,14 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
         status: MessageStatusEnum.FAILED
       })
 
-      window.$message.error(t('message_container.resend_failed'))
+      showFeedback(t('message_container.resend_failed'), 'error')
     }
   }
 
   const handleCopyTranslation = (text: string) => {
     if (text) {
       navigator.clipboard.writeText(text)
-      window.$message.success(t('message_container.copy_success'))
+      showFeedback(t('message_container.copy_success'), 'success')
     }
   }
 
@@ -192,7 +194,7 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
         logger.error('标记表情失败:', error)
       }
     } else {
-      window.$message.warning(t('message_container.emoji_already_marked'))
+      showFeedback(t('message_container.emoji_already_marked'), 'warning')
     }
   }
 

@@ -1,6 +1,6 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import { type MatrixClient, type MatrixEvent, NotificationCountType, type Room } from 'matrix-js-sdk'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixRoomStoreAdapter from './MatrixRoomStoreAdapter'
 
 interface RoomSummaryManager {
@@ -66,22 +66,9 @@ export type MatrixRoomSummaryInfo = RoomSummary
 export type MatrixRoomStats = RoomStats
 export type MatrixRoomMemberInfo = RoomMemberSummary
 
-class MatrixRoomSummaryService {
-  private client: MatrixClient | null = null
-
+class MatrixRoomSummaryService extends BaseMatrixService {
   initialize(client: MatrixClient): void {
-    this.client = client
-  }
-
-  private getClient(): MatrixClient {
-    const client = this.client ?? matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-    if (!this.client) {
-      this.client = client
-    }
-    return client
+    this.setFallbackClient(client)
   }
 
   async getRoomSummary(roomId: string): Promise<RoomSummary | null> {
@@ -217,13 +204,20 @@ class MatrixRoomSummaryService {
 
   // ==================== REST API Methods (via RoomSummaryManager) ====================
 
-  private getRoomSummaryManager() {
-    const client = matrixClientService.getClient()
-    if (!client) return null
+  private getRoomSummaryManager(): RoomSummaryManager | null {
+    const client = this.getClient()
     return (
       (client as unknown as { getRoomSummaryManager?: () => RoomSummaryManager | null }).getRoomSummaryManager?.() ??
       null
     )
+  }
+
+  private ensureRoomSummaryManager(): RoomSummaryManager {
+    const manager = this.getRoomSummaryManager()
+    if (!manager) {
+      throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
+    }
+    return manager
   }
 
   async createRoomSummaryViaApi(roomId: string): Promise<Record<string, unknown> | null> {
@@ -256,8 +250,8 @@ class MatrixRoomSummaryService {
   }
 
   async deleteRoomSummaryViaApi(roomId: string): Promise<void> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager?.deleteRoomSummary) throw new Error('RoomSummaryManager 不可用')
+    const manager = this.ensureRoomSummaryManager()
+    if (!manager.deleteRoomSummary) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.deleteRoomSummary(roomId)
       info(`[MatrixRoomSummary] 删除房间摘要成功: ${roomId}`)
@@ -281,8 +275,8 @@ class MatrixRoomSummaryService {
   }
 
   async batchWriteMemberSummaries(roomId: string, members: Array<Record<string, unknown>>): Promise<void> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager?.batchWriteMemberSummaries) throw new Error('RoomSummaryManager 不可用')
+    const manager = this.ensureRoomSummaryManager()
+    if (!manager.batchWriteMemberSummaries) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.batchWriteMemberSummaries(roomId, members)
       info(`[MatrixRoomSummary] 批量写入成员摘要成功: ${roomId}`)
@@ -293,8 +287,8 @@ class MatrixRoomSummaryService {
   }
 
   async updateMemberSummary(roomId: string, userId: string, data: Record<string, unknown>): Promise<void> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager?.updateMemberSummary) throw new Error('RoomSummaryManager 不可用')
+    const manager = this.ensureRoomSummaryManager()
+    if (!manager.updateMemberSummary) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.updateMemberSummary(roomId, userId, data)
       info(`[MatrixRoomSummary] 更新成员摘要成功: ${roomId}/${userId}`)
@@ -305,8 +299,8 @@ class MatrixRoomSummaryService {
   }
 
   async deleteMemberSummary(roomId: string, userId: string): Promise<void> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager?.deleteMemberSummary) throw new Error('RoomSummaryManager 不可用')
+    const manager = this.ensureRoomSummaryManager()
+    if (!manager.deleteMemberSummary) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.deleteMemberSummary(roomId, userId)
       info(`[MatrixRoomSummary] 删除成员摘要成功: ${roomId}/${userId}`)
@@ -333,8 +327,8 @@ class MatrixRoomSummaryService {
     key: string,
     content: Record<string, unknown>
   ): Promise<void> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager?.updateSummaryState) throw new Error('RoomSummaryManager 不可用')
+    const manager = this.ensureRoomSummaryManager()
+    if (!manager.updateSummaryState) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.updateSummaryState(roomId, type, key, content)
       info(`[MatrixRoomSummary] 更新摘要状态成功: ${roomId}/${type}/${key}`)
@@ -356,8 +350,8 @@ class MatrixRoomSummaryService {
   }
 
   async recalculateHeroes(roomId: string): Promise<void> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager?.recalculateHeroes) throw new Error('RoomSummaryManager 不可用')
+    const manager = this.ensureRoomSummaryManager()
+    if (!manager.recalculateHeroes) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.recalculateHeroes(roomId)
       info(`[MatrixRoomSummary] 重算 heroes 成功: ${roomId}`)
@@ -368,8 +362,8 @@ class MatrixRoomSummaryService {
   }
 
   async clearUnreadSummary(roomId: string): Promise<void> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager?.clearUnread) throw new Error('RoomSummaryManager 不可用')
+    const manager = this.ensureRoomSummaryManager()
+    if (!manager.clearUnread) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.clearUnread(roomId)
       info(`[MatrixRoomSummary] 清理未读摘要成功: ${roomId}`)

@@ -208,6 +208,7 @@
 import { Icon } from '@iconify/vue'
 import type { InputInst, VirtualListInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
@@ -221,6 +222,7 @@ import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const logger = createLogger('RobotLeft')
 const timerManager = useTimerManager()
 
@@ -317,7 +319,7 @@ const fetchConversationList = async (isLoadMore = false) => {
     }
   } catch (error) {
     logger.error('获取会话列表失败:', error)
-    window.$message.error(t('ai_assistant.robot.fetch_conversations_failed'))
+    showFeedback(t('ai_assistant.robot.fetch_conversations_failed'), 'error')
   } finally {
     loading.value = false
     loadingMore.value = false
@@ -445,7 +447,7 @@ const openHistory = () => {
 const add = async () => {
   // 检查是否有可用角色
   if (!hasRoles.value || !firstAvailableRoleId.value) {
-    window.$message.warning(t('ai_assistant.robot.create_role_first'))
+    showFeedback(t('ai_assistant.robot.create_role_first'), 'warning')
     openRoleManagement()
     return
   }
@@ -480,11 +482,11 @@ const add = async () => {
       // 激活新会话
       handleActive(newChat)
 
-      window.$message.success(t('ai_assistant.robot.conversation_created'))
+      showFeedback(t('ai_assistant.robot.conversation_created'), 'success')
     }
   } catch (error) {
     logger.error('创建会话失败:', error)
-    window.$message.error(t('ai_assistant.robot.create_conversation_failed'))
+    showFeedback(t('ai_assistant.robot.create_conversation_failed'), 'error')
   }
 }
 
@@ -513,11 +515,11 @@ const deleteChat = async (item: ChatItem) => {
         }
       }
 
-      window.$message.success(t('ai_assistant.robot.conversation_deleted'))
+      showFeedback(t('ai_assistant.robot.conversation_deleted'), 'success')
     }
   } catch (error) {
     logger.error('删除会话失败:', error)
-    window.$message.error(t('ai_assistant.robot.delete_conversation_failed'))
+    showFeedback(t('ai_assistant.robot.delete_conversation_failed'), 'error')
   }
 }
 
@@ -525,7 +527,7 @@ const deleteChat = async (item: ChatItem) => {
 const deleteAllChats = async () => {
   try {
     if (chatList.value.length === 0) {
-      window.$message.warning(t('ai_assistant.robot.no_conversations_to_delete'))
+      showFeedback(t('ai_assistant.robot.no_conversations_to_delete'), 'warning')
       showDeleteConfirm.value = false
       return
     }
@@ -541,10 +543,10 @@ const deleteAllChats = async () => {
     // 跳转到欢迎页
     router.push('/welcome')
 
-    window.$message.success(t('ai_assistant.robot.all_conversations_deleted'))
+    showFeedback(t('ai_assistant.robot.all_conversations_deleted'), 'success')
   } catch (error) {
     logger.error('删除全部会话失败:', error)
-    window.$message.error(t('ai_assistant.robot.delete_all_failed'))
+    showFeedback(t('ai_assistant.robot.delete_all_failed'), 'error')
   }
 }
 
@@ -583,7 +585,7 @@ const handleBlur = async (item: ChatItem, index: number) => {
     })
 
     originalTitle.value = nextTitle
-    window.$message.success(t('ai_assistant.robot.renamed_to', { name: nextTitle }))
+    showFeedback(t('ai_assistant.robot.renamed_to', { name: nextTitle }), 'success')
     useMitt.emit('left-chat-title', { id: item.id, title: nextTitle })
     useMitt.emit('update-chat-title', { id: item.id, title: nextTitle })
   } catch (error) {

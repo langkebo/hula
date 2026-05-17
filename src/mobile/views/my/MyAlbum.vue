@@ -5,7 +5,7 @@
         <HeaderBar
           :isOfficial="false"
           class="bg-white"
-          style="border-bottom: 1px solid; border-color: #dfdfdf"
+          style="border-bottom: 1px solid; border-color: var(--hula-border-default)"
           :hidden-right="true"
           :room-name="t('mobile_photo.title')" />
       </template>
@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import ImagePreview from '@/mobile/components/ImagePreview.vue'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -57,6 +58,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('MyAlbum')
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const fileStore = useFileStore()
 const globalStore = useGlobalStore()
 
@@ -101,9 +103,7 @@ const getAllImages = async () => {
     allImages.value = imagesList
   } catch (error) {
     logger.error('Failed to load images', error)
-    if (window.$message) {
-      window.$message.error(t('mobile_photo.image_load_failed'))
-    }
+    showFeedback(t('mobile_photo.image_load_failed'), 'error')
   } finally {
     loading.value = false
   }

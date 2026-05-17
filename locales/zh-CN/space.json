@@ -1,5 +1,6 @@
 {
   "title": "空间",
+  "space_selected": "已选择空间：{name}",
   "create": "创建空间",
   "create_route_hint": "创建完成后会自动回到工作台，并定位到新空间。",
   "search_sessions_placeholder": "搜索会话",
@@ -96,6 +97,7 @@
   "settings_success": "保存成功",
   "settings_failed": "保存失败",
   "search_placeholder": "搜索空间",
+  "session_list_label": "会话列表",
   "sessions": "个会话",
   "pinned": "置顶",
   "joined": "已加入",
@@ -105,11 +107,19 @@
   "detail_tab_members": "成员",
   "detail_tab_activity": "动态",
   "active_filters": "筛选",
+  "search_filter_tag": "搜索：{keyword}",
   "clear_all_filters": "清除全部",
+  "saved_preset_label": "常用视图",
+  "save_preset": "保存当前视图",
+  "apply_saved_preset": "应用已保存视图",
+  "saved_preset_active": "已应用常用视图",
+  "saved_preset_saved": "已保存当前视图",
+  "saved_preset_applied": "已应用已保存视图",
   "pin_space": "置顶",
   "unpin_space": "取消置顶",
   "discover": "发现空间",
   "unread": "未读",
   "upload_avatar": "上传头像",
-  "avatar": "头像"
+  "avatar": "头像",
+  "space_tree_label": "空间树"
 }

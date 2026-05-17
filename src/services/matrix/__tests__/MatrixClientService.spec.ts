@@ -15,6 +15,15 @@ vi.mock('@tauri-apps/plugin-http', () => ({
   fetch: vi.fn()
 }))
 
+vi.mock('../sdk-compat', () => ({
+  ensureMatrixSdkCompat: vi.fn(),
+  extendMatrixClientWithManagers: vi.fn().mockResolvedValue(undefined)
+}))
+
+vi.mock('matrix-js-sdk/friend', () => ({
+  extendMatrixClient: vi.fn()
+}))
+
 // Mock matrix-js-sdk
 vi.mock('matrix-js-sdk', () => {
   const mockClient = {
@@ -24,6 +33,7 @@ vi.mock('matrix-js-sdk', () => {
     startClient: vi.fn(),
     stopClient: vi.fn(),
     on: vi.fn(),
+    off: vi.fn(),
     removeListener: vi.fn(),
     getUserId: vi.fn().mockReturnValue('@user:example.com'),
     getDeviceId: vi.fn().mockReturnValue('DEVICE_ID'),

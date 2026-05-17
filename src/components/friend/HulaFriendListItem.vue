@@ -139,17 +139,17 @@ const getPresenceBadgeColor = (status?: OnlineEnum) => {
     box-shadow: var(--hula-surface-session-active-shadow);
 
     .hula-friend-list-item__name {
-      color: #ffffff;
+      color: var(--hula-text-inverse);
       font-weight: 600;
     }
 
     .hula-friend-list-item__status-tag {
-      color: rgba(255, 255, 255, 0.9);
-      background: rgba(255, 255, 255, 0.15);
+      color: color-mix(in srgb, var(--hula-text-inverse) 90%, transparent);
+      background: color-mix(in srgb, var(--hula-text-inverse) 15%, transparent);
     }
 
     .hula-friend-list-item__status-text {
-      color: rgba(255, 255, 255, 0.8);
+      color: color-mix(in srgb, var(--hula-text-inverse) 80%, transparent);
     }
   }
 
@@ -165,10 +165,10 @@ const getPresenceBadgeColor = (status?: OnlineEnum) => {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: #22c55e;
+    background: var(--hula-color-success-500);
     border: 2px solid var(--hula-surface-panel);
     z-index: 1;
-    box-shadow: 0 0 4px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 0 4px color-mix(in srgb, var(--hula-color-success-500) 40%, transparent);
   }
 
   &__avatar {
@@ -182,7 +182,7 @@ const getPresenceBadgeColor = (status?: OnlineEnum) => {
   }
 
   &.active &__avatar {
-    border-color: rgba(255, 255, 255, 0.4);
+    border-color: color-mix(in srgb, var(--hula-text-inverse) 40%, transparent);
   }
 
   &__status-tag {
@@ -196,13 +196,13 @@ const getPresenceBadgeColor = (status?: OnlineEnum) => {
     background: var(--hula-surface-search);
 
     &--online {
-      color: #16a34a;
-      background: rgba(22, 163, 74, 0.1);
+      color: var(--hula-color-success-500);
+      background: var(--color-success-light);
     }
 
     &--bot {
       color: var(--hula-color-primary-500);
-      background: rgba(59, 130, 246, 0.1);
+      background: color-mix(in srgb, var(--hula-color-primary-500) 10%, transparent);
     }
   }
 
@@ -222,17 +222,17 @@ const getPresenceBadgeColor = (status?: OnlineEnum) => {
   flex-shrink: 0;
 
   &--online {
-    background: #22c55e;
-    box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
+    background: var(--hula-color-success-500);
+    box-shadow: 0 0 4px color-mix(in srgb, var(--hula-color-success-500) 50%, transparent);
   }
 
   &--offline {
-    background: #9ca3af;
+    background: var(--hula-text-disabled);
   }
 
   &--bot {
     background: var(--hula-color-primary-500);
-    box-shadow: 0 0 4px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 4px color-mix(in srgb, var(--hula-color-primary-500) 50%, transparent);
   }
 }
 

@@ -7,6 +7,7 @@ const mockInvoke = vi.fn()
 const mockEnsureAppStateReady = vi.fn()
 const mockEmit = vi.fn()
 const mockLogInfo = vi.fn()
+const showFeedbackMock = vi.fn()
 
 const mockGlobalStore = reactive({
   isTrayMenuShow: false,
@@ -85,6 +86,12 @@ vi.mock('@/hooks/useMitt', () => ({
   useMitt: {
     emit: vi.fn()
   }
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
 }))
 
 vi.mock('@/stores/domains/widget/global', () => ({
@@ -212,5 +219,17 @@ describe('useLoginFlow', () => {
       client: 'PC'
     })
     expect(mockSessionOrchestrator.completeDesktopLoginTransition).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows action feedback and disables auto login fallback when auto login fails', async () => {
+    mockSessionOrchestrator.restoreWithAccessToken.mockRejectedValueOnce(new Error('restore failed'))
+
+    const { normalLogin, uiState } = useLoginFlow()
+
+    await normalLogin('PC', true, true)
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('restore failed', 'error')
+    expect(uiState.value).toBe('manual')
+    expect(mockSettingStore.setAutoLogin).toHaveBeenCalledWith(false)
   })
 })

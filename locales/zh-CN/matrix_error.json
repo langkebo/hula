@@ -1,0 +1,110 @@
+{
+  "common": {
+    "client_not_initialized": "客户端未初始化",
+    "matrix_client_not_initialized": "MatrixClient 未初始化",
+    "user_not_logged_in": "用户未登录",
+    "user_id_not_found": "用户 ID 未找到",
+    "cannot_get_user_id": "无法获取用户ID",
+    "room_not_found": "房间不存在: {roomId}",
+    "request_failed": "请求失败",
+    "user_id_not_exists": "用户ID不存在"
+  },
+  "auth": {
+    "access_token_missing": "缺少访问令牌，无法恢复登录会话",
+    "user_id_missing": "缺少用户ID，无法恢复登录会话",
+    "session_restore_failed": "基于访问令牌恢复 Matrix 会话失败",
+    "session_info_incomplete": "登录成功但会话信息不完整",
+    "sso_token_missing": "缺少 SSO 登录令牌",
+    "sso_login_failed": "SSO 登录失败，请稍后重试",
+    "sso_session_incomplete": "SSO 登录成功但会话信息不完整",
+    "user_id_missing_for_init": "缺少用户ID，无法初始化登录状态",
+    "client_config_missing": "客户端配置缺失，无法执行登录回退请求",
+    "sso_not_supported": "服务器不支持 SSO 登录",
+    "login_failed_with_status": "登录失败 ({status})",
+    "login_failed_check_network": "登录失败，请检查网络连接或服务器配置",
+    "matrix_login_failed": "Matrix 登录失败",
+    "homeserver_connection_failed": "无法连接 Matrix homeserver ({url})，请检查网络、服务地址或 CORS 配置{detail}",
+    "register_no_valid_session": "注册服务未返回有效会话，请联系管理员检查服务器配置",
+    "register_no_session": "注册服务未返回有效会话",
+    "verification_service_unavailable": "验证码服务暂不可用，请稍后重试或联系管理员 (服务器未就绪)",
+    "query_code_status_failed": "查询验证码状态失败",
+    "qr_login_device_not_logged_in": "当前设备未登录，无法确认二维码登录"
+  },
+  "client": {
+    "not_ready_timeout": "MatrixClient 未在指定时间内就绪",
+    "room_instance_failed_after_create": "创建房间后无法获取房间实例",
+    "room_instance_failed_after_join": "加入房间后无法获取房间实例",
+    "base_url_required": "baseUrl 不能为空",
+    "access_token_required": "accessToken 不能为空",
+    "create_room_failed": "创建房间失败",
+    "join_room_failed": "加入房间失败",
+    "leave_room_failed": "离开房间失败"
+  },
+  "room": {
+    "create_failed_no_id": "创建房间失败：未返回房间 ID",
+    "summary_manager_unavailable": "RoomSummaryManager 不可用",
+    "translate_request_failed": "翻译请求失败: {status}",
+    "direct_message_manager_not_initialized": "DirectMessageManager 未初始化"
+  },
+  "crypto": {
+    "not_enabled": "加密未启用",
+    "passphrase_verification_failed": "密码短语验证失败，无法导出密钥",
+    "encryption_module_unavailable": "加密模块不可用",
+    "auth_params_required": "需要认证参数",
+    "no_key_backup_available": "没有可用的密钥备份"
+  },
+  "media": {
+    "url_empty": "媒体 URL 不能为空",
+    "voip_call_creation_failed": "无法创建通话",
+    "voip_call_not_found": "通话不存在: {callId}",
+    "url_parse_failed": "无法解析媒体地址: {mediaUrl}",
+    "download_failed": "下载失败: {status} {statusText}",
+    "download_failed_short": "下载失败: {status}",
+    "voice_message_manager_unavailable": "语音服务不可用",
+    "no_active_recording": "没有正在进行的录制",
+    "invalid_mxc_url": "无效的 MXC URL"
+  },
+  "messaging": {
+    "event_id_missing": "事件发送失败: 未返回事件 ID",
+    "media_uri_missing": "文件上传失败: 未返回媒体 URI",
+    "other_user_emoji_unsupported": "暂不支持获取其他用户的表情数据",
+    "receipt_event_id_missing": "事件 ID 不存在",
+    "event_not_found": "事件不存在: {eventId}",
+    "emoji_not_found": "表情不存在: {emojiId}",
+    "unsupported_image_format": "不支持的图片格式: {type}，支持的格式: PNG、GIF、WebP",
+    "message_not_found": "消息不存在: {eventId}",
+    "original_message_not_found": "原始消息不存在: {originalEventId}",
+    "reply_message_not_found": "回复的消息不存在: {replyToEventId}",
+    "can_only_edit_own_messages": "只能编辑自己发送的消息",
+    "can_only_delete_own_messages": "只能删除自己发送的消息",
+    "threading_manager_unavailable": "ThreadingManager 不可用"
+  },
+  "admin": {
+    "sdk_manager_unavailable": "SDK AdminManager 不可用",
+    "quota_manager_not_initialized": "QuotaManager 未初始化",
+    "moderation_manager_not_initialized": "ModerationManager 未初始化",
+    "score_range_invalid": "评分必须在 -100 到 0 之间",
+    "upload_size_limit_unavailable": "getUploadSizeLimit 不可用",
+    "upload_file_size_limit_unavailable": "getUploadFileSizeLimit 不可用",
+    "user_storage_usage_unavailable": "getUserStorageUsage 不可用",
+    "has_storage_space_unavailable": "hasStorageSpace 不可用"
+  },
+  "friends": {
+    "manager_not_initialized": "FriendManager 未初始化",
+    "remark_update_unsupported": "FriendManager 不支持好友备注更新",
+    "status_update_unsupported": "FriendManager 不支持好友状态更新: {status}"
+  },
+  "widget": {
+    "manager_not_initialized": "WidgetsManager 未初始化"
+  },
+  "worker": {
+    "not_started": "worker 未启动，先调用 start()"
+  },
+  "extensions": {
+    "not_initialized": "SynapseRustExtensionsService 未初始化",
+    "api_request_failed_with_status": "API 请求失败 ({status})"
+  },
+  "account": {
+    "cannot_get_user_id": "无法获取用户ID"
+  }
+}

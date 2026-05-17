@@ -952,6 +952,7 @@ export type I18nKeys = {
     "view": "查看",
     "days": "天",
     "no_more": "没有更多了",
+    "no_more_data": "没有更多数据了",
     "notFound": "页面不存在或已被移除",
     "goHome": "返回首页",
     "thread": {
@@ -1008,6 +1009,15 @@ export type I18nKeys = {
       "permission_remove_failed": "撤销授权失败",
       "permission_remove_confirm_title": "撤销授权",
       "permission_remove_confirm_content": "确定要撤销 {user} 的访问权限吗？"
+    },
+    "window_titles": {
+      "video_call": "视频通话",
+      "audio_call": "语音通话",
+      "check_update": "检查更新",
+      "video_viewer": "视频查看器",
+      "preview_file": "预览文件",
+      "settings": "设置",
+      "about": "关于"
     },
     "admin": {
       "title": "管理",
@@ -1266,6 +1276,19 @@ export type I18nKeys = {
     "diagnose_no_homeserver": "未配置 Homeserver，无法自检",
     "diagnose_failed": "自检执行失败：{message}"
   },
+  "diagnostics": {
+    "versions_supported": "支持的版本: {versions}",
+    "versions_not_found": "未找到支持的 API 版本",
+    "connection_failed": "无法连接到服务器: {error}",
+    "login_flows_supported": "支持的登录方式: {flows}",
+    "login_flows_not_found": "未找到登录流程",
+    "login_flows_check_failed": "检查登录流程失败: {error}",
+    "sliding_sync_found": "找到 {count} 个可用端点",
+    "sliding_sync_not_found": "未找到可用的 Sliding Sync 端点",
+    "cors_ok": "CORS 配置正常",
+    "cors_headers_missing": "CORS 头部缺失",
+    "cors_check_failed": "CORS 检查失败: {error}"
+  },
   "dm": {
     "list": {
       "title": "私聊列表",
@@ -1426,6 +1449,7 @@ export type I18nKeys = {
     "burn_after_read_enabled": "阅后即焚已开启",
     "burn_after_read_disabled": "阅后即焚已关闭",
     "preparing_session": "正在准备会话...",
+    "room_readonly": "当前房间为只读，无法发送消息",
     "recently_used": "最近使用"
   },
   "emoticon": {
@@ -1582,14 +1606,19 @@ export type I18nKeys = {
       "title": "好友列表",
       "search": "搜索好友",
       "empty": "暂无好友",
+      "capability_unavailable_title": "当前服务端未开启好友能力",
+      "capability_unavailable_description": "请联系管理员开启好友能力后再使用好友列表与请求功能。",
       "online": "在线",
-      "offline": "离线"
+      "offline": "离线",
+      "friend_list_label": "好友列表",
+      "new_request_announcement": "收到 {count} 条新的好友请求"
     },
     "filter": {
       "all": "全部",
       "favorite": "收藏",
       "normal": "普通",
-      "blocked": "已屏蔽"
+      "blocked": "已屏蔽",
+      "hidden": "已隐藏"
     },
     "status": {
       "normal": "普通好友",
@@ -1599,6 +1628,8 @@ export type I18nKeys = {
     },
     "request": {
       "title": "好友请求",
+      "search": "搜索好友请求",
+      "result_count": "“{keyword}” 共匹配到 {count} 条请求",
       "incoming": "收到请求",
       "outgoing": "发送请求",
       "accept": "接受",
@@ -1606,7 +1637,8 @@ export type I18nKeys = {
       "cancel": "撤销",
       "empty": {
         "incoming": "暂无好友请求",
-        "outgoing": "暂无发送中的请求"
+        "outgoing": "暂无发送中的请求",
+        "search": "没有匹配的好友请求"
       },
       "success": {
         "accept": "已接受好友请求",
@@ -1629,6 +1661,8 @@ export type I18nKeys = {
       "not_found": "未找到该用户",
       "already_friend": "该用户已是你的好友",
       "search_error": "搜索用户失败",
+      "result_found": "找到用户：{user}",
+      "result_empty": "没有找到与 “{keyword}” 匹配的用户",
       "send": "发送请求",
       "success": "好友请求已发送",
       "error": "发送好友请求失败",
@@ -1666,6 +1700,7 @@ export type I18nKeys = {
       },
       "remove_success": "已删除好友",
       "remove_error": "删除好友失败",
+      "notFound": "未找到该好友信息",
       "just_now": "刚刚",
       "minutes_ago": "{count}分钟前",
       "hours_ago": "{count}小时前",
@@ -1690,10 +1725,22 @@ export type I18nKeys = {
       "accept": "接受",
       "reject": "拒绝"
     },
+    "search": {
+      "history": "最近搜索",
+      "clear_history": "清空历史",
+      "clear_current": "清除搜索",
+      "searching": "正在更新搜索结果...",
+      "result_count": "“{keyword}” 共匹配到 {count} 位好友",
+      "filter_result_count": "{filter} 共 {count} 位好友",
+      "empty_title": "未找到匹配的好友",
+      "empty_description": "没有找到与 “{keyword}” 相关的好友，试试其他关键词。"
+    },
     "group": {
       "title": "好友分组",
       "search": "搜索分组",
       "empty": "暂无分组",
+      "empty_search": "没有匹配的分组",
+      "result_count": "“{keyword}” 共匹配到 {count} 个分组",
       "create": "创建分组",
       "name_placeholder": "请输入分组名称",
       "member_count": "{count} 位成员",
@@ -1709,6 +1756,12 @@ export type I18nKeys = {
     }
   },
   "home": {
+    "room": {
+      "invite": {
+        "accept": "接受",
+        "reject": "拒绝"
+      }
+    },
     "search_suggestions": "建议",
     "search_guide": "在搜索框内搜索",
     "no_search_results": "未找到相关结果",
@@ -2047,7 +2100,12 @@ export type I18nKeys = {
         "save": "保存"
       },
       "toast": {
-        "avatar_update_success": "头像更新成功"
+        "avatar_update_success": "头像更新成功",
+        "nickname_empty": "昵称不能为空",
+        "rename_limit": "改名次数不足",
+        "save_success": "保存成功",
+        "badge_wear_success": "佩戴成功",
+        "badge_wear_failed": "佩戴失败，请稍后重试"
       }
     },
     "chat_sidebar": {
@@ -2160,6 +2218,10 @@ export type I18nKeys = {
       "announcement": {
         "view_all": "查看全部"
       },
+      "typing": {
+        "single": "{name} 正在输入...",
+        "multiple": "{count} 人正在输入..."
+      },
       "no_more": "没有更多消息",
       "empty_title": "暂无消息",
       "empty_desc": "发送第一条消息，开始聊天吧",
@@ -2224,7 +2286,56 @@ export type I18nKeys = {
     },
     "secret_chat": {
       "title": "私密聊天",
+      "desc": "进入需要密码保护的私密会话",
       "no_password": "请先在设置中设置私密聊天密码"
+    }
+  },
+  "hooks": {
+    "webrtc": {
+      "no_device": "没有可用的设备!",
+      "get_stream_failed": "获取本地媒体流失败，请检查设备!",
+      "rtc_connection_failed": "RTC通讯连接失败!",
+      "get_devices_failed": "获取设备失败!",
+      "call_timeout": "通话无人接听，自动挂断",
+      "cleanup_failed": "部分资源清理失败!",
+      "room_not_found": "房间号不存在，请重新连接！",
+      "camera_failed": "无法开启摄像头"
+    },
+    "window": {
+      "create_failed": "窗口创建失败: {label}",
+      "modal_create_failed": "创建{title}窗口失败",
+      "session_not_ready": "当前会话尚未准备好",
+      "group_call_not_supported": "群聊暂不支持音视频通话",
+      "user_info_missing": "无法获取对方用户信息"
+    },
+    "download": {
+      "failed": "下载失败",
+      "read_failed": "无法读取响应内容"
+    },
+    "avatar_upload": {
+      "image_load_failed": "图片加载失败",
+      "size_exceeded": "图片大小不能超过{sizeLimit}KB，当前图片裁剪后大小为{currentSize}KB",
+      "format_not_supported": "只支持 JPG、PNG、WebP 格式的图片",
+      "upload_failed": "上传头像失败"
+    },
+    "upload": {
+      "credential_failed": "获取上传凭证失败，请重试",
+      "file_size_exceeded": "文件大小不能超过{max}MB",
+      "url_failed": "获取上传链接失败，请重试",
+      "upload_failed": "文件上传失败，请重试"
+    },
+    "session": {
+      "detail_failed": "获取会话详情失败",
+      "show_failed": "显示会话失败"
+    },
+    "msg_input": {
+      "file_size_exceeded": "文件大小不能超过500MB",
+      "upload_limit": "一次性只能上传{count}个文件或图片",
+      "type_not_supported": "暂不支持发送类型消息",
+      "file_send_failed": "{fileName} 发送失败"
+    },
+    "mention": {
+      "ai_coming_soon": "当前ai正在对接，敬请期待"
     }
   },
   "login": {
@@ -2273,7 +2384,16 @@ export type I18nKeys = {
       "title": "单点登录",
       "oidc": "OIDC 单点登录",
       "saml": "SAML 单点登录",
-      "cas": "CAS 单点登录"
+      "cas": "CAS 单点登录",
+      "unavailable_feature": "第三方登录功能暂未开放，请使用账号密码登录",
+      "oidc_not_configured": "OIDC 单点登录服务暂未配置，请使用账号密码登录",
+      "oidc_unavailable": "OIDC 登录不可用，请检查服务器配置",
+      "oidc_auth_url_failed": "获取 OIDC 授权 URL 失败",
+      "oidc_failed": "OIDC 登录失败",
+      "saml_not_configured": "SAML 单点登录服务暂未配置，请使用账号密码登录",
+      "saml_failed": "SAML 登录失败",
+      "cas_not_configured": "CAS 单点登录服务暂未配置，请使用账号密码登录",
+      "cas_failed": "CAS 登录失败"
     },
     "oidc": {
       "processing": "正在处理 OIDC 登录...",
@@ -2460,10 +2580,132 @@ export type I18nKeys = {
     "sso_login_failed": "SSO 登录失败",
     "remote_login": {
       "unknown_ip": "未知IP",
-      "title": "异地登录提醒"
+      "title": "异地登录提醒",
+      "notice_title": "下线通知",
+      "description": "您的账号在其他设备 {ip} 登录，如非本人登录，请尽快修改密码，建议联系管理员",
+      "confirm": "知道了"
+    },
+    "secret_chat": {
+      "title": "私密聊天",
+      "description": "请输入私密聊天密码",
+      "password_placeholder": "请输入密码",
+      "confirm": "确认",
+      "password_required": "请输入密码",
+      "password_incorrect": "密码错误",
+      "verify_failed": "验证失败"
     },
     "service_agreement_title": "服务协议",
     "privacy_policy_title": "隐私保护指引"
+  },
+  "matrix_error": {
+    "common": {
+      "client_not_initialized": "客户端未初始化",
+      "matrix_client_not_initialized": "MatrixClient 未初始化",
+      "user_not_logged_in": "用户未登录",
+      "user_id_not_found": "用户 ID 未找到",
+      "cannot_get_user_id": "无法获取用户ID",
+      "room_not_found": "房间不存在: {roomId}",
+      "request_failed": "请求失败",
+      "user_id_not_exists": "用户ID不存在"
+    },
+    "auth": {
+      "access_token_missing": "缺少访问令牌，无法恢复登录会话",
+      "user_id_missing": "缺少用户ID，无法恢复登录会话",
+      "session_restore_failed": "基于访问令牌恢复 Matrix 会话失败",
+      "session_info_incomplete": "登录成功但会话信息不完整",
+      "sso_token_missing": "缺少 SSO 登录令牌",
+      "sso_login_failed": "SSO 登录失败，请稍后重试",
+      "sso_session_incomplete": "SSO 登录成功但会话信息不完整",
+      "user_id_missing_for_init": "缺少用户ID，无法初始化登录状态",
+      "client_config_missing": "客户端配置缺失，无法执行登录回退请求",
+      "sso_not_supported": "服务器不支持 SSO 登录",
+      "login_failed_with_status": "登录失败 ({status})",
+      "login_failed_check_network": "登录失败，请检查网络连接或服务器配置",
+      "matrix_login_failed": "Matrix 登录失败",
+      "homeserver_connection_failed": "无法连接 Matrix homeserver ({url})，请检查网络、服务地址或 CORS 配置{detail}",
+      "register_no_valid_session": "注册服务未返回有效会话，请联系管理员检查服务器配置",
+      "register_no_session": "注册服务未返回有效会话",
+      "verification_service_unavailable": "验证码服务暂不可用，请稍后重试或联系管理员 (服务器未就绪)",
+      "query_code_status_failed": "查询验证码状态失败",
+      "qr_login_device_not_logged_in": "当前设备未登录，无法确认二维码登录"
+    },
+    "client": {
+      "not_ready_timeout": "MatrixClient 未在指定时间内就绪",
+      "room_instance_failed_after_create": "创建房间后无法获取房间实例",
+      "room_instance_failed_after_join": "加入房间后无法获取房间实例",
+      "base_url_required": "baseUrl 不能为空",
+      "access_token_required": "accessToken 不能为空",
+      "create_room_failed": "创建房间失败",
+      "join_room_failed": "加入房间失败",
+      "leave_room_failed": "离开房间失败"
+    },
+    "room": {
+      "create_failed_no_id": "创建房间失败：未返回房间 ID",
+      "summary_manager_unavailable": "RoomSummaryManager 不可用",
+      "translate_request_failed": "翻译请求失败: {status}",
+      "direct_message_manager_not_initialized": "DirectMessageManager 未初始化"
+    },
+    "crypto": {
+      "not_enabled": "加密未启用",
+      "passphrase_verification_failed": "密码短语验证失败，无法导出密钥",
+      "encryption_module_unavailable": "加密模块不可用",
+      "auth_params_required": "需要认证参数",
+      "no_key_backup_available": "没有可用的密钥备份"
+    },
+    "media": {
+      "url_empty": "媒体 URL 不能为空",
+      "voip_call_creation_failed": "无法创建通话",
+      "voip_call_not_found": "通话不存在: {callId}",
+      "url_parse_failed": "无法解析媒体地址: {mediaUrl}",
+      "download_failed": "下载失败: {status} {statusText}",
+      "download_failed_short": "下载失败: {status}",
+      "voice_message_manager_unavailable": "语音服务不可用",
+      "no_active_recording": "没有正在进行的录制",
+      "invalid_mxc_url": "无效的 MXC URL"
+    },
+    "messaging": {
+      "event_id_missing": "事件发送失败: 未返回事件 ID",
+      "media_uri_missing": "文件上传失败: 未返回媒体 URI",
+      "other_user_emoji_unsupported": "暂不支持获取其他用户的表情数据",
+      "receipt_event_id_missing": "事件 ID 不存在",
+      "event_not_found": "事件不存在: {eventId}",
+      "emoji_not_found": "表情不存在: {emojiId}",
+      "unsupported_image_format": "不支持的图片格式: {type}，支持的格式: PNG、GIF、WebP",
+      "message_not_found": "消息不存在: {eventId}",
+      "original_message_not_found": "原始消息不存在: {originalEventId}",
+      "reply_message_not_found": "回复的消息不存在: {replyToEventId}",
+      "can_only_edit_own_messages": "只能编辑自己发送的消息",
+      "can_only_delete_own_messages": "只能删除自己发送的消息",
+      "threading_manager_unavailable": "ThreadingManager 不可用"
+    },
+    "admin": {
+      "sdk_manager_unavailable": "SDK AdminManager 不可用",
+      "quota_manager_not_initialized": "QuotaManager 未初始化",
+      "moderation_manager_not_initialized": "ModerationManager 未初始化",
+      "score_range_invalid": "评分必须在 -100 到 0 之间",
+      "upload_size_limit_unavailable": "getUploadSizeLimit 不可用",
+      "upload_file_size_limit_unavailable": "getUploadFileSizeLimit 不可用",
+      "user_storage_usage_unavailable": "getUserStorageUsage 不可用",
+      "has_storage_space_unavailable": "hasStorageSpace 不可用"
+    },
+    "friends": {
+      "manager_not_initialized": "FriendManager 未初始化",
+      "remark_update_unsupported": "FriendManager 不支持好友备注更新",
+      "status_update_unsupported": "FriendManager 不支持好友状态更新: {status}"
+    },
+    "widget": {
+      "manager_not_initialized": "WidgetsManager 未初始化"
+    },
+    "worker": {
+      "not_started": "worker 未启动，先调用 start()"
+    },
+    "extensions": {
+      "not_initialized": "SynapseRustExtensionsService 未初始化",
+      "api_request_failed_with_status": "API 请求失败 ({status})"
+    },
+    "account": {
+      "cannot_get_user_id": "无法获取用户ID"
+    }
   },
   "menu": {
     "check_update": "检查更新",
@@ -2471,6 +2713,7 @@ export type I18nKeys = {
     "settings": "设置",
     "about": "关于",
     "sign_out": "退出登录",
+    "sign_out_failed": "退出登录失败，请重试",
     "homeserver": "设置服务器",
     "admin_panel": "管理后台",
     "homeserver_url": "服务器地址",
@@ -2514,6 +2757,8 @@ export type I18nKeys = {
     "remove_from_group_fail": "移出群聊失败",
     "pin": "置顶",
     "unpin": "取消置顶",
+    "set_low_priority": "设为低优先级",
+    "remove_low_priority": "取消低优先级",
     "copy_account": "复制账号",
     "mark_unread": "标记未读",
     "group_message_setting": "群消息设置",
@@ -2672,6 +2917,7 @@ export type I18nKeys = {
     },
     "message_list": {
       "sync_loading": "正在同步消息",
+      "sync_complete": "消息同步完成",
       "official_popover": "官方群聊认证",
       "bot_popover": "HuLa助手",
       "mention_tag": "[有人@我]",
@@ -2698,7 +2944,11 @@ export type I18nKeys = {
       "dissolve_group_success": "已解散群聊",
       "quit_group_success": "已退出群聊",
       "notification_allowed": "已允许消息提醒",
-      "notification_silent": "已设置接收消息但不提醒"
+      "notification_silent": "已设置接收消息但不提醒",
+      "set_low_priority_success": "已设为低优先级",
+      "remove_low_priority_success": "已取消低优先级",
+      "set_low_priority_fail": "设置低优先级失败",
+      "remove_low_priority_fail": "取消低优先级失败"
     },
     "image_viewer": {
       "zoom_out": "缩小",
@@ -2920,7 +3170,30 @@ export type I18nKeys = {
     "audio": "音频",
     "voice": "语音",
     "keyboard": "键盘",
-    "import_model": "导入模型"
+    "import_model": "导入模型",
+    "notice": {
+      "title": "群公告",
+      "publisher": "发布人:",
+      "pinned": "置顶",
+      "read_count": "{count}人已读",
+      "detail_title": "公告详情",
+      "edit_notice": "编辑公告",
+      "not_found": "公告不存在或已被删除",
+      "edit_title": "编辑群公告",
+      "add_title": "新增群公告",
+      "content_placeholder": "请输入公告内容...",
+      "click_upload": "点击上传",
+      "set_pinned": "设为置顶",
+      "pinned_desc": "公告将显示在群公告列表顶部",
+      "content_required": "请输入公告内容",
+      "edit_success": "公告修改成功",
+      "publish_success": "公告发布成功",
+      "save_failed": "保存公告失败，请重试",
+      "fetch_failed": "获取公告详情失败，请重试",
+      "unknown_user": "未知用户",
+      "cancel": "取消",
+      "save": "保存"
+    }
   },
   "mobile_chat_setting": {
     "title": "{t} 设置",
@@ -2981,17 +3254,36 @@ export type I18nKeys = {
     "messages_muted": "已屏蔽消息",
     "messages_unmuted": "已取消屏蔽",
     "notifications_silent": "已设置接收消息但不提醒",
-    "notifications_enabled": "已允许消息提醒"
+    "notifications_enabled": "已允许消息提醒",
+    "start_group_chat": "发起群聊",
+    "search_contacts_placeholder": "搜索联系人~",
+    "search_button": "搜索",
+    "selected_count": "已选择 {count} 人",
+    "create_group_button": "发起群聊",
+    "cannot_create_group_with_two": "两个人无法建群哦",
+    "create_group_success": "创建群聊成功",
+    "create_group_failed": "创建群聊失败",
+    "invite_group_member_title": "邀请群友",
+    "invite_button": "邀请",
+    "select_friends_to_invite": "请选择要邀请的好友",
+    "invite_success": "成功邀请 {count} 位好友",
+    "invite_failed": "邀请失败，请重试"
   },
   "mobile_contact": {
     "title": "联系人",
+    "add_friends_group": "添加好友/群",
+    "search_no_result": "未找到相关结果",
+    "search_keyword_hint": "输入关键词搜索",
     "input": {
       "search": "搜索"
     },
     "my_chat": "我的消息",
     "tab": {
       "contacts": "好友",
-      "group": "群聊"
+      "group": "群聊",
+      "recommend": "推荐",
+      "find_friend": "找好友",
+      "find_group": "找群聊"
     },
     "friend": {
       "title": "我的好友"
@@ -3007,7 +3299,26 @@ export type I18nKeys = {
       "online": "在线",
       "offline": "离线",
       "blocked": "已屏蔽"
-    }
+    },
+    "search_placeholder": {
+      "recommend": "输入推荐关键词",
+      "user": "输入昵称搜索好友",
+      "group": "输入群号搜索群聊"
+    },
+    "account_label": "账号：{account}",
+    "copy_success": "复制成功 {account}",
+    "search_failed": "搜索失败",
+    "button": {
+      "edit_profile": "编辑资料",
+      "send_message": "发消息",
+      "add": "添加"
+    },
+    "menu": {
+      "add_group": "添加分组",
+      "rename_group": "重命名该组",
+      "delete_group": "删除分组"
+    },
+    "refresh_notification_failed": "刷新通知失败，请稍后再试"
   },
   "mobile_devices": {
     "title": "设备管理",
@@ -3033,7 +3344,8 @@ export type I18nKeys = {
       "message": "确定要删除其他 {count} 个设备吗？",
       "confirm": "删除",
       "cancel": "取消"
-    }
+    },
+    "verification_started": "验证已开始，事务ID: {transactionId}"
   },
   "mobile_edit_bio": {
     "title": "编辑签名",
@@ -3042,6 +3354,7 @@ export type I18nKeys = {
   },
   "mobile_edit_brithday": {
     "title": "编辑生日",
+    "select_date": "选择日期",
     "options": {
       "display_birthday_tag": "显示生日标签",
       "displsy_age": "显示年龄",
@@ -3146,7 +3459,13 @@ export type I18nKeys = {
     },
     "too_many_requests": "请求过于频繁，请在 {s} 秒后再试",
     "code_sent_email": "验证码已发送至您的邮箱",
-    "email_resend_in": "{seconds}秒后重新获取"
+    "email_resend_in": "{seconds}秒后重新获取",
+    "captcha_failed": "获取验证码失败，请稍后重试",
+    "send_code_failed": "发送验证码失败，请稍后重试",
+    "send_email_code_first": "请先发送邮箱验证码",
+    "verify_email_failed": "邮箱验证码校验失败，请稍后重试",
+    "complete_email_verify_first": "请先完成邮箱验证码校验",
+    "reset_password_failed": "重置密码失败，请稍后重试"
   },
   "mobile_help": {
     "title": "帮助与反馈",
@@ -3318,6 +3637,10 @@ export type I18nKeys = {
       "group": "群通知"
     },
     "friend_request_message": "留言：",
+    "message_content": "消息内容：",
+    "reply": "回复",
+    "message_label": "留言:",
+    "handler_label": "处理人:",
     "unknown_user": "未知用户",
     "empty_require": "暂无好友请求",
     "empty_group_require": "暂无群申请通知",
@@ -3383,7 +3706,13 @@ export type I18nKeys = {
       "success": "删除好友成功",
       "failed": "删除好友失败"
     },
-    "not_found": "没有找到好友哦"
+    "not_found": "没有找到好友哦",
+    "delete_friend_dialog": {
+      "title": "删除好友",
+      "message": "确定删除该好友吗？",
+      "confirm": "确定",
+      "cancel": "取消"
+    }
   },
   "mobile_personal_info_qr": {
     "account": "ID",
@@ -3470,7 +3799,20 @@ export type I18nKeys = {
     "scan_failed_or_cancelled": "扫码失败或已取消",
     "camera_permission_required": "没有相机权限，请在系统设置中开启权限",
     "permission_missing": "缺少权限",
-    "scan_error": "扫码过程中发生错误"
+    "scan_error": "扫码过程中发生错误",
+    "login_hula": "登录{device}的HULA",
+    "login_ip": "登录IP",
+    "login_address": "登录地址",
+    "login_time": "登录时间",
+    "login_countdown": "登录 ({countdown}s)",
+    "qr_code_expired_btn": "二维码已过期",
+    "qr_no_qrId": "登录二维码不存在qrId",
+    "qr_expired": "登录二维码已失效",
+    "qr_session_expired": "二维码登录会话不存在或已失效",
+    "qr_no_uid": "登录二维码不存在uid",
+    "cannot_add_self": "不能添加自己为好友哦~",
+    "group_qr_no_roomId": "加群二维码不存在roomId",
+    "invalid_qr_code": "识别不到正确的二维码"
   },
   "mobile_security": {
     "title": "安全设置",
@@ -3622,6 +3964,9 @@ export type I18nKeys = {
     "noise_suppression": "噪声抑制",
     "auto_gain": "自动增益",
     "select_device": "选择设备",
+    "microphone": "麦克风",
+    "speaker": "扬声器",
+    "camera": "摄像头",
     "test": "测试",
     "stop": "停止",
     "preview": "预览",
@@ -3630,7 +3975,10 @@ export type I18nKeys = {
     "test_started": "麦克风测试已开始",
     "mic_error": "无法访问麦克风，请检查权限",
     "preview_started": "视频预览已开始",
-    "camera_error": "无法访问摄像头，请检查权限"
+    "camera_error": "无法访问摄像头，请检查权限",
+    "unknown_user": "未知用户",
+    "video_call_invitation": "邀请你视频通话...",
+    "audio_call_invitation": "邀请你语音通话..."
   },
   "moderation": {
     "title": "内容审核",
@@ -3817,7 +4165,13 @@ export type I18nKeys = {
       "reject_failed": "拒绝邀请失败"
     },
     "batch": {
+      "enter": "批量选择",
+      "exit": "退出批量",
+      "enter_announcement": "已进入批量选择模式",
+      "exit_announcement": "已退出批量选择模式",
       "selected_count": "已选 {count} 项",
+      "select_all_announcement": "已全选 {count} 项",
+      "clear_selection_announcement": "已清空批量选择",
       "mark_read": "标记已读",
       "pin": "置顶",
       "mute": "静音",
@@ -5289,6 +5643,7 @@ export type I18nKeys = {
   },
   "space": {
     "title": "空间",
+    "space_selected": "已选择空间：{name}",
     "create": "创建空间",
     "create_route_hint": "创建完成后会自动回到工作台，并定位到新空间。",
     "search_sessions_placeholder": "搜索会话",
@@ -5385,6 +5740,7 @@ export type I18nKeys = {
     "settings_success": "保存成功",
     "settings_failed": "保存失败",
     "search_placeholder": "搜索空间",
+    "session_list_label": "会话列表",
     "sessions": "个会话",
     "pinned": "置顶",
     "joined": "已加入",
@@ -5394,13 +5750,21 @@ export type I18nKeys = {
     "detail_tab_members": "成员",
     "detail_tab_activity": "动态",
     "active_filters": "筛选",
+    "search_filter_tag": "搜索：{keyword}",
     "clear_all_filters": "清除全部",
+    "saved_preset_label": "常用视图",
+    "save_preset": "保存当前视图",
+    "apply_saved_preset": "应用已保存视图",
+    "saved_preset_active": "已应用常用视图",
+    "saved_preset_saved": "已保存当前视图",
+    "saved_preset_applied": "已应用已保存视图",
     "pin_space": "置顶",
     "unpin_space": "取消置顶",
     "discover": "发现空间",
     "unread": "未读",
     "upload_avatar": "上传头像",
-    "avatar": "头像"
+    "avatar": "头像",
+    "space_tree_label": "空间树"
   },
   "thread": {
     "title": "消息线程",
@@ -5408,6 +5772,37 @@ export type I18nKeys = {
     "no_replies": "暂无回复",
     "reply_placeholder": "输入回复内容...",
     "send_reply": "发送回复"
+  },
+  "utils": {
+    "download_link_not_found": "未找到下载链接",
+    "video_save_success": "视频保存成功",
+    "video_save_failed": "保存视频失败",
+    "file_download_success": "文件下载成功",
+    "file_save_failed": "保存文件失败",
+    "audio_compression_failed": "音频压缩失败"
+  },
+  "validation": {
+    "username_min_length": "用户名至少需要3个字符",
+    "username_max_length": "用户名不能超过20个字符",
+    "username_invalid_chars": "用户名只能包含字母、数字、下划线和连字符",
+    "password_min_length": "密码至少需要8个字符",
+    "password_max_length": "密码不能超过128个字符",
+    "password_strength": "密码需要包含字母和数字",
+    "email_required": "邮箱不能为空",
+    "email_invalid": "邮箱格式不正确",
+    "phone_required": "手机号码不能为空",
+    "phone_invalid": "手机号码格式不正确",
+    "url_required": "URL不能为空",
+    "url_invalid": "URL格式不正确",
+    "matrix_id_required": "Matrix ID 不能为空",
+    "matrix_id_invalid": "Matrix ID 格式不正确，格式应为 @user:server",
+    "room_id_required": "房间 ID 不能为空",
+    "room_id_invalid": "房间 ID 格式不正确",
+    "room_alias_required": "房间别名不能为空",
+    "room_alias_invalid": "房间别名格式不正确",
+    "file_type_required": "文件类型不能为空",
+    "file_type_unsupported": "不支持的文件类型，允许的类型: {types}",
+    "file_size_exceeded": "文件大小不能超过 {maxSize}MB"
   },
   "voice": {
     "recorder": {

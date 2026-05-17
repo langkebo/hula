@@ -1,10 +1,11 @@
 import { type Friend, FriendEvent, type FriendManager, type FriendRequest } from 'matrix-js-sdk/friend'
 
 // Extend FriendStatus for local UI needs
-export type FriendStatus = 'pending' | 'accepted' | 'rejected' | 'favorite' | 'normal' | 'blocked'
+export type FriendStatus = 'pending' | 'accepted' | 'rejected' | 'favorite' | 'normal' | 'blocked' | 'hidden'
 
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
+import { useI18nGlobal } from '@/services/i18n'
 import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 import { type SynapseFriendInfo, synapseRustExtensionsService } from '../SynapseRustExtensionsService'
@@ -121,7 +122,7 @@ class MatrixFriendService {
     const manager = this.syncFriendManager()
     if (!manager) {
       if (throwOnMissing) {
-        throw new Error('FriendManager 未初始化')
+        throw new Error(useI18nGlobal().t('matrix_error.friends.manager_not_initialized'))
       }
       return null
     }
@@ -138,7 +139,7 @@ class MatrixFriendService {
   private async requireFriendManager(): Promise<FriendManagerCompat> {
     const manager = await this.ensureFriendManager(false)
     if (!manager) {
-      throw new Error('FriendManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.friends.manager_not_initialized'))
     }
     return manager
   }
@@ -438,7 +439,7 @@ class MatrixFriendService {
       } else if (typeof manager.setFriendNote === 'function') {
         await manager.setFriendNote(userId, note)
       } else {
-        throw new Error('FriendManager 不支持好友备注更新')
+        throw new Error(useI18nGlobal().t('matrix_error.friends.remark_update_unsupported'))
       }
 
       info(`[MatrixFriend] 设置好友笔记成功: ${userId}`)
@@ -467,7 +468,7 @@ class MatrixFriendService {
 
       manager = await this.requireFriendManager()
       if (typeof manager?.setFriendStatus !== 'function') {
-        throw new Error(`FriendManager 不支持好友状态更新: ${status}`)
+        throw new Error(useI18nGlobal().t('matrix_error.friends.status_update_unsupported', { status }))
       }
 
       await manager.setFriendStatus(userId, status)

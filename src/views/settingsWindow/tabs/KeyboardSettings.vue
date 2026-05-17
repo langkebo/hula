@@ -71,16 +71,17 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NDivider, NInput, NModal, NSwitch, useMessage } from 'naive-ui'
+import { NButton, NDivider, NInput, NModal, NSwitch } from 'naive-ui'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 defineOptions({
   name: 'KeyboardSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 const settingStore = useSettingStore()
 
@@ -150,7 +151,7 @@ const currentEditingKeys = ref<string[]>([])
 
 function handleGlobalShortcutChange(value: boolean) {
   settingStore.setGlobalShortcutEnabled(value)
-  message.success(value ? t('setting.keyboard.enabled') : t('setting.keyboard.disabled'))
+  showFeedback(value ? t('setting.keyboard.enabled') : t('setting.keyboard.disabled'), 'success')
 }
 
 function handleEditShortcut(type: string) {
@@ -186,7 +187,7 @@ function handleKeyDown(event: KeyboardEvent) {
     )
 
     if (conflictingShortcut) {
-      message.error(t('setting.keyboard.conflict_error'))
+      showFeedback(t('setting.keyboard.conflict_error'), 'error')
       return
     }
 
@@ -198,7 +199,7 @@ function handleKeyDown(event: KeyboardEvent) {
       settingStore.setOpenMainPanelShortcut(shortcutStr)
     }
     editingShortcut.value = false
-    message.success(t('setting.keyboard.updated'))
+    showFeedback(t('setting.keyboard.updated'), 'success')
   }
 }
 
@@ -206,7 +207,7 @@ function resetShortcuts() {
   settingStore.resetGlobalShortcuts()
   shortcutsStore.screenshot = settingStore.screenshotShortcut
   shortcutsStore.openMainPanel = settingStore.openMainPanelShortcut
-  message.success(t('setting.keyboard.reset_success'))
+  showFeedback(t('setting.keyboard.reset_success'), 'success')
 }
 
 onMounted(() => {

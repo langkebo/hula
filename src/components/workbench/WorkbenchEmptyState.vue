@@ -7,7 +7,7 @@
       'workbench-empty-state--empty': state === 'empty'
     }">
     <div v-if="state === 'loading'" class="workbench-empty-state__icon">
-      <n-spin :size="24" :color="'#13987f'" />
+      <n-spin :size="24" color="var(--hula-color-primary-500)" />
     </div>
     <div v-else-if="state === 'error'" class="workbench-empty-state__icon">
       <svg class="size-32px color-[--hula-color-danger-500]">

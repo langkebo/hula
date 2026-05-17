@@ -86,13 +86,13 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   private resolveDownloadUrl(mediaUrl: string): string {
     if (!mediaUrl) {
-      throw new Error('媒体 URL 不能为空')
+      throw new Error(this.t('matrix_error.media.url_empty'))
     }
 
     if (mediaUrl.startsWith('mxc://')) {
       const downloadUrl = this.getMediaUrl(mediaUrl)
       if (!downloadUrl) {
-        throw new Error(`无法解析媒体地址: ${mediaUrl}`)
+        throw new Error(this.t('matrix_error.media.url_parse_failed', { mediaUrl }))
       }
       return downloadUrl
     }
@@ -114,14 +114,18 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         response = await fetch(`${downloadUrl}${separator}access_token=${encodeURIComponent(accessToken)}`)
       }
       if (!response.ok) {
-        throw new Error(`下载失败: ${response.status} ${response.statusText}`)
+        throw new Error(
+          this.t('matrix_error.media.download_failed', { status: response.status, statusText: response.statusText })
+        )
       }
       return new Uint8Array(await response.arrayBuffer())
     }
 
     const response = await fetch(downloadUrl)
     if (!response.ok) {
-      throw new Error(`下载失败: ${response.status} ${response.statusText}`)
+      throw new Error(
+        this.t('matrix_error.media.download_failed', { status: response.status, statusText: response.statusText })
+      )
     }
 
     return new Uint8Array(await response.arrayBuffer())

@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AppException, ErrorType } from '../exception'
 
+const { showFeedbackMock } = vi.hoisted(() => ({
+  showFeedbackMock: vi.fn()
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
     info: vi.fn(),
@@ -10,12 +14,11 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
-// Mock window.$message
-const mockMessageError = vi.fn()
-Object.defineProperty(window, '$message', {
-  value: { error: mockMessageError },
-  writable: true
-})
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
+}))
 
 describe('exception', () => {
   describe('ErrorType', () => {
@@ -92,6 +95,12 @@ describe('exception', () => {
         const ex = new AppException('test', { type })
         expect(ex.type).toBe(type)
       }
+    })
+
+    it('shows feedback once when configured to surface the error', () => {
+      new AppException('surface me', { showError: true })
+
+      expect(showFeedbackMock).toHaveBeenCalledWith('surface me', 'error')
     })
   })
 })

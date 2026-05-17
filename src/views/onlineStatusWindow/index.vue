@@ -55,6 +55,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OnlineStatusWindow')
@@ -67,6 +68,7 @@ const userStatusStore = useUserStatusStore()
 const { stateList, stateId } = storeToRefs(userStatusStore)
 const { currentState, statusIcon, statusTitle, statusBgColor, hasCustomState } = useOnlineStatus()
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const resetState = computed<UserState>(() => ({
   id: '0',
   title: t('auth.onlineStatus.reset_title'),
@@ -94,10 +96,10 @@ watchEffect(() => {
 const handleActive = async (item: UserState) => {
   try {
     await userStatusStore.changeCurrentUserState(item)
-    window.$message?.success(t('auth.onlineStatus.messages.success'))
+    showFeedback(t('auth.onlineStatus.messages.success'), 'success')
   } catch (error) {
     logger.error('更新状态失败:', formatMatrixError(error))
-    window.$message?.error(t('auth.onlineStatus.messages.error'))
+    showFeedback(t('auth.onlineStatus.messages.error'), 'error')
   }
 }
 

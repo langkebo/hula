@@ -1,6 +1,6 @@
 <template>
   <div class="h-15rem w-full">
-    <van-swipe class="h-full" :loop="false" :show-indicators="true" indicator-color="#999">
+    <van-swipe class="h-full" :loop="false" :show-indicators="true" indicator-color="var(--hula-text-tertiary)">
       <van-swipe-item v-for="(page, pageIndex) in pages" :key="pageIndex">
         <div class="px-15px pt-15px pb-30px grid grid-cols-4 gap-3 auto-rows-18">
           <div
@@ -70,6 +70,7 @@
 
 <script setup lang="ts">
 import type { UploaderFileListItem } from 'vant'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { CallTypeEnum } from '@/enums'
 import { CallTypeEnum as CallTypeEnumValue, RoomTypeEnum } from '@/enums'
 import router from '@/router'
@@ -77,6 +78,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('More')
+const { showFeedback } = useActionFeedback()
 
 const globalStore = useGlobalStore()
 
@@ -208,7 +210,7 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
     if (!validTypes.includes(rawFile.type)) {
       logger.debug('已过滤非图片文件:', file)
       if (!Array.isArray(fileList)) {
-        window.$message.warning('只能选择图片哦~')
+        showFeedback('只能选择图片哦~', 'warning')
       }
       continue
     }

@@ -144,7 +144,7 @@ class MatrixReceiptService extends BaseMatrixService {
     try {
       const eventId = event.getId()
       if (!eventId) {
-        throw new Error('[MatrixReceipt] 事件 ID 不存在')
+        throw new Error(this.t('matrix_error.messaging.receipt_event_id_missing'))
       }
 
       const manager = this.getReadReceiptsManager()
@@ -175,7 +175,7 @@ class MatrixReceiptService extends BaseMatrixService {
       const event = events.find((e) => e.getId() === eventId)
 
       if (!event) {
-        throw new Error(`[MatrixReceipt] 事件不存在: ${eventId}`)
+        throw new Error(this.t('matrix_error.messaging.event_not_found', { eventId }))
       }
 
       return this.sendReadReceipt(roomId, event)

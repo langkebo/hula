@@ -1,5 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 const SPECIAL_FRIENDS_EVENT_TYPE = 'm.special_friends' as const
@@ -8,13 +9,14 @@ interface SpecialFriendsContent {
   special_friends?: string[]
 }
 
-class MatrixSpecialFriendService {
+class MatrixSpecialFriendService extends BaseMatrixService {
   private listeners: Set<() => void> = new Set()
   private cache: Set<string> | null = null
   private observedClient: MatrixClient | null = null
   private hasWarnedBeforeClientReady = false
 
   constructor() {
+    super()
     this.ensureSyncListener()
   }
 
@@ -45,11 +47,11 @@ class MatrixSpecialFriendService {
     client.on('accountData', this.accountDataListener)
   }
 
-  private getClient(): MatrixClient {
+  protected getClient(): MatrixClient {
     this.ensureSyncListener()
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
     return client
   }

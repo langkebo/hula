@@ -1,12 +1,18 @@
 {
   "title": "Contacts",
+  "add_friends_group": "Add Friends/Groups",
+  "search_no_result": "No results found",
+  "search_keyword_hint": "Enter keywords to search",
   "input": {
     "search": "Search"
   },
   "my_chat": "My Chat",
   "tab": {
     "contacts": "Friends",
-    "group": "Group"
+    "group": "Group",
+    "recommend": "Recommend",
+    "find_friend": "Find Friends",
+    "find_group": "Find Groups"
   },
   "friend": {
     "title": "My Friends"
@@ -22,5 +28,24 @@
     "online": "Online",
     "offline": "Offline",
     "blocked": "Blocked"
-  }
+  },
+  "search_placeholder": {
+    "recommend": "Enter recommendation keywords",
+    "user": "Enter name to search friends",
+    "group": "Enter group ID to search groups"
+  },
+  "account_label": "Account: {account}",
+  "copy_success": "Copied {account}",
+  "search_failed": "Search failed",
+  "button": {
+    "edit_profile": "Edit Profile",
+    "send_message": "Message",
+    "add": "Add"
+  },
+  "menu": {
+    "add_group": "Add Group",
+    "rename_group": "Rename Group",
+    "delete_group": "Delete Group"
+  },
+  "refresh_notification_failed": "Failed to refresh notifications. Please try again later."
 }

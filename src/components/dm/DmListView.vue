@@ -35,7 +35,7 @@
             @click="handleSelectRoom(dmRoom)"
             @contextmenu="handleContextMenu($event, dmRoom)">
             <n-flex align="center" :size="12">
-              <n-badge :dot="false" color="#f0a020" :offset="[-4, 4]">
+              <n-badge :dot="false" color="var(--color-warning)" :offset="[-4, 4]">
                 <n-avatar
                   :size="44"
                   :src="AvatarUtils.getAvatarUrl(dmRoom.avatarUrl)"
@@ -47,12 +47,12 @@
                   <span class="text-14px truncate">
                     {{ dmRoom.name || dmRoom.roomId }}
                   </span>
-                  <span class="text-12px text-gray-500">
+                  <span class="text-12px text-[--hula-text-tertiary]">
                     {{ formatTime(dmRoom.lastMessage?.timestamp) }}
                   </span>
                 </n-flex>
                 <n-flex align="center" justify="space-between">
-                  <span class="text-12px text-gray-400 truncate flex-1">
+                  <span class="text-12px text-[--hula-text-quaternary] truncate flex-1">
                     {{ dmRoom.lastMessage?.content || t('dm.list.no_message') }}
                   </span>
                   <n-flex align="center" :size="4">

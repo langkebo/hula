@@ -44,6 +44,17 @@
           </n-tooltip>
         </n-flex>
       </div>
+      <div v-if="space.statusText || space.visibilityText" class="space-card__status-row">
+        <span
+          v-if="space.statusText"
+          class="space-card__status-pill"
+          :class="[
+            space.statusTone ? `space-card__status-pill--${space.statusTone}` : 'space-card__status-pill--neutral'
+          ]">
+          {{ space.statusText }}
+        </span>
+        <span v-if="space.visibilityText" class="space-card__visibility">{{ space.visibilityText }}</span>
+      </div>
       <span v-if="!compact && space.topic" class="space-card__topic">{{ space.topic }}</span>
       <span class="space-card__meta">
         <template v-if="space.memberCount">{{ space.memberCount }} {{ t('space.members') }}</template>
@@ -110,15 +121,15 @@ const avatarColor = computed(() => {
 
   &--active {
     background: var(--hula-surface-session-active);
-    color: #ffffff;
+    color: var(--hula-text-inverse);
 
     .space-card__topic,
     .space-card__meta {
-      color: rgba(255, 255, 255, 0.72);
+      color: color-mix(in srgb, var(--hula-text-inverse) 72%, transparent);
     }
 
     .space-card__unread-badge {
-      border-color: rgba(78, 205, 196, 1);
+      border-color: var(--hula-color-primary-500);
     }
   }
 
@@ -146,7 +157,7 @@ const avatarColor = computed(() => {
   justify-content: center;
   font-size: 12px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--hula-text-inverse);
 }
 
 .space-card--compact .space-card__initials {
@@ -163,9 +174,9 @@ const avatarColor = computed(() => {
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: #ff4d4f;
+  background: var(--hula-color-danger-500);
   border: 2px solid var(--hula-surface-panel);
-  color: #ffffff;
+  color: var(--hula-text-inverse);
   font-size: 10px;
   font-weight: 700;
   line-height: 12px;
@@ -222,12 +233,12 @@ const avatarColor = computed(() => {
 }
 
 .space-card--active .space-card__action-btn {
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
+  background: color-mix(in srgb, var(--hula-text-inverse) 15%, transparent);
+  color: color-mix(in srgb, var(--hula-text-inverse) 80%, transparent);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.25);
-    color: #ffffff;
+    background: color-mix(in srgb, var(--hula-text-inverse) 25%, transparent);
+    color: var(--hula-text-inverse);
   }
 }
 
@@ -238,6 +249,45 @@ const avatarColor = computed(() => {
   font-size: 11px;
   color: var(--hula-text-tertiary);
   line-height: 15px;
+}
+
+.space-card__status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.space-card__status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  min-height: 18px;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.space-card__status-pill--neutral {
+  background: var(--hula-surface-search);
+  color: var(--hula-text-tertiary);
+}
+
+.space-card__status-pill--info {
+  background: var(--hula-color-primary-100);
+  color: var(--hula-color-primary-500);
+}
+
+.space-card__status-pill--warning {
+  background: color-mix(in srgb, var(--hula-color-warning-500) 16%, transparent);
+  color: var(--hula-color-warning-500);
+}
+
+.space-card__visibility {
+  font-size: 10px;
+  color: var(--hula-text-quaternary);
+  white-space: nowrap;
 }
 
 .space-card__meta {

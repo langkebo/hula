@@ -7,5 +7,18 @@
   "scan_failed_or_cancelled": "Scan failed or was cancelled",
   "camera_permission_required": "Camera permission is required. Please enable it in system settings.",
   "permission_missing": "Permission missing",
-  "scan_error": "An error occurred while scanning"
+  "scan_error": "An error occurred while scanning",
+  "login_hula": "Log in to HULA on {device}",
+  "login_ip": "Login IP",
+  "login_address": "Login Address",
+  "login_time": "Login Time",
+  "login_countdown": "Login ({countdown}s)",
+  "qr_code_expired_btn": "QR Code Expired",
+  "qr_no_qrId": "Login QR code missing qrId",
+  "qr_expired": "Login QR code has expired",
+  "qr_session_expired": "QR code login session does not exist or has expired",
+  "qr_no_uid": "Login QR code missing uid",
+  "cannot_add_self": "You cannot add yourself as a friend",
+  "group_qr_no_roomId": "Group QR code missing roomId",
+  "invalid_qr_code": "Cannot recognize the QR code"
 }

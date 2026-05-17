@@ -24,5 +24,6 @@
   "burn_after_read_enabled": "Burn after read enabled",
   "burn_after_read_disabled": "Burn after read disabled",
   "preparing_session": "Preparing session...",
+  "room_readonly": "This room is read-only. You cannot send messages.",
   "recently_used": "Recently Used"
 }

@@ -1,4 +1,5 @@
 import { type Ref, ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { AiMsgContentTypeEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
@@ -46,6 +47,7 @@ export const useAiStreaming = ({
   onTokenUsageUpdate
 }: UseAiStreamingOptions) => {
   const { t } = useI18nGlobal()
+  const { showFeedback, showProgressFeedback, clearFeedback } = useActionFeedback()
   const isAIStreaming = ref(false)
   const currentAiRequestId = ref<string | null>(null)
   const currentAiAccumulatedContent = ref('')
@@ -53,7 +55,7 @@ export const useAiStreaming = ({
 
   const handleOpenClawSend = async (content: string) => {
     if (!isOpenClawConnected.value) {
-      window.$message.warning(t('ai_assistant.robot.openclaw_not_connected'))
+      showFeedback(t('ai_assistant.robot.openclaw_not_connected'), 'warning')
       return
     }
 
@@ -95,11 +97,11 @@ export const useAiStreaming = ({
       currentAiAccumulatedContent.value = ''
       const tokenBudget = Number(model?.maxTokens || 0)
       if (tokenBudget > 0 && conversationTokens.value >= tokenBudget) {
-        window.$message.warning(t('ai_assistant.robot.token_budget_exceeded', { budget: tokenBudget }))
+        showFeedback(t('ai_assistant.robot.token_budget_exceeded', { budget: tokenBudget }), 'warning')
         return
       }
 
-      window.$message.loading(t('ai_assistant.robot.ai_thinking'), { duration: 0 })
+      showProgressFeedback(t('ai_assistant.robot.ai_thinking'), 'loading', 'polite', { duration: 0 })
       messageList.value.push({
         type: 'user',
         msgType: AiMsgContentTypeEnum.TEXT,
@@ -236,16 +238,16 @@ export const useAiStreaming = ({
       msgInputRef.value?.clearInput?.()
     } catch (error) {
       logger.error('AI消息发送失败:', error)
-      window.$message.error(t('ai_assistant.robot.send_failed_network'))
+      showFeedback(t('ai_assistant.robot.send_failed_network'), 'error')
     } finally {
-      window.$message.destroyAll()
+      clearFeedback()
     }
   }
 
   const handleStopAIStream = async () => {
     if (!isAIStreaming.value || !currentAiRequestId.value) return
     try {
-      window.$message.destroyAll()
+      clearFeedback()
       await aiService.messageCancelStream(currentAiRequestId.value)
       await new Promise((resolve) => setTimeout(resolve, 180))
       const lastMessage = messageList.value[messageList.value.length - 1]
@@ -266,10 +268,10 @@ export const useAiStreaming = ({
           generatedContent: latest
         })
       }
-      window.$message.success(t('ai_assistant.robot.generation_stopped'))
+      showFeedback(t('ai_assistant.robot.generation_stopped'), 'success')
     } catch (error) {
       logger.error('停止生成失败:', error)
-      window.$message.error(t('ai_assistant.robot.stop_generation_failed'))
+      showFeedback(t('ai_assistant.robot.stop_generation_failed'), 'error')
     } finally {
       isAIStreaming.value = false
       currentAiRequestId.value = null

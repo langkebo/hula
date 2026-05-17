@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const { showFeedbackMock } = vi.hoisted(() => ({
+  showFeedbackMock: vi.fn()
+}))
+
 const writeImage = vi.fn()
 const writeText = vi.fn()
 vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
@@ -25,24 +29,24 @@ vi.mock('../selectionUtils', () => ({
   getSelectedText: (...a: unknown[]) => getSelectedTextMock(...a)
 }))
 
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
+}))
+
 const { useChatCopy } = await import('../useChatCopy')
 
 describe('useChatCopy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(window as any).$message = {
-      warning: vi.fn(),
-      info: vi.fn(),
-      success: vi.fn(),
-      error: vi.fn()
-    }
   })
 
   it('warns and returns when content is empty and no selection', async () => {
     getSelectedTextMock.mockReturnValue('')
     const { handleCopy } = useChatCopy()
     await handleCopy(undefined)
-    expect((window as any).$message.warning).toHaveBeenCalledWith('没有可复制的内容')
+    expect(showFeedbackMock).toHaveBeenCalledWith('没有可复制的内容', 'warning')
     expect(writeText).not.toHaveBeenCalled()
   })
 
@@ -53,7 +57,7 @@ describe('useChatCopy', () => {
     await handleCopy('fallback', true, 'msg-1')
 
     expect(writeText).toHaveBeenCalledWith('picked')
-    expect((window as any).$message.success).toHaveBeenCalledWith('选中文本已复制')
+    expect(showFeedbackMock).toHaveBeenCalledWith('选中文本已复制', 'success')
   })
 
   it('copies fallback text when prioritizeSelection=false', async () => {
@@ -64,7 +68,7 @@ describe('useChatCopy', () => {
 
     expect(getSelectedTextMock).not.toHaveBeenCalled()
     expect(writeText).toHaveBeenCalledWith('hi')
-    expect((window as any).$message.success).toHaveBeenCalledWith('消息内容已复制')
+    expect(showFeedbackMock).toHaveBeenCalledWith('消息内容已复制', 'success')
   })
 
   it('copies image bytes and reports PNG message', async () => {
@@ -77,7 +81,7 @@ describe('useChatCopy', () => {
     await handleCopy('https://host/img.png')
 
     expect(writeImage).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]))
-    expect((window as any).$message.success).toHaveBeenCalledWith('图片已复制到剪贴板')
+    expect(showFeedbackMock).toHaveBeenCalledWith('图片已复制到剪贴板', 'success')
   })
 
   it('announces PNG conversion for GIF/WEBP and reports conversion message', async () => {
@@ -89,8 +93,8 @@ describe('useChatCopy', () => {
     const { handleCopy } = useChatCopy()
     await handleCopy('https://host/a.gif')
 
-    expect((window as any).$message.info).toHaveBeenCalledWith('正在将 GIF 格式图片转换为 PNG 并复制...')
-    expect((window as any).$message.success).toHaveBeenCalledWith('图片已转换为 PNG 格式并复制到剪贴板')
+    expect(showFeedbackMock).toHaveBeenCalledWith('正在将 GIF 格式图片转换为 PNG 并复制...', 'info')
+    expect(showFeedbackMock).toHaveBeenCalledWith('图片已转换为 PNG 格式并复制到剪贴板', 'success')
   })
 
   it('swallows image copy errors and does not crash', async () => {
@@ -102,6 +106,6 @@ describe('useChatCopy', () => {
     const { handleCopy } = useChatCopy()
     await expect(handleCopy('https://host/img.png')).resolves.toBeUndefined()
     expect(writeImage).not.toHaveBeenCalled()
-    expect((window as any).$message.success).not.toHaveBeenCalled()
+    expect(showFeedbackMock).not.toHaveBeenCalledWith('图片已复制到剪贴板', 'success')
   })
 })

@@ -53,18 +53,17 @@ import {
   NInput,
   NModal,
   NPageHeader,
-  NSpace,
-  useMessage
+  NSpace
 } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAdminNotices } from '@/composables/admin'
-import type { ServerNoticeInfo } from '@/services/matrix/admin'
+import { type ServerNoticeInfo, useAdminNotices } from '@/composables/admin'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminNotices')
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 
 const adminNotices = useAdminNotices()
 const notices = adminNotices.notices
@@ -102,17 +101,17 @@ async function loadNotices() {
 
 async function handleSend() {
   if (!sendForm.value.userId || !sendForm.value.body) {
-    message.warning(t('admin.notices.fill_required'))
+    showFeedback(t('admin.notices.fill_required'), 'warning')
     return
   }
   try {
     await adminNotices.sendNotice(sendForm.value.userId, sendForm.value.body)
-    message.success(t('admin.notices.send_success'))
+    showFeedback(t('admin.notices.send_success'), 'success')
     showSendDialog.value = false
     sendForm.value = { userId: '', body: '' }
   } catch (err) {
     logger.error('Failed to send notice:', err)
-    message.error(t('admin.notices.send_failed'))
+    showFeedback(t('admin.notices.send_failed'), 'error')
   }
 }
 

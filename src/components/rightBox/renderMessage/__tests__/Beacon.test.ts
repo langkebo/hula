@@ -1,0 +1,129 @@
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { BeaconBody } from '@/services/types'
+import BeaconMessage from '../Beacon.vue'
+
+const { showFeedbackMock, openExternalUrlMock, getOpenStreetMapUrlMock, setIntervalMock, clearIntervalMock } =
+  vi.hoisted(() => ({
+    showFeedbackMock: vi.fn(),
+    openExternalUrlMock: vi.fn(),
+    getOpenStreetMapUrlMock: vi.fn(),
+    setIntervalMock: vi.fn(() => 1),
+    clearIntervalMock: vi.fn()
+  }))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
+}))
+
+vi.mock('@/hooks/useLinkSegments', () => ({
+  openExternalUrl: openExternalUrlMock
+}))
+
+vi.mock('@/services/matrix/media/MatrixLocationService', () => ({
+  matrixLocationService: {
+    getOpenStreetMapUrl: getOpenStreetMapUrlMock
+  }
+}))
+
+vi.mock('@/utils/TimerManager', () => ({
+  useTimerManager: () => ({
+    setInterval: setIntervalMock,
+    clearInterval: clearIntervalMock
+  })
+}))
+
+vi.mock('naive-ui', async () => {
+  const { defineComponent, h } = await import('vue')
+
+  return {
+    NFlex: defineComponent({
+      name: 'NFlex',
+      setup(_, { slots }) {
+        return () => h('div', slots.default?.())
+      }
+    }),
+    NButton: defineComponent({
+      name: 'NButton',
+      emits: ['click'],
+      setup(_, { slots, emit }) {
+        return () =>
+          h(
+            'button',
+            {
+              type: 'button',
+              onClick: () => emit('click')
+            },
+            slots.default?.()
+          )
+      }
+    })
+  }
+})
+
+const mountBeacon = (body?: BeaconBody) =>
+  mount(BeaconMessage, {
+    props: {
+      body
+    }
+  })
+
+describe('Beacon render message', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getOpenStreetMapUrlMock.mockReturnValue('https://map.example.com')
+  })
+
+  it('uses action feedback when the beacon is inactive', () => {
+    const wrapper = mountBeacon({
+      description: 'ended beacon',
+      isLive: false,
+      timeout: 0
+    })
+
+    ;(wrapper.vm as unknown as { handleBeaconClick: () => void }).handleBeaconClick()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('位置共享已结束，无法查看', 'info')
+  })
+
+  it('uses action feedback when beacon uri is missing or invalid', () => {
+    const activeBody = {
+      description: 'active beacon',
+      isLive: true,
+      lastUpdateTs: Date.now(),
+      timeout: 60_000
+    }
+
+    const missingUriWrapper = mountBeacon(activeBody)
+    ;(missingUriWrapper.vm as unknown as { handleBeaconClick: () => void }).handleBeaconClick()
+    expect(showFeedbackMock).toHaveBeenCalledWith('无法获取位置信息', 'info')
+
+    const invalidUriWrapper = mountBeacon({
+      ...activeBody,
+      uri: 'invalid-uri'
+    })
+    ;(invalidUriWrapper.vm as unknown as { handleBeaconClick: () => void }).handleBeaconClick()
+    expect(showFeedbackMock).toHaveBeenCalledWith('位置信息格式无效', 'info')
+  })
+
+  it('opens external map when beacon data is valid', () => {
+    const wrapper = mountBeacon({
+      description: 'live beacon',
+      isLive: true,
+      lastUpdateTs: Date.now(),
+      timeout: 60_000,
+      uri: 'geo:39.9,116.3'
+    })
+
+    ;(wrapper.vm as unknown as { handleBeaconClick: () => void }).handleBeaconClick()
+
+    expect(getOpenStreetMapUrlMock).toHaveBeenCalledWith({
+      latitude: 39.9,
+      longitude: 116.3,
+      timestamp: expect.any(Number)
+    })
+    expect(openExternalUrlMock).toHaveBeenCalledWith('https://map.example.com')
+  })
+})

@@ -54,8 +54,8 @@ import { NAvatar, NTag } from 'naive-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EncryptionStatus from '@/components/encryption/EncryptionStatus.vue'
+import { useTyping } from '@/composables/chat/useTyping'
 import { RoomTypeEnum } from '@/enums'
-import { matrixTypingService } from '@/services/matrix/messaging/MatrixTypingService'
 import { IsAllUserEnum } from '@/services/types'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
@@ -98,9 +98,11 @@ const channelAvatar = computed(() => {
   return AvatarUtils.getAvatarUrl(props.avatar)
 })
 
+const { getTypingUsersText } = useTyping()
+
 const typingText = computed(() => {
   if (!props.roomId) return ''
-  return matrixTypingService.getTypingUsersText(props.roomId, 2)
+  return getTypingUsersText(props.roomId, 2)
 })
 
 const emit = defineEmits<(e: 'click') => void>()

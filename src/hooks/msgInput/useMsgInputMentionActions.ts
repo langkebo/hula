@@ -1,5 +1,7 @@
 import { type Ref, ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MsgEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
 import type { UserItem } from '@/services/types.ts'
 
 interface GroupStoreLike {
@@ -52,6 +54,8 @@ export const useMsgInputMentionActions = ({
   triggerInputEvent
 }: UseMsgInputMentionActionsOptions) => {
   const editorRange = ref<{ range: Range; selection: Selection } | null>(null)
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
 
   const captureEditorRange = () => {
     const snapshot = getEditorRange()
@@ -80,7 +84,7 @@ export const useMsgInputMentionActions = ({
   const handleAI = (_item: unknown) => {
     if (isChinese.value) return
 
-    window.$message.info('当前ai正在对接，敬请期待')
+    showFeedback(t('hooks.mention.ai_coming_soon'), 'info')
     aiDialogVisible.value = false
 
     focusOn(messageInputDom.value)

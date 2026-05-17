@@ -34,6 +34,7 @@
 import { NButton, NInput, NModal } from 'naive-ui'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import {
   discoverAndSaveMatrixEndpoints,
   isValidHttpUrl,
@@ -50,6 +51,7 @@ type HomeserverEndpointPayload = {
 }
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 const showModal = defineModel<boolean>('show', { default: false })
 
@@ -77,14 +79,14 @@ function isPotentialHomeserverInput(value: string): boolean {
 
 async function handleSave() {
   if (!homeserverUrl.value.trim()) {
-    window.$message.error(t('menu.homeserver_empty'))
+    showFeedback(t('menu.homeserver_empty'), 'warning')
     return
   }
 
   const rawValue = homeserverUrl.value.trim()
 
   if (!isPotentialHomeserverInput(rawValue)) {
-    window.$message.error(t('menu.homeserver_invalid'))
+    showFeedback(t('menu.homeserver_invalid'), 'warning')
     return
   }
 
@@ -100,11 +102,11 @@ async function handleSave() {
       homeserverUrl: discovery.homeserverUrl,
       identityServerUrl: discovery.identityServerUrl
     })
-    window.$message.success(t('menu.homeserver_saved'))
+    showFeedback(t('menu.homeserver_saved'), 'success')
     showModal.value = false
   } catch (error) {
     logger.error('Failed to save homeserver URL:', error)
-    window.$message.error(t('menu.homeserver_save_failed'))
+    showFeedback(t('menu.homeserver_save_failed'), 'error')
   } finally {
     saving.value = false
   }

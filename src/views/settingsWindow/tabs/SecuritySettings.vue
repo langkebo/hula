@@ -312,14 +312,14 @@ import {
   NSelect,
   NSpin,
   NSwitch,
-  useDialog,
-  useMessage
+  useDialog
 } from 'naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useAccount } from '@/composables/user/useAccount'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
-import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 
@@ -329,9 +329,10 @@ defineOptions({
   name: 'SecuritySettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const { t } = useI18n()
+const { getIgnoredUsers, setIgnoredUsers } = useAccount()
 const settingStore = useSettingStore()
 
 const loadingIgnored = ref(false)
@@ -411,12 +412,12 @@ function handleSetupSecretChat() {
 
 async function handleSaveSecretChat() {
   if (secretChatForm.password !== secretChatForm.confirmPassword) {
-    message.error(t('setting.private_chat.password_mismatch'))
+    showFeedback(t('setting.private_chat.password_mismatch'), 'error')
     return
   }
 
   if (secretChatForm.password.length < 4) {
-    message.error(t('setting.private_chat.password_too_short'))
+    showFeedback(t('setting.private_chat.password_too_short'), 'error')
     return
   }
 
@@ -424,16 +425,19 @@ async function handleSaveSecretChat() {
     savingSecretChat.value = true
     settingStore.setSecretChatPassword(secretChatForm.password)
     showSecretChatDialog.value = false
-    message.success(t('setting.private_chat.password_set_success'))
+    showFeedback(t('setting.private_chat.password_set_success'), 'success')
   } catch (error) {
-    message.error(t('setting.private_chat.password_set_failed'))
+    showFeedback(t('setting.private_chat.password_set_failed'), 'error')
   } finally {
     savingSecretChat.value = false
   }
 }
 
 function handleSecretChatEnabledChange(value: boolean) {
-  message.success(value ? t('setting.security.private_chat_enabled') : t('setting.security.private_chat_disabled'))
+  showFeedback(
+    value ? t('setting.security.private_chat_enabled') : t('setting.security.private_chat_disabled'),
+    'success'
+  )
 }
 
 function handleClearSecretChat() {
@@ -444,7 +448,7 @@ function handleClearSecretChat() {
     negativeText: t('setting.common.cancel'),
     onPositiveClick: () => {
       settingStore.clearSecretChatPassword()
-      message.success(t('setting.private_chat.clear_success'))
+      showFeedback(t('setting.private_chat.clear_success'), 'success')
     }
   })
 }
@@ -483,7 +487,7 @@ async function loadBackupInfo() {
 async function loadIgnoredUsers() {
   loadingIgnored.value = true
   try {
-    ignoredUsers.value = await matrixAccountService.getIgnoredUsers()
+    ignoredUsers.value = await getIgnoredUsers()
   } catch (error) {
     logger.error('Failed to fetch ignored users', error)
   } finally {
@@ -514,12 +518,12 @@ function handleSetupBackup() {
 
 async function handleBackupSuccess() {
   await loadBackupInfo()
-  message.success(t('setting.security.backup_setup_success'))
+  showFeedback(t('setting.security.backup_setup_success'), 'success')
 }
 
 async function handleExportKey() {
   if (!encryptionEnabled.value) {
-    message.warning(t('setting.security.enable_encryption_first'))
+    showFeedback(t('setting.security.enable_encryption_first'), 'warning')
     return
   }
 
@@ -537,10 +541,10 @@ async function handleExportKey() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
 
-    message.success(t('setting.security.keys_exported'))
+    showFeedback(t('setting.security.keys_exported'), 'success')
   } catch (error) {
     logger.error('Failed to export recovery key', error)
-    message.error(t('setting.security.export_key_failed'))
+    showFeedback(t('setting.security.export_key_failed'), 'error')
   } finally {
     exportLoading.value = false
   }
@@ -548,27 +552,36 @@ async function handleExportKey() {
 
 function handleOnlineStatusChange(value: boolean) {
   localStorage.setItem('hula-show-online', value.toString())
-  message.success(value ? t('setting.security.online_status_shown') : t('setting.security.online_status_hidden'))
+  showFeedback(
+    value ? t('setting.security.online_status_shown') : t('setting.security.online_status_hidden'),
+    'success'
+  )
 }
 
 function handleTypingStatusChange(value: boolean) {
   localStorage.setItem('hula-show-typing', value.toString())
-  message.success(value ? t('setting.security.typing_status_shown') : t('setting.security.typing_status_hidden'))
+  showFeedback(
+    value ? t('setting.security.typing_status_shown') : t('setting.security.typing_status_hidden'),
+    'success'
+  )
 }
 
 function handleReadReceiptsChange(value: boolean) {
   localStorage.setItem('hula-send-receipts', value.toString())
-  message.success(value ? t('setting.security.read_receipts_enabled') : t('setting.security.read_receipts_disabled'))
+  showFeedback(
+    value ? t('setting.security.read_receipts_enabled') : t('setting.security.read_receipts_disabled'),
+    'success'
+  )
 }
 
 async function handleUnignore(userId: string) {
   try {
     const newIgnoredUsers = ignoredUsers.value.filter((u) => u !== userId)
-    await matrixAccountService.setIgnoredUsers(newIgnoredUsers)
+    await setIgnoredUsers(newIgnoredUsers)
     ignoredUsers.value = newIgnoredUsers
-    message.success(t('setting.security.ignored_user_removed'))
+    showFeedback(t('setting.security.ignored_user_removed'), 'success')
   } catch (error) {
-    message.error(t('setting.security.operation_failed'))
+    showFeedback(t('setting.security.operation_failed'), 'error')
   }
 }
 
@@ -592,23 +605,23 @@ function saveBlockedUsers() {
 
 function handleAddBlocked() {
   if (!newBlockedUser.value.trim()) {
-    message.warning(t('setting.security.input_user_id_required'))
+    showFeedback(t('setting.security.input_user_id_required'), 'warning')
     return false
   }
   if (blockedUsers.value.includes(newBlockedUser.value.trim())) {
-    message.warning(t('setting.security.user_already_blocked'))
+    showFeedback(t('setting.security.user_already_blocked'), 'warning')
     return false
   }
   blockedUsers.value.push(newBlockedUser.value.trim())
   newBlockedUser.value = ''
   saveBlockedUsers()
-  message.success(t('setting.security.blocked_user_added'))
+  showFeedback(t('setting.security.blocked_user_added'), 'success')
 }
 
 function handleUnblock(userId: string) {
   blockedUsers.value = blockedUsers.value.filter((u) => u !== userId)
   saveBlockedUsers()
-  message.success(t('setting.security.blocked_user_removed'))
+  showFeedback(t('setting.security.blocked_user_removed'), 'success')
 }
 
 function loadInviteLists() {
@@ -632,44 +645,44 @@ function saveInviteAllowlist() {
 
 function handleAddInviteBlocklist() {
   if (!newBlocklistUser.value.trim()) {
-    message.warning(t('setting.security.input_user_id_required'))
+    showFeedback(t('setting.security.input_user_id_required'), 'warning')
     return
   }
   if (inviteBlocklist.value.includes(newBlocklistUser.value.trim())) {
-    message.warning(t('setting.security.user_already_in_blocklist'))
+    showFeedback(t('setting.security.user_already_in_blocklist'), 'warning')
     return
   }
   inviteBlocklist.value.push(newBlocklistUser.value.trim())
   newBlocklistUser.value = ''
   saveInviteBlocklist()
-  message.success(t('setting.security.invite_blocklist_added'))
+  showFeedback(t('setting.security.invite_blocklist_added'), 'success')
 }
 
 function handleRemoveInviteBlocklist(userId: string) {
   inviteBlocklist.value = inviteBlocklist.value.filter((u) => u !== userId)
   saveInviteBlocklist()
-  message.success(t('setting.security.invite_blocklist_removed'))
+  showFeedback(t('setting.security.invite_blocklist_removed'), 'success')
 }
 
 function handleAddInviteAllowlist() {
   if (!newAllowlistUser.value.trim()) {
-    message.warning(t('setting.security.input_user_id_required'))
+    showFeedback(t('setting.security.input_user_id_required'), 'warning')
     return
   }
   if (inviteAllowlist.value.includes(newAllowlistUser.value.trim())) {
-    message.warning(t('setting.security.user_already_in_allowlist'))
+    showFeedback(t('setting.security.user_already_in_allowlist'), 'warning')
     return
   }
   inviteAllowlist.value.push(newAllowlistUser.value.trim())
   newAllowlistUser.value = ''
   saveInviteAllowlist()
-  message.success(t('setting.security.invite_allowlist_added'))
+  showFeedback(t('setting.security.invite_allowlist_added'), 'success')
 }
 
 function handleRemoveInviteAllowlist(userId: string) {
   inviteAllowlist.value = inviteAllowlist.value.filter((u) => u !== userId)
   saveInviteAllowlist()
-  message.success(t('setting.security.invite_allowlist_removed'))
+  showFeedback(t('setting.security.invite_allowlist_removed'), 'success')
 }
 </script>
 

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   routerPushMock,
-  messageSuccessMock,
+  showFeedbackMock,
   handleCallbackMock,
   exchangeOidcForMatrixTokenMock,
   restoreWithAccessTokenMock,
@@ -14,7 +14,7 @@ const {
   resolveMatrixEndpointConfigMock
 } = vi.hoisted(() => ({
   routerPushMock: vi.fn(),
-  messageSuccessMock: vi.fn(),
+  showFeedbackMock: vi.fn(),
   handleCallbackMock: vi.fn(),
   exchangeOidcForMatrixTokenMock: vi.fn(),
   restoreWithAccessTokenMock: vi.fn(),
@@ -44,9 +44,12 @@ vi.mock('naive-ui', () => ({
   NSpin: {
     name: 'NSpin',
     template: '<div class="n-spin">loading</div>'
-  },
-  useMessage: () => ({
-    success: messageSuccessMock
+  }
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
   })
 }))
 
@@ -153,7 +156,7 @@ describe('OidcCallback', () => {
       bootstrapAfterRestore: true
     })
     expect(applyDesktopLoginStateMock).toHaveBeenCalled()
-    expect(messageSuccessMock).toHaveBeenCalledWith('OIDC 登录成功')
+    expect(showFeedbackMock).toHaveBeenCalledWith('OIDC 登录成功', 'success')
     expect(wrapper.text()).toContain('登录成功')
 
     vi.advanceTimersByTime(1500)

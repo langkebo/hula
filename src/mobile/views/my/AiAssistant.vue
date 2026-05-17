@@ -4,7 +4,7 @@
       <HeaderBar
         :isOfficial="false"
         class="bg-white"
-        style="border-bottom: 1px solid; border-color: #dfdfdf"
+        style="border-bottom: 1px solid; border-color: var(--hula-border-default)"
         :hidden-right="true"
         :room-name="t('ai_assistant.title')" />
     </template>
@@ -382,7 +382,7 @@ const suggestions = [
     title: 'ai_assistant.suggestions.translate',
     desc: 'ai_assistant.suggestions.translate_desc',
     icon: 'mdi:translate',
-    color: '#1989fa',
+    color: 'var(--hula-color-info-500)',
     prompt: t('ai_assistant.suggestions.translate_prompt')
   },
   {
@@ -390,7 +390,7 @@ const suggestions = [
     title: 'ai_assistant.suggestions.summarize',
     desc: 'ai_assistant.suggestions.summarize_desc',
     icon: 'mdi:text-box-outline',
-    color: '#52c41a',
+    color: 'var(--hula-color-success-500)',
     prompt: t('ai_assistant.suggestions.summarize_prompt')
   },
   {

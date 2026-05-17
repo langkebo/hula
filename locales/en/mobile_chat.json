@@ -10,5 +10,28 @@
   "audio": "Audio",
   "voice": "Voice",
   "keyboard": "Keyboard",
-  "import_model": "Import Model"
+  "import_model": "Import Model",
+  "notice": {
+    "title": "Announcement",
+    "publisher": "Publisher:",
+    "pinned": "Pinned",
+    "read_count": "{count} read",
+    "detail_title": "Announcement Detail",
+    "edit_notice": "Edit Announcement",
+    "not_found": "Announcement not found or deleted",
+    "edit_title": "Edit Group Announcement",
+    "add_title": "New Group Announcement",
+    "content_placeholder": "Enter announcement content...",
+    "click_upload": "Click to Upload",
+    "set_pinned": "Pin to Top",
+    "pinned_desc": "Announcement will appear at the top of the list",
+    "content_required": "Please enter announcement content",
+    "edit_success": "Announcement updated",
+    "publish_success": "Announcement published",
+    "save_failed": "Failed to save announcement. Please try again.",
+    "fetch_failed": "Failed to load announcement. Please try again.",
+    "unknown_user": "Unknown User",
+    "cancel": "Cancel",
+    "save": "Save"
+  }
 }

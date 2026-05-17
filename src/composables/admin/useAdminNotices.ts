@@ -2,6 +2,8 @@ import { type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
 import type { ServerNoticeInfo } from '@/services/matrix/admin/AdminTypes'
 
+export type { ServerNoticeInfo } from '@/services/matrix/admin/AdminTypes'
+
 export interface UseAdminNoticesResult {
   notices: Ref<ServerNoticeInfo[]>
   loading: Ref<boolean>

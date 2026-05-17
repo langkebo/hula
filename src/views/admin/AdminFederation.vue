@@ -131,16 +131,16 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NSpace, NTag, useDialog, useMessage } from 'naive-ui'
+import { NButton, NSpace, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type FederationBlacklistView, useAdminFederation } from '@/composables/admin'
-import type { FederationDestination } from '@/services/matrix/admin'
+import { type FederationBlacklistView, type FederationDestination, useAdminFederation } from '@/composables/admin'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const adminStore = useAdminStore()
 const { handleAdminError } = useAdminErrorHandler()
@@ -273,9 +273,9 @@ function openDestDetail(dest: FederationDestination) {
 async function handleResetConnection(destination: string) {
   try {
     await federation.resetFederationConnection(destination)
-    message.success(t('admin.federation.resetSuccess'))
+    showFeedback(t('admin.federation.resetSuccess'), 'success')
   } catch (err) {
-    if (handleAdminError(err)) message.error(t('admin.federation.resetFailed'))
+    if (handleAdminError(err)) showFeedback(t('admin.federation.resetFailed'), 'error')
   }
 }
 
@@ -288,10 +288,10 @@ async function handleDisconnect(destination: string) {
     onPositiveClick: async () => {
       try {
         await federation.resetFederationConnection(destination)
-        message.success(t('admin.federation.disconnectSuccess'))
+        showFeedback(t('admin.federation.disconnectSuccess'), 'success')
         showDestDetail.value = false
       } catch (err) {
-        if (handleAdminError(err)) message.error(t('admin.federation.disconnectFailed'))
+        if (handleAdminError(err)) showFeedback(t('admin.federation.disconnectFailed'), 'error')
       }
     }
   })
@@ -299,7 +299,7 @@ async function handleDisconnect(destination: string) {
 
 async function handleAddToBlacklist() {
   if (!addBlacklistForm.value.domain) {
-    message.error(t('admin.federation.domainRequired'))
+    showFeedback(t('admin.federation.domainRequired'), 'error')
     return
   }
   addingBlacklist.value = true
@@ -309,11 +309,11 @@ async function handleAddToBlacklist() {
       addBlacklistForm.value.reason || undefined
     )
     if (success) {
-      message.success(t('admin.federation.addBlacklistSuccess'))
+      showFeedback(t('admin.federation.addBlacklistSuccess'), 'success')
       showAddBlacklistDialog.value = false
       addBlacklistForm.value = { domain: '', reason: '' }
     } else {
-      message.error(t('admin.federation.addBlacklistFailed'))
+      showFeedback(t('admin.federation.addBlacklistFailed'), 'error')
     }
   } finally {
     addingBlacklist.value = false
@@ -329,9 +329,9 @@ async function handleRemoveFromBlacklist(domain: string) {
     onPositiveClick: async () => {
       const success = await federation.removeFromBlacklist(domain)
       if (success) {
-        message.success(t('admin.federation.removeBlacklistSuccess'))
+        showFeedback(t('admin.federation.removeBlacklistSuccess'), 'success')
       } else {
-        message.error(t('admin.federation.removeBlacklistFailed'))
+        showFeedback(t('admin.federation.removeBlacklistFailed'), 'error')
       }
     }
   })

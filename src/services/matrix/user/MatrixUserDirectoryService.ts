@@ -6,7 +6,7 @@
 
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
-import { matrixClientService } from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 /**
  * 用户目录搜索结果
@@ -29,26 +29,13 @@ interface MatrixDirectoryUser {
 /**
  * 用户目录服务
  */
-class UserDirectoryService {
-  private client: MatrixClient | null = null
-
+class UserDirectoryService extends BaseMatrixService {
   /**
    * 初始化服务
    */
   initialize(client: MatrixClient): void {
-    this.client = client
+    this.setFallbackClient(client)
     info('[UserDirectory] 服务已初始化')
-  }
-
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient() ?? this.client
-    if (!client) {
-      throw new Error('Client 未初始化')
-    }
-    if (this.client !== client) {
-      this.client = client
-    }
-    return client
   }
 
   /**

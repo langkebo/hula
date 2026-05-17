@@ -10,8 +10,10 @@
           @error="($event.target as HTMLImageElement).src = '/logo.png'" />
       </div>
       <div class="flex flex-col gap-10px">
-        <div class="text-14px text-#333 font-bold">苏小研</div>
-        <div class="text-12px text-#999">消息内容：{{ props.message.content }}</div>
+        <div class="text-14px text-[--hula-text-primary] font-bold">{{ t('mobile_mymessage.unknown_user') }}</div>
+        <div class="text-12px text-[--hula-text-tertiary]">
+          {{ t('mobile_mymessage.message_content') }}{{ props.message.content }}
+        </div>
       </div>
       <div class="relative w-full aspect-square rounded-10px mask-rounded">
         <img
@@ -23,12 +25,16 @@
       class="mt-5px flex justify-end pb-10px"
       :class="props.message.type === 'reply' || props.message.type === 'comment' ? ['custom-border-b-1'] : ['']"
       v-if="props.message.type === 'reply' || props.message.type === 'comment'">
-      <div class="bg-#EFF5F4 text-14px rounded-25px w-82px line-height-32px text-center">回复</div>
+      <div class="bg-[--hula-color-primary-100] text-14px rounded-25px w-82px line-height-32px text-center">回复</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 const props = defineProps({
   message: {
     type: Object as PropType<{
@@ -44,6 +50,6 @@ const props = defineProps({
 <style lang="scss" scoped>
 .custom-border-b-1 {
   border-bottom: 1px solid;
-  border-color: #d9d9d9;
+  border-color: var(--hula-border-default);
 }
 </style>

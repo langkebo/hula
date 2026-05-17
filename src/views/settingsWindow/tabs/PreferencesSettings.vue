@@ -267,10 +267,11 @@
 <script setup lang="ts">
 import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
 import { open } from '@tauri-apps/plugin-dialog'
-import { NButton, NDivider, NProgress, NRadio, NRadioGroup, NSelect, NSwitch, useMessage } from 'naive-ui'
+import { NButton, NDivider, NProgress, NRadio, NRadioGroup, NSelect, NSwitch } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useLanguageOptions } from '@/composables/settings/settingsOptions'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useScannerStore } from '@/stores/domains/widget/scanner'
@@ -281,7 +282,7 @@ defineOptions({
   name: 'PreferencesSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const scannerStore = useScannerStore()
@@ -374,13 +375,14 @@ function findOptionLabel<T extends string | number>(options: Array<{ label: stri
 }
 
 function showToggleFeedback(label: string, value: boolean) {
-  message.success(
-    t(value ? 'setting.preferences.feedback.enabled' : 'setting.preferences.feedback.disabled', { label })
+  showFeedback(
+    t(value ? 'setting.preferences.feedback.enabled' : 'setting.preferences.feedback.disabled', { label }),
+    'success'
   )
 }
 
 function showOptionSetFeedback(label: string, value: string) {
-  message.success(t('setting.preferences.feedback.option_set', { label, value }))
+  showFeedback(t('setting.preferences.feedback.option_set', { label, value }), 'success')
 }
 
 onMounted(() => {
@@ -394,13 +396,13 @@ async function syncDesktopPreferences() {
     autoStartup.value = await isEnabled()
     settingStore.setAutoStartup(autoStartup.value)
   } catch (error) {
-    message.warning(t('setting.preferences.feedback.read_auto_startup_failed'))
+    showFeedback(t('setting.preferences.feedback.read_auto_startup_failed'), 'warning')
   }
 
   try {
     await scannerStore.initializeScanner()
   } catch (error) {
-    message.warning(t('setting.preferences.feedback.initialize_storage_scan_failed'))
+    showFeedback(t('setting.preferences.feedback.initialize_storage_scan_failed'), 'warning')
   }
 }
 
@@ -435,7 +437,7 @@ async function handleAutoStartupChange(value: boolean) {
     showToggleFeedback(t('setting.preferences.auto_startup_label'), value)
   } catch (error) {
     autoStartup.value = !value
-    message.error(t('setting.preferences.feedback.auto_startup_change_failed'))
+    showFeedback(t('setting.preferences.feedback.auto_startup_change_failed'), 'error')
   } finally {
     autoStartupLoading.value = false
   }
@@ -455,7 +457,7 @@ async function selectCustomDirectory() {
       scannerStore.setCustomDirectory(result)
     }
   } catch (error) {
-    message.error(t('setting.storage.select_directory_error'))
+    showFeedback(t('setting.storage.select_directory_error'), 'error')
   }
 }
 

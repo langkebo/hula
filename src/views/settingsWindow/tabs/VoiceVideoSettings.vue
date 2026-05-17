@@ -152,9 +152,10 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NDivider, NSelect, NSlider, NSwitch, useMessage } from 'naive-ui'
+import { NButton, NDivider, NSelect, NSlider, NSwitch } from 'naive-ui'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('VoiceVideoSettings')
@@ -163,7 +164,7 @@ defineOptions({
   name: 'VoiceVideoSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 
 const devicesLoading = ref(false)
@@ -242,7 +243,7 @@ async function loadDevices() {
     }
   } catch (error) {
     logger.error('Failed to load media devices', error)
-    message.error(t('setting.voice_video.load_devices_failed'))
+    showFeedback(t('setting.voice_video.load_devices_failed'), 'error')
   } finally {
     devicesLoading.value = false
   }
@@ -355,10 +356,10 @@ async function startAudioTest() {
 
     isRecording.value = true
     updateAudioLevel()
-    message.success(t('setting.voice_video.microphone_test_started'))
+    showFeedback(t('setting.voice_video.microphone_test_started'), 'success')
   } catch (error) {
     logger.error('Failed to start microphone test', error)
-    message.error(t('setting.voice_video.microphone_access_failed'))
+    showFeedback(t('setting.voice_video.microphone_access_failed'), 'error')
   }
 }
 
@@ -417,10 +418,10 @@ async function startPreview() {
     }
 
     isPreviewing.value = true
-    message.success(t('setting.voice_video.preview_started'))
+    showFeedback(t('setting.voice_video.preview_started'), 'success')
   } catch (error) {
     logger.error('Failed to start video preview', error)
-    message.error(t('setting.voice_video.camera_access_failed'))
+    showFeedback(t('setting.voice_video.camera_access_failed'), 'error')
   }
 }
 

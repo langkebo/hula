@@ -173,6 +173,17 @@
   --hula-color-beta-500: #a789d9;
   --hula-color-beta-100: #d9ccf7;
 
+  /* 业务语义色 */
+  --hula-room-unread-badge-bg: var(--hula-color-primary-500);
+  --hula-room-highlight-badge-bg: var(--hula-color-danger-500);
+  --hula-room-invite-bg: var(--hula-color-primary-100);
+  --hula-room-tombstoned-text: var(--hula-text-disabled);
+  --hula-space-public-badge-bg: var(--hula-color-success-100);
+  --hula-space-invite-badge-bg: var(--hula-color-warning-100);
+  --hula-friend-favorite-badge-bg: var(--hula-color-warning-100);
+  --hula-friend-blocked-badge-bg: var(--hula-color-danger-100);
+  --hula-sync-recovering-bg: var(--hula-color-warning-100);
+
   /* 管理后台 */
   --hula-admin-sidebar-bg: #1a1a2e;
   --hula-admin-sidebar-text: color-mix(in srgb, var(--hula-text-inverse) 65%, transparent);
@@ -372,6 +383,16 @@ html[data-theme='dark'] {
     0 70px 65px rgb(0 0 0 / 36%);
   --hula-color-beta-500: #a789d9;
   --hula-color-beta-100: #403555;
+
+  --hula-room-unread-badge-bg: var(--hula-color-primary-400);
+  --hula-room-highlight-badge-bg: var(--hula-color-danger-500);
+  --hula-room-invite-bg: rgba(19, 152, 127, 0.15);
+  --hula-room-tombstoned-text: #595959;
+  --hula-space-public-badge-bg: rgba(82, 196, 26, 0.15);
+  --hula-space-invite-badge-bg: rgba(250, 173, 20, 0.15);
+  --hula-friend-favorite-badge-bg: rgba(250, 173, 20, 0.15);
+  --hula-friend-blocked-badge-bg: rgba(255, 77, 79, 0.08);
+  --hula-sync-recovering-bg: rgba(250, 173, 20, 0.15);
   --hula-admin-sidebar-bg: #141422;
   --hula-admin-sidebar-text: color-mix(in srgb, var(--hula-text-inverse) 55%, transparent);
   --hula-admin-sidebar-border: var(--hula-border-contrast);

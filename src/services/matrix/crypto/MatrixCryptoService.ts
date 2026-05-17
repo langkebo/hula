@@ -557,7 +557,7 @@ class MatrixCryptoService extends BaseMatrixService {
           const backup = backups[0]
           const verifyResult = await secureBackupManager.verifySecureBackup(backup.backup_id, passphrase)
           if (!verifyResult.valid) {
-            throw new Error('密码短语验证失败，无法导出密钥')
+            throw new Error(this.t('matrix_error.crypto.passphrase_verification_failed'))
           }
         }
       }

@@ -48,6 +48,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
 import PrivacyOverlay from '@/components/privacy/PrivacyOverlay.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { usePrivacyProtection } from '@/composables/usePrivacyProtection'
 import { MittEnum, MsgEnum, NotificationTypeEnum, RoomTypeEnum, TauriCommand, WsResponseMessageType } from '@/enums'
 import { useCheckUpdate } from '@/hooks/useCheckUpdate'
@@ -74,6 +75,7 @@ import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import SettingsDialog from '@/views/settingsWindow/SettingsDialog.vue'
 
 const logger = createLogger('Layout')
+const { showFeedback } = useActionFeedback()
 
 const { t } = useI18n()
 const route = useRoute()
@@ -433,7 +435,7 @@ const buildPathUploadFiles = async (paths: string[]) => {
     return await FileUtil.map2PathUploadFile(paths, filesMeta)
   } catch (error) {
     logger.error('解析拖拽文件元数据失败:', error)
-    window.$message?.error?.('解析拖拽文件失败')
+    showFeedback('解析拖拽文件失败', 'error')
     return []
   }
 }
@@ -445,7 +447,7 @@ const handleNativeFileDrop = async (paths: string[]) => {
     if (pathFiles.length > 0) {
       useMitt.emit(MittEnum.GLOBAL_FILES_DROP, pathFiles)
     } else {
-      window.$message?.error?.('无法识别拖拽的文件')
+      showFeedback('无法识别拖拽的文件', 'error')
     }
   } catch (error) {
     logger.error('处理原生拖拽文件失败:', error)

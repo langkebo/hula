@@ -5,7 +5,7 @@
     </template>
 
     <template #container>
-      <div class="flex h-full flex-col overflow-auto bg-#f7f8fa">
+      <div class="flex h-full flex-col overflow-auto bg-[--hula-surface-panel-muted]">
         <div class="flex flex-col gap-12px p-16px">
           <div class="rounded-16px bg-white p-16px">
             <div class="text-18px font-600 text-[--hula-text-primary]">动态共享骨架</div>

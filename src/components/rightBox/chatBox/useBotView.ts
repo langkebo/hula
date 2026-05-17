@@ -8,6 +8,7 @@ import DOMPurify from 'dompurify'
 import type { DropdownOption } from 'naive-ui'
 import { computed, nextTick, type Ref, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { type AssistantModelPreset, useAssistantModelPresets } from '@/hooks/useAssistantModelPresets'
 import { useBotStore } from '@/stores/domains/user/bot'
 import { createLogger } from '@/utils/Logger'
@@ -41,6 +42,7 @@ interface UseBotViewOptions {
 export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBotViewOptions) => {
   const botStore = useBotStore()
   const { t } = useI18n()
+  const { showFeedback } = useActionFeedback()
 
   const currentLang = ref<'zh' | 'en'>('zh')
   const renderedMarkdown = ref('')
@@ -271,7 +273,7 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
       await showAssistant(true, true)
     } catch (error) {
       logger.error('选择本地模型失败:', error)
-      window.$message?.error(t('ai_assistant.bot.select_model_failed'))
+      showFeedback(t('ai_assistant.bot.select_model_failed'), 'error')
     }
   }
 

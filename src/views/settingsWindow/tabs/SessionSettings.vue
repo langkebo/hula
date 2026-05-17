@@ -85,9 +85,11 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NEmpty, NForm, NFormItem, NInput, NModal, NSpin, useDialog, useMessage } from 'naive-ui'
+import { NButton, NDivider, NEmpty, NForm, NFormItem, NInput, NModal, NSpin, useDialog } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useAccount } from '@/composables/user/useAccount'
 import { type DeviceInfo, matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 
@@ -95,9 +97,10 @@ defineOptions({
   name: 'SessionSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const { t, locale } = useI18n()
+const { getDevices, deleteDevices } = useAccount()
 const matrixStore = useMatrixStore()
 
 const loading = ref(false)
@@ -124,9 +127,9 @@ onMounted(async () => {
 async function loadDevices() {
   loading.value = true
   try {
-    devices.value = await matrixAccountService.getDevices()
+    devices.value = await getDevices()
   } catch (error) {
-    message.error(t('setting.sessions.fetch_failed'))
+    showFeedback(t('setting.sessions.fetch_failed'), 'error')
   } finally {
     loading.value = false
   }
@@ -158,18 +161,18 @@ function showRenameDialog(device: DeviceInfo | undefined) {
 
 async function handleRenameDevice() {
   if (!editingDevice.value || !newDeviceName.value.trim()) {
-    message.warning(t('setting.sessions.enter_device_name'))
+    showFeedback(t('setting.sessions.enter_device_name'), 'warning')
     return
   }
 
   renaming.value = true
   try {
     await matrixAccountService.setDeviceName(editingDevice.value.deviceId, newDeviceName.value.trim())
-    message.success(t('setting.sessions.device_name_updated'))
+    showFeedback(t('setting.sessions.device_name_updated'), 'success')
     renameDialogVisible.value = false
     await loadDevices()
   } catch (error) {
-    message.error(t('setting.sessions.rename_failed'))
+    showFeedback(t('setting.sessions.rename_failed'), 'error')
   } finally {
     renaming.value = false
   }
@@ -184,10 +187,10 @@ function handleDeleteDevice(device: DeviceInfo) {
     onPositiveClick: async () => {
       try {
         await matrixAccountService.deleteDevice(device.deviceId)
-        message.success(t('setting.sessions.device_logged_out'))
+        showFeedback(t('setting.sessions.device_logged_out'), 'success')
         await loadDevices()
       } catch (error) {
-        message.error(t('setting.sessions.logout_failed'))
+        showFeedback(t('setting.sessions.logout_failed'), 'error')
       }
     }
   })
@@ -204,11 +207,11 @@ function handleLogoutAllDevices() {
     negativeText: t('setting.common.cancel'),
     onPositiveClick: async () => {
       try {
-        await matrixAccountService.deleteDevices(deviceIds)
-        message.success(t('setting.sessions.all_other_devices_logged_out'))
+        await deleteDevices(deviceIds)
+        showFeedback(t('setting.sessions.all_other_devices_logged_out'), 'success')
         await loadDevices()
       } catch (error) {
-        message.error(t('setting.sessions.logout_all_failed'))
+        showFeedback(t('setting.sessions.logout_all_failed'), 'error')
       }
     }
   })

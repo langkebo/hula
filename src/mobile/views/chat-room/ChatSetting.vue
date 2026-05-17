@@ -11,7 +11,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col gap-15px py-15px px-20px flex-1 min-h-0 z-1">
-          <div class="bg-white dark:bg-[#1a1a1a] rounded-10px p-0">
+          <div class="bg-[--hula-surface-panel] rounded-10px p-0">
             <div class="flex py-10px rounded-10px w-full items-center gap-10px" @click="clickInfo">
               <!-- 群头像 -->
               <div class="flex justify-center">
@@ -50,7 +50,7 @@
           </div>
 
           <!-- 群成员  -->
-          <div v-if="isGroup" class="bg-white dark:bg-[#1a1a1a] rounded-10px">
+          <div v-if="isGroup" class="bg-[--hula-surface-panel] rounded-10px">
             <div class="flex items-center justify-between p-[15px_15px_0px_15px]">
               <span class="text-14px font-medium">{{ t('mobile_chat_setting.group_members_title') }}</span>
               <div
@@ -75,10 +75,11 @@
                   v-for="i in groupMemberListSliced"
                   :key="i.uid"
                   class="flex flex-col justify-center items-center gap-5px">
-                  <div class="rounded-full relative bg-#E5EFEE w-36px h-36px flex items-center justify-center">
+                  <div
+                    class="rounded-full relative bg-[--hula-color-primary-100] w-36px h-36px flex items-center justify-center">
                     <div
                       v-if="i.activeStatus !== OnlineEnum.ONLINE"
-                      class="w-36px h-36px absolute rounded-full bg-#707070 opacity-70 z-4"></div>
+                      class="w-36px h-36px absolute rounded-full bg-[--bg-offline-avatar-overlay] z-4"></div>
                     <img
                       class="absolute z-3 size-36px rounded-full object-cover"
                       :src="avatarSrc(i.avatar)"
@@ -97,17 +98,17 @@
           <!-- 管理群成员 -->
           <div
             v-if="isGroup && groupStore.isAdminOrLord() && globalStore.currentSessionRoomId !== '1'"
-            class="bg-white p-15px rounded-10px shadow text-14px flex cursor-pointer"
+            class="bg-[--hula-surface-panel] p-15px rounded-10px shadow text-14px flex cursor-pointer"
             @click="toManageGroupMember">
             {{ t('mobile_chat_setting.manage_group_members') }}
           </div>
 
-          <div class="bg-white dark:bg-[#1a1a1a] rounded-10px p-15px cursor-pointer" @click="handleSearchChatContent">
+          <div class="bg-[--hula-surface-panel] rounded-10px p-15px cursor-pointer" @click="handleSearchChatContent">
             {{ t('mobile_chat_setting.search_history') }}
           </div>
 
           <!-- 群公告 & 信息 -->
-          <div class="bg-white dark:bg-[#1a1a1a] rounded-10px">
+          <div class="bg-[--hula-surface-panel] rounded-10px">
             <div class="p-15px!">
               <div @click="handleCopy(activeItem?.account || '')" class="flex justify-between items-center">
                 <div class="text-14px">
@@ -187,7 +188,7 @@
           </div>
 
           <!-- 设置 -->
-          <div class="bg-white dark:bg-[#1a1a1a] rounded-10px">
+          <div class="bg-[--hula-surface-panel] rounded-10px">
             <div class="p-15px text-14px font-medium">
               {{ t('mobile_chat_setting.setting_type', { t: title }) }}
             </div>
@@ -237,6 +238,7 @@
 <script setup lang="ts">
 import { showConfirmDialog } from 'vant'
 import { I18nT, useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum, NotificationTypeEnum, OnlineEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { useMitt } from '@/hooks/useMitt.ts'
@@ -263,8 +265,8 @@ defineOptions({
 })
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
-const userStore = useUserStore()
 const chatStore = useChatStore()
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
@@ -333,7 +335,7 @@ const handleCrop = async (cropBlob: Blob) => {
 const handleCopy = (val: string) => {
   if (val) {
     navigator.clipboard.writeText(val)
-    window.$message.success(t('mobile_chat_setting.copy_id', { id: val }))
+    showFeedback(t('mobile_chat_setting.copy_id', { id: val }), 'success')
   }
 }
 
@@ -376,38 +378,38 @@ async function handleExit() {
 
     const session = activeItem.value
     if (!session) {
-      window.$message.warning(t('mobile_chat_setting.session_not_exist'))
+      showFeedback(t('mobile_chat_setting.session_not_exist'), 'warning')
       return
     }
     try {
       if (isGroup.value) {
         if (isLord.value) {
           if (currentSessionRoomId.value === '1') {
-            window.$message.warning(t('mobile_chat_setting.disband_channel_failed'))
+            showFeedback(t('mobile_chat_setting.disband_channel_failed'), 'warning')
             return
           }
           groupStore.exitGroup(currentSessionRoomId.value).then(() => {
-            window.$message.success(t('mobile_chat_setting.group_disbanded'))
+            showFeedback(t('mobile_chat_setting.group_disbanded'), 'success')
             useMitt.emit(MittEnum.DELETE_SESSION, currentSessionRoomId.value)
           })
         } else {
           if (currentSessionRoomId.value === '1') {
-            window.$message.warning(t('mobile_chat_setting.leave_channel_failed'))
+            showFeedback(t('mobile_chat_setting.leave_channel_failed'), 'warning')
             return
           }
           groupStore.exitGroup(currentSessionRoomId.value).then(() => {
-            window.$message.success(t('mobile_chat_setting.group_left'))
+            showFeedback(t('mobile_chat_setting.group_left'), 'success')
             useMitt.emit(MittEnum.DELETE_SESSION, currentSessionRoomId.value)
           })
         }
       } else {
         const detailId = session.detailId
         if (!detailId) {
-          window.$message.warning(t('mobile_chat_setting.get_friend_info_failed'))
+          showFeedback(t('mobile_chat_setting.get_friend_info_failed'), 'warning')
           return
         }
         await contactStore.onDeleteFriend(detailId)
-        window.$message.success(t('mobile_chat_setting.delete_friend_success'))
+        showFeedback(t('mobile_chat_setting.delete_friend_success'), 'success')
       }
       router.push('/mobile/message')
     } catch (error) {
@@ -424,7 +426,7 @@ const clickInfo = () => {
   } else {
     const detailId = activeItem.value?.detailId
     if (!detailId) {
-      window.$message.warning(t('mobile_chat_setting.session_not_ready'))
+      showFeedback(t('mobile_chat_setting.session_not_ready'), 'warning')
       return
     }
     router.push(`/mobile/mobileFriends/friendInfo/${detailId}`)
@@ -466,12 +468,13 @@ const handleTop = (value: boolean) => {
     .setSessionTop(currentSessionRoomId.value, value)
     .then(() => {
       chatStore.updateSession(currentSessionRoomId.value, { top: value })
-      window.$message.success(
-        value ? t('mobile_chat_setting.pinned_success') : t('mobile_chat_setting.unpinned_success')
+      showFeedback(
+        value ? t('mobile_chat_setting.pinned_success') : t('mobile_chat_setting.unpinned_success'),
+        'success'
       )
     })
     .catch(() => {
-      window.$message.error(t('mobile_chat_setting.pin_failed'))
+      showFeedback(t('mobile_chat_setting.pin_failed'), 'error')
     })
 }
 
@@ -498,7 +501,7 @@ const handleInfoUpdate = async () => {
 
     const detailId = activeItem.value?.detailId
     if (!detailId) {
-      window.$message.warning(t('mobile_chat_setting.get_friend_info_failed'))
+      showFeedback(t('mobile_chat_setting.get_friend_info_failed'), 'warning')
       return
     }
     await contactStore.setFriendNote(detailId, remarkValue.value)
@@ -509,7 +512,7 @@ const handleInfoUpdate = async () => {
     initialRemarkValue.value = remarkValue.value
   }
 
-  window.$message.success(t('mobile_chat_setting.remark_updated', { n: title.value }))
+  showFeedback(t('mobile_chat_setting.remark_updated', { n: title.value }), 'success')
 }
 
 const handleGroupInfoUpdate = async () => {
@@ -531,7 +534,7 @@ const handleGroupInfoUpdate = async () => {
   })
 
   initialNameValue.value = nameValue.value
-  window.$message.success(t('mobile_chat_setting.group_name_updated'))
+  showFeedback(t('mobile_chat_setting.group_name_updated'), 'success')
 }
 
 const fetchGroupMembers = async (roomId: string) => {
@@ -567,12 +570,13 @@ const handleShield = (value: boolean) => {
         globalStore.updateCurrentSessionRoomId(tempRoomId)
       })
 
-      window.$message.success(
-        value ? t('mobile_chat_setting.messages_muted') : t('mobile_chat_setting.messages_unmuted')
+      showFeedback(
+        value ? t('mobile_chat_setting.messages_muted') : t('mobile_chat_setting.messages_unmuted'),
+        'success'
       )
     })
     .catch(() => {
-      window.$message.error(t('mobile_chat_setting.setting_failed'))
+      showFeedback(t('mobile_chat_setting.setting_failed'), 'error')
     })
 }
 
@@ -598,12 +602,13 @@ const handleNotification = (value: boolean) => {
         chatStore.updateTotalUnreadCount()
       }
 
-      window.$message.success(
-        value ? t('mobile_chat_setting.notifications_silent') : t('mobile_chat_setting.notifications_enabled')
+      showFeedback(
+        value ? t('mobile_chat_setting.notifications_silent') : t('mobile_chat_setting.notifications_enabled'),
+        'success'
       )
     })
     .catch(() => {
-      window.$message.error(t('mobile_chat_setting.setting_failed'))
+      showFeedback(t('mobile_chat_setting.setting_failed'), 'error')
     })
 }
 

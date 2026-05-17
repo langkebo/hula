@@ -132,9 +132,12 @@
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeTextFile } from '@tauri-apps/plugin-fs'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useEncryption } from '@/composables/encryption'
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
+const encryption = useEncryption()
 
 const visible = defineModel<boolean>('show', { default: false })
 
@@ -164,7 +167,7 @@ const canProceed = computed(() => {
 const loadBackupStatus = async () => {
   loading.value = true
   try {
-    const info = await matrixEncryptionService.getKeyBackupInfo()
+    const info = await encryption.getKeyBackupInfo()
     backupStatus.value = {
       hasBackup: !!info,
       count: info?.count || 0
@@ -201,9 +204,9 @@ const generateRecoveryKey = (): string => {
 const handleCopyKey = async () => {
   try {
     await navigator.clipboard.writeText(recoveryKey.value)
-    window.$message.success(t('encryption.backup.copy_success'))
+    showFeedback(t('encryption.backup.copy_success'), 'success')
   } catch (err) {
-    window.$message.error(t('encryption.backup.copy_failed'))
+    showFeedback(t('encryption.backup.copy_failed'), 'error')
   }
 }
 
@@ -216,10 +219,10 @@ const handleDownloadKey = async () => {
 
     if (filePath) {
       await writeTextFile(filePath, recoveryKey.value)
-      window.$message.success(t('encryption.backup.download_success'))
+      showFeedback(t('encryption.backup.download_success'), 'success')
     }
   } catch (err) {
-    window.$message.error(t('encryption.backup.download_failed'))
+    showFeedback(t('encryption.backup.download_failed'), 'error')
   }
 }
 
@@ -228,10 +231,10 @@ const handleProceed = async () => {
 
   try {
     if (mode.value === 'create') {
-      await matrixEncryptionService.setupKeyBackup(recoveryKey.value)
+      await encryption.setupKeyBackup(recoveryKey.value)
       successMessage.value = t('encryption.backup.create_success')
     } else {
-      const result = await matrixEncryptionService.restoreFromBackup(restoreKey.value)
+      const result = await encryption.restoreFromBackup(restoreKey.value)
       successMessage.value = t('encryption.backup.restore_success', {
         imported: result.imported,
         total: result.total

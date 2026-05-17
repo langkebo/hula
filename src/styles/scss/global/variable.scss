@@ -184,9 +184,26 @@ svg {
   // 窗口关闭按钮
   --action-close-hover-bg: #c22b1c;
   --action-close-hover-icon: var(--hula-text-inverse);
+  // 插件图标容器背景
+  --plugin-icon-bg: color-mix(in srgb, var(--hula-text-quaternary) 6%, transparent);
+  // 插件下载进度
+  --plugin-downloading-bg: color-mix(in srgb, var(--hula-color-info-500) 55%, var(--hula-surface-panel));
+  --plugin-downloading-text: var(--hula-color-info-500);
+  // 通用标签背景
+  --tag-danger-bg: color-mix(in srgb, var(--hula-color-danger-500) 12%, var(--hula-surface-panel));
+  --tag-neutral-bg: var(--hula-surface-subtle);
+  --tag-info-bg: var(--hula-color-info-100);
+  // 时间分组背景
+  --time-group-bg: color-mix(in srgb, var(--hula-surface-subtle) 50%, transparent);
+  // PIN输入框背景
+  --pin-input-bg: var(--hula-surface-elevated);
   // 徽标
   --badge-danger-bg: var(--hula-color-danger-500);
   --badge-danger-text: var(--hula-text-inverse);
+  // 离线头像遮罩
+  --bg-offline-avatar-overlay: rgba(112, 112, 112, 0.7);
+  // 长按菜单背景
+  --bg-long-press-menu: #4e4e4e;
 }
 
 html[data-theme='dark'] {
@@ -312,12 +329,28 @@ html[data-theme='dark'] {
   // 窗口关闭按钮
   --action-close-hover-bg: #c22b1c;
   --action-close-hover-icon: var(--hula-text-inverse);
+  // 插件图标容器背景
+  --plugin-icon-bg: color-mix(in srgb, var(--hula-text-quaternary) 10%, transparent);
+  // 插件下载进度
+  --plugin-downloading-bg: color-mix(in srgb, var(--hula-color-info-500) 45%, var(--hula-surface-panel));
+  --plugin-downloading-text: var(--hula-color-info-500);
+  // 通用标签背景
+  --tag-danger-bg: color-mix(in srgb, var(--hula-color-danger-500) 15%, var(--hula-surface-panel));
+  --tag-neutral-bg: var(--hula-surface-panel-muted);
+  --tag-info-bg: var(--hula-color-info-100);
+  // 时间分组背景
+  --time-group-bg: color-mix(in srgb, var(--hula-surface-panel) 50%, transparent);
+  // PIN输入框背景
+  --pin-input-bg: var(--hula-surface-elevated);
   // 徽标
   --badge-danger-bg: var(--hula-color-danger-500);
   --badge-danger-text: var(--hula-text-inverse);
+  // 离线头像遮罩
+  --bg-offline-avatar-overlay: rgba(60, 60, 60, 0.6);
+  // 长按菜单背景
+  --bg-long-press-menu: #3a3a3a;
 }
 /**! end */
-// 线性动画
 @keyframes linearAnimation {
   0% {
     stroke-dasharray: 600;
@@ -446,4 +479,15 @@ html[data-blur='1'] {
   --n-box-shadow-active: 0 0 0 2px var(--hula-color-primary-200) !important;
   --n-border-active: 1px solid var(--hula-color-primary-500) !important;
   --n-border-hover: 1px solid var(--hula-color-primary-500) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

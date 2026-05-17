@@ -17,6 +17,7 @@
   "view": "View",
   "days": "days",
   "no_more": "No more",
+  "no_more_data": "No more data",
   "notFound": "Page not found or has been removed",
   "goHome": "Go Home",
   "thread": {
@@ -73,6 +74,15 @@
     "permission_remove_failed": "Failed to revoke permission",
     "permission_remove_confirm_title": "Revoke access",
     "permission_remove_confirm_content": "Revoke {user}'s access to this widget?"
+  },
+  "window_titles": {
+    "video_call": "Video Call",
+    "audio_call": "Audio Call",
+    "check_update": "Check Updates",
+    "video_viewer": "Video Viewer",
+    "preview_file": "Preview File",
+    "settings": "Settings",
+    "about": "About"
   },
   "admin": {
     "title": "Administration",

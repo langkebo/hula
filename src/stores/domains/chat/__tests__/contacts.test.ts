@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { OnlineEnum } from '@/enums'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -17,6 +18,12 @@ const { matrixClientServiceMock, getClientMock } = vi.hoisted(() => {
     getClientMock
   }
 })
+
+const openMsgSessionByRoomIdMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/hooks/session/openMsgSession', () => ({
+  openMsgSessionByRoomId: openMsgSessionByRoomIdMock
+}))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -206,5 +213,108 @@ describe('contacts store startup client readiness', () => {
 
     expect(leave).toHaveBeenCalledWith('!invite:matrix.org')
     expect(store.pendingInvites).toHaveLength(0)
+  })
+})
+
+describe('acceptFriendRequest', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    vi.mocked(useGlobalStore).mockReturnValue(globalStoreMock as never)
+    vi.mocked(matrixFriendService.getFriends).mockResolvedValue([])
+    vi.mocked(matrixDirectMessageService.getDmRoomInfos).mockResolvedValue([])
+  })
+
+  it('accepts request, creates DM via roomId, and opens session', async () => {
+    vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
+    vi.mocked(matrixDirectMessageService.createDm).mockResolvedValueOnce('!dm-room:matrix.org')
+
+    const store = useContactStore()
+    const result = await store.acceptFriendRequest('@bob:matrix.org')
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(result).toBe(true)
+    expect(matrixFriendService.acceptFriendRequest).toHaveBeenCalledWith('@bob:matrix.org')
+    expect(matrixDirectMessageService.createDm).toHaveBeenCalledWith('@bob:matrix.org', {
+      userIds: ['@bob:matrix.org'],
+      isEncrypted: false
+    })
+    expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('!dm-room:matrix.org')
+  })
+
+  it('removes the accepted request from incoming list', async () => {
+    vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
+    vi.mocked(matrixDirectMessageService.createDm).mockResolvedValueOnce('!dm-carol:matrix.org')
+
+    const store = useContactStore()
+    store.requestFriendsList = [
+      {
+        userId: '@carol:matrix.org',
+        displayName: 'Carol',
+        direction: 'incoming' as const,
+        applyId: 'apply-carol-1'
+      }
+    ]
+
+    await store.acceptFriendRequest('@carol:matrix.org')
+
+    expect(store.requestFriendsList.some((r) => r.userId === '@carol:matrix.org')).toBe(false)
+  })
+
+  it('decrements friend unread count after acceptance', async () => {
+    vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
+    vi.mocked(matrixDirectMessageService.createDm).mockResolvedValueOnce('!dm-dave:matrix.org')
+
+    const store = useContactStore()
+    await store.acceptFriendRequest('@dave:matrix.org')
+
+    expect(globalStoreMock.decrementFriendUnreadCount).toHaveBeenCalled()
+  })
+
+  it('loads contacts after acceptance', async () => {
+    vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
+    vi.mocked(matrixDirectMessageService.createDm).mockResolvedValueOnce('!dm-eve:matrix.org')
+    vi.mocked(matrixFriendService.getFriends).mockResolvedValue([])
+
+    const store = useContactStore()
+    await store.acceptFriendRequest('@eve:matrix.org')
+
+    expect(matrixFriendService.getFriends).toHaveBeenCalled()
+  })
+})
+
+describe('setFriendStatus', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    vi.mocked(useGlobalStore).mockReturnValue(globalStoreMock as never)
+  })
+
+  it('normal 动作写回 accepted 时，列表展示口径仍归一为 normal', async () => {
+    vi.mocked(matrixFriendService.setFriendStatus).mockResolvedValueOnce(undefined)
+
+    const store = useContactStore()
+    store.contactsList = [
+      {
+        userId: '@alice:matrix.org',
+        uid: '@alice:matrix.org',
+        displayName: 'Alice',
+        name: 'Alice',
+        avatarUrl: null,
+        avatar: '',
+        account: 'alice',
+        activeStatus: OnlineEnum.OFFLINE,
+        remark: '',
+        lastOptTime: Date.now(),
+        hideMyPosts: false,
+        hideTheirPosts: false,
+        friendStatus: 'favorite'
+      }
+    ]
+
+    const result = await store.setFriendStatus('@alice:matrix.org', 'accepted')
+
+    expect(result).toBe(true)
+    expect(store.contactsList[0]?.friendStatus).toBe('normal')
   })
 })

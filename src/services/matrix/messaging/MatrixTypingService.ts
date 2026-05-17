@@ -1,5 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, TypingManager } from 'matrix-js-sdk'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 export interface TypingUser {
@@ -13,7 +14,7 @@ export interface BatchTypingResult {
   [roomId: string]: TypingUser[]
 }
 
-class MatrixTypingService {
+class MatrixTypingService extends BaseMatrixService {
   private cachedClient: MatrixClient | null = null
   private cachedManager: TypingManager | null = null
   private activeTypingRooms = new Set<string>()
@@ -22,7 +23,7 @@ class MatrixTypingService {
   private getTypingManager(): TypingManager {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixTyping] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     if (this.cachedClient !== client || !this.cachedManager) {

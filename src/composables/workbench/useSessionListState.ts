@@ -1,4 +1,5 @@
 import { useI18n } from 'vue-i18n'
+import { useAriaLive } from '@/composables/common/useAriaLive'
 import { MsgEnum, RoomTypeEnum, UserType } from '@/enums'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
@@ -22,9 +23,16 @@ export const useSessionListState = () => {
   const { syncLoading } = storeToRefs(chatStore)
   const botDisplayText = computed(() => botStore.displayText)
   const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
+  const { announce } = useAriaLive()
   const activeContextMenuRoomId = ref<string | null>(null)
   const sessionMsgCache = reactive<Record<string, SessionMsgCacheItem>>({})
   const sessionCacheRefreshKey = ref(0)
+
+  watch(syncLoading, (loading, prevLoading) => {
+    if (prevLoading === true && loading === false) {
+      announce(t('message.message_list.sync_complete'), 'polite')
+    }
+  })
 
   const networkBanner = computed(() => {
     if (!networkStatus.browserOnline.value) {

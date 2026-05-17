@@ -14,6 +14,9 @@
   "noise_suppression": "Noise Suppression",
   "auto_gain": "Auto Gain Control",
   "select_device": "Select Device",
+  "microphone": "Microphone",
+  "speaker": "Speaker",
+  "camera": "Camera",
   "test": "Test",
   "stop": "Stop",
   "preview": "Preview",
@@ -22,5 +25,8 @@
   "test_started": "Microphone test started",
   "mic_error": "Cannot access microphone, please check permissions",
   "preview_started": "Video preview started",
-  "camera_error": "Cannot access camera, please check permissions"
+  "camera_error": "Cannot access camera, please check permissions",
+  "unknown_user": "Unknown User",
+  "video_call_invitation": "Video call invitation...",
+  "audio_call_invitation": "Audio call invitation..."
 }

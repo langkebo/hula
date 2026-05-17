@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { nextTick, onMounted, ref } from 'vue'
 import { RoomTypeEnum } from '@/enums'
 import { ANNOUNCEMENT_MOCKS, GROUP_DETAIL_MOCKS, GROUP_MEMBER_MOCKS, SPACE_ROOM_MOCKS } from '~/.storybook/mock-data'
 import { configureAnnouncementStoreMock, resetAnnouncementStoreMock } from '~/.storybook/mocks/announcement-store'
@@ -30,6 +31,27 @@ const render = (args: WorkbenchDetailPaneProps) => ({
     return { args }
   },
   template: '<WorkbenchDetailPane v-bind="args" />'
+})
+
+const renderWithTab = (args: WorkbenchDetailPaneProps, targetTab: 'members' | 'activity') => ({
+  components: { WorkbenchDetailPane },
+  setup() {
+    const rootRef = ref<HTMLElement | null>(null)
+    const tabIndex = targetTab === 'members' ? 1 : 2
+
+    onMounted(async () => {
+      await nextTick()
+      const tabs = rootRef.value?.querySelectorAll<HTMLButtonElement>('.workbench-pane-tabs__tab')
+      tabs?.[tabIndex]?.click()
+    })
+
+    return { args, rootRef }
+  },
+  template: `
+    <div ref="rootRef">
+      <WorkbenchDetailPane v-bind="args" />
+    </div>
+  `
 })
 
 const baseSpace = {
@@ -84,6 +106,14 @@ export const Default: Story = {
   ]
 }
 
+export const SummaryMode: Story = {
+  args: {
+    ...Default.args
+  },
+  render,
+  decorators: Default.decorators
+}
+
 export const NoSession: Story = {
   args: {
     ...Default.args,
@@ -114,6 +144,22 @@ export const DirectMessage: Story = {
     }
   },
   render,
+  decorators: Default.decorators
+}
+
+export const MembersMode: Story = {
+  args: {
+    ...Default.args
+  },
+  render: (args) => renderWithTab(args, 'members'),
+  decorators: Default.decorators
+}
+
+export const ActivityMode: Story = {
+  args: {
+    ...Default.args
+  },
+  render: (args) => renderWithTab(args, 'activity'),
   decorators: Default.decorators
 }
 

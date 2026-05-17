@@ -133,7 +133,6 @@
 <script setup lang="ts">
 import { uniq } from 'es-toolkit'
 import { useI18n } from 'vue-i18n'
-import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
 import type { NoticeItem } from '@/services/types.ts'
 import { NoticeType, RequestNoticeAgreeStatus } from '@/services/types.ts'
 import { useContactStore } from '@/stores/domains/chat/contacts'

@@ -3,6 +3,7 @@ import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import pLimit from 'p-limit'
 import { defineStore } from 'pinia'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { StoresEnum } from '@/enums'
 import { matrixEmojiService } from '@/services/matrix/messaging/MatrixEmojiService'
 import type { EmojiItem as EmojiItemType } from '@/services/types'
@@ -21,6 +22,7 @@ const MIME_TYPE_BY_EXTENSION: Record<string, (typeof SUPPORTED_EMOJI_MIME_TYPES)
 }
 
 export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
+  const { showFeedback } = useActionFeedback()
   const isLoading = ref(false) // 是否正在加载
   const isPrefetching = ref(false)
   const userStore = useUserStore()
@@ -237,7 +239,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
     try {
       const uploadFile = await createUploadFileFromUrl(emojiUrl)
       await matrixEmojiService.emojiUpload(uploadFile, 'custom_emoji')
-      window.$message.success('添加表情成功')
+      showFeedback('添加表情成功', 'success')
       await getEmojiList()
       return true
     } catch (error) {

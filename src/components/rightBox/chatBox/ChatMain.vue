@@ -138,11 +138,11 @@
     <!--  悬浮按钮提示(底部悬浮) -->
     <footer
       class="float-footer-button"
-      v-if="shouldShowFloatFooter && currentNewMsgCount && !isMobileRef"
+      v-if="shouldShowFloatButton && currentNewMsgCount && !isMobileRef"
       :style="{ bottom: '24px', right: '50px' }">
       <div class="float-box" :class="{ max: currentNewMsgCount?.count > 99 }" @click="handleFloatButtonClick">
         <n-flex justify="space-between" align="center">
-          <n-icon :color="currentNewMsgCount?.count > 99 ? '#ff4d4f' : '#13987f'">
+          <n-icon :color="currentNewMsgCount?.count > 99 ? 'var(--color-danger)' : 'var(--color-primary)'">
             <svg>
               <use href="#double-down"></use>
             </svg>
@@ -239,13 +239,13 @@
 <script setup lang="ts">
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { info } from '@tauri-apps/plugin-log'
-import { useDebounceFn, useEventListener, useResizeObserver, useTimeoutFn } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted, provide, ref, useTemplateRef, watch, watchPostEffect } from 'vue'
+import { useEventListener, useTimeoutFn } from '@vueuse/core'
+import { computed, nextTick, onMounted, onUnmounted, provide, type Ref, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
-import { MittEnum, MsgEnum, ScrollIntentEnum } from '@/enums'
-import { useAutoScrollGuard } from '@/hooks/useAutoScrollGuard'
+import { useChatScrollManager } from '@/composables/chat/useChatScrollManager'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { MittEnum, MsgEnum } from '@/enums'
 import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain.ts'
 
 // 异步加载非首屏或重型组件
@@ -273,6 +273,7 @@ const logger = createLogger('ChatMain')
 const timerManager = useTimerManager()
 const selfEmit = defineEmits(['scroll'])
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 type AnnouncementData = {
   content: string
@@ -300,7 +301,6 @@ const {
   tips,
   modalShow,
   selectKey,
-  scrollTop,
   groupNicknameModalVisible,
   groupNicknameValue,
   groupNicknameError,
@@ -348,10 +348,6 @@ const isMobileRef = ref(isMobile())
 
 provide('popoverControls', { enableScroll })
 
-// 滚动意图状态
-const scrollIntent = ref<ScrollIntentEnum>(ScrollIntentEnum.NONE)
-
-// 计算属性
 const isGroup = computed<boolean>(() => chatStore.isGroup)
 const userUid = computed(() => userStore.userInfo!.uid || '')
 const currentNewMsgCount = computed(() => chatStore.currentNewMsgCount || null)
@@ -397,62 +393,46 @@ const computeMsgHover = computed(() => (item: MessageType) => {
 
   return hoverId.value === item.message.id || item.isCheck
 })
-// 是否显示悬浮页脚
-const shouldShowFloatFooter = computed<boolean>(() => {
-  const container = scrollContainerRef.value
-  if (!container) return false
 
-  // 在自动滚动或加载更多消息时不显示
-  if (isLoadingMore.value) {
-    return false
-  }
-
-  const scrollHeight = container.scrollHeight
-  const clientHeight = container.clientHeight
-  const distanceFromBottom = scrollHeight - scrollTop.value - clientHeight
-
-  // 若已接近底部，任何情况下都不显示，避免切换会话瞬时闪现
-  if (distanceFromBottom <= 20) {
-    return false
-  }
-
-  // 优先级1：如果有新消息，优先显示新消息提示
-  if (currentNewMsgCount.value?.count && currentNewMsgCount.value.count > 0) {
-    return true
-  }
-
-  // 优先级2：只在向下滚动且距离底部较远时显示按钮
-  if (distanceFromBottom > clientHeight * 0.5) {
-    return true
-  }
-
-  return false
-})
-
-// 响应式状态变量
-const activeReply = ref<string>('')
 const scrollContainerRef = useTemplateRef<HTMLDivElement>('scrollContainer')
 const messageListRef = useTemplateRef<HTMLDivElement>('messageListRef')
+
+const storeNewMsgCount = computed(() => chatStore.currentNewMsgCount?.count ?? 0)
+const isLastPage = computed(() => chatStore.currentMessageOptions?.isLast ?? false)
+const isLoading = computed(() => chatStore.currentMessageOptions?.isLoading ?? false)
+
+const scrollManager = useChatScrollManager({
+  scrollContainer: scrollContainerRef as unknown as Ref<HTMLElement | null>,
+  messageListRef: messageListRef as unknown as Ref<HTMLElement | null>,
+  onLoadMore: () => chatStore.loadMore(),
+  isLastPage,
+  isLoading,
+  currentRoomId,
+  clearNewMsgCount: () => chatStore.clearNewMsgCount(),
+  newMessageCountSource: storeNewMsgCount
+})
+
+const {
+  isAtBottom,
+  isLoadingMore,
+  scrollTop,
+  scrollToBottom,
+  scrollToIndex,
+  handleScroll: scrollManagerHandleScroll,
+  loadMore,
+  shouldShowFloatButton
+} = scrollManager
+
+const handleScroll = (event: Event) => {
+  selfEmit('scroll', event)
+  scrollManagerHandleScroll(event)
+}
+
+const activeReply = ref<string>('')
 const showScrollbar = ref<boolean>(true)
 const isAnnouncementHover = ref<boolean>(false)
 const topAnnouncement = ref<AnnouncementData | null>(null)
 const hoverId = ref('')
-// 添加标记，用于识别是否正在加载历史消息
-const isLoadingMore = ref(false)
-// 避免初始化自动触发顶部加载
-const suppressTopLoadMore = ref(false)
-// 标记当前是否在底部
-const isAtBottom = ref(true)
-// 自动滚动保护（rAF 计时）
-const { isAutoScrolling, enableAutoScroll, stopAutoScrollGuard } = useAutoScrollGuard()
-
-const temporarilySuppressTopLoadMore = () => {
-  suppressTopLoadMore.value = true
-  const release = () => {
-    suppressTopLoadMore.value = false
-  }
-  timerManager.setTimeout(release, 32)
-}
 
 // 滚轮滚动限制状态
 const MAX_WHEEL_DELTA = 130
@@ -564,34 +544,6 @@ watch(
   { immediate: true }
 )
 
-// 1. 监听房间切换，触发初始化滚动意图
-watch(
-  () => [currentRoomId.value] as const,
-  ([newRoomId], oldValue) => {
-    const [oldRoomId] = oldValue ?? [undefined]
-    // 只有在房间切换且DOM就绪时才触发初始化意图
-    if (newRoomId && newRoomId !== oldRoomId) {
-      suppressTopLoadMore.value = true
-      // 切换房间时强制重置为在底部状态，并开启自动滚动保护
-      isAtBottom.value = true
-      enableAutoScroll(1200)
-
-      scrollIntent.value = ScrollIntentEnum.INITIAL
-    }
-  },
-  { flush: 'post' } // 确保DOM更新后执行
-)
-
-// 3. 执行具体的滚动操作 - 使用watchPostEffect确保DOM更新完成
-watchPostEffect(() => {
-  if (scrollIntent.value === ScrollIntentEnum.NONE) return
-
-  handleScrollByIntent(scrollIntent.value)
-  // 重置意图状态
-  scrollIntent.value = ScrollIntentEnum.NONE
-})
-
-// 跳转到回复消息
 const jumpToReplyMsg = async (key: string): Promise<void> => {
   // 先在当前列表中尝试查找
   let messageIndex = chatStore.getMsgIndex(String(key))
@@ -607,7 +559,7 @@ const jumpToReplyMsg = async (key: string): Promise<void> => {
   isLoadingMore.value = true
 
   // 显示加载状态
-  window.$message.info('正在查找消息...')
+  showFeedback('正在查找消息...', 'info')
 
   // 尝试加载历史消息直到找到目标消息或无法再加载
   let foundMessage = false
@@ -645,83 +597,10 @@ const jumpToReplyMsg = async (key: string): Promise<void> => {
     })
   } else {
     // 如果尝试多次后仍未找到消息
-    window.$message.warning('无法找到原始消息，可能已被删除或太久远')
+    showFeedback('无法找到原始消息，可能已被删除或太久远', 'warning')
   }
 }
 
-// 滚动到指定索引位置
-const scrollToIndex = (index: number, behavior: ScrollBehavior = 'auto'): void => {
-  const container = scrollContainerRef.value
-  if (!container || index < 0) return
-
-  const targetElement = container.querySelector(`[data-message-index="${index}"]`) as HTMLElement | null
-
-  if (targetElement) {
-    targetElement.scrollIntoView({ behavior, block: 'center', inline: 'nearest' })
-  }
-}
-
-// 根据滚动意图执行相应操作
-const handleScrollByIntent = (intent: ScrollIntentEnum): void => {
-  const container = scrollContainerRef.value
-  if (!container) return
-
-  switch (intent) {
-    case ScrollIntentEnum.INITIAL:
-      // 初始化滚动：直接滚动到底部显示最新消息
-      scrollToBottom()
-      break
-
-    case ScrollIntentEnum.NEW_MESSAGE:
-      // 新消息滚动：直接滚动到底部
-      scrollToBottom()
-      break
-
-    case ScrollIntentEnum.LOAD_MORE:
-      // 加载更多：不执行任何滚动，由handleLoadMore管理
-      break
-
-    default:
-      break
-  }
-}
-
-// 滚动到底部
-const scrollToBottom = (): void => {
-  temporarilySuppressTopLoadMore()
-  const container = scrollContainerRef.value
-  if (!container) return
-  // 立即清除新消息计数
-  chatStore.clearNewMsgCount()
-  // 标记为在底部并开启自动滚动保护，防止滚动过程中的事件导致 isAtBottom 被错误置为 false
-  isAtBottom.value = true
-  enableAutoScroll(500)
-
-  // 使用 requestAnimationFrame 确保在渲染后执行
-  requestAnimationFrame(() => {
-    if (!container) return
-    container.scrollTop = container.scrollHeight
-  })
-}
-// 监听消息列表大小变化，如果当前在底部则自动滚动到底部
-useResizeObserver(messageListRef, () => {
-  const container = scrollContainerRef.value
-  if (!container) return
-
-  // 直接通过 DOM 计算距离，不完全依赖 isAtBottom 状态，避免状态更新延迟导致的问题
-  const { scrollHeight, scrollTop, clientHeight } = container
-  const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-
-  // 如果距离底部小于 150px (允许一定的误差)，或者状态标记为在底部，则执行滚动
-  if (distanceFromBottom <= 150 || isAtBottom.value) {
-    // 使用 nextTick 确保 DOM 状态稳定
-    nextTick(() => {
-      scrollToBottom()
-    })
-  }
-})
-
-// 处理悬浮按钮点击 - 重置消息列表并滚动到底部
 const handleFloatButtonClick = async () => {
   try {
     // 只有消息数量超过60条才进行重置和刷新
@@ -735,86 +614,32 @@ const handleFloatButtonClick = async () => {
   }
 }
 
-// 处理滚动事件(用于页脚显示功能)
-const handleScroll = (event: Event) => {
-  selfEmit('scroll', event)
-
-  const container = event.target as HTMLElement
-  if (!container) return
-
-  const currentScrollTop = container.scrollTop
-  scrollTop.value = currentScrollTop
-
-  // 如果处于自动滚动保护期，强制认为在底部
-  if (isAutoScrolling.value) {
-    isAtBottom.value = true
-  } else {
-    // 更新是否在底部的状态
-    const { scrollHeight, clientHeight } = container
-    // 增加判断阈值到 150px，提高容错率
-    isAtBottom.value = scrollHeight - currentScrollTop - clientHeight <= 150
-  }
-
-  debouncedScrollOperations(container)
-}
-
-// 将滚动操作分离到防抖函数中
-const debouncedScrollOperations = useDebounceFn(async (container: HTMLElement) => {
-  const scrollHeight = container.scrollHeight
-  const clientHeight = container.clientHeight
-  const distanceFromBottom = scrollHeight - scrollTop.value - clientHeight
-
-  // 处理触顶加载更多
-  if (scrollTop.value < 60) {
-    // 如果正在加载或已经触发了加载，或已到达最后一页，则不重复触发
-    if (suppressTopLoadMore.value || chatStore.currentMessageOptions?.isLast) return
-
-    await handleLoadMore()
-  }
-
-  // 处理底部滚动和新消息提示
-  if (distanceFromBottom <= 20) {
-    chatStore.clearNewMsgCount()
-  }
-}, 16)
-
-// 监听会话切换
 const handleSessionChanged = async ({ roomId, oldRoomId }: SessionChangedPayload) => {
   if (!roomId || roomId === oldRoomId) {
     return
   }
-  // 使用音频管理器停止所有音频
   audioManager.stopAll()
-  // 如果不是群聊，清空置顶公告
   if (!isGroup.value) {
     topAnnouncement.value = null
   }
-
-  await nextTick()
-  scrollToBottom()
 }
 
 // 监听消息列表变化
 watch(
   () => chatStore.chatMessageList,
   async (value, oldValue) => {
-    // 简化消息列表监听，避免直接滚动操作
     if (value.length > oldValue.length) {
-      // 获取最新消息
       const latestMessage = value[value.length - 1]
 
-      // 如果正在加载历史消息，不进行任何滚动操作，由handleLoadMore处理位置恢复
       if (isLoadingMore.value) {
         return
       }
 
-      // 新消息计数逻辑（不在底部时）
       const container = scrollContainerRef.value
       if (container) {
         const isOtherUserMessage =
           latestMessage?.fromUser?.uid && String(latestMessage.fromUser.uid) !== String(userUid.value)
-        // 只有当不在底部且是他人消息时才增加计数
-        if (shouldShowFloatFooter.value && isOtherUserMessage) {
+        if (shouldShowFloatButton.value && isOtherUserMessage) {
           const roomId = globalStore.currentSessionRoomId
           const current = chatStore.newMsgCount[roomId]
           if (!current) {
@@ -858,45 +683,10 @@ const handleChatAreaClick = (event: Event): void => {
   }
 }
 
-// 防冲突的加载更多处理
-const handleLoadMore = async (): Promise<void> => {
-  // 如果正在加载、已经触发了加载、或已到达最后一页，则不重复触发
-  if (chatStore.currentMessageOptions?.isLoading || isLoadingMore.value || chatStore.currentMessageOptions?.isLast)
-    return
-
-  const container = scrollContainerRef.value
-  if (!container) return
-  scrollIntent.value = ScrollIntentEnum.LOAD_MORE
-
-  isLoadingMore.value = true
-
-  // 记录加载前的滚动高度，用于加载后恢复位置
-  const oldScrollHeight = container.scrollHeight
-  const oldScrollTop = container.scrollTop
-  try {
-    await chatStore.loadMore()
-
-    // 计算新的滚动位置，保持用户在加载前的相对位置
-    const newScrollHeight = container.scrollHeight
-    const heightDifference = newScrollHeight - oldScrollHeight
-    const newScrollTop = oldScrollTop + heightDifference
-
-    // 恢复滚动位置
-    container.scrollTop = newScrollTop
-  } catch (error) {
-    logger.error('加载历史消息失败:', error)
-    window.$message?.error('加载历史消息失败，请稍后重试')
-  } finally {
-    isLoadingMore.value = false
-
-    scrollIntent.value = ScrollIntentEnum.NONE
-  }
-}
-
 const handleViewAnnouncement = (): void => {
-  nextTick(async () => {
+  nextTick(() => {
     if (!currentRoomId.value) return
-    await createWebviewWindow('查看群公告', `announList/${currentRoomId.value}/1`, 420, 620)
+    useMitt.emit(MittEnum.OPEN_ANNOUNCEMENT_PANEL, { roomId: currentRoomId.value })
   })
 }
 
@@ -945,14 +735,12 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  // 清理监听器
   if (announcementUpdatedListener) {
     announcementUpdatedListener()
   }
   if (announcementClearListener) {
     announcementClearListener()
   }
-  stopAutoScrollGuard()
   stopWheelListener()
   timerManager.clearAll()
 })

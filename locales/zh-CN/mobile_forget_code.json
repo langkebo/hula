@@ -36,14 +36,18 @@
     "email_invalid": "请输入有效的邮箱地址",
     "email_code_require": "请输入发送到邮箱的验证码",
     "code_length": "验证码必须为 {len} 位",
-
     "new_pass_require": "请输入新密码",
     "new_pass_length": "密码必须为 {len} 个字符",
-
     "confirm_pass_require": "请确认密码",
     "pass_not_match": "两次输入的密码不一致"
   },
   "too_many_requests": "请求过于频繁，请在 {s} 秒后再试",
   "code_sent_email": "验证码已发送至您的邮箱",
-  "email_resend_in": "{seconds}秒后重新获取"
+  "email_resend_in": "{seconds}秒后重新获取",
+  "captcha_failed": "获取验证码失败，请稍后重试",
+  "send_code_failed": "发送验证码失败，请稍后重试",
+  "send_email_code_first": "请先发送邮箱验证码",
+  "verify_email_failed": "邮箱验证码校验失败，请稍后重试",
+  "complete_email_verify_first": "请先完成邮箱验证码校验",
+  "reset_password_failed": "重置密码失败，请稍后重试"
 }

@@ -76,8 +76,9 @@
 <script setup lang="ts">
 import type { FormInst, FormRules, UploadCustomRequestOptions } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useRoomActions } from '@/composables/room/useRoomActions'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('CreateRoomDialog')
@@ -92,6 +93,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
+const { createGroupRoom, getServerDomain } = useRoomActions()
 const formRef = ref<FormInst>()
 const creating = ref(false)
 const defaultAvatar = '/logoD.png'
@@ -133,7 +136,7 @@ const joinRuleOptions = [
 
 const loadServerDomain = async () => {
   try {
-    serverDomain.value = await roomNavigationService.getServerDomain()
+    serverDomain.value = await getServerDomain()
   } catch (error) {
     logger.error('获取 homeserver 域名失败:', error)
     serverDomain.value = 'matrix.org'
@@ -149,7 +152,7 @@ const handleAvatarUpload = async ({ file }: UploadCustomRequestOptions) => {
     formData.avatarUrl = result.contentUri
   } catch (error) {
     logger.error('上传头像失败:', error)
-    window.$message?.error(t('room.create.avatar_upload_failed'))
+    showFeedback(t('room.create.avatar_upload_failed'), 'error')
   }
 }
 
@@ -162,7 +165,7 @@ const handleCreate = async () => {
 
   creating.value = true
   try {
-    const room = await roomNavigationService.createGroupRoom({
+    const room = await createGroupRoom({
       name: formData.name,
       topic: formData.topic,
       avatarUrl: formData.avatarUrl || undefined,
@@ -173,13 +176,13 @@ const handleCreate = async () => {
       joinRule: formData.joinRule
     })
 
-    window.$message?.success(t('room.create.success'))
+    showFeedback(t('room.create.success'), 'success')
     emit('created', room?.roomId || '')
     emit('update:visible', false)
     resetForm()
   } catch (error) {
     logger.error('创建房间失败:', error)
-    window.$message?.error(t('room.create.failed'))
+    showFeedback(t('room.create.failed'), 'error')
   } finally {
     creating.value = false
   }

@@ -1,5 +1,6 @@
 import { save } from '@tauri-apps/plugin-dialog'
 import { defineStore } from 'pinia'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useDownload } from '@/hooks/useDownload.ts'
 import { createLogger } from '@/utils/Logger'
 
@@ -13,6 +14,7 @@ type DownloadObjType = {
 
 // 保持现有 store 行为，仅修正对外命名。
 export const useDownloadQueueStore = defineStore('downloadQueue', () => {
+  const { showFeedback } = useActionFeedback()
   const maxDownloadCount = 1
   const queue = reactive<string[]>([])
   const downloadObjMap = reactive<Record<string, DownloadObjType>>({})
@@ -69,7 +71,7 @@ export const useDownloadQueueStore = defineStore('downloadQueue', () => {
       await downloadFile(url, savePath)
     } catch (error) {
       logger.error('保存失败:', error)
-      window.$message.error('保存失败')
+      showFeedback('保存失败', 'error')
       removeQueueAction(url)
     }
   }

@@ -64,6 +64,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixForwardService } from '@/services/matrix/messaging/MatrixForwardService'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { useRoomStore } from '@/stores/domains/chat/room'
@@ -83,6 +84,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const roomStore = useRoomStore()
 const searchQuery = ref('')
 const selectedRooms = ref<string[]>([])
@@ -127,15 +129,15 @@ const handleForward = async () => {
     const successCount = results.filter((r) => r.success).length
 
     if (successCount > 0) {
-      window.$message?.success(t('message.forward.success', { count: successCount }))
+      showFeedback(t('message.forward.success', { count: successCount }), 'success')
       emit('forwarded', selectedRooms.value)
       selectedRooms.value = []
     } else {
-      window.$message?.error(t('message.forward.failed'))
+      showFeedback(t('message.forward.failed'), 'error')
     }
   } catch (error) {
     logger.error('Forward failed:', error)
-    window.$message?.error(t('message.forward.failed'))
+    showFeedback(t('message.forward.failed'), 'error')
   } finally {
     forwarding.value = false
   }

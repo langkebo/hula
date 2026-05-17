@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useChatFileDownload } from '../useChatFileDownload'
 
+const { showFeedbackMock, showProgressFeedbackMock, progressDestroyMock } = vi.hoisted(() => ({
+  showFeedbackMock: vi.fn(),
+  progressDestroyMock: vi.fn(),
+  showProgressFeedbackMock: vi.fn(() => ({ destroy: progressDestroyMock }))
+}))
+
 const mockFileDownloadStore = {
   getFileStatus: vi.fn(() => ({ absolutePath: '/test/file.txt', nativePath: '/test' })),
   downloadFile: vi.fn(() => Promise.resolve('/downloaded/file.txt')),
@@ -44,19 +50,19 @@ vi.mock('@/utils/PathUtil', () => ({
   detectRemoteFileType: vi.fn(() => Promise.resolve({ ext: 'txt', mime: 'text/plain' }))
 }))
 
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock,
+    showProgressFeedback: showProgressFeedbackMock
+  })
+}))
+
 const mockT = (key: string) => key
 const mockDownloadFile = vi.fn(() => Promise.resolve(undefined))
 const mockGetLocalVideoPath = vi.fn(() => Promise.resolve('videos/test.mp4'))
 const mockCheckVideoDownloaded = vi.fn(() => Promise.resolve(true))
 const mockCreateWebviewWindow = vi.fn(() => Promise.resolve(null))
 const mockSendWindowPayload = vi.fn(() => Promise.resolve())
-
-const mockMessage = {
-  info: vi.fn(() => ({ destroy: vi.fn() })),
-  success: vi.fn(),
-  error: vi.fn(),
-  warning: vi.fn()
-}
 
 const createHook = () =>
   useChatFileDownload({
@@ -71,7 +77,6 @@ const createHook = () =>
 describe('useChatFileDownload', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    window.$message = mockMessage as unknown as typeof window.$message
   })
 
   describe('revealInDirSafely', () => {
@@ -85,7 +90,7 @@ describe('useChatFileDownload', () => {
     it('shows error when path is null', async () => {
       const { revealInDirSafely } = createHook()
       await revealInDirSafely(null)
-      expect(mockMessage.error).toHaveBeenCalled()
+      expect(showFeedbackMock).toHaveBeenCalledWith('home.chat_main.file.missing_local', 'error')
     })
 
     it('shows error when revealItemInDir throws', async () => {
@@ -93,7 +98,7 @@ describe('useChatFileDownload', () => {
       const { revealItemInDir } = await import('@tauri-apps/plugin-opener')
       vi.mocked(revealItemInDir).mockRejectedValueOnce(new Error('access denied'))
       await revealInDirSafely('/test/path')
-      expect(mockMessage.error).toHaveBeenCalled()
+      expect(showFeedbackMock).toHaveBeenCalledWith('home.chat_main.file.show_failed', 'error')
     })
   })
 
@@ -160,7 +165,9 @@ describe('useChatFileDownload', () => {
         i18nKeys: { downloadPrompt: 'prompt', success: 'success', failed: 'failed' }
       })
       expect(mockFileDownloadStore.downloadFile).toHaveBeenCalled()
-      expect(mockMessage.success).toHaveBeenCalled()
+      expect(showProgressFeedbackMock).toHaveBeenCalledWith('prompt', 'info')
+      expect(progressDestroyMock).toHaveBeenCalled()
+      expect(showFeedbackMock).toHaveBeenCalledWith('success', 'success')
     })
 
     it('shows error when download returns null', async () => {
@@ -174,7 +181,7 @@ describe('useChatFileDownload', () => {
         fileName: 'file.txt',
         i18nKeys: { downloadPrompt: 'prompt', success: 'success', failed: 'failed' }
       })
-      expect(mockMessage.error).toHaveBeenCalled()
+      expect(showFeedbackMock).toHaveBeenCalledWith('failed', 'error')
     })
 
     it('downloads encrypted file through decrypt pipeline when descriptor exists', async () => {

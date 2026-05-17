@@ -3,6 +3,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { BaseDirectory, exists } from '@tauri-apps/plugin-fs'
 import { MsgEnum } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
+import { useI18nGlobal } from '@/services/i18n'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
@@ -15,6 +16,7 @@ const logger = createLogger('VideoViewer')
 /** 视频处理 */
 export const useVideoViewer = () => {
   const { createWebviewWindow } = useWindow()
+  const { t } = useI18nGlobal()
   const VideoViewerStore = useVideoViewerStore()
   const userStore = useUserStore()
   const chatStore = useChatStore()
@@ -209,7 +211,7 @@ export const useVideoViewer = () => {
       return
     }
 
-    await createWebviewWindow('视频查看器', 'videoViewer', 800, 600, '', true, 800, 600)
+    await createWebviewWindow(t('common.window_titles.video_viewer'), 'videoViewer', 800, 600, '', true, 800, 600)
   }
 
   return {

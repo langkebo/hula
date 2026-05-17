@@ -65,17 +65,17 @@ import {
   NPageHeader,
   NSpace,
   NStatistic,
-  NTag,
-  useMessage
+  NTag
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminFederationMonitor')
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 
 interface FederationServer {
   serverName: string
@@ -146,11 +146,11 @@ const columns: DataTableColumns<FederationServer> = [
 async function reconnect(serverName: string) {
   try {
     await adminService.reconnectFederation(serverName)
-    message.success(t('admin.federation_monitor.reconnect_success'))
+    showFeedback(t('admin.federation_monitor.reconnect_success'), 'success')
     await loadData()
   } catch (err) {
     logger.error('重连联邦服务器失败:', err)
-    message.error(t('admin.federation_monitor.reconnect_failed'))
+    showFeedback(t('admin.federation_monitor.reconnect_failed'), 'error')
   }
 }
 

@@ -2,7 +2,7 @@ import { error } from '@tauri-apps/plugin-log'
 import type { ICreateRoomOpts, Room, RoomMember } from 'matrix-js-sdk'
 import type { RoomTypeEnum } from '@/enums'
 import type { RoomInfo } from '@/services/types'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixRoomAccountDataService } from './AccountDataService'
 import { matrixRoomAliasesService } from './AliasesService'
 import { matrixRoomCreationService } from './CreationService'
@@ -42,7 +42,7 @@ import { matrixRoomTranslateService } from './TranslateService'
  * await matrixRoomService.inviteUser(room.roomId, '@user:example.org')
  * ```
  */
-class MatrixRoomService {
+class MatrixRoomService extends BaseMatrixService {
   /**
    * 获取所有房间
    *
@@ -51,10 +51,7 @@ class MatrixRoomService {
    */
   async getRooms(): Promise<Room[]> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('客户端未初始化')
-      }
+      const client = this.getClient()
       return client.getRooms()
     } catch (err) {
       error(`[MatrixRoom] 获取房间列表失败: ${err}`)
@@ -75,10 +72,7 @@ class MatrixRoomService {
   async getRoom(roomId: string, throwOnError: false): Promise<Room | null>
   async getRoom(roomId: string, throwOnError = true): Promise<Room | null> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('客户端未初始化')
-      }
+      const client = this.getClient()
       const room = client.getRoom(roomId) ?? null
       if (room || !throwOnError) {
         return room

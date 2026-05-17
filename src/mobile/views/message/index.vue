@@ -102,7 +102,7 @@
               @close="handleSwipeClose"
               v-on-long-press="[(e: PointerEvent) => handleLongPress(e, item), longPressOption]"
               class="text-black"
-              :class="item.top ? 'w-full bg-#64A29C18' : ''">
+              :class="item.top ? 'w-full bg-[--hula-color-primary-100]' : ''">
               <!-- 长按项 -->
               <div
                 @click.stop="intoRoom(item)"
@@ -110,7 +110,11 @@
                 <div class="flex-shrink-0">
                   <van-badge
                     :offset="[-6, 6]"
-                    :color="item.muteNotification === NotificationTypeEnum.NOT_DISTURB ? 'grey' : '#c14053'"
+                    :color="
+                      item.muteNotification === NotificationTypeEnum.NOT_DISTURB
+                        ? 'grey'
+                        : 'var(--hula-color-danger-500)'
+                    "
                     :content="item.unreadCount"
                     :max="99">
                     <img
@@ -186,7 +190,8 @@
         v-if="longPressState.showLongPressMenu"
         :style="{ top: longPressState.longPressMenuTop + 'px' }"
         class="fixed gap-10px z-999 left-1/2 transform -translate-x-1/2">
-        <div class="flex justify-between p-18px text-16px gap-22px rounded-16px bg-#4e4e4e whitespace-nowrap">
+        <div
+          class="flex justify-between p-18px text-16px gap-22px rounded-16px bg-[--bg-long-press-menu] whitespace-nowrap">
           <div class="text-white" @click="handleDelete(currentLongPressItem)">{{ t('mobile_home.menu.delete') }}</div>
           <div class="text-white" @click="handleToggleTop(currentLongPressItem)">
             {{ currentLongPressItem?.top ? t('mobile_home.menu.unpin') : t('mobile_home.menu.pintop') }}
@@ -199,7 +204,7 @@
         </div>
         <div class="flex w-full justify-center h-15px">
           <svg width="34" height="13" viewBox="0 0 35 13">
-            <path d="M0 0 L35 0 L17.5 13 Z" fill="#4e4e4e" />
+            <path d="M0 0 L35 0 L17.5 13 Z" fill="var(--bg-long-press-menu)" />
           </svg>
         </div>
       </div>
@@ -212,6 +217,7 @@ import { vOnLongPress } from '@vueuse/components'
 import { useDebounceFn, useThrottleFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MsgEnum, NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg'
@@ -235,6 +241,7 @@ const logger = createLogger('MobileMessage')
 const timerManager = useTimerManager()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const loading = ref(false)
 const count = ref(0)
 const currentLongPressItem = ref<SessionItem | null>(null)
@@ -437,7 +444,7 @@ const handleToggleReadStatus = async (markAsRead: boolean, sessionItem?: Session
       await roomListService.markAsRead(item.roomId)
     }
 
-    window.$message.success(successMsg)
+    showFeedback(successMsg, 'success')
   } catch (error) {
     chatStore.updateSession(item.roomId, {
       unreadCount: previousUnreadCount
@@ -445,7 +452,7 @@ const handleToggleReadStatus = async (markAsRead: boolean, sessionItem?: Session
     globalStore.updateGlobalUnreadCount()
 
     const errorMsg = markAsRead ? t('mobile_home.mark_as_read_failed') : t('mobile_home.mark_as_unread_failed')
-    window.$message.error(errorMsg)
+    showFeedback(errorMsg, 'error')
     logger.error(errorMsg, error)
   } finally {
     maskHandler.close()

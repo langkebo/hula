@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { UploadSceneEnum } from '@/enums'
 import { UploadProviderEnum, useUpload } from '../useUpload'
 
+const { showFeedbackMock } = vi.hoisted(() => ({
+  showFeedbackMock: vi.fn()
+}))
+
 vi.mock('@tauri-apps/api/core', () => ({
   Channel: vi.fn(() => ({ onmessage: null })),
   invoke: vi.fn()
@@ -54,10 +58,15 @@ vi.mock('@/services/renderWorker', () => ({
   }
 }))
 
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
+}))
+
 describe('useUpload', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    window.$message = { error: vi.fn() } as unknown as Window['$message']
   })
 
   it('should initialize with default values', () => {
@@ -114,7 +123,7 @@ describe('useUpload', () => {
 
     const { uploadFile } = useUpload()
     await uploadFile(largeFile)
-    expect(window.$message.error).toHaveBeenCalledWith('文件大小不能超过 500MB')
+    expect(showFeedbackMock).toHaveBeenCalledWith('文件大小不能超过500MB', 'error')
   })
 
   it('should resolve upload provider', async () => {

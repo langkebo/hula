@@ -11,7 +11,7 @@
               :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
             <n-flex vertical align="center" :size="4">
               <span class="text-16px font-semibold">{{ displayName }}</span>
-              <span class="text-12px text-gray-500">@{{ profileData.account }}</span>
+              <span class="text-12px text-[--hula-text-tertiary]">@{{ profileData.account }}</span>
             </n-flex>
           </n-flex>
 
@@ -19,27 +19,27 @@
 
           <n-flex vertical :size="12">
             <n-flex align="center" justify="space-between">
-              <span class="text-14px text-gray-600">{{ t('friend.detail.status') }}</span>
+              <span class="text-14px text-[--hula-text-secondary]">{{ t('friend.detail.status') }}</span>
               <n-tag :type="statusTagType" size="small">
                 {{ statusLabel }}
               </n-tag>
             </n-flex>
 
             <n-flex v-if="profileData.friendStatus" align="center" justify="space-between">
-              <span class="text-14px text-gray-600">{{ t('friend.detail.friend_status') }}</span>
+              <span class="text-14px text-[--hula-text-secondary]">{{ t('friend.detail.friend_status') }}</span>
               <n-tag :type="friendStatusTagType" size="small">
                 {{ friendStatusLabel }}
               </n-tag>
             </n-flex>
 
             <n-flex v-if="lastSeenText" align="center" justify="space-between">
-              <span class="text-14px text-gray-600">{{ t('friend.detail.last_seen') }}</span>
-              <span class="text-12px text-gray-500">{{ lastSeenText }}</span>
+              <span class="text-14px text-[--hula-text-secondary]">{{ t('friend.detail.last_seen') }}</span>
+              <span class="text-12px text-[--hula-text-tertiary]">{{ lastSeenText }}</span>
             </n-flex>
 
             <n-flex v-if="profileData.since" align="center" justify="space-between">
-              <span class="text-14px text-gray-600">{{ t('friend.detail.since') }}</span>
-              <span class="text-12px text-gray-500">{{ formatDate(profileData.since) }}</span>
+              <span class="text-14px text-[--hula-text-secondary]">{{ t('friend.detail.since') }}</span>
+              <span class="text-12px text-[--hula-text-tertiary]">{{ formatDate(profileData.since) }}</span>
             </n-flex>
           </n-flex>
 
@@ -47,7 +47,7 @@
 
           <n-flex vertical :size="8">
             <n-flex align="center" justify="space-between">
-              <span class="text-14px text-gray-600">{{ t('friend.detail.note') }}</span>
+              <span class="text-14px text-[--hula-text-secondary]">{{ t('friend.detail.note') }}</span>
               <n-button text size="tiny" @click="showNoteEdit = !showNoteEdit">
                 {{ showNoteEdit ? t('common.cancel') : t('friend.detail.note_section') }}
               </n-button>
@@ -71,7 +71,7 @@
 
           <n-flex vertical :size="8">
             <n-flex align="center" justify="space-between">
-              <span class="text-14px text-gray-600">{{ t('friend.detail.display_name') }}</span>
+              <span class="text-14px text-[--hula-text-secondary]">{{ t('friend.detail.display_name') }}</span>
               <n-button text size="tiny" @click="showDisplayNameEdit = !showDisplayNameEdit">
                 {{ showDisplayNameEdit ? t('common.cancel') : t('friend.detail.edit_display_name') }}
               </n-button>
@@ -93,7 +93,7 @@
           <n-divider style="margin: 0" />
 
           <n-flex vertical :size="8">
-            <span class="text-14px text-gray-600">{{ t('friend.detail.actions') }}</span>
+            <span class="text-14px text-[--hula-text-secondary]">{{ t('friend.detail.actions') }}</span>
             <n-flex :size="8">
               <n-button type="primary" block @click="handleSendMessage">
                 {{ t('friend.detail.send_message') }}
@@ -116,8 +116,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum, ThemeEnum } from '@/enums'
-import type { FriendStatus } from '@/services/matrix/friends/MatrixFriendService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -132,6 +132,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const contactStore = useContactStore()
 const settingStore = useSettingStore()
 
@@ -232,7 +233,7 @@ const handleSaveNote = async () => {
   try {
     const success = await contactStore.setFriendNote(props.userId, noteValue.value.trim())
     if (success) {
-      window.$message?.success(t('friend.detail.note_saved'))
+      showFeedback(t('friend.detail.note_saved'), 'success', 'polite')
       showNoteEdit.value = false
       if (profileData.value) {
         profileData.value.note = noteValue.value.trim()
@@ -240,7 +241,7 @@ const handleSaveNote = async () => {
       }
     }
   } catch {
-    window.$message?.error(t('friend.detail.note_error'))
+    showFeedback(t('friend.detail.note_error'), 'error', 'assertive')
   } finally {
     savingNote.value = false
   }
@@ -252,14 +253,14 @@ const handleSaveDisplayName = async () => {
   try {
     const success = await contactStore.setFriendDisplayName(props.userId, displayNameValue.value.trim())
     if (success) {
-      window.$message?.success(t('friend.detail.display_name_saved'))
+      showFeedback(t('friend.detail.display_name_saved'), 'success', 'polite')
       showDisplayNameEdit.value = false
       if (profileData.value) {
         profileData.value.remark = displayNameValue.value.trim()
       }
     }
   } catch {
-    window.$message?.error(t('friend.detail.display_name_error'))
+    showFeedback(t('friend.detail.display_name_error'), 'error', 'assertive')
   } finally {
     savingDisplayName.value = false
   }
@@ -277,7 +278,7 @@ const handleEncryptedChat = async () => {
     await contactStore.startDirectRoom(props.userId, true)
     visible.value = false
   } catch {
-    window.$message?.error(t('friend.detail.chat_error'))
+    showFeedback(t('friend.detail.chat_error'), 'error', 'assertive')
   }
 }
 
@@ -291,10 +292,10 @@ const handleRemoveFriend = async () => {
     onPositiveClick: async () => {
       const success = await contactStore.removeFromContacts(props.userId)
       if (success) {
-        window.$message?.success(t('friend.detail.remove_success'))
+        showFeedback(t('friend.detail.remove_success'), 'success', 'polite')
         visible.value = false
       } else {
-        window.$message?.error(t('friend.detail.remove_error'))
+        showFeedback(t('friend.detail.remove_error'), 'error', 'assertive')
       }
     }
   })

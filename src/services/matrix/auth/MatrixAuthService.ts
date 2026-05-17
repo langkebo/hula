@@ -1,5 +1,9 @@
 import * as sdk from 'matrix-js-sdk'
-import 'matrix-js-sdk/src/manager-extensions'
+import { useI18nGlobal } from '@/services/i18n'
+import { ensureMatrixSdkCompat } from '../sdk-compat'
+
+ensureMatrixSdkCompat()
+
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
@@ -416,7 +420,7 @@ async function matrixGetCaptcha(options?: {
     }>('/_matrix/client/v3/register', { type: 'm.login.dummy' }, '获取注册会话失败')
     const session = initResult.session
     if (!session) {
-      throw new Error('注册服务未返回有效会话，请联系管理员检查服务器配置')
+      throw new Error(useI18nGlobal().t('matrix_error.auth.register_no_valid_session'))
     }
     return postMatrixJson<MatrixCaptchaResult>(
       '/_matrix/client/v3/register/captcha/send',
@@ -426,7 +430,7 @@ async function matrixGetCaptcha(options?: {
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err)
     if (errMsg.includes('422') || errMsg.includes('M_UNKNOWN')) {
-      throw new Error('验证码服务暂不可用，请稍后重试或联系管理员 (服务器未就绪)')
+      throw new Error(useI18nGlobal().t('matrix_error.auth.verification_service_unavailable'))
     }
     throw err
   }
@@ -586,7 +590,7 @@ export class MatrixAuthService {
         flows?: Array<{ type: string; stages?: string[] }>
       }
       if (!r.session) {
-        throw new Error('注册服务未返回有效会话')
+        throw new Error(useI18nGlobal().t('matrix_error.auth.register_no_session'))
       }
       return { session: r.session, flows: r.flows ?? [] }
     } catch (err) {
@@ -613,20 +617,20 @@ export class MatrixAuthService {
   static async getCaptchaStatus(session: string): Promise<{ verified: boolean }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
     try {
       const result = await client.http.authedRequest('GET', '/_matrix/client/v3/register/captcha/status', { session })
       return result as { verified: boolean }
     } catch (_err) {
-      throw new Error('查询验证码状态失败')
+      throw new Error(useI18nGlobal().t('matrix_error.auth.query_code_status_failed'))
     }
   }
 
   static async whoami(): Promise<{ userId: string; deviceId?: string }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -644,7 +648,7 @@ export class MatrixAuthService {
   static async cleanupExpiredCaptchas(): Promise<{ cleaned: number }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -742,7 +746,7 @@ export class MatrixAuthService {
   static async logoutAll(): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -755,7 +759,7 @@ export class MatrixAuthService {
   static async getCapabilities(): Promise<Record<string, unknown>> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -769,7 +773,7 @@ export class MatrixAuthService {
   static async invalidateQrLogin(qrId: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -782,7 +786,7 @@ export class MatrixAuthService {
   static async getSamlRedirect(idpId?: string, redirectUrl?: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -815,7 +819,7 @@ export class MatrixAuthService {
   static async samlLogout(redirectUrl?: string): Promise<string | null> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -830,7 +834,7 @@ export class MatrixAuthService {
   static async getSamlMetadata(): Promise<Record<string, unknown>> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -848,7 +852,7 @@ export class MatrixAuthService {
   }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -872,7 +876,7 @@ export class MatrixAuthService {
   }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     if (matrixWorkerHost.isStarted) {
@@ -904,7 +908,7 @@ export class MatrixAuthService {
   static async getWellKnown(): Promise<Record<string, unknown>> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -923,7 +927,7 @@ export class MatrixAuthService {
   static async getSsoLoginUrl(idpId?: string, redirectUrl?: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {

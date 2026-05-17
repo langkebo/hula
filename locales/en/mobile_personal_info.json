@@ -17,5 +17,11 @@
     "success": "Friend deleted successfully",
     "failed": "Failed to delete friend"
   },
-  "not_found": "No friends found"
+  "not_found": "No friends found",
+  "delete_friend_dialog": {
+    "title": "Delete Friend",
+    "message": "Are you sure you want to delete this friend?",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  }
 }

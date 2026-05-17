@@ -1,7 +1,7 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { BackupInfo, KeyBackupManager, MatrixClientExtended } from '@/types/matrix-extensions'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 export interface BackupVersionInfo {
   version: string
@@ -111,23 +111,14 @@ interface CreateKeyBackupVersionRequest {
   auth_data: Record<string, unknown>
 }
 
-class MatrixKeyBackupService {
-  private client: MatrixClient | null = null
-
+class MatrixKeyBackupService extends BaseMatrixService {
   initialize(client: MatrixClient): void {
-    this.client = client
+    this.setFallbackClient(client)
     info('[KeyBackup] 服务已初始化')
   }
 
   private ensureClient(): HttpCapableClient {
-    const client = this.client ?? matrixClientService.getClient()
-    if (!client) {
-      throw new Error('MatrixClient 未初始化')
-    }
-    if (!this.client) {
-      this.client = client
-    }
-    return client as HttpCapableClient
+    return this.getClient() as HttpCapableClient
   }
 
   private getKeyBackupManager(): KeyBackupManager | null {

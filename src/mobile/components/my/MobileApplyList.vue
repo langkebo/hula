@@ -37,7 +37,7 @@
                 ? (currentUserId = item.operateId || '')
                 : (currentUserId = item.senderId || '')
             "
-            class="flex justify-between text-14px text-#2DA38D">
+            class="flex justify-between text-14px text-[--hula-color-primary-500]">
             {{ getUserInfo(item)?.name || t('mobile_mymessage.unknown_user') }}
           </div>
           <div class="flex text-gray-500 text-12px min-w-0">
@@ -46,7 +46,7 @@
             </span>
           </div>
           <div v-if="isFriendApplyOrGroupInvite(item)" class="flex gap-2 flex-1 text-12px text-gray-500 min-w-0">
-            <div class="whitespace-nowrap flex-shrink-0">留言:</div>
+            <div class="whitespace-nowrap flex-shrink-0">{{ t('mobile_mymessage.message_label') }}</div>
             <span
               class="flex-1 min-w-0 line-clamp-1"
               style="max-width: 100%"
@@ -55,7 +55,7 @@
             </span>
           </div>
           <div v-else class="flex gap-2 flex-1 text-12px text-gray-500 min-w-0">
-            <div class="whitespace-nowrap flex-shrink-0">处理人:</div>
+            <div class="whitespace-nowrap flex-shrink-0">{{ t('mobile_mymessage.handler_label') }}</div>
             <span
               class="flex-1 min-w-0 line-clamp-1"
               style="max-width: 100%"
@@ -88,18 +88,22 @@
               </div>
             </template>
           </van-popover>
-          <span class="text-(12px #64a29c)" v-else-if="item.status === RequestNoticeAgreeStatus.ACCEPTED">
+          <span
+            class="text-(12px [--hula-color-primary-400])"
+            v-else-if="item.status === RequestNoticeAgreeStatus.ACCEPTED">
             {{ t('mobile_mymessage.approved') }}
           </span>
-          <span class="text-(12px #c14053)" v-else-if="item.status === RequestNoticeAgreeStatus.REJECTED">
+          <span
+            class="text-(12px [--hula-color-danger-500])"
+            v-else-if="item.status === RequestNoticeAgreeStatus.REJECTED">
             {{ t('mobile_mymessage.refused') }}
           </span>
-          <span class="text-(12px #909090)" v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
+          <span class="text-(12px [--hula-text-tertiary])" v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
             {{ t('mobile_mymessage.ignored') }}
           </span>
           <span
-            class="text-(12px #64a29c)"
-            :class="{ 'text-(12px #c14053)': item.status === RequestNoticeAgreeStatus.REJECTED }"
+            class="text-(12px [--hula-color-primary-400])"
+            :class="{ 'text-(12px [--hula-color-danger-500])': item.status === RequestNoticeAgreeStatus.REJECTED }"
             v-else-if="isCurrentUser(item.senderId || '')">
             {{
               isAccepted(item)

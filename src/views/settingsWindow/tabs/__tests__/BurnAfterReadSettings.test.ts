@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import BurnAfterReadSettings from '../BurnAfterReadSettings.vue'
 
@@ -95,6 +96,7 @@ vi.mock('vue-i18n', () => ({
 
 describe('BurnAfterReadSettings', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     localStorage.clear()
     mockManager.getBurnStats.mockResolvedValue({ totalBurned: 128, pendingBurns: 3, activeRooms: 2 })

@@ -153,27 +153,27 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NModal, NSwitch, NTag, useMessage } from 'naive-ui'
+import { NButton, NDivider, NModal, NSwitch, NTag } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('EncryptionSettings')
-
 import CrossSigningDialog from '@/components/encryption/CrossSigningDialog.vue'
 import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
 import KeyBackupRestoreDialog from '@/components/encryption/KeyBackupRestoreDialog.vue'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 import KeyRotationDialog from '@/components/encryption/KeyRotationDialog.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('EncryptionSettings')
 
 defineOptions({
   name: 'EncryptionSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 
 const backupEnabled = ref(false)
@@ -258,7 +258,7 @@ function formatFingerprint(key: string): string {
 
 function handleBackupToggle(value: boolean) {
   if (!encryptionEnabled.value) {
-    message.warning(t('setting.encryption.enable_required'))
+    showFeedback(t('setting.encryption.enable_required'), 'warning')
     backupEnabled.value = false
     return
   }
@@ -267,7 +267,7 @@ function handleBackupToggle(value: boolean) {
   if (value) {
     showBackupDialog.value = true
   } else {
-    message.warning(t('setting.encryption.backup_disabled_feedback'))
+    showFeedback(t('setting.encryption.backup_disabled_feedback'), 'warning')
   }
 }
 
@@ -278,7 +278,7 @@ function handleCreateBackup() {
 function handleBackupCreated() {
   backupEnabled.value = true
   backupVersion.value = `v${Date.now()}`
-  message.success(t('setting.encryption.backup_created'))
+  showFeedback(t('setting.encryption.backup_created'), 'success')
 }
 
 function handleRestoreBackup() {
@@ -286,7 +286,7 @@ function handleRestoreBackup() {
 }
 
 function handleRestoreSuccess() {
-  message.success(t('setting.encryption.restore_success'))
+  showFeedback(t('setting.encryption.restore_success'), 'success')
 }
 
 function handleVerifyDevice() {
@@ -295,7 +295,7 @@ function handleVerifyDevice() {
 
 function handleVerifySuccess() {
   deviceVerified.value = true
-  message.success(t('setting.encryption.verify_success'))
+  showFeedback(t('setting.encryption.verify_success'), 'success')
 }
 
 function handleShowDeviceKey() {
@@ -307,7 +307,7 @@ function handleShowDeviceKey() {
 
 function copyFingerprint() {
   navigator.clipboard.writeText(deviceFingerprint.value.replace(/\s/g, ''))
-  message.success(t('setting.encryption.copied'))
+  showFeedback(t('setting.encryption.copied'), 'success')
 }
 </script>
 

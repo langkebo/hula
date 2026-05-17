@@ -1,3 +1,4 @@
+import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import type {
   SearchEventDoc,
@@ -212,7 +213,7 @@ export class MatrixWorkerHost {
   protected async request<T>(type: string, payload?: unknown): Promise<T> {
     const worker = this.worker
     if (!worker) {
-      throw new Error('MatrixWorkerHost: worker 未启动，先调用 start()')
+      throw new Error(useI18nGlobal().t('matrix_error.worker.not_started'))
     }
 
     const id = this.generateId()

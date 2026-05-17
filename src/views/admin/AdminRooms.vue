@@ -135,16 +135,16 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NSpace, NTag, useDialog, useMessage } from 'naive-ui'
+import { NButton, NSpace, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAdminRooms } from '@/composables/admin'
-import { adminService, type RoomInfo } from '@/services/matrix/admin'
+import { type RoomInfo, useAdminRooms } from '@/composables/admin'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const adminStore = useAdminStore()
 const { handleAdminError } = useAdminErrorHandler()
@@ -269,11 +269,14 @@ async function handleForceJoin() {
   forceJoinLoading.value = true
   try {
     await admin.forceJoinRoom(selectedRoom.value.roomId, forceJoinForm.value.userId)
-    message.success(t('admin.rooms.forceJoinSuccess'))
+    showFeedback(t('admin.rooms.forceJoinSuccess'), 'success')
     showForceJoinDialog.value = false
     forceJoinForm.value.userId = ''
+    await admin.loadMembers()
   } catch (err) {
-    if (handleAdminError(err)) message.error(t('admin.rooms.forceJoinFailed'))
+    if (handleAdminError(err)) {
+      showFeedback(t('admin.rooms.forceJoinFailed'), 'error')
+    }
   } finally {
     forceJoinLoading.value = false
   }
@@ -284,11 +287,13 @@ async function handleForceLeave() {
   forceLeaveLoading.value = true
   try {
     await admin.forceLeaveRoom(selectedRoom.value.roomId, forceLeaveForm.value.userId)
-    message.success(t('admin.rooms.forceLeaveSuccess'))
+    showFeedback(t('admin.rooms.forceLeaveSuccess'), 'success')
     showForceLeaveDialog.value = false
     forceLeaveForm.value.userId = ''
   } catch (err) {
-    if (handleAdminError(err)) message.error(t('admin.rooms.forceLeaveFailed'))
+    if (handleAdminError(err)) {
+      showFeedback(t('admin.rooms.forceLeaveFailed'), 'error')
+    }
   } finally {
     forceLeaveLoading.value = false
   }
@@ -300,10 +305,11 @@ async function handleToggleBlock() {
   try {
     await admin.blockRoom(selectedRoom.value.roomId, newBlockState)
     roomBlocked.value = newBlockState
-    message.success(newBlockState ? t('admin.rooms.blockSuccess') : t('admin.rooms.unblockSuccess'))
+    showFeedback(newBlockState ? t('admin.rooms.blockSuccess') : t('admin.rooms.unblockSuccess'), 'success')
   } catch (err) {
-    if (handleAdminError(err))
-      message.error(newBlockState ? t('admin.rooms.blockFailed') : t('admin.rooms.unblockFailed'))
+    if (handleAdminError(err)) {
+      showFeedback(newBlockState ? t('admin.rooms.blockFailed') : t('admin.rooms.unblockFailed'), 'error')
+    }
   }
 }
 
@@ -318,10 +324,10 @@ async function handleShutdownRoom() {
     onPositiveClick: async () => {
       try {
         await admin.shutdownRoom(target.roomId, t('admin.rooms.shutdownMessage'))
-        message.success(t('admin.rooms.shutdownSuccess'))
+        showFeedback(t('admin.rooms.shutdownSuccess'), 'success')
         showRoomDetail.value = false
       } catch (err) {
-        if (handleAdminError(err)) message.error(t('admin.rooms.shutdownFailed'))
+        if (handleAdminError(err)) showFeedback(t('admin.rooms.shutdownFailed'), 'error')
       }
     }
   })
@@ -338,10 +344,10 @@ async function handleDeleteRoom() {
     onPositiveClick: async () => {
       try {
         await admin.deleteRoom(target.roomId, { purge: true })
-        message.success(t('admin.rooms.deleteSuccess'))
+        showFeedback(t('admin.rooms.deleteSuccess'), 'success')
         showRoomDetail.value = false
       } catch (err) {
-        if (handleAdminError(err)) message.error(t('admin.rooms.deleteFailed'))
+        if (handleAdminError(err)) showFeedback(t('admin.rooms.deleteFailed'), 'error')
       }
     }
   })
@@ -359,11 +365,11 @@ async function handleKickUser(userId: string) {
     negativeText: t('admin.common.cancel'),
     onPositiveClick: async () => {
       try {
-        await adminService.kickUser(target.roomId, userId)
-        message.success(t('admin.rooms.kickSuccess'))
+        await admin.kickUser(target.roomId, userId)
+        showFeedback(t('admin.rooms.kickSuccess'), 'success')
         await admin.loadMembers()
       } catch (err) {
-        if (handleAdminError(err)) message.error(t('admin.rooms.kickFailed'))
+        if (handleAdminError(err)) showFeedback(t('admin.rooms.kickFailed'), 'error')
       }
     }
   })
@@ -379,11 +385,11 @@ async function handleBanUser(userId: string) {
     negativeText: t('admin.common.cancel'),
     onPositiveClick: async () => {
       try {
-        await adminService.banUser(target.roomId, userId)
-        message.success(t('admin.rooms.banSuccess'))
+        await admin.banUser(target.roomId, userId)
+        showFeedback(t('admin.rooms.banSuccess'), 'success')
         await admin.loadMembers()
       } catch (err) {
-        if (handleAdminError(err)) message.error(t('admin.rooms.banFailed'))
+        if (handleAdminError(err)) showFeedback(t('admin.rooms.banFailed'), 'error')
       }
     }
   })

@@ -17,6 +17,7 @@
   "view": "查看",
   "days": "天",
   "no_more": "没有更多了",
+  "no_more_data": "没有更多数据了",
   "notFound": "页面不存在或已被移除",
   "goHome": "返回首页",
   "thread": {
@@ -73,6 +74,15 @@
     "permission_remove_failed": "撤销授权失败",
     "permission_remove_confirm_title": "撤销授权",
     "permission_remove_confirm_content": "确定要撤销 {user} 的访问权限吗？"
+  },
+  "window_titles": {
+    "video_call": "视频通话",
+    "audio_call": "语音通话",
+    "check_update": "检查更新",
+    "video_viewer": "视频查看器",
+    "preview_file": "预览文件",
+    "settings": "设置",
+    "about": "关于"
   },
   "admin": {
     "title": "管理",

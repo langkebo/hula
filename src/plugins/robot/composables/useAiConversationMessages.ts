@@ -1,4 +1,5 @@
 import { type Ref, ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { AiMsgContentTypeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { isLikelyImageUrl, isLikelyMediaUrl } from '@/plugins/robot/utils/aiMediaUrl'
@@ -65,6 +66,7 @@ export const useAiConversationMessages = ({
   ensureLocalAiAudio
 }: UseAiConversationMessagesOptions) => {
   const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const userStore = useUserStore()
   const loadingMessages = ref(false)
 
@@ -173,7 +175,7 @@ export const useAiConversationMessages = ({
       }
     } catch (error) {
       logger.error('加载消息失败:', error)
-      window.$message.error('加载消息失败')
+      showFeedback('加载消息失败', 'error')
       messageList.value = []
       bumpMessageRenderVersion()
     } finally {
@@ -183,7 +185,7 @@ export const useAiConversationMessages = ({
 
   const handleDeleteMessage = async (messageId: string, index: number) => {
     if (!messageId) {
-      window.$message.warning('消息ID无效')
+      showFeedback('消息ID无效', 'warning')
       return
     }
 
@@ -191,7 +193,7 @@ export const useAiConversationMessages = ({
       await aiService.messageDelete({ id: messageId })
       messageList.value.splice(index, 1)
       bumpMessageRenderVersion()
-      window.$message.success(t('ai_assistant.robot.message_deleted'))
+      showFeedback(t('ai_assistant.robot.message_deleted'), 'success')
 
       currentChat.value.messageCount = Math.max((currentChat.value.messageCount || 0) - 1, 0)
       const latestEntry = messageList.value[messageList.value.length - 1]
@@ -202,7 +204,7 @@ export const useAiConversationMessages = ({
       })
     } catch (error) {
       logger.error('删除消息失败:', error)
-      window.$message.error('删除消息失败')
+      showFeedback('删除消息失败', 'error')
     }
   }
 

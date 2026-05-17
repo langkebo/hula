@@ -21,7 +21,8 @@ describe('PerformanceReporter', () => {
 
   afterEach(() => {
     vi.useRealTimers()
-    performanceReporter.terminate()
+    vi.restoreAllMocks()
+    performanceReporter.reset()
   })
 
   describe('initialize', () => {
@@ -151,6 +152,73 @@ describe('PerformanceReporter', () => {
       })
 
       expect(performanceReporter.getMetricsCount()).toBe(1)
+    })
+  })
+
+  describe('reportSdkRequestStats', () => {
+    it('should report sdk request metrics', () => {
+      const endpoint = 'http://localhost:9090'
+      performanceReporter.initialize({
+        endpoint,
+        batchSize: 10,
+        flushInterval: 5000,
+        enabled: true,
+        debug: false
+      })
+
+      performanceReporter.reportSdkRequestStats(
+        'voice',
+        {
+          total: 12,
+          successful: 10,
+          failed: 1,
+          retried: 2
+        },
+        {
+          platform: 'desktop'
+        }
+      )
+
+      expect(performanceReporter.getMetricsCount()).toBe(1)
+    })
+
+    it('should serialize sdk request metrics to prometheus payload', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true })
+      global.fetch = mockFetch
+
+      performanceReporter.initialize({
+        endpoint: 'http://localhost:9090/metrics',
+        batchSize: 100,
+        flushInterval: 60000,
+        enabled: true,
+        debug: false
+      })
+
+      performanceReporter.reportSdkRequestStats(
+        'voice',
+        {
+          total: 12,
+          successful: 10,
+          failed: 1,
+          retried: 2
+        },
+        {
+          platform: 'desktop'
+        }
+      )
+
+      await performanceReporter.forceFlush()
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+
+      const payload = mockFetch.mock.calls[0]?.[1]?.body
+      expect(payload).toContain('hula_sdk_manager_requests_total{')
+      expect(payload).toContain('manager="voice"')
+      expect(payload).toContain('platform="desktop"')
+      expect(payload).toContain('kind="total"} 12 ')
+      expect(payload).toContain('kind="successful"} 10 ')
+      expect(payload).toContain('kind="failed"} 1 ')
+      expect(payload).toContain('kind="retried"} 2 ')
     })
   })
 

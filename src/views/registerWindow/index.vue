@@ -238,16 +238,24 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import dayjs from 'dayjs'
 import { darkTheme, type FormInst, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useSessionActions } from '@/composables/user/useSessionActions'
 import { resolveMatrixRuntimeEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend'
-import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Register')
+const {
+  register: registerAccount,
+  requestEmailToken,
+  submitEmailToken,
+  restoreWithAccessToken,
+  loginWithPassword,
+  completeDesktopLoginTransition
+} = useSessionActions()
 
 import PinInput from '@/components/atomic/PinInput.vue'
 import Validation from '@/components/common/Validation.vue'
 import { useWindow } from '@/hooks/useWindow'
-import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import type { RegisterUserReq } from '@/services/types.ts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
@@ -260,6 +268,7 @@ const GENERAL_USER_SYSTEM_TYPE = 2
 const settingStore = useSettingStore()
 const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 /** 注册信息 */
 const info = reactive<RegisterUserReq>({
@@ -480,11 +489,11 @@ const handleStepAction = async () => {
   try {
     const email = info.email.trim()
     info.email = email
-    const result = await MatrixAuthService.requestEmailToken(email, 1)
+    const result = await requestEmailToken(email, 1)
     emailSessionId.value = result.sid
     emailClientSecret.value = result.client_secret
     startSendCodeCountdown()
-    window.$message.success(t('auth.register.messages.code_sent'))
+    showFeedback(t('auth.register.messages.code_sent'), 'success')
     emailCodeModal.value = true
     emailCode.value = ''
     nextTick(() => {
@@ -492,7 +501,7 @@ const handleStepAction = async () => {
     })
   } catch (error) {
     logger.error('发送验证码失败', error)
-    window.$message.error(getErrorMessage(error, t('auth.register.messages.register_fail')))
+    showFeedback(getErrorMessage(error, t('auth.register.messages.register_fail')), 'error')
   } finally {
     loading.value = false
   }
@@ -502,9 +511,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return error instanceof Error && error.message ? error.message : fallback
 }
 
-const finishRegistrationAndEnterHome = async (
-  registerResult: Awaited<ReturnType<typeof MatrixAuthService.register>>
-) => {
+const finishRegistrationAndEnterHome = async (registerResult: Awaited<ReturnType<typeof registerAccount>>) => {
   const account = info.nickName.trim()
   const displayName = account
 
@@ -513,7 +520,7 @@ const finishRegistrationAndEnterHome = async (
       homeserverUrl: matrixEndpointConfig.homeserverUrl,
       identityServerUrl: matrixEndpointConfig.identityServerUrl
     })
-    await sessionOrchestrator.restoreWithAccessToken({
+    await restoreWithAccessToken({
       uid: registerResult.user_id,
       accessToken: registerResult.access_token,
       refreshToken: registerResult.refresh_token,
@@ -525,7 +532,7 @@ const finishRegistrationAndEnterHome = async (
       bootstrapAfterRestore: true
     })
   } else {
-    await sessionOrchestrator.loginWithPassword({
+    await loginWithPassword({
       username: account,
       password: info.password,
       homeserverUrl: matrixEndpointConfig.homeserverUrl,
@@ -538,7 +545,7 @@ const finishRegistrationAndEnterHome = async (
     })
   }
 
-  await sessionOrchestrator.completeDesktopLoginTransition()
+  await completeDesktopLoginTransition()
 }
 
 const startSendCodeCountdown = () => {
@@ -578,11 +585,11 @@ const handleDirectRegister = async () => {
     info.systemType = GENERAL_USER_SYSTEM_TYPE
     info.avatar = generateRandomAvatar()
 
-    const registerResult = await MatrixAuthService.register(info.nickName.trim(), info.password)
+    const registerResult = await registerAccount(info.nickName.trim(), info.password)
     await finishRegistrationAndEnterHome(registerResult)
-    window.$message.success(t('auth.register.messages.register_success'))
+    showFeedback(t('auth.register.messages.register_success'), 'success')
   } catch (error) {
-    window.$message.error(getErrorMessage(error, t('auth.register.messages.register_fail')))
+    showFeedback(getErrorMessage(error, t('auth.register.messages.register_fail')), 'error')
   } finally {
     registerLoading.value = false
   }
@@ -601,10 +608,10 @@ const register = async () => {
     info.avatar = generateRandomAvatar()
 
     if (emailSessionId.value && emailClientSecret.value && info.code) {
-      await MatrixAuthService.submitEmailToken(info.code, emailClientSecret.value, emailSessionId.value)
+      await submitEmailToken(info.code, emailClientSecret.value, emailSessionId.value)
     }
 
-    const registerResult = await MatrixAuthService.register(
+    const registerResult = await registerAccount(
       info.nickName.trim(),
       info.password,
       emailSessionId.value || undefined,
@@ -613,11 +620,11 @@ const register = async () => {
       emailClientSecret.value || undefined
     )
     await finishRegistrationAndEnterHome(registerResult)
-    window.$message.success(t('auth.register.messages.register_success'))
+    showFeedback(t('auth.register.messages.register_success'), 'success')
 
     emailCodeModal.value = false
   } catch (error) {
-    window.$message.error(getErrorMessage(error, t('auth.register.messages.register_fail')))
+    showFeedback(getErrorMessage(error, t('auth.register.messages.register_fail')), 'error')
   } finally {
     registerLoading.value = false
   }

@@ -1,24 +1,8 @@
 import { error as logError, warn as logWarn } from '@tauri-apps/plugin-log'
-import type { MatrixClient } from 'matrix-js-sdk'
+import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
 import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
-
-interface VoiceUploadParams {
-  roomId: string
-  file: Blob | File
-  filename: string
-}
-
-interface VoiceUploadManagerResult {
-  eventId?: string
-  url?: string
-}
-
-interface VoiceInfoManagerResult {
-  duration?: number
-  waveform?: number[]
-}
 
 interface VoiceTranscriptionParams {
   roomId: string
@@ -30,12 +14,6 @@ interface VoiceTranscriptionResult {
   text: string
   language?: string
   segments?: Array<{ start: number; end: number; text: string }>
-}
-
-interface VoiceMessageManagerLike {
-  uploadVoiceMessage(params: VoiceUploadParams): Promise<VoiceUploadManagerResult>
-  getVoiceMessageInfo(roomId: string, eventId: string): Promise<VoiceInfoManagerResult | null>
-  transcribeVoiceMessage(params: VoiceTranscriptionParams): Promise<VoiceTranscriptionResult>
 }
 
 interface MxcHttpClient {
@@ -91,36 +69,13 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-class MatrixVoiceService {
-  public voiceManager: VoiceMessageManagerLike | null = null
-  private observedClient: MatrixClient | null = null
-
-  private getClient(): MxcHttpClient {
+class MatrixVoiceService extends BaseMatrixService {
+  private getVoiceClient(): MxcHttpClient {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
     return client as MxcHttpClient
-  }
-
-  private getVoiceManager(): VoiceMessageManagerLike {
-    const client = this.getClient() as MatrixClient & {
-      getVoiceMessageManager?: () => VoiceMessageManagerLike | null
-      voiceMessageManager?: VoiceMessageManagerLike | null
-    }
-
-    if (this.voiceManager && this.observedClient === client) {
-      return this.voiceManager
-    }
-
-    const manager = client.getVoiceMessageManager?.() ?? client.voiceMessageManager ?? null
-    if (!manager) {
-      throw new Error('VoiceMessageManager 不可用')
-    }
-
-    this.observedClient = client
-    this.voiceManager = manager
-    return manager
   }
 
   private resolveHttpUrl(mxcUrl?: string): string | undefined {
@@ -128,7 +83,7 @@ class MatrixVoiceService {
       return undefined
     }
 
-    const client = this.getClient()
+    const client = this.getVoiceClient()
     return client.mxcUrlToHttp?.(mxcUrl) ?? undefined
   }
 
@@ -150,18 +105,33 @@ class MatrixVoiceService {
   }
 
   async uploadVoice(roomId: string, file: Blob | File, filename = 'voice.webm'): Promise<VoiceMessageResult> {
-    try {
-      const manager = this.getVoiceManager()
-      const result = await manager.uploadVoiceMessage({
-        roomId,
-        file,
-        filename
-      })
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
+    }
 
-      const mxcUrl = result.url
+    try {
+      const path = MATRIX_PATHS.VOICE.UPLOAD
+      const available = await endpointCapabilityService.check('POST', path)
+      if (!available) {
+        throw new Error(this.t('matrix_error.media.voice_message_manager_unavailable'))
+      }
+
+      const formData = new FormData()
+      formData.append('file', file, filename)
+      if (roomId) formData.append('roomId', roomId)
+
+      const result = (await client.http.authedRequest(
+        'POST',
+        path,
+        undefined,
+        formData as unknown as Record<string, unknown>
+      )) as Record<string, unknown>
+
+      const mxcUrl = (result.url as string) ?? (result.content_uri as string)
       return {
-        eventId: result.eventId,
-        url: result.url,
+        eventId: (result.event_id as string) ?? (result.eventId as string),
+        url: mxcUrl,
         filename,
         mxcUrl,
         httpUrl: this.resolveHttpUrl(mxcUrl)
@@ -173,18 +143,23 @@ class MatrixVoiceService {
   }
 
   async getVoice(roomId: string, eventId: string): Promise<VoicePlaybackInfo | null> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
+    }
+
     try {
-      const manager = this.getVoiceManager()
-      const client = this.getClient()
-      const info = await manager.getVoiceMessageInfo(roomId, eventId)
-      const room = client.getRoom(roomId) as RoomLike | null
+      const client_ = this.getVoiceClient()
+      const room = client_.getRoom(roomId) as RoomLike | null
       const event = room?.findEventById?.(eventId) ?? null
       const content = event?.getContent?.()
       const mxcUrl = content?.url
 
+      if (!mxcUrl) {
+        return null
+      }
+
       return {
-        duration: info?.duration,
-        waveform: info?.waveform,
         mimeType: content?.info?.mimetype,
         size: content?.info?.size,
         mxcUrl,
@@ -198,8 +173,15 @@ class MatrixVoiceService {
 
   async transcribeVoice(params: VoiceTranscriptionParams): Promise<VoiceTranscriptionResult> {
     try {
-      const manager = this.getVoiceManager()
-      return await manager.transcribeVoiceMessage(params)
+      const result = await this.transcribeVoiceViaApi(params.eventId, params.lang)
+      if (!result) {
+        throw new Error(this.t('matrix_error.media.voice_message_manager_unavailable'))
+      }
+      return {
+        text: result.text,
+        language: result.language,
+        segments: undefined
+      }
     } catch (err) {
       logError(`[MatrixVoiceService] 语音转文字失败: ${params.eventId} ${err}`)
       throw err
@@ -213,7 +195,7 @@ class MatrixVoiceService {
   }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
 
     try {
@@ -241,7 +223,7 @@ class MatrixVoiceService {
   }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
 
     try {
@@ -269,7 +251,7 @@ class MatrixVoiceService {
   }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
 
     try {
@@ -291,7 +273,7 @@ class MatrixVoiceService {
   async deleteVoice(messageId: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
     try {
       const path = MATRIX_PATHS.VOICE.CONTENT(messageId)
@@ -317,7 +299,7 @@ class MatrixVoiceService {
   }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
 
     try {
@@ -350,7 +332,7 @@ class MatrixVoiceService {
   }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
 
     try {
@@ -376,7 +358,7 @@ class MatrixVoiceService {
   async getVoiceContent(messageId: string): Promise<Record<string, unknown> | null> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
 
     try {
@@ -395,7 +377,7 @@ class MatrixVoiceService {
   async convertVoice(messageId: string, targetFormat: string): Promise<{ url: string; format: string } | null> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
 
     try {
@@ -421,7 +403,7 @@ class MatrixVoiceService {
   ): Promise<{ url: string; size: number } | null> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
 
     try {
@@ -451,7 +433,7 @@ class MatrixVoiceService {
   ): Promise<{ text: string; language?: string; confidence?: number } | null> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('MatrixClient 未初始化')
+      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
 
     try {

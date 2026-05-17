@@ -282,12 +282,13 @@ import type { VirtualListInst } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
+import { useTyping } from '@/composables/chat/useTyping'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSendOptions } from '@/composables/settings/settingsOptions'
 import { MacOsKeyEnum, MittEnum, MobilePanelStateEnum, RoomTypeEnum, ThemeEnum, WinKeyEnum } from '@/enums'
 import { useCommon } from '@/hooks/useCommon.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useMsgInput } from '@/hooks/useMsgInput.ts'
-import { matrixTypingService } from '@/services/matrix/messaging/MatrixTypingService'
 import type { AIModel, UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -316,6 +317,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const appWindow = WebviewWindow.getCurrent()
 const settingStore = useSettingStore()
 const { handlePaste, processFiles } = useCommon()
@@ -366,16 +368,17 @@ const {
   getCursorSelectionRange
 } = useMsgInput(messageInputDom)
 
+const { startTyping, stopTyping } = useTyping()
+
 /** 表单提交处理函数 */
 const handleFormSubmit = async (e: Event) => {
   e.preventDefault()
-  // 发送前停止输入状态
   if (currentSessionRoomId.value && isTyping.value) {
     isTyping.value = false
     if (typingTimeout.value) {
       clearTimeout(typingTimeout.value)
     }
-    matrixTypingService.stopTyping(currentSessionRoomId.value)
+    stopTyping(currentSessionRoomId.value)
   }
   await send()
 }
@@ -435,7 +438,7 @@ const handleInternalInput = (e: Event) => {
   // 输入状态检测
   if (currentSessionRoomId.value && !isTyping.value) {
     isTyping.value = true
-    matrixTypingService.startTyping(currentSessionRoomId.value, 30000)
+    startTyping(currentSessionRoomId.value, 30000)
   }
 
   // 清除之前的定时器
@@ -443,11 +446,10 @@ const handleInternalInput = (e: Event) => {
     clearTimeout(typingTimeout.value)
   }
 
-  // 设置新的定时器，停止输入后发送停止输入通知
   typingTimeout.value = setTimeout(() => {
     if (currentSessionRoomId.value && isTyping.value) {
       isTyping.value = false
-      matrixTypingService.stopTyping(currentSessionRoomId.value)
+      stopTyping(currentSessionRoomId.value)
     }
   }, 3000)
 }
@@ -488,11 +490,11 @@ const handleBeaconClick = async () => {
       })
 
       isBeaconActive.value = true
-      window.$message?.success(t('message.beacon.started') || '信标已启动')
+      showFeedback(t('message.beacon.started') || '信标已启动', 'success')
     }
   } catch (error) {
     logger.error('启动 Beacon 失败:', error)
-    window.$message?.error(t('message.beacon.failed') || '信标启动失败')
+    showFeedback(t('message.beacon.failed') || '信标启动失败', 'error')
   }
 }
 
@@ -529,7 +531,7 @@ const handleGlobalFilesDrop = async (files: UploadFile[]) => {
     await processFiles(files, messageInputDom.value, showFileModalCallback)
   } catch (error) {
     logger.error('处理拖拽文件失败:', error)
-    window.$message?.error?.('处理拖拽文件失败')
+    showFeedback('处理拖拽文件失败', 'error')
   }
 }
 
@@ -539,7 +541,7 @@ const handleLocationSelected = async (locationData: LocationData) => {
     await sendLocationDirect(locationData)
   } catch (error) {
     logger.error('发送位置失败:', error)
-    window.$message?.error?.(t('message.location.send_failed') || '发送位置失败')
+    showFeedback(t('message.location.send_failed') || '发送位置失败', 'error')
   }
 }
 
@@ -724,7 +726,7 @@ const clearInput = () => {
 const handleAISend = async () => {
   const content = getInputContent()
   if (!content.trim()) {
-    window.$message.warning('请输入消息内容')
+    showFeedback('请输入消息内容', 'warning')
     return
   }
 

@@ -1,4 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
+import { useI18nGlobal } from '@/services/i18n'
 import { matrixClientService } from '../MatrixClientService'
 
 export interface Widget {
@@ -179,7 +180,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return null
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       const response = await manager.createWidget({
@@ -220,7 +221,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return false
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       await manager.deleteWidget(widgetId)
@@ -244,7 +245,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return null
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       const response = await manager.getWidgetById(widgetId)
@@ -260,7 +261,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return null
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       const response = await manager.updateWidget(widgetId, {
@@ -280,7 +281,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return null
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       return await manager.getWidgetConfig(widgetId)
@@ -295,7 +296,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return null
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       return await manager.getJitsiConfig(roomId)
@@ -310,7 +311,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return null
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       return await manager.getWidgetPermissions(widgetId)
@@ -330,7 +331,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return null
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       return await manager.setWidgetPermission(widgetId, { user_id: userId, permissions })
@@ -345,7 +346,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return false
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       await manager.deleteWidgetPermission(widgetId, userId)
@@ -365,7 +366,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return null
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       return await manager.createWidgetSession(widgetId, {
@@ -383,7 +384,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return []
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       return await manager.listWidgetSessions(widgetId)
@@ -398,7 +399,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return null
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       return await manager.getWidgetSession(sessionId)
@@ -413,7 +414,7 @@ class MatrixWidgetService {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return false
-      throw new Error('WidgetsManager 未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
       await manager.terminateWidgetSession(sessionId)
@@ -447,7 +448,7 @@ class MatrixWidgetService {
     const client = matrixClientService.getClient()
     if (!client) {
       if (!throwOnError) return null
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
     try {
       const result = (await client.http.authedRequest(
@@ -481,7 +482,7 @@ class MatrixWidgetService {
     const client = matrixClientService.getClient()
     if (!client) {
       if (!throwOnError) return null
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
     try {
       const result = (await client.http.authedRequest(
@@ -518,7 +519,7 @@ class MatrixWidgetService {
     const client = matrixClientService.getClient()
     if (!client) {
       if (!throwOnError) return null
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
     try {
       const result = (await client.http.authedRequest(

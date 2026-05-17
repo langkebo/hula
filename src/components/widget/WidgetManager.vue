@@ -136,18 +136,18 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { type FormInst, useDialog, useMessage } from 'naive-ui'
+import { type FormInst, useDialog } from 'naive-ui'
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type PermissionRow, useWidgetPermissions, useWidgets } from '@/composables/widget'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { type PermissionRow, useWidgetPermissions, useWidgets, type Widget } from '@/composables/widget'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
-import type { Widget } from '@/services/matrix/widget/MatrixWidgetService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WidgetManager')
 const { t } = useI18n()
 const dialog = useDialog()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 
 const props = defineProps<{
   roomId: string
@@ -234,17 +234,17 @@ const handleAddWidget = async () => {
       name: formData.name
     })
     if (!result) {
-      message.error(t('widget.add_failed'))
+      showFeedback(t('widget.add_failed'), 'error')
       return
     }
-    message.success(t('widget.add_success'))
+    showFeedback(t('widget.add_success'), 'success')
     showAddDialog.value = false
     formData.name = ''
     formData.type = 'custom'
     formData.url = ''
   } catch (error) {
     logger.error('[WidgetManager] 添加 Widget 失败:', error)
-    message.error(t('widget.add_failed'))
+    showFeedback(t('widget.add_failed'), 'error')
   }
 }
 
@@ -257,9 +257,9 @@ const handleRemoveWidget = (widget: Widget) => {
     onPositiveClick: async () => {
       const ok = await removeWidget(widget.id)
       if (ok) {
-        message.success(t('widget.remove_success'))
+        showFeedback(t('widget.remove_success'), 'success')
       } else {
-        message.error(t('widget.remove_failed'))
+        showFeedback(t('widget.remove_failed'), 'error')
       }
     }
   })
@@ -281,20 +281,20 @@ const handleAddPermission = async () => {
   if (!selectedWidget.value) return
   const userId = newPermission.userId.trim()
   if (!userId) {
-    message.warning(t('widget.permission_user_required'))
+    showFeedback(t('widget.permission_user_required'), 'warning')
     return
   }
   if (newPermission.permissions.length === 0) {
-    message.warning(t('widget.permission_scope_required'))
+    showFeedback(t('widget.permission_scope_required'), 'warning')
     return
   }
   const ok = await grantPermission(selectedWidget.value.id, userId, newPermission.permissions)
   if (ok) {
-    message.success(t('widget.permission_added'))
+    showFeedback(t('widget.permission_added'), 'success')
     newPermission.userId = ''
     newPermission.permissions = ['read']
   } else {
-    message.error(t('widget.permission_add_failed'))
+    showFeedback(t('widget.permission_add_failed'), 'error')
   }
 }
 
@@ -309,9 +309,9 @@ const handleRemovePermission = (row: PermissionRow) => {
     onPositiveClick: async () => {
       const ok = await revokePermission(widgetId, row.userId)
       if (ok) {
-        message.success(t('widget.permission_removed'))
+        showFeedback(t('widget.permission_removed'), 'success')
       } else {
-        message.error(t('widget.permission_remove_failed'))
+        showFeedback(t('widget.permission_remove_failed'), 'error')
       }
     }
   })

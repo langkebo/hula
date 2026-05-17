@@ -32,6 +32,7 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixMessageRelationService } from '@/services/matrix/messaging/MatrixMessageRelationService'
 
 import { createLogger } from '@/utils/Logger'
@@ -52,6 +53,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const inputRef = ref()
 const editContent = ref('')
 const saving = ref(false)
@@ -92,10 +94,10 @@ const handleSave = useDebounceFn(async () => {
     })
     emit('saved', newEventId)
     emit('update:visible', false)
-    window.$message?.success(t('message.edit_success'))
+    showFeedback(t('message.edit_success'), 'success')
   } catch (error) {
     logger.error('编辑消息失败:', error)
-    window.$message?.error(t('message.edit_failed'))
+    showFeedback(t('message.edit_failed'), 'error')
   } finally {
     saving.value = false
   }

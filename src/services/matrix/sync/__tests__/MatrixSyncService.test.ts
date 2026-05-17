@@ -63,7 +63,7 @@ describe('SyncService', () => {
   describe('startSync', () => {
     it('should throw error when client is not initialized', async () => {
       const service = new (syncService.constructor as unknown as new () => typeof syncService)()
-      await expect(service.startSync()).rejects.toThrow('Client 未初始化')
+      await expect(service.startSync()).rejects.toThrow('客户端未初始化')
     })
 
     it('should use matrixClientService client when initialize is not called', async () => {

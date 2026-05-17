@@ -1,0 +1,13 @@
+{
+  "versions_supported": "支持的版本: {versions}",
+  "versions_not_found": "未找到支持的 API 版本",
+  "connection_failed": "无法连接到服务器: {error}",
+  "login_flows_supported": "支持的登录方式: {flows}",
+  "login_flows_not_found": "未找到登录流程",
+  "login_flows_check_failed": "检查登录流程失败: {error}",
+  "sliding_sync_found": "找到 {count} 个可用端点",
+  "sliding_sync_not_found": "未找到可用的 Sliding Sync 端点",
+  "cors_ok": "CORS 配置正常",
+  "cors_headers_missing": "CORS 头部缺失",
+  "cors_check_failed": "CORS 检查失败: {error}"
+}

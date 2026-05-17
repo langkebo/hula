@@ -1,6 +1,6 @@
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
-import { matrixClientService } from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 export interface QrCodeResult {
   transactionId: string
@@ -30,12 +30,9 @@ interface QrLoginManagerLike {
   ): Promise<{ transaction_id: string; user_id: string; status: string }>
 }
 
-class MatrixQrLoginBridgeService {
+class MatrixQrLoginBridgeService extends BaseMatrixService {
   private ensureQrLoginManager(): QrLoginManagerLike {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[QrLoginBridge] 客户端未初始化')
-    }
+    const client = this.getClient()
     return (client as MatrixClient & { getQrLoginManager(): QrLoginManagerLike }).getQrLoginManager()
   }
 

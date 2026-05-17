@@ -32,18 +32,8 @@
 </template>
 
 <script setup lang="ts">
-import {
-  type DataTableColumns,
-  NAlert,
-  NButton,
-  NDataTable,
-  NIcon,
-  NPageHeader,
-  NSpace,
-  NTag,
-  useMessage
-} from 'naive-ui'
-import { h, onMounted, reactive, ref } from 'vue'
+import { type DataTableColumns, NAlert, NButton, NDataTable, NIcon, NPageHeader, NSpace, NTag } from 'naive-ui'
+import { h, onMounted, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminSecurity } from '@/composables/admin/useAdminSecurity'
 
@@ -59,7 +49,6 @@ interface AuditLogRow {
 }
 
 const { t } = useI18n()
-const message = useMessage()
 const { auditLogs, loading, nextBatch, loadAuditLogs } = useAdminSecurity()
 
 const pagination = reactive({

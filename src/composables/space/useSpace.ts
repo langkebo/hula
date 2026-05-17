@@ -3,6 +3,8 @@ import type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpace
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
 import { createLogger } from '@/utils/Logger'
 
+export type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
+
 const logger = createLogger('useSpace')
 
 export interface UseSpaceResult {
@@ -13,6 +15,15 @@ export interface UseSpaceResult {
   load: () => Promise<void>
   update: (updates: Partial<SpaceOptions>) => Promise<boolean>
   leave: () => Promise<boolean>
+  join: (viaServers?: string[]) => Promise<void>
+  getHierarchy: (options?: {
+    from?: string
+    limit?: number
+    maxDepth?: number
+    suggestedOnly?: boolean
+  }) => Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }>
+  getTreePath: () => Promise<Array<{ spaceId: string; name: string }>>
+  addChild: (roomId: string, options?: { via?: string[]; suggested?: boolean }) => Promise<void>
 }
 
 /**
@@ -79,5 +90,39 @@ export function useSpace(spaceId: () => string): UseSpaceResult {
     }
   }
 
-  return { space, loading, mutating, error, load, update, leave }
+  const join = async (viaServers?: string[]): Promise<void> => {
+    const id = spaceId()
+    if (!id) return
+    await matrixSpaceService.joinSpace(id, viaServers)
+  }
+
+  const getHierarchy = async (options?: {
+    from?: string
+    limit?: number
+    maxDepth?: number
+    suggestedOnly?: boolean
+  }): Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }> => {
+    const id = spaceId()
+    if (!id) return { rooms: [] }
+    return await matrixSpaceService.getSpaceHierarchy(id, options)
+  }
+
+  const getTreePath = async (): Promise<Array<{ spaceId: string; name: string }>> => {
+    const id = spaceId()
+    if (!id) return []
+
+    const path = await matrixSpaceService.getSpaceTreePath(id)
+    return path.map((item) => ({
+      spaceId: item.space_id,
+      name: item.name || ''
+    }))
+  }
+
+  const addChild = async (roomId: string, options?: { via?: string[]; suggested?: boolean }): Promise<void> => {
+    const id = spaceId()
+    if (!id) return
+    await matrixSpaceService.addChildToSpace(id, roomId, options)
+  }
+
+  return { space, loading, mutating, error, load, update, leave, join, getHierarchy, getTreePath, addChild }
 }

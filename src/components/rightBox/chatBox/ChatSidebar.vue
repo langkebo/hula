@@ -25,8 +25,11 @@
     </div>
 
     <div v-if="isGroup && !isCollapsed">
-      <!-- 群公告 -->
-      <n-flex vertical :size="14" class="px-4px py-10px">
+      <!-- 公告面板 (MW-ANNOUNCEMENT-002: 替代独立窗口) -->
+      <AnnouncementPanel v-if="showAnnouncementPanel" :room-id="currentRoomId" @close="showAnnouncementPanel = false" />
+
+      <!-- 群公告预览 -->
+      <n-flex v-if="!showAnnouncementPanel" vertical :size="14" class="px-4px py-10px">
         <n-flex align="center" justify="space-between" :size="8" class="cursor-pointer">
           <p
             class="text-(14px [--hula-text-primary]) truncate flex-1 min-w-0"
@@ -196,6 +199,7 @@ import { useDebounceFn } from '@vueuse/core'
 import type { InputInst } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import AnnouncementPanel from '@/components/room/AnnouncementPanel.vue'
 import { MittEnum, OnlineEnum, RoleEnum, RoomTypeEnum, ThemeEnum, WsResponseMessageType } from '@/enums'
 import { useChatMain } from '@/hooks/useChatMain.ts'
 import { useLinkSegments } from '@/hooks/useLinkSegments'
@@ -224,6 +228,8 @@ const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const announcementStore = useAnnouncementStore()
 const { clearAnnouncements } = announcementStore
+const showAnnouncementPanel = ref(false)
+const currentRoomId = computed(() => globalStore.currentSessionRoomId)
 // 当前加载的群聊ID
 // 如果成员列表未完全加载，使用当前列表的在线人数，避免与头像显示不一致
 const onlineCountDisplay = computed(
@@ -368,16 +374,8 @@ const handleSelect = () => {
 /**
  * 打开群公告
  */
-const handleOpenAnnoun = (isAdd: boolean) => {
-  nextTick(async () => {
-    const roomId = globalStore.currentSessionRoomId
-    await createWebviewWindow(
-      isAdd ? t('home.chat_sidebar.announcement.window.add') : t('home.chat_sidebar.announcement.window.view'),
-      `announList/${roomId}/${isAdd ? 0 : 1}`,
-      420,
-      620
-    )
-  })
+const handleOpenAnnoun = (_isAdd: boolean) => {
+  showAnnouncementPanel.value = true
 }
 
 const userStatusStore = useUserStatusStore()
@@ -413,6 +411,10 @@ onMounted(async () => {
     selectKey.value = event.uid
     infoPopoverRefs.value[event.uid]?.setShow(true)
     handlePopoverUpdate(event.uid)
+  })
+
+  useMitt.on(MittEnum.OPEN_ANNOUNCEMENT_PANEL, () => {
+    showAnnouncementPanel.value = true
   })
 
   appWindow.listen('announcementClear', async () => {

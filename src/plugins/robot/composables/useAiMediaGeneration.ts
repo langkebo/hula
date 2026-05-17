@@ -1,4 +1,5 @@
 import type { Ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { AiMsgContentTypeEnum } from '@/enums'
 import {
   buildAudioGenerationRequest,
@@ -128,6 +129,7 @@ const handleGenerationError = (
   error: unknown
 ) => {
   const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   logger.error(`${label}生成失败:`, error)
   const lastMessage = messageList.value[messageList.value.length - 1]
   if (lastMessage?.isGenerating) {
@@ -137,11 +139,12 @@ const handleGenerationError = (
     })
     lastMessage.isGenerating = false
   }
-  window.$message.error(t('ai_assistant.robot.generation_failed_network', { label: t(mediaTypeKey) }))
+  showFeedback(t('ai_assistant.robot.generation_failed_network', { label: t(mediaTypeKey) }), 'error')
 }
 
 export const useAiMediaGeneration = (options: UseAiMediaGenerationOptions) => {
   const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const {
     currentChat,
     conversationTokens,
@@ -160,7 +163,7 @@ export const useAiMediaGeneration = (options: UseAiMediaGenerationOptions) => {
   const guardTokenBudget = (model: AIModel) => {
     const exceededTokenBudget = getExceededTokenBudget(model, conversationTokens.value)
     if (exceededTokenBudget === null) return false
-    window.$message.warning(t('ai_assistant.robot.token_budget_exceeded', { budget: exceededTokenBudget }))
+    showFeedback(t('ai_assistant.robot.token_budget_exceeded', { budget: exceededTokenBudget }), 'warning')
     return true
   }
 

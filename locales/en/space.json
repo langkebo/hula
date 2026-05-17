@@ -1,5 +1,6 @@
 {
-  "title": "Spaces",
+  "title": "Space",
+  "space_selected": "Space selected: {name}",
   "create": "Create Space",
   "create_route_hint": "After creation, the workspace opens the new space automatically.",
   "search_sessions_placeholder": "Search sessions",
@@ -96,6 +97,7 @@
   "settings_success": "Settings saved",
   "settings_failed": "Failed to save settings",
   "search_placeholder": "Search spaces",
+  "session_list_label": "Session list",
   "sessions": "sessions",
   "pinned": "Pinned",
   "joined": "Joined",
@@ -105,11 +107,19 @@
   "detail_tab_members": "Members",
   "detail_tab_activity": "Activity",
   "active_filters": "Filters",
+  "search_filter_tag": "Search: {keyword}",
   "clear_all_filters": "Clear all",
+  "saved_preset_label": "Saved View",
+  "save_preset": "Save current view",
+  "apply_saved_preset": "Apply saved view",
+  "saved_preset_active": "Saved view active",
+  "saved_preset_saved": "Current view saved",
+  "saved_preset_applied": "Saved view applied",
   "pin_space": "Pin",
   "unpin_space": "Unpin",
   "discover": "Discover spaces",
   "unread": "unread",
   "upload_avatar": "Upload avatar",
-  "avatar": "Avatar"
+  "avatar": "Avatar",
+  "space_tree_label": "Space Tree"
 }

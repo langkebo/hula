@@ -47,6 +47,9 @@
                 <n-tag v-else size="tiny" :bordered="false" round>
                   {{ t('room.detail.private') }}
                 </n-tag>
+                <n-tag v-if="detail.isEncrypted" size="tiny" :bordered="false" round>
+                  {{ t('room.detail.encrypted') }}
+                </n-tag>
                 <span class="room-id-text" :title="roomId">{{ truncateId(roomId) }}</span>
               </n-flex>
             </div>
@@ -67,9 +70,9 @@
                 <dt>{{ t('room.detail.members') }}</dt>
                 <dd>{{ detail.memberCount }}</dd>
               </div>
-              <div v-if="detail.onlineCount !== undefined" class="detail-meta__row">
+              <div v-if="onlineCount > 0" class="detail-meta__row">
                 <dt>{{ t('room.detail.online') }}</dt>
-                <dd class="color-[--hula-color-success-500]">{{ detail.onlineCount }}</dd>
+                <dd class="color-[--hula-color-success-500]">{{ onlineCount }}</dd>
               </div>
             </dl>
           </div>
@@ -178,9 +181,9 @@ import { useI18n } from 'vue-i18n'
 import HulaSpaceJoinCta from '@/components/workbench/HulaSpaceJoinCta.vue'
 import { ThemeEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import type { Room } from '@/services/matrix/sdk'
 import { type MatrixGroupInfo, useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import type { Room } from '@/types/matrix-services'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const props = defineProps<{
@@ -221,6 +224,7 @@ const membership = ref<string | undefined>(undefined)
 const fallbackAvatar = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'))
 
 const isPublic = computed(() => detail.value?.isPublic || detail.value?.joinRule === 'public')
+const onlineCount = computed(() => (props.roomId ? groupStore.onlineCountMap[props.roomId] : 0) ?? 0)
 const canInvite = computed(() => {
   const client = matrixClientService.getClient()
   const room = props.roomId ? client?.getRoom(props.roomId) : null

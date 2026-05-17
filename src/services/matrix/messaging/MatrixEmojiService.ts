@@ -119,7 +119,7 @@ class MatrixEmojiService extends BaseMatrixService {
 
       const supportedTypes = ['image/png', 'image/gif', 'image/webp']
       if (!supportedTypes.includes(file.type)) {
-        throw new Error(`不支持的图片格式: ${file.type}，支持的格式: PNG、GIF、WebP`)
+        throw new Error(this.t('matrix_error.messaging.unsupported_image_format', { type: file.type }))
       }
 
       const uploadResult = await matrixMediaService.uploadFile(file)
@@ -277,7 +277,7 @@ class MatrixEmojiService extends BaseMatrixService {
       const sourceEmoji = this.findEmoji(response, emojiId)
 
       if (!sourceEmoji) {
-        throw new Error(`表情不存在: ${emojiId}`)
+        throw new Error(this.t('matrix_error.messaging.emoji_not_found', { emojiId }))
       }
 
       const targetPack = this.ensurePack(response, packId, now)
@@ -361,11 +361,11 @@ class MatrixEmojiService extends BaseMatrixService {
     const currentUserId = client.getUserId()
 
     if (!currentUserId) {
-      throw new Error('用户未登录')
+      throw new Error(this.t('matrix_error.common.user_not_logged_in'))
     }
 
     if (userId && userId !== currentUserId) {
-      throw new Error('暂不支持获取其他用户的表情数据')
+      throw new Error(this.t('matrix_error.messaging.other_user_emoji_unsupported'))
     }
 
     return currentUserId

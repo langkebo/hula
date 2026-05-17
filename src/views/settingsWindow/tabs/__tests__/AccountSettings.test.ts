@@ -165,7 +165,7 @@ describe('AccountSettings', () => {
     vm.passwordForm.newPassword = 'newpass'
     vm.passwordForm.confirmPassword = 'newpass'
     await vm.handlePasswordChange()
-    expect(changePasswordMock).toHaveBeenCalledWith('oldpass', 'newpass')
+    expect(changePasswordMock).toHaveBeenCalledWith('oldpass', 'newpass', undefined)
   })
 
   it('clears password form after successful change', async () => {

@@ -1,7 +1,9 @@
 import { computed, onUnmounted, ref } from 'vue'
-import { matrixBurnAfterReadService } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
+import { type BurnStats, matrixBurnAfterReadService } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
+
+export type { BurnStats } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
 
 const logger = createLogger('useBurnAfterRead')
 
@@ -237,6 +239,18 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
     }
   }
 
+  async function getBurnStats(): Promise<BurnStats> {
+    return await matrixBurnAfterReadService.getBurnStats()
+  }
+
+  async function enableBurn(roomId: string, burnAfterMs?: number): Promise<void> {
+    await matrixBurnAfterReadService.enableBurn(roomId, burnAfterMs)
+  }
+
+  async function disableBurn(roomId: string): Promise<void> {
+    await matrixBurnAfterReadService.disableBurn(roomId)
+  }
+
   function cleanup() {
     for (const timer of countdownTimers.value.values()) {
       clearInterval(timer)
@@ -269,6 +283,9 @@ export function useBurnAfterRead(options: UseBurnAfterReadOptions = {}) {
     isRoomBurnEnabled,
     getRoomBurnDuration,
     markMessageRead,
+    getBurnStats,
+    enableBurn,
+    disableBurn,
     cleanup
   }
 }

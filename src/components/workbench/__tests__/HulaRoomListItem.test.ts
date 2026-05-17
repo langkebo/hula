@@ -71,6 +71,27 @@ vi.mock('naive-ui', async () => {
     }
   })
 
+  const NCheckbox = defineComponent({
+    name: 'NCheckbox',
+    props: {
+      checked: {
+        type: Boolean,
+        default: false
+      }
+    },
+    emits: ['update:checked', 'click'],
+    setup(props, { emit }) {
+      return () =>
+        h('input', {
+          'data-test': 'NCheckbox',
+          type: 'checkbox',
+          checked: props.checked,
+          onClick: (event: Event) => emit('click', event),
+          onChange: (event: Event) => emit('update:checked', (event.target as HTMLInputElement).checked)
+        })
+    }
+  })
+
   const NBadge = defineComponent({
     name: 'NBadge',
     props: {
@@ -101,6 +122,7 @@ vi.mock('naive-ui', async () => {
     NAvatar: passthrough('NAvatar'),
     NBadge,
     NButton: passthrough('NButton'),
+    NCheckbox,
     NFlex: passthrough('NFlex'),
     NIcon: passthrough('NIcon'),
     NTag,
@@ -170,5 +192,40 @@ describe('HulaRoomListItem', () => {
     expect(wrapper.text()).toContain('message.message_list.mention_tag')
     expect(unreadBadge?.attributes('data-value')).toBe('5')
     expect(unreadBadge?.attributes('data-show')).toBe('true')
+  })
+
+  it('toggles batch selection instead of opening the room when batch mode is active', async () => {
+    const wrapper = mount(HulaRoomListItem, {
+      props: {
+        ...createProps(),
+        batchMode: true,
+        batchSelected: true
+      }
+    })
+
+    await wrapper.get('.hula-room-list-item').trigger('click')
+
+    expect(wrapper.emitted('batch-toggle')).toEqual([['!room:example.com']])
+    expect(wrapper.emitted('click')).toBeUndefined()
+    expect(wrapper.find('[data-test="NCheckbox"]').element).toBeTruthy()
+  })
+
+  it('supports keyboard activation and exposes selection aria state', async () => {
+    const wrapper = mount(HulaRoomListItem, {
+      props: {
+        ...createProps(),
+        batchMode: true,
+        batchSelected: true,
+        classes: { selected: true }
+      }
+    })
+
+    const item = wrapper.get('.hula-room-list-item')
+    expect(item.attributes('tabindex')).toBe('0')
+    expect(item.attributes('aria-current')).toBe('true')
+    expect(item.attributes('aria-pressed')).toBe('true')
+
+    await item.trigger('keydown.enter')
+    expect(wrapper.emitted('batch-toggle')).toEqual([['!room:example.com']])
   })
 })

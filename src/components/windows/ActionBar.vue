@@ -17,6 +17,8 @@
             v-if="proxy"
             @click="router.push('/network')"
             :class="{ network: isWindows() }"
+            role="button"
+            :aria-label="t('components.actionBar.proxy_settings')"
             class="w-30px h-24px flex-center hover-box">
             <svg
               :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
@@ -25,7 +27,16 @@
             </svg>
           </div>
           <!--  固定在最顶层  -->
-          <div v-if="topWinLabel !== void 0" @click="handleAlwaysOnTop" class="hover-box">
+          <div
+            v-if="topWinLabel !== void 0"
+            @click="handleAlwaysOnTop"
+            class="hover-box"
+            role="button"
+            :aria-label="
+              alwaysOnTopStatus
+                ? t('components.actionBar.always_on_top.enabled')
+                : t('components.actionBar.always_on_top.disabled')
+            ">
             <n-popover trigger="hover">
               <template #trigger>
                 <svg
@@ -46,7 +57,12 @@
             </n-popover>
           </div>
           <!-- 收缩页面 -->
-          <div v-if="shrink" @click="shrinkWindow" class="hover-box">
+          <div
+            v-if="shrink"
+            @click="shrinkWindow"
+            class="hover-box"
+            role="button"
+            :aria-label="t('components.actionBar.shrink')">
             <svg
               :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
               class="size-16px cursor-pointer">
@@ -54,7 +70,12 @@
             </svg>
           </div>
           <!-- 最小化 -->
-          <div v-if="showMinimizeButton" @click="handleMinimize" class="hover-box">
+          <div
+            v-if="showMinimizeButton"
+            @click="handleMinimize"
+            class="hover-box"
+            role="button"
+            :aria-label="t('components.actionBar.minimize')">
             <svg
               :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
               class="size-24px opacity-66 cursor-pointer">
@@ -62,7 +83,12 @@
             </svg>
           </div>
           <!-- 最大化 -->
-          <div v-if="maxW" @click="restoreWindow" class="hover-box">
+          <div
+            v-if="maxW"
+            @click="restoreWindow"
+            class="hover-box"
+            role="button"
+            :aria-label="windowMaximized ? t('components.actionBar.restore') : t('components.actionBar.maximize')">
             <svg
               v-show="!windowMaximized"
               :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
@@ -81,6 +107,8 @@
             v-if="closeW"
             @click="handleCloseWin"
             :class="{ windowMaximized: 'rounded-rt-8px' }"
+            role="button"
+            :aria-label="t('components.actionBar.close')"
             class="action-close">
             <svg
               :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
@@ -102,7 +130,11 @@
     <!-- 是否退到托盘提示框 -->
     <n-modal v-if="!tips.notTips" v-model:show="tipsRef.show" class="rounded-8px">
       <div class="bg-[--hula-surface-elevated] w-290px h-full p-6px box-border flex flex-col">
-        <svg @click="tipsRef.show = false" class="size-12px ml-a cursor-pointer select-none">
+        <svg
+          @click="tipsRef.show = false"
+          class="size-12px ml-a cursor-pointer select-none"
+          role="button"
+          :aria-label="t('components.actionBar.close')">
           <use href="#close"></use>
         </svg>
         <n-flex vertical :size="20" class="p-[22px_10px_10px_22px] select-none">

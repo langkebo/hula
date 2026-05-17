@@ -10,23 +10,107 @@
 
 import type { App } from 'vue'
 import type { Locale } from 'vue-i18n'
-import { createI18n } from 'vue-i18n'
+import * as VueI18n from 'vue-i18n'
 import { setDayjsLocale } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
-import { useSettingStore } from '../stores/domains/settings/setting'
 
 const logger = createLogger('I18n')
 
-export const i18n = createI18n({
-  legacy: false,
-  locale: ''
-})
+const getCreateI18n = () => {
+  if (!('createI18n' in VueI18n)) {
+    return null
+  }
+
+  const createI18nFn = Reflect.get(VueI18n, 'createI18n')
+  return typeof createI18nFn === 'function' ? createI18nFn : null
+}
+
+const createI18nFn = getCreateI18n()
+
+export const i18n = createI18nFn
+  ? createI18nFn({
+      legacy: false,
+      locale: ''
+    })
+  : null
+
+type FallbackComposer = {
+  locale: { value: Locale }
+  t: (key: string, params?: Record<string, unknown>) => string
+}
+
+const fallbackLocaleModules = import.meta.glob('../../locales/{zh-CN,en}/**/*.json', {
+  eager: true
+}) as Record<string, { default: Record<string, unknown> }>
+
+const fallbackMessages = Object.entries(fallbackLocaleModules).reduce(
+  (acc, [path, mod]) => {
+    const match = path.match(/\/locales\/([\w-]+)\/([\w-]+)\.json$/)
+    if (!match) return acc
+
+    const [, locale, part] = match
+    acc[locale as Locale] ??= {}
+    acc[locale as Locale][part] = mod.default
+    return acc
+  },
+  {} as Record<Locale, Record<string, unknown>>
+)
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null
+}
+
+const resolveFallbackMessage = (locale: Locale, key: string): string | null => {
+  const segments = key.split('.')
+  let current: unknown = fallbackMessages[locale]
+
+  for (const segment of segments) {
+    if (!isRecord(current) || !(segment in current)) {
+      return null
+    }
+    current = current[segment]
+  }
+
+  return typeof current === 'string' ? current : null
+}
+
+const formatFallbackMessage = (message: string, params?: Record<string, unknown>) => {
+  if (!params) return message
+  return message.replace(/\{(\w+)\}/g, (_, token: string) => {
+    const value = params[token]
+    return value === undefined ? `{${token}}` : String(value)
+  })
+}
+
+const fallbackComposer: FallbackComposer = {
+  locale: {
+    value: (typeof process !== 'undefined' && process.env.VITEST ? 'zh-CN' : 'en') as Locale
+  },
+  t: (key, params) => {
+    const localized =
+      resolveFallbackMessage(fallbackComposer.locale.value, key) ??
+      resolveFallbackMessage('en', key) ??
+      resolveFallbackMessage('zh-CN', key) ??
+      key
+    return formatFallbackMessage(localized, params)
+  }
+}
+
+const getGlobalComposer = (): FallbackComposer => {
+  const globalComposer = i18n?.global
+  if (globalComposer) {
+    return globalComposer as unknown as FallbackComposer
+  }
+  return fallbackComposer
+}
 
 /**
  * 在 setup 外使用，这似乎与 vue-i18n v9.x 相悖
  * 如非必要，请不要直接使用它!!!
  */
-export const useI18nGlobal = () => i18n.global
+export const useI18nGlobal = (): FallbackComposer => {
+  return getGlobalComposer()
+}
 
 // 动态导入所有 JSON 文件
 type LoadLocale = () => Promise<{ default: Record<string, string> }>
@@ -97,7 +181,7 @@ const normalizeLang = (lang: string): Locale => {
 // 应用语言到 i18n 和 html 标签
 export function setI18nLanguage(lang: LanguagePreference) {
   const resolved = normalizeLang(lang)
-  i18n.global.locale.value = resolved
+  getGlobalComposer().locale.value = resolved
   setDayjsLocale(resolved)
   if (typeof document !== 'undefined') {
     document.querySelector('html')?.setAttribute('lang', resolved)
@@ -117,7 +201,8 @@ function findLocales(lang: string) {
 // 加载语言包并切换语言，确保 lang 被归一化后再加载
 export async function loadLanguage(lang: LanguagePreference) {
   const resolvedLang = normalizeLang(lang)
-  if (i18n.global.locale.value === resolvedLang) {
+  const globalComposer = getGlobalComposer()
+  if (globalComposer.locale.value === resolvedLang) {
     return setI18nLanguage(resolvedLang)
   }
 
@@ -145,7 +230,9 @@ export async function loadLanguage(lang: LanguagePreference) {
   const messages = Object.fromEntries(modules)
 
   // 设置语言包
-  i18n.global.setLocaleMessage(resolvedLang, messages)
+  if (i18n?.global && typeof i18n.global.setLocaleMessage === 'function') {
+    i18n.global.setLocaleMessage(resolvedLang, messages)
+  }
 
   loadedLanguages.push(resolvedLang)
 
@@ -160,8 +247,17 @@ export async function applyLanguagePreference(lang?: LanguagePreference) {
  * Ensure that pinia is initialized first.
  */
 export const setupI18n = (app: App) => {
-  const settingStore = useSettingStore()
+  if (i18n) {
+    app.use(i18n)
+  }
 
-  void applyLanguagePreference(settingStore.languagePreference)
-  app.use(i18n)
+  void import('../stores/domains/settings/setting')
+    .then(({ useSettingStore }) => {
+      const settingStore = useSettingStore()
+      return applyLanguagePreference(settingStore.languagePreference)
+    })
+    .catch((error) => {
+      logger.warn('Failed to load setting store during i18n setup, falling back to AUTO', error)
+      return applyLanguagePreference('AUTO')
+    })
 }

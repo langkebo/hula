@@ -88,8 +88,10 @@
 import type { PropType } from 'vue'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CallTypeEnum, RoomTypeEnum, UserType } from '@/enums'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { CallTypeEnum, MittEnum, RoomTypeEnum, UserType } from '@/enums'
 import { openMsgSession } from '@/hooks/session/openMsgSession'
+import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -100,6 +102,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Details')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const groupStore = useGroupStore()
 const contactStore = useContactStore()
 const { createWebviewWindow, startRtcCall } = useWindow()
@@ -174,14 +177,9 @@ const fetchAnnouncement = async (_roomId: string) => {
   announcementContent.value = ''
 }
 
-const handleOpenAnnouncement = async () => {
+const handleOpenAnnouncement = () => {
   if (!item.value?.roomId) return
-  await createWebviewWindow(
-    t('home.chat_details.group.announcement.window_title'),
-    `announList/${item.value.roomId}/1`,
-    420,
-    620
-  )
+  useMitt.emit(MittEnum.OPEN_ANNOUNCEMENT_PANEL, { roomId: item.value.roomId })
 }
 
 const memberCount = computed(() => groupStore.userList.length || 0)
@@ -189,7 +187,7 @@ const displayMembers = computed(() => groupStore.userList.slice(0, 8))
 
 const ensureDirectSessionReady = async () => {
   if (!singleUid.value) {
-    window.$message?.warning?.(t('home.chat_details.single.friend_info_missing'))
+    showFeedback(t('home.chat_details.single.friend_info_missing'), 'warning')
     return false
   }
 

@@ -20,14 +20,14 @@
           <span class="font-bold text-20px">{{ userDetailInfo!.name }}</span>
           <div
             v-show="hasUserOnlineState"
-            class="bg-#E7EFE6 flex flex-wrap ps-2 px-8px items-center rounded-full gap-1 h-24px">
+            class="bg-[--hula-color-primary-100] flex flex-wrap ps-2 px-8px items-center rounded-full gap-1 h-24px">
             <span class="w-12px h-12px rounded-15px flex items-center">
               <img
                 :src="friendUserState.url ? friendUserState.url : currentState?.url"
                 alt=""
                 class="rounded-50% size-14px" />
             </span>
-            <span class="text-bold-style" style="font-size: 12px; color: #373838">
+            <span class="text-bold-style" style="font-size: 12px; color: var(--hula-text-secondary)">
               {{ friendUserState.title ? friendUserState.title : currentState.title }}
             </span>
           </div>
@@ -87,7 +87,7 @@
           round
           size="small"
           @click="handleDelete"
-          color="#d5304f"
+          color="var(--hula-color-danger-500)"
           v-if="!props.isMyPage && isMyFriendState && !isBotUser(uid)"
           class="px-5 py-10px font-bold text-center text-12px">
           {{ t('mobile_personal_info.remove_user') }}
@@ -124,6 +124,7 @@
 <script setup lang="ts">
 import { showDialog } from 'vant'
 import { useRoute, useRouter } from 'vue-router'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -140,6 +141,7 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 const logger = createLogger('PersonalInfo')
+const { showFeedback } = useActionFeedback()
 
 const props = defineProps({
   isShow: {
@@ -262,11 +264,11 @@ const loading = ref(false)
 
 const handleDelete = () => {
   showDialog({
-    title: '删除好友',
-    message: '确定删除该好友吗？',
+    title: t('mobile_personal_info.delete_friend_dialog.title'),
+    message: t('mobile_personal_info.delete_friend_dialog.message'),
     showCancelButton: true,
-    confirmButtonText: '确定',
-    cancelButtonText: '取消'
+    confirmButtonText: t('mobile_personal_info.delete_friend_dialog.confirm'),
+    cancelButtonText: t('mobile_personal_info.delete_friend_dialog.cancel')
   })
     .then(async () => {
       if (userDetailInfo.value?.uid) {
@@ -275,16 +277,16 @@ const handleDelete = () => {
           await contactStore.onDeleteFriend(userDetailInfo.value.uid)
           isMyFriendState.value = false
           chatStore.getSessionList(true)
-          window.$message.success(t('mobile_personal_info.delete_user.success'))
+          showFeedback(t('mobile_personal_info.delete_user.success'), 'success')
           router.back()
         } catch (error) {
-          window.$message.warning(t('mobile_personal_info.delete_user.failed'))
+          showFeedback(t('mobile_personal_info.delete_user.failed'), 'warning')
           logger.error('删除好友失败：', error)
         } finally {
           loading.value = false
         }
       } else {
-        window.$message.warning(t('mobile_personal_info.not_found'))
+        showFeedback(t('mobile_personal_info.not_found'), 'warning')
       }
     })
     .catch(() => {
@@ -404,7 +406,7 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 .text-bold-style {
   font-size: 14px;
   font-family: $font-family-system, $font-family-windows, $font-family-sans;
-  color: #757775;
+  color: var(--hula-text-tertiary);
 }
 
 .medal-number {
@@ -425,7 +427,7 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   margin-top: 0.5rem;
   font-size: 13px;
   font-family: $font-family-system, $font-family-windows, $font-family-sans;
-  color: #757775;
+  color: var(--hula-text-tertiary);
 }
 
 .custom-rounded {

@@ -1,108 +1,114 @@
 # 验收清单
 
+## 标注说明
+
+- `已完成阶段性成果`：验收对象的主要代码已落地，当前待联调、补记录或维护观察。
+- `待收尾完善`：验收对象尚未满足最终交付口径，仍需补开发、补验证或修正文档结论。
+- 本清单最后交叉核对时间：`2026-05-14`
+
 ## Phase 1: 死依赖与死代码清除
 
-- [x] `mermaid`、`stream-markdown`、`vue-demi` 已从 package.json 移除（`three` 保留，有实际引用）
-- [x] `crypto-js` 已移除，所有 MD5 功能由 `digest-wasm` 提供
-- [x] `build/config/chunks.ts` 中 mermaid、crypto-js、stream-markdown 相关配置已清理
-- [x] `pnpm install` 成功，lockfile 已更新
-- [ ] `pnpm tauri:dev` 应用正常启动，无运行时错误
-- [x] `src/services/api/` 目录已删除（18个文件+4个空目录）
-- [x] `src/services/errors.ts` 已删除
-- [x] `src/services/TokenMigrationService.ts` 和 `src/services/SecureStorageService.ts` 已删除
-- [x] `src/services/cache/MediaCacheService.ts` 已删除
-- [x] `src/services/notificationActions.ts` 已删除
-- [x] `vue-tsc --noEmit` 无类型错误
-- [x] `usePlatform.ts` 优先使用 `TAURI_ENV_PLATFORM` 判断平台
-- [x] Android/iOS Tauri 环境被正确识别为 `mobile` 平台
+- [x] `mermaid`、`stream-markdown`、`vue-demi` 已从 package.json 移除（`three` 保留，有实际引用） `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `crypto-js` 已移除，所有 MD5 功能由 `digest-wasm` 提供 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `build/config/chunks.ts` 中 mermaid、crypto-js、stream-markdown 相关配置已清理 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `pnpm install` 成功，lockfile 已更新 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [ ] `pnpm tauri:dev` 应用正常启动，无运行时错误 `【状态：待收尾完善｜剩余：补跑桌面端启动验证并沉淀结果｜预计收尾：2026-05-19】`
+- [x] `src/services/api/` 目录已删除（18个文件+4个空目录） `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `src/services/errors.ts` 已删除 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `src/services/TokenMigrationService.ts` 和 `src/services/SecureStorageService.ts` 已删除 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `src/services/cache/MediaCacheService.ts` 已删除 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `src/services/notificationActions.ts` 已删除 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [ ] `vue-tsc --noEmit` 无类型错误 `【状态：待收尾完善｜剩余：修复当前类型错误并恢复通过｜预计收尾：2026-05-21】`
+- [x] `usePlatform.ts` 优先使用 `TAURI_ENV_PLATFORM` 判断平台 `【状态：已完成阶段性成果｜剩余：补联调记录｜预计收尾：2026-05-19】`
+- [x] Android/iOS Tauri 环境被正确识别为 `mobile` 平台 `【状态：已完成阶段性成果｜剩余：补联调记录｜预计收尾：2026-05-19】`
 
 ## Phase 2: 首屏加载与运行时性能
 
-- [x] App.vue 中 Matrix 服务模块改为动态 import（createLazyLoader 模式，12个服务）
-- [x] `watchEffect(async ...)` 改为显式 `watch`
-- [x] `window.addEventListener('keydown', ...)` 在 `onUnmounted` 中正确清理
-- [x] 登录页首屏 JS 资源不包含 Matrix 服务模块（动态 import 延迟加载）
-- [x] `trimRoomTimelines()` 实现了实际的 timeline 裁剪逻辑
-- [x] `handleStopClient` 清除了内存检查的 `setInterval`
-- [x] `fingerprint.worker.ts` 不再将 `timestamp` 纳入指纹计算
-- [x] `highlightTask.ts` 的 `preloadCommon()` 正确 await
-- [x] `hula-emojis` 改为动态 import
-- [x] `@breezystack/lamejs` 改为动态 import
-- [x] `@fingerprintjs/fingerprintjs` 改为动态 import
-- [x] `tlbs-map-vue` 改为 `defineAsyncComponent` 动态加载
-- [x] `callWindow/index.vue` MediaStream 监听移除 `deep: true`
-- [x] `collectTrackedPresenceUserIds` watch 使用 computed 缓存
-- [x] 桌面端构建配置仅包含 `NaiveUiResolver`
-- [ ] 移动端构建配置仅包含 `VantResolver`（移动端有89个文件使用Naive UI，保留NaiveUiResolver）
+- [x] App.vue 中 Matrix 服务模块改为动态 import（createLazyLoader 模式，12个服务） `【状态：已完成阶段性成果｜剩余：补首屏实测数据｜预计收尾：2026-05-19】`
+- [x] `watchEffect(async ...)` 改为显式 `watch` `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `window.addEventListener('keydown', ...)` 在 `onUnmounted` 中正确清理 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [ ] 登录页首屏 JS 资源不包含 Matrix 服务模块（动态 import 延迟加载） `【状态：待收尾完善｜剩余：补网络瀑布与资源分析记录｜预计收尾：2026-05-19】`
+- [x] `trimRoomTimelines()` 实现了实际的 timeline 裁剪逻辑 `【状态：已完成阶段性成果｜剩余：补压测记录｜预计收尾：2026-05-19】`
+- [x] `handleStopClient` 清除了内存检查的 `setInterval` `【状态：已完成阶段性成果｜剩余：补 Worker 停止链路验证｜预计收尾：2026-05-19】`
+- [x] `fingerprint.worker.ts` 不再将 `timestamp` 纳入指纹计算 `【状态：已完成阶段性成果｜剩余：补稳定性记录｜预计收尾：2026-05-19】`
+- [x] `highlightTask.ts` 的 `preloadCommon()` 正确 await `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `hula-emojis` 改为动态 import `【状态：已完成阶段性成果｜剩余：补功能回归记录｜预计收尾：2026-05-19】`
+- [x] `@breezystack/lamejs` 改为动态 import `【状态：已完成阶段性成果｜剩余：补功能回归记录｜预计收尾：2026-05-19】`
+- [x] `@fingerprintjs/fingerprintjs` 改为动态 import `【状态：已完成阶段性成果｜剩余：补功能回归记录｜预计收尾：2026-05-19】`
+- [x] `tlbs-map-vue` 改为 `defineAsyncComponent` 动态加载 `【状态：已完成阶段性成果｜剩余：补功能回归记录｜预计收尾：2026-05-19】`
+- [x] `callWindow/index.vue` MediaStream 监听移除 `deep: true` `【状态：已完成阶段性成果｜剩余：补通话场景回归｜预计收尾：2026-05-19】`
+- [x] `collectTrackedPresenceUserIds` watch 使用 computed 缓存 `【状态：已完成阶段性成果｜剩余：补性能对比记录｜预计收尾：2026-05-19】`
+- [x] 桌面端构建配置仅包含 `NaiveUiResolver` `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [ ] 移动端构建配置仅包含 `VantResolver`（移动端有89个文件使用Naive UI，保留NaiveUiResolver） `【状态：待收尾完善｜剩余：梳理移动端 Naive UI 依赖并决定继续收敛或修订规范｜预计收尾：2026-05-23】`
 
 ## Phase 3: 架构优化
 
-- [x] `toAppError()` 包含 i18n key 逻辑，替代 `translateMatrixError()`
-- [x] `normalizeSdkError()` 标记为 `@deprecated`
-- [x] `TranslatedError` 标记为 `@deprecated`
-- [x] 所有错误消费者使用 `toAppError()` 统一 API（errorHandler.ts + friendErrors.ts 已迁移）
-- [x] 缺失的 Matrix 错误码已补充（7个新错误码）
-- [x] `BaseMatrixService.ts` 已创建，包含统一 `getClient()` 实现
-- [x] 25 个标准模式 Matrix 服务类继承 `BaseMatrixService`（14 个非标准模式暂未修改）
-- [x] 各服务类中重复的 `getClient()` 方法已移除
-- [x] 旧版 Admin 服务功能已迁移到 Facade 服务（8个服务文件+6个测试文件删除）
-- [x] `useChatMain.ts` 等消费者已更新使用 `AdminFacadeService`
-- [x] 旧版 Admin 服务文件已删除
-- [x] `AdminFacadeDomainMethods` 和 `AdminFacadeOpsMethods` 已合并回 `AdminFacadeService`
-- [x] `useRoomStore` 不再包含 `messages`、`hasMoreMessages` 属性
-- [x] 所有消息数据访问统一通过 `useChatStore`
-- [x] `useMessageStore` 标记为 `@deprecated`
-- [x] `useUserStore.fetchUserProfile` 通过 `MatrixProfileService` 封装
-- [x] `MatrixRuntimeSessionService` 不再直接导入 Pinia Store（Port/Adapter 模式）
-- [x] 会话编排逻辑由 `SessionOrchestrator` 负责
+- [x] `toAppError()` 包含 i18n key 逻辑，替代 `translateMatrixError()` `【状态：已完成阶段性成果｜剩余：继续迁移旧错误入口调用方｜预计收尾：2026-05-21】`
+- [x] `normalizeSdkError()` 标记为 `@deprecated` `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `TranslatedError` 标记为 `@deprecated` `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [ ] 所有错误消费者使用 `toAppError()` 统一 API（errorHandler.ts + friendErrors.ts 已迁移） `【状态：待收尾完善｜剩余：服务层与 store 层仍有旧 API 调用｜预计收尾：2026-05-21】`
+- [x] 缺失的 Matrix 错误码已补充（7个新错误码） `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `BaseMatrixService.ts` 已创建，包含统一 `getClient()` 实现 `【状态：已完成阶段性成果｜剩余：扩大覆盖范围｜预计收尾：2026-05-21】`
+- [ ] 25 个标准模式 Matrix 服务类继承 `BaseMatrixService`（14 个非标准模式暂未修改） `【状态：待收尾完善｜剩余：当前覆盖不足且仍有重复 `getClient()`｜预计收尾：2026-05-21】`
+- [ ] 各服务类中重复的 `getClient()` 方法已移除 `【状态：待收尾完善｜剩余：保留类仍需继续清理｜预计收尾：2026-05-21】`
+- [x] 旧版 Admin 服务功能已迁移到 Facade 服务（8个服务文件+6个测试文件删除） `【状态：已完成阶段性成果｜剩余：补迁移清单复核｜预计收尾：2026-05-19】`
+- [x] `useChatMain.ts` 等消费者已更新使用 `AdminFacadeService` `【状态：已完成阶段性成果｜剩余：补 facade 场景回归｜预计收尾：2026-05-19】`
+- [x] 旧版 Admin 服务文件已删除 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `AdminFacadeDomainMethods` 和 `AdminFacadeOpsMethods` 已合并回 `AdminFacadeService` `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `useRoomStore` 不再包含 `messages`、`hasMoreMessages` 属性 `【状态：已完成阶段性成果｜剩余：补消费者复核｜预计收尾：2026-05-19】`
+- [ ] 所有消息数据访问统一通过 `useChatStore` `【状态：待收尾完善｜剩余：补全量 grep 与场景回归｜预计收尾：2026-05-19】`
+- [x] `useMessageStore` 标记为 `@deprecated` `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `useUserStore.fetchUserProfile` 通过 `MatrixProfileService` 封装 `【状态：已完成阶段性成果｜剩余：补资料读取回归｜预计收尾：2026-05-19】`
+- [x] `MatrixRuntimeSessionService` 不再直接导入 Pinia Store（Port/Adapter 模式） `【状态：已完成阶段性成果｜剩余：补登录/登出联调｜预计收尾：2026-05-19】`
+- [x] 会话编排逻辑由 `SessionOrchestrator` 负责 `【状态：已完成阶段性成果｜剩余：补恢复链路联调｜预计收尾：2026-05-19】`
 
 ## Phase 4: 用户体验优化
 
-- [x] `Login.vue` 硬编码颜色迁移为 CSS 变量
-- [x] `ActionBar.vue`、`WorkbenchPaneTabs.vue` 等组件硬编码颜色迁移为 CSS 变量
-- [x] Naive UI 暗色主题覆盖包含 `Skeleton` 配置
-- [x] `Login.vue` 暗色模式使用 CSS 变量而非 JS 三元
-- [ ] 暗色模式下所有页面显示正确，无对比度问题
-- [x] `Login.vue` 硬编码中文迁移至 i18n（7处模板+7处脚本）
-- [x] `plugins/robot/` 硬编码中文迁移至 i18n（Left.vue + ModelManagement.vue + ApiKeyManagement.vue，约90处）
-- [x] `ChatFooter.vue`、`Bot.vue`、`renderMessage/index.vue` 硬编码中文迁移至 i18n
-- [ ] 移动端组件硬编码中文迁移至 i18n（延后处理）
-- [x] 语言回退策略改为英文
-- [ ] 英文环境下无硬编码中文残留
-- [x] 移动端 `user-select: none` 仅应用于交互元素
-- [x] 聊天消息文本可选择和复制
-- [x] 安全区域值不再被 `max()` 强制放大
-- [ ] 桌面端/移动端消息处理逻辑抽取为共享 composable（延后处理）
-- [x] 动态 import 样式文件包含 `.catch()` 错误处理
+- [x] `Login.vue` 硬编码颜色迁移为 CSS 变量 `【状态：已完成阶段性成果｜剩余：补暗色整页回归｜预计收尾：2026-05-23】`
+- [x] `ActionBar.vue`、`WorkbenchPaneTabs.vue` 等组件硬编码颜色迁移为 CSS 变量 `【状态：已完成阶段性成果｜剩余：补暗色整页回归｜预计收尾：2026-05-23】`
+- [x] Naive UI 暗色主题覆盖包含 `Skeleton` 配置 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `Login.vue` 暗色模式使用 CSS 变量而非 JS 三元 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [ ] 暗色模式下所有页面显示正确，无对比度问题 `【状态：待收尾完善｜剩余：仍有移动端和局部区域颜色待清理｜预计收尾：2026-05-23】`
+- [x] `Login.vue` 硬编码中文迁移至 i18n（7处模板+7处脚本） `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `plugins/robot/` 硬编码中文迁移至 i18n（Left.vue + ModelManagement.vue + ApiKeyManagement.vue，约90处） `【状态：已完成阶段性成果｜剩余：补英文界面回归｜预计收尾：2026-05-26】`
+- [x] `ChatFooter.vue`、`Bot.vue`、`renderMessage/index.vue` 硬编码中文迁移至 i18n `【状态：已完成阶段性成果｜剩余：补英文界面回归｜预计收尾：2026-05-26】`
+- [ ] 移动端组件硬编码中文迁移至 i18n（延后处理） `【状态：待收尾完善｜剩余：移动端仍有明显中文残留｜预计收尾：2026-05-26】`
+- [x] 语言回退策略改为英文 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [ ] 英文环境下无硬编码中文残留 `【状态：待收尾完善｜剩余：非 robot 目录与移动端仍需迁移｜预计收尾：2026-05-26】`
+- [x] 移动端 `user-select: none` 仅应用于交互元素 `【状态：已完成阶段性成果｜剩余：补真机验证｜预计收尾：2026-05-23】`
+- [x] 聊天消息文本可选择和复制 `【状态：已完成阶段性成果｜剩余：补真机验证｜预计收尾：2026-05-23】`
+- [x] 安全区域值不再被 `max()` 强制放大 `【状态：已完成阶段性成果｜剩余：补真机验证｜预计收尾：2026-05-23】`
+- [ ] 桌面端/移动端消息处理逻辑抽取为共享 composable（延后处理） `【状态：待收尾完善｜剩余：设计与落地共享抽象｜预计收尾：2026-05-23】`
+- [x] 动态 import 样式文件包含 `.catch()` 错误处理 `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
 
 ## Phase 5: 长期优化
 
-- [x] `renderMessage/index.vue` 脚本行数减少至 257 行（原 538 行，减少 52%）
-- [x] `useMessageActions` composable 已提取
-- [x] `useMessageContextMenu` composable 已提取
-- [ ] 组件不直接导入 matrix 服务层（渐进式迁移）
-- [x] `augmentations.d.ts` 不再包含 `export * from 'matrix-js-sdk'`
-- [x] `SlidingSync` 类型定义参数类型明确（非 `unknown`）
-- [x] `vue-tsc --noEmit` 验证通过
-- [x] 消息列表有 `role="log"` 和 `aria-live="polite"`
-- [x] 会话列表有 `role="list"` / `role="listitem"` 语义 + aria-label
-- [x] 右键菜单支持键盘导航（方向键、Enter、Escape）+ role="menu" 语义
-- [x] 焦点样式不被 `outline: none` 覆盖（改为 `:focus:not(:focus-visible)` 模式）
-- [x] `OfflineQueueService.enqueue()` 已集成到消息发送流程（增强网络状态检测）
-- [x] 全局网络状态 UI 指示器组件已添加（NetworkStatusBar.vue）
-- [x] 消息发送失败显示错误标识和重试按钮（红色图标+重试文字+tooltip）
-- [x] `OfflineQueueService` 使用指数退避重试策略
-- [x] 所有 Matrix 服务使用模块级单例 + 延迟初始化模式
-- [x] `initializeXxxService()` 显式调用已移除（5个函数删除）
-- [x] `matrix.ts` store 中散落的服务初始化调用已清理
+- [ ] `renderMessage/index.vue` 脚本行数减少至 257 行（原 538 行，减少 52%） `【状态：待收尾完善｜剩余：当前主文件仍未达到目标行数｜预计收尾：2026-05-30】`
+- [x] `useMessageActions` composable 已提取 `【状态：已完成阶段性成果｜剩余：补重构回归｜预计收尾：2026-05-30】`
+- [x] `useMessageContextMenu` composable 已提取 `【状态：已完成阶段性成果｜剩余：补重构回归｜预计收尾：2026-05-30】`
+- [ ] 组件不直接导入 matrix 服务层（渐进式迁移） `【状态：待收尾完善｜剩余：组件层仍有直接依赖服务情况｜预计收尾：2026-05-30】`
+- [x] `augmentations.d.ts` 不再包含 `export * from 'matrix-js-sdk'` `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `SlidingSync` 类型定义参数类型明确（非 `unknown`） `【状态：已完成阶段性成果｜剩余：补类型链路回归｜预计收尾：2026-05-21】`
+- [ ] `vue-tsc --noEmit` 验证通过 `【状态：待收尾完善｜剩余：当前类型检查未通过｜预计收尾：2026-05-21】`
+- [x] 消息列表有 `role="log"` 和 `aria-live="polite"` `【状态：已完成阶段性成果｜剩余：补读屏回归｜预计收尾：2026-05-19】`
+- [x] 会话列表有 `role="list"` / `role="listitem"` 语义 + aria-label `【状态：已完成阶段性成果｜剩余：补读屏回归｜预计收尾：2026-05-19】`
+- [x] 右键菜单支持键盘导航（方向键、Enter、Escape）+ role="menu" 语义 `【状态：已完成阶段性成果｜剩余：补键盘回归｜预计收尾：2026-05-19】`
+- [x] 焦点样式不被 `outline: none` 覆盖（改为 `:focus:not(:focus-visible)` 模式） `【状态：已完成阶段性成果｜剩余：补键盘回归｜预计收尾：2026-05-19】`
+- [x] `OfflineQueueService.enqueue()` 已集成到消息发送流程（增强网络状态检测） `【状态：已完成阶段性成果｜剩余：补弱网回归｜预计收尾：2026-05-19】`
+- [x] 全局网络状态 UI 指示器组件已添加（NetworkStatusBar.vue） `【状态：已完成阶段性成果｜剩余：补弱网回归｜预计收尾：2026-05-19】`
+- [x] 消息发送失败显示错误标识和重试按钮（红色图标+重试文字+tooltip） `【状态：已完成阶段性成果｜剩余：补弱网回归｜预计收尾：2026-05-19】`
+- [x] `OfflineQueueService` 使用指数退避重试策略 `【状态：已完成阶段性成果｜剩余：补重试时序回归｜预计收尾：2026-05-19】`
+- [ ] 所有 Matrix 服务使用模块级单例 + 延迟初始化模式 `【状态：待收尾完善｜剩余：补服务形态一致性复核｜预计收尾：2026-05-21】`
+- [x] `initializeXxxService()` 显式调用已移除（5个函数删除） `【状态：已完成阶段性成果｜剩余：无｜预计收尾：2026-05-14】`
+- [x] `matrix.ts` store 中散落的服务初始化调用已清理 `【状态：已完成阶段性成果｜剩余：补回归验证｜预计收尾：2026-05-21】`
 
 ## 全局验收
 
-- [x] `pnpm check:write` 通过（Biome 代码规范检查）
-- [x] `vue-tsc --noEmit` 通过（TypeScript 类型检查）
-- [x] `pnpm test:run` 通过（与本次修改相关的测试全部通过，剩余失败为预存在问题）
-- [ ] `pnpm tauri:dev` 桌面端正常启动和运行
-- [ ] 暗色模式切换正常
-- [ ] 中英文切换正常
-- [ ] 消息发送/接收功能正常
-- [ ] 登录/登出功能正常
+- [ ] `pnpm check:write` 通过（Biome 代码规范检查） `【状态：待收尾完善｜剩余：当前代码规范检查未恢复为全绿｜预计收尾：2026-05-21】`
+- [ ] `vue-tsc --noEmit` 通过（TypeScript 类型检查） `【状态：待收尾完善｜剩余：修复当前类型错误｜预计收尾：2026-05-21】`
+- [ ] `pnpm test:run` 通过（与本次修改相关的测试全部通过，剩余失败为预存在问题） `【状态：待收尾完善｜剩余：修复现有测试失败并重跑全量验证｜预计收尾：2026-05-21】`
+- [ ] `pnpm tauri:dev` 桌面端正常启动和运行 `【状态：待收尾完善｜剩余：补桌面端联调结果｜预计收尾：2026-05-19】`
+- [ ] 暗色模式切换正常 `【状态：待收尾完善｜剩余：补整页与移动端暗色验证｜预计收尾：2026-05-23】`
+- [ ] 中英文切换正常 `【状态：待收尾完善｜剩余：补中英文界面巡检｜预计收尾：2026-05-26】`
+- [ ] 消息发送/接收功能正常 `【状态：待收尾完善｜剩余：补在线/离线/弱网场景联调｜预计收尾：2026-05-19】`
+- [ ] 登录/登出功能正常 `【状态：待收尾完善｜剩余：补登录、登出、会话恢复联调｜预计收尾：2026-05-19】`

@@ -3,6 +3,16 @@ import { ref } from 'vue'
 import { MsgEnum } from '@/enums'
 import { useMsgInputMentionActions } from '../useMsgInputMentionActions'
 
+const { showFeedbackMock } = vi.hoisted(() => ({
+  showFeedbackMock: vi.fn()
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
+}))
+
 const makeTextNode = (value: string): Node => {
   const node = document.createTextNode(value)
   return node
@@ -42,7 +52,6 @@ const setup = (opts?: Partial<{ textNodeValue: string; endOffset: number; editor
   const isChinese = ref(false)
   const ait = ref(true)
   const aiDialogVisible = ref(true)
-  ;(window as any).$message = { info: vi.fn() }
 
   const actions = useMsgInputMentionActions({
     messageInputDom: messageInputDom as any,
@@ -127,7 +136,7 @@ describe('useMsgInputMentionActions', () => {
 
       ctx.actions.handleAI({})
 
-      expect((window as any).$message.info).not.toHaveBeenCalled()
+      expect(showFeedbackMock).not.toHaveBeenCalled()
     })
 
     it('shows the pending message, closes AI dialog, and deletes the / trigger text', () => {
@@ -135,7 +144,7 @@ describe('useMsgInputMentionActions', () => {
 
       ctx.actions.handleAI({})
 
-      expect((window as any).$message.info).toHaveBeenCalledWith('当前ai正在对接，敬请期待')
+      expect(showFeedbackMock).toHaveBeenCalledWith('当前ai正在对接，敬请期待', 'info')
       expect(ctx.aiDialogVisible.value).toBe(false)
       expect(ctx.range!.setStart).toHaveBeenCalled()
       expect(ctx.range!.setEnd).toHaveBeenCalled()
@@ -148,6 +157,7 @@ describe('useMsgInputMentionActions', () => {
 
       ctx.actions.handleAI({})
 
+      expect(showFeedbackMock).toHaveBeenCalledWith('当前ai正在对接，敬请期待', 'info')
       expect(ctx.aiDialogVisible.value).toBe(false)
       expect(ctx.triggerInputEvent).not.toHaveBeenCalled()
     })

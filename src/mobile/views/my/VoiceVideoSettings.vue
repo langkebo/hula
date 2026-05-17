@@ -7,13 +7,16 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-gray-500 mb-8px">{{ t('mobile_voice_video.audio_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mb-8px">
+            {{ t('mobile_voice_video.audio_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_voice_video.audio_input')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:microphone" :width="20" color="#1989fa" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:microphone" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -25,8 +28,9 @@
 
             <van-cell :title="t('mobile_voice_video.audio_output')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-green-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:speaker" :width="20" color="#52c41a" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-success-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:speaker" :width="20" color="var(--hula-color-success-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -39,14 +43,14 @@
             <van-cell :title="t('mobile_voice_video.input_volume')">
               <template #value>
                 <van-slider v-model="inputVolume" :min="0" :max="100" class="w-100px" />
-                <span class="ml-8px text-12px text-gray-500">{{ inputVolume }}%</span>
+                <span class="ml-8px text-12px text-[var(--hula-text-secondary)]">{{ inputVolume }}%</span>
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_voice_video.output_volume')">
               <template #value>
                 <van-slider v-model="outputVolume" :min="0" :max="100" class="w-100px" />
-                <span class="ml-8px text-12px text-gray-500">{{ outputVolume }}%</span>
+                <span class="ml-8px text-12px text-[var(--hula-text-secondary)]">{{ outputVolume }}%</span>
               </template>
             </van-cell>
           </van-cell-group>
@@ -66,23 +70,26 @@
           </van-cell-group>
 
           <div v-if="audioLevel > 0" class="px-16px">
-            <div class="h-8px bg-gray-200 rounded-full overflow-hidden">
+            <div class="h-8px bg-[var(--hula-border-color)] rounded-full overflow-hidden">
               <div
-                class="h-full bg-green-500 rounded-full transition-all duration-100"
+                class="h-full bg-[var(--hula-color-success-500)] rounded-full transition-all duration-100"
                 :style="{ width: `${audioLevel}%` }"></div>
             </div>
-            <div class="text-12px text-gray-500 text-center mt-4px">
+            <div class="text-12px text-[var(--hula-text-secondary)] text-center mt-4px">
               {{ t('mobile_voice_video.level') }}: {{ Math.round(audioLevel) }}%
             </div>
           </div>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_voice_video.video_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_voice_video.video_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_voice_video.video_input')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-purple-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:video" :width="20" color="#722ed1" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:video" :width="20" color="var(--hula-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -103,7 +110,9 @@
             <video ref="videoPreviewRef" autoplay muted playsinline class="w-full rounded-lg bg-black"></video>
           </div>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_voice_video.call_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_voice_video.call_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_voice_video.echo_cancellation')">
@@ -186,21 +195,21 @@ const videoInputDevices = ref<MediaDeviceInfo[]>([])
 
 const audioInputOptions = computed(() =>
   audioInputDevices.value.map((d) => ({
-    text: d.label || `麦克风 ${d.deviceId.slice(0, 8)}`,
+    text: d.label || `${t('mobile_voice_video.microphone')} ${d.deviceId.slice(0, 8)}`,
     value: d.deviceId
   }))
 )
 
 const audioOutputOptions = computed(() =>
   audioOutputDevices.value.map((d) => ({
-    text: d.label || `扬声器 ${d.deviceId.slice(0, 8)}`,
+    text: d.label || `${t('mobile_voice_video.speaker')} ${d.deviceId.slice(0, 8)}`,
     value: d.deviceId
   }))
 )
 
 const videoInputOptions = computed(() =>
   videoInputDevices.value.map((d) => ({
-    text: d.label || `摄像头 ${d.deviceId.slice(0, 8)}`,
+    text: d.label || `${t('mobile_voice_video.camera')} ${d.deviceId.slice(0, 8)}`,
     value: d.deviceId
   }))
 )

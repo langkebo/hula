@@ -5,13 +5,14 @@
       clearable
       :placeholder="placeholder"
       :aria-label="ariaLabel"
-      @update:value="handleValueChange">
+      @update:value="handleValueChange"
+      @keydown.enter="handleEnterSearch">
       <template #prefix>
         <svg class="size-14px"><use href="#search" /></svg>
       </template>
     </n-input>
 
-    <div v-if="history.length > 0" class="friend-search-bar__history">
+    <div v-if="showHistoryPanel" class="friend-search-bar__history">
       <div class="friend-search-bar__history-header">
         <span>{{ t('friend.search.history') }}</span>
         <button
@@ -44,12 +45,14 @@ const props = withDefaults(
   defineProps<{
     modelValue: string
     history?: string[]
+    showHistory?: boolean
     placeholder?: string
     dir?: 'ltr' | 'rtl'
     debounceMs?: number
   }>(),
   {
     history: () => [],
+    showHistory: true,
     placeholder: '',
     dir: 'ltr',
     debounceMs: 240
@@ -66,10 +69,16 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const ariaLabel = props.placeholder || t('friend.list.search')
 const emitSearch = useDebounceFn((value: string) => emit('search', value), props.debounceMs)
+const showHistoryPanel = computed(() => props.showHistory && props.history.length > 0)
 
 const handleValueChange = (value: string) => {
   emit('update:modelValue', value)
   emitSearch(value)
+}
+
+const handleEnterSearch = () => {
+  emitSearch.cancel?.()
+  emit('search', props.modelValue)
 }
 </script>
 
@@ -81,15 +90,15 @@ const handleValueChange = (value: string) => {
 }
 
 .friend-search-bar__history {
-  background: color-mix(in srgb, #6366f1 5%, var(--hula-surface-panel, #ffffff));
-  border: 1px solid var(--hula-border-default, rgba(99, 102, 241, 0.16));
+  background: color-mix(in srgb, var(--hula-color-primary-500) 5%, var(--hula-surface-panel));
+  border: 1px solid var(--hula-border-default);
   border-radius: 12px;
   padding: 10px;
 }
 
 .friend-search-bar__history-header {
   align-items: center;
-  color: var(--hula-text-tertiary, #6b7280);
+  color: var(--hula-text-tertiary);
   display: flex;
   font-size: 12px;
   justify-content: space-between;
@@ -121,8 +130,8 @@ const handleValueChange = (value: string) => {
 
 .friend-search-bar__chip {
   background: var(--hula-color-primary-100);
-  border-radius: var(--hula-radius-full, 999px);
-  color: var(--hula-text-secondary, #505050);
+  border-radius: var(--hula-radius-full);
+  color: var(--hula-text-secondary);
   cursor: pointer;
   font-size: 12px;
   padding: 4px 10px;

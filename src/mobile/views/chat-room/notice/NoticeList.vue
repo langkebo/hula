@@ -1,7 +1,7 @@
 <template>
   <AutoFixHeightPage :show-footer="false">
     <template #header>
-      <HeaderBar :isOfficial="false" border :hidden-right="true" room-name="群公告" />
+      <HeaderBar :isOfficial="false" border :hidden-right="true" :room-name="t('mobile_chat.notice.title')" />
     </template>
 
     <template #container>
@@ -14,14 +14,14 @@
                   <div class="flex flex-col w-full gap-10px">
                     <div class="flex items-center justify-between text-14px">
                       <span class="flex gap-5px">
-                        <span class="text-[--hula-text-secondary]">发布人:</span>
+                        <span class="text-[--hula-text-secondary]">{{ t('mobile_chat.notice.publisher') }}</span>
                         <span class="text-black dark:text-white/80">{{ groupStore.getUserInfo(item.uid)?.name }}</span>
                       </span>
                       <span
                         v-if="item.isTop"
                         class="text-[--color-primary] rounded-15px px-7px py-5px text-12px"
                         style="border: 1px solid; border-color: var(--color-primary)">
-                        置顶
+                        {{ t('mobile_chat.notice.pinned') }}
                       </span>
                     </div>
                     <div class="text-14px line-clamp-3 line-height-20px text-[--hula-text-secondary] max-h-60px">
@@ -32,7 +32,9 @@
                       <span class="flex gap-5px text-[--hula-text-secondary]">
                         {{ formatTimestamp(item.createTime) }}
                       </span>
-                      <span class="text-[--color-primary]">128人已读</span>
+                      <span class="text-[--color-primary]">
+                        {{ t('mobile_chat.notice.read_count', { count: 128 }) }}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -53,6 +55,7 @@
 
 <script setup lang="ts">
 import { onActivated } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
@@ -62,6 +65,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
 
+const { t } = useI18n()
 const logger = createLogger('NoticeList')
 
 defineOptions({

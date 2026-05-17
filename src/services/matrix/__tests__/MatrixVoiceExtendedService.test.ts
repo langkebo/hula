@@ -1,5 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import endpointCapabilityService from '../EndpointCapabilityService'
 import matrixClientService from '../MatrixClientService'
 import { matrixVoiceService } from '../media/MatrixVoiceService'
 
@@ -10,6 +11,12 @@ vi.mock('../MatrixClientService', () => {
     matrixClientService: { getClient }
   }
 })
+
+vi.mock('../EndpointCapabilityService', () => ({
+  default: {
+    check: vi.fn()
+  }
+}))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -32,6 +39,7 @@ describe('MatrixVoiceService - Extended Features', () => {
 
     vi.mocked(matrixClientService.getClient).mockReset()
     vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
+    vi.mocked(endpointCapabilityService.check).mockResolvedValue(true)
   })
 
   describe('getVoiceStats', () => {
@@ -59,7 +67,7 @@ describe('MatrixVoiceService - Extended Features', () => {
         average_duration: 30
       })
 
-      const _result = await matrixVoiceService.getVoiceStats('!room:example.com')
+      await matrixVoiceService.getVoiceStats('!room:example.com')
 
       expect(mockHttp.authedRequest).toHaveBeenCalledWith(
         'GET',

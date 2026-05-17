@@ -8,6 +8,11 @@ const { getGroupDetailByRoomId, getMembersByRoomId, getClient } = vi.hoisted(() 
   getClient: vi.fn()
 }))
 
+const { copyMock, showFeedbackMock } = vi.hoisted(() => ({
+  copyMock: vi.fn().mockResolvedValue(undefined),
+  showFeedbackMock: vi.fn()
+}))
+
 vi.mock('@/stores/domains/chat/group', () => ({
   useGroupStore: () => ({
     getGroupDetailByRoomId,
@@ -23,21 +28,14 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('naive-ui', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('naive-ui')>()
-  return {
-    ...actual,
-    useMessage: () => ({
-      success: vi.fn(),
-      error: vi.fn(),
-      warning: vi.fn(),
-      info: vi.fn()
-    })
-  }
-})
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
+}))
 
 vi.mock('@vueuse/core', () => ({
-  useClipboard: () => ({ copy: vi.fn().mockResolvedValue(undefined) })
+  useClipboard: () => ({ copy: copyMock })
 }))
 
 const globalStubs = {
@@ -178,5 +176,18 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
 
     expect(room.canInvite).toHaveBeenCalledWith('@u:matrix.test')
     expect(room.currentState.maySendStateEvent).toHaveBeenCalledWith('m.room.name', '@u:matrix.test')
+  })
+
+  it('uses action feedback after copying the room id', async () => {
+    getClient.mockReturnValue({
+      getUserId: () => '@admin:matrix.test',
+      getRoom: () => fakeRoom({ canInvite: true, canEdit: true })
+    })
+
+    const wrapper = await mountPane()
+    await wrapper.find('.copy-btn').trigger('click')
+
+    expect(copyMock).toHaveBeenCalledWith('!alpha:matrix.test')
+    expect(showFeedbackMock).toHaveBeenCalledWith('room.detail.id_copied', 'success')
   })
 })

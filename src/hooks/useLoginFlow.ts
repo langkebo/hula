@@ -8,6 +8,7 @@
 import { info as logInfo } from '@tauri-apps/plugin-log'
 import { useNetwork } from '@vueuse/core'
 import { useRouter } from 'vue-router'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum } from '@/enums'
 import { resolveMatrixEndpointConfig } from '@/services/backend'
 import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
@@ -27,6 +28,7 @@ export const useLoginFlow = () => {
   const matrixStore = useMatrixStore()
 
   const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
 
   let router: ReturnType<typeof useRouter> | null = null
   try {
@@ -186,7 +188,7 @@ export const useLoginFlow = () => {
       loginDisabled.value = false
       loginText.value = t('login.button.login.default')
       const error = err as Error & { message?: string }
-      window.$message.error(error.message || '登录失败')
+      showFeedback(error.message || '登录失败', 'error')
       if (auto) {
         uiState.value = 'manual'
         settingStore.setAutoLogin(false)

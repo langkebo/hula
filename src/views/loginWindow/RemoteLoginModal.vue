@@ -10,7 +10,7 @@
         </svg>
         <div class="flex flex-col gap-10px p-10px select-none">
           <n-flex vertical align="center" :size="30">
-            <span class="text-(14px [--hula-text-primary])">下线通知</span>
+            <span class="text-(14px [--hula-text-primary])">{{ t('login.remote_login.notice_title') }}</span>
             <div class="relative">
               <img class="rounded-full size-72px" :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')" />
               <div
@@ -21,9 +21,7 @@
               </div>
             </div>
             <div class="text-(13px centent [--hula-text-primary]) px-12px leading-loose mb-20px">
-              您的账号在其他设备
-              <span class="text-[--color-primary]">{{ ip }}</span>
-              登录，如非本人登录，请尽快修改密码，建议联系管理员
+              {{ t('login.remote_login.description', { ip }) }}
             </div>
           </n-flex>
           <n-button
@@ -31,7 +29,7 @@
             class="w-full"
             color="var(--color-primary)"
             @click="handleConfirm">
-            知道了
+            {{ t('login.remote_login.confirm') }}
           </n-button>
         </div>
       </div>
@@ -42,6 +40,7 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, lightTheme } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import { useWindow } from '@/hooks/useWindow.ts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -50,8 +49,9 @@ import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 
 const logger = createLogger('RemoteLoginModal')
+const { t } = useI18n()
 
-const ip = ref('未知IP')
+const ip = ref(t('login.remote_login.unknown_ip'))
 const showModal = ref(true)
 const settingStore = useSettingStore()
 const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
