@@ -1,4 +1,5 @@
 import { computed, type Ref, ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useI18nGlobal } from '@/services/i18n'
 import { conversationService } from '@/services/matrix/ai/ConversationService'
@@ -23,6 +24,7 @@ export const useAiModelManagement = ({
   loadRemainingUsage
 }: UseAiModelManagementOptions) => {
   const { t } = useI18nGlobal()
+  const { showFeedback, clearFeedback } = useActionFeedback()
   const showModelPopover = ref(false)
   const modelLoading = ref(false)
   const modelSearch = ref('')
@@ -70,7 +72,7 @@ export const useAiModelManagement = ({
       modelPagination.value.total = data.total || 0
     } catch (error) {
       logger.error('获取模型列表失败:', error)
-      window.$message.error(t('ai_assistant.robot.fetch_model_list_failed'))
+      showFeedback(t('ai_assistant.robot.fetch_model_list_failed'), 'error')
     } finally {
       modelLoading.value = false
     }
@@ -109,11 +111,11 @@ export const useAiModelManagement = ({
         })
       } catch (error) {
         logger.error('切换模型失败:', error)
-        window.$message.destroyAll()
-        window.$message.error(t('ai_assistant.robot.switch_model_failed'))
+        clearFeedback()
+        showFeedback(t('ai_assistant.robot.switch_model_failed'), 'error')
       }
     } else {
-      window.$message.success(t('ai_assistant.robot.model_selected', { name: model.name }))
+      showFeedback(t('ai_assistant.robot.model_selected', { name: model.name }), 'success')
     }
 
     useMitt.emit('model-selected', model)

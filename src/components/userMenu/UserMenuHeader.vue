@@ -47,11 +47,12 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NAvatar, NButton, NPopover, useMessage } from 'naive-ui'
+import { NAvatar, NButton, NPopover } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import defaultAvatarImg from '@/assets/img/win.png'
-import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useAccount } from '@/composables/user/useAccount'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -64,13 +65,15 @@ defineOptions({
   name: 'UserMenuHeader'
 })
 
+const { setPresence } = useAccount()
+
 const emit = defineEmits<{
   (e: 'theme-toggle'): void
   (e: 'avatar-click'): void
 }>()
 
-const message = useMessage()
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const userStore = useUserStore()
 const userStatusStore = useUserStatusStore()
 const settingStore = useSettingStore()
@@ -144,8 +147,8 @@ async function handleStatusChange(statusId: string) {
   }
 
   try {
-    await matrixAccountService.setPresence(presenceMap[statusId] || 'online')
-    message.success(t('menu.user_menu.status.updated'))
+    await setPresence(presenceMap[statusId] || 'online')
+    showFeedback(t('menu.user_menu.status.updated'), 'success')
   } catch (error) {
     logger.error('Failed to update user presence:', error)
   }

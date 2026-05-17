@@ -7,13 +7,16 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-gray-500 mb-8px">{{ t('mobile_notifications.global_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mb-8px">
+            {{ t('mobile_notifications.global_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_notifications.enable_notifications')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:bell" :width="20" color="#1989fa" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:bell" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -23,8 +26,9 @@
 
             <van-cell :title="t('mobile_notifications.enable_sound')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-green-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:volume-high" :width="20" color="#52c41a" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-success-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:volume-high" :width="20" color="var(--hula-color-success-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -33,7 +37,9 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_notifications.room_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_notifications.room_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_notifications.all_messages')">
@@ -57,13 +63,16 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_notifications.advanced_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_notifications.advanced_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_notifications.push_notifications')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-indigo-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:cellphone-message" :width="20" color="#597ef7" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:cellphone-message" :width="20" color="var(--hula-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -73,8 +82,9 @@
 
             <van-cell :title="t('mobile_notifications.email_notifications')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-teal-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:email-outline" :width="20" color="#13c2c2" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:email-outline" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -87,8 +97,9 @@
 
             <van-cell :title="t('mobile_notifications.encrypted_rooms')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-purple-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:shield-lock-outline" :width="20" color="#722ed1" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:shield-lock-outline" :width="20" color="var(--hula-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>

@@ -2,6 +2,7 @@ import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory } from '@tauri-apps/plugin-fs'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import type { FileTypeResult } from 'file-type'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
@@ -38,6 +39,7 @@ export interface UseChatFileDownloadOptions {
 
 export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
   const { t, downloadFile, getLocalVideoPath, checkVideoDownloaded, createWebviewWindow, sendWindowPayload } = options
+  const { showFeedback, showProgressFeedback } = useActionFeedback()
 
   const fileDownloadStore = useFileDownloadStore()
   const globalStore = useGlobalStore()
@@ -45,14 +47,14 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
 
   const revealInDirSafely = async (targetPath?: string | null) => {
     if (!targetPath) {
-      window.$message?.error(t('home.chat_main.file.missing_local'))
+      showFeedback(t('home.chat_main.file.missing_local'), 'error')
       return
     }
     try {
       await revealItemInDir(targetPath)
     } catch (error) {
       logger.error('在文件夹中显示文件失败:', error)
-      window.$message?.error(t('home.chat_main.file.show_failed'))
+      showFeedback(t('home.chat_main.file.show_failed'), 'error')
     }
   }
 
@@ -89,13 +91,13 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
     const [fileMeta] = await getFilesMeta<FilesMeta>([fileStatus?.absolutePath || absolutePath || fileUrl])
 
     if (!fileMeta.exists) {
-      const downloadMessage = window.$message.info(t(i18nKeys.downloadPrompt))
+      const downloadMessage = showProgressFeedback(t(i18nKeys.downloadPrompt), 'info')
       const _absolutePath = await downloadFileToLocal(fileUrl, fileName, encryptedFile)
 
       if (_absolutePath) {
         absolutePath = _absolutePath
         downloadMessage.destroy()
-        window.$message.success(t(i18nKeys.success))
+        showFeedback(t(i18nKeys.success), 'success')
         await revealInDirSafely(_absolutePath)
         await fileDownloadStore.refreshFileDownloadStatus({
           fileUrl,
@@ -107,7 +109,7 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
         return
       } else {
         absolutePath = ''
-        window.$message.error(t(i18nKeys.failed))
+        showFeedback(t(i18nKeys.failed), 'error')
         return
       }
     }
@@ -244,7 +246,7 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
       exists: fileMeta.exists
     })
 
-    await createWebviewWindow('预览文件', path, 860, 720, '', true)
+    await createWebviewWindow(t('common.window_titles.preview_file'), path, 860, 720, '', true)
   }
 
   return {

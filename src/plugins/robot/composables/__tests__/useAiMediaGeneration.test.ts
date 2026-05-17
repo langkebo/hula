@@ -9,7 +9,8 @@ const {
   clearInputMock,
   pollImageStatusMock,
   pollVideoStatusMock,
-  pollAudioStatusMock
+  pollAudioStatusMock,
+  showFeedbackMock
 } = vi.hoisted(() => ({
   aiServiceMock: {
     generateImage: vi.fn(),
@@ -21,7 +22,8 @@ const {
   clearInputMock: vi.fn(),
   pollImageStatusMock: vi.fn(),
   pollVideoStatusMock: vi.fn(),
-  pollAudioStatusMock: vi.fn()
+  pollAudioStatusMock: vi.fn(),
+  showFeedbackMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix/ai/AIService', () => ({
@@ -29,6 +31,9 @@ vi.mock('@/services/matrix/ai/AIService', () => ({
 }))
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ error: errorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() })
+}))
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({ showFeedback: showFeedbackMock })
 }))
 
 import { useAiMediaGeneration } from '../useAiMediaGeneration'
@@ -50,15 +55,6 @@ const createOptions = (conversationTokens = 0) => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  ;(window as any).$message = {
-    create: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    loading: vi.fn(),
-    warning: vi.fn(),
-    success: vi.fn(),
-    destroyAll: vi.fn()
-  }
 })
 
 describe('useAiMediaGeneration', () => {
@@ -162,7 +158,7 @@ describe('useAiMediaGeneration', () => {
       maxTokens: 1000
     } as any)
 
-    expect(window.$message.warning).toHaveBeenCalledWith('本会话 Token 已用完（1000），请新建会话或更换模型')
+    expect(showFeedbackMock).toHaveBeenCalledWith('本会话 Token 已用完（1000），请新建会话或更换模型', 'warning')
     expect(aiServiceMock.generateImage).not.toHaveBeenCalled()
     expect(options.messageList.value).toEqual([])
   })
@@ -184,7 +180,7 @@ describe('useAiMediaGeneration', () => {
       isGenerating: false
     })
     expect(errorMock).toHaveBeenCalledWith('音频生成失败:', expect.any(Error))
-    expect(window.$message.error).toHaveBeenCalledWith('音频生成失败，请检查网络连接')
+    expect(showFeedbackMock).toHaveBeenCalledWith('音频生成失败，请检查网络连接', 'error')
     expect(pollAudioStatusMock).not.toHaveBeenCalled()
   })
 })

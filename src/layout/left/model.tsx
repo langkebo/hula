@@ -23,6 +23,7 @@ import { confirm } from '@tauri-apps/plugin-dialog'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { check } from '@tauri-apps/plugin-updater'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -128,6 +129,7 @@ export const LockScreen = defineComponent(() => {
  */
 export const CheckUpdate = defineComponent(() => {
   const { t } = useI18n()
+  const { showFeedback } = useActionFeedback()
   /** 项目提交日志记录 */
   const commitLog = ref<{ message: string; icon: string }[]>([])
   const newCommitLog = ref<{ message: string; icon: string }[]>([])
@@ -227,7 +229,7 @@ export const CheckUpdate = defineComponent(() => {
               percentage.value = parseFloat(((downloaded.value / total.value) * 100 + '').substring(0, 4))
               break
             case 'Finished':
-              window.$message.success(t('message.check_update.download_success_toast'))
+              showFeedback(t('message.check_update.download_success_toast'), 'success')
               buttonState.value = 'update_success'
               updating.value = false
               break
@@ -237,11 +239,11 @@ export const CheckUpdate = defineComponent(() => {
           await relaunch()
         } catch (e) {
           logger.debug(String(e))
-          window.$message.error(t('message.check_update.restart_failed'))
+          showFeedback(t('message.check_update.restart_failed'), 'error')
         }
       })
       .catch(() => {
-        window.$message.error(t('message.check_update.update_error'))
+        showFeedback(t('message.check_update.update_error'), 'error')
       })
       .finally(() => {
         checkLoading.value = false
@@ -267,7 +269,7 @@ export const CheckUpdate = defineComponent(() => {
       })
       .catch(() => {
         checkLoading.value = false
-        window.$message.error(t('message.check_update.update_error'))
+        showFeedback(t('message.check_update.update_error'), 'error')
       })
   }
 

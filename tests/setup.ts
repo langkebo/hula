@@ -1,5 +1,12 @@
 import { vi } from 'vitest'
 
+vi.mock('colorthief', () => ({
+  default: class Colorthief {
+    getColor = vi.fn()
+    getPalette = vi.fn()
+  }
+}))
+
 // Mock vue-i18n
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({

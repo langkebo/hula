@@ -112,18 +112,18 @@ async function handleSave() {
 
 .config-label {
   font-size: 14px;
-  color: #323233;
+  color: var(--hula-text-primary);
   margin-bottom: 8px;
 }
 
 .config-hint {
   font-size: 12px;
-  color: #969799;
+  color: var(--hula-text-tertiary);
   line-height: 1.6;
 }
 
 .config-hint .example {
   margin-top: 4px;
-  color: #646566;
+  color: var(--hula-text-secondary);
 }
 </style>

@@ -1,3 +1,4 @@
+export type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
 export { type UseSpaceResult, useSpace } from './useSpace'
 export { type UseSpaceMembersResult, useSpaceMembers } from './useSpaceMembers'
 export {

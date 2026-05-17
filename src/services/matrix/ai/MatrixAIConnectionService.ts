@@ -1,4 +1,5 @@
 import { info, error as logError } from '@tauri-apps/plugin-log'
+import { useI18nGlobal } from '@/services/i18n'
 import { matrixClientService } from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 
@@ -47,7 +48,7 @@ class MatrixAIConnectionService {
   private ensureClient() {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[AIConnection] 客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
     return client
   }

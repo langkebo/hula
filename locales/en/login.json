@@ -44,7 +44,16 @@
     "title": "Single Sign-On",
     "oidc": "OIDC Sign-In",
     "saml": "SAML Sign-In",
-    "cas": "CAS Sign-In"
+    "cas": "CAS Sign-In",
+    "unavailable_feature": "Third-party sign-in is not available yet. Please use your account and password.",
+    "oidc_not_configured": "OIDC sign-in is not configured. Please use your account and password.",
+    "oidc_unavailable": "OIDC sign-in is unavailable. Please check the server configuration.",
+    "oidc_auth_url_failed": "Failed to get the OIDC authorization URL",
+    "oidc_failed": "OIDC sign-in failed",
+    "saml_not_configured": "SAML sign-in is not configured. Please use your account and password.",
+    "saml_failed": "SAML sign-in failed",
+    "cas_not_configured": "CAS sign-in is not configured. Please use your account and password.",
+    "cas_failed": "CAS sign-in failed"
   },
   "oidc": {
     "processing": "Processing OIDC login...",
@@ -231,7 +240,19 @@
   "sso_login_failed": "SSO login failed",
   "remote_login": {
     "unknown_ip": "Unknown IP",
-    "title": "Remote Login Alert"
+    "title": "Remote Login Alert",
+    "notice_title": "Signed Out Notice",
+    "description": "Your account signed in from another device at {ip}. If this was not you, please change your password as soon as possible and contact your administrator.",
+    "confirm": "Got It"
+  },
+  "secret_chat": {
+    "title": "Secret Chat",
+    "description": "Enter your secret chat password",
+    "password_placeholder": "Enter password",
+    "confirm": "Confirm",
+    "password_required": "Please enter your password",
+    "password_incorrect": "Incorrect password",
+    "verify_failed": "Verification failed"
   },
   "service_agreement_title": "Terms of Service",
   "privacy_policy_title": "Privacy Policy"

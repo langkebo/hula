@@ -1,3 +1,5 @@
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+
 export enum ErrorType {
   Network = 'Network',
   Server = 'Server',
@@ -27,6 +29,8 @@ const logRetryError = (message: string, details?: Record<string, unknown>) => {
   })
 }
 
+const { showFeedback } = useActionFeedback()
+
 export class AppException extends Error {
   public readonly type: ErrorType
   public readonly code?: number
@@ -44,7 +48,7 @@ export class AppException extends Error {
       if (errorDetails?.isRetryError) {
         logRetryError(message, this.details)
       } else {
-        window.$message.error(message)
+        showFeedback(message, 'error')
         AppException.hasShownError = true
 
         // 只有在 2 秒内没有显示过错误消息时才会显示

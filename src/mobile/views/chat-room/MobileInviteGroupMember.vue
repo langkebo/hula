@@ -27,7 +27,9 @@
           </van-field>
         </div>
         <div class="flex justify-end items-center">
-          <van-button size="small" type="primary" plain round @click="doSearch">搜索</van-button>
+          <van-button size="small" type="primary" plain round @click="doSearch">
+            {{ t('mobile_chat_setting.search_button') }}
+          </van-button>
         </div>
       </div>
 
@@ -64,7 +66,8 @@
                         <span
                           class="inline-block size-8px rounded-full"
                           :style="{
-                            backgroundColor: item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'
+                            backgroundColor:
+                              item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
                           }"></span>
                         {{ item.activeStatus === OnlineEnum.ONLINE ? '在线' : '离线' }}
                       </div>
@@ -81,9 +84,9 @@
     <template #footer>
       <!-- 底部操作栏 -->
       <div class="px-16px py-10px border-t border-gray-200 flex justify-between items-center">
-        <span class="text-14px">已选择 {{ selectedList.length }} 人</span>
+        <span class="text-14px">{{ t('mobile_chat_setting.selected_count', { count: selectedList.length }) }}</span>
         <van-button type="primary" :disabled="selectedList.length === 0" :loading="isLoading" @click="handleInvite">
-          邀请
+          {{ t('mobile_chat_setting.invite_button') }}
         </van-button>
       </div>
     </template>
@@ -91,6 +94,8 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
 import router from '@/router'
 import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
@@ -102,6 +107,8 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileInviteGroupMember')
+const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 defineOptions({
   name: 'mobileInviteGroupMember'
@@ -144,7 +151,7 @@ const doSearch = () => {}
 
 const handleInvite = async () => {
   if (selectedList.value.length === 0) {
-    window.$message.warning('请选择要邀请的好友')
+    showFeedback(t('mobile_chat_setting.select_friends_to_invite'), 'warning')
     return
   }
 
@@ -156,11 +163,11 @@ const handleInvite = async () => {
       )
     )
 
-    window.$message.success(`成功邀请 ${selectedList.value.length} 位好友`)
+    showFeedback(`成功邀请 ${selectedList.value.length} 位好友`, 'success')
     router.back()
   } catch (error) {
     logger.error('邀请失败:', error)
-    window.$message.error('邀请失败，请重试')
+    showFeedback(t('mobile_chat_setting.invite_failed'), 'error')
   } finally {
     isLoading.value = false
   }

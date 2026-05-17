@@ -100,9 +100,9 @@ const ariaLabel = computed(() => `${props.request.displayName || props.request.u
 
 <style scoped lang="scss">
 .friend-request-card {
-  background: var(--hula-surface-panel, #ffffff);
-  border: 1px solid var(--hula-border-default, #e3e3e3);
-  border-radius: var(--hula-radius-lg, 12px);
+  background: var(--hula-surface-panel);
+  border: 1px solid var(--hula-border-default);
+  border-radius: var(--hula-radius-lg);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -130,7 +130,7 @@ const ariaLabel = computed(() => `${props.request.displayName || props.request.u
 }
 
 .friend-request-card__name {
-  color: var(--hula-text-primary, #18181c);
+  color: var(--hula-text-primary);
   font-size: 14px;
   font-weight: 600;
   overflow: hidden;
@@ -141,7 +141,7 @@ const ariaLabel = computed(() => `${props.request.displayName || props.request.u
 .friend-request-card__account,
 .friend-request-card__countdown,
 .friend-request-card__message {
-  color: var(--hula-text-tertiary, #909090);
+  color: var(--hula-text-tertiary);
   font-size: 12px;
 }
 
@@ -151,7 +151,7 @@ const ariaLabel = computed(() => `${props.request.displayName || props.request.u
 
 .friend-request-card__message {
   background: var(--hula-surface-panel-muted);
-  border-radius: var(--hula-radius-sm, 8px);
+  border-radius: var(--hula-radius-sm);
   line-height: 1.5;
   margin: 0;
   padding: 8px 10px;

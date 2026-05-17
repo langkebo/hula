@@ -133,15 +133,16 @@
 </template>
 
 <script setup lang="ts">
-import { NAlert, NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, useDialog, useMessage } from 'naive-ui'
+import { NAlert, NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, useDialog } from 'naive-ui'
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 
 defineOptions({
   name: 'MjolnirSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const { t } = useI18n()
 
@@ -200,31 +201,31 @@ function saveBanLists() {
 
 function handleAddRoomBan() {
   if (!newRoomBan.entity.trim()) {
-    message.warning(t('setting.mjolnir.enter_room_id'))
+    showFeedback(t('setting.mjolnir.enter_room_id'), 'warning')
     return false
   }
   roomBanList.value.push({ entity: newRoomBan.entity.trim(), reason: newRoomBan.reason.trim(), type: 'room_id' })
   newRoomBan.entity = ''
   newRoomBan.reason = ''
   saveBanLists()
-  message.success(t('setting.mjolnir.added_room_rule'))
+  showFeedback(t('setting.mjolnir.added_room_rule'), 'success')
 }
 
 function handleAddUserBan() {
   if (!newUserBan.entity.trim()) {
-    message.warning(t('setting.mjolnir.enter_user_id'))
+    showFeedback(t('setting.mjolnir.enter_user_id'), 'warning')
     return false
   }
   userBanList.value.push({ entity: newUserBan.entity.trim(), reason: newUserBan.reason.trim(), type: 'user_id' })
   newUserBan.entity = ''
   newUserBan.reason = ''
   saveBanLists()
-  message.success(t('setting.mjolnir.added_user_rule'))
+  showFeedback(t('setting.mjolnir.added_user_rule'), 'success')
 }
 
 function handleAddServerBan() {
   if (!newServerBan.entity.trim()) {
-    message.warning(t('setting.mjolnir.enter_server_name'))
+    showFeedback(t('setting.mjolnir.enter_server_name'), 'warning')
     return false
   }
   serverBanList.value.push({
@@ -235,7 +236,7 @@ function handleAddServerBan() {
   newServerBan.entity = ''
   newServerBan.reason = ''
   saveBanLists()
-  message.success(t('setting.mjolnir.added_server_rule'))
+  showFeedback(t('setting.mjolnir.added_server_rule'), 'success')
 }
 
 function handleRemoveRoomBan(item: BanItem) {
@@ -247,7 +248,7 @@ function handleRemoveRoomBan(item: BanItem) {
     onPositiveClick: () => {
       roomBanList.value = roomBanList.value.filter((b) => b.entity !== item.entity)
       saveBanLists()
-      message.success(t('setting.mjolnir.removed_room_rule'))
+      showFeedback(t('setting.mjolnir.removed_room_rule'), 'success')
     }
   })
 }
@@ -261,7 +262,7 @@ function handleRemoveUserBan(item: BanItem) {
     onPositiveClick: () => {
       userBanList.value = userBanList.value.filter((b) => b.entity !== item.entity)
       saveBanLists()
-      message.success(t('setting.mjolnir.removed_user_rule'))
+      showFeedback(t('setting.mjolnir.removed_user_rule'), 'success')
     }
   })
 }
@@ -275,7 +276,7 @@ function handleRemoveServerBan(item: BanItem) {
     onPositiveClick: () => {
       serverBanList.value = serverBanList.value.filter((b) => b.entity !== item.entity)
       saveBanLists()
-      message.success(t('setting.mjolnir.removed_server_rule'))
+      showFeedback(t('setting.mjolnir.removed_server_rule'), 'success')
     }
   })
 }

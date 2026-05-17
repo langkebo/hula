@@ -1,12 +1,18 @@
 {
   "title": "联系人",
+  "add_friends_group": "添加好友/群",
+  "search_no_result": "未找到相关结果",
+  "search_keyword_hint": "输入关键词搜索",
   "input": {
     "search": "搜索"
   },
   "my_chat": "我的消息",
   "tab": {
     "contacts": "好友",
-    "group": "群聊"
+    "group": "群聊",
+    "recommend": "推荐",
+    "find_friend": "找好友",
+    "find_group": "找群聊"
   },
   "friend": {
     "title": "我的好友"
@@ -22,5 +28,24 @@
     "online": "在线",
     "offline": "离线",
     "blocked": "已屏蔽"
-  }
+  },
+  "search_placeholder": {
+    "recommend": "输入推荐关键词",
+    "user": "输入昵称搜索好友",
+    "group": "输入群号搜索群聊"
+  },
+  "account_label": "账号：{account}",
+  "copy_success": "复制成功 {account}",
+  "search_failed": "搜索失败",
+  "button": {
+    "edit_profile": "编辑资料",
+    "send_message": "发消息",
+    "add": "添加"
+  },
+  "menu": {
+    "add_group": "添加分组",
+    "rename_group": "重命名该组",
+    "delete_group": "删除分组"
+  },
+  "refresh_notification_failed": "刷新通知失败，请稍后再试"
 }

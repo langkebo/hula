@@ -1,53 +1,46 @@
 <template>
   <AutoFixHeightPage :show-footer="false">
     <template #header>
-      <HeaderBar :isOfficial="false" border :hidden-right="true" room-name="公告详情" />
+      <HeaderBar :isOfficial="false" border :hidden-right="true" :room-name="t('mobile_chat.notice.detail_title')" />
     </template>
 
     <template #container>
-      <div class="flex flex-col overflow-auto h-full relative">
-        <div class="flex flex-col flex-1 gap-15px py-15px px-20px">
-          <div v-if="loading" class="flex justify-center items-center h-200px">
-            <van-loading size="24px" />
-          </div>
+      <div class="h-full overflow-auto bg-[--hula-page-bg-color] px-16px py-12px">
+        <div v-if="loading" class="notice-detail__state">
+          <van-loading size="24px" />
+        </div>
 
-          <div v-else-if="announcement" class="bg-white dark:bg-dark-card rounded-15px overflow-hidden">
-            <div class="p-10px">
-              <div class="grid grid-cols-[2.2rem_1fr_4rem] items-start px-2 py-3 gap-1">
-                <div class="self-center h-38px">
-                  <van-badge>
-                    <img
-                      class="w-40px h-40px rounded-full object-cover"
-                      :src="publisherAvatar"
-                      @error="($event.target as HTMLImageElement).src = getFallbackAvatar()" />
-                  </van-badge>
-                </div>
-
-                <div class="truncate pl-4 flex gap-10px flex-col">
-                  <div class="text-14px leading-tight font-bold flex-1 truncate">
-                    {{ publisherName }}
-                  </div>
-                  <span class="text-12px text-gray-400">
-                    {{ formatTimestamp(announcement.createTime) }}
-                  </span>
-                </div>
+        <div v-else-if="announcement" class="notice-detail__card">
+          <div class="flex items-start justify-between gap-12px">
+            <div class="flex flex-col gap-8px">
+              <div class="flex items-center gap-8px">
+                <span class="text-15px font-600 text-[--hula-text-primary]">
+                  {{ t('mobile_chat.notice.detail_title') }}
+                </span>
+                <span v-if="announcement.isPinned" class="notice-detail__pinned">
+                  {{ t('mobile_chat.notice.pinned') }}
+                </span>
               </div>
+              <span class="text-12px text-[--hula-text-secondary]">
+                {{ t('mobile_chat.notice.publisher') }} {{ publisherName }}
+              </span>
+              <span class="text-12px text-[--hula-text-tertiary]">
+                {{ formatTimestamp(announcement.createdAt) }}
+              </span>
             </div>
 
-            <div class="flex justify-end px-10px text-12px">
-              <span class="text-#13987F">{{ announcement.readCount || 0 }}人已读</span>
-            </div>
-
-            <div class="p-15px">
-              {{ announcement.content }}
-            </div>
-
-            <div v-if="canEdit" class="flex justify-center pb-15px">
-              <van-button type="primary" plain size="small" @click="goToNoticeEdit">编辑公告</van-button>
-            </div>
+            <van-button plain size="small" type="primary" @click="goToEdit">
+              {{ t('mobile_chat.notice.edit_notice') }}
+            </van-button>
           </div>
 
-          <div v-else class="flex justify-center items-center h-200px text-#909090">公告不存在或已被删除</div>
+          <div class="notice-detail__content">
+            {{ announcement.content || t('mobile_chat.notice.not_found') }}
+          </div>
+        </div>
+
+        <div v-else class="notice-detail__state">
+          <van-empty :description="t('mobile_chat.notice.not_found')" />
         </div>
       </div>
     </template>
@@ -55,15 +48,17 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import type { Announcement as MatrixAnnouncement } from '@/services/matrix/room/MatrixAnnouncementService'
-import { matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { type Announcement, matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
 
+const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const logger = createLogger('NoticeDetail')
 
 defineOptions({
@@ -74,88 +69,93 @@ const route = useRoute()
 const router = useRouter()
 const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
-const userStore = useUserStore()
 
-type NoticeDetailAnnouncement = MatrixAnnouncement & {
-  uid: string
-  createTime: number
-  readCount?: number
-}
+const loading = ref(false)
+const announcement = ref<Announcement | null>(null)
 
-const announcement = ref<NoticeDetailAnnouncement | null>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
+const roomId = computed(() => String(route.query.roomId || globalStore.currentSessionRoomId || ''))
+const announcementId = computed(() => String(route.params.id || ''))
 
 const publisherName = computed(() => {
-  if (!announcement.value) return '未知用户'
-  const userInfo = groupStore.getUserInfo(announcement.value.uid)
-  return userInfo?.name || userInfo?.myName || '未知用户'
+  const authorId = announcement.value?.authorId
+  if (!authorId) {
+    return t('mobile_chat.notice.unknown_user')
+  }
+
+  return groupStore.getUserInfo(authorId)?.name || authorId || t('mobile_chat.notice.unknown_user')
 })
 
-const publisherAvatar = computed(() => {
-  if (!announcement.value) return ''
-  const userInfo = groupStore.getUserInfo(announcement.value.uid)
-  return userInfo?.avatar || ''
-})
+const loadAnnouncementDetail = async () => {
+  if (!roomId.value || !announcementId.value) {
+    announcement.value = null
+    return
+  }
 
-const getFallbackAvatar = () => {
-  return '/logo.png'
-}
-
-const canEdit = computed(() => {
-  if (!announcement.value) return false
-
-  const currentUid = userStore.userInfo?.uid
-  const isPublisher = announcement.value.uid === currentUid
-
-  const isLord = currentUid ? groupStore.isCurrentLord(currentUid) : false
-  const isAdmin = currentUid ? groupStore.isAdmin(currentUid) : false
-  return isPublisher || isLord || isAdmin
-})
-
-const fetchAnnouncementDetail = async () => {
+  loading.value = true
   try {
-    loading.value = true
-
-    const data = await matrixAnnouncementService.getAnnouncementById(
-      globalStore.currentSessionRoomId,
-      route.params.id as string
-    )
-    if (data) {
-      announcement.value = {
-        ...data,
-        uid: data.authorId,
-        createTime: data.createdAt
-      }
+    announcement.value = await matrixAnnouncementService.getAnnouncementById(roomId.value, announcementId.value)
+    if (!announcement.value) {
+      showFeedback(t('mobile_chat.notice.not_found'), 'warning')
     }
-  } catch (err) {
-    logger.error('获取公告详情失败:', err)
-    error.value = '获取公告详情失败，请重试'
+  } catch (error) {
+    logger.error('加载公告详情失败:', error)
+    announcement.value = null
+    showFeedback(t('mobile_chat.notice.fetch_failed'), 'error')
   } finally {
     loading.value = false
   }
 }
 
-const goToNoticeEdit = () => {
-  if (announcement.value) {
-    router.push(`/mobile/chatRoom/notice/edit/${announcement.value.id}`)
+const goToEdit = () => {
+  if (!announcement.value) {
+    return
   }
+
+  router.push({
+    path: `/mobile/chatRoom/notice/edit/${announcement.value.id}`,
+    query: {
+      roomId: roomId.value
+    }
+  })
 }
 
 onMounted(() => {
-  fetchAnnouncementDetail()
+  loadAnnouncementDetail()
 })
 </script>
 
 <style scoped>
-.announcement-content {
-  line-height: 1.6;
-  max-height: none;
-  overflow-y: auto;
+.notice-detail__card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--hula-border-default);
+  border-radius: 12px;
+  background: var(--hula-surface-panel);
 }
 
-.whitespace-pre-wrap {
+.notice-detail__pinned {
+  padding: 2px 8px;
+  border: 1px solid var(--hula-color-primary-500);
+  border-radius: 999px;
+  color: var(--hula-color-primary-500);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.notice-detail__content {
   white-space: pre-wrap;
-  word-wrap: break-word;
+  word-break: break-word;
+  color: var(--hula-text-primary);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.notice-detail__state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
 }
 </style>

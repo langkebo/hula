@@ -85,7 +85,13 @@
     "reject_failed": "拒绝邀请失败"
   },
   "batch": {
+    "enter": "批量选择",
+    "exit": "退出批量",
+    "enter_announcement": "已进入批量选择模式",
+    "exit_announcement": "已退出批量选择模式",
     "selected_count": "已选 {count} 项",
+    "select_all_announcement": "已全选 {count} 项",
+    "clear_selection_announcement": "已清空批量选择",
     "mark_read": "标记已读",
     "pin": "置顶",
     "mute": "静音",

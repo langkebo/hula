@@ -7,6 +7,7 @@ import {
   MatrixMsgType,
   MatrixRelType
 } from '@/common/matrixConstants'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import { matrixReceiptService } from './MatrixReceiptService'
 
@@ -170,7 +171,7 @@ interface ThreadingManagerCompat {
   ) => Promise<{ chunk: unknown[]; next_batch?: string }>
 }
 
-class MatrixThreadService {
+class MatrixThreadService extends BaseMatrixService {
   private getThreadingManager(): ThreadingManagerCompat | null {
     const client = matrixClientService.getClient()
     if (!client) return null
@@ -200,7 +201,7 @@ class MatrixThreadService {
   ): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixThread] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -238,7 +239,7 @@ class MatrixThreadService {
   ): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixThread] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -531,7 +532,7 @@ class MatrixThreadService {
   async muteThread(roomId: string, threadRootId: string, mute: boolean): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixThread] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -552,7 +553,7 @@ class MatrixThreadService {
   async freezeThread(roomId: string, threadRootId: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixThread] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -572,7 +573,7 @@ class MatrixThreadService {
   async unfreezeThread(roomId: string, threadRootId: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixThread] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -789,7 +790,7 @@ class MatrixThreadService {
 
   async deleteRoomThreadViaApi(roomId: string, threadId: string): Promise<void> {
     const manager = this.getThreadingManager()
-    if (!manager?.deleteRoomThread) throw new Error('[MatrixThread] ThreadingManager 不可用')
+    if (!manager?.deleteRoomThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
     try {
       await manager.deleteRoomThread(roomId, threadId)
     } catch (err) {
@@ -800,7 +801,7 @@ class MatrixThreadService {
 
   async freezeThreadViaApi(roomId: string, threadId: string): Promise<void> {
     const manager = this.getThreadingManager()
-    if (!manager?.freezeThread) throw new Error('[MatrixThread] ThreadingManager 不可用')
+    if (!manager?.freezeThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
     try {
       await manager.freezeThread(roomId, threadId)
     } catch (err) {
@@ -811,7 +812,7 @@ class MatrixThreadService {
 
   async unfreezeThreadViaApi(roomId: string, threadId: string): Promise<void> {
     const manager = this.getThreadingManager()
-    if (!manager?.unfreezeThread) throw new Error('[MatrixThread] ThreadingManager 不可用')
+    if (!manager?.unfreezeThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
     try {
       await manager.unfreezeThread(roomId, threadId)
     } catch (err) {
@@ -865,7 +866,7 @@ class MatrixThreadService {
 
   async unsubscribeFromThreadViaApi(roomId: string, threadId: string): Promise<void> {
     const manager = this.getThreadingManager()
-    if (!manager?.unsubscribeFromThread) throw new Error('[MatrixThread] ThreadingManager 不可用')
+    if (!manager?.unsubscribeFromThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
     try {
       await manager.unsubscribeFromThread(roomId, threadId)
     } catch (err) {
@@ -914,7 +915,7 @@ class MatrixThreadService {
 
   async redactThreadReplyViaApi(roomId: string, eventId: string): Promise<void> {
     const manager = this.getThreadingManager()
-    if (!manager?.redactThreadReply) throw new Error('[MatrixThread] ThreadingManager 不可用')
+    if (!manager?.redactThreadReply) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
     try {
       await manager.redactThreadReply(roomId, eventId)
     } catch (err) {

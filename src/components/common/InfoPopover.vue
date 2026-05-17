@@ -127,10 +127,10 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum, OnlineEnum, ThemeEnum } from '@/enums/index.ts'
 import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMitt } from '@/hooks/useMitt'
-import { useWindow } from '@/hooks/useWindow'
 import { leftHook } from '@/layout/left/hook'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -144,12 +144,12 @@ import { resolveDisplayActiveStatus } from '@/utils/presenceStatus'
 import { toLocalpart } from '@/utils/userIdentity'
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 const { uid, activeStatus } = defineProps<{
   uid: string
   activeStatus?: OnlineEnum
 }>()
-const { createWebviewWindow } = useWindow()
 const settingStore = useSettingStore()
 const avatarColor = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-inverse)'))
 const globalStore = useGlobalStore()
@@ -256,13 +256,12 @@ const handleCopy = () => {
   const account = displayAccount.value
   if (account) {
     navigator.clipboard.writeText(account)
-    window.$message.success(t('home.profile_card.notification.copy_success', { account }))
+    showFeedback(t('home.profile_card.notification.copy_success', { account }), 'success')
   }
 }
 
-const addFriend = async () => {
-  await createWebviewWindow(t('home.profile_card.modal.add_friend'), 'addFriendVerify', 380, 300, '', false, 380, 300)
-  globalStore.openAddFriendModal(uid)
+const addFriend = () => {
+  useMitt.emit(MittEnum.OPEN_ADD_FRIEND_DIALOG, { uid })
 }
 
 let enableScroll = () => {}

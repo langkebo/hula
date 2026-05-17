@@ -10,5 +10,28 @@
   "audio": "音频",
   "voice": "语音",
   "keyboard": "键盘",
-  "import_model": "导入模型"
+  "import_model": "导入模型",
+  "notice": {
+    "title": "群公告",
+    "publisher": "发布人:",
+    "pinned": "置顶",
+    "read_count": "{count}人已读",
+    "detail_title": "公告详情",
+    "edit_notice": "编辑公告",
+    "not_found": "公告不存在或已被删除",
+    "edit_title": "编辑群公告",
+    "add_title": "新增群公告",
+    "content_placeholder": "请输入公告内容...",
+    "click_upload": "点击上传",
+    "set_pinned": "设为置顶",
+    "pinned_desc": "公告将显示在群公告列表顶部",
+    "content_required": "请输入公告内容",
+    "edit_success": "公告修改成功",
+    "publish_success": "公告发布成功",
+    "save_failed": "保存公告失败，请重试",
+    "fetch_failed": "获取公告详情失败，请重试",
+    "unknown_user": "未知用户",
+    "cancel": "取消",
+    "save": "保存"
+  }
 }

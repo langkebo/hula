@@ -2,6 +2,7 @@ import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import { sumBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { StoresEnum } from '@/enums'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
@@ -33,6 +34,7 @@ export interface FileDownloadStatus {
 }
 
 export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => {
+  const { showFeedback } = useActionFeedback()
   const userStore = useUserStore()
 
   // 存储文件下载状态的Map，key为文件URL，value为下载状态
@@ -297,7 +299,7 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
         error: error instanceof Error ? error.message : '下载失败'
       })
 
-      window.$message?.error(`文件下载失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      showFeedback(`文件下载失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error')
       return null
     }
   }
@@ -329,7 +331,7 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
         error: error instanceof Error ? error.message : '下载失败'
       })
 
-      window.$message?.error(`文件下载失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      showFeedback(`文件下载失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error')
       return null
     }
   }

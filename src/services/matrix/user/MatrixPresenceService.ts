@@ -8,7 +8,15 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
+import * as MatrixClientServiceModule from '../MatrixClientService'
+
+const matrixClientServiceExports = MatrixClientServiceModule as Record<string, unknown>
+const matrixClientService = (
+  'default' in matrixClientServiceExports
+    ? matrixClientServiceExports['default']
+    : matrixClientServiceExports['matrixClientService']
+) as typeof import('../MatrixClientService').matrixClientService
 
 /**
  * 在线状态类型
@@ -36,9 +44,8 @@ export interface PresenceListResponse {
 /**
  * 在线状态服务
  */
-class MatrixPresenceService {
+class MatrixPresenceService extends BaseMatrixService {
   private readonly presenceHandlers = new Set<(info: PresenceInfo) => void>()
-  private registeredPresenceClient: MatrixClient | null = null
   private clientPresenceListener:
     | ((
         event: unknown,
@@ -52,19 +59,6 @@ class MatrixPresenceService {
       ) => void)
     | null = null
   private pendingPresenceRegistration: Promise<void> | null = null
-
-  /**
-   * 获取客户端实例
-   */
-  private async getClient(): Promise<MatrixClient> {
-    const client = await matrixClientService.waitForClientReady({
-      timeoutMs: 5000
-    })
-    if (!client) {
-      throw new Error('MatrixClient 未初始化')
-    }
-    return client
-  }
 
   private emitPresence(user: {
     userId: string
@@ -89,12 +83,8 @@ class MatrixPresenceService {
   }
 
   private attachPresenceListener(client: MatrixClient): void {
-    if (this.registeredPresenceClient === client && this.clientPresenceListener) {
+    if (this.clientPresenceListener) {
       return
-    }
-
-    if (this.registeredPresenceClient && this.clientPresenceListener) {
-      this.registeredPresenceClient.off('User.presence' as never, this.clientPresenceListener as never)
     }
 
     this.clientPresenceListener = (_event, user) => {
@@ -102,7 +92,6 @@ class MatrixPresenceService {
     }
 
     client.on('User.presence' as never, this.clientPresenceListener as never)
-    this.registeredPresenceClient = client
   }
 
   private ensurePresenceListenerRegistered(): void {
@@ -110,36 +99,29 @@ class MatrixPresenceService {
       return
     }
 
-    const client = matrixClientService.getClient()
-    if (client) {
+    try {
+      const client = this.getClient()
       this.attachPresenceListener(client)
-      return
-    }
+    } catch {
+      // Ignore initialization error during auto-registration
+      if (this.pendingPresenceRegistration) {
+        return
+      }
 
-    if (this.pendingPresenceRegistration) {
-      return
+      this.pendingPresenceRegistration = matrixClientService
+        .waitForClientReady({ timeoutMs: 5000 })
+        .then((readyClient) => {
+          if (readyClient && this.presenceHandlers.size > 0) {
+            this.attachPresenceListener(readyClient)
+          }
+        })
+        .catch(() => {
+          // Keep listener registration best-effort during startup.
+        })
+        .finally(() => {
+          this.pendingPresenceRegistration = null
+        })
     }
-
-    const waitForClientReady = (
-      matrixClientService as { waitForClientReady?: typeof matrixClientService.waitForClientReady }
-    ).waitForClientReady
-    if (typeof waitForClientReady !== 'function') {
-      return
-    }
-
-    this.pendingPresenceRegistration = waitForClientReady
-      .call(matrixClientService, { timeoutMs: 5000 })
-      .then((readyClient) => {
-        if (this.presenceHandlers.size > 0) {
-          this.attachPresenceListener(readyClient)
-        }
-      })
-      .catch(() => {
-        // Keep listener registration best-effort during startup.
-      })
-      .finally(() => {
-        this.pendingPresenceRegistration = null
-      })
   }
 
   /**
@@ -150,12 +132,12 @@ class MatrixPresenceService {
    */
   async setPresence(presence: PresenceState, statusMsg?: string): Promise<void> {
     try {
-      const client = await this.getClient()
+      const client = this.getClient()
       const presenceManager = client.getPresenceManager() as PresenceManager | null
       const userId = client.getUserId()
 
       if (!userId) {
-        throw new Error('用户 ID 未找到')
+        throw new Error(this.t('matrix_error.common.user_id_not_found'))
       }
 
       if (presenceManager) {
@@ -186,7 +168,7 @@ class MatrixPresenceService {
    */
   async getPresence(userId: string): Promise<PresenceInfo> {
     try {
-      const client = await this.getClient()
+      const client = this.getClient()
       const presenceManager = client.getPresenceManager() as PresenceManager | null
 
       if (presenceManager) {
@@ -230,11 +212,11 @@ class MatrixPresenceService {
    */
   async getCurrentPresence(): Promise<PresenceInfo> {
     try {
-      const client = await this.getClient()
+      const client = this.getClient()
       const userId = client.getUserId()
 
       if (!userId) {
-        throw new Error('用户 ID 未找到')
+        throw new Error(this.t('matrix_error.common.user_id_not_found'))
       }
 
       return await this.getPresence(userId)
@@ -251,7 +233,7 @@ class MatrixPresenceService {
    */
   async subscribeToPresence(userIds: string[], unsubscribeUserIds?: string[]): Promise<PresenceListResponse> {
     try {
-      const client = await this.getClient()
+      const client = this.getClient()
       const presenceManager = client.getPresenceManager() as PresenceManager | null
 
       const payload: Record<string, string[]> = { subscribe: userIds }
@@ -290,7 +272,7 @@ class MatrixPresenceService {
    */
   async unsubscribeFromPresence(userIds: string[]): Promise<void> {
     try {
-      const client = await this.getClient()
+      const client = this.getClient()
       const presenceManager = client.getPresenceManager() as PresenceManager | null
 
       if (presenceManager) {
@@ -313,12 +295,12 @@ class MatrixPresenceService {
    */
   async getPresenceList(userId?: string): Promise<PresenceListResponse> {
     try {
-      const client = await this.getClient()
+      const client = this.getClient()
       const presenceManager = client.getPresenceManager() as PresenceManager | null
       const targetUserId = userId || client.getUserId()
 
       if (!targetUserId) {
-        throw new Error('用户 ID 未找到')
+        throw new Error(this.t('matrix_error.common.user_id_not_found'))
       }
 
       if (presenceManager) {
@@ -397,9 +379,13 @@ class MatrixPresenceService {
 
     return () => {
       this.presenceHandlers.delete(handler)
-      if (this.presenceHandlers.size === 0 && this.registeredPresenceClient && this.clientPresenceListener) {
-        this.registeredPresenceClient.off('User.presence' as never, this.clientPresenceListener as never)
-        this.registeredPresenceClient = null
+      if (this.presenceHandlers.size === 0 && this.clientPresenceListener) {
+        try {
+          const client = this.getClient()
+          client.off('User.presence' as never, this.clientPresenceListener as never)
+        } catch {
+          // Client might be gone, ignore
+        }
         this.clientPresenceListener = null
       }
     }

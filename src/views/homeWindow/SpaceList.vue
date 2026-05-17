@@ -6,11 +6,16 @@
     :spaces="spaces"
     :space-loading="spaceLoading"
     :selected-space-id="selectedSpaceId"
+    :highlighted-space-id="activeTopLevelSpaceId"
     :search-keyword="searchKeyword"
     :session-type-filter="sessionTypeFilter"
     :session-engagement-filter="sessionEngagementFilter"
     :session-sort="sessionSort"
+    :has-saved-preset="hasSavedPreset"
+    :can-save-preset="canSavePreset"
+    :saved-preset-applied="savedPresetApplied"
     :active-space="activeSpace"
+    :space-breadcrumb-items="spaceBreadcrumbItems"
     :can-manage-active-space="canManageSelectedSpace"
     :selected-session="selectedSession"
     :sync-loading="syncLoading"
@@ -40,6 +45,8 @@
     @update:session-type-filter="setSessionTypeFilter"
     @update:session-engagement-filter="setSessionEngagementFilter"
     @update:session-sort="setSessionSort"
+    @save-preset="saveCurrentPreset"
+    @apply-saved-preset="applySavedPreset"
     @update:invite-user-id="inviteForm.userId = $event"
     @update:add-room-id="addRoomForm.roomId = $event"
     @update:add-room-suggested="addRoomForm.suggested = $event"
@@ -49,6 +56,7 @@
     @invite-space-member="openInviteSpaceMember"
     @add-space-room="openAddSpaceRoom"
     @open-space-settings="openSpaceSettings"
+    @select-space-breadcrumb="setSelectedSpaceId"
     @close-manage-pane="closeManagePane"
     @submit-manage-pane="submitManagePane"
     @close-overlay="closeOverlay"
@@ -56,40 +64,58 @@
     @overlay-forwarded="handleOverlayForwarded"
     @overlay-message-selected="handleOverlayMessageSelected"
     @overlay-room-selected="handleOverlayRoomSelected"
-    @overlay-user-selected="handleOverlayUserSelected" />
+    @overlay-user-selected="handleOverlayUserSelected"
+    @batch-mark-read="handleBatchMarkRead"
+    @batch-pin="handleBatchPin"
+    @batch-mute="handleBatchMute"
+    @batch-leave="handleBatchLeave" />
 </template>
 <script lang="ts" setup name="spaceList">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useMessage as useNaiveMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import type RoomSpaceWorkbench from '@/components/workbench/RoomSpaceWorkbench.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useSpace, useSpaceMembers, useSpaceRooms } from '@/composables/space'
 import { canManageSpaceByPowerLevel } from '@/composables/workbench/spacePermissions'
 import { useRoomSpaceWorkbench } from '@/composables/workbench/useRoomSpaceWorkbench'
 import { useSessionListState } from '@/composables/workbench/useSessionListState'
 import { useSessionPageSync } from '@/composables/workbench/useSessionPageSync'
-import { MittEnum, RoomTypeEnum } from '@/enums'
+import { MittEnum, NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { buildCreateSpaceRoute, SPACE_ROUTE_NAMES } from '@/router/spaceNavigation'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import type { SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
+import { roomListService } from '@/services/matrix/room/RoomListService'
+import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
+import { roomStateService } from '@/services/matrix/room/RoomStateService'
+import { useRoomStore } from '@/stores/domains/chat/room'
+import type { SpaceOptions } from '@/types/matrix-services'
 
 type SpaceManageMode = 'invite' | 'add-room' | 'settings'
 type OverlayMode = 'create-room' | 'create-space' | 'forward' | 'search' | 'history' | 'merged-msg'
+type SavedWorkbenchPreset = {
+  search: string
+  type: string
+  engagement: string
+  sort: string
+}
+
+const WORKBENCH_SAVED_PRESET_STORAGE_KEY = 'hula-workbench-saved-preset'
 
 const { t } = useI18n()
-const message = useNaiveMessage()
+const { announce } = useAriaLive()
+const { showFeedback } = useActionFeedback()
 const router = useRouter()
+const roomStore = useRoomStore()
 const appWindow = WebviewWindow.getCurrent()
 const { addListener } = useTauriListener()
 const { handleMsgClick, handleMsgDelete, handleMsgDblclick, visibleMenu, visibleSpecialMenu } = useMessage()
 const {
   chatStore,
   globalStore,
-  groupStore,
   syncLoading,
   networkBanner,
   retrySessions,
@@ -120,8 +146,44 @@ const {
   reloadActiveSpaceRooms
 } = useRoomSpaceWorkbench(sessionList)
 
+const normalizeSavedPreset = (value: unknown): SavedWorkbenchPreset | null => {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const candidate = value as Partial<SavedWorkbenchPreset>
+  if (
+    typeof candidate.search !== 'string' ||
+    typeof candidate.type !== 'string' ||
+    typeof candidate.engagement !== 'string' ||
+    typeof candidate.sort !== 'string'
+  ) {
+    return null
+  }
+
+  return {
+    search: candidate.search,
+    type: candidate.type,
+    engagement: candidate.engagement,
+    sort: candidate.sort
+  }
+}
+
+const readSavedPreset = (): SavedWorkbenchPreset | null => {
+  try {
+    return normalizeSavedPreset(JSON.parse(localStorage.getItem(WORKBENCH_SAVED_PRESET_STORAGE_KEY) || 'null'))
+  } catch {
+    return null
+  }
+}
+
+const writeSavedPreset = (preset: SavedWorkbenchPreset) => {
+  localStorage.setItem(WORKBENCH_SAVED_PRESET_STORAGE_KEY, JSON.stringify(preset))
+}
+
 const workbenchRef = ref<InstanceType<typeof RoomSpaceWorkbench> | null>(null)
 const manageMode = ref<SpaceManageMode | null>(null)
+const savedPreset = ref<SavedWorkbenchPreset | null>(readSavedPreset())
 const inviteForm = reactive({ userId: '' })
 const addRoomForm = reactive({ roomId: '', suggested: false })
 const settingsForm = reactive({ name: '', topic: '' })
@@ -142,7 +204,8 @@ const {
   space: selectedSpaceDetail,
   load: loadSelectedSpace,
   update: updateSelectedSpace,
-  mutating: settingsMutating
+  mutating: settingsMutating,
+  getTreePath: getSelectedSpaceTreePath
 } = useSpace(() => selectedSpaceId.value)
 const { invite: inviteSpaceMember, mutating: inviteMutating } = useSpaceMembers(() => selectedSpaceId.value)
 const { addRoom: addRoomToSpace, mutating: addRoomMutating } = useSpaceRooms(() => selectedSpaceId.value)
@@ -151,6 +214,18 @@ const canManageSelectedSpace = computed(() => {
   const spaceId = selectedSpaceId.value
   return canManageSpaceByPowerLevel(matrixClientService.getClient(), spaceId)
 })
+
+const spaceBreadcrumbItems = ref<Array<{ spaceId: string; name: string }>>([])
+const activeTopLevelSpaceId = computed(() => {
+  if (!selectedSpaceId.value) return ''
+  // 如果当前选中的就在顶级列表中，直接返回
+  if (spaces.value.some((s) => s.spaceId === selectedSpaceId.value)) {
+    return selectedSpaceId.value
+  }
+  // 否则从面包屑路径中取第一个
+  return spaceBreadcrumbItems.value[0]?.spaceId ?? ''
+})
+
 const manageSubmitting = computed(() => {
   switch (manageMode.value) {
     case 'invite':
@@ -163,9 +238,87 @@ const manageSubmitting = computed(() => {
       return false
   }
 })
+const currentPreset = computed<SavedWorkbenchPreset>(() => ({
+  search: searchKeyword.value.trim(),
+  type: sessionTypeFilter.value,
+  engagement: sessionEngagementFilter.value,
+  sort: sessionSort.value
+}))
+const hasCustomFilters = computed(
+  () =>
+    Boolean(currentPreset.value.search) ||
+    currentPreset.value.type !== 'all' ||
+    currentPreset.value.engagement !== 'all' ||
+    currentPreset.value.sort !== 'recent'
+)
+const hasSavedPreset = computed(() => Boolean(savedPreset.value))
+const savedPresetApplied = computed(() => {
+  if (!savedPreset.value) {
+    return false
+  }
+
+  return JSON.stringify(savedPreset.value) === JSON.stringify(currentPreset.value)
+})
+const canSavePreset = computed(() => hasCustomFilters.value && !savedPresetApplied.value)
+
+const loadSpaceBreadcrumbItems = async () => {
+  const spaceId = selectedSpaceId.value
+  if (!spaceId) {
+    spaceBreadcrumbItems.value = []
+    return
+  }
+
+  const path = await getSelectedSpaceTreePath()
+  const fallbackName = activeSpace.value?.name ?? selectedSpaceDetail.value?.name ?? ''
+  const normalizedPath = path.length
+    ? path
+    : [
+        {
+          spaceId,
+          name: fallbackName
+        }
+      ]
+
+  const dedupedPath = normalizedPath.filter(
+    (item, index, items) => items.findIndex((candidate) => candidate.spaceId === item.spaceId) === index
+  )
+
+  if (dedupedPath.at(-1)?.spaceId !== spaceId) {
+    dedupedPath.push({
+      spaceId,
+      name: fallbackName
+    })
+  }
+
+  spaceBreadcrumbItems.value = dedupedPath.map((item) => ({
+    spaceId: item.spaceId,
+    name: item.name || (item.spaceId === spaceId ? fallbackName : item.spaceId)
+  }))
+}
 
 const openCreateSpace = () => {
   void router.push(buildCreateSpaceRoute())
+}
+
+const saveCurrentPreset = () => {
+  const nextPreset = {
+    ...currentPreset.value
+  }
+  savedPreset.value = nextPreset
+  writeSavedPreset(nextPreset)
+  showFeedback(t('space.saved_preset_saved'), 'success')
+}
+
+const applySavedPreset = () => {
+  if (!savedPreset.value) {
+    return
+  }
+
+  setSearchKeyword(savedPreset.value.search)
+  setSessionTypeFilter(savedPreset.value.type as typeof sessionTypeFilter.value)
+  setSessionEngagementFilter(savedPreset.value.engagement as typeof sessionEngagementFilter.value)
+  setSessionSort(savedPreset.value.sort as typeof sessionSort.value)
+  showFeedback(t('space.saved_preset_applied'), 'success')
 }
 
 const openInviteSpaceMember = () => {
@@ -196,42 +349,42 @@ const closeManagePane = () => {
 const submitInviteSpaceMember = async () => {
   const userId = inviteForm.userId.trim()
   if (!userId) {
-    message.warning(t('space.invite_user_required'))
+    showFeedback(t('space.invite_user_required'), 'warning')
     return
   }
 
   const ok = await inviteSpaceMember(userId)
   if (!ok) {
-    message.error(t('space.invite_failed'))
+    showFeedback(t('space.invite_failed'), 'error')
     return
   }
 
-  message.success(t('space.invite_success'))
+  showFeedback(t('space.invite_success'), 'success')
   closeManagePane()
 }
 
 const submitAddSpaceRoom = async () => {
   const roomId = addRoomForm.roomId.trim()
   if (!roomId) {
-    message.warning(t('space.add_room_required'))
+    showFeedback(t('space.add_room_required'), 'warning')
     return
   }
 
   const ok = await addRoomToSpace(roomId, { suggested: addRoomForm.suggested })
   if (!ok) {
-    message.error(t('space.add_room_failed'))
+    showFeedback(t('space.add_room_failed'), 'error')
     return
   }
 
   await Promise.allSettled([reloadSpaces(), reloadActiveSpaceRooms()])
-  message.success(t('space.add_room_success'))
+  showFeedback(t('space.add_room_success'), 'success')
   closeManagePane()
 }
 
 const submitSpaceSettings = async () => {
   const nextName = settingsForm.name.trim()
   if (!nextName) {
-    message.warning(t('space.name_required'))
+    showFeedback(t('space.name_required'), 'warning')
     return
   }
 
@@ -253,12 +406,12 @@ const submitSpaceSettings = async () => {
 
   const ok = await updateSelectedSpace(payload)
   if (!ok) {
-    message.error(t('space.settings_failed'))
+    showFeedback(t('space.settings_failed'), 'error')
     return
   }
 
   await reloadSpaces()
-  message.success(t('space.settings_success'))
+  showFeedback(t('space.settings_success'), 'success')
   closeManagePane()
 }
 
@@ -276,14 +429,6 @@ const submitManagePane = async () => {
     default:
       return
   }
-}
-
-const openOverlay = (mode: OverlayMode, options?: Partial<typeof overlayState>) => {
-  overlayState.mode = mode
-  if (options?.forwardEventId !== undefined) overlayState.forwardEventId = options.forwardEventId
-  if (options?.forwardRoomId !== undefined) overlayState.forwardRoomId = options.forwardRoomId
-  if (options?.historyRoomId !== undefined) overlayState.historyRoomId = options.historyRoomId
-  if (options?.mergedMsgIds !== undefined) overlayState.mergedMsgIds = options.mergedMsgIds
 }
 
 const closeOverlay = () => {
@@ -322,10 +467,106 @@ const handleOverlayUserSelected = (_userId: string) => {
   closeOverlay()
 }
 
+const showBatchResult = (successCount: number, failCount: number) => {
+  const feedback = t('setting.notice.message_group_batch_update_result', {
+    success_count: successCount,
+    fail_count: failCount
+  })
+
+  if (successCount > 0 && failCount === 0) {
+    showFeedback(feedback, 'success')
+    return
+  }
+
+  if (successCount > 0) {
+    showFeedback(feedback, 'warning')
+    return
+  }
+
+  showFeedback(feedback, 'error')
+}
+
+const runBatchAction = async (
+  roomIds: string[],
+  action: (session: (typeof filteredSessionList.value)[number]) => Promise<void>
+) => {
+  if (!roomIds.length) {
+    return
+  }
+
+  const sessionMap = new Map(filteredSessionList.value.map((session) => [session.roomId, session] as const))
+  const results = await Promise.allSettled(
+    roomIds.map(async (roomId) => {
+      const session = sessionMap.get(roomId)
+      if (!session) {
+        throw new Error(`Session not found: ${roomId}`)
+      }
+      await action(session)
+    })
+  )
+
+  const successCount = results.filter((result) => result.status === 'fulfilled').length
+  const failCount = results.length - successCount
+  showBatchResult(successCount, failCount)
+}
+
+const handleBatchMarkRead = async (roomIds: string[]) => {
+  await runBatchAction(roomIds, async (session) => {
+    await roomListService.markAsRead(session.roomId)
+    await roomListService.clearUnreadSummary(session.roomId).catch(() => undefined)
+    chatStore.updateSession(session.roomId, {
+      unreadCount: 0
+    })
+  })
+  chatStore.updateTotalUnreadCount()
+}
+
+const handleBatchPin = async (roomIds: string[]) => {
+  await runBatchAction(roomIds, async (session) => {
+    if (roomStore.hasTag(session.roomId, 'm.favourite')) {
+      return
+    }
+    await roomStore.addRoomTag(session.roomId, 'm.favourite')
+  })
+}
+
+const handleBatchMute = async (roomIds: string[]) => {
+  await runBatchAction(roomIds, async (session) => {
+    await roomStateService.setRoomNotification(session.roomId, NotificationTypeEnum.NOT_DISTURB)
+    chatStore.updateSession(session.roomId, {
+      muteNotification: NotificationTypeEnum.NOT_DISTURB
+    })
+  })
+  chatStore.updateTotalUnreadCount()
+}
+
+const handleBatchLeave = async (roomIds: string[]) => {
+  await runBatchAction(roomIds, async (session) => {
+    if (session.type === RoomTypeEnum.SINGLE) {
+      throw new Error(`Direct message is not supported for batch leave: ${session.roomId}`)
+    }
+    await roomNavigationService.leaveRoom(session.roomId)
+    await handleMsgDelete(session.roomId)
+  })
+}
+
 watch(selectedSpaceId, (spaceId) => {
-  if (spaceId) return
+  if (spaceId) {
+    const spaceName = spaces.value.find((s) => s.spaceId === spaceId)?.name || activeSpace.value?.name || spaceId
+    announce(t('space.space_selected', { name: spaceName }), 'polite')
+    return
+  }
   closeManagePane()
 })
+
+watch(
+  [selectedSpaceId, activeSpace],
+  async () => {
+    await loadSpaceBreadcrumbItems()
+  },
+  { immediate: true }
+)
+
 useSessionPageSync({
   activeRouteName: SPACE_ROUTE_NAMES.workbench,
   handleMsgClick,

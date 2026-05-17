@@ -1,0 +1,110 @@
+{
+  "common": {
+    "client_not_initialized": "Client not initialized",
+    "matrix_client_not_initialized": "MatrixClient not initialized",
+    "user_not_logged_in": "User not logged in",
+    "user_id_not_found": "User ID not found",
+    "cannot_get_user_id": "Cannot get user ID",
+    "room_not_found": "Room not found: {roomId}",
+    "request_failed": "Request failed",
+    "user_id_not_exists": "User ID does not exist"
+  },
+  "auth": {
+    "access_token_missing": "Access token missing, cannot restore login session",
+    "user_id_missing": "User ID missing, cannot restore login session",
+    "session_restore_failed": "Failed to restore Matrix session with access token",
+    "session_info_incomplete": "Login successful but session info incomplete",
+    "sso_token_missing": "SSO login token missing",
+    "sso_login_failed": "SSO login failed, please try again later",
+    "sso_session_incomplete": "SSO login successful but session info incomplete",
+    "user_id_missing_for_init": "User ID missing, cannot initialize login state",
+    "client_config_missing": "Client config missing, cannot execute login fallback request",
+    "sso_not_supported": "Server does not support SSO login",
+    "login_failed_with_status": "Login failed ({status})",
+    "login_failed_check_network": "Login failed, please check network connection or server configuration",
+    "matrix_login_failed": "Matrix login failed",
+    "homeserver_connection_failed": "Cannot connect to Matrix homeserver ({url}), please check network, server address or CORS configuration{detail}",
+    "register_no_valid_session": "Registration service did not return a valid session, please contact admin to check server configuration",
+    "register_no_session": "Registration service did not return a valid session",
+    "verification_service_unavailable": "Verification code service temporarily unavailable, please try again later or contact admin (server not ready)",
+    "query_code_status_failed": "Failed to query verification code status",
+    "qr_login_device_not_logged_in": "Current device not logged in, cannot confirm QR code login"
+  },
+  "client": {
+    "not_ready_timeout": "MatrixClient not ready within specified time",
+    "room_instance_failed_after_create": "Cannot get room instance after creation",
+    "room_instance_failed_after_join": "Cannot get room instance after joining",
+    "base_url_required": "baseUrl is required",
+    "access_token_required": "accessToken is required",
+    "create_room_failed": "Room creation failed",
+    "join_room_failed": "Failed to join room",
+    "leave_room_failed": "Failed to leave room"
+  },
+  "room": {
+    "create_failed_no_id": "Room creation failed: no room ID returned",
+    "summary_manager_unavailable": "RoomSummaryManager unavailable",
+    "translate_request_failed": "Translation request failed: {status}",
+    "direct_message_manager_not_initialized": "DirectMessageManager not initialized"
+  },
+  "crypto": {
+    "not_enabled": "Encryption not enabled",
+    "passphrase_verification_failed": "Passphrase verification failed, cannot export keys",
+    "encryption_module_unavailable": "Encryption module unavailable",
+    "auth_params_required": "Authentication parameters required",
+    "no_key_backup_available": "No key backup available"
+  },
+  "media": {
+    "url_empty": "Media URL cannot be empty",
+    "voip_call_creation_failed": "Cannot create call",
+    "voip_call_not_found": "Call not found: {callId}",
+    "url_parse_failed": "Cannot parse media URL: {mediaUrl}",
+    "download_failed": "Download failed: {status} {statusText}",
+    "download_failed_short": "Download failed: {status}",
+    "voice_message_manager_unavailable": "Voice service unavailable",
+    "no_active_recording": "No active recording",
+    "invalid_mxc_url": "Invalid MXC URL"
+  },
+  "messaging": {
+    "event_id_missing": "Event send failed: no event ID returned",
+    "media_uri_missing": "File upload failed: no media URI returned",
+    "other_user_emoji_unsupported": "Getting other user's emoji data is not supported",
+    "receipt_event_id_missing": "Event ID does not exist",
+    "event_not_found": "Event not found: {eventId}",
+    "emoji_not_found": "Emoji not found: {emojiId}",
+    "unsupported_image_format": "Unsupported image format: {type}, supported formats: PNG, GIF, WebP",
+    "message_not_found": "Message not found: {eventId}",
+    "original_message_not_found": "Original message not found: {originalEventId}",
+    "reply_message_not_found": "Reply message not found: {replyToEventId}",
+    "can_only_edit_own_messages": "Can only edit your own messages",
+    "can_only_delete_own_messages": "Can only delete your own messages",
+    "threading_manager_unavailable": "ThreadingManager unavailable"
+  },
+  "admin": {
+    "sdk_manager_unavailable": "SDK AdminManager unavailable",
+    "quota_manager_not_initialized": "QuotaManager not initialized",
+    "moderation_manager_not_initialized": "ModerationManager not initialized",
+    "score_range_invalid": "Score must be between -100 and 0",
+    "upload_size_limit_unavailable": "getUploadSizeLimit unavailable",
+    "upload_file_size_limit_unavailable": "getUploadFileSizeLimit unavailable",
+    "user_storage_usage_unavailable": "getUserStorageUsage unavailable",
+    "has_storage_space_unavailable": "hasStorageSpace unavailable"
+  },
+  "friends": {
+    "manager_not_initialized": "FriendManager not initialized",
+    "remark_update_unsupported": "FriendManager does not support friend remark updates",
+    "status_update_unsupported": "FriendManager does not support friend status update: {status}"
+  },
+  "widget": {
+    "manager_not_initialized": "WidgetsManager not initialized"
+  },
+  "worker": {
+    "not_started": "Worker not started, call start() first"
+  },
+  "extensions": {
+    "not_initialized": "SynapseRustExtensionsService not initialized",
+    "api_request_failed_with_status": "API request failed ({status})"
+  },
+  "account": {
+    "cannot_get_user_id": "Cannot get user ID"
+  }
+}

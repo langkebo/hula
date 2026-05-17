@@ -8,14 +8,16 @@ const {
   restoreWithAccessTokenMock,
   completeDesktopLoginTransitionMock,
   matrixRegisterMock,
-  createModalWindowMock
+  createModalWindowMock,
+  showFeedbackMock
 } = vi.hoisted(() => ({
   currentWindowShowMock: vi.fn(),
   saveMatrixSessionEndpointConfigMock: vi.fn(),
   restoreWithAccessTokenMock: vi.fn(),
   completeDesktopLoginTransitionMock: vi.fn(),
   matrixRegisterMock: vi.fn(),
-  createModalWindowMock: vi.fn()
+  createModalWindowMock: vi.fn(),
+  showFeedbackMock: vi.fn()
 }))
 
 class MockWorker {
@@ -41,11 +43,21 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({
   }
 }))
 
-vi.mock('dayjs', () => ({
-  default: () => ({
-    year: () => 2026
+vi.mock('dayjs', () => {
+  const dayjsMock = () => ({
+    year: () => 2026,
+    format: () => '2026-05-15',
+    add: () => dayjsMock(),
+    subtract: () => dayjsMock(),
+    locale: vi.fn()
   })
-}))
+  dayjsMock.extend = vi.fn()
+  dayjsMock.duration = vi.fn()
+  dayjsMock.locale = vi.fn()
+  return {
+    default: dayjsMock
+  }
+})
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -227,6 +239,12 @@ vi.mock('@/components/common/Validation.vue', () => ({
   }
 }))
 
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
+}))
+
 const RegisterView = (await import('../index.vue')).default
 
 describe('registerWindow', () => {
@@ -240,12 +258,6 @@ describe('registerWindow', () => {
       access_token: 'registered-token',
       refresh_token: 'registered-refresh-token'
     })
-    window.$message = {
-      error: vi.fn(),
-      success: vi.fn(),
-      info: vi.fn(),
-      warning: vi.fn()
-    } as never
   })
 
   it('saves session endpoint before restoring runtime session after direct register', async () => {
@@ -266,7 +278,7 @@ describe('registerWindow', () => {
     await wrapper.get('button').trigger('click')
     await flushPromises()
 
-    expect(matrixRegisterMock).toHaveBeenCalledWith('alice', 'secret!')
+    expect(matrixRegisterMock).toHaveBeenCalledWith('alice', 'secret!', undefined, undefined, undefined, undefined)
     expect(saveMatrixSessionEndpointConfigMock).toHaveBeenCalledWith({
       homeserverUrl: 'https://matrix.example.com',
       identityServerUrl: 'https://identity.example.com'
@@ -286,5 +298,6 @@ describe('registerWindow', () => {
       restoreWithAccessTokenMock.mock.invocationCallOrder[0]
     )
     expect(completeDesktopLoginTransitionMock).toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('注册成功', 'success')
   })
 })

@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import type { MsgType } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -59,6 +60,7 @@ import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('VideoPreview')
+const { showFeedback } = useActionFeedback()
 
 interface Props {
   visible: boolean
@@ -158,15 +160,15 @@ const handleSave = async () => {
         fileStore.addFile(fileInfo)
       }
     }
-    window.$message?.success?.('视频已保存')
+    showFeedback('视频已保存', 'success')
   } catch (error) {
     logger.error('保存视频失败:', error)
-    window.$message?.error?.('保存失败')
+    showFeedback('保存失败', 'error')
   }
 }
 
 const handleMore = () => {
-  window.$message?.warning?.('更多功能暂未实现')
+  showFeedback('更多功能暂未实现', 'warning')
 }
 
 watch(

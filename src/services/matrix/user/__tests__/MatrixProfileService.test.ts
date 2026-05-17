@@ -46,7 +46,7 @@ describe('ProfileService', () => {
   describe('getProfile', () => {
     it('should throw error when client is not initialized', async () => {
       const service = new (profileService.constructor as unknown as new () => typeof profileService)()
-      await expect(service.getProfile('@user:matrix.org')).rejects.toThrow('Client 未初始化')
+      await expect(service.getProfile('@user:matrix.org')).rejects.toThrow('客户端未初始化')
     })
 
     it('should return user profile', async () => {
@@ -168,7 +168,7 @@ describe('ProfileService', () => {
   describe('setDisplayName', () => {
     it('should throw error when client is not initialized', async () => {
       const service = new (profileService.constructor as unknown as new () => typeof profileService)()
-      await expect(service.setDisplayName('New Name')).rejects.toThrow('Client 未初始化')
+      await expect(service.setDisplayName('New Name')).rejects.toThrow('客户端未初始化')
     })
 
     it('should set display name successfully', async () => {
@@ -190,7 +190,7 @@ describe('ProfileService', () => {
   describe('setAvatarUrl', () => {
     it('should throw error when client is not initialized', async () => {
       const service = new (profileService.constructor as unknown as new () => typeof profileService)()
-      await expect(service.setAvatarUrl('mxc://matrix.org/new')).rejects.toThrow('Client 未初始化')
+      await expect(service.setAvatarUrl('mxc://matrix.org/new')).rejects.toThrow('客户端未初始化')
     })
 
     it('should set avatar url successfully', async () => {
@@ -213,7 +213,7 @@ describe('ProfileService', () => {
     it('should throw error when client is not initialized', async () => {
       const service = new (profileService.constructor as unknown as new () => typeof profileService)()
       const file = new File(['content'], 'avatar.png', { type: 'image/png' })
-      await expect(service.uploadAndSetAvatar(file)).rejects.toThrow('Client 未初始化')
+      await expect(service.uploadAndSetAvatar(file)).rejects.toThrow('客户端未初始化')
     })
 
     it('should upload and set avatar successfully', async () => {

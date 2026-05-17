@@ -24,20 +24,6 @@
 
   <!-- 好友或者群聊的信息 -->
   <div v-else class="flex flex-col w-full" :class="{ 'justify-end': isMe }">
-    <!-- 信息时间(单聊) -->
-    <div
-      v-if="!isGroup"
-      class="text-(12px --hula-text-tertiary) h-12px flex select-none"
-      :class="{
-        'pr-48px justify-end': isMe,
-        'pl-42px justify-start': !isMe
-      }">
-      <Transition name="fade-single">
-        <span v-if="hoverMsgId === message.message.id">
-          {{ formatTimestamp(message.message.sendTime, true) }}
-        </span>
-      </Transition>
-    </div>
     <div class="flex justify-center items-center">
       <n-checkbox
         v-model:checked="message.isCheck"
@@ -119,14 +105,6 @@
               class="flex px-4px py-3px rounded-4px bg-[--hula-color-primary-100] size-fit select-none">
               <span class="text-(9px [--hula-color-primary-500])">{{ t('home.chat_sidebar.roles.admin') }}</span>
             </div>
-            <!-- 信息时间(群聊) -->
-            <Transition name="fade-group">
-              <span
-                v-if="isGroup && hoverMsgId === message.message.id"
-                class="text-(12px --hula-text-tertiary) select-none">
-                {{ formatTimestamp(message.message.sendTime, true) }}
-              </span>
-            </Transition>
           </n-flex>
           <!--  气泡样式  -->
           <ContextMenu
@@ -134,8 +112,6 @@
             :content="message"
             @mousedown.right="recordSelectionBeforeContext"
             @contextmenu="handleContextMenuSelection"
-            @mouseenter="() => (hoverMsgId = message.message.id)"
-            @mouseleave="() => (hoverMsgId = '')"
             class="relative flex flex-col chat-message-max-width"
             :data-key="isMe ? `U${message.message.id}` : `Q${message.message.id}`"
             :class="[isMe ? 'items-end' : 'items-start', isMobile() ? 'w-full max-w-full' : '']"
@@ -253,30 +229,6 @@
                 <p class="select-text cursor-text">{{ messageBody.translatedText.text }}</p>
               </div>
             </Transition>
-
-            <!-- 消息状态指示器 -->
-            <div v-if="isMe" class="absolute -left-6 top-2">
-              <n-icon v-if="message.message.status === MessageStatusEnum.SENDING" class="text-gray-400">
-                <img class="size-16px" src="@/assets/img/loading-one.svg" alt="" />
-              </n-icon>
-              <n-tooltip v-if="message.message.status === MessageStatusEnum.FAILED" trigger="hover">
-                <template #trigger>
-                  <div class="flex items-center gap-2px">
-                    <n-icon class="text-[--hula-color-danger-500] cursor-pointer" @click.stop="handleRetry(message)">
-                      <svg class="size-16px">
-                        <use href="#cloudError"></use>
-                      </svg>
-                    </n-icon>
-                    <span
-                      class="text-(10px [--hula-color-danger-500]) cursor-pointer whitespace-nowrap"
-                      @click.stop="handleRetry(message)">
-                      {{ t('message_container.retry') }}
-                    </span>
-                  </div>
-                </template>
-                <span>{{ t('message_container.send_failed_retry') }}</span>
-              </n-tooltip>
-            </div>
           </ContextMenu>
 
           <!-- 回复的内容 -->
@@ -340,6 +292,17 @@
             :room-id="message.message.roomId"
             :event-id="message.message.id"
             @open-thread="handleOpenThread" />
+
+          <HulaMessageMeta
+            v-if="!historyMode"
+            :message-id="message.message.id"
+            :room-id="message.message.roomId"
+            :sender-id="fromUser.uid"
+            :timestamp="message.message.sendTime"
+            :status="message.message.status"
+            :is-me="isMe"
+            :is-last-message="isLastRoomMessage"
+            @retry="handleRetry(message)" />
         </n-flex>
       </div>
     </div>
@@ -351,33 +314,29 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BurnMessage from '@/components/burn/BurnMessage.vue'
 import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
-import { MessageStatusEnum, MittEnum, MsgEnum, ThemeEnum } from '@/enums'
+import { useThread } from '@/composables/chat/useThread'
+import { MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain'
 import { useMitt } from '@/hooks/useMitt'
 import { usePopover } from '@/hooks/usePopover'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
 import router from '@/router'
-import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
-import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import type { MessageBody, MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
-import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMobile } from '@/utils/PlatformConstants'
-import { toFriendInfoPage } from '@/utils/RouterUtils'
 import Emoji from './Emoji.vue'
+import HulaMessageMeta from './HulaMessageMeta.vue'
 import Image from './Image.vue'
 import RecallMessage from './special/RecallMessage.vue'
 import SystemMessage from './special/SystemMessage.vue'
 import Text from './Text.vue'
 import { useMessageActions } from './useMessageActions'
 import { useMessageContextMenu } from './useMessageContextMenu'
+import { useMessageUser } from './useMessageUser'
 
 const Announcement = defineAsyncComponent(() => import('./Announcement.vue'))
 const AudioCall = defineAsyncComponent(() => import('./AudioCall.vue'))
@@ -398,8 +357,6 @@ type ShowablePopover = {
 const isShowablePopover = (value: unknown): value is ShowablePopover => {
   return typeof value === 'object' && value !== null && 'setShow' in value && typeof value.setShow === 'function'
 }
-
-const logger = createLogger('RenderMessage')
 
 const ThreadIndicator = computed(() => (isMobile() ? ThreadIndicatorMobile : ThreadIndicatorDesktop))
 
@@ -440,26 +397,27 @@ const setInfoPopoverRef = (messageId: string, el: unknown) => {
   infoPopoverRefs[messageId] = isShowablePopover(el) ? el : null
 }
 
-const userStore = useUserStore()
+const { isMe, getAvatarSrc, senderDisplayName, handleMentionUser, handleAvatarClick } = useMessageUser(props, {
+  selectKey
+})
+
 const activeReply = ref<string>('')
-const hoverMsgId = ref<string>('')
 const settingStore = useSettingStore()
 const injectedChatMain = inject(chatMainInjectionKey, null)
 const chatMainApi = injectedChatMain ?? useChatMain()
 const { optionsList, report, activeBubble, handleItemType, emojiList, specialMenuList, handleMsgClick } = chatMainApi
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
-const resolvingUserSet = new Set<string>()
 const isMultiSelectDisabled = computed(() => !isMessageMultiSelectEnabled(props.message.message.type))
+const isLastRoomMessage = computed(() => {
+  const lastMessage = chatStore.chatMessageList.at(-1)
+  return lastMessage?.message.id === props.message.message.id
+})
 const bubbleMaxWidth = computed(() => {
   if (isMobile()) {
     return '84%'
   }
   return props.isGroup ? '32vw' : '50vw'
-})
-
-const isMe = computed(() => {
-  return props.fromUser?.uid === userStore.userInfo!.uid
 })
 
 const {
@@ -475,10 +433,12 @@ const {
 const { recordSelectionBeforeContext, handleContextMenuSelection, longPressOption, handleLongPress } =
   useMessageContextMenu({ activeBubble })
 
+const { isBodyInThread } = useThread()
+
 const isThreadReply = computed(() => {
   const msg = props.message?.message
   if (!msg) return false
-  return matrixThreadService.isBodyInThread(msg.body)
+  return isBodyInThread(msg.body)
 })
 
 const handleOpenThread = (eventId: string) => {
@@ -491,71 +451,6 @@ const handleOpenThread = (eventId: string) => {
 }
 
 defineExpose({ isThreadReply, handleOpenThread })
-
-const handleAvatarClick = (uid: string, msgId: string) => {
-  if (isMobile()) {
-    toFriendInfoPage(uid)
-  } else {
-    selectKey.value = msgId
-  }
-}
-
-const handleMentionUser = () => {
-  if (!props.isGroup || isMe.value) return
-  const targetUid = props.fromUser?.uid
-  if (!targetUid) return
-  useMitt.emit(MittEnum.AT, targetUid)
-}
-
-const getAvatarSrc = computed(() => (uid: string) => {
-  const isCurrentUser = uid === userStore.userInfo?.uid
-  const storeUser = groupStore.getUserInfo(uid)
-  if (isMe.value && isCurrentUser) {
-    return AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar as string)
-  }
-  const resolvedAvatar = storeUser?.avatar || (uid === props.fromUser.uid ? props.message.fromUser.avatar : '')
-  return AvatarUtils.getAvatarUrl(resolvedAvatar as string)
-})
-
-const senderDisplayName = computed(() => {
-  const displayName = groupStore.getUserDisplayName(props.fromUser.uid)
-  if (displayName) {
-    return displayName
-  }
-
-  const storeUser = groupStore.getUserInfo(props.fromUser.uid)
-  if (storeUser?.myName || storeUser?.name) {
-    return storeUser.myName || storeUser.name || ''
-  }
-
-  return props.message.fromUser.username || t('message_container.unknown_user')
-})
-
-const ensureSenderInfo = async (uid: string) => {
-  if (!uid || resolvingUserSet.has(uid)) return
-  const cachedUser = groupStore.getUserInfo(uid)
-  if (cachedUser?.name || cachedUser?.myName || cachedUser?.avatar) return
-  const roomId = props.message?.message?.roomId
-  if (!roomId) return
-  resolvingUserSet.add(uid)
-  try {
-    const users = await matrixContactService.getUserByIds([uid])
-    const user = Array.isArray(users) ? users[0] : null
-    if (user?.uid) {
-      groupStore.updateUserItem(user.uid, user, roomId)
-    }
-  } catch (error) {
-    logger.error('拉取缺失用户信息失败:', error)
-  } finally {
-    resolvingUserSet.delete(uid)
-  }
-}
-
-watchEffect(() => {
-  if (!senderDisplayName.value || senderDisplayName.value === t('message_container.unknown_user')) {
-    ensureSenderInfo(props.fromUser.uid)
-  }
-})
 
 const componentMap: Partial<Record<MsgEnum, Component>> = {
   [MsgEnum.TEXT]: Text,

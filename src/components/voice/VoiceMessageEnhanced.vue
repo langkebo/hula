@@ -77,6 +77,7 @@
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import type { VoiceBody } from '@/services/types'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -85,6 +86,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('VoiceMessageEnhanced')
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const userStore = useUserStore()
 
 const props = defineProps<{
@@ -248,11 +250,11 @@ const handleDownload = async () => {
       if (filePath) {
         const buffer = await blob.arrayBuffer()
         await writeFile(filePath, new Uint8Array(buffer))
-        window.$message.success(t('voice.download_success'))
+        showFeedback(t('voice.download_success'), 'success')
       }
     }
   } catch (err) {
-    window.$message.error(t('voice.download_failed'))
+    showFeedback(t('voice.download_failed'), 'error')
   }
 }
 

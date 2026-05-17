@@ -213,7 +213,7 @@ declare module 'matrix-js-sdk/friend' {
   }
 }
 
-declare module 'matrix-js-sdk/src/telemetry' {
+declare module 'matrix-js-sdk/telemetry' {
   export interface TelemetryEvent {
     event: string
     timestamp: number

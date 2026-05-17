@@ -15,6 +15,25 @@ vi.mock('../MatrixPushService', () => ({
   }
 }))
 
+vi.mock('../../MatrixRequestDeduper', () => ({
+  MatrixRequestDeduper: {
+    dedupe: vi.fn(async (_key: string, task: () => Promise<unknown>) => task())
+  }
+}))
+
+vi.mock('../../MatrixRequestHelper', () => ({
+  MatrixRequestHelper: {
+    buildRoomPath: vi.fn((roomId: string, suffix: string) => `/_matrix/client/v3/rooms/${roomId}/${suffix}`),
+    safeGet: vi.fn()
+  }
+}))
+
+vi.mock('@/services/i18n', () => ({
+  useI18nGlobal: () => ({
+    t: (key: string) => key
+  })
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn() })
 }))
@@ -22,12 +41,14 @@ vi.mock('@/utils/Logger', () => ({
 describe('MatrixRoomNotificationService', () => {
   let matrixClientService: typeof import('../../MatrixClientService').matrixClientService
   let matrixPushService: typeof import('../MatrixPushService').matrixPushService
+  let matrixRequestHelper: typeof import('../../MatrixRequestHelper').MatrixRequestHelper
   let matrixRoomNotificationService: typeof import('../MatrixRoomNotificationService').matrixRoomNotificationService
 
   beforeEach(async () => {
     vi.clearAllMocks()
     matrixClientService = (await import('../../MatrixClientService')).matrixClientService
     matrixPushService = (await import('../MatrixPushService')).matrixPushService
+    matrixRequestHelper = (await import('../../MatrixRequestHelper')).MatrixRequestHelper
     matrixRoomNotificationService = (await import('../MatrixRoomNotificationService')).matrixRoomNotificationService
   })
 
@@ -79,31 +100,36 @@ describe('MatrixRoomNotificationService', () => {
 
   describe('fetchUnreadCount', () => {
     it('returns notification + highlight from /unread_count', async () => {
-      const authedRequest = vi.fn().mockResolvedValue({ notification_count: 5, highlight_count: 2 })
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        http: { authedRequest }
-      } as unknown as MatrixClient)
+      vi.mocked(matrixRequestHelper.safeGet).mockResolvedValue({ notification_count: 5, highlight_count: 2 })
 
       const result = await matrixRoomNotificationService.fetchUnreadCount('!u:server')
 
-      expect(authedRequest).toHaveBeenCalledTimes(1)
+      expect(matrixRequestHelper.buildRoomPath).toHaveBeenCalledWith('!u:server', 'unread_count')
+      expect(matrixRequestHelper.safeGet).toHaveBeenCalledTimes(1)
       expect(result).toEqual({ notification_count: 5, highlight_count: 2 })
     })
 
     it('coerces missing fields to zero', async () => {
-      const authedRequest = vi.fn().mockResolvedValue({})
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        http: { authedRequest }
-      } as unknown as MatrixClient)
+      vi.mocked(matrixRequestHelper.safeGet).mockResolvedValue({})
 
       const result = await matrixRoomNotificationService.fetchUnreadCount('!z:server')
 
       expect(result).toEqual({ notification_count: 0, highlight_count: 0 })
     })
 
-    it('returns null when client is missing', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
-      const result = await matrixRoomNotificationService.fetchUnreadCount('!n:server')
+    it('returns null when unread_count is not supported', async () => {
+      vi.mocked(matrixRequestHelper.safeGet).mockRejectedValue({ httpStatus: 404 })
+
+      const firstResult = await matrixRoomNotificationService.fetchUnreadCount('!n:server')
+      const secondResult = await matrixRoomNotificationService.fetchUnreadCount('!n:server')
+
+      expect(firstResult).toBeNull()
+      expect(secondResult).toBeNull()
+      expect(matrixRequestHelper.safeGet).toHaveBeenCalledTimes(1)
+    })
+
+    it('returns null when roomId is empty', async () => {
+      const result = await matrixRoomNotificationService.fetchUnreadCount('')
       expect(result).toBeNull()
     })
   })

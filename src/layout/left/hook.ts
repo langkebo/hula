@@ -1,11 +1,13 @@
 import { info } from '@tauri-apps/plugin-log'
 import { useTimeoutFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { IsYesEnum, MittEnum, ThemeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
 import { badgeService } from '@/services/BadgeService'
+import { useI18nGlobal } from '@/services/i18n'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import type { BadgeType, UserInfoType } from '@/services/types.ts'
 import { type MatrixRoomMember, useGroupStore } from '@/stores/domains/chat/group'
@@ -18,6 +20,8 @@ import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 export const leftHook = () => {
   const prefers = matchMedia('(prefers-color-scheme: dark)')
   const { createWebviewWindow } = useWindow()
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const settingStore = useSettingStore()
   const { menuTop } = storeToRefs(useMenuTopStore())
   const loginHistoriesStore = useLoginHistoriesStore()
@@ -84,11 +88,11 @@ export const leftHook = () => {
   /** 保存用户信息 */
   const saveEditInfo = (localUserInfo: Partial<UserInfoType>) => {
     if (!localUserInfo.name || localUserInfo.name.trim() === '') {
-      window.$message.error('昵称不能为空')
+      showFeedback(t('home.profile_edit.toast.nickname_empty'), 'error')
       return
     }
     if (localUserInfo.modifyNameChance === 0) {
-      window.$message.error('改名次数不足')
+      showFeedback(t('home.profile_edit.toast.rename_limit'), 'error')
       return
     }
     matrixAccountService.updateDisplayName(localUserInfo.name!).then(() => {
@@ -97,7 +101,7 @@ export const leftHook = () => {
       updateCurrentUserCache('name', localUserInfo.name)
       if (!editInfo.value.content.modifyNameChance) return
       editInfo.value.content.modifyNameChance -= 1
-      window.$message.success('保存成功')
+      showFeedback(t('home.profile_edit.toast.save_success'), 'success')
     })
   }
 
@@ -113,10 +117,10 @@ export const leftHook = () => {
       }))
       // 确保在状态更新后再显示成功消息
       nextTick(() => {
-        window.$message.success('佩戴成功')
+        showFeedback(t('home.profile_edit.toast.badge_wear_success'), 'success')
       })
     } catch {
-      window.$message.error('佩戴失败，请稍后重试')
+      showFeedback(t('home.profile_edit.toast.badge_wear_failed'), 'error')
     }
   }
 

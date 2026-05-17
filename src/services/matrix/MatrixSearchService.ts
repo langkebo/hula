@@ -1,4 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
+import { useI18nGlobal } from '@/services/i18n'
 import type { SearchEventContext } from '@/types/matrix-api'
 import type { SearchMessageHit } from '@/workers/matrixWorkerTypes'
 import matrixClientService from './MatrixClientService'
@@ -85,7 +86,7 @@ class MatrixSearchService {
   private async searchMessagesRemote(query: string, options?: SearchMessagesOptions): Promise<SearchResult[]> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixSearch] 客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     const response = await client.search(this.buildMessageSearchParams(query, options))
@@ -220,7 +221,7 @@ class MatrixSearchService {
   async searchUsers(query: string, limit: number = 10): Promise<UserSearchResult[]> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixSearch] 客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -288,7 +289,7 @@ class MatrixSearchService {
   }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixSearch] 客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -317,7 +318,7 @@ class MatrixSearchService {
   async searchPublicRooms(query: string, server?: string): Promise<RoomSearchResult[]> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixSearch] 客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -341,7 +342,7 @@ class MatrixSearchService {
   async getRoomDirectoryVisibility(roomId: string): Promise<'public' | 'private'> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixSearch] 客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -356,7 +357,7 @@ class MatrixSearchService {
   async setRoomDirectoryVisibility(roomId: string, visibility: 'public' | 'private'): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixSearch] 客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {

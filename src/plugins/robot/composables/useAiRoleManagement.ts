@@ -1,4 +1,5 @@
 import { type Ref, ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
@@ -14,6 +15,7 @@ interface UseAiRoleManagementOptions {
 }
 
 export const useAiRoleManagement = ({ currentChat }: UseAiRoleManagementOptions) => {
+  const { showFeedback, clearFeedback } = useActionFeedback()
   const showRolePopover = ref(false)
   const selectedRole = ref<ChatRole | null>(null)
   const roleList = ref<ChatRole[]>([])
@@ -29,7 +31,7 @@ export const useAiRoleManagement = ({ currentChat }: UseAiRoleManagementOptions)
       }
     } catch (error) {
       logger.error('加载角色列表失败:', error)
-      window.$message.error(t('ai_assistant.robot.load_role_list_failed'))
+      showFeedback(t('ai_assistant.robot.load_role_list_failed'), 'error')
     } finally {
       roleLoading.value = false
     }
@@ -47,12 +49,12 @@ export const useAiRoleManagement = ({ currentChat }: UseAiRoleManagementOptions)
           modelId: role.modelId || undefined
         })
       } else {
-        window.$message.success(t('ai_assistant.robot.role_selected', { name: role.name }))
+        showFeedback(t('ai_assistant.robot.role_selected', { name: role.name }), 'success')
       }
     } catch (error) {
       logger.error('切换角色失败:', error)
-      window.$message.destroyAll()
-      window.$message.error(t('ai_assistant.robot.switch_role_failed'))
+      clearFeedback()
+      showFeedback(t('ai_assistant.robot.switch_role_failed'), 'error')
     }
   }
 

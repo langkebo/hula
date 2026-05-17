@@ -154,7 +154,7 @@
                 {{ t('room.detail.settings') }}
               </n-button>
 
-              <n-button v-if="roomDetail.canInvite" block secondary @click="openInviteMember">
+              <n-button v-if="roomDetail.canInvite" block secondary @click="showInviteDialog = true">
                 <template #icon>
                   <svg class="size-14px"><use href="#add-user"></use></svg>
                 </template>
@@ -173,12 +173,16 @@
       </template>
     </template>
   </div>
+
+  <InviteDialog v-model:visible="showInviteDialog" :room-id="roomId ?? ''" />
 </template>
 
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
-import { useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import InviteDialog from '@/components/room/InviteDialog.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { OnlineEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 
@@ -223,11 +227,12 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const groupStore = useGroupStore()
 
 const loading = ref(false)
 const roomDetail = ref<RoomDetail | null>(null)
+const showInviteDialog = ref(false)
 
 const truncateId = (id: string) => {
   if (id.length <= 20) return id
@@ -238,7 +243,7 @@ const copyRoomId = async () => {
   if (!props.roomId) return
   const { copy } = useClipboard()
   await copy(props.roomId)
-  message.success(t('room.detail.id_copied'))
+  showFeedback(t('room.detail.id_copied'), 'success')
 }
 
 const handleAvatarClick = () => {
@@ -254,7 +259,7 @@ const openRoomSettings = () => {
 }
 
 const openInviteMember = () => {
-  emit('invite')
+  showInviteDialog.value = true
 }
 
 const buildRoomDetail = async (): Promise<RoomDetail | null> => {
@@ -269,7 +274,8 @@ const buildRoomDetail = async (): Promise<RoomDetail | null> => {
     try {
       const members = await groupStore.getMembersByRoomId(props.roomId)
       memberCount = Math.max(memberCount, members?.length || 0)
-      onlineCount = members?.filter((m) => (m as unknown as Record<string, unknown>).activeStatus).length || 0
+      onlineCount =
+        members?.filter((m) => (m as unknown as Record<string, unknown>).activeStatus === OnlineEnum.ONLINE).length || 0
     } catch {
       // member retrieval is best-effort
     }

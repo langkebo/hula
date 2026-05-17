@@ -3,13 +3,25 @@
     class="workbench-detail-pane border-l border-[--hula-border-default]"
     :class="{
       'workbench-detail-pane--compact': compact,
-      'workbench-detail-pane--narrow': narrow
+      'workbench-detail-pane--narrow': narrow,
+      'workbench-detail-pane--drawer': drawerMode,
+      'workbench-detail-pane--drawer-open': drawerMode && drawerVisible
     }">
     <div class="workbench-detail-pane__header">
       <n-flex :size="4" align="center" class="flex-1 min-w-0">
         <span class="text-13px font-600 truncate">{{ paneTitle }}</span>
       </n-flex>
-      <template v-if="overlayMode">
+      <template v-if="drawerMode && !overlayMode && !computedManageMode">
+        <WorkbenchPaneTabs v-model="activeTab" :tabs="visibleTabs" />
+        <button
+          type="button"
+          class="detail-members__toggle"
+          data-test="detail-close-drawer"
+          @click="emit('closeDrawer')">
+          {{ t('common.close') }}
+        </button>
+      </template>
+      <template v-else-if="overlayMode">
         <button type="button" class="detail-members__toggle" @click="emit('closeOverlay')">
           {{ t('common.close') }}
         </button>
@@ -61,250 +73,325 @@
         @close="emit('closeOverlay')" />
 
       <template v-else>
-        <section
-          v-if="computedManageMode && activeSpace"
-          class="detail-card detail-card--manage"
-          data-test="detail-manage-card">
-          <div class="detail-card__title">{{ manageCardTitle }}</div>
-          <p class="detail-card__hint">{{ activeSpace.name }}</p>
+        <div v-if="showManageMode" class="detail-mode-view" data-test="detail-mode-manage">
+          <section v-if="activeSpace" class="detail-card detail-card--manage" data-test="detail-manage-card">
+            <div class="detail-card__title">{{ manageCardTitle }}</div>
+            <p class="detail-card__hint">{{ activeSpace.name }}</p>
 
-          <n-form label-placement="top" :show-feedback="false" class="detail-manage-form">
-            <n-form-item v-if="computedManageMode === 'invite'" :label="t('space.invite')">
-              <n-input
-                :value="computedInviteUserId"
-                :placeholder="t('space.invite_user_placeholder')"
-                @update:value="emit('update:inviteUserId', $event)" />
-            </n-form-item>
-
-            <template v-else-if="computedManageMode === 'add-room'">
-              <n-form-item :label="t('space.add_room')">
+            <n-form label-placement="top" :show-feedback="false" class="detail-manage-form">
+              <n-form-item v-if="computedManageMode === 'invite'" :label="t('space.invite')">
                 <n-input
-                  :value="computedAddRoomId"
-                  :placeholder="t('space.add_room_placeholder')"
-                  @update:value="emit('update:addRoomId', $event)" />
+                  :value="computedInviteUserId"
+                  :placeholder="t('space.invite_user_placeholder')"
+                  @update:value="emit('update:inviteUserId', $event)" />
               </n-form-item>
-              <n-checkbox :checked="computedAddRoomSuggested" @update:checked="emit('update:addRoomSuggested', $event)">
-                {{ t('space.add_room_suggested') }}
-              </n-checkbox>
-            </template>
 
-            <template v-else-if="computedManageMode === 'settings'">
-              <n-form-item :label="t('space.name')">
-                <n-input
-                  :value="computedSettingsName"
-                  :placeholder="t('space.name_placeholder')"
-                  @update:value="emit('update:settingsName', $event)" />
-              </n-form-item>
-              <n-form-item :label="t('space.topic')">
-                <n-input
-                  :value="computedSettingsTopic"
-                  type="textarea"
-                  :rows="3"
-                  :placeholder="t('space.topic_placeholder')"
-                  @update:value="emit('update:settingsTopic', $event)" />
-              </n-form-item>
-            </template>
-          </n-form>
+              <template v-else-if="computedManageMode === 'add-room'">
+                <n-form-item :label="t('space.add_room')">
+                  <n-input
+                    :value="computedAddRoomId"
+                    :placeholder="t('space.add_room_placeholder')"
+                    @update:value="emit('update:addRoomId', $event)" />
+                </n-form-item>
+                <n-checkbox
+                  :checked="computedAddRoomSuggested"
+                  @update:checked="emit('update:addRoomSuggested', $event)">
+                  {{ t('space.add_room_suggested') }}
+                </n-checkbox>
+              </template>
 
-          <n-flex justify="flex-end" :size="12" class="detail-manage-actions">
-            <n-button @click="emit('closeManagePane')">{{ t('common.cancel') }}</n-button>
-            <n-button
-              type="primary"
-              :loading="computedManageSubmitting"
-              :disabled="!computedCanManageSpace"
-              @click="emit('submitManagePane')">
-              {{ t('common.confirm') }}
-            </n-button>
-          </n-flex>
-        </section>
+              <template v-else-if="computedManageMode === 'settings'">
+                <n-form-item :label="t('space.name')">
+                  <n-input
+                    :value="computedSettingsName"
+                    :placeholder="t('space.name_placeholder')"
+                    @update:value="emit('update:settingsName', $event)" />
+                </n-form-item>
+                <n-form-item :label="t('space.topic')">
+                  <n-input
+                    :value="computedSettingsTopic"
+                    type="textarea"
+                    :rows="3"
+                    :placeholder="t('space.topic_placeholder')"
+                    @update:value="emit('update:settingsTopic', $event)" />
+                </n-form-item>
+              </template>
+            </n-form>
 
-        <section v-if="showSummaryTab && selectedSession" class="detail-card" data-test="detail-session-card">
-          <div class="detail-card__title">{{ t('space.detail_session') }}</div>
-          <div class="detail-session">
-            <img
-              class="detail-session__avatar"
-              :src="AvatarUtils.getAvatarUrl(selectedSession.avatar)"
-              :alt="selectedSession.name || t('space.detail_session')" />
-            <div class="min-w-0 flex-1">
-              <div class="detail-session__name">{{ selectedSession.name }}</div>
-              <div class="detail-session__type">
-                {{
-                  selectedSession.type === RoomTypeEnum.GROUP
-                    ? t('space.detail_type_group')
-                    : t('space.detail_type_single')
-                }}
-              </div>
-            </div>
-          </div>
+            <n-flex justify="flex-end" :size="12" class="detail-manage-actions">
+              <n-button @click="emit('closeManagePane')">{{ t('common.cancel') }}</n-button>
+              <n-button
+                type="primary"
+                :loading="computedManageSubmitting"
+                :disabled="!computedCanManageSpace"
+                @click="emit('submitManagePane')">
+                {{ t('common.confirm') }}
+              </n-button>
+            </n-flex>
+          </section>
+        </div>
 
-          <dl class="detail-meta">
-            <div class="detail-meta__row">
-              <dt>{{ t('space.detail_last_active') }}</dt>
-              <dd>{{ selectedSession.lastMsgTime || '-' }}</dd>
-            </div>
-            <div class="detail-meta__row">
-              <dt>{{ t('space.detail_unread') }}</dt>
-              <dd>{{ selectedSession.unreadCount ?? 0 }}</dd>
-            </div>
-            <div class="detail-meta__row">
-              <dt>{{ t('space.detail_last_message') }}</dt>
-              <dd class="detail-meta__message">{{ selectedSession.lastMsg || '-' }}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section
-          v-if="showSummaryTab && !selectedSession"
-          class="detail-card detail-card--empty"
-          data-test="detail-session-empty">
-          <div class="detail-card__title">{{ t('space.detail_session') }}</div>
-          <div class="detail-empty__title">{{ t('space.details_empty_title') }}</div>
-          <p class="detail-empty__description">{{ t('space.details_empty_description') }}</p>
-        </section>
-
-        <section v-if="showSummaryTab" class="detail-card" data-test="detail-space-card">
-          <div class="detail-card__title">{{ t('space.detail_space') }}</div>
-          <dl class="detail-meta">
-            <div class="detail-meta__row">
-              <dt>{{ t('space.detail_scope') }}</dt>
-              <dd>{{ activeSpace ? activeSpace.name : t('space.detail_scope_all') }}</dd>
-            </div>
-            <div class="detail-meta__row">
-              <dt>{{ t('space.topic') }}</dt>
-              <dd class="detail-meta__text">
-                {{ activeSpace?.topic || t('space.detail_space_topic_empty') }}
-              </dd>
-            </div>
-            <div class="detail-meta__row">
-              <dt>{{ t('space.members') }}</dt>
-              <dd>{{ activeSpace?.memberCount ?? '-' }}</dd>
-            </div>
-            <div class="detail-meta__row">
-              <dt>{{ t('space.rooms') }}</dt>
-              <dd>{{ activeSpace?.childCount ?? '-' }}</dd>
-            </div>
-            <div class="detail-meta__row">
-              <dt>{{ t('space.detail_visible_sessions') }}</dt>
-              <dd>{{ visibleSessionCount }}</dd>
-            </div>
-            <div class="detail-meta__row">
-              <dt>{{ t('space.detail_total_sessions') }}</dt>
-              <dd>{{ totalSessionCount }}</dd>
-            </div>
-          </dl>
-
-          <div v-if="activeSpace" class="detail-members">
-            <div class="detail-members__title">{{ t('space.detail_space_rooms_preview') }}</div>
-
-            <div v-if="spaceRoomsPreview.length" class="detail-members__grid">
-              <div v-for="room in spaceRoomsPreview" :key="room.roomId" class="detail-member">
-                <img
-                  class="detail-space-room__avatar"
-                  :src="AvatarUtils.getAvatarUrl(room.avatarUrl || '')"
-                  :alt="room.name || room.roomId" />
-                <span class="detail-member__name">
-                  {{ room.name || room.roomId }}
-                </span>
-              </div>
-            </div>
-            <div v-else-if="spaceRoomsLoadFailed" class="detail-announcement-state">
-              <span class="detail-card__hint">{{ t('space.detail_space_rooms_load_failed') }}</span>
-              <button type="button" class="detail-announcement__retry" @click="handleRetrySpaceRooms">
-                {{ t('common.retry') }}
-              </button>
-            </div>
-            <p v-else-if="spaceRoomsReady" class="detail-card__hint">{{ t('space.detail_space_rooms_empty') }}</p>
-          </div>
-        </section>
-
-        <section v-if="showActivityTab && showGroupInsights" class="detail-card" data-test="detail-group-card">
-          <div class="detail-card__title">{{ t('space.detail_group') }}</div>
-
-          <dl class="detail-meta">
-            <div class="detail-meta__row">
-              <dt>{{ t('space.detail_members_count') }}</dt>
-              <dd>{{ groupMemberCount }}</dd>
-            </div>
-            <div class="detail-meta__row">
-              <dt>{{ t('space.detail_online_members') }}</dt>
-              <dd>{{ groupOnlineCount }}</dd>
-            </div>
-            <div class="detail-meta__row">
-              <dt>{{ t('space.detail_announcement') }}</dt>
-              <dd>
-                <div v-if="announcementLoadFailed" class="detail-announcement-state">
-                  <span class="detail-card__hint">{{ t('space.detail_announcement_load_failed') }}</span>
-                  <button type="button" class="detail-announcement__retry" @click="handleRetryAnnouncement">
-                    {{ t('common.retry') }}
-                  </button>
+        <div v-else-if="showSummaryMode" class="detail-mode-view" data-test="detail-mode-summary">
+          <section v-if="selectedSession" class="detail-card" data-test="detail-session-card">
+            <div class="detail-card__title">{{ t('space.detail_session') }}</div>
+            <div class="detail-session">
+              <img
+                class="detail-session__avatar"
+                :src="AvatarUtils.getAvatarUrl(selectedSession.avatar)"
+                :alt="selectedSession.name || t('space.detail_session')" />
+              <div class="min-w-0 flex-1">
+                <div class="detail-session__name">{{ selectedSession.name }}</div>
+                <div class="detail-session__type">
+                  {{
+                    selectedSession.type === RoomTypeEnum.GROUP
+                      ? t('space.detail_type_group')
+                      : t('space.detail_type_single')
+                  }}
                 </div>
-                <div v-else-if="announcementSegments.length" class="detail-announcement">
-                  <template
-                    v-for="(segment, index) in announcementSegments"
-                    :key="`ann-seg-${selectedSession?.roomId ?? 'none'}-${index}`">
-                    <button
-                      v-if="segment.isLink"
-                      type="button"
-                      class="detail-announcement__link"
-                      @click="openAnnouncementLink(segment.text)">
-                      {{ segment.text }}
+              </div>
+            </div>
+
+            <dl class="detail-meta">
+              <div class="detail-meta__row">
+                <dt>{{ t('space.detail_last_active') }}</dt>
+                <dd>{{ selectedSession.lastMsgTime || '-' }}</dd>
+              </div>
+              <div class="detail-meta__row">
+                <dt>{{ t('space.detail_unread') }}</dt>
+                <dd>{{ selectedSession.unreadCount ?? 0 }}</dd>
+              </div>
+              <div class="detail-meta__row">
+                <dt>{{ t('space.detail_last_message') }}</dt>
+                <dd class="detail-meta__message">{{ selectedSession.lastMsg || '-' }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section v-else class="detail-card detail-card--empty" data-test="detail-session-empty">
+            <div class="detail-card__title">{{ t('space.detail_session') }}</div>
+            <div class="detail-empty__title">{{ t('space.details_empty_title') }}</div>
+            <p class="detail-empty__description">{{ t('space.details_empty_description') }}</p>
+          </section>
+
+          <section class="detail-card" data-test="detail-space-card">
+            <div class="detail-card__title">{{ t('space.detail_space') }}</div>
+            <dl class="detail-meta">
+              <div class="detail-meta__row">
+                <dt>{{ t('space.detail_scope') }}</dt>
+                <dd>{{ activeSpace ? activeSpace.name : t('space.detail_scope_all') }}</dd>
+              </div>
+              <div class="detail-meta__row">
+                <dt>{{ t('space.topic') }}</dt>
+                <dd class="detail-meta__text">
+                  {{ activeSpace?.topic || t('space.detail_space_topic_empty') }}
+                </dd>
+              </div>
+              <div class="detail-meta__row">
+                <dt>{{ t('space.members') }}</dt>
+                <dd>{{ activeSpace?.memberCount ?? '-' }}</dd>
+              </div>
+              <div class="detail-meta__row">
+                <dt>{{ t('space.rooms') }}</dt>
+                <dd>{{ activeSpace?.childCount ?? '-' }}</dd>
+              </div>
+              <div class="detail-meta__row">
+                <dt>{{ t('space.detail_visible_sessions') }}</dt>
+                <dd>{{ visibleSessionCount }}</dd>
+              </div>
+              <div class="detail-meta__row">
+                <dt>{{ t('space.detail_total_sessions') }}</dt>
+                <dd>{{ totalSessionCount }}</dd>
+              </div>
+            </dl>
+
+            <div v-if="activeSpace" class="detail-members">
+              <div class="detail-members__title">{{ t('space.detail_space_rooms_preview') }}</div>
+
+              <div v-if="spaceRoomsPreview.length" class="detail-members__grid">
+                <div v-for="room in spaceRoomsPreview" :key="room.roomId" class="detail-member">
+                  <img
+                    class="detail-space-room__avatar"
+                    :src="AvatarUtils.getAvatarUrl(room.avatarUrl || '')"
+                    :alt="room.name || room.roomId" />
+                  <span class="detail-member__name">
+                    {{ room.name || room.roomId }}
+                  </span>
+                </div>
+              </div>
+              <div v-else-if="spaceRoomsLoadFailed" class="detail-announcement-state">
+                <span class="detail-card__hint">{{ t('space.detail_space_rooms_load_failed') }}</span>
+                <button type="button" class="detail-announcement__retry" @click="handleRetrySpaceRooms">
+                  {{ t('common.retry') }}
+                </button>
+              </div>
+              <p v-else-if="spaceRoomsReady" class="detail-card__hint">{{ t('space.detail_space_rooms_empty') }}</p>
+            </div>
+          </section>
+        </div>
+
+        <div v-else-if="showActivityMode" class="detail-mode-view" data-test="detail-mode-activity">
+          <section v-if="showGroupInsights" class="detail-card" data-test="detail-group-card">
+            <div class="detail-card__title">{{ t('space.detail_group') }}</div>
+
+            <dl class="detail-meta">
+              <div class="detail-meta__row">
+                <dt>{{ t('space.detail_members_count') }}</dt>
+                <dd>{{ groupMemberCount }}</dd>
+              </div>
+              <div class="detail-meta__row">
+                <dt>{{ t('space.detail_online_members') }}</dt>
+                <dd>{{ groupOnlineCount }}</dd>
+              </div>
+              <div class="detail-meta__row">
+                <dt>{{ t('space.detail_announcement') }}</dt>
+                <dd>
+                  <div v-if="announcementLoadFailed" class="detail-announcement-state">
+                    <span class="detail-card__hint">{{ t('space.detail_announcement_load_failed') }}</span>
+                    <button type="button" class="detail-announcement__retry" @click="handleRetryAnnouncement">
+                      {{ t('common.retry') }}
                     </button>
-                    <span v-else>{{ segment.text }}</span>
-                  </template>
-                </div>
-                <span v-else class="detail-card__hint">{{ t('space.detail_announcement_empty') }}</span>
+                  </div>
+                  <div v-else-if="announcementSegments.length" class="detail-announcement">
+                    <template
+                      v-for="(segment, index) in announcementSegments"
+                      :key="`ann-seg-${selectedSession?.roomId ?? 'none'}-${index}`">
+                      <button
+                        v-if="segment.isLink"
+                        type="button"
+                        class="detail-announcement__link"
+                        @click="openAnnouncementLink(segment.text)">
+                        {{ segment.text }}
+                      </button>
+                      <span v-else>{{ segment.text }}</span>
+                    </template>
+                  </div>
+                  <span v-else class="detail-card__hint">{{ t('space.detail_announcement_empty') }}</span>
 
-                <div v-if="groupRoomId" class="detail-announcement__actions">
-                  <button type="button" class="detail-members__toggle" @click="handleOpenAnnouncement(false)">
-                    {{ t('space.detail_view_all_announcements') }}
-                  </button>
-                  <button
-                    v-if="canEditAnnouncement"
-                    type="button"
-                    class="detail-members__toggle"
-                    @click="handleOpenAnnouncement(true)">
-                    {{ t('space.detail_edit_announcement') }}
-                  </button>
-                </div>
-              </dd>
+                  <div v-if="groupRoomId" class="detail-announcement__actions">
+                    <button type="button" class="detail-members__toggle" @click="handleOpenAnnouncement()">
+                      {{ t('space.detail_view_all_announcements') }}
+                    </button>
+                    <button
+                      v-if="canEditAnnouncement"
+                      type="button"
+                      class="detail-members__toggle"
+                      @click="handleOpenAnnouncement()">
+                      {{ t('space.detail_edit_announcement') }}
+                    </button>
+                  </div>
+                </dd>
+              </div>
+            </dl>
+
+            <div class="detail-members">
+              <div class="detail-members__title">{{ t('space.detail_members_preview') }}</div>
+
+              <div v-if="groupMembersPreview.length" class="detail-members__grid">
+                <button
+                  v-for="member in groupMembersPreview"
+                  :key="member.userId"
+                  type="button"
+                  class="detail-member"
+                  @click="handleMemberClick(member)">
+                  <img
+                    class="detail-member__avatar"
+                    :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '')"
+                    :alt="member.displayName || member.name || member.userId" />
+                  <span class="detail-member__name">
+                    {{ member.displayName || member.name || member.userId }}
+                  </span>
+                </button>
+              </div>
+              <div v-if="groupMembersPreview.length" class="detail-members__actions">
+                <button
+                  v-if="hasExpandableMembers"
+                  type="button"
+                  class="detail-members__toggle detail-members__expand-toggle"
+                  @click="showAllMembers = !showAllMembers">
+                  {{ showAllMembers ? t('space.detail_members_collapse') : t('space.detail_members_expand') }}
+                </button>
+                <button
+                  type="button"
+                  class="detail-members__toggle detail-members__directory-toggle"
+                  @click="openMembersMode(true)">
+                  {{ t('space.detail_members_view_all') }}
+                </button>
+              </div>
+              <div v-else-if="memberLoadFailed" class="detail-announcement-state">
+                <span class="detail-card__hint">{{ t('space.detail_members_load_failed') }}</span>
+                <button type="button" class="detail-announcement__retry" @click="handleRetryMembers">
+                  {{ t('common.retry') }}
+                </button>
+              </div>
+              <p v-else class="detail-card__hint">{{ t('space.detail_members_empty') }}</p>
             </div>
-          </dl>
+          </section>
+        </div>
 
-          <div class="detail-members">
-            <div class="detail-members__title">{{ t('space.detail_members_preview') }}</div>
-
-            <div v-if="groupMembersPreview.length" class="detail-members__grid">
+        <div v-else-if="showMembersMode" class="detail-mode-view" data-test="detail-mode-members">
+          <section class="detail-card" data-test="detail-members-tab">
+            <div class="detail-card__title detail-card__title--row">
+              <span>{{ t('space.detail_tab_members') }}</span>
               <button
-                v-for="member in groupMembersPreview"
-                :key="member.userId"
-                type="button"
-                class="detail-member"
-                @click="handleMemberClick(member)">
-                <img
-                  class="detail-member__avatar"
-                  :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '')"
-                  :alt="member.displayName || member.name || member.userId" />
-                <span class="detail-member__name">
-                  {{ member.displayName || member.name || member.userId }}
-                </span>
-              </button>
-            </div>
-            <div v-if="groupMembersPreview.length" class="detail-members__actions">
-              <button
-                v-if="hasExpandableMembers"
-                type="button"
-                class="detail-members__toggle detail-members__expand-toggle"
-                @click="showAllMembers = !showAllMembers">
-                {{ showAllMembers ? t('space.detail_members_collapse') : t('space.detail_members_expand') }}
-              </button>
-              <button
+                v-if="detailMembers.length && !showMemberDirectory"
                 type="button"
                 class="detail-members__toggle detail-members__directory-toggle"
-                @click="showMemberDirectory = !showMemberDirectory">
-                {{
-                  showMemberDirectory ? t('space.detail_members_hide_directory') : t('space.detail_members_view_all')
-                }}
+                @click="showMemberDirectory = true">
+                {{ t('space.detail_members_view_all') }}
               </button>
+            </div>
+
+            <div v-if="detailMembers.length" class="detail-members">
+              <div v-if="showMemberDirectory" class="detail-members__directory">
+                <MemberList
+                  :members="
+                    detailMembers.map((m) => ({
+                      userId: m.userId,
+                      displayName: m.displayName ?? undefined,
+                      avatarUrl: m.avatarUrl ?? undefined,
+                      powerLevel: m.powerLevel,
+                      membership: m.membership
+                    }))
+                  "
+                  @member-click="
+                    (member) => {
+                      const fullMember = detailMembers.find((m) => m.userId === member.userId)
+                      if (fullMember) handleMemberClick(fullMember)
+                    }
+                  " />
+              </div>
+              <div v-else class="detail-members__grid">
+                <button
+                  v-for="member in groupMembersPreview"
+                  :key="member.userId"
+                  type="button"
+                  class="detail-member"
+                  @click="handleMemberClick(member)">
+                  <img
+                    class="detail-member__avatar"
+                    :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '')"
+                    :alt="member.displayName || member.name || member.userId" />
+                  <span class="detail-member__name">
+                    {{ member.displayName || member.name || member.userId }}
+                  </span>
+                </button>
+              </div>
+              <div class="detail-members__actions">
+                <button
+                  v-if="hasExpandableMembers && !showMemberDirectory"
+                  type="button"
+                  class="detail-members__toggle detail-members__expand-toggle"
+                  @click="showAllMembers = !showAllMembers">
+                  {{ showAllMembers ? t('space.detail_members_collapse') : t('space.detail_members_expand') }}
+                </button>
+                <button
+                  v-if="showMemberDirectory"
+                  type="button"
+                  class="detail-members__toggle detail-members__directory-toggle"
+                  @click="showMemberDirectory = false">
+                  {{ t('space.detail_members_hide_directory') }}
+                </button>
+              </div>
             </div>
             <div v-else-if="memberLoadFailed" class="detail-announcement-state">
               <span class="detail-card__hint">{{ t('space.detail_members_load_failed') }}</span>
@@ -313,68 +400,20 @@
               </button>
             </div>
             <p v-else class="detail-card__hint">{{ t('space.detail_members_empty') }}</p>
+          </section>
 
-            <div v-if="showMemberDirectory && detailMembers.length" class="detail-members__directory">
-              <MemberList
-                :members="
-                  detailMembers.map((m) => ({
-                    userId: m.userId,
-                    displayName: m.displayName ?? undefined,
-                    avatarUrl: m.avatarUrl ?? undefined,
-                    powerLevel: m.powerLevel,
-                    membership: m.membership
-                  }))
-                "
-                @member-click="
-                  (member) => {
-                    const fullMember = detailMembers.find((m) => m.userId === member.userId)
-                    if (fullMember) handleMemberClick(fullMember)
-                  }
-                " />
+          <section v-if="selectedMemberUid" class="detail-card" data-test="detail-member-profile-card">
+            <div class="detail-card__title detail-card__title--row">
+              <span>{{ t('space.detail_member_profile') }}</span>
+              <button type="button" class="detail-members__toggle" @click="clearSelectedMember">
+                {{ t('common.close') }}
+              </button>
             </div>
-          </div>
-        </section>
-
-        <section v-if="selectedMemberUid" class="detail-card" data-test="detail-member-profile-card">
-          <div class="detail-card__title detail-card__title--row">
-            <span>{{ t('space.detail_member_profile') }}</span>
-            <button type="button" class="detail-members__toggle" @click="clearSelectedMember">
-              {{ t('common.close') }}
-            </button>
-          </div>
-          <div class="detail-member-profile">
-            <InfoPopover :uid="selectedMemberUid" :activeStatus="selectedMemberActiveStatus" />
-          </div>
-        </section>
-
-        <section v-if="showMembersTab" class="detail-card" data-test="detail-members-tab">
-          <div class="detail-card__title">{{ t('space.detail_tab_members') }}</div>
-          <div v-if="detailMembers.length" class="detail-members">
-            <MemberList
-              :members="
-                detailMembers.map((m) => ({
-                  userId: m.userId,
-                  displayName: m.displayName ?? undefined,
-                  avatarUrl: m.avatarUrl ?? undefined,
-                  powerLevel: m.powerLevel,
-                  membership: m.membership
-                }))
-              "
-              @member-click="
-                (member) => {
-                  const fullMember = detailMembers.find((m) => m.userId === member.userId)
-                  if (fullMember) handleMemberClick(fullMember)
-                }
-              " />
-          </div>
-          <div v-else-if="memberLoadFailed" class="detail-announcement-state">
-            <span class="detail-card__hint">{{ t('space.detail_members_load_failed') }}</span>
-            <button type="button" class="detail-announcement__retry" @click="handleRetryMembers">
-              {{ t('common.retry') }}
-            </button>
-          </div>
-          <p v-else class="detail-card__hint">{{ t('space.detail_members_empty') }}</p>
-        </section>
+            <div class="detail-member-profile">
+              <InfoPopover :uid="selectedMemberUid" :activeStatus="selectedMemberActiveStatus" />
+            </div>
+          </section>
+        </div>
       </template>
     </div>
   </aside>
@@ -393,9 +432,9 @@ import WorkbenchPaneTabs from '@/components/workbench/WorkbenchPaneTabs.vue'
 import WorkbenchQuickCreate from '@/components/workbench/WorkbenchQuickCreate.vue'
 import WorkbenchSearchPane from '@/components/workbench/WorkbenchSearchPane.vue'
 import { type SpaceChildRoom, useSpaceRooms } from '@/composables/space/useSpaceRooms'
-import { OnlineEnum, RoomTypeEnum } from '@/enums'
+import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
 import { useLinkSegments } from '@/hooks/useLinkSegments'
-import { createWebviewWindow } from '@/hooks/useWindow'
+import { useMitt } from '@/hooks/useMitt'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { type MatrixGroupInfo, type MatrixRoomMember, useGroupStore } from '@/stores/domains/chat/group'
@@ -425,6 +464,8 @@ const props = defineProps<{
   totalSessionCount: number
   compact?: boolean
   narrow?: boolean
+  drawerMode?: boolean
+  drawerVisible?: boolean
   manageMode?: SpaceManageMode | null
   canManageSpace?: boolean
   manageSubmitting?: boolean
@@ -448,6 +489,7 @@ const emit = defineEmits<{
   'update:addRoomSuggested': [value: boolean]
   'update:settingsName': [value: string]
   'update:settingsTopic': [value: string]
+  closeDrawer: []
   closeOverlay: []
   overlayCreated: [data: { roomId?: string; space?: unknown }]
   overlayForwarded: [roomIds: string[]]
@@ -460,12 +502,13 @@ const { t } = useI18n()
 const groupStore = useGroupStore()
 const announcementStore = useAnnouncementStore()
 
-type DetailTabKey = 'summary' | 'members' | 'activity'
+type DetailBrowseMode = 'summary' | 'members' | 'activity'
+type DetailPaneMode = DetailBrowseMode | 'manage'
 
-const activeTab = ref<DetailTabKey>('summary')
+const activeTab = ref<DetailBrowseMode>('summary')
 
 const visibleTabs = computed(() => {
-  const tabs: PaneTab<DetailTabKey>[] = [
+  const tabs: PaneTab<DetailBrowseMode>[] = [
     { key: 'summary', label: t('space.detail_tab_summary') },
     { key: 'members', label: t('space.detail_tab_members') }
   ]
@@ -475,9 +518,6 @@ const visibleTabs = computed(() => {
   return tabs
 })
 
-const showSummaryTab = computed(() => activeTab.value === 'summary')
-const showMembersTab = computed(() => activeTab.value === 'members')
-const showActivityTab = computed(() => activeTab.value === 'activity')
 const detailGroupInfo = ref<MatrixGroupInfo | null>(null)
 const detailMembers = ref<MatrixRoomMember[]>([])
 const announcementPreview = ref('')
@@ -525,6 +565,16 @@ const computedAddRoomId = computed(() => props.addRoomId ?? '')
 const computedAddRoomSuggested = computed(() => Boolean(props.addRoomSuggested))
 const computedSettingsName = computed(() => props.settingsName ?? '')
 const computedSettingsTopic = computed(() => props.settingsTopic ?? '')
+const currentPaneMode = computed<DetailPaneMode>(() => {
+  if (computedManageMode.value) {
+    return 'manage'
+  }
+  return activeTab.value
+})
+const showSummaryMode = computed(() => currentPaneMode.value === 'summary')
+const showMembersMode = computed(() => currentPaneMode.value === 'members')
+const showActivityMode = computed(() => currentPaneMode.value === 'activity')
+const showManageMode = computed(() => currentPaneMode.value === 'manage')
 const manageCardTitle = computed(() => {
   switch (computedManageMode.value) {
     case 'invite':
@@ -594,18 +644,13 @@ const handleRetrySpaceRooms = async () => {
   }
 }
 
-const handleOpenAnnouncement = async (isEdit: boolean) => {
+const handleOpenAnnouncement = () => {
   const roomId = groupRoomId.value
   if (!roomId) {
     return
   }
 
-  await createWebviewWindow(
-    isEdit ? t('space.detail_edit_announcement_window') : t('space.detail_view_all_announcements_window'),
-    `announList/${roomId}/${isEdit ? 0 : 1}`,
-    420,
-    620
-  )
+  useMitt.emit(MittEnum.OPEN_ANNOUNCEMENT_PANEL, { roomId })
 }
 
 const handleMemberClick = (member: MatrixRoomMember) => {
@@ -616,6 +661,12 @@ const handleMemberClick = (member: MatrixRoomMember) => {
 
   selectedMemberUid.value = uid
   selectedMemberActiveStatus.value = member.activeStatus
+  activeTab.value = 'members'
+}
+
+const openMembersMode = (showDirectory: boolean = false) => {
+  activeTab.value = 'members'
+  showMemberDirectory.value = showDirectory
 }
 
 const clearSelectedMember = () => {
@@ -668,6 +719,16 @@ const handleRetryMembers = async () => {
     }
   }
 }
+
+watch(
+  () => props.selectedSession?.roomId,
+  () => {
+    activeTab.value = 'summary'
+    showAllMembers.value = false
+    showMemberDirectory.value = false
+    clearSelectedMember()
+  }
+)
 
 watch(
   activeSpaceId,
@@ -760,6 +821,29 @@ watch(
 .workbench-detail-pane--narrow {
   width: 240px;
   min-width: 240px;
+}
+
+.workbench-detail-pane--drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: min(360px, calc(100% - 48px));
+  min-width: min(360px, calc(100% - 48px));
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: -12px 0 32px color-mix(in srgb, var(--hula-text-primary) 16%, transparent);
+  transition:
+    transform 0.24s ease,
+    opacity 0.24s ease;
+}
+
+.workbench-detail-pane--drawer-open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .workbench-detail-pane__header {

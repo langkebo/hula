@@ -21,6 +21,22 @@
   - 前端任务拆分表
   - 以后端合同、联调顺序和能力边界为核心拆分阶段任务、依赖关系和验收路径
 
+- `UI_ALIGNMENT_OPEN_TASKS_2026-05-15.md`
+  - UI 未完成任务清单与交叉核验报告
+  - 汇总当前已完成基线、文档明确未闭环项、代码核验缺口与去重后的优先级任务总表
+
+- `UI_ALIGNMENT_REGRESSION_MATRIX_2026-05-16.md`
+  - 四条主链路回归矩阵
+  - 统一记录入口、步骤、预期结果与 Storybook / 测试证据
+
+- `UI_ALIGNMENT_ACCEPTANCE_CHECKLIST_2026-05-16.md`
+  - 发布前 UI 验收检查表
+  - 覆盖工作台、空间树、房间列表、消息元信息、好友域和文档资产
+
+- `UI_ALIGNMENT_ASSET_INDEX_2026-05-16.md`
+  - 截图 / 录屏索引与命名规范
+  - 先登记 Storybook / 测试锚点，再逐步补齐实录资产
+
 ## matrix-js-sdk 对齐范围
 
 本轮文档已额外对齐 `/Users/ljf/Desktop/hu_ts/matrix-js-sdk` 中与 UI 直接相关的接口层，重点包括：
@@ -38,6 +54,10 @@
 2. 再阅读 `HULA_COMPONENT_REFACTOR_CHECKLIST.md`
 3. 设计侧同步阅读 `HULA_FIGMA_STRUCTURE.md`
 4. 开发、联调和 QA 执行 `HULA_FRONTEND_WORKBREAKDOWN.md`
+5. 迭代收口与排期整理参考 `UI_ALIGNMENT_OPEN_TASKS_2026-05-15.md`
+6. 回归验证参考 `UI_ALIGNMENT_REGRESSION_MATRIX_2026-05-16.md`
+7. 发布验收参考 `UI_ALIGNMENT_ACCEPTANCE_CHECKLIST_2026-05-16.md`
+8. 资产补录参考 `UI_ALIGNMENT_ASSET_INDEX_2026-05-16.md`
 
 ## 这套文档解决的问题
 
@@ -116,3 +136,4 @@
 - 设计评审时，优先核对文档中的字段来源和状态定义
 - 前端实现时，优先按“后端字段 -> 组件状态 -> 视觉 token”的顺序落地
 - 联调时，优先验证房间列表、空间树分页、好友接受跳转、能力降级四类主链路
+- 收尾排期时，优先以 `UI_ALIGNMENT_OPEN_TASKS_2026-05-15.md` 作为未完成项与验收缺口清单

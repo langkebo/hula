@@ -75,6 +75,7 @@
   },
   "message_list": {
     "sync_loading": "正在同步消息",
+    "sync_complete": "消息同步完成",
     "official_popover": "官方群聊认证",
     "bot_popover": "HuLa助手",
     "mention_tag": "[有人@我]",
@@ -101,7 +102,11 @@
     "dissolve_group_success": "已解散群聊",
     "quit_group_success": "已退出群聊",
     "notification_allowed": "已允许消息提醒",
-    "notification_silent": "已设置接收消息但不提醒"
+    "notification_silent": "已设置接收消息但不提醒",
+    "set_low_priority_success": "已设为低优先级",
+    "remove_low_priority_success": "已取消低优先级",
+    "set_low_priority_fail": "设置低优先级失败",
+    "remove_low_priority_fail": "取消低优先级失败"
   },
   "image_viewer": {
     "zoom_out": "缩小",

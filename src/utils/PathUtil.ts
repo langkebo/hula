@@ -1,6 +1,7 @@
 import { appCacheDir, appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory, exists, mkdir, readFile, writeFile } from '@tauri-apps/plugin-fs'
 import { type FileTypeResult, fileTypeFromBuffer } from 'file-type'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { FilesMeta } from '@/services/types'
 import { createLogger } from '@/utils/Logger'
 import { invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
@@ -316,6 +317,7 @@ export async function detectRemoteFileType(options: {
   byteLength?: number
 }): Promise<FileTypeResult | undefined> {
   const { url } = options
+  const { showFeedback } = useActionFeedback()
   if (!/^https?:\/\//i.test(url)) {
     return void 0
   }
@@ -335,7 +337,7 @@ export async function detectRemoteFileType(options: {
       const headResponse = await fetch(url, { method: 'HEAD' })
 
       if (!headResponse.ok) {
-        window.$message?.error('找不到文件')
+        showFeedback('找不到文件', 'error')
         throw new Error(`文件不存在, 状态: ${headResponse.status}`)
       }
 

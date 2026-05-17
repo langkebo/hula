@@ -1,0 +1,48 @@
+{
+  "webrtc": {
+    "no_device": "没有可用的设备!",
+    "get_stream_failed": "获取本地媒体流失败，请检查设备!",
+    "rtc_connection_failed": "RTC通讯连接失败!",
+    "get_devices_failed": "获取设备失败!",
+    "call_timeout": "通话无人接听，自动挂断",
+    "cleanup_failed": "部分资源清理失败!",
+    "room_not_found": "房间号不存在，请重新连接！",
+    "camera_failed": "无法开启摄像头"
+  },
+  "window": {
+    "create_failed": "窗口创建失败: {label}",
+    "modal_create_failed": "创建{title}窗口失败",
+    "session_not_ready": "当前会话尚未准备好",
+    "group_call_not_supported": "群聊暂不支持音视频通话",
+    "user_info_missing": "无法获取对方用户信息"
+  },
+  "download": {
+    "failed": "下载失败",
+    "read_failed": "无法读取响应内容"
+  },
+  "avatar_upload": {
+    "image_load_failed": "图片加载失败",
+    "size_exceeded": "图片大小不能超过{sizeLimit}KB，当前图片裁剪后大小为{currentSize}KB",
+    "format_not_supported": "只支持 JPG、PNG、WebP 格式的图片",
+    "upload_failed": "上传头像失败"
+  },
+  "upload": {
+    "credential_failed": "获取上传凭证失败，请重试",
+    "file_size_exceeded": "文件大小不能超过{max}MB",
+    "url_failed": "获取上传链接失败，请重试",
+    "upload_failed": "文件上传失败，请重试"
+  },
+  "session": {
+    "detail_failed": "获取会话详情失败",
+    "show_failed": "显示会话失败"
+  },
+  "msg_input": {
+    "file_size_exceeded": "文件大小不能超过500MB",
+    "upload_limit": "一次性只能上传{count}个文件或图片",
+    "type_not_supported": "暂不支持发送类型消息",
+    "file_send_failed": "{fileName} 发送失败"
+  },
+  "mention": {
+    "ai_coming_soon": "当前ai正在对接，敬请期待"
+  }
+}

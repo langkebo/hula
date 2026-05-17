@@ -1,4 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 export interface VoiceMessageConfig {
@@ -30,7 +31,7 @@ export interface ImageThumbnail {
   mimetype: string
 }
 
-class MatrixMultimediaService {
+class MatrixMultimediaService extends BaseMatrixService {
   private mediaRecorder: MediaRecorder | null = null
   private audioChunks: Blob[] = []
   private recordingStartTime: number = 0
@@ -78,7 +79,7 @@ class MatrixMultimediaService {
 
   async stopVoiceRecording(): Promise<{ blob: Blob; duration: number }> {
     if (!this.mediaRecorder) {
-      throw new Error('[Multimedia] 没有正在进行的录制')
+      throw new Error(this.t('matrix_error.media.no_active_recording'))
     }
 
     return new Promise((resolve, reject) => {
@@ -268,13 +269,13 @@ class MatrixMultimediaService {
   async downloadMedia(mxcUrl: string, filename: string): Promise<Blob> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[Multimedia] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
       const httpUrl = client.mxcUrlToHttp(mxcUrl)
       if (!httpUrl) {
-        throw new Error('[Multimedia] 无效的 MXC URL')
+        throw new Error(this.t('matrix_error.media.invalid_mxc_url'))
       }
 
       const response = await fetch(httpUrl)

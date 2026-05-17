@@ -23,7 +23,7 @@
                 </div>
 
                 <div
-                  class="flex flex-col text-#4e4e4e h-auto gap-8px overflow-hidden justify-center text-18px whitespace-normal break-words max-w-46">
+                  class="flex flex-col text-[--hula-text-secondary] h-auto gap-8px overflow-hidden justify-center text-18px whitespace-normal break-words max-w-46">
                   <span class="font-bold">{{ userInfo?.name }}</span>
                   <span class="text-16px text-gray-400">
                     {{ t('mobile_personal_info_qr.account') }}:{{ userInfo?.account }}

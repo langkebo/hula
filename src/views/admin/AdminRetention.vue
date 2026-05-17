@@ -61,17 +61,17 @@ import {
   NModal,
   NPageHeader,
   NSpace,
-  NTag,
-  useMessage
+  NTag
 } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type RetentionPolicyView as RetentionPolicy, useAdminRetention } from '@/composables/admin'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminRetention')
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 
 const retention = useAdminRetention()
 const policies = retention.policies
@@ -144,11 +144,11 @@ async function savePolicy() {
       editForm.value.maxLifetime || undefined,
       editForm.value.minLifetime || undefined
     )
-    message.success(t('admin.retention.save_success'))
+    showFeedback(t('admin.retention.save_success'), 'success')
     editVisible.value = false
   } catch (err) {
     logger.error('保存保留策略失败:', err)
-    message.error(t('admin.retention.save_failed'))
+    showFeedback(t('admin.retention.save_failed'), 'error')
   } finally {
     saveLoading.value = false
   }
@@ -157,20 +157,20 @@ async function savePolicy() {
 async function deletePolicy(roomId: string) {
   try {
     await retention.deletePolicy(roomId)
-    message.success(t('admin.retention.delete_success'))
+    showFeedback(t('admin.retention.delete_success'), 'success')
   } catch (err) {
     logger.error('删除保留策略失败:', err)
-    message.error(t('admin.retention.delete_failed'))
+    showFeedback(t('admin.retention.delete_failed'), 'error')
   }
 }
 
 async function handleRunTask() {
   try {
     await retention.runTask()
-    message.success(t('admin.retention.task_started'))
+    showFeedback(t('admin.retention.task_started'), 'success')
   } catch (err) {
     logger.error('启动保留任务失败:', err)
-    message.error(t('admin.retention.task_failed'))
+    showFeedback(t('admin.retention.task_failed'), 'error')
   }
 }
 

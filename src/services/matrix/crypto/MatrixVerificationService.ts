@@ -2,6 +2,7 @@ import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { CryptoEvent, VerificationPhase, VerificationRequestEvent } from 'matrix-js-sdk/crypto'
 import type { CryptoApi, VerificationRequest as SDKVerificationRequest } from '@/types/matrix-extensions'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 export type VerificationMethod = 'm.sas.v1' | 'm.qr_code.show.v1' | 'm.reciprocate.v1'
@@ -37,7 +38,7 @@ export interface VerificationCancelReason {
   reason: string
 }
 
-class VerificationService {
+class VerificationService extends BaseMatrixService {
   private observedClient: MatrixClient | null = null
   private pendingRequests: Map<string, VerificationRequest> = new Map()
 
@@ -94,18 +95,15 @@ class VerificationService {
     info('[Verification] 服务已初始化')
   }
 
-  private getClient(): MatrixClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
+  private getVerificationClient(): MatrixClient {
+    const client = this.getClient()
     this.setupEventListeners(client)
     return client
   }
 
   getCurrentUserId(): string | null {
     try {
-      const client = this.getClient()
+      const client = this.getVerificationClient()
       return client.getUserId() || null
     } catch {
       return null
@@ -114,7 +112,7 @@ class VerificationService {
 
   getCurrentDeviceId(): string | null {
     try {
-      const client = this.getClient()
+      const client = this.getVerificationClient()
       return client.getDeviceId() || null
     } catch {
       return null
@@ -142,11 +140,11 @@ class VerificationService {
   }
 
   async startSasVerification(userId: string, deviceId: string): Promise<string> {
-    const client = this.getClient()
+    const client = this.getVerificationClient()
     try {
       const crypto = client.getCrypto() as CryptoApi | null
       if (!crypto) {
-        throw new Error('加密未启用')
+        throw new Error(this.t('matrix_error.crypto.not_enabled'))
       }
 
       const verificationRequest = await crypto.requestDeviceVerification(userId, deviceId)
@@ -173,17 +171,17 @@ class VerificationService {
   async startSasVerificationWithCurrentUser(deviceId: string): Promise<string> {
     const userId = this.getCurrentUserId()
     if (!userId) {
-      throw new Error('用户未登录')
+      throw new Error(this.t('matrix_error.common.user_not_logged_in'))
     }
     return this.startSasVerification(userId, deviceId)
   }
 
   async acceptVerification(transactionId: string): Promise<void> {
-    const client = this.getClient()
+    const client = this.getVerificationClient()
     try {
       const crypto = client.getCrypto() as CryptoApi | null
       if (!crypto) {
-        throw new Error('加密未启用')
+        throw new Error(this.t('matrix_error.crypto.not_enabled'))
       }
 
       const verification = crypto.verificationRequests?.get(transactionId)
@@ -207,11 +205,11 @@ class VerificationService {
   }
 
   async confirmSas(transactionId: string): Promise<void> {
-    const client = this.getClient()
+    const client = this.getVerificationClient()
     try {
       const crypto = client.getCrypto() as CryptoApi | null
       if (!crypto) {
-        throw new Error('加密未启用')
+        throw new Error(this.t('matrix_error.crypto.not_enabled'))
       }
 
       const verification = crypto.verificationRequests?.get(transactionId)
@@ -231,11 +229,11 @@ class VerificationService {
   }
 
   async cancelVerification(transactionId: string, reason: string): Promise<void> {
-    const client = this.getClient()
+    const client = this.getVerificationClient()
     try {
       const crypto = client.getCrypto() as CryptoApi | null
       if (!crypto) {
-        throw new Error('加密未启用')
+        throw new Error(this.t('matrix_error.crypto.not_enabled'))
       }
 
       const verification = crypto.verificationRequests?.get(transactionId)
@@ -261,7 +259,7 @@ class VerificationService {
   }
 
   async isDeviceVerified(userId: string, deviceId: string): Promise<boolean> {
-    const client = this.getClient()
+    const client = this.getVerificationClient()
     try {
       const crypto = client.getCrypto() as CryptoApi | null
       if (!crypto) {
@@ -286,7 +284,7 @@ class VerificationService {
   }
 
   async getVerificationRequests(): Promise<Array<Record<string, unknown>>> {
-    const client = this.getClient()
+    const client = this.getVerificationClient()
     try {
       const result = await client.http.authedRequest('GET', '/_matrix/client/v3/keys/device_signing/requests')
       info('[Verification] 获取验证请求列表成功')
@@ -298,7 +296,7 @@ class VerificationService {
   }
 
   async getQrCodeShow(): Promise<{ qr_code: string; transaction_id: string } | null> {
-    const client = this.getClient()
+    const client = this.getVerificationClient()
     try {
       const result = await client.http.authedRequest('GET', '/_matrix/client/v3/keys/qr_code/show')
       info('[Verification] 获取二维码成功')
@@ -310,7 +308,7 @@ class VerificationService {
   }
 
   async scanQrCode(qrCodeData: string): Promise<boolean> {
-    const client = this.getClient()
+    const client = this.getVerificationClient()
     try {
       await client.http.authedRequest('POST', '/_matrix/client/v3/keys/qr_code/scan', undefined, {
         qr_code: qrCodeData

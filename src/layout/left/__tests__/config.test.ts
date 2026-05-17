@@ -11,6 +11,24 @@ vi.mock('vue-i18n', async (importOriginal) => {
   }
 })
 
+vi.mock('@/services/i18n', () => ({
+  useI18nGlobal: () => ({
+    t: (key: string) => key
+  })
+}))
+
+vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
+  matrixCapabilityService: {
+    hasCapability: vi.fn(() => false)
+  }
+}))
+
+vi.mock('@/stores/domains/admin/admin', () => ({
+  useAdminStore: () => ({
+    canAccessAdmin: false
+  })
+}))
+
 vi.mock('@/hooks/useLoginFlow', () => ({
   useLoginFlow: () => ({
     logout: vi.fn()

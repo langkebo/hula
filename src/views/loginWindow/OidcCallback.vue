@@ -29,19 +29,21 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NResult, NSpace, NSpin, useMessage } from 'naive-ui'
+import { NButton, NResult, NSpace, NSpin } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useSessionActions } from '@/composables/user/useSessionActions'
 import { resolveMatrixEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
-import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OidcCallback')
+const { restoreWithAccessToken, applyDesktopLoginState } = useSessionActions()
+const { showFeedback } = useActionFeedback()
 
 const { t } = useI18n()
 const router = useRouter()
-const message = useMessage()
 
 type CallbackStatus = 'loading' | 'success' | 'error'
 const status = ref<CallbackStatus>('loading')
@@ -112,7 +114,7 @@ const handleOidcCallback = async () => {
       })
     }
 
-    await sessionOrchestrator.restoreWithAccessToken({
+    await restoreWithAccessToken({
       uid: matrixTokens.user_id,
       accessToken: matrixTokens.access_token,
       refreshToken: matrixTokens.refresh_token,
@@ -120,10 +122,10 @@ const handleOidcCallback = async () => {
       client: 'PC',
       bootstrapAfterRestore: true
     })
-    await sessionOrchestrator.applyDesktopLoginState()
+    await applyDesktopLoginState()
 
     status.value = 'success'
-    message.success(t('login.oidc.login_success'))
+    showFeedback(t('login.oidc.login_success'), 'success')
 
     setTimeout(() => {
       goToHome()

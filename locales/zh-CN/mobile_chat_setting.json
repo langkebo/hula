@@ -57,5 +57,18 @@
   "messages_muted": "已屏蔽消息",
   "messages_unmuted": "已取消屏蔽",
   "notifications_silent": "已设置接收消息但不提醒",
-  "notifications_enabled": "已允许消息提醒"
+  "notifications_enabled": "已允许消息提醒",
+  "start_group_chat": "发起群聊",
+  "search_contacts_placeholder": "搜索联系人~",
+  "search_button": "搜索",
+  "selected_count": "已选择 {count} 人",
+  "create_group_button": "发起群聊",
+  "cannot_create_group_with_two": "两个人无法建群哦",
+  "create_group_success": "创建群聊成功",
+  "create_group_failed": "创建群聊失败",
+  "invite_group_member_title": "邀请群友",
+  "invite_button": "邀请",
+  "select_friends_to_invite": "请选择要邀请的好友",
+  "invite_success": "成功邀请 {count} 位好友",
+  "invite_failed": "邀请失败，请重试"
 }

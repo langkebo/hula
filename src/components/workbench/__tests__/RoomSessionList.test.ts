@@ -46,8 +46,18 @@ vi.mock('@/components/common/ContextMenu.vue', () => ({
 vi.mock('../HulaRoomListItem.vue', () => ({
   default: {
     name: 'HulaRoomListItem',
-    props: ['item'],
-    template: '<div data-test="HulaRoomListItem">{{ item?.name }}</div>'
+    props: ['item', 'batchMode', 'batchSelected'],
+    emits: ['batch-toggle'],
+    template: `
+      <button
+        type="button"
+        data-test="HulaRoomListItem"
+        :data-batch-mode="String(batchMode)"
+        :data-batch-selected="String(batchSelected)"
+        @click="$emit('batch-toggle', item?.roomId)">
+        {{ item?.name }}
+      </button>
+    `
   }
 }))
 
@@ -222,5 +232,31 @@ describe('RoomSessionList', () => {
     await nextTick()
 
     expect(scrollToMock).not.toHaveBeenCalled()
+  })
+
+  it('passes batch props into room items and re-emits batch toggles', async () => {
+    const wrapper = mountComponent({
+      sessionList: [{ roomId: '!room:server', name: 'Alpha' } as never],
+      batchMode: true,
+      batchSelectedIds: new Set(['!room:server'])
+    })
+
+    const item = wrapper.get('[data-test="HulaRoomListItem"]')
+    expect(item.attributes('data-batch-mode')).toBe('true')
+    expect(item.attributes('data-batch-selected')).toBe('true')
+
+    await item.trigger('click')
+    expect(wrapper.emitted('batchToggle')).toEqual([['!room:server']])
+  })
+
+  it('exposes list accessibility metadata for session results', () => {
+    const wrapper = mountComponent({
+      syncLoading: true,
+      sessionList: [{ roomId: '!room:server', name: 'Alpha' } as never]
+    })
+
+    const list = wrapper.get('[role="list"]')
+    expect(list.attributes('aria-label')).toBe('space.session_list_label')
+    expect(list.attributes('aria-busy')).toBe('true')
   })
 })

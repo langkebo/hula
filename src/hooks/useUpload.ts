@@ -1,7 +1,9 @@
 import { Channel } from '@tauri-apps/api/core'
 import { BaseDirectory, stat, writeFile } from '@tauri-apps/plugin-fs'
 import { createEventHook } from '@vueuse/core'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { TauriCommand, type UploadSceneEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
 import { renderWorker } from '@/services/renderWorker'
 import { uploadService } from '@/services/UploadService'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -59,6 +61,8 @@ const isAbsolutePath = (path: string): boolean => {
  */
 export const useUpload = () => {
   const userStore = useUserStore()
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const isUploading = ref(false) // 是否正在上传
   const progress = ref(0) // 进度
   const fileInfo = ref<FileInfoType | null>(null) // 文件信息
@@ -176,7 +180,7 @@ export const useUpload = () => {
   const getUploadCredential = async (fileName: string, scene?: UploadSceneEnum) => {
     const credential = await uploadService.getOssToken({ scene, fileName })
     if (!credential?.uploadUrl || !credential?.downloadUrl) {
-      throw new Error('获取上传凭证失败，请重试')
+      throw new Error(t('hooks.upload.credential_failed'))
     }
     return credential
   }
@@ -267,7 +271,7 @@ export const useUpload = () => {
 
     // 限制文件大小
     if (info.size > MAX_FILE_SIZE) {
-      window.$message.error(`文件大小不能超过 ${Max}MB`)
+      showFeedback(t('hooks.upload.file_size_exceeded', { max: Max }), 'error')
       return
     }
 
@@ -334,7 +338,7 @@ export const useUpload = () => {
     logger.debug('执行文件上传:', path)
     try {
       if (!uploadUrl) {
-        throw new Error('获取上传链接失败，请重试')
+        throw new Error(t('hooks.upload.url_failed'))
       }
 
       const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
@@ -377,7 +381,7 @@ export const useUpload = () => {
       isUploading.value = false
       trigger('fail')
       logger.error('文件上传失败:', error)
-      throw new Error('文件上传失败，请重试')
+      throw new Error(t('hooks.upload.upload_failed'))
     }
   }
 

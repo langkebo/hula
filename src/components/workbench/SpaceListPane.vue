@@ -1,18 +1,21 @@
 <template>
-  <div
+  <nav
     class="space-list-pane border-r border-[--hula-border-default]"
+    :aria-label="t('space.title')"
     :class="{
       'space-list-pane--compact': compact,
-      'space-list-pane--narrow': narrow
+      'space-list-pane--narrow': narrow,
+      'space-list-pane--rail': narrow
     }">
-    <div class="space-list-pane__header px-12px py-10px">
+    <div class="space-list-pane__header px-12px py-10px" :class="{ 'space-list-pane__header--rail': narrow }">
       <n-input
         v-model:value="searchQuery"
         size="small"
         :placeholder="t('space.search_placeholder')"
         clearable
         round
-        class="space-list-pane__search">
+        class="space-list-pane__search"
+        :input-props="narrow ? { 'aria-label': t('space.search_placeholder') } : undefined">
         <template #prefix>
           <svg class="size-14px"><use href="#search" /></svg>
         </template>
@@ -21,23 +24,32 @@
 
     <n-spin :show="loading" class="flex-1 min-h-0">
       <n-scrollbar class="h-full">
-        <div class="space-list-pane__body p-8px">
+        <div class="space-list-pane__body p-8px" role="list" :aria-label="t('space.title')">
           <button
             type="button"
             class="space-item"
-            :class="{ 'space-item--active': !selectedSpaceId }"
+            :class="{ 'space-item--active': !selectedSpaceId && !highlightedSpaceId, 'space-item--rail': narrow }"
+            :title="t('space.all_sessions')"
+            :aria-pressed="!selectedSpaceId && !highlightedSpaceId"
             @click="emit('selectSpace', '')">
             <div class="space-item__icon space-item__icon--global">
               <svg class="size-16px"><use href="#grid" /></svg>
             </div>
             <div class="space-item__content">
               <span class="space-item__name">{{ t('space.all_sessions') }}</span>
-              <span class="space-item__meta">{{ totalCount }} {{ t('space.sessions') }}</span>
+              <span v-if="!narrow" class="space-item__meta">{{ totalCount }} {{ t('space.sessions') }}</span>
             </div>
           </button>
 
           <div v-if="pinnedSpaces.length" class="space-section">
-            <div class="space-section__header" @click="toggleSection('pinned')">
+            <button
+              :id="getSectionButtonId('pinned')"
+              type="button"
+              class="space-section__header"
+              :title="t('space.pinned')"
+              :aria-controls="getSectionPanelId('pinned')"
+              :aria-expanded="expandedSections.pinned"
+              @click="toggleSection('pinned')">
               <svg
                 class="size-12px space-section__chevron"
                 :class="{ 'space-section__chevron--collapsed': !expandedSections.pinned }"
@@ -52,15 +64,20 @@
                   stroke-linejoin="round" />
               </svg>
               <span class="space-section__title">{{ t('space.pinned') }}</span>
-              <span class="space-section__count">{{ pinnedSpaces.length }}</span>
-            </div>
-            <div v-show="expandedSections.pinned" class="space-section__items">
+              <span v-if="!narrow" class="space-section__count">{{ pinnedSpaces.length }}</span>
+            </button>
+            <div
+              v-show="expandedSections.pinned"
+              :id="getSectionPanelId('pinned')"
+              class="space-section__items"
+              role="group"
+              :aria-labelledby="getSectionButtonId('pinned')">
               <SpaceCard
                 v-for="space in pinnedSpaces"
                 :key="space.spaceId"
                 :space="space"
-                :active="selectedSpaceId === space.spaceId"
-                :compact="compact"
+                :active="selectedSpaceId === space.spaceId || highlightedSpaceId === space.spaceId"
+                :compact="compact || narrow"
                 @click="emit('selectSpace', space.spaceId)"
                 @pin="emit('pinSpace', $event)"
                 @settings="emit('spaceSettings', $event)" />
@@ -68,7 +85,14 @@
           </div>
 
           <div v-if="joinedSpaces.length" class="space-section">
-            <div class="space-section__header" @click="toggleSection('joined')">
+            <button
+              :id="getSectionButtonId('joined')"
+              type="button"
+              class="space-section__header"
+              :title="t('space.joined')"
+              :aria-controls="getSectionPanelId('joined')"
+              :aria-expanded="expandedSections.joined"
+              @click="toggleSection('joined')">
               <svg
                 class="size-12px space-section__chevron"
                 :class="{ 'space-section__chevron--collapsed': !expandedSections.joined }"
@@ -83,15 +107,20 @@
                   stroke-linejoin="round" />
               </svg>
               <span class="space-section__title">{{ t('space.joined') }}</span>
-              <span class="space-section__count">{{ joinedSpaces.length }}</span>
-            </div>
-            <div v-show="expandedSections.joined" class="space-section__items">
+              <span v-if="!narrow" class="space-section__count">{{ joinedSpaces.length }}</span>
+            </button>
+            <div
+              v-show="expandedSections.joined"
+              :id="getSectionPanelId('joined')"
+              class="space-section__items"
+              role="group"
+              :aria-labelledby="getSectionButtonId('joined')">
               <SpaceCard
                 v-for="space in joinedSpaces"
                 :key="space.spaceId"
                 :space="space"
-                :active="selectedSpaceId === space.spaceId"
-                :compact="compact"
+                :active="selectedSpaceId === space.spaceId || highlightedSpaceId === space.spaceId"
+                :compact="compact || narrow"
                 @click="emit('selectSpace', space.spaceId)"
                 @pin="emit('pinSpace', $event)"
                 @settings="emit('spaceSettings', $event)" />
@@ -99,7 +128,14 @@
           </div>
 
           <div v-if="lowPrioritySpaces.length" class="space-section">
-            <div class="space-section__header" @click="toggleSection('lowPriority')">
+            <button
+              :id="getSectionButtonId('lowPriority')"
+              type="button"
+              class="space-section__header"
+              :title="t('space.low_priority')"
+              :aria-controls="getSectionPanelId('lowPriority')"
+              :aria-expanded="expandedSections.lowPriority"
+              @click="toggleSection('lowPriority')">
               <svg
                 class="size-12px space-section__chevron"
                 :class="{ 'space-section__chevron--collapsed': !expandedSections.lowPriority }"
@@ -114,15 +150,20 @@
                   stroke-linejoin="round" />
               </svg>
               <span class="space-section__title">{{ t('space.low_priority') }}</span>
-              <span class="space-section__count">{{ lowPrioritySpaces.length }}</span>
-            </div>
-            <div v-show="expandedSections.lowPriority" class="space-section__items">
+              <span v-if="!narrow" class="space-section__count">{{ lowPrioritySpaces.length }}</span>
+            </button>
+            <div
+              v-show="expandedSections.lowPriority"
+              :id="getSectionPanelId('lowPriority')"
+              class="space-section__items"
+              role="group"
+              :aria-labelledby="getSectionButtonId('lowPriority')">
               <SpaceCard
                 v-for="space in lowPrioritySpaces"
                 :key="space.spaceId"
                 :space="space"
-                :active="selectedSpaceId === space.spaceId"
-                :compact="compact"
+                :active="selectedSpaceId === space.spaceId || highlightedSpaceId === space.spaceId"
+                :compact="compact || narrow"
                 @click="emit('selectSpace', space.spaceId)"
                 @pin="emit('pinSpace', $event)"
                 @settings="emit('spaceSettings', $event)" />
@@ -135,7 +176,7 @@
         </div>
       </n-scrollbar>
     </n-spin>
-  </div>
+  </nav>
 </template>
 
 <script setup lang="ts">
@@ -153,11 +194,15 @@ export type SpaceListItem = {
   isPinned?: boolean
   isLowPriority?: boolean
   unreadCount?: number
+  statusText?: string
+  statusTone?: 'neutral' | 'info' | 'warning'
+  visibilityText?: string
 }
 
 const props = defineProps<{
   spaces: SpaceListItem[]
   selectedSpaceId: string
+  highlightedSpaceId?: string
   loading: boolean
   totalCount: number
   compact?: boolean
@@ -181,6 +226,9 @@ const expandedSections = reactive({
 const toggleSection = (section: keyof typeof expandedSections) => {
   expandedSections[section] = !expandedSections[section]
 }
+
+const getSectionButtonId = (section: keyof typeof expandedSections) => `space-section-${section}-trigger`
+const getSectionPanelId = (section: keyof typeof expandedSections) => `space-section-${section}-panel`
 
 const filteredSpaces = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
@@ -211,8 +259,8 @@ const lowPrioritySpaces = computed(() => filteredSpaces.value.filter((s: SpaceLi
 }
 
 .space-list-pane--narrow {
-  width: 168px;
-  min-width: 168px;
+  width: 132px;
+  min-width: 132px;
 }
 
 .space-list-pane__search {
@@ -250,10 +298,11 @@ const lowPrioritySpaces = computed(() => filteredSpaces.value.filter((s: SpaceLi
 
   &--active {
     background: var(--hula-surface-session-active);
-    color: #ffffff;
+    box-shadow: var(--hula-surface-session-active-shadow);
+    color: var(--hula-text-inverse);
 
     .space-item__meta {
-      color: rgba(255, 255, 255, 0.72);
+      color: color-mix(in srgb, var(--hula-text-inverse) 72%, transparent);
     }
   }
 }
@@ -303,11 +352,15 @@ const lowPrioritySpaces = computed(() => filteredSpaces.value.filter((s: SpaceLi
 .space-section__header {
   display: flex;
   align-items: center;
+  width: 100%;
   gap: 4px;
+  border: 0;
+  background: transparent;
   padding: 6px 12px;
   cursor: pointer;
   user-select: none;
   border-radius: 6px;
+  text-align: left;
   transition: background-color 0.15s ease;
 
   &:hover {
@@ -366,6 +419,43 @@ const lowPrioritySpaces = computed(() => filteredSpaces.value.filter((s: SpaceLi
 
 .space-list-pane--narrow .space-item {
   padding: 8px 10px;
+}
+
+.space-list-pane--rail .space-list-pane__header {
+  padding: 8px;
+}
+
+.space-list-pane--rail .space-list-pane__search {
+  :deep(.n-input__input-el) {
+    display: none;
+  }
+
+  :deep(.n-input__placeholder) {
+    display: none;
+  }
+}
+
+.space-list-pane--rail .space-item__content,
+.space-list-pane--rail .space-section__count {
+  display: none;
+}
+
+.space-list-pane--rail .space-item,
+.space-list-pane--rail .space-section__header {
+  justify-content: center;
+}
+
+.space-list-pane--rail .space-item--rail {
+  padding-inline: 8px;
+}
+
+.space-list-pane--rail .space-section__title {
+  font-size: 10px;
+  text-align: center;
+}
+
+.space-list-pane--rail .space-section__items {
+  padding-left: 0;
 }
 
 .space-list-pane--narrow .space-item__name {

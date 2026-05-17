@@ -81,6 +81,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
 import type { TextBody } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -105,6 +107,8 @@ const keys = Object.keys(urlMap)
 // 正则表达式常量用于匹配URL
 const URL_REGEX = /https?:\/\/[^\s<]+[^<.,:;"')\]\s]/g
 
+const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const groupStore = useGroupStore()
 
 // 仅依赖后端透出的 atUidList，避免用户手动输入的「@文本」被误判
@@ -248,7 +252,7 @@ const openUrl = (url: string) => openExternalUrl(url)
 const handleCopy = (item: string) => {
   if (item) {
     navigator.clipboard.writeText(item)
-    window.$message.success('复制成功')
+    showFeedback(t('copy_success'), 'success')
   }
 }
 

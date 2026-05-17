@@ -8,7 +8,7 @@
     @click="$emit('select', friend)"
     @keydown.enter="$emit('select', friend)">
     <div class="friend-list-item__avatar-wrap">
-      <n-badge :dot="friend.friendStatus === 'favorite'" color="#f0a020" :offset="[-4, 4]">
+      <n-badge :dot="friend.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
         <n-avatar
           :size="44"
           round
@@ -165,16 +165,16 @@ const highlightText = (value?: string | null) => {
   border-color: transparent;
 
   .friend-list-item__name {
-    color: #ffffff;
+    color: var(--hula-text-inverse);
     font-weight: 600;
   }
 
   .friend-list-item__meta {
-    color: rgba(255, 255, 255, 0.8);
+    color: color-mix(in srgb, var(--hula-text-inverse) 80%, transparent);
   }
 
   .friend-list-item__presence {
-    border-color: #4ecdc4;
+    border-color: var(--hula-color-primary-500);
   }
 }
 
@@ -188,7 +188,7 @@ const highlightText = (value?: string | null) => {
 }
 
 .friend-list-item__presence {
-  background: #9ca3af;
+  background: var(--hula-text-disabled);
   border: 2px solid var(--friend-card-bg);
   border-radius: 999px;
   bottom: -2px;
@@ -200,8 +200,8 @@ const highlightText = (value?: string | null) => {
 }
 
 .friend-list-item__presence--online {
-  background: #22c55e;
-  box-shadow: 0 0 4px rgba(34, 197, 94, 0.4);
+  background: var(--hula-color-success-500);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--hula-color-success-500) 40%, transparent);
 }
 
 .friend-list-item__content {

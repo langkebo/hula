@@ -57,5 +57,18 @@
   "messages_muted": "Messages muted",
   "messages_unmuted": "Messages unmuted",
   "notifications_silent": "Messages allowed, notifications off",
-  "notifications_enabled": "Notifications enabled"
+  "notifications_enabled": "Notifications enabled",
+  "start_group_chat": "Start Group Chat",
+  "search_contacts_placeholder": "Search contacts...",
+  "search_button": "Search",
+  "selected_count": "{count} selected",
+  "create_group_button": "Create Group",
+  "cannot_create_group_with_two": "Cannot create a group with only two people",
+  "create_group_success": "Group created successfully",
+  "create_group_failed": "Failed to create group",
+  "invite_group_member_title": "Invite Group Members",
+  "invite_button": "Invite",
+  "select_friends_to_invite": "Please select friends to invite",
+  "invite_success": "Successfully invited {count} friends",
+  "invite_failed": "Invitation failed. Please try again."
 }

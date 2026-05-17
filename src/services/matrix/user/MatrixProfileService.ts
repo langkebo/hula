@@ -2,7 +2,7 @@ import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { Ref } from 'vue'
 import { ref } from 'vue'
-import { matrixClientService } from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 export interface MatrixProfile {
   userId: string
@@ -14,28 +14,15 @@ interface UploadContentResponse {
   content_uri: string
 }
 
-class MatrixProfileService {
-  private client: MatrixClient | null = null
-
+class MatrixProfileService extends BaseMatrixService {
   initialize(client: MatrixClient): void {
-    this.client = client
+    this.setFallbackClient(client)
     info('[ProfileService] 服务已初始化')
-  }
-
-  private ensureClient(): MatrixClient {
-    const activeClient = matrixClientService.getClient() ?? this.client
-    if (!activeClient) {
-      throw new Error('Client 未初始化')
-    }
-    if (this.client !== activeClient) {
-      this.client = activeClient
-    }
-    return activeClient
   }
 
   async getProfile(userId: string): Promise<MatrixProfile> {
     try {
-      const client = this.ensureClient()
+      const client = this.getClient()
       const profile = await client.getProfileInfo(userId)
       return {
         userId,
@@ -75,7 +62,7 @@ class MatrixProfileService {
 
   async setDisplayName(displayName: string): Promise<void> {
     try {
-      const client = this.ensureClient()
+      const client = this.getClient()
       await client.setDisplayName(displayName)
       info('[ProfileService] 更新昵称成功')
     } catch (err) {
@@ -86,7 +73,7 @@ class MatrixProfileService {
 
   async setAvatarUrl(avatarUrl: string): Promise<void> {
     try {
-      const client = this.ensureClient()
+      const client = this.getClient()
       await client.setAvatarUrl(avatarUrl)
       info('[ProfileService] 更新头像成功')
     } catch (err) {
@@ -97,7 +84,7 @@ class MatrixProfileService {
 
   async uploadAndSetAvatar(file: Blob | File): Promise<string> {
     try {
-      const client = this.ensureClient()
+      const client = this.getClient()
       const response = (await client.uploadContent(file, {
         type: file.type || 'application/octet-stream',
         rawResponse: false

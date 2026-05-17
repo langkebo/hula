@@ -145,6 +145,8 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useAccount } from '@/composables/user/useAccount'
 import { IsYesEnum, MittEnum } from '@/enums'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { countGraphemes } from '@/hooks/useCommon.ts'
@@ -152,7 +154,6 @@ import { useMitt } from '@/hooks/useMitt.ts'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { leftHook } from '@/layout/left/hook.ts'
 import { badgeService } from '@/services/BadgeService'
-import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import type { ModifyUserInfoType } from '@/services/types'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -161,6 +162,8 @@ import { isMac, isWindows } from '@/utils/PlatformConstants'
 
 const appWindow = WebviewWindow.getCurrent()
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
+const { updateAvatar } = useAccount()
 const localUserInfo = ref<Partial<ModifyUserInfoType>>({})
 const userStore = useUserStore()
 const { addListener } = useTauriListener()
@@ -177,7 +180,7 @@ const {
   handleCrop: onCrop
 } = useAvatarUpload({
   onSuccess: async (downloadUrl) => {
-    await matrixAccountService.updateAvatar(downloadUrl)
+    await updateAvatar(downloadUrl)
     // 更新编辑信息
     editInfo.value.content.avatar = downloadUrl
     // 更新用户信息
@@ -188,7 +191,7 @@ const {
     loginHistoriesStore.loginHistories.filter((item) => item.uid === userStore.userInfo!.uid)[0].avatar = downloadUrl
     // 更新缓存里面的用户信息
     updateCurrentUserCache('avatar', downloadUrl)
-    window.$message.success(t('home.profile_edit.toast.avatar_update_success'))
+    showFeedback(t('home.profile_edit.toast.avatar_update_success'), 'success')
   }
 })
 

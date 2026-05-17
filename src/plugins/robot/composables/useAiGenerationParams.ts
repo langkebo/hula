@@ -11,6 +11,7 @@
 
 import type { UploadFileInfo } from 'naive-ui'
 import { computed, ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { UploadSceneEnum } from '@/enums'
 import { UploadProviderEnum, useUpload } from '@/hooks/useUpload'
 import { useI18nGlobal } from '@/services/i18n'
@@ -32,6 +33,7 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 
 export const useAiGenerationParams = () => {
   const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const imageParams = ref({
     size: '1024x1024'
   })
@@ -122,13 +124,13 @@ export const useAiGenerationParams = () => {
     }
 
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      window.$message.error(t('ai_assistant.robot.image_format_not_supported'))
+      showFeedback(t('ai_assistant.robot.image_format_not_supported'), 'error')
       payload.onError()
       return
     }
 
     if (file.size > MAX_IMAGE_SIZE) {
-      window.$message.error(t('ai_assistant.robot.image_size_exceeded'))
+      showFeedback(t('ai_assistant.robot.image_size_exceeded'), 'error')
       payload.onError()
       return
     }

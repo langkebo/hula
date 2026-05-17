@@ -1,6 +1,6 @@
 <template>
   <n-modal
-    v-model:show="visible"
+    :show="visible"
     preset="card"
     :title="t('message.forward.title')"
     :style="{ width: '400px' }"
@@ -50,13 +50,14 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixForwardService } from '@/services/matrix/messaging/MatrixForwardService'
-import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
+import { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ForwardDialog')
+const { getRoomMessage, forwardEventToMultipleRooms } = useChatMessageActions()
 
 const props = defineProps<{
   visible: boolean
@@ -70,6 +71,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const roomStore = useRoomStore()
 const searchQuery = ref('')
 const selectedRooms = ref<string[]>([])
@@ -112,23 +114,23 @@ const handleForward = async () => {
 
   forwarding.value = true
   try {
-    const event = await matrixMessageService.getRoomMessage(props.roomId, props.eventId)
+    const event = await getRoomMessage(props.roomId, props.eventId)
     if (!event) return
 
-    const results = await matrixForwardService.forwardEventToMultipleRooms(event, selectedRooms.value)
+    const results = await forwardEventToMultipleRooms(event, selectedRooms.value)
     const successCount = results.filter((r) => r.success).length
 
     if (successCount > 0) {
-      window.$message?.success(t('message.forward.success', { count: successCount }))
+      showFeedback(t('message.forward.success', { count: successCount }), 'success')
       emit('forwarded', selectedRooms.value)
       emit('update:visible', false)
       selectedRooms.value = []
     } else {
-      window.$message?.error(t('message.forward.failed'))
+      showFeedback(t('message.forward.failed'), 'error')
     }
   } catch (error) {
     logger.error('转发失败:', error)
-    window.$message?.error(t('message.forward.failed'))
+    showFeedback(t('message.forward.failed'), 'error')
   } finally {
     forwarding.value = false
   }

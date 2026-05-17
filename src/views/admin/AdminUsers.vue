@@ -173,16 +173,16 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NSpace, NTag, useDialog, useMessage } from 'naive-ui'
+import { NButton, NSpace, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAdminUsers } from '@/composables/admin'
-import type { UserDevice, UserInfo } from '@/services/matrix/admin'
+import { type UserDevice, type UserInfo, useAdminUsers } from '@/composables/admin'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const adminStore = useAdminStore()
 const { handleAdminError } = useAdminErrorHandler()
@@ -324,14 +324,14 @@ async function handleCreateUser() {
       displayname: createForm.value.displayName
     })
     if (result) {
-      message.success(t('admin.users.createSuccess'))
+      showFeedback(t('admin.users.createSuccess'), 'success')
       showCreateDialog.value = false
       createForm.value = { username: '', password: '', displayName: '', isAdmin: false }
     } else {
-      message.error(t('admin.users.createFailed'))
+      showFeedback(t('admin.users.createFailed'), 'error')
     }
   } catch (err) {
-    if (handleAdminError(err)) message.error(t('admin.users.createFailed'))
+    if (handleAdminError(err)) showFeedback(t('admin.users.createFailed'), 'error')
   } finally {
     creating.value = false
   }
@@ -342,9 +342,9 @@ async function handleResetPassword(userId: string) {
   if (!newPassword) return
   try {
     await admin.resetPassword(userId, newPassword)
-    message.success(t('admin.users.resetSuccess'))
+    showFeedback(t('admin.users.resetSuccess'), 'success')
   } catch (err) {
-    if (handleAdminError(err)) message.error(t('admin.users.resetFailed'))
+    if (handleAdminError(err)) showFeedback(t('admin.users.resetFailed'), 'error')
   }
 }
 
@@ -358,9 +358,9 @@ async function handleToggleDeactivate(user: UserInfo) {
       onPositiveClick: async () => {
         try {
           await admin.deactivateUser(user.userId)
-          message.success(t('admin.users.deactivateSuccess'))
+          showFeedback(t('admin.users.deactivateSuccess'), 'success')
         } catch (err) {
-          if (handleAdminError(err)) message.error(t('admin.users.deactivateFailed'))
+          if (handleAdminError(err)) showFeedback(t('admin.users.deactivateFailed'), 'error')
         }
       }
     })
@@ -380,9 +380,9 @@ async function handleToggleAdmin(user: UserInfo) {
     onPositiveClick: async () => {
       try {
         await admin.setAdmin(user.userId, newAdminState)
-        message.success(t('admin.users.adminUpdateSuccess'))
+        showFeedback(t('admin.users.adminUpdateSuccess'), 'success')
       } catch (err) {
-        if (handleAdminError(err)) message.error(t('admin.users.adminUpdateFailed'))
+        if (handleAdminError(err)) showFeedback(t('admin.users.adminUpdateFailed'), 'error')
       }
     }
   })
@@ -398,9 +398,9 @@ async function handleDeleteDevice(deviceId: string) {
     onPositiveClick: async () => {
       try {
         await admin.deleteUserDevice(selectedUser.value!.userId, deviceId)
-        message.success(t('admin.users.deleteDeviceSuccess'))
+        showFeedback(t('admin.users.deleteDeviceSuccess'), 'success')
       } catch (err) {
-        if (handleAdminError(err)) message.error(t('admin.users.deleteDeviceFailed'))
+        if (handleAdminError(err)) showFeedback(t('admin.users.deleteDeviceFailed'), 'error')
       }
     }
   })
@@ -414,10 +414,10 @@ async function handleSetRateLimit() {
       messagesPerSecond: rateLimitForm.value.messagesPerSecond,
       burstCount: rateLimitForm.value.burstCount
     })
-    message.success(t('admin.users.rateLimitSetSuccess'))
+    showFeedback(t('admin.users.rateLimitSetSuccess'), 'success')
     showRateLimitDialog.value = false
   } catch (err) {
-    if (handleAdminError(err)) message.error(t('admin.users.rateLimitSetFailed'))
+    if (handleAdminError(err)) showFeedback(t('admin.users.rateLimitSetFailed'), 'error')
   } finally {
     settingRateLimit.value = false
   }
@@ -427,9 +427,9 @@ async function handleDeleteRateLimit() {
   if (!selectedUser.value) return
   try {
     await admin.deleteRateLimit(selectedUser.value.userId)
-    message.success(t('admin.users.rateLimitDeleteSuccess'))
+    showFeedback(t('admin.users.rateLimitDeleteSuccess'), 'success')
   } catch (err) {
-    if (handleAdminError(err)) message.error(t('admin.users.rateLimitDeleteFailed'))
+    if (handleAdminError(err)) showFeedback(t('admin.users.rateLimitDeleteFailed'), 'error')
   }
 }
 
@@ -443,9 +443,9 @@ async function handleShadowBan() {
     onPositiveClick: async () => {
       try {
         await admin.shadowBanUser(selectedUser.value!.userId)
-        message.success(t('admin.users.shadowBanSuccess'))
+        showFeedback(t('admin.users.shadowBanSuccess'), 'success')
       } catch (err) {
-        if (handleAdminError(err)) message.error(t('admin.users.shadowBanFailed'))
+        if (handleAdminError(err)) showFeedback(t('admin.users.shadowBanFailed'), 'error')
       }
     }
   })
@@ -455,9 +455,9 @@ async function handleUnshadowBan() {
   if (!selectedUser.value) return
   try {
     await admin.unshadowBanUser(selectedUser.value.userId)
-    message.success(t('admin.users.unshadowBanSuccess'))
+    showFeedback(t('admin.users.unshadowBanSuccess'), 'success')
   } catch (err) {
-    if (handleAdminError(err)) message.error(t('admin.users.unshadowBanFailed'))
+    if (handleAdminError(err)) showFeedback(t('admin.users.unshadowBanFailed'), 'error')
   }
 }
 

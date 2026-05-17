@@ -1,0 +1,8 @@
+{
+  "download_link_not_found": "未找到下载链接",
+  "video_save_success": "视频保存成功",
+  "video_save_failed": "保存视频失败",
+  "file_download_success": "文件下载成功",
+  "file_save_failed": "保存文件失败",
+  "audio_compression_failed": "音频压缩失败"
+}

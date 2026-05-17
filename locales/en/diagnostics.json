@@ -1,0 +1,13 @@
+{
+  "versions_supported": "Supported versions: {versions}",
+  "versions_not_found": "No supported API versions found",
+  "connection_failed": "Unable to connect to server: {error}",
+  "login_flows_supported": "Supported login methods: {flows}",
+  "login_flows_not_found": "No login flows found",
+  "login_flows_check_failed": "Failed to check login flows: {error}",
+  "sliding_sync_found": "Found {count} available endpoints",
+  "sliding_sync_not_found": "No available Sliding Sync endpoints found",
+  "cors_ok": "CORS configuration is normal",
+  "cors_headers_missing": "CORS headers are missing",
+  "cors_check_failed": "CORS check failed: {error}"
+}

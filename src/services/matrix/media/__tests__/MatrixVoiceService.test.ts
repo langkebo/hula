@@ -3,37 +3,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
+  warn: vi.fn(),
   error: vi.fn()
 }))
 
 const getClientMock = vi.fn()
+const endpointCheckMock = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
   default: {
     getClient: () => getClientMock() as MatrixClient | null
   }
 }))
+vi.mock('../../EndpointCapabilityService', () => ({
+  default: {
+    check: (...args: unknown[]) => endpointCheckMock(...args)
+  }
+}))
 
-interface VoiceMessageManagerLike {
-  uploadVoiceMessage: ReturnType<typeof vi.fn>
-  getVoiceMessageInfo: ReturnType<typeof vi.fn>
-  transcribeVoiceMessage: ReturnType<typeof vi.fn>
-}
-
-type MatrixVoiceServiceInternals = {
-  voiceManager: VoiceMessageManagerLike | null
-  observedClient: MatrixClient | null
-}
-
-const mockVoiceManager: VoiceMessageManagerLike = {
-  uploadVoiceMessage: vi.fn(),
-  getVoiceMessageInfo: vi.fn(),
-  transcribeVoiceMessage: vi.fn()
-}
-
+const authedRequestMock = vi.fn()
 const mockClient = {
+  http: {
+    authedRequest: authedRequestMock
+  },
   mxcUrlToHttp: vi.fn((mxcUrl: string) => `https://cdn.example.com/${mxcUrl.replace('mxc://', '')}`),
-  getRoom: vi.fn(() => null as Room | null),
-  getVoiceMessageManager: vi.fn(() => mockVoiceManager)
+  getRoom: vi.fn(() => null as Room | null)
 }
 
 const { matrixVoiceService, isVoiceMessageResult } = await import('../MatrixVoiceService')
@@ -42,15 +35,14 @@ describe('MatrixVoiceService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getClientMock.mockReturnValue(mockClient as unknown as MatrixClient)
-    ;(matrixVoiceService as unknown as { voiceManager: unknown }).voiceManager = mockVoiceManager
-    ;(matrixVoiceService as unknown as { observedClient: unknown }).observedClient = mockClient
+    endpointCheckMock.mockResolvedValue(true)
   })
 
-  it('should return sdk upload result instead of forging pseudo mxc url', async () => {
+  it('uploads voice through the voice upload endpoint', async () => {
     const file = new Blob(['voice-bytes'], { type: 'audio/webm' })
-    mockVoiceManager.uploadVoiceMessage.mockResolvedValueOnce({
-      eventId: '$voice-event',
-      url: 'mxc://example.org/media'
+    authedRequestMock.mockResolvedValueOnce({
+      event_id: '$voice-event',
+      content_uri: 'mxc://example.org/media'
     })
 
     const result = await matrixVoiceService.uploadVoice('!room:example.org', file)
@@ -62,18 +54,16 @@ describe('MatrixVoiceService', () => {
       mxcUrl: 'mxc://example.org/media',
       httpUrl: 'https://cdn.example.com/example.org/media'
     })
-    expect(mockVoiceManager.uploadVoiceMessage).toHaveBeenCalledWith({
-      roomId: '!room:example.org',
-      file,
-      filename: 'voice.webm'
-    })
+    expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/client/v1/voice/upload')
+    expect(authedRequestMock).toHaveBeenCalledWith(
+      'POST',
+      '/_matrix/client/v1/voice/upload',
+      undefined,
+      expect.any(FormData)
+    )
   })
 
   it('should resolve playback urls from room event content', async () => {
-    mockVoiceManager.getVoiceMessageInfo.mockResolvedValueOnce({
-      duration: 12,
-      waveform: [1, 2, 3]
-    })
     mockClient.getRoom.mockReturnValueOnce({
       findEventById: vi.fn(() => ({
         getContent: () => ({
@@ -89,8 +79,6 @@ describe('MatrixVoiceService', () => {
     const result = await matrixVoiceService.getVoice('!room:example.org', '$event')
 
     expect(result).toEqual({
-      duration: 12,
-      waveform: [1, 2, 3],
       mimeType: 'audio/ogg',
       size: 2048,
       mxcUrl: 'mxc://example.org/voice-file',
@@ -108,8 +96,8 @@ describe('MatrixVoiceService', () => {
     expect(matrixVoiceService.getPlayableUrl()).toBe('')
   })
 
-  it('should forward typed transcription params to sdk', async () => {
-    mockVoiceManager.transcribeVoiceMessage.mockResolvedValueOnce({
+  it('should transcribe voice through the voice transcription endpoint', async () => {
+    authedRequestMock.mockResolvedValueOnce({
       text: 'hello world',
       language: 'en'
     })
@@ -123,61 +111,34 @@ describe('MatrixVoiceService', () => {
       text: 'hello world',
       language: 'en'
     })
-    expect(mockVoiceManager.transcribeVoiceMessage).toHaveBeenCalledWith({
-      roomId: '!room:example.org',
-      eventId: '$voice-event'
+    expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/client/v1/voice/transcription')
+    expect(authedRequestMock).toHaveBeenCalledWith('POST', '/_matrix/client/v1/voice/transcription', undefined, {
+      message_id: '$voice-event'
     })
   })
 
-  it('should lazily resolve voice manager from matrix client when cache is empty', async () => {
-    getClientMock.mockReturnValueOnce({
-      ...mockClient,
-      getVoiceMessageManager: vi.fn(() => mockVoiceManager)
-    } as unknown as MatrixClient)
-    ;(matrixVoiceService as unknown as MatrixVoiceServiceInternals).voiceManager = null
-    mockVoiceManager.uploadVoiceMessage.mockResolvedValueOnce({
-      eventId: '$lazy',
-      url: 'mxc://example.org/lazy'
-    })
+  it('returns endpoint-unavailable error when upload api is disabled', async () => {
+    endpointCheckMock.mockResolvedValueOnce(false)
 
-    const result = await matrixVoiceService.uploadVoice('!room:example.org', new Blob(['lazy']))
-
-    expect(result?.mxcUrl).toBe('mxc://example.org/lazy')
-    expect(mockVoiceManager.uploadVoiceMessage).toHaveBeenCalledOnce()
+    await expect(matrixVoiceService.uploadVoice('!room:example.org', new Blob(['lazy']))).rejects.toThrow(
+      '语音服务不可用'
+    )
+    expect(authedRequestMock).not.toHaveBeenCalled()
   })
 
-  it('should refresh cached voice manager when matrix client changes', async () => {
-    const nextVoiceManager = {
-      uploadVoiceMessage: vi.fn().mockResolvedValue({
-        eventId: '$next',
-        url: 'mxc://example.org/next'
-      }),
-      getVoiceMessageInfo: vi.fn(),
-      transcribeVoiceMessage: vi.fn()
-    }
-    const nextClient = {
-      mxcUrlToHttp: vi.fn((mxcUrl: string) => `https://cdn.example.com/${mxcUrl.replace('mxc://', '')}`),
-      getRoom: vi.fn(() => null),
-      getVoiceMessageManager: vi.fn(() => nextVoiceManager)
-    }
+  it('returns null when transcription endpoint is unavailable', async () => {
+    endpointCheckMock.mockResolvedValueOnce(false)
 
-    getClientMock.mockReturnValue(nextClient as unknown as MatrixClient)
-    ;(matrixVoiceService as unknown as MatrixVoiceServiceInternals).voiceManager = mockVoiceManager
-    ;(matrixVoiceService as unknown as MatrixVoiceServiceInternals).observedClient =
-      mockClient as unknown as MatrixClient
-
-    const result = await matrixVoiceService.uploadVoice('!room:example.org', new Blob(['next']))
-
-    expect(nextClient.getVoiceMessageManager).toHaveBeenCalledOnce()
-    expect(mockVoiceManager.uploadVoiceMessage).not.toHaveBeenCalled()
-    expect(nextVoiceManager.uploadVoiceMessage).toHaveBeenCalledOnce()
-    expect(result.mxcUrl).toBe('mxc://example.org/next')
+    await expect(
+      matrixVoiceService.transcribeVoice({
+        roomId: '!room:example.org',
+        eventId: '$voice-event'
+      })
+    ).rejects.toThrow('语音服务不可用')
   })
 
   it('should fall back to original mxc url when client is unavailable', () => {
     getClientMock.mockReturnValueOnce(null)
-    ;(matrixVoiceService as unknown as MatrixVoiceServiceInternals).voiceManager = null
-    ;(matrixVoiceService as unknown as MatrixVoiceServiceInternals).observedClient = null
 
     expect(matrixVoiceService.getPlayableUrl('mxc://example.org/fallback')).toBe('mxc://example.org/fallback')
   })

@@ -5,7 +5,7 @@
     </template>
 
     <template #container>
-      <div class="flex h-full flex-col overflow-auto bg-#f7f8fa">
+      <div class="flex h-full flex-col overflow-auto bg-[--hula-surface-panel-muted]">
         <div class="flex flex-col gap-12px p-16px">
           <div class="rounded-16px bg-white p-16px">
             <van-tag :type="getTagType(selectedItem.status)">{{ getStatusText(selectedItem.status) }}</van-tag>

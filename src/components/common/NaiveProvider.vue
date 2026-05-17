@@ -29,6 +29,7 @@ import {
   type GlobalTheme,
   type GlobalThemeOverrides,
   lightTheme,
+  type MessageApi,
   type NDateLocale,
   type NLocale,
   zhCN
@@ -68,8 +69,7 @@ const currentNaiveDateLocale = computed(() => resolveNaiveLocale(locale.value).d
 /**监听深色主题颜色变化*/
 const globalTheme = ref<GlobalTheme | null>(settingStore.themeContent === ThemeEnum.DARK ? darkTheme : lightTheme)
 const prefers = matchMedia('(prefers-color-scheme: dark)')
-// 定义不需要显示消息提示的窗口
-const noMessageWindows = ['tray', 'notify', 'capture', 'update', 'checkupdate']
+const mutedMessageWindowLabels = new Set(['tray', 'notify', 'capture', 'update', 'checkupdate'])
 
 const isValidContent = (theme?: string): theme is ThemeEnum => theme === ThemeEnum.DARK || theme === ThemeEnum.LIGHT
 
@@ -252,18 +252,8 @@ const darkThemeOverrides: GlobalThemeOverrides = {
   }
 }
 
-// 挂载naive组件的方法至window, 以便在路由钩子函数和请求函数里面调用
-const registerNaiveTools = () => {
-  window.$loadingBar = useLoadingBar()
-  window.$dialog = useDialog()
-  window.$notification = useNotification()
-  window.$modal = useModal()
-
-  // 获取原始的消息对象
-  const originalMessage = useMessage()
-
-  // 创建一个空的消息对象，用于禁用消息的窗口
-  const noOpMessage = {
+const createMutedMessageApi = (): MessageApi =>
+  ({
     info: () => {},
     success: () => {},
     warning: () => {},
@@ -277,18 +267,29 @@ const registerNaiveTools = () => {
       type: 'info'
     }),
     destroyAll: () => {}
-  } as unknown as ReturnType<typeof useMessage>
+  }) as unknown as MessageApi
 
-  // 检查当前路由是否需要禁用消息
-  const shouldDisableMessage = () => {
-    if (!hasTauriRuntime()) {
-      return false
-    }
-    return noMessageWindows.includes(getCurrentWebviewWindow().label)
+const resolveMessageApi = (messageApi: MessageApi): MessageApi => {
+  if (!hasTauriRuntime()) {
+    return messageApi
   }
 
-  // 设置消息对象
-  window.$message = shouldDisableMessage() ? noOpMessage : originalMessage
+  try {
+    const currentWindowLabel = getCurrentWebviewWindow().label
+    return mutedMessageWindowLabels.has(currentWindowLabel) ? createMutedMessageApi() : messageApi
+  } catch (error) {
+    logger.warn('Failed to resolve current window label for message bridge:', error)
+    return messageApi
+  }
+}
+
+// 暂时保留全局桥接，供 hooks / mobile / 非组件上下文复用统一反馈能力。
+const registerNaiveTools = () => {
+  window.$loadingBar = useLoadingBar()
+  window.$dialog = useDialog()
+  window.$notification = useNotification()
+  window.$modal = useModal()
+  window.$message = resolveMessageApi(useMessage())
 }
 
 const NaiveProviderContent = defineComponent({

@@ -234,7 +234,7 @@ describe('mobile login', () => {
       client: 'MOBILE'
     })
     expect(routerPushMock).not.toHaveBeenCalled()
-    expect(showFailToastMock).toHaveBeenCalledWith('SSO 登录失败')
+    expect(showFailToastMock).toHaveBeenCalledWith('login.sso_login_failed')
     expect(mobileLoadingRef.value).toBe(false)
     expect(mobileLoginDisabledRef.value).toBe(false)
     expect(mobileLoginTextRef.value).toBe('登录')

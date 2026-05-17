@@ -28,7 +28,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import CreateSpaceDialog from '@/components/space/CreateSpaceDialog.vue'
 import { buildSpaceWorkbenchRoute } from '@/router/spaceNavigation'
-import type { SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
+import type { SpaceInfo } from '@/types/matrix-services'
 
 const { t } = useI18n()
 const router = useRouter()

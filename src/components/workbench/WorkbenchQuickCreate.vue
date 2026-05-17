@@ -80,16 +80,17 @@
 
 <script setup lang="ts">
 import type { FormInst, FormRules, UploadCustomRequestOptions } from 'naive-ui'
-import { useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { type SpaceInfo, useSpaces } from '@/composables/space'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import { matrixSpaceService, type SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
 import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WorkbenchQuickCreate')
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
+const { create: createSpace } = useSpaces()
 
 const props = defineProps<{
   isSpaceMode?: boolean
@@ -149,16 +150,16 @@ const handleAvatarUpload = async (options: UploadCustomRequestOptions) => {
 }
 
 const handleCreateSpace = async () => {
-  const created = await matrixSpaceService.createSpace({
+  const created = await createSpace({
     name: formData.name,
     topic: formData.topic,
     avatarUrl: formData.avatarUrl
   })
   if (!created) {
-    message.error(t('space.create_failed'))
+    showFeedback(t('space.create_failed'), 'error')
     return
   }
-  message.success(t('space.create_success'))
+  showFeedback(t('space.create_success'), 'success')
   emit('created', { space: created })
   resetForm()
 }
@@ -173,7 +174,7 @@ const handleCreateRoom = async () => {
     isEncrypted: formData.isEncrypted,
     historyVisibility: formData.historyVisibility
   })
-  message.success(t('room.create.success'))
+  showFeedback(t('room.create.success'), 'success')
   emit('created', { roomId: room?.roomId || '' })
   resetForm()
 }
@@ -190,7 +191,7 @@ const handleSubmit = async () => {
   } catch (error) {
     if (error !== false) {
       logger.error('[QuickCreate] create failed:', error)
-      message.error(props.isSpaceMode ? t('space.create_failed') : t('room.create.failed'))
+      showFeedback(props.isSpaceMode ? t('space.create_failed') : t('room.create.failed'), 'error')
     }
   } finally {
     loading.value = false

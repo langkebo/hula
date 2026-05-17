@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 import { useEmojiStore } from '../emoji'
 
-const { emojiUpload, emojiList } = vi.hoisted(() => ({
+const { emojiUpload, emojiList, showFeedbackMock } = vi.hoisted(() => ({
   emojiUpload: vi.fn(),
-  emojiList: vi.fn()
+  emojiList: vi.fn(),
+  showFeedbackMock: vi.fn()
 }))
 
 const mockUserStore = reactive({
@@ -64,6 +65,12 @@ vi.mock('@/utils/PlatformConstants', () => ({
   isMobile: vi.fn(() => false)
 }))
 
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
+}))
+
 describe('EmojiStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -86,9 +93,6 @@ describe('EmojiStore', () => {
         }
       })
     )
-    window.$message = {
-      success: vi.fn()
-    } as any
   })
 
   it('uploads a real File when adding emoji from remote image url', async () => {
@@ -104,5 +108,6 @@ describe('EmojiStore', () => {
     expect(file.type).toBe('image/webp')
     expect(file.name).toBe('custom_emoji.webp')
     expect(name).toBe('custom_emoji')
+    expect(showFeedbackMock).toHaveBeenCalledWith('添加表情成功', 'success')
   })
 })

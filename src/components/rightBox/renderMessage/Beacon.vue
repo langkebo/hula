@@ -41,6 +41,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import type { BeaconBody } from '@/services/types'
@@ -92,6 +93,7 @@ const props = withDefaults(
 const now = ref(Date.now())
 const timerManager = useTimerManager()
 let timer: number | undefined
+const { showFeedback } = useActionFeedback()
 
 const isActive = computed(() => {
   if (!props.body || !props.body.isLive) return false
@@ -138,19 +140,19 @@ const parseGeoUri = (uri: string): { latitude: number; longitude: number; timest
  */
 const handleBeaconClick = () => {
   if (!isActive.value) {
-    window.$message.info('位置共享已结束，无法查看')
+    showFeedback('位置共享已结束，无法查看', 'info')
     return
   }
 
   const uri = props.body?.uri
   if (!uri) {
-    window.$message.info('无法获取位置信息')
+    showFeedback('无法获取位置信息', 'info')
     return
   }
 
   const location = parseGeoUri(uri)
   if (!location) {
-    window.$message.info('位置信息格式无效')
+    showFeedback('位置信息格式无效', 'info')
     return
   }
 

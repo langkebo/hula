@@ -120,9 +120,10 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, useMessage } from 'naive-ui'
+import { NButton, NDivider } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { usePlatform } from '@/composables/usePlatform'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { createLogger } from '@/utils/Logger'
@@ -133,7 +134,7 @@ defineOptions({
   name: 'HelpSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 const { isDesktop: isDesktopPlatform } = usePlatform()
 
@@ -205,9 +206,9 @@ async function handleCheckUpdate() {
       latestVersion: appVersion.value
     }
 
-    message.success(t('setting.help_about.up_to_date'))
+    showFeedback(t('setting.help_about.up_to_date'), 'success')
   } catch (error) {
-    message.error(t('setting.help_about.check_update_failed'))
+    showFeedback(t('setting.help_about.check_update_failed'), 'error')
   } finally {
     checkingUpdate.value = false
   }
@@ -233,10 +234,10 @@ async function handleOpenLogs() {
       const logPath = await appDataDir()
       await open(logPath)
     } catch (error) {
-      message.error(t('setting.help_about.open_logs_failed'))
+      showFeedback(t('setting.help_about.open_logs_failed'), 'error')
     }
   } else {
-    message.info(t('setting.help_about.open_logs_unsupported'))
+    showFeedback(t('setting.help_about.open_logs_unsupported'), 'info')
   }
 }
 </script>

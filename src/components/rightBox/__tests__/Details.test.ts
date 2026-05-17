@@ -7,6 +7,7 @@ import Details from '../Details.vue'
 const openMsgSessionMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const startRtcCallMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const createWebviewWindowMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const showFeedbackMock = vi.hoisted(() => vi.fn())
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -20,6 +21,12 @@ vi.mock('vue-i18n', () => ({
       if (key === 'home.chat_details.single.friend_info_missing') return '无法获取好友信息'
       return key
     }
+  })
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
   })
 }))
 
@@ -151,5 +158,26 @@ describe('Details', () => {
 
     expect(openMsgSessionMock).toHaveBeenCalledWith('@kevins:matrix.test', RoomTypeEnum.SINGLE)
     expect(startRtcCallMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('缺少好友信息时使用统一反馈提示', async () => {
+    const wrapper = mount(Details, {
+      props: {
+        content: {
+          type: RoomTypeEnum.SINGLE,
+          uid: ''
+        }
+      },
+      global: {
+        stubs: globalStubs,
+        plugins: [createPinia()]
+      }
+    })
+
+    await flushPromises()
+    await wrapper.find('.single-details__action').trigger('click')
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('无法获取好友信息', 'warning')
+    expect(openMsgSessionMock).not.toHaveBeenCalled()
   })
 })

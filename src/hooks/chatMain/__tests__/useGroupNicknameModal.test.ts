@@ -29,11 +29,18 @@ vi.mock('@/hooks/useMitt', () => ({
 
 const updateUserItem = vi.fn()
 const updateGroupDetail = vi.fn().mockResolvedValue(undefined)
+const showFeedbackMock = vi.fn()
 vi.mock('@/stores/domains/chat/group', () => ({
   useGroupStore: () => ({
     updateUserItem,
     updateGroupDetail,
     myNameInCurrentGroup: ''
+  })
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
   })
 }))
 
@@ -45,7 +52,6 @@ describe('useGroupNicknameModal', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    ;(window as any).$message = { error: vi.fn() }
   })
 
   it('initializes with hidden modal and empty state', () => {
@@ -107,7 +113,7 @@ describe('useGroupNicknameModal', () => {
 
     await m.handleGroupNicknameConfirm()
 
-    expect((window as any).$message.error).toHaveBeenCalledWith('home.chat_main.group_nickname.error.invalid_room')
+    expect(showFeedbackMock).toHaveBeenCalledWith('home.chat_main.group_nickname.error.invalid_room', 'error')
     expect(setMemberDisplayName).not.toHaveBeenCalled()
   })
 

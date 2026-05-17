@@ -1,7 +1,9 @@
 import { listen } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { error, info } from '@tauri-apps/plugin-log'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { CallTypeEnum, RTCCallStatus } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 import { TimerManager } from '@/utils/TimerManager'
@@ -38,6 +40,8 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   const { addListener } = useTauriListener()
 
   const router = useRouter()
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
 
   info(`useWebRtc, roomId: ${roomId}, remoteUserId: ${remoteUserId}, callType: ${callType}, isReceiver: ${isReceiver}`)
   const rtcMsg = ref<Partial<RtcMsgVO>>({
@@ -173,7 +177,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
             : false
       }
       if (!constraints.audio && !constraints.video) {
-        window.$message.error('没有可用的设备!')
+        showFeedback(t('hooks.webrtc.no_device'), 'error')
         // 没有可用设备时自动挂断并关闭窗口
         timerManager.setTimeout(async () => {
           if (isReceiver) {
@@ -211,7 +215,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       return true
     } catch (err) {
       logger.error('获取本地流失败:', err)
-      window.$message.error('获取本地媒体流失败，请检查设备!')
+      showFeedback(t('hooks.webrtc.get_stream_failed'), 'error')
       error(`获取本地媒体流失败，请检查设备! ${err}`)
       await sendRtcCall2VideoCallResponse(2)
       return false
@@ -265,7 +269,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
           case 'disconnected':
             info('RTC 连接断开')
             connectionStatus.value = RTCCallStatus.END
-            window.$message.error('RTC通讯连接失败!')
+            showFeedback(t('hooks.webrtc.rtc_connection_failed'), 'error')
             timerManager.setTimeout(async () => {
               await endCall()
             }, 500)
@@ -280,7 +284,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
           case 'failed':
             connectionStatus.value = RTCCallStatus.ERROR
             info('RTC 连接失败')
-            window.$message.error('RTC通讯连接失败!')
+            showFeedback(t('hooks.webrtc.rtc_connection_failed'), 'error')
             timerManager.setTimeout(async () => {
               await endCall()
             }, 500)
@@ -331,7 +335,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       }
       clear() // 清理资源
       if (!(await getDevices())) {
-        window.$message.error('获取设备失败!')
+        showFeedback(t('hooks.webrtc.get_devices_failed'), 'error')
         // 获取设备失败时自动关闭窗口
         timerManager.setTimeout(async () => {
           await handleCallResponse(0)
@@ -349,7 +353,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       // 设置30秒超时定时器
       callTimer.value = timerManager.setTimeout(() => {
         if (connectionStatus.value === RTCCallStatus.CALLING) {
-          window.$message.warning('通话无人接听，自动挂断')
+          showFeedback(t('hooks.webrtc.call_timeout'), 'warning')
           endCall()
         }
       }, MAX_TIME_OUT_SECONDS * 1000)
@@ -379,7 +383,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       rtcStatus.value = 'new'
     } catch (err) {
       logger.error('开始通话失败:', err)
-      window.$message.error('RTC通讯连接失败!')
+      showFeedback(t('hooks.webrtc.rtc_connection_failed'), 'error')
       clear()
       return false
     }
@@ -421,7 +425,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       localStream.value?.getTracks().forEach((track) => track.stop())
       remoteStream.value?.getTracks().forEach((track) => track.stop())
     } catch (error) {
-      window.$message.error('部分资源清理失败!')
+      showFeedback(t('hooks.webrtc.cleanup_failed'), 'error')
       logger.error('清理资源失败:', error)
     } finally {
       // 重置状态
@@ -500,7 +504,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       await peerConnection.value!.setLocalDescription(answer)
 
       if (!roomId) {
-        window.$message.error('房间号不存在，请重新连接！')
+        showFeedback(t('hooks.webrtc.room_not_found'), 'error')
         return false
       }
 
@@ -552,7 +556,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
         // 3. 通知服务器通话已建立
         if (!isReceiver) {
           if (!roomId) {
-            window.$message.error('房间号不存在，请重新连接！')
+            showFeedback(t('hooks.webrtc.room_not_found'), 'error')
             await endCall()
             return
           }
@@ -631,7 +635,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
           }
         } catch (error) {
           logger.error('重新获取视频轨道失败:', error)
-          window.$message.error('无法开启摄像头')
+          showFeedback(t('hooks.webrtc.camera_failed'), 'error')
         }
       }
     }
@@ -645,7 +649,10 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
     selectedVideoDevice,
     videoDevices,
     isVideoCall: () => rtcMsg.value.callType === CallTypeEnum.VIDEO,
-    isMobile
+    isMobile,
+    notify: {
+      error: (msg: string) => showFeedback(msg, 'error')
+    }
   })
 
   // 桌面共享（抽离到 useScreenShare）
@@ -655,7 +662,11 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
     selectedVideoDevice,
     getCurrentCallType: () => rtcMsg.value.callType,
     getLocalStream,
-    switchVideoDevice
+    switchVideoDevice,
+    notify: {
+      warning: (msg: string) => showFeedback(msg, 'warning'),
+      error: (msg: string) => showFeedback(msg, 'error')
+    }
   })
 
   const lisendCandidate = async () => {

@@ -20,7 +20,20 @@
         </n-input>
 
         <n-flex align="center" :size="8" wrap>
-          <n-button v-if="showCreateAction" size="small" secondary @click="emit('createSpace')">
+          <n-button size="small" tertiary :data-test="`${testIdPrefix}-batch-toggle`" @click="emit('toggleBatchMode')">
+            <template #icon>
+              <svg class="size-14px">
+                <use :href="batchMode ? '#close' : '#batch'" />
+              </svg>
+            </template>
+            {{ batchMode ? t('room.batch.exit') : t('room.batch.enter') }}
+          </n-button>
+          <n-button
+            v-if="showCreateAction"
+            size="small"
+            secondary
+            :data-test="`${testIdPrefix}-create-space`"
+            @click="emit('createSpace')">
             <template #icon>
               <svg class="size-14px">
                 <use href="#add"></use>
@@ -105,6 +118,16 @@
       <n-flex v-if="hasActiveFilters" align="center" :size="8" class="toolbar-filter-summary">
         <span class="text-11px color-[--hula-text-tertiary]">{{ t('space.active_filters') }}:</span>
         <n-tag
+          v-if="hasSearchKeyword"
+          size="tiny"
+          closable
+          round
+          :bordered="false"
+          class="toolbar-filter-tag"
+          @close="emit('update:searchKeyword', '')">
+          {{ t('space.search_filter_tag', { keyword: searchKeyword.trim() }) }}
+        </n-tag>
+        <n-tag
           v-if="isNonDefaultTypeFilter"
           size="tiny"
           closable
@@ -138,6 +161,29 @@
           {{ t('space.clear_all_filters') }}
         </button>
       </n-flex>
+
+      <n-flex v-if="hasSavedPreset || canSavePreset" align="center" :size="8" class="toolbar-preset-bar">
+        <span class="text-11px color-[--hula-text-tertiary]">{{ t('space.saved_preset_label') }}:</span>
+        <button
+          v-if="canSavePreset"
+          type="button"
+          class="toolbar-preset-button"
+          :data-test="`${testIdPrefix}-save-preset`"
+          @click="emit('savePreset')">
+          {{ t('space.save_preset') }}
+        </button>
+        <button
+          v-if="hasSavedPreset && !savedPresetApplied"
+          type="button"
+          class="toolbar-preset-button toolbar-preset-button--primary"
+          :data-test="`${testIdPrefix}-apply-preset`"
+          @click="emit('applySavedPreset')">
+          {{ t('space.apply_saved_preset') }}
+        </button>
+        <span v-else-if="savedPresetApplied" class="toolbar-preset-active" :data-test="`${testIdPrefix}-preset-active`">
+          {{ t('space.saved_preset_active') }}
+        </span>
+      </n-flex>
     </n-flex>
   </div>
 </template>
@@ -163,18 +209,26 @@ const props = withDefaults(
     filteredCount: number
     totalCount: number
     compact?: boolean
+    batchMode?: boolean
     showCreateAction?: boolean
     showJoinAction?: boolean
     createButtonText?: string
     rootTestId?: string
     testIdPrefix?: string
+    hasSavedPreset?: boolean
+    canSavePreset?: boolean
+    savedPresetApplied?: boolean
   }>(),
   {
     compact: false,
+    batchMode: false,
     showCreateAction: true,
     showJoinAction: false,
     sessionEngagementFilter: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all,
-    testIdPrefix: 'session'
+    testIdPrefix: 'session',
+    hasSavedPreset: false,
+    canSavePreset: false,
+    savedPresetApplied: false
   }
 )
 
@@ -183,8 +237,11 @@ const emit = defineEmits<{
   'update:sessionTypeFilter': [value: WorkbenchSessionTypeFilter]
   'update:sessionEngagementFilter': [value: WorkbenchSessionEngagementFilter]
   'update:sessionSort': [value: WorkbenchSessionSort]
+  toggleBatchMode: []
   createSpace: []
   joinRoom: []
+  savePreset: []
+  applySavedPreset: []
 }>()
 
 const { t } = useI18n()
@@ -215,13 +272,18 @@ const sortSummary = computed(() =>
   props.sessionSort === WORKBENCH_SESSION_SORTS.name ? t('space.sort_summary_name') : t('space.sort_summary_recent')
 )
 
+const hasSearchKeyword = computed(() => props.searchKeyword.trim().length > 0)
 const isNonDefaultTypeFilter = computed(() => props.sessionTypeFilter !== WORKBENCH_SESSION_TYPE_FILTERS.all)
 const isNonDefaultEngagementFilter = computed(
   () => props.sessionEngagementFilter !== WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all
 )
 const isNonDefaultSort = computed(() => props.sessionSort !== WORKBENCH_SESSION_SORTS.recent)
 const hasActiveFilters = computed(
-  () => isNonDefaultTypeFilter.value || isNonDefaultEngagementFilter.value || isNonDefaultSort.value
+  () =>
+    hasSearchKeyword.value ||
+    isNonDefaultTypeFilter.value ||
+    isNonDefaultEngagementFilter.value ||
+    isNonDefaultSort.value
 )
 
 const activeTypeLabel = computed(
@@ -233,6 +295,7 @@ const activeEngagementLabel = computed(
 const activeSortLabel = computed(() => sortOptions.value.find((o) => o.value === props.sessionSort)?.label ?? '')
 
 const clearAllFilters = () => {
+  emit('update:searchKeyword', '')
   emit('update:sessionTypeFilter', WORKBENCH_SESSION_TYPE_FILTERS.all)
   emit('update:sessionEngagementFilter', WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all)
   emit('update:sessionSort', WORKBENCH_SESSION_SORTS.recent)
@@ -381,5 +444,45 @@ const handleChipGroupKeydown = <T extends string>(
   &:hover {
     background: var(--hula-color-primary-100);
   }
+}
+
+.toolbar-preset-bar {
+  padding: 4px 10px;
+}
+
+.toolbar-preset-button,
+.toolbar-preset-active {
+  border-radius: var(--hula-radius-full);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.toolbar-preset-button {
+  border: 1px solid var(--hula-border-default);
+  background: transparent;
+  color: var(--hula-text-secondary);
+  cursor: pointer;
+  padding: 4px 10px;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.toolbar-preset-button:hover {
+  border-color: var(--hula-color-primary-300);
+  color: var(--hula-text-primary);
+}
+
+.toolbar-preset-button--primary {
+  border-color: var(--hula-color-primary-500);
+  background: var(--hula-color-primary-100);
+  color: var(--hula-color-primary-600);
+}
+
+.toolbar-preset-active {
+  padding: 4px 10px;
+  background: var(--hula-surface-search);
+  color: var(--hula-text-tertiary);
 }
 </style>

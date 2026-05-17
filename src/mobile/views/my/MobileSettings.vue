@@ -7,12 +7,14 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-gray-500 mb-8px">{{ t('mobile_setting.account_section') }}</div>
+          <div class="text-14px text-[--hula-text-secondary] mb-8px">{{ t('mobile_setting.account_section') }}</div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_setting.status')" is-link @click="router.push('/mobile/mobileMy/status')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-green-50 mr-12px flex items-center justify-center">
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.status">
                   <Icon :icon="statusIcon" :width="20" :style="{ color: statusColor }" />
                 </div>
               </template>
@@ -26,8 +28,10 @@
               is-link
               @click="router.push('/mobile/mobileMy/editProfile')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:account-edit" :width="20" color="#1989fa" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.profile">
+                  <Icon icon="mdi:account-edit" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
             </van-cell>
@@ -37,14 +41,18 @@
               is-link
               @click="router.push(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:shield-lock" :width="20" color="#ff4d4f" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.security">
+                  <Icon icon="mdi:shield-lock" :width="20" color="var(--hula-color-danger-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.notification_section') }}</div>
+          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+            {{ t('mobile_setting.notification_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell
@@ -52,20 +60,26 @@
               is-link
               @click="router.push('/mobile/mobileMy/notifications')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:bell" :width="20" color="#fa8c16" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.notification">
+                  <Icon icon="mdi:bell" :width="20" color="var(--hula-color-warning-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.appearance_section') }}</div>
+          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+            {{ t('mobile_setting.appearance_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_setting.theme')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-purple-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:palette" :width="20" color="#722ed1" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.theme">
+                  <Icon icon="mdi:palette" :width="20" color="var(--hula-color-beta-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -78,20 +92,24 @@
 
             <van-cell :title="t('mobile_setting.language')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-cyan-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:translate" :width="20" color="#13c2c2" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.language">
+                  <Icon icon="mdi:translate" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
               <template #right-icon>
                 <van-radio-group v-model="languageValue" direction="horizontal">
-                  <van-radio name="zh-CN">中文</van-radio>
-                  <van-radio name="en">EN</van-radio>
+                  <van-radio name="zh-CN">{{ t('setting.preferences.language_zh_cn') }}</van-radio>
+                  <van-radio name="en">{{ t('setting.preferences.language_en') }}</van-radio>
                 </van-radio-group>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.privacy_section') }}</div>
+          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+            {{ t('mobile_setting.privacy_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell
@@ -99,8 +117,10 @@
               is-link
               @click="router.push('/mobile/mobileMy/preferences')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-cyan-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:tune" :width="20" color="#13c2c2" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.preferences">
+                  <Icon icon="mdi:tune" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
             </van-cell>
@@ -110,22 +130,28 @@
               is-link
               @click="router.push('/mobile/mobileMy/burnAfterRead')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:timer-outline" :width="20" color="#fa8c16" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.burnAfterRead">
+                  <Icon icon="mdi:timer-outline" :width="20" color="var(--hula-color-warning-500)" />
                 </div>
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_setting.mjolnir')" is-link @click="router.push('/mobile/mobileMy/mjolnir')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:block-helper" :width="20" color="#ff4d4f" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.mjolnir">
+                  <Icon icon="mdi:block-helper" :width="20" color="var(--hula-color-danger-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.help_section') }}</div>
+          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+            {{ t('mobile_setting.help_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell
@@ -133,14 +159,18 @@
               is-link
               @click="router.push(MOBILE_SETTINGS_HELP_ABOUT_PATH)">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-indigo-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:help-circle" :width="20" color="#597ef7" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.help">
+                  <Icon icon="mdi:help-circle" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_setting.advanced_section') }}</div>
+          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+            {{ t('mobile_setting.advanced_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell
@@ -165,7 +195,9 @@
             </van-button>
           </div>
 
-          <div class="text-center text-12px text-gray-400 mt-16px">{{ t('mobile_setting.version') }}: v1.0.0</div>
+          <div class="text-center text-12px text-[--hula-text-quaternary] mt-16px">
+            {{ t('mobile_setting.version') }}: v1.0.0
+          </div>
         </div>
       </div>
     </template>
@@ -209,11 +241,44 @@ const languageValue = computed({
 
 const currentStatusId = computed(() => userStatusStore.stateId || 'online')
 
+const iconShellStyles = {
+  status: { backgroundColor: 'var(--hula-color-success-100)' },
+  profile: { backgroundColor: 'var(--hula-color-info-100)' },
+  security: { backgroundColor: 'var(--hula-color-danger-100)' },
+  notification: { backgroundColor: 'var(--hula-color-warning-100)' },
+  theme: { backgroundColor: 'var(--hula-color-beta-100)' },
+  language: { backgroundColor: 'var(--hula-color-info-100)' },
+  preferences: { backgroundColor: 'var(--hula-color-info-100)' },
+  burnAfterRead: { backgroundColor: 'var(--hula-color-warning-100)' },
+  mjolnir: { backgroundColor: 'var(--hula-color-danger-100)' },
+  help: { backgroundColor: 'var(--hula-color-info-100)' }
+} as const
+
 const statusOptions = [
-  { id: 'online', label: t('mobile_setting.status_online'), icon: 'mdi:circle', color: '#52c41a' },
-  { id: 'away', label: t('mobile_setting.status_away'), icon: 'mdi:circle', color: '#faad14' },
-  { id: 'busy', label: t('mobile_setting.status_busy'), icon: 'mdi:circle', color: '#ff4d4f' },
-  { id: 'offline', label: t('mobile_setting.status_offline'), icon: 'mdi:circle-outline', color: '#999' }
+  {
+    id: 'online',
+    label: t('mobile_setting.status_online'),
+    icon: 'mdi:circle',
+    color: 'var(--hula-color-success-500)'
+  },
+  {
+    id: 'away',
+    label: t('mobile_setting.status_away'),
+    icon: 'mdi:circle',
+    color: 'var(--hula-color-warning-500)'
+  },
+  {
+    id: 'busy',
+    label: t('mobile_setting.status_busy'),
+    icon: 'mdi:circle',
+    color: 'var(--hula-color-danger-500)'
+  },
+  {
+    id: 'offline',
+    label: t('mobile_setting.status_offline'),
+    icon: 'mdi:circle-outline',
+    color: 'var(--hula-text-quaternary)'
+  }
 ]
 
 const currentStatus = computed(() => {

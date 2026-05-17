@@ -274,7 +274,7 @@ describe('Mobile EncryptionSettings', () => {
 
     expect(startSasVerificationMock).toHaveBeenCalledWith('@alice:example.com', 'OTHER_DEVICE')
     expect(deleteDeviceMock).toHaveBeenCalledWith('OTHER_DEVICE')
-    expect(showToastMock).toHaveBeenCalledWith('验证已开始，事务ID: txn-123')
+    expect(showToastMock).toHaveBeenCalledWith('mobile_devices.verification_started')
     expect(showToastMock).toHaveBeenCalledWith('setting.encryption.delete_device_success')
     expect((wrapper.vm as any).showDeviceSheet).toBe(false)
   })

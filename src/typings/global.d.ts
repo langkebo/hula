@@ -4,6 +4,9 @@ declare global {
     $dialog: import('naive-ui').DialogApi
     $notification: import('naive-ui').NotificationApi
     $loadingBar: import('naive-ui').LoadingBarApi
+    $modal: import('naive-ui').ModalApi
+    $invoke: (channel: string, payload?: unknown) => Promise<unknown>
+    __HULA_RENDER_SAMPLES__?: import('@/utils/AppHarness').RenderSampleRecord[]
     hulaChatStore: any
     hulaGlobalStore: any
     hulaUserStore: any

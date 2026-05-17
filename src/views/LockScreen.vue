@@ -115,6 +115,7 @@ import { onKeyStroke } from '@vueuse/core'
 import dayjs from 'dayjs'
 import type { InputInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -129,6 +130,7 @@ const { lockScreen } = storeToRefs(settingStore)
 const { logout } = useLoginFlow()
 const { t } = useI18n()
 const timerManager = useTimerManager()
+const { showFeedback } = useActionFeedback()
 /** 解锁密码 */
 const password = ref('')
 /** 是否是解锁页面 */
@@ -171,19 +173,20 @@ watch(isWrongPassword, (val) => {
 /** 解锁 */
 const unlock = () => {
   if (password.value === '') {
-    window.$message.error(t('message.lock_screen.toast_empty_password'))
+    showFeedback(t('message.lock_screen.toast_empty_password'), 'warning')
+    return
+  }
+
+  isLogining.value = true
+  if (password.value === lockScreen.value.password) {
+    timerManager.setTimeout(() => {
+      lockScreen.value.enable = false
+      isLogining.value = false
+    }, 1000)
   } else {
-    isLogining.value = true
-    if (password.value === lockScreen.value.password) {
-      timerManager.setTimeout(() => {
-        lockScreen.value.enable = false
-        isLogining.value = false
-      }, 1000)
-    } else {
-      timerManager.setTimeout(() => {
-        isWrongPassword.value = true
-      }, 300)
-    }
+    timerManager.setTimeout(() => {
+      isWrongPassword.value = true
+    }, 300)
   }
 }
 

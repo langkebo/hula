@@ -2,6 +2,8 @@ import { type Ref, ref } from 'vue'
 import { matrixWidgetService, type Widget } from '@/services/matrix/widget/MatrixWidgetService'
 import { createLogger } from '@/utils/Logger'
 
+export type { Widget } from '@/services/matrix/widget/MatrixWidgetService'
+
 const logger = createLogger('useWidgets')
 
 export interface CreateWidgetInput {
@@ -20,6 +22,12 @@ export interface UseWidgetsResult {
   create: (input: CreateWidgetInput) => Promise<Widget | null>
   remove: (widgetId: string) => Promise<boolean>
   update: (widgetId: string, updates: Partial<Widget>) => Promise<Widget | null>
+  createWidgetSession: (
+    widgetId: string,
+    options?: { deviceId?: string; expiresInMs?: number },
+    throwOnError?: boolean
+  ) => Promise<Record<string, unknown> | null>
+  terminateWidgetSession: (sessionId: string, throwOnError?: boolean) => Promise<boolean>
 }
 
 /**
@@ -100,5 +108,41 @@ export function useWidgets(roomId: () => string): UseWidgetsResult {
     }
   }
 
-  return { widgets, loading, mutating, error, load, create, remove, update }
+  const createWidgetSession = async (
+    widgetId: string,
+    options?: { deviceId?: string; expiresInMs?: number },
+    throwOnError = false
+  ): Promise<Record<string, unknown> | null> => {
+    try {
+      const result = await matrixWidgetService.createWidgetSession(widgetId, options, throwOnError)
+      return result as Record<string, unknown> | null
+    } catch (err) {
+      logger.error('create widget session failed', err)
+      error.value = err instanceof Error ? err.message : String(err)
+      return null
+    }
+  }
+
+  const terminateWidgetSession = async (sessionId: string, throwOnError = false): Promise<boolean> => {
+    try {
+      return await matrixWidgetService.terminateWidgetSession(sessionId, throwOnError)
+    } catch (err) {
+      logger.error('terminate widget session failed', err)
+      error.value = err instanceof Error ? err.message : String(err)
+      return false
+    }
+  }
+
+  return {
+    widgets,
+    loading,
+    mutating,
+    error,
+    load,
+    create,
+    remove,
+    update,
+    createWidgetSession,
+    terminateWidgetSession
+  }
 }

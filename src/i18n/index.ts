@@ -2,7 +2,7 @@
  * 兼容旧入口，统一复用实际运行时的 i18n 实例。
  * 新代码请直接从 `@/services/i18n` 导入。
  */
-import { i18n, loadLanguage } from '@/services/i18n'
+import { i18n, loadLanguage, useI18nGlobal } from '@/services/i18n'
 
 export { i18n }
 
@@ -19,7 +19,7 @@ export async function setLocale(locale: 'zh-CN' | 'en-US' | 'en') {
  * 获取当前语言
  */
 export function getLocale(): 'zh-CN' | 'en-US' | 'en' {
-  return i18n.global.locale.value as 'zh-CN' | 'en-US' | 'en'
+  return useI18nGlobal().locale.value as 'zh-CN' | 'en-US' | 'en'
 }
 
 /**

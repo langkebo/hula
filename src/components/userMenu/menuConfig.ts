@@ -1,6 +1,7 @@
-import { useDialog, useMessage } from 'naive-ui'
+import { useDialog } from 'naive-ui'
 import { useRouter } from 'vue-router'
-import { i18n } from '@/services/i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useI18nGlobal } from '@/services/i18n'
 import type { SettingsTabType } from '@/stores/domains/settings/settingsDialog'
 import { createLogger } from '@/utils/Logger'
 
@@ -55,7 +56,8 @@ function navigateToHome(): void {
 }
 
 function translateMenu(key: string, named?: Record<string, unknown>) {
-  return named ? i18n.global.t(key, named) : i18n.global.t(key)
+  const composer = useI18nGlobal()
+  return named ? composer.t(key, named) : composer.t(key)
 }
 
 function openSendMessageDialog(): void {
@@ -102,7 +104,7 @@ async function handleSetBlocked(): Promise<void> {
 }
 
 async function handleRemoveFriend(): Promise<void> {
-  const message = useMessage()
+  const { showFeedback } = useActionFeedback()
   const dialog = useDialog()
   const router = useRouter()
 
@@ -116,9 +118,9 @@ async function handleRemoveFriend(): Promise<void> {
         if (router) {
           router.push('/friend')
         }
-        message.info(translateMenu('menu.user_menu.dialogs.remove_friend.redirect_hint'))
+        showFeedback(translateMenu('menu.user_menu.dialogs.remove_friend.redirect_hint'), 'info')
       } catch {
-        message.error(translateMenu('menu.user_menu.dialogs.remove_friend.failed'))
+        showFeedback(translateMenu('menu.user_menu.dialogs.remove_friend.failed'), 'error')
       }
     }
   })

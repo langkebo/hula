@@ -33,7 +33,7 @@
             <AvatarCropper ref="cropperRef" v-model:show="showCropper" :image-url="localImageUrl" @crop="handleCrop" />
           </div>
           <!-- 个人信息 -->
-          <div class="rounded-16px bg-white dark:bg-[#1a1a1a] overflow-hidden">
+          <div class="rounded-16px bg-[--hula-surface-panel] overflow-hidden">
             <van-form @submit="saveEditInfo">
               <van-field
                 v-model="localUserInfo.name"
@@ -127,6 +127,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import router from '@/router'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
@@ -140,6 +141,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('EditProfile')
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const genderText = computed(() => {
   const item = pickerColumn.value.gender.find((i) => i.value === localUserInfo.value.sex)
   return item ? item.text : ''
@@ -226,7 +228,7 @@ const updateCurrentUserCache = (key: 'name' | 'avatar', value: string) => {
 
 const saveEditInfo = async () => {
   if (!localUserInfo.value.name || localUserInfo.value.name.trim() === '') {
-    window.$message.error(t('mobile_edit_profile.nickname_required'))
+    showFeedback(t('mobile_edit_profile.nickname_required'), 'error')
     return
   }
 
@@ -242,14 +244,14 @@ const saveEditInfo = async () => {
     userStore.userInfo!.name = localUserInfo.value.name!
     userStore.userInfo!.sex = localUserInfo.value.sex!
     userStore.userInfo!.phone = localUserInfo.value.phone!
-    loginHistoriesStore.updateLoginHistory(<UserInfoType>userStore.userInfo)
+    loginHistoriesStore.updateLoginHistory(userStore.userInfo as UserInfoType)
     updateCurrentUserCache('name', localUserInfo.value.name)
     if (!localUserInfo.value.modifyNameChance) return
     localUserInfo.value.modifyNameChance -= 1
-    window.$message.success(t('mobile_edit_profile.save_success'))
+    showFeedback(t('mobile_edit_profile.save_success'), 'success')
   } catch (error) {
     logger.error('Failed to update profile', error)
-    window.$message.error(t('mobile_edit_profile.save_failed'))
+    showFeedback(t('mobile_edit_profile.save_failed'), 'error')
   }
 }
 

@@ -274,7 +274,7 @@ const handleVerifyDevice = async () => {
 
   try {
     const transactionId = await matrixVerificationService.startSasVerification(userId, selectedDevice.value.device_id)
-    showToast(`验证已开始，事务ID: ${transactionId}`)
+    showToast(t('mobile_devices.verification_started', { transactionId }))
   } catch (error) {
     showToast(t('setting.encryption.verify_device_todo'))
   }

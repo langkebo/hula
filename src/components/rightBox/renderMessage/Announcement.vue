@@ -48,7 +48,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { useWindow } from '@/hooks/useWindow'
+import { MittEnum } from '@/enums'
+import { useMitt } from '@/hooks/useMitt'
 import type { AnnouncementBody } from '@/services/types'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
@@ -61,7 +62,6 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const globalStore = useGlobalStore()
-const { createWebviewWindow } = useWindow()
 const route = useRoute()
 const router = useRouter()
 
@@ -78,13 +78,10 @@ const openAnnouncementDetail = async () => {
     return
   }
 
-  // 判断是否为手机端
   if (isMobile()) {
-    // 手机端跳转到详情页
     router.push(`/mobile/chatRoom/notice/detail/${props.body.id}`)
   } else {
-    // 桌面端打开新窗口
-    await createWebviewWindow(t('components.announcementCard.windowTitle'), `announList/${roomId}/1`, 420, 620)
+    useMitt.emit(MittEnum.OPEN_ANNOUNCEMENT_PANEL, { roomId })
   }
 }
 </script>

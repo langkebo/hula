@@ -89,7 +89,7 @@ const indeterminate = computed(() => props.selectedCount > 0 && props.selectedCo
   padding: 8px 16px;
   background: var(--hula-surface-elevated);
   border-bottom: 1px solid var(--hula-border-default);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--hula-text-primary) 6%, transparent);
 }
 
 .room-batch-action-bar__btn {
@@ -111,7 +111,7 @@ const indeterminate = computed(() => props.selectedCount > 0 && props.selectedCo
   }
 
   &--danger:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: var(--color-danger-light);
     color: var(--hula-color-danger-500);
   }
 }

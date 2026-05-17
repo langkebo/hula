@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MergeMessageType, MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
@@ -70,6 +71,7 @@ import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ImagePreview')
+const { showFeedback } = useActionFeedback()
 
 interface Props {
   visible: boolean
@@ -127,16 +129,12 @@ const handleClose = () => {
 const handleForward = () => {
   const msgId = props.message?.id
   if (!msgId) {
-    if (window.$message) {
-      window.$message.warning('无法转发：消息ID缺失')
-    }
+    showFeedback('无法转发：消息ID缺失', 'warning')
     return
   }
   const target = chatStore.getMessage(msgId)
   if (!target) {
-    if (window.$message) {
-      window.$message.warning('未找到可转发的消息')
-    }
+    showFeedback('未找到可转发的消息', 'warning')
     return
   }
   chatStore.clearMsgCheck()
@@ -149,16 +147,14 @@ const handleForward = () => {
 
 const handleSave = async () => {
   if (!props.message?.body) {
-    if (window.$message) {
-      window.$message.warning('无法保存：图片地址缺失')
-    }
+    showFeedback('无法保存：图片地址缺失', 'warning')
     return
   }
   try {
     const bodyRecord = props.message.body as Record<string, unknown>
     const sourceUrl = (typeof bodyRecord.url === 'string' && bodyRecord.url) || props.imageUrl
     if (!sourceUrl) {
-      window.$message?.warning('无法保存：图片地址缺失')
+      showFeedback('无法保存：图片地址缺失', 'warning')
       return
     }
 
@@ -178,9 +174,9 @@ const handleSave = async () => {
       result = await fileDownloadStore.downloadFile(sourceUrl, fileName)
     }
 
-    if (result && window.$message) {
+    if (result) {
       logger.debug('图片保存路径:', result)
-      window.$message.success('图片已保存')
+      showFeedback('图片已保存', 'success')
 
       const roomId = getCurrentRoomId()
       if (roomId) {
@@ -201,18 +197,14 @@ const handleSave = async () => {
     }
   } catch (e) {
     logger.error('保存图片失败:', e)
-    if (window.$message) {
-      window.$message.error('保存失败')
-    }
+    showFeedback('保存失败', 'error')
   }
 
   emit('save')
 }
 
 const handleMore = () => {
-  if (window.$message) {
-    window.$message.warning('更多功能暂未实现')
-  }
+  showFeedback('更多功能暂未实现', 'warning')
 
   emit('more')
 }

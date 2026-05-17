@@ -1,4 +1,5 @@
 import { type Ref, ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useI18nGlobal } from '@/services/i18n'
 import { conversationService } from '@/services/matrix/ai/ConversationService'
@@ -12,6 +13,7 @@ interface UseAiTitleEditOptions {
 
 export const useAiTitleEdit = ({ currentChat }: UseAiTitleEditOptions) => {
   const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const isEdit = ref(false)
   const originalTitle = ref('')
 
@@ -32,7 +34,7 @@ export const useAiTitleEdit = ({ currentChat }: UseAiTitleEditOptions) => {
       useMitt.emit('update-chat-title', { title: currentChat.value.title, id: currentChat.value.id })
     } catch (error) {
       logger.error('更新会话标题失败:', error)
-      window.$message.error(t('ai_assistant.robot.rename_failed'))
+      showFeedback(t('ai_assistant.robot.rename_failed'), 'error')
       currentChat.value.title = originalTitle.value
     }
   }

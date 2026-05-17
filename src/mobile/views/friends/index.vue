@@ -48,7 +48,7 @@
       </van-field>
     </div>
 
-    <div class="custom-rounded flex-1 bg-white dark:bg-[#1a1a1a]">
+    <div class="custom-rounded flex-1 bg-[--hula-surface-panel]">
       <!-- 卡片头部 -->
       <div
         class="flex items-center justify-between py-15px px-16px text-14px border-b border-gray-100 dark:border-gray-700">
@@ -66,7 +66,54 @@
       <!-- 选项卡 -->
       <van-tabs v-model:active="activeTab" type="card" class="mt-4px p-[4px_10px_0px_8px]">
         <van-tab :title="t('mobile_contact.tab.contacts')">
-          <van-collapse v-model="activeCollapseNames">
+          <div
+            v-if="isMobileFriendStateLoading"
+            class="flex items-center justify-center text-[--hula-text-secondary]"
+            style="min-height: 240px">
+            <van-loading size="24px" />
+          </div>
+          <div
+            v-else-if="mobileFriendViewState === 'capability'"
+            class="flex items-center justify-center px-16px text-center"
+            style="min-height: 240px">
+            <van-empty :description="t('friend.list.capability_unavailable_description')">
+              <template #image>
+                <svg class="size-40px color-[--hula-text-tertiary]"><use href="#friends"></use></svg>
+              </template>
+              <template #bottom>
+                <div class="mt-8px text-14px font-600 text-[--hula-text-primary]">
+                  {{ t('friend.list.capability_unavailable_title') }}
+                </div>
+              </template>
+            </van-empty>
+          </div>
+          <div
+            v-else-if="mobileFriendViewState === 'error'"
+            class="flex items-center justify-center px-16px text-center"
+            style="min-height: 240px">
+            <van-empty :description="mobileFriendErrorMessage">
+              <template #image>
+                <svg class="size-40px color-[--hula-text-tertiary]"><use href="#warning"></use></svg>
+              </template>
+              <template #bottom>
+                <div class="mt-8px flex flex-col items-center gap-12px">
+                  <div class="text-14px font-600 text-[--hula-text-primary]">
+                    {{ t('common.error') }}
+                  </div>
+                  <van-button size="small" type="primary" plain @click="handleRetryMobileFriends">
+                    {{ t('common.retry') }}
+                  </van-button>
+                </div>
+              </template>
+            </van-empty>
+          </div>
+          <div
+            v-else-if="mobileFriendViewState === 'empty'"
+            class="flex items-center justify-center px-16px text-center"
+            style="min-height: 240px">
+            <van-empty :description="t('friend.list.empty')" />
+          </div>
+          <van-collapse v-else v-model="activeCollapseNames">
             <ContextMenu @contextmenu="showMenu($event)" @select="handleSelect($event.label)" :menu="menuList">
               <!-- 特殊关心分组 -->
               <van-collapse-item v-if="specialContacts.length > 0" name="special">
@@ -110,7 +157,10 @@
                             <span
                               class="inline-block size-8px rounded-full"
                               :style="{
-                                backgroundColor: item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'
+                                backgroundColor:
+                                  item.activeStatus === OnlineEnum.ONLINE
+                                    ? 'var(--color-online)'
+                                    : 'var(--color-offline)'
                               }"></span>
                             {{
                               item.activeStatus === OnlineEnum.ONLINE
@@ -168,7 +218,10 @@
                             <span
                               class="inline-block size-8px rounded-full"
                               :style="{
-                                backgroundColor: item.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'
+                                backgroundColor:
+                                  item.activeStatus === OnlineEnum.ONLINE
+                                    ? 'var(--color-online)'
+                                    : 'var(--color-offline)'
                               }"></span>
                             {{
                               item.activeStatus === OnlineEnum.ONLINE
@@ -284,6 +337,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useFriends } from '@/composables/useFriends'
 import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
@@ -296,6 +350,7 @@ import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const logger = createLogger('FriendsIndex')
 const timerManager = useTimerManager()
 
@@ -315,9 +370,9 @@ const activeCollapseNames = ref(['special', 'normal'])
 const activeGroupCollapseNames = ref(['1'])
 
 const menuList = ref([
-  { label: '添加分组', icon: 'plus' },
-  { label: '重命名该组', icon: 'edit' },
-  { label: '删除分组', icon: 'delete' }
+  { label: t('mobile_contact.menu.add_group'), icon: 'plus' },
+  { label: t('mobile_contact.menu.rename_group'), icon: 'edit' },
+  { label: t('mobile_contact.menu.delete_group'), icon: 'delete' }
 ])
 
 const detailsShow = ref(false)
@@ -345,7 +400,7 @@ const toMessage = async () => {
     await contactStore.getApplyUnReadCount()
   } catch (error) {
     logger.error('刷新通知并标记已读失败', error)
-    window.$message?.error?.('刷新通知失败，请稍后再试')
+    showFeedback(t('mobile_contact.refresh_notification_failed'), 'error')
   } finally {
     router.push('/mobile/mobileMy/myMessages')
   }

@@ -9,6 +9,7 @@
  * 在本 composable 内自管理；调用方仅需透传 `selectedModel` 以便决定默认 tab。
  */
 import { onMounted, onUnmounted, type Ref, ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
@@ -24,6 +25,7 @@ export interface UseAiHistoryViewOptions {
 
 export const useAiHistoryView = ({ selectedModel }: UseAiHistoryViewOptions) => {
   const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const showHistoryModal = ref(false)
   const historyType = ref<'image' | 'video' | 'audio'>('image')
   const historyLoading = ref(false)
@@ -62,7 +64,7 @@ export const useAiHistoryView = ({ selectedModel }: UseAiHistoryViewOptions) => 
       historyPagination.value.total = data.total || 0
     } catch (error) {
       logger.error('加载历史记录失败:', error)
-      window.$message.error(t('ai_assistant.robot.load_history_failed'))
+      showFeedback(t('ai_assistant.robot.load_history_failed'), 'error')
     } finally {
       historyLoading.value = false
     }

@@ -7,6 +7,7 @@ import {
   MatrixMsgType,
   MatrixRelType
 } from '@/common/matrixConstants'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 type RelatesTo = {
@@ -102,7 +103,7 @@ export interface SendRelationResponse {
   }
 }
 
-class MatrixMessageRelationService {
+class MatrixMessageRelationService extends BaseMatrixService {
   async editMessage(
     roomId: string,
     originalEventId: string,
@@ -110,23 +111,23 @@ class MatrixMessageRelationService {
   ): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MessageRelation] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
       const room = client.getRoom(roomId)
       if (!room) {
-        throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
+        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
       }
 
       const originalEvent = room.findEventById(originalEventId)
       if (!originalEvent) {
-        throw new Error(`[MessageRelation] 原始消息不存在: ${originalEventId}`)
+        throw new Error(this.t('matrix_error.messaging.original_message_not_found', { originalEventId }))
       }
 
       const myUserId = client.getUserId()
       if (originalEvent.getSender() !== myUserId) {
-        throw new Error('[MessageRelation] 只能编辑自己发送的消息')
+        throw new Error(this.t('matrix_error.messaging.can_only_edit_own_messages'))
       }
 
       const content: Record<string, unknown> = {
@@ -163,23 +164,23 @@ class MatrixMessageRelationService {
   async editMediaMessage(roomId: string, originalEventId: string, newCaption?: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MessageRelation] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
       const room = client.getRoom(roomId)
       if (!room) {
-        throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
+        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
       }
 
       const originalEvent = room.findEventById(originalEventId)
       if (!originalEvent) {
-        throw new Error(`[MessageRelation] 原始消息不存在: ${originalEventId}`)
+        throw new Error(this.t('matrix_error.messaging.original_message_not_found', { originalEventId }))
       }
 
       const myUserId = client.getUserId()
       if (originalEvent.getSender() !== myUserId) {
-        throw new Error('[MessageRelation] 只能编辑自己发送的消息')
+        throw new Error(this.t('matrix_error.messaging.can_only_edit_own_messages'))
       }
 
       const originalContent = originalEvent.getContent() as RelationContent
@@ -272,18 +273,18 @@ class MatrixMessageRelationService {
   ): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MessageRelation] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
       const room = client.getRoom(roomId)
       if (!room) {
-        throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
+        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
       }
 
       const replyToEvent = room.findEventById(replyToEventId)
       if (!replyToEvent) {
-        throw new Error(`[MessageRelation] 回复的消息不存在: ${replyToEventId}`)
+        throw new Error(this.t('matrix_error.messaging.reply_message_not_found', { replyToEventId }))
       }
 
       const messageContent: Record<string, unknown> = {
@@ -317,7 +318,7 @@ class MatrixMessageRelationService {
   ): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MessageRelation] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -490,23 +491,23 @@ class MatrixMessageRelationService {
   async deleteMessage(roomId: string, eventId: string, reason?: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MessageRelation] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
       const room = client.getRoom(roomId)
       if (!room) {
-        throw new Error(`[MessageRelation] 房间不存在: ${roomId}`)
+        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
       }
 
       const event = room.findEventById(eventId)
       if (!event) {
-        throw new Error(`[MessageRelation] 消息不存在: ${eventId}`)
+        throw new Error(this.t('matrix_error.messaging.message_not_found', { eventId }))
       }
 
       const myUserId = client.getUserId()
       if (event.getSender() !== myUserId) {
-        throw new Error('[MessageRelation] 只能删除自己发送的消息')
+        throw new Error(this.t('matrix_error.messaging.can_only_delete_own_messages'))
       }
 
       await client.redactEvent(roomId, eventId, undefined, reason ? { reason } : undefined)

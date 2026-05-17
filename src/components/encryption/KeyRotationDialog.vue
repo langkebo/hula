@@ -112,16 +112,18 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NEmpty, NFlex, NModal, NSelect, NSpin, NSwitch, useMessage } from 'naive-ui'
+import { NButton, NDivider, NEmpty, NFlex, NModal, NSelect, NSpin, NSwitch } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type KeyRotationRecord, matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { type KeyRotationRecord, useEncryption } from '@/composables/encryption'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('KeyRotation')
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
+const encryption = useEncryption()
 const emit = defineEmits<{
   updated: []
 }>()
@@ -167,7 +169,7 @@ const formatKeyId = (keyId: string): string => {
 const loadRotationStatus = async () => {
   loading.value = true
   try {
-    const status = await matrixEncryptionService.getKeyRotationStatus()
+    const status = await encryption.getKeyRotationStatus()
     needsRotation.value = status.needsRotation
     lastRotationTime.value = status.lastRotation ?? null
     autoRotate.value = status.enabled
@@ -181,9 +183,9 @@ const loadRotationStatus = async () => {
 
 const loadRotationHistory = async () => {
   try {
-    const deviceId = matrixEncryptionService.getCurrentDeviceId()
+    const deviceId = encryption.getCurrentDeviceId()
     if (deviceId) {
-      rotationHistory.value = await matrixEncryptionService.getRotationHistory(deviceId)
+      rotationHistory.value = await encryption.getRotationHistory(deviceId)
     }
   } catch (err) {
     logger.error('Failed to load rotation history:', err)
@@ -193,18 +195,18 @@ const loadRotationHistory = async () => {
 const handleRotate = async () => {
   rotating.value = true
   try {
-    const result = await matrixEncryptionService.rotateKeys()
+    const result = await encryption.rotateKeys()
     if (result.success) {
-      message.success(t('encryption.key_rotation.rotation_success'))
+      showFeedback(t('encryption.key_rotation.rotation_success'), 'success')
       await loadRotationStatus()
       await loadRotationHistory()
       emit('updated')
     } else {
-      message.error(t('encryption.key_rotation.rotation_failed'))
+      showFeedback(t('encryption.key_rotation.rotation_failed'), 'error')
     }
   } catch (err) {
     logger.error('Key rotation failed:', err)
-    message.error(t('encryption.key_rotation.rotation_failed'))
+    showFeedback(t('encryption.key_rotation.rotation_failed'), 'error')
   } finally {
     rotating.value = false
   }
@@ -212,13 +214,13 @@ const handleRotate = async () => {
 
 const handleConfigChange = async () => {
   try {
-    await matrixEncryptionService.configureKeyRotation(autoRotate.value, rotationInterval.value)
+    await encryption.configureKeyRotation(autoRotate.value, rotationInterval.value)
     await loadRotationStatus()
     emit('updated')
-    message.success(t('encryption.key_rotation.config_success'))
+    showFeedback(t('encryption.key_rotation.config_success'), 'success')
   } catch (err) {
     logger.error('Failed to update key rotation config:', err)
-    message.error(t('encryption.key_rotation.config_failed'))
+    showFeedback(t('encryption.key_rotation.config_failed'), 'error')
   }
 }
 

@@ -19,6 +19,7 @@
         <router-view />
       </div>
       <LockScreen v-else />
+      <GlobalAriaLive />
     </NaiveProvider>
     <MemoryMonitor v-if="isDev && showMemoryMonitor && isHomeDesktopWindow" />
   </div>
@@ -29,7 +30,9 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import { exit } from '@tauri-apps/plugin-process'
 import ConnectionStatusBanner from '@/components/common/ConnectionStatusBanner.vue'
+import GlobalAriaLive from '@/components/common/GlobalAriaLive.vue'
 import NetworkStatusBar from '@/components/common/NetworkStatusBar.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { CallTypeEnum, ChangeTypeEnum, EventEnum, MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
@@ -1048,6 +1051,7 @@ useMitt.on(MittEnum.MSG_INIT, async () => {
 
 // 初始化的时候需要加载一次用户在localStorage中保存的代理设置
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const setConfigProxy = async () => {
   const proxySettingsStr = localStorage.getItem('proxySettings')
   // 如果用户没有设置代理，则不需要设置
@@ -1060,7 +1064,7 @@ const setConfigProxy = async () => {
   const wsUrl = proxySettings.wsType + '://' + proxySettings.wsIp + ':' + proxySettings.wsPort + proxySettings.wsSuffix
 
   await updateSettings({ baseUrl, wsUrl }).catch((err) => {
-    window.$message.error(t('login.network.messages.save_failed', { error: err }))
+    showFeedback(t('login.network.messages.save_failed', { error: err }), 'error')
   })
 }
 // 在整个应用挂载前，运行一次这段代码

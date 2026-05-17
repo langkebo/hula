@@ -5,18 +5,22 @@ import { ref } from 'vue'
 const {
   mockDiscoverAndSaveMatrixEndpoints,
   mockResolveMatrixEndpointConfig,
+  mockGetLoginFlows,
   mockDiscoverOidc,
   mockGetAuthorizationUrl,
   mockSaveMatrixSessionEndpointConfig,
+  mockShowFeedback,
   mockInfo,
   mockWarn,
   mockError
 } = vi.hoisted(() => ({
   mockDiscoverAndSaveMatrixEndpoints: vi.fn(),
   mockResolveMatrixEndpointConfig: vi.fn(),
+  mockGetLoginFlows: vi.fn(),
   mockDiscoverOidc: vi.fn(),
   mockGetAuthorizationUrl: vi.fn(),
   mockSaveMatrixSessionEndpointConfig: vi.fn(),
+  mockShowFeedback: vi.fn(),
   mockInfo: vi.fn(),
   mockWarn: vi.fn(),
   mockError: vi.fn()
@@ -31,6 +35,15 @@ vi.mock('vue-i18n', () => ({
           'login.sso.oidc': 'OIDC 单点登录',
           'login.sso.saml': 'SAML 单点登录',
           'login.sso.cas': 'CAS 单点登录',
+          'login.sso.unavailable_feature': '第三方登录功能暂未开放，请使用账号密码登录',
+          'login.sso.oidc_not_configured': 'OIDC 单点登录服务暂未配置，请使用账号密码登录',
+          'login.sso.oidc_unavailable': 'OIDC 登录不可用，请检查服务器配置',
+          'login.sso.oidc_auth_url_failed': '获取 OIDC 授权 URL 失败',
+          'login.sso.oidc_failed': 'OIDC 登录失败',
+          'login.sso.saml_not_configured': 'SAML 单点登录服务暂未配置，请使用账号密码登录',
+          'login.sso.saml_failed': 'SAML 登录失败',
+          'login.sso.cas_not_configured': 'CAS 单点登录服务暂未配置，请使用账号密码登录',
+          'login.sso.cas_failed': 'CAS 登录失败',
           'login.third_party.gitee': '使用 Gitee 登录',
           'login.third_party.github': '使用 GitHub 登录'
         }) as Record<string, string>
@@ -42,6 +55,12 @@ vi.mock('@/services/backend', () => ({
   discoverAndSaveMatrixEndpoints: mockDiscoverAndSaveMatrixEndpoints,
   resolveMatrixEndpointConfig: mockResolveMatrixEndpointConfig,
   saveMatrixSessionEndpointConfig: mockSaveMatrixSessionEndpointConfig
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: mockShowFeedback
+  })
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -59,11 +78,12 @@ vi.mock('@/hooks/useLoginFlow', () => ({
   })
 }))
 
-vi.mock('@/services/matrix/auth/MatrixOidcService', () => ({
-  matrixOidcService: {
+vi.mock('@/composables/user/useSessionActions', () => ({
+  useSessionActions: () => ({
+    getLoginFlows: mockGetLoginFlows,
     discoverOidc: mockDiscoverOidc,
-    getAuthorizationUrl: mockGetAuthorizationUrl
-  }
+    getOidcAuthorizationUrl: mockGetAuthorizationUrl
+  })
 }))
 
 import ThirdPartyLogin from '../ThirdPartyLogin.vue'
@@ -100,16 +120,11 @@ describe('ThirdPartyLogin', () => {
       source: 'well_known',
       serverName: 'example.com'
     })
+    mockGetLoginFlows.mockResolvedValue([{ type: 'm.login.sso' }, { type: 'm.login.cas' }])
     mockDiscoverOidc.mockResolvedValue({
       issuer: 'https://issuer.example.com'
     })
     mockGetAuthorizationUrl.mockResolvedValue(null)
-    window.$message = {
-      error: vi.fn(),
-      info: vi.fn(),
-      success: vi.fn(),
-      warning: vi.fn()
-    } as never
   })
 
   it('runs discovery before starting oidc login and syncs the resolved endpoints back to context', async () => {
@@ -179,5 +194,25 @@ describe('ThirdPartyLogin', () => {
       identityServerUrl: 'https://identity.resolved.example.com'
     })
     expect(locationAssignSpy).toHaveBeenCalledWith(expectedUrl())
+  })
+
+  it('hides unavailable oidc entry and still uses translated fallback feedback for unsupported third-party providers', async () => {
+    mockGetLoginFlows.mockResolvedValueOnce([{ type: 'm.login.password' }])
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(wrapper.find('[aria-label="OIDC 单点登录"]').exists()).toBe(false)
+
+    await wrapper.get('[aria-label="使用 Gitee 登录"]').trigger('click')
+    expect(mockShowFeedback).toHaveBeenCalledWith('第三方登录功能暂未开放，请使用账号密码登录', 'info')
+  })
+
+  it('shows translated feedback when oidc authorization url resolution fails', async () => {
+    const wrapper = mountComponent()
+
+    await wrapper.get('[aria-label="OIDC 单点登录"]').trigger('click')
+    await flushPromises()
+
+    expect(mockShowFeedback).toHaveBeenCalledWith('获取 OIDC 授权 URL 失败', 'error')
   })
 })

@@ -1,9 +1,10 @@
-import { useDialog, useMessage } from 'naive-ui'
+import { useDialog } from 'naive-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { isDesktop } from '@/composables/usePlatform'
-import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
+import { useSessionActions } from '@/composables/user/useSessionActions'
 import { type SettingsTabType, useSettingsDialogStore } from '@/stores/domains/settings/settingsDialog'
 import { type MenuPosition, type MenuTrigger, useUserMenuStore } from '@/stores/domains/user/userMenu'
 import { createLogger } from '@/utils/Logger'
@@ -15,9 +16,10 @@ export function useUserMenu() {
   const userMenuStore = useUserMenuStore()
   const settingsDialogStore = useSettingsDialogStore()
   const dialog = useDialog()
-  const message = useMessage()
+  const { showFeedback, showProgressFeedback } = useActionFeedback()
   const router = useRouter()
   const { t } = useI18n()
+  const { logoutCurrentSession } = useSessionActions()
 
   setRouterInstance(router)
 
@@ -45,13 +47,13 @@ export function useUserMenu() {
   }
 
   async function handleLogout() {
-    const loading = message.loading(t('menu.user_menu.dialogs.logout.loading'), { duration: 0 })
+    const loading = showProgressFeedback(t('menu.user_menu.dialogs.logout.loading'), 'loading')
     try {
-      await sessionOrchestrator.logoutCurrentSession()
-      message.success(t('menu.user_menu.dialogs.logout.success'))
+      await logoutCurrentSession()
+      showFeedback(t('menu.user_menu.dialogs.logout.success'), 'success')
       window.location.reload()
     } catch (error) {
-      message.error(t('menu.user_menu.dialogs.logout.failed'))
+      showFeedback(t('menu.user_menu.dialogs.logout.failed'), 'error')
       logger.error('Failed to log out:', error)
     } finally {
       loading.destroy()

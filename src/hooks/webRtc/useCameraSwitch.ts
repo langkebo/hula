@@ -22,7 +22,7 @@ export type UseCameraSwitchOptions = {
   isVideoCall: () => boolean
   /** True on mobile platforms — gates `switchCameraFacing`. */
   isMobile: () => boolean
-  /** Optional toast surface; tests can stub it. Defaults to `window.$message`. */
+  /** Optional feedback surface; tests can stub it. Falls back to the global message bridge. */
   notify?: {
     error: (msg: string) => void
   }

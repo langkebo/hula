@@ -23,7 +23,12 @@
       </button>
     </div>
 
-    <div v-if="sessionList.length > 0" role="list" class="p-[4px_10px_0px_8px] h-full">
+    <div
+      v-if="sessionList.length > 0"
+      role="list"
+      :aria-label="t('space.session_list_label')"
+      :aria-busy="syncLoading"
+      class="p-[4px_10px_0px_8px] h-full">
       <RecycleScroller
         class="scroller h-full"
         :items="sessionList"

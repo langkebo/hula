@@ -161,9 +161,10 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NDivider, NInput, NSlider, NSwitch, NTag, useMessage } from 'naive-ui'
-import { onMounted, ref } from 'vue'
+import { NButton, NDivider, NInput, NSlider, NSwitch, NTag } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import PushSettings from '@/views/settingsWindow/tabs/PushSettings.vue'
 
@@ -172,7 +173,7 @@ defineOptions({
 })
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const settingStore = useSettingStore()
 
 const desktopNotification = ref(true)
@@ -248,25 +249,27 @@ async function handleNotificationChange(value: boolean) {
   if (value && 'Notification' in window) {
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') {
-      message.warning(t('setting.notification.feedback.permission_denied'))
+      showFeedback(t('setting.notification.feedback.permission_denied'), 'warning')
       desktopNotification.value = false
       return
     }
   }
   localStorage.setItem('hula-desktop-notification', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.desktop', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    })
+    }),
+    'success'
   )
 }
 
 function handleSoundChange(value: boolean) {
   settingStore.setMessageSoundEnabled(value)
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.sound', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    })
+    }),
+    'success'
   )
 }
 
@@ -276,28 +279,31 @@ function handleVolumeChange(value: number) {
 
 function handleContentChange(value: boolean) {
   localStorage.setItem('hula-show-content', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.message_content', {
       state: t(value ? 'setting.notification.common.shown' : 'setting.notification.common.hidden')
-    })
+    }),
+    'success'
   )
 }
 
 function handleSenderChange(value: boolean) {
   localStorage.setItem('hula-show-sender', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.sender_name', {
       state: t(value ? 'setting.notification.common.shown' : 'setting.notification.common.hidden')
-    })
+    }),
+    'success'
   )
 }
 
 function handleKeywordToggle(value: boolean) {
   localStorage.setItem('hula-keyword-notification', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.keyword', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    })
+    }),
+    'success'
   )
 }
 
@@ -307,76 +313,83 @@ function addKeyword() {
     keywords.value.push(keyword)
     localStorage.setItem('hula-keywords', JSON.stringify(keywords.value))
     newKeyword.value = ''
-    message.success(t('setting.notification.feedback.keyword_added', { keyword }))
+    showFeedback(t('setting.notification.feedback.keyword_added', { keyword }), 'success')
   }
 }
 
 function removeKeyword(keyword: string) {
   keywords.value = keywords.value.filter((k) => k !== keyword)
   localStorage.setItem('hula-keywords', JSON.stringify(keywords.value))
-  message.success(t('setting.notification.feedback.keyword_removed', { keyword }))
+  showFeedback(t('setting.notification.feedback.keyword_removed', { keyword }), 'success')
 }
 
 function handleThreadReplyNotify(value: boolean) {
   localStorage.setItem('hula-thread-reply-notify', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.thread_reply', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    })
+    }),
+    'success'
   )
 }
 
 function handleThreadParticipateNotify(value: boolean) {
   localStorage.setItem('hula-thread-participate-notify', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.thread_participate', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    })
+    }),
+    'success'
   )
 }
 
 function handleThreadMentionNotify(value: boolean) {
   localStorage.setItem('hula-thread-mention-notify', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.thread_mention', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    })
+    }),
+    'success'
   )
 }
 
 function handleSpaceNewRoomNotify(value: boolean) {
   localStorage.setItem('hula-space-new-room-notify', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.space_new_room', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    })
+    }),
+    'success'
   )
 }
 
 function handleSpaceMemberChangeNotify(value: boolean) {
   localStorage.setItem('hula-space-member-change-notify', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.space_member_change', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    })
+    }),
+    'success'
   )
 }
 
 function handleFriendRequestNotify(value: boolean) {
   localStorage.setItem('hula-friend-request-notify', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.friend_request', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    })
+    }),
+    'success'
   )
 }
 
 function handleFriendAcceptNotify(value: boolean) {
   localStorage.setItem('hula-friend-accept-notify', value.toString())
-  message.success(
+  showFeedback(
     t('setting.notification.feedback.friend_accept', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    })
+    }),
+    'success'
   )
 }
 </script>

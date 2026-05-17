@@ -1,5 +1,5 @@
 <template>
-  <div class="hula-space-tree">
+  <div class="hula-space-tree" :role="treeRole" :aria-label="treeAriaLabel" @keydown="handleKeyDown">
     <div v-if="loading && !rooms.length" class="hula-space-tree__loading">
       <n-spin size="small" />
     </div>
@@ -10,22 +10,31 @@
 
     <div v-else class="hula-space-tree__list">
       <div
-        v-for="room in rooms"
+        v-for="(room, index) in rooms"
         :key="room.spaceId"
+        role="treeitem"
+        :aria-expanded="room.childCount > 0 ? expandedIds.has(room.spaceId) : undefined"
+        :aria-selected="selectedSpaceId === room.spaceId"
+        :aria-level="currentDepth + 1"
+        :aria-posinset="index + 1"
+        :aria-setsize="rooms.length"
+        :tabindex="selectedSpaceId === room.spaceId || (!selectedSpaceId && index === 0) ? 0 : -1"
+        :data-id="room.spaceId"
         class="hula-space-tree__item"
-        :style="{ paddingLeft: `${currentDepth * 16 + 8}px` }">
-        <div
-          class="hula-space-tree__item-content"
-          :class="{ 'is-selected': selectedSpaceId === room.spaceId }"
-          @click="handleSelect(room)">
+        :style="{ paddingLeft: `${currentDepth * 16 + 8}px` }"
+        @click="handleSelect(room)">
+        <div class="hula-space-tree__item-content" :class="{ 'is-selected': selectedSpaceId === room.spaceId }">
           <div class="hula-space-tree__item-icon">
-            <svg
+            <button
               v-if="room.childCount > 0"
-              class="size-14px"
-              :class="{ 'is-expanded': expandedIds.has(room.spaceId) }"
+              type="button"
+              class="hula-space-tree__expand-button"
+              :aria-expanded="expandedIds.has(room.spaceId)"
               @click.stop="toggleExpand(room.spaceId)">
-              <use href="#down"></use>
-            </svg>
+              <svg class="size-14px" :class="{ 'is-expanded': expandedIds.has(room.spaceId) }">
+                <use href="#down"></use>
+              </svg>
+            </button>
             <div v-else class="w-14px" />
           </div>
 
@@ -51,7 +60,10 @@
             v-if="expandedIds.has(room.spaceId)"
             :space-id="room.spaceId"
             :depth="currentDepth + 1"
+            nested
             :selected-space-id="selectedSpaceId"
+            :suggested-only="suggestedOnly"
+            :loader="loader"
             @select="handleSelect" />
         </Transition>
       </div>
@@ -72,14 +84,23 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { type SpaceInfo, useSpace } from '@/composables/space'
 import { ThemeEnum } from '@/enums'
-import { matrixSpaceService, type SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 const props = defineProps<{
   spaceId?: string
   depth?: number
+  nested?: boolean
   selectedSpaceId?: string
+  suggestedOnly?: boolean
+  loader?: (options: {
+    spaceId: string
+    from?: string
+    limit?: number
+    maxDepth?: number
+    suggestedOnly?: boolean
+  }) => Promise<{ rooms: SpaceInfo[]; next_batch?: string }>
 }>()
 
 const emit = defineEmits<{
@@ -88,7 +109,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
+const { getHierarchy } = useSpace(() => props.spaceId!)
 const currentDepth = computed(() => props.depth ?? 0)
+const treeRole = computed(() => (props.nested ? 'group' : 'tree'))
+const treeAriaLabel = computed(() => (props.nested ? undefined : t('space.space_tree_label')))
 
 const rooms = ref<SpaceInfo[]>([])
 const loading = ref(false)
@@ -97,6 +121,29 @@ const nextBatch = ref<string | undefined>(undefined)
 const expandedIds = ref<Set<string>>(new Set())
 
 const fallbackAvatar = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'))
+const loadHierarchy = async (options: {
+  spaceId: string
+  from?: string
+  limit?: number
+  maxDepth?: number
+  suggestedOnly?: boolean
+}): Promise<{ rooms: SpaceInfo[]; next_batch?: string }> => {
+  if (props.loader) {
+    return await props.loader(options)
+  }
+
+  const result = await getHierarchy({
+    from: options.from,
+    limit: options.limit,
+    maxDepth: options.maxDepth,
+    suggestedOnly: options.suggestedOnly
+  })
+
+  return {
+    rooms: result.rooms as unknown as SpaceInfo[],
+    next_batch: result.next_batch
+  }
+}
 
 const loadData = async (from?: string) => {
   if (!props.spaceId) return
@@ -108,16 +155,18 @@ const loadData = async (from?: string) => {
   }
 
   try {
-    const result = await matrixSpaceService.getSpaceHierarchy(props.spaceId, {
+    const result = await loadHierarchy({
+      spaceId: props.spaceId,
       limit: 20,
       from,
-      maxDepth: 1
+      maxDepth: 1,
+      suggestedOnly: props.suggestedOnly
     })
 
     if (from) {
-      rooms.value = [...rooms.value, ...(result.rooms as unknown as SpaceInfo[])]
+      rooms.value = [...rooms.value, ...result.rooms]
     } else {
-      rooms.value = result.rooms as unknown as SpaceInfo[]
+      rooms.value = result.rooms
     }
     nextBatch.value = result.next_batch
   } catch (err) {
@@ -142,6 +191,51 @@ const handleSelect = (room: SpaceInfo) => {
 const loadMore = () => {
   if (nextBatch.value) {
     void loadData(nextBatch.value)
+  }
+}
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  const target = event.target as HTMLElement
+  const currentItem = target.closest('[role="treeitem"]') as HTMLElement
+  if (!currentItem) return
+
+  switch (event.key) {
+    case 'ArrowUp': {
+      event.preventDefault()
+      const prev = currentItem.previousElementSibling as HTMLElement
+      if (prev?.focus) prev.focus()
+      break
+    }
+    case 'ArrowDown': {
+      event.preventDefault()
+      const next = currentItem.nextElementSibling as HTMLElement
+      if (next?.focus) next.focus()
+      break
+    }
+    case 'ArrowRight': {
+      event.preventDefault()
+      const roomId = currentItem.dataset.id
+      if (roomId && !expandedIds.value.has(roomId)) {
+        toggleExpand(roomId)
+      }
+      break
+    }
+    case 'ArrowLeft': {
+      event.preventDefault()
+      const roomId = currentItem.dataset.id
+      if (roomId && expandedIds.value.has(roomId)) {
+        toggleExpand(roomId)
+      }
+      break
+    }
+    case 'Enter':
+    case ' ': {
+      event.preventDefault()
+      const roomId = currentItem.dataset.id
+      const room = rooms.value.find((r) => r.spaceId === roomId)
+      if (room) handleSelect(room)
+      break
+    }
   }
 }
 
@@ -203,6 +297,17 @@ watch(
       transform: rotate(-90deg);
     }
   }
+}
+
+.hula-space-tree__expand-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
 }
 
 .hula-space-tree__item-avatar {

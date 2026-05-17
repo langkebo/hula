@@ -111,6 +111,7 @@
 import { join } from '@tauri-apps/api/path'
 import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MessageStatusEnum, TauriCommand } from '@/enums'
 import { useDownload } from '@/hooks/useDownload'
 import type { FileBody, FilesMeta, MsgType } from '@/services/types'
@@ -128,6 +129,7 @@ const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 const { isDownloading: legacyIsDownloading } = useDownload()
 const fileDownloadStore = useFileDownloadStore()
@@ -193,14 +195,14 @@ const persistFileLocalPath = async (absolutePath: string) => {
 
 const revealInDirSafely = async (targetPath?: string | null) => {
   if (!targetPath) {
-    window.$message?.error(t('message.file.toast.missing_local'))
+    showFeedback(t('message.file.toast.missing_local'), 'error')
     return
   }
   try {
     await revealItemInDir(targetPath)
   } catch (error) {
     logger.error('在文件夹中显示文件失败:', error)
-    window.$message?.error(t('message.file.toast.reveal_fail'))
+    showFeedback(t('message.file.toast.reveal_fail'), 'error')
   }
 }
 
@@ -395,9 +397,9 @@ const downloadAndOpenFile = async () => {
     logger.error('下载文件失败:', error)
     const errorMessage = error instanceof Error ? error.message : '未知错误'
     if (errorMessage.includes('Not allowed to open path') || errorMessage.includes('revealItemInDir')) {
-      window.$message?.error(t('message.file.toast.download_open_fail'))
+      showFeedback(t('message.file.toast.download_open_fail'), 'error')
     } else {
-      window.$message?.error(t('message.file.toast.download_failed', { reason: errorMessage }))
+      showFeedback(t('message.file.toast.download_failed', { reason: errorMessage }), 'error')
     }
   }
 }

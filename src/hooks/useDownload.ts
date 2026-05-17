@@ -1,11 +1,15 @@
 import { BaseDirectory, exists, mkdir, writeFile } from '@tauri-apps/plugin-fs'
 import { createEventHook } from '@vueuse/core'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('Download')
 
 export const useDownload = () => {
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const process = ref(0)
   const isDownloading = ref(false)
   const { on: onLoaded, trigger } = createEventHook()
@@ -30,12 +34,14 @@ export const useDownload = () => {
 
       const response = await fetch(url)
       if (!response.ok) {
-        return window.$message.error('下载失败')
+        showFeedback(t('hooks.download.failed'), 'error')
+        return
       }
 
       const reader = response.body?.getReader()
       if (!reader) {
-        return window.$message.error('无法读取响应内容')
+        showFeedback(t('hooks.download.read_failed'), 'error')
+        return
       }
 
       const contentLength = Number(response.headers.get('Content-Length')) || 0

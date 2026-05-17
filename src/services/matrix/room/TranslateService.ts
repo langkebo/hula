@@ -1,5 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 /**
  * Text translation domain service.
@@ -10,15 +10,12 @@ import matrixClientService from '../MatrixClientService'
  * calls it via `matrixRoomService.translateText`; the client-initialized
  * guard is retained for backwards-compatible error parity.
  */
-export class MatrixRoomTranslateService {
+export class MatrixRoomTranslateService extends BaseMatrixService {
   async translateText(text: string, _provider?: string): Promise<string>
   async translateText(text: string, _provider: string | undefined, throwOnError: true): Promise<string>
   async translateText(text: string, _provider: string | undefined, throwOnError: false): Promise<string>
   async translateText(text: string, _provider?: string, throwOnError = true): Promise<string> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
+    this.getClient()
 
     try {
       const response = await fetch(

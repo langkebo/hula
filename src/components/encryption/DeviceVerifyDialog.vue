@@ -91,15 +91,17 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NModal, NSpin, useMessage } from 'naive-ui'
+import { NButton, NModal, NSpin } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useEncryption } from '@/composables/encryption'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('DeviceVerify')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
+const encryption = useEncryption()
 
 defineOptions({
   name: 'DeviceVerifyDialog'
@@ -115,8 +117,6 @@ const emit = defineEmits<{
   (e: 'update:show', value: boolean): void
   (e: 'success'): void
 }>()
-
-const message = useMessage()
 
 const visible = computed({
   get: () => props.show,
@@ -135,7 +135,7 @@ const fingerprintChunks = computed(() => {
 })
 
 onMounted(async () => {
-  userId.value = matrixEncryptionContextService.getCurrentSessionContext().userId ?? ''
+  userId.value = encryption.getCurrentSessionContext().userId ?? ''
 })
 
 function handleCancel() {
@@ -158,7 +158,7 @@ async function startVerification() {
   loading.value = true
 
   try {
-    const sessionContext = matrixEncryptionContextService.getCurrentSessionContext()
+    const sessionContext = encryption.getCurrentSessionContext()
     const targetUserId = sessionContext.userId
     const targetDeviceId = props.deviceId || sessionContext.deviceId
 
@@ -168,12 +168,12 @@ async function startVerification() {
 
     userId.value = targetUserId
     fingerprint.value =
-      (await matrixEncryptionContextService.getDeviceFingerprint(targetUserId, targetDeviceId)) ||
+      (await encryption.getDeviceFingerprint(targetUserId, targetDeviceId)) ||
       t('encryption.device_verify_dialog.fingerprint_unavailable')
     step.value = 'showKey'
   } catch (error) {
     logger.error('Failed to load device fingerprint:', error)
-    message.error(t('encryption.device_verify_dialog.load_fingerprint_failed'))
+    showFeedback(t('encryption.device_verify_dialog.load_fingerprint_failed'), 'error')
   } finally {
     loading.value = false
   }
@@ -183,7 +183,7 @@ async function handleConfirm() {
   loading.value = true
 
   try {
-    const sessionContext = matrixEncryptionContextService.getCurrentSessionContext()
+    const sessionContext = encryption.getCurrentSessionContext()
     const targetUserId = userId.value || sessionContext.userId
     const targetDeviceId = props.deviceId || sessionContext.deviceId
 
@@ -191,13 +191,13 @@ async function handleConfirm() {
       throw new Error('Device context unavailable')
     }
 
-    await matrixEncryptionService.trustDevice(targetUserId, targetDeviceId)
+    await encryption.trustDevice(targetUserId, targetDeviceId)
 
     step.value = 'success'
-    message.success(t('encryption.verify_success'))
+    showFeedback(t('encryption.verify_success'), 'success')
   } catch (error) {
     logger.error('Device verification failed:', error)
-    message.error(t('encryption.device_verify_dialog.verify_failed'))
+    showFeedback(t('encryption.device_verify_dialog.verify_failed'), 'error')
   } finally {
     loading.value = false
   }

@@ -22,5 +22,6 @@
     "message": "确定要删除其他 {count} 个设备吗？",
     "confirm": "删除",
     "cancel": "取消"
-  }
+  },
+  "verification_started": "验证已开始，事务ID: {transactionId}"
 }

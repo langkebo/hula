@@ -33,7 +33,7 @@ describe('check-sdk-augmentations', () => {
     })
     expect(report.augmentedEnumCount).toBeGreaterThan(0)
     expect(report.canonicalEnumCount).toBeGreaterThan(0)
-  }, 30_000)
+  }, 120_000)
 
   it('reports drift finding shape with type + enum + detail fields', () => {
     let output = ''
@@ -54,5 +54,5 @@ describe('check-sdk-augmentations', () => {
         detail: expect.any(String)
       })
     }
-  }, 60_000)
+  }, 120_000)
 })

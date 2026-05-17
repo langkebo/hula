@@ -1,99 +1,154 @@
 <template>
   <div class="friend-list-view">
-    <n-flex vertical :size="12" class="p-12px">
-      <n-flex align="center" justify="space-between">
-        <n-flex align="center" :size="8">
-          <span class="text-16px font-semibold">{{ t('friend.list.title') }}</span>
-          <n-badge :value="incomingRequestsCount" :max="99" :show="incomingRequestsCount > 0" />
-        </n-flex>
-        <n-flex :size="8">
-          <n-button quaternary circle size="small" @click="showAddFriend = true">
-            <template #icon>
-              <n-icon>
-                <svg><use href="#plus" /></svg>
-              </n-icon>
-            </template>
-          </n-button>
-          <n-button quaternary circle size="small" @click="showFriendRequest = true">
-            <template #icon>
-              <n-icon>
-                <svg><use href="#bell" /></svg>
-              </n-icon>
-            </template>
-          </n-button>
-        </n-flex>
-      </n-flex>
-
-      <n-input v-model:value="searchValue" :placeholder="t('friend.list.search')" size="small" clearable>
-        <template #prefix>
-          <n-icon size="16">
-            <svg><use href="#search" /></svg>
-          </n-icon>
-        </template>
-      </n-input>
-
-      <n-flex :size="4">
-        <n-button
-          v-for="filter in filterOptions"
-          :key="filter.value"
-          :type="currentFilter === filter.value ? 'primary' : 'default'"
-          size="tiny"
-          quaternary
-          @click="handleFilterChange(filter.value)">
-          {{ filter.label }}
-          <n-badge
-            v-if="filter.value !== 'all'"
-            :value="getFilterCount(filter.value)"
-            :max="99"
-            :show="getFilterCount(filter.value) > 0"
-            type="info"
-            class="ml-4px" />
-        </n-button>
-      </n-flex>
-    </n-flex>
-
-    <n-divider style="margin: 0" />
-
-    <n-spin :show="isLoading">
-      <n-scrollbar style="height: calc(100vh - 200px)">
+    <div v-if="showStatePanel" class="friend-list-view__state">
+      <n-spin :show="isCapabilityLoading" class="h-full">
         <n-empty
-          v-if="filteredFriends.length === 0 && !isLoading"
-          :description="t('friend.list.empty')"
-          class="mt-40px" />
-        <div v-else class="friend-items">
-          <div
-            v-for="friend in filteredFriends"
-            :key="friend.userId"
-            class="friend-item"
-            @click="handleSelectFriend(friend)"
-            @contextmenu="handleContextMenu($event, friend)">
-            <n-flex align="center" :size="12">
-              <n-badge :dot="friend.friendStatus === 'favorite'" color="#f0a020" :offset="[-4, 4]">
-                <n-avatar
-                  :size="44"
-                  :src="AvatarUtils.getAvatarUrl(friend.avatarUrl)"
-                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                  round />
-              </n-badge>
-              <n-flex vertical :size="4" class="flex-1 truncate">
-                <span class="text-14px truncate">
-                  {{ friend.remark || friend.displayName || friend.name }}
-                </span>
-                <n-flex align="center" :size="4">
-                  <n-badge :color="friend.activeStatus === OnlineEnum.ONLINE ? '#1ab292' : '#909090'" dot />
-                  <span class="text-12px text-gray-500">
-                    {{ friend.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : getLastSeenText(friend) }}
+          v-if="viewState === 'capability'"
+          :description="t('friend.list.capability_unavailable_description')"
+          size="large">
+          <template #extra>
+            <span class="friend-list-view__state-title">
+              {{ t('friend.list.capability_unavailable_title') }}
+            </span>
+          </template>
+        </n-empty>
+        <n-empty v-else :description="lastFriendError?.message || t('common.error')" size="large">
+          <template #extra>
+            <n-flex vertical align="center" :size="12">
+              <span class="friend-list-view__state-title">{{ t('common.error') }}</span>
+              <n-button size="small" @click="handleRetryFriendList">
+                {{ t('common.retry') }}
+              </n-button>
+            </n-flex>
+          </template>
+        </n-empty>
+      </n-spin>
+    </div>
+
+    <template v-else>
+      <n-flex vertical :size="12" class="p-12px">
+        <n-flex align="center" justify="space-between">
+          <n-flex align="center" :size="8">
+            <span class="text-16px font-semibold">{{ t('friend.list.title') }}</span>
+            <n-badge :value="incomingRequestsCount" :max="99" :show="incomingRequestsCount > 0" />
+          </n-flex>
+          <n-flex :size="8">
+            <n-button quaternary circle size="small" @click="showAddFriend = true">
+              <template #icon>
+                <n-icon>
+                  <svg><use href="#plus" /></svg>
+                </n-icon>
+              </template>
+            </n-button>
+            <n-button quaternary circle size="small" @click="showFriendRequest = true">
+              <template #icon>
+                <n-icon>
+                  <svg><use href="#bell" /></svg>
+                </n-icon>
+              </template>
+            </n-button>
+          </n-flex>
+        </n-flex>
+
+        <FriendSearchBar
+          v-model="searchValue"
+          :history="searchHistory"
+          :show-history="showSearchHistory"
+          :placeholder="t('friend.list.search')"
+          @search="handleSearch"
+          @select-history="handleSelectSearchHistory"
+          @clear-history="handleClearSearchHistory" />
+
+        <div v-if="showSearchSummary" class="friend-list-view__search-summary">
+          <span>{{ searchSummaryText }}</span>
+          <button
+            v-if="showSearchClearAction"
+            type="button"
+            class="friend-list-view__search-clear"
+            @click="handleClearActiveSearch">
+            {{ t('friend.search.clear_current') }}
+          </button>
+        </div>
+
+        <n-flex :size="4">
+          <n-button
+            v-for="filter in filterOptions"
+            :key="filter.value"
+            :type="currentFilter === filter.value ? 'primary' : 'default'"
+            size="tiny"
+            quaternary
+            @click="handleFilterChange(filter.value)">
+            {{ filter.label }}
+            <n-badge
+              v-if="filter.value !== 'all'"
+              :value="getFilterCount(filter.value)"
+              :max="99"
+              :show="getFilterCount(filter.value) > 0"
+              type="info"
+              class="ml-4px" />
+          </n-button>
+        </n-flex>
+      </n-flex>
+
+      <n-divider style="margin: 0" />
+
+      <n-spin :show="isCapabilityLoading || isLoading">
+        <n-scrollbar style="height: calc(100vh - 200px)">
+          <n-empty v-if="showSearchEmptyState && !isLoading" :description="searchEmptyDescription" class="mt-40px">
+            <template #extra>
+              <n-flex vertical align="center" :size="12">
+                <span class="friend-list-view__state-title">{{ t('friend.search.empty_title') }}</span>
+                <n-button size="small" @click="handleClearActiveSearch">
+                  {{ t('friend.search.clear_current') }}
+                </n-button>
+              </n-flex>
+            </template>
+          </n-empty>
+          <n-empty v-else-if="showEmptyState && !isLoading" :description="t('friend.list.empty')" class="mt-40px" />
+          <div v-else class="friend-items" role="list" :aria-label="t('friend.list.friend_list_label')">
+            <button
+              v-for="friend in filteredFriends"
+              :key="friend.userId"
+              type="button"
+              role="listitem"
+              class="friend-item"
+              :aria-current="selectedUserId === friend.userId ? 'true' : undefined"
+              @click="handleSelectFriend(friend)"
+              @contextmenu="handleContextMenu($event, friend)">
+              <n-flex align="center" :size="12">
+                <n-badge :dot="friend.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
+                  <n-avatar
+                    :size="44"
+                    :src="AvatarUtils.getAvatarUrl(friend.avatarUrl)"
+                    :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                    round />
+                </n-badge>
+                <n-flex vertical :size="4" class="flex-1 truncate">
+                  <span class="text-14px truncate">
+                    {{ friend.remark || friend.displayName || friend.name }}
                   </span>
-                  <n-tag v-if="friend.friendStatus === 'blocked'" type="error" size="tiny">
-                    {{ t('friend.status.blocked') }}
-                  </n-tag>
+                  <n-flex align="center" :size="4">
+                    <n-badge
+                      :color="
+                        friend.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
+                      "
+                      dot />
+                    <span class="friend-item__presence-text text-12px">
+                      {{
+                        friend.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : getLastSeenText(friend)
+                      }}
+                    </span>
+                    <n-tag v-if="friend.friendStatus === 'blocked'" type="error" size="tiny">
+                      {{ t('friend.status.blocked') }}
+                    </n-tag>
+                  </n-flex>
                 </n-flex>
               </n-flex>
-            </n-flex>
+            </button>
           </div>
-        </div>
-      </n-scrollbar>
-    </n-spin>
+        </n-scrollbar>
+      </n-spin>
+    </template>
 
     <ContextMenu ref="contextMenuRef" :menu="contextMenuItems" @select="handleContextMenuSelect" />
 
@@ -106,21 +161,40 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import ContextMenu from '@/components/common/ContextMenu.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useAriaLive } from '@/composables/common/useAriaLive'
+import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHistory'
+import { useSearchFeedbackSummary } from '@/composables/common/useSearchFeedbackSummary'
 import { OnlineEnum, ThemeEnum } from '@/enums'
-import type { FriendStatus } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpecialFriendService'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import type { FriendStatus } from '@/types/matrix-services'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import AddFriendDialog from './AddFriendDialog.vue'
 import FriendDetailDrawer from './FriendDetailDrawer.vue'
 import FriendRequestDialog from './FriendRequestDialog.vue'
+import FriendSearchBar from './FriendSearchBar.vue'
+import { resolveFriendListViewState } from './friendListViewState'
+
+const FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'hula-friend-search-history'
 
 const { t } = useI18n()
+const { announce } = useAriaLive()
+const { showFeedback } = useActionFeedback()
 const contactStore = useContactStore()
 const settingStore = useSettingStore()
+const { isLoaded, canUseFriendList } = useServerCapability()
+const {
+  historyValues: searchHistory,
+  rememberTerm,
+  clearHistory: clearSearchHistory
+} = useRecentSearchHistory(FRIEND_SEARCH_HISTORY_STORAGE_KEY)
 
 const searchValue = ref('')
+const appliedSearchValue = ref('')
+const isSearchPending = ref(false)
 const currentFilter = ref<FriendStatus | 'all'>('all')
 const showFriendRequest = ref(false)
 const showAddFriend = ref(false)
@@ -130,23 +204,44 @@ const contextMenuRef = ref()
 const selectedFriend = ref<MatrixContact | null>(null)
 
 const isLoading = computed(() => contactStore.isLoading)
+const isCapabilityLoading = computed(() => !isLoaded.value)
 const incomingRequestsCount = computed(() => contactStore.incomingRequestsCount)
+const lastFriendError = computed(() => contactStore.lastFriendError)
+const hasSearchKeyword = computed(() => appliedSearchValue.value.trim().length > 0)
+const showSearchHistory = computed(
+  () => !isLoading.value && !showStatePanel.value && !searchValue.value.trim() && searchHistory.value.length > 0
+)
+
+watch(incomingRequestsCount, (count, prevCount) => {
+  if (count > (prevCount || 0)) {
+    announce(t('friend.list.new_request_announcement', { count: count }), 'assertive')
+  }
+})
 
 const filterOptions = computed(() => [
   { value: 'all' as const, label: t('friend.filter.all') },
   { value: 'favorite' as FriendStatus, label: t('friend.filter.favorite') },
   { value: 'normal' as FriendStatus, label: t('friend.filter.normal') },
-  { value: 'blocked' as FriendStatus, label: t('friend.filter.blocked') }
+  { value: 'blocked' as FriendStatus, label: t('friend.filter.blocked') },
+  { value: 'hidden' as FriendStatus, label: t('friend.filter.hidden') }
 ])
+
+const normalizeFriendStatus = (status?: FriendStatus) => {
+  if (status === 'accepted') {
+    return 'normal'
+  }
+
+  return status
+}
 
 const filteredFriends = computed(() => {
   let friends =
     currentFilter.value === 'all'
-      ? contactStore.contactsList
-      : contactStore.contactsList.filter((f) => f.friendStatus === currentFilter.value)
+      ? [...contactStore.contactsList]
+      : contactStore.contactsList.filter((f) => normalizeFriendStatus(f.friendStatus) === currentFilter.value)
 
-  if (searchValue.value.trim()) {
-    const query = searchValue.value.toLowerCase()
+  if (appliedSearchValue.value.trim()) {
+    const query = appliedSearchValue.value.toLowerCase()
     friends = friends.filter(
       (f) =>
         f.userId.toLowerCase().includes(query) ||
@@ -166,8 +261,79 @@ const filteredFriends = computed(() => {
 })
 
 const getFilterCount = (status: FriendStatus) => {
-  return contactStore.contactsList.filter((f) => f.friendStatus === status).length
+  return contactStore.contactsList.filter((f) => normalizeFriendStatus(f.friendStatus) === status).length
 }
+
+const viewState = computed(() =>
+  resolveFriendListViewState({
+    isCapabilityReady: isLoaded.value,
+    canUseFriendList: canUseFriendList.value,
+    hasError: Boolean(lastFriendError.value),
+    hasFriends: contactStore.contactsList.length > 0
+  })
+)
+
+const showStatePanel = computed(() => viewState.value === 'capability' || viewState.value === 'error')
+const {
+  showSummary: showSearchSummary,
+  showClearAction: showSearchClearAction,
+  summaryText: searchSummaryText,
+  emptyDescription: searchEmptyDescription
+} = useSearchFeedbackSummary({
+  searchValue,
+  appliedSearchValue,
+  isSearching: isSearchPending,
+  resultCount: () => filteredFriends.value.length,
+  showSummaryWhen: () =>
+    !showStatePanel.value && (isSearchPending.value || hasSearchKeyword.value || currentFilter.value !== 'all'),
+  showClearActionWhen: () => Boolean(searchValue.value || currentFilter.value !== 'all'),
+  searchingText: () => t('friend.search.searching'),
+  announce,
+  getIdleSummaryText: () => {
+    if (hasSearchKeyword.value) {
+      return t('friend.search.result_count', {
+        count: filteredFriends.value.length,
+        keyword: appliedSearchValue.value
+      })
+    }
+
+    if (currentFilter.value !== 'all') {
+      return t('friend.search.filter_result_count', {
+        count: filteredFriends.value.length,
+        filter: t(`friend.filter.${currentFilter.value}`)
+      })
+    }
+
+    return ''
+  },
+  getResultAnnouncementText: () =>
+    t('friend.search.result_count', {
+      count: filteredFriends.value.length,
+      keyword: appliedSearchValue.value
+    }),
+  getEmptyAnnouncementText: () =>
+    t('friend.search.empty_description', {
+      keyword: appliedSearchValue.value
+    }),
+  getEmptyDescription: () =>
+    t('friend.search.empty_description', {
+      keyword: appliedSearchValue.value
+    })
+})
+const showSearchEmptyState = computed(
+  () =>
+    filteredFriends.value.length === 0 &&
+    hasSearchKeyword.value &&
+    viewState.value !== 'error' &&
+    viewState.value !== 'capability'
+)
+const showEmptyState = computed(
+  () =>
+    filteredFriends.value.length === 0 &&
+    !hasSearchKeyword.value &&
+    viewState.value !== 'error' &&
+    viewState.value !== 'capability'
+)
 
 const getLastSeenText = (friend: MatrixContact): string => {
   if (friend.activeStatus === OnlineEnum.ONLINE) return t('friend.list.online')
@@ -185,6 +351,43 @@ const getLastSeenText = (friend: MatrixContact): string => {
 
 const handleFilterChange = (filter: FriendStatus | 'all') => {
   currentFilter.value = filter
+}
+
+const applySearch = (value: string, options?: { remember?: boolean }) => {
+  const normalizedValue = value.trim()
+  appliedSearchValue.value = normalizedValue
+  isSearchPending.value = false
+
+  if (options?.remember !== false) {
+    rememberTerm(normalizedValue)
+  }
+}
+
+const handleSearch = (value: string) => {
+  applySearch(value)
+}
+
+const handleSelectSearchHistory = (value: string) => {
+  searchValue.value = value
+  applySearch(value)
+}
+
+const handleClearSearchHistory = () => {
+  clearSearchHistory()
+}
+
+const handleClearActiveSearch = () => {
+  searchValue.value = ''
+  appliedSearchValue.value = ''
+  isSearchPending.value = false
+}
+
+watch(searchValue, (value) => {
+  isSearchPending.value = value.trim() !== appliedSearchValue.value.trim()
+})
+
+const handleRetryFriendList = async () => {
+  await contactStore.initialize()
 }
 
 const handleSelectFriend = (friend: MatrixContact) => {
@@ -257,9 +460,9 @@ const handleContextMenuSelect = async (item: { label: string }) => {
 const handleSetSecretFriend = async (friend: MatrixContact) => {
   try {
     await matrixSpecialFriendService.addSpecialFriend(friend.userId)
-    window.$message?.success(t('friend.secret_chat.success'))
+    showFeedback(t('friend.secret_chat.success'), 'success')
   } catch (e) {
-    window.$message?.error(String(e))
+    showFeedback(String(e), 'error')
   }
 }
 
@@ -325,15 +528,52 @@ onMounted(async () => {
   flex-direction: column;
 }
 
+.friend-list-view__state {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.friend-list-view__state-title {
+  font-size: 14px;
+  color: var(--hula-text-primary);
+}
+
+.friend-list-view__search-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--hula-text-tertiary);
+}
+
+.friend-list-view__search-clear {
+  border: none;
+  background: transparent;
+  color: var(--hula-color-primary-500);
+  cursor: pointer;
+  padding: 0;
+}
+
 .friend-items {
   padding: 8px;
 }
 
 .friend-item {
+  display: block;
+  width: 100%;
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.2s;
+  border: none;
+  background: none;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
 
   &:hover {
     background: var(--hula-surface-list-hover);
@@ -342,5 +582,9 @@ onMounted(async () => {
   &:active {
     background: var(--hula-surface-session-active);
   }
+}
+
+.friend-item__presence-text {
+  color: var(--hula-text-tertiary);
 }
 </style>

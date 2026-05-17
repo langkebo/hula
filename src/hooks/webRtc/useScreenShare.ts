@@ -19,7 +19,7 @@ export type UseScreenShareOptions = {
   getCurrentCallType: () => number | undefined
   getLocalStream: (callType: number) => Promise<unknown> | unknown
   switchVideoDevice: (deviceId: string) => Promise<unknown> | unknown
-  /** Optional toast surface; tests can stub it. Defaults to `window.$message`. */
+  /** Optional feedback surface; tests can stub it. Falls back to the global message bridge. */
   notify?: {
     warning: (msg: string) => void
     error: (msg: string) => void

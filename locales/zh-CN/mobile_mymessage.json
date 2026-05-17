@@ -12,6 +12,10 @@
     "group": "群通知"
   },
   "friend_request_message": "留言：",
+  "message_content": "消息内容：",
+  "reply": "回复",
+  "message_label": "留言:",
+  "handler_label": "处理人:",
   "unknown_user": "未知用户",
   "empty_require": "暂无好友请求",
   "empty_group_require": "暂无群申请通知",

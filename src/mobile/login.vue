@@ -13,7 +13,7 @@
             @click="activeTab = 'login'"
             :class="[
               'z-999 w-100px text-center transition-all duration-300 ease-out',
-              activeTab === 'login' ? 'text-(18px #000)' : 'text-(16px #666)'
+              activeTab === 'login' ? 'text-(18px [--hula-text-primary])' : 'text-(16px [--hula-text-secondary])'
             ]">
             {{ t('login.mobile.tabs.login') }}
           </div>
@@ -21,7 +21,7 @@
             @click="activeTab = 'register'"
             :class="[
               'z-999 w-100px text-center transition-all duration-300 ease-out',
-              activeTab === 'register' ? 'text-(18px #000)' : 'text-(16px #666)'
+              activeTab === 'register' ? 'text-(18px [--hula-text-primary])' : 'text-(16px [--hula-text-secondary])'
             ]">
             {{ t('login.mobile.tabs.register') }}
           </div>
@@ -294,10 +294,10 @@ import { useDebounceFn } from '@vueuse/core'
 import { showFailToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import Validation from '@/components/common/Validation.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useSessionActions } from '@/composables/user/useSessionActions'
 import { MittEnum } from '@/enums'
 import router from '@/router'
-import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
-import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import type { RegisterUserReq, UserInfoType } from '@/services/types'
 import { useMobileStore } from '@/stores/domains/settings/mobile'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
@@ -312,10 +312,12 @@ import { WsResponseMessageType } from '../services/wsType'
 import { useSettingStore } from '../stores/domains/settings/setting'
 
 const logger = createLogger('MobileLogin')
+const { loginWithSsoToken, register: registerAccount, requestEmailToken, submitEmailToken } = useSessionActions()
 
 interface LocalRegisterInfo extends RegisterUserReq {}
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const loginHistoriesStore = useLoginHistoriesStore()
 const { loginHistories } = storeToRefs(loginHistoriesStore)
 const mobileStore = useMobileStore()
@@ -401,7 +403,7 @@ const handleSsoLoginCallback = async (): Promise<boolean> => {
   loginDisabled.value = true
 
   try {
-    await sessionOrchestrator.loginWithSsoToken({
+    await loginWithSsoToken({
       loginToken,
       client: 'MOBILE'
     })
@@ -417,7 +419,7 @@ const handleSsoLoginCallback = async (): Promise<boolean> => {
     return true
   } catch (error) {
     logger.error('Failed to complete mobile SSO login callback', error)
-    showFailToast('SSO 登录失败')
+    showFailToast(t('login.sso_login_failed'))
     loading.value = false
     loginDisabled.value = false
     loginText.value = t('login.button.login.default')
@@ -591,7 +593,7 @@ const handleRegisterStep = async () => {
 
 const handleSendEmailCode = async () => {
   if (!isEmailValid.value) {
-    window.$message.warning(t('login.mobile.email_invalid'))
+    showFeedback(t('login.mobile.email_invalid'), 'warning')
     return
   }
 
@@ -601,14 +603,14 @@ const handleSendEmailCode = async () => {
 
   sendCodeLoading.value = true
   try {
-    const result = await MatrixAuthService.requestEmailToken(registerInfo.value.email, 1)
+    const result = await requestEmailToken(registerInfo.value.email, 1)
     emailSessionId.value = result.sid
     emailClientSecret.value = result.client_secret
-    window.$message.success(t('login.mobile.code_sent_email'))
+    showFeedback(t('login.mobile.code_sent_email'), 'success')
     startSendCodeCountdown()
   } catch (error) {
     logger.error(t('login.mobile.code_send_failed_with_reason', { reason: error }))
-    window.$message.error(getErrorMessage(error, t('login.mobile.code_send_failed_retry')))
+    showFeedback(getErrorMessage(error, t('login.mobile.code_send_failed_retry')), 'error')
   } finally {
     sendCodeLoading.value = false
   }
@@ -620,7 +622,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 const handleRegisterComplete = async () => {
   if (!isStep2Valid.value) {
-    window.$message.warning(t('login.mobile.complete_info_before_register'))
+    showFeedback(t('login.mobile.complete_info_before_register'), 'warning')
     return
   }
 
@@ -634,10 +636,10 @@ const handleRegisterComplete = async () => {
     registerInfo.value.avatar = avatarId
 
     if (emailSessionId.value && emailClientSecret.value && registerInfo.value.code) {
-      await MatrixAuthService.submitEmailToken(registerInfo.value.code, emailClientSecret.value, emailSessionId.value)
+      await submitEmailToken(registerInfo.value.code, emailClientSecret.value, emailSessionId.value)
     }
 
-    await MatrixAuthService.register(
+    await registerAccount(
       registerInfo.value.nickName,
       registerInfo.value.password,
       emailSessionId.value || undefined,
@@ -648,11 +650,11 @@ const handleRegisterComplete = async () => {
 
     activeTab.value = 'login'
     userInfo.value.account = registerInfo.value.nickName || registerInfo.value.email
-    window.$message.success(t('login.mobile.register_success'))
+    showFeedback(t('login.mobile.register_success'), 'success')
 
     resetRegisterForm()
   } catch (error) {
-    window.$message.error(getErrorMessage(error, t('login.mobile.register_fail')))
+    showFeedback(getErrorMessage(error, t('login.mobile.register_fail')), 'error')
     logger.error('注册失败:', error)
   } finally {
     registerLoading.value = false

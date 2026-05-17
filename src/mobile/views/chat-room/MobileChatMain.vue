@@ -43,6 +43,7 @@
 import { open } from '@tauri-apps/plugin-dialog'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { UserType } from '@/enums'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -54,6 +55,7 @@ import { type AssistantModelPreset, useAssistantModelPresets } from '@/hooks/use
 
 const logger = createLogger('MobileChatMain')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 defineOptions({
   name: 'mobileChatRoomDefault'
@@ -223,7 +225,7 @@ const handleAssistantImport = async () => {
     customModelPath.value = filePath
   } catch (error) {
     logger.error('选择模型文件失败:', error)
-    window.$message?.error?.('选择模型文件失败，请重试')
+    showFeedback('选择模型文件失败，请重试', 'error')
   }
 }
 </script>
@@ -253,14 +255,14 @@ const handleAssistantImport = async () => {
   gap: 6px;
   padding: 6px 14px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.85);
-  color: #333;
+  background: color-mix(in srgb, var(--hula-surface-panel) 88%, transparent);
+  color: var(--hula-text-primary);
   font-size: 13px;
-  border: 1px solid #e3e3e3;
+  border: 1px solid var(--hula-border-default);
 
   &.active {
-    color: #13987f;
-    background: rgba(19, 152, 127, 0.15);
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--hula-color-primary-500) 16%, transparent);
   }
 }
 

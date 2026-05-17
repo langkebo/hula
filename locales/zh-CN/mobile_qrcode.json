@@ -7,5 +7,18 @@
   "scan_failed_or_cancelled": "扫码失败或已取消",
   "camera_permission_required": "没有相机权限，请在系统设置中开启权限",
   "permission_missing": "缺少权限",
-  "scan_error": "扫码过程中发生错误"
+  "scan_error": "扫码过程中发生错误",
+  "login_hula": "登录{device}的HULA",
+  "login_ip": "登录IP",
+  "login_address": "登录地址",
+  "login_time": "登录时间",
+  "login_countdown": "登录 ({countdown}s)",
+  "qr_code_expired_btn": "二维码已过期",
+  "qr_no_qrId": "登录二维码不存在qrId",
+  "qr_expired": "登录二维码已失效",
+  "qr_session_expired": "二维码登录会话不存在或已失效",
+  "qr_no_uid": "登录二维码不存在uid",
+  "cannot_add_self": "不能添加自己为好友哦~",
+  "group_qr_no_roomId": "加群二维码不存在roomId",
+  "invalid_qr_code": "识别不到正确的二维码"
 }

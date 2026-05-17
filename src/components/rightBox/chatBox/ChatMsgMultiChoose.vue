@@ -147,12 +147,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { ErrorType } from '@/common/exception'
-import { MergeMessageType, MittEnum, MsgEnum, RoomTypeEnum, TauriCommand } from '@/enums'
+import { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { MittEnum, MsgEnum, RoomTypeEnum, TauriCommand } from '@/enums'
 import { useCustomForwardTask } from '@/hooks/useCustomForwardTask'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { matrixForwardService } from '@/services/matrix/messaging/MatrixForwardService'
-import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import type { MessageBody, MessageType } from '@/stores/domains/chat/chat/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -166,8 +166,10 @@ import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import ChatMultiMsg from './ChatMultiMsg.vue'
 
 const logger = createLogger('ChatMsgMultiChoose')
+const { forwardRoomMessages, sendStructuredMessage } = useChatMessageActions()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const chatStore = useChatStore()
 const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
@@ -217,7 +219,6 @@ const filteredSessionList = computed(() => {
   })
 })
 
-let mergeMessageType: MergeMessageType = MergeMessageType.SINGLE
 const deleteConfirmText = computed(() => {
   const count = selectedMsgs.value.length
   if (!count) {
@@ -228,7 +229,7 @@ const deleteConfirmText = computed(() => {
 
 const handleDeleteClick = () => {
   if (selectedMsgs.value.length === 0) {
-    window.$message?.warning(t('message.multi_choose.select_delete_prompt'))
+    showFeedback(t('message.multi_choose.select_delete_prompt'), 'warning')
     return
   }
   showDeleteConfirm.value = true
@@ -238,7 +239,7 @@ const handleBatchDelete = async () => {
   if (isDeleting.value || selectedMsgs.value.length === 0) return
   const roomId = globalStore.currentSessionRoomId
   if (!roomId) {
-    window.$message?.error(t('message.multi_choose.room_missing'))
+    showFeedback(t('message.multi_choose.room_missing'), 'error')
     showDeleteConfirm.value = false
     return
   }
@@ -263,7 +264,7 @@ const handleBatchDelete = async () => {
       )
     )
     ids.forEach((id) => chatStore.deleteMsg(id))
-    window.$message?.success(t('message.multi_choose.delete_success'))
+    showFeedback(t('message.multi_choose.delete_success'), 'success')
     chatStore.clearMsgCheck()
     chatStore.resetSessionSelection()
     chatStore.setMsgMultiChoose(false)
@@ -271,7 +272,7 @@ const handleBatchDelete = async () => {
     showDeleteConfirm.value = false
   } catch (error) {
     logger.error('批量删除消息失败:', error)
-    window.$message?.error(t('message.multi_choose.delete_failed_retry'))
+    showFeedback(t('message.multi_choose.delete_failed_retry'), 'error')
   } finally {
     isDeleting.value = false
   }
@@ -285,7 +286,7 @@ const isCustomImageTask = computed(
 )
 
 const forwardMessages = async (roomIds: string[], sourceRoomId: string, messageIds: string[]) => {
-  const results = await matrixForwardService.forwardRoomMessages(sourceRoomId, messageIds, roomIds)
+  const results = await forwardRoomMessages(sourceRoomId, messageIds, roomIds)
   const hasSuccess = results.some((result) => result.success)
   if (!hasSuccess) {
     throw new Error('All message forwards failed')
@@ -298,7 +299,6 @@ const toolOptions = computed(() => [
     icon: '#share-three',
     disabled: selectedMsgs.value.length === 0,
     click: () => {
-      mergeMessageType = MergeMessageType.SINGLE
       chatStore.resetSessionSelection()
       showModal.value = true
     }
@@ -308,23 +308,15 @@ const toolOptions = computed(() => [
     icon: '#share',
     disabled: selectedMsgs.value.length === 0,
     click: () => {
-      mergeMessageType = MergeMessageType.MERGE
       chatStore.resetSessionSelection()
       showModal.value = true
     }
   },
-  // {
-  //   text: '收藏',
-  //   icon: '#collect',
-  //   click: () => {
-  //     window.$message.warning('暂未实现')
-  //   }
-  // },
   {
     text: t('message.multi_choose.save_to_pc'),
     icon: '#collect-laptop',
     click: () => {
-      window.$message.warning(t('message.multi_choose.not_implemented'))
+      showFeedback(t('message.multi_choose.not_implemented'), 'warning')
     }
   },
   {
@@ -376,7 +368,7 @@ const sendCustomForwardTask = async (roomIds: string[]) => {
   const messageBody = await buildCustomTaskImageBody()
 
   for (const roomId of roomIds) {
-    await matrixMessageService.sendStructuredMessage({
+    await sendStructuredMessage({
       roomId,
       msgType: MsgEnum.IMAGE,
       body: {
@@ -393,7 +385,7 @@ const sendMsg = async () => {
   if (isForwarding.value) return
   const selectedRoomIds = selectedSessions.value.map((item) => item.roomId)
   if (!selectedRoomIds.length) {
-    window.$message?.warning(t('message.multi_choose.search_placeholder'))
+    showFeedback(t('message.multi_choose.search_placeholder'), 'warning')
     return
   }
 
@@ -412,20 +404,19 @@ const sendMsg = async () => {
       const selectedMsgIds = selectedMsgs.value.map((msg) => msg.message.id)
       await forwardMessages(selectedRoomIds, sourceRoomId, selectedMsgIds)
     }
-    window.$message.success(t('message.multi_choose.forward_success'))
+    showFeedback(t('message.multi_choose.forward_success'), 'success')
   } catch (error) {
     logger.error('消息转发失败', error)
-    window.$message.error(t('message.multi_choose.forward_failed'))
+    showFeedback(t('message.multi_choose.forward_failed'), 'error')
   } finally {
     isForwarding.value = false
     cleanupSelectionState()
   }
 }
 
-useMitt.on(MittEnum.MSG_MULTI_CHOOSE, (payload?: { action?: string; mergeType?: MergeMessageType }) => {
+useMitt.on(MittEnum.MSG_MULTI_CHOOSE, (payload?: { action?: string }) => {
   if (!payload) return
   if (payload.action === 'open-forward') {
-    mergeMessageType = payload.mergeType ?? MergeMessageType.SINGLE
     chatStore.resetSessionSelection()
     showModal.value = true
   }

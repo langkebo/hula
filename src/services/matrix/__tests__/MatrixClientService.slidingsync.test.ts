@@ -34,6 +34,15 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
+vi.mock('../sdk-compat', () => ({
+  ensureMatrixSdkCompat: vi.fn(),
+  extendMatrixClientWithManagers: vi.fn().mockResolvedValue(undefined)
+}))
+
+vi.mock('matrix-js-sdk/friend', () => ({
+  extendMatrixClient: vi.fn()
+}))
+
 // Mock runtime fetch
 vi.mock('@/services/matrix/network/runtimeFetch', () => ({
   getRuntimeAwareFetch: vi.fn(() => global.fetch),

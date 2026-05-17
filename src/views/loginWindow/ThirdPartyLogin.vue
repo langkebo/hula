@@ -30,6 +30,8 @@
 <script setup lang="ts">
 import { computed, onMounted, type Ref, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useSessionActions } from '@/composables/user/useSessionActions'
 import {
   discoverAndSaveMatrixEndpoints,
   resolveMatrixEndpointConfig,
@@ -38,10 +40,10 @@ import {
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ThirdPartyLogin')
+const { getLoginFlows, discoverOidc, getOidcAuthorizationUrl } = useSessionActions()
+const { showFeedback } = useActionFeedback()
 
 import { useLoginFlow } from '@/hooks/useLoginFlow'
-import { matrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
-import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
 
 export type ThirdPartyLoginContext = Pick<ReturnType<typeof useLoginFlow>, 'loading' | 'loginDisabled'> & {
   giteeLogin?: () => void
@@ -67,10 +69,10 @@ const resolvedContext: ThirdPartyLoginContext & ReturnType<typeof useLoginFlow> 
   ? { ...defaultContext, ...props.loginContext }
   : defaultContext
 
-const ssoLabel = computed(() => t('login.sso.title') || 'SSO 登录')
+const ssoLabel = computed(() => t('login.sso.title'))
 
 const noop = () => {
-  window.$message?.info('第三方登录功能暂未开放，请使用账号密码登录')
+  showFeedback(t('login.sso.unavailable_feature'), 'info')
 }
 
 const ssoDisabled = computed(
@@ -91,7 +93,7 @@ async function detectAvailableFlows(): Promise<void> {
   flowsLoading.value = true
   flowsError.value = null
   try {
-    const flows = await matrixAuthService.getLoginFlows()
+    const flows = await getLoginFlows()
     const flowTypes = new Set(flows.map((f) => f.type))
     availableFlows.value = flowTypes
     logger.info('检测到可用登录流:', [...flowTypes])
@@ -161,35 +163,35 @@ const redirectTo = (url: string): void => {
 
 const handleOidcLogin = async () => {
   if (!isSsoFlowAvailable('oidc')) {
-    window.$message?.info('OIDC 单点登录服务暂未配置，请使用账号密码登录')
+    showFeedback(t('login.sso.oidc_not_configured'), 'info')
     return
   }
   try {
     const homeserverUrl = await resolveSsoHomeserverUrl()
-    const discovery = await matrixOidcService.discoverOidc(homeserverUrl)
+    const discovery = await discoverOidc(homeserverUrl)
 
     if (!discovery) {
-      window.$message?.error('OIDC 登录不可用，请检查服务器配置')
+      showFeedback(t('login.sso.oidc_unavailable'), 'error')
       return
     }
 
     const redirectUri = `${window.location.origin}/oidc/callback`
-    const authUrl = await matrixOidcService.getAuthorizationUrl({ redirectUri })
+    const authUrl = await getOidcAuthorizationUrl({ redirectUri })
 
     if (authUrl) {
       redirectTo(authUrl)
     } else {
-      window.$message?.error('获取 OIDC 授权 URL 失败')
+      showFeedback(t('login.sso.oidc_auth_url_failed'), 'error')
     }
   } catch (error) {
     logger.error('OIDC login error:', error)
-    window.$message?.error('OIDC 登录失败')
+    showFeedback(t('login.sso.oidc_failed'), 'error')
   }
 }
 
 const handleSamlLogin = async () => {
   if (!isSsoFlowAvailable('saml')) {
-    window.$message?.info('SAML 单点登录服务暂未配置，请使用账号密码登录')
+    showFeedback(t('login.sso.saml_not_configured'), 'info')
     return
   }
   try {
@@ -199,13 +201,13 @@ const handleSamlLogin = async () => {
     redirectTo(samlUrl)
   } catch (error) {
     logger.error('SAML login error:', error)
-    window.$message?.error('SAML 登录失败')
+    showFeedback(t('login.sso.saml_failed'), 'error')
   }
 }
 
 const handleCasLogin = async () => {
   if (!isSsoFlowAvailable('cas')) {
-    window.$message?.info('CAS 单点登录服务暂未配置，请使用账号密码登录')
+    showFeedback(t('login.sso.cas_not_configured'), 'info')
     return
   }
   try {
@@ -215,14 +217,14 @@ const handleCasLogin = async () => {
     redirectTo(casUrl)
   } catch (error) {
     logger.error('CAS login error:', error)
-    window.$message?.error('CAS 登录失败')
+    showFeedback(t('login.sso.cas_failed'), 'error')
   }
 }
 
 const ssoOptions = computed(() => [
   {
     key: 'oidc',
-    label: t('login.sso.oidc') || 'OIDC 单点登录',
+    label: t('login.sso.oidc'),
     icon: 'OIDC',
     style: 'color-[--color-primary] dark:color-[--color-primary]80',
     action: handleOidcLogin,
@@ -230,7 +232,7 @@ const ssoOptions = computed(() => [
   },
   {
     key: 'saml',
-    label: t('login.sso.saml') || 'SAML 单点登录',
+    label: t('login.sso.saml'),
     icon: 'SAML',
     style: 'color-#303030 dark:color-#fefefe90',
     action: handleSamlLogin,
@@ -238,7 +240,7 @@ const ssoOptions = computed(() => [
   },
   {
     key: 'cas',
-    label: t('login.sso.cas') || 'CAS 单点登录',
+    label: t('login.sso.cas'),
     icon: 'CAS',
     style: 'color-[--color-danger] dark:color-[--color-danger]80',
     action: handleCasLogin,

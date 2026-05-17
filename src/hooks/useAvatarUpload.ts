@@ -1,4 +1,6 @@
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { UploadSceneEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import { UploadProviderEnum, useUpload } from './useUpload'
 
@@ -19,6 +21,8 @@ export interface AvatarUploadOptions {
  */
 export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
   const { onSuccess, scene = UploadSceneEnum.AVATAR, sizeLimit = 150 } = options
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
 
   const fileInput = ref<HTMLInputElement>()
   const localImageUrl = ref('')
@@ -43,7 +47,7 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
         })
       }
       img.onerror = () => {
-        window.$message.error('图片加载失败')
+        showFeedback(t('hooks.avatar_upload.image_load_failed'), 'error')
         URL.revokeObjectURL(url)
       }
       img.src = url
@@ -63,7 +67,10 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
 
       // 检查裁剪后的文件大小
       if (file.size > sizeLimit * 1024) {
-        window.$message.error(`图片大小不能超过${sizeLimit}KB，当前图片裁剪后大小为${Math.round(file.size / 1024)}KB`)
+        showFeedback(
+          t('hooks.avatar_upload.size_exceeded', { sizeLimit, currentSize: Math.round(file.size / 1024) }),
+          'error'
+        )
         // 结束加载状态
         cropperRef.value?.finishLoading()
         return
@@ -72,7 +79,7 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
       // 先设置图片URL，等待图片加载完成后再显示裁剪窗口
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
       if (!allowedTypes.includes(file.type)) {
-        window.$message.error('只支持 JPG、PNG、WebP 格式的图片')
+        showFeedback(t('hooks.avatar_upload.format_not_supported'), 'error')
         // 结束加载状态
         cropperRef.value?.finishLoading()
         return
@@ -109,7 +116,7 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
       showCropper.value = false
     } catch (error) {
       logger.error('上传头像失败:', error)
-      window.$message.error('上传头像失败')
+      showFeedback(t('hooks.avatar_upload.upload_failed'), 'error')
       // 发生错误时也需要结束加载状态
       cropperRef.value?.finishLoading()
     }

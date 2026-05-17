@@ -134,7 +134,9 @@
       <div v-if="currentStep === 3" class="w-full max-w-300px mx-auto mt-100px text-center">
         <img class="size-98px" src="/emoji/party-popper.webp" alt="" />
         <div class="mt-16px text-18px">{{ t('mobile_forget_code.password_reset_success') }}</div>
-        <div class="mt-16px text-14px text-#666">{{ t('mobile_forget_code.password_reset_success_desc') }}</div>
+        <div class="mt-16px text-14px text-[--hula-text-secondary]">
+          {{ t('mobile_forget_code.password_reset_success_desc') }}
+        </div>
       </div>
     </div>
   </MobileLayout>
@@ -143,6 +145,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import Validation from '@/components/common/Validation.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import router from '@/router'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { createLogger } from '@/utils/Logger'
@@ -153,6 +156,7 @@ const logger = createLogger('MobileForgetPassword')
 const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url), { type: 'module' })
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 const currentStep = ref(1)
 
@@ -201,7 +205,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 const getCaptchaImage = async () => {
   if (captchaInCooldown.value) {
-    window.$message.warning(t('mobile_forget_code.too_many_requests', { s: captchaCooldownRemaining.value }))
+    showFeedback(t('mobile_forget_code.too_many_requests', { s: captchaCooldownRemaining.value }), 'warning')
     return
   }
 
@@ -220,19 +224,19 @@ const getCaptchaImage = async () => {
     })
   } catch (error) {
     logger.error('获取验证码失败', error)
-    window.$message.error(getErrorMessage(error, '获取验证码失败，请稍后重试'))
+    showFeedback(getErrorMessage(error, t('mobile_forget_code.captcha_failed')), 'error')
     captchaInCooldown.value = false
   }
 }
 
 const sendEmailCode = async () => {
   if (!formData.value.email) {
-    window.$message.warning(t('mobile_forget_code.rules.email_require'))
+    showFeedback(t('mobile_forget_code.rules.email_require'), 'warning')
     return
   }
 
   if (!/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(formData.value.email)) {
-    window.$message.warning(t('mobile_forget_code.rules.email_invalid'))
+    showFeedback(t('mobile_forget_code.rules.email_invalid'), 'warning')
     return
   }
 
@@ -248,7 +252,7 @@ const sendEmailCode = async () => {
     emailVerified.value = false
     emailSendAttempt.value += 1
 
-    window.$message.success(t('mobile_forget_code.code_sent_email'))
+    showFeedback(t('mobile_forget_code.code_sent_email'), 'success')
 
     sendBtnDisabled.value = true
     countDown.value = 60
@@ -261,7 +265,7 @@ const sendEmailCode = async () => {
     })
   } catch (error) {
     logger.error('发送验证码失败', error)
-    window.$message.error(getErrorMessage(error, '发送验证码失败，请稍后重试'))
+    showFeedback(getErrorMessage(error, t('mobile_forget_code.send_code_failed')), 'error')
     getCaptchaImage()
   } finally {
     sendingEmailCode.value = false
@@ -270,14 +274,14 @@ const sendEmailCode = async () => {
 
 const verifyEmail = async () => {
   if (!formData.value.email || !formData.value.emailCode) {
-    window.$message.warning(t('mobile_forget_code.rules.email_require'))
+    showFeedback(t('mobile_forget_code.rules.email_require'), 'warning')
     return
   }
 
   try {
     verifyLoading.value = true
     if (!emailSessionId.value || !emailClientSecret.value) {
-      throw new Error('请先发送邮箱验证码')
+      throw new Error(t('mobile_forget_code.send_email_code_first'))
     }
 
     formData.value.emailCode = formData.value.emailCode.trim()
@@ -292,7 +296,7 @@ const verifyEmail = async () => {
     currentStep.value = 2
   } catch (error) {
     logger.error('表单验证失败', error)
-    window.$message.error(getErrorMessage(error, '邮箱验证码校验失败，请稍后重试'))
+    showFeedback(getErrorMessage(error, t('mobile_forget_code.verify_email_failed')), 'error')
   } finally {
     verifyLoading.value = false
   }
@@ -305,12 +309,12 @@ const goBack = () => {
 
 const submitNewPassword = async () => {
   if (!passwordForm.value.password || !passwordForm.value.confirmPassword) {
-    window.$message.warning(t('mobile_forget_code.rules.new_pass_require'))
+    showFeedback(t('mobile_forget_code.rules.new_pass_require'), 'warning')
     return
   }
 
   if (passwordForm.value.password !== passwordForm.value.confirmPassword) {
-    window.$message.warning(t('mobile_forget_code.rules.pass_not_match'))
+    showFeedback(t('mobile_forget_code.rules.pass_not_match'), 'warning')
     return
   }
 
@@ -318,7 +322,7 @@ const submitNewPassword = async () => {
     submitLoading.value = true
 
     if (!emailVerified.value || !emailSessionId.value || !emailClientSecret.value) {
-      throw new Error('请先完成邮箱验证码校验')
+      throw new Error(t('mobile_forget_code.complete_email_verify_first'))
     }
 
     await MatrixAuthService.resetPassword(
@@ -336,7 +340,7 @@ const submitNewPassword = async () => {
     }, 2000)
   } catch (error) {
     logger.error('重置密码失败', error)
-    window.$message.error(getErrorMessage(error, '重置密码失败，请稍后重试'))
+    showFeedback(getErrorMessage(error, t('mobile_forget_code.reset_password_failed')), 'error')
   } finally {
     submitLoading.value = false
   }
@@ -408,12 +412,12 @@ onBeforeUnmount(() => {
 }
 
 :deep(.van-field__right-icon) {
-  color: #505050;
+  color: var(--hula-text-secondary);
   cursor: pointer;
 }
 
 :deep(.van-field__clear) {
-  color: #909090;
+  color: var(--hula-text-tertiary);
 }
 
 :deep(.van-steps) {

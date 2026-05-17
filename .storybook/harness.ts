@@ -4,6 +4,10 @@ import { configureContactServiceMock, resetContactServiceMock } from './mocks/co
 import { configureChatMainMock, resetChatMainMock } from './mocks/chat-main'
 import { configureUserStatusStoreMock, resetUserStatusStoreMock } from './mocks/user-status-store'
 import { configureGlobalStoreMock, resetGlobalStoreMock } from './mocks/global-store'
+import {
+  configureMatrixCapabilityServiceMock,
+  resetMatrixCapabilityServiceMock
+} from './mocks/matrix-capability-service'
 import type { MockAnnouncement } from './mocks/announcement-store'
 import {
   configureAnnouncementStoreMock,
@@ -31,6 +35,7 @@ export const resetStorybookMocks = () => {
   resetUserStatusStoreMock()
   resetChatMainMock()
   resetContactServiceMock()
+  resetMatrixCapabilityServiceMock()
   resetWebviewWindowMock()
   resetPopoverMock()
 }
@@ -67,6 +72,8 @@ export const configureRoomDetailMocks = (options: {
     members: options.members
   })
 }
+
+export { configureMatrixCapabilityServiceMock }
 
 export const configureWorkbenchMocks = (options: {
   detail: GroupDetail

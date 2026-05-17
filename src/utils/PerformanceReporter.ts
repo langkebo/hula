@@ -39,7 +39,18 @@ export interface PageRenderMetric {
   meta?: Record<string, string>
 }
 
-export type PerformanceMetric = LongtaskMetric | WebVitalMetric | PageRenderMetric
+export interface SdkRequestMetric {
+  type: 'sdk-request'
+  name: 'sdk-request'
+  manager: string
+  total: number
+  successful: number
+  failed: number
+  retried: number
+  meta?: Record<string, string>
+}
+
+export type PerformanceMetric = LongtaskMetric | WebVitalMetric | PageRenderMetric | SdkRequestMetric
 
 export interface ReporterConfig {
   endpoint: string
@@ -163,6 +174,28 @@ class PerformanceReporter {
     })
   }
 
+  reportSdkRequestStats(
+    manager: string,
+    stats: {
+      total: number
+      successful: number
+      failed: number
+      retried: number
+    },
+    meta?: Record<string, string>
+  ): void {
+    this.report({
+      type: 'sdk-request',
+      name: 'sdk-request',
+      manager,
+      total: stats.total,
+      successful: stats.successful,
+      failed: stats.failed,
+      retried: stats.retried,
+      meta
+    })
+  }
+
   private getRating(name: string, value: number): MetricRating {
     const threshold = SLA_THRESHOLDS[name]
     if (!threshold) return 'needs-improvement'
@@ -205,6 +238,18 @@ class PerformanceReporter {
       return
     }
 
+    if (metric.type === 'sdk-request') {
+      if (metric.failed > 0) {
+        logger.warn(`[PerformanceReporter] SDK manager ${metric.manager} 出现失败请求`, {
+          total: metric.total,
+          successful: metric.successful,
+          failed: metric.failed,
+          retried: metric.retried
+        })
+      }
+      return
+    }
+
     const rating = this.getRating(metric.name, metric.value)
 
     if (rating === 'poor') {
@@ -227,6 +272,10 @@ class PerformanceReporter {
       logger.info(`[PerformanceReporter] longtask: ${metric.duration.toFixed(2)}ms`)
     } else if (metric.type === 'page-render') {
       logger.info(`[PerformanceReporter] ${metric.page} render: ${metric.value.toFixed(2)}ms (${metric.rating})`)
+    } else if (metric.type === 'sdk-request') {
+      logger.info(
+        `[PerformanceReporter] sdk ${metric.manager}: total=${metric.total}, ok=${metric.successful}, failed=${metric.failed}, retried=${metric.retried}`
+      )
     } else {
       logger.info(`[PerformanceReporter] ${metric.name}: ${metric.value.toFixed(2)} (${metric.rating})`)
     }
@@ -266,27 +315,51 @@ class PerformanceReporter {
     const timestamp = Date.now() * 1000000
 
     for (const metric of metrics) {
-      const labels = this.buildLabels(metric)
-      const labelStr = Object.entries(labels)
-        .map(([k, v]) => `${k}="${v}"`)
-        .join(',')
+      const labels = this.formatLabels(this.buildLabels(metric))
 
       if (metric.type === 'longtask') {
-        lines.push(
-          `hula_longtask_duration_seconds${labelStr ? `{${labelStr}}` : ''} ${metric.duration / 1000} ${timestamp}`
-        )
+        lines.push(`hula_longtask_duration_seconds${labels} ${metric.duration / 1000} ${timestamp}`)
       } else if (metric.type === 'page-render') {
+        lines.push(`hula_page_render_duration_seconds${labels} ${metric.value / 1000} ${timestamp}`)
+      } else if (metric.type === 'sdk-request') {
         lines.push(
-          `hula_page_render_duration_seconds${labelStr ? `{${labelStr}}` : ''} ${metric.value / 1000} ${timestamp}`
+          `hula_sdk_manager_requests_total${this.formatLabels({
+            ...this.buildLabels(metric),
+            kind: 'total'
+          })} ${metric.total} ${timestamp}`
+        )
+        lines.push(
+          `hula_sdk_manager_requests_total${this.formatLabels({
+            ...this.buildLabels(metric),
+            kind: 'successful'
+          })} ${metric.successful} ${timestamp}`
+        )
+        lines.push(
+          `hula_sdk_manager_requests_total${this.formatLabels({
+            ...this.buildLabels(metric),
+            kind: 'failed'
+          })} ${metric.failed} ${timestamp}`
+        )
+        lines.push(
+          `hula_sdk_manager_requests_total${this.formatLabels({
+            ...this.buildLabels(metric),
+            kind: 'retried'
+          })} ${metric.retried} ${timestamp}`
         )
       } else {
-        lines.push(
-          `hula_webvital_${metric.name.toLowerCase()}_seconds${labelStr ? `{${labelStr}}` : ''} ${metric.value / 1000} ${timestamp}`
-        )
+        lines.push(`hula_webvital_${metric.name.toLowerCase()}_seconds${labels} ${metric.value / 1000} ${timestamp}`)
       }
     }
 
     return lines.join('\n')
+  }
+
+  private formatLabels(labels: Record<string, string>): string {
+    const entries = Object.entries(labels)
+      .map(([key, value]) => `${key}="${value}"`)
+      .join(',')
+
+    return entries ? `{${entries}}` : ''
   }
 
   private buildLabels(metric: PerformanceMetric): Record<string, string> {
@@ -303,6 +376,11 @@ class PerformanceReporter {
       labels.rating = metric.rating
       labels.threshold_ms = String(metric.threshold)
 
+      if (metric.meta) {
+        Object.assign(labels, metric.meta)
+      }
+    } else if (metric.type === 'sdk-request') {
+      labels.manager = metric.manager
       if (metric.meta) {
         Object.assign(labels, metric.meta)
       }
@@ -377,6 +455,17 @@ class PerformanceReporter {
       this.visibilityHandler = null
     }
     void this.forceFlush()
+  }
+
+  reset(): void {
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer)
+      this.flushTimer = null
+    }
+    this.metrics = []
+    this.isProcessing = false
+    this.failedAttempts = 0
+    this.config = { ...DEFAULT_CONFIG, endpoint: '' }
   }
 
   getMetricsCount(): number {

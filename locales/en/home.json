@@ -1,4 +1,10 @@
 {
+  "room": {
+    "invite": {
+      "accept": "Accept",
+      "reject": "Reject"
+    }
+  },
   "search_suggestions": "Suggestions",
   "search_guide": "Search in the search box",
   "no_search_results": "No results found",
@@ -337,7 +343,12 @@
       "save": "Save"
     },
     "toast": {
-      "avatar_update_success": "Avatar updated"
+      "avatar_update_success": "Avatar updated",
+      "nickname_empty": "Nickname cannot be empty",
+      "rename_limit": "No rename attempts left",
+      "save_success": "Saved successfully",
+      "badge_wear_success": "Badge worn successfully",
+      "badge_wear_failed": "Failed to wear badge, please try again later"
     }
   },
   "chat_sidebar": {
@@ -450,6 +461,10 @@
     "announcement": {
       "view_all": "View all"
     },
+    "typing": {
+      "single": "{name} is typing...",
+      "multiple": "{count} people are typing..."
+    },
     "no_more": "No more messages",
     "empty_title": "No messages yet",
     "empty_desc": "Send your first message to start chatting",
@@ -514,6 +529,7 @@
   },
   "secret_chat": {
     "title": "Secret Chat",
+    "desc": "Open password-protected private conversations",
     "no_password": "Please set a secret chat password in settings first"
   }
 }

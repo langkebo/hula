@@ -90,16 +90,17 @@
 </template>
 
 <script setup lang="ts">
-import { NDivider, NSelect, NSlider, NSwitch, useMessage } from 'naive-ui'
+import { NDivider, NSelect, NSlider, NSwitch } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 defineOptions({
   name: 'AppearanceSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 const settingStore = useSettingStore()
 
@@ -141,19 +142,19 @@ onMounted(() => {
 
 function handleThemeChange(theme: string) {
   settingStore.toggleTheme(theme)
-  message.success(t('setting.appearance.feedback.theme_changed'))
+  showFeedback(t('setting.appearance.feedback.theme_changed'), 'success')
 }
 
 function handleFontChange(value: string) {
   settingStore.setPageFont(value)
   document.documentElement.style.setProperty('--font-family', value)
-  message.success(t('setting.appearance.feedback.font_changed'))
+  showFeedback(t('setting.appearance.feedback.font_changed'), 'success')
 }
 
 function handleFontSizeChange(value: number) {
   applyFontSize(value)
   localStorage.setItem('hula-font-size', value.toString())
-  message.success(t('setting.appearance.feedback.font_size_changed', { size: String(value) }))
+  showFeedback(t('setting.appearance.feedback.font_size_changed', { size: String(value) }), 'success')
 }
 
 function applyFontSize(size: number) {
@@ -162,24 +163,27 @@ function applyFontSize(size: number) {
 
 function handleShadowChange(value: boolean) {
   settingStore.setPageShadowEnabled(value)
-  message.success(
+  showFeedback(
     value
       ? t('setting.appearance.feedback.window_shadow_enabled')
-      : t('setting.appearance.feedback.window_shadow_disabled')
+      : t('setting.appearance.feedback.window_shadow_disabled'),
+    'success'
   )
 }
 
 function handleBlurChange(value: boolean) {
   settingStore.setPageBlurEnabled(value)
-  message.success(
-    value ? t('setting.appearance.feedback.blur_enabled') : t('setting.appearance.feedback.blur_disabled')
+  showFeedback(
+    value ? t('setting.appearance.feedback.blur_enabled') : t('setting.appearance.feedback.blur_disabled'),
+    'success'
   )
 }
 
 function handleBubbleStyleChange(value: boolean) {
   localStorage.setItem('hula-bubble-style', value.toString())
-  message.success(
-    value ? t('setting.appearance.feedback.bubble_rounded') : t('setting.appearance.feedback.bubble_square')
+  showFeedback(
+    value ? t('setting.appearance.feedback.bubble_rounded') : t('setting.appearance.feedback.bubble_square'),
+    'success'
   )
 }
 </script>

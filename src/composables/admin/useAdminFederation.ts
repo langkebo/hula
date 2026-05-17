@@ -2,6 +2,8 @@ import { type Ref, ref } from 'vue'
 import type { FederationBlacklistEntry, FederationDestination } from '@/services/matrix/admin'
 import { adminService } from '@/services/matrix/admin'
 
+export type { FederationDestination } from '@/services/matrix/admin'
+
 export interface FederationBlacklistView {
   domain: string
   reason?: string

@@ -5,9 +5,9 @@
       <div class="flex w-full flex-1 flex-col rounded-15px bg-white pt-40% items-center gap-20px">
         <div class="flex flex-col items-center gap-15px">
           <img class="w-100px h-100px" :src="qrCodeIcon" alt="" />
-          <div class="text-20px font-bold text-#343434">
+          <div class="text-20px font-bold text-[--hula-text-primary]">
             登录
-            <span class="text-#6B9C89">{{ props.deviceType }}</span>
+            <span class="text-[--hula-color-primary-500]">{{ props.deviceType }}</span>
             &nbsp;的HULA
           </div>
         </div>
@@ -16,7 +16,7 @@
 
         <div class="flex flex-col w-80% gap-20px mt-10px">
           <div class="flex justify-between w-full">
-            <span>登录IP</span>
+            <span>{{ t('mobile_qrcode.login_ip') }}</span>
             <span>{{ props.ip }}</span>
           </div>
           <div class="flex justify-between">
@@ -37,7 +37,11 @@
           @click="handleConfirmLogin"
           type="primary"
           class="px-50px absolute bottom-20%">
-          {{ countdown > 0 ? `登录 (${countdown}s)` : '二维码已过期' }}
+          {{
+            countdown > 0
+              ? t('mobile_qrcode.login_countdown', { countdown: countdown })
+              : t('mobile_qrcode.qr_code_expired_btn')
+          }}
         </van-button>
       </div>
     </div>
@@ -46,11 +50,13 @@
 
 <script setup lang="ts">
 import dayjs from 'dayjs'
+import { useI18n } from 'vue-i18n'
 import router from '@/router'
 import { matrixQrLoginService } from '@/services/matrix/auth/MatrixQrLoginService'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
+const { t } = useI18n()
 const logger = createLogger('ConfirmQRLogin')
 const timerManager = useTimerManager()
 

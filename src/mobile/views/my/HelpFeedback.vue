@@ -7,29 +7,35 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-gray-500 mb-8px">{{ t('mobile_help.help_section') }}</div>
+          <div class="text-14px text-[--hula-text-secondary] mb-8px">{{ t('mobile_help.help_section') }}</div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_help.user_guide')" is-link @click="openLink('https://matrix.org/docs/guides')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:book-open-variant" :width="20" color="#1989fa" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.guide">
+                  <Icon icon="mdi:book-open-variant" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_help.faq')" is-link @click="openLink('https://matrix.org/faq')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-green-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:frequently-asked-questions" :width="20" color="#52c41a" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.faq">
+                  <Icon icon="mdi:frequently-asked-questions" :width="20" color="var(--hula-color-success-500)" />
                 </div>
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_help.privacy_policy')" is-link @click="router.push('/mobile/privacyAgreement')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-purple-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:shield-account" :width="20" color="#722ed1" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.privacy">
+                  <Icon icon="mdi:shield-account" :width="20" color="var(--hula-color-beta-500)" />
                 </div>
               </template>
             </van-cell>
@@ -39,56 +45,70 @@
               is-link
               @click="router.push('/mobile/serviceAgreement')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:file-document-outline" :width="20" color="#fa8c16" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.terms">
+                  <Icon icon="mdi:file-document-outline" :width="20" color="var(--hula-color-warning-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_help.feedback_section') }}</div>
+          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+            {{ t('mobile_help.feedback_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_help.report_bug')" is-link @click="showBugReport = true">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:bug-outline" :width="20" color="#ff4d4f" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.bug">
+                  <Icon icon="mdi:bug-outline" :width="20" color="var(--hula-color-danger-500)" />
                 </div>
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_help.feature_request')" is-link @click="showFeatureRequest = true">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-cyan-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:lightbulb-outline" :width="20" color="#13c2c2" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.feature">
+                  <Icon icon="mdi:lightbulb-outline" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_help.contact_support')" is-link @click="openLink('https://matrix.org/support')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-indigo-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:headset" :width="20" color="#597ef7" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.support">
+                  <Icon icon="mdi:headset" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_help.about_section') }}</div>
+          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">{{ t('mobile_help.about_section') }}</div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_help.about_hula')" :label="versionInfo" is-link @click="showAbout = true">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-gray-100 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:information-outline" :width="20" color="#666" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.about">
+                  <Icon icon="mdi:information-outline" :width="20" color="var(--hula-text-secondary)" />
                 </div>
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_help.check_update')" is-link @click="checkUpdate">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-teal-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:update" :width="20" color="#20c997" />
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.update">
+                  <Icon icon="mdi:update" :width="20" color="var(--hula-color-success-500)" />
                 </div>
               </template>
             </van-cell>
@@ -144,9 +164,9 @@
         <div class="p-16px text-center">
           <div class="text-16px font-bold mb-16px">{{ t('mobile_help.about_hula') }}</div>
           <img src="/logo.png" class="w-80px h-80px mx-auto mb-16px" alt="HuLa Logo" />
-          <div class="text-14px text-gray-600 mb-8px">{{ t('mobile_help.about_description') }}</div>
-          <div class="text-12px text-gray-400">{{ versionInfo }}</div>
-          <div class="text-12px text-gray-400 mt-8px">
+          <div class="text-14px text-[--hula-text-secondary] mb-8px">{{ t('mobile_help.about_description') }}</div>
+          <div class="text-12px text-[--hula-text-quaternary]">{{ versionInfo }}</div>
+          <div class="text-12px text-[--hula-text-quaternary] mt-8px">
             {{ t('mobile_help.copyright') }}
           </div>
         </div>
@@ -172,6 +192,18 @@ const router = useRouter()
 const showBugReport = ref(false)
 const showFeatureRequest = ref(false)
 const showAbout = ref(false)
+
+const iconShellStyles = {
+  guide: { backgroundColor: 'var(--hula-color-info-100)' },
+  faq: { backgroundColor: 'var(--hula-color-success-100)' },
+  privacy: { backgroundColor: 'var(--hula-color-beta-100)' },
+  terms: { backgroundColor: 'var(--hula-color-warning-100)' },
+  bug: { backgroundColor: 'var(--hula-color-danger-100)' },
+  feature: { backgroundColor: 'var(--hula-color-info-100)' },
+  support: { backgroundColor: 'var(--hula-color-info-100)' },
+  about: { backgroundColor: 'var(--hula-surface-subtle)' },
+  update: { backgroundColor: 'var(--hula-color-success-100)' }
+} as const
 
 const versionInfo = ref('v1.0.0')
 

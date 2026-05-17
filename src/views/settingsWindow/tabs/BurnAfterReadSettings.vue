@@ -144,23 +144,11 @@
 </template>
 
 <script setup lang="ts">
-import {
-  NAlert,
-  NButton,
-  NDivider,
-  NForm,
-  NFormItem,
-  NModal,
-  NSelect,
-  NSpin,
-  NSwitch,
-  NTag,
-  useDialog,
-  useMessage
-} from 'naive-ui'
+import { NAlert, NButton, NDivider, NForm, NFormItem, NModal, NSelect, NSpin, NSwitch, NTag, useDialog } from 'naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixBurnAfterReadService } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('BurnAfterReadSettings')
@@ -169,9 +157,10 @@ defineOptions({
   name: 'BurnAfterReadSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const { t } = useI18n()
+const { getBurnStats, enableBurn, disableBurn } = useBurnAfterRead()
 
 const globalBurnEnabled = ref(false)
 const globalBurnDuration = ref(60)
@@ -253,7 +242,7 @@ function saveSettings() {
 async function loadBurnStats() {
   loadingStats.value = true
   try {
-    const stats = await matrixBurnAfterReadService.getBurnStats()
+    const stats = await getBurnStats()
     if (stats) {
       burnStats.totalBurned = stats.totalBurned || 0
       burnStats.totalPending = stats.totalPending ?? 0
@@ -283,7 +272,7 @@ async function handleGlobalBurnToggle(value: boolean) {
       onPositiveClick: () => {
         globalBurnEnabled.value = true
         saveSettings()
-        message.success(t('setting.burn_after_read.feedback.global_enabled'))
+        showFeedback(t('setting.burn_after_read.feedback.global_enabled'), 'success')
       },
       onNegativeClick: () => {
         globalBurnEnabled.value = false
@@ -292,19 +281,19 @@ async function handleGlobalBurnToggle(value: boolean) {
   } else {
     globalBurnEnabled.value = false
     saveSettings()
-    message.info(t('setting.burn_after_read.feedback.global_disabled'))
+    showFeedback(t('setting.burn_after_read.feedback.global_disabled'), 'info')
   }
 }
 
 function handleBurnDurationChange(value: number) {
   globalBurnDuration.value = value
   saveSettings()
-  message.success(t('setting.burn_after_read.feedback.duration_changed', { duration: formatDuration(value) }))
+  showFeedback(t('setting.burn_after_read.feedback.duration_changed', { duration: formatDuration(value) }), 'success')
 }
 
 function handleToggle(_key: string) {
   saveSettings()
-  message.success(t('setting.burn_after_read.feedback.settings_updated'))
+  showFeedback(t('setting.burn_after_read.feedback.settings_updated'), 'success')
 }
 
 function handleEditRoomBurn(room: BurnRoom) {
@@ -315,42 +304,42 @@ function handleEditRoomBurn(room: BurnRoom) {
 
 async function handleSaveRoomBurn() {
   try {
-    await matrixBurnAfterReadService.enableBurn(editRoomId.value, editRoomDuration.value * 1000)
+    await enableBurn(editRoomId.value, editRoomDuration.value * 1000)
     const room = burnRooms.value.find((r) => r.roomId === editRoomId.value)
     if (room) {
       room.burnDuration = editRoomDuration.value
     }
     saveSettings()
     showEditRoom.value = false
-    message.success(t('setting.burn_after_read.feedback.room_duration_updated'))
+    showFeedback(t('setting.burn_after_read.feedback.room_duration_updated'), 'success')
     await loadBurnStats()
   } catch {
-    message.error(t('setting.burn_after_read.feedback.room_duration_failed'))
+    showFeedback(t('setting.burn_after_read.feedback.room_duration_failed'), 'error')
   }
 }
 
 async function handleEnableRoomBurn(room: BurnRoom) {
   try {
-    await matrixBurnAfterReadService.enableBurn(room.roomId, globalBurnDuration.value * 1000)
+    await enableBurn(room.roomId, globalBurnDuration.value * 1000)
     room.burnEnabled = true
     room.burnDuration = globalBurnDuration.value
     saveSettings()
-    message.success(t('setting.burn_after_read.feedback.room_enabled'))
+    showFeedback(t('setting.burn_after_read.feedback.room_enabled'), 'success')
     await loadBurnStats()
   } catch {
-    message.error(t('setting.burn_after_read.feedback.room_enable_failed'))
+    showFeedback(t('setting.burn_after_read.feedback.room_enable_failed'), 'error')
   }
 }
 
 async function handleDisableRoomBurn(room: BurnRoom) {
   try {
-    await matrixBurnAfterReadService.disableBurn(room.roomId)
+    await disableBurn(room.roomId)
     room.burnEnabled = false
     saveSettings()
-    message.success(t('setting.burn_after_read.feedback.room_disabled'))
+    showFeedback(t('setting.burn_after_read.feedback.room_disabled'), 'success')
     await loadBurnStats()
   } catch {
-    message.error(t('setting.burn_after_read.feedback.room_disable_failed'))
+    showFeedback(t('setting.burn_after_read.feedback.room_disable_failed'), 'error')
   }
 }
 </script>

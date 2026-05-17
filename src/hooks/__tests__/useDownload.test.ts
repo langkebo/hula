@@ -2,6 +2,10 @@ import { BaseDirectory } from '@tauri-apps/plugin-fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDownload } from '../useDownload'
 
+const { showFeedbackMock } = vi.hoisted(() => ({
+  showFeedbackMock: vi.fn()
+}))
+
 vi.mock('@tauri-apps/plugin-fs', () => ({
   BaseDirectory: {
     AppData: 'AppData',
@@ -14,6 +18,12 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
 
 vi.mock('@/utils/PlatformConstants', () => ({
   isMobile: vi.fn(() => false)
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -31,7 +41,6 @@ describe('useDownload', () => {
     vi.clearAllMocks()
     mockFetch = vi.fn()
     global.fetch = mockFetch as any
-    global.window = { $message: { error: vi.fn() } } as any
   })
 
   afterEach(() => {
@@ -78,7 +87,7 @@ describe('useDownload', () => {
     const { downloadFile } = useDownload()
     await downloadFile('http://test.com/file.txt', 'test/file.txt')
 
-    expect(window.$message.error).toHaveBeenCalledWith('下载失败')
+    expect(showFeedbackMock).toHaveBeenCalledWith('下载失败', 'error')
   })
 
   it('should handle missing response body', async () => {
@@ -87,7 +96,7 @@ describe('useDownload', () => {
     const { downloadFile } = useDownload()
     await downloadFile('http://test.com/file.txt', 'test/file.txt')
 
-    expect(window.$message.error).toHaveBeenCalledWith('无法读取响应内容')
+    expect(showFeedbackMock).toHaveBeenCalledWith('无法读取响应内容', 'error')
   })
 
   it('should update progress during download', async () => {

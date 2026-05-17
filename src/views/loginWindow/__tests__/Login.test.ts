@@ -10,6 +10,7 @@ const {
   completeDesktopLoginTransitionMock,
   getWindowPayloadMock,
   loggerErrorMock,
+  showFeedbackMock,
   loginLoadingRef,
   loginTextRef,
   loginDisabledRef
@@ -21,6 +22,7 @@ const {
   completeDesktopLoginTransitionMock: vi.fn(),
   getWindowPayloadMock: vi.fn(),
   loggerErrorMock: vi.fn(),
+  showFeedbackMock: vi.fn(),
   loginLoadingRef: { value: false },
   loginTextRef: { value: '登录' },
   loginDisabledRef: { value: false }
@@ -71,6 +73,12 @@ vi.mock('vue-i18n', () => ({
           'login.input.pass.placeholder': '输入 HuLa 密码'
         }) as Record<string, string>
       )[key] || key
+  })
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
   })
 }))
 
@@ -269,12 +277,6 @@ describe('Login', () => {
     loginLoadingRef.value = false
     loginTextRef.value = '登录'
     loginDisabledRef.value = false
-    window.$message = {
-      error: vi.fn(),
-      success: vi.fn(),
-      info: vi.fn(),
-      warning: vi.fn()
-    } as never
   })
 
   it('consumes loginToken callback and completes desktop sso login on mount', async () => {
@@ -304,7 +306,7 @@ describe('Login', () => {
       client: 'PC'
     })
     expect(completeDesktopLoginTransitionMock).not.toHaveBeenCalled()
-    expect(window.$message.error).toHaveBeenCalledWith('login.sso_login_failed')
+    expect(showFeedbackMock).toHaveBeenCalledWith('login.sso_login_failed', 'error')
     expect(loginLoadingRef.value).toBe(false)
     expect(loginDisabledRef.value).toBe(false)
     expect(loginTextRef.value).toBe('登录')

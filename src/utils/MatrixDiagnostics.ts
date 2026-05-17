@@ -1,3 +1,4 @@
+import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { createLogger } from './Logger'
 
@@ -29,6 +30,7 @@ export class MatrixDiagnostics {
   }
 
   private async checkVersions(): Promise<DiagnosticResult> {
+    const { t } = useI18nGlobal()
     try {
       const data = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.getServerVersions(this.homeserverUrl)
@@ -38,7 +40,7 @@ export class MatrixDiagnostics {
         return {
           name: 'API Versions',
           status: 'success',
-          message: `支持的版本: ${data.versions.join(', ')}`,
+          message: t('diagnostics.versions_supported', { versions: data.versions.join(', ') }),
           details: data
         }
       }
@@ -46,18 +48,19 @@ export class MatrixDiagnostics {
       return {
         name: 'API Versions',
         status: 'error',
-        message: '未找到支持的 API 版本'
+        message: t('diagnostics.versions_not_found')
       }
     } catch (error) {
       return {
         name: 'API Versions',
         status: 'error',
-        message: `无法连接到服务器: ${error}`
+        message: t('diagnostics.connection_failed', { error: String(error) })
       }
     }
   }
 
   private async checkLoginFlows(): Promise<DiagnosticResult> {
+    const { t } = useI18nGlobal()
     try {
       const data = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.getLoginFlows(this.homeserverUrl)
@@ -68,7 +71,7 @@ export class MatrixDiagnostics {
         return {
           name: 'Login Flows',
           status: 'success',
-          message: `支持的登录方式: ${flowTypes.join(', ')}`,
+          message: t('diagnostics.login_flows_supported', { flows: flowTypes.join(', ') }),
           details: data
         }
       }
@@ -76,18 +79,19 @@ export class MatrixDiagnostics {
       return {
         name: 'Login Flows',
         status: 'warning',
-        message: '未找到登录流程'
+        message: t('diagnostics.login_flows_not_found')
       }
     } catch (error) {
       return {
         name: 'Login Flows',
         status: 'error',
-        message: `检查登录流程失败: ${error}`
+        message: t('diagnostics.login_flows_check_failed', { error: String(error) })
       }
     }
   }
 
   private async checkSlidingSyncEndpoint(): Promise<DiagnosticResult> {
+    const { t } = useI18nGlobal()
     const endpoints = [
       '/_matrix/client/v3/sync',
       '/_matrix/client/unstable/org.matrix.msc3575/sync',
@@ -130,7 +134,7 @@ export class MatrixDiagnostics {
       return {
         name: 'Sliding Sync Endpoints',
         status: 'success',
-        message: `找到 ${availableEndpoints.length} 个可用端点`,
+        message: t('diagnostics.sliding_sync_found', { count: availableEndpoints.length }),
         details: results
       }
     }
@@ -138,12 +142,13 @@ export class MatrixDiagnostics {
     return {
       name: 'Sliding Sync Endpoints',
       status: 'error',
-      message: '未找到可用的 Sliding Sync 端点',
+      message: t('diagnostics.sliding_sync_not_found'),
       details: results
     }
   }
 
   private async checkCORS(): Promise<DiagnosticResult> {
+    const { t } = useI18nGlobal()
     try {
       const corsHeaders = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.probeCors(this.homeserverUrl)
@@ -162,7 +167,7 @@ export class MatrixDiagnostics {
         return {
           name: 'CORS Configuration',
           status: 'success',
-          message: 'CORS 配置正常',
+          message: t('diagnostics.cors_ok'),
           details: corsHeaders
         }
       }
@@ -170,14 +175,14 @@ export class MatrixDiagnostics {
       return {
         name: 'CORS Configuration',
         status: 'warning',
-        message: 'CORS 头部缺失',
+        message: t('diagnostics.cors_headers_missing'),
         details: corsHeaders
       }
     } catch (error) {
       return {
         name: 'CORS Configuration',
         status: 'error',
-        message: `CORS 检查失败: ${error}`
+        message: t('diagnostics.cors_check_failed', { error: String(error) })
       }
     }
   }
@@ -197,7 +202,6 @@ export async function runMatrixDiagnostics(homeserverUrl: string): Promise<void>
   }
 }
 
-// 导出到全局作用域供浏览器控制台使用
 if (typeof window !== 'undefined') {
   ;(window as unknown as Record<string, unknown>).runMatrixDiagnostics = runMatrixDiagnostics
 }

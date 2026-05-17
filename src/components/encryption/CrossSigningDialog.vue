@@ -124,16 +124,18 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NFlex, NModal, NSpin, NTag, useMessage } from 'naive-ui'
+import { NButton, NDivider, NFlex, NModal, NSpin, NTag } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useEncryption } from '@/composables/encryption'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('CrossSigning')
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
+const encryption = useEncryption()
 
 const visible = defineModel<boolean>('show', { default: false })
 
@@ -160,7 +162,7 @@ function formatKey(key: string | null): string {
 const loadCrossSigningInfo = async () => {
   loading.value = true
   try {
-    const info = await matrixEncryptionService.getCrossSigningInfo()
+    const info = await encryption.getCrossSigningInfo()
     isSetup.value = info.isSetup
     masterKey.value = info.masterPublicKey ?? null
     selfSigningKey.value = info.selfSigningPublicKey ?? null
@@ -175,12 +177,12 @@ const loadCrossSigningInfo = async () => {
 const handleSetup = async () => {
   settingUp.value = true
   try {
-    await matrixEncryptionService.setupCrossSigning()
-    message.success(t('encryption.cross_signing.setup_success'))
+    await encryption.setupCrossSigning()
+    showFeedback(t('encryption.cross_signing.setup_success'), 'success')
     await loadCrossSigningInfo()
   } catch (err) {
     logger.error('Failed to set up cross-signing:', err)
-    message.error(t('encryption.cross_signing.setup_failed'))
+    showFeedback(t('encryption.cross_signing.setup_failed'), 'error')
   } finally {
     settingUp.value = false
   }
@@ -189,12 +191,12 @@ const handleSetup = async () => {
 const handleReset = async () => {
   resetting.value = true
   try {
-    await matrixEncryptionService.resetCrossSigning()
-    message.success(t('encryption.cross_signing.reset_success'))
+    await encryption.resetCrossSigning()
+    showFeedback(t('encryption.cross_signing.reset_success'), 'success')
     await loadCrossSigningInfo()
   } catch (err) {
     logger.error('Failed to reset cross-signing:', err)
-    message.error(t('encryption.cross_signing.reset_failed'))
+    showFeedback(t('encryption.cross_signing.reset_failed'), 'error')
   } finally {
     resetting.value = false
   }
@@ -209,10 +211,10 @@ const handleCopyKeys = async () => {
 
   try {
     await navigator.clipboard.writeText(keysText)
-    message.success(t('encryption.cross_signing.copied'))
+    showFeedback(t('encryption.cross_signing.copied'), 'success')
   } catch (err) {
     logger.error('Failed to copy public keys:', err)
-    message.error(t('encryption.cross_signing.copy_failed'))
+    showFeedback(t('encryption.cross_signing.copy_failed'), 'error')
   }
 }
 

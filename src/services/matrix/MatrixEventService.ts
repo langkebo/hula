@@ -50,7 +50,7 @@ class MatrixEventService extends BaseMatrixService {
     ) {
       return response.event_id
     }
-    throw new Error('事件发送失败: 未返回事件 ID')
+    throw new Error(this.t('matrix_error.messaging.event_id_missing'))
   }
 
   private extractContentUri(response: unknown): string {
@@ -66,7 +66,7 @@ class MatrixEventService extends BaseMatrixService {
       return uploadResponse.contentUri
     }
 
-    throw new Error('文件上传失败: 未返回媒体 URI')
+    throw new Error(this.t('matrix_error.messaging.media_uri_missing'))
   }
 
   private async resolveContentUri(source: MessageSendSource, mimetype?: string): Promise<string> {
@@ -308,12 +308,12 @@ class MatrixEventService extends BaseMatrixService {
 
     const room = client.getRoom(roomId)
     if (!room) {
-      throw new Error(`房间不存在: ${roomId}`)
+      throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
     }
 
     const targetEvent = room.findEventById(eventId)
     if (!targetEvent) {
-      throw new Error(`事件不存在: ${eventId}`)
+      throw new Error(this.t('matrix_error.messaging.event_not_found', { eventId }))
     }
 
     try {
@@ -330,7 +330,7 @@ class MatrixEventService extends BaseMatrixService {
       const client = this.getClient()
       const room = client.getRoom(roomId)
       if (!room) {
-        throw new Error(`房间不存在: ${roomId}`)
+        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
       }
 
       const events = room.getLiveTimeline().getEvents()
@@ -345,7 +345,7 @@ class MatrixEventService extends BaseMatrixService {
     const client = this.getClient()
     const room = client.getRoom(roomId)
     if (!room) {
-      throw new Error(`房间不存在: ${roomId}`)
+      throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
     }
 
     const beforeEvents = room.getLiveTimeline().getEvents()

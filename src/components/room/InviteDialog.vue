@@ -1,6 +1,6 @@
 <template>
   <n-modal
-    v-model:show="visible"
+    :show="visible"
     preset="card"
     :title="t('room.invite.title')"
     :style="{ width: '400px' }"
@@ -66,8 +66,9 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useRoomActions } from '@/composables/room/useRoomActions'
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 
@@ -84,6 +85,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const searchQuery = ref('')
 const selectedUsers = ref<string[]>([])
 const manualUserId = ref('')
@@ -144,10 +146,12 @@ const addManualUser = () => {
       selectedUsers.value.push(userId)
       manualUserId.value = ''
     } else {
-      window.$message?.warning(t('room.invite.invalid_user_id'))
+      showFeedback(t('room.invite.invalid_user_id'), 'warning')
     }
   }
 }
+
+const { inviteUser } = useRoomActions()
 
 const handleInvite = async () => {
   if (selectedUsers.value.length === 0) return
@@ -155,16 +159,16 @@ const handleInvite = async () => {
   inviting.value = true
   try {
     for (const userId of selectedUsers.value) {
-      await matrixRoomService.inviteUser(props.roomId, userId)
+      await inviteUser(props.roomId, userId)
     }
 
-    window.$message?.success(t('room.invite.success', { count: selectedUsers.value.length }))
+    showFeedback(t('room.invite.success', { count: selectedUsers.value.length }), 'success')
     emit('invited', selectedUsers.value)
     emit('update:visible', false)
     selectedUsers.value = []
   } catch (error) {
     logger.error('邀请失败:', error)
-    window.$message?.error(t('room.invite.failed'))
+    showFeedback(t('room.invite.failed'), 'error')
   } finally {
     inviting.value = false
   }

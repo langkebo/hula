@@ -1,7 +1,7 @@
 <template>
   <div ref="containerRef" class="smart-virtual-list" @scroll.passive="handleScroll">
     <div v-if="showTopTip && !loading" class="top-tip">
-      <span>{{ topTipText }}</span>
+      <span>{{ topTipText || t('common.no_more_data') }}</span>
     </div>
 
     <div v-if="loading && items.length === 0" class="loading-wrapper">
@@ -26,12 +26,15 @@
 
 <script setup lang="ts" generic="T extends { id?: string | number; [key: string]: any }">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 type ListItem = { id?: string | number; [key: string]: unknown }
 
 type VisibleItem<TItem extends ListItem> = TItem & {
   _index: number
 }
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -49,7 +52,7 @@ const props = withDefaults(
     buffer: 5,
     loading: false,
     showTopTip: false,
-    topTipText: '没有更多数据了',
+    topTipText: '',
     keyField: 'id'
   }
 )

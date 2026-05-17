@@ -92,7 +92,11 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
-    error: vi.fn()
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn()
   })
 }))
 

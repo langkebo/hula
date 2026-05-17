@@ -8,6 +8,7 @@ import {
   resolveMatrixSessionEndpointConfig,
   saveMatrixSessionEndpointConfig
 } from '@/services/backend/config'
+import { useI18nGlobal } from '@/services/i18n'
 import type { MatrixClientConfig } from '@/services/matrix/MatrixClientService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
@@ -159,7 +160,7 @@ class MatrixRuntimeSessionService {
 
     const tokens = await this.getStoredTokens()
     if (!tokens.token) {
-      throw new Error('缺少访问令牌，无法恢复登录会话')
+      throw new Error(useI18nGlobal().t('matrix_error.auth.access_token_missing'))
     }
 
     const userInfo = this.port.user.getUserInfo()
@@ -242,11 +243,11 @@ class MatrixRuntimeSessionService {
       } = options
 
       if (!uid) {
-        throw new Error('缺少用户ID，无法恢复登录会话')
+        throw new Error(useI18nGlobal().t('matrix_error.auth.user_id_missing'))
       }
 
       if (!accessToken) {
-        throw new Error('缺少访问令牌，无法恢复登录会话')
+        throw new Error(useI18nGlobal().t('matrix_error.auth.access_token_missing'))
       }
 
       const { homeserverUrl, identityServerUrl } = resolveMatrixSessionEndpointConfig()
@@ -277,7 +278,7 @@ class MatrixRuntimeSessionService {
 
       const success = await this.port.matrix.loginWithToken(accessToken, uid)
       if (!success) {
-        throw new Error('基于访问令牌恢复 Matrix 会话失败')
+        throw new Error(useI18nGlobal().t('matrix_error.auth.session_restore_failed'))
       }
 
       const resolvedDisplayName = this.resolveDisplayName(uid, displayName, account)
@@ -332,13 +333,15 @@ class MatrixRuntimeSessionService {
 
       const success = await this.port.matrix.login(username, password, deviceName)
       if (!success) {
-        throw new Error(this.port.matrix.getLastError() || '登录失败，请检查网络连接或服务器配置')
+        throw new Error(
+          this.port.matrix.getLastError() || useI18nGlobal().t('matrix_error.auth.login_failed_check_network')
+        )
       }
 
       const uid = this.port.matrix.getUserId()
       const accessToken = this.port.matrix.getAccessToken()
       if (!uid || !accessToken) {
-        throw new Error('登录成功但会话信息不完整')
+        throw new Error(useI18nGlobal().t('matrix_error.auth.session_info_incomplete'))
       }
 
       const refreshToken = this.port.matrix.getRefreshToken() ?? ''
@@ -396,7 +399,7 @@ class MatrixRuntimeSessionService {
       } = options
 
       if (!loginToken) {
-        throw new Error('缺少 SSO 登录令牌')
+        throw new Error(useI18nGlobal().t('matrix_error.auth.sso_token_missing'))
       }
 
       const { homeserverUrl, identityServerUrl } = resolveMatrixSessionEndpointConfig()
@@ -410,13 +413,13 @@ class MatrixRuntimeSessionService {
 
       const success = await this.port.matrix.completeSSOLogin(loginToken)
       if (!success) {
-        throw new Error('SSO 登录失败，请稍后重试')
+        throw new Error(useI18nGlobal().t('matrix_error.auth.sso_login_failed'))
       }
 
       const uid = this.port.matrix.getUserId()
       const accessToken = this.port.matrix.getAccessToken()
       if (!uid || !accessToken) {
-        throw new Error('SSO 登录成功但会话信息不完整')
+        throw new Error(useI18nGlobal().t('matrix_error.auth.sso_session_incomplete'))
       }
 
       const refreshToken = this.port.matrix.getRefreshToken() ?? ''
@@ -593,7 +596,7 @@ class MatrixRuntimeSessionService {
       const uid = this.port.matrix.getUserId() ?? this.port.user.getUserInfo()?.uid ?? ''
 
       if (!uid) {
-        throw new Error('缺少用户ID，无法初始化登录状态')
+        throw new Error(useI18nGlobal().t('matrix_error.auth.user_id_missing_for_init'))
       }
 
       await this.ensureClientReadyForBootstrap(options)

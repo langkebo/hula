@@ -219,7 +219,7 @@ class AdminFacadeService extends BaseMatrixService {
     }
     const manager = client.getAdminManager?.()
     if (!manager) {
-      throw new Error('SDK AdminManager 不可用')
+      throw new Error(this.t('matrix_error.admin.sdk_manager_unavailable'))
     }
     return manager
   }
@@ -231,7 +231,7 @@ class AdminFacadeService extends BaseMatrixService {
         ? (client.getMediaQuotaManager() as QuotaManager)
         : ((client as unknown as { quotaManager?: QuotaManager }).quotaManager as QuotaManager | undefined)
     if (!manager) {
-      throw new Error('[Admin] QuotaManager 未初始化')
+      throw new Error(this.t('matrix_error.admin.quota_manager_not_initialized'))
     }
     return manager
   }
@@ -241,7 +241,7 @@ class AdminFacadeService extends BaseMatrixService {
     const manager = (client as unknown as { moderationManager?: ModerationManager }).moderationManager ?? null
     if (!manager) {
       if (throwOnMissing) {
-        throw new Error('[Admin] ModerationManager 未初始化')
+        throw new Error(this.t('matrix_error.admin.moderation_manager_not_initialized'))
       }
       return null
     }
@@ -703,7 +703,7 @@ class AdminFacadeService extends BaseMatrixService {
   async scoreReport(roomId: string, eventId: string, score: number): Promise<void> {
     const client = this.getClient()
     if (score < -100 || score > 0) {
-      throw new Error('[Admin] 评分必须在 -100 到 0 之间')
+      throw new Error(this.t('matrix_error.admin.score_range_invalid'))
     }
     try {
       await client.http.authedRequest(
@@ -930,7 +930,7 @@ class AdminFacadeService extends BaseMatrixService {
   async getUploadSizeLimit(throwOnError = true): Promise<number> {
     try {
       if (!this.quotaManager.getUploadSizeLimit) {
-        throw new Error('[Admin] getUploadSizeLimit 不可用')
+        throw new Error(this.t('matrix_error.admin.upload_size_limit_unavailable'))
       }
       const limit = await this.quotaManager.getUploadSizeLimit(throwOnError)
       info(`[Admin] 获取上传大小限制成功: ${limit}`)
@@ -945,7 +945,7 @@ class AdminFacadeService extends BaseMatrixService {
   async getUploadFileSizeLimit(throwOnError = true): Promise<number> {
     try {
       if (!this.quotaManager.getUploadFileSizeLimit) {
-        throw new Error('[Admin] getUploadFileSizeLimit 不可用')
+        throw new Error(this.t('matrix_error.admin.upload_file_size_limit_unavailable'))
       }
       const limit = await this.quotaManager.getUploadFileSizeLimit(throwOnError)
       info(`[Admin] 获取文件上传大小限制成功: ${limit}`)
@@ -960,7 +960,7 @@ class AdminFacadeService extends BaseMatrixService {
   async getUserStorageUsage(throwOnError = true): Promise<{ size: number; ntFiles: number } | null> {
     try {
       if (!this.quotaManager.getUserStorageUsage) {
-        throw new Error('[Admin] getUserStorageUsage 不可用')
+        throw new Error(this.t('matrix_error.admin.user_storage_usage_unavailable'))
       }
       const usage = await this.quotaManager.getUserStorageUsage(throwOnError)
       info(`[Admin] 获取用户存储使用量成功: ${usage?.size ?? 0}`)
@@ -975,7 +975,7 @@ class AdminFacadeService extends BaseMatrixService {
   async hasStorageSpace(requiredBytes: number): Promise<boolean> {
     try {
       if (!this.quotaManager.hasStorageSpace) {
-        throw new Error('[Admin] hasStorageSpace 不可用')
+        throw new Error(this.t('matrix_error.admin.has_storage_space_unavailable'))
       }
       const result = await this.quotaManager.hasStorageSpace(requiredBytes)
       info(`[Admin] 检查存储空间成功: ${requiredBytes} -> ${result}`)

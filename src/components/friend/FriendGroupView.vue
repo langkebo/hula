@@ -12,20 +12,35 @@
         </n-button>
       </n-flex>
 
-      <n-input v-model:value="searchValue" :placeholder="t('friend.group.search')" size="small" clearable>
-        <template #prefix>
-          <n-icon size="16">
-            <svg><use href="#search" /></svg>
-          </n-icon>
-        </template>
-      </n-input>
+      <FriendSearchBar
+        v-model="searchValue"
+        :history="searchHistory"
+        :show-history="showSearchHistory"
+        :placeholder="t('friend.group.search')"
+        @search="handleSearch"
+        @select-history="handleSelectHistory"
+        @clear-history="handleClearSearchHistory" />
+
+      <div v-if="showSearchSummary" class="friend-group-view__search-summary">
+        <span>{{ searchSummaryText }}</span>
+        <button
+          v-if="showSearchClearAction"
+          type="button"
+          class="friend-group-view__search-clear"
+          @click="handleClearActiveSearch">
+          {{ t('friend.search.clear_current') }}
+        </button>
+      </div>
     </n-flex>
 
     <n-divider style="margin: 0" />
 
     <n-spin :show="loading">
       <n-scrollbar style="height: calc(100vh - 200px)">
-        <n-empty v-if="filteredGroups.length === 0" :description="t('friend.group.empty')" class="mt-40px" />
+        <n-empty
+          v-if="filteredGroups.length === 0"
+          :description="hasSearchKeyword ? searchEmptyDescription : t('friend.group.empty')"
+          class="mt-40px" />
         <div v-else class="group-items">
           <div
             v-for="group in filteredGroups"
@@ -85,18 +100,32 @@
 </template>
 
 <script setup lang="ts">
-import { NIcon, useMessage } from 'naive-ui'
-import { computed, h, onMounted, ref } from 'vue'
+import { NIcon } from 'naive-ui'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
-import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useAriaLive } from '@/composables/common/useAriaLive'
+import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHistory'
+import { useSearchFeedbackSummary } from '@/composables/common/useSearchFeedbackSummary'
+import { type FriendGroup, useFriends } from '@/composables/useFriends'
+import FriendSearchBar from './FriendSearchBar.vue'
 
+const FRIEND_GROUP_SEARCH_HISTORY_STORAGE_KEY = 'hula-friend-group-search-history'
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
+const { announce } = useAriaLive()
+const { getFriendGroups, createFriendGroup, renameFriendGroup, deleteFriendGroup } = useFriends()
+const {
+  historyValues: searchHistory,
+  rememberTerm,
+  clearHistory: clearSearchHistory
+} = useRecentSearchHistory(FRIEND_GROUP_SEARCH_HISTORY_STORAGE_KEY)
 
 const loading = ref(false)
 const groups = ref<FriendGroup[]>([])
 const searchValue = ref('')
+const appliedSearchValue = ref('')
+const isSearchPending = ref(false)
 const showCreateDialog = ref(false)
 const newGroupName = ref('')
 const creating = ref(false)
@@ -107,10 +136,81 @@ const selectedGroup = ref<FriendGroup | null>(null)
 const showContextMenu = ref(false)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
+const showSearchHistory = computed(() => !loading.value && !searchValue.value.trim() && searchHistory.value.length > 0)
 
 const filteredGroups = computed(() => {
-  if (!searchValue.value) return groups.value
-  return groups.value.filter((g) => g.name.toLowerCase().includes(searchValue.value.toLowerCase()))
+  if (!appliedSearchValue.value.trim()) return groups.value
+  return groups.value.filter((g) => g.name.toLowerCase().includes(appliedSearchValue.value.toLowerCase()))
+})
+
+const {
+  hasSearchKeyword,
+  showSummary: showSearchSummary,
+  showClearAction: showSearchClearAction,
+  summaryText: searchSummaryText,
+  emptyDescription: searchEmptyDescription
+} = useSearchFeedbackSummary({
+  searchValue,
+  appliedSearchValue,
+  isSearching: isSearchPending,
+  resultCount: () => filteredGroups.value.length,
+  searchingText: () => t('friend.search.searching'),
+  announce,
+  getIdleSummaryText: () => {
+    if (!appliedSearchValue.value.trim()) {
+      return ''
+    }
+
+    return t('friend.group.result_count', {
+      count: filteredGroups.value.length,
+      keyword: appliedSearchValue.value
+    })
+  },
+  getResultAnnouncementText: () =>
+    t('friend.group.result_count', {
+      count: filteredGroups.value.length,
+      keyword: appliedSearchValue.value
+    }),
+  getEmptyAnnouncementText: () => t('friend.group.empty_search'),
+  getEmptyDescription: () => t('friend.group.empty_search')
+})
+
+const applySearch = (value: string, options?: { remember?: boolean }) => {
+  const normalizedValue = value.trim()
+  appliedSearchValue.value = normalizedValue
+  isSearchPending.value = false
+
+  if (options?.remember !== false) {
+    rememberTerm(normalizedValue)
+  }
+}
+
+const handleSearch = (value: string) => {
+  applySearch(value)
+}
+
+const handleSelectHistory = (value: string) => {
+  searchValue.value = value
+  applySearch(value)
+}
+
+const handleClearSearchHistory = () => {
+  clearSearchHistory()
+}
+
+const handleClearActiveSearch = () => {
+  searchValue.value = ''
+  appliedSearchValue.value = ''
+  isSearchPending.value = false
+}
+
+watch(searchValue, (value) => {
+  if (!value.trim()) {
+    isSearchPending.value = false
+    return
+  }
+
+  isSearchPending.value = value.trim() !== appliedSearchValue.value.trim()
 })
 
 const contextMenuOptions = computed(() => [
@@ -121,9 +221,9 @@ const contextMenuOptions = computed(() => [
 async function loadGroups() {
   loading.value = true
   try {
-    groups.value = await matrixFriendService.getFriendGroups()
+    groups.value = await getFriendGroups()
   } catch {
-    message.error(t('friend.group.load_failed'))
+    showFeedback(t('friend.group.load_failed'), 'error')
   } finally {
     loading.value = false
   }
@@ -132,13 +232,13 @@ async function loadGroups() {
 async function handleCreateGroup() {
   creating.value = true
   try {
-    await matrixFriendService.createFriendGroup(newGroupName.value.trim())
-    message.success(t('friend.group.create_success'))
+    await createFriendGroup(newGroupName.value.trim())
+    showFeedback(t('friend.group.create_success'), 'success')
     showCreateDialog.value = false
     newGroupName.value = ''
     await loadGroups()
   } catch {
-    message.error(t('friend.group.create_failed'))
+    showFeedback(t('friend.group.create_failed'), 'error')
   } finally {
     creating.value = false
   }
@@ -148,12 +248,12 @@ async function handleRenameGroup() {
   if (!selectedGroup.value) return
   renaming.value = true
   try {
-    await matrixFriendService.renameFriendGroup(selectedGroup.value.group_id, renameValue.value.trim())
-    message.success(t('friend.group.rename_success'))
+    await renameFriendGroup(selectedGroup.value.group_id, renameValue.value.trim())
+    showFeedback(t('friend.group.rename_success'), 'success')
     showRenameDialog.value = false
     await loadGroups()
   } catch {
-    message.error(t('friend.group.rename_failed'))
+    showFeedback(t('friend.group.rename_failed'), 'error')
   } finally {
     renaming.value = false
   }
@@ -161,11 +261,11 @@ async function handleRenameGroup() {
 
 async function handleDeleteGroup(groupId: string) {
   try {
-    await matrixFriendService.deleteFriendGroup(groupId)
-    message.success(t('friend.group.delete_success'))
+    await deleteFriendGroup(groupId)
+    showFeedback(t('friend.group.delete_success'), 'success')
     await loadGroups()
   } catch {
-    message.error(t('friend.group.delete_failed'))
+    showFeedback(t('friend.group.delete_failed'), 'error')
   }
 }
 
@@ -198,6 +298,23 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.friend-group-view__search-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--hula-text-tertiary);
+}
+
+.friend-group-view__search-clear {
+  border: none;
+  background: transparent;
+  color: var(--hula-color-primary-500);
+  cursor: pointer;
+  padding: 0;
+}
+
 .group-item {
   cursor: pointer;
   padding: 8px 12px;

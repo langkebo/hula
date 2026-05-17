@@ -1,5 +1,6 @@
 {
   "title": "Edit Brithday",
+  "select_date": "Select Date",
   "options": {
     "display_birthday_tag": "Display Birthday Tag",
     "displsy_age": "Display Age",

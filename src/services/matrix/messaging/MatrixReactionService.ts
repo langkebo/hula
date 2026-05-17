@@ -2,6 +2,7 @@ import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { MatrixContentField } from '@/common/matrixConstants'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 export interface ReactionInfo {
@@ -22,7 +23,7 @@ type ReactionContent = {
   [key: string]: unknown
 }
 
-class MatrixReactionService {
+class MatrixReactionService extends BaseMatrixService {
   async addReaction(roomId: string, eventId: string, emoji: string): Promise<string> {
     if (!navigator.onLine) {
       const offlineId = offlineQueueService.enqueue('reaction', roomId, { roomId, eventId, emoji })
@@ -32,7 +33,7 @@ class MatrixReactionService {
 
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixReaction] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -62,7 +63,7 @@ class MatrixReactionService {
 
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixReaction] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -77,18 +78,18 @@ class MatrixReactionService {
   async toggleReaction(roomId: string, eventId: string, emoji: string): Promise<{ added: boolean; eventId?: string }> {
     const client = matrixClientService.getClient()
     if (!client) {
-      throw new Error('[MatrixReaction] 客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
       const room = client.getRoom(roomId)
       if (!room) {
-        throw new Error(`[MatrixReaction] 房间不存在: ${roomId}`)
+        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
       }
 
       const myUserId = client.getUserId()
       if (!myUserId) {
-        throw new Error('[MatrixReaction] 用户ID不存在')
+        throw new Error(this.t('matrix_error.common.user_id_not_exists'))
       }
 
       const existingReaction = this.findUserReaction(roomId, eventId, emoji, myUserId)

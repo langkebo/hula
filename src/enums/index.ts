@@ -136,7 +136,12 @@ export enum MittEnum {
   /** 打开线程 */
   OPEN_THREAD = 'openThread',
   /** AI 停止流式输出 */
-  AI_STOP_STREAMING = 'ai_stop_streaming'
+  AI_STOP_STREAMING = 'ai_stop_streaming',
+  /** 打开公告面板 (MW-ANNOUNCEMENT-002) */
+  OPEN_ANNOUNCEMENT_PANEL = 'openAnnouncementPanel',
+  OPEN_ADD_FRIEND_DIALOG = 'openAddFriendDialog',
+  ROOM_TYPING_CHANGED = 'roomTypingChanged',
+  ROOM_RECEIPT_CHANGED = 'roomReceiptChanged'
 }
 
 /** 主题类型 */

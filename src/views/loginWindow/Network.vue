@@ -111,6 +111,7 @@
 <script setup lang="ts">
 import { darkTheme, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import router from '@/router'
 import { getDefaultMatrixEndpointConfig } from '@/services/backend'
 import { updateSettings } from '@/services/tauriCommand'
@@ -123,6 +124,7 @@ import { addSlashToHead } from '@/utils/StringUtils.ts'
 const logger = createLogger('Network')
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const settingStore = useSettingStore()
 const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 
@@ -199,7 +201,7 @@ const handleSave = async () => {
       (savedProxy.apiType && (!savedProxy.apiIp || !savedProxy.apiPort)) ||
       (savedProxy.wsType && (!savedProxy.wsIp || !savedProxy.wsPort))
     ) {
-      window.$message.warning(t('login.network.messages.incomplete'))
+      showFeedback(t('login.network.messages.incomplete'), 'warning')
       return
     }
     let proxySettings
@@ -227,9 +229,9 @@ const handleSave = async () => {
     await updateTauriSettings(proxySettings)
     logger.debug('settings', proxySettings)
 
-    window.$message.success(t('login.network.messages.save_success'))
+    showFeedback(t('login.network.messages.save_success'), 'success')
   } catch (error) {
-    window.$message.error(t('login.network.messages.save_failed', { error }))
+    showFeedback(t('login.network.messages.save_failed', { error }), 'error')
   }
 }
 
@@ -239,7 +241,7 @@ const updateTauriSettings = async (proxySettings: ProxySettings) => {
   const wsUrl = proxySettings.wsType + '://' + proxySettings.wsIp + ':' + proxySettings.wsPort + proxySettings.wsSuffix
 
   await updateSettings({ baseUrl, wsUrl }).catch((err) => {
-    window.$message.error(t('login.network.messages.save_failed', { error: err }))
+    showFeedback(t('login.network.messages.save_failed', { error: err }), 'error')
   })
 }
 </script>

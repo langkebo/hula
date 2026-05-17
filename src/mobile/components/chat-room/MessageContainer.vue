@@ -3,8 +3,8 @@
     <div
       ref="scrollContainerRef"
       class="message-scroll-container flex-1 overflow-y-auto overflow-x-hidden"
-      @scroll="handleScroll">
-      <div class="message-list-wrapper">
+      @scroll="handleScrollEvent">
+      <div ref="contentRef" class="message-list-wrapper">
         <slot name="header"></slot>
 
         <div v-if="showNoMore && !loading" class="no-more-tip">
@@ -15,7 +15,7 @@
           <van-loading size="24px">{{ t('message_container.loading') }}</van-loading>
         </div>
 
-        <div v-else ref="contentRef" class="message-content">
+        <div v-else class="message-content">
           <div
             v-for="(item, index) in messages"
             :key="getMessageKey(item, index)"
@@ -45,9 +45,9 @@
 </template>
 
 <script setup lang="ts">
-import { useThrottleFn } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useChatScrollManager } from '@/composables/chat/useChatScrollManager'
 
 const { t } = useI18n()
 
@@ -66,6 +66,7 @@ const props = withDefaults(
     noMoreText?: string
     estimatedItemHeight?: number
     scrollBehavior?: ScrollBehavior
+    currentRoomId?: string | null
   }>(),
   {
     messages: () => [],
@@ -74,7 +75,8 @@ const props = withDefaults(
     showNoMore: false,
     noMoreText: '',
     estimatedItemHeight: 80,
-    scrollBehavior: 'smooth'
+    scrollBehavior: 'smooth',
+    currentRoomId: null
   }
 )
 
@@ -86,16 +88,10 @@ const emit = defineEmits<{
 }>()
 
 const scrollContainerRef = ref<HTMLElement | null>(null)
+const contentRef = ref<HTMLElement | null>(null)
 let visibilityObserver: IntersectionObserver | null = null
 
-const newMessageCount = ref(0)
-const showNewMessageTip = ref(false)
-const isNearBottom = ref(true)
-
 const hasData = computed(() => props.messages.length > 0)
-
-const SCROLL_THRESHOLD = 100
-const LOAD_MORE_THRESHOLD = 50
 
 function getMessageKey(item: MessageItem, index: number): string {
   return item.id || item.message?.id || `msg-${index}`
@@ -105,58 +101,46 @@ function getMessageId(item: MessageItem): string | undefined {
   return item.id || item.message?.id
 }
 
-const handleScroll = useThrottleFn((event: Event) => {
-  emit('scroll', event)
-
-  if (!scrollContainerRef.value) return
-
-  const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.value
-  const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-
-  isNearBottom.value = distanceFromBottom < SCROLL_THRESHOLD
-
-  if (scrollTop < LOAD_MORE_THRESHOLD && !props.loading && props.hasMore) {
+const {
+  isAtBottom,
+  scrollToBottom,
+  scrollToMessage,
+  handleScroll,
+  handleNewMessage,
+  loadMore,
+  newMessageCount,
+  showNewMessageTip,
+  handleRoomChange
+} = useChatScrollManager({
+  scrollContainer: scrollContainerRef,
+  messageListRef: contentRef,
+  bottomThreshold: 100,
+  topLoadThreshold: 50,
+  onLoadMore: async () => {
     emit('loadMore')
-  }
-
-  if (isNearBottom.value && showNewMessageTip.value) {
-    showNewMessageTip.value = false
+  },
+  isLastPage: computed(() => !props.hasMore),
+  isLoading: computed(() => props.loading),
+  currentRoomId: computed(() => props.currentRoomId ?? null),
+  clearNewMsgCount: () => {
     newMessageCount.value = 0
+  },
+  onScrollToBottom: () => {
+    emit('scrollToEnd')
   }
-}, 16)
+})
 
-function scrollToBottom(behavior: ScrollBehavior = props.scrollBehavior) {
-  if (!scrollContainerRef.value) return
-
-  nextTick(() => {
-    if (scrollContainerRef.value) {
-      scrollContainerRef.value.scrollTo({
-        top: scrollContainerRef.value.scrollHeight,
-        behavior
-      })
-    }
-  })
-}
-
-function scrollToMessage(messageId: string, behavior: ScrollBehavior = 'smooth') {
-  if (!scrollContainerRef.value) return
-
-  const element = scrollContainerRef.value.querySelector(`[data-message-id="${messageId}"]`)
-  if (element) {
-    element.scrollIntoView({ behavior, block: 'center' })
-  }
-}
-
-function getScrollContainer(): HTMLElement | null {
-  return scrollContainerRef.value
+const handleScrollEvent = (event: Event) => {
+  handleScroll(event)
+  emit('scroll', event)
 }
 
 watch(
   () => props.messages.length,
   (newLength, oldLength) => {
     if (newLength > (oldLength || 0)) {
-      if (isNearBottom.value) {
-        scrollToBottom('auto')
+      if (isAtBottom.value) {
+        scrollToBottom()
       } else {
         newMessageCount.value += newLength - (oldLength || 0)
         showNewMessageTip.value = true
@@ -164,6 +148,19 @@ watch(
     }
   }
 )
+
+watch(
+  () => props.currentRoomId,
+  (newRoomId, oldRoomId) => {
+    if (newRoomId && newRoomId !== oldRoomId) {
+      handleRoomChange(newRoomId, oldRoomId)
+    }
+  }
+)
+
+function getScrollContainer(): HTMLElement | null {
+  return scrollContainerRef.value
+}
 
 onMounted(() => {
   if (scrollContainerRef.value) {

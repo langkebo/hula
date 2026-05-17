@@ -102,11 +102,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/views/homeWindow/SharedScreen.vue')
   },
   {
-    path: '/modal-invite',
-    name: 'modal-invite',
-    component: () => import('@/views/modalWindow/index.vue')
-  },
-  {
     path: '/space/create',
     name: SPACE_ROUTE_NAMES.create,
     component: () => import('@/views/homeWindow/SpaceView.vue')
@@ -182,11 +177,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     redirect: '/settings?tab=account'
   },
   {
-    path: '/announList/:roomId/:type',
-    name: 'announList',
-    component: () => import('@/views/announWindow/index.vue')
-  },
-  {
     path: '/previewFile',
     name: 'previewFile',
     component: () => import('@/views/previewFileWindow/index.vue')
@@ -210,16 +200,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     path: '/multiMsg',
     name: 'multiMsg',
     component: () => import('@/views/multiMsgWindow/index.vue')
-  },
-  {
-    path: '/searchFriend',
-    name: 'searchFriend',
-    component: () => import('@/views/friendWindow/SearchFriend.vue')
-  },
-  {
-    path: '/addFriendVerify',
-    name: 'addFriendVerify',
-    component: () => import('@/views/friendWindow/AddFriendVerify.vue')
   },
   {
     path: '/addGroupVerify',

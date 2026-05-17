@@ -1,8 +1,9 @@
-import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum, ModalEnum, PluginEnum } from '@/enums'
 import { useLoginFlow } from '@/hooks/useLoginFlow'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useWindow } from '@/hooks/useWindow.ts'
+import { useI18nGlobal } from '@/services/i18n'
 import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { createLogger } from '@/utils/Logger'
@@ -42,7 +43,7 @@ const baseItemsBottom: Array<Omit<OPT.L.Common, 'title' | 'shortTitle'>> = [
 
 const useItemsBottom = () =>
   (() => {
-    const { t } = useI18n()
+    const { t } = useI18nGlobal()
     return computed<OPT.L.Common[]>(() => [
       {
         ...baseItemsBottom[0],
@@ -58,7 +59,8 @@ const useItemsBottom = () =>
   })()
 /** 设置列表菜单项 */
 const useMoreList = () => {
-  const { t } = useI18n()
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const { createWebviewWindow } = useWindow()
   const { logout } = useLoginFlow()
   const showHomeserverDialog = ref(false)
@@ -121,14 +123,14 @@ const useMoreList = () => {
           label: t('menu.settings'),
           icon: 'settings',
           click: async () => {
-            await createWebviewWindow('设置', 'settings', 840, 840, '', true, 840, 600)
+            await createWebviewWindow(t('common.window_titles.settings'), 'settings', 840, 840, '', true, 840, 600)
           }
         },
         {
           label: t('menu.about'),
           icon: 'info',
           click: async () => {
-            await createWebviewWindow('关于', 'about', 360, 480)
+            await createWebviewWindow(t('common.window_titles.about'), 'about', 360, 480)
           }
         },
         {
@@ -139,7 +141,7 @@ const useMoreList = () => {
               await logout()
             } catch (error) {
               logger.error('退出登录失败:', error)
-              window.$message.error('退出登录失败，请重试')
+              showFeedback(t('menu.sign_out_failed'), 'error')
             }
           }
         }
@@ -257,7 +259,7 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
 
 const usePluginsList = () =>
   (() => {
-    const { t } = useI18n()
+    const { t } = useI18nGlobal()
     return computed<STO.Plugins<PluginEnum>[]>(() => [
       {
         ...basePluginsList[0],

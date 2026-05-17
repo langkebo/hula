@@ -1,38 +1,41 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, unref } from 'vue'
-import { RoomTypeEnum } from '@/enums'
-import { WORKBENCH_SESSION_SORTS, WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
+import { MittEnum, RoomTypeEnum } from '@/enums'
+import {
+  WORKBENCH_SESSION_ENGAGEMENT_FILTERS,
+  WORKBENCH_SESSION_SORTS,
+  WORKBENCH_SESSION_TYPE_FILTERS
+} from '@/router/spaceNavigation'
+import RoomBatchActionBar from '../RoomBatchActionBar.vue'
 import RoomSpaceActionBar from '../RoomSpaceActionBar.vue'
 import RoomSpaceToolbar from '../RoomSpaceToolbar.vue'
 import SpaceListPane from '../SpaceListPane.vue'
 import WorkbenchDetailPane from '../WorkbenchDetailPane.vue'
 
-const { groupStoreMock, announcementStoreMock, openLinkMock, spaceRoomsMock, createWebviewWindowMock } = vi.hoisted(
-  () => ({
-    groupStoreMock: {
-      loadGroupInfo: vi.fn(),
-      loadRoomMembers: vi.fn(),
-      getGroupDetailByRoomId: vi.fn(),
-      getMembersByRoomId: vi.fn()
-    },
-    announcementStoreMock: {
-      announcementContent: '',
-      announList: [] as Array<{ id: string; content: string }>,
-      announError: false,
-      isAddAnnoun: false,
-      loadGroupAnnouncements: vi.fn()
-    },
-    openLinkMock: vi.fn(),
-    createWebviewWindowMock: vi.fn(),
-    spaceRoomsMock: {
-      rooms: null as { value: Array<{ roomId: string; name: string; avatarUrl?: string }> } | null,
-      loading: null as { value: boolean } | null,
-      error: null as { value: string | null } | null,
-      load: vi.fn()
-    }
-  })
-)
+const { groupStoreMock, announcementStoreMock, openLinkMock, spaceRoomsMock, mittEmitMock } = vi.hoisted(() => ({
+  groupStoreMock: {
+    loadGroupInfo: vi.fn(),
+    loadRoomMembers: vi.fn(),
+    getGroupDetailByRoomId: vi.fn(),
+    getMembersByRoomId: vi.fn()
+  },
+  announcementStoreMock: {
+    announcementContent: '',
+    announList: [] as Array<{ id: string; content: string }>,
+    announError: false,
+    isAddAnnoun: false,
+    loadGroupAnnouncements: vi.fn()
+  },
+  openLinkMock: vi.fn(),
+  mittEmitMock: vi.fn(),
+  spaceRoomsMock: {
+    rooms: null as { value: Array<{ roomId: string; name: string; avatarUrl?: string }> } | null,
+    loading: null as { value: boolean } | null,
+    error: null as { value: string | null } | null,
+    load: vi.fn()
+  }
+}))
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -55,8 +58,18 @@ vi.mock('naive-ui', async () => {
       }
     })
 
+  const tooltipStub = defineComponent({
+    name: 'NTooltip',
+    setup(_, { slots }) {
+      return () => h('div', { 'data-test': 'NTooltip' }, [...(slots.trigger?.() ?? []), ...(slots.default?.() ?? [])])
+    }
+  })
+
   return {
+    NAvatar: passthroughStub('NAvatar'),
     NFlex: passthroughStub('NFlex'),
+    NTag: passthroughStub('NTag'),
+    NTooltip: tooltipStub,
     NForm: passthroughStub('NForm'),
     NFormItem: defineComponent({
       name: 'NFormItem',
@@ -175,6 +188,12 @@ vi.mock('naive-ui', async () => {
           )
       }
     }),
+    NDivider: defineComponent({
+      name: 'NDivider',
+      setup() {
+        return () => h('div', { 'data-test': 'NDivider' })
+      }
+    }),
     NButton: defineComponent({
       name: 'NButton',
       props: {
@@ -212,8 +231,12 @@ vi.mock('@/stores/domains/chat/announcement', () => ({
   useAnnouncementStore: () => announcementStoreMock
 }))
 
-vi.mock('@/hooks/useWindow', () => ({
-  createWebviewWindow: createWebviewWindowMock
+vi.mock('@/hooks/useMitt.ts', () => ({
+  useMitt: {
+    emit: mittEmitMock,
+    on: vi.fn(),
+    off: vi.fn()
+  }
 }))
 
 vi.mock('@/components/room/MemberList.vue', () => ({
@@ -304,6 +327,11 @@ vi.mock('@/hooks/useLinkSegments', () => ({
   })
 }))
 
+const switchWorkbenchTab = async (wrapper: ReturnType<typeof mount>, index: number) => {
+  await wrapper.findAll('.workbench-pane-tabs__tab')[index].trigger('click')
+  await flushPromises()
+}
+
 vi.mock('@/utils/AvatarUtils', () => ({
   AvatarUtils: {
     getAvatarUrl: (value?: string) => value || 'avatar.png'
@@ -328,17 +356,17 @@ describe('SpaceListPane', () => {
       }
     })
 
-    const buttons = wrapper.findAll('button')
+    const allSessionsButton = wrapper.get('.space-item')
+    const spaceCards = wrapper.findAll('.space-card')
 
-    expect(wrapper.text()).toContain('space.title')
     expect(wrapper.text()).toContain('space.all_sessions')
     expect(wrapper.text()).toContain('Space Two')
     expect(wrapper.get('[data-test="NSpin"]').attributes('data-show')).toBe('true')
-    expect(buttons[0].classes()).not.toContain('space-item--active')
-    expect(buttons[2].classes()).toContain('space-item--active')
+    expect(allSessionsButton.classes()).not.toContain('space-item--active')
+    expect(spaceCards[1]?.classes()).toContain('space-card--active')
 
-    await buttons[0].trigger('click')
-    await buttons[2].trigger('click')
+    await allSessionsButton.trigger('click')
+    await spaceCards[1]!.trigger('click')
 
     expect(wrapper.emitted('selectSpace')).toEqual([[''], ['space-2']])
   })
@@ -357,6 +385,46 @@ describe('SpaceListPane', () => {
 
     expect(wrapper.classes()).toContain('space-list-pane--compact')
     expect(wrapper.classes()).toContain('space-list-pane--narrow')
+  })
+
+  it('collapses the space list into a rail in narrow mode', () => {
+    const wrapper = mount(SpaceListPane, {
+      props: {
+        spaces: [{ spaceId: 'space-1', name: 'Space One', childCount: 2, isPinned: true }],
+        selectedSpaceId: '',
+        loading: false,
+        totalCount: 3,
+        narrow: true
+      }
+    })
+
+    expect(wrapper.classes()).toContain('space-list-pane--rail')
+    expect(wrapper.get('.space-item').attributes('title')).toBe('space.all_sessions')
+    expect(wrapper.find('.space-item__meta').exists()).toBe(false)
+    expect(wrapper.find('.space-section__count').exists()).toBe(false)
+  })
+
+  it('exposes expandable section controls with aria metadata', async () => {
+    const wrapper = mount(SpaceListPane, {
+      props: {
+        spaces: [
+          { spaceId: 'space-1', name: 'Space One', childCount: 2, isPinned: true },
+          { spaceId: 'space-2', name: 'Space Two', childCount: 1 }
+        ],
+        selectedSpaceId: '',
+        loading: false,
+        totalCount: 3
+      }
+    })
+
+    const pinnedTrigger = wrapper.get('#space-section-pinned-trigger')
+    expect(wrapper.attributes('aria-label')).toBe('space.title')
+    expect(wrapper.get('.space-list-pane__body').attributes('role')).toBe('list')
+    expect(pinnedTrigger.attributes('aria-controls')).toBe('space-section-pinned-panel')
+    expect(pinnedTrigger.attributes('aria-expanded')).toBe('true')
+
+    await pinnedTrigger.trigger('click')
+    expect(pinnedTrigger.attributes('aria-expanded')).toBe('false')
   })
 })
 
@@ -377,18 +445,19 @@ describe('RoomSpaceToolbar', () => {
     })
 
     const input = wrapper.get('input')
-    const buttons = wrapper.findAll('button')
 
     expect(input.attributes('placeholder')).toBe('space.search_sessions_placeholder')
     expect(input.element.value).toBe('alpha')
+    expect(wrapper.text()).toContain('room.batch.enter')
     expect(wrapper.text()).toContain('space.create')
     expect(wrapper.text()).toContain('2/7')
     expect(wrapper.text()).toContain('space.filter_all')
     expect(wrapper.text()).toContain('space.sort_recent')
     expect(wrapper.text()).toContain('space.sort_summary_recent')
+    expect(wrapper.text()).toContain('space.search_filter_tag')
 
     await input.setValue('beta')
-    await buttons[0].trigger('click')
+    await wrapper.get('[data-test="session-create-space"]').trigger('click')
     await wrapper.get('[data-test="session-type-group"]').trigger('click')
     await wrapper.get('[data-test="session-sort-name"]').trigger('click')
 
@@ -396,6 +465,54 @@ describe('RoomSpaceToolbar', () => {
     expect(wrapper.emitted('update:sessionTypeFilter')).toEqual([['group']])
     expect(wrapper.emitted('update:sessionSort')).toEqual([['name']])
     expect(wrapper.emitted('createSpace')).toEqual([[]])
+  })
+
+  it('switches the batch trigger label when batch mode is active', async () => {
+    const wrapper = mount(RoomSpaceToolbar, {
+      props: {
+        searchKeyword: '',
+        sessionTypeFilter: WORKBENCH_SESSION_TYPE_FILTERS.all,
+        sessionSort: WORKBENCH_SESSION_SORTS.recent,
+        filteredCount: 2,
+        totalCount: 7,
+        batchMode: true
+      }
+    })
+
+    expect(wrapper.text()).toContain('room.batch.exit')
+    await wrapper.findAll('button')[0].trigger('click')
+    expect(wrapper.emitted('toggleBatchMode')).toEqual([[]])
+  })
+
+  it('renders preset actions, closes search tag, and clears all filters including search', async () => {
+    const wrapper = mount(RoomSpaceToolbar, {
+      props: {
+        searchKeyword: 'roadmap',
+        sessionTypeFilter: WORKBENCH_SESSION_TYPE_FILTERS.group,
+        sessionEngagementFilter: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.unread,
+        sessionSort: WORKBENCH_SESSION_SORTS.name,
+        filteredCount: 1,
+        totalCount: 7,
+        hasSavedPreset: true,
+        canSavePreset: true
+      }
+    })
+
+    expect(wrapper.text()).toContain('space.saved_preset_label')
+    expect(wrapper.find('[data-test="session-save-preset"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="session-apply-preset"]').exists()).toBe(true)
+
+    await wrapper.get('[data-test="session-save-preset"]').trigger('click')
+    await wrapper.get('[data-test="session-apply-preset"]').trigger('click')
+    await wrapper.get('.toolbar-filter-tag').trigger('close')
+    await wrapper.get('.toolbar-clear-all').trigger('click')
+
+    expect(wrapper.emitted('savePreset')).toEqual([[]])
+    expect(wrapper.emitted('applySavedPreset')).toEqual([[]])
+    expect(wrapper.emitted('update:searchKeyword')).toEqual([[''], ['']])
+    expect(wrapper.emitted('update:sessionTypeFilter')).toEqual([['all']])
+    expect(wrapper.emitted('update:sessionEngagementFilter')).toEqual([['all']])
+    expect(wrapper.emitted('update:sessionSort')).toEqual([['recent']])
   })
 
   it('adds compact styling hook for constrained widths', () => {
@@ -452,17 +569,26 @@ describe('RoomSpaceActionBar', () => {
     const buttons = wrapper.findAll('button')
 
     expect(wrapper.text()).toContain('Space One')
-    expect(wrapper.text()).toContain('4 space.rooms · 6 个会话')
+    expect(wrapper.get('nav').attributes('aria-label')).toBe('space.title')
+    expect(wrapper.get('[aria-current="page"]').text()).toBe('Space One')
+    expect(wrapper.text()).toContain('4 space.rooms')
+    expect(wrapper.text()).toContain('6 个会话')
+    expect(wrapper.text()).toContain('space.discover')
     expect(wrapper.text()).toContain('space.invite')
     expect(wrapper.text()).toContain('space.add_room')
+    expect(wrapper.text()).toContain('space.members')
     expect(wrapper.text()).toContain('space.settings')
 
     await buttons[0].trigger('click')
     await buttons[1].trigger('click')
     await buttons[2].trigger('click')
+    await buttons[3].trigger('click')
+    await buttons[4].trigger('click')
 
+    expect(wrapper.emitted('discover')).toEqual([[]])
     expect(wrapper.emitted('invite')).toEqual([[]])
     expect(wrapper.emitted('addRoom')).toEqual([[]])
+    expect(wrapper.emitted('members')).toEqual([[]])
     expect(wrapper.emitted('settings')).toEqual([[]])
   })
 
@@ -478,18 +604,46 @@ describe('RoomSpaceActionBar', () => {
 
     const buttons = wrapper.findAll('button')
 
-    expect(buttons).toHaveLength(3)
+    expect(buttons).toHaveLength(5)
+    expect(buttons[0].attributes('disabled')).toBeUndefined()
     buttons.forEach((button) => {
+      if (button === buttons[0]) return
       expect(button.attributes('disabled')).toBeDefined()
     })
 
     await buttons[0].trigger('click')
     await buttons[1].trigger('click')
     await buttons[2].trigger('click')
+    await buttons[3].trigger('click')
+    await buttons[4].trigger('click')
 
+    expect(wrapper.emitted('discover')).toEqual([[]])
     expect(wrapper.emitted('invite')).toBeUndefined()
     expect(wrapper.emitted('addRoom')).toBeUndefined()
+    expect(wrapper.emitted('members')).toBeUndefined()
     expect(wrapper.emitted('settings')).toBeUndefined()
+  })
+
+  it('renders clickable ancestor breadcrumbs and keeps current space as page', async () => {
+    const wrapper = mount(RoomSpaceActionBar, {
+      props: {
+        breadcrumbItems: [
+          { spaceId: 'space-root', name: 'Root Space' },
+          { spaceId: 'space-child', name: 'Child Space' }
+        ],
+        spaceName: 'Child Space',
+        roomCount: 4,
+        sessionCount: 6,
+        canManageSpace: true
+      }
+    })
+
+    const crumbButton = wrapper.get('.room-space-action-bar__breadcrumb-link')
+    expect(crumbButton.text()).toBe('Root Space')
+    expect(wrapper.get('[aria-current="page"]').text()).toBe('Child Space')
+
+    await crumbButton.trigger('click')
+    expect(wrapper.emitted('selectBreadcrumb')).toEqual([['space-root']])
   })
 
   it('adds compact styling hook for constrained widths', () => {
@@ -504,6 +658,35 @@ describe('RoomSpaceActionBar', () => {
     })
 
     expect(wrapper.classes()).toContain('room-space-action-bar--compact')
+  })
+})
+
+describe('RoomBatchActionBar', () => {
+  it('renders selected count state and emits batch actions', async () => {
+    const wrapper = mount(RoomBatchActionBar, {
+      props: {
+        visible: true,
+        selectedCount: 2,
+        totalCount: 5
+      }
+    })
+
+    expect(wrapper.text()).toContain('room.batch.selected_count')
+
+    await wrapper.get('input[type="checkbox"]').setValue(true)
+    const buttons = wrapper.findAll('button')
+    await buttons[0].trigger('click')
+    await buttons[1].trigger('click')
+    await buttons[2].trigger('click')
+    await buttons[3].trigger('click')
+    await buttons[4].trigger('click')
+
+    expect(wrapper.emitted('toggleAll')).toEqual([[]])
+    expect(wrapper.emitted('markRead')).toEqual([[]])
+    expect(wrapper.emitted('pin')).toEqual([[]])
+    expect(wrapper.emitted('mute')).toEqual([[]])
+    expect(wrapper.emitted('leave')).toEqual([[]])
+    expect(wrapper.emitted('close')).toEqual([[]])
   })
 })
 
@@ -523,6 +706,7 @@ describe('WorkbenchDetailPane', () => {
     spaceRoomsMock.loading!.value = false
     spaceRoomsMock.error!.value = null
     spaceRoomsMock.load.mockResolvedValue(undefined)
+    mittEmitMock.mockReset()
   })
 
   it('renders empty state and selected session details', async () => {
@@ -535,6 +719,7 @@ describe('WorkbenchDetailPane', () => {
       }
     })
 
+    expect(emptyWrapper.find('[data-test="detail-mode-summary"]').exists()).toBe(true)
     expect(emptyWrapper.text()).toContain('space.details_empty_title')
     expect(emptyWrapper.text()).toContain('space.detail_scope_all')
     expect(emptyWrapper.text()).toContain('space.detail_space_topic_empty')
@@ -593,6 +778,7 @@ describe('WorkbenchDetailPane', () => {
 
     await flushPromises()
 
+    expect(filledWrapper.find('[data-test="detail-mode-summary"]').exists()).toBe(true)
     expect(filledWrapper.text()).toContain('Alpha Room')
     expect(filledWrapper.text()).toContain('space.detail_type_group')
     expect(filledWrapper.text()).toContain('hello world')
@@ -603,6 +789,10 @@ describe('WorkbenchDetailPane', () => {
     expect(filledWrapper.text()).toContain('9')
     expect(filledWrapper.text()).toContain('Design Room')
     expect(filledWrapper.text()).toContain('Frontend Room')
+
+    await switchWorkbenchTab(filledWrapper, 2)
+
+    expect(filledWrapper.find('[data-test="detail-mode-activity"]').exists()).toBe(true)
     expect(filledWrapper.text()).toContain('space.detail_group')
     expect(filledWrapper.text()).toContain('12')
     expect(filledWrapper.text()).toContain('2')
@@ -631,6 +821,25 @@ describe('WorkbenchDetailPane', () => {
 
     expect(wrapper.classes()).toContain('workbench-detail-pane--compact')
     expect(wrapper.classes()).toContain('workbench-detail-pane--narrow')
+  })
+
+  it('renders drawer classes and close action in narrow drawer mode', async () => {
+    const wrapper = mount(WorkbenchDetailPane, {
+      props: {
+        selectedSession: null,
+        activeSpace: null,
+        visibleSessionCount: 0,
+        totalSessionCount: 3,
+        drawerMode: true,
+        drawerVisible: true
+      }
+    })
+
+    expect(wrapper.classes()).toContain('workbench-detail-pane--drawer')
+    expect(wrapper.classes()).toContain('workbench-detail-pane--drawer-open')
+
+    await wrapper.get('[data-test="detail-close-drawer"]').trigger('click')
+    expect(wrapper.emitted('closeDrawer')).toEqual([[]])
   })
 
   it('renders space room retry state and reloads child rooms on demand', async () => {
@@ -695,6 +904,7 @@ describe('WorkbenchDetailPane', () => {
     })
 
     await flushPromises()
+    await switchWorkbenchTab(wrapper, 2)
 
     expect(wrapper.text()).toContain('space.detail_announcement_load_failed')
     expect(wrapper.text()).toContain('common.retry')
@@ -725,18 +935,14 @@ describe('WorkbenchDetailPane', () => {
     })
 
     await flushPromises()
+    await switchWorkbenchTab(wrapper, 2)
 
     expect(wrapper.text()).toContain('space.detail_view_all_announcements')
 
     const buttons = wrapper.findAll('.detail-announcement__actions .detail-members__toggle')
     await buttons[0].trigger('click')
 
-    expect(createWebviewWindowMock).toHaveBeenCalledWith(
-      'space.detail_view_all_announcements_window',
-      'announList/!announcement:server/1',
-      420,
-      620
-    )
+    expect(mittEmitMock).toHaveBeenCalledWith(MittEnum.OPEN_ANNOUNCEMENT_PANEL, { roomId: '!announcement:server' })
   })
 
   it('shows edit announcement action for manageable groups', async () => {
@@ -759,6 +965,7 @@ describe('WorkbenchDetailPane', () => {
     })
 
     await flushPromises()
+    await switchWorkbenchTab(wrapper, 2)
 
     expect(wrapper.text()).toContain('space.detail_edit_announcement')
 
@@ -767,15 +974,10 @@ describe('WorkbenchDetailPane', () => {
 
     await buttons[1].trigger('click')
 
-    expect(createWebviewWindowMock).toHaveBeenCalledWith(
-      'space.detail_edit_announcement_window',
-      'announList/!editable:server/0',
-      420,
-      620
-    )
+    expect(mittEmitMock).toHaveBeenCalledWith(MittEnum.OPEN_ANNOUNCEMENT_PANEL, { roomId: '!editable:server' })
   })
 
-  it('toggles full member directory from detail pane', async () => {
+  it('switches from activity preview to members mode and toggles directory', async () => {
     groupStoreMock.loadRoomMembers.mockResolvedValue([
       {
         userId: '@u1:server',
@@ -813,12 +1015,15 @@ describe('WorkbenchDetailPane', () => {
     })
 
     await flushPromises()
+    await switchWorkbenchTab(wrapper, 2)
 
+    expect(wrapper.find('[data-test="detail-mode-activity"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="member-list-stub"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('space.detail_members_view_all')
 
     await wrapper.get('.detail-members__directory-toggle').trigger('click')
 
+    expect(wrapper.find('[data-test="detail-mode-members"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="member-list-stub"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('User 1')
     expect(wrapper.text()).toContain('space.detail_members_hide_directory')
@@ -858,11 +1063,13 @@ describe('WorkbenchDetailPane', () => {
     })
 
     await flushPromises()
+    await switchWorkbenchTab(wrapper, 2)
 
     expect(wrapper.find('[data-test="info-popover-stub"]').exists()).toBe(false)
 
     await wrapper.get('.detail-member').trigger('click')
 
+    expect(wrapper.find('[data-test="detail-mode-members"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="NModal"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="detail-member-profile-card"]').exists()).toBe(true)
     expect(wrapper.get('[data-test="info-popover-stub"]').text()).toBe('u1')
@@ -889,6 +1096,7 @@ describe('WorkbenchDetailPane', () => {
     })
 
     expect(wrapper.text()).toContain('space.invite_title')
+    expect(wrapper.find('[data-test="detail-mode-manage"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="detail-manage-card"]').exists()).toBe(true)
 
     await wrapper.get('input[placeholder="space.invite_user_placeholder"]').setValue('@alice:server')
@@ -977,6 +1185,7 @@ describe('WorkbenchDetailPane', () => {
     })
 
     await flushPromises()
+    await switchWorkbenchTab(wrapper, 2)
 
     expect(wrapper.text()).toContain('space.detail_members_load_failed')
     expect(wrapper.text()).toContain('common.retry')
@@ -1015,6 +1224,7 @@ describe('WorkbenchDetailPane', () => {
     })
 
     await flushPromises()
+    await switchWorkbenchTab(wrapper, 2)
 
     expect(wrapper.text()).toContain('User 6')
     expect(wrapper.text()).not.toContain('User 7')

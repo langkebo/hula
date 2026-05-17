@@ -19,16 +19,24 @@ const groupStoreMock = {
   }))
 }
 
+const contactStoreMock = {
+  getContactByUserId: vi.fn(() => null)
+}
+
 const userStatusStoreMock = reactive({
   stateList: [],
   currentState: null
 })
 
-vi.mock('pinia', () => ({
-  storeToRefs: (store: Record<string, unknown>) => ({
-    currentState: computed(() => store.currentState)
-  })
-}))
+vi.mock('pinia', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('pinia')>()
+  return {
+    ...actual,
+    storeToRefs: (store: Record<string, unknown>) => ({
+      currentState: computed(() => store.currentState)
+    })
+  }
+})
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -42,6 +50,10 @@ vi.mock('@/stores/domains/user/user', () => ({
 
 vi.mock('@/stores/domains/chat/group', () => ({
   useGroupStore: () => groupStoreMock
+}))
+
+vi.mock('@/stores/domains/chat/contacts', () => ({
+  useContactStore: () => contactStoreMock
 }))
 
 vi.mock('@/stores/domains/user/userStatus', () => ({

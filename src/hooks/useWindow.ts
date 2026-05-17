@@ -4,7 +4,9 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { type Monitor, primaryMonitor, UserAttentionType, type WindowOptions } from '@tauri-apps/api/window'
 import { info } from '@tauri-apps/plugin-log'
 import { assign } from 'es-toolkit/compat'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { CallTypeEnum, EventEnum, RoomTypeEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 import { isCompatibility, isDesktop, isMac, isWindows, isWindows10 } from '@/utils/PlatformConstants'
@@ -110,7 +112,7 @@ const awaitWindowCreation = async (label: string, webview: WebviewWindow): Promi
         return
       }
 
-      rejectWindow(new Error(`窗口创建失败: ${label}`))
+      rejectWindow(new Error(useI18nGlobal().t('hooks.window.create_failed', { label })))
     })
   })
 }
@@ -137,6 +139,8 @@ const ensureDesktopWindowInstance = async (
 
 export const useWindow = () => {
   const globalStore = useGlobalStore()
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   /**
    * 创建窗口
    * @param title 窗口标题
@@ -407,7 +411,7 @@ export const useWindow = () => {
     // 监听错误事件
     modalWindow.once('tauri://error', async (e) => {
       logger.error(`${title}窗口创建失败:`, e)
-      window.$message?.error(`创建${title}窗口失败`)
+      showFeedback(`创建${title}窗口失败`, 'error')
       await parentWindow?.setEnabled(true)
     })
 
@@ -500,19 +504,19 @@ export const useWindow = () => {
     try {
       const currentSession = globalStore.currentSession
       if (!currentSession) {
-        window.$message?.warning?.('当前会话尚未准备好')
+        showFeedback(t('hooks.window.session_not_ready'), 'warning')
         return
       }
       // 判断是否为群聊，如果是群聊则跳过
       if (currentSession.type === RoomTypeEnum.GROUP) {
-        window.$message.warning('群聊暂不支持音视频通话')
+        showFeedback(t('hooks.window.group_call_not_supported'), 'warning')
         return
       }
 
       // 获取当前房间好友的ID（单聊时使用detailId作为remoteUid）
       const remoteUid = currentSession.detailId
       if (!remoteUid) {
-        window.$message.error('无法获取对方用户信息')
+        showFeedback(t('hooks.window.user_info_missing'), 'error')
         return
       }
       await createRtcCallWindow(false, remoteUid, globalStore.currentSessionRoomId, callType)
@@ -534,7 +538,8 @@ export const useWindow = () => {
         ? { width: 850, height: 580, minWidth: 850, minHeight: 580 } // 视频通话尺寸
         : { width: 500, height: 650, minWidth: 500, minHeight: 650 } // 语音通话尺寸
 
-    const type = callType === CallTypeEnum.VIDEO ? '视频通话' : '语音通话'
+    const type =
+      callType === CallTypeEnum.VIDEO ? t('common.window_titles.video_call') : t('common.window_titles.audio_call')
     await createWebviewWindow(
       type, // 窗口标题
       'rtcCall', // 窗口标签
@@ -584,7 +589,7 @@ export const useWindow = () => {
     return ensureDesktopWindowInstance(
       'checkupdate',
       {
-        title: '检查更新',
+        title: t('common.window_titles.check_update'),
         url: '/checkupdate',
         resizable: false,
         width: 500,

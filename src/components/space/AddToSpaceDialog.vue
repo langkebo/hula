@@ -21,7 +21,7 @@ import type { PropType } from 'vue'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
+import { useSpace } from '@/composables/space'
 import { useSpaceStore } from '@/stores/domains/widget/space'
 import { createLogger } from '@/utils/Logger'
 
@@ -29,6 +29,7 @@ const logger = createLogger('AddToSpaceDialog')
 const { t } = useI18n()
 const router = useRouter()
 const spaceStore = useSpaceStore()
+const { addChild } = useSpace(() => props.spaceId)
 const props = defineProps<{
   visible: boolean
   spaceId: string
@@ -53,7 +54,7 @@ const handleSubmit = async () => {
   try {
     loading.value = true
     await formRef.value?.validate()
-    await matrixSpaceService.addChildToSpace(props.spaceId, formData.roomId)
+    await addChild(formData.roomId)
     emit('update:visible', false)
   } catch (error) {
     logger.error('[AddToSpaceDialog] 添加房间失败:', error)

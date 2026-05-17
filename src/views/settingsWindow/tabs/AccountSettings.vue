@@ -83,29 +83,31 @@
 </template>
 
 <script setup lang="ts">
-import { NAvatar, NButton, NDivider, NForm, NFormItem, NInput, useDialog, useMessage } from 'naive-ui'
+import { NAvatar, NButton, NDivider, NForm, NFormItem, NInput, useDialog } from 'naive-ui'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import defaultAvatarImg from '@/assets/img/win.png'
+import type { AvatarCropperInstance } from '@/components/common/AvatarCropper.vue'
+import AvatarCropper from '@/components/common/AvatarCropper.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingsTabDirty } from '@/composables/settings/useSettingsDirtyRegistry'
+import { useAccount } from '@/composables/user/useAccount'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AccountSettings')
 
-import defaultAvatarImg from '@/assets/img/win.png'
-import type { AvatarCropperInstance } from '@/components/common/AvatarCropper.vue'
-import AvatarCropper from '@/components/common/AvatarCropper.vue'
-import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
-
 defineOptions({
   name: 'AccountSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const { t } = useI18n()
+const { changePassword, deactivateAccount } = useAccount()
 const userStore = useUserStore()
 const matrixStore = useMatrixStore()
 
@@ -153,12 +155,12 @@ function handleFileSelect(event: Event) {
 
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
-    message.error(t('setting.account.avatar_format_invalid'))
+    showFeedback(t('setting.account.avatar_format_invalid'), 'error')
     return
   }
 
   if (file.size > 5 * 1024 * 1024) {
-    message.error(t('setting.account.avatar_too_large'))
+    showFeedback(t('setting.account.avatar_too_large'), 'error')
     return
   }
 
@@ -188,7 +190,7 @@ async function handleCrop(blob: Blob) {
 
     await userStore.updateAvatar(mxcUrl)
 
-    message.success(t('setting.account.avatar_updated'))
+    showFeedback(t('setting.account.avatar_updated'), 'success')
     showCropper.value = false
 
     if (localImageUrl.value) {
@@ -197,7 +199,7 @@ async function handleCrop(blob: Blob) {
     }
   } catch (error) {
     logger.error('Failed to upload avatar', error)
-    message.error(t('setting.account.avatar_update_failed_retry'))
+    showFeedback(t('setting.account.avatar_update_failed_retry'), 'error')
     cropperRef.value?.finishLoading()
   } finally {
     avatarUploading.value = false
@@ -209,33 +211,33 @@ async function handleDisplayNameChange() {
 
   try {
     await matrixAccountService.updateDisplayName(formData.displayName)
-    message.success(t('setting.account.nickname_updated'))
+    showFeedback(t('setting.account.nickname_updated'), 'success')
   } catch (error) {
-    message.error(t('setting.account.nickname_update_failed'))
+    showFeedback(t('setting.account.nickname_update_failed'), 'error')
     formData.displayName = userStore.currentUserDisplayName || ''
   }
 }
 
 async function handlePasswordChange() {
   if (!passwordForm.oldPassword || !passwordForm.newPassword) {
-    message.warning(t('setting.account.password_incomplete'))
+    showFeedback(t('setting.account.password_incomplete'), 'warning')
     return
   }
 
   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    message.warning(t('setting.account.password_mismatch'))
+    showFeedback(t('setting.account.password_mismatch'), 'warning')
     return
   }
 
   passwordLoading.value = true
   try {
-    await matrixAccountService.changePassword(passwordForm.oldPassword, passwordForm.newPassword)
-    message.success(t('setting.account.password_changed'))
+    await changePassword(passwordForm.oldPassword, passwordForm.newPassword)
+    showFeedback(t('setting.account.password_changed'), 'success')
     passwordForm.oldPassword = ''
     passwordForm.newPassword = ''
     passwordForm.confirmPassword = ''
   } catch (error) {
-    message.error(t('setting.account.password_change_failed_with_hint'))
+    showFeedback(t('setting.account.password_change_failed_with_hint'), 'error')
   } finally {
     passwordLoading.value = false
   }
@@ -249,10 +251,10 @@ function handleDeactivateAccount() {
     negativeText: t('setting.common.cancel'),
     onPositiveClick: async () => {
       try {
-        await matrixAccountService.deactivateAccount()
-        message.success(t('setting.account.deactivate_success'))
+        await deactivateAccount()
+        showFeedback(t('setting.account.deactivate_success'), 'success')
       } catch (error) {
-        message.error(t('setting.account.deactivate_failed'))
+        showFeedback(t('setting.account.deactivate_failed'), 'error')
       }
     }
   })

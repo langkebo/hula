@@ -8,16 +8,18 @@ import {
   SlidingSync,
   type SlidingSync as SlidingSyncInstance
 } from 'matrix-js-sdk'
-import { extendMatrixClientWithManagers } from 'matrix-js-sdk/src/manager-extensions'
-import type { TelemetryManager } from 'matrix-js-sdk/src/telemetry'
+import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
+import { MittEnum } from '@/enums'
+import { useMitt } from '@/hooks/useMitt'
+import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
+// 导入并初始化 Manager 扩展
+import { ensureMatrixSdkCompat, extendMatrixClientWithManagers } from '@/services/matrix/sdk-compat'
 import { type ICreateClientOpts, PendingEventOrdering } from '@/types/matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import type { SearchEventDoc } from '@/workers/matrixWorkerTypes'
 
-// 导入并初始化 Manager 扩展
-import 'matrix-js-sdk/src/manager-extensions'
 const logger = createLogger('MatrixClient')
 
 /**
@@ -208,8 +210,22 @@ class MatrixClientService {
     }
   }
 
+  private readonly typingListener = (...args: unknown[]) => {
+    const room = args[1] as Room | undefined
+    if (room) {
+      useMitt.emit(MittEnum.ROOM_TYPING_CHANGED, { roomId: room.roomId })
+    }
+  }
+
+  private readonly receiptListener = (...args: unknown[]) => {
+    const room = args[1] as Room | undefined
+    if (room) {
+      useMitt.emit(MittEnum.ROOM_RECEIPT_CHANGED, { roomId: room.roomId })
+    }
+  }
+
   constructor() {
-    logger.info('Matrix 客户端服务初始化')
+    logger.info?.('Matrix 客户端服务初始化')
   }
 
   private isMatrixApiError(error: unknown): boolean {
@@ -222,7 +238,7 @@ class MatrixClientService {
 
   private async loginByHttpFallback(username: string, password: string, deviceName?: string): Promise<LoginResponse> {
     if (!this.config?.homeserverUrl) {
-      throw new Error('客户端配置缺失，无法执行登录回退请求')
+      throw new Error(useI18nGlobal().t('matrix_error.auth.client_config_missing'))
     }
 
     const runtimeFetch = getRuntimeAwareFetch()
@@ -241,7 +257,9 @@ class MatrixClientService {
 
     if (!response.ok) {
       const text = await response.text().catch(() => '')
-      throw new Error(text || `登录失败 (${response.status})`)
+      throw new Error(
+        text || useI18nGlobal().t('matrix_error.auth.login_failed_with_status', { status: response.status })
+      )
     }
 
     return (await response.json()) as LoginResponse
@@ -273,31 +291,11 @@ class MatrixClientService {
 
       // 在创建客户端之前，注册所有 Manager 扩展（包括 FriendManager、ProfileManager 等）
       try {
+        ensureMatrixSdkCompat()
         await extendMatrixClientWithManagers()
         logger.info('Manager 扩展注册完成')
       } catch (extErr) {
-        logger.warn('Manager 扩展注册失败，尝试直接注册关键 Manager:', extErr)
-        try {
-          const friendModule = await import('matrix-js-sdk/friend')
-          const extendFn = (friendModule as unknown as Record<string, unknown>).extendMatrixClient
-          if (typeof extendFn === 'function') {
-            extendFn()
-            logger.info('FriendManager 手动注册成功')
-          }
-        } catch (friendErr) {
-          logger.warn('FriendManager 手动注册失败:', friendErr)
-        }
-        try {
-          const modulePath = 'matrix-js-sdk/src/profile/index' as string
-          const profileModule: Record<string, unknown> = await import(/* @vite-ignore */ modulePath)
-          const extendFn = profileModule.default || profileModule.extendMatrixClient
-          if (typeof extendFn === 'function') {
-            extendFn()
-            logger.info('ProfileManager 手动注册成功')
-          }
-        } catch (profileErr) {
-          logger.warn('ProfileManager 手动注册失败:', profileErr)
-        }
+        logger.error('Manager 扩展注册失败:', extErr)
       }
 
       const clientOpts: ICreateClientOpts = {
@@ -327,17 +325,11 @@ class MatrixClientService {
   }
 
   /**
-   * 使用用户名密码登录
-      throw err
-    }
-  }
-
-  /**
    * 创建 Sliding Sync 实例
    */
   private createSlidingSync(): SlidingSyncInstance {
     if (!this.client || !this.config) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     const slidingSyncConfig = this.config.slidingSync ?? {}
@@ -449,7 +441,7 @@ class MatrixClientService {
    */
   async getSSOLoginUrl(identityProviderId?: string): Promise<string> {
     if (!this.client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -457,7 +449,7 @@ class MatrixClientService {
       const ssoFlow = loginFlow.flows.find((flow: Record<string, unknown>) => flow.type === 'm.login.sso')
 
       if (!ssoFlow) {
-        throw new Error('服务器不支持 SSO 登录')
+        throw new Error(useI18nGlobal().t('matrix_error.auth.sso_not_supported'))
       }
 
       const ssoUrl = this.client.getSsoLoginUrl(window.location.href, 'HuLa Client', identityProviderId)
@@ -589,7 +581,7 @@ class MatrixClientService {
    */
   async startClient(): Promise<void> {
     if (!this.client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     this.setupResumeListener()
@@ -813,7 +805,7 @@ class MatrixClientService {
       if (this.client) return this.client
       await new Promise((resolve) => setTimeout(resolve, intervalMs))
     }
-    throw new Error('MatrixClient 未在指定时间内就绪')
+    throw new Error(useI18nGlobal().t('matrix_error.client.not_ready_timeout'))
   }
 
   /**
@@ -926,7 +918,7 @@ class MatrixClientService {
    */
   async createRoom(options: ICreateRoomOpts): Promise<Room> {
     if (!this.client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -934,11 +926,12 @@ class MatrixClientService {
       logger.info(`创建房间成功: ${response.room_id}`)
       const room = this.client.getRoom(response.room_id)
       if (!room) {
-        throw new Error('创建房间后无法获取房间实例')
+        throw new Error(useI18nGlobal().t('matrix_error.client.room_instance_failed_after_create'))
       }
       return room
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '创建房间失败'
+      const errorMessage =
+        err instanceof Error ? err.message : useI18nGlobal().t('matrix_error.client.create_room_failed')
       logger.error(errorMessage)
       throw err
     }
@@ -953,7 +946,7 @@ class MatrixClientService {
    */
   async joinRoom(roomId: string): Promise<Room> {
     if (!this.client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -961,11 +954,12 @@ class MatrixClientService {
       logger.info(`加入房间成功: ${roomId}`)
       const room = this.client!.getRoom(roomId)
       if (!room) {
-        throw new Error('加入房间后无法获取房间实例')
+        throw new Error(useI18nGlobal().t('matrix_error.client.room_instance_failed_after_join'))
       }
       return room
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '加入房间失败'
+      const errorMessage =
+        err instanceof Error ? err.message : useI18nGlobal().t('matrix_error.client.join_room_failed')
       logger.error(errorMessage)
       throw err
     }
@@ -979,14 +973,15 @@ class MatrixClientService {
    */
   async leaveRoom(roomId: string): Promise<void> {
     if (!this.client) {
-      throw new Error('客户端未初始化')
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
       await this.client!.leave(roomId)
       logger.info(`离开房间成功: ${roomId}`)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '离开房间失败'
+      const errorMessage =
+        err instanceof Error ? err.message : useI18nGlobal().t('matrix_error.client.leave_room_failed')
       logger.error(errorMessage)
       throw err
     }
@@ -1050,7 +1045,9 @@ class MatrixClientService {
     client.on('sync', this.syncListener)
     client.on('room', this.roomListener)
     client.on('room_timeline', this.roomTimelineListener)
-    client.on('Event.redaction', this.redactionListener) // Add this line
+    client.on('Event.redaction', this.redactionListener)
+    client.on('Room.typing', this.typingListener)
+    client.on('Room.receipt', this.receiptListener)
     this.observedClient = client
   }
 
@@ -1059,6 +1056,8 @@ class MatrixClientService {
     client.off('room', this.roomListener)
     client.off('room_timeline', this.roomTimelineListener)
     client.off('Event.redaction', this.redactionListener)
+    client.off('Room.typing', this.typingListener)
+    client.off('Room.receipt', this.receiptListener)
   }
 }
 

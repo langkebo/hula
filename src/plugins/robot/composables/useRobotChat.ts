@@ -1,4 +1,5 @@
 import { computed, onMounted, onUnmounted, type Ref, ref, watch } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { AiMsgContentTypeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useAiConversationLifecycle } from '@/plugins/robot/composables/useAiConversationLifecycle'
@@ -91,6 +92,7 @@ export interface UseRobotChatOptions {
 export const useRobotChat = (options: UseRobotChatOptions) => {
   const { msgInputRef } = options
   const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const userStore = useUserStore()
 
   const currentChat = ref<ConversationMeta>({
@@ -314,7 +316,7 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
 
   const handleSendAI = (data: { content: string }) => {
     if (!data.content.trim()) {
-      window.$message.warning('消息内容不能为空')
+      showFeedback('消息内容不能为空', 'warning')
       return
     }
 
@@ -324,7 +326,7 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     }
 
     if (!selectedModel.value) {
-      window.$message.warning(t('ai_assistant.robot.select_model_first'))
+      showFeedback(t('ai_assistant.robot.select_model_first'), 'warning')
       return
     }
 
@@ -345,7 +347,7 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
       return
     }
 
-    window.$message.warning(t('ai_assistant.robot.unsupported_model_type'))
+    showFeedback(t('ai_assistant.robot.unsupported_model_type'), 'warning')
   }
 
   watch(

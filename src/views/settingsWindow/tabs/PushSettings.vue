@@ -80,13 +80,13 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NEmpty, NSpin, NSwitch, NTimePicker, useDialog, useMessage } from 'naive-ui'
+import { NButton, NDivider, NEmpty, NSpin, NSwitch, NTimePicker, useDialog } from 'naive-ui'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
-import type { IPusher, IPushRule, IPushRules } from '@/services/matrix/notifications/MatrixPushService'
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
-import type { PushRuleKind } from '@/services/matrix/sdk'
+import type { IPusher, IPushRule, IPushRules, PushRuleKind } from '@/types/matrix-services'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PushSettings')
@@ -105,7 +105,7 @@ defineOptions({
 })
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 
 const loading = ref(false)
@@ -141,7 +141,7 @@ async function fetchPushers() {
   try {
     pushers.value = await matrixPushService.getPushers()
   } catch (error) {
-    message.error(t('setting.push.fetchFailed'))
+    showFeedback(t('setting.push.fetchFailed'), 'error')
   } finally {
     loading.value = false
   }
@@ -226,9 +226,9 @@ function handleDeletePusher(pusher: IPusher) {
       try {
         await matrixPushService.unregisterPusher(pusher.pushkey, pusher.app_id)
         pushers.value = pushers.value.filter((p: IPusher) => p.pushkey !== pusher.pushkey)
-        message.success(t('setting.push.delete.success'))
+        showFeedback(t('setting.push.delete.success'), 'success')
       } catch (error) {
-        message.error(t('setting.push.delete.failed'))
+        showFeedback(t('setting.push.delete.failed'), 'error')
       }
     }
   })
@@ -237,10 +237,10 @@ function handleDeletePusher(pusher: IPusher) {
 async function handleMasterToggle(enabled: boolean) {
   try {
     await matrixPushService.setPushRuleEnabled('global', 'override', '.m.rule.master', !enabled)
-    message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
+    showFeedback(enabled ? t('setting.push.enabled') : t('setting.push.disabled'), 'success')
   } catch (error) {
     logger.error('Failed to update master push rule', error)
-    message.error(t('setting.push.updateFailed'))
+    showFeedback(t('setting.push.updateFailed'), 'error')
     masterEnabled.value = !enabled
   }
 }
@@ -258,10 +258,10 @@ async function handleMessagePushToggle(enabled: boolean) {
         enabled
       )
     }
-    message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
+    showFeedback(enabled ? t('setting.push.enabled') : t('setting.push.disabled'), 'success')
   } catch (error) {
     logger.error('Failed to update message push rule', error)
-    message.error(t('setting.push.updateFailed'))
+    showFeedback(t('setting.push.updateFailed'), 'error')
     messagePushEnabled.value = !enabled
   }
 }
@@ -269,10 +269,10 @@ async function handleMessagePushToggle(enabled: boolean) {
 async function handleInvitePushToggle(enabled: boolean) {
   try {
     await matrixPushService.setPushRuleEnabled('global', 'override' as PushRuleKind, '.m.rule.invite_for_me', enabled)
-    message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
+    showFeedback(enabled ? t('setting.push.enabled') : t('setting.push.disabled'), 'success')
   } catch (error) {
     logger.error('Failed to update invite push rule', error)
-    message.error(t('setting.push.updateFailed'))
+    showFeedback(t('setting.push.updateFailed'), 'error')
     invitePushEnabled.value = !enabled
   }
 }
@@ -284,7 +284,7 @@ function handleDndToggle(enabled: boolean) {
     startTime: dndStartTime.value,
     endTime: dndEndTime.value
   })
-  message.success(enabled ? t('setting.push.enabled') : t('setting.push.disabled'))
+  showFeedback(enabled ? t('setting.push.enabled') : t('setting.push.disabled'), 'success')
 }
 
 function handleDndTimeChange() {

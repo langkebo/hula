@@ -20,7 +20,9 @@
 import { Icon } from '@iconify/vue'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
+import { useThread } from '@/composables/chat/useThread'
+
+const { getThread } = useThread()
 
 const { t } = useI18n()
 
@@ -38,7 +40,7 @@ const replyCount = ref(0)
 const hasReplies = computed(() => replyCount.value > 0)
 
 const loadThreadInfo = () => {
-  const thread = matrixThreadService.getThread(props.roomId, props.eventId)
+  const thread = getThread(props.roomId, props.eventId)
   if (thread) {
     replyCount.value = thread.replyCount
   }

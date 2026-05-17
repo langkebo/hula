@@ -1,4 +1,5 @@
 import type { Ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { AiMsgContentTypeEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
@@ -56,6 +57,7 @@ export const useAiGenerationPolling = ({
   getCurrentAudioInfo
 }: UseAiGenerationPollingOptions) => {
   const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   const pollingTasks = usePollingTasks()
 
   const markMessageFailed = (messageIndex: number, content: string) => {
@@ -86,7 +88,7 @@ export const useAiGenerationPolling = ({
       if (Date.now() - task.startedAt > MAX_POLL_DURATION) {
         pollingTasks.stop(taskId)
         markMessageFailed(messageIndex, timeoutContent)
-        window.$message.warning(timeoutToast)
+        showFeedback(timeoutToast, 'warning')
         return
       }
 
@@ -109,7 +111,7 @@ export const useAiGenerationPolling = ({
 
         if (record.status === 30) {
           markMessageFailed(messageIndex, resolveFailureContent(record))
-          window.$message.error(failureToast)
+          showFeedback(failureToast, 'error')
           pollingTasks.stop(taskId)
         }
       } catch (error) {
@@ -161,7 +163,7 @@ export const useAiGenerationPolling = ({
           }
         }
         void ensureLocalAiImage(image.picUrl || image.url, messageIndex)
-        window.$message.success(t('ai_assistant.robot.image_generation_success'))
+        showFeedback(t('ai_assistant.robot.image_generation_success'), 'success')
         bumpMessageRenderVersion()
       },
       resolveFailureContent: (image) =>
@@ -206,7 +208,7 @@ export const useAiGenerationPolling = ({
           }
         }
         void ensureLocalAiVideo(video.videoUrl || video.url, messageIndex)
-        window.$message.success('视频生成成功')
+        showFeedback('视频生成成功', 'success')
         bumpMessageRenderVersion()
       },
       resolveFailureContent: (video) =>
@@ -245,7 +247,7 @@ export const useAiGenerationPolling = ({
           }
         }
         void ensureLocalAiAudio(audio.audioUrl || audio.url, messageIndex)
-        window.$message.success(t('ai_assistant.robot.audio_generation_success'))
+        showFeedback(t('ai_assistant.robot.audio_generation_success'), 'success')
         bumpMessageRenderVersion()
       },
       resolveFailureContent: (audio) =>

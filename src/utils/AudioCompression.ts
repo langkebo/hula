@@ -1,3 +1,4 @@
+import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AudioCompression')
@@ -56,7 +57,7 @@ export async function compressAudioToMp3(audioBuffer: ArrayBuffer, config: Audio
     return blob
   } catch (error) {
     logger.error('音频压缩失败:', error)
-    throw new Error('音频压缩失败')
+    throw new Error(useI18nGlobal().t('utils.audio_compression_failed'))
   }
 }
 

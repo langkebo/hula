@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { CallTypeEnum, MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
@@ -65,6 +66,7 @@ const router = useRouter()
 const mobileStore = useMobileStore()
 const groupStore = useGroupStore()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 const currentCall = ref<{
   callerUid: string
@@ -88,7 +90,9 @@ const displayName = computed(() => currentCall.value?.displayName || '未知用�
 
 const callMessage = computed(() => {
   if (!currentCall.value) return ''
-  return currentCall.value.callType === CallTypeEnum.VIDEO ? '邀请你视频通话...' : '邀请你语音通话...'
+  return currentCall.value.callType === CallTypeEnum.VIDEO
+    ? t('mobile_voice_video.video_call_invitation')
+    : t('mobile_voice_video.audio_call_invitation')
 })
 
 const toAvatarUrl = (raw?: unknown) => {
@@ -133,7 +137,11 @@ const handleCallRequest = (payload: CallPayload) => {
   const callType = payload.isVideo || payload.video ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO
   const remoteUserInfo = groupStore.getUserInfo(callerUid, roomId)
   const displayNameCandidate =
-    remoteUserInfo?.myName || remoteUserInfo?.name || payload.callerName || payload.name || '未知用户'
+    remoteUserInfo?.myName ||
+    remoteUserInfo?.name ||
+    payload.callerName ||
+    payload.name ||
+    t('mobile_voice_video.unknown_user')
   const avatarCandidate = remoteUserInfo?.avatar ?? payload.avatar
 
   currentCall.value = {

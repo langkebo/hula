@@ -190,6 +190,7 @@ import { info } from '@tauri-apps/plugin-log'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { extractLinkSegments, openExternalUrl } from '@/hooks/useLinkSegments'
 import { matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
@@ -237,6 +238,7 @@ const groupStore = useGroupStore()
 const announcementStore = useAnnouncementStore()
 const userStore = useUserStore()
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const isAdmin = computed(() => {
   const LordId = groupStore.currentLordId
   const adminUserTds = groupStore.adminUidList
@@ -459,11 +461,11 @@ const handleEdit = (announcement: AnnouncementViewItem) => {
 // 验证公告内容
 const validateAnnouncement = (content: string) => {
   if (!content.trim()) {
-    window.$message.error(t('announcement.toast.contentRequired'))
+    showFeedback(t('announcement.toast.contentRequired'), 'warning')
     return false
   }
   if (content.length > 600) {
-    window.$message.error(t('announcement.toast.contentTooLong'))
+    showFeedback(t('announcement.toast.contentTooLong'), 'warning')
     return false
   }
   return true
@@ -493,7 +495,7 @@ const handlePushAnnouncement = async () => {
 
   try {
     await apiCall()
-    window.$message.success(successMessage)
+    showFeedback(successMessage, 'success')
 
     // 重新获取公告列表
     await handleInit()
@@ -521,7 +523,7 @@ const handlePushAnnouncement = async () => {
     }
   } catch (error) {
     logger.error(errorMessage, error)
-    window.$message.error(errorMessage)
+    showFeedback(errorMessage, 'error')
   }
 }
 

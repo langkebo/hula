@@ -14,7 +14,7 @@
         <van-field
           v-model="announcementContent"
           type="textarea"
-          placeholder="请输入公告内容..."
+          :placeholder="t('mobile_chat.notice.content_placeholder')"
           class="w-full"
           rows="5"
           autosize
@@ -24,10 +24,10 @@
 
         <div class="upload-image-container pt-10px">
           <div class="upload-trigger">
-            <svg class="size-24px text-#999">
+            <svg class="size-24px text-[--hula-text-tertiary]">
               <use href="#plus"></use>
             </svg>
-            <span class="text-12px text-#999 mt-5px">点击上传</span>
+            <span class="text-12px text-[--hula-text-tertiary] mt-5px">{{ t('mobile_chat.notice.click_upload') }}</span>
           </div>
         </div>
 
@@ -35,17 +35,19 @@
           <div class="flex flex-col w-full">
             <div class="flex justify-between py-15px px-15px items-center border-b border-gray-200">
               <div class="flex flex-col">
-                <div class="text-14px font-medium">设为置顶</div>
-                <div class="text-12px text-gray-500 mt-5px">公告将显示在群公告列表顶部</div>
+                <div class="text-14px font-medium">{{ t('mobile_chat.notice.set_pinned') }}</div>
+                <div class="text-12px text-gray-500 mt-5px">{{ t('mobile_chat.notice.pinned_desc') }}</div>
               </div>
               <van-switch v-model="top" />
             </div>
           </div>
 
           <div class="flex justify-center gap-15px">
-            <van-button plain round size="large" class="w-40%" @click="handleCancel">取消</van-button>
+            <van-button plain round size="large" class="w-40%" @click="handleCancel">
+              {{ t('mobile_chat.notice.cancel') }}
+            </van-button>
             <van-button type="primary" round size="large" class="w-40%" @click="handleSubmit" :loading="submitting">
-              保存
+              {{ t('mobile_chat.notice.save') }}
             </van-button>
           </div>
         </div>
@@ -55,11 +57,15 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
+const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const logger = createLogger('NoticeEdit')
 
 defineOptions({
@@ -103,7 +109,7 @@ const handleCancel = () => {
 
 const handleSubmit = async () => {
   if (!announcementContent.value.trim()) {
-    window.$message?.error('请输入公告内容')
+    showFeedback(t('mobile_chat.notice.content_required'), 'error')
     return
   }
 
@@ -123,7 +129,7 @@ const handleSubmit = async () => {
         content: announcementData.content,
         isPinned: announcementData.top
       })
-      window.$message?.success('公告修改成功')
+      showFeedback('公告修改成功', 'success')
       router.push({
         path: `/mobile/chatRoom/notice/detail/${announcementData.id}`
       })
@@ -138,12 +144,12 @@ const handleSubmit = async () => {
         content: announcementData.content,
         isPinned: announcementData.top
       })
-      window.$message?.success('公告发布成功')
+      showFeedback('公告发布成功', 'success')
       router.back()
     }
   } catch (error) {
     logger.error('保存公告失败:', error)
-    window.$message?.error('保存公告失败，请重试')
+    showFeedback(t('mobile_chat.notice.save_failed'), 'error')
   } finally {
     submitting.value = false
   }
@@ -166,9 +172,9 @@ onMounted(() => {
   justify-content: center;
   width: 100px;
   height: 100px;
-  border: 1px dashed #d9d9d9;
+  border: 1px dashed var(--hula-border-default);
   border-radius: 8px;
-  background-color: #fafafa;
+  background-color: var(--hula-surface-panel-muted);
   cursor: not-allowed;
 }
 </style>

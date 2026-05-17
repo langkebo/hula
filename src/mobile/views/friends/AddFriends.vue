@@ -6,7 +6,7 @@
         :hidden-right="true"
         :enable-default-background="false"
         :enable-shadow="false"
-        room-name="添加好友/群" />
+        :room-name="t('mobile_contact.add_friends_group')" />
     </template>
 
     <template #container>
@@ -63,9 +63,11 @@
                           <span class="text-(14px [--hula-text-primary])">{{ item.name }}</span>
                         </div>
                         <div class="flex items-center gap-10px">
-                          <span class="text-(12px [--hula-text-secondary])">{{ `账号：${item.account}` }}</span>
+                          <span class="text-(12px [--hula-text-secondary])">
+                            {{ t('mobile_contact.account_label', { account: item.account }) }}
+                          </span>
                           <svg
-                            class="size-12px hover:color-#909090 hover:transition-colors cursor-pointer"
+                            class="size-12px hover:color-[--hula-text-tertiary] hover:transition-colors cursor-pointer"
                             @click="handleCopy(item.account)">
                             <use href="#copy"></use>
                           </svg>
@@ -95,12 +97,12 @@
 
             <!-- 搜索无结果状态 -->
             <template v-else-if="hasSearched">
-              <van-empty description="未找到相关结果" />
+              <van-empty :description="t('mobile_contact.search_no_result')" />
             </template>
 
             <!-- 默认空状态 -->
             <template v-else>
-              <van-empty description="输入关键词搜索" image="search" />
+              <van-empty :description="t('mobile_contact.search_keyword_hint')" image="search" />
             </template>
           </van-tab>
         </van-tabs>
@@ -112,7 +114,9 @@
 <script setup lang="ts">
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useI18n } from 'vue-i18n'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { type FriendSearchResult, useFriends } from '@/composables/useFriends'
 import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
@@ -122,12 +126,14 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isMobile } from '@/utils/PlatformConstants'
 
+const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const tabs = ref([
-  { name: 'recommend', label: '推荐' },
-  { name: 'user', label: '找好友' },
-  { name: 'group', label: '找群聊' }
+  { name: 'recommend', label: t('mobile_contact.tab.recommend') },
+  { name: 'user', label: t('mobile_contact.tab.find_friend') },
+  { name: 'group', label: t('mobile_contact.tab.find_group') }
 ])
 const {
   searchType,
@@ -144,29 +150,29 @@ const {
 } = useFriends()
 
 const searchPlaceholder: Record<string, string> = {
-  recommend: '输入推荐关键词',
-  user: '输入昵称搜索好友',
-  group: '输入群号搜索群聊'
+  recommend: t('mobile_contact.search_placeholder.recommend'),
+  user: t('mobile_contact.search_placeholder.user'),
+  group: t('mobile_contact.search_placeholder.group')
 }
 
 const handleCopy = (account: string) => {
   navigator.clipboard.writeText(account)
-  window.$message.success(`复制成功 ${account}`)
+  showFeedback(t('mobile_contact.copy_success', { account }), 'success')
 }
 
 const handleSearchClear = () => {
   try {
     clearSearch()
   } catch (error) {
-    window.$message.error('搜索失败')
+    showFeedback(t('mobile_contact.search_failed'), 'error')
   }
 }
 
 const getButtonText = (item: FriendSearchResult) => {
   const action = getActionKind(item)
-  if (action === 'edit-profile') return '编辑资料'
-  if (action === 'message') return '发消息'
-  return '添加'
+  if (action === 'edit-profile') return t('mobile_contact.button.edit_profile')
+  if (action === 'message') return t('mobile_contact.button.send_message')
+  return t('mobile_contact.button.add')
 }
 
 const getVantButtonType = (item: FriendSearchResult): 'default' | 'primary' | 'success' | 'warning' | 'danger' => {

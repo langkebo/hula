@@ -3,14 +3,19 @@
     "title": "Friends",
     "search": "Search friends",
     "empty": "No friends yet",
+    "capability_unavailable_title": "Friend capability is unavailable on this server",
+    "capability_unavailable_description": "Ask your administrator to enable friend support before using the friend list or friend requests.",
     "online": "Online",
-    "offline": "Offline"
+    "offline": "Offline",
+    "friend_list_label": "Friend List",
+    "new_request_announcement": "Received {count} new friend requests"
   },
   "filter": {
     "all": "All",
     "favorite": "Favorites",
     "normal": "Normal",
-    "blocked": "Blocked"
+    "blocked": "Blocked",
+    "hidden": "Hidden"
   },
   "status": {
     "normal": "Normal",
@@ -20,6 +25,8 @@
   },
   "request": {
     "title": "Friend Requests",
+    "search": "Search friend requests",
+    "result_count": "\"{keyword}\" matched {count} requests",
     "incoming": "Incoming",
     "outgoing": "Outgoing",
     "accept": "Accept",
@@ -27,7 +34,8 @@
     "cancel": "Cancel",
     "empty": {
       "incoming": "No friend requests",
-      "outgoing": "No pending requests"
+      "outgoing": "No pending requests",
+      "search": "No matching friend requests"
     },
     "success": {
       "accept": "Friend request accepted",
@@ -50,6 +58,8 @@
     "not_found": "User not found",
     "already_friend": "This user is already your friend",
     "search_error": "Failed to search user",
+    "result_found": "Found user: {user}",
+    "result_empty": "No users matched \"{keyword}\"",
     "send": "Send Request",
     "success": "Friend request sent",
     "error": "Failed to send friend request",
@@ -87,6 +97,7 @@
     },
     "remove_success": "Friend removed",
     "remove_error": "Failed to remove friend",
+    "notFound": "Friend information not found",
     "just_now": "Just now",
     "minutes_ago": "{count}m ago",
     "hours_ago": "{count}h ago",
@@ -111,10 +122,22 @@
     "accept": "Accept",
     "reject": "Reject"
   },
+  "search": {
+    "history": "Recent searches",
+    "clear_history": "Clear history",
+    "clear_current": "Clear search",
+    "searching": "Updating search results...",
+    "result_count": "\"{keyword}\" matched {count} friends",
+    "filter_result_count": "{filter}: {count} friends",
+    "empty_title": "No matching friends found",
+    "empty_description": "No friends matched \"{keyword}\". Try a different keyword."
+  },
   "group": {
     "title": "Friend Groups",
     "search": "Search groups",
     "empty": "No groups yet",
+    "empty_search": "No matching groups",
+    "result_count": "\"{keyword}\" matched {count} groups",
     "create": "Create Group",
     "name_placeholder": "Enter group name",
     "member_count": "{count} members",

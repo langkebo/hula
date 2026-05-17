@@ -40,6 +40,7 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import { getDisabledOptions, getFilteredOptions, renderLabel, renderSourceList } from '@/layout/center/model.tsx'
@@ -52,6 +53,7 @@ const logger = createLogger('ModalWindow')
 const timerManager = useTimerManager()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const { getWindowPayload } = useWindow()
 const groupStore = useGroupStore()
 const windowTitle = ref('')
@@ -78,13 +80,13 @@ const handleInvite = async () => {
     // 调用邀请群成员API
     await Promise.all(selectedValue.value.map((uid: string) => matrixGroupService.inviteGroupMember(roomId.value, uid)))
 
-    window.$message.success('邀请成功')
+    showFeedback(t('space.invite_success', { count: selectedValue.value.length }), 'success')
     timerManager.setTimeout(() => {
       handleClose()
     }, 1000)
   } catch (error) {
     logger.error('邀请失败:', error)
-    window.$message.error('邀请失败，请重试')
+    showFeedback(t('space.invite_failed'), 'error')
   }
 }
 

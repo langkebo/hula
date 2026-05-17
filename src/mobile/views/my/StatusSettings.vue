@@ -7,7 +7,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-gray-500 mb-8px">{{ t('mobile_status.subtitle') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mb-8px">{{ t('mobile_status.subtitle') }}</div>
 
           <van-cell-group inset>
             <van-cell
@@ -24,7 +24,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-icon v-if="currentStatusId === status.id" name="success" color="#1989fa" />
+                <van-icon v-if="currentStatusId === status.id" name="success" color="var(--hula-color-info-500)" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -75,10 +75,15 @@ const statusMessage = ref('')
 const loading = ref(false)
 
 const statusOptions = [
-  { id: 'online', label: t('mobile_status.status.online'), icon: 'mdi:circle', color: '#52c41a' },
-  { id: 'away', label: t('mobile_status.status.away'), icon: 'mdi:circle', color: '#faad14' },
-  { id: 'busy', label: t('mobile_status.status.busy'), icon: 'mdi:circle', color: '#ff4d4f' },
-  { id: 'offline', label: t('mobile_status.status.offline'), icon: 'mdi:circle-outline', color: '#999' }
+  { id: 'online', label: t('mobile_status.status.online'), icon: 'mdi:circle', color: 'var(--hula-color-success-500)' },
+  { id: 'away', label: t('mobile_status.status.away'), icon: 'mdi:circle', color: 'var(--hula-color-warning-500)' },
+  { id: 'busy', label: t('mobile_status.status.busy'), icon: 'mdi:circle', color: 'var(--hula-color-danger-500)' },
+  {
+    id: 'offline',
+    label: t('mobile_status.status.offline'),
+    icon: 'mdi:circle-outline',
+    color: 'var(--hula-text-quaternary)'
+  }
 ]
 
 function handleStatusChange(statusId: string) {

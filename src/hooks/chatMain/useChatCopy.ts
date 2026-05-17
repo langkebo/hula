@@ -1,4 +1,5 @@
 import { writeImage, writeText } from '@tauri-apps/plugin-clipboard-manager'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { removeTag } from '@/utils/Formatting'
 import { detectImageFormat, imageUrlToUint8Array, isImageUrl } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
@@ -13,6 +14,7 @@ const logger = createLogger('ChatMain.Copy')
  * 保留 composable 形式仅为和调用点的 `useChatCopy()` 习惯一致。
  */
 export const useChatCopy = () => {
+  const { showFeedback } = useActionFeedback()
   /**
    * @param content 作为回退的消息原文（图片时应传 url）
    * @param prioritizeSelection 优先复制用户选中的文本（默认 true）
@@ -36,7 +38,7 @@ export const useChatCopy = () => {
       }
 
       if (!textToCopy) {
-        window.$message?.warning('没有可复制的内容')
+        showFeedback('没有可复制的内容', 'warning')
         return
       }
 
@@ -44,12 +46,12 @@ export const useChatCopy = () => {
         try {
           const imageFormat = detectImageFormat(textToCopy)
           if (imageFormat === 'GIF' || imageFormat === 'WEBP') {
-            window.$message?.info(`正在将 ${imageFormat} 格式图片转换为 PNG 并复制...`)
+            showFeedback(`正在将 ${imageFormat} 格式图片转换为 PNG 并复制...`, 'info')
           }
           const imageBytes = await imageUrlToUint8Array(textToCopy)
           await writeImage(imageBytes)
           const successMessage = imageFormat === 'PNG' ? '图片已复制到剪贴板' : '图片已转换为 PNG 格式并复制到剪贴板'
-          window.$message?.success(successMessage)
+          showFeedback(successMessage, 'success')
         } catch (imageError) {
           logger.error('图片复制失败:', imageError)
         }
@@ -57,7 +59,7 @@ export const useChatCopy = () => {
       }
 
       await writeText(removeTag(textToCopy))
-      window.$message?.success(isSelectedText ? '选中文本已复制' : '消息内容已复制')
+      showFeedback(isSelectedText ? '选中文本已复制' : '消息内容已复制', 'success')
     } catch (error) {
       logger.error('复制失败:', error)
     }

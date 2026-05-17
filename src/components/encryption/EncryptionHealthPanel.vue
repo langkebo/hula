@@ -27,9 +27,10 @@
 import { NAlert, NButton, NSpace } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type CryptoHealthStatus, cryptoHealthMonitor } from '@/services/matrix/crypto/CryptoHealthMonitor'
+import { type CryptoHealthStatus, useEncryption } from '@/composables/encryption'
 
 const { t } = useI18n()
+const encryption = useEncryption()
 const loading = ref(false)
 
 const status = ref<CryptoHealthStatus>({
@@ -51,19 +52,19 @@ const allGood = computed(
 async function refresh() {
   loading.value = true
   try {
-    status.value = await cryptoHealthMonitor.performCheck()
+    status.value = await encryption.getHealthStatus()
   } finally {
     loading.value = false
   }
 }
 
 onMounted(async () => {
-  cryptoHealthMonitor.registerCallbacks({
+  encryption.registerHealthCallbacks({
     onHealthStatusChange: (newStatus) => {
       status.value = newStatus
     }
   })
-  status.value = await cryptoHealthMonitor.performCheck()
+  status.value = await encryption.getHealthStatus()
 })
 </script>
 

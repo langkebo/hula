@@ -34,6 +34,7 @@ import type {
 } from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAssistantModelPresets } from '@/hooks/useAssistantModelPresets'
 import { createLogger } from '@/utils/Logger'
 import { ensureModelFile } from '@/utils/PathUtil'
@@ -41,6 +42,7 @@ import { isDesktop } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('HuLaAssistant')
+const { showFeedback } = useActionFeedback()
 
 // 动态导入 three.js 核心及插件
 const getThree = async () => {
@@ -413,7 +415,7 @@ const loadModel = async () => {
     currentCustomSource &&
     extensions.some((ext) => ['KHR_texture_basisu', 'EXT_meshopt_compression'].includes(ext))
   ) {
-    window.$message?.warning('暂不支持压缩后的 glb 模型，请选择原始模型文件')
+    showFeedback('暂不支持压缩后的 glb 模型，请选择原始模型文件', 'warning')
     throw new Error('UNSUPPORTED_COMPRESSED_MODEL')
   }
 
@@ -429,7 +431,7 @@ const loadModel = async () => {
   const center = box.getCenter(new ThreeModule.Vector3())
   const hasInvalidBounds = isInvalidBounds(size, center)
   if (hasInvalidBounds) {
-    window.$message?.warning('模型没有几何数据或存在损坏，请检查后重新导入')
+    showFeedback('模型没有几何数据或存在损坏，请检查后重新导入', 'warning')
     throw new Error('EMPTY_MODEL_GEOMETRY')
   }
   const maxAxis = Math.max(size.x, size.y, size.z) || 1

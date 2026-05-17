@@ -1,0 +1,8 @@
+{
+  "download_link_not_found": "Download link not found",
+  "video_save_success": "Video saved successfully",
+  "video_save_failed": "Failed to save video",
+  "file_download_success": "File downloaded successfully",
+  "file_save_failed": "Failed to save file",
+  "audio_compression_failed": "Audio compression failed"
+}

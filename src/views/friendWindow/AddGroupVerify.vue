@@ -52,6 +52,7 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 import { countGraphemes } from '@/hooks/useCommon.ts'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -60,6 +61,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('AddGroupVerify')
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const userStore = useUserStore()
 const requestMsgAutosize = { minRows: 3, maxRows: 3 }
 const { userInfo, requestMsg, syncDefaultMessage, submitRequest } = useGroupRequestConfirm(
@@ -69,7 +71,7 @@ const { userInfo, requestMsg, syncDefaultMessage, submitRequest } = useGroupRequ
 const addFriend = async () => {
   const submitted = await submitRequest()
   if (!submitted) return
-  window.$message.success(t('message.group_verify.toast_success'))
+  showFeedback(t('message.group_verify.toast_success'), 'success')
   setTimeout(async () => {
     await getCurrentWebviewWindow().close()
   }, 2000)

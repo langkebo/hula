@@ -1,6 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
-import matrixClientService from '../MatrixClientService'
+import { BaseMatrixService } from '../BaseMatrixService'
 
 export interface DeviceInfo {
   deviceId: string
@@ -27,12 +27,9 @@ interface AuthData {
   [key: string]: unknown
 }
 
-class MatrixAccountService {
+class MatrixAccountService extends BaseMatrixService {
   async updateDisplayName(displayName: string): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.setDisplayName(displayName)
@@ -45,10 +42,7 @@ class MatrixAccountService {
   }
 
   async updateAvatar(avatarUrl: string): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.setAvatarUrl(avatarUrl)
@@ -61,15 +55,12 @@ class MatrixAccountService {
   }
 
   async changePassword(oldPassword: string, newPassword: string, logoutDevices: boolean = false): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const userId = client.getUserId()
       if (!userId) {
-        throw new Error('[MatrixAccount] 无法获取用户ID')
+        throw new Error(this.t('matrix_error.account.cannot_get_user_id'))
       }
 
       const authData: Parameters<typeof client.setPassword>[0] = {
@@ -90,10 +81,7 @@ class MatrixAccountService {
   }
 
   async getDevices(): Promise<DeviceInfo[]> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const response = await client.getDevices()
@@ -116,10 +104,7 @@ class MatrixAccountService {
   }
 
   async getDevice(deviceId: string): Promise<DeviceInfo> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const response = await client.getDevice(deviceId)
@@ -140,10 +125,7 @@ class MatrixAccountService {
   }
 
   async setDeviceName(deviceId: string, displayName: string): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.setDeviceName(deviceId, displayName)
@@ -156,10 +138,7 @@ class MatrixAccountService {
   }
 
   async deleteDevice(deviceId: string, authData?: AuthData): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.deleteDevice(deviceId, authData)
@@ -172,10 +151,7 @@ class MatrixAccountService {
   }
 
   async deleteDevices(deviceIds: string[], authData?: AuthData): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.deleteMultipleDevices(deviceIds, authData)
@@ -201,10 +177,7 @@ class MatrixAccountService {
       added_at: number
     }>
   }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const accountData = await client.getThreePids()
@@ -220,10 +193,7 @@ class MatrixAccountService {
   }
 
   async addThreePid(sid: string, clientSecret: string, bind?: boolean): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.addThreePidOnly({ sid, client_secret: clientSecret }, bind ?? false)
@@ -235,10 +205,7 @@ class MatrixAccountService {
   }
 
   async bindThreePid(sid: string, clientSecret: string, medium: string, address: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.bindThreePid({ sid, client_secret: clientSecret, medium, address })
@@ -250,10 +217,7 @@ class MatrixAccountService {
   }
 
   async deleteThreePid(medium: string, address: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.deleteThreePid({ medium, address })
@@ -265,10 +229,7 @@ class MatrixAccountService {
   }
 
   async unbindThreePid(medium: string, address: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.unbindThreePid({ medium, address })
@@ -284,10 +245,7 @@ class MatrixAccountService {
     clientSecret: string,
     sendAttempt: number = 1
   ): Promise<{ sid: string }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const result = await client.requestAdd3pidEmailToken(clientSecret, email, sendAttempt)
@@ -305,10 +263,7 @@ class MatrixAccountService {
     clientSecret: string,
     sendAttempt: number = 1
   ): Promise<{ sid: string; msisdn: string; submit_url?: string }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const result = await client.requestAdd3pidMsisdnToken(clientSecret, countryCode, phoneNumber, sendAttempt)
@@ -326,10 +281,7 @@ class MatrixAccountService {
   }
 
   async deactivateAccount(authData?: AuthData, erase: boolean = false): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.deactivateAccount(authData, erase)
@@ -341,10 +293,7 @@ class MatrixAccountService {
   }
 
   async getIgnoredUsers(): Promise<string[]> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const accountData = await client.getAccountDataFromServer('m.ignored_user_list')
@@ -358,10 +307,7 @@ class MatrixAccountService {
   }
 
   async setIgnoredUsers(userIds: string[]): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const ignoredUsers = userIds.map((userId) => ({ user_id: userId }))
@@ -375,10 +321,7 @@ class MatrixAccountService {
   }
 
   async setPresence(presence: 'online' | 'offline' | 'unavailable' | 'away', statusMessage?: string): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       await client.setPresence(presence, { status_msg: statusMessage })
@@ -391,10 +334,7 @@ class MatrixAccountService {
   }
 
   async getCapabilities(): Promise<Record<string, unknown>> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     if (matrixWorkerHost.isStarted) {
       const accessToken = client.getAccessToken()
@@ -421,10 +361,7 @@ class MatrixAccountService {
   }
 
   async getThirdPartyProtocols(): Promise<Record<string, unknown>> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const result = await client.http.authedRequest('GET', '/_matrix/client/v3/thirdparty/protocols')
@@ -437,10 +374,7 @@ class MatrixAccountService {
   }
 
   async getMyRooms(): Promise<string[]> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const result = await client.http.authedRequest('GET', '/_matrix/client/v3/my_rooms')
@@ -452,10 +386,7 @@ class MatrixAccountService {
   }
 
   async getEventStream(from?: string, timeout: number = 30000): Promise<Record<string, unknown>> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[MatrixAccount] 客户端未初始化')
-    }
+    const client = this.getClient()
 
     try {
       const queryParams: Record<string, string> = { timeout: String(timeout) }

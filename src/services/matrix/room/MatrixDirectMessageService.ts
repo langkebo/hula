@@ -7,11 +7,12 @@ import type {
   DmRoomInfo,
   IDirectRoomsMap
 } from 'matrix-js-sdk/dm'
+import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 export type { CreateDmOptions, DmPartnerResponse, DmRoomInfo, IDirectRoomsMap }
 
-class MatrixDirectMessageService {
+class MatrixDirectMessageService extends BaseMatrixService {
   private dmManager: DirectMessageManager | null = null
   private observedClient: ReturnType<typeof matrixClientService.getClient> | null = null
   private dmRoomsCache: Map<string, DmRoomInfo[]> = new Map()
@@ -39,7 +40,7 @@ class MatrixDirectMessageService {
   private requireManager(): DirectMessageManager {
     const manager = this.getManager()
     if (!manager) {
-      throw new Error('DirectMessageManager 未初始化')
+      throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
     return manager
   }
@@ -48,7 +49,7 @@ class MatrixDirectMessageService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error('客户端未初始化')
+        throw new Error(this.t('matrix_error.common.client_not_initialized'))
       }
 
       this.observedClient = client
@@ -125,7 +126,7 @@ class MatrixDirectMessageService {
       if (!throwOnError) {
         return []
       }
-      throw new Error('DirectMessageManager 未初始化')
+      throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
     try {
       return await manager.getDMRooms()
@@ -146,7 +147,7 @@ class MatrixDirectMessageService {
       if (!throwOnError) {
         return null
       }
-      throw new Error('DirectMessageManager 未初始化')
+      throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
     try {
       return manager.getDmForUser(userId) ?? null
@@ -203,7 +204,7 @@ class MatrixDirectMessageService {
       if (!throwOnError) {
         return null
       }
-      throw new Error('DirectMessageManager 未初始化')
+      throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
     return manager.getDmRoomInfo(roomId)
   }
@@ -231,14 +232,14 @@ class MatrixDirectMessageService {
       if (!throwOnError) {
         return []
       }
-      throw new Error('DirectMessageManager 未初始化')
+      throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
     const client = matrixClientService.getClient()
     if (!client) {
       if (!throwOnError) {
         return []
       }
-      throw new Error('客户端未初始化')
+      throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     try {
@@ -287,7 +288,7 @@ class MatrixDirectMessageService {
       if (!throwOnError) {
         return false
       }
-      throw new Error('DirectMessageManager 未初始化')
+      throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
 
     return manager.isDmRoomFromServer(roomId, throwOnError)
@@ -299,7 +300,7 @@ class MatrixDirectMessageService {
       if (!throwOnError) {
         return null
       }
-      throw new Error('DirectMessageManager 未初始化')
+      throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
 
     return manager.getDmPartnerFromServer(roomId, throwOnError)

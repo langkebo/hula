@@ -26,6 +26,12 @@ vi.mock('../EndpointCapabilityService', () => ({
   }
 }))
 
+vi.mock('@/services/i18n', () => ({
+  useI18nGlobal: () => ({
+    t: (key: string) => key
+  })
+}))
+
 describe('SynapseRustExtensionsService', () => {
   let synapseRustExtensionsService: typeof import('../SynapseRustExtensionsService').synapseRustExtensionsService
   let matrixClientService: typeof import('../MatrixClientService').default

@@ -108,14 +108,16 @@ describe('backend config', () => {
     expect(storage.getItem(MATRIX_HOMESERVER_STORAGE_KEY)).toBe('http://matrix.internal')
   })
 
-  it('allows an empty identity server configuration', () => {
+  it('clears a stored identity server configuration and falls back to defaults', () => {
     const storage = createStorage({
       [MATRIX_IDENTITY_SERVER_STORAGE_KEY]: 'https://identity.example.com'
     })
 
     expect(saveMatrixIdentityServerUrl('', storage)).toBe('')
     expect(storage.getItem(MATRIX_IDENTITY_SERVER_STORAGE_KEY)).toBeNull()
-    expect(getDefaultMatrixEndpointConfig().identityServerUrl).toBe('')
+    expect(resolveMatrixEndpointConfig(storage).identityServerUrl).toBe(
+      getDefaultMatrixEndpointConfig().identityServerUrl
+    )
   })
 
   it('rewrites local homeserver requests only when the current runtime uses the dev proxy', () => {
@@ -170,7 +172,7 @@ describe('backend config', () => {
 
     expect(resolveMatrixSessionEndpointConfig(storage)).toEqual({
       homeserverUrl: 'https://matrix.test',
-      identityServerUrl: ''
+      identityServerUrl: getDefaultMatrixEndpointConfig().identityServerUrl
     })
     expect(storage.getItem(MATRIX_SESSION_HOMESERVER_STORAGE_KEY)).toBeNull()
     expect(storage.getItem(MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY)).toBeNull()

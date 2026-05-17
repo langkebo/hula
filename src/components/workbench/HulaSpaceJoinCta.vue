@@ -89,9 +89,9 @@
 </template>
 
 <script setup lang="ts">
-import { useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useSpace } from '@/composables/space'
 
 type CtaAction = 'join' | 'leave'
 
@@ -106,7 +106,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
+const { join, leave } = useSpace(() => props.spaceId)
 const loading = ref(false)
 const loadingAction = ref<'join' | 'leave' | null>(null)
 const successPulse = ref(false)
@@ -133,12 +134,12 @@ const handleJoin = async () => {
   loading.value = true
   loadingAction.value = 'join'
   try {
-    await matrixSpaceService.joinSpace(props.spaceId)
+    await join()
     triggerSuccessPulse()
-    message.success(t('space.join_success'))
+    showFeedback(t('space.join_success'), 'success')
     emit('success', 'join')
   } catch (err) {
-    message.error(t('space.join_failed'))
+    showFeedback(t('space.join_failed'), 'error')
   } finally {
     loading.value = false
     loadingAction.value = null
@@ -149,12 +150,12 @@ const handleLeave = async () => {
   loading.value = true
   loadingAction.value = 'leave'
   try {
-    await matrixSpaceService.leaveSpace(props.spaceId)
+    await leave()
     triggerSuccessPulse()
-    message.success(t('space.leave_success'))
+    showFeedback(t('space.leave_success'), 'success')
     emit('success', 'leave')
   } catch (err) {
-    message.error(t('space.leave_failed'))
+    showFeedback(t('space.leave_failed'), 'error')
   } finally {
     loading.value = false
     loadingAction.value = null

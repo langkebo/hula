@@ -3,23 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import CreateRoomDialog from '../CreateRoomDialog.vue'
 
-const {
-  validateMock,
-  createGroupRoomMock,
-  getServerDomainMock,
-  uploadFileMock,
-  loggerErrorMock,
-  messageSuccessMock,
-  messageErrorMock
-} = vi.hoisted(() => ({
-  validateMock: vi.fn(),
-  createGroupRoomMock: vi.fn(),
-  getServerDomainMock: vi.fn(),
-  uploadFileMock: vi.fn(),
-  loggerErrorMock: vi.fn(),
-  messageSuccessMock: vi.fn(),
-  messageErrorMock: vi.fn()
-}))
+const { validateMock, createGroupRoomMock, getServerDomainMock, uploadFileMock, loggerErrorMock, showFeedbackMock } =
+  vi.hoisted(() => ({
+    validateMock: vi.fn(),
+    createGroupRoomMock: vi.fn(),
+    getServerDomainMock: vi.fn(),
+    uploadFileMock: vi.fn(),
+    loggerErrorMock: vi.fn(),
+    showFeedbackMock: vi.fn()
+  }))
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -39,6 +31,12 @@ vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
   matrixMediaService: {
     uploadFile: uploadFileMock
   }
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
 }))
 
 vi.mock('@/services/matrix/room/RoomNavigationService', () => ({
@@ -186,8 +184,8 @@ vi.mock('naive-ui', async () => {
       name: 'NRadioGroup',
       props: {
         value: {
-          type: Boolean,
-          default: false
+          type: [String, Boolean],
+          default: 'room'
         }
       },
       emits: ['update:value'],
@@ -244,9 +242,10 @@ type DialogVM = {
     topic: string
     alias: string
     avatarUrl: string
-    isPublic: boolean
+    roomType: 'room' | 'private_room' | 'space'
     isEncrypted: boolean
     historyVisibility: string
+    joinRule: string
   }
   creating: boolean
 }
@@ -269,10 +268,6 @@ describe('CreateRoomDialog', () => {
     createGroupRoomMock.mockResolvedValue({ roomId: '!new:example.com' })
     getServerDomainMock.mockResolvedValue('example.com')
     uploadFileMock.mockResolvedValue({ contentUri: 'mxc://server/avatar' })
-    ;(window as any).$message = {
-      success: messageSuccessMock,
-      error: messageErrorMock
-    }
   })
 
   it('显示公开房间别名时使用服务层提供的 homeserver 域名', async () => {
@@ -280,7 +275,7 @@ describe('CreateRoomDialog', () => {
 
     await flushPromises()
 
-    getVm(wrapper).formData.isPublic = true
+    getVm(wrapper).formData.roomType = 'room'
     await nextTick()
 
     expect(getServerDomainMock).toHaveBeenCalledTimes(1)
@@ -291,8 +286,6 @@ describe('CreateRoomDialog', () => {
     const wrapper = mountDialog()
 
     await flushPromises()
-    await wrapper.get('[data-test="radio-group-toggle"]').trigger('click')
-    await nextTick()
 
     const inputs = wrapper.findAll('[data-test="n-input"]')
     await inputs[1].setValue('Updated Topic')
@@ -301,7 +294,7 @@ describe('CreateRoomDialog', () => {
     await wrapper.get('[data-test="modal-update-show"]').trigger('click')
     await nextTick()
 
-    expect(getVm(wrapper).formData.isPublic).toBe(true)
+    expect(getVm(wrapper).formData.roomType).toBe('room')
     expect(getVm(wrapper).formData.topic).toBe('Updated Topic')
     expect(getVm(wrapper).formData.alias).toBe('updated-alias')
     expect(getVm(wrapper).formData.historyVisibility).toBe('joined')
@@ -314,7 +307,7 @@ describe('CreateRoomDialog', () => {
 
     await flushPromises()
 
-    getVm(wrapper).formData.isPublic = true
+    getVm(wrapper).formData.roomType = 'room'
     await nextTick()
 
     expect(loggerErrorMock).toHaveBeenCalled()
@@ -341,7 +334,7 @@ describe('CreateRoomDialog', () => {
     await flushPromises()
 
     expect(loggerErrorMock).toHaveBeenCalled()
-    expect(messageErrorMock).toHaveBeenCalledWith('room.create.avatar_upload_failed')
+    expect(showFeedbackMock).toHaveBeenCalledWith('room.create.avatar_upload_failed', 'error')
   })
 
   it('创建公开加密房间时通过服务层组装参数并在成功后重置表单', async () => {
@@ -353,9 +346,10 @@ describe('CreateRoomDialog', () => {
     getVm(wrapper).formData.topic = 'Topic'
     getVm(wrapper).formData.alias = 'public-room'
     getVm(wrapper).formData.avatarUrl = 'mxc://server/avatar'
-    getVm(wrapper).formData.isPublic = true
+    getVm(wrapper).formData.roomType = 'room'
     getVm(wrapper).formData.isEncrypted = true
     getVm(wrapper).formData.historyVisibility = 'invited'
+    getVm(wrapper).formData.joinRule = 'invite'
     await nextTick()
 
     await getCreateButton(wrapper).trigger('click')
@@ -369,9 +363,10 @@ describe('CreateRoomDialog', () => {
       isPublic: true,
       alias: 'public-room',
       isEncrypted: true,
-      historyVisibility: 'invited'
+      historyVisibility: 'invited',
+      joinRule: 'invite'
     })
-    expect(messageSuccessMock).toHaveBeenCalledWith('room.create.success')
+    expect(showFeedbackMock).toHaveBeenCalledWith('room.create.success', 'success')
     expect(wrapper.emitted('created')).toEqual([['!new:example.com']])
     expect(wrapper.emitted('update:visible')).toEqual([[false]])
     expect(getVm(wrapper).formData.name).toBe('')
@@ -408,7 +403,7 @@ describe('CreateRoomDialog', () => {
     await flushPromises()
 
     expect(loggerErrorMock).toHaveBeenCalled()
-    expect(messageErrorMock).toHaveBeenCalledWith('room.create.failed')
+    expect(showFeedbackMock).toHaveBeenCalledWith('room.create.failed', 'error')
     expect(getVm(wrapper).creating).toBe(false)
   })
 
@@ -419,7 +414,7 @@ describe('CreateRoomDialog', () => {
 
     getVm(wrapper).formData.name = 'Will Reset'
     getVm(wrapper).formData.alias = 'reset-me'
-    getVm(wrapper).formData.isPublic = true
+    getVm(wrapper).formData.roomType = 'room'
     await nextTick()
 
     await wrapper.setProps({ visible: false })
@@ -427,6 +422,6 @@ describe('CreateRoomDialog', () => {
 
     expect(getVm(wrapper).formData.name).toBe('')
     expect(getVm(wrapper).formData.alias).toBe('')
-    expect(getVm(wrapper).formData.isPublic).toBe(false)
+    expect(getVm(wrapper).formData.roomType).toBe('room')
   })
 })

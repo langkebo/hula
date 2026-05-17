@@ -1,5 +1,6 @@
 import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import { startRecording, stopRecording } from 'tauri-plugin-mic-recorder-api'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useUserStore } from '@/stores/domains/user/user'
 import { calculateCompressionRatio, compressAudioToMp3, getAudioInfo } from '@/utils/AudioCompression'
 import { createLogger } from '@/utils/Logger'
@@ -23,6 +24,7 @@ type VoiceRecordRustOptions = {
 export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
   // 用户store
   const userStore = useUserStore()
+  const { showFeedback } = useActionFeedback()
   const isRecording = ref(false)
   const recordingTime = ref(0)
   const audioLevel = ref(0)
@@ -92,7 +94,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       options.onStart?.()
     } catch (error) {
       logger.error('开始录音失败:', error)
-      window.$message?.error('录音失败')
+      showFeedback('录音失败', 'error')
       options.onError?.('录音失败')
     }
   }
@@ -267,7 +269,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       options.onStop?.(audioBlob, duration, fullPath)
     } catch (error) {
       logger.error('保存音频文件失败:', error)
-      window.$message?.error('音频保存失败')
+      showFeedback('音频保存失败', 'error')
       options.onError?.('音频保存失败')
     }
   }

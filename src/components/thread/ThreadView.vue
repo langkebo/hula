@@ -71,14 +71,14 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import dayjs from 'dayjs'
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Thread, ThreadDisplayMessage } from '@/services/matrix/messaging/MatrixThreadService'
-import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
+import { type Thread, type ThreadDisplayMessage, useThread } from '@/composables/chat/useThread'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ThreadView')
 const { t } = useI18n()
+const { getThreadViewData, sendThreadReply } = useThread()
 
 const props = defineProps<{
   roomId: string
@@ -103,7 +103,7 @@ const formatTime = (timestamp: number) => {
 const loadThread = async () => {
   loading.value = true
   try {
-    const viewData = matrixThreadService.getThreadViewData(props.roomId, props.threadRootId)
+    const viewData = getThreadViewData(props.roomId, props.threadRootId)
     thread.value = viewData.thread
     rootMessage.value = viewData.rootMessage
     messages.value = viewData.replies
@@ -119,7 +119,7 @@ const handleSendReply = async () => {
 
   sending.value = true
   try {
-    await matrixThreadService.sendThreadReply(props.roomId, props.threadRootId, {
+    await sendThreadReply(props.roomId, props.threadRootId, {
       body: replyText.value
     })
     replyText.value = ''

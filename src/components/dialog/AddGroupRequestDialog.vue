@@ -41,12 +41,14 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 import { countGraphemes } from '@/hooks/useCommon'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
 
@@ -65,7 +67,7 @@ const { userInfo, requestMsg, syncDefaultMessage, submitRequest } = useGroupRequ
 const addGroupRequest = async () => {
   const submitted = await submitRequest()
   if (!submitted) return
-  window.$message.success(t('message.group_verify.toast_success'))
+  showFeedback(t('message.group_verify.toast_success'), 'success')
   handleClose()
 }
 

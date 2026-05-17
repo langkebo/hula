@@ -2,6 +2,8 @@ import { computed, type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
 import type { RoomInfo, RoomState } from '@/services/matrix/admin/AdminTypes'
 
+export type { RoomInfo } from '@/services/matrix/admin/AdminTypes'
+
 export interface UseAdminRoomsResult {
   rooms: Ref<RoomInfo[]>
   filteredRooms: Ref<RoomInfo[]>
@@ -24,6 +26,8 @@ export interface UseAdminRoomsResult {
   shutdownRoom: (roomId: string, message?: string) => Promise<{ kickedUsers: string[] }>
   forceJoinRoom: (roomId: string, userId: string) => Promise<void>
   forceLeaveRoom: (roomId: string, userId: string) => Promise<void>
+  kickUser: (roomId: string, userId: string) => Promise<void>
+  banUser: (roomId: string, userId: string) => Promise<void>
 }
 
 /**
@@ -123,6 +127,16 @@ export function useAdminRooms(): UseAdminRoomsResult {
     if (selectedRoom.value?.roomId === roomId) await loadMembers()
   }
 
+  async function kickUser(roomId: string, userId: string) {
+    await adminService.kickUser(roomId, userId)
+    if (selectedRoom.value?.roomId === roomId) await loadMembers()
+  }
+
+  async function banUser(roomId: string, userId: string) {
+    await adminService.banUser(roomId, userId)
+    if (selectedRoom.value?.roomId === roomId) await loadMembers()
+  }
+
   return {
     rooms,
     filteredRooms,
@@ -141,6 +155,8 @@ export function useAdminRooms(): UseAdminRoomsResult {
     blockRoom,
     shutdownRoom,
     forceJoinRoom,
-    forceLeaveRoom
+    forceLeaveRoom,
+    kickUser,
+    banUser
   }
 }

@@ -23,6 +23,17 @@
         <span class="text-(14px [--hula-text-tertiary])">{{ t('editor.relation.not_friends') }}</span>
       </n-flex>
     </div>
+    <div
+      v-else-if="isRoomReadonly"
+      :style="{ height: `${footerHeight}px` }"
+      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--hula-surface-overlay]">
+      <n-flex align="center" justify="center" class="pb-60px">
+        <svg class="size-24px">
+          <use href="#lock"></use>
+        </svg>
+        <span class="text-(14px [--hula-text-tertiary])">{{ t('editor.room_readonly') }}</span>
+      </n-flex>
+    </div>
 
     <ChatMsgMultiChoose v-if="chatStore.isMsgMultiChoose" />
 
@@ -60,7 +71,7 @@
                 :disabled="emojiShow || recentEmojis.length < 4"
                 placement="top">
                 <template #trigger>
-                  <svg class="mr-18px">
+                  <svg class="mr-18px" role="button" aria-label="表情">
                     <use href="#smiling-face"></use>
                   </svg>
                 </template>
@@ -88,7 +99,7 @@
           </n-popover>
 
           <div class="flex-center gap-2px mr-12px">
-            <svg @click="handleScreenshot()">
+            <svg @click="handleScreenshot()" role="button" aria-label="截图">
               <use href="#screenshot"></use>
             </svg>
             <n-popover
@@ -139,7 +150,7 @@
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
             <template #trigger>
               <div class="flex-center gap-2px mr-12px">
-                <svg @click="handleFileOpen">
+                <svg @click="handleFileOpen" role="button" aria-label="发送文件">
                   <use href="#file2"></use>
                 </svg>
                 <svg style="width: 14px; height: 14px">
@@ -151,7 +162,7 @@
           </n-popover>
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
             <template #trigger>
-              <svg @click="handleImageOpen" class="mr-18px">
+              <svg @click="handleImageOpen" class="mr-18px" role="button" aria-label="发送图片">
                 <use href="#photo"></use>
               </svg>
             </template>
@@ -159,7 +170,7 @@
           </n-popover>
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
             <template #trigger>
-              <svg @click="handleVoiceRecord" class="mr-18px">
+              <svg @click="handleVoiceRecord" class="mr-18px" role="button" aria-label="语音消息">
                 <use href="#voice"></use>
               </svg>
             </template>
@@ -167,7 +178,7 @@
           </n-popover>
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
             <template #trigger>
-              <svg @click="showLocationModal = true" class="mr-18px">
+              <svg @click="showLocationModal = true" class="mr-18px" role="button" aria-label="位置">
                 <use href="#local"></use>
               </svg>
             </template>
@@ -179,7 +190,9 @@
               <svg
                 :class="{ 'text-[--hula-color-primary-500]': burnAfterReadEnabled }"
                 @click="toggleBurnAfterRead"
-                class="mr-18px cursor-pointer">
+                class="mr-18px cursor-pointer"
+                role="button"
+                aria-label="阅后即焚">
                 <use href="#timer"></use>
               </svg>
             </template>
@@ -189,7 +202,11 @@
 
         <n-popover trigger="hover" :show-arrow="false" placement="bottom">
           <template #trigger>
-            <svg class="w-22px h-22px cursor-pointer outline-none" @click="openChatHistory">
+            <svg
+              class="w-22px h-22px cursor-pointer outline-none"
+              @click="openChatHistory"
+              role="button"
+              aria-label="聊天记录">
               <use href="#history"></use>
             </svg>
           </template>
@@ -242,6 +259,7 @@ import { useI18n } from 'vue-i18n'
 import { FOOTER_HEIGHT, MAX_FOOTER_HEIGHT, MIN_FOOTER_HEIGHT } from '@/common/constants'
 import LocationModal from '@/components/rightBox/location/LocationModal.vue'
 import type { VoiceRecordPayload } from '@/components/rightBox/VoiceRecorder.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { MittEnum, MobilePanelStateEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import { useChatLayoutGlobal } from '@/hooks/useChatLayout'
@@ -249,6 +267,7 @@ import { type SelectionRange, useCommon } from '@/hooks/useCommon.ts'
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { FriendItem, SessionItem } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -264,6 +283,7 @@ import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('ChatFooter')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 // 移动端组件条件导入
 const Emoticon = defineAsyncComponent(() => import('@/components/rightBox/emoticon/index.vue'))
 const More = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/chat-room/panel/More.vue')) : void 0
@@ -408,6 +428,20 @@ const isFriend = computed(() => {
   return contactStore.contactsList.some((contact: FriendItem) => contact.uid === target)
 })
 
+const isRoomReadonly = computed(() => {
+  const roomId = globalStore.currentSessionRoomId
+  if (!roomId) return false
+  const client = matrixClientService.getClient()
+  if (!client) return false
+  const room = client.getRoom(roomId)
+  if (!room) return false
+  const tombstoneEvent = room.currentState.getStateEvents('m.room.tombstone', '')
+  if (tombstoneEvent) return true
+  const membership = room.getMyMembership?.()
+  if (membership !== 'join') return true
+  return false
+})
+
 // 监听emojiShow的变化，当emojiShow为true时关闭recentlyTip
 watch(emojiShow, (newValue) => {
   if (newValue === true) {
@@ -464,14 +498,14 @@ const sendEmojiWithDebounce = useDebounceFn((payload: EmojiUrlPayload) => {
     // 不等待发送完成，立即返回（避免卡顿）
     MsgInputRef.value?.sendEmojiDirect(payload.serverUrl).catch((error: unknown) => {
       logger.error('发送表情包失败:', error)
-      window.$message?.error?.('发送表情包失败')
+      showFeedback('发送表情包失败', 'error')
     })
 
     // 添加到最近使用表情列表
     updateRecentEmojis(payload.serverUrl)
   } catch (error) {
     logger.error('发送表情包失败:', error)
-    window.$message?.error?.('发送表情包失败')
+    showFeedback('发送表情包失败', 'error')
   }
 }, 200)
 
@@ -632,12 +666,12 @@ const toggleBurnAfterRead = async () => {
   try {
     await burnAfterRead.toggleRoomBurn()
     if (burnAfterReadEnabled.value) {
-      window.$message.success(t('editor.burn_after_read_enabled'))
+      showFeedback(t('editor.burn_after_read_enabled'), 'success')
     } else {
-      window.$message.info(t('editor.burn_after_read_disabled'))
+      showFeedback(t('editor.burn_after_read_disabled'), 'info')
     }
   } catch {
-    window.$message.error(t('editor.burn_after_read_disabled'))
+    showFeedback(t('editor.burn_after_read_disabled'), 'error')
   }
 }
 
@@ -719,7 +753,7 @@ const handleMoreSendFiles = async (files: File[]) => {
     await MsgInputRef.value?.sendFilesDirect(files)
   } catch (error) {
     logger.error('移动端发送文件失败:', error)
-    window.$message?.error?.('发送文件失败')
+    showFeedback('发送文件失败', 'error')
   }
 }
 

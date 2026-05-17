@@ -3,6 +3,7 @@ import '@unocss/reset/eric-meyer.css'
 import '@/styles/css/design-tokens.css'
 import App from '@/App.vue'
 import { AppException } from '@/common/exception.ts'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import vResize from '@/directives/v-resize'
 import { vSafeHtml } from '@/directives/v-safe-html'
 import vSlide from '@/directives/v-slide.ts'
@@ -18,6 +19,7 @@ import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Main')
+const { showFeedback } = useActionFeedback()
 
 performance.mark('hula-init-start')
 
@@ -111,7 +113,7 @@ app.config.errorHandler = (err, instance, info) => {
   }
 
   if (err instanceof AppException) {
-    window.$message.error(err.message)
+    showFeedback(err.message, 'error')
     return
   }
   throw err

@@ -84,7 +84,8 @@ describe('useFriendsList helpers', () => {
       contacts as never[],
       [{ uid: 'u1', activeStatus: 1, lastOptTime: 0 }] as never[],
       [{ uid: 'u3', activeStatus: 0, lastOptTime: 30 }] as never[],
-      (uid) => uid === 'u2'
+      [] as never[],
+      (uid: string) => uid === 'u2'
     )
 
     expect(result.map((item) => item.uid)).toEqual(['u2'])

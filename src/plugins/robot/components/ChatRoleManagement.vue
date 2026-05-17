@@ -230,6 +230,7 @@ import { Icon } from '@iconify/vue'
 import type { FormInst, FormRules } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { useMitt } from '@/hooks/useMitt'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
@@ -242,6 +243,7 @@ import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('ChatRoleManagement')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const timerManager = useTimerManager()
 
 const showModal = defineModel<boolean>({ default: false })
@@ -366,7 +368,7 @@ const {
 
     await nextTick()
 
-    window.$message.success(t('ai_assistant.robot.avatar_upload_success'))
+    showFeedback(t('ai_assistant.robot.avatar_upload_success'), 'success')
   }
 })
 
@@ -396,7 +398,7 @@ const loadModelList = async () => {
     }))
   } catch (error) {
     logger.error('加载模型列表失败:', error)
-    window.$message.error(t('ai_assistant.robot.load_models_failed'))
+    showFeedback(t('ai_assistant.robot.load_models_failed'), 'error')
   }
 }
 
@@ -412,7 +414,7 @@ const loadRoleList = async () => {
     pagination.value.total = data.total || 0
   } catch (error) {
     logger.error('加载角色列表失败:', error)
-    window.$message.error(t('ai_assistant.robot.load_role_list_failed'))
+    showFeedback(t('ai_assistant.robot.load_role_list_failed'), 'error')
   } finally {
     loading.value = false
   }
@@ -474,11 +476,11 @@ const handleSubmit = async () => {
         id: editingRole.value.id,
         ...submitData
       })
-      window.$message.success(t('ai_assistant.robot.role_updated'))
+      showFeedback(t('ai_assistant.robot.role_updated'), 'success')
     } else {
       // 创建
       await chatRoleService.create(submitData as ChatRole)
-      window.$message.success(t('ai_assistant.robot.role_created'))
+      showFeedback(t('ai_assistant.robot.role_created'), 'success')
     }
 
     showEditModal.value = false
@@ -493,7 +495,7 @@ const handleSubmit = async () => {
       return
     }
     logger.error('保存角色失败:', error)
-    window.$message.error(t('ai_assistant.robot.save_role_failed'))
+    showFeedback(t('ai_assistant.robot.save_role_failed'), 'error')
   } finally {
     submitting.value = false
   }
@@ -520,14 +522,14 @@ const resetForm = () => {
 const handleDelete = async (id: string) => {
   try {
     await chatRoleService.delete({ id })
-    window.$message.success(t('ai_assistant.robot.role_deleted'))
+    showFeedback(t('ai_assistant.robot.role_deleted'), 'success')
     loadRoleList()
     emit('refresh')
     // 通知左侧刷新角色状态
     useMitt.emit('refresh-roles')
   } catch (error) {
     logger.error('删除角色失败:', error)
-    window.$message.error(t('ai_assistant.robot.delete_role_failed'))
+    showFeedback(t('ai_assistant.robot.delete_role_failed'), 'error')
   }
 }
 

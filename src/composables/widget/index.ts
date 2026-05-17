@@ -1,3 +1,4 @@
+export type { Widget } from '@/services/matrix/widget/MatrixWidgetService'
 export {
   type PermissionRow,
   parsePermissionsResponse,

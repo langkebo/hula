@@ -16,6 +16,7 @@
 
 <script setup lang="ts">
 import { MSG_REPLY_TEXT_MAP } from '@/common/message'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { EventEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import { useWindow } from '@/hooks/useWindow'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -27,6 +28,7 @@ import { createLogger } from '@/utils/Logger'
 import { getBodyContent } from '@/utils/messageBody'
 
 const logger = createLogger('ChatMultiMsg')
+const { showFeedback } = useActionFeedback()
 
 const { contentList, msgIds, msgId } = defineProps<{
   contentList: string[]
@@ -108,7 +110,7 @@ const openMultiMsgWindow = async () => {
     await sendWindowPayload(label, { msgIds })
   } catch (e) {
     logger.error('创建聊天记录窗口失败:', e)
-    window.$message?.error('打开聊天记录失败')
+    showFeedback('打开聊天记录失败', 'error')
   }
 }
 </script>

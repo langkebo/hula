@@ -17,5 +17,11 @@
     "success": "删除好友成功",
     "failed": "删除好友失败"
   },
-  "not_found": "没有找到好友哦"
+  "not_found": "没有找到好友哦",
+  "delete_friend_dialog": {
+    "title": "删除好友",
+    "message": "确定删除该好友吗？",
+    "confirm": "确定",
+    "cancel": "取消"
+  }
 }

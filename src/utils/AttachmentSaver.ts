@@ -1,6 +1,8 @@
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { useDownload } from '@/hooks/useDownload'
+import { useI18nGlobal } from '@/services/i18n'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { createLogger } from '@/utils/Logger'
@@ -33,8 +35,10 @@ const saveAttachmentAs = async ({
   successMessage,
   errorMessage
 }: SaveAttachmentOptions) => {
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
   if (!url) {
-    window.$message.error('未找到下载链接')
+    showFeedback(t('utils.download_link_not_found'), 'error')
     return
   }
 
@@ -57,17 +61,18 @@ const saveAttachmentAs = async ({
     }
 
     if (successMessage) {
-      window.$message.success(successMessage)
+      showFeedback(successMessage, 'success')
     }
   } catch (error) {
     logger.error(errorMessage || '保存文件失败:', error)
     if (errorMessage) {
-      window.$message.error(errorMessage)
+      showFeedback(errorMessage, 'error')
     }
   }
 }
 
 export const saveVideoAttachmentAs = async (options: SaveAttachmentOptions) => {
+  const { t } = useI18nGlobal()
   await saveAttachmentAs({
     filters: options.filters || [
       {
@@ -75,16 +80,17 @@ export const saveVideoAttachmentAs = async (options: SaveAttachmentOptions) => {
         extensions: [...VIDEO_FILE_EXTENSIONS]
       }
     ],
-    successMessage: options.successMessage || '视频保存成功',
-    errorMessage: options.errorMessage || '保存视频失败',
+    successMessage: options.successMessage || t('utils.video_save_success'),
+    errorMessage: options.errorMessage || t('utils.video_save_failed'),
     ...options
   })
 }
 
 export const saveFileAttachmentAs = async (options: SaveAttachmentOptions) => {
+  const { t } = useI18nGlobal()
   await saveAttachmentAs({
-    successMessage: options.successMessage || '文件下载成功',
-    errorMessage: options.errorMessage || '保存文件失败',
+    successMessage: options.successMessage || t('utils.file_download_success'),
+    errorMessage: options.errorMessage || t('utils.file_save_failed'),
     ...options
   })
 }

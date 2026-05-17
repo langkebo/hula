@@ -10,8 +10,9 @@
           <van-cell-group inset>
             <van-cell :title="t('mobile_security.change_password')" is-link @click="showPasswordDialog = true">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-blue-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:lock" :width="20" color="#1989fa" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:lock" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
             </van-cell>
@@ -22,20 +23,24 @@
               :value="deviceCount"
               @click="router.push('/mobile/mobileMy/devices')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-green-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:devices" :width="20" color="#52c41a" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-success-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:devices" :width="20" color="var(--hula-color-success-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_security.encryption_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_security.encryption_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_security.cross_signing')" :label="crossSigningStatus">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-purple-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:shield-check" :width="20" color="#722ed1" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:shield-check" :width="20" color="var(--hula-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -51,8 +56,9 @@
               is-link
               @click="showBackupDialog = true">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-orange-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:backup-restore" :width="20" color="#fa8c16" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-warning-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:backup-restore" :width="20" color="var(--hula-color-warning-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -64,14 +70,17 @@
 
             <van-cell :title="t('mobile_security.export_keys')" is-link @click="handleExportKeys">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-cyan-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:download" :width="20" color="#13c2c2" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:download" :width="20" color="var(--hula-color-info-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_security.privacy_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_security.privacy_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell
@@ -80,20 +89,24 @@
               :value="ignoredUsersCount"
               @click="router.push('/mobile/mobileMy/ignoredUsers')">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:account-cancel" :width="20" color="#ff4d4f" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-danger-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:account-cancel" :width="20" color="var(--hula-color-danger-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-gray-500 mt-16px mb-8px">{{ t('mobile_security.danger_section') }}</div>
+          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_security.danger_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_security.deactivate_account')" is-link @click="handleDeactivate">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-red-50 mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:alert-circle" :width="20" color="#ff4d4f" />
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-danger-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:alert-circle" :width="20" color="var(--hula-color-danger-500)" />
                 </div>
               </template>
             </van-cell>
@@ -135,7 +148,7 @@
         :cancel-button-text="t('mobile_security.cancel')"
         @confirm="handleSetupBackup">
         <div class="p-16px">
-          <div class="text-14px text-gray-600 mb-12px">
+          <div class="text-14px text-[var(--hula-text-secondary)] mb-12px">
             {{ t('mobile_security.backup_description') }}
           </div>
           <van-field

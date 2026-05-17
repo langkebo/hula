@@ -20,12 +20,12 @@ export class MatrixRoomMemberProfileService extends BaseMatrixService {
     try {
       const userId = client.getUserId()
       if (!userId) {
-        throw new Error('用户未登录')
+        throw new Error(this.t('matrix_error.common.user_not_logged_in'))
       }
 
       const room = client.getRoom(roomId)
       if (!room) {
-        throw new Error(`房间不存在: ${roomId}`)
+        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
       }
 
       const currentMembership = (room.currentState.getStateEvents('m.room.member', userId)?.getContent() ??

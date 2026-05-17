@@ -1,5 +1,6 @@
 import { computed, type InjectionKey, nextTick, onUnmounted, ref } from 'vue'
 import { ErrorType } from '@/common/exception'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import {
   CallTypeEnum,
   MergeMessageType,
@@ -33,8 +34,8 @@ const logger = createLogger('ChatMain')
 type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<string, unknown>
 
 import { useI18n } from 'vue-i18n'
+import { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
 import { adminService } from '@/services/matrix/admin'
-import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
 import { roomStateService } from '@/services/matrix/room/RoomStateService'
 import type { MessageType } from '@/stores/domains/chat/chat'
@@ -59,8 +60,10 @@ type UseChatMainOptions = {
 
 export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions = {}) => {
   const { t } = useI18n()
+  const { showFeedback } = useActionFeedback()
   const { createWebviewWindow, sendWindowPayload, startRtcCall } = useWindow()
   const { getLocalVideoPath, checkVideoDownloaded } = useVideoViewer()
+  const { recallMessage } = useChatMessageActions()
   const settingStore = useSettingStore()
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()
@@ -132,6 +135,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   // 不能回复的消息类型
   const shouldHideCopy = (item: MessageType) => copyDisabledTypes.includes(item.message.type)
   const isNoticeMessage = (item: MessageType) => item.message.type === MsgEnum.NOTICE
+  const showComingSoon = () => showFeedback(t('home.chat_main.feature.coming_soon'), 'warning')
 
   const commonMenuList = ref<OPT.RightMenu[]>([
     {
@@ -148,7 +152,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       click: async (item: MessageType) => {
         const imageUrl = item.message.body.url || item.message.body.content
         if (!imageUrl) {
-          window.$message.error(t('home.chat_main.image.fetch_failed'))
+          showFeedback(t('home.chat_main.image.fetch_failed'), 'error')
           return
         }
         await emojiStore.addEmoji(imageUrl)
@@ -162,20 +166,13 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       icon: 'share',
       click: (item: MessageType) => {
         if (isMobile()) {
-          window.$message.warning(t('home.chat_main.feature.coming_soon'))
+          showComingSoon()
           return
         }
         handleForward(item)
       },
       visible: (item: MessageType) => !isNoticeMessage(item)
     },
-    // {
-    //   label: '收藏',
-    //   icon: 'collection-files',
-    //   click: () => {
-    //     window.$message.warning('暂未实现')
-    //   }
-    // },
     {
       label: () => t('menu.reply'),
       icon: 'reply',
@@ -191,9 +188,9 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         const originalType = item.message.type
         const originalContent = item.message.body.content
         try {
-          await matrixMessageService.recallMessage(globalStore.currentSessionRoomId, item.message.id)
+          await recallMessage(globalStore.currentSessionRoomId, item.message.id)
         } catch (res: unknown) {
-          window.$message.error(String(res))
+          showFeedback(String(res), 'error')
           return
         }
         chatStore.recordRecallMsg({
@@ -243,7 +240,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       icon: 'copy',
       click: (item: MessageType) => {
         if (isMobile()) {
-          window.$message.warning(t('home.chat_main.feature.coming_soon'))
+          showComingSoon()
           return
         }
         handleCopy(item.message.body.url, true, item.message.id)
@@ -255,7 +252,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       icon: 'Importing',
       click: async (item: MessageType) => {
         if (isMobile()) {
-          window.$message.warning(t('home.chat_main.feature.coming_soon'))
+          showComingSoon()
           return
         }
         const bodyRecord = item.message.body as Record<string, unknown>
@@ -309,7 +306,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
 
         const content = selectedText || item.message.body.content
         if (!content) {
-          window.$message?.warning(t('home.chat_main.translate.empty'))
+          showFeedback(t('home.chat_main.translate.empty'), 'warning')
           return
         }
 
@@ -372,19 +369,12 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           messageType === MsgEnum.FILE
         ) {
           const mediaMenus: OPT.RightMenu[] = [
-            // {
-            //   label: '收藏',
-            //   icon: 'collection-files',
-            //   click: () => {
-            //     window.$message.warning('暂未实现')
-            //   }
-            // },
             {
               label: () => t('menu.save_as'),
               icon: 'Importing',
               click: async (item: MessageType) => {
                 if (isMobile()) {
-                  window.$message.warning(t('home.chat_main.feature.coming_soon'))
+                  showComingSoon()
                   return
                 }
                 const fileUrl = item.message.body.url
@@ -466,7 +456,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       icon: 'Importing',
       click: async (item: RightMouseMessageItem) => {
         if (isMobile()) {
-          window.$message.warning(t('home.chat_main.feature.coming_soon'))
+          showComingSoon()
           return
         }
         const bodyRecord = item.message.body as Record<string, unknown>
@@ -516,7 +506,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       icon: 'Importing',
       click: async (item: MessageType) => {
         if (isMobile()) {
-          window.$message.warning(t('home.chat_main.feature.coming_soon'))
+          showComingSoon()
           return
         }
         try {
@@ -539,7 +529,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           })
         } catch (error) {
           logger.error('保存图片失败:', error)
-          window.$message.error(t('home.chat_main.image.save_failed'))
+          showFeedback(t('home.chat_main.image.save_failed'), 'error')
         }
       }
     },
@@ -549,13 +539,13 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       click: async (item: MessageType) => {
         const fileUrl = (item.message.body.url || item.message.body.content) as string | undefined
         if (!fileUrl) {
-          window.$message.warning(t('home.chat_main.image.locate_failed'))
+          showFeedback(t('home.chat_main.image.locate_failed'), 'warning')
           return
         }
         const fileName = item.message.body.fileName || extractFileName(fileUrl)
         const bodyRecord = item.message.body as Record<string, unknown>
         if (!fileName) {
-          window.$message.warning(t('home.chat_main.image.locate_failed'))
+          showFeedback(t('home.chat_main.image.locate_failed'), 'warning')
           return
         }
         await downloadAndRevealFile({
@@ -626,9 +616,8 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     {
       label: () => t('menu.add_friend'),
       icon: 'people-plus',
-      click: async (item: ContextMenuItem) => {
-        await createWebviewWindow('申请加好友', 'addFriendVerify', 380, 300, '', false, 380, 300)
-        globalStore.openAddFriendModal(item.uid || item.fromUser.uid)
+      click: (item: ContextMenuItem) => {
+        useMitt.emit(MittEnum.OPEN_ADD_FRIEND_DIALOG, { uid: item.uid || item.fromUser.uid })
       },
       visible: (item: ContextMenuItem) => !checkFriendRelation(item.uid || item.fromUser.uid, 'all')
     },
@@ -642,9 +631,9 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
 
         try {
           await groupStore.addAdmin([targetUid])
-          window.$message.success(t('menu.set_admin_success'))
+          showFeedback(t('menu.set_admin_success'), 'success')
         } catch {
-          window.$message.error(t('menu.set_admin_fail'))
+          showFeedback(t('menu.set_admin_fail'), 'error')
         }
       },
       visible: (item: ContextMenuItem) => {
@@ -687,9 +676,9 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
 
         try {
           await groupStore.revokeAdmin([targetUid])
-          window.$message.success(t('menu.revoke_admin_success'))
+          showFeedback(t('menu.revoke_admin_success'), 'success')
         } catch {
-          window.$message.error(t('menu.revoke_admin_fail'))
+          showFeedback(t('menu.revoke_admin_fail'), 'error')
         }
       },
       visible: (item: ContextMenuItem) => {
@@ -737,9 +726,9 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           await roomNavigationService.removeMember(roomId, targetUid)
           // 从群成员列表中移除该用户
           groupStore.removeUserItem(targetUid, roomId)
-          window.$message.success(t('menu.remove_from_group_success'))
+          showFeedback(t('menu.remove_from_group_success'), 'success')
         } catch {
-          window.$message.error(t('menu.remove_from_group_fail'))
+          showFeedback(t('menu.remove_from_group_fail'), 'error')
         }
       },
       visible: (item: ContextMenuItem) => {
@@ -785,7 +774,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         const roomId = globalStore.currentSessionRoomId
         const eventId = item.message?.id
         if (!roomId || !eventId) {
-          window.$message.warning('无法获取消息信息')
+          showFeedback('无法获取消息信息', 'warning')
           return
         }
         try {
@@ -795,10 +784,10 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
             reason: 'violation',
             explanation: 'User reported via chat menu'
           })
-          window.$message.success(t('menu.report_success'))
+          showFeedback(t('menu.report_success'), 'success')
         } catch (err) {
           logger.error('举报失败:', err)
-          window.$message.error('举报失败，请稍后重试')
+          showFeedback('举报失败，请稍后重试', 'error')
         }
       }
     }
@@ -848,7 +837,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     if (!delIndex.value) return
     const targetRoomId = delRoomId.value || globalStore.currentSessionRoomId
     if (!targetRoomId) {
-      window.$message?.error('无法确定消息所属的会话')
+      showFeedback('无法确定消息所属的会话', 'error')
       return
     }
     try {
@@ -868,7 +857,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       delIndex.value = ''
       delRoomId.value = ''
       modalShow.value = false
-      window.$message?.success('消息已删除')
+      showFeedback('消息已删除', 'success')
     } catch (error) {
       logger.error('删除消息失败:', error)
     }

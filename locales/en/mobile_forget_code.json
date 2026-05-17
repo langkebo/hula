@@ -36,14 +36,18 @@
     "email_invalid": "Please enter a valid email address",
     "email_code_require": "Please enter the verification code sent to your email",
     "code_length": "Verification code must be {len} digits",
-
     "new_pass_require": "Please enter a new password",
     "new_pass_length": "Password must be {len} characters",
-
     "confirm_pass_require": "Please confirm your password",
     "pass_not_match": "Passwords do not match"
   },
   "too_many_requests": "Too many requests. Please try again in {s} seconds",
   "code_sent_email": "Verification code has been sent to your email",
-  "email_resend_in": "Resend in {seconds}s"
+  "email_resend_in": "Resend in {seconds}s",
+  "captcha_failed": "Failed to get captcha. Please try again later.",
+  "send_code_failed": "Failed to send verification code. Please try again later.",
+  "send_email_code_first": "Please send email verification code first",
+  "verify_email_failed": "Email verification failed. Please try again later.",
+  "complete_email_verify_first": "Please complete email verification first",
+  "reset_password_failed": "Failed to reset password. Please try again later."
 }

@@ -75,7 +75,8 @@
   },
   "message_list": {
     "sync_loading": "Syncing messages",
-    "official_popover": "Official group",
+    "sync_complete": "Message sync complete",
+    "official_popover": "Official group authentication",
     "bot_popover": "HuLa Assistant",
     "mention_tag": "[Mentioned me]",
     "favorite_tag": "Pinned",
@@ -101,7 +102,11 @@
     "dissolve_group_success": "Group dissolved",
     "quit_group_success": "Left group",
     "notification_allowed": "Notifications enabled",
-    "notification_silent": "Receiving silently"
+    "notification_silent": "Receiving silently",
+    "set_low_priority_success": "Set as low priority",
+    "remove_low_priority_success": "Removed low priority",
+    "set_low_priority_fail": "Failed to set low priority",
+    "remove_low_priority_fail": "Failed to remove low priority"
   },
   "image_viewer": {
     "zoom_out": "Zoom out",

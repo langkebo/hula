@@ -39,6 +39,25 @@ export const Default: Story = {
   render
 }
 
+export const NoHistory: Story = {
+  args: {
+    placeholder: '搜索好友',
+    history: [],
+    modelValue: 'Alice'
+  },
+  render
+}
+
+export const HiddenHistory: Story = {
+  args: {
+    placeholder: '搜索好友',
+    history: ['Alice', '@bob:example.com', '设计组'],
+    showHistory: false,
+    modelValue: ''
+  },
+  render
+}
+
 export const Rtl: Story = {
   args: {
     placeholder: 'Search friends',

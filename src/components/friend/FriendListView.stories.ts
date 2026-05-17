@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { defineComponent } from 'vue'
 import FriendListView from '@/components/friend/FriendListView.vue'
 import { OnlineEnum } from '@/enums'
-import { resetStorybookMocks } from '~/.storybook/harness'
+import { configureMatrixCapabilityServiceMock, resetStorybookMocks } from '~/.storybook/harness'
 import { configureContactStoreMock, type FriendRequestItem, type MatrixContact } from '~/.storybook/mocks/contact-store'
 
 const meta = {
@@ -88,6 +88,10 @@ export const Default: Story = {
   loaders: [
     async () => {
       resetStorybookMocks()
+      configureMatrixCapabilityServiceMock({
+        isLoaded: true,
+        canUseFriendList: true
+      })
       configureContactStoreMock({
         contactsList: mockContacts,
         requestFriendsList: mockRequests,
@@ -103,6 +107,10 @@ export const Empty: Story = {
   loaders: [
     async () => {
       resetStorybookMocks()
+      configureMatrixCapabilityServiceMock({
+        isLoaded: true,
+        canUseFriendList: true
+      })
       configureContactStoreMock({
         contactsList: [],
         requestFriendsList: [],
@@ -118,10 +126,110 @@ export const Loading: Story = {
   loaders: [
     async () => {
       resetStorybookMocks()
+      configureMatrixCapabilityServiceMock({
+        isLoaded: false,
+        canUseFriendList: true
+      })
       configureContactStoreMock({
         contactsList: [],
         requestFriendsList: [],
         isLoading: true
+      })
+      return {}
+    }
+  ],
+  render
+}
+
+export const CapabilityOff: Story = {
+  loaders: [
+    async () => {
+      resetStorybookMocks()
+      configureMatrixCapabilityServiceMock({
+        isLoaded: true,
+        canUseFriendList: false
+      })
+      configureContactStoreMock({
+        contactsList: [],
+        requestFriendsList: [],
+        isLoading: false
+      })
+      return {}
+    }
+  ],
+  render
+}
+
+export const ErrorState: Story = {
+  loaders: [
+    async () => {
+      resetStorybookMocks()
+      configureMatrixCapabilityServiceMock({
+        isLoaded: true,
+        canUseFriendList: true
+      })
+      configureContactStoreMock({
+        contactsList: [],
+        requestFriendsList: [],
+        isLoading: false,
+        lastFriendError: {
+          message: '加载好友列表失败'
+        }
+      })
+      return {}
+    }
+  ],
+  render
+}
+
+export const RequestsPending: Story = {
+  loaders: [
+    async () => {
+      resetStorybookMocks()
+      configureMatrixCapabilityServiceMock({
+        isLoaded: true,
+        canUseFriendList: true
+      })
+      configureContactStoreMock({
+        contactsList: mockContacts,
+        requestFriendsList: mockRequests,
+        isLoading: false
+      })
+      return {}
+    }
+  ],
+  render
+}
+
+export const BlockedHiddenMix: Story = {
+  loaders: [
+    async () => {
+      resetStorybookMocks()
+      configureMatrixCapabilityServiceMock({
+        isLoaded: true,
+        canUseFriendList: true
+      })
+      configureContactStoreMock({
+        contactsList: [
+          ...mockContacts,
+          {
+            userId: '@diana:example.com',
+            displayName: 'Diana',
+            avatarUrl: '',
+            uid: '@diana:example.com',
+            name: 'Diana',
+            account: 'diana',
+            avatar: '',
+            activeStatus: OnlineEnum.OFFLINE,
+            remark: '',
+            lastOptTime: Date.now() - 86_400_000,
+            hideMyPosts: false,
+            hideTheirPosts: false,
+            friendStatus: 'hidden'
+          }
+        ],
+        requestFriendsList: [],
+        isLoading: false
       })
       return {}
     }

@@ -134,9 +134,10 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, NSwitch, useDialog, useMessage } from 'naive-ui'
+import { NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, NSwitch, useDialog } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { createLogger } from '@/utils/Logger'
 
@@ -146,7 +147,7 @@ defineOptions({
   name: 'FriendsSettings'
 })
 
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const { t } = useI18n()
 
@@ -252,21 +253,21 @@ async function loadFriendRequests() {
 
 function handleToggle(_key: string) {
   saveSettings()
-  message.success(t('setting.friends.feedback.settings_updated'))
+  showFeedback(t('setting.friends.feedback.settings_updated'), 'success')
 }
 
 async function handleCreateGroup() {
   if (!newGroupName.value.trim()) {
-    message.warning(t('setting.friends.groups.name_required'))
+    showFeedback(t('setting.friends.groups.name_required'), 'warning')
     return false
   }
   try {
     await matrixFriendService.createFriendGroup(newGroupName.value.trim())
     newGroupName.value = ''
-    message.success(t('setting.friends.groups.create_success'))
+    showFeedback(t('setting.friends.groups.create_success'), 'success')
     await loadFriendGroups()
   } catch {
-    message.error(t('setting.friends.groups.create_failed'))
+    showFeedback(t('setting.friends.groups.create_failed'), 'error')
   }
 }
 
@@ -278,16 +279,16 @@ function handleEditGroup(group: FriendGroup) {
 
 async function handleSaveGroup() {
   if (!editGroupName.value.trim()) {
-    message.warning(t('setting.friends.groups.name_required'))
+    showFeedback(t('setting.friends.groups.name_required'), 'warning')
     return false
   }
   try {
     await matrixFriendService.renameFriendGroup(editingGroupId.value, editGroupName.value.trim())
-    message.success(t('setting.friends.groups.rename_success'))
+    showFeedback(t('setting.friends.groups.rename_success'), 'success')
     showEditGroup.value = false
     await loadFriendGroups()
   } catch {
-    message.error(t('setting.friends.groups.rename_failed'))
+    showFeedback(t('setting.friends.groups.rename_failed'), 'error')
   }
 }
 
@@ -300,10 +301,10 @@ function handleDeleteGroup(group: FriendGroup) {
     onPositiveClick: async () => {
       try {
         await matrixFriendService.deleteFriendGroup(group.group_id)
-        message.success(t('setting.friends.groups.delete_success'))
+        showFeedback(t('setting.friends.groups.delete_success'), 'success')
         await loadFriendGroups()
       } catch {
-        message.error(t('setting.friends.groups.delete_failed'))
+        showFeedback(t('setting.friends.groups.delete_failed'), 'error')
       }
     }
   })
@@ -312,30 +313,30 @@ function handleDeleteGroup(group: FriendGroup) {
 async function handleAcceptRequest(req: FriendRequest) {
   try {
     await matrixFriendService.acceptFriendRequest(req.user_id)
-    message.success(t('setting.friends.pending.accept_success'))
+    showFeedback(t('setting.friends.pending.accept_success'), 'success')
     await loadFriendRequests()
   } catch {
-    message.error(t('setting.friends.pending.accept_failed'))
+    showFeedback(t('setting.friends.pending.accept_failed'), 'error')
   }
 }
 
 async function handleRejectRequest(req: FriendRequest) {
   try {
     await matrixFriendService.rejectFriendRequest(req.user_id)
-    message.success(t('setting.friends.pending.reject_success'))
+    showFeedback(t('setting.friends.pending.reject_success'), 'success')
     await loadFriendRequests()
   } catch {
-    message.error(t('setting.friends.pending.reject_failed'))
+    showFeedback(t('setting.friends.pending.reject_failed'), 'error')
   }
 }
 
 async function handleCancelRequest(req: FriendRequest) {
   try {
     await matrixFriendService.cancelFriendRequest(req.user_id)
-    message.success(t('setting.friends.pending.cancel_success'))
+    showFeedback(t('setting.friends.pending.cancel_success'), 'success')
     await loadFriendRequests()
   } catch {
-    message.error(t('setting.friends.pending.cancel_failed'))
+    showFeedback(t('setting.friends.pending.cancel_failed'), 'error')
   }
 }
 </script>

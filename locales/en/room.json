@@ -85,7 +85,13 @@
     "reject_failed": "Failed to reject invitation"
   },
   "batch": {
+    "enter": "Batch Select",
+    "exit": "Exit Batch",
+    "enter_announcement": "Batch selection mode enabled",
+    "exit_announcement": "Batch selection mode closed",
     "selected_count": "{count} selected",
+    "select_all_announcement": "Selected all {count} items",
+    "clear_selection_announcement": "Batch selection cleared",
     "mark_read": "Mark read",
     "pin": "Pin",
     "mute": "Mute",

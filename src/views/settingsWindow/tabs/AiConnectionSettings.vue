@@ -82,14 +82,15 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import type { FormInst } from 'naive-ui'
-import { NButton, NEmpty, NForm, NFormItem, NInput, NModal, NSelect, NSpin, NTag, useMessage } from 'naive-ui'
+import { NButton, NEmpty, NForm, NFormItem, NInput, NModal, NSelect, NSpin, NTag } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import type { AIConnectionInfo } from '@/services/matrix/ai/MatrixAIConnectionService'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixAIConnectionService } from '@/services/matrix/ai/MatrixAIConnectionService'
+import type { AIConnectionInfo } from '@/types/matrix-services'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiConnectionSettings')
-const message = useMessage()
+const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 
 const loading = ref(false)
@@ -167,7 +168,7 @@ async function handleCreateConnection() {
     try {
       config = JSON.parse(createForm.value.config)
     } catch {
-      message.error(t('setting.ai_connection.create_dialog.config_invalid'))
+      showFeedback(t('setting.ai_connection.create_dialog.config_invalid'), 'error')
       creating.value = false
       return
     }
@@ -178,13 +179,13 @@ async function handleCreateConnection() {
       config
     })
 
-    message.success(t('setting.ai_connection.messages.create_success'))
+    showFeedback(t('setting.ai_connection.messages.create_success'), 'success')
     showCreateDialog.value = false
     createForm.value = { name: '', type: 'openai', config: '{}' }
     await loadConnections()
   } catch (err) {
     logger.error('Failed to create AI connection', err)
-    message.error(t('setting.ai_connection.messages.create_failed'))
+    showFeedback(t('setting.ai_connection.messages.create_failed'), 'error')
   } finally {
     creating.value = false
   }
@@ -193,11 +194,11 @@ async function handleCreateConnection() {
 async function handleDeleteConnection(id: string) {
   try {
     await matrixAIConnectionService.deleteConnection(id)
-    message.success(t('setting.ai_connection.messages.delete_success'))
+    showFeedback(t('setting.ai_connection.messages.delete_success'), 'success')
     await loadConnections()
   } catch (err) {
     logger.error('Failed to delete AI connection', err)
-    message.error(t('setting.ai_connection.messages.delete_failed'))
+    showFeedback(t('setting.ai_connection.messages.delete_failed'), 'error')
   }
 }
 

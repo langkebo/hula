@@ -7,7 +7,10 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col flex-1 gap-20px py-15px px-20px">
-          <van-date-picker v-model="selectedDate" title="选择日期" class="m-auto rounded-16px" />
+          <van-date-picker
+            v-model="selectedDate"
+            :title="t('mobile_edit_brithday.select_date')"
+            class="m-auto rounded-16px" />
 
           <div class="px-15px flex flex-col w-full box-border rounded-16px bg-white dark:bg-dark-card">
             <div class="flex w-full justify-between items-center py-15px">
