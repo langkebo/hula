@@ -141,7 +141,7 @@
           </template>
           <div style="max-width: 300px">
             <div v-if="videoImagePreview" style="margin-bottom: 8px">
-              <img :src="videoImagePreview" style="max-width: 100%; border-radius: 4px" />
+              <img :src="videoImagePreview" style="max-width: 100%; border-radius: 4px" alt="视频预览" />
             </div>
             <div style="font-size: 12px; color: #666">
               <div v-if="isUploadingVideoImage" style="color: #18a058">

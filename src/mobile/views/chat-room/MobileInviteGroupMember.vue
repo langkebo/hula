@@ -57,6 +57,7 @@
                       :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
                       class="size-44px rounded-full object-cover"
                       style="border: 1px solid var(--avatar-border-color)"
+                      alt="用户头像"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <div class="flex flex-col leading-tight truncate">
                       <span class="text-14px font-medium truncate">

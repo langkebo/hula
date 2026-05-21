@@ -116,19 +116,15 @@ const meta = {
     sessionLoading: false,
     networkBanner: null,
     emptyDescription: '暂无会话',
-    getItemClasses: () => ({}),
-    visibleMenu: () => [],
-    visibleSpecialMenu: () => [],
-    onMsgClick: () => {},
-    onMsgDblclick: () => {},
-    onMenuShow: () => {}
+    onMsgClick: (_item: SessionItem) => {},
+    onMsgDblclick: (_item: SessionItem) => {}
   }
 } satisfies Meta<typeof RoomSessionList>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-const render = (args: InstanceType<typeof RoomSessionList>['$props']) =>
+const render = (args: Record<string, unknown>) =>
   defineComponent({
     components: { RoomSessionList },
     setup() {
@@ -169,9 +165,9 @@ const render = (args: InstanceType<typeof RoomSessionList>['$props']) =>
     `
   })
 
-export const Default: Story = {
+export const Default = {
   render
-}
+} as unknown as Story
 
 export const Empty: Story = {
   args: {
@@ -260,14 +256,14 @@ export const PerfUnreadPatch: Story = {
   args: {
     ...Default.args
   },
-  render: (args: InstanceType<typeof RoomSessionList>['$props']) =>
+  render: (args: Record<string, unknown>) =>
     defineComponent({
       components: { RoomSessionList },
       setup() {
         resetStorybookMocks()
         resetStorybookPerfSamples()
 
-        const sessionList = ref(args.sessionList.map((item: StorySessionItem) => ({ ...item })))
+        const sessionList = ref((args.sessionList as StorySessionItem[]).map((item: StorySessionItem) => ({ ...item })))
 
         startStorybookPerfSample('ui-room-list-initial-render', {
           route: 'storybook:room-session-list-perf',

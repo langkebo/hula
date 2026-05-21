@@ -1028,6 +1028,19 @@ export type I18nKeys = {
       "quick_actions": "快速操作",
       "server_stats": "服务器统计",
       "settings": "设置",
+      "nav": {
+        "dashboard": "仪表盘",
+        "users": "用户管理",
+        "rooms": "房间管理",
+        "federation": "联邦管理",
+        "notices": "服务器通知",
+        "server_config": "服务器配置"
+      },
+      "status": {
+        "admin": "管理员",
+        "user": "普通用户"
+      },
+      "backToApp": "返回应用",
       "total_users": "总用户数",
       "total_rooms": "总房间数",
       "active_users": "活跃用户",
@@ -1204,6 +1217,55 @@ export type I18nKeys = {
         "fill_required": "请填写用户ID和内容",
         "send_success": "通知已发送",
         "send_failed": "发送通知失败"
+      },
+      "server_config": {
+        "title": "服务器配置",
+        "subtitle": "查看和修改服务器运行配置",
+        "revert": "还原更改",
+        "confirm_title": "确认保存",
+        "confirm_content": "确定要保存这些配置更改吗？更改将立即生效。",
+        "save_failed": "保存配置失败",
+        "general": {
+          "title": "通用设置",
+          "server_name": "服务器名称",
+          "registration_enabled": "开放注册",
+          "max_upload_size": "最大上传大小",
+          "presence_enabled": "启用在线状态"
+        },
+        "security": {
+          "title": "安全设置",
+          "admin_mfa_required": "管理员强制MFA",
+          "rbac_enabled": "启用RBAC",
+          "login_lockout_threshold": "登录锁定阈值"
+        },
+        "federation": {
+          "title": "联邦设置",
+          "enabled": "启用联邦",
+          "admission_mode": "准入模式",
+          "mode_open": "开放",
+          "mode_invite": "邀请",
+          "mode_whitelist": "白名单"
+        },
+        "rate_limit": {
+          "title": "速率限制",
+          "enabled": "启用速率限制",
+          "requests_per_second": "每秒请求数",
+          "burst_count": "突发请求数"
+        },
+        "translation": {
+          "title": "翻译设置",
+          "enabled": "启用翻译",
+          "provider": "翻译服务",
+          "target_language": "目标语言"
+        },
+        "push": {
+          "title": "推送通知",
+          "enabled": "启用推送通知",
+          "apns_status": "APNS 状态",
+          "fcm_status": "FCM 状态",
+          "webpush_status": "WebPush 状态",
+          "unconfigured": "未配置"
+        }
       }
     }
   },
@@ -4698,7 +4760,45 @@ export type I18nKeys = {
         "success": "推送设备已删除",
         "failed": "删除推送设备失败"
       },
-      "fetchFailed": "获取推送设备列表失败"
+      "fetchFailed": "获取推送设备列表失败",
+      "add_pusher": {
+        "label": "添加推送设备",
+        "title": "添加推送设备",
+        "kind_label": "设备类型",
+        "app_id_label": "应用 ID",
+        "app_id_placeholder": "例如: com.hula.desktop",
+        "app_display_name_label": "应用名称",
+        "app_display_name_placeholder": "例如: HuLa 桌面端",
+        "device_display_name_label": "设备名称",
+        "device_display_name_placeholder": "例如: 我的 Mac",
+        "pushkey_label": "推送密钥",
+        "pushkey_placeholder": "输入推送密钥",
+        "lang_label": "语言",
+        "required": "应用 ID 和推送密钥为必填项",
+        "success": "推送设备添加成功",
+        "failed": "添加推送设备失败",
+        "confirm": "确认添加",
+        "cancel": "取消"
+      },
+      "rules_by_kind": {
+        "title": "推送规则详情",
+        "desc": "按类别查看和管理所有推送规则",
+        "pattern": "匹配模式",
+        "empty": "暂无规则",
+        "kinds": {
+          "override": "覆盖规则",
+          "content": "内容规则",
+          "room": "房间规则",
+          "sender": "发送者规则",
+          "underride": "默认规则"
+        }
+      },
+      "history": {
+        "title": "通知历史",
+        "desc": "查看最近的通知记录",
+        "empty": "暂无通知记录",
+        "no_content": "无内容"
+      }
     },
     "notification": {
       "common": {

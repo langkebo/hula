@@ -1,5 +1,6 @@
 import { error } from '@tauri-apps/plugin-log'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { MATRIX_PATHS } from '../paths'
 
 /**
  * Room metadata domain service.
@@ -76,6 +77,17 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
       return result as Record<string, unknown>
     } catch (err) {
       error(`[MatrixRoom] 获取房间级同步失败: ${err}`)
+      return {}
+    }
+  }
+
+  async getRoomPermissions(roomId: string): Promise<Record<string, unknown>> {
+    const client = this.getClient()
+    try {
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.PERMISSIONS(roomId))
+      return result as Record<string, unknown>
+    } catch (err) {
+      error(`[MatrixRoom] 获取房间权限失败: ${err}`)
       return {}
     }
   }

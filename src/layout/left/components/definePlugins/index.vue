@@ -7,11 +7,11 @@
         <img
           class="absolute blur-6px rounded-t-6px z-1 top-0 left-0 w-full h-140px object-cover"
           src="/img/dispersion-bg.png"
-          alt="" />
+          alt="插件背景" />
         <img
           class="absolute rounded-t-6px z-2 top-0 left-0 w-full h-140px object-cover"
           src="/img/dispersion-bg.png"
-          alt="" />
+          alt="插件背景" />
 
         <div
           v-if="isMac()"

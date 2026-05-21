@@ -395,7 +395,45 @@
       "success": "推送设备已删除",
       "failed": "删除推送设备失败"
     },
-    "fetchFailed": "获取推送设备列表失败"
+    "fetchFailed": "获取推送设备列表失败",
+    "add_pusher": {
+      "label": "添加推送设备",
+      "title": "添加推送设备",
+      "kind_label": "设备类型",
+      "app_id_label": "应用 ID",
+      "app_id_placeholder": "例如: com.hula.desktop",
+      "app_display_name_label": "应用名称",
+      "app_display_name_placeholder": "例如: HuLa 桌面端",
+      "device_display_name_label": "设备名称",
+      "device_display_name_placeholder": "例如: 我的 Mac",
+      "pushkey_label": "推送密钥",
+      "pushkey_placeholder": "输入推送密钥",
+      "lang_label": "语言",
+      "required": "应用 ID 和推送密钥为必填项",
+      "success": "推送设备添加成功",
+      "failed": "添加推送设备失败",
+      "confirm": "确认添加",
+      "cancel": "取消"
+    },
+    "rules_by_kind": {
+      "title": "推送规则详情",
+      "desc": "按类别查看和管理所有推送规则",
+      "pattern": "匹配模式",
+      "empty": "暂无规则",
+      "kinds": {
+        "override": "覆盖规则",
+        "content": "内容规则",
+        "room": "房间规则",
+        "sender": "发送者规则",
+        "underride": "默认规则"
+      }
+    },
+    "history": {
+      "title": "通知历史",
+      "desc": "查看最近的通知记录",
+      "empty": "暂无通知记录",
+      "no_content": "无内容"
+    }
   },
   "notification": {
     "common": {

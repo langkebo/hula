@@ -16,11 +16,19 @@ vi.mock('../user/MatrixAccountService', () => ({
 }))
 
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
-import { CapabilityUnavailableError, matrixCapabilityService } from '../MatrixCapabilityService'
+import {
+  CapabilityUnavailableError,
+  matrixCapabilityService,
+  registerCapabilityStoreResolver
+} from '../MatrixCapabilityService'
 
 describe('MatrixCapabilityService §16.5.3 gates', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    // Register the store resolver so the service can access the store
+    // (resets the cached store instance from previous tests)
+    registerCapabilityStoreResolver(() => useCapabilityStore())
   })
 
   it('canUseSlidingSync reflects msc3575 flags', () => {

@@ -11,7 +11,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { MatrixRuntimeSessionService, type SessionStorePort } from './MatrixRuntimeSessionService'
 
-function createSessionStorePort(): SessionStorePort {
+export function createSessionStorePort(): SessionStorePort {
   return {
     matrix: {
       getClient() {

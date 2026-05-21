@@ -10,8 +10,6 @@ const {
   handleMsgClickMock,
   handleMsgDeleteMock,
   handleMsgDblclickMock,
-  visibleMenuMock,
-  visibleSpecialMenuMock,
   getSessionListMock,
   markSessionReadMock,
   useMittOnMock,
@@ -23,8 +21,6 @@ const {
   handleMsgClickMock: vi.fn(),
   handleMsgDeleteMock: vi.fn(),
   handleMsgDblclickMock: vi.fn(),
-  visibleMenuMock: vi.fn(() => []),
-  visibleSpecialMenuMock: vi.fn(() => []),
   getSessionListMock: vi.fn(async () => {}),
   markSessionReadMock: vi.fn(),
   useMittOnMock: vi.fn(),
@@ -116,9 +112,7 @@ vi.mock('@/hooks/useMessage.ts', () => ({
   useMessage: () => ({
     handleMsgClick: handleMsgClickMock,
     handleMsgDelete: handleMsgDeleteMock,
-    handleMsgDblclick: handleMsgDblclickMock,
-    visibleMenu: visibleMenuMock,
-    visibleSpecialMenu: visibleSpecialMenuMock
+    handleMsgDblclick: handleMsgDblclickMock
   })
 }))
 

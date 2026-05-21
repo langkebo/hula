@@ -1,8 +1,12 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleKind } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import { safeJsonParse, validateObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('MatrixNotificationService')
 
 let ackEndpointAvailableCache: boolean | null = null
 let ackCheckTimestamp = 0
@@ -76,8 +80,8 @@ class MatrixNotificationService extends BaseMatrixService {
   private persistConfig(): void {
     try {
       localStorage.setItem(MatrixNotificationService.CONFIG_STORAGE_KEY, JSON.stringify(this.config))
-    } catch {
-      // Ignore storage errors
+    } catch (err) {
+      logger.warn('Notification storage error:', err)
     }
   }
 
@@ -233,8 +237,8 @@ class MatrixNotificationService extends BaseMatrixService {
           return kind
         }
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      logger.warn('Notification operation failed:', err)
     }
     return 'override'
   }
@@ -354,7 +358,7 @@ class MatrixNotificationService extends BaseMatrixService {
       const queryParams: Record<string, string> = { limit: String(limit) }
       if (from) queryParams.from = from
 
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/notifications', queryParams)
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.NOTIFICATION.NOTIFICATIONS, queryParams)
       return result as { notifications: Array<Record<string, unknown>>; next_token?: string }
     } catch (err) {
       error(`[MatrixNotification] 获取通知列表失败: ${err}`)
@@ -423,6 +427,79 @@ class MatrixNotificationService extends BaseMatrixService {
     } catch (err) {
       error(`[MatrixNotification] 已读回执发送失败: ${err}`)
       return false
+    }
+  }
+
+  /**
+   * 从服务端获取完整推送规则 (async, 使用 MATRIX_PATHS)
+   */
+  async fetchPushRules(): Promise<IPushRules> {
+    const client = this.getNotificationClient()
+    try {
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.NOTIFICATION.PUSH_RULES)
+      return result as IPushRules
+    } catch (err) {
+      error(`[MatrixNotification] 获取推送规则失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 设置推送规则 (使用 MATRIX_PATHS)
+   */
+  async setPushRuleByScope(scope: string, kind: string, ruleId: string, body: Record<string, unknown>): Promise<void> {
+    const client = this.getNotificationClient()
+    try {
+      const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
+      await client.http.authedRequest('PUT', path, undefined, body)
+      info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
+    } catch (err) {
+      error(`[MatrixNotification] 设置推送规则失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 删除推送规则 (使用 MATRIX_PATHS)
+   */
+  async deletePushRuleByScope(scope: string, kind: string, ruleId: string): Promise<void> {
+    const client = this.getNotificationClient()
+    try {
+      const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
+      await client.http.authedRequest('DELETE', path)
+      info(`[MatrixNotification] 删除推送规则成功: ${scope}/${kind}/${ruleId}`)
+    } catch (err) {
+      error(`[MatrixNotification] 删除推送规则失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 获取推送设备列表 (使用 MATRIX_PATHS)
+   */
+  async fetchPushers(): Promise<Array<Record<string, unknown>>> {
+    const client = this.getNotificationClient()
+    try {
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.NOTIFICATION.PUSHERS)
+      const response = result as { pushers?: Array<Record<string, unknown>> }
+      return response.pushers ?? []
+    } catch (err) {
+      error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 设置推送设备 (使用 MATRIX_PATHS)
+   */
+  async setPusherByBody(pusher: Record<string, unknown>): Promise<void> {
+    const client = this.getNotificationClient()
+    try {
+      await client.http.authedRequest('POST', MATRIX_PATHS.NOTIFICATION.PUSHERS + '/set', undefined, pusher)
+      info('[MatrixNotification] 设置推送设备成功')
+    } catch (err) {
+      error(`[MatrixNotification] 设置推送设备失败: ${err}`)
+      throw err
     }
   }
 

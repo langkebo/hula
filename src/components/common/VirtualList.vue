@@ -10,7 +10,7 @@
       <span class="text-(12px [--hula-text-tertiary])">{{ t('virtualList.allMessagesLoaded') }}</span>
     </n-flex>
     <n-flex v-if="isLoadingMore && !isLast" justify="center" class="box-border absolute-x-center pt-10px">
-      <img class="size-16px" src="@/assets/img/loading.svg" alt="" />
+      <img class="size-16px" src="@/assets/img/loading.svg" alt="加载中" />
       <span class="text-(12px [--hula-text-tertiary])">{{ t('virtualList.loading') }}</span>
     </n-flex>
     <div ref="phantomRef" class="virtual-list-phantom"></div>

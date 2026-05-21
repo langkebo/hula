@@ -1,4 +1,7 @@
 import type { AppError } from '@/common/errors'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('sdk-errors')
 
 type MatrixSdkError = Error & {
   errcode?: string
@@ -12,7 +15,9 @@ function newCorrelationId(): string {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID()
     }
-  } catch {}
+  } catch (err) {
+    logger.warn('SDK error classification failed:', err)
+  }
   return `corr-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`
 }
 

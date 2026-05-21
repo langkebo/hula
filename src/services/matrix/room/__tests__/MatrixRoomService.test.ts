@@ -319,55 +319,6 @@ describe('MatrixRoomService', () => {
     })
   })
 
-  describe('getDirectRooms', () => {
-    it('should parse direct room account data', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getAccountData: vi.fn(() => ({
-          getContent: vi.fn(() => ({
-            '@alice:example.com': ['!dm1:id', '!dm2:id'],
-            '@bob:example.com': ['!dm3:id', 1],
-            '@charlie:example.com': 'invalid'
-          }))
-        }))
-      } as unknown as MatrixClient)
-
-      await expect(matrixRoomService.getDirectRooms()).resolves.toEqual(
-        new Map([
-          ['@alice:example.com', ['!dm1:id', '!dm2:id']],
-          ['@bob:example.com', ['!dm3:id']]
-        ])
-      )
-    })
-
-    it('should return empty map when account data is missing', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getAccountData: vi.fn(() => null)
-      } as unknown as MatrixClient)
-
-      await expect(matrixRoomService.getDirectRooms()).resolves.toEqual(new Map())
-    })
-
-    it('should throw when reading direct rooms fails by default', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getAccountData: vi.fn(() => {
-          throw new Error('account data failed')
-        })
-      } as unknown as MatrixClient)
-
-      await expect(matrixRoomService.getDirectRooms()).rejects.toThrow('account data failed')
-    })
-
-    it('should return empty map when reading direct rooms fails and throwOnError is false', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getAccountData: vi.fn(() => {
-          throw new Error('account data failed')
-        })
-      } as unknown as MatrixClient)
-
-      await expect(matrixRoomService.getDirectRooms(false)).resolves.toEqual(new Map())
-    })
-  })
-
   describe('setDirectRoom', () => {
     it('should append new direct room and persist account data', async () => {
       const setAccountData = vi.fn().mockResolvedValue(undefined)
@@ -478,41 +429,44 @@ describe('MatrixRoomService', () => {
   })
 
   describe('translateText', () => {
-    it('should return translated text when request succeeds', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
+    it('should return translated text when backend proxy succeeds', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: {
+          authedRequest: vi.fn().mockResolvedValue({
+            translated_text: '你好',
+            detected_source_lang: 'en',
+            target_lang: 'zh-CN',
+            provider: 'youdao'
+          })
+        }
+      } as unknown as MatrixClient)
+
+      await expect(matrixRoomService.translateText('hello', 'zh-CN')).resolves.toBe('你好')
+    })
+
+    it('should fall back to Google Translate when backend proxy fails', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: {
+          authedRequest: vi.fn().mockRejectedValue(new Error('backend unavailable'))
+        }
+      } as unknown as MatrixClient)
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue([[['你好']]])
       } as unknown as Response)
 
-      await expect(matrixRoomService.translateText('hello')).resolves.toBe('你好')
+      await expect(matrixRoomService.translateText('hello', 'zh-CN')).resolves.toBe('你好')
     })
 
-    it('should return original text when translation response has no data', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue([])
-      } as unknown as Response)
-
-      await expect(matrixRoomService.translateText('hello')).resolves.toBe('hello')
-    })
-
-    it('should throw when translation request fails by default', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500
-      } as unknown as Response)
-
-      await expect(matrixRoomService.translateText('hello')).rejects.toThrow('翻译请求失败: 500')
-    })
-
-    it('should return original text when translation fails and throwOnError is false', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
+    it('should return original text when both backend and fallback fail and throwOnError is false', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: {
+          authedRequest: vi.fn().mockRejectedValue(new Error('backend unavailable'))
+        }
+      } as unknown as MatrixClient)
       globalThis.fetch = vi.fn().mockRejectedValue(new Error('network failed'))
 
-      await expect(matrixRoomService.translateText('hello', undefined, false)).resolves.toBe('hello')
+      await expect(matrixRoomService.translateText('hello', 'zh-CN')).resolves.toBe('hello')
     })
   })
 

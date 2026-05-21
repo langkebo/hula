@@ -1,5 +1,8 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('LifecycleService')
 
 /**
  * Room lifecycle domain service.
@@ -31,8 +34,8 @@ export class MatrixRoomLifecycleService {
             info(`[MatrixRoom] getDomain() 返回空，从 baseUrl 提取域名: ${hostname}`)
             return hostname
           }
-        } catch {
-          // URL 解析失败
+        } catch (err) {
+          logger.warn('URL parsing failed:', err)
         }
       }
 

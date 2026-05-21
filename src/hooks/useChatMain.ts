@@ -312,7 +312,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
 
         item.message.body.translatedText = { provider: settingStore.chatTranslateProvider || 'client', text: '' }
         try {
-          const translatedText = await roomStateService.translateText(content, settingStore.chatTranslateProvider)
+          const translatedText = await roomStateService.translateText(content)
           item.message.body.translatedText = {
             provider: settingStore.chatTranslateProvider || 'client',
             text: translatedText || content

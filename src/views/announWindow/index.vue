@@ -173,7 +173,7 @@
         <!-- 加载更多 -->
         <div v-if="announList.length > 0" class="w-full h-40px flex-center mt-10px">
           <!-- <n-button v-if="!isLast" class="bg-[--button-bg]" @click="handleLoadMore">加载更多</n-button> -->
-          <img v-if="isLoading" class="size-16px" src="@/assets/img/loading.svg" alt="" />
+          <img v-if="isLoading" class="size-16px" src="@/assets/img/loading.svg" alt="加载中" />
           <span v-if="isLast && !isLoading" class="text-[12px] color-[#909090]">
             {{ t('announcement.list.noMore') }}
           </span>

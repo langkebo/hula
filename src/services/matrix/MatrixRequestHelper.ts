@@ -1,6 +1,11 @@
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import { matrixClientService } from './MatrixClientService'
 
+/**
+ * @deprecated Use MatrixHttpClient for new code. This class will be merged into MatrixHttpClient
+ * in a future refactor. See A-1 in code review for details.
+ */
+
 export interface RequestOptions {
   throwOnError?: boolean
   logPrefix?: string

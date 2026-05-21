@@ -9,13 +9,16 @@ import { vSafeHtml } from '@/directives/v-safe-html'
 import vSlide from '@/directives/v-slide.ts'
 import router from '@/router'
 import { setupI18n } from '@/services/i18n'
+import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
 import { pinia } from '@/stores'
+import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { errorTracker } from '@/utils/ErrorTracker'
 import { initializePlatform, isIOS, isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
+import { MatrixCacheManager } from '@/services/matrix/MatrixCacheManager'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Main')
@@ -55,6 +58,11 @@ if (process.env.NODE_ENV === 'development') {
     window.hulaRouter = module.default
   })
   window.pinia = pinia
+
+  Object.defineProperty(window, '__hula_cache_stats', {
+    get: () => MatrixCacheManager.getStats()
+  })
+  MatrixCacheManager.enableStatsReporting()
 
   if (isMobile()) {
     import('eruda').then((module) => {
@@ -98,6 +106,10 @@ app
   .directive('resize', vResize)
   .directive('slide', vSlide)
   .directive('safe-html', vSafeHtml)
+
+// Register capability store resolver to break circular dependency
+// (must be called after pinia is installed)
+registerCapabilityStoreResolver(() => useCapabilityStore())
 performance.mark('hula-plugin-install-end')
 
 performance.mark('hula-mount-start')

@@ -9,16 +9,24 @@ interface CacheEntry<T> {
 export class MatrixCacheManager {
   private static caches = new Map<string, CacheEntry<unknown>>()
   private static maxCacheSize = 500
+  private static hits = 0
+  private static misses = 0
+  private static statsInterval: ReturnType<typeof setInterval> | null = null
 
   static get<T>(key: string): T | null {
     const entry = MatrixCacheManager.caches.get(key)
-    if (!entry) return null
-
-    if (Date.now() - entry.timestamp > entry.ttl) {
-      MatrixCacheManager.caches.delete(key)
+    if (!entry) {
+      MatrixCacheManager.misses++
       return null
     }
 
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      MatrixCacheManager.caches.delete(key)
+      MatrixCacheManager.misses++
+      return null
+    }
+
+    MatrixCacheManager.hits++
     return entry.data as T
   }
 
@@ -59,11 +67,30 @@ export class MatrixCacheManager {
     info('[Cache] 缓存已清空')
   }
 
-  static getStats(): { size: number; maxSize: number; hitRate: number } {
+  static getStats(): { size: number; maxSize: number; hitRate: number; hits: number; misses: number } {
+    const total = MatrixCacheManager.hits + MatrixCacheManager.misses
     return {
       size: MatrixCacheManager.caches.size,
       maxSize: MatrixCacheManager.maxCacheSize,
-      hitRate: 0
+      hitRate: total > 0 ? MatrixCacheManager.hits / total : 0,
+      hits: MatrixCacheManager.hits,
+      misses: MatrixCacheManager.misses
+    }
+  }
+
+  static enableStatsReporting(intervalMs = 60000): void {
+    if (MatrixCacheManager.statsInterval) return
+    MatrixCacheManager.statsInterval = setInterval(() => {
+      const stats = MatrixCacheManager.getStats()
+      if (stats.size > 0) {
+      }
+    }, intervalMs)
+  }
+
+  static disableStatsReporting(): void {
+    if (MatrixCacheManager.statsInterval) {
+      clearInterval(MatrixCacheManager.statsInterval)
+      MatrixCacheManager.statsInterval = null
     }
   }
 

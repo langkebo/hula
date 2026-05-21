@@ -51,15 +51,15 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
   align-items: center;
   height: 100vh;
   padding: 24px;
-  background: var(--n-body-color, #f7f8fa);
+  background: var(--hula-surface-app);
 }
 
 .dynamic-shell {
   width: min(840px, 100%);
   padding: 32px;
   border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 10px 30px rgb(15 23 42 / 8%);
+  background: var(--hula-surface-panel);
+  box-shadow: var(--hula-shadow-lg);
 }
 
 .dynamic-shell h1 {
@@ -69,13 +69,13 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
 
 .dynamic-shell p {
   margin: 0;
-  color: #52606d;
+  color: var(--hula-text-secondary);
   line-height: 1.6;
 }
 
 .dynamic-meta {
   margin-top: 16px;
-  color: #1d4ed8;
+  color: var(--hula-color-info-500);
   font-size: 14px;
 }
 
@@ -88,9 +88,9 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
 
 .dynamic-card {
   padding: 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--hula-border-default);
   border-radius: 16px;
-  background: #f8fafc;
+  background: var(--hula-surface-panel-muted);
 }
 
 .dynamic-card__header {
@@ -107,7 +107,7 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
 }
 
 .dynamic-card__header span {
-  color: #475569;
+  color: var(--hula-text-secondary);
   font-size: 13px;
 }
 </style>

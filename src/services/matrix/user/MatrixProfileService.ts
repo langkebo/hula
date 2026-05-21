@@ -1,4 +1,7 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MatrixProfile')
+
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { Ref } from 'vue'
 import { ref } from 'vue'
@@ -17,7 +20,7 @@ interface UploadContentResponse {
 class MatrixProfileService extends BaseMatrixService {
   initialize(client: MatrixClient): void {
     this.setFallbackClient(client)
-    info('[ProfileService] 服务已初始化')
+    logger.info('服务已初始化')
   }
 
   async getProfile(userId: string): Promise<MatrixProfile> {
@@ -32,9 +35,9 @@ class MatrixProfileService extends BaseMatrixService {
     } catch (err: unknown) {
       // 13.4.3: 降级处理 404 (M_NOT_FOUND)，这在 Matrix 中是常见现象（例如用户未设置资料或用户不存在）
       if ((err as { httpStatus?: number })?.httpStatus === 404 || String(err).includes('404')) {
-        warn(`[ProfileService] 用户资料不存在: ${userId}`)
+        logger.warn(`用户资料不存在: ${userId}`)
       } else {
-        error(`[ProfileService] 获取资料失败: ${userId}, ${err}`)
+        logger.error(`获取资料失败: ${userId}, ${err}`)
       }
       throw err
     }
@@ -45,7 +48,7 @@ class MatrixProfileService extends BaseMatrixService {
       const profile = await this.getProfile(userId)
       return profile.displayname
     } catch (err) {
-      warn(`[ProfileService] 获取昵称失败: ${userId}, ${err}`)
+      logger.warn(`获取昵称失败: ${userId}, ${err}`)
       return undefined
     }
   }
@@ -55,7 +58,7 @@ class MatrixProfileService extends BaseMatrixService {
       const profile = await this.getProfile(userId)
       return profile.avatarUrl
     } catch (err) {
-      warn(`[ProfileService] 获取头像失败: ${userId}, ${err}`)
+      logger.warn(`获取头像失败: ${userId}, ${err}`)
       return undefined
     }
   }
@@ -64,9 +67,13 @@ class MatrixProfileService extends BaseMatrixService {
     try {
       const client = this.getClient()
       await client.setDisplayName(displayName)
-      info('[ProfileService] 更新昵称成功')
+      logger.info(`设置显示名称成功: ${displayName}`)
     } catch (err) {
-      error(`[ProfileService] 更新昵称失败: ${err}`)
+      if (err instanceof Error && err.name === 'AbortError') {
+        logger.warn('设置显示名称被中止')
+      } else {
+        logger.error(`设置显示名称失败: ${err}`)
+      }
       throw err
     }
   }
@@ -75,9 +82,9 @@ class MatrixProfileService extends BaseMatrixService {
     try {
       const client = this.getClient()
       await client.setAvatarUrl(avatarUrl)
-      info('[ProfileService] 更新头像成功')
+      logger.info(`设置头像成功: ${avatarUrl}`)
     } catch (err) {
-      error(`[ProfileService] 更新头像失败: ${err}`)
+      logger.error(`设置头像失败: ${err}`)
       throw err
     }
   }
@@ -91,10 +98,10 @@ class MatrixProfileService extends BaseMatrixService {
       })) as UploadContentResponse
 
       await client.setAvatarUrl(response.content_uri)
-      info('[ProfileService] 上传头像成功')
+      logger.info('上传头像成功')
       return response.content_uri
     } catch (err) {
-      error(`[ProfileService] 上传头像失败: ${err}`)
+      logger.error(`上传头像失败: ${err}`)
       throw err
     }
   }

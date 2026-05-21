@@ -5,6 +5,7 @@ import { TauriCommand } from '@/enums'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
+import { AdminModerationService } from './AdminModerationService'
 import type {
   AdminReport,
   ContentFilter,
@@ -41,9 +42,12 @@ import type {
   UserReputation
 } from './AdminTypes'
 import { AdminApplicationService } from './ApplicationService'
+import { AdminFederationService } from './FederationService'
 import { AdminMediaService } from './MediaService'
 import { AdminNotificationService } from './NotificationService'
+import { AdminQuotaService } from './QuotaService'
 import { AdminRegistrationTokensService } from './RegistrationTokensService'
+import { AdminReportService } from './ReportService'
 import { AdminRetentionService } from './RetentionService'
 import { AdminRoomService } from './RoomService'
 import { AdminSecurityService } from './SecurityService'
@@ -87,51 +91,10 @@ export type {
   UserReputation
 } from './AdminTypes'
 
-interface ModerationManager {
-  start(): Promise<void>
-  stop(): void
-  on(event: string, callback: (...args: unknown[]) => void): void
-  removeAllListeners(): void
-  getReports(filters?: ReportFilters): Promise<Report[]>
-  resolveReport(reportId: string, request: ResolveReportRequest): Promise<void>
-  getUserReputation(userId: string): Promise<UserReputation>
-  setUserReputation(userId: string, score: number): Promise<void>
-  getContentFilters(): Promise<ContentFilter[]>
-  addContentFilter(filter: CreateContentFilterRequest): Promise<ContentFilter>
-  removeContentFilter(filterId: string): Promise<void>
-}
-
-interface QuotaManager {
-  checkQuota(): Promise<QuotaStatus>
-  getQuotaStats(): Promise<QuotaStats>
-  getUploadSizeLimit?(throwOnError?: boolean): Promise<number>
-  getUploadFileSizeLimit?(throwOnError?: boolean): Promise<number>
-  getUserStorageUsage?(throwOnError?: boolean): Promise<{ size: number; ntFiles: number } | null>
-  hasStorageSpace?(requiredBytes: number): Promise<boolean>
-  getQuotaAlerts(): Promise<QuotaAlert[]>
-  getQuotaConfigs(): Promise<QuotaConfig[]>
-  setUserQuota(userId: string, quota: number): Promise<void>
-  getServerQuota(): Promise<ServerQuota>
-}
-
-const ModerationEvent = {
-  ReportCreated: 'Moderation.report.created',
-  ReportResolved: 'Moderation.report.resolved',
-  UserReputationChanged: 'Moderation.reputation.changed',
-  ContentFilterAdded: 'Moderation.filter.added',
-  ContentFilterRemoved: 'Moderation.filter.removed',
-  Error: 'Moderation.error'
-} as const
-
 class AdminFacadeService extends BaseMatrixService {
   private adminVerifiedAt = 0
   private readonly ADMIN_VERIFY_INTERVAL = 2 * 60 * 1000
   private cachedAdminStatus = false
-
-  private moderationManager: ModerationManager | null = null
-  private observedClient: ReturnType<typeof this.getClient> | null = null
-  private managerStarted = false
-  private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
 
   readonly registrationTokens = new AdminRegistrationTokensService(() => this.sdkAdmin())
   readonly users = new AdminUserService(
@@ -146,8 +109,24 @@ class AdminFacadeService extends BaseMatrixService {
   readonly server = new AdminServerService(() => this.sdkAdmin())
   readonly media = new AdminMediaService(() => this.sdkAdmin())
   readonly notifications = new AdminNotificationService(() => this.sdkAdmin())
-  readonly retention = new AdminRetentionService(() => this.sdkAdmin())
+  readonly retention = new AdminRetentionService(
+    () => this.sdkAdmin(),
+    () => this.getClient()
+  )
   readonly applications = new AdminApplicationService(() => this.sdkAdmin())
+  readonly reports = new AdminReportService(
+    () => this.sdkAdmin(),
+    () => this.getClient()
+  )
+  readonly quota = new AdminQuotaService(
+    () => this.sdkAdmin(),
+    () => this.getClient()
+  )
+  readonly federation = new AdminFederationService(
+    () => this.sdkAdmin(),
+    () => this.getClient()
+  )
+  readonly moderation = new AdminModerationService(() => this.getClient())
 
   initialize(): void {
     info('[Admin] 服务已初始化')
@@ -224,119 +203,18 @@ class AdminFacadeService extends BaseMatrixService {
     return manager
   }
 
-  private get quotaManager(): QuotaManager {
+  private async adminRequest<TResponse>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    body?: Record<string, unknown>
+  ): Promise<TResponse> {
     const client = this.getClient()
-    const manager =
-      typeof client.getMediaQuotaManager === 'function'
-        ? (client.getMediaQuotaManager() as QuotaManager)
-        : ((client as unknown as { quotaManager?: QuotaManager }).quotaManager as QuotaManager | undefined)
-    if (!manager) {
-      throw new Error(this.t('matrix_error.admin.quota_manager_not_initialized'))
-    }
-    return manager
-  }
-
-  private async ensureModerationManager(throwOnMissing = true): Promise<ModerationManager | null> {
-    const client = this.getClient()
-    const manager = (client as unknown as { moderationManager?: ModerationManager }).moderationManager ?? null
-    if (!manager) {
-      if (throwOnMissing) {
-        throw new Error(this.t('matrix_error.admin.moderation_manager_not_initialized'))
-      }
-      return null
-    }
-
-    if (this.observedClient !== client || this.moderationManager !== manager) {
-      if (this.moderationManager && this.moderationManager !== manager) {
-        this.moderationManager.stop()
-        this.moderationManager.removeAllListeners()
-      }
-
-      this.observedClient = client
-      this.moderationManager = manager
-      this.managerStarted = false
-      this.setupModerationEventListeners(manager)
-    }
-
-    if (!this.managerStarted) {
-      await manager.start()
-      this.managerStarted = true
-    }
-
-    return manager
-  }
-
-  private setupModerationEventListeners(manager: ModerationManager): void {
-    manager.removeAllListeners()
-
-    manager.on(ModerationEvent.ReportCreated, (...args: unknown[]) => {
-      const report = args[0] as Report
-      this.emitModerationEvent('reportCreated', report)
-      info(`[Admin] 新举报: ${report.id}`)
-    })
-
-    manager.on(ModerationEvent.ReportResolved, (...args: unknown[]) => {
-      const report = args[0] as Report
-      this.emitModerationEvent('reportResolved', report)
-      info(`[Admin] 举报已处理: ${report.id}`)
-    })
-
-    manager.on(ModerationEvent.UserReputationChanged, (...args: unknown[]) => {
-      const reputation = args[0] as UserReputation
-      this.emitModerationEvent('reputationChanged', reputation)
-      info(`[Admin] 用户信誉变更: ${reputation.userId}`)
-    })
-
-    manager.on(ModerationEvent.ContentFilterAdded, (...args: unknown[]) => {
-      const filter = args[0] as ContentFilter
-      this.emitModerationEvent('filterAdded', filter)
-      info(`[Admin] 内容过滤器添加: ${filter.id}`)
-    })
-
-    manager.on(ModerationEvent.ContentFilterRemoved, (...args: unknown[]) => {
-      const filterId = args[0] as string
-      this.emitModerationEvent('filterRemoved', filterId)
-      info(`[Admin] 内容过滤器移除: ${filterId}`)
-    })
-
-    manager.on(ModerationEvent.Error, (...args: unknown[]) => {
-      const err = args[0] as Error
-      this.emitModerationEvent('error', err)
-      error(`[Admin] Moderation 错误: ${err.message}`)
-    })
-  }
-
-  private emitModerationEvent(event: string, data?: unknown): void {
-    const listeners = this.eventListeners.get(event)
-    if (listeners) {
-      listeners.forEach((callback) => callback(data))
-    }
-  }
-
-  onModerationEvent(event: string, callback: (...args: unknown[]) => void): void {
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, new Set())
-    }
-    this.eventListeners.get(event)!.add(callback)
-  }
-
-  offModerationEvent(event: string, callback: (...args: unknown[]) => void): void {
-    const listeners = this.eventListeners.get(event)
-    if (listeners) {
-      listeners.delete(callback)
-    }
-  }
-
-  stopModeration(): void {
-    if (this.moderationManager) {
-      this.moderationManager.stop()
-      this.moderationManager.removeAllListeners()
-      this.moderationManager = null
-    }
-    this.observedClient = null
-    this.managerStarted = false
-    this.eventListeners.clear()
-    info('[Admin] Moderation 已停止')
+    return client.http.authedRequest(
+      method,
+      `${MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE}${path}`,
+      undefined,
+      method === 'GET' || method === 'DELETE' ? undefined : body
+    ) as Promise<TResponse>
   }
 
   // ==================== Server Management ====================
@@ -359,6 +237,10 @@ class AdminFacadeService extends BaseMatrixService {
 
   async getServerConfig(): Promise<Record<string, unknown> | null> {
     return this.server.getServerConfig()
+  }
+
+  async updateServerConfig(config: Record<string, unknown>): Promise<void> {
+    return this.server.updateServerConfig(config)
   }
 
   // ==================== User Management ====================
@@ -489,102 +371,31 @@ class AdminFacadeService extends BaseMatrixService {
   // ==================== Federation Management ====================
 
   async getFederationDestinations(): Promise<FederationDestination[]> {
-    return this.security.getFederationDestinations()
+    return this.federation.getFederationDestinations()
   }
 
   async getFederationDestination(destination: string): Promise<FederationDestination | null> {
-    return this.security.getFederationDestination(destination)
+    return this.federation.getFederationDestination(destination)
   }
 
   async resetFederationConnection(destination: string): Promise<void> {
-    return this.security.resetFederationConnection(destination)
-  }
-
-  // ==================== Federation Blacklist ====================
-
-  private toBlacklistEntry(value: unknown): FederationBlacklistEntry | null {
-    if (typeof value !== 'object' || value === null) return null
-    const record = value as Record<string, unknown>
-    const domain =
-      typeof record.domain === 'string'
-        ? record.domain
-        : typeof record.server_name === 'string'
-          ? record.server_name
-          : null
-    if (!domain) return null
-    return {
-      domain,
-      reason: typeof record.reason === 'string' ? record.reason : undefined,
-      addedBy: typeof record.added_by === 'string' ? record.added_by : undefined,
-      addedAt: typeof record.added_at === 'number' ? record.added_at : undefined
-    }
-  }
-
-  private async adminRequest<TResponse>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    body?: Record<string, unknown>
-  ): Promise<TResponse> {
-    const client = this.getClient()
-    return client.http.authedRequest(
-      method,
-      `${MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE}${path}`,
-      undefined,
-      method === 'GET' || method === 'DELETE' ? undefined : body
-    ) as Promise<TResponse>
+    return this.federation.resetFederationConnection(destination)
   }
 
   async getFederationBlacklist(): Promise<FederationBlacklistEntry[]> {
-    try {
-      const response = await this.adminRequest<{ blacklist?: unknown[]; servers?: unknown[] }>(
-        'GET',
-        '/federation/blacklist'
-      )
-      const items = Array.isArray(response.blacklist)
-        ? response.blacklist
-        : Array.isArray(response.servers)
-          ? response.servers
-          : []
-      return items
-        .map((item) => this.toBlacklistEntry(item))
-        .filter((entry): entry is FederationBlacklistEntry => entry !== null)
-    } catch (err) {
-      error(`[Admin] 获取联邦黑名单失败: ${err}`)
-      return []
-    }
+    return this.federation.getFederationBlacklist()
   }
 
   async addToFederationBlacklist(domain: string, reason?: string): Promise<boolean> {
-    try {
-      await this.adminRequest('POST', `/federation/blacklist/${encodeURIComponent(domain)}`, { reason })
-      info(`[Admin] 添加联邦黑名单成功: ${domain}`)
-      return true
-    } catch (err) {
-      error(`[Admin] 添加联邦黑名单失败: ${err}`)
-      return false
-    }
+    return this.federation.addToFederationBlacklist(domain, reason)
   }
 
   async removeFromFederationBlacklist(domain: string): Promise<boolean> {
-    try {
-      await this.adminRequest('DELETE', `/federation/blacklist/${encodeURIComponent(domain)}`)
-      info(`[Admin] 删除联邦黑名单成功: ${domain}`)
-      return true
-    } catch (err) {
-      error(`[Admin] 删除联邦黑名单失败: ${err}`)
-      return false
-    }
+    return this.federation.removeFromFederationBlacklist(domain)
   }
 
   async getFederationStatus(): Promise<Record<string, unknown>> {
-    try {
-      const response = await this.adminRequest<Record<string, unknown>>('GET', '/federation/status')
-      info('[Admin] 获取联邦状态成功')
-      return response
-    } catch (err) {
-      error(`[Admin] 获取联邦状态失败: ${err}`)
-      return {}
-    }
+    return this.federation.getFederationStatus()
   }
 
   // ==================== Notification Management ====================
@@ -630,107 +441,23 @@ class AdminFacadeService extends BaseMatrixService {
   // ==================== Report ====================
 
   async reportEvent(request: ReportRequest): Promise<void> {
-    const client = this.getClient()
-    const { roomId, eventId, reason, explanation } = request
-    try {
-      await client.reportEvent(roomId, eventId, reason, explanation || '')
-      info(`[Admin] 举报成功: ${roomId}/${eventId}`)
-    } catch (err) {
-      error(`[Admin] 举报失败: ${err}`)
-      throw err
-    }
+    return this.reports.reportEvent(request)
   }
 
   async reportUser(userId: string, reason: string, explanation?: string): Promise<void> {
-    const client = this.getClient()
-    try {
-      const rooms = client.getRooms()
-      for (const room of rooms) {
-        if (room.timeline.length > 0) {
-          for (const event of room.timeline) {
-            const content = event.getContent()
-            if (content && (event as unknown as { sender?: string }).sender === userId) {
-              const eventId = (event as unknown as { event_id?: string }).event_id
-              const roomId = (room as unknown as { roomId?: string }).roomId
-              if (eventId && roomId) {
-                await this.reportEvent({ roomId, eventId, reason, explanation })
-                info(`[Admin] 举报用户成功: ${userId}`)
-                return
-              }
-            }
-          }
-        }
-      }
-      info(`[Admin] 未找到用户 ${userId} 的可举报事件`)
-    } catch (err) {
-      error(`[Admin] 举报用户失败: ${err}`)
-      throw err
-    }
+    return this.reports.reportUser(userId, reason, explanation)
   }
 
   async reportRoom(roomId: string, reason: string, description?: string): Promise<ReportRoomResponse | null> {
-    const client = this.getClient()
-    try {
-      const result = (await client.http.authedRequest(
-        'POST',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/report`,
-        undefined,
-        { reason, description }
-      )) as ReportRoomResponse
-      info(`[Admin] 举报房间成功: ${roomId}, report_id=${result.report_id}`)
-      return result
-    } catch (err) {
-      error(`[Admin] v3 举报房间失败，回退到事件举报: ${err}`)
-      try {
-        const room = client.getRoom(roomId)
-        if (room && room.timeline.length > 0) {
-          const event = room.timeline[0]
-          await this.reportEvent({
-            roomId,
-            eventId: event.getId() || '',
-            reason,
-            explanation: description
-          })
-          return { report_id: '' }
-        }
-      } catch (fallbackErr) {
-        error(`[Admin] 回退举报房间也失败: ${fallbackErr}`)
-      }
-      throw err
-    }
+    return this.reports.reportRoom(roomId, reason, description)
   }
 
   async scoreReport(roomId: string, eventId: string, score: number): Promise<void> {
-    const client = this.getClient()
-    if (score < -100 || score > 0) {
-      throw new Error(this.t('matrix_error.admin.score_range_invalid'))
-    }
-    try {
-      await client.http.authedRequest(
-        'PUT',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/score`,
-        undefined,
-        { score }
-      )
-      info(`[Admin] 举报评分成功: ${roomId}/${eventId}, score=${score}`)
-    } catch (err) {
-      error(`[Admin] 举报评分失败: ${err}`)
-      throw err
-    }
+    return this.reports.scoreReport(roomId, eventId, score)
   }
 
   async getScannerInfo(roomId: string, eventId: string): Promise<ScannerInfo | null> {
-    const client = this.getClient()
-    try {
-      const result = (await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO(roomId, eventId)
-      )) as ScannerInfo
-      return result
-    } catch (err) {
-      error(`[Admin] 获取扫描器信息失败: ${err}`)
-      return null
-    }
+    return this.reports.getScannerInfo(roomId, eventId)
   }
 
   async getAdminReports(
@@ -738,306 +465,117 @@ class AdminFacadeService extends BaseMatrixService {
     limit: number = 50,
     from?: string
   ): Promise<{ reports: AdminReport[]; next_batch?: string }> {
-    const client = this.getClient()
-    try {
-      const queryParams: Record<string, string> = { limit: String(limit) }
-      if (roomId) queryParams.room_id = roomId
-      if (from) queryParams.from = from
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ADMIN.REPORTS, queryParams)
-      return {
-        reports: (result as { reports?: AdminReport[] }).reports ?? [],
-        next_batch: (result as { next_batch?: string }).next_batch
-      }
-    } catch (err) {
-      error(`[Admin] 获取管理端报表失败: ${err}`)
-      return { reports: [] }
-    }
+    return this.reports.getAdminReports(roomId, limit, from)
   }
 
   async getAdminReport(reportId: string): Promise<AdminReport | null> {
-    const client = this.getClient()
-    try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
-      return result as AdminReport
-    } catch (err) {
-      error(`[Admin] 获取报表详情失败: ${err}`)
-      return null
-    }
+    return this.reports.getAdminReport(reportId)
   }
 
   async dismissReport(reportId: string): Promise<boolean> {
-    const client = this.getClient()
-    try {
-      await client.http.authedRequest('DELETE', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
-      info(`[Admin] 驳回报表成功: ${reportId}`)
-      return true
-    } catch (err) {
-      error(`[Admin] 驳回报表失败: ${err}`)
-      return false
-    }
+    return this.reports.dismissReport(reportId)
   }
 
   // ==================== Moderation ====================
 
+  onModerationEvent(event: string, callback: (...args: unknown[]) => void): void {
+    this.moderation.onModerationEvent(event, callback)
+  }
+
+  offModerationEvent(event: string, callback: (...args: unknown[]) => void): void {
+    this.moderation.offModerationEvent(event, callback)
+  }
+
+  stopModeration(): void {
+    this.moderation.stopModeration()
+  }
+
   async getModerationReports(filters?: ReportFilters): Promise<Report[]> {
-    const manager = (await this.ensureModerationManager())!
-    try {
-      const reports = await manager.getReports(filters)
-      info(`[Admin] 获取举报列表: ${reports.length} 条`)
-      return reports
-    } catch (err) {
-      error(`[Admin] 获取举报列表失败: ${err}`)
-      throw err
-    }
+    return this.moderation.getModerationReports(filters)
   }
 
   async resolveModerationReport(reportId: string, request: ResolveReportRequest): Promise<void> {
-    const manager = (await this.ensureModerationManager())!
-    try {
-      await manager.resolveReport(reportId, request)
-      info(`[Admin] 处理举报成功: ${reportId} -> ${request.action}`)
-    } catch (err) {
-      error(`[Admin] 处理举报失败: ${err}`)
-      throw err
-    }
+    return this.moderation.resolveModerationReport(reportId, request)
   }
 
   async getUserReputation(userId: string): Promise<UserReputation> {
-    const manager = (await this.ensureModerationManager())!
-    try {
-      const reputation = await manager.getUserReputation(userId)
-      info(`[Admin] 获取用户信誉: ${userId} -> ${reputation.level}`)
-      return reputation
-    } catch (err) {
-      error(`[Admin] 获取用户信誉失败: ${err}`)
-      throw err
-    }
+    return this.moderation.getUserReputation(userId)
   }
 
   async setUserReputation(userId: string, score: number): Promise<void> {
-    const manager = (await this.ensureModerationManager())!
-    try {
-      await manager.setUserReputation(userId, score)
-      info(`[Admin] 设置用户信誉: ${userId} -> ${score}`)
-    } catch (err) {
-      error(`[Admin] 设置用户信誉失败: ${err}`)
-      throw err
-    }
+    return this.moderation.setUserReputation(userId, score)
   }
 
   async getContentFilters(): Promise<ContentFilter[]> {
-    const manager = (await this.ensureModerationManager())!
-    try {
-      const filters = await manager.getContentFilters()
-      info(`[Admin] 获取内容过滤器: ${filters.length} 条`)
-      return filters
-    } catch (err) {
-      error(`[Admin] 获取内容过滤器失败: ${err}`)
-      throw err
-    }
+    return this.moderation.getContentFilters()
   }
 
   async addContentFilter(filter: CreateContentFilterRequest): Promise<ContentFilter> {
-    const manager = (await this.ensureModerationManager())!
-    try {
-      const result = await manager.addContentFilter(filter)
-      info(`[Admin] 添加内容过滤器: ${result.id}`)
-      return result
-    } catch (err) {
-      error(`[Admin] 添加内容过滤器失败: ${err}`)
-      throw err
-    }
+    return this.moderation.addContentFilter(filter)
   }
 
   async removeContentFilter(filterId: string): Promise<void> {
-    const manager = (await this.ensureModerationManager())!
-    try {
-      await manager.removeContentFilter(filterId)
-      info(`[Admin] 移除内容过滤器: ${filterId}`)
-    } catch (err) {
-      error(`[Admin] 移除内容过滤器失败: ${err}`)
-      throw err
-    }
+    return this.moderation.removeContentFilter(filterId)
   }
 
   // ==================== Quota ====================
 
   async checkQuota(): Promise<QuotaStatus> {
-    try {
-      const status = await this.quotaManager.checkQuota()
-      info('[Admin] 配额检查完成')
-      return status
-    } catch (err) {
-      error(`[Admin] 配额检查失败: ${err}`)
-      throw err
-    }
+    return this.quota.checkQuota()
   }
 
   async getQuotaStats(): Promise<QuotaStats> {
-    try {
-      const stats = await this.quotaManager.getQuotaStats()
-      info('[Admin] 获取配额统计成功')
-      return stats
-    } catch (err) {
-      error(`[Admin] 获取配额统计失败: ${err}`)
-      throw err
-    }
+    return this.quota.getQuotaStats()
   }
 
   async getQuotaAlerts(): Promise<QuotaAlert[]> {
-    try {
-      const alerts = await this.quotaManager.getQuotaAlerts()
-      info(`[Admin] 获取配额告警成功: ${alerts.length} 条`)
-      return alerts
-    } catch (err) {
-      error(`[Admin] 获取配额告警失败: ${err}`)
-      throw err
-    }
+    return this.quota.getQuotaAlerts()
   }
 
   async getQuotaConfigs(): Promise<QuotaConfig[]> {
-    try {
-      const configs = await this.quotaManager.getQuotaConfigs()
-      info('[Admin] 获取配额配置成功')
-      return configs
-    } catch (err) {
-      error(`[Admin] 获取配额配置失败: ${err}`)
-      throw err
-    }
+    return this.quota.getQuotaConfigs()
   }
 
   async setUserQuota(userId: string, quota: number): Promise<void> {
-    try {
-      await this.quotaManager.setUserQuota(userId, quota)
-      info(`[Admin] 设置用户配额成功: ${userId} -> ${quota}`)
-    } catch (err) {
-      error(`[Admin] 设置用户配额失败: ${err}`)
-      throw err
-    }
+    return this.quota.setUserQuota(userId, quota)
   }
 
   async getServerQuota(): Promise<ServerQuota> {
-    try {
-      const serverQuota = await this.quotaManager.getServerQuota()
-      info('[Admin] 获取服务器配额成功')
-      return serverQuota
-    } catch (err) {
-      error(`[Admin] 获取服务器配额失败: ${err}`)
-      throw err
-    }
+    return this.quota.getServerQuota()
   }
 
   async getUploadSizeLimit(throwOnError = true): Promise<number> {
-    try {
-      if (!this.quotaManager.getUploadSizeLimit) {
-        throw new Error(this.t('matrix_error.admin.upload_size_limit_unavailable'))
-      }
-      const limit = await this.quotaManager.getUploadSizeLimit(throwOnError)
-      info(`[Admin] 获取上传大小限制成功: ${limit}`)
-      return limit
-    } catch (err) {
-      error(`[Admin] 获取上传大小限制失败: ${err}`)
-      if (throwOnError) throw err
-      return 10 * 1024 * 1024
-    }
+    return this.quota.getUploadSizeLimit(throwOnError)
   }
 
   async getUploadFileSizeLimit(throwOnError = true): Promise<number> {
-    try {
-      if (!this.quotaManager.getUploadFileSizeLimit) {
-        throw new Error(this.t('matrix_error.admin.upload_file_size_limit_unavailable'))
-      }
-      const limit = await this.quotaManager.getUploadFileSizeLimit(throwOnError)
-      info(`[Admin] 获取文件上传大小限制成功: ${limit}`)
-      return limit
-    } catch (err) {
-      error(`[Admin] 获取文件上传大小限制失败: ${err}`)
-      if (throwOnError) throw err
-      return 10 * 1024 * 1024
-    }
+    return this.quota.getUploadFileSizeLimit(throwOnError)
   }
 
   async getUserStorageUsage(throwOnError = true): Promise<{ size: number; ntFiles: number } | null> {
-    try {
-      if (!this.quotaManager.getUserStorageUsage) {
-        throw new Error(this.t('matrix_error.admin.user_storage_usage_unavailable'))
-      }
-      const usage = await this.quotaManager.getUserStorageUsage(throwOnError)
-      info(`[Admin] 获取用户存储使用量成功: ${usage?.size ?? 0}`)
-      return usage
-    } catch (err) {
-      error(`[Admin] 获取用户存储使用量失败: ${err}`)
-      if (throwOnError) throw err
-      return null
-    }
+    return this.quota.getUserStorageUsage(throwOnError)
   }
 
   async hasStorageSpace(requiredBytes: number): Promise<boolean> {
-    try {
-      if (!this.quotaManager.hasStorageSpace) {
-        throw new Error(this.t('matrix_error.admin.has_storage_space_unavailable'))
-      }
-      const result = await this.quotaManager.hasStorageSpace(requiredBytes)
-      info(`[Admin] 检查存储空间成功: ${requiredBytes} -> ${result}`)
-      return result
-    } catch (err) {
-      error(`[Admin] 检查存储空间失败: ${err}`)
-      return true
-    }
+    return this.quota.hasStorageSpace(requiredBytes)
   }
 
   // ==================== Retention (client API) ====================
 
   async getRoomRetention(roomId: string): Promise<RoomRetention> {
-    const client = this.getClient()
-    try {
-      const policy = await client.getRoomStateEvent(roomId, 'm.room.retention', '')
-      return {
-        roomId,
-        policy: policy
-          ? {
-              min_lifetime: policy.min_lifetime as number | undefined,
-              max_lifetime: policy.max_lifetime as number | undefined
-            }
-          : undefined
-      }
-    } catch (err) {
-      error(`[Admin] 获取保留策略失败: ${err}`)
-      return { roomId }
-    }
+    return this.retention.getRoomRetention(roomId)
   }
 
   async setRoomRetention(roomId: string, policy: RetentionPolicy): Promise<void> {
-    const client = this.getClient()
-    try {
-      await client.sendStateEvent(roomId, 'm.room.retention', policy, '')
-      info(`[Admin] 设置保留策略成功: ${roomId}`)
-    } catch (err) {
-      error(`[Admin] 设置保留策略失败: ${err}`)
-      throw err
-    }
+    return this.retention.setRoomRetention(roomId, policy)
   }
 
   async deleteRoomRetention(roomId: string): Promise<void> {
-    const client = this.getClient()
-    try {
-      await client.redact(roomId, '')
-      info(`[Admin] 删除保留策略成功: ${roomId}`)
-    } catch (err) {
-      error(`[Admin] 删除保留策略失败: ${err}`)
-      throw err
-    }
+    return this.retention.deleteRoomRetention(roomId)
   }
 
   async getDefaultRetention(): Promise<RetentionPolicy | null> {
-    const client = this.getClient()
-    try {
-      const config = await client.getServerRetention()
-      return config || null
-    } catch (err) {
-      error(`[Admin] 获取默认保留策略失败: ${err}`)
-      return null
-    }
+    return this.retention.getDefaultRetention()
   }
 
   // ==================== Domain Methods (from AdminFacadeDomainMethods) ====================

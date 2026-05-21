@@ -12,6 +12,7 @@ declare global {
     hulaUserStore: any
     hulaRouter: any
     pinia: any
+    __hula_cache_stats?: { size: number; maxSize: number; hitRate: number; hits: number; misses: number }
   }
 }
 

@@ -40,6 +40,34 @@ export class MatrixRoomPinsService extends BaseMatrixService {
     }
   }
 
+  async pinEvent(roomId: string, eventId: string): Promise<void> {
+    const client = this.getClient()
+    try {
+      await client.http.authedRequest(
+        'POST',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/pinned_events/${encodeURIComponent(eventId)}`
+      )
+      info(`[MatrixRoom] 置顶事件成功: ${roomId}/${eventId}`)
+    } catch (err) {
+      error(`[MatrixRoom] 置顶事件失败: ${err}`)
+      throw err
+    }
+  }
+
+  async unpinEvent(roomId: string, eventId: string): Promise<void> {
+    const client = this.getClient()
+    try {
+      await client.http.authedRequest(
+        'DELETE',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/pinned_events/${encodeURIComponent(eventId)}`
+      )
+      info(`[MatrixRoom] 取消置顶事件成功: ${roomId}/${eventId}`)
+    } catch (err) {
+      error(`[MatrixRoom] 取消置顶事件失败: ${err}`)
+      throw err
+    }
+  }
+
   async getStickyEvents(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {

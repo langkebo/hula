@@ -4,7 +4,7 @@
     <div class="flex flex-col flex-1 items-center px-15px">
       <div class="flex w-full flex-1 flex-col rounded-15px bg-white pt-40% items-center gap-20px">
         <div class="flex flex-col items-center gap-15px">
-          <img class="w-100px h-100px" :src="qrCodeIcon" alt="" />
+          <img class="w-100px h-100px" :src="qrCodeIcon" alt="二维码" />
           <div class="text-20px font-bold text-[--hula-text-primary]">
             登录
             <span class="text-[--hula-color-primary-500]">{{ props.deviceType }}</span>

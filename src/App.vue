@@ -32,9 +32,10 @@ import { exit } from '@tauri-apps/plugin-process'
 import ConnectionStatusBanner from '@/components/common/ConnectionStatusBanner.vue'
 import GlobalAriaLive from '@/components/common/GlobalAriaLive.vue'
 import NetworkStatusBar from '@/components/common/NetworkStatusBar.vue'
+import { useWsEventHandler } from '@/composables/app/useWsEventHandler'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
-import { CallTypeEnum, ChangeTypeEnum, EventEnum, MittEnum, OnlineEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
+import { EventEnum, MittEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
@@ -115,18 +116,11 @@ import SplashScreen from '@/components/common/SplashScreen.vue'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { updateSettings } from '@/services/tauriCommand.ts'
-import type { MarkItemType, RevokedMsgType, UserItem } from '@/services/types.ts'
-import {
-  type LoginSuccessResType,
-  type OnStatusChangeType,
-  WsResponseMessageType,
-  type WsTokenExpire
-} from '@/services/wsType.ts'
+
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import type { MatrixRoomMember } from '@/stores/domains/chat/group/types.ts'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
@@ -204,399 +198,6 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
   }
 }
 
-type VideoCallRequestPayload = {
-  callerUid: string
-  isVideo: boolean
-  [key: string]: unknown
-}
-
-type WebsocketConnectionStatePayload = {
-  type?: string
-  state?: string
-  isReconnection?: boolean
-  is_reconnection?: boolean
-}
-
-useMitt.on<VideoCallRequestPayload>(WsResponseMessageType.VideoCallRequest, (event) => {
-  info(`收到通话请求：${JSON.stringify(event)}`)
-  const remoteUid = event.callerUid
-  const callType = event.isVideo ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO
-
-  if (isMobile()) {
-    useMitt.emit(MittEnum.MOBILE_RTC_CALL_REQUEST, {
-      ...event,
-      callerUid: remoteUid
-    })
-    return
-  }
-
-  handleVideoCall(remoteUid, callType)
-})
-
-useMitt.on(WsResponseMessageType.LOGIN_SUCCESS, async (data: LoginSuccessResType) => {
-  const { ...rest } = data
-  // 自己更新自己上线
-  groupStore.updateOnlineNum({
-    uid: rest.uid,
-    isAdd: true
-  })
-  groupStore.updateUserItem(rest.uid, {
-    activeStatus: OnlineEnum.ONLINE,
-    avatar: rest.avatar,
-    account: rest.account,
-    lastOptTime: Date.now(),
-    name: rest.name,
-    uid: rest.uid
-  })
-
-  if (userStore.userInfo) {
-    userStore.userInfo.activeStatus = OnlineEnum.ONLINE
-    userStore.userInfo.lastOptTime = Date.now()
-  }
-
-  // 设置在线状态到服务器
-  try {
-    const clientService = await getMatrixClientService()
-    await clientService.waitForClientReady({
-      timeoutMs: 5000
-    })
-    const presenceService = await getMatrixPresenceService()
-    await presenceService.setPresence('online')
-    logger.info('[Login] 在线状态已设置为 online')
-
-    await syncAvatarPresence()
-
-    if (!unsubscribePresenceListener) {
-      unsubscribePresenceListener = presenceService.onPresenceChange((presence) => {
-        const patch = buildPresenceStorePatch(presence)
-        contactStore.updateContactPresence(presence.user_id, patch)
-        groupStore.updateUserPresence(presence.user_id, {
-          activeStatus: patch.activeStatus,
-          lastOptTime: patch.lastOptTime
-        })
-        if (userStore.userInfo && presence.user_id === userStore.userInfo.uid) {
-          userStore.userInfo.activeStatus = patch.activeStatus
-          userStore.userInfo.lastOptTime = patch.lastOptTime
-        }
-      })
-    }
-  } catch (error) {
-    logger.error('[Login] 设置在线状态失败:', error)
-  }
-
-  // 刚登录成功时同步当前/首个群聊的成员信息，避免消息显示”未知用户”
-  await refreshActiveGroupMembers()
-})
-
-useMitt.on(WsResponseMessageType.MSG_RECALL, (data: RevokedMsgType) => {
-  chatStore.updateRecallMsg(data)
-})
-
-useMitt.on(WsResponseMessageType.MY_ROOM_INFO_CHANGE, (data: { myName: string; roomId: string; uid: string }) => {
-  // 更新用户在群聊中的昵称
-  groupStore.updateUserItem(data.uid, { myName: data.myName }, data.roomId)
-})
-
-useMitt.on(
-  WsResponseMessageType.REQUEST_NEW_FRIEND,
-  async (data: { uid: number; unReadCount4Friend: number; unReadCount4Group: number }) => {
-    logger.debug('收到好友申请')
-    // 更新未读数
-    globalStore.setUnreadCounts({
-      friend: data.unReadCount4Friend || 0,
-      group: data.unReadCount4Group || 0
-    })
-    globalStore.refreshUnreadBadge()
-
-    // 刷新好友申请列表
-    await contactStore.getApplyPage('friend', true)
-  }
-)
-
-useMitt.on(WsResponseMessageType.NOTIFY_EVENT, async () => {
-  await contactStore.getApplyUnReadCount()
-  await Promise.allSettled([contactStore.getApplyPage('friend', true), contactStore.getApplyPage('group', true)])
-})
-
-// 处理自己被移除
-const handleSelfRemove = async (roomId: string) => {
-  info('本人退出群聊，移除会话数据')
-
-  // 移除会话和群成员数据
-  chatStore.removeSession(roomId)
-  groupStore.removeAllUsers(roomId)
-
-  // 如果当前会话就是被移除的群聊，切换到其他会话
-  if (globalStore.currentSessionRoomId === roomId) {
-    globalStore.updateCurrentSessionRoomId(chatStore.sessionList[0].roomId)
-  }
-}
-
-// 处理其他成员被移除
-const handleOtherMemberRemove = async (uid: string, roomId: string) => {
-  info('群成员退出群聊，移除群内的成员数据')
-  groupStore.removeUserItem(uid, roomId)
-}
-
-// 处理群成员移除
-const handleMemberRemove = async (userList: UserItem[], roomId: string) => {
-  for (const user of userList) {
-    if (isSelfUser(user.uid)) {
-      await handleSelfRemove(roomId)
-    } else {
-      await handleOtherMemberRemove(user.uid, roomId)
-    }
-  }
-}
-
-// 处理其他成员加入群聊
-const handleOtherMemberAdd = async (user: UserItem, roomId: string) => {
-  info('群成员加入群聊，添加群成员数据')
-  const matrixMember: MatrixRoomMember = {
-    ...user,
-    userId: user.uid,
-    displayName: user.name,
-    avatarUrl: user.avatar,
-    membership: 'join',
-    powerLevel: 0,
-    isModerator: false,
-    isCreator: false,
-    roleId: 2 // 普通成员
-  }
-  groupStore.addUserItem(matrixMember, roomId)
-}
-
-// 检查是否为当前用户
-const isSelfUser = (uid: string): boolean => {
-  return uid === userStore.userInfo!.uid
-}
-
-// 处理自己加入群聊
-const handleSelfAdd = async (roomId: string) => {
-  info('本人加入群聊，加载该群聊的会话数据')
-  await chatStore.addSession({
-    roomId,
-    name: roomId,
-    type: RoomTypeEnum.SINGLE,
-    unreadCount: 0,
-    activeTime: Date.now()
-  })
-  try {
-    await groupStore.getGroupUserList(roomId, true)
-  } catch (error) {
-    logger.error('初始化群成员失败:', error)
-  }
-}
-
-// 处理群成员添加
-const handleMemberAdd = async (userList: UserItem[], roomId: string) => {
-  for (const user of userList) {
-    if (isSelfUser(user.uid)) {
-      await handleSelfAdd(roomId)
-    } else {
-      await handleOtherMemberAdd(user, roomId)
-    }
-  }
-}
-
-useMitt.on(
-  WsResponseMessageType.WS_MEMBER_CHANGE,
-  async (param: {
-    roomId: string
-    changeType: ChangeTypeEnum
-    userList: UserItem[]
-    totalNum: number
-    onlineNum: number
-  }) => {
-    info('监听到群成员变更消息')
-    const isRemoveAction = param.changeType === ChangeTypeEnum.REMOVE || param.changeType === ChangeTypeEnum.EXIT_GROUP
-    if (isRemoveAction) {
-      await handleMemberRemove(param.userList, param.roomId)
-    } else {
-      await handleMemberAdd(param.userList, param.roomId)
-    }
-
-    groupStore.addGroupDetail(param.roomId)
-    // 更新群内的总人数
-    groupStore.updateGroupNumber(param.roomId, param.totalNum)
-  }
-)
-
-useMitt.on(WsResponseMessageType.MSG_MARK_ITEM, async (data: { markList: MarkItemType[] }) => {
-  logger.debug('收到消息标记更新:', data)
-
-  // 确保data.markList是一个数组再传递给updateMarkCount
-  if (data?.markList && Array.isArray(data.markList)) {
-    await chatStore.updateMarkCount(data.markList)
-  } else if (data && !Array.isArray(data)) {
-    // 兼容处理：如果直接收到了单个MarkItemType对象
-    await chatStore.updateMarkCount([data as unknown as MarkItemType])
-  }
-})
-
-useMitt.on(WsResponseMessageType.REQUEST_APPROVAL_FRIEND, async () => {
-  // 刷新好友列表以获取最新状态
-  await contactStore.getContactList(true)
-  await contactStore.getApplyUnReadCount()
-  globalStore.refreshUnreadBadge()
-})
-
-useMitt.on(WsResponseMessageType.ROOM_INFO_CHANGE, async (data: { roomId: string; name: string; avatar: string }) => {
-  // 根据roomId修改对应房间中的群名称和群头像
-  const { roomId, name, avatar } = data
-
-  // 更新chatStore中的会话信息
-  chatStore.updateSession(roomId, {
-    name,
-    avatar
-  })
-})
-
-useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExpire) => {
-  if (Number(userUid.value) === Number(wsTokenExpire.uid) && userStore.userInfo!.client === wsTokenExpire.client) {
-    const { useLoginFlow } = await import('@/hooks/useLoginFlow')
-    const { logout } = useLoginFlow()
-    if (isMobile()) {
-      try {
-        await logout()
-
-        settingStore.toggleLogin(false, false)
-        info('账号在其他设备登录')
-
-        // 立即跳转到登录页，使用 replace 替换当前路由
-        const router = await import('@/router')
-        await router.default.replace('/mobile/login')
-
-        // 跳转后再显示弹窗提示
-        const { showDialog } = await import('vant')
-        await import('vant/es/dialog/style')
-
-        showDialog({
-          title: '登录失效',
-          message: '您的账号已在其他设备登录，请重新登录',
-          confirmButtonText: '我知道了',
-          showCancelButton: false,
-          closeOnClickOverlay: false,
-          closeOnPopstate: false,
-          allowHtml: false
-        })
-      } catch (error) {
-        logger.error('处理token过期失败：', error)
-      }
-    } else {
-      // 桌面端处理：聚焦主窗口并显示远程登录弹窗
-      const home = await WebviewWindow.getByLabel('home')
-      await home?.setFocus()
-      const remoteIp = wsTokenExpire.ip || '未知IP'
-      await sendWindowPayload('login', {
-        remoteLogin: {
-          ip: remoteIp,
-          timestamp: Date.now()
-        }
-      })
-      await logout()
-    }
-  }
-})
-
-useMitt.on(WsResponseMessageType.INVALID_USER, (param: { uid: string }) => {
-  logger.debug('无效用户')
-  const data = param
-  // 消息列表删掉拉黑的发言
-  // chatStore.filterUser(data.uid)
-  // 群成员列表删掉拉黑的用户
-  groupStore.removeUserItem(data.uid)
-})
-
-useMitt.on(WsResponseMessageType.ONLINE, async (onStatusChangeType: OnStatusChangeType) => {
-  logger.debug('收到用户上线通知')
-  // 群聊
-  if (onStatusChangeType.type === 1) {
-    groupStore.updateOnlineNum({
-      roomId: onStatusChangeType.roomId,
-      isAdd: true
-    })
-    groupStore.updateUserItem(
-      onStatusChangeType.uid,
-      {
-        activeStatus: OnlineEnum.ONLINE,
-        lastOptTime: onStatusChangeType.lastOptTime
-      },
-      onStatusChangeType.roomId
-    )
-  }
-})
-
-useMitt.on(WsResponseMessageType.ROOM_DISSOLUTION, async (roomId: string) => {
-  logger.debug('收到群解散通知', roomId)
-  // 移除群聊的会话
-  chatStore.removeSession(roomId)
-  // 移除群聊的详情
-  groupStore.removeGroupDetail(roomId)
-  // 如果当前会话为解散的群聊，切换到第一个会话
-  if (globalStore.currentSessionRoomId === roomId) {
-    globalStore.currentSessionRoomId = chatStore.sessionList[0].roomId
-  }
-})
-
-useMitt.on(WsResponseMessageType.USER_STATE_CHANGE, async (data: { uid: string; userStateId: string }) => {
-  logger.debug('收到用户状态改变', data)
-  groupStore.updateUserItem(data.uid, {
-    userStateId: data.userStateId
-  })
-})
-
-useMitt.on<{ roomId: string; uids: string[]; status: number | boolean }>(
-  WsResponseMessageType.GROUP_SET_ADMIN_SUCCESS,
-  (event) => {
-    logger.debug('设置群管理员---> ', event)
-    groupStore.updateAdminStatus(event.roomId, event.uids, Boolean(event.status))
-  }
-)
-
-useMitt.on(WsResponseMessageType.OFFLINE, async (onStatusChangeType: OnStatusChangeType) => {
-  logger.debug('收到用户下线通知', onStatusChangeType)
-  // 群聊
-  if (onStatusChangeType.type === 1) {
-    groupStore.updateOnlineNum({
-      roomId: onStatusChangeType.roomId,
-      isAdd: false
-    })
-    groupStore.updateUserItem(
-      onStatusChangeType.uid,
-      {
-        activeStatus: OnlineEnum.OFFLINE,
-        lastOptTime: onStatusChangeType.lastOptTime
-      },
-      onStatusChangeType.roomId
-    )
-  }
-})
-
-const handleVideoCall = async (remotedUid: string, callType: CallTypeEnum) => {
-  info(`监听到视频通话调用，remotedUid: ${remotedUid}, callType: ${callType}`)
-  const currentSession = globalStore.currentSession
-  const targetUid = remotedUid || currentSession?.detailId
-  if (!targetUid) {
-    logger.warn('当前会话尚未就绪或无法解析对端用户，忽略通话事件')
-    return
-  }
-  if (isMobile()) {
-    router.push({
-      path: '/mobile/rtcCall',
-      query: {
-        remoteUserId: targetUid,
-        roomId: globalStore.currentSessionRoomId,
-        callType: callType,
-        // 接受方
-        isIncoming: 'true'
-      }
-    })
-  } else {
-    await createRtcCallWindow(true, targetUid, globalStore.currentSessionRoomId, callType)
-  }
-}
-
 const listenMobileReLogin = async () => {
   if (isMobile()) {
     const { useLoginFlow } = await import('@/hooks/useLoginFlow')
@@ -612,7 +213,7 @@ const listenMobileReLogin = async () => {
   }
 }
 
-// 登录/重连后兜底刷新：仅刷新当前（或首个）群聊成员，避免消息渲染成“未知用户”
+// 登录/重连后兜底刷新：仅刷新当前（或首个）群聊成员，避免消息渲染成"未知用户"
 const refreshActiveGroupMembers = async () => {
   const tasks: Promise<unknown>[] = []
   try {
@@ -693,6 +294,13 @@ const syncAvatarPresence = async () => {
 
 let lastWsConnectionState: string | null = null
 let isReconnectInFlight = false
+
+type WebsocketConnectionStatePayload = {
+  type?: string
+  state?: string
+  isReconnection?: boolean
+  is_reconnection?: boolean
+}
 
 const handleWebsocketEvent = async (event: { payload: WebsocketConnectionStatePayload | null | undefined }) => {
   const payload = event.payload
@@ -950,6 +558,24 @@ onMounted(async () => {
     )
   }
   listenMobileReLogin()
+
+  // 注册 WS 事件处理器（从 useWsEventHandler 迁移）
+  const wsEventHandler = useWsEventHandler({
+    getMatrixClientService,
+    getMatrixPresenceService,
+    syncAvatarPresence,
+    refreshActiveGroupMembers,
+    subscribedPresenceUserIds,
+    unsubscribePresenceListener: {
+      get value() {
+        return unsubscribePresenceListener
+      },
+      set value(v) {
+        unsubscribePresenceListener = v
+      }
+    }
+  })
+  wsEventHandler.registerHandlers()
 })
 
 onUnmounted(async () => {

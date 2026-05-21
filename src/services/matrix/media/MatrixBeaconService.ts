@@ -145,7 +145,8 @@ class MatrixBeaconService {
         is_live: content.beacon_info.live ?? false,
         last_updated: event.getTs() || Date.now()
       }
-    } catch {
+    } catch (err) {
+      logger.warn('getBeaconInfo failed:', err)
       return null
     }
   }
@@ -186,7 +187,8 @@ class MatrixBeaconService {
       }
 
       return beacons
-    } catch {
+    } catch (err) {
+      logger.warn('getActiveBeacons failed:', err)
       return []
     }
   }
@@ -283,7 +285,8 @@ class MatrixBeaconService {
       }
 
       return locations.sort((a, b) => a.timestamp - b.timestamp)
-    } catch {
+    } catch (err) {
+      logger.warn('getBeaconLocationHistory failed:', err)
       return []
     }
   }
@@ -310,7 +313,8 @@ class MatrixBeaconService {
 
       await client.sendEvent(roomId, 'm.beacon_info', updatedContent)
       return true
-    } catch {
+    } catch (err) {
+      logger.warn('stopBeacon failed:', err)
       return false
     }
   }
@@ -324,7 +328,8 @@ class MatrixBeaconService {
       if (!client) return false
       await client.redactEvent(roomId, eventId, undefined, { reason: 'Beacon deleted' })
       return true
-    } catch {
+    } catch (err) {
+      logger.warn('deleteBeacon failed:', err)
       return false
     }
   }

@@ -1,6 +1,8 @@
 import type { AriaLivePoliteness } from './useAriaLive'
 import { useAriaLive } from './useAriaLive'
 
+export type { AriaLivePoliteness } from './useAriaLive'
+
 export type ActionFeedbackType = 'info' | 'warning' | 'success' | 'error'
 export type ActionProgressFeedbackType = 'info' | 'loading'
 export interface ActionFeedbackHandle {

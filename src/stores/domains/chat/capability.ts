@@ -1,12 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
+import type { MatrixCapabilities } from '@/types/message'
 
-export interface MatrixCapabilities {
-  unstable_features: Record<string, boolean>
-  capabilities: Record<string, unknown>
-  client_config: Record<string, unknown>
-}
+export type { MatrixCapabilities } from '@/types/message'
 
 export const useCapabilityStore = defineStore(StoresEnum.CAPABILITY, () => {
   const unstableFeatures = ref<Record<string, boolean>>({})

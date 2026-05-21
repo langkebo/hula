@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "vitest/globals", "vite/client"],
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": [
+    "src/typings/**/*.d.ts",
+    "src/composables/workbench/useSessionEvents.ts",
+    "src/composables/workbench/__tests__/useSessionEvents.test.ts",
+    "src/hooks/useMitt.ts",
+    "src/hooks/__tests__/useMitt.test.ts",
+    "src/services/matrix/network/**/*.ts",
+    "src/services/matrix/matrixClientAccessor.ts",
+    "src/services/matrix/sdk-errors.ts"
+  ]
+}

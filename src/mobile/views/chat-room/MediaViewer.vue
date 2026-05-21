@@ -20,7 +20,7 @@
               showImagePreviewRef = true
             }
           ">
-          <img :src="image.url" class="w-full h-full" />
+          <img :src="image.url" class="w-full h-full" alt="媒体图片" />
         </div>
       </div>
     </div>

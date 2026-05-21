@@ -1,7 +1,7 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import matrixClientService from '../MatrixClientService'
 import { matrixMessageService } from '../messaging/MatrixMessageService'
-import { matrixRoomService } from './MatrixRoomService'
+import { matrixRoomQueryService } from './QueryService'
 
 export interface Announcement {
   id: string
@@ -42,7 +42,7 @@ class MatrixAnnouncementService {
   }
 
   private async getRoom(roomId: string) {
-    return await matrixRoomService.getRoom(roomId)
+    return await matrixRoomQueryService.getRoom(roomId)
   }
 
   private async getPinnedEventIds(roomId: string): Promise<string[]> {

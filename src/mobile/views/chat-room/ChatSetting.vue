@@ -20,6 +20,7 @@
                     class="absolute size-38px rounded-full object-cover"
                     style="top: 50%; left: 50%; transform: translate(-50%, -50%)"
                     :src="AvatarUtils.getAvatarUrl(activeItem?.avatar || '')"
+                    alt="群头像"
                     @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                 </div>
                 <input
@@ -83,6 +84,7 @@
                     <img
                       class="absolute z-3 size-36px rounded-full object-cover"
                       :src="avatarSrc(i.avatar)"
+                      alt="用户头像"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                   </div>
                   <div class="truncate max-w-full text-[--hula-text-secondary]">{{ i.name }}</div>

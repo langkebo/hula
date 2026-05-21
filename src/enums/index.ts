@@ -240,7 +240,9 @@ export enum StoresEnum {
   /** 内容审核 */
   MODERATION = 'moderation',
   /** 服务端能力探测 */
-  CAPABILITY = 'capability'
+  CAPABILITY = 'capability',
+  /** 消息多选 */
+  MESSAGE_SELECTION = 'messageSelection'
 }
 
 /**

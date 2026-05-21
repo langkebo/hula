@@ -20,7 +20,7 @@
 
         <!-- 聊天界面背景图标 -->
         <div v-else class="flex-center size-full select-none">
-          <img class="w-150px h-140px" src="/logoD.png" alt="" />
+          <img class="w-150px h-140px" src="/logoD.png" alt="HuLa" />
         </div>
       </div>
     </div>

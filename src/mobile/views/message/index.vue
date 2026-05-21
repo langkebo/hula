@@ -22,6 +22,7 @@
           <img
             class="size-38px rounded-full object-cover"
             :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ? userStore.userInfo.avatar : '/logoD.png')"
+            alt="用户头像"
             @error="($event.target as HTMLImageElement).src = '/logo.png'" />
 
           <div class="flex flex-col justify-center gap-6px">

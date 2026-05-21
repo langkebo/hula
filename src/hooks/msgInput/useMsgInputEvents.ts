@@ -1,5 +1,6 @@
 import { nextTick, onMounted, type Ref } from 'vue'
 import { MittEnum, MsgEnum } from '@/enums'
+import { sanitizeMessageInputHtml } from '@/hooks/msgInput/sanitizeInputHtml'
 import { useMitt } from '@/hooks/useMitt.ts'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { createLogger } from '@/utils/Logger'
@@ -57,7 +58,7 @@ export const useMsgInputEvents = ({
   const onReEdit = async (event: string) => {
     messageInputDom.value.focus()
     await nextTick(() => {
-      messageInputDom.value.innerHTML = event
+      messageInputDom.value.innerHTML = sanitizeMessageInputHtml(event)
       msgInput.value = event
       const selection = window.getSelection()
       const range = document.createRange()

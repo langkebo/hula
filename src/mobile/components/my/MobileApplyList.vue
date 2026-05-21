@@ -28,7 +28,8 @@
               props.type === 'friend'
                 ? avatarSrc(getUserInfo(item)?.avatar || '')
                 : avatarSrc(groupDetailsMap[item.roomId ?? '']?.avatar || '/default-group-avatar.png')
-            " />
+            "
+            alt="用户头像" />
         </div>
         <div class="flex-1 flex flex-col gap-10px min-w-0">
           <div

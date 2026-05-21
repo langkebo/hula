@@ -107,6 +107,19 @@ export class AdminServerService {
     }
   }
 
+  async updateServerConfig(config: Record<string, unknown>): Promise<void> {
+    try {
+      const admin = (await this.sdkAdmin()) as unknown as {
+        updateServerConfig(config: Record<string, unknown>): Promise<void>
+      }
+      await admin.updateServerConfig(config)
+      info('[AdminServer] 服务器配置已更新')
+    } catch (err) {
+      error(`[AdminServer] 更新服务器配置失败: ${err}`)
+      throw err
+    }
+  }
+
   async restartServer(): Promise<void> {
     try {
       const admin = (await this.sdkAdmin()) as unknown as {

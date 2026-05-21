@@ -141,6 +141,7 @@
                         :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
                         style="border: 1px solid var(--avatar-border-color)"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                        alt="用户头像"
                         @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                       <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
@@ -150,7 +151,10 @@
                           [
                           <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
                           <template v-else-if="getUserState(item.uid)">
-                            <img class="size-12px rounded-50%" :src="getUserState(item.uid)?.url" alt="" />
+                            <img
+                              class="size-12px rounded-50%"
+                              :src="getUserState(item.uid)?.url"
+                              :alt="translateStateTitle(getUserState(item.uid)?.title)" />
                             {{ translateStateTitle(getUserState(item.uid)?.title) }}
                           </template>
                           <template v-else>
@@ -202,6 +206,7 @@
                         :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
                         style="border: 1px solid var(--avatar-border-color)"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                        alt="用户头像"
                         @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                       <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
@@ -211,7 +216,10 @@
                           [
                           <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
                           <template v-else-if="getUserState(item.uid)">
-                            <img class="size-12px rounded-50%" :src="getUserState(item.uid)?.url" alt="" />
+                            <img
+                              class="size-12px rounded-50%"
+                              :src="getUserState(item.uid)?.url"
+                              :alt="translateStateTitle(getUserState(item.uid)?.title)" />
                             {{ translateStateTitle(getUserState(item.uid)?.title) }}
                           </template>
                           <template v-else>
@@ -260,6 +268,7 @@
                         class="size-44px rounded-full object-cover grayscale"
                         style="border: 1px solid var(--avatar-border-color)"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                        alt="用户头像"
                         @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                       <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
@@ -294,6 +303,7 @@
                       class="size-44px rounded-full object-cover"
                       style="border: 1px solid var(--avatar-border-color)"
                       :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                      alt="群头像"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <span class="text-14px leading-tight flex-1 truncate">{{ item.remark || item.groupName }}</span>
                   </div>
@@ -337,12 +347,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
+import { resolveFriendListViewState } from '@/components/friend/friendListViewState'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useFriends } from '@/composables/useFriends'
 import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -391,8 +403,34 @@ const {
   isBotUser,
   getUserState,
   setSelectedItem,
-  clearSelectedItem
+  clearSelectedItem,
+  loading: friendsLoading,
+  initialLoading: friendsInitialLoading
 } = useFriends()
+
+const { isLoaded: capabilityLoaded, canUseFriendList } = useServerCapability()
+
+const mobileFriendErrorMessage = ref('')
+
+const isMobileFriendStateLoading = computed(() => friendsInitialLoading.value || friendsLoading.value)
+
+const mobileFriendViewState = computed(() =>
+  resolveFriendListViewState({
+    isCapabilityReady: capabilityLoaded.value,
+    canUseFriendList: canUseFriendList.value,
+    hasError: Boolean(mobileFriendErrorMessage.value),
+    hasFriends: specialContacts.value.length > 0 || normalContacts.value.length > 0
+  })
+)
+
+const handleRetryMobileFriends = async () => {
+  mobileFriendErrorMessage.value = ''
+  try {
+    await contactStore.getContactList(true)
+  } catch (error) {
+    mobileFriendErrorMessage.value = error instanceof Error ? error.message : t('common.error')
+  }
+}
 
 const toMessage = async () => {
   try {

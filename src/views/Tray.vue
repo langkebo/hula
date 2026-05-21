@@ -9,7 +9,7 @@
         :size="10"
         @click="toggleStatus(item)"
         class="p-6px rounded-4px hover:bg-[--tray-hover]">
-        <img class="size-14px" :src="item.url" alt="" />
+        <img class="size-14px" :src="item.url" :alt="translateStateTitle(item.title)" />
         <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
           {{ translateStateTitle(item.title) }}
         </span>

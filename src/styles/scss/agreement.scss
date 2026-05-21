@@ -8,25 +8,25 @@
   -webkit-user-select: none;
   transition: background-color 0.3s ease, color 0.3s ease;
 
-  --agreement-heading-color: #333;
-  --agreement-subheading-color: #444;
-  --agreement-paragraph-color: #555;
-  --agreement-muted-color: #666;
-  --agreement-accent-color: #13987f90;
-  --agreement-scrollbar-track: #f1f1f1;
-  --agreement-scrollbar-thumb: #c1c1c1;
-  --agreement-scrollbar-thumb-hover: #a8a8a8;
+  --agreement-heading-color: var(--hula-text-primary);
+  --agreement-subheading-color: var(--hula-text-primary);
+  --agreement-paragraph-color: var(--hula-text-secondary);
+  --agreement-muted-color: var(--hula-text-tertiary);
+  --agreement-accent-color: color-mix(in srgb, var(--hula-color-primary-500) 56%, transparent);
+  --agreement-scrollbar-track: var(--hula-surface-panel-muted);
+  --agreement-scrollbar-thumb: var(--hula-border-default);
+  --agreement-scrollbar-thumb-hover: var(--hula-text-quaternary);
 }
 
 [data-theme='dark'] .agreement-container {
-  --agreement-heading-color: #f3f3f3;
-  --agreement-subheading-color: #e4e4e7;
-  --agreement-paragraph-color: #d5d5d5;
-  --agreement-muted-color: #b5b5b5;
-  --agreement-accent-color: rgba(19, 152, 127, 0.55);
-  --agreement-scrollbar-track: #2b2b2b;
-  --agreement-scrollbar-thumb: #3f3f3f;
-  --agreement-scrollbar-thumb-hover: #575757;
+  --agreement-heading-color: var(--hula-text-primary);
+  --agreement-subheading-color: var(--hula-text-primary);
+  --agreement-paragraph-color: var(--hula-text-secondary);
+  --agreement-muted-color: var(--hula-text-tertiary);
+  --agreement-accent-color: color-mix(in srgb, var(--hula-color-primary-500) 55%, transparent);
+  --agreement-scrollbar-track: var(--hula-surface-panel-muted);
+  --agreement-scrollbar-thumb: var(--hula-border-default);
+  --agreement-scrollbar-thumb-hover: var(--hula-text-quaternary);
 }
 
 .agreement-content {

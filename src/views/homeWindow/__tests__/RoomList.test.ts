@@ -8,10 +8,7 @@ const {
   routerReplaceMock,
   addListenerMock,
   handleMsgClickMock,
-  handleMsgDeleteMock,
   handleMsgDblclickMock,
-  visibleMenuMock,
-  visibleSpecialMenuMock,
   useMittOnMock,
   useMittEmitMock,
   scrollToIndexMock
@@ -19,10 +16,7 @@ const {
   routerReplaceMock: vi.fn(),
   addListenerMock: vi.fn(async () => {}),
   handleMsgClickMock: vi.fn(),
-  handleMsgDeleteMock: vi.fn(),
   handleMsgDblclickMock: vi.fn(),
-  visibleMenuMock: vi.fn(() => []),
-  visibleSpecialMenuMock: vi.fn(() => []),
   useMittOnMock: vi.fn(),
   useMittEmitMock: vi.fn(),
   scrollToIndexMock: vi.fn()
@@ -125,10 +119,8 @@ vi.mock('@/hooks/session/openMsgSession', () => ({
 vi.mock('@/hooks/useMessage.ts', () => ({
   useMessage: () => ({
     handleMsgClick: handleMsgClickMock,
-    handleMsgDelete: handleMsgDeleteMock,
-    handleMsgDblclick: handleMsgDblclickMock,
-    visibleMenu: visibleMenuMock,
-    visibleSpecialMenu: visibleSpecialMenuMock
+    handleMsgDelete: vi.fn(),
+    handleMsgDblclick: handleMsgDblclickMock
   })
 }))
 
@@ -252,7 +244,11 @@ describe('RoomListView', () => {
 
     expect(wrapper.get('[data-test="toolbar-search-value"]').text()).toBe('beta')
     expect(wrapper.get('[data-test="toolbar-summary"]').text()).toBe('1/2')
-    expect(wrapper.get('[data-test="session-list-count"]').text()).toBe('1')
+
+    const list = wrapper.getComponent({ name: 'RoomSessionListStub' })
+    expect(list.props('sessionList')).toHaveLength(1)
+    expect(list.props('onMsgClick')).toBe(handleMsgClickMock)
+    expect(list.props('onMsgDblclick')).toBe(handleMsgDblclickMock)
   })
 
   it('syncs the search keyword back to the roomList route query', async () => {

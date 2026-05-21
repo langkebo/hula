@@ -1,6 +1,5 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import { matrixExtensionEndpoints } from '@/services/backend'
-import { httpClient } from '@/utils/HttpClient'
+import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 
 export interface ApiKey {
   id: string
@@ -33,30 +32,24 @@ export interface ApiKeyBalance {
 
 class MatrixApiKeyService {
   async page(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: ApiKey[]; total: number }> {
-    try {
-      const result = await httpClient.request<{ list: ApiKey[]; total: number }>({
+    return matrixHttpClient.request<{ list: ApiKey[]; total: number }>(
+      {
         url: matrixExtensionEndpoints.API_KEY_PAGE,
         params
-      })
-      info(`[MatrixApiKey] 获取 API 密钥列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixApiKey] 获取 API 密钥列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixApiKey' }
+    )
   }
 
   async simpleList(): Promise<ApiKey[]> {
-    try {
-      const result = await httpClient.request<ApiKey[]>({
+    return matrixHttpClient.request<ApiKey[]>(
+      {
         url: matrixExtensionEndpoints.API_KEY_SIMPLE_LIST
-      })
-      info(`[MatrixApiKey] 获取 API 密钥简单列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixApiKey] 获取 API 密钥简单列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixApiKey' }
+    )
   }
 
   async create(body: {
@@ -66,17 +59,15 @@ class MatrixApiKeyService {
     url?: string
     status: number
   }): Promise<ApiKey> {
-    try {
-      const result = await httpClient.request<ApiKey>({
+    return matrixHttpClient.request<ApiKey>(
+      {
         url: matrixExtensionEndpoints.API_KEY_CREATE,
+        method: 'POST',
         body
-      })
-      info(`[MatrixApiKey] 创建 API 密钥成功: ${result.id}`)
-      return result
-    } catch (err) {
-      logError(`[MatrixApiKey] 创建 API 密钥失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixApiKey' }
+    )
   }
 
   async update(body: {
@@ -87,72 +78,61 @@ class MatrixApiKeyService {
     url?: string
     status: number
   }): Promise<ApiKey> {
-    try {
-      const result = await httpClient.request<ApiKey>({
+    return matrixHttpClient.request<ApiKey>(
+      {
         url: matrixExtensionEndpoints.API_KEY_UPDATE,
+        method: 'POST',
         body
-      })
-      info(`[MatrixApiKey] 更新 API 密钥成功: ${body.id}`)
-      return result
-    } catch (err) {
-      logError(`[MatrixApiKey] 更新 API 密钥失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixApiKey' }
+    )
   }
 
   async delete(params: { id: string }): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.API_KEY_DELETE,
         params
-      })
-      info(`[MatrixApiKey] 删除 API 密钥成功: ${params.id}`)
-      return true
-    } catch (err) {
-      logError(`[MatrixApiKey] 删除 API 密钥失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixApiKey' }
+    )
+    return true
   }
 
   async balance(params: { id: string }): Promise<ApiKeyBalance> {
-    try {
-      const result = await httpClient.request<ApiKeyBalance>({
+    return matrixHttpClient.request<ApiKeyBalance>(
+      {
         url: matrixExtensionEndpoints.API_KEY_BALANCE,
         params
-      })
-      info(`[MatrixApiKey] 查询 API 密钥余额成功: ${params.id}`)
-      return result
-    } catch (err) {
-      logError(`[MatrixApiKey] 查询 API 密钥余额失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixApiKey' }
+    )
   }
 
   async platformList(): Promise<Platform[]> {
-    try {
-      const result = await httpClient.request<Platform[]>({
+    return matrixHttpClient.request<Platform[]>(
+      {
         url: matrixExtensionEndpoints.PLATFORM_LIST
-      })
-      info(`[MatrixApiKey] 获取平台列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixApiKey] 获取平台列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixApiKey' }
+    )
   }
 
   async addPlatformModel(platform: string, model: string): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.PLATFORM_ADD_MODEL,
+        method: 'POST',
         body: { platform, model }
-      })
-      info(`[MatrixApiKey] 添加平台模型成功: ${platform}/${model}`)
-      return true
-    } catch (err) {
-      logError(`[MatrixApiKey] 添加平台模型失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixApiKey' }
+    )
+    return true
   }
 }
 

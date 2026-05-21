@@ -294,6 +294,12 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         name: 'adminMaintenance',
         component: () => import('@/views/admin/AdminMaintenance.vue'),
         meta: { requiresAdmin: true }
+      },
+      {
+        path: 'server-config',
+        name: 'adminServerConfig',
+        component: () => import('@/views/admin/AdminServerConfig.vue'),
+        meta: { requiresAdmin: true }
       }
     ]
   }

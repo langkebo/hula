@@ -32,6 +32,7 @@
                     <img
                       class="w-42px h-42px rounded-full object-cover flex-shrink-0"
                       :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                      alt="用户头像"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <span class="line-clamp-1">
                       {{ item.name }}

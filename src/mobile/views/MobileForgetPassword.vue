@@ -132,7 +132,7 @@
 
       <!-- 第三步：完成 -->
       <div v-if="currentStep === 3" class="w-full max-w-300px mx-auto mt-100px text-center">
-        <img class="size-98px" src="/emoji/party-popper.webp" alt="" />
+        <img class="size-98px" src="/emoji/party-popper.webp" alt="庆祝" />
         <div class="mt-16px text-18px">{{ t('mobile_forget_code.password_reset_success') }}</div>
         <div class="mt-16px text-14px text-[--hula-text-secondary]">
           {{ t('mobile_forget_code.password_reset_success_desc') }}

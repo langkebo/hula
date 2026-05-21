@@ -700,6 +700,7 @@ declare module 'matrix-js-sdk' {
     getVisibleRooms(): Room[]
     syncOnce(opts?: Record<string, unknown>): Promise<void>
     getBurnAfterReadManager(): BurnAfterReadManager
+    getSpaceManager(): import('matrix-js-sdk/space').SpaceManager
     oidcUserInfo(): Promise<Record<string, unknown>>
     isCrossSigningReady(): Promise<boolean>
     isSecretStorageReady(): Promise<boolean>

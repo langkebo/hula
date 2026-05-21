@@ -46,7 +46,6 @@ const DEFAULT_CONFIG = {
     'target',
     'rel',
     'class',
-    'style',
     'src',
     'alt',
     'title',
@@ -60,13 +59,24 @@ const DEFAULT_CONFIG = {
   ],
   ALLOW_DATA_ATTR: false,
   FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input'],
-  FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
+  FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'style']
 } as const
 
 DOMPurify.addHook('afterSanitizeAttributes', (node) => {
   if (node.tagName === 'A') {
     node.setAttribute('target', '_blank')
     node.setAttribute('rel', 'noopener noreferrer')
+  }
+
+  // Convert Matrix custom color attributes to inline styles (safe subset: color/background-color only)
+  const el = node as HTMLElement
+  const fgColor = el.getAttribute('data-mx-color')
+  const bgColor = el.getAttribute('data-mx-bg-color')
+  if (fgColor || bgColor) {
+    const parts: string[] = []
+    if (fgColor) parts.push(`color:${fgColor}`)
+    if (bgColor) parts.push(`background-color:${bgColor}`)
+    el.setAttribute('style', parts.join(';'))
   }
 })
 

@@ -15,7 +15,7 @@
         </p>
         <p v-else-if="part.type === 'number'" class="text-[--hula-color-warning-500]">{{ part.text }}</p>
       </div>
-      <img class="size-18px" src="/emoji/party-popper.webp" alt="" />
+      <img class="size-18px" src="/emoji/party-popper.webp" alt="庆祝" />
     </div>
   </main>
 </template>

@@ -395,14 +395,14 @@ export const useMessage = () => {
     }
   }
 
-  const visibleMenu = (item: SessionItem) => {
+  const _visibleMenu = (item: SessionItem) => {
     if (item.account === UserType.BOT) {
       return menuList.value.filter((_, index) => BOT_ALLOWED_MENU_INDEXES.has(index))
     }
     return menuList.value
   }
 
-  const visibleSpecialMenu = (item: SessionItem) => {
+  const _visibleSpecialMenu = (item: SessionItem) => {
     if (item.account === UserType.BOT) {
       return []
     }
@@ -416,8 +416,8 @@ export const useMessage = () => {
     handleMsgDblclick,
     menuList,
     specialMenuList,
-    visibleMenu,
-    visibleSpecialMenu,
+    visibleMenu: _visibleMenu,
+    visibleSpecialMenu: _visibleSpecialMenu,
     preloadChatRoom
   }
 }

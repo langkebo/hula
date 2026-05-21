@@ -1,7 +1,10 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, TypingManager } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixTypingService')
 
 export interface TypingUser {
   userId: string
@@ -57,7 +60,9 @@ class MatrixTypingService extends BaseMatrixService {
   }
 
   stopTyping(roomId: string): void {
-    this.sendTypingNotification(roomId, false).catch(() => {})
+    this.sendTypingNotification(roomId, false).catch((err) => {
+      logger.warn('Stop typing notification failed:', err)
+    })
   }
 
   getTypingUsers(roomId: string): TypingUser[] {
@@ -137,7 +142,9 @@ class MatrixTypingService extends BaseMatrixService {
     manager?.clearAllTimers()
 
     for (const roomId of roomIds) {
-      void Promise.resolve(manager?.stopTyping(roomId)).catch(() => {})
+      void Promise.resolve(manager?.stopTyping(roomId)).catch((err) => {
+        logger.warn('Stop typing via manager failed:', err)
+      })
     }
   }
 }

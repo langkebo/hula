@@ -1,16 +1,18 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixEvent, Room } from 'matrix-js-sdk'
 import { isMessageEventType, MatrixBurnDuration, MatrixEventType, MatrixFormat } from '@/common/matrixConstants'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
-import type { MessageType } from '@/stores/domains/chat/chat/types'
 import { ReceiptType } from '@/types/matrix-js-sdk'
+import type { MessageType } from '@/types/message'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from './BaseMatrixService'
 import matrixMessageAdapter from './messaging/MatrixMessageAdapter'
 import { matrixMessageRelationService } from './messaging/MatrixMessageRelationService'
 import { matrixReactionService } from './messaging/MatrixReactionService'
 import { matrixReceiptService } from './messaging/MatrixReceiptService'
-import matrixRoomService from './room/MatrixRoomService'
+import { matrixRoomQueryService } from './room/QueryService'
+
+const logger = createLogger('MatrixEvent')
 
 interface UploadResponse {
   content_uri?: string
@@ -87,7 +89,7 @@ class MatrixEventService extends BaseMatrixService {
         eventType,
         content
       })
-      info(`[MatrixEvent] 离线状态，已将事件发送操作入队: ${roomId}/${eventType} (queueId: ${id})`)
+      logger.info(`离线状态，已将事件发送操作入队: ${roomId}/${eventType} (queueId: ${id})`)
       // 返回一个带有前缀的临时 ID，以便前端识别
       return `local-${id}`
     }
@@ -97,10 +99,10 @@ class MatrixEventService extends BaseMatrixService {
     try {
       const response = await client.sendEvent(roomId, eventType, content)
       const eventId = this.extractEventId(response)
-      info(`[MatrixEvent] 发送事件成功: ${roomId}/${eventType}/${eventId}`)
+      logger.info(`发送事件成功: ${roomId}/${eventType}/${eventId}`)
       return eventId
     } catch (err) {
-      error(`[MatrixEvent] 发送事件失败: ${err}`)
+      logger.error(`发送事件失败: ${err}`)
       throw err
     }
   }
@@ -119,7 +121,7 @@ class MatrixEventService extends BaseMatrixService {
 
       return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
-      error(`[MatrixEvent] 发送文本消息失败: ${roomId} ${err}`)
+      logger.error(`发送文本消息失败: ${roomId} ${err}`)
       throw err
     }
   }
@@ -146,7 +148,7 @@ class MatrixEventService extends BaseMatrixService {
 
       return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
-      error(`[MatrixEvent] 发送图片消息失败: ${roomId} ${err}`)
+      logger.error(`发送图片消息失败: ${roomId} ${err}`)
       throw err
     }
   }
@@ -171,7 +173,7 @@ class MatrixEventService extends BaseMatrixService {
 
       return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
-      error(`[MatrixEvent] 发送文件消息失败: ${roomId} ${err}`)
+      logger.error(`发送文件消息失败: ${roomId} ${err}`)
       throw err
     }
   }
@@ -210,7 +212,7 @@ class MatrixEventService extends BaseMatrixService {
 
       return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
-      error(`[MatrixEvent] 发送视频消息失败: ${roomId} ${err}`)
+      logger.error(`发送视频消息失败: ${roomId} ${err}`)
       throw err
     }
   }
@@ -236,7 +238,7 @@ class MatrixEventService extends BaseMatrixService {
 
       return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
-      error(`[MatrixEvent] 发送音频消息失败: ${roomId} ${err}`)
+      logger.error(`发送音频消息失败: ${roomId} ${err}`)
       throw err
     }
   }
@@ -266,7 +268,7 @@ class MatrixEventService extends BaseMatrixService {
 
       return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
-      error(`[MatrixEvent] 发送语音消息失败: ${roomId} ${err}`)
+      logger.error(`发送语音消息失败: ${roomId} ${err}`)
       throw err
     }
   }
@@ -281,7 +283,7 @@ class MatrixEventService extends BaseMatrixService {
 
       return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
     } catch (err) {
-      error(`[MatrixEvent] 发送位置消息失败: ${roomId} ${err}`)
+      logger.error(`发送位置消息失败: ${roomId} ${err}`)
       throw err
     }
   }
@@ -291,9 +293,9 @@ class MatrixEventService extends BaseMatrixService {
 
     try {
       await client.redactEvent(roomId, eventId, undefined, reason ? { reason } : undefined)
-      info(`[MatrixEvent] 撤回事件成功: ${roomId}/${eventId}`)
+      logger.info(`撤回事件成功: ${roomId}/${eventId}`)
     } catch (err) {
-      error(`[MatrixEvent] 撤回事件失败: ${err}`)
+      logger.error(`撤回事件失败: ${err}`)
       throw err
     }
   }
@@ -318,9 +320,9 @@ class MatrixEventService extends BaseMatrixService {
 
     try {
       await client.sendReadReceipt(targetEvent, receiptType as ReceiptType)
-      info(`[MatrixEvent] 发送回执成功: ${roomId}/${eventId}/${receiptType}`)
+      logger.info(`发送回执成功: ${roomId}/${eventId}/${receiptType}`)
     } catch (err) {
-      error(`[MatrixEvent] 发送回执失败: ${err}`)
+      logger.error(`发送回执失败: ${err}`)
       throw err
     }
   }
@@ -336,7 +338,7 @@ class MatrixEventService extends BaseMatrixService {
       const events = room.getLiveTimeline().getEvents()
       return events.slice(Math.max(events.length - limit, 0))
     } catch (err) {
-      error(`[MatrixEvent] 获取房间时间线失败: ${roomId} ${err}`)
+      logger.error(`获取房间时间线失败: ${roomId} ${err}`)
       throw err
     }
   }
@@ -365,7 +367,7 @@ class MatrixEventService extends BaseMatrixService {
 
       return direction === 'b' ? events.slice(0, limit) : events.slice(Math.max(events.length - limit, 0))
     } catch (err) {
-      error(`[MatrixEvent] 分页时间线失败: ${err}`)
+      logger.error(`分页时间线失败: ${err}`)
       throw err
     }
   }
@@ -375,7 +377,7 @@ class MatrixEventService extends BaseMatrixService {
       this.getClient()
       return await matrixMessageRelationService.replyToMessage(roomId, eventId, { body, html })
     } catch (err) {
-      error(`[MatrixEvent] 回复消息失败: ${roomId}/${eventId} ${err}`)
+      logger.error(`回复消息失败: ${roomId}/${eventId} ${err}`)
       throw err
     }
   }
@@ -385,7 +387,7 @@ class MatrixEventService extends BaseMatrixService {
       this.getClient()
       return await matrixMessageRelationService.editMessage(roomId, eventId, { body, html })
     } catch (err) {
-      error(`[MatrixEvent] 编辑消息失败: ${roomId}/${eventId} ${err}`)
+      logger.error(`编辑消息失败: ${roomId}/${eventId} ${err}`)
       throw err
     }
   }
@@ -395,7 +397,7 @@ class MatrixEventService extends BaseMatrixService {
       this.getClient()
       return await matrixReactionService.addReaction(roomId, eventId, emoji)
     } catch (err) {
-      error(`[MatrixEvent] 添加反应失败: ${roomId}/${eventId} ${err}`)
+      logger.error(`添加反应失败: ${roomId}/${eventId} ${err}`)
       throw err
     }
   }
@@ -482,7 +484,7 @@ class MatrixEventService extends BaseMatrixService {
     isLast: boolean
     cursor: string
   }> {
-    const room = await matrixRoomService.getRoom(roomId, false)
+    const room = await matrixRoomQueryService.getRoom(roomId, false)
     if (!room) {
       return { messages: [], isLast: true, cursor: '' }
     }

@@ -1,6 +1,11 @@
 <template>
   <div ref="wrap" class="relative" :style="{ height: `${height}px` }">
-    <img v-if="displayImgSrc" :src="displayImgSrc" class="size-full object-cover select-none" draggable="false" />
+    <img
+      v-if="displayImgSrc"
+      :src="displayImgSrc"
+      alt="地图"
+      class="size-full object-cover select-none"
+      draggable="false" />
     <div
       v-if="controls"
       class="absolute left-0 top-0 size-full"

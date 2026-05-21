@@ -24,7 +24,7 @@
           <div v-else class="space-grid">
             <div v-for="space in spaces" :key="space.spaceId" class="space-card" @click="handleSpaceClick(space)">
               <div class="space-cover">
-                <img v-if="space.avatarUrl" :src="space.avatarUrl" alt="" />
+                <img v-if="space.avatarUrl" :src="space.avatarUrl" :alt="space.name + '的头像'" />
                 <div v-else class="default-cover">
                   <van-icon name="cluster-o" size="40" />
                 </div>
@@ -87,7 +87,7 @@
         <div v-if="selectedSpace" class="space-detail">
           <div class="detail-header">
             <div class="detail-cover">
-              <img v-if="selectedSpace.avatarUrl" :src="selectedSpace.avatarUrl" alt="" />
+              <img v-if="selectedSpace.avatarUrl" :src="selectedSpace.avatarUrl" :alt="selectedSpace.name + '的头像'" />
               <div v-else class="default-cover">
                 <van-icon name="cluster-o" size="60" />
               </div>

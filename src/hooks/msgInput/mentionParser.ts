@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify'
 import type { UserItem } from '@/services/types'
 
 /**
@@ -39,7 +40,11 @@ export function extractAtUserIds(content: string, userList: MentionUser[]): stri
   }
 
   const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = content
+  tempDiv.innerHTML = DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: ['span'],
+    ALLOWED_ATTR: ['id', 'class', 'data-ait-uid', 'data-server-url'],
+    ALLOW_DATA_ATTR: true
+  })
 
   const mentionNodes = tempDiv.querySelectorAll<HTMLElement>('#aitSpan, [data-ait-uid]')
   mentionNodes.forEach((node) => {

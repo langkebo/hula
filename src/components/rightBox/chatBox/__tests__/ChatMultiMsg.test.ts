@@ -66,7 +66,7 @@ const mountComponent = () =>
   mount(ChatMultiMsg, {
     props: {
       contentList: ['fallback line'],
-      msgIds: [{ msgId: '$1' }]
+      msgIds: [{ msgId: '$1', fromUid: '@alice:example.com' }]
     }
   })
 

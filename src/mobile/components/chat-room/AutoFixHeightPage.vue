@@ -1,6 +1,10 @@
 <template>
   <div class="flex flex-col flex-1 min-h-0 relative">
-    <img v-if="bgmURL" :src="bgmURL as string" class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
+    <img
+      v-if="bgmURL"
+      :src="bgmURL as string"
+      alt="聊天背景"
+      class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
     <!-- 页面容器 -->
     <div class="flex w-full items-start flex-col flex-1 min-h-0 z-1">
       <div class="w-full">

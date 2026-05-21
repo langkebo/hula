@@ -1,16 +1,16 @@
 .driver-popover.driverjs-theme {
-  background-color: #13987f;
+  background-color: var(--hula-color-primary-500);
 }
 
 #driver-popover-title {
   font-size: 16px;
   padding-bottom: 4px;
-  color: #101010;
+  color: var(--hula-text-primary);
 }
 
 #driver-popover-description {
   font-size: 12px;
-  color: #303030;
+  color: var(--hula-text-secondary);
 }
 
 driver-popover.driverjs-theme .driver-popover-title {
@@ -20,14 +20,14 @@ driver-popover.driverjs-theme .driver-popover-title {
 .driver-popover.driverjs-theme .driver-popover-title,
 .driver-popover.driverjs-theme .driver-popover-description,
 .driver-popover.driverjs-theme .driver-popover-progress-text {
-  color: #000;
+  color: var(--hula-text-primary);
 }
 
 .driver-popover.driverjs-theme button {
   text-align: center;
-  background-color: #000;
-  color: #ffffff;
-  border: 2px solid #000;
+  background-color: var(--hula-text-primary);
+  color: var(--hula-text-inverse);
+  border: 2px solid var(--hula-text-primary);
   text-shadow: none;
   font-size: 12px;
   padding: 5px 8px;
@@ -37,8 +37,8 @@ driver-popover.driverjs-theme .driver-popover-title {
 }
 
 .driver-popover.driverjs-theme button:hover {
-  background-color: #000;
-  color: #ffffff;
+  background-color: var(--hula-text-primary);
+  color: var(--hula-text-inverse);
 }
 
 .driver-popover.driverjs-theme .driver-popover-navigation-btns {
