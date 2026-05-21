@@ -2,6 +2,7 @@ import { error, info } from '@tauri-apps/plugin-log'
 import type { Room } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 /**
  * Room membership domain service.
@@ -134,6 +135,27 @@ export class MatrixRoomMembershipService {
       return room
     } catch (err) {
       error(`[MatrixRoom] 敲门加入房间失败: ${err}`)
+      throw err
+    }
+  }
+
+  async joinRoomByAlias(roomIdOrAlias: string, serverName?: string[]): Promise<{ room_id: string }> {
+    const client = this.getClient()
+    try {
+      const body: Record<string, unknown> = {}
+      if (serverName && serverName.length > 0) {
+        body.server_name = serverName
+      }
+      const result = await client.http.authedRequest(
+        'POST',
+        MATRIX_PATHS.ROOM.JOIN_BY_ALIAS(roomIdOrAlias),
+        undefined,
+        body
+      )
+      info(`[MatrixRoom] 通过别名加入房间成功: ${roomIdOrAlias}`)
+      return result as { room_id: string }
+    } catch (err) {
+      error(`[MatrixRoom] 通过别名加入房间失败: ${err}`)
       throw err
     }
   }

@@ -4,7 +4,10 @@
  * 提供用户搜索和目录功能
  */
 
-import { error, info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MatrixUserDirectory')
+
 import type { MatrixClient } from 'matrix-js-sdk'
 import { BaseMatrixService } from '../BaseMatrixService'
 
@@ -35,7 +38,7 @@ class UserDirectoryService extends BaseMatrixService {
    */
   initialize(client: MatrixClient): void {
     this.setFallbackClient(client)
-    info('[UserDirectory] 服务已初始化')
+    logger.info('[UserDirectory] 服务已初始化')
   }
 
   /**
@@ -62,10 +65,10 @@ class UserDirectoryService extends BaseMatrixService {
         errMsg.includes('M_FORBIDDEN') ||
         errMsg.includes('403')
       ) {
-        info(`[UserDirectory] 用户搜索需要认证 (${errMsg.includes('403') ? '403' : '401'})`)
+        logger.info(`[UserDirectory] 用户搜索需要认证 (${errMsg.includes('403') ? '403' : '401'})`)
         return []
       }
-      error(`[UserDirectory] 搜索用户失败: ${err}`)
+      logger.error(`[UserDirectory] 搜索用户失败: ${err}`)
       throw err
     }
   }
@@ -81,7 +84,7 @@ class UserDirectoryService extends BaseMatrixService {
       // 这里返回空数组，需要通过搜索获取
       return []
     } catch (err) {
-      error(`[UserDirectory] 获取目录失败: ${err}`)
+      logger.error(`[UserDirectory] 获取目录失败: ${err}`)
       return []
     }
   }
@@ -126,7 +129,7 @@ class UserDirectoryService extends BaseMatrixService {
       }))
       return { users, next_batch: result.next_batch }
     } catch (err) {
-      error(`[UserDirectory] 获取用户目录列表失败: ${err}`)
+      logger.error(`[UserDirectory] 获取用户目录列表失败: ${err}`)
       return { users: [] }
     }
   }
@@ -144,7 +147,7 @@ class UserDirectoryService extends BaseMatrixService {
         avatarUrl: result.avatar_url
       }
     } catch (err) {
-      error(`[UserDirectory] 获取目录资料失败: ${err}`)
+      logger.error(`[UserDirectory] 获取目录资料失败: ${err}`)
       return null
     }
   }

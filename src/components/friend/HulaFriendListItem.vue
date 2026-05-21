@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { OnlineEnum, ThemeEnum } from '@/enums'
 import { useSettingStore } from '@/stores/domains/settings/setting'

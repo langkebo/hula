@@ -1,16 +1,9 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import { BaseMatrixService } from './BaseMatrixService'
 import endpointCapabilityService from './EndpointCapabilityService'
-import * as MatrixClientServiceModule from './MatrixClientService'
+import { matrixClientService } from './MatrixClientService'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
 import { MATRIX_PATHS } from './paths'
-
-const matrixClientServiceExports = MatrixClientServiceModule as Record<string, unknown>
-const matrixClientService = (
-  'default' in matrixClientServiceExports
-    ? matrixClientServiceExports['default']
-    : matrixClientServiceExports['matrixClientService']
-) as typeof import('./MatrixClientService').matrixClientService
 
 export interface SynapseFriendInfo {
   user_id: string

@@ -70,7 +70,7 @@
               <n-timeline-item v-for="(log, index) in newCommitLog" :key="index" :content="log.message">
                 <template #icon>
                   <n-icon :size="32">
-                    <img class="size-32px" :src="`/emoji/${log.icon}.webp`" alt="" />
+                    <img class="size-32px" :src="`/emoji/${log.icon}.webp`" :alt="log.message" />
                   </n-icon>
                 </template>
               </n-timeline-item>
@@ -93,7 +93,7 @@
             <n-timeline-item v-for="(log, index) in commitLog" :key="index" :content="log.message">
               <template #icon>
                 <n-icon :size="32">
-                  <img class="size-32px" :src="`/emoji/${log.icon}.webp`" alt="" />
+                  <img class="size-32px" :src="`/emoji/${log.icon}.webp`" :alt="log.message" />
                 </n-icon>
               </template>
             </n-timeline-item>

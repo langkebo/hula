@@ -57,6 +57,7 @@ export interface StreamChunk {
   choices?: { delta: { content: string } }[]
   done?: boolean
   content: string
+  reasoning_content?: string
 }
 
 // ============ 常量 ============
@@ -80,6 +81,9 @@ class OpenClawClient {
   }
 
   private currentSessionKey: string | null = null
+
+  // 当前请求的 AbortController
+  private currentAbortController: AbortController | null = null
 
   // 连接状态管理
   private connectionState: ConnectionStateInfo = {
@@ -144,6 +148,9 @@ class OpenClawClient {
       model?: string
       temperature?: number
       maxTokens?: number
+      topP?: number
+      presencePenalty?: number
+      frequencyPenalty?: number
     }
   ): AsyncGenerator<StreamChunk> {
     const requestBody: ChatCompletionRequest = {
@@ -154,13 +161,15 @@ class OpenClawClient {
       stream: true
     }
 
+    this.currentAbortController = new AbortController()
     const response = await fetch(`${this.config.gatewayUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.config.token}`
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
+      signal: this.currentAbortController.signal
     })
 
     if (!response.ok) {
@@ -222,6 +231,16 @@ class OpenClawClient {
    */
   setCurrentSessionKey(key: string | null) {
     this.currentSessionKey = key
+  }
+
+  /**
+   * 停止当前正在进行的请求
+   */
+  stopCurrentRequest() {
+    if (this.currentAbortController) {
+      this.currentAbortController.abort()
+      this.currentAbortController = null
+    }
   }
 
   /**
@@ -484,6 +503,13 @@ export function useOpenClaw() {
   }
 
   /**
+   * 停止当前生成
+   */
+  function stopGeneration() {
+    openClawClient.stopCurrentRequest()
+  }
+
+  /**
    * 清空历史
    */
   function clearHistory() {
@@ -507,6 +533,7 @@ export function useOpenClaw() {
     sendMessage,
     sendMessageSimple,
     setModel,
+    stopGeneration,
     clearHistory
   }
 }

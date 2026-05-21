@@ -20,7 +20,7 @@ export type {
   IDirectRoomsMap
 } from 'matrix-js-sdk/dm'
 export { extendMatrixClientWithManagers } from 'matrix-js-sdk/manager-extensions'
-export type { Space, SpaceManager, SpaceMember, SpaceQueryOptions } from 'matrix-js-sdk/space'
+export type { Space, SpaceChild, SpaceManager, SpaceMember, SpaceQueryOptions } from 'matrix-js-sdk/space'
 export { IndexedDBStoreWorker } from 'matrix-js-sdk/store/worker'
 export type { TelemetryManager } from 'matrix-js-sdk/telemetry'
 

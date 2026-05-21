@@ -17,6 +17,7 @@
               <img
                 class="absolute size-86px rounded-full object-cover"
                 :src="AvatarUtils.getAvatarUrl(localUserInfo.avatar!)"
+                alt="用户头像"
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />
               <div
                 class="absolute h-50% w-full bottom-0 bg-[rgb(50,50,50)] bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-15 backdrop-saturate-100 backdrop-contrast-100"></div>

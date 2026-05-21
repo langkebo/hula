@@ -171,16 +171,16 @@ svg {
   --admin-health-err-bg: var(--hula-admin-health-err-bg);
   --admin-health-err-text: var(--hula-admin-health-err-text);
   // 登录窗口
-  --login-avatar-border: #fff;
+  --login-avatar-border: var(--hula-surface-panel);
   --login-avatar-bg: var(--hula-surface-panel);
   --login-dropdown-bg: rgba(253, 253, 253, 0.6);
   --login-dropdown-border: rgba(70, 70, 70, 0.1);
-  --login-divider-color: #ccc;
-  --login-third-party-divider-color: #dadada;
-  --login-surface-bg: #fff;
-  --avatar-fallback-color: #fff;
+  --login-divider-color: var(--hula-border-default);
+  --login-third-party-divider-color: var(--hula-border-muted);
+  --login-surface-bg: var(--hula-surface-panel);
+  --avatar-fallback-color: var(--hula-text-inverse);
   --avatar-fallback-src: /logoD.png;
-  --voice-icon-color-other: #000;
+  --voice-icon-color-other: var(--hula-text-primary);
   // 窗口关闭按钮
   --action-close-hover-bg: #c22b1c;
   --action-close-hover-icon: var(--hula-text-inverse);
@@ -201,9 +201,9 @@ svg {
   --badge-danger-bg: var(--hula-color-danger-500);
   --badge-danger-text: var(--hula-text-inverse);
   // 离线头像遮罩
-  --bg-offline-avatar-overlay: rgba(112, 112, 112, 0.7);
+  --bg-offline-avatar-overlay: color-mix(in srgb, var(--hula-text-tertiary) 70%, transparent);
   // 长按菜单背景
-  --bg-long-press-menu: #4e4e4e;
+  --bg-long-press-menu: var(--hula-surface-subtle);
 }
 
 html[data-theme='dark'] {
@@ -316,16 +316,16 @@ html[data-theme='dark'] {
   --admin-health-err-bg: var(--hula-admin-health-err-bg);
   --admin-health-err-text: var(--hula-admin-health-err-text);
   // 登录窗口
-  --login-avatar-border: #606060;
+  --login-avatar-border: var(--hula-border-default);
   --login-avatar-bg: var(--hula-surface-search);
   --login-dropdown-bg: rgba(72, 72, 78, 0.6);
   --login-dropdown-border: rgba(255, 255, 255, 0.1);
-  --login-divider-color: #707070;
-  --login-third-party-divider-color: #3a3a3a;
-  --login-surface-bg: #202020;
+  --login-divider-color: var(--hula-border-default);
+  --login-third-party-divider-color: var(--hula-border-muted);
+  --login-surface-bg: var(--hula-surface-panel);
   --avatar-fallback-color: transparent;
   --avatar-fallback-src: /logoL.png;
-  --voice-icon-color-other: #fff;
+  --voice-icon-color-other: var(--hula-text-inverse);
   // 窗口关闭按钮
   --action-close-hover-bg: #c22b1c;
   --action-close-hover-icon: var(--hula-text-inverse);
@@ -346,9 +346,9 @@ html[data-theme='dark'] {
   --badge-danger-bg: var(--hula-color-danger-500);
   --badge-danger-text: var(--hula-text-inverse);
   // 离线头像遮罩
-  --bg-offline-avatar-overlay: rgba(60, 60, 60, 0.6);
+  --bg-offline-avatar-overlay: color-mix(in srgb, var(--hula-text-tertiary) 60%, transparent);
   // 长按菜单背景
-  --bg-long-press-menu: #3a3a3a;
+  --bg-long-press-menu: var(--hula-surface-subtle);
 }
 /**! end */
 @keyframes linearAnimation {

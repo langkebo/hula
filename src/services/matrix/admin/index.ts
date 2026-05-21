@@ -1,4 +1,5 @@
 export { adminService, useAdmin } from './AdminFacadeService'
+export { AdminModerationService } from './AdminModerationService'
 export type {
   AdminReport,
   ContentFilter,

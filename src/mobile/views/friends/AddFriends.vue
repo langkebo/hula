@@ -54,6 +54,7 @@
                       <img
                         :src="AvatarUtils.getAvatarUrl(item.avatar)"
                         class="size-48px rounded-full object-cover"
+                        alt="用户头像"
                         @error="
                           ($event.target as HTMLImageElement).src =
                             settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'

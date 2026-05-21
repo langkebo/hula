@@ -215,7 +215,7 @@
                 class="AI-item">
                 <n-flex align="center" justify="space-between" class="w-full pr-6px">
                   <n-flex align="center">
-                    <img class="size-18px object-contain" :src="item.avatar" alt="" />
+                    <img class="size-18px object-contain" :src="item.avatar" :alt="item.name + '的头像'" />
                     <p class="text-(14px [--hula-text-primary])">{{ item.name }}</p>
                   </n-flex>
 

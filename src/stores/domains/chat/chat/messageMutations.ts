@@ -4,7 +4,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { type MessageStatusEnum, MittEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import type { useGroupStore } from '@/stores/domains/chat/group'
 import type { useUserStore } from '@/stores/domains/user/user'
 import type { useGlobalStore } from '@/stores/domains/widget/global'
@@ -202,7 +202,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
 
       sessionStore.updateSession(msg.message.roomId, updateData)
     } else {
-      const room = await matrixRoomService.getRoom(msg.message.roomId, false)
+      const room = await matrixRoomQueryService.getRoom(msg.message.roomId, false)
       if (room) {
         const newSession = {
           roomId: room.roomId,

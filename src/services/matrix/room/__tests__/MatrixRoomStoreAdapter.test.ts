@@ -1,7 +1,7 @@
 import type { MatrixEvent, Room } from 'matrix-js-sdk'
 import { describe, expect, it, vi } from 'vitest'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat'
+import type { MessageType } from '@/types/message'
 import matrixRoomStoreAdapter from '../MatrixRoomStoreAdapter'
 
 function createEventLike(

@@ -70,7 +70,7 @@
         class="text-card"
         @click="openUrl(item)">
         <div v-if="urlMap[item].image" class="text-card-image-wrapper">
-          <img class="text-card-image" :src="urlMap[item].image" @error="onImageLoadError" />
+          <img class="text-card-image" :src="urlMap[item].image" :alt="urlMap[item].title" @error="onImageLoadError" />
         </div>
         <div class="text-card-link-content">
           <span class="text-14px line-clamp-1">{{ urlMap[item].title }}</span>

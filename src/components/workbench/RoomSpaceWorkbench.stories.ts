@@ -21,31 +21,34 @@ const DEFAULT_SPACE_ID = '!space-design:example.com'
 type StorySpaceTreeNode = {
   spaceId: string
   name: string
+  topic?: string
+  avatarUrl?: string
+  memberCount: number
   childCount: number
 }
 
 const storyTreePages: Record<string, { initial: StorySpaceTreeNode[]; more?: StorySpaceTreeNode[] }> = {
   '!space-design:example.com': {
     initial: [
-      { spaceId: '!space-design-squad:example.com', name: 'Design Squad', childCount: 2 },
-      { spaceId: '!space-design-research:example.com', name: 'Research', childCount: 0 }
+      { spaceId: '!space-design-squad:example.com', name: 'Design Squad', memberCount: 5, childCount: 2 },
+      { spaceId: '!space-design-research:example.com', name: 'Research', memberCount: 3, childCount: 0 }
     ],
-    more: [{ spaceId: '!space-design-archive:example.com', name: 'Archive', childCount: 0 }]
+    more: [{ spaceId: '!space-design-archive:example.com', name: 'Archive', memberCount: 2, childCount: 0 }]
   },
   '!space-design-squad:example.com': {
     initial: [
-      { spaceId: '!space-design-icons:example.com', name: 'Icon System', childCount: 0 },
-      { spaceId: '!space-design-motion:example.com', name: 'Motion Library', childCount: 0 }
+      { spaceId: '!space-design-icons:example.com', name: 'Icon System', memberCount: 2, childCount: 0 },
+      { spaceId: '!space-design-motion:example.com', name: 'Motion Library', memberCount: 2, childCount: 0 }
     ]
   },
   '!space-rd:example.com': {
     initial: [
-      { spaceId: '!space-rd-platform:example.com', name: 'Platform', childCount: 1 },
-      { spaceId: '!space-rd-release:example.com', name: 'Release', childCount: 0 }
+      { spaceId: '!space-rd-platform:example.com', name: 'Platform', memberCount: 8, childCount: 1 },
+      { spaceId: '!space-rd-release:example.com', name: 'Release', memberCount: 4, childCount: 0 }
     ]
   },
   '!space-rd-platform:example.com': {
-    initial: [{ spaceId: '!space-rd-observability:example.com', name: 'Observability', childCount: 0 }]
+    initial: [{ spaceId: '!space-rd-observability:example.com', name: 'Observability', memberCount: 3, childCount: 0 }]
   }
 }
 
@@ -668,13 +671,9 @@ export const Default: Story = {
     settingsName: '设计协作',
     settingsTopic: '设计评审与交付',
     spaceTreeLoader: createStorySpaceTreeLoader(),
-    getItemClasses: () => ({}),
-    visibleMenu: () => [],
-    visibleSpecialMenu: () => [],
-    onMsgClick: () => undefined,
-    onMsgDblclick: () => undefined,
-    onMenuShow: () => undefined,
-    onRetryNetwork: () => undefined
+    onMsgClick: (_item) => {},
+    onMsgDblclick: (_item) => {},
+    onRetryNetwork: () => {}
   },
   render
 }

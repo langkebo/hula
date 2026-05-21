@@ -1,11 +1,13 @@
 import { type Ref, ref } from 'vue'
-import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
+import { matrixSpaceService, type SpaceMember } from '@/services/matrix/room/MatrixSpaceService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useSpaceMembers')
 
+export type { SpaceMember }
+
 export interface UseSpaceMembersResult {
-  members: Ref<string[]>
+  members: Ref<SpaceMember[]>
   loading: Ref<boolean>
   mutating: Ref<boolean>
   error: Ref<string | null>
@@ -14,7 +16,7 @@ export interface UseSpaceMembersResult {
 }
 
 export function useSpaceMembers(spaceId: () => string): UseSpaceMembersResult {
-  const members = ref<string[]>([])
+  const members = ref<SpaceMember[]>([])
   const loading = ref(false)
   const mutating = ref(false)
   const error = ref<string | null>(null)

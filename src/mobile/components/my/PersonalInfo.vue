@@ -10,6 +10,7 @@
         <img
           class="size-86px rounded-full object-cover"
           :src="AvatarUtils.getAvatarUrl(userDetailInfo!.avatar)"
+          alt="用户头像"
           @error="($event.target as HTMLImageElement).src = '/logo.png'" />
       </div>
 
@@ -24,7 +25,7 @@
             <span class="w-12px h-12px rounded-15px flex items-center">
               <img
                 :src="friendUserState.url ? friendUserState.url : currentState?.url"
-                alt=""
+                :alt="friendUserState.title || currentState.title"
                 class="rounded-50% size-14px" />
             </span>
             <span class="text-bold-style" style="font-size: 12px; color: var(--hula-text-secondary)">
@@ -37,7 +38,7 @@
         <div class="flex flex-warp gap-2 items-center">
           <span class="text-bold-style">{{ t('mobile_personal_info.account') }}:{{ userDetailInfo!.account }}</span>
           <span v-if="isMyPage" @click="toMyQRCode" class="pe-15px">
-            <img class="w-14px h-14px dark:invert" src="@/assets/mobile/my/qr-code.webp" alt="" />
+            <img class="w-14px h-14px dark:invert" src="@/assets/mobile/my/qr-code.webp" alt="二维码" />
           </span>
         </div>
       </div>

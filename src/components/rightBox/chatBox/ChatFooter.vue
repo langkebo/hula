@@ -88,7 +88,7 @@
                           checkIsUrl(emoji) ? 'emoji-url' : 'emoji'
                         )
                       ">
-                      <img v-if="checkIsUrl(emoji)" :src="resolveRecentRenderUrl(emoji)" class="size-24px" />
+                      <img v-if="checkIsUrl(emoji)" :src="resolveRecentRenderUrl(emoji)" class="size-24px" alt="表情" />
                       <span v-else class="text-18px">{{ emoji }}</span>
                     </div>
                   </div>

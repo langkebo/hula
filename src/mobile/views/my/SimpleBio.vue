@@ -28,6 +28,7 @@
               <img
                 class="w-74px h-74px rounded-full object-cover flex-shrink-0"
                 :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)"
+                alt="用户头像"
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />
 
               <div @click="toMyInfo" class="flex flex-col flex-1 py-10px">

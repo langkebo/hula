@@ -3,7 +3,13 @@
     <!-- 顶部导航 -->
     <div class="openclaw-view__header">
       <div class="openclaw-view__header-left">
-        <svg class="openclaw-view__back" @click="handleBack">
+        <svg
+          class="openclaw-view__back"
+          role="button"
+          tabindex="0"
+          aria-label="返回"
+          @click="handleBack"
+          @keydown.enter="handleBack">
           <use href="#left-arrow"></use>
         </svg>
         <h2 class="openclaw-view__title">OpenClawX</h2>
@@ -33,7 +39,10 @@
             v-for="(action, index) in quickActions"
             :key="index"
             class="openclaw-view__quick-action"
-            @click="handleQuickAction(action.text)">
+            role="button"
+            tabindex="0"
+            @click="handleQuickAction(action.text)"
+            @keydown.enter="handleQuickAction(action.text)">
             {{ action.text }}
           </div>
         </div>

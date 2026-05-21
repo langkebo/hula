@@ -3,7 +3,7 @@
     <div class="h-full flex-col-center gap-40px">
       <div class="flex-center absolute top-13vh left-36px">
         <p class="text-(20px [--hula-text-primary])">{{ t('login.mobile.welcome_title') }}</p>
-        <img src="@/assets/mobile/2.svg" alt="" class="w-80px h-20px" />
+        <img src="@/assets/mobile/2.svg" alt="HuLa" class="w-80px h-20px" />
       </div>
 
       <!-- 选项卡导航 -->
@@ -74,6 +74,7 @@
               <div class="flex-between-center">
                 <img
                   :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                  alt="用户头像"
                   class="size-28px bg-[--hula-text-disabled] rounded-50% object-cover" />
                 <p class="text-14px color-[--chat-text-color]">{{ item.account }}</p>
                 <svg @click.stop="delAccount(item)" class="w-12px h-12px">

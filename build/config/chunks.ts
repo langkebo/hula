@@ -16,7 +16,6 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/vooks/': 'naive-ui',
   'node_modules/@css-render/': 'naive-ui',
   'node_modules/css-render/': 'naive-ui',
-  'node_modules/seemly/': 'naive-ui',
   'node_modules/vant/': 'vant',
   'node_modules/@vant/': 'vant',
 
@@ -48,11 +47,10 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/zrender': 'chart-vendor',
 
   // 工具库
-  'node_modules/es-toolkit': 'utils-lodash',
+  'node_modules/es-toolkit': 'utils-es-toolkit',
   'node_modules/dayjs': 'dayjs',
   'node_modules/axios': 'axios',
   'node_modules/digest-wasm': 'crypto',
-  'node_modules/idb': 'idb',
   'node_modules/qrcode': 'qrcode',
   'node_modules/mitt': 'mitt',
   'node_modules/file-type': 'file-type',

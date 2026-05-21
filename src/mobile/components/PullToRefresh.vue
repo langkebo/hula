@@ -20,7 +20,7 @@
         'will-change': isDragging ? 'transform' : ''
       }">
       <template v-if="isRefreshing">
-        <img class="size-18px" src="@/assets/img/loading.svg" alt="" />
+        <img class="size-18px" src="@/assets/img/loading.svg" alt="加载中" />
         <span class="ml-2 text-sm color-#333">正在刷新...</span>
       </template>
       <template v-else>

@@ -93,6 +93,19 @@
     "quick_actions": "Quick Actions",
     "server_stats": "Server Statistics",
     "settings": "Settings",
+    "nav": {
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "rooms": "Rooms",
+      "federation": "Federation",
+      "notices": "Server Notices",
+      "server_config": "Server Config"
+    },
+    "status": {
+      "admin": "Admin",
+      "user": "User"
+    },
+    "backToApp": "Back to App",
     "total_users": "Total Users",
     "total_rooms": "Total Rooms",
     "active_users": "Active Users",
@@ -269,6 +282,55 @@
       "fill_required": "Please fill in user ID and content",
       "send_success": "Notice sent",
       "send_failed": "Failed to send notice"
+    },
+    "server_config": {
+      "title": "Server Configuration",
+      "subtitle": "View and modify server runtime configuration",
+      "revert": "Revert Changes",
+      "confirm_title": "Confirm Save",
+      "confirm_content": "Are you sure you want to save these configuration changes? Changes will take effect immediately.",
+      "save_failed": "Failed to save configuration",
+      "general": {
+        "title": "General",
+        "server_name": "Server Name",
+        "registration_enabled": "Registration Enabled",
+        "max_upload_size": "Max Upload Size",
+        "presence_enabled": "Presence Enabled"
+      },
+      "security": {
+        "title": "Security",
+        "admin_mfa_required": "Admin MFA Required",
+        "rbac_enabled": "RBAC Enabled",
+        "login_lockout_threshold": "Login Lockout Threshold"
+      },
+      "federation": {
+        "title": "Federation",
+        "enabled": "Federation Enabled",
+        "admission_mode": "Admission Mode",
+        "mode_open": "Open",
+        "mode_invite": "Invite",
+        "mode_whitelist": "Whitelist"
+      },
+      "rate_limit": {
+        "title": "Rate Limiting",
+        "enabled": "Rate Limiting Enabled",
+        "requests_per_second": "Requests Per Second",
+        "burst_count": "Burst Count"
+      },
+      "translation": {
+        "title": "Translation",
+        "enabled": "Translation Enabled",
+        "provider": "Translation Provider",
+        "target_language": "Target Language"
+      },
+      "push": {
+        "title": "Push Notifications",
+        "enabled": "Push Notifications Enabled",
+        "apns_status": "APNS Status",
+        "fcm_status": "FCM Status",
+        "webpush_status": "WebPush Status",
+        "unconfigured": "Unconfigured"
+      }
     }
   }
 }

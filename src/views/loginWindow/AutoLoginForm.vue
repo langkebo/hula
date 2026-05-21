@@ -1,7 +1,7 @@
 <template>
   <n-flex vertical :size="29" data-tauri-drag-region>
     <n-flex justify="center" class="mt-15px">
-      <img src="/hula.png" class="w-140px h-60px" alt="" />
+      <img src="/hula.png" class="w-140px h-60px" alt="HuLa" />
     </n-flex>
     <n-flex :size="30" vertical>
       <n-flex justify="center">

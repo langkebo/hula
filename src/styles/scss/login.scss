@@ -16,7 +16,7 @@
     inset 0px -2px 27px 0px rgba(105, 187, 157, 0.76),
     inset 0px 2px 6px 0px rgba(254, 254, 254, 0.5);
   &:span {
-    color: #fff;
+    color: var(--hula-text-inverse);
   }
 }
 

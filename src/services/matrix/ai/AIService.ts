@@ -1,5 +1,5 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import { matrixExtensionEndpoints } from '@/services/backend'
+import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 import type {
   AIAudio,
   AIAudioListResponse,
@@ -11,8 +11,10 @@ import type {
   AIVideoListResponse,
   AIVoice
 } from '@/types/matrix-api'
-import { httpClient } from '@/utils/HttpClient'
+import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+
+const logger = createLogger('MatrixAI')
 
 export interface AIConversation {
   id: string
@@ -101,17 +103,14 @@ class MatrixAIService {
    * @returns AI 对话列表
    */
   async conversationGetMy(params?: { id?: string }): Promise<AIConversation[]> {
-    try {
-      const result = await httpClient.request<AIConversation[]>({
+    return matrixHttpClient.request<AIConversation[]>(
+      {
         url: matrixExtensionEndpoints.CONVERSATION_GET_MY,
         params
-      })
-      info(`[MatrixAI] 获取 AI 对话列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 获取 AI 对话列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   /**
@@ -138,17 +137,15 @@ class MatrixAIService {
     maxTokens?: number
     maxContexts?: number
   }): Promise<AIConversation> {
-    try {
-      const result = await httpClient.request<AIConversation>({
+    return matrixHttpClient.request<AIConversation>(
+      {
         url: matrixExtensionEndpoints.CONVERSATION_CREATE_MY,
+        method: 'POST',
         body: params
-      })
-      info(`[MatrixAI] 创建 AI 对话成功: ${result.id}`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 创建 AI 对话失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   /**
@@ -179,17 +176,15 @@ class MatrixAIService {
     maxTokens?: number
     maxContexts?: number
   }): Promise<AIConversation> {
-    try {
-      const result = await httpClient.request<AIConversation>({
+    return matrixHttpClient.request<AIConversation>(
+      {
         url: matrixExtensionEndpoints.CONVERSATION_UPDATE_MY,
+        method: 'POST',
         body: params
-      })
-      info(`[MatrixAI] 更新 AI 对话成功: ${params.id}`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 更新 AI 对话失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   /**
@@ -199,17 +194,16 @@ class MatrixAIService {
    * @returns 是否删除成功
    */
   async conversationDelete(conversationIdList: string[]): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.CONVERSATION_DELETE_MY,
+        method: 'POST',
         body: { conversationIdList }
-      })
-      info(`[MatrixAI] 删除 AI 对话成功: ${conversationIdList.join(', ')}`)
-      return true
-    } catch (err) {
-      logError(`[MatrixAI] 删除 AI 对话失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
+    return true
   }
 
   /**
@@ -226,17 +220,15 @@ class MatrixAIService {
     prompt: string
     generatedContent: string
   }): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.MESSAGE_SAVE_GENERATED_CONTENT,
         params
-      })
-      info(`[MatrixAI] 保存生成内容成功`)
-      return true
-    } catch (err) {
-      logError(`[MatrixAI] 保存生成内容失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
+    return true
   }
 
   /**
@@ -249,10 +241,10 @@ class MatrixAIService {
     try {
       const { invoke } = await import('@tauri-apps/api/core')
       await invoke('ai_message_cancel_stream', { requestId })
-      info(`[MatrixAI] 取消流式生成成功: ${requestId}`)
+      logger.info(`取消流式生成成功: ${requestId}`)
       return true
     } catch (err) {
-      logError(`[MatrixAI] 取消流式生成失败: ${err}`)
+      logger.error(`取消流式生成失败: ${err}`)
       return false
     }
   }
@@ -260,7 +252,7 @@ class MatrixAIService {
   private getClient() {
     const client = matrixClientService.getClient()
     if (!client) {
-      info('[MatrixAI] Matrix client not initialized, service unavailable.')
+      logger.info('Matrix client not initialized, service unavailable.')
       return null
     }
     return client
@@ -370,17 +362,15 @@ class MatrixAIService {
    * @returns 图片生成结果
    */
   async generateImage(request: ImageGenerationRequest): Promise<ImageGenerationResult | number | string> {
-    try {
-      const result = await httpClient.request<ImageGenerationResult | number | string>({
+    return matrixHttpClient.request<ImageGenerationResult | number | string>(
+      {
         url: matrixExtensionEndpoints.IMAGE_DRAW,
+        method: 'POST',
         body: request
-      })
-      info(`[MatrixAI] 生成图片请求成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 生成图片失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   /**
@@ -397,213 +387,174 @@ class MatrixAIService {
     pageNo?: number
     pageSize?: number
   }): Promise<AIMessage[]> {
-    try {
-      const result = await httpClient.request<AIMessage[]>({
+    return matrixHttpClient.request<AIMessage[]>(
+      {
         url: matrixExtensionEndpoints.MESSAGE_LIST_BY_CONVERSATION_ID,
         params
-      })
-      info(`[MatrixAI] 获取对话消息列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 获取对话消息列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async modelPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIModelListResponse> {
-    try {
-      const result = await httpClient.request<AIModelListResponse>({
+    return matrixHttpClient.request<AIModelListResponse>(
+      {
         url: matrixExtensionEndpoints.MODEL_PAGE,
         params
-      })
-      info(`[MatrixAI] 获取模型列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 获取模型列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async getModelRemainingUsage(params: { modelId: string }): Promise<number> {
-    try {
-      const result = await httpClient.request<number | AIModelRemainingUsageResponse>({
+    const result = await matrixHttpClient.request<number | AIModelRemainingUsageResponse>(
+      {
         url: matrixExtensionEndpoints.MODEL_REMAINING_USAGE,
         params
-      })
-      info(`[MatrixAI] 获取模型剩余使用量成功`)
-      return typeof result === 'number' ? result : result.remainingUsage
-    } catch (err) {
-      logError(`[MatrixAI] 获取模型剩余使用量失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
+    return typeof result === 'number' ? result : result.remainingUsage
   }
 
   async imageMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIImageListResponse> {
-    try {
-      const result = await httpClient.request<AIImageListResponse>({
+    return matrixHttpClient.request<AIImageListResponse>(
+      {
         url: matrixExtensionEndpoints.IMAGE_MY_PAGE,
         params
-      })
-      info(`[MatrixAI] 获取我的图片列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 获取我的图片列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async imageMyListByIds(params: { ids: string }): Promise<AIImage[]> {
-    try {
-      const result = await httpClient.request<AIImage[]>({
+    return matrixHttpClient.request<AIImage[]>(
+      {
         url: matrixExtensionEndpoints.IMAGE_MY_LIST_BY_IDS,
         params
-      })
-      info(`[MatrixAI] 根据ID列表获取图片成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 根据ID列表获取图片失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async videoMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIVideoListResponse> {
-    try {
-      const result = await httpClient.request<AIVideoListResponse>({
+    return matrixHttpClient.request<AIVideoListResponse>(
+      {
         url: matrixExtensionEndpoints.VIDEO_MY_PAGE,
         params
-      })
-      info(`[MatrixAI] 获取我的视频列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 获取我的视频列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async videoMyListByIds(params: { ids: string }): Promise<AIVideo[]> {
-    try {
-      const result = await httpClient.request<AIVideo[]>({
+    return matrixHttpClient.request<AIVideo[]>(
+      {
         url: matrixExtensionEndpoints.VIDEO_MY_LIST_BY_IDS,
         params
-      })
-      info(`[MatrixAI] 根据ID列表获取视频成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 根据ID列表获取视频失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async videoGenerate(body: VideoGenerationRequest): Promise<AIAsyncGenerationResponse> {
-    try {
-      const result = await httpClient.request<AIAsyncGenerationResponse>({
+    return matrixHttpClient.request<AIAsyncGenerationResponse>(
+      {
         url: matrixExtensionEndpoints.VIDEO_GENERATE,
+        method: 'POST',
         body
-      })
-      info(`[MatrixAI] 请求视频生成成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 请求视频生成失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async audioMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIAudioListResponse> {
-    try {
-      const result = await httpClient.request<AIAudioListResponse>({
+    return matrixHttpClient.request<AIAudioListResponse>(
+      {
         url: matrixExtensionEndpoints.AUDIO_MY_PAGE,
         params
-      })
-      info(`[MatrixAI] 获取我的音频列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 获取我的音频列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async audioMyListByIds(params: { ids: string }): Promise<AIAudio[]> {
-    try {
-      const result = await httpClient.request<AIAudio[]>({
+    return matrixHttpClient.request<AIAudio[]>(
+      {
         url: matrixExtensionEndpoints.AUDIO_MY_LIST_BY_IDS,
         params
-      })
-      info(`[MatrixAI] 根据ID列表获取音频成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 根据ID列表获取音频失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async audioGenerate(body: AudioGenerationRequest): Promise<AIAsyncGenerationResponse> {
-    try {
-      const result = await httpClient.request<AIAsyncGenerationResponse>({
+    return matrixHttpClient.request<AIAsyncGenerationResponse>(
+      {
         url: matrixExtensionEndpoints.AUDIO_GENERATE,
+        method: 'POST',
         body
-      })
-      info(`[MatrixAI] 请求音频生成成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 请求音频生成失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async audioGetVoices(params: { model: string }): Promise<AIVoice[]> {
-    try {
-      const result = await httpClient.request<AIVoice[]>({
+    return matrixHttpClient.request<AIVoice[]>(
+      {
         url: matrixExtensionEndpoints.AUDIO_VOICES,
         params
-      })
-      info(`[MatrixAI] 获取语音列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 获取语音列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 
   async messageDelete(params: { id: string }): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.MESSAGE_DELETE,
         params
-      })
-      info(`[MatrixAI] 删除消息成功: ${params.id}`)
-      return true
-    } catch (err) {
-      logError(`[MatrixAI] 删除消息失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
+    return true
   }
 
   async messageDeleteByConversationId(params: { conversationIdList: string[] }): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.MESSAGE_DELETE_BY_CONVERSATION_ID,
+        method: 'POST',
         body: params
-      })
-      info(`[MatrixAI] 删除会话所有消息成功`)
-      return true
-    } catch (err) {
-      logError(`[MatrixAI] 删除会话所有消息失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
+    return true
   }
 
   async chatRolePage(params?: { pageNo?: number; pageSize?: number }): Promise<AIChatRoleListResponse> {
-    try {
-      const result = await httpClient.request<AIChatRoleListResponse>({
+    return matrixHttpClient.request<AIChatRoleListResponse>(
+      {
         url: matrixExtensionEndpoints.CHAT_ROLE_PAGE,
         params
-      })
-      info(`[MatrixAI] 获取聊天角色列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixAI] 获取聊天角色列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   }
 }
 

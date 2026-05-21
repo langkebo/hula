@@ -10,7 +10,10 @@ import type { RoomDetail, RoomInfo } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
+import { createLogger } from '@/utils/Logger'
 import { LRUCache } from '@/utils/LRUCache'
+
+const logger = createLogger('RoomStore')
 
 type TimelineEvent = {
   event_id: string
@@ -343,11 +346,15 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
             unreadCount: roomInfo.unreadCount
           })
         }
-        refreshRoomTags(roomId).catch(() => {})
+        refreshRoomTags(roomId).catch((err) => {
+          logger.warn('Refresh room tags failed:', err)
+        })
       },
       onRoomListRefresh: () => {
         loadRooms()
-        batchRefreshTags().catch(() => {})
+        batchRefreshTags().catch((err) => {
+          logger.warn('Batch refresh tags failed:', err)
+        })
       }
     })
 

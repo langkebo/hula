@@ -99,7 +99,8 @@ class MatrixVoiceService extends BaseMatrixService {
 
     try {
       return this.resolveHttpUrl(sourceUrl) ?? fallbackUrl ?? sourceUrl
-    } catch {
+    } catch (err) {
+      logWarn(`[MatrixVoiceService] getPlayableUrl failed: ${err}`)
       return fallbackUrl ?? sourceUrl
     }
   }
@@ -212,7 +213,8 @@ class MatrixVoiceService extends BaseMatrixService {
         totalMessages: (result.total_messages as number) ?? 0,
         averageDuration: (result.average_duration as number) ?? 0
       }
-    } catch {
+    } catch (err) {
+      logWarn(`[MatrixVoiceService] getVoiceStats failed: ${err}`)
       return { totalDuration: 0, totalMessages: 0, averageDuration: 0 }
     }
   }
@@ -239,7 +241,8 @@ class MatrixVoiceService extends BaseMatrixService {
         totalDuration: (result.total_duration as number) ?? 0,
         totalMessages: (result.total_messages as number) ?? 0
       }
-    } catch {
+    } catch (err) {
+      logWarn(`[MatrixVoiceService] getUserVoiceStats failed: ${err}`)
       return { totalDuration: 0, totalMessages: 0 }
     }
   }
@@ -265,7 +268,8 @@ class MatrixVoiceService extends BaseMatrixService {
         allowedFormats: (result.allowed_formats as string[]) ?? ['audio/webm', 'audio/ogg', 'audio/mp4'],
         autoTranscribe: (result.auto_transcribe as boolean) ?? false
       }
-    } catch {
+    } catch (err) {
+      logWarn(`[MatrixVoiceService] getVoiceConfig failed: ${err}`)
       return { maxDuration: 300, allowedFormats: ['audio/webm', 'audio/ogg', 'audio/mp4'], autoTranscribe: false }
     }
   }
@@ -317,7 +321,8 @@ class MatrixVoiceService extends BaseMatrixService {
           (result.voices as Array<{ event_id: string; sender: string; duration: number; timestamp: number }>) ?? [],
         total: (result.total as number) ?? 0
       }
-    } catch {
+    } catch (err) {
+      logWarn(`[MatrixVoiceService] getRoomVoiceList failed: ${err}`)
       return { voices: [], total: 0 }
     }
   }
@@ -350,7 +355,8 @@ class MatrixVoiceService extends BaseMatrixService {
           (result.voices as Array<{ event_id: string; room_id: string; duration: number; timestamp: number }>) ?? [],
         total: (result.total as number) ?? 0
       }
-    } catch {
+    } catch (err) {
+      logWarn(`[MatrixVoiceService] getUserVoiceList failed: ${err}`)
       return { voices: [], total: 0 }
     }
   }
@@ -369,7 +375,8 @@ class MatrixVoiceService extends BaseMatrixService {
       }
       const result = await client.http.authedRequest('GET', path)
       return result as Record<string, unknown>
-    } catch {
+    } catch (err) {
+      logWarn(`[MatrixVoiceService] getVoiceContent failed: ${err}`)
       return null
     }
   }
@@ -392,7 +399,8 @@ class MatrixVoiceService extends BaseMatrixService {
         target_format: targetFormat
       })) as Record<string, unknown>
       return { url: (result.url as string) ?? '', format: (result.format as string) ?? targetFormat }
-    } catch {
+    } catch (err) {
+      logWarn(`[MatrixVoiceService] convertVoice failed: ${err}`)
       return null
     }
   }
@@ -422,7 +430,8 @@ class MatrixVoiceService extends BaseMatrixService {
         unknown
       >
       return { url: (result.url as string) ?? '', size: (result.size as number) ?? 0 }
-    } catch {
+    } catch (err) {
+      logWarn(`[MatrixVoiceService] optimizeVoice failed: ${err}`)
       return null
     }
   }
@@ -457,7 +466,8 @@ class MatrixVoiceService extends BaseMatrixService {
         language: result.language as string | undefined,
         confidence: result.confidence as number | undefined
       }
-    } catch {
+    } catch (err) {
+      logWarn(`[MatrixVoiceService] transcribeVoiceViaApi failed: ${err}`)
       return null
     }
   }

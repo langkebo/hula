@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { computed, defineComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RoomTypeEnum } from '@/enums'
+import type { SessionItem } from '@/stores/domains/chat/chat/session'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import MsgInput from './MsgInput.vue'
@@ -56,7 +57,7 @@ const StateOverlayWrapper = defineComponent({
       type: RoomTypeEnum.GROUP,
       activeTime: Date.now(),
       unreadCount: 0
-    } as any)
+    } as SessionItem)
     globalStore.currentSessionRoomId = mockRoomId
 
     const overlayContent = computed(() => {
@@ -126,7 +127,7 @@ export const Default: Story = {
         type: RoomTypeEnum.GROUP,
         activeTime: Date.now(),
         unreadCount: 0
-      } as any)
+      } as SessionItem)
       globalStore.currentSessionRoomId = mockRoomId
 
       return {}

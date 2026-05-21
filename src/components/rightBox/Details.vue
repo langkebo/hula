@@ -53,7 +53,7 @@
         class="rounded-12px select-none cursor-pointer"
         :src="AvatarUtils.getAvatarUrl(item.avatar)"
         @dblclick="openImageViewer"
-        alt="" />
+        alt="群头像" />
 
       <span class="text-(18px [--hula-text-primary])">{{ item.name }}</span>
 

@@ -1,4 +1,4 @@
-export { matrixRoomAccountDataService } from './AccountDataService'
+export { type AIConnection, type MCPTool, matrixRoomAccountDataService } from './AccountDataService'
 export { matrixRoomAliasesService } from './AliasesService'
 export { matrixRoomCreationService } from './CreationService'
 export { matrixRoomDirectMessageService } from './DirectMessageService'
@@ -18,6 +18,7 @@ export { matrixRoomMembershipService } from './MembershipService'
 export { matrixRoomMetadataService } from './MetadataService'
 export { matrixRoomModerationService } from './ModerationService'
 export { matrixRoomPinsService } from './PinsService'
+export { matrixRoomQueryService } from './QueryService'
 export type { VisibleRoomSession } from './RealtimeService'
 export { matrixRoomRealtimeService } from './RealtimeService'
 export type {

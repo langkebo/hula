@@ -16,7 +16,7 @@ import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { switchUserDatabase } from '@/services/tauriCommand'
 import type { RoomInfo, UserInfoType } from '@/services/types'
-import type { MessageType } from '@/stores/domains/chat/chat/types'
+import type { MessageType } from '@/types/message'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
@@ -588,7 +588,9 @@ class MatrixRuntimeSessionService {
 
   private beforeUnloadRegistered = false
   private readonly onBeforeUnload = () => {
-    void matrixPresenceService.setPresence('unavailable').catch(() => {})
+    void matrixPresenceService.setPresence('unavailable').catch((err) => {
+      logger.warn('Set presence to unavailable failed:', err)
+    })
   }
 
   async bootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {

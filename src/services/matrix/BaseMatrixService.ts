@@ -1,15 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
-import * as MatrixClientServiceModule from './MatrixClientService'
-
-const matrixClientServiceExports = MatrixClientServiceModule as Record<string, unknown>
-const matrixClientService = (
-  'default' in matrixClientServiceExports
-    ? matrixClientServiceExports['default']
-    : matrixClientServiceExports['matrixClientService']
-) as {
-  getClient(): MatrixClient | null
-}
+import { matrixClientService } from './MatrixClientService'
 
 export abstract class BaseMatrixService {
   private fallbackClient: MatrixClient | null = null

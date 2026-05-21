@@ -1,6 +1,5 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import { matrixExtensionEndpoints } from '@/services/backend'
-import { httpClient } from '@/utils/HttpClient'
+import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 
 export interface ChatRole {
   id: string
@@ -22,30 +21,24 @@ export interface ChatRole {
 
 class MatrixChatRoleService {
   async page(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: ChatRole[]; total: number }> {
-    try {
-      const result = await httpClient.request<{ list: ChatRole[]; total: number }>({
+    return matrixHttpClient.request<{ list: ChatRole[]; total: number }>(
+      {
         url: matrixExtensionEndpoints.CHAT_ROLE_PAGE,
         params
-      })
-      info(`[MatrixChatRole] 获取角色列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixChatRole] 获取角色列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixChatRole' }
+    )
   }
 
   async categoryList(): Promise<Array<{ label: string; value: string }>> {
-    try {
-      const result = await httpClient.request<Array<{ label: string; value: string }>>({
+    return matrixHttpClient.request<Array<{ label: string; value: string }>>(
+      {
         url: matrixExtensionEndpoints.CHAT_ROLE_CATEGORY_LIST
-      })
-      info(`[MatrixChatRole] 获取角色类别列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixChatRole] 获取角色类别列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixChatRole' }
+    )
   }
 
   async create(body: {
@@ -61,17 +54,15 @@ class MatrixChatRoleService {
     publicStatus: boolean
     status: number
   }): Promise<ChatRole> {
-    try {
-      const result = await httpClient.request<ChatRole>({
+    return matrixHttpClient.request<ChatRole>(
+      {
         url: matrixExtensionEndpoints.CHAT_ROLE_CREATE,
+        method: 'POST',
         body
-      })
-      info(`[MatrixChatRole] 创建角色成功: ${result.id}`)
-      return result
-    } catch (err) {
-      logError(`[MatrixChatRole] 创建角色失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixChatRole' }
+    )
   }
 
   async update(body: {
@@ -88,31 +79,27 @@ class MatrixChatRoleService {
     publicStatus?: boolean
     status?: number
   }): Promise<ChatRole> {
-    try {
-      const result = await httpClient.request<ChatRole>({
+    return matrixHttpClient.request<ChatRole>(
+      {
         url: matrixExtensionEndpoints.CHAT_ROLE_UPDATE,
+        method: 'POST',
         body
-      })
-      info(`[MatrixChatRole] 更新角色成功: ${body.id}`)
-      return result
-    } catch (err) {
-      logError(`[MatrixChatRole] 更新角色失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixChatRole' }
+    )
   }
 
   async delete(params: { id: string }): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.CHAT_ROLE_DELETE,
         params
-      })
-      info(`[MatrixChatRole] 删除角色成功: ${params.id}`)
-      return true
-    } catch (err) {
-      logError(`[MatrixChatRole] 删除角色失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixChatRole' }
+    )
+    return true
   }
 }
 

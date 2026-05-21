@@ -149,6 +149,7 @@ export const useContextMenu = (ContextMenuRef: Ref, isNull?: Ref<boolean>) => {
   return {
     showMenu,
     x,
-    y
+    y,
+    handleContextMenu
   }
 }

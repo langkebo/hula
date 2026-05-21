@@ -46,15 +46,15 @@ onMounted(() => {
   align-items: center;
   height: 100vh;
   padding: 24px;
-  background: var(--n-body-color, #f7f8fa);
+  background: var(--hula-surface-app);
 }
 
 .dynamic-detail-shell {
   width: min(720px, 100%);
   padding: 32px;
   border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 10px 30px rgb(15 23 42 / 8%);
+  background: var(--hula-surface-panel);
+  box-shadow: var(--hula-shadow-lg);
 }
 
 .dynamic-detail-tag {
@@ -63,8 +63,8 @@ onMounted(() => {
   height: 28px;
   padding: 0 12px;
   border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--hula-color-info-100);
+  color: var(--hula-color-info-500);
   font-size: 13px;
 }
 
@@ -75,7 +75,7 @@ onMounted(() => {
 
 .dynamic-detail-shell p {
   margin: 0;
-  color: #52606d;
+  color: var(--hula-text-secondary);
   line-height: 1.6;
 }
 
@@ -83,8 +83,8 @@ onMounted(() => {
   margin-top: 20px;
   padding: 16px;
   border-radius: 16px;
-  background: #f8fafc;
-  color: #334155;
+  background: var(--hula-surface-panel-muted);
+  color: var(--hula-text-secondary);
   line-height: 1.6;
 }
 </style>

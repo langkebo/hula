@@ -5,8 +5,8 @@
  */
 
 import { matrixExtensionEndpoints } from '@/services/backend'
+import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
-import { httpClient } from '@/utils/HttpClient'
 
 type TransformedCoordinate = {
   lat: number
@@ -40,7 +40,7 @@ type ReverseGeocodeResult = {
 export const transformCoordinates = async (lat: number, lng: number): Promise<TransformedCoordinate> => {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new Error('坐标范围无效')
   try {
-    const data = await httpClient.requestResult<{ lat: number; lng: number }>({
+    const data = await matrixHttpClient.requestResult<{ lat: number; lng: number }>({
       url: matrixExtensionEndpoints.MAP_COORD_TRANSLATE,
       params: { lat, lng }
     })
@@ -57,7 +57,7 @@ export const transformCoordinates = async (lat: number, lng: number): Promise<Tr
 export const reverseGeocode = async (lat: number, lng: number): Promise<ReverseGeocodeResult | null> => {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new Error('坐标范围无效')
   try {
-    const data = await httpClient.requestResult<ReverseGeocodeResult>({
+    const data = await matrixHttpClient.requestResult<ReverseGeocodeResult>({
       url: matrixExtensionEndpoints.MAP_REVERSE_GEOCODE,
       params: { lat, lng }
     })
@@ -68,7 +68,7 @@ export const reverseGeocode = async (lat: number, lng: number): Promise<ReverseG
 }
 
 export const getStaticMap = async (lat: number, lng: number, width = 600, height = 400, zoom = 18): Promise<string> => {
-  const data = await httpClient.requestResult<{ dataUrl: string }>({
+  const data = await matrixHttpClient.requestResult<{ dataUrl: string }>({
     url: matrixExtensionEndpoints.MAP_STATIC,
     params: { lat, lng, width, height, zoom }
   })

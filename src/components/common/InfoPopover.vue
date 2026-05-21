@@ -5,7 +5,7 @@
     <img
       class="absolute rounded-t-8px z-2 top-0 left-0 w-full h-100px object-cover"
       src="/img/dispersion-bg.png"
-      alt="" />
+      alt="个人信息背景" />
     <div class="h-20px"></div>
     <n-flex vertical :size="20" class="size-full p-10px box-border z-10 relative">
       <n-flex vertical :size="20">
@@ -65,7 +65,7 @@
                   "
                   class="p-4px rounded-full size-18px"
                   :class="isCurrentUserUid ? 'cursor-pointer' : 'cursor-default'"
-                  alt="" />
+                  :alt="currentStateTitle" />
               </div>
             </template>
             <span>{{ currentStateTitle }}</span>

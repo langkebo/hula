@@ -11,9 +11,12 @@ import type {
   SecureBackupRestoreResponse,
   VerificationRequest
 } from '@/types/matrix-extensions'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
 import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('MatrixCryptoService')
 
 export interface DeviceInfo {
   deviceId: string
@@ -217,8 +220,8 @@ class MatrixCryptoService extends BaseMatrixService {
 
       try {
         crossSigningReady = await crypto.isCrossSigningReady()
-      } catch {
-        // ignore
+      } catch (err) {
+        logger.warn('Check cross-signing ready failed:', err)
       }
 
       try {
@@ -227,8 +230,8 @@ class MatrixCryptoService extends BaseMatrixService {
           const backupInfo = await backupManager.checkKeyBackup()
           keyBackupEnabled = backupInfo !== null
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        logger.warn('Check key backup status failed:', err)
       }
 
       return { crossSigningReady, keyBackupEnabled }
@@ -728,14 +731,14 @@ class MatrixCryptoService extends BaseMatrixService {
       try {
         const status = await crypto.getCrossSigningStatus()
         privateKeysCached = status.crossSigningPrivateKeysInStorage
-      } catch {
-        // ignore
+      } catch (err) {
+        logger.warn('Get cross-signing status failed:', err)
       }
 
       try {
         crossSigningVerified = await crypto.isCrossSigningReady()
-      } catch {
-        // ignore
+      } catch (err) {
+        logger.warn('Check cross-signing ready failed:', err)
       }
 
       return { privateKeysCached, crossSigningVerified }

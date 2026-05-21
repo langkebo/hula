@@ -103,6 +103,7 @@ class MatrixClientService {
   private connectionState: ConnectionState = 'DISCONNECTED'
   private config: MatrixClientConfig | null = null
   private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
+  private roomListeners: Map<string, { room: Room; handlers: Map<string, (...args: unknown[]) => void> }> = new Map()
   private slidingSyncInstance: SlidingSync | null = null
   private telemetryManager: TelemetryManager | null = null
   private observedClient: MatrixClient | null = null
@@ -170,15 +171,29 @@ class MatrixClientService {
     updateRoom()
 
     // 监听房间元数据变化
-    const roomAny = room as unknown as { on: (event: string, handler: (...args: unknown[]) => void) => void }
+    const roomAny = room as unknown as {
+      on: (event: string, handler: (...args: unknown[]) => void) => void
+      off: (event: string, handler: (...args: unknown[]) => void) => void
+    }
     if (typeof roomAny.on === 'function') {
-      roomAny.on('Room.name', updateRoom)
-      roomAny.on('RoomState.events', (event: unknown) => {
+      const roomNameHandler: (...args: unknown[]) => void = () => updateRoom()
+      const roomStateEventsHandler: (...args: unknown[]) => void = (event: unknown) => {
         const matrixEvent = event as MatrixEvent
         const type = matrixEvent.getType()
         if (type === 'm.room.avatar' || type === 'm.room.name' || type === 'm.room.member') {
           updateRoom()
         }
+      }
+
+      roomAny.on('Room.name', roomNameHandler)
+      roomAny.on('RoomState.events', roomStateEventsHandler)
+
+      this.roomListeners.set(room.roomId, {
+        room,
+        handlers: new Map([
+          ['Room.name', roomNameHandler],
+          ['RoomState.events', roomStateEventsHandler]
+        ])
       })
     }
   }
@@ -741,8 +756,8 @@ class MatrixClientService {
       try {
         const { sessionOrchestrator } = await import('./auth/SessionOrchestrator')
         await sessionOrchestrator.logoutCurrentSession({ resetLocalState: true, preserveTokens: false })
-      } catch {
-        // Ignore cleanup errors
+      } catch (err) {
+        logger.warn('Cleanup error:', err)
       }
     } finally {
       this.isRefreshingToken = false
@@ -1058,6 +1073,23 @@ class MatrixClientService {
     client.off('Event.redaction', this.redactionListener)
     client.off('Room.typing', this.typingListener)
     client.off('Room.receipt', this.receiptListener)
+
+    // 清理 Room 级别的事件监听器
+    this.detachRoomListeners()
+  }
+
+  private detachRoomListeners(): void {
+    for (const [, entry] of this.roomListeners) {
+      const roomAny = entry.room as unknown as {
+        off: (event: string, handler: (...args: unknown[]) => void) => void
+      }
+      if (typeof roomAny.off === 'function') {
+        for (const [event, handler] of entry.handlers) {
+          roomAny.off(event, handler)
+        }
+      }
+    }
+    this.roomListeners.clear()
   }
 }
 

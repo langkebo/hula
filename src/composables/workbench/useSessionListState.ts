@@ -4,8 +4,7 @@ import { MsgEnum, RoomTypeEnum, UserType } from '@/enums'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
 import matrixClientService from '@/services/matrix/MatrixClientService'
-import type { SessionItem } from '@/stores/domains/chat/chat'
-import { useChatStore } from '@/stores/domains/chat/chat'
+import { type SessionItem, useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useBotStore } from '@/stores/domains/user/bot'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -24,7 +23,6 @@ export const useSessionListState = () => {
   const botDisplayText = computed(() => botStore.displayText)
   const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
   const { announce } = useAriaLive()
-  const activeContextMenuRoomId = ref<string | null>(null)
   const sessionMsgCache = reactive<Record<string, SessionMsgCacheItem>>({})
   const sessionCacheRefreshKey = ref(0)
 
@@ -159,29 +157,24 @@ export const useSessionListState = () => {
     return sessionList.value.find((item) => item.roomId === globalStore.currentSessionRoomId) ?? null
   })
 
-  const handleMenuShow = (roomId: string, isShow: boolean) => {
-    activeContextMenuRoomId.value = isShow ? roomId : null
-  }
-
-  const getItemClasses = (item: SessionItem) => {
-    const isCurrentSession = globalStore.currentSessionRoomId === item.roomId
-    const isContextMenuActive = activeContextMenuRoomId.value === item.roomId
-
-    return {
-      active: isCurrentSession,
-      'active-bot': isCurrentSession && item.account === UserType.BOT,
-      'active-shield': Boolean(isCurrentSession && item.shield),
-      'bg-[--hula-surface-search] rounded-12px relative': Boolean(item.top),
-      'context-menu-active': isContextMenuActive,
-      'context-menu-active-shield': Boolean(item.shield && isContextMenuActive),
-      'active-context-menu': isContextMenuActive && isCurrentSession
-    }
-  }
-
   const invalidateSessionCache = (roomId?: string) => {
     if (!roomId) return
     Reflect.deleteProperty(sessionMsgCache, roomId)
     sessionCacheRefreshKey.value++
+  }
+
+  const handleMenuShow = (roomId: string, isShow: boolean) => {
+    if (!isShow) return
+    invalidateSessionCache(roomId)
+  }
+
+  const getItemClasses = (item: SessionItem) => {
+    const isSelected = globalStore.currentSessionRoomId === item.roomId
+    return {
+      'hula-room-list-item--selected': isSelected,
+      'hula-room-list-item--pinned': !!item.top,
+      'hula-room-list-item--muted': !!item.muteNotification
+    }
   }
 
   return {
@@ -193,8 +186,8 @@ export const useSessionListState = () => {
     retrySessions,
     sessionList,
     selectedSession,
+    invalidateSessionCache,
     handleMenuShow,
-    getItemClasses,
-    invalidateSessionCache
+    getItemClasses
   }
 }

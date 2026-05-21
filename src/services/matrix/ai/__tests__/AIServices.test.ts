@@ -42,8 +42,8 @@ vi.mock('@/services/backend', () => ({
 }))
 
 const mockRequest = vi.fn()
-vi.mock('@/utils/HttpClient', () => ({
-  httpClient: { request: mockRequest }
+vi.mock('../../MatrixHttpClient', () => ({
+  matrixHttpClient: { request: mockRequest }
 }))
 
 vi.mock('../../MatrixClientService', () => ({

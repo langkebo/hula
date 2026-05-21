@@ -47,7 +47,7 @@
           <span class="text-(14px [--hula-text-secondary])">{{ t('home.profile_edit.badge.current') }}</span>
           <n-popover trigger="hover">
             <template #trigger>
-              <img :src="currentBadge?.img" alt="" class="size-22px" />
+              <img :src="currentBadge?.img" :alt="currentBadge?.describe || '徽章'" class="size-22px" />
             </template>
             <span>{{ currentBadge?.describe }}</span>
           </n-popover>
@@ -171,10 +171,10 @@ const loginHistoriesStore = useLoginHistoriesStore()
 const { editInfo, currentBadge, updateCurrentUserCache, saveEditInfo, toggleWarningBadge } = leftHook()
 // 使用自定义hook处理头像上传
 const {
-  fileInput: _fileInput,
+  fileInput,
   localImageUrl,
   showCropper,
-  cropperRef: _cropperRef,
+  cropperRef,
   openAvatarCropper,
   handleFileChange,
   handleCrop: onCrop

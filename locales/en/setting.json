@@ -735,7 +735,45 @@
       "success": "Push device deleted",
       "failed": "Failed to delete push device"
     },
-    "fetchFailed": "Failed to fetch push devices"
+    "fetchFailed": "Failed to fetch push devices",
+    "add_pusher": {
+      "label": "Add Push Device",
+      "title": "Add Push Device",
+      "kind_label": "Device Type",
+      "app_id_label": "App ID",
+      "app_id_placeholder": "e.g. com.hula.desktop",
+      "app_display_name_label": "App Name",
+      "app_display_name_placeholder": "e.g. HuLa Desktop",
+      "device_display_name_label": "Device Name",
+      "device_display_name_placeholder": "e.g. My Mac",
+      "pushkey_label": "Push Key",
+      "pushkey_placeholder": "Enter push key",
+      "lang_label": "Language",
+      "required": "App ID and Push Key are required",
+      "success": "Push device added successfully",
+      "failed": "Failed to add push device",
+      "confirm": "Add",
+      "cancel": "Cancel"
+    },
+    "rules_by_kind": {
+      "title": "Push Rule Details",
+      "desc": "View and manage all push rules grouped by kind",
+      "pattern": "Pattern",
+      "empty": "No rules",
+      "kinds": {
+        "override": "Override Rules",
+        "content": "Content Rules",
+        "room": "Room Rules",
+        "sender": "Sender Rules",
+        "underride": "Default Rules"
+      }
+    },
+    "history": {
+      "title": "Notification History",
+      "desc": "View recent notification records",
+      "empty": "No notification records",
+      "no_content": "No content"
+    }
   },
   "notification": {
     "common": {

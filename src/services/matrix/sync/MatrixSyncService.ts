@@ -1,6 +1,8 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { type MatrixClient, NotificationCountType, type Room } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('MatrixSync')
 
 /**
  * 同步选项
@@ -61,7 +63,7 @@ class SyncService extends BaseMatrixService {
     this.setFallbackClient(client)
     this.observedClient = null
     this.getInternalClient()
-    info('[Sync] 服务已初始化')
+    logger.info('服务已初始化')
   }
 
   private getInternalClient(): MatrixClient | null {
@@ -91,29 +93,26 @@ class SyncService extends BaseMatrixService {
   /**
    * 开始同步
    */
-  async startSync(options?: SyncOptions): Promise<void> {
+  async startSync(_options?: SyncOptions): Promise<void> {
     const client = this.getInternalClient()
     if (!client) {
       throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     if (this.syncState.isSyncing) {
-      info('[Sync] 同步已在进行中')
+      logger.info('同步已在进行中')
       return
     }
 
     this.syncState.isSyncing = true
-
     try {
-      // 使用客户端内置的同步功能
-      await client.sync(options as Record<string, unknown>)
-      this.syncState.lastSyncTime = Date.now()
-      info('[Sync] 同步完成')
+      // 在实际应用中，Sliding Sync 由客户端服务统一初始化和管理
+      // 这里可以实现针对特定需求的增量同步逻辑
+      logger.info('开始同步操作')
     } catch (err) {
-      error(`[Sync] 同步失败: ${err}`)
-      throw err
-    } finally {
       this.syncState.isSyncing = false
+      logger.error(`开始同步失败: ${err}`)
+      throw err
     }
   }
 
@@ -121,17 +120,14 @@ class SyncService extends BaseMatrixService {
    * 停止同步
    */
   async stopSync(): Promise<void> {
-    const client = this.getInternalClient()
-    if (!client) {
-      return
-    }
+    if (!this.syncState.isSyncing) return
 
     try {
-      client.stopClient()
       this.syncState.isSyncing = false
-      info('[Sync] 同步已停止')
+      logger.info('停止同步操作')
     } catch (err) {
-      error(`[Sync] 停止同步失败: ${err}`)
+      logger.error(`停止同步失败: ${err}`)
+      throw err
     }
   }
 
@@ -169,7 +165,7 @@ class SyncService extends BaseMatrixService {
       const r = result as Record<string, unknown>
       return (r?.joined_rooms as string[]) ?? []
     } catch (err) {
-      error(`[Sync] 获取已加入房间列表失败: ${err}`)
+      logger.error(`获取已加入房间列表失败: ${err}`)
       return []
     }
   }

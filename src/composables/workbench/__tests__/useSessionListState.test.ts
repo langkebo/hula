@@ -197,7 +197,7 @@ describe('useSessionListState', () => {
     wrapper.unmount()
   })
 
-  it('maps session display data, keeps pinned sessions first, and computes item classes', async () => {
+  it('maps session display data and keeps pinned sessions first', async () => {
     const { wrapper, api } = await createHarness()
 
     expect(api.sessionList.value.map((item) => item.roomId)).toEqual(['room-group', 'room-single'])
@@ -219,24 +219,6 @@ describe('useSessionListState', () => {
       })
     )
     expect(api.selectedSession.value?.roomId).toBe('room-group')
-
-    api.handleMenuShow('room-group', true)
-    expect(
-      api.getItemClasses({
-        roomId: 'room-group',
-        account: UserType.BOT,
-        shield: true
-      } as never)
-    ).toEqual(
-      expect.objectContaining({
-        active: true,
-        'active-bot': true,
-        'active-shield': true,
-        'context-menu-active': true,
-        'context-menu-active-shield': true,
-        'active-context-menu': true
-      })
-    )
 
     wrapper.unmount()
   })

@@ -1,6 +1,5 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import { matrixExtensionEndpoints } from '@/services/backend'
-import { httpClient } from '@/utils/HttpClient'
+import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 
 export interface AIModel {
   id: string
@@ -25,17 +24,14 @@ export interface AIModel {
 
 class MatrixModelService {
   async page(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: AIModel[]; total: number }> {
-    try {
-      const result = await httpClient.request<{ list: AIModel[]; total: number }>({
+    return matrixHttpClient.request<{ list: AIModel[]; total: number }>(
+      {
         url: matrixExtensionEndpoints.MODEL_PAGE,
         params
-      })
-      info(`[MatrixModel] 获取模型列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixModel] 获取模型列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixModel' }
+    )
   }
 
   async update(body: {
@@ -53,31 +49,27 @@ class MatrixModelService {
     maxTokens?: number
     maxContexts?: number
   }): Promise<AIModel> {
-    try {
-      const result = await httpClient.request<AIModel>({
+    return matrixHttpClient.request<AIModel>(
+      {
         url: matrixExtensionEndpoints.MODEL_UPDATE,
+        method: 'POST',
         body
-      })
-      info(`[MatrixModel] 更新模型成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixModel] 更新模型失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixModel' }
+    )
   }
 
   async delete(params: { id: string }): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.MODEL_DELETE,
         params
-      })
-      info(`[MatrixModel] 删除模型成功: ${params.id}`)
-      return true
-    } catch (err) {
-      logError(`[MatrixModel] 删除模型失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixModel' }
+    )
+    return true
   }
 }
 

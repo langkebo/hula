@@ -6,12 +6,15 @@
         <div v-if="pushers.length > 0" class="device-list">
           <div v-for="pusher in pushers" :key="pusher.pushkey" class="device-item">
             <div class="device-info">
-              <Icon icon="mdi:bell-ring" :width="24" />
+              <Icon :icon="getDeviceIcon(pusher.kind)" :width="24" />
               <div class="device-details">
                 <div class="device-name">{{ pusher.device_display_name || t('setting.push.noDevices') }}</div>
                 <div class="device-meta">
-                  <span>{{ pusher.app_display_name }}</span>
-                  <span v-if="pusher.lang">{{ t('setting.push.dnd.startTime') }}: {{ pusher.lang }}</span>
+                  <span v-if="pusher.app_display_name">{{ pusher.app_display_name }}</span>
+                  <span v-if="pusher.kind" class="device-type-badge">{{ getDeviceTypeLabel(pusher.kind) }}</span>
+                  <span v-if="pusher.pushkey" class="device-pushkey" :title="pusher.pushkey">
+                    {{ truncatePushKey(pusher.pushkey) }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -24,7 +27,43 @@
         </div>
         <n-empty v-else :description="t('setting.push.noDevices')" />
       </n-spin>
+      <div class="add-pusher-section">
+        <n-button size="small" @click="showAddPusherModal = true">
+          {{ t('setting.push.add_pusher.label') }}
+        </n-button>
+      </div>
     </div>
+
+    <n-modal v-model:show="showAddPusherModal" preset="dialog" :title="t('setting.push.add_pusher.title')">
+      <n-form label-placement="left" label-width="auto">
+        <n-form-item :label="t('setting.push.add_pusher.kind_label')">
+          <n-select v-model:value="newPusher.kind" :options="pusherKindOptions" />
+        </n-form-item>
+        <n-form-item :label="t('setting.push.add_pusher.app_id_label')">
+          <n-input v-model:value="newPusher.app_id" :placeholder="t('setting.push.add_pusher.app_id_placeholder')" />
+        </n-form-item>
+        <n-form-item :label="t('setting.push.add_pusher.app_display_name_label')">
+          <n-input
+            v-model:value="newPusher.app_display_name"
+            :placeholder="t('setting.push.add_pusher.app_display_name_placeholder')" />
+        </n-form-item>
+        <n-form-item :label="t('setting.push.add_pusher.device_display_name_label')">
+          <n-input
+            v-model:value="newPusher.device_display_name"
+            :placeholder="t('setting.push.add_pusher.device_display_name_placeholder')" />
+        </n-form-item>
+        <n-form-item :label="t('setting.push.add_pusher.pushkey_label')">
+          <n-input v-model:value="newPusher.pushkey" :placeholder="t('setting.push.add_pusher.pushkey_placeholder')" />
+        </n-form-item>
+        <n-form-item :label="t('setting.push.add_pusher.lang_label')">
+          <n-input v-model:value="newPusher.lang" placeholder="en" />
+        </n-form-item>
+      </n-form>
+      <template #action>
+        <n-button @click="showAddPusherModal = false">{{ t('setting.push.add_pusher.cancel') }}</n-button>
+        <n-button type="primary" @click="handleAddPusher">{{ t('setting.push.add_pusher.confirm') }}</n-button>
+      </template>
+    </n-modal>
 
     <n-divider />
 
@@ -56,6 +95,32 @@
     <n-divider />
 
     <div class="settings-section">
+      <h3 class="section-title">{{ t('setting.push.rules_by_kind.title') }}</h3>
+      <p class="section-desc">{{ t('setting.push.rules_by_kind.desc') }}</p>
+      <n-spin :show="rulesLoading">
+        <div v-for="kind in ruleKinds" :key="kind" class="rule-kind-group">
+          <h4 class="rule-kind-title">{{ t(`setting.push.rules_by_kind.kinds.${kind}`) }}</h4>
+          <div v-if="getRulesByKind(kind).length > 0">
+            <div v-for="rule in getRulesByKind(kind)" :key="rule.rule_id" class="setting-item">
+              <div class="setting-info">
+                <span class="setting-label">{{ formatRuleId(rule.rule_id) }}</span>
+                <span v-if="rule.pattern" class="setting-desc">
+                  {{ t('setting.push.rules_by_kind.pattern') }}: {{ rule.pattern }}
+                </span>
+              </div>
+              <n-switch
+                :value="rule.enabled !== false"
+                @update:value="(v: boolean) => handleRuleToggle(kind, rule, v)" />
+            </div>
+          </div>
+          <div v-else class="rule-empty">{{ t('setting.push.rules_by_kind.empty') }}</div>
+        </div>
+      </n-spin>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
       <h3 class="section-title">{{ t('setting.push.dnd.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -75,13 +140,49 @@
         </div>
       </div>
     </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">{{ t('setting.push.history.title') }}</h3>
+      <p class="section-desc">{{ t('setting.push.history.desc') }}</p>
+      <n-spin :show="historyLoading">
+        <div v-if="notifications.length > 0" class="notification-list">
+          <div v-for="(notif, idx) in notifications" :key="idx" class="notification-item">
+            <div class="notification-info">
+              <div class="notification-content">
+                {{ getNotificationContent(notif) }}
+              </div>
+              <div class="notification-meta">
+                <span v-if="notif.room_id" class="notification-room">{{ notif.room_id }}</span>
+                <span v-if="notif.ts" class="notification-time">{{ formatTimestamp(notif.ts as number) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <n-empty v-else :description="t('setting.push.history.empty')" />
+      </n-spin>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NEmpty, NSpin, NSwitch, NTimePicker, useDialog } from 'naive-ui'
-import { onMounted, onUnmounted, ref } from 'vue'
+import {
+  NButton,
+  NDivider,
+  NEmpty,
+  NForm,
+  NFormItem,
+  NInput,
+  NModal,
+  NSelect,
+  NSpin,
+  NSwitch,
+  NTimePicker,
+  useDialog
+} from 'naive-ui'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
@@ -110,6 +211,7 @@ const dialog = useDialog()
 
 const loading = ref(false)
 const rulesLoading = ref(false)
+const historyLoading = ref(false)
 const pushers = ref<IPusher[]>([])
 const pushRules = ref<IPushRules | null>(null)
 const masterEnabled = ref(true)
@@ -118,10 +220,29 @@ const invitePushEnabled = ref(true)
 const dndEnabled = ref(false)
 const dndStartTime = ref<number | null>(null)
 const dndEndTime = ref<number | null>(null)
+const notifications = ref<Array<Record<string, unknown>>>([])
 let unsubscribePushRules: (() => void) | null = null
 
+const showAddPusherModal = ref(false)
+const newPusher = reactive({
+  kind: 'http',
+  app_id: '',
+  app_display_name: '',
+  device_display_name: '',
+  pushkey: '',
+  lang: 'en'
+})
+
+const pusherKindOptions = [
+  { label: 'Web (HTTP)', value: 'http' },
+  { label: 'APNs (iOS)', value: 'apns' },
+  { label: 'FCM (Android)', value: 'fcm' }
+]
+
+const ruleKinds = ['override', 'content', 'room', 'sender', 'underride'] as const
+
 onMounted(async () => {
-  await Promise.allSettled([fetchPushers(), fetchPushRules()])
+  await Promise.allSettled([fetchPushers(), fetchPushRules(), fetchNotifications()])
   await loadDndSettings()
   unsubscribePushRules = matrixPushService.subscribePushRules(handlePushRulesUpdate)
 })
@@ -158,6 +279,18 @@ async function fetchPushRules() {
     loadSavedSettings()
   } finally {
     rulesLoading.value = false
+  }
+}
+
+async function fetchNotifications() {
+  historyLoading.value = true
+  try {
+    const result = await matrixNotificationService.getNotifications(undefined, 20)
+    notifications.value = result.notifications
+  } catch (error) {
+    logger.error('Failed to fetch notifications', error)
+  } finally {
+    historyLoading.value = false
   }
 }
 
@@ -216,6 +349,30 @@ async function loadDndSettings() {
   }
 }
 
+function getRulesByKind(kind: string): IPushRule[] {
+  if (!pushRules.value?.global) return []
+  const globalRules = pushRules.value.global as unknown as Record<string, IPushRule[] | undefined>
+  return globalRules[kind] ?? []
+}
+
+function formatRuleId(ruleId: string): string {
+  if (ruleId.startsWith('.m.rule.')) {
+    return ruleId.replace('.m.rule.', '')
+  }
+  return ruleId
+}
+
+async function handleRuleToggle(kind: string, rule: IPushRule, enabled: boolean) {
+  try {
+    await matrixPushService.setPushRuleEnabled('global', kind as PushRuleKind, rule.rule_id, enabled)
+    showFeedback(enabled ? t('setting.push.enabled') : t('setting.push.disabled'), 'success')
+    await fetchPushRules()
+  } catch (error) {
+    logger.error('Failed to toggle push rule', error)
+    showFeedback(t('setting.push.updateFailed'), 'error')
+  }
+}
+
 function handleDeletePusher(pusher: IPusher) {
   dialog.warning({
     title: t('setting.push.delete.title'),
@@ -232,6 +389,85 @@ function handleDeletePusher(pusher: IPusher) {
       }
     }
   })
+}
+
+async function handleAddPusher() {
+  if (!newPusher.app_id || !newPusher.pushkey) {
+    showFeedback(t('setting.push.add_pusher.required'), 'warning')
+    return
+  }
+  try {
+    await matrixNotificationService.setPusherByBody({
+      kind: newPusher.kind,
+      app_id: newPusher.app_id,
+      app_display_name: newPusher.app_display_name,
+      device_display_name: newPusher.device_display_name,
+      pushkey: newPusher.pushkey,
+      lang: newPusher.lang || 'en',
+      data: {}
+    })
+    showFeedback(t('setting.push.add_pusher.success'), 'success')
+    showAddPusherModal.value = false
+    resetNewPusher()
+    await fetchPushers()
+  } catch (error) {
+    logger.error('Failed to add pusher', error)
+    showFeedback(t('setting.push.add_pusher.failed'), 'error')
+  }
+}
+
+function resetNewPusher() {
+  newPusher.kind = 'http'
+  newPusher.app_id = ''
+  newPusher.app_display_name = ''
+  newPusher.device_display_name = ''
+  newPusher.pushkey = ''
+  newPusher.lang = 'en'
+}
+
+function getDeviceIcon(kind?: string): string {
+  switch (kind) {
+    case 'apns':
+      return 'mdi:apple'
+    case 'fcm':
+      return 'mdi:android'
+    default:
+      return 'mdi:bell-ring'
+  }
+}
+
+function getDeviceTypeLabel(kind?: string): string {
+  switch (kind) {
+    case 'apns':
+      return 'APNs'
+    case 'fcm':
+      return 'FCM'
+    case 'http':
+      return 'Web'
+    default:
+      return kind ?? 'Web'
+  }
+}
+
+function truncatePushKey(pushkey: string): string {
+  if (pushkey.length <= 12) return pushkey
+  return `${pushkey.slice(0, 6)}...${pushkey.slice(-6)}`
+}
+
+function getNotificationContent(notif: Record<string, unknown>): string {
+  const content = notif.content as Record<string, unknown> | undefined
+  if (content && typeof content === 'object' && 'body' in content) {
+    return String(content.body)
+  }
+  return t('setting.push.history.no_content')
+}
+
+function formatTimestamp(ts: number): string {
+  try {
+    return new Date(ts).toLocaleString()
+  } catch {
+    return String(ts)
+  }
 }
 
 async function handleMasterToggle(enabled: boolean) {
@@ -322,6 +558,12 @@ function handleDndTimeChange() {
   color: var(--hula-text-primary);
 }
 
+.section-desc {
+  margin: calc(var(--hula-space-2) * -1) 0 var(--hula-space-4);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+}
+
 .device-list {
   display: flex;
   flex-direction: column;
@@ -361,9 +603,25 @@ function handleDndTimeChange() {
   color: var(--hula-text-quaternary);
 }
 
+.device-type-badge {
+  padding: 0 var(--hula-space-1);
+  background-color: var(--hula-settings-divider);
+  border-radius: var(--hula-radius-sm);
+  font-size: var(--hula-font-size-xs);
+}
+
+.device-pushkey {
+  font-family: monospace;
+  font-size: var(--hula-font-size-xs);
+}
+
 .device-actions {
   display: flex;
   gap: var(--hula-space-2);
+}
+
+.add-pusher-section {
+  margin-top: var(--hula-space-3);
 }
 
 .setting-item {
@@ -390,6 +648,26 @@ function handleDndTimeChange() {
   margin-top: var(--hula-space-1);
 }
 
+.rule-kind-group {
+  margin-bottom: var(--hula-space-3);
+}
+
+.rule-kind-title {
+  font-size: var(--hula-font-size-base);
+  font-weight: var(--hula-font-weight-medium);
+  color: var(--hula-text-secondary);
+  margin-bottom: var(--hula-space-2);
+  padding: var(--hula-space-1) var(--hula-space-2);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
+}
+
+.rule-empty {
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+  padding: var(--hula-space-2) 0;
+}
+
 .time-range {
   display: flex;
   gap: 24px;
@@ -408,5 +686,47 @@ function handleDndTimeChange() {
 .time-label {
   font-size: var(--hula-font-size-base);
   color: var(--hula-text-secondary);
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hula-space-2);
+}
+
+.notification-item {
+  padding: var(--hula-space-3) var(--hula-space-4);
+  background-color: var(--hula-settings-card-bg);
+  border-radius: var(--hula-radius-sm);
+}
+
+.notification-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hula-space-1);
+}
+
+.notification-content {
+  font-size: var(--hula-font-size-base);
+  color: var(--hula-text-primary);
+  word-break: break-word;
+}
+
+.notification-meta {
+  display: flex;
+  gap: var(--hula-space-3);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
+}
+
+.notification-room {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-time {
+  white-space: nowrap;
 }
 </style>

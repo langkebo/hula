@@ -2,8 +2,7 @@ import { error, info } from '@tauri-apps/plugin-log'
 import { computed } from 'vue'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
-import type { MatrixCapabilities } from '@/stores/domains/chat/capability'
-import { useCapabilityStore } from '@/stores/domains/chat/capability'
+import type { MatrixCapabilities } from '@/types/message'
 import { matrixClientService } from './MatrixClientService'
 import { MATRIX_PATHS } from './paths'
 import { matrixAccountService } from './user/MatrixAccountService'
@@ -17,10 +16,16 @@ type MatrixCapabilitiesResponse = {
 }
 
 /**
- * Matrix 服务端能力探测服务
+ * Matrix server capability detection service.
  *
- * 负责应用启动或登录后，并发拉取 versions、capabilities 和 client config，
- * 并存入 capability store 供 UI 决策使用。
+ * Decoupled from Pinia store to break the circular dependency:
+ *   MatrixCapabilityService ↔ capability store ↔ matrix store
+ *
+ * - `fetchCapabilities()` returns data without writing to any store.
+ * - Query methods access the store via a lazily-initialized getter,
+ *   so the module-level import graph has no service → store edge.
+ * - The `useServerCapability()` composable bridges service + store at the
+ *   consumption layer (no circular import at the service definition level).
  */
 export type HulaCapability = 'sliding-sync' | 'e2ee' | 'voip' | 'friend-list' | 'admin-api'
 
@@ -35,6 +40,34 @@ export class CapabilityUnavailableError extends Error {
   }
 }
 
+/**
+ * Lazy store resolver — set at application boot by registerCapabilityStore().
+ * This breaks the static import cycle between service and store layers.
+ */
+let _capabilityStore: ReturnType<typeof import('@/stores/domains/chat/capability').useCapabilityStore> | null = null
+let _storeResolver: (() => ReturnType<typeof import('@/stores/domains/chat/capability').useCapabilityStore>) | null =
+  null
+
+/**
+ * Register the capability store resolver. Called once at app initialization
+ * (before any capability queries) to break the circular dependency.
+ */
+export function registerCapabilityStoreResolver(
+  resolver: () => ReturnType<typeof import('@/stores/domains/chat/capability').useCapabilityStore>
+): void {
+  _storeResolver = resolver
+  _capabilityStore = null // Reset cache so next access uses the new resolver
+}
+
+function getCapabilityStore() {
+  if (_capabilityStore) return _capabilityStore
+  if (_storeResolver) {
+    _capabilityStore = _storeResolver()
+    return _capabilityStore
+  }
+  throw new Error('[CapabilityService] Store not registered. Call registerCapabilityStoreResolver() during app init.')
+}
+
 export class MatrixCapabilityService {
   private capabilityMap: Record<HulaCapability, string> = {
     'sliding-sync': 'org.matrix.msc3575',
@@ -45,7 +78,7 @@ export class MatrixCapabilityService {
   }
 
   hasCapability(capability: HulaCapability): boolean {
-    const store = useCapabilityStore()
+    const store = getCapabilityStore()
     const featureKey = this.capabilityMap[capability]
     if (!featureKey) return false
     return store.hasFeature(featureKey).value || store.hasUnstable(featureKey).value
@@ -60,12 +93,12 @@ export class MatrixCapabilityService {
   }
 
   canUseSlidingSync(): boolean {
-    const store = useCapabilityStore()
+    const store = getCapabilityStore()
     return store.hasUnstable('org.matrix.msc3575').value || store.hasUnstable('org.matrix.simplified_msc3575').value
   }
 
   canUseE2EE(): boolean {
-    const store = useCapabilityStore()
+    const store = getCapabilityStore()
     const encryptionCapability = store.capabilities['m.room.encryption'] as { enabled?: boolean } | undefined
     if (encryptionCapability?.enabled === false) {
       return false
@@ -82,20 +115,20 @@ export class MatrixCapabilityService {
       throw new CapabilityUnavailableError(capability)
     }
   }
+
   /**
-   * 刷新并加载服务端能力
+   * Fetch server capabilities without writing to any store.
+   * The caller is responsible for persisting the result.
    */
-  async refreshCapabilities(): Promise<void> {
+  async fetchCapabilities(): Promise<MatrixCapabilities | null> {
     const client = matrixClientService.getClient()
     if (!client) {
-      error('[CapabilityService] 客户端未初始化，跳过能力探测')
-      return
+      error('[CapabilityService] Client not initialized, skipping capability detection')
+      return null
     }
 
-    const store = useCapabilityStore()
     const baseUrl = client.getHomeserverUrl()
-
-    info(`[CapabilityService] 开始探测服务端能力: ${baseUrl}`)
+    info(`[CapabilityService] Detecting server capabilities: ${baseUrl}`)
 
     try {
       const [versionsResult, capabilitiesResult, clientConfigResult] = await Promise.allSettled([
@@ -108,16 +141,28 @@ export class MatrixCapabilityService {
       const capabilities = capabilitiesResult.status === 'fulfilled' ? capabilitiesResult.value : { capabilities: {} }
       const clientConfig = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
 
-      store.setCapabilities({
+      const result: MatrixCapabilities = {
         unstable_features: versions.unstable_features || {},
         capabilities: capabilities.capabilities || {},
         client_config: clientConfig || {}
-      })
+      }
 
-      info('[CapabilityService] 服务端能力探测完成')
+      info('[CapabilityService] Server capability detection complete')
+      return result
     } catch (err) {
-      error(`[CapabilityService] 服务端能力探测部分失败: ${err}`)
-      // 失败时不中断流程，保持乐观默认或上次状态
+      error(`[CapabilityService] Server capability detection partially failed: ${err}`)
+      return null
+    }
+  }
+
+  /**
+   * @deprecated Use fetchCapabilities() + store.setCapabilities() instead.
+   * Kept for backward compatibility during migration.
+   */
+  async refreshCapabilities(): Promise<void> {
+    const data = await this.fetchCapabilities()
+    if (data) {
+      getCapabilityStore().setCapabilities(data)
     }
   }
 
@@ -155,10 +200,11 @@ export class MatrixCapabilityService {
 export const matrixCapabilityService = new MatrixCapabilityService()
 
 /**
- * Composable: 统一的服务器特性检查
+ * Composable: unified server capability checks.
+ * This is the bridge layer that connects service + store at consumption time.
  */
 export function useServerCapability() {
-  const store = useCapabilityStore()
+  const store = getCapabilityStore()
   const service = matrixCapabilityService
 
   return {

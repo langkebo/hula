@@ -162,7 +162,10 @@
                         align="center"
                         :size="4"
                         class="flex-1">
-                        <img class="size-12px" :src="getUserState(item.userStateId)?.url" alt="" />
+                        <img
+                          class="size-12px"
+                          :src="getUserState(item.userStateId)?.url"
+                          :alt="translateStateTitle(getUserState(item.userStateId)?.title)" />
                         <span
                           class="text-10px text-[--hula-text-tertiary] flex-1 min-w-0 truncate"
                           :title="translateStateTitle(getUserState(item.userStateId)?.title)">

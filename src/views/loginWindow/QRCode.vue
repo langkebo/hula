@@ -4,7 +4,7 @@
     <ActionBar :max-w="false" :shrink="false" proxy data-tauri-drag-region />
 
     <n-flex justify="center" class="mt-15px" data-tauri-drag-region>
-      <img src="/hula.png" class="w-100px h-40px drop-shadow-xl" alt="" data-tauri-drag-region />
+      <img src="/hula.png" class="w-100px h-40px drop-shadow-xl" alt="HuLa" data-tauri-drag-region />
     </n-flex>
 
     <!-- 二维码 -->

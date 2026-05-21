@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { matrixExtensionEndpoints } from '@/services/backend'
-import { httpClient } from '@/utils/HttpClient'
+import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AssistantModelPresets')
@@ -32,17 +32,19 @@ const fetchAssistantModelPresets = async (force = false) => {
   assistantModelLoading.value = true
   assistantModelError.value = null
   try {
-    const response = await httpClient.requestResult<AssistantModelPreset[]>({
+    const response = await matrixHttpClient.requestResult<AssistantModelPreset[]>({
       url: matrixExtensionEndpoints.GET_ASSISTANT_MODEL_LIST
     })
     if (!response.ok) {
       throw response.error
     }
-    const normalized = (response.data ?? []).map((preset) => ({
+    const normalized = (response.data ?? []).map((preset: AssistantModelPreset) => ({
       ...preset,
       modelUrl: appendVersionQuery(preset.modelUrl, preset.version)
     }))
-    const sorted = normalized.slice().sort((a, b) => Number(a.id) - Number(b.id))
+    const sorted = normalized
+      .slice()
+      .sort((a: AssistantModelPreset, b: AssistantModelPreset) => Number(a.id) - Number(b.id))
     const metaMap: Record<string, { name: string; version: string }> = {}
     for (const preset of sorted) {
       metaMap[preset.modelUrl] = {

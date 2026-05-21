@@ -77,7 +77,6 @@ const handleValueChange = (value: string) => {
 }
 
 const handleEnterSearch = () => {
-  emitSearch.cancel?.()
   emit('search', props.modelValue)
 }
 </script>

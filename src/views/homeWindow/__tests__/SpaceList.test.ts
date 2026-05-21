@@ -10,8 +10,6 @@ const {
   handleMsgClickMock,
   handleMsgDeleteMock,
   handleMsgDblclickMock,
-  visibleMenuMock,
-  visibleSpecialMenuMock,
   useMittOnMock,
   useMittEmitMock,
   showFeedbackMock,
@@ -43,8 +41,6 @@ const {
   handleMsgClickMock: vi.fn(),
   handleMsgDeleteMock: vi.fn(),
   handleMsgDblclickMock: vi.fn(),
-  visibleMenuMock: vi.fn(() => []),
-  visibleSpecialMenuMock: vi.fn(() => []),
   useMittOnMock: vi.fn(),
   useMittEmitMock: vi.fn(),
   showFeedbackMock: vi.fn(),
@@ -186,9 +182,7 @@ vi.mock('@/hooks/useMessage.ts', () => ({
   useMessage: () => ({
     handleMsgClick: handleMsgClickMock,
     handleMsgDelete: handleMsgDeleteMock,
-    handleMsgDblclick: handleMsgDblclickMock,
-    visibleMenu: visibleMenuMock,
-    visibleSpecialMenu: visibleSpecialMenuMock
+    handleMsgDblclick: handleMsgDblclickMock
   })
 }))
 
@@ -223,8 +217,6 @@ vi.mock('@/composables/workbench/useSessionListState', () => ({
     retrySessions: vi.fn(),
     sessionList: computed(() => filteredSessionSource.value),
     selectedSession: computed(() => filteredSessionSource.value[0] ?? null),
-    handleMenuShow: vi.fn(),
-    getItemClasses: vi.fn(() => ({})),
     invalidateSessionCache: vi.fn()
   })
 }))

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import { EventType } from '@/services/matrix/sdk'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -61,7 +61,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
     try {
       isAddAnnoun.value = canAddAnnouncement.value
 
-      const room = await matrixRoomService.getRoom(targetRoomId, false)
+      const room = await matrixRoomQueryService.getRoom(targetRoomId, false)
       if (!room) {
         announList.value = []
         announNum.value = 0

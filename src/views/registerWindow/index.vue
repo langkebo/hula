@@ -12,7 +12,7 @@
       <n-flex class="ma text-center w-full max-w-320px pointer-events-auto" vertical :size="16">
         <n-flex justify="center" align="center" :size="12">
           <span class="text-(24px [--color-primary]) textFont">{{ t('auth.register.title') }}</span>
-          <img class="w-100px h-40px" src="/hula.png" alt="" />
+          <img class="w-100px h-40px" src="/hula.png" alt="HuLa" />
         </n-flex>
 
         <div class="overflow-y-auto max-h-380px px-10px">

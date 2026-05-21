@@ -13,7 +13,7 @@
       class="p-20px box-border rounded-8px">
       <!-- 当前选中的状态 -->
       <n-flex justify="center" align="center" class="py-10px">
-        <img class="w-34px h-34px" :src="statusIcon" alt="" />
+        <img class="w-34px h-34px" :src="statusIcon" :alt="displayStatusTitle" />
         <span class="text-22px ml-8px">{{ displayStatusTitle }}</span>
       </n-flex>
 
@@ -36,7 +36,7 @@
             align="center"
             :size="8"
             class="status-item">
-            <img class="size-24px" :src="item.url" alt="" />
+            <img class="size-24px" :src="item.url" :alt="translateStateTitle(item.title)" />
             <span class="text-11px" :title="translateStateTitle(item.title)">
               {{ translateStateTitle(item.title) }}
             </span>

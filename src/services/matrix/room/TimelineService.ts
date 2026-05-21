@@ -102,6 +102,28 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
     }
   }
 
+  async getRoomNotifications(
+    roomId: string,
+    params?: { from?: string; limit?: number }
+  ): Promise<{ notifications: Array<Record<string, unknown>>; next_token?: string }> {
+    const client = this.getClient()
+    try {
+      const queryParams: Record<string, string> = {}
+      if (params?.from) queryParams.from = params.from
+      if (params?.limit) queryParams.limit = String(params.limit)
+
+      const result = await client.http.authedRequest(
+        'GET',
+        MATRIX_PATHS.ROOM.NOTIFICATIONS(roomId),
+        Object.keys(queryParams).length > 0 ? queryParams : undefined
+      )
+      return result as { notifications: Array<Record<string, unknown>>; next_token?: string }
+    } catch (err) {
+      error(`[MatrixRoom] 获取房间通知失败: ${err}`)
+      return { notifications: [] }
+    }
+  }
+
   async getRoomCall(roomId: string, callId: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {

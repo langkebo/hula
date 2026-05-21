@@ -15,12 +15,13 @@
       <template v-else-if="roomDetail">
         <div class="pane-header">
           <div class="header-avatar-wrapper">
-            <div class="header-avatar" @click="handleAvatarClick">
+            <div class="header-avatar" :class="{ 'is-uploading': avatarUploading }" @click="handleAvatarClick">
               <img v-if="roomDetail.avatar" :src="roomDetail.avatar" alt="room avatar" class="avatar-img" />
               <div v-else class="avatar-fallback">
                 <svg class="size-24px color-[--hula-text-tertiary]"><use href="#view-grid-card"></use></svg>
               </div>
-              <div class="avatar-overlay" v-if="roomDetail.canEdit">
+              <n-spin v-if="avatarUploading" size="small" class="avatar-spin" />
+              <div class="avatar-overlay" v-else-if="roomDetail.canEdit">
                 <svg class="size-14px"><use href="#camera"></use></svg>
               </div>
             </div>
@@ -175,15 +176,30 @@
   </div>
 
   <InviteDialog v-model:visible="showInviteDialog" :room-id="roomId ?? ''" />
+
+  <input
+    ref="avatarFileInput"
+    type="file"
+    accept="image/jpeg,image/png,image/webp"
+    class="hidden"
+    @change="handleAvatarFileChange" />
+  <AvatarCropper
+    ref="avatarCropperRef"
+    v-model:show="avatarCropperVisible"
+    :image-url="avatarLocalImageUrl"
+    @crop="handleAvatarCrop" />
 </template>
 
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import InviteDialog from '@/components/room/InviteDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
+import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { roomStateService } from '@/services/matrix/room/RoomStateService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 
 interface RoomDetail {
@@ -233,6 +249,26 @@ const groupStore = useGroupStore()
 const loading = ref(false)
 const roomDetail = ref<RoomDetail | null>(null)
 const showInviteDialog = ref(false)
+const avatarUploading = ref(false)
+
+const {
+  fileInput: avatarFileInput,
+  localImageUrl: avatarLocalImageUrl,
+  showCropper: avatarCropperVisible,
+  cropperRef: avatarCropperRef,
+  openAvatarCropper,
+  handleFileChange: handleAvatarFileChange,
+  handleCrop: onAvatarCrop
+} = useAvatarUpload({
+  onSuccess: async (downloadUrl) => {
+    if (!props.roomId) return
+    await roomStateService.setRoomAvatar(props.roomId, downloadUrl)
+    if (roomDetail.value) {
+      roomDetail.value = { ...roomDetail.value, avatar: downloadUrl }
+    }
+    showFeedback(t('room.detail.avatar_updated'), 'success')
+  }
+})
 
 const truncateId = (id: string) => {
   if (id.length <= 20) return id
@@ -247,7 +283,17 @@ const copyRoomId = async () => {
 }
 
 const handleAvatarClick = () => {
-  // TODO: integrate avatar upload/edit
+  if (!roomDetail.value?.canEdit || avatarUploading.value) return
+  openAvatarCropper()
+}
+
+const handleAvatarCrop = async (cropBlob: Blob) => {
+  avatarUploading.value = true
+  try {
+    await onAvatarCrop(cropBlob)
+  } finally {
+    avatarUploading.value = false
+  }
 }
 
 const enterRoom = () => {
@@ -408,11 +454,24 @@ watch(
   background: rgba(0, 0, 0, 0.4);
   opacity: 0;
   transition: opacity 0.15s;
-  color: #fff;
+  color: var(--hula-text-inverse);
 }
 
 .header-avatar:hover .avatar-overlay {
   opacity: 1;
+}
+
+.header-avatar.is-uploading {
+  cursor: wait;
+}
+
+.avatar-spin {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .header-info {

@@ -59,7 +59,7 @@
             <van-tab :title="t('mobile_files.media')">
               <div class="grid grid-cols-3 gap-8px pt-12px">
                 <div v-for="file in mediaFiles" :key="file.id" class="aspect-square rounded-8px overflow-hidden">
-                  <img v-if="file.type === 'image'" :src="file.url" class="w-full h-full object-cover" />
+                  <img v-if="file.type === 'image'" :src="file.url" class="w-full h-full object-cover" alt="文件图片" />
                   <div v-else class="w-full h-full bg-[--hula-surface-subtle] flex items-center justify-center">
                     <Icon icon="mdi:play-circle" :width="32" color="var(--hula-text-secondary)" />
                   </div>

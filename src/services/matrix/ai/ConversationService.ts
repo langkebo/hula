@@ -1,6 +1,5 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import { matrixExtensionEndpoints } from '@/services/backend'
-import { httpClient } from '@/utils/HttpClient'
+import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 
 export interface Conversation {
   id: string
@@ -26,17 +25,14 @@ export interface Message {
 
 class MatrixConversationService {
   async page(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: Conversation[]; total: number }> {
-    try {
-      const result = await httpClient.request<{ list: Conversation[]; total: number }>({
+    return matrixHttpClient.request<{ list: Conversation[]; total: number }>(
+      {
         url: matrixExtensionEndpoints.CONVERSATION_PAGE,
         params
-      })
-      info(`[MatrixConversation] 获取会话列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixConversation] 获取会话列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixConversation' }
+    )
   }
 
   async create(params: {
@@ -45,17 +41,15 @@ class MatrixConversationService {
     title?: string
     modelId?: string
   }): Promise<Conversation> {
-    try {
-      const result = await httpClient.request<Conversation>({
+    return matrixHttpClient.request<Conversation>(
+      {
         url: matrixExtensionEndpoints.CONVERSATION_CREATE_MY,
+        method: 'POST',
         body: params
-      })
-      info(`[MatrixConversation] 创建会话成功: ${result.id}`)
-      return result
-    } catch (err) {
-      logError(`[MatrixConversation] 创建会话失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixConversation' }
+    )
   }
 
   async update(params: {
@@ -66,73 +60,63 @@ class MatrixConversationService {
     modelId?: string
     knowledgeId?: string
   }): Promise<Conversation> {
-    try {
-      const result = await httpClient.request<Conversation>({
+    return matrixHttpClient.request<Conversation>(
+      {
         url: matrixExtensionEndpoints.CONVERSATION_UPDATE_MY,
+        method: 'POST',
         body: params
-      })
-      info(`[MatrixConversation] 更新会话成功: ${params.id}`)
-      return result
-    } catch (err) {
-      logError(`[MatrixConversation] 更新会话失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixConversation' }
+    )
   }
 
   async delete(params: { conversationIdList: string[] }): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.CONVERSATION_DELETE_MY,
+        method: 'POST',
         body: params
-      })
-      info(`[MatrixConversation] 删除会话成功`)
-      return true
-    } catch (err) {
-      logError(`[MatrixConversation] 删除会话失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixConversation' }
+    )
+    return true
   }
 
   async messageListByConversationId(params: { conversationId: string }): Promise<Message[]> {
-    try {
-      const result = await httpClient.request<Message[]>({
+    return matrixHttpClient.request<Message[]>(
+      {
         url: matrixExtensionEndpoints.MESSAGE_LIST_BY_CONVERSATION_ID,
         params
-      })
-      info(`[MatrixConversation] 获取会话消息列表成功`)
-      return result
-    } catch (err) {
-      logError(`[MatrixConversation] 获取会话消息列表失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixConversation' }
+    )
   }
 
   async messageDelete(params: { id: string }): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.MESSAGE_DELETE,
         params
-      })
-      info(`[MatrixConversation] 删除消息成功: ${params.id}`)
-      return true
-    } catch (err) {
-      logError(`[MatrixConversation] 删除消息失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixConversation' }
+    )
+    return true
   }
 
   async messageDeleteByConversationId(params: { conversationId: string }): Promise<boolean> {
-    try {
-      await httpClient.request({
+    await matrixHttpClient.request(
+      {
         url: matrixExtensionEndpoints.MESSAGE_DELETE_BY_CONVERSATION_ID,
         params
-      })
-      info(`[MatrixConversation] 删除会话所有消息成功`)
-      return true
-    } catch (err) {
-      logError(`[MatrixConversation] 删除会话所有消息失败: ${err}`)
-      throw err
-    }
+      },
+      undefined,
+      { logPrefix: 'MatrixConversation' }
+    )
+    return true
   }
 }
 

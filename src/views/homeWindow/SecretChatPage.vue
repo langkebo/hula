@@ -29,7 +29,7 @@
           class="session-item"
           @click="handleSessionClick(session)">
           <div class="session-avatar">
-            <img v-if="session.avatar" :src="session.avatar" alt="" />
+            <img v-if="session.avatar" :src="session.avatar" :alt="session.name + '的头像'" />
             <div v-else class="avatar-placeholder">
               {{ session.name?.charAt(0) || '?' }}
             </div>

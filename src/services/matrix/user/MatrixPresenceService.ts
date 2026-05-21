@@ -8,15 +8,11 @@
 import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import * as MatrixClientServiceModule from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 
-const matrixClientServiceExports = MatrixClientServiceModule as Record<string, unknown>
-const matrixClientService = (
-  'default' in matrixClientServiceExports
-    ? matrixClientServiceExports['default']
-    : matrixClientServiceExports['matrixClientService']
-) as typeof import('../MatrixClientService').matrixClientService
+const logger = createLogger('MatrixPresenceService')
 
 /**
  * 在线状态类型
@@ -383,8 +379,8 @@ class MatrixPresenceService extends BaseMatrixService {
         try {
           const client = this.getClient()
           client.off('User.presence' as never, this.clientPresenceListener as never)
-        } catch {
-          // Client might be gone, ignore
+        } catch (err) {
+          logger.warn('Presence update failed (client may be gone):', err)
         }
         this.clientPresenceListener = null
       }

@@ -1,14 +1,9 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import * as MatrixClientServiceModule from '../MatrixClientService'
 
-const matrixClientServiceExports = MatrixClientServiceModule as Record<string, unknown>
-const _matrixClientService = (
-  'default' in matrixClientServiceExports
-    ? matrixClientServiceExports['default']
-    : matrixClientServiceExports['matrixClientService']
-) as typeof import('../MatrixClientService').matrixClientService
+const logger = createLogger('MatrixVoIP')
 
 let turnAvailableCache: boolean | null = null
 let turnCheckTimestamp = 0
@@ -99,8 +94,8 @@ class MatrixVoIPService extends BaseMatrixService {
     let client: MatrixClient
     try {
       client = this.getClient()
-    } catch {
-      warn('[VoIP] 客户端未初始化')
+    } catch (err) {
+      logger.warn('initialize getClient failed:', err)
       return
     }
 
@@ -469,7 +464,8 @@ class MatrixVoIPService extends BaseMatrixService {
     let client: MatrixClient
     try {
       client = this.getClient()
-    } catch {
+    } catch (err) {
+      logger.warn('getCallStats getClient failed:', err)
       return null
     }
 
@@ -508,7 +504,8 @@ class MatrixVoIPService extends BaseMatrixService {
         jitter,
         roundTripTime
       }
-    } catch {
+    } catch (err) {
+      logger.warn('getCallStats failed:', err)
       return null
     }
   }
@@ -519,7 +516,8 @@ class MatrixVoIPService extends BaseMatrixService {
       const hasAudio = devices.some((d) => d.kind === 'audioinput')
       const hasVideo = devices.some((d) => d.kind === 'videoinput')
       return { audio: hasAudio, video: hasVideo }
-    } catch {
+    } catch (err) {
+      logger.warn('checkMediaPermissions failed:', err)
       return { audio: false, video: false }
     }
   }
@@ -531,7 +529,8 @@ class MatrixVoIPService extends BaseMatrixService {
         audio: devices.filter((d) => d.kind === 'audioinput'),
         video: devices.filter((d) => d.kind === 'videoinput')
       }
-    } catch {
+    } catch (err) {
+      logger.warn('getMediaDevices failed:', err)
       return { audio: [], video: [] }
     }
   }
@@ -568,7 +567,8 @@ class MatrixVoIPService extends BaseMatrixService {
     let client: MatrixClient
     try {
       client = this.getClient()
-    } catch {
+    } catch (err) {
+      logger.warn('checkTurnAvailability getClient failed:', err)
       turnAvailableCache = false
       turnCheckTimestamp = now
       return { available: false, reason: '客户端未初始化' }
@@ -615,7 +615,8 @@ class MatrixVoIPService extends BaseMatrixService {
     let client: MatrixClient
     try {
       client = this.getClient()
-    } catch {
+    } catch (err) {
+      logger.warn('checkVoipAvailability getClient failed:', err)
       return { voipAvailable: false, turnAvailable: false, message: '客户端未初始化' }
     }
 

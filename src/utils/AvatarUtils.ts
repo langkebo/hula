@@ -10,6 +10,11 @@ export class AvatarUtils {
   private static readonly RANGE_START = parseInt(AvatarUtils.DEFAULT_AVATAR_RANGE.start, 10)
   private static readonly RANGE_END = parseInt(AvatarUtils.DEFAULT_AVATAR_RANGE.end, 10)
 
+  private static readonly DEFAULT = '/logoD.png'
+
+  /** Memoization cache: avatar input -> resolved URL */
+  private static readonly cache = new Map<string, string>()
+
   /**
    * 检查头像字符串是否为默认头像 (001-022)
    * @param avatar - 要检查的头像字符串
@@ -28,17 +33,52 @@ export class AvatarUtils {
   }
 
   /**
-   * 根据头像值获取头像URL
+   * 根据头像值获取头像URL（带 memoization 缓存）
    * @param avatar - 头像字符串或URL
    * @returns 头像字符串或URL
    */
   public static getAvatarUrl(avatar: string | null | undefined): string {
-    const DEFAULT = '/logoD.png'
-
-    if (!avatar) return DEFAULT
+    if (!avatar) return AvatarUtils.DEFAULT
     const rawAvatar = avatar.trim()
-    if (AvatarUtils.isDefaultAvatar(rawAvatar)) {
-      return `/avatar/${rawAvatar}.webp`
+
+    const cached = AvatarUtils.cache.get(rawAvatar)
+    if (cached !== undefined) return cached
+
+    const result = AvatarUtils.resolveAvatarUrl(rawAvatar)
+    AvatarUtils.cache.set(rawAvatar, result)
+    return result
+  }
+
+  /**
+   * 批量预解析头像 URL，适用于列表渲染前调用
+   * 避免渲染时逐个调用 getAvatarUrl 导致的重复计算
+   * @param avatars - 头像字符串数组
+   */
+  public static batchResolve(avatars: (string | null | undefined)[]): void {
+    for (const avatar of avatars) {
+      if (avatar) {
+        const rawAvatar = avatar.trim()
+        if (!AvatarUtils.cache.has(rawAvatar)) {
+          AvatarUtils.cache.set(rawAvatar, AvatarUtils.resolveAvatarUrl(rawAvatar))
+        }
+      }
+    }
+  }
+
+  /**
+   * 清除缓存（通常不需要调用，仅在头像更新时使用）
+   */
+  public static clearCache(avatar?: string): void {
+    if (avatar) {
+      AvatarUtils.cache.delete(avatar.trim())
+    } else {
+      AvatarUtils.cache.clear()
+    }
+  }
+
+  private static resolveAvatarUrl(avatar: string): string {
+    if (AvatarUtils.isDefaultAvatar(avatar)) {
+      return `/avatar/${avatar}.webp`
     }
 
     try {
@@ -52,6 +92,6 @@ export class AvatarUtils {
         return `/avatar/${avatar}.webp`
       }
     }
-    return DEFAULT
+    return AvatarUtils.DEFAULT
   }
 }

@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import type { SessionItem } from '@/stores/domains/chat/chat'
 import RoomSessionList from '../RoomSessionList.vue'
 
 const { scrollToMock, themesRefMock, globalStoreMock } = vi.hoisted(() => ({
@@ -14,11 +15,15 @@ const { scrollToMock, themesRefMock, globalStoreMock } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('pinia', () => ({
-  storeToRefs: () => ({
-    themes: themesRefMock
-  })
-}))
+vi.mock('pinia', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('pinia')>()
+  return {
+    ...actual,
+    storeToRefs: () => ({
+      themes: themesRefMock
+    })
+  }
+})
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -28,6 +33,24 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/stores/domains/widget/global', () => ({
   useGlobalStore: () => globalStoreMock
+}))
+
+vi.mock('@/stores/domains/chat/chat/session', () => ({
+  useSessionStore: () => ({
+    getUnreadDetail: vi.fn(() => null)
+  })
+}))
+
+vi.mock('@/stores/domains/chat/room', () => ({
+  useRoomStore: () => ({
+    getTagsForRoom: vi.fn(() => ({}))
+  })
+}))
+
+vi.mock('@/composables/chat/useTyping', () => ({
+  useTyping: () => ({
+    getTypingUsersText: vi.fn(() => '')
+  })
 }))
 
 vi.mock('@/stores/domains/settings/setting', () => ({
@@ -46,15 +69,17 @@ vi.mock('@/components/common/ContextMenu.vue', () => ({
 vi.mock('../HulaRoomListItem.vue', () => ({
   default: {
     name: 'HulaRoomListItem',
-    props: ['item', 'batchMode', 'batchSelected'],
-    emits: ['batch-toggle'],
+    props: ['item', 'batchMode', 'batchSelected', 'selected'],
+    emits: ['batch-toggle', 'contextmenu'],
     template: `
       <button
         type="button"
         data-test="HulaRoomListItem"
         :data-batch-mode="String(batchMode)"
         :data-batch-selected="String(batchSelected)"
-        @click="$emit('batch-toggle', item?.roomId)">
+        :data-selected="String(selected)"
+        @click="$emit('batch-toggle', item?.roomId)"
+        @contextmenu.prevent="$emit('contextmenu', $event, item)">
         {{ item?.name }}
       </button>
     `
@@ -258,5 +283,19 @@ describe('RoomSessionList', () => {
     const list = wrapper.get('[role="list"]')
     expect(list.attributes('aria-label')).toBe('space.session_list_label')
     expect(list.attributes('aria-busy')).toBe('true')
+  })
+
+  it('correctly identifies the selected session via getItemClasses', () => {
+    const wrapper = mountComponent({
+      sessionList: [
+        { roomId: '!room:1', name: 'Alpha' },
+        { roomId: '!room:2', name: 'Beta' }
+      ] as never,
+      getItemClasses: (item: SessionItem) => ({ selected: item.roomId === '!room:2' })
+    })
+
+    const items = wrapper.findAll('[data-test="HulaRoomListItem"]')
+    expect(items[0].attributes('data-selected')).toBe('false')
+    expect(items[1].attributes('data-selected')).toBe('true')
   })
 })
