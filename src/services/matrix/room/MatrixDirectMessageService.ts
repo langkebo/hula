@@ -49,7 +49,8 @@ class MatrixDirectMessageService extends BaseMatrixService {
     try {
       const client = matrixClientService.getClient()
       if (!client) {
-        throw new Error(this.t('matrix_error.common.client_not_initialized'))
+        // 客户端未就绪是暂时状态，不需要 ERROR 日志
+        return
       }
 
       this.observedClient = client
@@ -58,12 +59,11 @@ class MatrixDirectMessageService extends BaseMatrixService {
           ? (client.getDirectMessageManager() as DirectMessageManager)
           : (client.dmManager as DirectMessageManager)
       if (!this.dmManager) {
-        error('[MatrixDM] DirectMessageManager 未在客户端上找到')
+        // DirectMessageManager 未注册是暂时状态（扩展可能还在加载）
         return
       }
 
       await this.refreshCache()
-      info('[MatrixDM] DirectMessageService 初始化完成')
     } catch (err) {
       error(`[MatrixDM] 初始化失败: ${err}`)
       throw err

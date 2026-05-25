@@ -287,7 +287,7 @@ interface LocalConversation {
   updatedAt: number
 }
 
-type AIProvider = 'openclaw' | 'siliconflow'
+type AIProvider = 'siliconflow'
 
 const messages = ref<Message[]>([])
 const inputText = ref('')
@@ -295,15 +295,6 @@ const isGenerating = ref(false)
 const chatContainerRef = ref<HTMLElement | null>(null)
 const currentConversationId = ref<string | null>(null)
 const conversations = ref<LocalConversation[]>([])
-
-const openclawModels: AIModel[] = [
-  { id: 'gpt-4', name: 'GPT-4', provider: 'openclaw' },
-  { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'openclaw' },
-  { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'openclaw' },
-  { id: 'claude-3-opus', name: 'Claude-3 Opus', provider: 'openclaw' },
-  { id: 'claude-3-sonnet', name: 'Claude-3 Sonnet', provider: 'openclaw' },
-  { id: 'claude-3-haiku', name: 'Claude-3 Haiku', provider: 'openclaw' }
-]
 
 const siliconflowModels: AIModel[] = [
   { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen2.5-72B', provider: 'siliconflow' },
@@ -313,7 +304,7 @@ const siliconflowModels: AIModel[] = [
   { id: 'microsoft Phi-3-medium-4k-instruct', name: 'Phi-3 Medium', provider: 'siliconflow' }
 ]
 
-const selectedProvider = ref<AIProvider>('openclaw')
+const selectedProvider = ref<AIProvider>('siliconflow')
 const selectedProviderValues = computed({
   get: () => [selectedProvider.value],
   set: (val: string[]) => {
@@ -348,7 +339,6 @@ const isConnected = computed(() => {
 })
 
 const providerDisplayName = computed(() => {
-  if (selectedProvider.value === 'openclaw') return 'OpenClaw'
   return 'SiliconFlow'
 })
 
@@ -364,15 +354,9 @@ const connectionStatusText = computed(() => {
   return t('ai_assistant.status.disconnected')
 })
 
-const providerColumns: { text: string; value: string }[] = [
-  { text: 'OpenClaw', value: 'openclaw' },
-  { text: 'SiliconFlow', value: 'siliconflow' }
-]
+const providerColumns: { text: string; value: string }[] = [{ text: 'SiliconFlow', value: 'siliconflow' }]
 
 const filteredModels = computed(() => {
-  if (selectedProvider.value === 'openclaw') {
-    return openclawModels
-  }
   return siliconflowModels
 })
 

@@ -256,6 +256,15 @@
     "password_changed": "密码已修改",
     "password_change_failed": "密码修改失败",
     "password_change_failed_with_hint": "密码修改失败，请检查当前密码是否正确",
+    "password_too_short": "密码长度不能少于8个字符",
+    "password_too_long": "密码长度不能超过128个字符",
+    "password_need_uppercase": "密码必须包含至少一个大写字母",
+    "password_need_lowercase": "密码必须包含至少一个小写字母",
+    "password_need_digit": "密码必须包含至少一个数字",
+    "password_need_special": "密码必须包含至少一个特殊字符（如 !@#$%^&*）",
+    "password_too_weak": "密码强度不足，请设置更复杂的密码",
+    "password_wrong_current": "当前密码不正确，请重新输入",
+    "logout_other_devices": "修改密码后登出其他设备",
     "danger_zone": "危险操作区",
     "deactivate_account": "停用账户",
     "deactivate_account_desc": "永久删除您的账户和数据",
@@ -620,7 +629,12 @@
     "invite_blocklist_removed": "已从邀请黑名单移除",
     "user_already_in_allowlist": "该用户已在白名单中",
     "invite_allowlist_added": "已添加到邀请白名单",
-    "invite_allowlist_removed": "已从邀请白名单移除"
+    "invite_allowlist_removed": "已从邀请白名单移除",
+    "security_key_label": "安全密钥",
+    "security_key_configured_desc": "安全密钥已设置，你的加密密钥受到保护",
+    "security_key_not_configured_desc": "未设置安全密钥，建议设置以保护加密数据",
+    "setup_action": "设置",
+    "security_key_created": "安全密钥设置成功"
   },
   "sessions": {
     "title": "会话",
@@ -1321,7 +1335,16 @@
       "restoring_progress": "正在恢复密钥... {progress}%",
       "restore_result_success": "成功恢复 {imported} 个密钥",
       "restore_result_failed": "恢复失败，请检查密钥是否正确"
-    }
+    },
+    "security_key_section": "安全密钥",
+    "security_key_label": "安全密钥",
+    "security_key_configured": "安全密钥已设置，你的加密密钥受到保护",
+    "security_key_not_configured": "未设置安全密钥，建议设置以保护加密数据",
+    "security_key_created": "安全密钥设置成功",
+    "e2ee_incomplete_hint": "加密设置尚未完成，建议完成设置以保护消息安全",
+    "quick_setup": "快速设置",
+    "onboarding_complete": "加密设置完成！",
+    "onboarding_skip": "已跳过加密设置，可稍后在设置中完成"
   },
   "threepid": {
     "title": "账号绑定",

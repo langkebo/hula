@@ -12,6 +12,9 @@ declare global {
     hulaUserStore: any
     hulaRouter: any
     pinia: any
+    __HULA_APP_READY__?: boolean
+    __HULA_APP_READY_PHASE__?: 'booting' | 'mounted' | 'router-ready'
+    __HULA_PINIA_READY__?: boolean
     __hula_cache_stats?: { size: number; maxSize: number; hitRate: number; hits: number; misses: number }
   }
 }
@@ -58,4 +61,13 @@ export type ProxySettings = {
 export type MsgId = {
   msgId: string
   fromUid: string
+}
+
+// 模块增强声明，以扩展 MatrixClient 类型
+import { MatrixClient } from 'matrix-js-sdk/src/client';
+import { MatrixClientExtensionMethods } from 'matrix-js-sdk/src/matrix-client-extensions.d';
+
+declare module 'matrix-js-sdk/src/client' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  export interface MatrixClient extends MatrixClientExtensionMethods {}
 }

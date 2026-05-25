@@ -1,4 +1,6 @@
 import { error, info } from '@tauri-apps/plugin-log'
+import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
+import { getMatrixAccessToken, getMatrixHomeserverUrl } from '@/services/matrix/matrixClientAccessor'
 
 export interface ChunkUploadOptions {
   file: File
@@ -35,6 +37,17 @@ export interface ChunkInfo {
   status: 'pending' | 'uploading' | 'completed' | 'failed'
 }
 
+/** Base URL for Matrix media v1 endpoints */
+function getBaseUrl(): string {
+  return getMatrixHomeserverUrl() || resolveMatrixRuntimeEndpointConfig().homeserverUrl
+}
+
+/** Get the current access token for auth headers */
+function getAuthHeaders(): Record<string, string> {
+  const token = getMatrixAccessToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 class ChunkUploadService {
   private uploads: Map<string, ChunkUploadContext> = new Map()
 
@@ -50,11 +63,14 @@ class ChunkUploadService {
       onError
     } = options
 
-    const uploadId = this.generateUploadId()
     const totalChunks = Math.ceil(file.size / chunkSize)
 
+    // Step 1: Start upload session on server
+    const startResp = await this.startUpload(file.name, file.type, file.size, totalChunks)
+    const serverUploadId = startResp.upload_id
+
     const context: ChunkUploadContext = {
-      id: uploadId,
+      id: serverUploadId,
       file,
       chunkSize,
       maxRetries,
@@ -80,7 +96,7 @@ class ChunkUploadService {
       })
     }
 
-    this.uploads.set(uploadId, context)
+    this.uploads.set(serverUploadId, context)
 
     try {
       const result = await this.processUpload(context)
@@ -88,10 +104,46 @@ class ChunkUploadService {
       return result
     } catch (err) {
       error(`[ChunkUpload] 上传失败: ${err}`)
+      // Try to cancel the upload on server
+      try {
+        await this.cancelUpload(serverUploadId)
+      } catch {
+        // Ignore cancel errors during cleanup
+      }
       throw err
     } finally {
-      this.uploads.delete(uploadId)
+      this.uploads.delete(serverUploadId)
     }
+  }
+
+  /** Call POST /_matrix/media/v1/upload/chunk/start to create a server-side upload session */
+  private async startUpload(
+    filename: string,
+    contentType: string,
+    totalSize: number,
+    totalChunks: number
+  ): Promise<{ upload_id: string; chunk_size_limit: number; max_file_size: number }> {
+    const baseUrl = getBaseUrl()
+    const resp = await fetch(`${baseUrl}_matrix/media/v1/upload/chunk/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({
+        filename,
+        content_type: contentType || 'application/octet-stream',
+        total_size: totalSize,
+        total_chunks: totalChunks
+      })
+    })
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '')
+      throw new Error(`Failed to start chunked upload: ${resp.status} ${text}`)
+    }
+
+    return resp.json()
   }
 
   private async processUpload(context: ChunkUploadContext): Promise<UploadResult> {
@@ -136,13 +188,21 @@ class ChunkUploadService {
     return this.completeUpload(context)
   }
 
+  /** Upload a single chunk via POST /_matrix/media/v1/upload/chunk?upload_id=...&chunk_index=... */
   private async uploadChunk(context: ChunkUploadContext, chunk: ChunkInfo): Promise<void> {
     const slice = context.file.slice(chunk.start, chunk.end)
-    const formData = new FormData()
-    formData.append('chunk', slice)
-    formData.append('index', chunk.index.toString())
-    formData.append('total', context.totalChunks.toString())
-    formData.append('filename', context.file.name)
+    const buffer = await slice.arrayBuffer()
+
+    const baseUrl = getBaseUrl()
+    const params = new URLSearchParams({
+      upload_id: context.id,
+      chunk_index: chunk.index.toString(),
+      total_chunks: context.totalChunks.toString(),
+      total_size: context.file.size.toString()
+    })
+    if (chunk.index === 0) {
+      params.set('filename', context.file.name)
+    }
 
     await new Promise<void>((resolve, reject) => {
       const xhr = new XMLHttpRequest()
@@ -165,16 +225,24 @@ class ChunkUploadService {
 
       xhr.onerror = () => reject(new Error('Network error'))
 
-      xhr.open('POST', '/_matrix/media/v1/upload/chunk')
-      xhr.setRequestHeader('Content-Type', 'multipart/form-data')
-      xhr.send(formData)
+      xhr.open('POST', `${baseUrl}_matrix/media/v1/upload/chunk?${params.toString()}`)
+
+      // Set auth header
+      const token = getMatrixAccessToken()
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      }
+      // Set content type to the file's mime type or octet-stream
+      xhr.setRequestHeader('Content-Type', context.file.type || 'application/octet-stream')
+
+      xhr.send(buffer)
     })
   }
 
   private updateProgress(context: ChunkUploadContext, chunkIndex: number, chunkProgress: number): void {
     const elapsed = Date.now() - context.startTime
     const speed = context.uploadedSize / (elapsed / 1000)
-    const remaining = (context.file.size - context.uploadedSize) / speed
+    const remaining = speed > 0 ? (context.file.size - context.uploadedSize) / speed : 0
 
     const chunkProgressArray = context.chunks.map((_c, i) => {
       if (i < chunkIndex) return 1
@@ -192,19 +260,77 @@ class ChunkUploadService {
     })
   }
 
+  /** Call POST /_matrix/media/v1/upload/chunk/complete to finalize the upload */
   private async completeUpload(context: ChunkUploadContext): Promise<UploadResult> {
+    const baseUrl = getBaseUrl()
+    const resp = await fetch(`${baseUrl}_matrix/media/v1/upload/chunk/complete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ upload_id: context.id })
+    })
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '')
+      throw new Error(`Failed to complete chunked upload: ${resp.status} ${text}`)
+    }
+
+    const result = await resp.json()
+
     return {
-      mxcUrl: `mxc://server/${context.id}`,
+      mxcUrl: result.content_uri,
       filename: context.file.name,
-      size: context.file.size,
+      size: result.size ?? context.file.size,
       mimeType: context.file.type
     }
+  }
+
+  /** Call POST /_matrix/media/v1/upload/chunk/cancel to cancel an in-progress upload */
+  private async cancelUpload(uploadId: string): Promise<void> {
+    const baseUrl = getBaseUrl()
+    const resp = await fetch(`${baseUrl}_matrix/media/v1/upload/chunk/cancel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ upload_id: uploadId })
+    })
+
+    if (!resp.ok) {
+      error(`[ChunkUpload] Failed to cancel upload ${uploadId}: ${resp.status}`)
+    }
+  }
+
+  /** Get upload progress from server */
+  async getProgress(uploadId: string): Promise<{
+    upload_id: string
+    uploaded_chunks: number
+    total_chunks: number
+    uploaded_size: number
+    total_size: number | null
+    status: string
+  } | null> {
+    const baseUrl = getBaseUrl()
+    const resp = await fetch(
+      `${baseUrl}_matrix/media/v1/upload/chunk/progress?upload_id=${encodeURIComponent(uploadId)}`,
+      {
+        headers: getAuthHeaders()
+      }
+    )
+
+    if (!resp.ok) return null
+    return resp.json()
   }
 
   abort(uploadId: string): void {
     const context = this.uploads.get(uploadId)
     if (context) {
       context.aborted = true
+      // Fire-and-forget cancel on server
+      this.cancelUpload(uploadId).catch(() => {})
       info(`[ChunkUpload] 上传已取消: ${uploadId}`)
     }
   }
@@ -221,10 +347,6 @@ class ChunkUploadService {
     if (context?.paused) {
       context.paused = false
     }
-  }
-
-  private generateUploadId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }
 }
 

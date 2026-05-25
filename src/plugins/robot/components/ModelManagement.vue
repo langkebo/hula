@@ -20,7 +20,7 @@
       <div v-if="modelList.length === 0" class="empty-container">
         <n-empty :description="t('ai_assistant.robot.no_models')" size="large">
           <template #icon>
-            <Icon icon="mdi:package-variant-closed" class="text-48px color-#909090" />
+            <Icon icon="mdi:package-variant-closed" class="text-48px color-[--hula-text-tertiary]" />
           </template>
           <template #extra>
             <n-button type="primary" @click="handleAdd">{{ t('ai_assistant.robot.add_first_model') }}</n-button>
@@ -183,7 +183,7 @@
                 </template>
                 {{ formData.avatar ? t('ai_assistant.robot.change_avatar') : t('ai_assistant.robot.upload_avatar') }}
               </n-button>
-              <span v-if="formData.avatar" class="text-(12px #909090)">
+              <span v-if="formData.avatar" class="text-(12px [--hula-text-tertiary])">
                 {{ t('ai_assistant.robot.uploaded') }}
                 <n-button text type="error" size="tiny" @click="formData.avatar = ''">
                   {{ t('ai_assistant.robot.clear') }}
@@ -724,10 +724,10 @@ const {
   handleFileChange,
   handleCrop: onCrop
 } = useAvatarUpload({
-  onSuccess: async (downloadUrl) => {
+  onSuccess: async (mxcUrl) => {
     formData.value.avatar = ''
     await nextTick()
-    formData.value.avatar = downloadUrl
+    formData.value.avatar = mxcUrl
     await nextTick()
     showFeedback(t('ai_assistant.robot.avatar_upload_success'), 'success')
   }
@@ -856,7 +856,7 @@ onMounted(() => {
   border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   padding: 16px;
-  background: var(--bg-color);
+  background: var(--hula-surface-panel);
   transition: all 0.3s;
 
   &:hover {
@@ -882,7 +882,7 @@ onMounted(() => {
 
       .meta-item {
         font-size: 12px;
-        color: #909090;
+        color: var(--hula-text-tertiary);
       }
     }
   }

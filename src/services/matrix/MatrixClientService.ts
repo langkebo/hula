@@ -1,6 +1,7 @@
 import {
   createClient,
   type ICreateRoomOpts,
+  initializeManagerExtensions,
   type LoginResponse,
   type MatrixClient,
   type MatrixEvent,
@@ -13,9 +14,8 @@ import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
+import { setMatrixClientAccessor } from '@/services/matrix/matrixClientAccessor'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
-// 导入并初始化 Manager 扩展
-import { ensureMatrixSdkCompat, extendMatrixClientWithManagers } from '@/services/matrix/sdk-compat'
 import { type ICreateClientOpts, PendingEventOrdering } from '@/types/matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import type { SearchEventDoc } from '@/workers/matrixWorkerTypes'
@@ -114,29 +114,21 @@ class MatrixClientService {
   private readonly syncListener = (state: string, prevState?: string, data?: unknown) => {
     this.emit('sync', { state, prevState, data })
 
-    // 增强错误日志
     if (state === 'ERROR') {
-      // 13.4.3: 识别限流或超时，避免产生干扰日志。M_LIMIT_EXCEEDED 或 ConnectionError 是同步过程中常见的暂时性问题。
       const errorData = data as SyncErrorLike | undefined
       if (errorData?.errcode === 'M_LIMIT_EXCEEDED' || errorData?.name === 'ConnectionError') {
-        logger.warn(`同步暂时受限或超时 (M_LIMIT_EXCEEDED)，SDK 将自动重试: ${state}`)
+        // 限流/超时是常见暂时性问题，不输出日志避免刷屏
       } else {
         logger.error(`同步错误: ${state}`, {
           prevState,
-          data,
-          homeserverUrl: this.config?.homeserverUrl,
-          userId: this.client?.getUserId(),
-          deviceId: this.client?.getDeviceId(),
-          hasAccessToken: !!this.config?.accessToken,
-          hasSlidingSync: !!this.slidingSyncInstance,
-          connectionState: this.connectionState
+          errcode: errorData?.errcode,
+          errorName: errorData?.name
         })
       }
     } else if (state !== prevState) {
-      logger.info(`同步状态: ${state}`, { prevState })
-    } else {
-      logger.debug(`同步状态保持不变: ${state}`, { prevState })
+      logger.info(`同步状态: ${state}`)
     }
+    // 状态不变时不再输出日志，避免刷屏
 
     const nextConnectionState = this.mapSyncStateToConnectionState(state)
     if (nextConnectionState) {
@@ -163,8 +155,8 @@ class MatrixClientService {
             memberCount: room.getJoinedMemberCount()
           }
         ])
-        .catch((err) => {
-          logger.warn(`[MatrixClientService] 转发房间更新事件到 Worker 失败: ${err}`)
+        .catch(() => {
+          // Worker 转发失败不输出日志，避免刷屏
         })
     }
 
@@ -209,8 +201,8 @@ class MatrixClientService {
         msgtype: 'm.text',
         body: event.getContent().body as string
       }
-      void matrixWorkerHost.upsertSearchEvents([searchEventDoc]).catch((err) => {
-        logger.warn(`[MatrixClientService] 转发 timeline 消息事件到 Worker 失败: ${err}`)
+      void matrixWorkerHost.upsertSearchEvents([searchEventDoc]).catch(() => {
+        // Worker 转发失败不输出日志，避免刷屏
       })
     }
   }
@@ -219,8 +211,8 @@ class MatrixClientService {
     const event = args[0] as MatrixEvent
     const redactedEventId = event.getAssociatedId()
     if (redactedEventId) {
-      void matrixWorkerHost.redactSearchEvent(redactedEventId).catch((err: unknown) => {
-        logger.warn(`[MatrixClientService] 转发 redaction 事件失败: ${err}`)
+      void matrixWorkerHost.redactSearchEvent(redactedEventId).catch(() => {
+        // Worker 转发失败不输出日志，避免刷屏
       })
     }
   }
@@ -243,41 +235,73 @@ class MatrixClientService {
     logger.info?.('Matrix 客户端服务初始化')
   }
 
-  private isMatrixApiError(error: unknown): boolean {
-    if (!error || typeof error !== 'object') {
-      return false
-    }
-
-    return 'errcode' in error || 'httpStatus' in error
-  }
-
   private async loginByHttpFallback(username: string, password: string, deviceName?: string): Promise<LoginResponse> {
     if (!this.config?.homeserverUrl) {
       throw new Error(useI18nGlobal().t('matrix_error.auth.client_config_missing'))
     }
 
-    const runtimeFetch = getRuntimeAwareFetch()
-    const response = await runtimeFetch(`${this.config.homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        type: 'm.login.password',
-        user: username,
-        password,
-        initial_device_display_name: deviceName || 'HuLa Client'
-      })
+    const url = `${this.config.homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/login`
+    const body = JSON.stringify({
+      type: 'm.login.password',
+      user: username,
+      password,
+      initial_device_display_name: deviceName || 'HuLa Client'
     })
 
-    if (!response.ok) {
+    return this.loginRequestWithRetry(url, body)
+  }
+
+  private async tokenLoginByHttpFallback(loginToken: string): Promise<LoginResponse> {
+    if (!this.config?.homeserverUrl) {
+      throw new Error(useI18nGlobal().t('matrix_error.auth.client_config_missing'))
+    }
+
+    const url = `${this.config.homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/login`
+    const body = JSON.stringify({
+      type: 'm.login.token',
+      token: loginToken
+    })
+
+    return this.loginRequestWithRetry(url, body)
+  }
+
+  private async loginRequestWithRetry(url: string, body: string, maxRetries = 2): Promise<LoginResponse> {
+    const runtimeFetch = getRuntimeAwareFetch()
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const response = await runtimeFetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body
+      })
+
+      if (response.ok) {
+        return (await response.json()) as LoginResponse
+      }
+
+      // 429 限流：等待 retry_after_ms 后重试
+      if (response.status === 429 && attempt < maxRetries) {
+        let retryAfterMs = 5000
+        try {
+          const errorBody = await response.clone().json()
+          retryAfterMs = errorBody.retry_after_ms || 5000
+        } catch {
+          /* ignore */
+        }
+        logger.warn(`登录请求被限流 (429)，${retryAfterMs}ms 后重试 (${attempt + 1}/${maxRetries})`)
+        await new Promise((resolve) => setTimeout(resolve, retryAfterMs))
+        continue
+      }
+
       const text = await response.text().catch(() => '')
       throw new Error(
         text || useI18nGlobal().t('matrix_error.auth.login_failed_with_status', { status: response.status })
       )
     }
 
-    return (await response.json()) as LoginResponse
+    throw new Error('登录请求被限流，请稍后重试')
   }
 
   /**
@@ -304,10 +328,10 @@ class MatrixClientService {
       this.config = config
       this.connectionState = 'CONNECTING'
 
-      // 在创建客户端之前，注册所有 Manager 扩展（包括 FriendManager、ProfileManager 等）
+      // 在创建客户端之前，注册所有 Manager 扩展
+      // 使用主入口的 initializeManagerExtensions 确保修改的是预打包版本的 MatrixClient.prototype
       try {
-        ensureMatrixSdkCompat()
-        await extendMatrixClientWithManagers()
+        await initializeManagerExtensions()
         logger.info('Manager 扩展注册完成')
       } catch (extErr) {
         logger.error('Manager 扩展注册失败:', extErr)
@@ -330,6 +354,14 @@ class MatrixClientService {
       // 不在这里创建 SlidingSync，延迟到 startClient() 时创建
       // 这样可以确保有有效的 accessToken
       this.client = createClient(clientOpts)
+
+      // 注册全局 accessor，消除 "getClient 在 accessor 注册前被调用" 警告
+      setMatrixClientAccessor({
+        getClient: () => this.client,
+        getAccessToken: () => this.client?.getAccessToken() ?? null,
+        getHomeserverUrl: () => this.client?.getHomeserverUrl() ?? null,
+        waitForClientReady: (opts) => this.waitForClientReady(opts)
+      })
 
       logger.info(`客户端初始化完成: ${config.homeserverUrl}`)
     } catch (err) {
@@ -410,11 +442,12 @@ class MatrixClientService {
           initial_device_display_name: deviceName || 'HuLa Client'
         })
       } catch (error) {
-        if (this.isMatrixApiError(error)) {
-          throw error
-        }
-
-        logger.warn('SDK 密码登录失败，尝试使用 HTTP 回退登录', error)
+        // 登录场景始终尝试 HTTP fallback——SDK 登录可能因请求格式差异、
+        // 中间件干扰等原因失败，而 HTTP fallback 等同于 curl 直接请求
+        const errInfo = error instanceof Error ? error.message : String(error)
+        const httpStatus = (error as { httpStatus?: number })?.httpStatus
+        const errcode = (error as { errcode?: string })?.errcode
+        logger.warn(`SDK 密码登录失败 (status=${httpStatus}, errcode=${errcode}): ${errInfo}，尝试 HTTP 回退`)
         loginResponse = await this.loginByHttpFallback(username, password, deviceName)
       }
 
@@ -491,9 +524,18 @@ class MatrixClientService {
 
     try {
       this.connectionState = 'CONNECTING'
-      const loginResponse: LoginResponse = await this.client.login('m.login.token', {
-        token: loginToken
-      })
+      let loginResponse: LoginResponse
+
+      try {
+        loginResponse = await this.client.login('m.login.token', {
+          token: loginToken
+        })
+      } catch (error) {
+        const errInfo = error instanceof Error ? error.message : String(error)
+        const httpStatus = (error as { httpStatus?: number })?.httpStatus
+        logger.warn(`SDK SSO 登录失败 (status=${httpStatus}): ${errInfo}，尝试 HTTP 回退`)
+        loginResponse = await this.tokenLoginByHttpFallback(loginToken)
+      }
 
       logger.info(`SSO 登录成功: ${loginResponse.user_id}`)
 
@@ -531,7 +573,7 @@ class MatrixClientService {
    * @param userId - 用户 ID
    * @returns 登录结果
    */
-  async loginWithToken(token: string, userId: string): Promise<LoginResult> {
+  async loginWithToken(token: string, userId: string, refreshToken?: string): Promise<LoginResult> {
     if (!this.config) {
       return { success: false, error: '配置未初始化' }
     }
@@ -545,7 +587,45 @@ class MatrixClientService {
 
       this.connectionState = 'CONNECTED'
 
-      this.scheduleTokenRefresh(undefined, undefined)
+      // 如果有 refresh_token，尝试获取 token 过期时间并调度刷新
+      if (refreshToken) {
+        try {
+          if (this.client) {
+            // 尝试刷新 token 以获取 expires_in 信息
+            const refreshResult = (await this.client.http.request('POST', '/_matrix/client/v3/refresh', undefined, {
+              refresh_token: refreshToken
+            })) as Record<string, unknown>
+
+            const newAccessToken = refreshResult.access_token as string | undefined
+            const newRefreshToken = refreshResult.refresh_token as string | undefined
+            let newExpiresInMs = refreshResult.expires_in_ms as number | undefined
+            const expiresInSec = refreshResult.expires_in as number | undefined
+            if (!newExpiresInMs && expiresInSec) {
+              newExpiresInMs = expiresInSec * 1000
+            }
+
+            if (newAccessToken && newExpiresInMs && newExpiresInMs > 0) {
+              // 更新客户端的 access token
+              // 持久化新 token
+              const { invoke } = await import('@tauri-apps/api/core')
+              const uid = this.client.getUserId()
+              if (uid) {
+                await invoke('update_token', {
+                  req: {
+                    uid,
+                    token: newAccessToken,
+                    refreshToken: newRefreshToken ?? refreshToken
+                  }
+                })
+              }
+              this.scheduleTokenRefresh(newRefreshToken ?? refreshToken, newExpiresInMs)
+            }
+          }
+        } catch {
+          // 服务器不支持 refresh 或刷新失败，不影响登录
+          // Token 登录用户将使用现有 token 直到过期
+        }
+      }
 
       return {
         success: true,
@@ -615,11 +695,13 @@ class MatrixClientService {
         this.slidingSyncInstance = null
       }
 
-      await this.client!.startClient(startOpts)
-
-      this.connectionState = 'CONNECTED'
+      // 在启动客户端之前注册事件监听器，确保不遗漏初始 sync 事件
       this.setupEventListeners()
 
+      await this.client!.startClient(startOpts)
+
+      // startClient 返回后 sync 可能仍在进行中，
+      // 连接状态由 syncListener 中的 mapSyncStateToConnectionState 管理
       logger.info('客户端启动成功')
     } catch (err) {
       this.connectionState = 'ERROR'
@@ -707,8 +789,11 @@ class MatrixClientService {
     this.clearTokenRefreshTimer()
     if (!refreshToken || !expiresInMs || expiresInMs <= 0) return
 
-    const refreshAt = Math.max(expiresInMs - 60000, 30000)
-    logger.info(`[TokenRefresh] 已调度 Token 刷新: ${refreshAt}ms 后`)
+    // Matrix 规范中 expires_in 是秒，需转换为毫秒
+    // 如果值小于 1000，说明传入的是秒而非毫秒
+    const expiresInMsActual = expiresInMs < 1000 ? expiresInMs * 1000 : expiresInMs
+    const refreshAt = Math.max(expiresInMsActual - 60000, 30000)
+    logger.info(`[TokenRefresh] 已调度 Token 刷新: ${refreshAt}ms 后 (原始值: ${expiresInMs})`)
     this.tokenRefreshTimer = setTimeout(() => {
       void this.tryRefreshToken(refreshToken)
     }, refreshAt)
@@ -727,13 +812,19 @@ class MatrixClientService {
 
     try {
       logger.info('[TokenRefresh] 开始刷新访问令牌')
-      const result = (await this.client.http.authedRequest('POST', '/_matrix/client/v3/refresh', undefined, {
+      // 使用未认证请求，因为 refresh 端点不需要旧的 access_token
+      const result = (await this.client.http.request('POST', '/_matrix/client/v3/refresh', undefined, {
         refresh_token: refreshToken
       })) as Record<string, unknown>
 
       const newAccessToken = result.access_token as string | undefined
       const newRefreshToken = result.refresh_token as string | undefined
-      const newExpiresInMs = result.expires_in_ms as number | undefined
+      // Matrix 规范中 expires_in 是秒，需转换为毫秒
+      let newExpiresInMs = result.expires_in_ms as number | undefined
+      const expiresInSec = result.expires_in as number | undefined
+      if (!newExpiresInMs && expiresInSec) {
+        newExpiresInMs = expiresInSec * 1000
+      }
 
       if (newAccessToken) {
         const { invoke } = await import('@tauri-apps/api/core')
@@ -751,6 +842,20 @@ class MatrixClientService {
         this.scheduleTokenRefresh(newRefreshToken, newExpiresInMs)
       }
     } catch (err) {
+      const httpStatus = (err as { httpStatus?: number })?.httpStatus
+      // 404 表示服务器不支持 refresh 端点，不应登出，只需停止后续刷新
+      if (httpStatus === 404) {
+        logger.warn('[TokenRefresh] 服务器不支持 Token 刷新端点 (404)，停止自动刷新')
+        this.clearTokenRefreshTimer()
+        return
+      }
+      // 429 限流，稍后重试
+      if (httpStatus === 429) {
+        logger.warn('[TokenRefresh] Token 刷新被限流 (429)，将在 30s 后重试')
+        this.scheduleTokenRefresh(refreshToken, 30000)
+        return
+      }
+      // 其他错误（如 M_UNKNOWN_TOKEN）才触发登出
       logger.error(`[TokenRefresh] 刷新访问令牌失败: ${err}`)
       logger.warn('[TokenRefresh] Session expired, clearing stored session')
       try {
@@ -945,9 +1050,8 @@ class MatrixClientService {
       }
       return room
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : useI18nGlobal().t('matrix_error.client.create_room_failed')
-      logger.error(errorMessage)
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      logger.error(`创建房间失败: ${errorMessage}`)
       throw err
     }
   }

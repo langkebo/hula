@@ -54,6 +54,15 @@ svg {
   // 应用背景色
   --app-bg-color: var(--hula-surface-app);
 
+  --left-bg-color: var(--hula-surface-sidebar);
+  --left-active-bg-color: var(--hula-surface-sidebar-selected);
+  --left-text-color: var(--hula-text-secondary);
+  --left-icon-color: var(--hula-text-secondary);
+  --left-active-hover: var(--hula-color-primary-500);
+  --left-bg-hover: var(--hula-surface-sidebar-hover);
+  --left-active-icon-color: var(--hula-color-primary-500);
+  --left-win-icon-color: var(--hula-color-primary-200);
+  
   --center-bg-color: var(--hula-surface-panel);
   --right-bg-color: var(--hula-surface-subtle);
   // 文字颜色

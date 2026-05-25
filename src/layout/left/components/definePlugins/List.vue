@@ -26,7 +26,7 @@
 
             <n-flex vertical :size="10">
               <n-flex align="center" :size="6">
-                <p class="text-(14px [--hula-text-secondary]) pl-4px">{{ plugin.title }}</p>
+                <p class="text-[var(--text-sm)] text-[--hula-text-secondary] pl-4px">{{ plugin.title }}</p>
 
                 <Transition>
                   <svg
@@ -41,7 +41,7 @@
                 <n-flex
                   v-if="plugin.state === PluginEnum.UNINSTALLING"
                   class="relative rounded-22px bg-[--tag-danger-bg] size-fit p-[4px_8px]">
-                  <p class="text-(12px [--hula-color-danger-500] center)">
+                  <p class="text-[var(--text-xs)] text-[--hula-color-danger-500] text-center">
                     {{ t('home.plugins.status.uninstalling') }}
                   </p>
                 </n-flex>
@@ -49,11 +49,13 @@
                 <n-flex
                   v-else-if="plugin.state === PluginEnum.BUILTIN"
                   class="relative rounded-22px bg-[--tag-neutral-bg] size-fit p-[4px_8px]">
-                  <p class="text-(12px [--hula-text-tertiary] center)">{{ t('home.plugins.status.builtin') }}</p>
+                  <p class="text-[var(--text-xs)] text-[--hula-text-tertiary] text-center">
+                    {{ t('home.plugins.status.builtin') }}
+                  </p>
                 </n-flex>
 
                 <n-flex v-else class="relative rounded-22px bg-[--tag-info-bg] size-fit p-[4px_8px]">
-                  <p class="text-(12px [--hula-color-info-500] center)">{{ plugin.version }}</p>
+                  <p class="text-[var(--text-xs)] text-[--hula-color-info-500] text-center">{{ plugin.version }}</p>
                 </n-flex>
               </Transition>
             </n-flex>
@@ -83,10 +85,12 @@
                 ]"
                 v-if="plugin.state === PluginEnum.DOWNLOADING"
                 class="bg-[--plugin-downloading-bg]">
-                <p class="absolute-center text-(12px [--plugin-downloading-text])">{{ plugin.progress }}%</p>
+                <p class="absolute-center text-[var(--text-xs)] text-[--plugin-downloading-text]">
+                  {{ plugin.progress }}%
+                </p>
               </div>
 
-              <p v-else class="text-(12px [--hula-text-secondary] center) w-full">
+              <p v-else class="text-[var(--text-xs)] text-[--hula-text-secondary] text-center w-full">
                 {{ t('home.plugins.actions.install') }}
               </p>
             </n-flex>

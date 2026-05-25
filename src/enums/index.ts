@@ -242,7 +242,9 @@ export enum StoresEnum {
   /** 服务端能力探测 */
   CAPABILITY = 'capability',
   /** 消息多选 */
-  MESSAGE_SELECTION = 'messageSelection'
+  MESSAGE_SELECTION = 'messageSelection',
+  /** 加密状态 */
+  ENCRYPTION = 'encryption'
 }
 
 /**

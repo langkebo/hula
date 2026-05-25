@@ -2,6 +2,7 @@
   <ListWorkbenchShell class="message-list-page">
     <template #toolbar>
       <MessageSessionToolbar
+        :title="t('home.action.message_short_title', '消息')"
         :search-keyword="searchKeyword"
         :session-type-filter="sessionTypeFilter"
         :session-engagement-filter="sessionEngagementFilter"

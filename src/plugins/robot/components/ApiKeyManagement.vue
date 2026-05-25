@@ -20,7 +20,7 @@
       <div v-if="apiKeyList.length === 0" class="empty-container">
         <n-empty :description="t('ai_assistant.robot.no_api_keys')" size="large">
           <template #icon>
-            <Icon icon="mdi:key-variant" class="text-48px color-#909090" />
+            <Icon icon="mdi:key-variant" class="text-48px color-[--hula-text-tertiary]" />
           </template>
           <template #extra>
             <n-button type="primary" @click="handleAdd">{{ t('ai_assistant.robot.add_first_key') }}</n-button>
@@ -432,7 +432,7 @@ onMounted(() => {
   border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   padding: 16px;
-  background: var(--bg-color);
+  background: var(--hula-surface-panel);
   transition: all 0.3s;
 
   &:hover {
@@ -457,7 +457,7 @@ onMounted(() => {
 
       .meta-item {
         font-size: 12px;
-        color: #909090;
+        color: var(--hula-text-tertiary);
       }
     }
   }

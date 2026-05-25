@@ -646,9 +646,12 @@ class MatrixEncryptionService extends BaseMatrixService {
     }
 
     try {
+      // 后端 rotation/status 使用 GET 返回 403（需跨签名就绪），
+      // rotation/config 使用 GET 返回 405（仅支持 POST/PUT），
+      // 优先尝试 POST 方法获取轮换状态
       const response = (await (client.http as MatrixHttpApi).request(
-        'GET',
-        MATRIX_PATHS.CRYPTO.KEY_ROTATION_STATUS
+        'POST',
+        MATRIX_PATHS.CRYPTO.KEY_ROTATION_CHECK
       )) as RotationStatusResponse
       return {
         enabled: response.enabled ?? true,
@@ -657,6 +660,7 @@ class MatrixEncryptionService extends BaseMatrixService {
         needsRotation: response.needs_rotation ?? true
       }
     } catch (err) {
+      // 如果 POST 也不可用，返回默认值
       error(`[Encryption] 获取密钥轮换状态失败: ${err}`)
       return { enabled: true, intervalMs: 604800000, needsRotation: false }
     }
@@ -671,8 +675,9 @@ class MatrixEncryptionService extends BaseMatrixService {
     }
 
     try {
+      // 后端 rotation/check 端点使用 POST 方法
       const response = (await (client.http as MatrixHttpApi).request(
-        'GET',
+        'POST',
         MATRIX_PATHS.CRYPTO.KEY_ROTATION_CHECK
       )) as RotationStatusResponse
       return response.needs_rotation ?? false

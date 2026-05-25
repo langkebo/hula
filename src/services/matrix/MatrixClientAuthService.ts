@@ -39,11 +39,12 @@ export class MatrixClientAuthService {
           initial_device_display_name: deviceName || 'HuLa Client'
         })
       } catch (error) {
-        if (this.isMatrixApiError(error)) {
-          throw error
-        }
-
-        logger.warn('SDK 密码登录失败，尝试使用 HTTP 回退登录', error)
+        // 登录场景始终尝试 HTTP fallback——SDK 登录可能因请求格式差异、
+        // 中间件干扰等原因失败，而 HTTP fallback 等同于 curl 直接请求
+        const errInfo = error instanceof Error ? error.message : String(error)
+        const httpStatus = (error as { httpStatus?: number })?.httpStatus
+        const errcode = (error as { errcode?: string })?.errcode
+        logger.warn(`SDK 密码登录失败 (status=${httpStatus}, errcode=${errcode}): ${errInfo}，尝试 HTTP 回退`)
         loginResponse = await this.loginByHttpFallback(username, password, deviceName)
       }
 
@@ -108,9 +109,18 @@ export class MatrixClientAuthService {
 
     try {
       this.deps.setConnectionState('CONNECTING')
-      const loginResponse: LoginResponse = await client.login('m.login.token', {
-        token: loginToken
-      })
+      let loginResponse: LoginResponse
+
+      try {
+        loginResponse = await client.login('m.login.token', {
+          token: loginToken
+        })
+      } catch (error) {
+        const errInfo = error instanceof Error ? error.message : String(error)
+        const httpStatus = (error as { httpStatus?: number })?.httpStatus
+        logger.warn(`SDK SSO 登录失败 (status=${httpStatus}): ${errInfo}，尝试 HTTP 回退`)
+        loginResponse = await this.tokenLoginByHttpFallback(loginToken)
+      }
 
       logger.info(`SSO 登录成功: ${loginResponse.user_id}`)
 
@@ -201,42 +211,75 @@ export class MatrixClientAuthService {
     }
   }
 
-  private isMatrixApiError(error: unknown): boolean {
-    if (!error || typeof error !== 'object') {
-      return false
-    }
-
-    return 'errcode' in error || 'httpStatus' in error
-  }
-
   private async loginByHttpFallback(username: string, password: string, deviceName?: string): Promise<LoginResponse> {
     const config = this.deps.getConfig()
     if (!config?.homeserverUrl) {
       throw new Error(useI18nGlobal().t('matrix_error.auth.client_config_missing'))
     }
 
-    const runtimeFetch = getRuntimeAwareFetch()
-    const response = await runtimeFetch(`${config.homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        type: 'm.login.password',
-        user: username,
-        password,
-        initial_device_display_name: deviceName || 'HuLa Client'
-      })
+    const url = `${config.homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/login`
+    const body = JSON.stringify({
+      type: 'm.login.password',
+      user: username,
+      password,
+      initial_device_display_name: deviceName || 'HuLa Client'
     })
 
-    if (!response.ok) {
+    return this.loginRequestWithRetry(url, body)
+  }
+
+  private async tokenLoginByHttpFallback(loginToken: string): Promise<LoginResponse> {
+    const config = this.deps.getConfig()
+    if (!config?.homeserverUrl) {
+      throw new Error(useI18nGlobal().t('matrix_error.auth.client_config_missing'))
+    }
+
+    const url = `${config.homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/login`
+    const body = JSON.stringify({
+      type: 'm.login.token',
+      token: loginToken
+    })
+
+    return this.loginRequestWithRetry(url, body)
+  }
+
+  private async loginRequestWithRetry(url: string, body: string, maxRetries = 2): Promise<LoginResponse> {
+    const runtimeFetch = getRuntimeAwareFetch()
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const response = await runtimeFetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body
+      })
+
+      if (response.ok) {
+        return (await response.json()) as LoginResponse
+      }
+
+      // 429 限流：等待 retry_after_ms 后重试
+      if (response.status === 429 && attempt < maxRetries) {
+        let retryAfterMs = 5000
+        try {
+          const errorBody = await response.clone().json()
+          retryAfterMs = errorBody.retry_after_ms || 5000
+        } catch {
+          /* ignore */
+        }
+        logger.warn(`登录请求被限流 (429)，${retryAfterMs}ms 后重试 (${attempt + 1}/${maxRetries})`)
+        await new Promise((resolve) => setTimeout(resolve, retryAfterMs))
+        continue
+      }
+
       const text = await response.text().catch(() => '')
       throw new Error(
         text || useI18nGlobal().t('matrix_error.auth.login_failed_with_status', { status: response.status })
       )
     }
 
-    return (await response.json()) as LoginResponse
+    throw new Error('登录请求被限流，请稍后重试')
   }
 
   private scheduleTokenRefresh(refreshToken?: string, expiresInMs?: number): void {

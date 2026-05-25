@@ -1,6 +1,8 @@
 import 'uno.css'
 import '@unocss/reset/eric-meyer.css'
 import '@/styles/css/design-tokens.css'
+import '@/styles/scss/global/responsive.scss'
+import '@/styles/scss/global/typography.scss'
 import App from '@/App.vue'
 import { AppException } from '@/common/exception.ts'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -19,6 +21,7 @@ import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { MatrixCacheManager } from '@/services/matrix/MatrixCacheManager'
+import { markHulaAppReady } from '@/utils/AppReady'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Main')
@@ -107,6 +110,10 @@ app
   .directive('slide', vSlide)
   .directive('safe-html', vSafeHtml)
 
+// Expose pinia for E2E tests and mark readiness
+window.pinia = pinia
+window.__HULA_PINIA_READY__ = true
+
 // Register capability store resolver to break circular dependency
 // (must be called after pinia is installed)
 registerCapabilityStoreResolver(() => useCapabilityStore())
@@ -115,6 +122,7 @@ performance.mark('hula-plugin-install-end')
 performance.mark('hula-mount-start')
 app.mount('#app')
 performance.mark('hula-mount-end')
+markHulaAppReady('mounted')
 
 app.config.errorHandler = (err, instance, info) => {
   if (err instanceof Error) {
@@ -132,6 +140,7 @@ app.config.errorHandler = (err, instance, info) => {
 }
 
 router.isReady().then(() => {
+  markHulaAppReady('router-ready')
   performance.mark('hula-router-ready')
   performance.measure('hula-total-boot', 'hula-init-start', 'hula-router-ready')
   performance.measure('hula-app-creation', 'hula-app-create-start', 'hula-app-create-end')

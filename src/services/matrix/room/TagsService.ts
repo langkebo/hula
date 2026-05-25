@@ -1,4 +1,4 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { error, info, warn } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { BaseMatrixService } from '../BaseMatrixService'
 
@@ -9,18 +9,28 @@ import { BaseMatrixService } from '../BaseMatrixService'
  * keeps method signatures for backwards compatibility and forwards here.
  */
 export class MatrixRoomTagsService extends BaseMatrixService {
+  private tagsUnsupported = false
+  private unsupportedLogged = false
+
   async getTags(roomId: string): Promise<Record<string, { order?: number }>> {
+    if (this.tagsUnsupported) {
+      return {}
+    }
+
     const client = this.getClient()
     try {
-      const userId = client.getUserId()
-      if (!userId) return {}
-      const result = await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v3/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/tags`
-      )
-      return (result as { tags?: Record<string, { order?: number }> }).tags ?? {}
+      const result = await client.getRoomTags(roomId)
+      return result.tags ?? {}
     } catch (err) {
-      error(`[MatrixRoom] 获取标签失败: ${err}`)
+      if (this.isTagsUnsupportedError(err)) {
+        this.tagsUnsupported = true
+        if (!this.unsupportedLogged) {
+          warn('[MatrixRoom] 当前服务端未提供 room tags 接口，后续跳过标签拉取')
+          this.unsupportedLogged = true
+        }
+        return {}
+      }
+      // 标签获取失败不输出日志，避免 429 限流时刷屏
       return {}
     }
   }
@@ -33,16 +43,8 @@ export class MatrixRoomTagsService extends BaseMatrixService {
     }
     const client = this.getClient()
     try {
-      const userId = client.getUserId()
-      if (!userId) throw new Error(this.t('matrix_error.common.user_not_logged_in'))
-      const content: Record<string, unknown> = {}
-      if (order !== undefined) content.order = order
-      await client.http.authedRequest(
-        'PUT',
-        `/_matrix/client/v3/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/tags/${encodeURIComponent(tag)}`,
-        undefined,
-        content
-      )
+      if (!client.getUserId()) throw new Error(this.t('matrix_error.common.user_not_logged_in'))
+      await client.setRoomTag(roomId, tag, order !== undefined ? { order } : {})
       info(`[MatrixRoom] 设置标签成功: ${roomId}/${tag}`)
     } catch (err) {
       error(`[MatrixRoom] 设置标签失败: ${err}`)
@@ -58,17 +60,30 @@ export class MatrixRoomTagsService extends BaseMatrixService {
     }
     const client = this.getClient()
     try {
-      const userId = client.getUserId()
-      if (!userId) throw new Error(this.t('matrix_error.common.user_not_logged_in'))
-      await client.http.authedRequest(
-        'DELETE',
-        `/_matrix/client/v3/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/tags/${encodeURIComponent(tag)}`
-      )
+      if (!client.getUserId()) throw new Error(this.t('matrix_error.common.user_not_logged_in'))
+      await client.deleteRoomTag(roomId, tag)
       info(`[MatrixRoom] 移除标签成功: ${roomId}/${tag}`)
     } catch (err) {
       error(`[MatrixRoom] 移除标签失败: ${err}`)
       throw err
     }
+  }
+
+  private isTagsUnsupportedError(err: unknown): boolean {
+    const candidate = err as {
+      errcode?: string
+      httpStatus?: number
+      statusCode?: number
+      message?: string
+    }
+
+    return (
+      candidate?.errcode === 'M_UNRECOGNIZED' ||
+      candidate?.errcode === 'M_NOT_FOUND' ||
+      candidate?.httpStatus === 404 ||
+      candidate?.statusCode === 404 ||
+      candidate?.message?.includes('404') === true
+    )
   }
 }
 

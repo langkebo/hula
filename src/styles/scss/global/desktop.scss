@@ -12,3 +12,15 @@ body {
 .chat-bot-message-gap {
   gap: 8px;
 }
+
+/* 统一全局空状态 UI */
+.n-empty {
+  .n-empty__icon {
+    color: var(--hula-text-quaternary);
+    opacity: 0.6;
+  }
+  .n-empty__description {
+    color: var(--hula-text-tertiary);
+    font-size: var(--text-xs);
+  }
+}

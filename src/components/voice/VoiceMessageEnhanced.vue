@@ -281,7 +281,7 @@ onUnmounted(() => {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 12px;
-  background: var(--bg-color);
+  background: var(--hula-surface-app);
   min-width: 200px;
 
   &.is-current-user {
@@ -349,7 +349,7 @@ onUnmounted(() => {
   align-items: flex-start;
   gap: 6px;
   padding: 8px;
-  background: var(--bg-color);
+  background: var(--hula-surface-app);
   border-radius: 6px;
   font-size: 13px;
   line-height: 1.4;

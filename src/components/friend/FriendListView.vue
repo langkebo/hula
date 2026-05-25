@@ -29,7 +29,7 @@
       <n-flex vertical :size="12" class="p-12px">
         <n-flex align="center" justify="space-between">
           <n-flex align="center" :size="8">
-            <span class="text-16px font-semibold">{{ t('friend.list.title') }}</span>
+            <span class="text-[var(--text-base)] font-semibold">{{ t('friend.list.title') }}</span>
             <n-badge :value="incomingRequestsCount" :max="99" :show="incomingRequestsCount > 0" />
           </n-flex>
           <n-flex :size="8">
@@ -49,6 +49,53 @@
             </n-button>
           </n-flex>
         </n-flex>
+
+        <!-- 待处理好友请求预览区域 -->
+        <div v-if="incomingRequestsCount > 0" class="friend-request-preview">
+          <n-flex align="center" justify="space-between" class="mb-8px">
+            <n-flex align="center" :size="6">
+              <svg class="size-14px color-[--hula-color-primary-500]"><use href="#bell" /></svg>
+              <span class="text-[var(--text-sm)] font-medium color-[--hula-color-primary-500]">
+                {{ t('friend.list.pending_requests', { count: incomingRequestsCount }) }}
+              </span>
+            </n-flex>
+            <n-button text size="tiny" type="primary" @click="showFriendRequest = true">
+              {{ t('friend.list.view_all') }}
+            </n-button>
+          </n-flex>
+          <div class="friend-request-preview__list">
+            <div v-for="request in previewIncomingRequests" :key="request.userId" class="friend-request-preview__item">
+              <n-flex align="center" :size="8" class="flex-1 min-w-0">
+                <n-avatar
+                  :size="32"
+                  :src="AvatarUtils.getAvatarUrl(request.avatarUrl)"
+                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  round />
+                <div class="flex flex-col min-w-0 flex-1">
+                  <span class="text-[var(--text-sm)] truncate">{{ request.displayName || request.userId }}</span>
+                  <span v-if="request.message" class="text-[var(--text-xs)] text-[--hula-text-quaternary] truncate">
+                    {{ request.message }}
+                  </span>
+                </div>
+              </n-flex>
+              <n-flex :size="6" shrink-0>
+                <n-button
+                  type="primary"
+                  size="tiny"
+                  :loading="processingRequest === request.userId"
+                  @click="handleQuickAccept(request)">
+                  {{ t('friend.request.accept') }}
+                </n-button>
+                <n-button
+                  size="tiny"
+                  :loading="processingRequest === request.userId"
+                  @click="handleQuickReject(request)">
+                  {{ t('friend.request.reject') }}
+                </n-button>
+              </n-flex>
+            </div>
+          </div>
+        </div>
 
         <FriendSearchBar
           v-model="searchValue"
@@ -124,7 +171,7 @@
                     round />
                 </n-badge>
                 <n-flex vertical :size="4" class="flex-1 truncate">
-                  <span class="text-14px truncate">
+                  <span class="text-[var(--text-sm)] truncate">
                     {{ friend.remark || friend.displayName || friend.name }}
                   </span>
                   <n-flex align="center" :size="4">
@@ -133,7 +180,7 @@
                         friend.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
                       "
                       dot />
-                    <span class="friend-item__presence-text text-12px">
+                    <span class="friend-item__presence-text text-[var(--text-xs)]">
                       {{
                         friend.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : getLastSeenText(friend)
                       }}
@@ -168,7 +215,7 @@ import { useSearchFeedbackSummary } from '@/composables/common/useSearchFeedback
 import { OnlineEnum, ThemeEnum } from '@/enums'
 import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpecialFriendService'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
-import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
+import { type FriendRequestItem, type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { FriendStatus } from '@/types/matrix-services'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -202,6 +249,7 @@ const showDetail = ref(false)
 const selectedUserId = ref('')
 const contextMenuRef = ref()
 const selectedFriend = ref<MatrixContact | null>(null)
+const processingRequest = ref<string | null>(null)
 
 const isLoading = computed(() => contactStore.isLoading)
 const isCapabilityLoading = computed(() => !isLoaded.value)
@@ -211,6 +259,39 @@ const hasSearchKeyword = computed(() => appliedSearchValue.value.trim().length >
 const showSearchHistory = computed(
   () => !isLoading.value && !showStatePanel.value && !searchValue.value.trim() && searchHistory.value.length > 0
 )
+
+// 预览区域最多显示3条好友请求
+const previewIncomingRequests = computed(() =>
+  contactStore.requestFriendsList.filter((r) => r.direction === 'incoming').slice(0, 3)
+)
+
+// 快速接受好友请求
+const handleQuickAccept = async (request: FriendRequestItem) => {
+  if (!request.userId) return
+  processingRequest.value = request.userId
+  try {
+    await contactStore.acceptFriendRequest(request.userId)
+    showFeedback(t('friend.request.success.accept'), 'success')
+  } catch {
+    showFeedback(t('friend.request.error.accept'), 'error')
+  } finally {
+    processingRequest.value = null
+  }
+}
+
+// 快速拒绝好友请求
+const handleQuickReject = async (request: FriendRequestItem) => {
+  if (!request.userId) return
+  processingRequest.value = request.userId
+  try {
+    await contactStore.rejectFriendRequest(request.userId)
+    showFeedback(t('friend.request.success.reject'), 'success')
+  } catch {
+    showFeedback(t('friend.request.error.reject'), 'error')
+  } finally {
+    processingRequest.value = null
+  }
+}
 
 watch(incomingRequestsCount, (count, prevCount) => {
   if (count > (prevCount || 0)) {
@@ -425,12 +506,22 @@ const handleContextMenuSelect = async (item: { label: string }) => {
   const friend = selectedFriend.value
 
   switch (item.label) {
-    case t('friend.context.send_message'):
-      await contactStore.startDirectRoom(friend.userId, false)
+    case t('friend.context.send_message'): {
+      const roomId = await contactStore.startDirectRoom(friend.userId, false)
+      if (roomId) {
+        const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+        await openMsgSessionByRoomId(roomId)
+      }
       break
-    case t('friend.context.encrypted_chat'):
-      await contactStore.startDirectRoom(friend.userId, true)
+    }
+    case t('friend.context.encrypted_chat'): {
+      const roomId = await contactStore.startDirectRoom(friend.userId, true)
+      if (roomId) {
+        const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+        await openMsgSessionByRoomId(roomId)
+      }
       break
+    }
     case t('friend.context.secret_chat'):
       await handleSetSecretFriend(friend)
       break
@@ -556,6 +647,30 @@ onMounted(async () => {
   color: var(--hula-color-primary-500);
   cursor: pointer;
   padding: 0;
+}
+
+.friend-request-preview {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--hula-color-primary-50, rgba(59, 130, 246, 0.08));
+  border: 1px solid var(--hula-color-primary-100, rgba(59, 130, 246, 0.15));
+}
+
+.friend-request-preview__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.friend-request-preview__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--hula-surface-panel);
+  border: 1px solid var(--hula-border-default);
 }
 
 .friend-items {

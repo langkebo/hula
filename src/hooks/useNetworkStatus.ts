@@ -21,9 +21,11 @@ const useSharedNetworkStatus = createSharedComposable(() => {
       case 'CONNECTED':
         return 'connected'
       case 'CONNECTING':
+        return 'connecting'
       case 'RECONNECTING':
         return 'connecting'
       case 'DISCONNECTED':
+        if (!matrixStore.isInitialized) return 'unknown'
         return 'disconnected'
       case 'ERROR':
         return 'error'
@@ -44,6 +46,9 @@ const useSharedNetworkStatus = createSharedComposable(() => {
   })
 
   const isOnline = computed<boolean>(() => {
+    // Tauri WebView 中 navigator.onLine 可能不可靠，
+    // 当 Matrix WS 连接正常时，应信任 WS 状态而非 browserOnline
+    if (wsOnline.value === true) return true
     if (!browserOnline.value) return false
     return wsOnline.value !== false
   })

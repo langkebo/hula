@@ -16,29 +16,3 @@ export interface OpenClawConversation {
   updatedAt: number
   messages: OpenClawWorkbenchMessage[]
 }
-
-export interface OpenClawConfig {
-  gatewayUrl: string
-  token: string
-  autoConnect: boolean
-  reconnect: boolean
-  reconnectInterval: number
-  maxReconnectAttempts: number
-  heartbeatInterval: number
-  temperature: number
-  maxTokens: number
-  topP: number
-  presencePenalty: number
-  frequencyPenalty: number
-  systemPrompt: string
-}
-
-export interface OpenClawPresetOption {
-  label: string
-  value: number
-}
-
-export interface OpenClawPresetState {
-  label: string
-  desc: string
-}

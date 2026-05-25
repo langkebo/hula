@@ -103,23 +103,16 @@ export class MatrixSlidingSyncService {
   private onLifecycle(state: SlidingSyncState, resp: MSC3575SlidingSyncResponse | null, err?: Error) {
     if (err) {
       if (this.isRateLimitError(err)) {
-        logger.warn(`Lifecycle rate limited: ${err.message}`)
+        // 429 限流是常见暂时性问题，不输出日志避免刷屏
       } else {
         logger.error(`Lifecycle error: ${err.message}`)
       }
       return
     }
 
-    switch (state) {
-      case 'FINISHED':
-        logger.debug('Request finished')
-        break
-      case 'COMPLETE':
-        logger.debug('Sync complete')
-        if (resp) {
-          this.onSyncComplete(resp)
-        }
-        break
+    // 正常的 Request finished / Sync complete 不输出日志，避免刷屏
+    if (state === 'COMPLETE' && resp) {
+      this.onSyncComplete(resp)
     }
   }
 
@@ -172,7 +165,7 @@ export class MatrixSlidingSyncService {
     }
 
     if (shouldRefreshRoomList) {
-      logger.debug('Room list refresh requested')
+      // Room list refresh 是高频事件，不输出日志
       this.callbacks.onRoomListRefresh?.()
     }
 
@@ -202,7 +195,7 @@ export class MatrixSlidingSyncService {
       ])
     }
 
-    logger.debug(`Room data updated: ${roomId}`)
+    // Room data 更新是高频事件，不输出日志避免刷屏
   }
 
   private shouldRefreshRoomList(resp: MSC3575SlidingSyncResponse): boolean {

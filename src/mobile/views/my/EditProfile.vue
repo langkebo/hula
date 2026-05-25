@@ -187,12 +187,16 @@ const {
   handleFileChange,
   handleCrop: onCrop
 } = useAvatarUpload({
-  onSuccess: async (downloadUrl) => {
-    localUserInfo.value.avatar = downloadUrl
-    userStore.userInfo!.avatar = downloadUrl
-    userStore.userInfo!.avatarUpdateTime = Date.now()
-    loginHistoriesStore.loginHistories.filter((item) => item.uid === userStore.userInfo!.uid)[0].avatar = downloadUrl
-    updateCurrentUserCache('avatar', downloadUrl)
+  onSuccess: async (mxcUrl) => {
+    localUserInfo.value.avatar = mxcUrl
+    if (userStore.matrixProfile) {
+      userStore.matrixProfile.avatarUrl = mxcUrl
+    }
+    const historyItem = loginHistoriesStore.loginHistories.find((item) => item.uid === userStore.userInfo!.uid)
+    if (historyItem) {
+      historyItem.avatar = mxcUrl
+    }
+    updateCurrentUserCache('avatar', mxcUrl)
   }
 })
 

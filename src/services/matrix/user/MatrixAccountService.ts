@@ -64,6 +64,7 @@ class MatrixAccountService extends BaseMatrixService {
       }
 
       const authData: Parameters<typeof client.setPassword>[0] = {
+        type: 'm.login.password',
         identifier: {
           type: 'm.id.user',
           user: userId

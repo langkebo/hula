@@ -75,8 +75,16 @@ class MatrixReceiptService extends BaseMatrixService {
     const events = timeline.getEvents()
     const lastEvent = events[events.length - 1]
 
-    if (lastEvent) {
+    if (!lastEvent) return
+
+    // 如果 lastEvent 是 MatrixEvent 实例，直接使用；否则提取 eventId 用 sendReadReceiptByEventId
+    if (typeof lastEvent.getId === 'function') {
       await this.sendReadReceipt(roomId, lastEvent)
+    } else {
+      const eventId = (lastEvent as unknown as { event_id?: string }).event_id
+      if (eventId) {
+        await this.sendReadReceiptByEventId(roomId, eventId)
+      }
     }
   }
 
@@ -142,14 +150,21 @@ class MatrixReceiptService extends BaseMatrixService {
 
   async sendReadReceipt(roomId: string, event: MatrixEvent): Promise<string | undefined> {
     try {
-      const eventId = event.getId()
+      // event 可能是普通对象（如从 Sliding Sync/Worker 传来的序列化数据），需要兼容处理
+      const eventId =
+        typeof event.getId === 'function'
+          ? event.getId()
+          : ((event as unknown as { event_id?: string; id?: string }).event_id ??
+            (event as unknown as { event_id?: string; id?: string }).id)
       if (!eventId) {
         throw new Error(this.t('matrix_error.messaging.receipt_event_id_missing'))
       }
 
+      // SDK ReadReceiptsManager.sendReadReceiptByEventId 接受 (roomId, eventId)
+      // 不要使用 sendReadReceipt(event)，因为它需要 MatrixEvent 实例
       const manager = this.getReadReceiptsManager()
-      await manager.sendReadReceipt(roomId, eventId)
-      info(`[MatrixReceipt] 发送阅读回执成功: ${roomId}/${event.getId()}`)
+      await manager.sendReadReceiptByEventId(roomId, eventId)
+      info(`[MatrixReceipt] 发送阅读回执成功: ${roomId}/${eventId}`)
       return eventId
     } catch (err) {
       error(`[MatrixReceipt] 发送阅读回执失败: ${err}`)

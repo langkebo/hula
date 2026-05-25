@@ -221,7 +221,7 @@ async function loadFriendGroups() {
       member_count: g.member_count || 0
     }))
   } catch {
-    logger.error('Failed to load friend groups')
+    logger.warn('Failed to load friend groups')
   } finally {
     loadingGroups.value = false
   }

@@ -375,7 +375,7 @@ describe('MatrixRuntimeSessionService', () => {
       userId: '@bob:example.com',
       allowInsecureHttp: false
     })
-    expect(mockPort.matrix.loginWithToken).toHaveBeenCalledWith('restored-token', '@bob:example.com')
+    expect(mockPort.matrix.loginWithToken).toHaveBeenCalledWith('restored-token', '@bob:example.com', 'refresh-token')
     expect(mockPort.user.initUserInfo).toHaveBeenCalledWith('@bob:example.com', 'Bob')
     expect(mockInvoke).toHaveBeenCalledWith('update_token', {
       req: {
@@ -435,12 +435,54 @@ describe('MatrixRuntimeSessionService', () => {
       userId: '@carol:example.com',
       allowInsecureHttp: false
     })
-    expect(mockPort.matrix.loginWithToken).toHaveBeenCalledWith('stored-token', '@carol:example.com')
+    expect(mockPort.matrix.loginWithToken).toHaveBeenCalledWith(
+      'stored-token',
+      '@carol:example.com',
+      'stored-refresh-token'
+    )
     expect(mockPort.room.resetState).toHaveBeenCalled()
     expect(mockPort.room.loadRooms).toHaveBeenCalled()
     expect(mockPort.room.setupEventListeners).toHaveBeenCalled()
     expect(mockPort.chat.getSessionList).toHaveBeenCalledWith(true)
     expect(mockPort.global.updateCurrentSessionRoomId).toHaveBeenCalledWith('!room:example.com')
+  })
+
+  it('reuses runtime tokens for bootstrap restore when access token persistence is disabled', async () => {
+    mockPort.matrix.getClient.mockReturnValue(null)
+    mockPort.matrix.getUserId.mockReturnValue('@dave:example.com')
+    mockPort.matrix.getAccessToken.mockReturnValue('runtime-token')
+    mockPort.matrix.getRefreshToken.mockReturnValue('runtime-refresh-token')
+    mockPort.user.getUserInfo.mockReturnValue({
+      uid: '@dave:example.com',
+      name: 'Dave',
+      account: 'dave',
+      email: 'dave@example.com',
+      avatar: 'mxc://dave',
+      client: 'PC'
+    } as any)
+
+    const service = createService()
+    await service.bootstrapPostLoginState({
+      account: 'dave',
+      displayName: 'Dave',
+      avatar: 'mxc://dave',
+      client: 'PC'
+    })
+
+    expect(mockPort.matrix.initialize).toHaveBeenCalledWith({
+      homeserverUrl: 'https://matrix-session.example.com',
+      identityServerUrl: 'https://identity-session.example.com',
+      accessToken: 'runtime-token',
+      userId: '@dave:example.com',
+      allowInsecureHttp: false
+    })
+    expect(mockPort.matrix.loginWithToken).toHaveBeenCalledWith(
+      'runtime-token',
+      '@dave:example.com',
+      'runtime-refresh-token'
+    )
+    expect(mockInvoke).not.toHaveBeenCalledWith('get_user_tokens', undefined)
+    expect(mockInvoke).not.toHaveBeenCalledWith('switch_user_database', expect.anything())
   })
 
   it('resets local state and completes desktop logout flow', async () => {

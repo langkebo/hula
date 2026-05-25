@@ -42,6 +42,31 @@ export const baseConfig: UserConfig = {
       'matrix-js-sdk/manager-extensions': fileURLToPath(
         new URL('../../../matrix-js-sdk/src/manager-extensions/index.ts', import.meta.url)
       ),
+      'matrix-js-sdk/store/worker': fileURLToPath(
+        new URL('../../../matrix-js-sdk/src/store/indexeddb-store-worker.ts', import.meta.url)
+      ),
+      'matrix-js-sdk/credentials': fileURLToPath(
+        new URL('../../../matrix-js-sdk/src/credentials/index.ts', import.meta.url)
+      ),
+      'matrix-js-sdk/account': fileURLToPath(new URL('../../../matrix-js-sdk/src/account/index.ts', import.meta.url)),
+      'matrix-js-sdk/auth': fileURLToPath(new URL('../../../matrix-js-sdk/src/auth/index.ts', import.meta.url)),
+      'matrix-js-sdk/capabilities': fileURLToPath(
+        new URL('../../../matrix-js-sdk/src/capabilities/index.ts', import.meta.url)
+      ),
+      'matrix-js-sdk/room': fileURLToPath(new URL('../../../matrix-js-sdk/src/room/index.ts', import.meta.url)),
+      'matrix-js-sdk/media': fileURLToPath(new URL('../../../matrix-js-sdk/src/media/index.ts', import.meta.url)),
+      'matrix-js-sdk/message': fileURLToPath(new URL('../../../matrix-js-sdk/src/message/index.ts', import.meta.url)),
+      'matrix-js-sdk/profile': fileURLToPath(new URL('../../../matrix-js-sdk/src/profile/index.ts', import.meta.url)),
+      'matrix-js-sdk/presence': fileURLToPath(new URL('../../../matrix-js-sdk/src/presence/index.ts', import.meta.url)),
+      'matrix-js-sdk/sending': fileURLToPath(new URL('../../../matrix-js-sdk/src/sending/index.ts', import.meta.url)),
+      'matrix-js-sdk/crypto-keys': fileURLToPath(
+        new URL('../../../matrix-js-sdk/src/crypto-keys/index.ts', import.meta.url)
+      ),
+      'matrix-js-sdk/device': fileURLToPath(new URL('../../../matrix-js-sdk/src/device/index.ts', import.meta.url)),
+      'matrix-js-sdk/telemetry': fileURLToPath(
+        new URL('../../../matrix-js-sdk/src/telemetry/index.ts', import.meta.url)
+      ),
+      'matrix-js-sdk/qr-login': fileURLToPath(new URL('../../../matrix-js-sdk/src/qr-login/index.ts', import.meta.url)),
       'matrix-js-sdk': fileURLToPath(new URL('../../../matrix-js-sdk/src/index.ts', import.meta.url))
     }
   },

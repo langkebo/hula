@@ -268,14 +268,22 @@ const handleSaveDisplayName = async () => {
 
 const handleSendMessage = async () => {
   if (!props.userId) return
-  await contactStore.startDirectRoom(props.userId, false)
+  const roomId = await contactStore.startDirectRoom(props.userId, false)
+  if (roomId) {
+    const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+    await openMsgSessionByRoomId(roomId)
+  }
   visible.value = false
 }
 
 const handleEncryptedChat = async () => {
   if (!props.userId) return
   try {
-    await contactStore.startDirectRoom(props.userId, true)
+    const roomId = await contactStore.startDirectRoom(props.userId, true)
+    if (roomId) {
+      const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+      await openMsgSessionByRoomId(roomId)
+    }
     visible.value = false
   } catch {
     showFeedback(t('friend.detail.chat_error'), 'error', 'assertive')

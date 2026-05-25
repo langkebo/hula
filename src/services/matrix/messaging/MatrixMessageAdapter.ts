@@ -18,6 +18,7 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
     const msgType = this.getMsgTypeFromMatrixEvent(event)
 
     return {
+      clientKey: event.getId() || '',
       fromUser: {
         uid: sender,
         username: senderMember?.name || sender.split(':')[0],

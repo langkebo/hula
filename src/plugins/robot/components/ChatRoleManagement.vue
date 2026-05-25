@@ -21,7 +21,7 @@
         <div v-if="roleList.length === 0" class="empty-container">
           <n-empty :description="t('ai_assistant.robot.no_roles')" size="large">
             <template #icon>
-              <Icon icon="mdi:account-circle" class="text-48px color-#909090" />
+              <Icon icon="mdi:account-circle" class="text-48px color-[--hula-text-tertiary]" />
             </template>
             <template #extra>
               <n-button type="primary" @click="handleAdd">{{ t('ai_assistant.robot.add_first_role') }}</n-button>
@@ -137,7 +137,7 @@
                 </template>
                 {{ formData.avatar ? t('ai_assistant.robot.change_avatar') : t('ai_assistant.robot.upload_avatar') }}
               </n-button>
-              <span v-if="formData.avatar" class="text-(12px #909090)">
+              <span v-if="formData.avatar" class="text-(12px [--hula-text-tertiary])">
                 {{ t('ai_assistant.robot.uploaded') }}
                 <n-button text type="error" size="tiny" @click="formData.avatar = ''">
                   {{ t('ai_assistant.robot.clear') }}
@@ -361,10 +361,10 @@ const {
   handleFileChange,
   handleCrop: onCrop
 } = useAvatarUpload({
-  onSuccess: async (downloadUrl) => {
+  onSuccess: async (mxcUrl) => {
     formData.value.avatar = ''
     await nextTick()
-    formData.value.avatar = downloadUrl
+    formData.value.avatar = mxcUrl
 
     await nextTick()
 
@@ -571,7 +571,7 @@ watch(showEditModal, (val) => {
   border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   padding: 16px;
-  background: var(--bg-color);
+  background: var(--hula-surface-panel);
   transition: all 0.3s;
 
   &:hover {
@@ -596,7 +596,7 @@ watch(showEditModal, (val) => {
 
       .meta-item {
         font-size: 12px;
-        color: #909090;
+        color: var(--hula-text-tertiary);
       }
     }
   }

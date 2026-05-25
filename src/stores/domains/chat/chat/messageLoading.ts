@@ -2,6 +2,8 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { info } from '@tauri-apps/plugin-log'
 import pLimit from 'p-limit'
 import type { Ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import type { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
@@ -34,6 +36,8 @@ interface MessageLoadingDeps {
 }
 
 export const createMessageLoading = (deps: MessageLoadingDeps) => {
+  const { t } = useI18n()
+  const { showFeedback } = useActionFeedback()
   const {
     globalStore,
     sessionStore,
@@ -53,8 +57,11 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
     clearRoomMessagesExceptTransient
   } = deps
 
-  const getPageMsg = async (size: number, roomId: string, cursor: string = '', _async?: boolean) => {
+  const getPageMsg = async (size: number, roomId: string, cursor: string = '', showLoadingBar = false) => {
     try {
+      if (showLoadingBar && window.$loadingBar) {
+        window.$loadingBar.start()
+      }
       const currentOptions = messageOptions[roomId] || {
         isLast: false,
         isLoading: false,
@@ -89,16 +96,23 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         cursor: result.cursor,
         hasLoadedOnce: true
       }
+      if (showLoadingBar && window.$loadingBar) {
+        window.$loadingBar.finish()
+      }
     } catch (err) {
       logger.error('获取消息失败:', err)
+      if (showLoadingBar && window.$loadingBar) {
+        window.$loadingBar.error()
+      }
+      showFeedback(t('message.load_messages_failed'), 'error')
       messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: true }
     }
   }
 
-  const getMsgList = async (size = pageSize, async?: boolean) => {
+  const getMsgList = async (size = pageSize, showLoadingBar = false) => {
     await info('获取消息列表')
     const requestRoomId = globalStore.currentSessionRoomId
-    await getPageMsg(size, requestRoomId, currentMessageOptions.value?.cursor, async)
+    await getPageMsg(size, requestRoomId, currentMessageOptions.value?.cursor, showLoadingBar)
   }
 
   const setAllSessionMsgList = async (size = pageSize) => {
@@ -107,7 +121,7 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
 
     const sortedSessions = [...sessionStore.sessionList].sort((a, b) => b.activeTime - a.activeTime)
     const limit = pLimit(5)
-    const tasks = sortedSessions.map((session) => limit(() => getPageMsg(size, session.roomId, '', true)))
+    const tasks = sortedSessions.map((session) => limit(() => getPageMsg(size, session.roomId, '', false)))
     const results = await Promise.allSettled(tasks)
 
     const successCount = results.filter((r) => r.status === 'fulfilled').length
@@ -130,7 +144,7 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
       const opts = messageOptions[roomId] || { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }
       opts.cursor = ''
       messageOptions[roomId] = opts
-      await getPageMsg(size, roomId, '')
+      await getPageMsg(size, roomId, '', true)
     } finally {
       remoteSyncLocks.delete(roomId)
     }
@@ -163,7 +177,7 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
     }
 
     try {
-      await getPageMsg(pageSize, roomId, '')
+      await getPageMsg(pageSize, roomId, '', true)
     } catch (err) {
       logger.error('无法加载消息:', err)
       currentMessageOptions.value = {
@@ -207,7 +221,7 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         }
       }
 
-      await getPageMsg(pageSize, requestRoomId, '')
+      await getPageMsg(pageSize, requestRoomId, '', true)
 
       logger.debug('已重置并刷新当前聊天室的消息列表')
     } catch (err) {

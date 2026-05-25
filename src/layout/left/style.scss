@@ -1,4 +1,5 @@
 @use '@/styles/scss/global/variable.scss' as *;
+@use '@/styles/scss/global/responsive.scss' as responsive;
 
 @mixin action() {
   &:not(.active):hover {
@@ -48,9 +49,15 @@
 
 :deep(.n-badge .n-badge-sup) {
   font-weight: bold;
-  font-size: 10px;
+  font-size: var(--text-xs);
 }
 
 :deep(.n-badge) {
   color: inherit;
+}
+
+@include responsive.respond-to-max('md') {
+  .item-hover {
+    padding: 6px;
+  }
 }

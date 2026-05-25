@@ -61,28 +61,28 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
-  background: var(--primary-color-hover);
+  background: var(--color-primary-hover);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: var(--primary-color);
+    background: var(--color-primary);
     transform: translateX(2px);
   }
 
   .thread-icon {
-    color: var(--primary-color);
+    color: var(--color-primary);
   }
 
   .reply-count {
     font-size: 13px;
     font-weight: 500;
-    color: var(--primary-color);
+    color: var(--color-primary);
   }
 
   .arrow-icon {
-    color: var(--primary-color);
+    color: var(--color-primary);
   }
 }
 
@@ -91,7 +91,7 @@ onMounted(() => {
   color: var(--hula-text-secondary);
 
   &:hover {
-    color: var(--primary-color);
+    color: var(--color-primary);
   }
 }
 </style>

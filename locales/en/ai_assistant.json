@@ -1,4 +1,20 @@
 {
+  "openclaw": {
+    "title": "AI Assistant",
+    "new_chat": "New Chat",
+    "welcome": "Hello! I'm your AI assistant. How can I help you?",
+    "input_placeholder": "Type a message...",
+    "reasoning": "Reasoning",
+    "thinking": "Thinking...",
+    "error_default": "Sorry, an error occurred. Please try again.",
+    "retry": "Retry",
+    "quick_action": {
+      "code": "Write some code",
+      "explain": "Explain a concept",
+      "news": "What's the news today",
+      "movie": "Recommend some movies"
+    }
+  },
   "title": "AI Assistant",
   "welcome": "Hello, I'm your AI Assistant",
   "welcome_desc": "I can help you translate text, summarize content, write code, and more. Choose a feature below or just type your question.",

@@ -1,5 +1,7 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
+import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from './Logger'
 
 const logger = createLogger('MatrixDiagnostics')
@@ -13,9 +15,11 @@ export interface DiagnosticResult {
 
 export class MatrixDiagnostics {
   private homeserverUrl: string
+  private fetch: typeof globalThis.fetch
 
   constructor(homeserverUrl: string) {
     this.homeserverUrl = homeserverUrl
+    this.fetch = getRuntimeAwareFetch()
   }
 
   async runAll(): Promise<DiagnosticResult[]> {
@@ -34,7 +38,7 @@ export class MatrixDiagnostics {
     try {
       const data = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.getServerVersions(this.homeserverUrl)
-        : await fetch(`${this.homeserverUrl}/_matrix/client/versions`).then((r) => r.json())
+        : await this.fetch(`${this.homeserverUrl}/_matrix/client/versions`).then((r) => r.json())
 
       if (data.versions && data.versions.length > 0) {
         return {
@@ -64,7 +68,7 @@ export class MatrixDiagnostics {
     try {
       const data = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.getLoginFlows(this.homeserverUrl)
-        : await fetch(`${this.homeserverUrl}/_matrix/client/v3/login`).then((r) => r.json())
+        : await this.fetch(`${this.homeserverUrl}/_matrix/client/v3/login`).then((r) => r.json())
 
       if (data.flows && data.flows.length > 0) {
         const flowTypes = data.flows.map((f: { type: string }) => f.type)
@@ -106,7 +110,7 @@ export class MatrixDiagnostics {
       results = []
       for (const endpoint of endpoints) {
         try {
-          const response = await fetch(`${this.homeserverUrl}${endpoint}`, {
+          const response = await this.fetch(`${this.homeserverUrl}${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({})
@@ -149,11 +153,21 @@ export class MatrixDiagnostics {
 
   private async checkCORS(): Promise<DiagnosticResult> {
     const { t } = useI18nGlobal()
+
+    // Tauri 原生 fetch 绕过浏览器 CORS，CORS 检查不适用
+    if (hasTauriRuntime()) {
+      return {
+        name: 'CORS Configuration',
+        status: 'success',
+        message: t('diagnostics.cors_not_required', { defaultValue: '桌面端使用原生网络请求，无需 CORS 配置' })
+      }
+    }
+
     try {
       const corsHeaders = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.probeCors(this.homeserverUrl)
         : await (async () => {
-            const response = await fetch(`${this.homeserverUrl}/_matrix/client/versions`, {
+            const response = await this.fetch(`${this.homeserverUrl}/_matrix/client/versions`, {
               method: 'OPTIONS'
             })
             return {

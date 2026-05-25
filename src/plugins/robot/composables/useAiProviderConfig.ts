@@ -1,18 +1,14 @@
 import { ref, watch } from 'vue'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useI18nGlobal } from '@/services/i18n'
-import { useOpenClaw } from '@/services/openclaw'
 import { useSiliconFlow } from '@/services/siliconflow'
 import { useTrendRadar } from '@/services/trendradar'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiProviderConfig')
 
-export type AIProvider = 'hula' | 'openclaw' | 'siliconflow' | 'trendradar'
+export type AIProvider = 'hula' | 'siliconflow' | 'trendradar'
 
 const STORAGE_KEYS = {
   AI_PROVIDER: 'hula-chat-ai-provider',
-  OPENCLAW_CONFIG: 'hula-chat-openclaw-config',
   TRENDRADAR_CONFIG: 'hula-chat-trendradar-config'
 }
 
@@ -23,16 +19,8 @@ export interface UseAiProviderConfigOptions {
 
 export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
   const { fetchModelList, modelList } = options
-  const { t } = useI18nGlobal()
-  const { showFeedback } = useActionFeedback()
 
-  const aiProvider = ref<AIProvider>('openclaw')
-
-  const openClawConfig = ref({
-    gatewayUrl: 'http://127.0.0.1:18789',
-    token:
-      'sk-cp-l46Ur27NFasi28UCTJLIiehkD9PHSnpPCa6adzL40tN5A_TKnBjfY4ENtj3w45PSUilSQZofIMKKHObkVZXuPQz0JWzvABt19QXq6j5XMiXf3fvNzkyrIAM'
-  })
+  const aiProvider = ref<AIProvider>('hula')
 
   const siliconFlowConfig = ref({
     apiKey: '',
@@ -44,14 +32,6 @@ export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
     apiUrl: 'http://127.0.0.1:3333/mcp',
     apiKey: ''
   })
-
-  const {
-    isConnected: isOpenClawConnected,
-    availableModels: openClawModels,
-    currentModel: openClawCurrentModel,
-    connect: connectOpenClaw,
-    sendMessage: sendOpenClawMessage
-  } = useOpenClaw()
 
   const {
     isConnected: isSiliconFlowConnected,
@@ -69,15 +49,8 @@ export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
   const loadSavedConfig = () => {
     try {
       const savedProvider = localStorage.getItem(STORAGE_KEYS.AI_PROVIDER)
-      if (savedProvider && ['hula', 'openclaw', 'siliconflow', 'trendradar'].includes(savedProvider)) {
+      if (savedProvider && ['hula', 'siliconflow', 'trendradar'].includes(savedProvider)) {
         aiProvider.value = savedProvider as AIProvider
-      }
-
-      const savedOpenClawConfig = localStorage.getItem(STORAGE_KEYS.OPENCLAW_CONFIG)
-      if (savedOpenClawConfig) {
-        const parsed = JSON.parse(savedOpenClawConfig)
-        if (parsed.gatewayUrl) openClawConfig.value.gatewayUrl = parsed.gatewayUrl
-        if (parsed.token) openClawConfig.value.token = parsed.token
       }
 
       const savedTrendRadarConfig = localStorage.getItem(STORAGE_KEYS.TRENDRADAR_CONFIG)
@@ -94,33 +67,16 @@ export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
     localStorage.setItem(STORAGE_KEYS.AI_PROVIDER, provider)
   }
 
-  const saveOpenClawConfig = () => {
-    localStorage.setItem(STORAGE_KEYS.OPENCLAW_CONFIG, JSON.stringify(openClawConfig.value))
-  }
-
   const saveTrendRadarConfig = () => {
     localStorage.setItem(STORAGE_KEYS.TRENDRADAR_CONFIG, JSON.stringify(trendRadarConfig.value))
   }
 
-  watch(openClawConfig, saveOpenClawConfig, { deep: true })
   watch(trendRadarConfig, saveTrendRadarConfig, { deep: true })
 
   const handleProviderChange = async (provider: AIProvider) => {
     saveAiProvider(provider)
 
-    if (provider === 'openclaw') {
-      if (!isOpenClawConnected.value) {
-        try {
-          await connectOpenClaw({
-            gatewayUrl: openClawConfig.value.gatewayUrl,
-            token: openClawConfig.value.token
-          })
-        } catch (e) {
-          logger.error('OpenClaw 连接失败:', e)
-          showFeedback(t('ai_assistant.robot.openclaw_connection_failed_gateway'), 'error')
-        }
-      }
-    } else if (provider === 'trendradar') {
+    if (provider === 'trendradar') {
       logger.debug('TrendRadar 模式，apiUrl:', trendRadarConfig.value.apiUrl)
     } else {
       if (modelList.value.length === 0) {
@@ -131,14 +87,8 @@ export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
 
   return {
     aiProvider,
-    openClawConfig,
     siliconFlowConfig,
     trendRadarConfig,
-    isOpenClawConnected,
-    openClawModels,
-    openClawCurrentModel,
-    connectOpenClaw,
-    sendOpenClawMessage,
     isSiliconFlowConnected,
     isSiliconFlowConnecting,
     siliconFlowModels,

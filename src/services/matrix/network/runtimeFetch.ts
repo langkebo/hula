@@ -1,4 +1,5 @@
 import { type ClientOptions, fetch as nativeFetch } from '@tauri-apps/plugin-http'
+import { createRateLimitedFetch } from '@/services/matrix/MatrixRateLimitInterceptor'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
@@ -58,8 +59,16 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
     const normalizedInit = withTauriClientOptions(input, init)
 
     try {
-      return await nativeFetch(input as URL | Request | string, normalizedInit)
+      const response = await nativeFetch(input as URL | Request | string, normalizedInit)
+      if (!response.ok) {
+        const url = resolveRequestUrl(input)
+        const method = normalizedInit?.method || 'GET'
+        logger.warn(`nativeFetch ${method} ${url} -> ${response.status}`)
+      }
+      return response
     } catch (error) {
+      const url = resolveRequestUrl(input)
+      logger.warn(`nativeFetch 抛出异常 for ${url}: ${error}`)
       if (!shouldUseBrowserFallback(input)) {
         throw error
       }
@@ -74,12 +83,16 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
 }
 
 export function getRuntimeAwareFetch(): typeof globalThis.fetch {
+  let baseFetch: typeof globalThis.fetch
+
   if (hasTauriRuntime()) {
-    return createTauriFetchWithBrowserFallback()
+    baseFetch = createTauriFetchWithBrowserFallback()
+  } else {
+    baseFetch = ((input: URL | RequestInfo, init?: RequestInit) =>
+      globalThis.fetch(input, withOmittedCredentials(init))) as typeof globalThis.fetch
   }
 
-  return ((input: URL | RequestInfo, init?: RequestInit) =>
-    globalThis.fetch(input, withOmittedCredentials(init))) as typeof globalThis.fetch
+  return createRateLimitedFetch(baseFetch)
 }
 
 export function getRuntimeAwareFetchFn(): typeof globalThis.fetch | undefined {

@@ -288,6 +288,8 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       info(`[ContactStore] 加载联系人成功: ${contacts.length} 个`)
     } catch (err) {
       error(`[ContactStore] 加载联系人失败: ${err}`)
+      // 客户端未初始化是暂时状态，不设置错误状态避免干扰 UI
+      if (String(err).includes('客户端未初始化')) return
       setFriendListError('contacts', err, '加载好友列表失败')
     } finally {
       isLoading.value = false
@@ -325,6 +327,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       info(`[ContactStore] 加载好友请求成功: ${requestFriendsList.value.length} 个`)
     } catch (err) {
       error(`[ContactStore] 加载好友请求失败: ${err}`)
+      // 客户端未初始化是暂时状态，不需要额外处理
     }
   }
 

@@ -5,13 +5,13 @@
         <div
           v-if="isMac()"
           @click="editInfo.show = false"
-          class="mac-close size-13px shadow-inner bg-#ed6a5eff rounded-50% mt-6px select-none absolute left-6px">
-          <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+          class="mac-close size-13px shadow-inner bg-[--hula-color-primary-500] rounded-50% mt-6px select-none absolute left-6px">
+          <svg class="hidden size-7px color-[--hula-text-inverse] select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>
 
-        <n-flex class="text-(14px [--hula-text-primary]) select-none pt-6px" justify="center">
+        <n-flex class="text-[var(--text-sm)] text-[--hula-text-primary] select-none pt-6px" justify="center">
           {{ t('home.profile_edit.title') }}
         </n-flex>
 
@@ -31,20 +31,22 @@
               <div class="avatar-wrapper relative" @click="openAvatarCropper">
                 <n-avatar :size="80" :src="AvatarUtils.getAvatarUrl(editInfo.content.avatar!)" round />
                 <div class="avatar-hover absolute size-full rounded-50% flex-center">
-                  <span class="text-12px color-[--hula-text-secondary]">
+                  <span class="text-[var(--text-sm)] color-[--hula-text-secondary]">
                     {{ t('home.profile_edit.avatar.change') }}
                   </span>
                 </div>
               </div>
             </template>
-            <p class="text-12px text-[--hula-text-secondary] w-280px leading-5 p-4px">
+            <p class="text-[var(--text-sm)] text-[--hula-text-secondary] w-280px leading-5 p-4px">
               {{ t('home.profile_edit.avatar.tips') }}
             </p>
           </n-popover>
         </n-flex>
         <!-- 当前佩戴的徽章 -->
         <n-flex v-if="currentBadge" align="center" justify="center">
-          <span class="text-(14px [--hula-text-secondary])">{{ t('home.profile_edit.badge.current') }}</span>
+          <span class="text-[var(--text-sm)] text-[--hula-text-secondary]">
+            {{ t('home.profile_edit.badge.current') }}
+          </span>
           <n-popover trigger="hover">
             <template #trigger>
               <img :src="currentBadge?.img" :alt="currentBadge?.describe || '徽章'" class="size-22px" />
@@ -179,18 +181,22 @@ const {
   handleFileChange,
   handleCrop: onCrop
 } = useAvatarUpload({
-  onSuccess: async (downloadUrl) => {
-    await updateAvatar(downloadUrl)
+  onSuccess: async (mxcUrl) => {
+    // 更新 Matrix 头像 URL（mxc:// URI）
+    await updateAvatar(mxcUrl)
+    // 更新用户 store 中的头像
+    if (userStore.matrixProfile) {
+      userStore.matrixProfile.avatarUrl = mxcUrl
+    }
     // 更新编辑信息
-    editInfo.value.content.avatar = downloadUrl
-    // 更新用户信息
-    userStore.userInfo!.avatar = downloadUrl
-    // 更新头像更新时间
-    userStore.userInfo!.avatarUpdateTime = Date.now()
+    editInfo.value.content.avatar = mxcUrl
     // 更新登录历史记录
-    loginHistoriesStore.loginHistories.filter((item) => item.uid === userStore.userInfo!.uid)[0].avatar = downloadUrl
+    const historyItem = loginHistoriesStore.loginHistories.find((item) => item.uid === userStore.userInfo!.uid)
+    if (historyItem) {
+      historyItem.avatar = mxcUrl
+    }
     // 更新缓存里面的用户信息
-    updateCurrentUserCache('avatar', downloadUrl)
+    updateCurrentUserCache('avatar', mxcUrl)
     showFeedback(t('home.profile_edit.toast.avatar_update_success'), 'success')
   }
 })

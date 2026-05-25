@@ -1,7 +1,6 @@
 import type {
   RobotAiProvider,
   RobotStorageScopeOptions,
-  StoredOpenClawConfig,
   StoredTrendRadarConfig
 } from '@/services/secure/robotAiProviderStorage'
 
@@ -28,11 +27,6 @@ export interface RobotProviderCredentialSummary {
   userId?: string
   hasSecret: boolean
   updatedAt: number
-}
-
-export interface RobotOpenClawCredential extends StoredOpenClawConfig {
-  provider: 'openclaw'
-  userId?: string
 }
 
 export interface RobotTrendRadarCredential extends StoredTrendRadarConfig {

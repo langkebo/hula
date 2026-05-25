@@ -10,6 +10,8 @@ export const DEFAULT_MATRIX_IDENTITY_SERVER_URL = ''
 const MATRIX_DEV_PROXY_PORT = '6130'
 const MATRIX_DEV_PROXY_TARGET_PORT = '8008'
 const LEGACY_LOCAL_MATRIX_HOMESERVER_URLS = new Set([
+  'http://localhost:8008',
+  'http://127.0.0.1:8008',
   'http://localhost:28008',
   'http://127.0.0.1:28008',
   'https://localhost:28008',
@@ -113,7 +115,10 @@ function shouldUseMatrixDevProxy(): boolean {
     return false
   }
 
-  return window.location.protocol.startsWith('http') && window.location.port === MATRIX_DEV_PROXY_PORT
+  return (
+    window.location.protocol.startsWith('http') &&
+    (window.location.port === MATRIX_DEV_PROXY_PORT || window.location.port === '5210')
+  )
 }
 
 function shouldRewriteHomeserverToDevProxy(homeserverUrl: string): boolean {
@@ -123,11 +128,29 @@ function shouldRewriteHomeserverToDevProxy(homeserverUrl: string): boolean {
 
   try {
     const targetUrl = new URL(homeserverUrl)
-    return (
+    const appOrigin = window.location.origin
+
+    // Already pointing to the app origin, no rewrite needed
+    if (targetUrl.origin === appOrigin) {
+      return false
+    }
+
+    // Rewrite localhost:8008 (standard Matrix dev proxy target)
+    if (
       (targetUrl.hostname === 'localhost' || targetUrl.hostname === '127.0.0.1') &&
       targetUrl.port === MATRIX_DEV_PROXY_TARGET_PORT &&
       targetUrl.protocol === window.location.protocol
-    )
+    ) {
+      return true
+    }
+
+    // Rewrite any HTTPS homeserver URL when running in HTTP dev mode
+    // (browser cannot reach HTTPS endpoints directly; Vite proxy handles it)
+    if (targetUrl.protocol === 'https:' && window.location.protocol === 'http:') {
+      return true
+    }
+
+    return false
   } catch {
     return false
   }

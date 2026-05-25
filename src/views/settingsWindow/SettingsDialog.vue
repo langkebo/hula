@@ -185,29 +185,46 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
+
 .settings-dialog {
   display: flex;
   height: 100%;
+  min-height: 0;
   color: var(--hula-text-primary);
   background: linear-gradient(180deg, var(--hula-surface-panel) 0%, var(--hula-surface-panel-muted) 100%);
   border: 1px solid var(--hula-border-default);
   border-radius: var(--hula-radius-lg);
   box-shadow: var(--hula-shadow-border), var(--hula-shadow-md);
   overflow: hidden;
+
+  @include responsive.respond-to-max('md') {
+    flex-direction: column;
+  }
 }
 
 .settings-sidebar {
   width: var(--hula-settings-sidebar-width);
+  flex-shrink: 0;
   background: color-mix(in srgb, var(--hula-surface-panel) 78%, var(--hula-surface-subtle) 22%);
   border-right: 1px solid var(--hula-border-default);
   overflow-y: auto;
+
+  @include responsive.respond-to-max('md') {
+    width: 100%;
+    max-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--hula-border-default);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 }
 
 .settings-nav-empty {
   padding: var(--hula-space-5) var(--hula-space-4);
   color: var(--hula-text-tertiary);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .settings-main {
@@ -237,9 +254,9 @@ onUnmounted(() => {
 }
 
 .settings-title {
-  font-size: var(--hula-font-size-xl);
-  font-weight: var(--hula-font-weight-semibold);
-  line-height: 1.4;
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
   margin: 0;
 }
 
@@ -248,7 +265,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   width: fit-content;
-  font-size: var(--hula-font-size-sm);
+  font-size: var(--text-sm);
   color: var(--hula-color-warning-600);
   background: var(--hula-color-warning-100);
   border: 1px solid color-mix(in srgb, var(--hula-color-warning-500) 20%, transparent);
@@ -258,12 +275,21 @@ onUnmounted(() => {
 
 .settings-search {
   max-width: 320px;
+
+  @include responsive.respond-to-max('md') {
+    max-width: 100%;
+  }
 }
 
 .settings-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--hula-space-5);
   background: var(--hula-surface-panel);
+
+  @include responsive.respond-to-max('md') {
+    padding: var(--hula-space-4);
+  }
 }
 </style>

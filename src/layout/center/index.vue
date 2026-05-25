@@ -11,7 +11,7 @@
       <div :class="{ 'opacity-100': isDragging }" class="transition-all duration-600 ease-in-out opacity-0 drag-icon">
         <div
           style="border-radius: 8px 0 0 8px"
-          class="h-60px w-14px absolute top-40% right-0 drag-icon bg-[--hula-surface-sidebar-selected]">
+          class="h-60px w-14px absolute top-50% -translate-y-1/2 right-0 drag-icon bg-[--hula-surface-sidebar-selected]">
           <svg class="size-16px absolute top-1/2 right--2px transform -translate-y-1/2 color-[--hula-text-tertiary]">
             <use href="#sliding"></use>
           </svg>

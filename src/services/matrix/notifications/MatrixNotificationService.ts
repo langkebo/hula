@@ -87,6 +87,7 @@ class MatrixNotificationService extends BaseMatrixService {
 
   async syncConfigToAccountData(): Promise<void> {
     try {
+      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
       const client = this.getNotificationClient()
       await client.setAccountData(
         MatrixNotificationService.ACCOUNT_DATA_TYPE,
@@ -100,6 +101,7 @@ class MatrixNotificationService extends BaseMatrixService {
 
   async syncConfigFromAccountData(): Promise<boolean> {
     try {
+      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
       const client = this.getNotificationClient()
       const event = client.getAccountData(MatrixNotificationService.ACCOUNT_DATA_TYPE)
       if (event) {
@@ -138,6 +140,7 @@ class MatrixNotificationService extends BaseMatrixService {
     endTime: number | null
   } | null> {
     try {
+      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
       const client = this.getNotificationClient()
       const event = client.getAccountData(MatrixNotificationService.DND_ACCOUNT_DATA_TYPE)
       if (event) {
@@ -157,7 +160,7 @@ class MatrixNotificationService extends BaseMatrixService {
       }
       return null
     } catch (err) {
-      error(`[MatrixNotification] 从服务端同步 DND 设置失败: ${err}`)
+      warn(`[MatrixNotification] 从服务端同步 DND 设置失败: ${err}`)
       return null
     }
   }

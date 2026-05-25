@@ -16,6 +16,11 @@
 | 空间侧栏 | 截图 | `space-sidebar-invite-only.png` | `src/components/workbench/SpaceListItemCard.stories.ts` | 待补截图 |
 | 房间列表 | 截图 | `room-list-sync-loading.png` | `src/components/workbench/RoomSessionList.stories.ts` | 待补截图 |
 | 房间列表 | 截图 | `room-list-reconnecting.png` | `src/components/workbench/RoomSessionList.stories.ts` | 待补截图 |
+| 房间列表中间栏 | 截图切图 | `room-list-mid-pane-slice-header-2026-05-25.png` | `docs/ui/ROOM_LIST_MID_PANE_ALIGNMENT_SPEC_2026-05-25.md`、`src/views/homeWindow/__tests__/RoomList.test.ts` | 已补齐 |
+| 房间列表中间栏 | 截图切图 | `room-list-mid-pane-slice-toolbar-2026-05-25.png` | `docs/ui/ROOM_LIST_MID_PANE_ALIGNMENT_SPEC_2026-05-25.md`、`src/components/workbench/__tests__/MessageSessionToolbar.test.ts` | 已补齐 |
+| 房间列表中间栏 | 截图切图 | `room-list-mid-pane-slice-list-2026-05-25.png` | `docs/ui/ROOM_LIST_MID_PANE_ALIGNMENT_SPEC_2026-05-25.md`、`src/components/workbench/__tests__/RoomSessionList.test.ts` | 已补齐 |
+| 房间列表中间栏 | 标注文件 | `room-list-mid-pane-annotation-2026-05-25.svg` | `docs/ui/ROOM_LIST_MID_PANE_CONSISTENCY_REPORT_2026-05-25.md` | 已补齐 |
+| 房间列表中间栏 | 标注文件 | `room-list-mid-pane-annotation-2026-05-25.json` | `docs/ui/ROOM_LIST_MID_PANE_CONSISTENCY_REPORT_2026-05-25.md` | 已补齐 |
 | 输入禁用态 | 录屏 | `msg-input-disabled-states.mp4` | `src/components/rightBox/MsgInput.stories.ts` | 待补实录 |
 | 消息元信息 | 截图 | `message-meta-receipts-presence.png` | `src/components/rightBox/renderMessage/HulaMessageMeta.stories.ts` | 待补截图 |
 | 好友请求 | 录屏 | `friend-request-accept-to-dm.mp4` | `src/components/friend/FriendRequestDialog.stories.ts`、`src/components/friend/__tests__/FriendRequestDialog.test.ts` | 待补实录 |

@@ -7,9 +7,6 @@
         :message-count="currentChat.messageCount"
         :is-edit="isEdit"
         :ai-provider="aiProvider"
-        :is-open-claw-connected="isOpenClawConnected"
-        :open-claw-models="openClawModels"
-        :open-claw-current-model="openClawCurrentModel"
         :selected-model="selectedModel"
         :remaining-usage="remainingUsage"
         :remaining-usage-display="remainingUsageDisplay"
@@ -21,7 +18,6 @@
         @update:chat-title="currentChat.title = $event"
         @update:ai-provider="aiProvider = $event"
         @change-provider="handleProviderChange"
-        @update:open-claw-current-model="openClawCurrentModel = $event"
         @update:show-delete-chat-confirm="showDeleteChatConfirm = $event"
         @update:delete-with-messages="deleteWithMessages = $event"
         @model-click="handleModelClick"
@@ -138,27 +134,31 @@
                 @click="handlePreviewImage(item)" />
               <div v-else-if="item.status === 10" class="preview-placeholder">
                 <n-spin size="large" />
-                <p class="text-12px text-#909090 mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
+                <p class="text-12px text-[--hula-text-tertiary] mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
               </div>
               <div v-else class="preview-placeholder error">
-                <Icon icon="mdi:alert-circle-outline" class="text-48px text-#d5304f" />
-                <p class="text-12px text-#d5304f mt-8px">{{ t('ai_assistant.robot.generation_failed') }}</p>
+                <Icon icon="mdi:alert-circle-outline" class="text-48px text-[--hula-color-danger-500]" />
+                <p class="text-12px text-[--hula-color-danger-500] mt-8px">
+                  {{ t('ai_assistant.robot.generation_failed') }}
+                </p>
               </div>
             </div>
 
             <!-- 音频预览 -->
             <div v-else-if="historyType === 'audio'" class="media-preview">
               <div v-if="item.status === 20 && item.audioUrl" class="audio-preview">
-                <Icon icon="mdi:music-circle" class="text-64px text-#1890ff" />
-                <p class="text-12px text-#1890ff mt-8px">{{ t('ai_assistant.robot.click_to_play') }}</p>
+                <Icon icon="mdi:music-circle" class="text-64px text-[--hula-color-info-500]" />
+                <p class="text-12px text-[--hula-color-info-500] mt-8px">{{ t('ai_assistant.robot.click_to_play') }}</p>
               </div>
               <div v-else-if="item.status === 10" class="preview-placeholder">
                 <n-spin size="large" />
-                <p class="text-12px text-#909090 mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
+                <p class="text-12px text-[--hula-text-tertiary] mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
               </div>
               <div v-else class="preview-placeholder error">
-                <Icon icon="mdi:alert-circle-outline" class="text-48px text-#d5304f" />
-                <p class="text-12px text-#d5304f mt-8px">{{ t('ai_assistant.robot.generation_failed') }}</p>
+                <Icon icon="mdi:alert-circle-outline" class="text-48px text-[--hula-color-danger-500]" />
+                <p class="text-12px text-[--hula-color-danger-500] mt-8px">
+                  {{ t('ai_assistant.robot.generation_failed') }}
+                </p>
               </div>
             </div>
 
@@ -170,18 +170,20 @@
               </div>
               <div v-else-if="item.status === 10" class="preview-placeholder">
                 <n-spin size="large" />
-                <p class="text-12px text-#909090 mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
+                <p class="text-12px text-[--hula-text-tertiary] mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
               </div>
               <div v-else class="preview-placeholder error">
-                <Icon icon="mdi:alert-circle-outline" class="text-48px text-#d5304f" />
-                <p class="text-12px text-#d5304f mt-8px">{{ t('ai_assistant.robot.generation_failed') }}</p>
+                <Icon icon="mdi:alert-circle-outline" class="text-48px text-[--hula-color-danger-500]" />
+                <p class="text-12px text-[--hula-color-danger-500] mt-8px">
+                  {{ t('ai_assistant.robot.generation_failed') }}
+                </p>
               </div>
             </div>
 
             <!-- 信息 -->
             <div class="history-info">
               <p class="prompt" :title="item.prompt">{{ item.prompt }}</p>
-              <p class="text-11px text-#909090 mt-4px">{{ item.width }} × {{ item.height }}</p>
+              <p class="text-11px text-[--hula-text-tertiary] mt-4px">{{ item.width }} × {{ item.height }}</p>
             </div>
           </div>
         </div>
@@ -212,7 +214,7 @@
           <strong>{{ t('ai_assistant.robot.prompt_label') }}</strong>
           {{ previewItem.prompt }}
         </p>
-        <p class="text-12px text-#909090 mt-8px">
+        <p class="text-12px text-[--hula-text-tertiary] mt-8px">
           <strong>{{ t('ai_assistant.robot.size_label') }}</strong>
           {{ previewItem.width }} × {{ previewItem.height }}
         </p>
@@ -233,7 +235,7 @@
           <strong>{{ t('ai_assistant.robot.prompt_label') }}</strong>
           {{ previewItem.prompt }}
         </p>
-        <p class="text-12px text-#909090 mt-8px">
+        <p class="text-12px text-[--hula-text-tertiary] mt-8px">
           <strong>{{ t('ai_assistant.robot.size_label') }}</strong>
           {{ previewItem.width }} × {{ previewItem.height }}
         </p>
@@ -304,9 +306,6 @@ const {
   otherFeatures,
   userAvatar,
   aiProvider,
-  isOpenClawConnected,
-  openClawModels,
-  openClawCurrentModel,
   handleProviderChange,
   getDefaultAvatar,
   getModelAvatar,
@@ -391,7 +390,7 @@ const {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: var(--hula-surface-panel-muted);
   cursor: pointer;
   position: relative;
 
@@ -408,7 +407,7 @@ const {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--hula-color-primary-400) 0%, var(--hula-color-primary-600) 100%);
   }
 
   .preview-placeholder {
@@ -420,7 +419,7 @@ const {
     justify-content: center;
 
     &.error {
-      background: #fff1f0;
+      background: var(--hula-color-danger-100);
     }
   }
 }
@@ -451,7 +450,7 @@ const {
 
   .preview-info {
     padding: 16px;
-    background: var(--bg-color);
+    background: var(--hula-surface-panel);
     border-radius: 8px;
   }
 }

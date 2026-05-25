@@ -8,7 +8,9 @@
     "online": "Online",
     "offline": "Offline",
     "friend_list_label": "Friend List",
-    "new_request_announcement": "Received {count} new friend requests"
+    "new_request_announcement": "Received {count} new friend requests",
+    "pending_requests": "{count} pending friend requests",
+    "view_all": "View all"
   },
   "filter": {
     "all": "All",

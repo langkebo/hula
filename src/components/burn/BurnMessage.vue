@@ -17,7 +17,7 @@
         <svg class="burn-message__burned-icon">
           <use href="#burned"></use>
         </svg>
-        <span class="burn-message__burned-text">此消息已销毁</span>
+        <span class="burn-message__burned-text">{{ t('chat.burn.message_destroyed') }}</span>
       </div>
     </Transition>
   </div>
@@ -25,8 +25,11 @@
 
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import BurnIndicator from './BurnIndicator.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   msgId: string

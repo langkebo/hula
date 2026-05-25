@@ -27,13 +27,6 @@
         @update:value="emit('update:chat-title', $event)" />
 
       <n-flex align="center" :size="8" class="mt-4px">
-        <n-tag v-if="aiProvider === 'openclaw'" :type="isOpenClawConnected ? 'success' : 'error'" size="small">
-          OpenClaw
-          {{
-            isOpenClawConnected ? t('ai_assistant.robot.status.connected') : t('ai_assistant.robot.status.disconnected')
-          }}
-        </n-tag>
-
         <n-select
           :value="aiProvider"
           :options="providerOptions"
@@ -41,17 +34,8 @@
           style="width: 120px"
           @update:value="handleProviderSelect" />
 
-        <n-select
-          v-if="aiProvider === 'openclaw' && openClawModels.length > 0"
-          :value="openClawCurrentModel"
-          :options="openClawModels.map((m) => ({ label: m, value: m }))"
-          size="tiny"
-          style="width: 180px"
-          :placeholder="t('ai_assistant.robot.select_model')"
-          @update:value="emit('update:open-claw-current-model', $event)" />
-
         <div v-if="aiProvider === 'hula'" class="flex items-center gap-6px">
-          <span class="text-(11px #909090)">{{ t('ai_assistant.robot.current_model') }}</span>
+          <span class="text-(11px [--hula-text-tertiary])">{{ t('ai_assistant.robot.current_model') }}</span>
           <n-tag
             v-if="selectedModel"
             size="small"
@@ -105,7 +89,9 @@
           </n-tag>
         </div>
 
-        <p class="text-(11px #707070)">{{ t('ai_assistant.robot.conversation_count', { count: messageCount }) }}</p>
+        <p class="text-(11px [--hula-text-tertiary])">
+          {{ t('ai_assistant.robot.conversation_count', { count: messageCount }) }}
+        </p>
       </n-flex>
     </n-flex>
 
@@ -144,7 +130,7 @@
           <p class="text-(14px [--hula-text-primary]) font-500">
             {{ t('ai_assistant.robot.confirm_delete_conversation') }}
           </p>
-          <p class="text-(12px #d5304f)">{{ t('ai_assistant.robot.irreversible_warning') }}</p>
+          <p class="text-(12px [--hula-color-danger-500])">{{ t('ai_assistant.robot.irreversible_warning') }}</p>
 
           <n-checkbox
             :checked="deleteWithMessages"
@@ -192,9 +178,6 @@ const props = defineProps<{
   messageCount: ConversationMeta['messageCount']
   isEdit: boolean
   aiProvider: AIProvider
-  isOpenClawConnected: boolean
-  openClawModels: readonly string[]
-  openClawCurrentModel: string
   selectedModel: AIModel | null
   remainingUsage: number | null
   remainingUsageDisplay: string
@@ -209,7 +192,6 @@ const emit = defineEmits<{
   'update:chat-title': [value: string]
   'update:ai-provider': [value: AIProvider]
   'change-provider': [value: AIProvider]
-  'update:open-claw-current-model': [value: string]
   'update:show-delete-chat-confirm': [value: boolean]
   'update:delete-with-messages': [value: boolean]
   'model-click': []
@@ -218,8 +200,9 @@ const emit = defineEmits<{
 }>()
 
 const providerOptions: Array<{ label: string; value: AIProvider }> = [
-  { label: 'OpenClaw', value: 'openclaw' },
-  { label: t('ai_assistant.robot.hula_backend'), value: 'hula' }
+  { label: t('ai_assistant.robot.hula_backend'), value: 'hula' },
+  { label: 'SiliconFlow', value: 'siliconflow' },
+  { label: 'TrendRadar', value: 'trendradar' }
 ]
 
 const titleInputRef = ref<InputInst | null>(null)

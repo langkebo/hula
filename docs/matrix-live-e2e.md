@@ -15,10 +15,16 @@
 
 ```bash
 MATRIX_LIVE_E2E=1
-MATRIX_LIVE_HOMESERVER_URL=http://127.0.0.1:28008
+MATRIX_LIVE_HOMESERVER_URL=https://matrix.test
 MATRIX_LIVE_USERNAME=alice
 MATRIX_LIVE_PASSWORD=secret
 ```
+
+说明：
+
+- 浏览器 Playwright 运行时会自动把 `MATRIX_LIVE_HOMESERVER_URL` 注入为 dev server 的 `VITE_HOMESERVER_URL`，由 Vite 的 `/_matrix` 同源代理转发到真实 homeserver。
+- `matrix-live` 支持层会在浏览器模式下自动把运行态 homeserver 改写为 `MATRIX_LIVE_APP_URL` 的 origin，避免 `password-api` 走跨域直连后出现 `Failed to fetch`。
+- 如果你仍希望走本地代理，也可以继续把 `MATRIX_LIVE_HOMESERVER_URL` 设为 `http://127.0.0.1:28008`。
 
 可选：
 

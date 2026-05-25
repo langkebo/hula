@@ -1,13 +1,10 @@
 import {
   loadRobotAiProvider,
-  loadRobotOpenClawConfig,
   loadRobotTrendRadarConfig,
   type RobotAiProvider,
   type RobotStorageScopeOptions,
-  type StoredOpenClawConfig,
   type StoredTrendRadarConfig,
   saveRobotAiProvider,
-  saveRobotOpenClawConfig,
   saveRobotTrendRadarConfig
 } from '@/services/secure/robotAiProviderStorage'
 import { createLogger } from '@/utils/Logger'
@@ -41,22 +38,6 @@ class RobotCredentialService {
   async saveProvider(provider: RobotAiProvider, context?: RobotCredentialContext): Promise<void> {
     saveRobotAiProvider(provider, this.createScope(context))
     this.touch(context, provider)
-  }
-
-  async loadOpenClawConfig(
-    defaults: StoredOpenClawConfig,
-    context?: RobotCredentialContext
-  ): Promise<StoredOpenClawConfig> {
-    return loadRobotOpenClawConfig(defaults, this.createScope(context))
-  }
-
-  async saveOpenClawConfig(
-    config: StoredOpenClawConfig,
-    context?: RobotCredentialContext
-  ): Promise<StoredOpenClawConfig> {
-    const saved = await saveRobotOpenClawConfig(config, this.createScope(context))
-    this.touch(context, 'openclaw')
-    return saved
   }
 
   async loadTrendRadarConfig(

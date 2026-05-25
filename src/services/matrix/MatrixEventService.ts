@@ -405,6 +405,7 @@ class MatrixEventService extends BaseMatrixService {
   convertEventToMessageType(event: MatrixEvent): MessageType {
     const content = event.getContent()
     return {
+      clientKey: event.getId() ?? '',
       fromUser: {
         uid: event.getSender() ?? '',
         username: event.getSender() ?? '',
@@ -436,6 +437,7 @@ class MatrixEventService extends BaseMatrixService {
     const burnRemainingSeconds = burnAfterRead ? Math.round(burnExpiresIn / 1000) : undefined
 
     return {
+      clientKey: event.getId() || '',
       message: {
         id: event.getId() || '',
         roomId: room.roomId,

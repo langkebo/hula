@@ -1,4 +1,5 @@
 import { listen } from '@tauri-apps/api/event'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 
@@ -42,6 +43,12 @@ const waitForReadyEvent = () =>
  */
 export const ensureAppStateReady = async () => {
   if (isReady) {
+    return
+  }
+
+  // Browser-only runs have no native app-state lifecycle to wait for.
+  if (typeof window !== 'undefined' && !hasTauriRuntime()) {
+    isReady = true
     return
   }
 

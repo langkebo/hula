@@ -173,6 +173,7 @@ vi.mock('@/components/workbench/MessageSessionToolbar.vue', () => ({
   default: defineComponent({
     name: 'MessageSessionToolbarStub',
     props: {
+      title: { type: String, default: '' },
       searchKeyword: { type: String, default: '' },
       filteredCount: { type: Number, default: 0 },
       totalCount: { type: Number, default: 0 }
@@ -181,6 +182,7 @@ vi.mock('@/components/workbench/MessageSessionToolbar.vue', () => ({
     setup(props, { emit }) {
       return () =>
         h('div', { 'data-test': 'message-toolbar' }, [
+          h('span', { 'data-test': 'toolbar-title' }, props.title),
           h('span', { 'data-test': 'toolbar-search-value' }, props.searchKeyword),
           h('span', { 'data-test': 'toolbar-summary' }, `${props.filteredCount}/${props.totalCount}`),
           h(
@@ -238,6 +240,7 @@ describe('MessageView', () => {
     expect(wrapper.find('[data-test="message-toolbar"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="session-list"]').exists()).toBe(true)
     expect(wrapper.findComponent({ name: 'RoomSpaceWorkbench' }).exists()).toBe(false)
+    expect(wrapper.get('[data-test="toolbar-title"]').text()).toBe('消息')
     expect(wrapper.get('[data-test="toolbar-summary"]').text()).toBe('1/1')
 
     await wrapper.get('[data-test="toolbar-search"]').trigger('click')

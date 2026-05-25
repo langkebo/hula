@@ -161,7 +161,7 @@ if (props.lazy) {
   position: relative;
   display: inline-block;
   overflow: hidden;
-  background: var(--bg-color);
+  background: var(--hula-surface-app);
   border-radius: 8px;
 }
 
@@ -171,7 +171,7 @@ if (props.lazy) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-color);
+  background: var(--hula-surface-app);
 }
 
 .lazy-image {
@@ -198,7 +198,7 @@ if (props.lazy) {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: var(--bg-color);
+  background: var(--hula-surface-app);
   font-size: 12px;
   color: var(--hula-text-tertiary);
 }

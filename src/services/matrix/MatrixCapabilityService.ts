@@ -68,6 +68,14 @@ function getCapabilityStore() {
   throw new Error('[CapabilityService] Store not registered. Call registerCapabilityStoreResolver() during app init.')
 }
 
+function tryGetStore() {
+  try {
+    return getCapabilityStore()
+  } catch {
+    return null
+  }
+}
+
 export class MatrixCapabilityService {
   private capabilityMap: Record<HulaCapability, string> = {
     'sliding-sync': 'org.matrix.msc3575',
@@ -78,7 +86,8 @@ export class MatrixCapabilityService {
   }
 
   hasCapability(capability: HulaCapability): boolean {
-    const store = getCapabilityStore()
+    const store = tryGetStore()
+    if (!store) return false
     const featureKey = this.capabilityMap[capability]
     if (!featureKey) return false
     return store.hasFeature(featureKey).value || store.hasUnstable(featureKey).value
@@ -93,12 +102,14 @@ export class MatrixCapabilityService {
   }
 
   canUseSlidingSync(): boolean {
-    const store = getCapabilityStore()
+    const store = tryGetStore()
+    if (!store) return false
     return store.hasUnstable('org.matrix.msc3575').value || store.hasUnstable('org.matrix.simplified_msc3575').value
   }
 
   canUseE2EE(): boolean {
-    const store = getCapabilityStore()
+    const store = tryGetStore()
+    if (!store) return false
     const encryptionCapability = store.capabilities['m.room.encryption'] as { enabled?: boolean } | undefined
     if (encryptionCapability?.enabled === false) {
       return false
@@ -141,8 +152,19 @@ export class MatrixCapabilityService {
       const capabilities = capabilitiesResult.status === 'fulfilled' ? capabilitiesResult.value : { capabilities: {} }
       const clientConfig = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
 
+      // 合并 versions 和 capabilities 两个来源的 unstable_features
+      // versions 接口返回标准的 unstable_features（如 msc 标志）
+      // capabilities 接口也可能返回 unstable_features（如 io.hula.friends）
+      const capabilitiesUnstable = (capabilities as Record<string, unknown>).unstable_features as
+        | Record<string, boolean>
+        | undefined
+      const mergedUnstableFeatures: Record<string, boolean> = {
+        ...(capabilitiesUnstable || {}),
+        ...(versions.unstable_features || {})
+      }
+
       const result: MatrixCapabilities = {
-        unstable_features: versions.unstable_features || {},
+        unstable_features: mergedUnstableFeatures,
         capabilities: capabilities.capabilities || {},
         client_config: clientConfig || {}
       }
@@ -204,18 +226,17 @@ export const matrixCapabilityService = new MatrixCapabilityService()
  * This is the bridge layer that connects service + store at consumption time.
  */
 export function useServerCapability() {
-  const store = getCapabilityStore()
   const service = matrixCapabilityService
 
   return {
-    isLoaded: computed(() => store.isLoaded),
-    hasUnstable: (flag: string) => store.hasUnstable(flag).value,
-    hasFeature: (feature: string) => store.hasFeature(feature).value,
+    isLoaded: computed(() => tryGetStore()?.isLoaded ?? false),
+    hasUnstable: (flag: string) => tryGetStore()?.hasUnstable(flag).value ?? false,
+    hasFeature: (feature: string) => tryGetStore()?.hasFeature(feature).value ?? false,
 
-    canSetAvatar: computed(() => store.hasFeature('m.set_avatar_url').value),
-    hasVoip: computed(() => store.hasFeature('m.voip').value),
-    hasSpaces: computed(() => store.hasFeature('m.spaces').value),
-    hasThreads: computed(() => store.hasUnstable('org.matrix.msc3026').value),
+    canSetAvatar: computed(() => tryGetStore()?.hasFeature('m.set_avatar_url').value ?? false),
+    hasVoip: computed(() => tryGetStore()?.hasFeature('m.voip').value ?? false),
+    hasSpaces: computed(() => tryGetStore()?.hasFeature('m.spaces').value ?? false),
+    hasThreads: computed(() => tryGetStore()?.hasUnstable('org.matrix.msc3026').value ?? false),
 
     canUseAdminApi: computed(() => service.canUseAdminApi()),
     canUseFriendList: computed(() => service.canUseFriendList()),

@@ -311,7 +311,7 @@ const openImageViewer = () => {
   align-items: center;
   justify-content: center;
   background: var(--hula-color-primary-500);
-  color: #fff;
+  color: var(--hula-text-inverse);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,

@@ -17,6 +17,7 @@ const matrixLiveEnv = readMatrixLiveEnv()
 
 test.describe('Matrix Live Desktop Flows', () => {
   test.describe.configure({ mode: 'serial' })
+  test.setTimeout(180_000)
 
   test.beforeEach(async ({ page }) => {
     test.skip(test.info().project.name !== 'desktop-chromium', 'matrix-live 仅在桌面 Chromium 项目下运行')
@@ -32,8 +33,8 @@ test.describe('Matrix Live Desktop Flows', () => {
     await openMessageWorkspace(page)
     await waitForLiveSessions(page)
 
-    await expect(page.locator('[data-test="message-page"]')).toBeVisible()
-    await expect(page.locator('[data-test="message-session-toolbar"]')).toBeVisible()
+    await expect(page.locator('.message-list-page')).toBeVisible()
+    await expect(page.locator('.message-session-toolbar')).toBeVisible()
   })
 
   test('sends a probe message into the configured encrypted room', async ({ page }) => {

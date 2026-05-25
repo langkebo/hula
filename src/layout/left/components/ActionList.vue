@@ -49,7 +49,7 @@
               :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
           </svg>
         </n-badge>
-        <p v-if="showMode === ShowModeEnum.TEXT && item.title" class="text-(10px center)">
+        <p v-if="showMode === ShowModeEnum.TEXT && item.title" class="text-[var(--text-xs)] text-center">
           {{ item.shortTitle }}
         </p>
       </div>
@@ -141,7 +141,7 @@
           </template>
           <p>{{ item.title }}</p>
         </n-popover>
-        <p v-if="showMode === ShowModeEnum.TEXT && item.title" class="text-(10px center)">
+        <p v-if="showMode === ShowModeEnum.TEXT && item.title" class="text-[var(--text-xs)] text-center">
           {{ item.shortTitle }}
         </p>
       </div>
@@ -183,7 +183,9 @@
             {{ t('home.action.plugin_manage') }}
           </n-flex>
         </n-popover>
-        <p v-if="showMode === ShowModeEnum.TEXT" class="text-(10px center)">{{ t('home.action.plugin') }}</p>
+        <p v-if="showMode === ShowModeEnum.TEXT" class="text-[var(--text-xs)] text-center">
+          {{ t('home.action.plugin') }}
+        </p>
       </div>
     </header>
 
@@ -236,7 +238,7 @@
               :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
           </svg>
         </n-badge>
-        <p v-if="showMode === ShowModeEnum.TEXT && item.title" class="menu-text text-(10px center)">
+        <p v-if="showMode === ShowModeEnum.TEXT && item.title" class="menu-text text-[var(--text-xs)] text-center">
           {{ item.shortTitle }}
         </p>
       </div>
@@ -272,7 +274,9 @@
             </div>
           </div>
         </n-popover>
-        <p v-if="showMode === ShowModeEnum.TEXT" class="text-(10px center)">{{ t('home.action.more') }}</p>
+        <p v-if="showMode === ShowModeEnum.TEXT" class="text-[var(--text-xs)] text-center">
+          {{ t('home.action.more') }}
+        </p>
       </div>
     </footer>
   </div>
@@ -569,7 +573,7 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
 }
 </style>

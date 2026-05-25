@@ -41,12 +41,18 @@ export class MatrixRoomPinsService extends BaseMatrixService {
   }
 
   async pinEvent(roomId: string, eventId: string): Promise<void> {
-    const client = this.getClient()
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('pin', roomId, { roomId, type: 'pin', eventId })
+      info(`[MatrixRoom] 离线状态，已将置顶事件入队: ${roomId}`)
+      return
+    }
     try {
-      await client.http.authedRequest(
-        'POST',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/pinned_events/${encodeURIComponent(eventId)}`
-      )
+      // 使用 state event 方式置顶：获取当前置顶列表，添加新事件，发送 m.room.pinned_events
+      const pinnedEvents = await this.getPinnedEvents(roomId)
+      if (!pinnedEvents.includes(eventId)) {
+        pinnedEvents.push(eventId)
+      }
+      await this.setPinnedEvents(roomId, pinnedEvents)
       info(`[MatrixRoom] 置顶事件成功: ${roomId}/${eventId}`)
     } catch (err) {
       error(`[MatrixRoom] 置顶事件失败: ${err}`)
@@ -55,12 +61,16 @@ export class MatrixRoomPinsService extends BaseMatrixService {
   }
 
   async unpinEvent(roomId: string, eventId: string): Promise<void> {
-    const client = this.getClient()
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('pin', roomId, { roomId, type: 'unpin', eventId })
+      info(`[MatrixRoom] 离线状态，已将取消置顶事件入队: ${roomId}`)
+      return
+    }
     try {
-      await client.http.authedRequest(
-        'DELETE',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/pinned_events/${encodeURIComponent(eventId)}`
-      )
+      // 使用 state event 方式取消置顶：获取当前置顶列表，移除事件，发送 m.room.pinned_events
+      const pinnedEvents = await this.getPinnedEvents(roomId)
+      const updatedEvents = pinnedEvents.filter((id) => id !== eventId)
+      await this.setPinnedEvents(roomId, updatedEvents)
       info(`[MatrixRoom] 取消置顶事件成功: ${roomId}/${eventId}`)
     } catch (err) {
       error(`[MatrixRoom] 取消置顶事件失败: ${err}`)

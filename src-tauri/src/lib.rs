@@ -633,7 +633,10 @@ async fn start_homeserver_health_check(app_handle: AppHandle) {
 
     match client {
         Ok(client) => loop {
-            tokio::time::sleep(Duration::from_secs(60)).await;
+            // 指数退避：60s → 120s → 240s → ... 最大 600s（10分钟）
+            let failures = FAILURE_COUNT.load(Ordering::SeqCst);
+            let backoff_secs = (60u64 * 2u64.pow(failures.min(4))).min(600);
+            tokio::time::sleep(Duration::from_secs(backoff_secs)).await;
 
             let hs_url = {
                 if let Some(state) = app_handle.try_state::<crate::AppData>() {
@@ -658,19 +661,36 @@ async fn start_homeserver_health_check(app_handle: AppHandle) {
                 }
                 Ok(response) => {
                     let count = FAILURE_COUNT.fetch_add(1, Ordering::SeqCst) + 1;
-                    tracing::warn!(
-                        "[HEALTH] Homeserver returned status {} (failure #{})",
-                        response.status(),
-                        count
-                    );
+                    // 前 3 次 WARN，之后降为 DEBUG 避免日志噪音
+                    if count <= 3 {
+                        tracing::warn!(
+                            "[HEALTH] Homeserver returned status {} (failure #{})",
+                            response.status(),
+                            count
+                        );
+                    } else {
+                        tracing::debug!(
+                            "[HEALTH] Homeserver returned status {} (failure #{})",
+                            response.status(),
+                            count
+                        );
+                    }
                 }
                 Err(e) => {
                     let count = FAILURE_COUNT.fetch_add(1, Ordering::SeqCst) + 1;
-                    tracing::warn!(
-                        "[HEALTH] Homeserver health check failed (failure #{}): {}",
-                        count,
-                        e
-                    );
+                    if count <= 3 {
+                        tracing::warn!(
+                            "[HEALTH] Homeserver health check failed (failure #{}): {}",
+                            count,
+                            e
+                        );
+                    } else {
+                        tracing::debug!(
+                            "[HEALTH] Homeserver health check failed (failure #{}): {}",
+                            count,
+                            e
+                        );
+                    }
                 }
             }
         },

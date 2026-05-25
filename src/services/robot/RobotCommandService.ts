@@ -12,7 +12,7 @@ export interface RobotCommandResult {
 }
 
 type ParsedBotCommand = {
-  command: 'status' | 'summarize' | 'briefing'
+  command: 'status' | 'briefing'
   args: string
 }
 
@@ -28,7 +28,7 @@ function parseBotCommand(input: string): ParsedBotCommand | null {
   }
 
   const args = rest.join(' ').trim()
-  if (command === 'status' || command === 'summarize' || command === 'briefing') {
+  if (command === 'status' || command === 'briefing') {
     return {
       command,
       args
@@ -59,24 +59,6 @@ class RobotCommandService {
           source: 'slash-command',
           command: 'status'
         })
-        return { handled: true }
-      }
-      case 'summarize': {
-        const instance = robotCenterStore.getRoomInstance(context.roomId, 'openclaw-assistant')
-        if (!instance) {
-          return { handled: true, message: '当前房间未部署 OpenClaw Assistant，无法执行 /bot summarize。' }
-        }
-        await robotCenterStore.invokeRobot(
-          context.roomId,
-          'openclaw-assistant',
-          parsed.args || '请结合最近消息总结本房间的讨论重点。',
-          {
-            userId: context.userId,
-            source: 'slash-command',
-            command: 'summarize',
-            prompt: parsed.args || '请结合最近消息总结本房间的讨论重点。'
-          }
-        )
         return { handled: true }
       }
       case 'briefing': {

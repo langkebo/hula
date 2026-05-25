@@ -177,7 +177,7 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
   {
     icon: 'robot',
     iconAction: 'GPT',
-    url: 'robot',
+    url: 'openclaw',
     state: PluginEnum.BUILTIN,
     isAdd: true,
     dot: false,

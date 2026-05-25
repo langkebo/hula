@@ -169,7 +169,7 @@
       <template v-else>
         <div class="pane-error">
           <p>{{ t('room.detail.load_failed') }}</p>
-          <n-button size="small" @click="loadRoomDetail">重试</n-button>
+          <n-button size="small" @click="loadRoomDetail">{{ t('common.retry') }}</n-button>
         </div>
       </template>
     </template>
@@ -260,11 +260,11 @@ const {
   handleFileChange: handleAvatarFileChange,
   handleCrop: onAvatarCrop
 } = useAvatarUpload({
-  onSuccess: async (downloadUrl) => {
+  onSuccess: async (mxcUrl) => {
     if (!props.roomId) return
-    await roomStateService.setRoomAvatar(props.roomId, downloadUrl)
+    await roomStateService.setRoomAvatar(props.roomId, mxcUrl)
     if (roomDetail.value) {
-      roomDetail.value = { ...roomDetail.value, avatar: downloadUrl }
+      roomDetail.value = { ...roomDetail.value, avatar: mxcUrl }
     }
     showFeedback(t('room.detail.avatar_updated'), 'success')
   }

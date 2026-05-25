@@ -11,7 +11,7 @@
 
     <!-- ✅ 使用 keep-alive 缓存 Chat.vue，避免重复挂载 -->
     <RouterView v-slot="{ Component }">
-      <keep-alive>
+      <keep-alive :max="5">
         <component :is="Component" />
       </keep-alive>
     </RouterView>

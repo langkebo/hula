@@ -6,6 +6,7 @@ export const FRIENDS = {
   OUTGOING_REQUESTS: '/_matrix/client/v1/friends/requests/outgoing',
   ACCEPT: (userId: string) => `/_matrix/client/v1/friends/request/${userId}/accept`,
   REJECT: (userId: string) => `/_matrix/client/v1/friends/request/${userId}/reject`,
+  CANCEL: (userId: string) => `/_matrix/client/v1/friends/request/${userId}/cancel`,
   REMOVE: (userId: string) => `/_matrix/client/v1/friends/${userId}`,
   NOTE: (userId: string) => `/_matrix/client/v1/friends/${userId}/note`,
   CHECK: (userId: string) => `/_matrix/client/v1/friends/check/${userId}`,

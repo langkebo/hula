@@ -94,6 +94,7 @@ function convertMatrixEventToMessage(event: MatrixEvent): MessageType {
   const messageType = matrixMessageAdapter.getMsgTypeFromEventLike(event.getType(), content)
 
   return {
+    clientKey: event.getId() ?? '',
     fromUser: {
       uid: event.getSender() ?? '',
       username: event.getSender() ?? '',
@@ -134,6 +135,7 @@ function convertTimelineEventToMessage(roomId: string, event: Record<string, unk
   const messageType = matrixMessageAdapter.getMsgTypeFromEventLike(event.type as string, content)
 
   return {
+    clientKey: event.event_id as string,
     fromUser: {
       uid: event.sender as string,
       username: event.sender as string,

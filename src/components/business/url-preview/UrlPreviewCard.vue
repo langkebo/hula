@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { matrixUrlPreviewService, simplifyUrl, type UrlPreview } from '@/services/matrix/media/MatrixUrlPreviewService'
 
@@ -8,6 +9,8 @@ interface Props {
   showImage?: boolean
   maxWidth?: number
 }
+
+const { t } = useI18n()
 
 const props = withDefaults(defineProps<Props>(), {
   showImage: true,
@@ -39,7 +42,7 @@ const handleClick = () => {
     <!-- 加载状态 -->
     <div v-if="loading" class="url-preview-loading">
       <div class="loading-spinner"></div>
-      <span>加载预览...</span>
+      <span>{{ t('chat.url_preview.loading') }}</span>
     </div>
 
     <!-- 错误状态 -->
@@ -99,7 +102,7 @@ const handleClick = () => {
     width: 16px;
     height: 16px;
     border: 2px solid var(--hula-border-default);
-    border-top-color: var(--primary-color, #007aff);
+    border-top-color: var(--color-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -122,7 +125,7 @@ const handleClick = () => {
   }
 
   .url-text {
-    color: var(--primary-color, #007aff);
+    color: var(--color-primary);
     word-break: break-all;
   }
 }

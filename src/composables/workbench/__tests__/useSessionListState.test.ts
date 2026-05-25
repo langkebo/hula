@@ -10,11 +10,14 @@ const networkStateMock = {
 }
 
 const chatStoreMock = reactive({
+  chatMessageListByRoomId: vi.fn<(roomId: string) => Array<Record<string, unknown>>>()
+})
+
+const sessionStoreMock = reactive({
   syncLoading: false,
   sessionOptions: { isLoading: false },
   sessionList: [] as Array<Record<string, unknown>>,
-  getSessionList: vi.fn(async () => undefined),
-  chatMessageListByRoomId: vi.fn<(roomId: string) => Array<Record<string, unknown>>>()
+  getSessionList: vi.fn(async () => undefined)
 })
 
 const globalStoreMock = reactive({
@@ -36,7 +39,8 @@ const replaceMsgMock = {
 }
 
 vi.mock('@/stores/domains/chat/chat', () => ({
-  useChatStore: () => chatStoreMock
+  useChatStore: () => chatStoreMock,
+  useSessionStore: () => sessionStoreMock
 }))
 
 vi.mock('@/stores/domains/widget/global', () => ({
@@ -99,13 +103,13 @@ describe('useSessionListState', () => {
     networkStateMock.browserOnline.value = true
     networkStateMock.isWsConnecting.value = false
     networkStateMock.wsOnline.value = true
-    chatStoreMock.syncLoading = false
-    chatStoreMock.sessionOptions.isLoading = false
-    chatStoreMock.getSessionList.mockResolvedValue(undefined)
+    sessionStoreMock.syncLoading = false
+    sessionStoreMock.sessionOptions.isLoading = false
+    sessionStoreMock.getSessionList.mockResolvedValue(undefined)
     globalStoreMock.currentSessionRoomId = 'room-group'
     botStoreMock.displayText = 'bot-display'
 
-    chatStoreMock.sessionList = [
+    sessionStoreMock.sessionList = [
       {
         roomId: 'room-single',
         type: RoomTypeEnum.SINGLE,
@@ -172,6 +176,7 @@ describe('useSessionListState', () => {
     expect(api.networkBanner.value).toBeNull()
 
     networkStateMock.browserOnline.value = false
+    networkStateMock.wsOnline.value = false
     await flushAll()
     expect(api.networkBanner.value).toEqual({
       text: 'home.chat_main.network_offline',
@@ -179,6 +184,7 @@ describe('useSessionListState', () => {
     })
 
     networkStateMock.browserOnline.value = true
+    networkStateMock.wsOnline.value = true
     networkStateMock.isWsConnecting.value = true
     await flushAll()
     expect(api.networkBanner.value).toEqual({
@@ -238,19 +244,19 @@ describe('useSessionListState', () => {
     expect(api.sessionList.value[0].lastMsg).toBe('updated-room-group')
 
     await api.retrySessions()
-    expect(chatStoreMock.getSessionList).toHaveBeenCalledWith(true)
-    expect(chatStoreMock.syncLoading).toBe(false)
+    expect(sessionStoreMock.getSessionList).toHaveBeenCalledWith(true)
+    expect(sessionStoreMock.syncLoading).toBe(false)
 
-    chatStoreMock.syncLoading = true
+    sessionStoreMock.syncLoading = true
     await api.retrySessions()
-    expect(chatStoreMock.getSessionList).toHaveBeenCalledTimes(1)
+    expect(sessionStoreMock.getSessionList).toHaveBeenCalledTimes(1)
 
     wrapper.unmount()
   })
 
   it('falls back to session text when room messages are not cached locally', async () => {
-    chatStoreMock.sessionList = [
-      ...chatStoreMock.sessionList,
+    sessionStoreMock.sessionList = [
+      ...sessionStoreMock.sessionList,
       {
         roomId: 'room-fallback',
         type: RoomTypeEnum.GROUP,
@@ -282,6 +288,33 @@ describe('useSessionListState', () => {
     const { wrapper, api } = await createHarness()
 
     expect(api.sessionList.value.find((item) => item.roomId === 'room-fallback')?.lastMsg).toBe('timeline-preview')
+
+    wrapper.unmount()
+  })
+
+  it('reacts to session store updates after the composable has mounted', async () => {
+    const { wrapper, api } = await createHarness()
+
+    expect(api.sessionList.value.map((item) => item.roomId)).toEqual(['room-group', 'room-single'])
+
+    sessionStoreMock.sessionList = [
+      {
+        roomId: 'room-live',
+        type: RoomTypeEnum.GROUP,
+        avatar: 'live-avatar.png',
+        name: '实时会话',
+        unreadCount: 0,
+        activeTime: 200,
+        top: false,
+        shield: false
+      }
+    ]
+
+    chatStoreMock.chatMessageListByRoomId.mockImplementation(() => [])
+
+    await flushAll()
+
+    expect(api.sessionList.value.map((item) => item.roomId)).toEqual(['room-live'])
 
     wrapper.unmount()
   })

@@ -10,11 +10,14 @@
 
     <p class="w-full h-1px bg-[--hula-border-default] my-6px select-none"></p>
 
-    <p class="text-(10px [--hula-text-tertiary]) ml-4px select-none">查看 {{ msgIds.length }} 条转发消息</p>
+    <p class="text-(10px [--hula-text-tertiary]) ml-4px select-none">
+      {{ t('chat.multi_msg.view_forwarded', { count: msgIds.length }) }}
+    </p>
   </main>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { MSG_REPLY_TEXT_MAP } from '@/common/message'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { EventEnum, MsgEnum, RoomTypeEnum } from '@/enums'
@@ -26,6 +29,8 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import type { MsgId } from '@/typings/global'
 import { createLogger } from '@/utils/Logger'
 import { getBodyContent } from '@/utils/messageBody'
+
+const { t } = useI18n()
 
 const logger = createLogger('ChatMultiMsg')
 const { showFeedback } = useActionFeedback()

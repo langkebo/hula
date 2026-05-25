@@ -13,7 +13,7 @@ import type { MessageType } from '@/stores/domains/chat/chat/types'
 import { createLogger } from '@/utils/Logger'
 import { LRUCache } from '@/utils/LRUCache'
 
-const logger = createLogger('RoomStore')
+const _logger = createLogger('RoomStore')
 
 type TimelineEvent = {
   event_id: string
@@ -69,21 +69,28 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     return roomList.value.filter((room) => !room.isDirect)
   })
 
-  async function loadRooms(): Promise<void> {
+  async function loadRooms(): Promise<boolean> {
+    // 返回 boolean
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('客户端未初始化')
     }
 
     isLoading.value = true
+    let roomsChanged = false // 新增标志位
     try {
-      const roomInfos = matrixRoomService.getAllRoomInfos()
-
-      for (const roomInfo of roomInfos) {
-        rooms.value.set(roomInfo.roomId, roomInfo)
+      const newRoomInfos = matrixRoomService.getAllRoomInfos()
+      // 比较新旧房间列表，判断是否有变化
+      if (
+        newRoomInfos.length !== rooms.value.size ||
+        !Array.from(newRoomInfos.values()).every((newRoom) => rooms.value.has(newRoom.roomId))
+      ) {
+        roomsChanged = true
+        rooms.value = new Map(newRoomInfos.map((room) => [room.roomId, room])) // 直接替换整个 Map
         triggerRef(rooms)
       }
-      info(`[RoomStore] 加载房间列表成功: ${roomInfos.length} 个房间`)
+      // 加载房间列表成功不输出日志，避免 SlidingSync 高频触发时刷屏
+      return roomsChanged // 返回是否发生变化
     } catch (err) {
       error(`[RoomStore] 加载房间列表失败: ${err}`)
       throw err
@@ -165,6 +172,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
         else if (event.type === 'm.room.member') msgEnum = MsgEnum.SYSTEM
 
         const msg: MessageType = {
+          clientKey: event.event_id ?? '',
           fromUser: {
             uid: event.sender ?? '',
             username: event.sender ?? '',
@@ -346,15 +354,24 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
             unreadCount: roomInfo.unreadCount
           })
         }
-        refreshRoomTags(roomId).catch((err) => {
-          logger.warn('Refresh room tags failed:', err)
-        })
+        scheduleTagsRefresh(roomId)
       },
       onRoomListRefresh: () => {
-        loadRooms()
-        batchRefreshTags().catch((err) => {
-          logger.warn('Batch refresh tags failed:', err)
-        })
+        // 防抖：300ms 内只执行一次 loadRooms 和 (如果房间列表有变化则) batchRefreshTags，避免 SlidingSync 高频触发
+        if (loadRoomsDebounce) {
+          clearTimeout(loadRoomsDebounce)
+        }
+        loadRoomsDebounce = setTimeout(async () => {
+          // 添加 async
+          loadRoomsDebounce = null
+          const roomsChanged = await loadRooms() // 等待 loadRooms 返回结果
+          if (roomsChanged) {
+            // 只有房间列表发生变化才刷新标签
+            batchRefreshTags().catch(() => {
+              // 标签批量刷新失败不输出日志，避免刷屏
+            })
+          }
+        }, 300)
       }
     })
 
@@ -494,6 +511,10 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     return !!tags && tag in tags
   }
 
+  let loadRoomsDebounce: ReturnType<typeof setTimeout> | null = null
+  let tagsRefreshDebounce: ReturnType<typeof setTimeout> | null = null
+  const pendingTagsRefresh = new Set<string>()
+
   async function refreshRoomTags(roomId: string): Promise<Record<string, { order?: number }>> {
     if (!roomId) return {}
     const tags = await matrixRoomTagsService.getTags(roomId)
@@ -504,9 +525,41 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     return tags
   }
 
+  function scheduleTagsRefresh(roomId: string): void {
+    pendingTagsRefresh.add(roomId)
+    if (tagsRefreshDebounce) {
+      clearTimeout(tagsRefreshDebounce)
+    }
+    tagsRefreshDebounce = setTimeout(() => {
+      const roomIds = Array.from(pendingTagsRefresh)
+      pendingTagsRefresh.clear()
+      tagsRefreshDebounce = null
+      // 串行请求标签，避免并发触发 429
+      ;(async () => {
+        for (const id of roomIds) {
+          try {
+            await refreshRoomTags(id)
+          } catch {
+            // 标签获取失败不影响主流程
+          }
+          // 请求间隔 200ms，避免触发限流
+          await new Promise((resolve) => setTimeout(resolve, 200))
+        }
+      })()
+    }, 1000)
+  }
+
   async function batchRefreshTags(): Promise<void> {
     const roomIds = Array.from(rooms.value.keys())
-    await Promise.allSettled(roomIds.map((id) => refreshRoomTags(id)))
+    // 串行请求标签，避免并发触发 429
+    for (const id of roomIds) {
+      try {
+        await refreshRoomTags(id)
+      } catch {
+        // 标签获取失败不影响主流程
+      }
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
   }
 
   async function addRoomTag(roomId: string, tag: string, order?: number): Promise<void> {

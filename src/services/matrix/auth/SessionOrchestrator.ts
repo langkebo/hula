@@ -1,4 +1,15 @@
+import { getCurrentSessionRoomId, setCurrentSessionRoomId } from '@/common/currentSessionRoomState'
+import {
+  clearCurrentUserState,
+  getCurrentUserInfo,
+  patchCurrentUserInfoFields,
+  setCurrentUserInfo
+} from '@/common/currentUserState'
+import { setTrayMenuShow } from '@/common/globalUiState'
+import { getMatrixClient } from '@/services/matrix/matrixClientAccessor'
+import { getMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
 import type { UserInfoType } from '@/services/types'
+import { pinia } from '@/stores'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
@@ -8,67 +19,91 @@ import { useRoomStore } from '@/stores/domains/chat/room'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { MatrixRuntimeSessionService, type SessionStorePort } from './MatrixRuntimeSessionService'
 
 export function createSessionStorePort(): SessionStorePort {
+  const matrixStore = () => useMatrixStore(pinia)
+  const userStore = () => useUserStore(pinia)
+  const roomStore = () => useRoomStore(pinia)
+  const chatStore = () => useChatStore(pinia)
+  const groupStore = () => useGroupStore(pinia)
+  const contactStore = () => useContactStore(pinia)
+  const loginHistoryStore = () => useLoginHistoriesStore(pinia)
+  const emojiStore = () => useEmojiStore(pinia)
+  const settingStore = () => useSettingStore(pinia)
+  const getRuntimeMatrixSession = () => {
+    const sessionSnapshot = getMatrixSessionSnapshot()
+    const store = matrixStore() as unknown as {
+      userId?: string | null
+      accessToken?: string | null
+      homeserverUrl?: string | null
+    }
+
+    return {
+      userId: sessionSnapshot.userId ?? store.userId ?? null,
+      accessToken: sessionSnapshot.accessToken ?? store.accessToken ?? null,
+      homeserverUrl: sessionSnapshot.homeserverUrl ?? store.homeserverUrl ?? null
+    }
+  }
+
   return {
     matrix: {
       getClient() {
-        return useMatrixStore().getClient()
+        return getMatrixClient() ?? matrixStore().getClient?.() ?? null
       },
       getUserId() {
-        return useMatrixStore().userId
+        return getRuntimeMatrixSession().userId
       },
       isLoggedIn() {
-        return useMatrixStore().isLoggedIn
+        const runtimeSession = getRuntimeMatrixSession()
+        return Boolean(runtimeSession.userId && runtimeSession.accessToken)
       },
       isInitialized() {
-        return useMatrixStore().isInitialized
+        return matrixStore().isInitialized
       },
       getLastError() {
-        return useMatrixStore().lastError ?? undefined
+        return matrixStore().lastError ?? undefined
       },
       getAccessToken() {
-        return useMatrixStore().accessToken ?? undefined
+        return getRuntimeMatrixSession().accessToken ?? undefined
       },
       getRefreshToken() {
-        return (useMatrixStore() as unknown as { refreshToken?: string }).refreshToken ?? undefined
+        return (matrixStore() as unknown as { refreshToken?: string }).refreshToken ?? undefined
       },
       getHomeserverUrl() {
-        return useMatrixStore().homeserverUrl ?? undefined
+        return getRuntimeMatrixSession().homeserverUrl ?? undefined
       },
       initialize(config) {
-        return useMatrixStore().initialize(config)
+        return matrixStore().initialize(config)
       },
       login(username, password, deviceName) {
-        return useMatrixStore().login(username, password, deviceName)
+        return matrixStore().login(username, password, deviceName)
       },
       completeSSOLogin(loginToken) {
-        return useMatrixStore().completeSSOLogin(loginToken)
+        return matrixStore().completeSSOLogin(loginToken)
       },
       loginWithToken(accessToken, userId) {
-        return useMatrixStore().loginWithToken(accessToken, userId)
+        return matrixStore().loginWithToken(accessToken, userId)
       },
       logout() {
-        return useMatrixStore().logout()
+        return matrixStore().logout()
       }
     },
     user: {
       getUserInfo() {
-        return useUserStore().userInfo
+        return getCurrentUserInfo()
       },
       initUserInfo(uid, displayName) {
-        useUserStore().initUserInfo(uid, displayName)
+        userStore().initUserInfo(uid, displayName)
       },
       setUserInfo(info) {
-        useUserStore().userInfo = info
+        setCurrentUserInfo(info)
       },
       clearUser() {
-        useUserStore().clearUser()
+        clearCurrentUserState()
       },
       async fetchUserProfile(uid) {
-        const profile = await useUserStore().fetchUserProfile(uid)
+        const profile = await userStore().fetchUserProfile(uid)
         if (!profile) return null
         return {
           displayName: profile.displayName ?? undefined,
@@ -76,89 +111,84 @@ export function createSessionStorePort(): SessionStorePort {
         }
       },
       updateProfileFields(fields) {
-        const userStore = useUserStore()
-        if (!userStore.userInfo) return
-        if (fields.name !== undefined) userStore.userInfo.name = fields.name
-        if (fields.avatar !== undefined) userStore.userInfo.avatar = fields.avatar
-        if (fields.activeStatus !== undefined) userStore.userInfo.activeStatus = fields.activeStatus
-        if (fields.lastOptTime !== undefined) userStore.userInfo.lastOptTime = fields.lastOptTime
+        patchCurrentUserInfoFields(fields)
       }
     },
     room: {
       getRoomList() {
-        return useRoomStore().roomList
+        return roomStore().roomList
       },
       getMessages(roomId) {
-        return useChatStore().chatMessageListByRoomId(roomId)
+        return chatStore().chatMessageListByRoomId(roomId)
       },
       resetState() {
-        useRoomStore().resetState()
+        roomStore().resetState()
       },
       setupEventListeners() {
-        return useRoomStore().setupEventListeners()
+        return roomStore().setupEventListeners()
       },
       loadRooms() {
-        return useRoomStore().loadRooms()
+        return roomStore().loadRooms()
       }
     },
     chat: {
       getSessionList(refresh) {
-        return useChatStore().getSessionList(refresh)
+        return chatStore().getSessionList(refresh)
       },
       getSessionListValue() {
-        return useChatStore().sessionList
+        return chatStore().sessionList
       }
     },
     group: {
       clearGroupDetails() {
-        useGroupStore().groupDetails.length = 0
+        groupStore().groupDetails.length = 0
       },
       clearMembersMap() {
-        const groupStore = useGroupStore()
-        for (const key of Object.keys(groupStore.membersMap)) {
-          delete groupStore.membersMap[key]
+        const store = groupStore()
+        for (const key of Object.keys(store.membersMap)) {
+          delete store.membersMap[key]
         }
       },
       updateUserPresence(userId, presence) {
-        if (typeof useGroupStore().updateUserPresence === 'function') {
-          useGroupStore().updateUserPresence(userId, presence)
+        if (typeof groupStore().updateUserPresence === 'function') {
+          groupStore().updateUserPresence(userId, presence)
         }
       }
     },
     contact: {
       updateContactPresence(userId, patch) {
-        if (typeof useContactStore().updateContactPresence === 'function') {
-          useContactStore().updateContactPresence(userId, patch)
+        if (typeof contactStore().updateContactPresence === 'function') {
+          contactStore().updateContactPresence(userId, patch)
         }
       }
     },
     global: {
       getCurrentSessionRoomId() {
-        return useGlobalStore().currentSessionRoomId
+        return getCurrentSessionRoomId()
       },
       updateCurrentSessionRoomId(roomId) {
-        useGlobalStore().updateCurrentSessionRoomId(roomId)
+        setCurrentSessionRoomId(roomId)
       },
       setTrayMenuShow(show) {
-        useGlobalStore().isTrayMenuShow = show
+        setTrayMenuShow(show)
       }
     },
     loginHistory: {
       addLoginHistory(account) {
-        useLoginHistoriesStore().addLoginHistory(account as UserInfoType)
+        loginHistoryStore().addLoginHistory(account as UserInfoType)
       }
     },
     emoji: {
       initEmojis() {
-        return useEmojiStore().initEmojis()
+        return emojiStore().initEmojis()
       },
       prefetchEmojiToLocal() {
-        return useEmojiStore().prefetchEmojiToLocal()
+        return emojiStore().prefetchEmojiToLocal()
       }
     },
     setting: {
       closeAutoLogin() {
-        useSettingStore().closeAutoLogin()
+        settingStore().closeAutoLogin()
       }
     }
   }

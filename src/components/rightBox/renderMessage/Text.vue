@@ -32,7 +32,7 @@
                 <use href="#copy"></use>
               </svg>
             </template>
-            <span>复制网址</span>
+            <span>{{ t('chat.text.copy_url') }}</span>
           </n-tooltip>
           <div style="flex: 1; word-wrap: break-word; overflow-wrap: anywhere">
             <n-highlight

@@ -1,4 +1,20 @@
 {
+  "openclaw": {
+    "title": "AI 助手",
+    "new_chat": "新对话",
+    "welcome": "你好！我是 AI 助手，请问有什么可以帮助你的？",
+    "input_placeholder": "输入消息...",
+    "reasoning": "思维过程",
+    "thinking": "思考中...",
+    "error_default": "抱歉，发生了错误，请重试。",
+    "retry": "重试",
+    "quick_action": {
+      "code": "帮我写一段代码",
+      "explain": "解释一下这个概念",
+      "news": "今天有什么新闻",
+      "movie": "推荐一些电影"
+    }
+  },
   "title": "AI 助手",
   "welcome": "你好，我是 AI 助手",
   "welcome_desc": "我可以帮助你翻译文本、总结内容、编写代码等。请选择下方功能或直接输入问题。",

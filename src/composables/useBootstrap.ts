@@ -13,6 +13,8 @@ const logger = createLogger('Bootstrap')
 
 export type BootstrapState = 'idle' | 'initializing' | 'ready' | 'error'
 
+const BOOTSTRAP_TIMEOUT_MS = 15_000
+
 const useSharedBootstrap = createSharedComposable(() => {
   const state = ref<BootstrapState>('idle')
   const loadingMessage = ref('')
@@ -29,6 +31,18 @@ const useSharedBootstrap = createSharedComposable(() => {
     loadingProgress.value = progress
   }
 
+  function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T | undefined> {
+    return Promise.race([
+      promise,
+      new Promise<undefined>((resolve) =>
+        setTimeout(() => {
+          logger.warn(`${label} 超时 (${ms}ms)，跳过`)
+          resolve(undefined)
+        }, ms)
+      )
+    ])
+  }
+
   async function bootstrap(): Promise<void> {
     if (state.value === 'ready') {
       return
@@ -37,12 +51,24 @@ const useSharedBootstrap = createSharedComposable(() => {
     state.value = 'initializing'
     error.value = null
 
+    // 兜底：如果 bootstrap 在超时内未完成，强制转为 ready 避免白屏
+    const safetyTimer = setTimeout(() => {
+      if (state.value === 'initializing') {
+        logger.warn(`bootstrap 超过 ${BOOTSTRAP_TIMEOUT_MS}ms 未完成，强制转为 ready`)
+        state.value = 'ready'
+      }
+    }, BOOTSTRAP_TIMEOUT_MS)
+
     try {
       await setLoading('初始化平台...', 10)
       initializePlatform()
 
       await setLoading('恢复配置...', 30)
-      await Promise.allSettled([restoreProxySettings(), restoreTheme(), restoreLanguage()])
+      await withTimeout(
+        Promise.allSettled([restoreProxySettings(), restoreTheme(), restoreLanguage()]),
+        8_000,
+        '恢复配置'
+      )
 
       await setLoading('检查会话...', 80)
       await checkSession()
@@ -55,6 +81,8 @@ const useSharedBootstrap = createSharedComposable(() => {
       error.value = err instanceof Error ? err.message : '初始化失败'
       state.value = 'error'
       throw err
+    } finally {
+      clearTimeout(safetyTimer)
     }
   }
 

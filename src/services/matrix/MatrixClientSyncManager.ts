@@ -227,24 +227,18 @@ export class MatrixClientSyncManager {
     if (state === 'ERROR') {
       const errorData = data as SyncErrorLike | undefined
       if (errorData?.errcode === 'M_LIMIT_EXCEEDED' || errorData?.name === 'ConnectionError') {
-        logger.warn(`同步暂时受限或超时 (M_LIMIT_EXCEEDED)，SDK 将自动重试: ${state}`)
+        // 限流/超时是常见暂时性问题，不输出日志避免刷屏
       } else {
         logger.error(`同步错误: ${state}`, {
           prevState,
-          data,
-          homeserverUrl: this.deps.getConfig()?.homeserverUrl,
-          userId: this.deps.getClient()?.getUserId(),
-          deviceId: this.deps.getClient()?.getDeviceId(),
-          hasAccessToken: !!this.deps.getConfig()?.accessToken,
-          hasSlidingSync: !!this.slidingSyncInstance,
-          connectionState: this.deps.getConnectionState()
+          errcode: errorData?.errcode,
+          errorName: errorData?.name
         })
       }
     } else if (state !== prevState) {
-      logger.info(`同步状态: ${state}`, { prevState })
-    } else {
-      logger.debug(`同步状态保持不变: ${state}`, { prevState })
+      logger.info(`同步状态: ${state}`)
     }
+    // 状态不变时不再输出日志，避免刷屏
 
     const nextConnectionState = this.mapSyncStateToConnectionState(state)
     if (nextConnectionState) {
@@ -270,8 +264,8 @@ export class MatrixClientSyncManager {
             memberCount: room.getJoinedMemberCount()
           }
         ])
-        .catch((err) => {
-          logger.warn(`[MatrixClientService] 转发房间更新事件到 Worker 失败: ${err}`)
+        .catch(() => {
+          // Worker 转发失败不输出日志，避免刷屏
         })
     }
 
@@ -316,8 +310,8 @@ export class MatrixClientSyncManager {
         msgtype: 'm.text',
         body: event.getContent().body as string
       }
-      void matrixWorkerHost.upsertSearchEvents([searchEventDoc]).catch((err) => {
-        logger.warn(`[MatrixClientService] 转发 timeline 消息事件到 Worker 失败: ${err}`)
+      void matrixWorkerHost.upsertSearchEvents([searchEventDoc]).catch(() => {
+        // Worker 转发失败不输出日志，避免刷屏
       })
     }
   }
@@ -326,8 +320,8 @@ export class MatrixClientSyncManager {
     const event = args[0] as MatrixEvent
     const redactedEventId = event.getAssociatedId()
     if (redactedEventId) {
-      void matrixWorkerHost.redactSearchEvent(redactedEventId).catch((err: unknown) => {
-        logger.warn(`[MatrixClientService] 转发 redaction 事件失败: ${err}`)
+      void matrixWorkerHost.redactSearchEvent(redactedEventId).catch(() => {
+        // Worker 转发失败不输出日志，避免刷屏
       })
     }
   }

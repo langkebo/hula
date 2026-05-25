@@ -1,75 +1,79 @@
 <template>
-  <!--! 这里最好不要使用n-flex,滚动高度会有问题  -->
   <main
-    style="height: 100%"
-    class="flex-shrink-0"
+    class="flex-shrink-0 flex flex-col transition-all duration-300 h-full"
     :class="[
       isGroup
         ? isCollapsed
-          ? 'w-0 pr-1px'
-          : 'w-180px border-l-(1px solid [--hula-border-default]) p-[12px_0_12px_6px] custom-shadow'
-        : 'w-0 pr-1px',
-      'item-box'
+          ? 'w-0 border-none'
+          : 'w-240px border-l border-[--hula-border-default] bg-[--hula-surface-panel] shadow-sm'
+        : 'w-0 border-none',
+      'relative'
     ]">
     <!-- 收缩按钮 -->
     <div
       v-show="isGroup"
       @click.stop="isCollapsed = !isCollapsed"
-      style="border-radius: 18px 0 0 18px"
-      class="contraction transition-all duration-600 ease-in-out absolute top-35% left--14px cursor-pointer opacity-0 bg-[--hula-surface-sidebar-selected] h-60px w-14px">
+      class="absolute top-1/2 -left-14px -translate-y-1/2 cursor-pointer bg-[--hula-surface-sidebar-selected] h-48px w-14px rounded-l-12px flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10 shadow-sm border border-r-0 border-[--hula-border-default]">
       <svg
         :class="isCollapsed ? 'rotate-0' : 'rotate-180'"
-        class="size-16px color-[--hula-text-tertiary] absolute top-38%">
+        class="size-14px color-[--hula-text-tertiary] transition-transform">
         <use href="#left-arrow"></use>
       </svg>
     </div>
 
-    <div v-if="isGroup && !isCollapsed">
+    <div v-if="isGroup && !isCollapsed" class="flex flex-col h-full overflow-hidden">
       <!-- 公告面板 (MW-ANNOUNCEMENT-002: 替代独立窗口) -->
       <AnnouncementPanel v-if="showAnnouncementPanel" :room-id="currentRoomId" @close="showAnnouncementPanel = false" />
 
       <!-- 群公告预览 -->
-      <n-flex v-if="!showAnnouncementPanel" vertical :size="14" class="px-4px py-10px">
-        <n-flex align="center" justify="space-between" :size="8" class="cursor-pointer">
-          <p
-            class="text-(14px [--hula-text-primary]) truncate flex-1 min-w-0"
-            @click="handleOpenAnnoun(announNum === 0 && isAddAnnoun)">
+      <n-flex
+        v-if="!showAnnouncementPanel"
+        vertical
+        :size="10"
+        class="p-12px border-b border-[--hula-border-default] shrink-0 bg-[--hula-surface-panel]">
+        <n-flex
+          align="center"
+          justify="space-between"
+          :size="8"
+          class="cursor-pointer"
+          @click="handleOpenAnnoun(announNum === 0 && isAddAnnoun)">
+          <span class="text-[var(--text-sm)] font-medium color-[--hula-text-primary] truncate flex-1 min-w-0">
             {{ t('home.chat_sidebar.announcement.title') }}
-          </p>
+          </span>
           <svg
-            class="size-16px rotate-270 color-[--hula-text-primary] shrink-0"
-            @click="handleOpenAnnoun(announNum === 0 && isAddAnnoun)">
+            class="size-14px color-[--hula-text-secondary] shrink-0 transition-transform hover:color-[--hula-text-primary]">
             <use v-if="announNum === 0 && isAddAnnoun" href="#plus"></use>
-            <use v-else href="#down"></use>
+            <use v-else href="#right"></use>
           </svg>
         </n-flex>
 
         <!-- 公告加载失败提示 -->
-        <n-flex v-if="announError" class="h-74px" align="center" justify="center">
+        <n-flex
+          v-if="announError"
+          class="h-60px bg-[--hula-surface-search] rounded-8px"
+          align="center"
+          justify="center">
           <div class="text-center">
-            <p class="text-(12px --hula-text-tertiary) mb-8px">
+            <p class="text-[var(--text-xs)] color-[--hula-color-danger-500] mb-6px">
               {{ t('home.chat_sidebar.announcement.load_failed') }}
             </p>
-            <n-button size="tiny" @click="announcementStore.loadGroupAnnouncements()">
+            <n-button size="tiny" tertiary type="error" @click="announcementStore.loadGroupAnnouncements()">
               {{ t('home.chat_sidebar.actions.retry') }}
             </n-button>
           </div>
         </n-flex>
 
         <!-- 公告内容 -->
-        <n-scrollbar v-else class="h-74px">
-          <p class="text-(12px --hula-text-tertiary) leading-6 line-clamp-4 max-w-99%" v-if="announNum === 0">
-            {{ t('home.chat_sidebar.announcement.default') }}
-          </p>
-          <p
-            v-else
-            style="user-select: text"
-            class="announcement-text text-(12px --hula-text-tertiary) leading-6 line-clamp-4 max-w-99% break-words">
-            <template v-if="announcementSegments.length > 0">
+        <div v-else class="max-h-68px overflow-hidden relative">
+          <p class="text-[var(--text-xs)] color-[--hula-text-secondary] leading-relaxed line-clamp-3">
+            <template v-if="announNum === 0">
+              {{ t('home.chat_sidebar.announcement.default') }}
+            </template>
+            <template v-else-if="announcementSegments.length > 0">
               <template v-for="(segment, index) in announcementSegments" :key="index">
                 <span
                   v-if="segment.isLink"
-                  class="cursor-pointer hover:underline hover:opacity-80 text-[--hula-color-primary-500]"
+                  class="cursor-pointer hover:underline text-[--hula-color-primary-500]"
                   @click.stop="openAnnouncementLink(segment.text)">
                   {{ segment.text }}
                 </span>
@@ -78,121 +82,189 @@
             </template>
             <template v-else>{{ announcementContent }}</template>
           </p>
-        </n-scrollbar>
+        </div>
       </n-flex>
 
-      <n-flex v-if="!isSearch" align="center" justify="space-between" class="pr-8px pl-8px h-42px">
-        <span class="text-14px">{{ t('home.chat_sidebar.online_members', { count: onlineCountDisplay }) }}</span>
-        <svg @click="handleSelect" class="size-14px">
-          <use href="#search"></use>
-        </svg>
-      </n-flex>
-      <!-- 搜索框 -->
-      <n-flex v-else align="center" class="pr-8px h-42px">
-        <n-input
-          :on-input="handleSearch"
-          @blur="handleBlur"
-          ref="inputInstRef"
-          v-model:value="searchRef"
-          clearable
-          :placeholder="t('home.chat_sidebar.search.placeholder')"
-          type="text"
-          size="tiny"
-          spellCheck="false"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          class="h-26px w-95% lh-26px rounded-6px">
-          <template #prefix>
-            <svg class="w-12px h-12px">
-              <use href="#search"></use>
-            </svg>
-          </template>
-        </n-input>
-      </n-flex>
+      <!-- Tab 选项卡机制 -->
+      <n-tabs
+        v-model:value="activeTab"
+        type="line"
+        size="small"
+        class="chat-sidebar-tabs shrink-0"
+        :tabs-padding="12"
+        justify-content="space-evenly">
+        <n-tab-pane name="members" :tab="t('home.chat_sidebar.tabs.members', '成员')">
+          <!-- 成员列表与搜索被迁移至此处内部，但为保持代码结构，我们利用 v-show 切换内容区域 -->
+        </n-tab-pane>
+        <n-tab-pane name="files" :tab="t('home.chat_sidebar.tabs.files', '文件')"></n-tab-pane>
+        <n-tab-pane name="pins" :tab="t('home.chat_sidebar.tabs.pins', '置顶')"></n-tab-pane>
+      </n-tabs>
 
-      <!-- 成员列表 -->
-      <n-virtual-list
-        id="image-chat-sidebar"
-        style="max-height: calc(100vh / var(--page-scale, 1) - 250px)"
-        item-resizable
-        @scroll="handleScroll($event)"
-        :item-size="46"
-        :items="displayedUserList">
-        <template #default="{ item }">
-          <n-popover
-            :ref="(el: any) => (infoPopoverRefs[item.uid] = el)"
-            @update:show="handlePopoverUpdate(item.uid, $event)"
-            trigger="click"
-            placement="left"
-            :show-arrow="false"
-            style="padding: 0; background: var(--hula-surface-panel)">
-            <template #trigger>
-              <ContextMenu
-                :content="item"
-                @select="$event.click(item, 'Sidebar')"
-                :menu="optionsList"
-                :special-menu="report">
-                <n-flex
-                  @click="onClickMember(item)"
-                  :key="item.uid"
-                  :size="10"
-                  align="center"
-                  justify="space-between"
-                  class="item">
-                  <n-flex align="center" :size="8" class="flex-1 truncate">
-                    <div class="relative inline-flex items-center justify-center">
-                      <n-avatar
-                        round
-                        class="grayscale"
-                        :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE }"
-                        :size="26"
-                        :color="'#ffffff'"
-                        :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                        :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                        @load="userLoadedMap[item.uid] = true"
-                        @error="userLoadedMap[item.uid] = true" />
-                    </div>
-                    <n-flex vertical :size="2" class="flex-1 truncate">
-                      <p :title="item.name" class="text-12px truncate flex-1 leading-tight">
-                        {{ item.myName ? item.myName : item.name }}
-                      </p>
-                      <n-flex
-                        v-if="item.userStateId && getUserState(item.userStateId)"
-                        align="center"
-                        :size="4"
-                        class="flex-1">
-                        <img
-                          class="size-12px"
-                          :src="getUserState(item.userStateId)?.url"
-                          :alt="translateStateTitle(getUserState(item.userStateId)?.title)" />
-                        <span
-                          class="text-10px text-[--hula-text-tertiary] flex-1 min-w-0 truncate"
-                          :title="translateStateTitle(getUserState(item.userStateId)?.title)">
-                          {{ translateStateTitle(getUserState(item.userStateId)?.title) }}
-                        </span>
-                      </n-flex>
-                    </n-flex>
-                  </n-flex>
-
-                  <div
-                    v-if="item.roleId === RoleEnum.LORD"
-                    class="flex px-4px bg-[--hula-color-danger-500]30 py-3px rounded-4px size-fit select-none">
-                    <p class="text-(10px [--hula-color-danger-500])">{{ t('home.chat_sidebar.roles.owner') }}</p>
-                  </div>
-                  <div
-                    v-if="item.roleId === RoleEnum.ADMIN"
-                    class="flex px-4px bg-[--hula-color-primary-100] py-3px rounded-4px size-fit select-none">
-                    <p class="text-(10px [--hula-color-primary-500])">{{ t('home.chat_sidebar.roles.admin') }}</p>
-                  </div>
-                </n-flex>
-              </ContextMenu>
+      <!-- 动态内容区域 -->
+      <div v-show="activeTab === 'members'" class="flex flex-col flex-1 min-h-0">
+        <!-- 成员搜索与统计 -->
+        <n-flex
+          align="center"
+          justify="space-between"
+          class="px-12px py-8px shrink-0 border-b border-[--hula-border-default]">
+          <span v-if="!isSearch" class="text-[var(--text-xs)] font-medium color-[--hula-text-tertiary]">
+            {{ t('home.chat_sidebar.online_members', { count: onlineCountDisplay }) }}
+          </span>
+          <n-input
+            v-else
+            :on-input="handleSearch"
+            @blur="handleBlur"
+            ref="inputInstRef"
+            v-model:value="searchRef"
+            clearable
+            :placeholder="t('home.chat_sidebar.search.placeholder')"
+            type="text"
+            size="small"
+            spellCheck="false"
+            autoComplete="off"
+            class="flex-1 bg-[--hula-surface-search] border-none rounded-6px text-[var(--text-xs)]">
+            <template #prefix>
+              <svg class="size-12px color-[--hula-text-tertiary]">
+                <use href="#search"></use>
+              </svg>
             </template>
-            <!-- 用户个人信息框 -->
-            <InfoPopover v-if="selectKey === item.uid" :uid="item.uid" :activeStatus="item.activeStatus" />
-          </n-popover>
-        </template>
-      </n-virtual-list>
+          </n-input>
+          <n-button v-if="!isSearch" size="tiny" quaternary circle @click="handleSelect">
+            <template #icon>
+              <svg class="size-14px color-[--hula-text-secondary]">
+                <use href="#search"></use>
+              </svg>
+            </template>
+          </n-button>
+        </n-flex>
+
+        <!-- 成员列表 -->
+        <div class="flex-1 min-h-0 relative">
+          <n-virtual-list
+            id="image-chat-sidebar"
+            class="h-full px-6px py-4px"
+            item-resizable
+            @scroll="handleScroll($event)"
+            :item-size="46"
+            :items="displayedUserList">
+            <template #default="{ item }">
+              <n-popover
+                :ref="(el: any) => (infoPopoverRefs[item.uid] = el)"
+                @update:show="handlePopoverUpdate(item.uid, $event)"
+                trigger="click"
+                placement="left"
+                :show-arrow="false"
+                style="padding: 0; background: var(--hula-surface-panel)">
+                <template #trigger>
+                  <ContextMenu
+                    :content="item"
+                    @select="$event.click(item, 'Sidebar')"
+                    :menu="optionsList"
+                    :special-menu="report">
+                    <n-flex
+                      @click="onClickMember(item)"
+                      :key="item.uid"
+                      :size="10"
+                      align="center"
+                      justify="space-between"
+                      class="item">
+                      <n-flex align="center" :size="8" class="flex-1 truncate">
+                        <div class="relative inline-flex items-center justify-center">
+                          <n-avatar
+                            round
+                            class="grayscale"
+                            :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE }"
+                            :size="26"
+                            :color="'#ffffff'"
+                            :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                            :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                            @load="userLoadedMap[item.uid] = true"
+                            @error="userLoadedMap[item.uid] = true" />
+                        </div>
+                        <n-flex vertical :size="2" class="flex-1 truncate">
+                          <p
+                            :title="item.name"
+                            class="text-[var(--text-xs)] truncate flex-1 leading-tight color-[--hula-text-primary]">
+                            {{ item.myName ? item.myName : item.name }}
+                          </p>
+                          <n-flex
+                            v-if="item.userStateId && getUserState(item.userStateId)"
+                            align="center"
+                            :size="4"
+                            class="flex-1">
+                            <img
+                              class="size-12px"
+                              :src="getUserState(item.userStateId)?.url"
+                              :alt="translateStateTitle(getUserState(item.userStateId)?.title)" />
+                            <span
+                              class="text-[10px] text-[--hula-text-tertiary] flex-1 min-w-0 truncate"
+                              :title="translateStateTitle(getUserState(item.userStateId)?.title)">
+                              {{ translateStateTitle(getUserState(item.userStateId)?.title) }}
+                            </span>
+                          </n-flex>
+                        </n-flex>
+                      </n-flex>
+
+                      <div
+                        v-if="item.roleId === RoleEnum.LORD"
+                        class="flex px-4px bg-[--hula-color-danger-500]30 py-3px rounded-4px size-fit select-none">
+                        <p class="text-(10px [--hula-color-danger-500])">{{ t('home.chat_sidebar.roles.owner') }}</p>
+                      </div>
+                      <div
+                        v-if="item.roleId === RoleEnum.ADMIN"
+                        class="flex px-4px bg-[--hula-color-primary-100] py-3px rounded-4px size-fit select-none">
+                        <p class="text-(10px [--hula-color-primary-500])">{{ t('home.chat_sidebar.roles.admin') }}</p>
+                      </div>
+                    </n-flex>
+                  </ContextMenu>
+                </template>
+                <!-- 用户个人信息框 -->
+                <InfoPopover v-if="selectKey === item.uid" :uid="item.uid" :activeStatus="item.activeStatus" />
+              </n-popover>
+            </template>
+          </n-virtual-list>
+        </div>
+      </div>
+
+      <!-- 文件 Tab 占位 -->
+      <div v-show="activeTab === 'files'" class="flex-1 min-h-0 flex flex-col">
+        <!-- 头部空间配额统计 -->
+        <n-flex
+          align="center"
+          justify="space-between"
+          class="px-12px py-8px shrink-0 border-b border-[--hula-border-default]">
+          <span class="text-[var(--text-xs)] font-medium color-[--hula-text-tertiary]">
+            {{ t('home.chat_sidebar.quota.title', '空间配额') }}
+          </span>
+          <span class="text-[var(--text-xs)] color-[--hula-color-primary-500]">
+            {{ '1.2 GB / 5.0 GB' }}
+          </span>
+        </n-flex>
+        <!-- 进度条占位 -->
+        <div class="px-12px py-8px shrink-0 border-b border-[--hula-border-default]">
+          <n-progress
+            type="line"
+            :percentage="24"
+            :height="4"
+            :show-indicator="false"
+            color="var(--hula-color-primary-500)" />
+        </div>
+
+        <div class="flex-1 flex items-center justify-center">
+          <n-empty :description="t('home.chat_sidebar.empty.files', '暂无群文件')">
+            <template #icon>
+              <svg class="size-48px opacity-50 color-[--hula-text-quaternary]">
+                <use href="#folder"></use>
+              </svg>
+            </template>
+          </n-empty>
+        </div>
+      </div>
+
+      <!-- 置顶 Tab 占位 -->
+      <div v-show="activeTab === 'pins'" class="flex-1 min-h-0 flex items-center justify-center">
+        <n-empty :description="t('home.chat_sidebar.empty.pins', '暂无置顶消息')" />
+      </div>
     </div>
   </main>
 </template>
@@ -245,6 +317,7 @@ const isGroup = computed(() => globalStore.currentSession?.type === RoomTypeEnum
 const { announcementContent, announNum, announError, isAddAnnoun } = storeToRefs(announcementStore)
 const { segments: announcementSegments, openLink: openAnnouncementLink } = useLinkSegments(announcementContent)
 
+const activeTab = ref('members')
 /** 是否是搜索模式 */
 const isSearch = ref(false)
 const searchRef = ref('')

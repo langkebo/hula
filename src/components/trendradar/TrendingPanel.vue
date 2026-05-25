@@ -2,7 +2,7 @@
   <div class="trending-panel">
     <div class="trending-panel__header">
       <svg class="trending-panel__icon"><use href="#trending-up"></use></svg>
-      <span class="trending-panel__title">趋势话题</span>
+      <span class="trending-panel__title">{{ t('trendradar.trending_topics') }}</span>
     </div>
     <div class="trending-panel__list">
       <div v-for="(topic, index) in topics" :key="index" class="trending-panel__item" @click="handleTopicClick(topic)">
@@ -30,17 +30,20 @@
     </div>
     <div v-if="loading" class="trending-panel__loading">
       <n-spin size="small" />
-      <span>加载中...</span>
+      <span>{{ t('trendradar.loading') }}</span>
     </div>
     <div v-else-if="topics.length === 0" class="trending-panel__empty">
       <svg class="trending-panel__empty-icon"><use href="#trending-up"></use></svg>
-      <span>暂无趋势话题</span>
+      <span>{{ t('trendradar.no_trending_topics') }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { TrendRadarTopic } from '@/services/trendradar'
+
+const { t } = useI18n()
 
 defineProps<{
   topics: TrendRadarTopic[]
@@ -52,8 +55,8 @@ const emit = defineEmits<(event: 'topicClick', topic: TrendRadarTopic) => void>(
 const formatHotValue = (value: number | string) => {
   const num = typeof value === 'string' ? parseFloat(value) : value
   if (isNaN(num)) return String(value)
-  if (num >= 100000000) return (num / 100000000).toFixed(1) + '亿'
-  if (num >= 10000) return (num / 10000).toFixed(1) + '万'
+  if (num >= 100000000) return (num / 100000000).toFixed(1) + t('trendradar.billion')
+  if (num >= 10000) return (num / 10000).toFixed(1) + t('trendradar.ten_thousand')
   return String(num)
 }
 
@@ -82,7 +85,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 .trending-panel__icon {
   width: 18px;
   height: 18px;
-  color: var(--primary-color);
+  color: var(--color-primary);
 }
 
 .trending-panel__title {
@@ -126,7 +129,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 }
 
 .trending-panel__rank--hot {
-  background: linear-gradient(135deg, #ff6b6b, #ff4757);
+  background: linear-gradient(135deg, var(--hula-color-danger-400), var(--hula-color-danger-500));
   color: white;
 }
 
@@ -157,8 +160,8 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 
 .trending-panel__category {
   font-size: 11px;
-  color: var(--primary-color);
-  background: var(--primary-color-alpha);
+  color: var(--color-primary);
+  background: var(--color-primary-active);
   padding: 1px 6px;
   border-radius: 4px;
 }
@@ -170,11 +173,11 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 }
 
 .trending-panel__trend--up {
-  color: #ff4757;
+  color: var(--hula-color-danger-500);
 }
 
 .trending-panel__trend--down {
-  color: #2ed573;
+  color: var(--hula-color-success-500);
 }
 
 .trending-panel__loading,

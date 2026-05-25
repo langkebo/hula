@@ -69,7 +69,7 @@ vi.mock('@/components/common/ContextMenu.vue', () => ({
 vi.mock('../HulaRoomListItem.vue', () => ({
   default: {
     name: 'HulaRoomListItem',
-    props: ['item', 'batchMode', 'batchSelected', 'selected'],
+    props: ['item', 'batchMode', 'batchSelected', 'classes'],
     emits: ['batch-toggle', 'contextmenu'],
     template: `
       <button
@@ -77,7 +77,7 @@ vi.mock('../HulaRoomListItem.vue', () => ({
         data-test="HulaRoomListItem"
         :data-batch-mode="String(batchMode)"
         :data-batch-selected="String(batchSelected)"
-        :data-selected="String(selected)"
+        :data-selected="String(Boolean(classes?.selected))"
         @click="$emit('batch-toggle', item?.roomId)"
         @contextmenu.prevent="$emit('contextmenu', $event, item)">
         {{ item?.name }}
@@ -95,7 +95,11 @@ vi.mock('@/utils/AvatarUtils', () => ({
 vi.mock('vue-virtual-scroller', () => ({
   RecycleScroller: {
     name: 'RecycleScroller',
-    template: '<div data-test="recycle-scroller"><slot :item="items[0]" /></div>',
+    template: `
+      <div data-test="recycle-scroller">
+        <slot v-for="item in items" :item="item" :key="item.roomId" />
+      </div>
+    `,
     props: ['items', 'itemSize', 'keyField']
   }
 }))
@@ -131,22 +135,22 @@ vi.mock('naive-ui', async () => {
       }
     }),
     NFlex: passthroughStub('NFlex'),
-    NSkeleton: defineComponent({
-      name: 'NSkeleton',
-      setup() {
-        return () => h('div', { 'data-test': 'NSkeleton' })
-      }
-    }),
-    NResult: defineComponent({
-      name: 'NResult',
+    NEmpty: defineComponent({
+      name: 'NEmpty',
       props: {
         description: {
           type: String,
           default: ''
         }
       },
-      setup(props) {
-        return () => h('div', { 'data-test': 'NResult' }, props.description)
+      setup(props, { slots }) {
+        return () => h('div', { 'data-test': 'NEmpty' }, [slots.icon?.(), props.description, slots.extra?.()])
+      }
+    }),
+    NSkeleton: defineComponent({
+      name: 'NSkeleton',
+      setup() {
+        return () => h('div', { 'data-test': 'NSkeleton' })
       }
     }),
     NAvatar: passthroughStub('NAvatar'),
@@ -231,8 +235,8 @@ describe('RoomSessionList', () => {
       sessionLoading: true
     })
 
-    expect(wrapper.findAll('[data-test="NSkeleton"]')).toHaveLength(4)
-    expect(wrapper.find('[data-test="NResult"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-test="NSkeleton"]')).toHaveLength(20)
+    expect(wrapper.find('[data-test="NEmpty"]').exists()).toBe(false)
   })
 
   it('renders the empty description when there are no sessions and not loading', () => {
@@ -240,7 +244,7 @@ describe('RoomSessionList', () => {
       emptyDescription: '当前筛选条件下暂无会话'
     })
 
-    expect(wrapper.get('[data-test="NResult"]').text()).toBe('当前筛选条件下暂无会话')
+    expect(wrapper.get('[data-test="NEmpty"]').text()).toContain('当前筛选条件下暂无会话')
   })
 
   it('exposes scrollToIndex and delegates to the scrollbar ref', async () => {

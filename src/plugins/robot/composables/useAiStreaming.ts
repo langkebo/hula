@@ -25,11 +25,9 @@ interface UseAiStreamingOptions {
   conversationTokens: Ref<number>
   reasoningEnabled: Ref<boolean>
   msgInputRef: Ref<{ clearInput?: () => void } | undefined>
-  isOpenClawConnected: Ref<boolean>
   bumpMessageRenderVersion: () => void
   notifyConversationMetaChange: (payload: { messageCount?: number; createTime: number }) => void
   loadRemainingUsage: (modelId: string) => Promise<void>
-  sendOpenClawMessage: (content: string, onChunk: (text: string) => void) => AsyncIterable<unknown>
   onTokenUsageUpdate: (usage: number) => void
 }
 
@@ -39,11 +37,9 @@ export const useAiStreaming = ({
   conversationTokens,
   reasoningEnabled,
   msgInputRef,
-  isOpenClawConnected,
   bumpMessageRenderVersion,
   notifyConversationMetaChange,
   loadRemainingUsage,
-  sendOpenClawMessage,
   onTokenUsageUpdate
 }: UseAiStreamingOptions) => {
   const { t } = useI18nGlobal()
@@ -52,44 +48,6 @@ export const useAiStreaming = ({
   const currentAiRequestId = ref<string | null>(null)
   const currentAiAccumulatedContent = ref('')
   const lastAiPrompt = ref('')
-
-  const handleOpenClawSend = async (content: string) => {
-    if (!isOpenClawConnected.value) {
-      showFeedback(t('ai_assistant.robot.openclaw_not_connected'), 'warning')
-      return
-    }
-
-    messageList.value.push({
-      type: 'user',
-      msgType: AiMsgContentTypeEnum.TEXT,
-      content,
-      createTime: Date.now()
-    })
-    const aiMessageIndex = messageList.value.length
-    messageList.value.push({
-      type: 'assistant',
-      msgType: AiMsgContentTypeEnum.TEXT,
-      content: '',
-      createTime: Date.now()
-    })
-    bumpMessageRenderVersion()
-    isAIStreaming.value = true
-
-    try {
-      for await (const _ of sendOpenClawMessage(content, (text) => {
-        messageList.value[aiMessageIndex].content = text
-      })) {
-        // noop
-      }
-    } catch (error) {
-      logger.error('OpenClaw 发送失败:', error)
-      messageList.value[aiMessageIndex].content = t('ai_assistant.robot.send_failed_with_error', {
-        error: error instanceof Error ? error.message : t('ai_assistant.robot.unknown_error')
-      })
-    } finally {
-      isAIStreaming.value = false
-    }
-  }
 
   const sendAIMessage = async (content: string, model: AIModel) => {
     try {
@@ -284,7 +242,6 @@ export const useAiStreaming = ({
     currentAiAccumulatedContent,
     lastAiPrompt,
     sendAIMessage,
-    handleStopAIStream,
-    handleOpenClawSend
+    handleStopAIStream
   }
 }

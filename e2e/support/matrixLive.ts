@@ -3,10 +3,13 @@ import { expect, type Page } from '@playwright/test'
 
 const MATRIX_HOMESERVER_STORAGE_KEY = 'hula-homeserver-url'
 const MATRIX_IDENTITY_SERVER_STORAGE_KEY = 'hula-identity-server-url'
+const MATRIX_SESSION_HOMESERVER_STORAGE_KEY = 'hula-session-homeserver-url'
+const MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY = 'hula-session-identity-server-url'
 const E2E_STORAGE_KEY = 'hula:e2e:enabled'
 const PLATFORM_STORAGE_KEY = 'hula:e2e:platform'
 const MOCK_AUTH_STORAGE_KEY = 'hula:e2e:mock-auth'
 const SEEDED_WORKBENCH_STORAGE_KEY = 'hula:e2e:seed-workbench'
+const GUIDE_STORAGE_KEY = 'guide'
 
 export type MatrixLiveAuthStrategy = 'password-api' | 'restore-token' | 'ui'
 
@@ -34,14 +37,82 @@ export interface MatrixLiveEnv {
   peerDisplayName: string
 }
 
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
+let pendingPasswordLoginSlot: Promise<void> = Promise.resolve()
+let nextPasswordLoginAllowedAt = 0
+
+const isRateLimitError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error)
+  return /429|Too Many Requests|M_LIMIT_EXCEEDED|retry[_ -]?after/i.test(message)
+}
+
+const getRateLimitDelayMs = (error: unknown, attempt: number): number => {
+  const message = error instanceof Error ? error.message : String(error)
+  const retryAfterMatch = message.match(/retry[_ -]?after(?:_ms)?["':=\s]+(\d+)/i)
+  const parsedDelay = retryAfterMatch ? Number.parseInt(retryAfterMatch[1], 10) : NaN
+  if (Number.isFinite(parsedDelay) && parsedDelay > 0) {
+    return parsedDelay
+  }
+  return Math.max(1200 * attempt, 1200)
+}
+
+const withPasswordLoginSlot = async <T>(task: () => Promise<T>): Promise<T> => {
+  const previousSlot = pendingPasswordLoginSlot
+  let releaseSlot = () => {}
+  pendingPasswordLoginSlot = new Promise<void>((resolve) => {
+    releaseSlot = resolve
+  })
+
+  await previousSlot
+
+  try {
+    const delay = nextPasswordLoginAllowedAt - Date.now()
+    if (delay > 0) {
+      await sleep(delay)
+    }
+
+    const result = await task()
+    nextPasswordLoginAllowedAt = Date.now() + 1200
+    return result
+  } finally {
+    releaseSlot()
+  }
+}
+
 const readEnv = (name: string): string => process.env[name]?.trim() ?? ''
 
 const isEnabledFlag = (value: string): boolean => value === '1' || value.toLowerCase() === 'true'
 
+const resolveBrowserProxyHomeserverUrl = (homeserverUrl: string, appUrl: string): string => {
+  if (!homeserverUrl || !appUrl) {
+    return homeserverUrl
+  }
+
+  try {
+    const homeserver = new URL(homeserverUrl)
+    const app = new URL(appUrl)
+    if (!/^https?:$/i.test(app.protocol) || !/^https?:$/i.test(homeserver.protocol)) {
+      return homeserverUrl
+    }
+
+    if (homeserver.origin === app.origin) {
+      return homeserverUrl
+    }
+
+    return app.origin
+  } catch {
+    return homeserverUrl
+  }
+}
+
 export const readMatrixLiveEnv = (): MatrixLiveEnv => ({
   enabled: isEnabledFlag(readEnv('MATRIX_LIVE_E2E')),
   authStrategy: (readEnv('MATRIX_LIVE_AUTH_STRATEGY') || 'password-api') as MatrixLiveAuthStrategy,
-  homeserverUrl: readEnv('MATRIX_LIVE_HOMESERVER_URL'),
+  homeserverUrl: resolveBrowserProxyHomeserverUrl(
+    readEnv('MATRIX_LIVE_HOMESERVER_URL'),
+    readEnv('MATRIX_LIVE_APP_URL') || readEnv('PLAYWRIGHT_TEST_BASE_URL') || 'http://127.0.0.1:5210'
+  ),
   appUrl: readEnv('MATRIX_LIVE_APP_URL') || readEnv('PLAYWRIGHT_TEST_BASE_URL') || 'http://127.0.0.1:5210',
   identityServerUrl: readEnv('MATRIX_LIVE_IDENTITY_SERVER_URL'),
   username: readEnv('MATRIX_LIVE_USERNAME'),
@@ -149,26 +220,205 @@ const resolveActorCredentials = (env: MatrixLiveEnv, actor: MatrixLiveActor): Ma
 
 export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): Promise<void> => {
   await page.addInitScript(
-    ({ homeserverUrl, identityServerUrl }: { homeserverUrl: string; identityServerUrl: string }) => {
+    ({
+      homeserverUrl,
+      identityServerUrl,
+      storageKeys
+    }: {
+      homeserverUrl: string
+      identityServerUrl: string
+      storageKeys: { homeserver: string; sessionHomeserver: string; identity: string; sessionIdentity: string }
+    }) => {
+      const runtimeWindow = window as Window & {
+        __TAURI_INTERNALS__?: {
+          metadata: {
+            currentWindow: { label: string }
+            currentWebview: { label: string }
+          }
+          invoke: (cmd: string, args?: Record<string, unknown>, options?: unknown) => Promise<unknown>
+          transformCallback: (callback: unknown, once?: boolean) => number
+          unregisterCallback: (id: number) => void
+          convertFileSrc: (filePath: string, protocol?: string) => string
+          callbacks?: Map<number, (data: unknown) => void>
+          runCallback?: (id: number, data: unknown) => void
+        }
+        __HULA_TAURI_CALLBACKS__?: Map<number, unknown>
+        __HULA_TAURI_CALLBACK_ID__?: number
+        __HULA_TAURI_EVENT_LISTENERS__?: Map<string, Set<number>>
+        __TAURI_EVENT_PLUGIN_INTERNALS__?: {
+          unregisterListener: (event: string, eventId: number) => void
+        }
+      }
+
+      if (!runtimeWindow.__TAURI_INTERNALS__) {
+        runtimeWindow.__HULA_TAURI_CALLBACKS__ = new Map()
+        runtimeWindow.__HULA_TAURI_CALLBACK_ID__ = 0
+        runtimeWindow.__HULA_TAURI_EVENT_LISTENERS__ = new Map()
+        const unregisterCallback = (id: number) => {
+          runtimeWindow.__HULA_TAURI_CALLBACKS__?.delete(id)
+        }
+        const unregisterListener = (event: string, eventId: number) => {
+          runtimeWindow.__HULA_TAURI_EVENT_LISTENERS__?.get(event)?.delete(eventId)
+          unregisterCallback(eventId)
+        }
+        const emitEvent = (event: string, payload?: unknown) => {
+          const listenerIds = runtimeWindow.__HULA_TAURI_EVENT_LISTENERS__?.get(event)
+          if (!listenerIds?.size) {
+            return
+          }
+          listenerIds.forEach((listenerId) => {
+            const callback = runtimeWindow.__HULA_TAURI_CALLBACKS__?.get(listenerId)
+            if (typeof callback === 'function') {
+              ;(callback as (data: unknown) => void)({
+                event,
+                id: listenerId,
+                payload
+              })
+            }
+          })
+        }
+        runtimeWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = {
+          unregisterListener
+        }
+        runtimeWindow.__TAURI_INTERNALS__ = {
+          metadata: {
+            currentWindow: { label: 'home' },
+            currentWebview: { label: 'home' }
+          },
+          async invoke(cmd: string, args?: Record<string, unknown>) {
+            if (cmd === 'is_app_state_ready') {
+              return true
+            }
+            if (cmd === 'plugin:window|get_all_windows' || cmd === 'plugin:webview|get_all_webviews') {
+              return []
+            }
+            if (cmd === 'plugin:window|title') {
+              return 'HuLa'
+            }
+            if (cmd === 'plugin:event|listen') {
+              const event = typeof args?.event === 'string' ? args.event : ''
+              const handlerId = typeof args?.handler === 'number' ? args.handler : 0
+              if (!event || !handlerId) {
+                return handlerId
+              }
+              const listeners = runtimeWindow.__HULA_TAURI_EVENT_LISTENERS__?.get(event) ?? new Set<number>()
+              listeners.add(handlerId)
+              runtimeWindow.__HULA_TAURI_EVENT_LISTENERS__?.set(event, listeners)
+              return handlerId
+            }
+            if (cmd === 'plugin:event|unlisten') {
+              const event = typeof args?.event === 'string' ? args.event : ''
+              const eventId = typeof args?.eventId === 'number' ? args.eventId : 0
+              if (event && eventId) {
+                unregisterListener(event, eventId)
+              }
+              return null
+            }
+            if (cmd === 'plugin:event|emit' || cmd === 'plugin:event|emit_to') {
+              const event = typeof args?.event === 'string' ? args.event : ''
+              if (event) {
+                emitEvent(event, args?.payload)
+              }
+              return null
+            }
+            if (
+              cmd.includes('register_listener') ||
+              cmd.includes('registerListener') ||
+              cmd.includes('remove_listener')
+            ) {
+              return null
+            }
+            return undefined
+          },
+          transformCallback(callback: unknown) {
+            const nextId = (runtimeWindow.__HULA_TAURI_CALLBACK_ID__ ?? 0) + 1
+            runtimeWindow.__HULA_TAURI_CALLBACK_ID__ = nextId
+            runtimeWindow.__HULA_TAURI_CALLBACKS__?.set(nextId, callback)
+            return nextId
+          },
+          unregisterCallback,
+          callbacks: runtimeWindow.__HULA_TAURI_CALLBACKS__ as Map<number, (data: unknown) => void>,
+          runCallback(id: number, data: unknown) {
+            const callback = runtimeWindow.__HULA_TAURI_CALLBACKS__?.get(id)
+            if (typeof callback === 'function') {
+              ;(callback as (data: unknown) => void)(data)
+            }
+          },
+          convertFileSrc(filePath: string) {
+            return filePath
+          }
+        }
+      }
+
       window.localStorage.setItem(E2E_STORAGE_KEY, '1')
       window.localStorage.setItem(PLATFORM_STORAGE_KEY, 'desktop')
       window.localStorage.removeItem(MOCK_AUTH_STORAGE_KEY)
       window.localStorage.removeItem(SEEDED_WORKBENCH_STORAGE_KEY)
-      window.localStorage.setItem(MATRIX_HOMESERVER_STORAGE_KEY, homeserverUrl)
+      window.localStorage.setItem(GUIDE_STORAGE_KEY, JSON.stringify({ isGuideCompleted: true }))
+      window.localStorage.setItem(storageKeys.homeserver, homeserverUrl)
+      window.localStorage.setItem(storageKeys.sessionHomeserver, homeserverUrl)
       if (identityServerUrl) {
-        window.localStorage.setItem(MATRIX_IDENTITY_SERVER_STORAGE_KEY, identityServerUrl)
+        window.localStorage.setItem(storageKeys.identity, identityServerUrl)
+        window.localStorage.setItem(storageKeys.sessionIdentity, identityServerUrl)
       } else {
-        window.localStorage.removeItem(MATRIX_IDENTITY_SERVER_STORAGE_KEY)
+        window.localStorage.removeItem(storageKeys.identity)
+        window.localStorage.removeItem(storageKeys.sessionIdentity)
       }
     },
     {
       homeserverUrl: env.homeserverUrl,
-      identityServerUrl: env.identityServerUrl
+      identityServerUrl: env.identityServerUrl,
+      storageKeys: {
+        homeserver: MATRIX_HOMESERVER_STORAGE_KEY,
+        sessionHomeserver: MATRIX_SESSION_HOMESERVER_STORAGE_KEY,
+        identity: MATRIX_IDENTITY_SERVER_STORAGE_KEY,
+        sessionIdentity: MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY
+      }
     }
   )
 
   await page.goto(env.appUrl)
   await page.waitForSelector('#app', { state: 'visible' })
+  await waitForHulaAppReady(page)
+  await waitForPinia(page)
+  await page.evaluate(async () => {
+    const runtimeWindow = window as Window & { pinia?: unknown }
+
+    if (runtimeWindow.pinia == null) {
+      throw new Error('Pinia is not available on window. Cannot bootstrap guide store.')
+    }
+
+    const modulePath = '/src/stores/domains/settings/guide.ts'
+    const { useGuideStore } = (await import(/* @vite-ignore */ modulePath)) as {
+      useGuideStore: (pinia?: unknown) => { markGuideCompleted: () => void }
+    }
+    useGuideStore(runtimeWindow.pinia).markGuideCompleted()
+    document
+      .querySelectorAll('.driver-overlay, .driver-popover, .driver-popover-footer, .driver-active-element')
+      .forEach((node) => node.remove())
+  })
+}
+
+const waitForHulaAppReady = async (page: Page): Promise<void> => {
+  await page.waitForFunction(
+    () => (window as Window & { __HULA_APP_READY__?: boolean }).__HULA_APP_READY__ === true,
+    undefined,
+    {
+      timeout: 120_000
+    }
+  )
+}
+
+const waitForPinia = async (page: Page): Promise<void> => {
+  await page.waitForFunction(
+    () =>
+      (window as Window & { __HULA_PINIA_READY__?: boolean; pinia?: unknown }).__HULA_PINIA_READY__ === true &&
+      (window as Window & { pinia?: unknown }).pinia != null,
+    undefined,
+    {
+      timeout: 30_000
+    }
+  )
 }
 
 const waitForMatrixLoggedIn = async (page: Page): Promise<void> => {
@@ -176,12 +426,32 @@ const waitForMatrixLoggedIn = async (page: Page): Promise<void> => {
     .poll(
       async () =>
         page.evaluate(async () => {
-          const modulePath = '/src/stores/domains/chat/matrix.ts'
-          const { useMatrixStore } = (await import(/* @vite-ignore */ modulePath)) as {
-            useMatrixStore: () => { isLoggedIn: boolean; userId?: string | null }
+          const runtimeWindow = window as Window & { pinia?: unknown }
+          const matrixStoreModulePath = '/src/stores/domains/chat/matrix.ts'
+          const sessionStateModulePath = '/src/services/matrix/matrixSessionState.ts'
+          const currentUserStateModulePath = '/src/common/currentUserState.ts'
+          const { useMatrixStore } = (await import(/* @vite-ignore */ matrixStoreModulePath)) as {
+            useMatrixStore: (pinia?: unknown) => {
+              isLoggedIn: boolean
+              userId?: string | null
+              accessToken?: string | null
+            }
           }
-          const matrixStore = useMatrixStore()
-          return Boolean(matrixStore.isLoggedIn && matrixStore.userId)
+          const { getMatrixSessionSnapshot } = (await import(/* @vite-ignore */ sessionStateModulePath)) as {
+            getMatrixSessionSnapshot: () => { userId: string | null; accessToken: string | null }
+          }
+          const { getCurrentUserInfo } = (await import(/* @vite-ignore */ currentUserStateModulePath)) as {
+            getCurrentUserInfo: () => { uid?: string | null } | undefined
+          }
+          const matrixStore = useMatrixStore(runtimeWindow.pinia)
+          const sessionSnapshot = getMatrixSessionSnapshot()
+          const currentUser = getCurrentUserInfo()
+          return Boolean(
+            (matrixStore.isLoggedIn && matrixStore.userId) ||
+              (matrixStore.userId && matrixStore.accessToken) ||
+              (sessionSnapshot.userId && sessionSnapshot.accessToken) ||
+              currentUser?.uid
+          )
         }),
       {
         timeout: 120_000,
@@ -193,71 +463,192 @@ const waitForMatrixLoggedIn = async (page: Page): Promise<void> => {
 
 const loginWithPasswordApi = async (page: Page, env: MatrixLiveEnv, actor: MatrixLiveActor): Promise<void> => {
   const credentials = resolveActorCredentials(env, actor)
+  await waitForHulaAppReady(page)
+  await waitForPinia(page)
 
-  await page.evaluate(
-    async (options: Record<string, string>) => {
-      const modulePath = '/src/services/matrix/auth/SessionOrchestrator.ts'
-      const { sessionOrchestrator } = (await import(/* @vite-ignore */ modulePath)) as {
-        sessionOrchestrator: {
-          loginWithPassword: (options: Record<string, unknown>) => Promise<unknown>
-        }
+  const loginOptions = {
+    username: credentials.username,
+    password: credentials.password,
+    displayName: credentials.displayName,
+    homeserverUrl: env.homeserverUrl,
+    identityServerUrl: env.identityServerUrl
+  }
+
+  const maxAttempts = 4
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await withPasswordLoginSlot(async () => {
+        await page.evaluate(async (options: Record<string, string>) => {
+          const runtimeWindow = window as Window & { pinia?: unknown }
+
+          if (runtimeWindow.pinia == null) {
+            throw new Error('Pinia is not available on window. Cannot login with password.')
+          }
+
+          const modulePath = '/src/services/matrix/auth/SessionOrchestrator.ts'
+          const { sessionOrchestrator } = (await import(/* @vite-ignore */ modulePath)) as {
+            sessionOrchestrator: {
+              loginWithPassword: (options: Record<string, unknown>) => Promise<unknown>
+            }
+          }
+
+          await sessionOrchestrator.loginWithPassword({
+            username: options.username,
+            password: options.password,
+            homeserverUrl: options.homeserverUrl,
+            identityServerUrl: options.identityServerUrl,
+            deviceName: 'HuLa Playwright Matrix Live',
+            account: options.username,
+            displayName: options.displayName || options.username,
+            client: 'PC',
+            persistTokens: false,
+            persistUserInfo: false,
+            switchDatabase: false
+          })
+
+          const initialSyncModulePath = '/src/stores/domains/chat/initialSync.ts'
+          const currentUserStateModulePath = '/src/common/currentUserState.ts'
+          const { useInitialSyncStore } = (await import(/* @vite-ignore */ initialSyncModulePath)) as {
+            useInitialSyncStore: (pinia?: unknown) => { markSynced: (uid: string) => void }
+          }
+          const { getCurrentUserInfo } = (await import(/* @vite-ignore */ currentUserStateModulePath)) as {
+            getCurrentUserInfo: () => { uid?: string | null } | undefined
+          }
+          const currentUserId = getCurrentUserInfo()?.uid ?? ''
+          if (currentUserId && runtimeWindow.pinia != null) {
+            useInitialSyncStore(runtimeWindow.pinia).markSynced(currentUserId)
+          }
+        }, loginOptions)
+      })
+      return
+    } catch (error) {
+      if (!isRateLimitError(error) || attempt === maxAttempts) {
+        throw error
       }
 
-      await sessionOrchestrator.loginWithPassword({
-        username: options.username,
-        password: options.password,
-        homeserverUrl: options.homeserverUrl,
-        identityServerUrl: options.identityServerUrl,
-        deviceName: 'HuLa Playwright Matrix Live',
-        account: options.username,
-        displayName: options.displayName || options.username,
-        client: 'PC',
-        persistTokens: false,
-        persistUserInfo: false,
-        switchDatabase: false
-      })
-    },
-    {
-      username: credentials.username,
-      password: credentials.password,
-      displayName: credentials.displayName,
-      homeserverUrl: env.homeserverUrl,
-      identityServerUrl: env.identityServerUrl
+      const retryDelay = getRateLimitDelayMs(error, attempt)
+      nextPasswordLoginAllowedAt = Date.now() + retryDelay
+      await sleep(retryDelay)
     }
-  )
+  }
 }
 
 const restoreWithAccessToken = async (page: Page, env: MatrixLiveEnv, actor: MatrixLiveActor): Promise<void> => {
   const credentials = resolveActorCredentials(env, actor)
+  await waitForHulaAppReady(page)
+  await waitForPinia(page)
 
   await page.evaluate(
     async (options: Record<string, string>) => {
+      const runtimeWindow = window as Window & {
+        pinia?: unknown
+        __MATRIX_LIVE_RESTORE_STAGE__?: string
+      }
+
+      if (runtimeWindow.pinia == null) {
+        throw new Error('Pinia is not available on window. Cannot restore session.')
+      }
+
       const modulePath = '/src/services/matrix/auth/SessionOrchestrator.ts'
+      const matrixStoreModulePath = '/src/stores/domains/chat/matrix.ts'
+      runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ = 'loading-session-orchestrator'
       const { sessionOrchestrator } = (await import(/* @vite-ignore */ modulePath)) as {
         sessionOrchestrator: {
           restoreWithAccessToken: (options: Record<string, unknown>) => Promise<unknown>
         }
       }
+      runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ = 'session-orchestrator-loaded'
+      const { useMatrixStore } = (await import(/* @vite-ignore */ matrixStoreModulePath)) as {
+        useMatrixStore: (pinia?: unknown) => {
+          initialize: (options: Record<string, unknown>) => Promise<void>
+          loginWithToken: (accessToken: string, userId: string, refreshToken?: string) => Promise<boolean>
+        }
+      }
+      const matrixStore = useMatrixStore(runtimeWindow.pinia)
+      const originalInitialize = matrixStore.initialize.bind(matrixStore)
+      const originalLoginWithToken = matrixStore.loginWithToken.bind(matrixStore)
 
-      await sessionOrchestrator.restoreWithAccessToken({
-        uid: options.userId,
-        accessToken: options.accessToken,
-        refreshToken: options.refreshToken || undefined,
-        displayName: options.displayName || options.username || options.userId,
-        account: options.username || options.userId,
-        client: 'PC',
-        persistTokens: false,
-        persistUserInfo: false,
-        switchDatabase: false,
-        bootstrapAfterRestore: true
-      })
+      matrixStore.initialize = async (config: Record<string, unknown>) => {
+        runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ = 'matrix-store.initialize:start'
+        try {
+          const result = await originalInitialize(config)
+          runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ = 'matrix-store.initialize:done'
+          return result
+        } catch (error) {
+          runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ = `matrix-store.initialize:error:${String(error)}`
+          throw error
+        }
+      }
+
+      matrixStore.loginWithToken = async (accessToken: string, userId: string, refreshToken?: string) => {
+        runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ = 'matrix-store.loginWithToken:start'
+        try {
+          const result = await originalLoginWithToken(accessToken, userId, refreshToken)
+          runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ = `matrix-store.loginWithToken:done:${String(result)}`
+          return result
+        } catch (error) {
+          runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ = `matrix-store.loginWithToken:error:${String(error)}`
+          throw error
+        }
+      }
+
+      window.localStorage.setItem(options.homeserverStorageKey, options.homeserverUrl)
+      window.localStorage.setItem(options.sessionHomeserverStorageKey, options.homeserverUrl)
+      if (options.identityServerUrl) {
+        window.localStorage.setItem(options.identityStorageKey, options.identityServerUrl)
+        window.localStorage.setItem(options.sessionIdentityStorageKey, options.identityServerUrl)
+      } else {
+        window.localStorage.removeItem(options.identityStorageKey)
+        window.localStorage.removeItem(options.sessionIdentityStorageKey)
+      }
+
+      runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ = 'session-orchestrator.restore:start'
+      await Promise.race([
+        sessionOrchestrator.restoreWithAccessToken({
+          uid: options.userId,
+          accessToken: options.accessToken,
+          // Skip refresh-token bootstrap in browser Playwright runs; token refresh is not
+          // required for the immediate live-session validation and can stall on real backends.
+          refreshToken: undefined,
+          displayName: options.displayName || options.username || options.userId,
+          account: options.username || options.userId,
+          client: 'PC',
+          persistTokens: false,
+          persistUserInfo: false,
+          switchDatabase: false,
+          // Bootstrap rooms and sessions immediately so SlidingSync listeners are
+          // registered and the session list populates before the test proceeds.
+          bootstrapAfterRestore: true
+        }),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error(`restoreWithAccessToken stage timeout: ${runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__}`))
+          }, 45_000)
+        })
+      ])
+      runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ = 'session-orchestrator.restore:done'
+
+      const initialSyncModulePath = '/src/stores/domains/chat/initialSync.ts'
+      const { useInitialSyncStore } = (await import(/* @vite-ignore */ initialSyncModulePath)) as {
+        useInitialSyncStore: (pinia?: unknown) => { markSynced: (uid: string) => void }
+      }
+      if (options.userId && runtimeWindow.pinia != null) {
+        useInitialSyncStore(runtimeWindow.pinia).markSynced(options.userId)
+      }
     },
     {
       username: credentials.username,
       userId: credentials.userId,
       accessToken: credentials.accessToken,
       refreshToken: credentials.refreshToken,
-      displayName: credentials.displayName
+      displayName: credentials.displayName,
+      homeserverUrl: env.homeserverUrl,
+      identityServerUrl: env.identityServerUrl,
+      homeserverStorageKey: MATRIX_HOMESERVER_STORAGE_KEY,
+      identityStorageKey: MATRIX_IDENTITY_SERVER_STORAGE_KEY,
+      sessionHomeserverStorageKey: MATRIX_SESSION_HOMESERVER_STORAGE_KEY,
+      sessionIdentityStorageKey: MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY
     }
   )
 }
@@ -299,16 +690,187 @@ export const openMessageWorkspace = async (page: Page): Promise<void> => {
   })
 
   await expect(page).toHaveURL(/\/message(?:\?.*)?$/)
-  await expect(page.locator('[data-test="message-page"]')).toBeVisible()
+  await expect(page.locator('.message-list-page')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.message-session-toolbar')).toBeVisible({ timeout: 15_000 })
+}
+
+const collectMatrixLiveSessionDebugSnapshot = async (page: Page): Promise<Record<string, unknown>> => {
+  return page.evaluate(async () => {
+    const runtimeWindow = window as Window & { pinia?: unknown; __MATRIX_LIVE_RESTORE_STAGE__?: string }
+    const importBrowserModule = <T>(modulePath: string): Promise<T> =>
+      import(/* @vite-ignore */ modulePath) as Promise<T>
+    const [
+      { useMatrixStore },
+      { useRoomStore },
+      { useSessionStore },
+      { getMatrixSessionSnapshot },
+      { getCurrentUserInfo },
+      { resolveMatrixRuntimeEndpointConfig, resolveMatrixSessionEndpointConfig },
+      { filterAndSortSessions, matchesKeyword, matchesSessionType, matchesSessionEngagement },
+      {
+        readSpaceWorkbenchSearch,
+        readSpaceWorkbenchSessionTypeFilter,
+        readSpaceWorkbenchSessionEngagementFilter,
+        readSpaceWorkbenchSessionSort
+      },
+      { errorTracker }
+    ] = await Promise.all([
+      importBrowserModule<{ useMatrixStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/matrix.ts'),
+      importBrowserModule<{ useRoomStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/room.ts'),
+      importBrowserModule<{ useSessionStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/chat/session.ts'),
+      importBrowserModule<{ getMatrixSessionSnapshot: () => unknown }>('/src/services/matrix/matrixSessionState.ts'),
+      importBrowserModule<{ getCurrentUserInfo: () => unknown }>('/src/common/currentUserState.ts'),
+      importBrowserModule<{
+        resolveMatrixRuntimeEndpointConfig: () => unknown
+        resolveMatrixSessionEndpointConfig: () => unknown
+      }>('/src/services/backend/config.ts'),
+      importBrowserModule<{
+        filterAndSortSessions: (sessions: any[], options: Record<string, unknown>) => any[]
+        matchesKeyword: (session: any, keyword: string) => boolean
+        matchesSessionType: (session: any, sessionTypeFilter: string) => boolean
+        matchesSessionEngagement: (session: any, sessionEngagementFilter: string) => boolean
+      }>('/src/composables/workbench/sessionListFilters.ts'),
+      importBrowserModule<{
+        readSpaceWorkbenchSearch: (query: Record<string, unknown>) => string
+        readSpaceWorkbenchSessionTypeFilter: (query: Record<string, unknown>) => string
+        readSpaceWorkbenchSessionEngagementFilter: (query: Record<string, unknown>) => string
+        readSpaceWorkbenchSessionSort: (query: Record<string, unknown>) => string
+      }>('/src/router/spaceNavigation.ts'),
+      importBrowserModule<{
+        errorTracker: {
+          getTopErrors: (limit: number) => Array<{
+            type: string
+            message: string
+            context?: Record<string, unknown>
+          }>
+        }
+      }>('/src/utils/ErrorTracker.ts')
+    ])
+
+    const matrixStore = useMatrixStore(runtimeWindow.pinia)
+    const roomStore = useRoomStore(runtimeWindow.pinia)
+    const sessionStore = useSessionStore(runtimeWindow.pinia)
+    const routeQuery = Object.fromEntries(new URLSearchParams(window.location.search).entries())
+    const filters = {
+      search: readSpaceWorkbenchSearch(routeQuery),
+      type: readSpaceWorkbenchSessionTypeFilter(routeQuery),
+      engagement: readSpaceWorkbenchSessionEngagementFilter(routeQuery),
+      sort: readSpaceWorkbenchSessionSort(routeQuery)
+    }
+    const filteredSessions = filterAndSortSessions(sessionStore.sessionList, {
+      keyword: filters.search.toLocaleLowerCase(),
+      sessionTypeFilter: filters.type,
+      sessionEngagementFilter: filters.engagement,
+      sessionSort: filters.sort
+    })
+
+    return {
+      route: `${window.location.pathname}${window.location.search}`,
+      stage: runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ ?? null,
+      matrix: {
+        isLoggedIn: matrixStore.isLoggedIn,
+        userId: matrixStore.userId,
+        accessTokenPresent: !!matrixStore.accessToken,
+        connectionState: matrixStore.connectionState,
+        syncState: matrixStore.syncState,
+        lastError: matrixStore.lastError
+      },
+      sessionSnapshot: getMatrixSessionSnapshot(),
+      currentUser: getCurrentUserInfo(),
+      endpoints: {
+        runtime: resolveMatrixRuntimeEndpointConfig(),
+        session: resolveMatrixSessionEndpointConfig(),
+        storedHomeserverUrl: window.localStorage.getItem('hula-homeserver-url'),
+        storedSessionHomeserverUrl: window.localStorage.getItem('hula-session-homeserver-url')
+      },
+      rooms: {
+        count: roomStore.roomList.length,
+        sample: roomStore.roomList.slice(0, 5).map((room: { roomId: string; name?: string }) => ({
+          roomId: room.roomId,
+          name: room.name ?? ''
+        }))
+      },
+      sessions: {
+        count: sessionStore.sessionList.length,
+        sample: sessionStore.sessionList
+          .slice(0, 5)
+          .map(
+            (session: {
+              roomId: string
+              name?: string
+              type?: unknown
+              unreadCount?: number
+              highlightCount?: number
+              isInvite?: boolean
+            }) => ({
+              roomId: session.roomId,
+              name: session.name ?? '',
+              type: session.type ?? null,
+              unreadCount: session.unreadCount ?? 0,
+              highlightCount: session.highlightCount ?? 0,
+              isInvite: Boolean(session.isInvite)
+            })
+          )
+      },
+      filters,
+      filteredSessions: {
+        count: filteredSessions.length,
+        sample: filteredSessions.slice(0, 5).map((session: { roomId: string; name?: string }) => ({
+          roomId: session.roomId,
+          name: session.name ?? ''
+        })),
+        evaluation: sessionStore.sessionList
+          .slice(0, 5)
+          .map(
+            (session: {
+              roomId: string
+              name?: string
+              type?: unknown
+              unreadCount?: number
+              highlightCount?: number
+              isInvite?: boolean
+              lastMsg?: string
+              remark?: string
+              account?: string
+            }) => ({
+              roomId: session.roomId,
+              name: session.name ?? '',
+              type: session.type ?? null,
+              unreadCount: session.unreadCount ?? 0,
+              highlightCount: session.highlightCount ?? 0,
+              isInvite: Boolean(session.isInvite),
+              matchesType: matchesSessionType(session, filters.type),
+              matchesEngagement: matchesSessionEngagement(session, filters.engagement),
+              matchesKeyword: matchesKeyword(session, filters.search.toLocaleLowerCase())
+            })
+          )
+      },
+      runtimeErrors: errorTracker.getTopErrors(5).map((error) => ({
+        type: error.type,
+        message: error.message,
+        context: error.context ?? {}
+      })),
+      dom: {
+        sessionItems: document.querySelectorAll('[role="list"] [role="listitem"]').length,
+        bodyText: document.body.innerText.slice(0, 800)
+      }
+    }
+  })
 }
 
 export const waitForLiveSessions = async (page: Page): Promise<void> => {
-  await expect
-    .poll(() => page.locator('[data-test^="session-item-"]').count(), {
-      timeout: 120_000,
-      message: '等待消息会话列表加载'
-    })
-    .toBeGreaterThan(0)
+  try {
+    await expect
+      .poll(() => page.locator('[role="list"] [role="listitem"]').count(), {
+        timeout: 120_000,
+        message: '等待消息会话列表加载'
+      })
+      .toBeGreaterThan(0)
+  } catch (error) {
+    const snapshot = await collectMatrixLiveSessionDebugSnapshot(page)
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`${message}\nmatrix-live snapshot: ${JSON.stringify(snapshot)}`)
+  }
 }
 
 export const openConfiguredRoom = async (page: Page, env: MatrixLiveEnv): Promise<void> => {
@@ -330,14 +892,13 @@ export const openConfiguredRoom = async (page: Page, env: MatrixLiveEnv): Promis
 export const sendTextMessageToRoom = async (page: Page, roomId: string, text: string): Promise<string> => {
   return page.evaluate(
     async ({ targetRoomId, body }: { targetRoomId: string; body: string }) => {
-      const modulePath = '/src/stores/domains/chat/room.ts'
-      const { useRoomStore } = (await import(/* @vite-ignore */ modulePath)) as {
-        useRoomStore: () => {
-          sendMessage: (roomId: string, content: { type: 'text'; text: string }) => Promise<string>
+      const modulePath = '/src/services/matrix/MatrixEventService.ts'
+      const { matrixEventService } = (await import(/* @vite-ignore */ modulePath)) as {
+        matrixEventService: {
+          sendTextMessage: (roomId: string, body: string) => Promise<string>
         }
       }
-      const roomStore = useRoomStore()
-      return roomStore.sendMessage(targetRoomId, { type: 'text', text: body })
+      return matrixEventService.sendTextMessage(targetRoomId, body)
     },
     { targetRoomId: roomId, body: text }
   )
@@ -346,9 +907,10 @@ export const sendTextMessageToRoom = async (page: Page, roomId: string, text: st
 export const roomContainsMessage = async (page: Page, roomId: string, text: string): Promise<boolean> => {
   return page.evaluate(
     async ({ targetRoomId, expectedText }: { targetRoomId: string; expectedText: string }) => {
+      const runtimeWindow = window as Window & { pinia?: unknown }
       const modulePath = '/src/stores/domains/chat/chat/index.ts'
       const { useChatStore } = (await import(/* @vite-ignore */ modulePath)) as {
-        useChatStore: () => {
+        useChatStore: (pinia?: unknown) => {
           chatMessageListByRoomId: (roomId: string) => Array<{
             message: {
               body:
@@ -361,7 +923,7 @@ export const roomContainsMessage = async (page: Page, roomId: string, text: stri
           }>
         }
       }
-      const chatStore = useChatStore()
+      const chatStore = useChatStore(runtimeWindow.pinia)
 
       return chatStore
         .chatMessageListByRoomId(targetRoomId)

@@ -700,6 +700,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
 
       const userInfo = groupStore.getUserInfo(userUid.value)
       const tempMsg: MessageType = {
+        clientKey: tempMsgId,
         fromUser: {
           uid: String(userUid.value || 0),
           username: userInfo?.name || '',

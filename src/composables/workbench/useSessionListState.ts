@@ -4,7 +4,7 @@ import { MsgEnum, RoomTypeEnum, UserType } from '@/enums'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg.ts'
 import matrixClientService from '@/services/matrix/MatrixClientService'
-import { type SessionItem, useChatStore } from '@/stores/domains/chat/chat'
+import { type SessionItem, useChatStore, useSessionStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useBotStore } from '@/stores/domains/user/bot'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -15,11 +15,13 @@ type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderN
 export const useSessionListState = () => {
   const { t } = useI18n()
   const chatStore = useChatStore()
+  const sessionStore = useSessionStore()
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()
   const botStore = useBotStore()
   const networkStatus = useNetworkStatus()
-  const { syncLoading } = storeToRefs(chatStore)
+  const syncLoading = toRef(sessionStore, 'syncLoading')
+  const sourceSessionList = toRef(sessionStore, 'sessionList')
   const botDisplayText = computed(() => botStore.displayText)
   const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
   const { announce } = useAriaLive()
@@ -33,7 +35,7 @@ export const useSessionListState = () => {
   })
 
   const networkBanner = computed(() => {
-    if (!networkStatus.browserOnline.value) {
+    if (!networkStatus.browserOnline.value && networkStatus.wsOnline.value !== true) {
       return { text: t('home.chat_main.network_offline'), retryable: false }
     }
 
@@ -49,20 +51,20 @@ export const useSessionListState = () => {
   })
 
   const retrySessions = async () => {
-    if (chatStore.syncLoading || chatStore.sessionOptions.isLoading) return
+    if (sessionStore.syncLoading || sessionStore.sessionOptions.isLoading) return
 
-    chatStore.syncLoading = true
+    sessionStore.syncLoading = true
     try {
-      await chatStore.getSessionList(true)
+      await sessionStore.getSessionList(true)
     } finally {
-      chatStore.syncLoading = false
+      sessionStore.syncLoading = false
     }
   }
 
   const sessionList = computed(() => {
     sessionCacheRefreshKey.value
 
-    return chatStore.sessionList
+    return sourceSessionList.value
       .map((item) => {
         let latestAvatar = item.avatar
         if (item.type === RoomTypeEnum.SINGLE && item.detailId) {

@@ -1,14 +1,15 @@
 <template>
   <div
-    class="room-space-toolbar border-b border-[--hula-border-default] px-12px py-10px"
+    class="room-space-toolbar px-12px py-10px"
     :class="{ 'room-space-toolbar--compact': props.compact }"
     :data-test="props.rootTestId">
     <n-flex vertical :size="10">
-      <n-flex align="center" justify="space-between" :size="12" wrap>
+      <n-flex align="center" justify="space-between" :size="8" wrap>
         <n-input
           :value="searchKeyword"
           clearable
-          class="toolbar-search min-w-220px flex-1"
+          size="small"
+          class="toolbar-search flex-1 min-w-0 bg-[--hula-surface-search] border-none"
           :placeholder="t('space.search_sessions_placeholder')"
           :aria-label="t('space.search_sessions_placeholder')"
           @update:value="emit('update:searchKeyword', $event)">
@@ -19,114 +20,123 @@
           </template>
         </n-input>
 
-        <n-flex align="center" :size="8" wrap>
-          <n-button size="small" tertiary :data-test="`${testIdPrefix}-batch-toggle`" @click="emit('toggleBatchMode')">
+        <n-popover placement="bottom-end" trigger="click" style="border-radius: 12px; padding: 16px; width: 280px">
+          <template #trigger>
+            <n-button size="small" quaternary circle>
+              <template #icon>
+                <n-badge :dot="hasActiveFilters" type="info">
+                  <svg class="size-16px color-[--hula-text-secondary]">
+                    <use href="#filter"></use>
+                  </svg>
+                </n-badge>
+              </template>
+            </n-button>
+          </template>
+
+          <n-flex vertical :size="16">
+            <!-- Type Filter -->
+            <n-flex vertical :size="8">
+              <span class="text-[var(--text-xs)] color-[--hula-text-tertiary] font-medium">
+                {{ t('space.filter_label') }}
+              </span>
+              <div class="toolbar-chip-group" role="tablist">
+                <button
+                  v-for="option in sessionTypeOptions"
+                  :key="option.value"
+                  type="button"
+                  class="toolbar-chip"
+                  :class="{ 'toolbar-chip--active': sessionTypeFilter === option.value }"
+                  role="tab"
+                  :aria-selected="sessionTypeFilter === option.value"
+                  :tabindex="sessionTypeFilter === option.value ? 0 : -1"
+                  @click="emit('update:sessionTypeFilter', option.value)">
+                  {{ option.label }}
+                </button>
+              </div>
+            </n-flex>
+
+            <!-- Engagement Filter -->
+            <n-flex vertical :size="8">
+              <span class="text-[var(--text-xs)] color-[--hula-text-tertiary] font-medium">
+                {{ t('space.engagement_label') }}
+              </span>
+              <div class="toolbar-chip-group" role="tablist">
+                <button
+                  v-for="option in sessionEngagementOptions"
+                  :key="option.value"
+                  type="button"
+                  class="toolbar-chip"
+                  :class="{ 'toolbar-chip--active': sessionEngagementFilter === option.value }"
+                  role="tab"
+                  :aria-selected="sessionEngagementFilter === option.value"
+                  :tabindex="sessionEngagementFilter === option.value ? 0 : -1"
+                  @click="emit('update:sessionEngagementFilter', option.value)">
+                  {{ option.label }}
+                </button>
+              </div>
+            </n-flex>
+
+            <!-- Sort Options -->
+            <n-flex vertical :size="8">
+              <span class="text-[var(--text-xs)] color-[--hula-text-tertiary] font-medium">
+                {{ t('space.sort_label') }}
+              </span>
+              <div class="toolbar-chip-group" role="tablist">
+                <button
+                  v-for="option in sortOptions"
+                  :key="option.value"
+                  type="button"
+                  class="toolbar-chip"
+                  :class="{ 'toolbar-chip--active': sessionSort === option.value }"
+                  role="tab"
+                  :aria-selected="sessionSort === option.value"
+                  :tabindex="sessionSort === option.value ? 0 : -1"
+                  @click="emit('update:sessionSort', option.value)">
+                  {{ option.label }}
+                </button>
+              </div>
+            </n-flex>
+
+            <n-divider style="margin: 0" />
+
+            <!-- Presets & Clear -->
+            <n-flex align="center" justify="space-between" :size="8">
+              <button
+                type="button"
+                class="text-[var(--text-xs)] color-[--hula-text-tertiary] hover:color-[--hula-text-primary] cursor-pointer"
+                @click="clearAllFilters">
+                {{ t('space.clear_all_filters') }}
+              </button>
+
+              <n-flex :size="8">
+                <button v-if="canSavePreset" type="button" class="toolbar-preset-button" @click="emit('savePreset')">
+                  {{ t('space.save_preset') }}
+                </button>
+                <button
+                  v-if="hasSavedPreset && !savedPresetApplied"
+                  type="button"
+                  class="toolbar-preset-button toolbar-preset-button--primary"
+                  @click="emit('applySavedPreset')">
+                  {{ t('space.apply_saved_preset') }}
+                </button>
+              </n-flex>
+            </n-flex>
+          </n-flex>
+        </n-popover>
+
+        <n-dropdown :options="moreOptions" @select="handleMoreSelect" trigger="click" placement="bottom-end">
+          <n-button size="small" quaternary circle>
             <template #icon>
-              <svg class="size-14px">
-                <use :href="batchMode ? '#close' : '#batch'" />
+              <svg class="size-16px color-[--hula-text-secondary]">
+                <use href="#more"></use>
               </svg>
             </template>
-            {{ batchMode ? t('room.batch.exit') : t('room.batch.enter') }}
           </n-button>
-          <n-button
-            v-if="showCreateAction"
-            size="small"
-            secondary
-            :data-test="`${testIdPrefix}-create-space`"
-            @click="emit('createSpace')">
-            <template #icon>
-              <svg class="size-14px">
-                <use href="#add"></use>
-              </svg>
-            </template>
-            {{ createButtonText }}
-          </n-button>
-          <n-button v-if="showJoinAction" size="small" tertiary @click="emit('joinRoom')">
-            <template #icon>
-              <svg class="size-14px">
-                <use href="#login"></use>
-              </svg>
-            </template>
-            {{ t('room.join') }}
-          </n-button>
-          <span class="toolbar-summary text-12px color-[--hula-text-tertiary]">
-            {{ filteredCount }}/{{ totalCount }}
-          </span>
-        </n-flex>
+        </n-dropdown>
       </n-flex>
 
-      <n-flex align="center" justify="space-between" :size="12" wrap>
-        <div class="toolbar-chip-group" role="tablist" :aria-label="t('space.filter_label')">
-          <button
-            v-for="option in sessionTypeOptions"
-            :key="option.value"
-            type="button"
-            class="toolbar-chip"
-            :class="{ 'toolbar-chip--active': sessionTypeFilter === option.value }"
-            role="tab"
-            :aria-selected="sessionTypeFilter === option.value"
-            :tabindex="sessionTypeFilter === option.value ? 0 : -1"
-            :data-test="`${testIdPrefix}-type-${option.value}`"
-            @click="emit('update:sessionTypeFilter', option.value)"
-            @keydown="handleChipGroupKeydown($event, sessionTypeOptions, option.value, updateSessionTypeFilter)">
-            {{ option.label }}
-          </button>
-        </div>
-
-        <n-flex align="center" :size="8" wrap>
-          <span class="text-12px color-[--hula-text-tertiary]">{{ sortSummary }}</span>
-          <div class="toolbar-chip-group" role="tablist" :aria-label="t('space.sort_label')">
-            <button
-              v-for="option in sortOptions"
-              :key="option.value"
-              type="button"
-              class="toolbar-chip"
-              :class="{ 'toolbar-chip--active': sessionSort === option.value }"
-              role="tab"
-              :aria-selected="sessionSort === option.value"
-              :tabindex="sessionSort === option.value ? 0 : -1"
-              :data-test="`${testIdPrefix}-sort-${option.value}`"
-              @click="emit('update:sessionSort', option.value)"
-              @keydown="handleChipGroupKeydown($event, sortOptions, option.value, updateSessionSort)">
-              {{ option.label }}
-            </button>
-          </div>
-        </n-flex>
-      </n-flex>
-
-      <n-flex align="center" :size="8" wrap>
-        <div class="toolbar-chip-group" role="tablist" :aria-label="t('space.engagement_label')">
-          <button
-            v-for="option in sessionEngagementOptions"
-            :key="option.value"
-            type="button"
-            class="toolbar-chip"
-            :class="{ 'toolbar-chip--active': sessionEngagementFilter === option.value }"
-            role="tab"
-            :aria-selected="sessionEngagementFilter === option.value"
-            :tabindex="sessionEngagementFilter === option.value ? 0 : -1"
-            :data-test="`${testIdPrefix}-engagement-${option.value}`"
-            @click="emit('update:sessionEngagementFilter', option.value)"
-            @keydown="
-              handleChipGroupKeydown($event, sessionEngagementOptions, option.value, updateSessionEngagementFilter)
-            ">
-            {{ option.label }}
-          </button>
-        </div>
-      </n-flex>
-
-      <n-flex v-if="hasActiveFilters" align="center" :size="8" class="toolbar-filter-summary">
-        <span class="text-11px color-[--hula-text-tertiary]">{{ t('space.active_filters') }}:</span>
-        <n-tag
-          v-if="hasSearchKeyword"
-          size="tiny"
-          closable
-          round
-          :bordered="false"
-          class="toolbar-filter-tag"
-          @close="emit('update:searchKeyword', '')">
-          {{ t('space.search_filter_tag', { keyword: searchKeyword.trim() }) }}
-        </n-tag>
+      <!-- Active Filters Tag (only when active) -->
+      <n-flex v-if="hasActiveFilters" align="center" :size="6" class="toolbar-filter-summary">
         <n-tag
           v-if="isNonDefaultTypeFilter"
           size="tiny"
@@ -157,34 +167,9 @@
           @close="emit('update:sessionSort', WORKBENCH_SESSION_SORTS.recent)">
           {{ activeSortLabel }}
         </n-tag>
-        <button type="button" class="toolbar-clear-all" @click="clearAllFilters">
-          {{ t('space.clear_all_filters') }}
-        </button>
-      </n-flex>
-
-      <n-flex v-if="hasSavedPreset || canSavePreset" align="center" :size="8" class="toolbar-preset-bar">
-        <span class="text-11px color-[--hula-text-tertiary]">{{ t('space.saved_preset_label') }}:</span>
-        <button
-          v-if="canSavePreset"
-          type="button"
-          class="toolbar-preset-button"
-          :data-test="`${testIdPrefix}-save-preset`"
-          @click="emit('savePreset')">
-          {{ t('space.save_preset') }}
-        </button>
-        <button
-          v-if="hasSavedPreset && !savedPresetApplied"
-          type="button"
-          class="toolbar-preset-button toolbar-preset-button--primary"
-          :data-test="`${testIdPrefix}-apply-preset`"
-          @click="emit('applySavedPreset')">
-          {{ t('space.apply_saved_preset') }}
-        </button>
-        <span v-else-if="savedPresetApplied" class="toolbar-preset-active" :data-test="`${testIdPrefix}-preset-active`">
-          {{ t('space.saved_preset_active') }}
-        </span>
       </n-flex>
     </n-flex>
+    <n-divider style="margin: 10px -12px -10px -12px; width: calc(100% + 24px)" />
   </div>
 </template>
 
@@ -249,6 +234,56 @@ const showCreateAction = computed(() => props.showCreateAction)
 const showJoinAction = computed(() => props.showJoinAction)
 const testIdPrefix = computed(() => props.testIdPrefix)
 const createButtonText = computed(() => props.createButtonText || t('space.create'))
+
+const moreOptions = computed(() => {
+  const options = []
+
+  options.push({
+    label: props.batchMode ? t('room.batch.exit') : t('room.batch.enter'),
+    key: 'batch'
+  })
+
+  if (showCreateAction.value) {
+    options.push({
+      label: createButtonText.value,
+      key: 'create'
+    })
+  }
+
+  if (showJoinAction.value) {
+    options.push({
+      label: t('room.join'),
+      key: 'join'
+    })
+  }
+
+  options.push({
+    type: 'divider',
+    key: 'd1'
+  })
+
+  options.push({
+    label: `${props.filteredCount}/${props.totalCount} ${t('space.session_list_label')}`,
+    key: 'count',
+    disabled: true
+  })
+
+  return options
+})
+
+const handleMoreSelect = (key: string) => {
+  switch (key) {
+    case 'batch':
+      emit('toggleBatchMode')
+      break
+    case 'create':
+      emit('createSpace')
+      break
+    case 'join':
+      emit('joinRoom')
+      break
+  }
+}
 
 const sessionTypeOptions = computed(() => [
   { value: WORKBENCH_SESSION_TYPE_FILTERS.all, label: t('space.filter_all') },

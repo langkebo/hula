@@ -17,10 +17,10 @@
       </div>
 
       <n-flex vertical align="center" :size="20" class="cursor-default" data-tauri-drag-region>
-        <span class="text-(15px #707070)">
+        <span class="text-(15px [--hula-text-tertiary])">
           {{ t('home.about.version', { version: _pkg.version, arch: osArch || '' }) }}
         </span>
-        <span class="text-(15px #707070)">
+        <span class="text-(15px [--hula-text-tertiary])">
           {{ t('home.about.device', { type: osType || '', version: osVersion || '' }) }}
         </span>
         <n-flex vertical class="text-(12px --hula-text-tertiary)" :size="8" align="center">

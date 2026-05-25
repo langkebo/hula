@@ -1,0 +1,54 @@
+{
+  "footer": {
+    "emoji": "表情",
+    "screenshot": "截图",
+    "send_file": "发送文件",
+    "send_image": "发送图片",
+    "voice_message": "语音消息",
+    "location": "位置",
+    "burn_after_read": "阅后即焚",
+    "chat_history": "聊天记录"
+  },
+  "header": {
+    "video_call": "视频通话",
+    "voice_call": "语音通话",
+    "start_meeting": "发起会议",
+    "screen_share": "屏幕共享",
+    "group_qr_code": "群二维码",
+    "more_options": "更多选项"
+  },
+  "burn": {
+    "message_destroyed": "此消息已销毁",
+    "destroyed": "已销毁",
+    "waiting_read": "等待阅读"
+  },
+  "location": {
+    "title": "位置",
+    "cannot_display": "无法展示"
+  },
+  "link_preview": {
+    "unknown_link": "未知链接",
+    "unknown_source": "未知来源"
+  },
+  "beacon": {
+    "live_location": "实时位置共享",
+    "remaining_time": "剩余时间:",
+    "view_location": "查看位置",
+    "ended": "本次位置共享已结束"
+  },
+  "text": {
+    "copy_url": "复制网址"
+  },
+  "privacy": {
+    "screenshot_protected": "此聊天受保护，禁止截图"
+  },
+  "recall": {
+    "cannot_recall": "无法撤回"
+  },
+  "multi_msg": {
+    "view_forwarded": "查看 {count} 条转发消息"
+  },
+  "url_preview": {
+    "loading": "加载预览..."
+  }
+}

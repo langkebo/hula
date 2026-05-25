@@ -9,7 +9,7 @@
       <svg class="privacy-overlay__icon">
         <use href="#shield"></use>
       </svg>
-      <span>此聊天受保护，禁止截图</span>
+      <span>{{ t('chat.privacy.screenshot_protected') }}</span>
     </div>
   </div>
 </template>
@@ -17,6 +17,9 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   visible?: boolean
@@ -105,7 +108,7 @@ function calculateWatermarkCount() {
 .privacy-overlay__icon {
   width: 48px;
   height: 48px;
-  color: #ff4757;
+  color: var(--hula-color-danger-500);
 }
 
 .privacy-overlay__block-message span {

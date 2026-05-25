@@ -15,8 +15,8 @@
       <span v-if="status === 'burning'" class="burn-indicator__countdown">
         {{ formattedTime }}
       </span>
-      <span v-else-if="status === 'burned'" class="burn-indicator__label">已销毁</span>
-      <span v-else class="burn-indicator__label">等待阅读</span>
+      <span v-else-if="status === 'burned'" class="burn-indicator__label">{{ t('chat.burn.destroyed') }}</span>
+      <span v-else class="burn-indicator__label">{{ t('chat.burn.waiting_read') }}</span>
     </div>
     <div v-if="status === 'burning'" class="burn-indicator__progress">
       <div class="burn-indicator__progress-bar" :style="{ width: `${progressPercent}%` }"></div>
@@ -26,6 +26,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   remainingSeconds?: number

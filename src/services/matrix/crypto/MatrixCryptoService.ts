@@ -2,6 +2,7 @@ import { error, info, warn } from '@tauri-apps/plugin-log'
 import type {
   CryptoApi,
   DeviceTrustManager,
+  GeneratedSecretStorageKey,
   ISecuritySummary,
   KeyBackupManager,
   LegacyStoredDevice,
@@ -601,6 +602,26 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  async createRecoveryKeyFromPassphrase(password?: string): Promise<GeneratedSecretStorageKey | null> {
+    try {
+      const crypto = this.getCrypto()
+      if (!crypto) {
+        error('[MatrixCrypto] 创建恢复密钥失败: CryptoApi 不可用，客户端加密模块未初始化')
+        return null
+      }
+      if (typeof crypto.createRecoveryKeyFromPassphrase !== 'function') {
+        error('[MatrixCrypto] 创建恢复密钥失败: CryptoApi.createRecoveryKeyFromPassphrase 方法不存在')
+        return null
+      }
+      const result = await crypto.createRecoveryKeyFromPassphrase(password)
+      info(`[MatrixCrypto] 创建恢复密钥成功${password ? '（使用短语）' : '（随机生成）'}`)
+      return result
+    } catch (err) {
+      error(`[MatrixCrypto] 创建恢复密钥失败: ${err}`)
+      throw err
+    }
+  }
+
   async createSecureBackup(passphrase: string): Promise<SecureBackupInfo | null> {
     try {
       const secureBackupManager = this.getSecureBackupManager()
@@ -648,28 +669,16 @@ class MatrixCryptoService extends BaseMatrixService {
 
   private async getSecureBackupList(): Promise<SecureBackupInfo[]> {
     try {
-      const client = this.getClient()
-      const response = (await client.http.authedRequest('GET', MATRIX_PATHS.CRYPTO.SECURE_BACKUP)) as Record<
-        string,
-        unknown
-      >
-      const backups: SecureBackupInfo[] = []
-      if (response && typeof response === 'object') {
-        for (const [id, data] of Object.entries(response)) {
-          if (data && typeof data === 'object') {
-            const d = data as Record<string, unknown>
-            backups.push({
-              backup_id: id,
-              algorithm: (d.algorithm as string) ?? '',
-              auth_data: (d.auth_data as Record<string, unknown>) ?? {},
-              created_ts: (d.created_ts as number) ?? 0,
-              key_count: d.key_count as number | undefined,
-              version: (d.version as string) ?? id
-            })
-          }
-        }
-      }
-      return backups
+      // 后端 GET /keys/backup/secure 返回 405，改用 room_keys/version 获取备份版本
+      const versions = await this.getBackupVersions()
+      return versions.map((v) => ({
+        backup_id: v.version,
+        algorithm: v.algorithm,
+        auth_data: v.auth_data,
+        created_ts: 0,
+        key_count: v.count,
+        version: v.version
+      }))
     } catch (err) {
       error(`[MatrixCrypto] 获取安全备份列表失败: ${err}`)
       return []
@@ -683,7 +692,23 @@ class MatrixCryptoService extends BaseMatrixService {
       if (!room) return false
       const crypto = this.getCrypto()
       if (crypto) {
-        return (room as unknown as { hasEncryptionStateEvent: () => boolean }).hasEncryptionStateEvent()
+        // 优先使用 SDK 的 hasEncryptionStateEvent 检测
+        if ((room as unknown as { hasEncryptionStateEvent: () => boolean }).hasEncryptionStateEvent()) {
+          return true
+        }
+      }
+      // Fallback: 直接检查房间状态中的 m.room.encryption 事件
+      // 后端可能未正确标记 is_encrypted，但实际存在加密状态事件
+      try {
+        const encryptionEvent = room.currentState.getStateEvents('m.room.encryption', '')
+        if (encryptionEvent) {
+          const content = encryptionEvent.getContent() as { algorithm?: string }
+          if (content.algorithm) {
+            return true
+          }
+        }
+      } catch {
+        // Ignore
       }
       return false
     } catch (err) {

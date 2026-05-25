@@ -43,7 +43,7 @@
             {{ t('login.secret_chat.confirm') }}
           </n-button>
 
-          <div v-if="errorMsg" class="text-(12px #b02525) text-center">
+          <div v-if="errorMsg" class="text-(12px [--hula-color-danger-500]) text-center">
             {{ errorMsg }}
           </div>
         </div>

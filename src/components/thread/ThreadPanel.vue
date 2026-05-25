@@ -134,9 +134,9 @@ const loadThreadReplies = async () => {
 
 .original-message {
   padding: 12px;
-  background: var(--bg-color);
+  background: var(--hula-surface-app);
   border-radius: 8px;
-  border-left: 3px solid var(--primary-color);
+  border-left: 3px solid var(--color-primary);
 
   .message-header {
     display: flex;

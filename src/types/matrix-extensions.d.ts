@@ -10,6 +10,22 @@ import type { MatrixClient } from 'matrix-js-sdk'
 // Crypto API 扩展
 // ============================================
 
+export interface GeneratedSecretStorageKey {
+  keyInfo: {
+    passphrase?: {
+      algorithm: string
+      iterations: number
+      salt: string
+      bits?: number
+    }
+    algorithm: string
+    iv: string
+    mac: string
+  }
+  encodedPrivateKey: string
+  privateKey: Uint8Array
+}
+
 export interface VerificationRequest {
   transactionId: string
   userId: string
@@ -106,6 +122,7 @@ export interface CryptoApi {
   startVerification(request: unknown): Promise<unknown>
   acceptVerification(request: unknown): Promise<unknown>
   cancelVerification(request: unknown): Promise<void>
+  createRecoveryKeyFromPassphrase(password?: string): Promise<GeneratedSecretStorageKey>
 }
 
 // ============================================
