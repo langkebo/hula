@@ -6,7 +6,7 @@
         <svg class="size-14px color-[--hula-color-primary-500]">
           <use href="#local"></use>
         </svg>
-        <p class="text-14px font-medium color-[--hula-text-primary]">位置</p>
+        <p class="text-14px font-medium color-[--hula-text-primary]">{{ t('chat.location.title') }}</p>
       </div>
 
       <div class="text-(10px --hula-color-primary-500) p-4px rounded-4px border-(1px solid --hula-color-primary-500)">
@@ -32,7 +32,7 @@
         <svg class="size-32px color-[--hula-text-quaternary]">
           <use href="#cloudError"></use>
         </svg>
-        <span class="text-12px color-[--hula-text-quaternary]">无法展示</span>
+        <span class="text-12px color-[--hula-text-quaternary]">{{ t('chat.location.cannot_display') }}</span>
       </div>
     </div>
   </main>
@@ -42,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { LocationBody } from '@/services/types'
 import { isWindows } from '@/utils/PlatformConstants'
 import LocationModal from '../location/LocationModal.vue'
@@ -50,6 +51,8 @@ import StaticProxyMap from '../location/StaticProxyMap.vue'
 defineOptions({
   inheritAttrs: false
 })
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{

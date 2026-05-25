@@ -256,6 +256,15 @@
     "password_changed": "Password changed",
     "password_change_failed": "Failed to change password",
     "password_change_failed_with_hint": "Failed to change password, please verify your current password",
+    "password_too_short": "Password must be at least 8 characters",
+    "password_too_long": "Password must not exceed 128 characters",
+    "password_need_uppercase": "Password must contain at least one uppercase letter",
+    "password_need_lowercase": "Password must contain at least one lowercase letter",
+    "password_need_digit": "Password must contain at least one digit",
+    "password_need_special": "Password must contain at least one special character (e.g. !@#$%^&*)",
+    "password_too_weak": "Password is too weak, please choose a stronger password",
+    "password_wrong_current": "Current password is incorrect, please try again",
+    "logout_other_devices": "Sign out other devices after password change",
     "danger_zone": "Danger Zone",
     "deactivate_account": "Deactivate Account",
     "deactivate_account_desc": "Permanently delete your account and data",
@@ -960,7 +969,12 @@
     "invite_blocklist_removed": "Removed from invite blocklist",
     "user_already_in_allowlist": "This user is already in the allowlist",
     "invite_allowlist_added": "Added to invite allowlist",
-    "invite_allowlist_removed": "Removed from invite allowlist"
+    "invite_allowlist_removed": "Removed from invite allowlist",
+    "security_key_label": "Security Key",
+    "security_key_configured_desc": "Security key configured, your encryption keys are protected",
+    "security_key_not_configured_desc": "Security key not configured, recommended to protect your encrypted data",
+    "setup_action": "Set Up",
+    "security_key_created": "Security key set up successfully"
   },
   "labs": {
     "title": "Labs",
@@ -1321,7 +1335,16 @@
       "restoring_progress": "Restoring keys... {progress}%",
       "restore_result_success": "Successfully restored {imported} keys",
       "restore_result_failed": "Restore failed. Please check whether the key is correct."
-    }
+    },
+    "security_key_section": "Security Key",
+    "security_key_label": "Security Key",
+    "security_key_configured": "Security key configured, your encryption keys are protected",
+    "security_key_not_configured": "Security key not configured, recommended to protect your encrypted data",
+    "security_key_created": "Security key set up successfully",
+    "e2ee_incomplete_hint": "Encryption setup incomplete, recommended to complete setup to secure your messages",
+    "quick_setup": "Quick Setup",
+    "onboarding_complete": "Encryption setup complete!",
+    "onboarding_skip": "Encryption setup skipped, you can complete it later in settings"
   },
   "threepid": {
     "title": "Account Binding",

@@ -88,6 +88,7 @@ export class LocationMessageStrategyImpl extends AbstractMessageStrategy {
     const userInfo = groupStore.getUserInfo(userUid.value)
 
     return {
+      clientKey: messageId,
       fromUser: {
         uid: userUid.value || '',
         username: userInfo?.name || '',

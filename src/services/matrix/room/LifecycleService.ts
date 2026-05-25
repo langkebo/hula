@@ -21,6 +21,7 @@ export class MatrixRoomLifecycleService {
 
   async getServerDomain(): Promise<string> {
     try {
+      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
       const client = this.getClient(false)
       const domain = client.getDomain()
       if (domain) return domain

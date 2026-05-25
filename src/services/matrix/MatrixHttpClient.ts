@@ -13,6 +13,10 @@ export interface MatrixHttpRequestOptions {
   logPrefix?: string
   defaultValue?: unknown
   quiet?: boolean
+  retries?: number
+  retryDelay?: number
+  showLoading?: boolean
+  showErrorToast?: boolean
 }
 
 type MatrixHttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS'
@@ -107,6 +111,8 @@ class MatrixHttpClient {
           body?: Record<string, unknown>
           params?: Record<string, string | number>
           headers?: Record<string, string>
+          retries?: number
+          retryDelay?: number
         },
     path?: string,
     options: Omit<MatrixHttpRequestOptions, 'throwOnError' | 'defaultValue'> = {}
@@ -122,7 +128,9 @@ class MatrixHttpClient {
         ...options,
         body: methodOrOptions.body,
         queryParams: methodOrOptions.params,
-        headers: methodOrOptions.headers
+        headers: methodOrOptions.headers,
+        retries: methodOrOptions.retries,
+        retryDelay: methodOrOptions.retryDelay
       }
     } else {
       method = methodOrOptions
@@ -130,6 +138,47 @@ class MatrixHttpClient {
       requestOptions = options
     }
 
+    const showLoading = requestOptions.showLoading ?? false
+    const showErrorToast = requestOptions.showErrorToast ?? false
+
+    if (showLoading && window.$loadingBar) {
+      window.$loadingBar.start()
+    }
+
+    let retries = requestOptions.retries ?? 0
+    const retryDelay = requestOptions.retryDelay ?? 1000
+
+    while (true) {
+      try {
+        const result = await this._doRequest<T>(method, requestPath, requestOptions)
+        if (showLoading && window.$loadingBar) {
+          window.$loadingBar.finish()
+        }
+        return result
+      } catch (err: any) {
+        // Retry only on network errors or 5xx server errors
+        const isRetryable = err instanceof TypeError || err.message?.includes('HTTP 5')
+        if (!isRetryable || retries <= 0) {
+          if (showLoading && window.$loadingBar) {
+            window.$loadingBar.error()
+          }
+          if (showErrorToast && window.$message) {
+            window.$message.error(err.message || String(err))
+          }
+          throw err
+        }
+        retries--
+        logger.warn(`请求失败，准备重试 (${retries} 次剩余): ${requestPath}`, err)
+        await new Promise((resolve) => setTimeout(resolve, retryDelay))
+      }
+    }
+  }
+
+  private async _doRequest<T>(
+    method: MatrixHttpMethod,
+    requestPath: string,
+    requestOptions: Omit<MatrixHttpRequestOptions, 'throwOnError' | 'defaultValue'>
+  ): Promise<T> {
     if (!AI_EXTENSION_ENABLED && this.isAiExtensionEndpoint(requestPath)) {
       if (!this.hasWarnedAiDisabled) {
         this.hasWarnedAiDisabled = true
@@ -191,7 +240,8 @@ class MatrixHttpClient {
       throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`)
     }
 
-    return (await response.json()) as T
+    const responseText = await response.text()
+    return (responseText ? JSON.parse(responseText) : {}) as T
   }
 
   /**
@@ -204,8 +254,13 @@ class MatrixHttpClient {
   ): Promise<T | null> {
     const { logPrefix = 'MatrixHttpClient', defaultValue = null, quiet = false, throwOnError = false } = options
 
+    const mergedOptions = {
+      showErrorToast: !quiet,
+      ...options
+    }
+
     try {
-      const result = await this.request<T>(method, path, options)
+      const result = await this.request<T>(method, path, mergedOptions)
       if (!quiet && method !== 'GET') {
         logger.info(`[${logPrefix}] ${method} ${path} 成功`)
       }

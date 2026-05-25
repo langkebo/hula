@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { StoresEnum } from '@/enums'
 import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import { EventType } from '@/services/matrix/sdk'
@@ -21,11 +22,13 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()
   const userStore = useUserStore()
+  const { showFeedback } = useActionFeedback()
 
   const announList = ref<Announcement[]>([])
   const announNum = ref(0)
   const announError = ref(false)
   const isAddAnnoun = ref(false)
+  const isLoading = ref(false)
 
   const announcementContent = computed(() => (announList.value.length > 0 ? (announList.value[0]?.content ?? '') : ''))
 
@@ -59,6 +62,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
     }
 
     try {
+      isLoading.value = true
       isAddAnnoun.value = canAddAnnouncement.value
 
       const room = await matrixRoomQueryService.getRoom(targetRoomId, false)
@@ -110,9 +114,12 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
       announError.value = false
     } catch (error) {
       logger.error('加载群公告失败:', error)
+      showFeedback('加载群公告失败', 'error')
       if (targetRoomId === globalStore.currentSessionRoomId) {
         announError.value = true
       }
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -139,6 +146,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
     canAddAnnouncement,
     loadGroupAnnouncements,
     getGroupAnnouncementList,
-    clearAnnouncements
+    clearAnnouncements,
+    isLoading
   }
 })

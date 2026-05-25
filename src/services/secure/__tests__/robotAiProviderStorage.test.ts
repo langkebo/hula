@@ -14,10 +14,8 @@ vi.mock('../secureStorage', () => ({
 
 import {
   loadRobotAiProvider,
-  loadRobotOpenClawConfig,
   loadRobotTrendRadarConfig,
   saveRobotAiProvider,
-  saveRobotOpenClawConfig,
   saveRobotTrendRadarConfig
 } from '../robotAiProviderStorage'
 
@@ -29,51 +27,6 @@ describe('robotAiProviderStorage', () => {
     getSecureSecretMock.mockResolvedValue(null)
     setSecureSecretMock.mockResolvedValue(true)
     deleteSecureSecretMock.mockResolvedValue(true)
-  })
-
-  it('migrates legacy openclaw token out of localStorage', async () => {
-    window.localStorage.setItem(
-      'hula-chat-openclaw-config',
-      JSON.stringify({
-        gatewayUrl: ' http://127.0.0.1:3000 ',
-        token: ' openclaw-token '
-      })
-    )
-    getSecureSecretMock.mockResolvedValue('openclaw-token')
-
-    const result = await loadRobotOpenClawConfig({
-      gatewayUrl: 'http://127.0.0.1:18789',
-      token: '',
-      autoConnect: true,
-      reconnect: true,
-      reconnectInterval: 3000,
-      maxReconnectAttempts: 5,
-      heartbeatInterval: 30000,
-      temperature: 0.7,
-      maxTokens: 4096,
-      topP: 1.0,
-      presencePenalty: 0.0,
-      frequencyPenalty: 0.0
-    })
-
-    expect(result).toEqual({
-      gatewayUrl: 'http://127.0.0.1:3000',
-      token: 'openclaw-token',
-      autoConnect: true,
-      reconnect: true,
-      reconnectInterval: 3000,
-      maxReconnectAttempts: 5,
-      heartbeatInterval: 30000,
-      temperature: 0.7,
-      maxTokens: 4096,
-      topP: 1.0,
-      presencePenalty: 0.0,
-      frequencyPenalty: 0.0
-    })
-    expect(window.localStorage.getItem('hula-chat-openclaw-config')).toBe(
-      '{"gatewayUrl":"http://127.0.0.1:3000","autoConnect":true,"reconnect":true,"reconnectInterval":3000,"maxReconnectAttempts":5,"heartbeatInterval":30000,"temperature":0.7,"maxTokens":4096,"topP":1,"presencePenalty":0,"frequencyPenalty":0}'
-    )
-    expect(setSecureSecretMock).toHaveBeenCalledWith('hula-chat-openclaw-token', 'openclaw-token')
   })
 
   it('falls back to sessionStorage for trendradar apiKey when secure storage is unavailable', async () => {
@@ -110,97 +63,12 @@ describe('robotAiProviderStorage', () => {
     expect(loadRobotAiProvider()).toBe('trendradar')
   })
 
-  it('stores provider and openclaw config in a user-scoped namespace', async () => {
+  it('stores provider in a user-scoped namespace', () => {
     const scope = { userId: '@alice:hula.im' }
 
-    saveRobotAiProvider('openclaw', scope)
-    await saveRobotOpenClawConfig(
-      {
-        gatewayUrl: 'http://127.0.0.1:20001',
-        token: 'alice-token',
-        autoConnect: true,
-        reconnect: true,
-        reconnectInterval: 3000,
-        maxReconnectAttempts: 5,
-        heartbeatInterval: 30000,
-        temperature: 0.7,
-        maxTokens: 4096,
-        topP: 1.0,
-        presencePenalty: 0.0,
-        frequencyPenalty: 0.0
-      },
-      scope
-    )
+    saveRobotAiProvider('hula', scope)
 
-    expect(loadRobotAiProvider(scope)).toBe('openclaw')
-    expect(window.localStorage.getItem('hula-chat-ai-provider::@alice:hula.im')).toBe('openclaw')
-    expect(window.localStorage.getItem('hula-chat-openclaw-config::@alice:hula.im')).toBe(
-      '{"gatewayUrl":"http://127.0.0.1:20001","autoConnect":true,"reconnect":true,"reconnectInterval":3000,"maxReconnectAttempts":5,"heartbeatInterval":30000,"temperature":0.7,"maxTokens":4096,"topP":1,"presencePenalty":0,"frequencyPenalty":0}'
-    )
-    expect(setSecureSecretMock).toHaveBeenCalledWith('hula-chat-openclaw-token::@alice:hula.im', 'alice-token')
-  })
-
-  it('migrates legacy openclaw config into the current user scope on load', async () => {
-    const scope = { userId: '@bob:hula.im' }
-    window.localStorage.setItem(
-      'hula-chat-openclaw-config',
-      JSON.stringify({
-        gatewayUrl: 'http://127.0.0.1:3001',
-        token: 'legacy-user-token'
-      })
-    )
-    getSecureSecretMock.mockImplementation(async (key: string) => {
-      if (key === 'hula-chat-openclaw-token') {
-        return 'legacy-user-token'
-      }
-      return null
-    })
-
-    const loaded = await loadRobotOpenClawConfig(
-      {
-        gatewayUrl: 'http://127.0.0.1:18789',
-        token: '',
-        autoConnect: true,
-        reconnect: true,
-        reconnectInterval: 3000,
-        maxReconnectAttempts: 5,
-        heartbeatInterval: 30000,
-        temperature: 0.7,
-        maxTokens: 4096,
-        topP: 1.0,
-        presencePenalty: 0.0,
-        frequencyPenalty: 0.0
-      },
-      scope
-    )
-
-    expect(loaded.gatewayUrl).toBe('http://127.0.0.1:3001')
-    expect(loaded.token).toBe('legacy-user-token')
-    expect(window.localStorage.getItem('hula-chat-openclaw-config::@bob:hula.im')).toBe(
-      '{"gatewayUrl":"http://127.0.0.1:3001","autoConnect":true,"reconnect":true,"reconnectInterval":3000,"maxReconnectAttempts":5,"heartbeatInterval":30000,"temperature":0.7,"maxTokens":4096,"topP":1,"presencePenalty":0,"frequencyPenalty":0}'
-    )
-    expect(setSecureSecretMock).toHaveBeenCalledWith('hula-chat-openclaw-token::@bob:hula.im', 'legacy-user-token')
-  })
-
-  it('stores only the openclaw gateway url in localStorage on save', async () => {
-    await saveRobotOpenClawConfig({
-      gatewayUrl: 'http://127.0.0.1:20000',
-      token: 'new-token',
-      autoConnect: false,
-      reconnect: true,
-      reconnectInterval: 4500,
-      maxReconnectAttempts: 7,
-      heartbeatInterval: 45000,
-      temperature: 1.1,
-      maxTokens: 8192,
-      topP: 1.0,
-      presencePenalty: 0.0,
-      frequencyPenalty: 0.0
-    })
-
-    expect(window.localStorage.getItem('hula-chat-openclaw-config')).toBe(
-      '{"gatewayUrl":"http://127.0.0.1:20000","autoConnect":false,"reconnect":true,"reconnectInterval":4500,"maxReconnectAttempts":7,"heartbeatInterval":45000,"temperature":1.1,"maxTokens":8192,"topP":1,"presencePenalty":0,"frequencyPenalty":0}'
-    )
-    expect(setSecureSecretMock).toHaveBeenCalledWith('hula-chat-openclaw-token', 'new-token')
+    expect(loadRobotAiProvider(scope)).toBe('hula')
+    expect(window.localStorage.getItem('hula-chat-ai-provider::@alice:hula.im')).toBe('hula')
   })
 })

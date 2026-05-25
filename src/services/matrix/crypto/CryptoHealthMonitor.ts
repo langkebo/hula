@@ -94,7 +94,7 @@ export class CryptoHealthMonitor {
         await this.triggerKeyRequests()
       }
 
-      logger.debug('加密健康检查完成', this.status)
+      // 健康检查完成不输出日志，避免定时刷屏
     } catch (err) {
       logger.error('加密健康检查失败:', err)
     }

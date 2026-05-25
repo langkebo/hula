@@ -138,8 +138,11 @@ export function createMatrixClientLifecycleManager(deps: MatrixClientLifecycleDe
     clearTokenRefreshTimer()
     if (!refreshToken || !expiresInMs || expiresInMs <= 0) return
 
-    const refreshAt = Math.max(expiresInMs - 60000, 30000)
-    logger.info(`[TokenRefresh] 已调度 Token 刷新: ${refreshAt}ms 后`)
+    // Matrix 规范中 expires_in 是秒，需转换为毫秒
+    // 如果值小于 1000，说明传入的是秒而非毫秒
+    const expiresInMsActual = expiresInMs < 1000 ? expiresInMs * 1000 : expiresInMs
+    const refreshAt = Math.max(expiresInMsActual - 60000, 30000)
+    logger.info(`[TokenRefresh] 已调度 Token 刷新: ${refreshAt}ms 后 (原始值: ${expiresInMs})`)
     tokenRefreshTimer = setTimeout(() => {
       void tryRefreshToken(refreshToken)
     }, refreshAt)
@@ -164,11 +167,14 @@ export function createMatrixClientLifecycleManager(deps: MatrixClientLifecycleDe
         deps.setSlidingSync(null)
       }
 
+      // 在启动客户端之前注册事件监听器，确保不遗漏初始 sync 事件
+      deps.setupEventListeners()
+
       const startOpts = createStartClientOptions(INITIAL_CLIENT_RETRY_COUNT, slidingSync)
       await client.startClient(startOpts)
 
-      deps.updateConnectionState('CONNECTED')
-      deps.setupEventListeners()
+      // startClient 返回后 sync 可能仍在进行中，
+      // 连接状态由 syncListener 中的 mapSyncStateToConnectionState 管理
       logger.info('客户端启动成功')
     } catch (err) {
       deps.updateConnectionState('ERROR')

@@ -358,7 +358,7 @@ async function startAudioTest() {
     updateAudioLevel()
     showFeedback(t('setting.voice_video.microphone_test_started'), 'success')
   } catch (error) {
-    logger.error('Failed to start microphone test', error)
+    logger.warn('Failed to start microphone test', error)
     showFeedback(t('setting.voice_video.microphone_access_failed'), 'error')
   }
 }

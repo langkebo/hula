@@ -6,7 +6,7 @@
         <svg class="size-14px color-[--hula-color-warning-400]">
           <use href="#local"></use>
         </svg>
-        <p class="text-14px font-medium color-[--hula-text-primary]">实时位置共享</p>
+        <p class="text-14px font-medium color-[--hula-text-primary]">{{ t('chat.beacon.live_location') }}</p>
       </div>
 
       <div class="flex-y-center gap-4px">
@@ -26,14 +26,18 @@
     <!-- 状态面板 -->
     <div class="relative rounded-6px overflow-hidden bg-[--hula-surface-app] h-80px flex-col-center gap-8px">
       <template v-if="isActive">
-        <p class="text-12px color-[--hula-text-secondary]">剩余时间: {{ remainingTimeText }}</p>
-        <n-button size="small" type="primary" secondary @click.stop="handleJoinClick">查看位置</n-button>
+        <p class="text-12px color-[--hula-text-secondary]">
+          {{ t('chat.beacon.remaining_time') }} {{ remainingTimeText }}
+        </p>
+        <n-button size="small" type="primary" secondary @click.stop="handleJoinClick">
+          {{ t('chat.beacon.view_location') }}
+        </n-button>
       </template>
       <template v-else>
         <svg class="size-24px color-[--hula-text-quaternary]">
           <use href="#time-out"></use>
         </svg>
-        <span class="text-12px color-[--hula-text-quaternary]">本次位置共享已结束</span>
+        <span class="text-12px color-[--hula-text-quaternary]">{{ t('chat.beacon.ended') }}</span>
       </template>
     </div>
   </main>
@@ -41,6 +45,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
@@ -50,6 +55,8 @@ import { useTimerManager } from '@/utils/TimerManager'
 defineOptions({
   inheritAttrs: false
 })
+
+const { t } = useI18n()
 
 /**
  * Beacon 消息组件 - 用于显示实时位置共享消息

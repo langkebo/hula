@@ -105,11 +105,50 @@ class MatrixContactService {
         limit
       })
 
-      return response.results.map((user: { user_id: string; display_name?: string; avatar_url?: string }) => ({
+      const results = response.results.map((user: { user_id: string; display_name?: string; avatar_url?: string }) => ({
         userId: user.user_id,
         displayName: user.display_name ?? undefined,
         avatarUrl: user.avatar_url ?? undefined
       }))
+
+      // 如果用户目录搜索也没有结果，且输入看起来像 Matrix 用户 ID，尝试直接获取 profile
+      if (results.length === 0 && trimmedQuery.startsWith('@') && trimmedQuery.includes(':')) {
+        try {
+          const profile = await client.getUserProfile(trimmedQuery)
+          if (profile) {
+            results.push({
+              userId: trimmedQuery,
+              displayName: profile.displayname ?? undefined,
+              avatarUrl: profile.avatar_url ?? undefined
+            })
+          }
+        } catch {
+          // profile 不存在，忽略
+        }
+      }
+
+      // 如果仍然没有结果，尝试将输入作为 localpart 构造完整 Matrix ID 进行 profile lookup
+      if (results.length === 0 && !trimmedQuery.startsWith('@')) {
+        try {
+          const currentUserId = client.getUserId()
+          const domain = currentUserId?.split(':')[1]
+          if (domain) {
+            const fullUserId = `@${trimmedQuery}:${domain}`
+            const profile = await client.getUserProfile(fullUserId)
+            if (profile) {
+              results.push({
+                userId: fullUserId,
+                displayName: profile.displayname ?? undefined,
+                avatarUrl: profile.avatar_url ?? undefined
+              })
+            }
+          }
+        } catch {
+          // profile 不存在，忽略
+        }
+      }
+
+      return results
     } catch (err) {
       if (this.isClientNotReadyError(err)) {
         if (!this.hasLoggedSearchBeforeClientReady) {

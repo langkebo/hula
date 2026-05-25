@@ -91,7 +91,9 @@
                       <div class="text-(12px [--hula-text-secondary])">
                         {{ groupStore.getUserInfo(announcement.uid)?.name }}
                       </div>
-                      <div class="text-(12px [#909090])">{{ formatTimestamp(announcement?.timestamp) }}</div>
+                      <div class="text-(12px [--hula-text-tertiary])">
+                        {{ formatTimestamp(announcement?.timestamp) }}
+                      </div>
                     </n-flex>
                   </n-flex>
                   <div
@@ -174,7 +176,7 @@
         <div v-if="announList.length > 0" class="w-full h-40px flex-center mt-10px">
           <!-- <n-button v-if="!isLast" class="bg-[--button-bg]" @click="handleLoadMore">加载更多</n-button> -->
           <img v-if="isLoading" class="size-16px" src="@/assets/img/loading.svg" alt="加载中" />
-          <span v-if="isLast && !isLoading" class="text-[12px] color-[#909090]">
+          <span v-if="isLast && !isLoading" class="text-[12px] color-[--hula-text-tertiary]">
             {{ t('announcement.list.noMore') }}
           </span>
         </div>

@@ -134,7 +134,7 @@ const handleAvatarError = (event: Event) => {
   }
 
   &--selected {
-    background-color: #e8f4f1;
+    background-color: var(--hula-color-primary-100);
     box-shadow: inset 0 0 0 1px var(--color-primary);
   }
 }

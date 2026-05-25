@@ -11,7 +11,9 @@ const { matrixClientServiceMock, getHomeserverUrlMock, matrixCapabilityServiceMo
   const matrixClientServiceMock = {
     getClient: getClientMock,
     isLoggedIn: vi.fn(() => false),
-    loginWithPassword: vi.fn(),
+    login: vi.fn(),
+    loginWithToken: vi.fn(),
+    completeSSOLogin: vi.fn(),
     logout: vi.fn(),
     on: vi.fn(),
     initialize: vi.fn(),
@@ -61,6 +63,7 @@ describe('MatrixStore', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.resetAllMocks()
   })
 
@@ -136,6 +139,76 @@ describe('MatrixStore', () => {
 
       expect(matrixClientServiceMock.startClient).toHaveBeenCalled()
       expect(matrixCapabilityServiceMock.refreshCapabilities).toHaveBeenCalled()
+    })
+  })
+
+  describe('post-login startup budget', () => {
+    it('returns from token restore when client startup does not settle in time', async () => {
+      vi.useFakeTimers()
+      const store = useMatrixStore()
+
+      matrixClientServiceMock.loginWithToken.mockResolvedValue({
+        success: true,
+        userId: '@restore:matrix.test',
+        accessToken: 'restore-token'
+      })
+      matrixClientServiceMock.startClient.mockReturnValue(new Promise(() => {}))
+
+      const loginPromise = store.loginWithToken('restore-token', '@restore:matrix.test')
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      await expect(loginPromise).resolves.toBe(true)
+      expect(store.userId).toBe('@restore:matrix.test')
+      expect(store.accessToken).toBe('restore-token')
+      expect(matrixCapabilityServiceMock.refreshCapabilities).not.toHaveBeenCalled()
+    })
+
+    it('returns from password login when capability detection exceeds the startup budget', async () => {
+      vi.useFakeTimers()
+      const store = useMatrixStore()
+
+      matrixClientServiceMock.login.mockResolvedValue({
+        success: true,
+        userId: '@alice:matrix.test',
+        deviceId: 'ALICEDEVICE',
+        accessToken: 'alice-token'
+      })
+      matrixClientServiceMock.startClient.mockResolvedValue(undefined)
+      matrixCapabilityServiceMock.refreshCapabilities.mockReturnValue(new Promise(() => {}))
+
+      const loginPromise = store.login('alice', 'pw', 'HuLa Test Device')
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      await expect(loginPromise).resolves.toBe(true)
+      expect(store.userId).toBe('@alice:matrix.test')
+      expect(store.deviceId).toBe('ALICEDEVICE')
+      expect(store.accessToken).toBe('alice-token')
+      expect(matrixClientServiceMock.startClient).toHaveBeenCalledTimes(1)
+      expect(matrixCapabilityServiceMock.refreshCapabilities).toHaveBeenCalledTimes(1)
+    })
+
+    it('returns from SSO login when post-login startup continues in the background', async () => {
+      vi.useFakeTimers()
+      const store = useMatrixStore()
+
+      matrixClientServiceMock.completeSSOLogin.mockResolvedValue({
+        success: true,
+        userId: '@sso:matrix.test',
+        deviceId: 'SSODEVICE',
+        accessToken: 'sso-token'
+      })
+      matrixClientServiceMock.startClient.mockResolvedValue(undefined)
+      matrixCapabilityServiceMock.refreshCapabilities.mockReturnValue(new Promise(() => {}))
+
+      const loginPromise = store.completeSSOLogin('mock-login-token')
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      await expect(loginPromise).resolves.toBe(true)
+      expect(store.userId).toBe('@sso:matrix.test')
+      expect(store.deviceId).toBe('SSODEVICE')
+      expect(store.accessToken).toBe('sso-token')
+      expect(matrixClientServiceMock.startClient).toHaveBeenCalledTimes(1)
+      expect(matrixCapabilityServiceMock.refreshCapabilities).toHaveBeenCalledTimes(1)
     })
   })
 })

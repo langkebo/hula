@@ -3,12 +3,16 @@ import { type Friend, FriendEvent, type FriendManager, type FriendRequest } from
 // Extend FriendStatus for local UI needs
 export type FriendStatus = 'pending' | 'accepted' | 'rejected' | 'favorite' | 'normal' | 'blocked' | 'hidden'
 
-import { error, info } from '@tauri-apps/plugin-log'
+import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
 import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
-import { type SynapseFriendInfo, synapseRustExtensionsService } from '../SynapseRustExtensionsService'
+import {
+  type SynapseFriendInfo,
+  type SynapseFriendRequest,
+  synapseRustExtensionsService
+} from '../SynapseRustExtensionsService'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
 
 export type { Friend, FriendRequest }
@@ -45,6 +49,10 @@ class MatrixFriendService {
     incomingRequests: [],
     outgoingRequests: []
   }
+  /** 好友请求轮询定时器（后端不推送事件，需要前端定时拉取） */
+  private pollTimer: ReturnType<typeof setInterval> | null = null
+  /** 轮询间隔（毫秒） */
+  private static readonly POLL_INTERVAL = 30_000
 
   async initialize(): Promise<void> {
     try {
@@ -54,6 +62,8 @@ class MatrixFriendService {
           this.hasLoggedMissingFriendManager = true
           info('[MatrixFriend] FriendManager 未在客户端上找到，已降级到好友 REST 接口')
         }
+        // 即使 FriendManager 不可用，也启动轮询（使用 REST API）
+        this.startPolling()
         return
       }
       this.hasLoggedMissingFriendManager = false
@@ -100,6 +110,7 @@ class MatrixFriendService {
 
     if (this.observedClient !== client || this.friendManager !== manager) {
       if (this.friendManager && this.friendManager !== manager) {
+        this.stopPolling()
         this.friendManager.stop()
         this.friendManager.removeAllListeners()
       }
@@ -131,6 +142,7 @@ class MatrixFriendService {
       await manager.start()
       this.managerStarted = true
       await this.updateSyncState()
+      this.startPolling()
     }
 
     return manager
@@ -148,8 +160,81 @@ class MatrixFriendService {
     return friend.user_id ?? ''
   }
 
+  /**
+   * 启动好友请求轮询
+   * 后端 synapse-rust 不推送好友请求事件，需要前端定时拉取
+   */
+  private startPolling(): void {
+    this.stopPolling()
+    this.pollTimer = setInterval(async () => {
+      try {
+        await this.pollFriendRequests()
+      } catch (err) {
+        warn(`[MatrixFriend] 轮询好友请求失败: ${err}`)
+      }
+    }, MatrixFriendService.POLL_INTERVAL)
+  }
+
+  /** 停止好友请求轮询 */
+  private stopPolling(): void {
+    if (this.pollTimer !== null) {
+      clearInterval(this.pollTimer)
+      this.pollTimer = null
+    }
+  }
+
+  /** 轮询好友请求，检测新增/变更的请求 */
+  private async pollFriendRequests(): Promise<void> {
+    const prevIncomingIds = new Set(this.syncState.incomingRequests.map((r) => r.user_id))
+    const prevOutgoingIds = new Set(this.syncState.outgoingRequests.map((r) => r.user_id))
+
+    if (this.friendManager && this.managerStarted) {
+      // FriendManager 可用时，通过 SDK 拉取
+      await this.updateSyncState()
+    } else {
+      // FriendManager 不可用时，通过 REST API 拉取
+      try {
+        const pending = await synapseRustExtensionsService.getPendingRequests()
+        this.syncState = {
+          ...this.syncState,
+          incomingRequests: (pending.incoming ?? []).map((r) => this.normalizeSynapseFriendRequest(r)),
+          outgoingRequests: (pending.outgoing ?? []).map((r) => this.normalizeSynapseFriendRequest(r))
+        }
+      } catch (err) {
+        warn(`[MatrixFriend] REST API 轮询好友请求失败: ${err}`)
+        return
+      }
+    }
+
+    // 检测新增的入站好友请求
+    const newIncoming = this.syncState.incomingRequests.filter((r) => !prevIncomingIds.has(r.user_id))
+    for (const request of newIncoming) {
+      this.emit('requestReceived', request)
+    }
+    if (newIncoming.length > 0) {
+      info(`[MatrixFriend] 轮询发现 ${newIncoming.length} 个新好友请求`)
+    }
+
+    // 检测出站请求变化
+    const newOutgoing = this.syncState.outgoingRequests.filter((r) => !prevOutgoingIds.has(r.user_id))
+    if (newIncoming.length > 0 || newOutgoing.length > 0) {
+      this.emit('sync', this.syncState)
+    }
+  }
+
   private getRequestUserId(request: FriendRequest): string {
     return request.user_id ?? ''
+  }
+
+  /** 将 REST API 返回的好友请求转换为 FriendRequest 格式 */
+  private normalizeSynapseFriendRequest(req: SynapseFriendRequest): FriendRequest {
+    return {
+      user_id: req.requester,
+      message: req.message,
+      status: req.status === 'declined' ? 'rejected' : req.status,
+      timestamp: req.created_ts,
+      direction: 'incoming'
+    }
   }
 
   private normalizeFriend(friend: Friend | SynapseFriendInfo): Friend {
@@ -307,16 +392,24 @@ class MatrixFriendService {
 
   async isFriend(userId: string): Promise<boolean> {
     const manager = await this.ensureFriendManager(false)
-    if (!manager) return false
 
     try {
-      if (typeof manager.checkFriendship === 'function') {
-        return await manager.checkFriendship(userId)
+      if (manager) {
+        if (typeof manager.checkFriendship === 'function') {
+          return await manager.checkFriendship(userId)
+        }
+        const friends = await manager.getFriends()
+        return friends.some((f: Friend) => this.getFriendUserId(f) === userId)
       }
-      const friends = await manager.getFriends()
-      return friends.some((f: Friend) => this.getFriendUserId(f) === userId)
     } catch (err) {
-      error(`[MatrixFriend] 检查好友关系失败: ${err}`)
+      error(`[MatrixFriend] FriendManager 检查好友关系失败，回退到 REST API: ${err}`)
+    }
+
+    // FriendManager 不可用时，回退到 REST API
+    try {
+      return await synapseRustExtensionsService.checkFriendship(userId)
+    } catch (restErr) {
+      error(`[MatrixFriend] REST API 检查好友关系也失败: ${restErr}`)
       return false
     }
   }
@@ -332,19 +425,43 @@ class MatrixFriendService {
   }
 
   async getIncomingRequests(): Promise<FriendRequest[]> {
+    const manager = await this.ensureFriendManager(false)
+
     try {
-      return (await this.ensureFriendManager(false))?.getIncomingRequests() ?? []
+      if (manager) {
+        return await manager.getIncomingRequests()
+      }
     } catch (err) {
-      error(`[MatrixFriend] 获取入站好友请求失败: ${err}`)
+      error(`[MatrixFriend] FriendManager 获取入站好友请求失败，回退到 REST API: ${err}`)
+    }
+
+    // FriendManager 不可用时，回退到 REST API
+    try {
+      const pending = await synapseRustExtensionsService.getPendingRequests()
+      return pending.incoming as unknown as FriendRequest[]
+    } catch (restErr) {
+      error(`[MatrixFriend] REST API 获取入站好友请求也失败: ${restErr}`)
       return []
     }
   }
 
   async getOutgoingRequests(): Promise<FriendRequest[]> {
+    const manager = await this.ensureFriendManager(false)
+
     try {
-      return (await this.ensureFriendManager(false))?.getOutgoingRequests() ?? []
+      if (manager) {
+        return await manager.getOutgoingRequests()
+      }
     } catch (err) {
-      error(`[MatrixFriend] 获取出站好友请求失败: ${err}`)
+      error(`[MatrixFriend] FriendManager 获取出站好友请求失败，回退到 REST API: ${err}`)
+    }
+
+    // FriendManager 不可用时，回退到 REST API
+    try {
+      const pending = await synapseRustExtensionsService.getPendingRequests()
+      return pending.outgoing as unknown as FriendRequest[]
+    } catch (restErr) {
+      error(`[MatrixFriend] REST API 获取出站好友请求也失败: ${restErr}`)
       return []
     }
   }
@@ -370,6 +487,48 @@ class MatrixFriendService {
       }
       info(`[MatrixFriend] 发送好友请求成功: ${userId}`)
     } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+
+      // 409 已存在待处理的好友请求，属于正常业务场景，不应作为错误
+      if (errMsg.includes('already exists') || errMsg.includes('M_USER_IN_USE') || errMsg.includes('409')) {
+        info(`[MatrixFriend] 好友请求已存在: ${userId}`)
+        return
+      }
+
+      // FriendManager 失败时降级到 REST API
+      if (manager) {
+        try {
+          await synapseRustExtensionsService.sendFriendRequest(userId, reason)
+          info(`[MatrixFriend] 发送好友请求成功(REST降级): ${userId}`)
+          return
+        } catch (restErr) {
+          const restErrMsg = restErr instanceof Error ? restErr.message : String(restErr)
+          // REST 降级也返回 409，同样属于正常场景
+          if (
+            restErrMsg.includes('already exists') ||
+            restErrMsg.includes('M_USER_IN_USE') ||
+            restErrMsg.includes('409')
+          ) {
+            info(`[MatrixFriend] 好友请求已存在(REST): ${userId}`)
+            return
+          }
+          error(`[MatrixFriend] REST API 发送好友请求也失败: ${restErr}`)
+        }
+      }
+
+      // 好友端点不可用时，回退到创建 DM 房间作为添加好友的替代方案
+      if (errMsg.includes('不可用') || errMsg.includes('unavailable') || errMsg.includes('404')) {
+        info(`[MatrixFriend] 好友端点不可用，回退到创建 DM 房间: ${userId}`)
+        try {
+          const { matrixRoomDirectMessageService } = await import('../room/DirectMessageService')
+          await matrixRoomDirectMessageService.createDirectRoom(userId)
+          info(`[MatrixFriend] 已创建 DM 房间作为好友替代: ${userId}`)
+          return
+        } catch (dmErr) {
+          error(`[MatrixFriend] 创建 DM 房间也失败: ${dmErr}`)
+        }
+      }
+
       error(`[MatrixFriend] 发送好友请求失败: ${err}`)
       throw err
     }
@@ -387,14 +546,25 @@ class MatrixFriendService {
   }
 
   async cancelFriendRequest(userId: string): Promise<void> {
-    const manager = await this.requireFriendManager()
+    const manager = await this.ensureFriendManager(false)
 
     try {
-      await manager.cancelFriendRequest(userId)
-      info(`[MatrixFriend] 取消好友请求成功: ${userId}`)
+      if (manager) {
+        await manager.cancelFriendRequest(userId)
+        info(`[MatrixFriend] 取消好友请求成功: ${userId}`)
+        return
+      }
     } catch (err) {
-      error(`[MatrixFriend] 取消好友请求失败: ${err}`)
-      throw err
+      error(`[MatrixFriend] FriendManager 取消好友请求失败，回退到 REST API: ${err}`)
+    }
+
+    // FriendManager 不可用或失败时，回退到 REST API
+    try {
+      await synapseRustExtensionsService.cancelFriendRequest(userId)
+      info(`[MatrixFriend] 取消好友请求成功(REST降级): ${userId}`)
+    } catch (restErr) {
+      error(`[MatrixFriend] REST API 取消好友请求也失败: ${restErr}`)
+      throw restErr
     }
   }
 

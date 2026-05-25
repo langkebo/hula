@@ -163,7 +163,7 @@ onUnmounted(() => {
 }
 
 :deep(.dark) .user-menu-dropdown {
-  background-color: #1a1a1a;
+  background-color: var(--hula-surface-app);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
@@ -206,7 +206,7 @@ onUnmounted(() => {
 }
 
 .menu-item-danger {
-  color: #d5304f;
+  color: var(--hula-color-danger-500);
 }
 
 .menu-item-disabled {

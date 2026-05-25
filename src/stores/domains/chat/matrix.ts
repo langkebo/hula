@@ -10,6 +10,7 @@ import {
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixStore')
+const POST_LOGIN_STARTUP_TIMEOUT_MS = 15_000
 
 export const useMatrixStore = defineStore(
   StoresEnum.MATRIX,
@@ -25,6 +26,38 @@ export const useMatrixStore = defineStore(
 
     const isLoggedIn = computed(() => !!userId.value && !!accessToken.value)
     const isConnected = computed(() => connectionState.value === 'CONNECTED')
+
+    async function settlePostLoginStartup(): Promise<void> {
+      let timeoutHandle: ReturnType<typeof setTimeout> | undefined
+      let startupError: Error | null = null
+      const startupTask = (async () => {
+        try {
+          await matrixClientService.startClient()
+          await matrixCapabilityService.refreshCapabilities()
+        } catch (error) {
+          startupError = error instanceof Error ? error : new Error(String(error))
+          logger.warn('登录后 Matrix 启动收尾失败:', error)
+        }
+      })()
+
+      await Promise.race([
+        startupTask,
+        new Promise<void>((resolve) => {
+          timeoutHandle = setTimeout(() => {
+            logger.warn(`登录后 Matrix 启动收尾超过 ${POST_LOGIN_STARTUP_TIMEOUT_MS}ms，转为后台继续`)
+            resolve()
+          }, POST_LOGIN_STARTUP_TIMEOUT_MS)
+        })
+      ])
+
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle)
+      }
+
+      if (startupError) {
+        logger.error('Matrix startClient 失败，同步将不可用:', (startupError as Error).message)
+      }
+    }
 
     async function initialize(config: MatrixClientConfig): Promise<void> {
       try {
@@ -65,8 +98,7 @@ export const useMatrixStore = defineStore(
           accessToken.value = result.accessToken ?? null
           connectionState.value = 'CONNECTED'
 
-          await matrixClientService.startClient()
-          matrixCapabilityService.refreshCapabilities()
+          await settlePostLoginStartup()
           return true
         } else {
           connectionState.value = 'ERROR'
@@ -103,8 +135,7 @@ export const useMatrixStore = defineStore(
           accessToken.value = result.accessToken ?? null
           connectionState.value = 'CONNECTED'
 
-          await matrixClientService.startClient()
-          matrixCapabilityService.refreshCapabilities()
+          await settlePostLoginStartup()
           return true
         } else {
           connectionState.value = 'ERROR'
@@ -120,19 +151,18 @@ export const useMatrixStore = defineStore(
       }
     }
 
-    async function loginWithToken(token: string, uid: string): Promise<boolean> {
+    async function loginWithToken(token: string, uid: string, refreshToken?: string): Promise<boolean> {
       try {
         lastError.value = null
         connectionState.value = 'CONNECTING'
-        const result = await matrixClientService.loginWithToken(token, uid)
+        const result = await matrixClientService.loginWithToken(token, uid, refreshToken)
 
         if (result.success) {
           userId.value = result.userId ?? null
           accessToken.value = result.accessToken ?? null
           connectionState.value = 'CONNECTED'
 
-          await matrixClientService.startClient()
-          matrixCapabilityService.refreshCapabilities()
+          await settlePostLoginStartup()
           return true
         } else {
           connectionState.value = 'ERROR'

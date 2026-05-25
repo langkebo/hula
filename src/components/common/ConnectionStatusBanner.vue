@@ -3,7 +3,7 @@
     <div v-if="showBanner" class="connection-status-banner" :class="`connection-status-banner--${state}`">
       <div class="connection-status-banner__content">
         <div class="connection-status-banner__icon">
-          <n-spin v-if="state === 'reconnecting'" :size="14" />
+          <n-spin v-if="state === 'reconnecting' || state === 'connecting'" :size="14" />
           <svg
             v-else-if="state === 'offline'"
             width="14"
@@ -81,12 +81,14 @@ const matrixStore = useMatrixStore()
 
 const diagnosing = ref(false)
 
-const showBanner = computed(() => props.state !== 'online')
+const showBanner = computed(() => props.state !== 'online' && props.state !== 'idle')
 
 const statusText = computed(() => {
   switch (props.state) {
     case 'offline':
       return t('connection.offline')
+    case 'connecting':
+      return t('connection.reconnecting')
     case 'reconnecting':
       if (props.retryCount > 0) {
         return t('connection.reconnecting_attempt', { count: props.retryCount, max: props.maxRetries })
@@ -148,6 +150,11 @@ const onDiagnose = async () => {
 
 .connection-status-banner--offline {
   background: var(--hula-color-warning-500);
+  color: var(--hula-text-inverse);
+}
+
+.connection-status-banner--connecting {
+  background: var(--hula-color-info-500);
   color: var(--hula-text-inverse);
 }
 

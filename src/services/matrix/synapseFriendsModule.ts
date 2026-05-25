@@ -1,4 +1,4 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
 import { MATRIX_PATHS } from './paths'
 import {
   extractPendingRequests,
@@ -36,7 +36,7 @@ export function createSynapseFriendsModule(context: SynapseFriendsModuleContext)
     async getFriends(): Promise<SynapseFriendInfo[]> {
       try {
         if (!(await context.isFriendEndpointAvailable())) {
-          warn('[SynapseRust] 好友端点不可用')
+          info('[SynapseRust] 好友端点不可用，已降级')
           return []
         }
 

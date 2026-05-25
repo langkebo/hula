@@ -2,6 +2,7 @@
   <div
     role="listitem"
     tabindex="0"
+    :data-test="`session-item-${roomId}`"
     :aria-label="ariaLabel"
     :aria-current="isActive ? 'true' : undefined"
     :aria-pressed="isBatchMode ? isBatchSelected : undefined"
@@ -11,7 +12,7 @@
     @keydown.enter.prevent="handleClick"
     @keydown.space.prevent="handleClick"
     @contextmenu="handleContextMenu">
-    <n-flex align="center" :size="10">
+    <n-flex align="center" :size="12">
       <n-checkbox
         v-if="isBatchMode"
         :checked="isBatchSelected"
@@ -25,9 +26,9 @@
           :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
           round />
       </n-badge>
-      <n-flex vertical :size="2" class="flex-1 min-w-0">
+      <n-flex vertical :size="4" class="flex-1 min-w-0">
         <n-flex align="center" justify="space-between" :gap="8">
-          <span class="text-14px font-medium truncate flex-1">{{ displayName }}</span>
+          <span class="hula-room-list-item__name truncate flex-1">{{ displayName }}</span>
           <n-flex align="center" :size="4" shrink="0">
             <n-icon v-if="isEncrypted" size="14" class="text-[--hula-text-tertiary]">
               <svg><use href="#lock" /></svg>
@@ -35,7 +36,7 @@
             <n-icon v-if="isBurnAfterRead" size="14" class="text-[--hula-color-danger-500]">
               <svg><use href="#fire" /></svg>
             </n-icon>
-            <span class="text-11px text-[--hula-text-tertiary] whitespace-nowrap">{{ timeText }}</span>
+            <span class="hula-room-list-item__time whitespace-nowrap">{{ timeText }}</span>
           </n-flex>
         </n-flex>
         <n-flex align="center" justify="space-between" :gap="8">
@@ -49,13 +50,13 @@
             <n-tag v-if="hasLowPriorityTag" size="tiny" round :bordered="false" class="shrink-0">
               {{ t('message.message_list.low_priority_tag') }}
             </n-tag>
-            <span v-if="typingText" class="text-12px text-[--hula-color-primary-500] truncate flex-1">
+            <span v-if="typingText" class="hula-room-list-item__typing truncate flex-1">
               {{ typingText }}
             </span>
-            <span v-else-if="lastMessageText" class="text-12px text-[--hula-text-secondary] truncate flex-1">
+            <span v-else-if="lastMessageText" class="hula-room-list-item__preview truncate flex-1">
               {{ lastMessageText }}
             </span>
-            <span v-else class="text-12px text-[--hula-text-tertiary] truncate flex-1">--</span>
+            <span v-else class="hula-room-list-item__placeholder truncate flex-1">--</span>
           </n-flex>
           <n-flex align="center" :gap="4" shrink="0">
             <n-tag
@@ -199,6 +200,7 @@ const itemClasses = computed(() => ({
   'hula-room-list-item--batch': isBatchMode.value,
   'hula-room-list-item--batch-selected': isBatchSelected.value,
   'hula-room-list-item--top': isTop.value,
+  'hula-room-list-item--muted': props.classes?.muted ?? false,
   'hula-room-list-item--dm': isDm.value,
   'hula-room-list-item--encrypted': isEncrypted.value,
   'hula-room-list-item--burn': isBurnAfterRead.value
@@ -207,7 +209,7 @@ const itemClasses = computed(() => ({
 const ariaLabel = computed(() => {
   const parts: string[] = [displayName.value]
   if (lastMessageText.value) parts.push(lastMessageText.value)
-  if (badgeCount.value > 0) parts.push(`${badgeCount.value}条未读`)
+  if (badgeCount.value > 0) parts.push(`${badgeCount.value}`)
   return parts.join('，')
 })
 
@@ -238,24 +240,34 @@ const handleBatchToggle = () => {
 
 <style lang="scss" scoped>
 .hula-room-list-item {
-  padding: 12px 16px;
+  min-height: 76px;
+  padding: 12px;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.2s var(--hula-motion-ease-standard),
+    box-shadow 0.2s var(--hula-motion-ease-standard),
+    opacity 0.2s var(--hula-motion-ease-standard);
   user-select: none;
-  border-radius: 6px;
-  margin: 2px 8px;
+  border-radius: 12px;
+  margin: 0 8px 4px;
+  border: 1px solid transparent;
 
   &:hover {
     background: var(--hula-surface-list-hover);
   }
 
+  &:focus-visible {
+    outline: 2px solid var(--hula-color-primary-500);
+    outline-offset: 2px;
+  }
+
+  &:active {
+    background: var(--hula-surface-session-active);
+  }
+
   &--selected {
     background: var(--hula-surface-session-active);
-
-    .text-14px {
-      font-weight: 600;
-      color: var(--hula-text-primary);
-    }
+    box-shadow: var(--hula-surface-session-active-shadow);
   }
 
   &--batch {
@@ -264,12 +276,16 @@ const handleBatchToggle = () => {
 
   &--batch-selected {
     background: var(--hula-color-primary-100);
-    box-shadow: inset 0 0 0 1px var(--hula-color-primary-300);
+    box-shadow: inset 0 0 0 1px var(--hula-color-primary-300-alpha);
   }
 
   &--top {
-    border-left: 3px solid var(--hula-brand-primary);
-    padding-left: calc(16px - 3px);
+    border-left: 3px solid var(--hula-color-primary-500);
+    padding-left: 9px;
+  }
+
+  &--muted {
+    opacity: 0.65;
   }
 
   &--dm {
@@ -306,6 +322,46 @@ const handleBatchToggle = () => {
   flex-shrink: 0;
 }
 
+.hula-room-list-item__name {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--hula-text-primary);
+}
+
+.hula-room-list-item__time {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--hula-text-tertiary);
+}
+
+.hula-room-list-item__preview,
+.hula-room-list-item__placeholder {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.hula-room-list-item__preview {
+  color: var(--hula-text-secondary);
+}
+
+.hula-room-list-item__placeholder {
+  color: var(--hula-text-tertiary);
+}
+
+.hula-room-list-item__typing {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--hula-color-primary-500);
+}
+
+.hula-room-list-item--selected {
+  .hula-room-list-item__name {
+    font-weight: 600;
+    color: var(--hula-text-primary);
+  }
+}
+
 @keyframes burn-pulse {
   0%,
   100% {
@@ -315,6 +371,12 @@ const handleBatchToggle = () => {
   50% {
     opacity: 0.5;
     transform: scale(0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hula-room-list-item--burn::after {
+    animation: none;
   }
 }
 </style>

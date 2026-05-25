@@ -118,6 +118,7 @@ import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHist
 import { useSearchFeedbackSummary } from '@/composables/common/useSearchFeedbackSummary'
 import { useFriends } from '@/composables/useFriends'
 import { ThemeEnum } from '@/enums'
+import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -242,12 +243,27 @@ const handleSearch = async (value?: string) => {
       limit: 1
     })
 
+    let foundUserId: string | null = null
+
     if (searchResults.length > 0) {
-      const userId = searchResults[0].user_id
-      const profile = await contactStore.getUserProfile(userId)
+      foundUserId = searchResults[0].user_id
+    } else {
+      // 回退到 MatrixContactService 的多级搜索（exact → fuzzy → user_directory → profile lookup）
+      try {
+        const fallbackResults = await matrixContactService.searchUsers(query)
+        if (fallbackResults.length > 0) {
+          foundUserId = fallbackResults[0].userId
+        }
+      } catch {
+        // 回退搜索也失败，忽略
+      }
+    }
+
+    if (foundUserId) {
+      const profile = await contactStore.getUserProfile(foundUserId)
       searchResult.value = profile
 
-      if (await contactStore.isFriend(userId)) {
+      if (await contactStore.isFriend(foundUserId)) {
         showFeedback(t('friend.add.already_friend'), 'info', 'polite')
       }
     } else {

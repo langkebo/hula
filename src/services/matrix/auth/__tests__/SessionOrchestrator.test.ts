@@ -32,7 +32,11 @@ const {
   matrixStoreMock: {
     isInitialized: false,
     lastError: null as string | null,
+    userId: null as string | null,
+    accessToken: null as string | null,
+    homeserverUrl: null as string | null,
     refreshToken: undefined as string | undefined,
+    getClient: vi.fn(),
     initialize: vi.fn(),
     login: vi.fn(),
     completeSSOLogin: vi.fn(),
@@ -149,6 +153,11 @@ const { createSessionStorePort } = await import('../SessionOrchestrator')
 describe('createSessionStorePort', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    matrixStoreMock.userId = null
+    matrixStoreMock.accessToken = null
+    matrixStoreMock.homeserverUrl = null
+    matrixStoreMock.getClient.mockReset()
+    matrixStoreMock.getClient.mockReturnValue(null)
     getMatrixSessionSnapshotMock.mockReturnValue({
       userId: '@alice:example.com',
       accessToken: 'token',
@@ -169,6 +178,35 @@ describe('createSessionStorePort', () => {
     expect(port.matrix.getUserId()).toBe('@alice:example.com')
     expect(port.matrix.getAccessToken()).toBe('token')
     expect(port.matrix.getHomeserverUrl()).toBe('https://matrix.example.com')
+    expect(port.matrix.isLoggedIn()).toBe(true)
+  })
+
+  it('falls back to the matrix store client when accessor is not registered', () => {
+    const storeClient = { kind: 'store-client' }
+    getMatrixClientMock.mockReturnValue(null)
+    matrixStoreMock.getClient.mockReturnValue(storeClient)
+
+    const port = createSessionStorePort()
+
+    expect(port.matrix.getClient()).toBe(storeClient)
+    expect(matrixStoreMock.getClient).toHaveBeenCalledTimes(1)
+  })
+
+  it('falls back to matrix store session fields when lightweight snapshot is not ready', () => {
+    getMatrixSessionSnapshotMock.mockReturnValue({
+      userId: null,
+      accessToken: null,
+      homeserverUrl: null
+    })
+    matrixStoreMock.userId = '@restore:example.com'
+    matrixStoreMock.accessToken = 'restore-token'
+    matrixStoreMock.homeserverUrl = 'https://restore.example.com'
+
+    const port = createSessionStorePort()
+
+    expect(port.matrix.getUserId()).toBe('@restore:example.com')
+    expect(port.matrix.getAccessToken()).toBe('restore-token')
+    expect(port.matrix.getHomeserverUrl()).toBe('https://restore.example.com')
     expect(port.matrix.isLoggedIn()).toBe(true)
   })
 

@@ -16,16 +16,6 @@ const logger = createLogger('RobotCenterStore')
 
 const BUILTIN_ROBOT_DEFINITIONS: RobotDefinition[] = [
   {
-    id: 'openclaw-assistant',
-    name: 'OpenClaw Assistant',
-    description: '房间内 AI 对话与总结助手',
-    provider: 'openclaw',
-    supportsRoomDeployment: true,
-    supportedMessageKinds: ['text', 'rich_text', 'link_card', 'tool_result'],
-    requiredPermissions: ['room.robot.deploy', 'room.robot.invoke'],
-    version: '0.1.0'
-  },
-  {
     id: 'trendradar-briefing',
     name: 'TrendRadar Briefing',
     description: '用于热点摘要、资讯播报与链接卡片推送',

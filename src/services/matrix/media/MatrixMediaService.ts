@@ -106,9 +106,27 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
     const accessToken = client.getAccessToken()
     if (accessToken && downloadUrl.startsWith(client.getHomeserverUrl())) {
+      // 优先使用 Bearer 认证头下载
       let response = await fetch(downloadUrl, {
         headers: { Authorization: `Bearer ${accessToken}` }
       })
+      // 如果 Bearer 认证失败，尝试认证媒体下载端点 (MSC3916)
+      if (!response.ok && response.status === 404) {
+        try {
+          const mxcMatch = mediaUrl.match(/^mxc:\/\/([^/]+)\/(.+)$/)
+          if (mxcMatch) {
+            const serverName = mxcMatch[1]
+            const mediaId = mxcMatch[2]
+            const authDownloadUrl = `${client.getHomeserverUrl()}_matrix/client/v1/media/download/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`
+            response = await fetch(authDownloadUrl, {
+              headers: { Authorization: `Bearer ${accessToken}` }
+            })
+          }
+        } catch {
+          // 认证下载端点不可用，继续尝试其他方式
+        }
+      }
+      // 最后尝试 access_token 查询参数
       if (!response.ok) {
         const separator = downloadUrl.includes('?') ? '&' : '?'
         response = await fetch(`${downloadUrl}${separator}access_token=${encodeURIComponent(accessToken)}`)

@@ -28,7 +28,9 @@
 
       <!-- 内容部分 -->
       <div class="preview-content">
-        <h3 class="preview-title line-clamp-2" :title="body?.title">{{ body?.title || '未知链接' }}</h3>
+        <h3 class="preview-title line-clamp-2" :title="body?.title">
+          {{ body?.title || t('chat.link_preview.unknown_link') }}
+        </h3>
 
         <p v-if="body?.description" class="preview-desc line-clamp-3" :title="body?.description">
           {{ body?.description }}
@@ -49,6 +51,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { LinkPreviewBody } from '@/services/types'
@@ -56,6 +59,8 @@ import type { LinkPreviewBody } from '@/services/types'
 defineOptions({
   inheritAttrs: false
 })
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{

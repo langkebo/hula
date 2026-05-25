@@ -127,7 +127,7 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
     try {
       defaultDirectory.value = await getUserDataRootAbsoluteDir()
     } catch (error) {
-      logger.error('获取 userData 根目录失败，回退到 appCacheDir:', error)
+      logger.warn('获取 userData 根目录失败，回退到 appCacheDir:', error)
       defaultDirectory.value = await appCacheDir()
     }
   }

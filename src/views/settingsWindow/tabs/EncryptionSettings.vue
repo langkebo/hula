@@ -9,6 +9,34 @@
           <div class="key-desc">{{ keyStatus }}</div>
         </div>
       </div>
+      <div v-if="!e2eeFullySetup && encryptionEnabled" class="e2ee-onboarding-hint">
+        <Icon icon="mdi:shield-alert" :width="18" />
+        <span>{{ t('setting.encryption.e2ee_incomplete_hint') }}</span>
+        <n-button size="small" type="primary" @click="showOnboardingDialog = true">
+          {{ t('setting.encryption.quick_setup') }}
+        </n-button>
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">{{ t('setting.encryption.security_key_section') }}</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.encryption.security_key_label') }}</span>
+          <span class="setting-desc">
+            {{
+              securityKeySetup
+                ? t('setting.encryption.security_key_configured')
+                : t('setting.encryption.security_key_not_configured')
+            }}
+          </span>
+        </div>
+        <n-button size="small" @click="showSecurityKeyDialog = true">
+          {{ securityKeySetup ? t('setting.encryption.manage') : t('setting.encryption.setup_action') }}
+        </n-button>
+      </div>
     </div>
 
     <n-divider />
@@ -137,6 +165,13 @@
 
     <KeyRotationDialog v-model:show="showKeyRotationDialog" @updated="loadRotationStatus" />
 
+    <SecurityKeySetupDialog v-model:show="showSecurityKeyDialog" @success="handleSecurityKeyCreated" />
+
+    <E2EEOnboardingDialog
+      v-model:show="showOnboardingDialog"
+      @complete="handleOnboardingComplete"
+      @skip="handleOnboardingSkip" />
+
     <n-modal
       v-model:show="deviceKeyVisible"
       preset="card"
@@ -158,13 +193,15 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CrossSigningDialog from '@/components/encryption/CrossSigningDialog.vue'
 import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
+import E2EEOnboardingDialog from '@/components/encryption/E2EEOnboardingDialog.vue'
 import KeyBackupRestoreDialog from '@/components/encryption/KeyBackupRestoreDialog.vue'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 import KeyRotationDialog from '@/components/encryption/KeyRotationDialog.vue'
+import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
-import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
+import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('EncryptionSettings')
@@ -175,10 +212,8 @@ defineOptions({
 
 const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
+const encryptionStore = useEncryptionStore()
 
-const backupEnabled = ref(false)
-const backupVersion = ref('v1')
-const deviceVerified = ref(false)
 const deviceKeyVisible = ref(false)
 const deviceFingerprint = ref('')
 const showBackupDialog = ref(false)
@@ -186,10 +221,18 @@ const showRestoreDialog = ref(false)
 const showVerifyDialog = ref(false)
 const showCrossSigningDialog = ref(false)
 const showKeyRotationDialog = ref(false)
+const showSecurityKeyDialog = ref(false)
+const showOnboardingDialog = ref(false)
 const createBackupLoading = ref(false)
-const crossSigningSetup = ref(false)
-const needsRotation = ref(false)
-const encryptionEnabled = ref(false)
+
+const encryptionEnabled = computed(() => encryptionStore.encryptionEnabled)
+const securityKeySetup = computed(() => encryptionStore.securityKeyConfigured)
+const crossSigningSetup = computed(() => encryptionStore.crossSigningSetup)
+const backupEnabled = computed(() => encryptionStore.backupEnabled)
+const backupVersion = computed(() => encryptionStore.backupVersion)
+const needsRotation = computed(() => encryptionStore.needsRotation)
+const deviceVerified = computed(() => encryptionStore.deviceVerified)
+const e2eeFullySetup = computed(() => encryptionStore.e2eeFullySetup)
 
 const keyStatus = computed(() => {
   if (!encryptionEnabled.value) {
@@ -210,10 +253,9 @@ onMounted(async () => {
 })
 
 async function loadEncryptionInfo() {
-  const { userId, deviceId, isCryptoEnabled } = matrixEncryptionContextService.getCurrentSessionContext()
-  encryptionEnabled.value = isCryptoEnabled
+  await encryptionStore.loadEncryptionStatus()
 
-  if (!isCryptoEnabled) {
+  if (!encryptionEnabled.value) {
     return
   }
 
@@ -223,33 +265,14 @@ async function loadEncryptionInfo() {
       deviceFingerprint.value = formatFingerprint(fingerprint)
     }
 
-    if (userId && deviceId) {
-      deviceVerified.value = await matrixVerificationService.isDeviceVerified(userId, deviceId)
-    }
-
-    const backupInfo = await matrixEncryptionService.getKeyBackupInfo()
-    if (backupInfo) {
-      backupEnabled.value = true
-      backupVersion.value = `v${backupInfo.version || 1}`
-    }
-
-    const savedBackup = localStorage.getItem('hula-backup-enabled')
-    if (savedBackup !== null) {
-      backupEnabled.value = savedBackup === 'true'
-    }
-
-    const crossSigningInfo = await matrixEncryptionService.getCrossSigningInfo()
-    crossSigningSetup.value = crossSigningInfo.isSetup
-
-    await loadRotationStatus()
+    await encryptionStore.loadDeviceVerification()
   } catch (error) {
     logger.error('Failed to load encryption details', error)
   }
 }
 
 async function loadRotationStatus() {
-  const rotationStatus = await matrixEncryptionService.getKeyRotationStatus()
-  needsRotation.value = rotationStatus.needsRotation
+  await encryptionStore.loadRotationStatus()
 }
 
 function formatFingerprint(key: string): string {
@@ -259,7 +282,6 @@ function formatFingerprint(key: string): string {
 function handleBackupToggle(value: boolean) {
   if (!encryptionEnabled.value) {
     showFeedback(t('setting.encryption.enable_required'), 'warning')
-    backupEnabled.value = false
     return
   }
 
@@ -276,8 +298,7 @@ function handleCreateBackup() {
 }
 
 function handleBackupCreated() {
-  backupEnabled.value = true
-  backupVersion.value = `v${Date.now()}`
+  encryptionStore.markBackupEnabled(String(Date.now()))
   showFeedback(t('setting.encryption.backup_created'), 'success')
 }
 
@@ -294,7 +315,7 @@ function handleVerifyDevice() {
 }
 
 function handleVerifySuccess() {
-  deviceVerified.value = true
+  encryptionStore.markDeviceVerified()
   showFeedback(t('setting.encryption.verify_success'), 'success')
 }
 
@@ -308,6 +329,20 @@ function handleShowDeviceKey() {
 function copyFingerprint() {
   navigator.clipboard.writeText(deviceFingerprint.value.replace(/\s/g, ''))
   showFeedback(t('setting.encryption.copied'), 'success')
+}
+
+function handleSecurityKeyCreated() {
+  encryptionStore.markSecurityKeyConfigured()
+  showFeedback(t('setting.encryption.security_key_created'), 'success')
+}
+
+function handleOnboardingComplete() {
+  loadEncryptionInfo()
+  showFeedback(t('setting.encryption.onboarding_complete'), 'success')
+}
+
+function handleOnboardingSkip() {
+  showFeedback(t('setting.encryption.onboarding_skip'), 'warning')
 }
 </script>
 
@@ -434,5 +469,17 @@ function copyFingerprint() {
   color: var(--hula-text-quaternary);
   text-align: center;
   margin-top: var(--hula-space-2);
+}
+
+.e2ee-onboarding-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--hula-space-2);
+  margin-top: var(--hula-space-3);
+  padding: var(--hula-space-3);
+  background-color: var(--hula-color-warning-100);
+  border-radius: var(--hula-radius-sm);
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-secondary);
 }
 </style>

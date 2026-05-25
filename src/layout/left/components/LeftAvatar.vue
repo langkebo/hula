@@ -20,7 +20,7 @@
           round />
 
         <div
-          class="bg-[--left-bg-color] text-10px rounded-50% size-12px absolute bottom--2px right--2px border-(2px solid [--left-bg-color])"
+          class="bg-[--left-bg-color] text-[var(--text-xs)] rounded-50% size-12px absolute bottom--2px right--2px border-(2px solid [--left-bg-color])"
           @click.stop="openContent(t('home.profile_card.online_status'), 'onlineStatus', 320, 480)">
           <img :src="statusIcon" :alt="statusTitle" class="rounded-50% size-full" />
         </div>
@@ -40,11 +40,11 @@
             round
             :color="cssVar('--avatar-fallback-color')"
             :fallback-src="cssVar('--avatar-fallback-src')"
-            class="size-68px text-20px select-none cursor-default" />
+            class="size-68px text-[var(--text-xl)] select-none cursor-default" />
 
           <n-flex :size="10" class="text-[--hula-text-primary]" justify="center" vertical>
-            <span class="text-18px">{{ userStore.userInfo?.name }}</span>
-            <span class="text-(12px [--info-text-color])">
+            <span class="text-[var(--text-lg)]">{{ userStore.userInfo?.name }}</span>
+            <span class="text-[var(--text-sm)] text-[--info-text-color]">
               {{ t('home.profile_card.labels.account') }} {{ userStore.userInfo?.account }}
             </span>
             <n-flex
@@ -60,7 +60,7 @@
 
         <n-flex :size="5" align="center" class="item-hover" vertical>
           <svg class="size-20px"><use href="#thumbs-up"></use></svg>
-          <span class="text-12px">9999+</span>
+          <span class="text-[var(--text-sm)]">9999+</span>
         </n-flex>
       </n-flex>
       <!-- 地址 -->

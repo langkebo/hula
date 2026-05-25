@@ -193,7 +193,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-color);
+  background: var(--hula-surface-app);
   border-radius: 8px;
   overflow: hidden;
 
@@ -224,7 +224,7 @@ onUnmounted(() => {
     font-weight: 500;
 
     .n-icon {
-      color: var(--primary-color);
+      color: var(--color-primary);
     }
   }
 

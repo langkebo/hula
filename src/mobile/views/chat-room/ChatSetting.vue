@@ -325,8 +325,8 @@ const {
   handleFileChange,
   handleCrop: onCrop
 } = useAvatarUpload({
-  onSuccess: async (downloadUrl) => {
-    avatarValue.value = downloadUrl
+  onSuccess: async (mxcUrl) => {
+    avatarValue.value = mxcUrl
   }
 })
 

@@ -16,8 +16,8 @@
         <div
           v-if="isMac()"
           @click="isShow = false"
-          class="mac-close z-10 relative size-13px shadow-inner bg-#ed6a5eff rounded-50% select-none">
-          <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+          class="mac-close z-10 relative size-13px shadow-inner bg-[--hula-color-primary-500] rounded-50% select-none">
+          <svg class="hidden size-7px color-[--hula-text-inverse] select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>
@@ -25,18 +25,18 @@
         <svg
           v-if="isWindows()"
           @click="isShow = false"
-          class="z-10 color-#333 w-12px h-12px absolute top-6px right-6px cursor-pointer select-none">
+          class="z-10 color-[--hula-text-primary] w-12px h-12px absolute top-6px right-6px cursor-pointer select-none">
           <use href="#close"></use>
         </svg>
       </div>
 
       <n-flex justify="space-between" align="center">
         <n-flex :size="4" align="center" class="p-18px truncate flex-1 min-w-0">
-          <p class="text-(16px [--hula-text-primary]) leading-loose truncate flex-1 min-w-0">
+          <p class="text-[var(--text-base)] text-[--hula-text-primary] leading-loose truncate flex-1 min-w-0">
             {{ t('home.action.plugin_manage') }}
           </p>
           <div
-            class="ml-6px p-[4px_8px] size-fit bg-[--bate-bg] rounded-8px text-(12px [--bate-color] center) flex-shrink-0">
+            class="ml-6px p-[4px_8px] size-fit bg-[--bate-bg] rounded-8px text-[var(--text-xs)] text-[--bate-color] text-center flex-shrink-0">
             Beta
           </div>
         </n-flex>

@@ -267,6 +267,22 @@ export type I18nKeys = {
     }
   },
   "ai_assistant": {
+    "openclaw": {
+      "title": "AI 助手",
+      "new_chat": "新对话",
+      "welcome": "你好！我是 AI 助手，请问有什么可以帮助你的？",
+      "input_placeholder": "输入消息...",
+      "reasoning": "思维过程",
+      "thinking": "思考中...",
+      "error_default": "抱歉，发生了错误，请重试。",
+      "retry": "重试",
+      "quick_action": {
+        "code": "帮我写一段代码",
+        "explain": "解释一下这个概念",
+        "news": "今天有什么新闻",
+        "movie": "推荐一些电影"
+      }
+    },
     "title": "AI 助手",
     "welcome": "你好，我是 AI 助手",
     "welcome_desc": "我可以帮助你翻译文本、总结内容、编写代码等。请选择下方功能或直接输入问题。",
@@ -914,6 +930,60 @@ export type I18nKeys = {
       }
     }
   },
+  "chat": {
+    "footer": {
+      "emoji": "表情",
+      "screenshot": "截图",
+      "send_file": "发送文件",
+      "send_image": "发送图片",
+      "voice_message": "语音消息",
+      "location": "位置",
+      "burn_after_read": "阅后即焚",
+      "chat_history": "聊天记录"
+    },
+    "header": {
+      "video_call": "视频通话",
+      "voice_call": "语音通话",
+      "start_meeting": "发起会议",
+      "screen_share": "屏幕共享",
+      "group_qr_code": "群二维码",
+      "more_options": "更多选项"
+    },
+    "burn": {
+      "message_destroyed": "此消息已销毁",
+      "destroyed": "已销毁",
+      "waiting_read": "等待阅读"
+    },
+    "location": {
+      "title": "位置",
+      "cannot_display": "无法展示"
+    },
+    "link_preview": {
+      "unknown_link": "未知链接",
+      "unknown_source": "未知来源"
+    },
+    "beacon": {
+      "live_location": "实时位置共享",
+      "remaining_time": "剩余时间:",
+      "view_location": "查看位置",
+      "ended": "本次位置共享已结束"
+    },
+    "text": {
+      "copy_url": "复制网址"
+    },
+    "privacy": {
+      "screenshot_protected": "此聊天受保护，禁止截图"
+    },
+    "recall": {
+      "cannot_recall": "无法撤回"
+    },
+    "multi_msg": {
+      "view_forwarded": "查看 {count} 条转发消息"
+    },
+    "url_preview": {
+      "loading": "加载预览..."
+    }
+  },
   "chatHistory": {
     "title": "聊天记录",
     "search": {
@@ -1543,6 +1613,91 @@ export type I18nKeys = {
       "undecryptable": "有 {count} 条消息无法解密，正在尝试恢复密钥",
       "all_good": "加密状态正常，所有安全检查已通过",
       "recheck": "重新检查"
+    },
+    "security_key": {
+      "dialog_title_intro": "设置安全密钥",
+      "dialog_title_generating": "生成安全密钥",
+      "dialog_title_show_key": "保存安全密钥",
+      "dialog_title_verify": "验证安全密钥",
+      "dialog_title_success": "设置完成",
+      "intro_primary": "安全密钥用于加密保护你的加密密钥。如果你在其他设备登录或丢失密钥，可以使用安全密钥恢复加密数据。",
+      "intro_warning": "请妥善保存安全密钥，丢失后将无法恢复加密数据！",
+      "start_setup": "生成安全密钥",
+      "use_passphrase": "使用自定义短语",
+      "passphrase_desc": "输入一个容易记住但难以猜测的短语作为安全密钥",
+      "passphrase_input_label": "安全短语",
+      "passphrase_input_placeholder": "输入安全短语（至少8个字符）",
+      "passphrase_confirm_label": "确认短语",
+      "passphrase_confirm_placeholder": "再次输入安全短语",
+      "passphrase_too_short": "安全短语至少需要8个字符",
+      "passphrase_mismatch": "两次输入的短语不一致",
+      "generating": "正在生成安全密钥...",
+      "your_recovery_key": "你的恢复密钥",
+      "your_security_key": "你的安全密钥",
+      "key_warning": "请将此密钥保存在安全的地方，不要分享给任何人",
+      "passphrase_warning": "请记住此短语，丢失后将无法恢复加密数据",
+      "key_saved_confirm": "我已安全保存密钥",
+      "passphrase_saved_confirm": "我已记住此安全短语",
+      "copy_key": "复制密钥",
+      "download_key": "下载密钥",
+      "next_step": "下一步",
+      "confirm_complete": "下一步",
+      "verify_prompt": "请输入你保存的安全密钥以确认",
+      "verify_passphrase_prompt": "请输入你的安全短语以确认",
+      "key_placeholder": "输入安全密钥...",
+      "passphrase_placeholder": "输入安全短语...",
+      "verify_key": "验证",
+      "key_mismatch": "密钥不匹配，请重新输入",
+      "verify_success": "安全密钥验证成功",
+      "verify_failed": "安全密钥验证失败",
+      "create_failed": "创建安全密钥失败",
+      "copy_manual": "请手动复制密钥",
+      "copy_success": "已复制到剪贴板",
+      "copy_failed": "复制失败",
+      "download_success": "下载成功",
+      "success_title": "安全密钥设置完成！",
+      "success_desc": "你的加密密钥现在受到安全密钥的保护。请妥善保存安全密钥，以便在新设备上恢复加密数据。"
+    },
+    "onboarding": {
+      "dialog_title": "设置加密",
+      "welcome_title": "设置端到端加密",
+      "welcome_desc": "端到端加密保护你的消息安全。完成以下设置后，你的消息将只能由你和对话参与者阅读。",
+      "step_security_key": "设置安全密钥",
+      "step_security_key_desc": "保护你的加密密钥",
+      "step_cross_signing": "启用交叉签名",
+      "step_cross_signing_desc": "验证你的设备",
+      "step_key_backup": "启用密钥备份",
+      "step_key_backup_desc": "安全备份加密密钥",
+      "step_backup": "启用密钥备份",
+      "step_backup_desc": "安全备份加密密钥",
+      "skip": "跳过",
+      "start_setup": "开始设置",
+      "next": "下一步",
+      "back": "返回",
+      "finish": "完成",
+      "generating_key": "正在生成安全密钥...",
+      "key_generated": "安全密钥已生成",
+      "recovery_key": "恢复密钥",
+      "copy_key": "复制密钥",
+      "download_key": "下载密钥",
+      "key_warning": "请将此密钥保存在安全的地方，不要分享给任何人",
+      "key_saved_confirm": "我已安全保存密钥",
+      "save_key_warning": "请保存安全密钥后再继续",
+      "setting_up_cross_signing": "正在设置交叉签名...",
+      "cross_signing_done": "交叉签名设置成功",
+      "cross_signing_success": "交叉签名设置成功",
+      "cross_signing_failed": "交叉签名设置失败",
+      "setting_up_backup": "正在启用密钥备份...",
+      "backup_done": "密钥备份已启用",
+      "backup_success": "密钥备份已启用",
+      "backup_failed": "密钥备份启用失败",
+      "generate_key_failed": "生成安全密钥失败",
+      "copy_success": "已复制到剪贴板",
+      "copy_failed": "复制失败",
+      "download_success": "下载成功",
+      "complete": "完成",
+      "complete_title": "加密设置完成！",
+      "complete_desc": "你的消息现在受到端到端加密保护。"
     }
   },
   "error": {
@@ -1673,7 +1828,9 @@ export type I18nKeys = {
       "online": "在线",
       "offline": "离线",
       "friend_list_label": "好友列表",
-      "new_request_announcement": "收到 {count} 条新的好友请求"
+      "new_request_announcement": "收到 {count} 条新的好友请求",
+      "pending_requests": "{count} 条待处理好友请求",
+      "view_all": "查看全部"
     },
     "filter": {
       "all": "全部",
@@ -2763,7 +2920,8 @@ export type I18nKeys = {
     },
     "extensions": {
       "not_initialized": "SynapseRustExtensionsService 未初始化",
-      "api_request_failed_with_status": "API 请求失败 ({status})"
+      "api_request_failed_with_status": "API 请求失败 ({status})",
+      "rate_limited": "请求过于频繁，请稍后再试"
     },
     "account": {
       "cannot_get_user_id": "无法获取用户ID"
@@ -4621,6 +4779,15 @@ export type I18nKeys = {
       "password_changed": "密码已修改",
       "password_change_failed": "密码修改失败",
       "password_change_failed_with_hint": "密码修改失败，请检查当前密码是否正确",
+      "password_too_short": "密码长度不能少于8个字符",
+      "password_too_long": "密码长度不能超过128个字符",
+      "password_need_uppercase": "密码必须包含至少一个大写字母",
+      "password_need_lowercase": "密码必须包含至少一个小写字母",
+      "password_need_digit": "密码必须包含至少一个数字",
+      "password_need_special": "密码必须包含至少一个特殊字符（如 !@#$%^&*）",
+      "password_too_weak": "密码强度不足，请设置更复杂的密码",
+      "password_wrong_current": "当前密码不正确，请重新输入",
+      "logout_other_devices": "修改密码后登出其他设备",
       "danger_zone": "危险操作区",
       "deactivate_account": "停用账户",
       "deactivate_account_desc": "永久删除您的账户和数据",
@@ -4985,7 +5152,12 @@ export type I18nKeys = {
       "invite_blocklist_removed": "已从邀请黑名单移除",
       "user_already_in_allowlist": "该用户已在白名单中",
       "invite_allowlist_added": "已添加到邀请白名单",
-      "invite_allowlist_removed": "已从邀请白名单移除"
+      "invite_allowlist_removed": "已从邀请白名单移除",
+      "security_key_label": "安全密钥",
+      "security_key_configured_desc": "安全密钥已设置，你的加密密钥受到保护",
+      "security_key_not_configured_desc": "未设置安全密钥，建议设置以保护加密数据",
+      "setup_action": "设置",
+      "security_key_created": "安全密钥设置成功"
     },
     "sessions": {
       "title": "会话",
@@ -5686,7 +5858,16 @@ export type I18nKeys = {
         "restoring_progress": "正在恢复密钥... {progress}%",
         "restore_result_success": "成功恢复 {imported} 个密钥",
         "restore_result_failed": "恢复失败，请检查密钥是否正确"
-      }
+      },
+      "security_key_section": "安全密钥",
+      "security_key_label": "安全密钥",
+      "security_key_configured": "安全密钥已设置，你的加密密钥受到保护",
+      "security_key_not_configured": "未设置安全密钥，建议设置以保护加密数据",
+      "security_key_created": "安全密钥设置成功",
+      "e2ee_incomplete_hint": "加密设置尚未完成，建议完成设置以保护消息安全",
+      "quick_setup": "快速设置",
+      "onboarding_complete": "加密设置完成！",
+      "onboarding_skip": "已跳过加密设置，可稍后在设置中完成"
     },
     "threepid": {
       "title": "账号绑定",
@@ -5872,6 +6053,43 @@ export type I18nKeys = {
     "no_replies": "暂无回复",
     "reply_placeholder": "输入回复内容...",
     "send_reply": "发送回复"
+  },
+  "trendradar": {
+    "title": "TrendRadar 资讯助手",
+    "connected": "已连接",
+    "disconnected": "未连接",
+    "hot_news": "热点新闻",
+    "refresh": "刷新",
+    "fetching": "正在获取资讯...",
+    "connection_error": "无法连接到 TrendRadar 服务",
+    "retry": "重试",
+    "no_hot_news": "暂无热点新闻",
+    "trending_topics": "趋势话题",
+    "loading": "加载中...",
+    "rss_subscriptions": "RSS 订阅",
+    "no_subscriptions": "暂无订阅内容",
+    "topic_analysis": "话题分析",
+    "analyze_placeholder": "输入想要分析的话题...",
+    "analyze": "分析",
+    "analyzing": "正在分析话题...",
+    "search_placeholder": "搜索关键词...",
+    "send": "发送",
+    "nav_hot": "热点",
+    "nav_search": "搜索",
+    "nav_trending": "趋势",
+    "nav_rss": "订阅",
+    "nav_analyze": "分析",
+    "search": "搜索",
+    "search_news_placeholder": "搜索新闻...",
+    "searching": "搜索中...",
+    "no_results": "未找到相关结果",
+    "no_trending_topics": "暂无趋势话题",
+    "view_details": "查看详情",
+    "just_now": "刚刚",
+    "hours_ago": "{hours}小时前",
+    "days_ago": "{days}天前",
+    "billion": "亿",
+    "ten_thousand": "万"
   },
   "utils": {
     "download_link_not_found": "未找到下载链接",

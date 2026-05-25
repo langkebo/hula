@@ -16,7 +16,7 @@
               <svg class="size-38px color-[--hula-text-quaternary]">
                 <use :href="`#${plugin.icon}`"></use>
               </svg>
-              <p class="text-(12px [--hula-text-secondary])">{{ plugin.title }}</p>
+              <p class="text-[var(--text-xs)] text-[--hula-text-secondary]">{{ plugin.title }}</p>
 
               <!-- 在下载中进度条 -->
               <n-flex
@@ -35,10 +35,14 @@
                   ]"
                   v-if="plugin.state === PluginEnum.DOWNLOADING"
                   class="bg-[--hula-color-info-400]">
-                  <p class="absolute-center text-(12px [--hula-color-info-500])">{{ plugin?.progress }}%</p>
+                  <p class="absolute-center text-[var(--text-xs)] text-[--hula-color-info-500]">
+                    {{ plugin?.progress }}%
+                  </p>
                 </div>
 
-                <p v-else class="text-(12px [--hula-color-info-500] center)">{{ t('home.plugins.actions.install') }}</p>
+                <p v-else class="text-[var(--text-xs)] text-[--hula-color-info-500] text-center">
+                  {{ t('home.plugins.actions.install') }}
+                </p>
               </n-flex>
 
               <!-- 闪光效果 -->
@@ -66,24 +70,28 @@
               <svg class="size-38px color-[--hula-text-secondary]">
                 <use :href="`#${plugin.iconAction || plugin.icon}`"></use>
               </svg>
-              <p class="text-(12px [--hula-text-secondary])">{{ plugin.title }}</p>
+              <p class="text-[var(--text-xs)] text-[--hula-text-secondary]">{{ plugin.title }}</p>
 
               <n-flex
                 v-if="plugin.state === PluginEnum.UNINSTALLING"
                 class="relative rounded-22px border-(1px solid [--hula-color-danger-500]) bg-[--hula-color-danger-100] p-[4px_8px]">
-                <p class="text-(12px [--hula-color-danger-500] center)">{{ t('home.plugins.status.uninstalling') }}</p>
+                <p class="text-[var(--text-xs)] text-[--hula-color-danger-500] text-center">
+                  {{ t('home.plugins.status.uninstalling') }}
+                </p>
               </n-flex>
 
               <n-flex
                 v-if="plugin.state === PluginEnum.BUILTIN"
                 class="relative rounded-22px border-(1px solid [--hula-text-tertiary]) bg-[--hula-surface-subtle] size-fit p-[4px_8px]">
-                <p class="text-(12px [--hula-text-tertiary] center)">{{ t('home.plugins.status.builtin') }}</p>
+                <p class="text-[var(--text-xs)] text-[--hula-text-tertiary] text-center">
+                  {{ t('home.plugins.status.builtin') }}
+                </p>
               </n-flex>
 
               <n-flex
                 v-if="plugin.state === PluginEnum.INSTALLED"
                 class="relative rounded-22px border-(1px solid [--hula-color-info-500]) bg-[--hula-color-info-100] p-[4px_8px]">
-                <p class="text-(12px [--hula-color-info-500] center)">{{ plugin.version }}</p>
+                <p class="text-[var(--text-xs)] text-[--hula-color-info-500] text-center">{{ plugin.version }}</p>
               </n-flex>
 
               <!-- 闪光效果 -->

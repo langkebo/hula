@@ -2,87 +2,120 @@
   <n-modal
     v-model:show="visible"
     preset="card"
-    :title="t('encryption.device_verify_dialog.title')"
-    style="width: 450px"
-    :mask-closable="false">
+    :title="t('setting.device_verify_dialog.title')"
+    style="width: 500px"
+    :mask-closable="false"
+    class="rounded-12px overflow-hidden shadow-lg">
     <n-spin :show="loading">
-      <div v-if="step === 'intro'" class="step-content">
-        <div class="intro-icon">
-          <Icon icon="mdi:shield-check" :width="64" />
-        </div>
-        <div class="intro-text">
-          <p>{{ t('encryption.device_verify_dialog.intro_primary') }}</p>
-          <p>{{ t('encryption.device_verify_dialog.intro_secondary') }}</p>
-        </div>
-        <div class="device-info-card">
-          <div class="info-row">
-            <span class="info-label">{{ t('encryption.device_verify_dialog.device_id') }}</span>
-            <span class="info-value">{{ deviceId }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">{{ t('encryption.device_verify_dialog.device_name') }}</span>
-            <span class="info-value">{{ deviceName || t('encryption.device_verify_dialog.unnamed_device') }}</span>
-          </div>
-        </div>
-        <div class="step-actions">
-          <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
-          <n-button type="primary" @click="startVerification">
-            {{ t('encryption.device_verify_dialog.start_verification') }}
-          </n-button>
-        </div>
-      </div>
+      <div class="px-24px py-20px">
+        <!-- 步骤条引导 -->
+        <n-steps :current="currentStepIndex" class="mb-32px" size="small">
+          <n-step :title="t('setting.device_verify_dialog.step_intro', '确认设备')" />
+          <n-step :title="t('setting.device_verify_dialog.step_verify', '指纹核对')" />
+          <n-step :title="t('setting.device_verify_dialog.step_result', '完成')" />
+        </n-steps>
 
-      <div v-else-if="step === 'showKey'" class="step-content">
-        <div class="key-display">
-          <div class="key-label">{{ t('encryption.device_verify_dialog.fingerprint_label') }}</div>
-          <div class="fingerprint-display">
-            <div v-for="(chunk, index) in fingerprintChunks" :key="index" class="fingerprint-chunk">
-              {{ chunk }}
+        <!-- Step: Intro -->
+        <div v-if="step === 'intro'" class="flex flex-col items-center text-center">
+          <div class="mb-16px text-[var(--hula-color-primary-500)] bg-[var(--hula-surface-search)] p-16px rounded-full">
+            <Icon icon="mdi:shield-check" :width="48" />
+          </div>
+          <div class="mb-24px text-[var(--text-sm)] color-[var(--hula-text-secondary)]">
+            <p class="mb-8px">{{ t('setting.device_verify_dialog.intro_primary') }}</p>
+            <p>{{ t('setting.device_verify_dialog.intro_secondary') }}</p>
+          </div>
+          <div
+            class="w-full bg-[var(--hula-surface-panel)] border border-[var(--hula-border-default)] rounded-8px p-16px mb-24px text-left">
+            <div class="flex justify-between mb-12px">
+              <span class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)]">
+                {{ t('setting.device_verify_dialog.device_id') }}
+              </span>
+              <span class="text-[var(--text-xs)] font-medium color-[var(--hula-text-primary)] break-all ml-16px">
+                {{ deviceId }}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)]">
+                {{ t('setting.device_verify_dialog.device_name') }}
+              </span>
+              <span class="text-[var(--text-xs)] font-medium color-[var(--hula-text-primary)]">
+                {{ deviceName || t('setting.device_verify_dialog.unnamed_device') }}
+              </span>
             </div>
           </div>
-          <div class="key-hint">
-            <Icon icon="mdi:information" :width="16" />
-            <span>{{ t('encryption.device_verify_dialog.fingerprint_hint') }}</span>
+          <div class="w-full flex justify-end gap-12px">
+            <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
+            <n-button type="primary" @click="startVerification">
+              {{ t('setting.device_verify_dialog.start_verification') }}
+            </n-button>
           </div>
         </div>
-        <div class="verification-question">
-          <p>{{ t('encryption.device_verify_dialog.match_question') }}</p>
-        </div>
-        <div class="step-actions">
-          <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
-          <n-button type="error" @click="handleReject">
-            {{ t('encryption.device_verify_dialog.mismatch') }}
-          </n-button>
-          <n-button type="primary" @click="handleConfirm">
-            {{ t('encryption.device_verify_dialog.confirm_match') }}
-          </n-button>
-        </div>
-      </div>
 
-      <div v-else-if="step === 'success'" class="step-content">
-        <div class="success-icon">
-          <Icon icon="mdi:check-circle" :width="64" class="success-color" />
+        <!-- Step: Show Key -->
+        <div v-else-if="step === 'showKey'" class="flex flex-col items-center text-center">
+          <div
+            class="w-full bg-[var(--hula-surface-panel)] border border-[var(--hula-border-default)] rounded-8px p-24px mb-24px">
+            <div class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)] mb-16px">
+              {{ t('setting.device_verify_dialog.fingerprint_label') }}
+            </div>
+            <div
+              class="flex flex-wrap justify-center gap-8px font-mono text-[var(--text-lg)] font-bold tracking-wider color-[var(--hula-text-primary)]">
+              <div
+                v-for="(chunk, index) in fingerprintChunks"
+                :key="index"
+                class="bg-[var(--hula-surface-search)] px-8px py-4px rounded-6px">
+                {{ chunk }}
+              </div>
+            </div>
+            <div
+              class="mt-16px flex items-center justify-center gap-4px text-[var(--text-xs)] color-[var(--hula-color-warning-500)] bg-[var(--hula-color-warning-100)] py-8px px-12px rounded-6px">
+              <Icon icon="mdi:information" :width="16" />
+              <span>{{ t('setting.device_verify_dialog.fingerprint_hint') }}</span>
+            </div>
+          </div>
+          <div class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-24px">
+            <p>{{ t('setting.device_verify_dialog.match_question') }}</p>
+          </div>
+          <div class="w-full flex justify-end gap-12px">
+            <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
+            <n-button type="error" @click="handleReject" ghost>
+              {{ t('setting.device_verify_dialog.mismatch') }}
+            </n-button>
+            <n-button type="primary" @click="handleConfirm">
+              {{ t('setting.device_verify_dialog.confirm_match') }}
+            </n-button>
+          </div>
         </div>
-        <div class="success-text">
-          <h3>{{ t('encryption.device_verify_dialog.success_title') }}</h3>
-          <p>{{ t('encryption.device_verify_dialog.success_desc') }}</p>
-        </div>
-        <div class="step-actions">
-          <n-button type="primary" @click="handleClose">{{ t('common.close') }}</n-button>
-        </div>
-      </div>
 
-      <div v-else-if="step === 'rejected'" class="step-content">
-        <div class="error-icon">
-          <Icon icon="mdi:alert-circle" :width="64" class="error-color" />
+        <!-- Step: Success -->
+        <div v-else-if="step === 'success'" class="flex flex-col items-center text-center py-24px">
+          <div class="mb-16px text-[var(--hula-color-success-500)]">
+            <Icon icon="mdi:check-circle" :width="64" />
+          </div>
+          <h3 class="text-[var(--text-lg)] font-medium color-[var(--hula-text-primary)] mb-8px">
+            {{ t('setting.device_verify_dialog.success_title') }}
+          </h3>
+          <p class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-24px">
+            {{ t('setting.device_verify_dialog.success_desc') }}
+          </p>
+          <n-button type="primary" @click="handleClose" class="w-120px">{{ t('common.close') }}</n-button>
         </div>
-        <div class="error-text">
-          <h3>{{ t('encryption.device_verify_dialog.rejected_title') }}</h3>
-          <p>{{ t('encryption.device_verify_dialog.rejected_desc') }}</p>
-          <p class="warning-text">{{ t('encryption.device_verify_dialog.rejected_hint') }}</p>
-        </div>
-        <div class="step-actions">
-          <n-button @click="handleClose">{{ t('common.close') }}</n-button>
+
+        <!-- Step: Rejected -->
+        <div v-else-if="step === 'rejected'" class="flex flex-col items-center text-center py-24px">
+          <div class="mb-16px text-[var(--hula-color-danger-500)]">
+            <Icon icon="mdi:alert-circle" :width="64" />
+          </div>
+          <h3 class="text-[var(--text-lg)] font-medium color-[var(--hula-text-primary)] mb-8px">
+            {{ t('setting.device_verify_dialog.rejected_title') }}
+          </h3>
+          <p class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-8px">
+            {{ t('setting.device_verify_dialog.rejected_desc') }}
+          </p>
+          <p class="text-[var(--text-xs)] color-[var(--hula-color-danger-500)] mb-24px">
+            {{ t('setting.device_verify_dialog.rejected_hint') }}
+          </p>
+          <n-button @click="handleClose" class="w-120px">{{ t('common.close') }}</n-button>
         </div>
       </div>
     </n-spin>
@@ -129,6 +162,20 @@ const loading = ref(false)
 const fingerprint = ref('')
 const userId = ref('')
 
+const currentStepIndex = computed(() => {
+  switch (step.value) {
+    case 'intro':
+      return 1
+    case 'showKey':
+      return 2
+    case 'success':
+    case 'rejected':
+      return 3
+    default:
+      return 1
+  }
+})
+
 const fingerprintChunks = computed(() => {
   if (!fingerprint.value) return []
   return fingerprint.value.match(/.{1,4}/g) || []
@@ -172,7 +219,7 @@ async function startVerification() {
       t('encryption.device_verify_dialog.fingerprint_unavailable')
     step.value = 'showKey'
   } catch (error) {
-    logger.error('Failed to load device fingerprint:', error)
+    logger.warn('Failed to load device fingerprint:', error)
     showFeedback(t('encryption.device_verify_dialog.load_fingerprint_failed'), 'error')
   } finally {
     loading.value = false
@@ -217,7 +264,7 @@ function handleReject() {
   display: flex;
   justify-content: center;
   margin-bottom: 16px;
-  color: var(--primary-color, #1890ff);
+  color: var(--color-primary);
 }
 
 .intro-text {

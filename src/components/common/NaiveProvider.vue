@@ -50,6 +50,24 @@ defineOptions({ name: 'NaiveProvider' })
 const settingStore = useSettingStore()
 const { locale } = useI18n()
 
+/**
+ * 品牌色具体色值（供 Naive UI 颜色运算使用）。
+ * Naive UI 内部使用 seemly/rgba() 对颜色做运算（如计算 hover/pressed 状态），
+ * 无法解析 CSS 变量引用，必须传入具体色值。
+ * 注意：暗色模式下 primary 色值不变，danger 变为 #ff7875（在 darkThemeOverrides 中覆盖）。
+ */
+const primaryColors = {
+  500: '#13987f',
+  400: '#1ab292',
+  600: '#0f7a66',
+  200: 'rgba(19, 152, 127, 0.2)',
+  100: 'rgba(19, 152, 127, 0.1)'
+}
+
+const dangerColors = {
+  500: '#ff4d4f'
+}
+
 type NaiveLocalePack = {
   locale: NLocale
   dateLocale: NDateLocale
@@ -133,7 +151,7 @@ onUnmounted(() => {
 
 const commonTheme: GlobalThemeOverrides = {
   Badge: {
-    color: 'var(--hula-color-danger-500)'
+    color: dangerColors[500]
   },
   Input: {
     borderRadius: '10px',
@@ -143,10 +161,10 @@ const commonTheme: GlobalThemeOverrides = {
     boxShadowFocus: '0'
   },
   Checkbox: {
-    colorChecked: 'var(--hula-color-primary-500)',
-    borderChecked: '1px solid var(--hula-color-primary-500)',
-    borderFocus: '1px solid var(--hula-color-primary-500)',
-    boxShadowFocus: '0 0 0 2px color-mix(in srgb, var(--hula-color-primary-500) 20%, transparent)',
+    colorChecked: primaryColors[500],
+    borderChecked: `1px solid ${primaryColors[500]}`,
+    borderFocus: `1px solid ${primaryColors[500]}`,
+    boxShadowFocus: `0 0 0 2px ${primaryColors[200]}`,
     checkMarkColor: 'var(--hula-text-inverse)'
   },
   Tag: {
@@ -155,26 +173,26 @@ const commonTheme: GlobalThemeOverrides = {
   Button: {
     borderRadiusMedium: '10px',
     borderRadiusSmall: '6px',
-    colorPrimary: 'var(--hula-color-primary-500)',
-    colorHoverPrimary: 'var(--hula-color-primary-400)',
-    colorPressedPrimary: 'var(--hula-color-primary-600)',
-    colorFocusPrimary: 'var(--hula-color-primary-400)',
-    colorDisabledPrimary: 'var(--hula-color-primary-200)',
+    colorPrimary: primaryColors[500],
+    colorHoverPrimary: primaryColors[400],
+    colorPressedPrimary: primaryColors[600],
+    colorFocusPrimary: primaryColors[400],
+    colorDisabledPrimary: primaryColors[200],
     // 显式提供 secondary 颜色，防止 Naive UI 尝试使用 seemly/rgba 解析 CSS 变量
-    colorSecondaryPrimary: 'color-mix(in srgb, var(--hula-color-primary-500) 12%, transparent)',
-    colorSecondaryHoverPrimary: 'color-mix(in srgb, var(--hula-color-primary-500) 18%, transparent)',
-    colorSecondaryPressedPrimary: 'color-mix(in srgb, var(--hula-color-primary-500) 24%, transparent)',
-    textColorTextPrimary: 'var(--hula-color-primary-500)',
-    textColorGhostPrimary: 'var(--hula-color-primary-500)'
+    colorSecondaryPrimary: primaryColors[100],
+    colorSecondaryHoverPrimary: 'rgba(19, 152, 127, 0.18)',
+    colorSecondaryPressedPrimary: 'rgba(19, 152, 127, 0.24)',
+    textColorTextPrimary: primaryColors[500],
+    textColorGhostPrimary: primaryColors[500]
   },
   Tabs: {
     tabTextColorSegment: 'var(--hula-text-secondary)',
     tabPaddingMediumSegment: '4px',
-    tabTextColorActiveLine: 'var(--hula-color-primary-500)',
-    tabTextColorHoverLine: 'var(--hula-color-primary-500)',
-    tabTextColorActiveBar: 'var(--hula-color-primary-500)',
-    tabTextColorHoverBar: 'var(--hula-color-primary-500)',
-    barColor: 'var(--hula-color-primary-500)'
+    tabTextColorActiveLine: primaryColors[500],
+    tabTextColorHoverLine: primaryColors[500],
+    tabTextColorActiveBar: primaryColors[500],
+    tabTextColorHoverBar: primaryColors[500],
+    barColor: primaryColors[500]
   },
   Popover: {
     padding: '5px',
@@ -187,42 +205,42 @@ const commonTheme: GlobalThemeOverrides = {
     border: '1px solid var(--hula-surface-panel)'
   },
   Switch: {
-    railColorActive: 'var(--hula-color-primary-500)',
-    loadingColor: 'var(--hula-color-primary-500)',
-    boxShadowFocus: '0 0 0 2px color-mix(in srgb, var(--hula-color-primary-500) 20%, transparent)'
+    railColorActive: primaryColors[500],
+    loadingColor: primaryColors[500],
+    boxShadowFocus: `0 0 0 2px ${primaryColors[200]}`
   },
   Radio: {
-    dotColorActive: 'var(--hula-color-primary-500)',
-    buttonBorderColorActive: 'var(--hula-color-primary-500)',
-    buttonTextColorActive: 'var(--hula-color-primary-500)',
-    boxShadowFocus: '0 0 0 2px color-mix(in srgb, var(--hula-color-primary-500) 20%, transparent)'
+    dotColorActive: primaryColors[500],
+    buttonBorderColorActive: primaryColors[500],
+    buttonTextColorActive: primaryColors[500],
+    boxShadowFocus: `0 0 0 2px ${primaryColors[200]}`
   },
   Message: {
-    iconColorSuccess: 'var(--hula-color-primary-500)',
-    iconColorLoading: 'var(--hula-color-primary-500)',
-    loadingColor: 'var(--hula-color-primary-500)',
+    iconColorSuccess: primaryColors[500],
+    iconColorLoading: primaryColors[500],
+    loadingColor: primaryColors[500],
     borderRadius: '8px'
   },
   Slider: {
     handleSize: '12px',
     fontSize: '10px',
     markFontSize: '8px',
-    fillColor: 'var(--hula-color-primary-500)',
-    fillColorHover: 'var(--hula-color-primary-500)',
+    fillColor: primaryColors[500],
+    fillColorHover: primaryColors[500],
     indicatorBorderRadius: '8px'
   },
   Notification: {
     borderRadius: '8px'
   },
   Steps: {
-    indicatorBorderColorProcess: 'var(--hula-color-primary-500)',
-    indicatorColorProcess: 'var(--hula-color-primary-500)',
+    indicatorBorderColorProcess: primaryColors[500],
+    indicatorColorProcess: primaryColors[500],
     indicatorTextColorProcess: 'var(--hula-text-inverse)',
-    stepHeaderTextColorProcess: 'var(--hula-color-primary-500)',
+    stepHeaderTextColorProcess: primaryColors[500],
     indicatorIconColorProcess: 'var(--hula-text-inverse)'
   },
   LoadingBar: {
-    colorLoading: 'var(--hula-color-primary-500)'
+    colorLoading: primaryColors[500]
   }
 }
 
@@ -242,6 +260,9 @@ const lightThemeOverrides: GlobalThemeOverrides = {
 /** 深色模式的主题颜色 */
 const darkThemeOverrides: GlobalThemeOverrides = {
   ...commonTheme,
+  Badge: {
+    color: '#ff7875'
+  },
   Scrollbar: {
     color: 'color-mix(in srgb, var(--hula-text-inverse) 20%, transparent)',
     colorHover: 'color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)'

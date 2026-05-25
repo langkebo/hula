@@ -71,7 +71,7 @@
                 :disabled="emojiShow || recentEmojis.length < 4"
                 placement="top">
                 <template #trigger>
-                  <svg class="mr-18px" role="button" aria-label="表情">
+                  <svg class="mr-18px" role="button" :aria-label="t('chat.footer.emoji')">
                     <use href="#smiling-face"></use>
                   </svg>
                 </template>
@@ -99,7 +99,7 @@
           </n-popover>
 
           <div class="flex-center gap-2px mr-12px">
-            <svg @click="handleScreenshot()" role="button" aria-label="截图">
+            <svg @click="handleScreenshot()" role="button" :aria-label="t('chat.footer.screenshot')">
               <use href="#screenshot"></use>
             </svg>
             <n-popover
@@ -150,7 +150,7 @@
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
             <template #trigger>
               <div class="flex-center gap-2px mr-12px">
-                <svg @click="handleFileOpen" role="button" aria-label="发送文件">
+                <svg @click="handleFileOpen" role="button" :aria-label="t('chat.footer.send_file')">
                   <use href="#file2"></use>
                 </svg>
                 <svg style="width: 14px; height: 14px">
@@ -162,7 +162,7 @@
           </n-popover>
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
             <template #trigger>
-              <svg @click="handleImageOpen" class="mr-18px" role="button" aria-label="发送图片">
+              <svg @click="handleImageOpen" class="mr-18px" role="button" :aria-label="t('chat.footer.send_image')">
                 <use href="#photo"></use>
               </svg>
             </template>
@@ -170,7 +170,11 @@
           </n-popover>
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
             <template #trigger>
-              <svg @click="handleVoiceRecord" class="mr-18px" role="button" aria-label="语音消息">
+              <svg
+                @click="handleVoiceRecord"
+                class="mr-18px"
+                role="button"
+                :aria-label="t('chat.footer.voice_message')">
                 <use href="#voice"></use>
               </svg>
             </template>
@@ -178,7 +182,11 @@
           </n-popover>
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
             <template #trigger>
-              <svg @click="showLocationModal = true" class="mr-18px" role="button" aria-label="位置">
+              <svg
+                @click="showLocationModal = true"
+                class="mr-18px"
+                role="button"
+                :aria-label="t('chat.footer.location')">
                 <use href="#local"></use>
               </svg>
             </template>
@@ -192,7 +200,7 @@
                 @click="toggleBurnAfterRead"
                 class="mr-18px cursor-pointer"
                 role="button"
-                aria-label="阅后即焚">
+                :aria-label="t('chat.footer.burn_after_read')">
                 <use href="#timer"></use>
               </svg>
             </template>
@@ -206,7 +214,7 @@
               class="w-22px h-22px cursor-pointer outline-none"
               @click="openChatHistory"
               role="button"
-              aria-label="聊天记录">
+              :aria-label="t('chat.footer.chat_history')">
               <use href="#history"></use>
             </svg>
           </template>

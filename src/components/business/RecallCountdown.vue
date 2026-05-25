@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTimerManager } from '@/utils/TimerManager'
 
 interface Props {
@@ -16,6 +17,9 @@ const props = withDefaults(defineProps<Props>(), {
 const timerManager = useTimerManager()
 const remainingSeconds = ref(0)
 let timer: number | null = null
+
+const { t } = useI18n()
+const cannotRecallText = computed(() => t('chat.recall.cannot_recall'))
 
 const canRecall = computed(() => remainingSeconds.value > 0)
 
@@ -70,7 +74,7 @@ defineExpose({
       <span class="time">{{ formattedTime }}</span>
     </template>
     <template v-else>
-      <span class="expired-text">无法撤回</span>
+      <span class="expired-text">{{ cannotRecallText }}</span>
     </template>
   </span>
 </template>

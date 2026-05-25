@@ -6,11 +6,11 @@
         <svg class="trendradar-view__back" @click="handleBack">
           <use href="#left-arrow"></use>
         </svg>
-        <h2 class="trendradar-view__title">TrendRadar 资讯助手</h2>
+        <h2 class="trendradar-view__title">{{ t('trendradar.title') }}</h2>
       </div>
       <div class="trendradar-view__header-right">
         <n-tag :type="isConnected ? 'success' : 'error'" size="small">
-          {{ isConnected ? '已连接' : '未连接' }}
+          {{ isConnected ? t('trendradar.connected') : t('trendradar.disconnected') }}
         </n-tag>
         <svg class="trendradar-view__refresh" @click="handleRefresh">
           <use href="#refresh"></use>
@@ -40,22 +40,22 @@
         <!-- 热点新闻 -->
         <div v-show="activeTab === 'hot'" class="trendradar-view__panel">
           <div class="trendradar-view__panel-header">
-            <h3>热点新闻</h3>
-            <n-button size="tiny" @click="loadLatestNews" :loading="loading">刷新</n-button>
+            <h3>{{ t('trendradar.hot_news') }}</h3>
+            <n-button size="tiny" @click="loadLatestNews" :loading="loading">{{ t('trendradar.refresh') }}</n-button>
           </div>
           <div v-if="loading && newsList.length === 0" class="trendradar-view__loading">
             <n-spin size="large" />
-            <span>正在获取资讯...</span>
+            <span>{{ t('trendradar.fetching') }}</span>
           </div>
           <div v-else-if="!isConnected" class="trendradar-view__error">
             <svg class="trendradar-view__error-icon"><use href="#alert-circle"></use></svg>
-            <span>无法连接到 TrendRadar 服务</span>
-            <n-button size="small" @click="handleRetry">重试</n-button>
+            <span>{{ t('trendradar.connection_error') }}</span>
+            <n-button size="small" @click="handleRetry">{{ t('trendradar.retry') }}</n-button>
           </div>
           <div v-else-if="newsList.length === 0" class="trendradar-view__empty">
             <svg class="trendradar-view__empty-icon"><use href="#document"></use></svg>
-            <span>暂无热点新闻</span>
-            <n-button size="small" @click="loadLatestNews">刷新</n-button>
+            <span>{{ t('trendradar.no_hot_news') }}</span>
+            <n-button size="small" @click="loadLatestNews">{{ t('trendradar.refresh') }}</n-button>
           </div>
           <div v-else class="trendradar-view__news-grid">
             <NewsCard v-for="(news, index) in newsList" :key="index" :news="news" @click="handleNewsClick" />
@@ -74,12 +74,14 @@
         <!-- 趋势话题 -->
         <div v-show="activeTab === 'trending'" class="trendradar-view__panel">
           <div class="trendradar-view__panel-header">
-            <h3>趋势话题</h3>
-            <n-button size="tiny" @click="loadTrendingTopics" :loading="trendingLoading">刷新</n-button>
+            <h3>{{ t('trendradar.trending_topics') }}</h3>
+            <n-button size="tiny" @click="loadTrendingTopics" :loading="trendingLoading">
+              {{ t('trendradar.refresh') }}
+            </n-button>
           </div>
           <div v-if="trendingLoading" class="trendradar-view__loading">
             <n-spin size="large" />
-            <span>加载中...</span>
+            <span>{{ t('trendradar.loading') }}</span>
           </div>
           <div v-else>
             <TrendingPanel :topics="trendingTopics" :loading="trendingLoading" @topic-click="handleTopicClick" />
@@ -89,16 +91,16 @@
         <!-- RSS订阅 -->
         <div v-show="activeTab === 'rss'" class="trendradar-view__panel">
           <div class="trendradar-view__panel-header">
-            <h3>RSS 订阅</h3>
-            <n-button size="tiny" @click="loadRss" :loading="rssLoading">刷新</n-button>
+            <h3>{{ t('trendradar.rss_subscriptions') }}</h3>
+            <n-button size="tiny" @click="loadRss" :loading="rssLoading">{{ t('trendradar.refresh') }}</n-button>
           </div>
           <div v-if="rssLoading" class="trendradar-view__loading">
             <n-spin size="large" />
-            <span>加载中...</span>
+            <span>{{ t('trendradar.loading') }}</span>
           </div>
           <div v-else-if="rssList.length === 0" class="trendradar-view__empty">
             <svg class="trendradar-view__empty-icon"><use href="#rss"></use></svg>
-            <span>暂无订阅内容</span>
+            <span>{{ t('trendradar.no_subscriptions') }}</span>
           </div>
           <div v-else class="trendradar-view__news-grid">
             <NewsCard v-for="(item, index) in rssList" :key="index" :news="item" @click="handleNewsClick" />
@@ -108,23 +110,25 @@
         <!-- 话题分析 -->
         <div v-show="activeTab === 'analyze'" class="trendradar-view__panel">
           <div class="trendradar-view__panel-header">
-            <h3>话题分析</h3>
+            <h3>{{ t('trendradar.topic_analysis') }}</h3>
           </div>
           <div class="trendradar-view__analyze-input">
             <n-input
               v-model:value="analyzeKeyword"
-              placeholder="输入想要分析的话题..."
+              :placeholder="t('trendradar.analyze_placeholder')"
               size="large"
               @keyup.enter="handleAnalyze">
               <template #prefix>
                 <svg class="trendradar-view__analyze-icon"><use href="#search"></use></svg>
               </template>
             </n-input>
-            <n-button type="primary" size="large" :loading="analyzeLoading" @click="handleAnalyze">分析</n-button>
+            <n-button type="primary" size="large" :loading="analyzeLoading" @click="handleAnalyze">
+              {{ t('trendradar.analyze') }}
+            </n-button>
           </div>
           <div v-if="analyzeLoading" class="trendradar-view__loading">
             <n-spin size="large" />
-            <span>正在分析话题...</span>
+            <span>{{ t('trendradar.analyzing') }}</span>
           </div>
           <div v-else-if="analyzeResult" class="trendradar-view__analyze-result">
             <div class="trendradar-view__analyze-content">{{ analyzeResult }}</div>
@@ -135,18 +139,23 @@
 
     <!-- 底部输入区 -->
     <div class="trendradar-view__footer">
-      <n-input v-model:value="inputKeyword" placeholder="搜索关键词..." size="large" @keyup.enter="handleQuickSearch">
+      <n-input
+        v-model:value="inputKeyword"
+        :placeholder="t('trendradar.search_placeholder')"
+        size="large"
+        @keyup.enter="handleQuickSearch">
         <template #prefix>
           <svg class="trendradar-view__input-icon"><use href="#search"></use></svg>
         </template>
       </n-input>
-      <n-button type="primary" size="large" @click="handleQuickSearch">发送</n-button>
+      <n-button type="primary" size="large" @click="handleQuickSearch">{{ t('trendradar.send') }}</n-button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import NewsCard from '@/components/trendradar/NewsCard.vue'
 import SearchPanel from '@/components/trendradar/SearchPanel.vue'
 import TrendingPanel from '@/components/trendradar/TrendingPanel.vue'
@@ -161,6 +170,8 @@ const emit = defineEmits<{
 
 const { isConnected, setupTrendRadar, getLatestNews, searchNews, getTrendingTopics, getLatestRss, analyzeTopicTrend } =
   useTrendRadar()
+
+const { t } = useI18n()
 
 const activeTab = ref('hot')
 const loading = ref(false)
@@ -179,11 +190,11 @@ const analyzeKeyword = ref('')
 const analyzeResult = ref('')
 
 const navItems = [
-  { key: 'hot', label: '热点', icon: 'fire' },
-  { key: 'search', label: '搜索', icon: 'search' },
-  { key: 'trending', label: '趋势', icon: 'trending-up' },
-  { key: 'rss', label: '订阅', icon: 'rss' },
-  { key: 'analyze', label: '分析', icon: 'chart' }
+  { key: 'hot', label: t('trendradar.nav_hot'), icon: 'fire' },
+  { key: 'search', label: t('trendradar.nav_search'), icon: 'search' },
+  { key: 'trending', label: t('trendradar.nav_trending'), icon: 'trending-up' },
+  { key: 'rss', label: t('trendradar.nav_rss'), icon: 'rss' },
+  { key: 'analyze', label: t('trendradar.nav_analyze'), icon: 'chart' }
 ]
 
 const handleBack = () => {
@@ -382,8 +393,8 @@ onMounted(() => {
 }
 
 .trendradar-view__nav-item--active {
-  background: var(--primary-color-alpha);
-  color: var(--primary-color);
+  background: var(--color-primary-active);
+  color: var(--color-primary);
 }
 
 .trendradar-view__nav-icon {

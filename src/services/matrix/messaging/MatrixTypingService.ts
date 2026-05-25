@@ -69,18 +69,20 @@ class MatrixTypingService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return []
 
-    const room = client.getRoom(roomId)
-    if (!room) return []
-
     const myUserId = client.getUserId()
     const typingUsers: TypingUser[] = []
 
     try {
-      const userIds = room.getTypingUsers()
+      const room = client.getRoom(roomId)
+      if (!room) return []
+
+      // Read typing user IDs from room's current state (m.typing ephemeral event)
+      const typingEvent = room.currentState.getStateEvents('m.typing', '')
+      const content = typingEvent?.getContent() as { user_ids?: string[] } | undefined
+      const userIds: string[] = content?.user_ids ?? []
 
       for (const userId of userIds) {
         if (userId === myUserId) continue
-
         const member = room.getMember(userId)
         typingUsers.push({
           userId,

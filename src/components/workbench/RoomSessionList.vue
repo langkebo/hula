@@ -1,14 +1,14 @@
 <template>
-  <n-scrollbar ref="msg-scrollbar" class="h-full" style="max-height: calc(100vh / var(--page-scale, 1) - 70px)">
-    <div v-if="syncLoading" class="flex-center gap-10px py-12px text-(12px [--hula-text-primary])">
+  <n-scrollbar ref="msg-scrollbar" class="h-full">
+    <div v-if="syncLoading" class="flex-center gap-10px py-12px text-[var(--text-xs)] text-[--hula-text-primary]">
       <n-spin :size="14" />
       <span>{{ t('message.message_list.sync_loading') }}</span>
     </div>
 
     <div
       v-if="networkBanner && !syncLoading && !globalStore.currentSessionRoomId"
-      class="mx-10px mt-6px border-(1px solid [--hula-color-danger-500]) flex items-center gap-8px rounded-6px bg-[--hula-color-danger-100] px-12px py-10px text-(12px [--hula-color-danger-500])"
-      style="position: sticky; top: 6px; z-index: 999">
+      class="room-session-list__network-banner"
+      style="position: sticky; top: 8px; z-index: 999">
       <svg class="size-16px flex-shrink-0">
         <use href="#cloudError"></use>
       </svg>
@@ -16,7 +16,7 @@
       <button
         v-if="showRetryAction"
         type="button"
-        class="ml-auto rounded-full border border-[--hula-color-danger-500] bg-transparent px-10px py-2px text-12px leading-tight color-[--hula-color-danger-500] transition-opacity hover:opacity-80"
+        class="ml-auto rounded-full border border-[--hula-color-danger-500] bg-transparent px-10px py-2px text-[var(--text-xs)] leading-tight color-[--hula-color-danger-500] transition-opacity hover:opacity-80"
         data-test="network-retry"
         @click="onRetryNetwork">
         {{ t('common.retry') }}
@@ -28,7 +28,7 @@
       role="list"
       :aria-label="t('space.session_list_label')"
       :aria-busy="syncLoading"
-      class="p-[4px_10px_0px_8px] h-full">
+      class="room-session-list__body h-full">
       <RecycleScroller
         class="scroller h-full"
         :items="sessionList"
@@ -52,30 +52,28 @@
       </RecycleScroller>
     </div>
 
-    <n-flex
-      v-else-if="sessionLoading"
-      vertical
-      :size="18"
-      style="max-height: calc(100vh / var(--page-scale, 1) - 70px)"
-      class="relative h-100vh box-border p-20px">
-      <n-flex>
-        <n-skeleton style="border-radius: 14px" height="60px" width="100%" :sharp="false" />
-      </n-flex>
-
-      <n-flex>
-        <n-skeleton style="border-radius: 14px" height="40px" width="80%" :sharp="false" />
-      </n-flex>
-
-      <n-flex justify="end">
-        <n-skeleton style="border-radius: 14px" height="40px" width="80%" :sharp="false" />
-      </n-flex>
-
-      <n-flex>
-        <n-skeleton style="border-radius: 14px" height="60px" width="100%" :sharp="false" />
-      </n-flex>
+    <n-flex v-else-if="sessionLoading" vertical :size="8" class="room-session-list__body relative h-full box-border">
+      <div v-for="i in 5" :key="i" class="room-session-list__skeleton">
+        <n-skeleton circle style="width: 44px; height: 44px" :sharp="false" />
+        <n-flex vertical :size="4" class="flex-1 min-w-0">
+          <n-flex align="center" justify="space-between">
+            <n-skeleton height="14px" width="60%" :sharp="false" style="border-radius: 4px" />
+            <n-skeleton height="10px" width="30px" :sharp="false" style="border-radius: 4px" />
+          </n-flex>
+          <n-skeleton height="12px" width="80%" :sharp="false" style="border-radius: 4px" />
+        </n-flex>
+      </div>
     </n-flex>
 
-    <n-result v-else class="absolute-center" status="418" :description="emptyDescription" />
+    <div v-else class="h-full flex-center text-[var(--text-xs)] color-[--hula-text-tertiary]" role="status">
+      <n-empty :description="emptyDescription" size="large">
+        <template #icon>
+          <svg class="size-48px opacity-50 color-[--hula-text-quaternary]">
+            <use href="#chat"></use>
+          </svg>
+        </template>
+      </n-empty>
+    </div>
   </n-scrollbar>
 </template>
 
@@ -152,4 +150,31 @@ defineExpose({
 
 <style scoped lang="scss">
 @use '@/styles/scss/message';
+
+.room-session-list__body {
+  padding: 8px 8px 0;
+}
+
+.room-session-list__network-banner {
+  margin: 8px 12px 0;
+  border: 1px solid var(--hula-color-danger-500);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  background: var(--hula-color-danger-100);
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--hula-color-danger-500);
+}
+
+.room-session-list__skeleton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  margin: 0 8px 4px;
+  padding: 12px;
+  border-radius: 12px;
+}
 </style>

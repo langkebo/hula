@@ -419,7 +419,12 @@ declare module 'matrix-js-sdk' {
   // synapse-rust 特有：已读回执管理器扩展
   // 官方 matrix-js-sdk 不包含此管理器接口
   export interface ReadReceiptsManager {
-    sendReadReceipt(roomId: string, eventId: string): Promise<void>
+    sendReadReceipt(
+      event: MatrixEvent | null,
+      receiptType?: ReceiptType,
+      unthreaded?: boolean
+    ): Promise<Record<string, unknown> | undefined>
+    sendReadReceiptByEventId(roomId: string, eventId: string): Promise<void>
     setReadMarkers(roomId: string, eventId: string, fullyReadEventId?: string): Promise<void>
     setReadMarker(roomId: string, eventId: string): Promise<void>
     getReceipt(
@@ -463,6 +468,7 @@ declare module 'matrix-js-sdk' {
     constructor(localStorage: Storage)
   }
   export function createClient(opts: ICreateClientOpts): MatrixClient
+  export function initializeManagerExtensions(): Promise<void>
   // MatrixClient 接口扩展
   interface MatrixClient {
     readonly deviceId: string | null
@@ -529,6 +535,9 @@ declare module 'matrix-js-sdk' {
     setRoomName(roomId: string, name: string): Promise<void>
     setRoomTopic(roomId: string, topic: string): Promise<void>
     setRoomAvatar(roomId: string, url: string): Promise<void>
+    getRoomTags(roomId: string): Promise<{ tags: Record<string, { order?: number }> }>
+    setRoomTag(roomId: string, tagName: string, metadata?: { order?: number }): Promise<EmptyObject>
+    deleteRoomTag(roomId: string, tagName: string): Promise<EmptyObject>
     leave(roomId: string): Promise<void>
     sendStateEvent(roomId: string, eventType: string, content: unknown, stateKey?: string): Promise<ISendEventResponse>
     sendStateEvent(
@@ -1375,4 +1384,61 @@ declare module 'matrix-js-sdk' {
     icon?: string
     fields: Record<string, string>
   }
+}
+
+// ==================== SDK 子路径模块类型声明 ====================
+declare module 'matrix-js-sdk/account' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/auth' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/capabilities' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/credentials' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/room' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/media' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/message' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/profile' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/presence' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/sending' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/crypto-keys' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/device' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/telemetry' {
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/qr-login' {
+  export function extendMatrixClient(): void
 }

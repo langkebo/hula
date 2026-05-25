@@ -1,6 +1,8 @@
 /// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test'
 
+const liveHomeserverUrl = process.env.MATRIX_LIVE_HOMESERVER_URL?.trim()
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -14,6 +16,10 @@ export default defineConfig({
   },
   webServer: {
     command: 'pnpm dev --host 127.0.0.1 --port 5210',
+    env: {
+      ...process.env,
+      ...(liveHomeserverUrl ? { VITE_HOMESERVER_URL: liveHomeserverUrl } : {})
+    },
     url: 'http://127.0.0.1:5210',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000

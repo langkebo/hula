@@ -19,8 +19,21 @@
           :type="detailsContent.applyType" />
 
         <!-- 聊天界面背景图标 -->
-        <div v-else class="flex-center size-full select-none">
-          <img class="w-150px h-140px" src="/logoD.png" alt="HuLa" />
+        <div
+          v-else
+          class="flex-center size-full select-none flex-col gap-16px text-[var(--text-xs)] color-[--hula-text-tertiary] bg-[--hula-surface-panel]">
+          <n-empty :description="t('home.chat_sidebar.empty.no_chat_selected', '未选择会话')" size="huge">
+            <template #icon>
+              <svg class="size-60px opacity-50 color-[--hula-text-quaternary]">
+                <use href="#chat"></use>
+              </svg>
+            </template>
+            <template #extra>
+              <n-text depth="3" class="text-[var(--text-xs)] mt-8px inline-block">
+                {{ t('home.chat_sidebar.empty.select_to_start', '选择一个会话或发起新聊天') }}
+              </n-text>
+            </template>
+          </n-empty>
         </div>
       </div>
     </div>
@@ -28,6 +41,7 @@
 </template>
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useI18n } from 'vue-i18n'
 import { MittEnum, ThemeEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
@@ -35,6 +49,7 @@ import type { DetailsContent } from '@/services/types'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
+const { t } = useI18n()
 const appWindow = WebviewWindow.getCurrent()
 const settingStore = useSettingStore()
 const globalStore = useGlobalStore()

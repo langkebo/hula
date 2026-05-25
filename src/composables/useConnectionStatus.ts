@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 
-export type ConnectionState = 'online' | 'offline' | 'reconnecting' | 'error'
+export type ConnectionState = 'online' | 'offline' | 'connecting' | 'reconnecting' | 'error' | 'idle'
 
 export function useConnectionStatus() {
   const matrixStore = useMatrixStore()
@@ -13,11 +13,19 @@ export function useConnectionStatus() {
       case 'CONNECTED':
         return 'online'
       case 'CONNECTING':
+        return 'connecting'
+      case 'RECONNECTING':
         return 'reconnecting'
       case 'ERROR':
         return 'error'
-      default:
+      case 'DISCONNECTED':
+        // 未初始化/未登录时，不应显示为"网络已断开"
+        if (!matrixStore.isInitialized) {
+          return 'idle'
+        }
         return 'offline'
+      default:
+        return 'idle'
     }
   })
 

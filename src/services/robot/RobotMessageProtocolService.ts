@@ -40,11 +40,6 @@ type BotUiMeta = {
 }
 
 const BOT_UI_MAP: Record<string, BotUiMeta> = {
-  'openclaw-assistant': {
-    name: 'OpenClaw Assistant',
-    shortLabel: 'AI',
-    tone: 'purple'
-  },
   'trendradar-briefing': {
     name: 'TrendRadar Briefing',
     shortLabel: 'TR',

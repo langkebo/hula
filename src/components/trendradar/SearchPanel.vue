@@ -1,21 +1,28 @@
 <template>
   <div class="search-panel">
     <div class="search-panel__header">
-      <n-input v-model:value="keyword" placeholder="搜索新闻..." size="small" clearable @keyup.enter="handleSearch">
+      <n-input
+        v-model:value="keyword"
+        :placeholder="t('trendradar.search_news_placeholder')"
+        size="small"
+        clearable
+        @keyup.enter="handleSearch">
         <template #prefix>
           <svg class="search-panel__search-icon"><use href="#search"></use></svg>
         </template>
       </n-input>
-      <n-button size="small" type="primary" :loading="loading" @click="handleSearch">搜索</n-button>
+      <n-button size="small" type="primary" :loading="loading" @click="handleSearch">
+        {{ t('trendradar.search') }}
+      </n-button>
     </div>
     <div class="search-panel__results">
       <div v-if="loading" class="search-panel__loading">
         <n-spin size="small" />
-        <span>搜索中...</span>
+        <span>{{ t('trendradar.searching') }}</span>
       </div>
       <div v-else-if="results.length === 0 && hasSearched" class="search-panel__empty">
         <svg class="search-panel__empty-icon"><use href="#search"></use></svg>
-        <span>未找到相关结果</span>
+        <span>{{ t('trendradar.no_results') }}</span>
       </div>
       <div v-else class="search-panel__list">
         <NewsCard v-for="(news, index) in results" :key="index" :news="news" @click="handleNewsClick" />
@@ -26,8 +33,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { TrendRadarNews } from '@/services/trendradar'
 import NewsCard from './NewsCard.vue'
+
+const { t } = useI18n()
 
 defineProps<{
   results: TrendRadarNews[]

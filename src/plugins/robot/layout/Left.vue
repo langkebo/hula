@@ -15,9 +15,9 @@
               Beta
             </div>
           </n-flex>
-          <p class="text-(12px #909090)">{{ t('ai_assistant.robot.subtitle_desc') }}</p>
+          <p class="text-(12px [--hula-text-tertiary])">{{ t('ai_assistant.robot.subtitle_desc') }}</p>
         </n-flex>
-        <svg class="size-44px color-#13987f opacity-20"><use href="#GPT"></use></svg>
+        <svg class="size-44px color-[--hula-color-primary-500] opacity-20"><use href="#GPT"></use></svg>
       </n-flex>
 
       <!-- 头像和插件 -->
@@ -26,7 +26,7 @@
           <n-avatar bordered round :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)" :size="48" />
           <n-flex vertical>
             <p class="text-(14px [--hula-text-primary]) font-500">{{ userStore.userInfo!.name }}</p>
-            <p class="text-(12px #909090)">{{ t('ai_assistant.robot.expire_days', { days: 28 }) }}</p>
+            <p class="text-(12px [--hula-text-tertiary])">{{ t('ai_assistant.robot.expire_days', { days: 28 }) }}</p>
           </n-flex>
         </n-flex>
 
@@ -44,13 +44,13 @@
         <!-- 加载状态 -->
         <div v-if="loading && pageNo === 1" class="flex justify-center items-center py-20px">
           <n-spin size="small" />
-          <span class="ml-10px text-(12px #909090)">{{ t('ai_assistant.robot.loading') }}</span>
+          <span class="ml-10px text-(12px [--hula-text-tertiary])">{{ t('ai_assistant.robot.loading') }}</span>
         </div>
 
         <!-- 空状态 -->
         <div
           v-else-if="chatList.length === 0"
-          class="flex flex-col items-center justify-center py-20px text-(12px #909090)">
+          class="flex flex-col items-center justify-center py-20px text-(12px [--hula-text-tertiary])">
           <svg class="size-40px mb-10px opacity-50"><use href="#empty"></use></svg>
           <p>{{ t('ai_assistant.robot.no_conversation') }}</p>
         </div>
@@ -100,7 +100,7 @@
                     <use href="#squareClose"></use>
                   </svg>
                 </n-flex>
-                <n-flex justify="space-between" align="center" :size="0" class="text-(12px #909090)">
+                <n-flex justify="space-between" align="center" :size="0" class="text-(12px [--hula-text-tertiary])">
                   <p>{{ t('ai_assistant.robot.message_count', { count: item.messageCount || 0 }) }}</p>
                   <p>{{ formatTimestamp(item.createTime) }}</p>
                 </n-flex>
@@ -115,11 +115,15 @@
             {{ t('ai_assistant.robot.load_more') }}
           </n-button>
           <n-spin v-else size="small" />
-          <span v-if="loadingMore" class="ml-10px text-(12px #909090)">{{ t('ai_assistant.robot.loading') }}</span>
+          <span v-if="loadingMore" class="ml-10px text-(12px [--hula-text-tertiary])">
+            {{ t('ai_assistant.robot.loading') }}
+          </span>
         </div>
 
         <!-- 没有更多数据 -->
-        <div v-else-if="chatList.length > 0" class="flex justify-center items-center py-16px text-(12px #909090)">
+        <div
+          v-else-if="chatList.length > 0"
+          class="flex justify-center items-center py-16px text-(12px [--hula-text-tertiary])">
           <span>{{ t('ai_assistant.robot.no_more_conversations') }}</span>
         </div>
       </n-scrollbar>
@@ -167,7 +171,7 @@
       <!-- 操作按钮行 -->
       <n-flex :size="4" align="center" justify="space-between">
         <!-- 提示信息或新建按钮 -->
-        <div v-if="!hasRoles" class="flex-1 text-(11px #d5304f) text-center">
+        <div v-if="!hasRoles" class="flex-1 text-(11px [--hula-color-danger-500]) text-center">
           {{ t('ai_assistant.robot.create_role_first') }}
         </div>
         <div
@@ -698,7 +702,7 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .gpt-subtitle {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-#38BDF8 to-#13987F text-20px font-800;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-[--hula-color-primary-400] to-[--hula-color-primary-500] text-20px font-800;
 }
 
 .plugins {
@@ -720,8 +724,8 @@ onMounted(async () => {
 }
 
 .chat-item-active {
-  border: 1px dashed #13987f;
-  box-shadow: 0 0 0 1px rgba(19, 152, 127, 0.1) inset;
+  border: 1px dashed var(--hula-color-primary-500);
+  box-shadow: 0 0 0 1px var(--hula-color-primary-100) inset;
 }
 
 .list-move, /* 对移动中的元素应用的过渡 */

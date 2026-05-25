@@ -13,6 +13,7 @@ import type { MatrixClientConfig } from '@/services/matrix/MatrixClientService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
+import { patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { switchUserDatabase } from '@/services/tauriCommand'
 import type { RoomInfo, UserInfoType } from '@/services/types'
@@ -98,7 +99,7 @@ export interface SessionStorePort {
     initialize(config: MatrixClientConfig): Promise<void>
     login(username: string, password: string, deviceName?: string): Promise<boolean>
     completeSSOLogin(loginToken: string): Promise<boolean>
-    loginWithToken(accessToken: string, userId: string): Promise<boolean>
+    loginWithToken(accessToken: string, userId: string, refreshToken?: string): Promise<boolean>
     logout(): Promise<void>
   }
   user: {
@@ -114,7 +115,7 @@ export interface SessionStorePort {
     getMessages(roomId: string): MessageType[]
     resetState(): void
     setupEventListeners(): Promise<void>
-    loadRooms(): Promise<void>
+    loadRooms(): Promise<boolean>
   }
   chat: {
     getSessionList(refresh: boolean): Promise<void>
@@ -158,8 +159,16 @@ class MatrixRuntimeSessionService {
       return
     }
 
-    const tokens = await this.getStoredTokens()
-    if (!tokens.token) {
+    const runtimeAccessToken = this.port.matrix.getAccessToken()
+    const runtimeRefreshToken = this.port.matrix.getRefreshToken()
+    const storedTokens = runtimeAccessToken
+      ? {
+          token: runtimeAccessToken,
+          refreshToken: runtimeRefreshToken ?? null
+        }
+      : await this.getStoredTokens()
+
+    if (!storedTokens.token) {
       throw new Error(useI18nGlobal().t('matrix_error.auth.access_token_missing'))
     }
 
@@ -169,14 +178,15 @@ class MatrixRuntimeSessionService {
 
     await this.restoreWithAccessToken({
       uid,
-      accessToken: tokens.token,
-      refreshToken: tokens.refreshToken ?? undefined,
+      accessToken: storedTokens.token,
+      refreshToken: storedTokens.refreshToken ?? undefined,
       displayName: options.displayName || userInfo?.name,
       account: options.account || userInfo?.account || userInfo?.email,
       avatar: options.avatar || userInfo?.avatar,
       client: restoredClient,
       persistTokens: false,
       persistUserInfo: false,
+      switchDatabase: false,
       bootstrapAfterRestore: false
     })
   }
@@ -276,10 +286,15 @@ class MatrixRuntimeSessionService {
         allowInsecureHttp: homeserverUrl.startsWith('http://')
       })
 
-      const success = await this.port.matrix.loginWithToken(accessToken, uid)
+      const success = await this.port.matrix.loginWithToken(accessToken, uid, refreshToken)
       if (!success) {
         throw new Error(useI18nGlobal().t('matrix_error.auth.session_restore_failed'))
       }
+      patchMatrixSessionSnapshot({
+        userId: uid,
+        accessToken,
+        homeserverUrl
+      })
 
       const resolvedDisplayName = this.resolveDisplayName(uid, displayName, account)
       this.port.user.initUserInfo(uid, resolvedDisplayName)
@@ -345,6 +360,11 @@ class MatrixRuntimeSessionService {
       }
 
       const refreshToken = this.port.matrix.getRefreshToken() ?? ''
+      patchMatrixSessionSnapshot({
+        userId: uid,
+        accessToken,
+        homeserverUrl
+      })
 
       if (switchDatabase) {
         await switchUserDatabase(uid)
@@ -423,6 +443,11 @@ class MatrixRuntimeSessionService {
       }
 
       const refreshToken = this.port.matrix.getRefreshToken() ?? ''
+      patchMatrixSessionSnapshot({
+        userId: uid,
+        accessToken,
+        homeserverUrl
+      })
 
       if (switchDatabase) {
         await switchUserDatabase(uid)
@@ -670,6 +695,12 @@ class MatrixRuntimeSessionService {
         localStorage.removeItem('REFRESH_TOKEN')
         await invokeWithErrorHandler(TauriCommand.REMOVE_TOKENS)
       }
+      patchMatrixSessionSnapshot({
+        userId: null,
+        deviceId: null,
+        accessToken: null,
+        homeserverUrl: null
+      })
       clearMatrixSessionEndpointConfig()
 
       this.port.setting.closeAutoLogin()

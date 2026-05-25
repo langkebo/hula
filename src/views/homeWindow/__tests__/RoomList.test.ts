@@ -182,7 +182,9 @@ vi.mock('@/components/workbench/RoomSessionList.vue', () => ({
     name: 'RoomSessionListStub',
     props: {
       sessionList: { type: Array, default: () => [] },
-      emptyDescription: { type: String, default: '' }
+      emptyDescription: { type: String, default: '' },
+      onMsgClick: { type: Function, default: undefined },
+      onMsgDblclick: { type: Function, default: undefined }
     },
     setup(props, { expose }) {
       expose({
@@ -198,24 +200,6 @@ vi.mock('@/components/workbench/RoomSessionList.vue', () => ({
   })
 }))
 
-vi.mock('@/components/workbench/WorkbenchDetailPane.vue', () => ({
-  default: defineComponent({
-    name: 'WorkbenchDetailPaneStub',
-    props: {
-      selectedSession: { type: Object, default: null },
-      visibleSessionCount: { type: Number, default: 0 },
-      totalSessionCount: { type: Number, default: 0 }
-    },
-    setup(props) {
-      return () =>
-        h('div', { 'data-test': 'detail-pane' }, [
-          h('span', { 'data-test': 'detail-session-name' }, props.selectedSession?.name ?? ''),
-          h('span', { 'data-test': 'detail-counts' }, `${props.visibleSessionCount}/${props.totalSessionCount}`)
-        ])
-    }
-  })
-}))
-
 describe('RoomListView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -225,15 +209,13 @@ describe('RoomListView', () => {
     globalStore.currentSessionRoomId = '!alpha:server'
   })
 
-  it('renders the room workbench shell with toolbar, filtered group sessions and detail pane', async () => {
+  it('renders the room workbench shell with toolbar and filtered group sessions', async () => {
     const wrapper = mount(RoomListView)
     await flushPromises()
 
     expect(wrapper.find('[data-test="room-toolbar"]').exists()).toBe(true)
     expect(wrapper.get('[data-test="toolbar-summary"]').text()).toBe('2/2')
     expect(wrapper.get('[data-test="session-list-count"]').text()).toBe('2')
-    expect(wrapper.get('[data-test="detail-session-name"]').text()).toBe('Alpha Room')
-    expect(wrapper.get('[data-test="detail-counts"]').text()).toBe('2/2')
   })
 
   it('reads the initial search value from the route query and filters the room list', async () => {
@@ -266,5 +248,31 @@ describe('RoomListView', () => {
         sort: undefined
       }
     })
+  })
+
+  it('updates the list when a new room is created or joined', async () => {
+    const wrapper = mount(RoomListView)
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="session-list-count"]').text()).toBe('2')
+
+    // Simulate creating a room by adding it to the session source
+    sessionSource.value.push({
+      roomId: '!new_room:server',
+      name: 'New Room',
+      type: RoomTypeEnum.GROUP,
+      avatar: '',
+      activeTime: Date.now(),
+      unreadCount: 0,
+      top: false,
+      account: '',
+      shield: false,
+      lastMsg: 'welcome',
+      lastMsgTime: '10:05'
+    })
+
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="session-list-count"]').text()).toBe('3')
   })
 })

@@ -1,14 +1,14 @@
+import { info as tauriInfo } from '@tauri-apps/plugin-log'
 import * as sdk from 'matrix-js-sdk'
-import { useI18nGlobal } from '@/services/i18n'
-import { ensureMatrixSdkCompat } from '../sdk-compat'
-
-ensureMatrixSdkCompat()
-
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
+import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
+import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('MatrixAuth')
 
 export interface MatrixLoginResult {
   user_id: string
@@ -231,14 +231,6 @@ function normalizeSdkMatrixError(error: unknown, failureLabel: string): Error {
   return new Error(`${failureLabel}: ${detail}`)
 }
 
-function isSdkMatrixApiError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') {
-    return false
-  }
-
-  return 'errcode' in error || 'httpStatus' in error
-}
-
 async function runSdkFirst<T>(
   sdkRequest: () => Promise<T>,
   fallbackRequest: () => Promise<T>,
@@ -247,11 +239,17 @@ async function runSdkFirst<T>(
   try {
     return await sdkRequest()
   } catch (error) {
-    if (isSdkMatrixApiError(error)) {
-      throw normalizeSdkMatrixError(error, failureLabel)
+    // 登录/注册场景始终尝试 fallback——SDK 请求可能因请求格式差异、
+    // 中间件干扰等原因失败，而 fallback 等同于 curl 直接请求
+    const errInfo = error instanceof Error ? error.message : String(error)
+    const httpStatus = (error as { httpStatus?: number })?.httpStatus
+    const errcode = (error as { errcode?: string })?.errcode
+    logger.warn(`SDK 请求失败 (status=${httpStatus}, errcode=${errcode}): ${errInfo}，尝试 HTTP 回退`)
+    try {
+      return await fallbackRequest()
+    } catch (fallbackError) {
+      throw normalizeSdkMatrixError(fallbackError, failureLabel)
     }
-
-    return fallbackRequest()
   }
 }
 
@@ -713,8 +711,15 @@ export class MatrixAuthService {
         const result = await matrixWorkerHost.getLoginFlows(homeserverUrl)
         return result.flows ?? []
       } catch (err) {
-        throw normalizeSdkMatrixError(err, '获取登录流程失败')
+        // Worker 中浏览器 fetch 对自签名 HTTPS 可能失败，回退到主线程
+        tauriInfo(`[MatrixAuth] Worker 获取登录流失败，回退到主线程: ${err}`)
       }
+    }
+    // 确保 SDK Manager 扩展已加载（尤其是 getAccountManager），避免临时客户端缺少原型方法
+    try {
+      await sdk.initializeManagerExtensions()
+    } catch {
+      // 初始化失败时忽略，loginFlows 可能仍可用
     }
     try {
       const result = await createTemporaryMatrixClient().loginFlows()

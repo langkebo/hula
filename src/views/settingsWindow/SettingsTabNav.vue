@@ -102,9 +102,18 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
+
 .settings-tab-nav {
   padding: var(--hula-space-2) 0;
+
+  @include responsive.respond-to-max('md') {
+    display: flex;
+    gap: var(--hula-space-2);
+    padding: var(--hula-space-2);
+    min-width: max-content;
+  }
 }
 
 .tab-item {
@@ -124,6 +133,13 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
   background: transparent;
   text-align: left;
   font: inherit;
+
+  @include responsive.respond-to-max('md') {
+    width: auto;
+    min-width: max-content;
+    margin: 0;
+    padding: 0 var(--hula-space-4);
+  }
 }
 
 .tab-item:hover,
@@ -148,7 +164,7 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
 }
 
 .tab-label {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
 }
 </style>

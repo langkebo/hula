@@ -33,7 +33,6 @@ import ConnectionStatusBanner from '@/components/common/ConnectionStatusBanner.v
 import GlobalAriaLive from '@/components/common/GlobalAriaLive.vue'
 import NetworkStatusBar from '@/components/common/NetworkStatusBar.vue'
 import { useWsEventHandler } from '@/composables/app/useWsEventHandler'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { EventEnum, MittEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
@@ -111,11 +110,9 @@ const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
 const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))
 
 import { listen } from '@tauri-apps/api/event'
-import { useI18n } from 'vue-i18n'
 import SplashScreen from '@/components/common/SplashScreen.vue'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { useTauriListener } from '@/hooks/useTauriListener'
-import { updateSettings } from '@/services/tauriCommand.ts'
 
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -123,7 +120,6 @@ import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
-import { unreadCountManager } from '@/utils/UnreadCountManager'
 
 const logger = createLogger('App')
 const mobileRtcCallFloatCell = isMobile()
@@ -154,11 +150,10 @@ const handleBootstrapRetry = async () => {
 const userStore = useUserStore()
 const contactStore = useContactStore()
 const announcementStore = useAnnouncementStore()
-const userUid = computed(() => userStore.userInfo!.uid)
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
 const appWindow = tauriRuntimeAvailable ? WebviewWindow.getCurrent() : null
-const { createRtcCallWindow, sendWindowPayload, ensureCheckUpdateWindow } = useWindow()
+const { ensureCheckUpdateWindow } = useWindow()
 const globalStore = useGlobalStore()
 const router = useRouter()
 const { addListener } = useTauriListener()
@@ -674,28 +669,6 @@ useMitt.on(MittEnum.MSG_INIT, async () => {
     { immediate: true }
   )
 })
-
-// 初始化的时候需要加载一次用户在localStorage中保存的代理设置
-const { t } = useI18n()
-const { showFeedback } = useActionFeedback()
-const setConfigProxy = async () => {
-  const proxySettingsStr = localStorage.getItem('proxySettings')
-  // 如果用户没有设置代理，则不需要设置
-  if (!proxySettingsStr) {
-    return
-  }
-  const proxySettings = JSON.parse(proxySettingsStr as string)
-  const baseUrl =
-    proxySettings.apiType + '://' + proxySettings.apiIp + ':' + proxySettings.apiPort + proxySettings.apiSuffix
-  const wsUrl = proxySettings.wsType + '://' + proxySettings.wsIp + ':' + proxySettings.wsPort + proxySettings.wsSuffix
-
-  await updateSettings({ baseUrl, wsUrl }).catch((err) => {
-    showFeedback(t('login.network.messages.save_failed', { error: err }), 'error')
-  })
-}
-// 在整个应用挂载前，运行一次这段代码
-// setConfigProxy 已在 bootstrap() 中执行
-onBeforeMount(() => {})
 </script>
 <style lang="scss">
 /* 修改naive-ui select 组件的样式 */

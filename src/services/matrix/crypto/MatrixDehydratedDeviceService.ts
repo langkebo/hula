@@ -40,7 +40,7 @@ class MatrixDehydratedDeviceService {
 
   /**
    * 创建脱水设备
-   * 使用 /_matrix/client/v1/dehydrated_device 创建新设备
+   * 使用 /_matrix/client/unstable/org.matrix.msc3814.v1/dehydrated_device 创建新设备
    */
   async createDevice(params: CreateDehydratedDeviceParams): Promise<DehydratedDevice | null> {
     const { initialDeviceDisplayName, deviceData } = params

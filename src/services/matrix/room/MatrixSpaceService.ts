@@ -4,6 +4,7 @@ import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { matrixClientService } from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 import type {
   Space as SdkSpace,
@@ -551,12 +552,16 @@ class SpaceService extends BaseMatrixService {
       const spaces = await manager.getUserSpaces()
       return spaces.map((s) => this.sdkSpaceToSpaceInfo(s))
     } catch (err) {
+      // 客户端未就绪时静默返回空列表，不输出错误日志
+      const client = matrixClientService.getClient()
+      if (!client) {
+        return []
+      }
       error(`[Space] SpaceManager 获取用户 Spaces 失败，回退: ${err}`)
       // Fallback to local room list
-      const client = this.getClient()
       try {
         const rooms = client.getRooms()
-        return rooms.filter((room) => room.isSpaceRoom()).map((room) => this.roomToSpaceInfo(room))
+        return rooms.filter((room: Room) => room.isSpaceRoom()).map((room: Room) => this.roomToSpaceInfo(room))
       } catch (fallbackErr) {
         error(`[Space] 回退获取用户 Spaces 也失败: ${fallbackErr}`)
         return []

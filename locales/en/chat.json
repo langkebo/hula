@@ -1,0 +1,54 @@
+{
+  "footer": {
+    "emoji": "Emoji",
+    "screenshot": "Screenshot",
+    "send_file": "Send File",
+    "send_image": "Send Image",
+    "voice_message": "Voice Message",
+    "location": "Location",
+    "burn_after_read": "Burn After Read",
+    "chat_history": "Chat History"
+  },
+  "header": {
+    "video_call": "Video Call",
+    "voice_call": "Voice Call",
+    "start_meeting": "Start Meeting",
+    "screen_share": "Screen Share",
+    "group_qr_code": "Group QR Code",
+    "more_options": "More Options"
+  },
+  "burn": {
+    "message_destroyed": "This message has been destroyed",
+    "destroyed": "Destroyed",
+    "waiting_read": "Waiting to be read"
+  },
+  "location": {
+    "title": "Location",
+    "cannot_display": "Cannot display"
+  },
+  "link_preview": {
+    "unknown_link": "Unknown link",
+    "unknown_source": "Unknown source"
+  },
+  "beacon": {
+    "live_location": "Live Location Sharing",
+    "remaining_time": "Remaining time:",
+    "view_location": "View Location",
+    "ended": "This location sharing has ended"
+  },
+  "text": {
+    "copy_url": "Copy URL"
+  },
+  "privacy": {
+    "screenshot_protected": "This chat is protected, screenshots are prohibited"
+  },
+  "recall": {
+    "cannot_recall": "Cannot recall"
+  },
+  "multi_msg": {
+    "view_forwarded": "View {count} forwarded messages"
+  },
+  "url_preview": {
+    "loading": "Loading preview..."
+  }
+}

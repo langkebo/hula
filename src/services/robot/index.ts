@@ -1,9 +1,7 @@
 import { hulaNotifierRoomService } from './HulaNotifierRoomService'
-import { openClawAssistantRoomService } from './OpenClawAssistantRoomService'
 import { trendRadarBriefingRoomService } from './TrendRadarBriefingRoomService'
 
 export { hulaNotifierRoomService } from './HulaNotifierRoomService'
-export { openClawAssistantRoomService } from './OpenClawAssistantRoomService'
 export { robotAuditService } from './RobotAuditService'
 export { robotCommandService } from './RobotCommandService'
 export { robotConversationService } from './RobotConversationService'
@@ -19,5 +17,4 @@ export { trendRadarBriefingRoomService } from './TrendRadarBriefingRoomService'
 export * from './types'
 
 hulaNotifierRoomService.ensureRegistered()
-openClawAssistantRoomService.ensureRegistered()
 trendRadarBriefingRoomService.ensureRegistered()

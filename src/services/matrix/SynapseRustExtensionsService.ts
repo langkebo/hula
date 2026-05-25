@@ -1,6 +1,7 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import { BaseMatrixService } from './BaseMatrixService'
 import endpointCapabilityService from './EndpointCapabilityService'
+import { matrixCapabilityService } from './MatrixCapabilityService'
 import { matrixClientService } from './MatrixClientService'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
 import { MATRIX_PATHS } from './paths'
@@ -210,12 +211,19 @@ class SynapseRustExtensionsService extends BaseMatrixService {
     this.baseUrl = ''
     this.accessToken = ''
     this.endpointAvailability.clear()
-    this.friendEndpointAvailable = null
+    endpointCapabilityService.clear('friends')
   }
 
   private async ensureInitialized(): Promise<void> {
-    if (!this.baseUrl || !this.accessToken) {
-      await this.initialize()
+    // 每次都从 matrixClientService 获取最新 token，确保 Token 刷新后不会使用旧 token
+    const latestToken = matrixClientService.getAccessToken?.() || ''
+    if (!this.baseUrl || !this.accessToken || this.accessToken !== latestToken) {
+      if (latestToken) {
+        this.accessToken = latestToken
+      }
+      if (!this.baseUrl) {
+        await this.initialize()
+      }
     }
 
     if (!this.baseUrl || !this.accessToken) {
@@ -228,18 +236,31 @@ class SynapseRustExtensionsService extends BaseMatrixService {
     const url = `${this.baseUrl}${endpoint}`
     const runtimeFetch = getRuntimeAwareFetch()
 
+    // GET/HEAD 请求不应设置 Content-Type，避免服务端尝试解析空的请求体
+    const isBodylessMethod = !options.method || options.method === 'GET' || options.method === 'HEAD'
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.accessToken}`,
+      ...(options.headers as Record<string, string>)
+    }
+    if (!isBodylessMethod) {
+      headers['Content-Type'] = 'application/json'
+    }
+
     const response = await runtimeFetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.accessToken}`,
-        ...options.headers
-      }
+      headers
     })
 
     const text = await response.text()
 
     if (!response.ok) {
+      // 429 限流是正常行为，降级为 WARN 避免日志噪音
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After')
+        warn(`[SynapseRust] ${endpoint} 请求被限流${retryAfter ? `，建议 ${retryAfter}s 后重试` : ''}`)
+        throw new Error(this.t('matrix_error.extensions.rate_limited'))
+      }
+
       let parsed: Record<string, unknown> = {}
       try {
         parsed = text ? JSON.parse(text) : {}
@@ -293,18 +314,20 @@ class SynapseRustExtensionsService extends BaseMatrixService {
     return response as T
   }
 
-  private friendEndpointAvailable: boolean | null = null
-
   private async isFriendEndpointAvailable(): Promise<boolean> {
-    if (this.friendEndpointAvailable !== null) return this.friendEndpointAvailable
-    this.friendEndpointAvailable = await endpointCapabilityService.check('GET', MATRIX_PATHS.FRIENDS.LIST)
-    return this.friendEndpointAvailable
+    // 优先使用声明式能力检测（通过 /_matrix/client/versions 的 io.hula.friends 特性标志）
+    // 这比 HEAD 请求探测更可靠，尤其在 Tauri 环境中 WKWebView 可能限制直接 fetch
+    if (matrixCapabilityService.canUseFriendList()) {
+      return true
+    }
+    // 声明式检测不可用时，回退到 HEAD 请求探测
+    return await endpointCapabilityService.check('GET', MATRIX_PATHS.FRIENDS.LIST)
   }
 
   async getFriends(): Promise<SynapseFriendInfo[]> {
     try {
       if (!(await this.isFriendEndpointAvailable())) {
-        warn('[SynapseRust] 好友端点不可用')
+        info('[SynapseRust] 好友端点不可用，已降级')
         return []
       }
 
@@ -500,6 +523,20 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       info(`[SynapseRust] 拒绝好友请求成功: ${userId}`)
     } catch (err) {
       error(`[SynapseRust] 拒绝好友请求失败: ${err}`)
+      throw err
+    }
+  }
+
+  async cancelFriendRequest(userId: string): Promise<void> {
+    try {
+      if (!(await this.isFriendEndpointAvailable())) return
+      await this.request(MATRIX_PATHS.FRIENDS.CANCEL(encodeURIComponent(userId)), {
+        method: 'POST',
+        body: JSON.stringify({})
+      })
+      info(`[SynapseRust] 取消好友请求成功: ${userId}`)
+    } catch (err) {
+      error(`[SynapseRust] 取消好友请求失败: ${err}`)
       throw err
     }
   }

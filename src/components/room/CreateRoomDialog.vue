@@ -181,7 +181,7 @@ const handleCreate = async () => {
     emit('update:visible', false)
     resetForm()
   } catch (error) {
-    logger.error('创建房间失败:', error)
+    logger.error('创建房间失败:', error instanceof Error ? error.message : String(error))
     showFeedback(t('room.create.failed'), 'error')
   } finally {
     creating.value = false

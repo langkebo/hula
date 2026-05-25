@@ -8,7 +8,9 @@
     "online": "在线",
     "offline": "离线",
     "friend_list_label": "好友列表",
-    "new_request_announcement": "收到 {count} 条新的好友请求"
+    "new_request_announcement": "收到 {count} 条新的好友请求",
+    "pending_requests": "{count} 条待处理好友请求",
+    "view_all": "查看全部"
   },
   "filter": {
     "all": "全部",

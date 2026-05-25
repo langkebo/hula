@@ -237,7 +237,7 @@ async function verifyKeyInput() {
   display: flex;
   justify-content: center;
   margin-bottom: 16px;
-  color: var(--primary-color, #1890ff);
+  color: var(--color-primary);
 }
 
 .intro-text {

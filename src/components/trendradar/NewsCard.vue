@@ -13,7 +13,7 @@
         {{ tag }}
       </n-tag>
       <div class="news-card__action">
-        <span class="news-card__link">查看详情</span>
+        <span class="news-card__link">{{ t('trendradar.view_details') }}</span>
         <svg class="news-card__arrow"><use href="#right-arrow"></use></svg>
       </div>
     </div>
@@ -22,7 +22,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { TrendRadarNews } from '@/services/trendradar'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   news: TrendRadarNews
@@ -44,11 +47,11 @@ const formattedTime = computed(() => {
   const now = new Date()
   const diff = now.getTime() - date.getTime()
   const hours = Math.floor(diff / (1000 * 60 * 60))
-  if (hours < 1) return '刚刚'
-  if (hours < 24) return `${hours}小时前`
+  if (hours < 1) return t('trendradar.just_now')
+  if (hours < 24) return t('trendradar.hours_ago', { hours })
   const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}天前`
-  return date.toLocaleDateString('zh-CN')
+  if (days < 7) return t('trendradar.days_ago', { days })
+  return date.toLocaleDateString()
 })
 
 const tags = computed(() => {
@@ -80,7 +83,7 @@ const handleClick = () => {
 .news-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-color);
+  border-color: var(--color-primary);
 }
 
 .news-card__header {
@@ -138,7 +141,7 @@ const handleClick = () => {
   align-items: center;
   gap: 4px;
   margin-left: auto;
-  color: var(--primary-color);
+  color: var(--color-primary);
   font-size: 12px;
 }
 

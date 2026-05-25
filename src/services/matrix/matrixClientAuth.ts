@@ -95,13 +95,21 @@ export async function refreshAccessToken(
   refreshToken?: string
   expiresInMs?: number
 }> {
-  const result = (await client.http.authedRequest('POST', '/_matrix/client/v3/refresh', undefined, {
+  // 使用未认证请求，因为 refresh 端点不需要旧的 access_token
+  const result = (await client.http.request('POST', '/_matrix/client/v3/refresh', undefined, {
     refresh_token: refreshToken
   })) as Record<string, unknown>
+
+  // Matrix 规范中 expires_in 是秒，需转换为毫秒
+  let expiresInMs = result.expires_in_ms as number | undefined
+  const expiresInSec = result.expires_in as number | undefined
+  if (!expiresInMs && expiresInSec) {
+    expiresInMs = expiresInSec * 1000
+  }
 
   return {
     accessToken: result.access_token as string | undefined,
     refreshToken: result.refresh_token as string | undefined,
-    expiresInMs: result.expires_in_ms as number | undefined
+    expiresInMs
   }
 }

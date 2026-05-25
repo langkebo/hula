@@ -34,6 +34,21 @@
       <h3 class="section-title">{{ t('setting.security.recovery_key') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
+          <span class="setting-label">{{ t('setting.security.security_key_label') }}</span>
+          <span class="setting-desc">
+            {{
+              securityKeyConfigured
+                ? t('setting.security.security_key_configured_desc')
+                : t('setting.security.security_key_not_configured_desc')
+            }}
+          </span>
+        </div>
+        <n-button size="small" @click="showSecurityKeyDialog = true">
+          {{ securityKeyConfigured ? t('setting.security.manage') : t('setting.security.setup_action') }}
+        </n-button>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
           <span class="setting-label">{{ t('setting.security.backup_label') }}</span>
           <span class="setting-desc">{{ backupStatusText }}</span>
         </div>
@@ -140,6 +155,8 @@
     </div>
 
     <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupSuccess" />
+
+    <SecurityKeySetupDialog v-model:show="showSecurityKeyDialog" @success="handleSecurityKeyCreated" />
 
     <n-divider />
 
@@ -317,9 +334,11 @@ import {
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
+import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAccount } from '@/composables/user/useAccount'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 
@@ -334,6 +353,7 @@ const dialog = useDialog()
 const { t } = useI18n()
 const { getIgnoredUsers, setIgnoredUsers } = useAccount()
 const settingStore = useSettingStore()
+const encryptionStore = useEncryptionStore()
 
 const loadingIgnored = ref(false)
 const ignoredUsers = ref<string[]>([])
@@ -350,11 +370,14 @@ const newBlocklistUser = ref('')
 const newAllowlistUser = ref('')
 
 const showBackupDialog = ref(false)
+const showSecurityKeyDialog = ref(false)
 const backupLoading = ref(false)
 const exportLoading = ref(false)
 const hasBackup = ref(false)
 const backupInfo = ref<{ version: string | null; count: number } | null>(null)
-const encryptionEnabled = ref(false)
+
+const encryptionEnabled = computed(() => encryptionStore.encryptionEnabled)
+const securityKeyConfigured = computed(() => encryptionStore.securityKeyConfigured)
 
 const showOnlineStatus = ref(true)
 const showTypingStatus = ref(true)
@@ -464,7 +487,7 @@ const backupStatusText = computed(() => {
 })
 
 onMounted(async () => {
-  encryptionEnabled.value = await matrixEncryptionService.isEncryptionAvailable()
+  await encryptionStore.loadEncryptionStatus()
   await loadIgnoredUsers()
   await loadBlockedUsers()
   loadInviteLists()
@@ -484,12 +507,17 @@ async function loadBackupInfo() {
   }
 }
 
+function handleSecurityKeyCreated() {
+  encryptionStore.markSecurityKeyConfigured()
+  showFeedback(t('setting.security.security_key_created'), 'success')
+}
+
 async function loadIgnoredUsers() {
   loadingIgnored.value = true
   try {
     ignoredUsers.value = await getIgnoredUsers()
   } catch (error) {
-    logger.error('Failed to fetch ignored users', error)
+    logger.warn('Failed to fetch ignored users', error)
   } finally {
     loadingIgnored.value = false
   }

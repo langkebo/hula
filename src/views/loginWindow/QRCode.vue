@@ -35,7 +35,7 @@
           <svg class="size-42px animate-pulse">
             <use :href="`#${scanStatus.icon}`"></use>
           </svg>
-          <span class="text-(14px #e3e3e3)">{{ scanStatusText }}</span>
+          <span class="text-(14px [--hula-text-quaternary])">{{ scanStatusText }}</span>
         </n-flex>
 
         <n-flex
@@ -46,12 +46,12 @@
           class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
           style="pointer-events: none">
           <n-spin size="small" />
-          <span class="text-(16px #e3e3e3)">{{ t('login.qr.overlay.refreshing') }}</span>
+          <span class="text-(16px [--hula-text-quaternary])">{{ t('login.qr.overlay.refreshing') }}</span>
         </n-flex>
       </div>
     </n-flex>
 
-    <n-flex justify="center" class="mt-15px text-(14px #808080)">
+    <n-flex justify="center" class="mt-15px text-(14px [--hula-text-tertiary])">
       {{ loadText }}
     </n-flex>
 
@@ -62,12 +62,12 @@
 
     <!-- 底部操作栏 -->
     <n-flex justify="center" class="text-14px" data-tauri-drag-region>
-      <div class="color-#13987f cursor-pointer" @click="router.push('/login')">
+      <div class="color-[--hula-color-primary-500] cursor-pointer" @click="router.push('/login')">
         {{ t('login.qr.actions.account_login') }}
       </div>
       <div class="w-1px h-14px bg-[--login-divider-color]"></div>
       <div
-        class="color-#13987f cursor-pointer"
+        class="color-[--hula-color-primary-500] cursor-pointer"
         @click="createWebviewWindow(t('login.qr.actions.register_title'), 'register', 600, 600)">
         {{ t('login.qr.actions.register') }}
       </div>

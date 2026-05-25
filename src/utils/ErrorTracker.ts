@@ -90,7 +90,23 @@ class ErrorTracker {
     }
   }
 
+  private static readonly IGNORED_MESSAGES = [
+    'ResizeObserver loop completed with undelivered notifications',
+    'ResizeObserver loop limit exceeded',
+    // Vite HMR SharedWorker 在 WKWebView (macOS Tauri) 中受限，仅开发模式出现
+    'The operation is insecure',
+    // Naive UI seemly/rgba 无法解析 CSS 变量，已在 NaiveProvider 中用具体色值修复
+    '[seemly/rgba]: Invalid color value',
+    // Tauri 窗口关闭后异步操作引用了已销毁的窗口，属于良性生命周期问题
+    'window not found'
+  ]
+
   trackError(type: TrackedError['type'], error: Error, context: ErrorContext = {}): void {
+    // 过滤已知的良性浏览器警告
+    if (ErrorTracker.IGNORED_MESSAGES.some((msg) => error.message.includes(msg))) {
+      return
+    }
+
     const fingerprint = this.computeFingerprint(error, context)
     const now = Date.now()
     const existing = this.errors.get(fingerprint)

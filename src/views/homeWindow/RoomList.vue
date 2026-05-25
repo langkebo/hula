@@ -8,6 +8,7 @@
         :session-sort="sessionSort"
         :filtered-count="filteredRoomSessionList.length"
         :total-count="roomSessionList.length"
+        :title="t('home.plugins.room_list_short_title')"
         :show-create-action="true"
         :show-join-action="true"
         :create-button-text="t('room.create.create')"
@@ -35,25 +36,6 @@
         :on-menu-show="handleMenuShow"
         :on-retry-network="retrySessions" />
     </template>
-
-    <template #detail>
-      <WorkbenchDetailPane
-        :selected-session="selectedRoomSession"
-        :active-space="null"
-        :visible-session-count="filteredRoomSessionList.length"
-        :total-session-count="roomSessionList.length"
-        :overlay-mode="overlayState.mode"
-        :forward-event-id="overlayState.forwardEventId"
-        :forward-room-id="overlayState.forwardRoomId"
-        :history-room-id="overlayState.historyRoomId"
-        :merged-msg-ids="overlayState.mergedMsgIds"
-        @close-overlay="closeOverlay"
-        @overlay-created="handleOverlayCreated"
-        @overlay-forwarded="handleOverlayForwarded"
-        @overlay-message-selected="handleOverlayMessageSelected"
-        @overlay-room-selected="handleOverlayRoomSelected"
-        @overlay-user-selected="handleOverlayUserSelected" />
-    </template>
   </ListWorkbenchShell>
 
   <CreateRoomDialog v-model:visible="showCreateRoomDialog" @created="handleRoomCreated" />
@@ -68,7 +50,6 @@ import JoinRoomDialog from '@/components/room/JoinRoomDialog.vue'
 import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'
 import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.vue'
 import type RoomSessionList from '@/components/workbench/RoomSessionList.vue'
-import WorkbenchDetailPane from '@/components/workbench/WorkbenchDetailPane.vue'
 import { useMessageSessionFilters } from '@/composables/workbench/useMessageSessionFilters'
 import { useSessionListState } from '@/composables/workbench/useSessionListState'
 import { useSessionPageSync } from '@/composables/workbench/useSessionPageSync'
@@ -96,52 +77,6 @@ const {
   invalidateSessionCache
 } = useSessionListState()
 
-type OverlayMode = 'create-room' | 'create-space' | 'forward' | 'search' | 'history' | 'merged-msg'
-
-const overlayState = reactive<{
-  mode: OverlayMode | null
-  forwardEventId: string
-  forwardRoomId: string
-  historyRoomId: string
-  mergedMsgIds: string[]
-}>({
-  mode: null,
-  forwardEventId: '',
-  forwardRoomId: '',
-  historyRoomId: '',
-  mergedMsgIds: []
-})
-
-const closeOverlay = () => {
-  overlayState.mode = null
-  overlayState.forwardEventId = ''
-  overlayState.forwardRoomId = ''
-  overlayState.historyRoomId = ''
-  overlayState.mergedMsgIds = []
-}
-
-const handleOverlayCreated = (_data: { roomId?: string; space?: unknown }) => {
-  closeOverlay()
-}
-
-const handleOverlayForwarded = (_roomIds: string[]) => {
-  closeOverlay()
-}
-
-const handleOverlayMessageSelected = (roomId: string, _eventId: string) => {
-  ensureSessionVisible(roomId)
-  closeOverlay()
-}
-
-const handleOverlayRoomSelected = (roomId: string) => {
-  ensureSessionVisible(roomId)
-  closeOverlay()
-}
-
-const handleOverlayUserSelected = (_userId: string) => {
-  closeOverlay()
-}
-
 const roomSessionList = computed(() => sessionList.value.filter((item) => item.type === RoomTypeEnum.GROUP))
 const {
   searchKeyword,
@@ -160,9 +95,6 @@ const ROOM_LIST_ROUTE_NAME = 'roomList'
 const showCreateRoomDialog = ref(false)
 const showJoinRoomDialog = ref(false)
 
-const selectedRoomSession = computed(
-  () => roomSessionList.value.find((item) => item.roomId === globalStore.currentSessionRoomId) ?? null
-)
 const emptyDescription = computed(() => {
   if (
     searchKeyword.value.trim() ||

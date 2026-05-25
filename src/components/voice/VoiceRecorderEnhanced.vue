@@ -364,7 +364,7 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: var(--bg-color);
+  background: var(--hula-surface-app);
   border-radius: 12px;
   min-width: 280px;
 }

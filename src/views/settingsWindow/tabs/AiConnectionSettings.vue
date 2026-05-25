@@ -134,7 +134,7 @@ async function loadConnections() {
   try {
     connections.value = await matrixAIConnectionService.listConnections()
   } catch (err) {
-    logger.error('Failed to load AI connections', err)
+    logger.warn('Failed to load AI connections', err)
     connections.value = []
   } finally {
     loading.value = false
@@ -147,7 +147,7 @@ async function loadMcpTools() {
     const result = await matrixAIConnectionService.listMcpTools()
     mcpTools.value = result.map((tool) => ({ name: tool.name, description: tool.description }))
   } catch (err) {
-    logger.error('Failed to load MCP tools', err)
+    logger.warn('Failed to load MCP tools', err)
     mcpTools.value = []
   } finally {
     toolsLoading.value = false

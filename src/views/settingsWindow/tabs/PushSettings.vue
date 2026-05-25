@@ -244,7 +244,11 @@ const ruleKinds = ['override', 'content', 'room', 'sender', 'underride'] as cons
 onMounted(async () => {
   await Promise.allSettled([fetchPushers(), fetchPushRules(), fetchNotifications()])
   await loadDndSettings()
-  unsubscribePushRules = matrixPushService.subscribePushRules(handlePushRulesUpdate)
+  try {
+    unsubscribePushRules = matrixPushService.subscribePushRules(handlePushRulesUpdate)
+  } catch {
+    // 客户端未初始化时订阅会失败，设置页打开时可能客户端尚未就绪
+  }
 })
 
 onUnmounted(() => {
@@ -275,7 +279,7 @@ async function fetchPushRules() {
     pushRules.value = rules
     updateUIFromRules(rules)
   } catch (error) {
-    logger.error('Failed to fetch push rules', error)
+    logger.warn('Failed to fetch push rules', error)
     loadSavedSettings()
   } finally {
     rulesLoading.value = false
@@ -288,7 +292,7 @@ async function fetchNotifications() {
     const result = await matrixNotificationService.getNotifications(undefined, 20)
     notifications.value = result.notifications
   } catch (error) {
-    logger.error('Failed to fetch notifications', error)
+    logger.warn('Failed to fetch notifications', error)
   } finally {
     historyLoading.value = false
   }

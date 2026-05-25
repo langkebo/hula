@@ -154,7 +154,7 @@ defineExpose({
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: var(--bg-color);
+  background: var(--hula-surface-panel);
   border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   cursor: pointer;
@@ -162,7 +162,7 @@ defineExpose({
 
   &:hover {
     background: var(--hover-color);
-    border-color: var(--primary-color);
+    border-color: var(--color-primary);
   }
 
   .role-info {
@@ -180,7 +180,7 @@ defineExpose({
 
     .role-desc {
       font-size: 12px;
-      color: #909090;
+      color: var(--hula-text-tertiary);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -189,7 +189,7 @@ defineExpose({
   }
 
   .expand-icon {
-    color: #909090;
+    color: var(--hula-text-tertiary);
     transition: transform 0.3s;
 
     &.expanded {
@@ -203,7 +203,7 @@ defineExpose({
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: var(--bg-color);
+  background: var(--hula-surface-panel);
   border: 1px solid var(--hula-border-default);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -240,10 +240,10 @@ defineExpose({
     }
 
     &.active {
-      background: var(--primary-color-hover);
+      background: var(--color-primary-hover);
 
       .role-item-name {
-        color: var(--primary-color);
+        color: var(--color-primary);
       }
     }
 
@@ -262,7 +262,7 @@ defineExpose({
 
       .role-item-desc {
         font-size: 12px;
-        color: #909090;
+        color: var(--hula-text-tertiary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -271,7 +271,7 @@ defineExpose({
     }
 
     .check-icon {
-      color: var(--primary-color);
+      color: var(--color-primary);
     }
   }
 
@@ -283,13 +283,13 @@ defineExpose({
     padding: 40px 20px;
 
     .empty-icon {
-      color: #909090;
+      color: var(--hula-text-tertiary);
       margin-bottom: 12px;
     }
 
     .empty-text {
       font-size: 14px;
-      color: #909090;
+      color: var(--hula-text-tertiary);
       margin-bottom: 16px;
     }
   }

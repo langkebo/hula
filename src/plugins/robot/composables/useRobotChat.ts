@@ -23,7 +23,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import type { AIAudio, AIImage, AIVideo } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
 
-const logger = createLogger('RobotChat')
+const _logger = createLogger('RobotChat')
 
 export interface ConversationMeta {
   id: string
@@ -182,17 +182,7 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     loadRemainingUsage
   })
 
-  const {
-    aiProvider,
-    openClawConfig,
-    isOpenClawConnected,
-    openClawModels,
-    openClawCurrentModel,
-    connectOpenClaw,
-    sendOpenClawMessage,
-    loadSavedConfig,
-    handleProviderChange
-  } = useAiProviderConfig({
+  const { aiProvider, loadSavedConfig, handleProviderChange } = useAiProviderConfig({
     fetchModelList,
     modelList
   })
@@ -274,17 +264,15 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
       ensureLocalAiAudio
     })
 
-  const { isAIStreaming, sendAIMessage, handleStopAIStream, handleOpenClawSend } = useAiStreaming({
+  const { isAIStreaming, sendAIMessage, handleStopAIStream } = useAiStreaming({
     currentChat,
     messageList,
     conversationTokens,
     reasoningEnabled,
     msgInputRef,
-    isOpenClawConnected,
     bumpMessageRenderVersion,
     notifyConversationMetaChange,
     loadRemainingUsage,
-    sendOpenClawMessage,
     onTokenUsageUpdate: (usage) => {
       serverTokenUsage.value = usage
     }
@@ -317,11 +305,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
   const handleSendAI = (data: { content: string }) => {
     if (!data.content.trim()) {
       showFeedback('消息内容不能为空', 'warning')
-      return
-    }
-
-    if (aiProvider.value === 'openclaw') {
-      void handleOpenClawSend(data.content)
       return
     }
 
@@ -375,17 +358,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
 
   onMounted(async () => {
     loadSavedConfig()
-
-    if (aiProvider.value === 'openclaw') {
-      try {
-        await connectOpenClaw({
-          gatewayUrl: openClawConfig.value.gatewayUrl,
-          token: openClawConfig.value.token
-        })
-      } catch (error) {
-        logger.error('OpenClaw 连接失败:', error)
-      }
-    }
 
     if (modelList.value.length === 0) {
       await fetchModelList()
@@ -460,9 +432,6 @@ export const useRobotChat = (options: UseRobotChatOptions) => {
     otherFeatures,
     userAvatar,
     aiProvider,
-    isOpenClawConnected,
-    openClawModels,
-    openClawCurrentModel,
     handleProviderChange,
     getDefaultAvatar,
     getModelAvatar,

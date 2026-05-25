@@ -176,6 +176,18 @@
         },
         {
           "path": "$RESOURCE/**"
+        },
+        {
+          "path": "$HOME/**"
+        },
+        {
+          "path": "$DESKTOP/**"
+        },
+        {
+          "path": "$PICTURES/**"
+        },
+        {
+          "path": "$DOCUMENTS/**"
         }
       ]
     },

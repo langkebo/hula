@@ -371,7 +371,7 @@ onMounted(() => {
     flex: 1;
 
     .widget-icon {
-      color: var(--primary-color);
+      color: var(--color-primary);
     }
 
     .widget-details {

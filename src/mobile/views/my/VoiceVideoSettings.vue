@@ -347,7 +347,7 @@ async function startAudioTest() {
       message: t('mobile_voice_video.test_started')
     })
   } catch (error) {
-    logger.error('Failed to start microphone test', error)
+    logger.warn('Failed to start microphone test', error)
     showToast({
       type: 'fail',
       message: t('mobile_voice_video.mic_error')

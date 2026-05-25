@@ -5,7 +5,7 @@
       v-if="networkBanner"
       align="center"
       justify="center"
-      class="z-999 w-full h-40px rounded-4px text-(12px [--hula-color-danger-500]) bg-[--hula-color-danger-100] flex-shrink-0">
+      class="z-999 w-full h-40px rounded-4px text-[var(--text-sm)] text-[--hula-color-danger-500] bg-[--hula-color-danger-100] flex-shrink-0">
       <svg class="size-16px">
         <use href="#cloudError"></use>
       </svg>
@@ -14,7 +14,12 @@
 
     <!-- 置顶公告提示 -->
     <Transition name="announcement" mode="out-in">
-      <div v-if="isGroup && topAnnouncement" key="announcement" class="p-[6px_12px_0_12px]">
+      <div v-if="announcementStore.isLoading" key="announcement-loading" class="p-[6px_12px_0_12px]">
+        <div class="custom-announcement flex items-center justify-center h-40px">
+          <n-spin :size="20" />
+        </div>
+      </div>
+      <div v-else-if="isGroup && topAnnouncement" key="announcement" class="p-[6px_12px_0_12px]">
         <div
           class="custom-announcement"
           :class="{ 'announcement-hover': isAnnouncementHover }"
@@ -25,12 +30,12 @@
               <svg class="size-16px flex-shrink-0">
                 <use href="#Loudspeaker"></use>
               </svg>
-              <div class="flex-1 min-w-0 line-clamp-1 text-(12px [--hula-text-tertiary])">
+              <div class="flex-1 min-w-0 line-clamp-1 text-[var(--text-sm)] text-[--hula-text-tertiary]">
                 {{ topAnnouncement.content }}
               </div>
             </n-flex>
             <div class="flex-shrink-0 w-60px select-none" @click="handleViewAnnouncement">
-              <p class="text-(12px --hula-color-primary-500) cursor-pointer">
+              <p class="text-[var(--text-sm)] text-[--hula-color-primary-500] cursor-pointer">
                 {{ t('home.chat_main.announcement.view_all') }}
               </p>
             </div>
@@ -56,7 +61,7 @@
           <div
             v-show="isMainViewReady && chatStore.shouldShowNoMoreMessage"
             class="flex-center gap-6px h-32px flex-shrink-0 cursor-default select-none">
-            <p class="text-(12px --hula-text-tertiary)">{{ t('home.chat_main.no_more') }}</p>
+            <p class="text-[var(--text-sm)] text-[--hula-text-tertiary]">{{ t('home.chat_main.no_more') }}</p>
           </div>
 
           <!-- 空状态 -->
@@ -67,8 +72,12 @@
               <svg><use href="#chat" /></svg>
             </n-icon>
             <n-flex vertical align="center" :size="8">
-              <span class="text-16px text-[--hula-text-secondary]">{{ t('home.chat_main.empty_title') }}</span>
-              <span class="text-12px text-[--hula-text-tertiary]">{{ t('home.chat_main.empty_desc') }}</span>
+              <span class="text-[var(--text-base)] text-[--hula-text-secondary]">
+                {{ t('home.chat_main.empty_title') }}
+              </span>
+              <span class="text-[var(--text-sm)] text-[--hula-text-tertiary]">
+                {{ t('home.chat_main.empty_desc') }}
+              </span>
             </n-flex>
           </div>
           <DynamicScroller
@@ -96,7 +105,10 @@
                 :data-message-id="item.message.id"
                 :data-message-index="index">
                 <!-- 信息间隔时间 -->
-                <span class="text-(12px --hula-text-tertiary) select-none p-4px" v-if="item.timeBlock" @click.stop>
+                <span
+                  class="text-[var(--text-sm)] text-[--hula-text-tertiary] select-none p-4px"
+                  v-if="item.timeBlock"
+                  @click.stop>
                   {{ timeToStr(item.message.sendTime) }}
                 </span>
                 <!-- 消息内容容器 -->
@@ -149,7 +161,7 @@
           </n-icon>
           <span
             v-if="currentNewMsgCount?.count && currentNewMsgCount.count > 0"
-            class="text-12px"
+            class="text-[var(--text-sm)]"
             :class="{ 'color-[--hula-color-danger-500]': currentNewMsgCount?.count > 99 }">
             {{ t('home.chat_main.new_messages', { count: newMsgCountLabel }) }}
           </span>
@@ -177,7 +189,7 @@
         <use href="#close"></use>
       </svg>
       <div class="flex flex-col gap-30px p-[22px_10px_10px_22px] select-none">
-        <span class="text-14px">{{ tips }}</span>
+        <span class="text-[var(--text-sm)]">{{ tips }}</span>
 
         <n-flex justify="end">
           <n-button @click="handleConfirm" class="w-78px" type="primary">
@@ -207,7 +219,9 @@
         <use href="#close"></use>
       </svg>
       <div class="flex flex-col gap-20px p-[22px_10px_10px_22px] select-none">
-        <span class="text-(16px [--hula-text-primary]) font-500">{{ t('home.chat_main.group_nickname.title') }}</span>
+        <span class="text-[var(--text-base)] text-[--hula-text-primary] font-500">
+          {{ t('home.chat_main.group_nickname.title') }}
+        </span>
         <n-input
           v-model:value="groupNicknameValue"
           :placeholder="t('home.chat_main.group_nickname.placeholder')"
@@ -216,7 +230,9 @@
           :disabled="groupNicknameSubmitting"
           clearable
           @keydown.enter.prevent="handleGroupNicknameConfirm" />
-        <p v-if="groupNicknameError" class="text-(12px [--hula-color-danger-500])">{{ groupNicknameError }}</p>
+        <p v-if="groupNicknameError" class="text-[var(--text-sm)] text-[--hula-color-danger-500]">
+          {{ groupNicknameError }}
+        </p>
         <n-flex justify="end" :size="12">
           <n-button @click="groupNicknameModalVisible = false" :disabled="groupNicknameSubmitting" secondary>
             {{ t('home.chat_main.cancel') }}
@@ -368,7 +384,7 @@ const isMainViewReady = computed(() => {
   return hasSessionBound && hasLoadedCurrentRoom
 })
 const networkBanner = computed(() => {
-  if (!networkStatus.browserOnline.value) {
+  if (!networkStatus.browserOnline.value && networkStatus.wsOnline.value !== true) {
     return { text: t('home.chat_main.network_offline') }
   }
 
@@ -486,6 +502,7 @@ let announcementUpdatedListener: UnlistenFn | null = null
 let announcementClearListener: UnlistenFn | null = null
 // 获取置顶公告
 const loadTopAnnouncement = async (roomId?: string): Promise<void> => {
+  if (announcementStore.isLoading) return
   const targetRoomId = roomId ?? currentRoomId.value
 
   if (!targetRoomId || !isGroup.value) {
