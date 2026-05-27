@@ -6,7 +6,7 @@
         :show-indicator="false"
         :height="6"
         :stroke-width="10"
-        :color="'#13987f'"
+        :color="'var(--hula-color-primary-500)'"
         :rail-color="'rgba(19, 152, 127, 0.3)'"
         class="assistant-view__progress"
         type="line" />

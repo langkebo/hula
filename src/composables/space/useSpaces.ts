@@ -20,6 +20,8 @@ export interface UseSpacesResult {
     options?: { from?: string; limit?: number; maxDepth?: number; suggestedOnly?: boolean }
   ) => Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }>
   addChildToSpace: (spaceId: string, roomId: string, options?: { via?: string[]; suggested?: boolean }) => Promise<void>
+  getRoomParentSpaces: (roomId: string) => Promise<SpaceInfo[]>
+  getRoomSpaceInfo: (roomId: string) => Promise<SpaceInfo | null>
 }
 
 export function useSpaces(): UseSpacesResult {
@@ -76,5 +78,35 @@ export function useSpaces(): UseSpacesResult {
     await matrixSpaceService.addChildToSpace(spaceId, roomId, options)
   }
 
-  return { spaces, loading, mutating, error, load, create, joinSpace, getSpaceHierarchy, addChildToSpace }
+  const getRoomParentSpaces = async (roomId: string): Promise<SpaceInfo[]> => {
+    try {
+      return await matrixSpaceService.getRoomParentSpaces(roomId)
+    } catch (err) {
+      logger.error('get room parent spaces failed', err)
+      return []
+    }
+  }
+
+  const getRoomSpaceInfo = async (roomId: string): Promise<SpaceInfo | null> => {
+    try {
+      return await matrixSpaceService.getRoomParentSpacesViaApi(roomId).then((spaces) => spaces[0] ?? null)
+    } catch (err) {
+      logger.error('get room space info failed', err)
+      return null
+    }
+  }
+
+  return {
+    spaces,
+    loading,
+    mutating,
+    error,
+    load,
+    create,
+    joinSpace,
+    getSpaceHierarchy,
+    addChildToSpace,
+    getRoomParentSpaces,
+    getRoomSpaceInfo
+  }
 }

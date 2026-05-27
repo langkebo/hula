@@ -129,8 +129,14 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
   }
 
   const pushMsg = async (msg: MessageType, options: { isActiveChatView?: boolean; activeRoomId?: string } = {}) => {
+    // 防御性归一化：确保 fromUser 始终有有效结构
+    if (!msg.fromUser || typeof msg.fromUser !== 'object') {
+      msg.fromUser = { uid: '', username: '', avatar: '' }
+    }
+    msg.fromUser.uid = msg.fromUser.uid ?? ''
+
     if (!msg.message.id) {
-      msg.message.id = `${msg.message.roomId}_${msg.message.sendTime}_${msg.fromUser.uid}`
+      msg.message.id = `${msg.message.roomId}_${msg.message.sendTime}_${msg.fromUser.uid || 'unknown'}`
     }
     const messageKey = msg.message.id
 
@@ -172,7 +178,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
         targetRoomId === msg.message.roomId
     }
 
-    const uid = msg.fromUser.uid
+    const uid = msg.fromUser?.uid ?? ''
     const cacheUser = groupStore.getUserInfo(uid)
 
     const session = sessionStore.getSession(msg.message.roomId)
@@ -182,7 +188,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
         msg.message.type === MsgEnum.RECALL
           ? session.type === RoomTypeEnum.GROUP
             ? `${lastMsgUserName}:撤回了一条消息`
-            : msg.fromUser.uid === userStore.userInfo!.uid
+            : msg.fromUser?.uid === userStore.userInfo?.uid
               ? '你撤回了一条消息'
               : '对方撤回了一条消息'
           : msg.message.body?.content || msg.message.body?.body || ''
@@ -192,7 +198,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
         activeTime: Date.now()
       }
 
-      const isSelfMessage = msg.fromUser.uid === userStore.userInfo!.uid
+      const isSelfMessage = msg.fromUser?.uid === userStore.userInfo?.uid
       const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
 
       if (shouldIncreaseUnread) {
@@ -213,7 +219,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
           activeTime: Date.now()
         }
         sessionStore.addSession(newSession)
-        const isSelfMessage = msg.fromUser.uid === userStore.userInfo!.uid
+        const isSelfMessage = msg.fromUser?.uid === userStore.userInfo?.uid
         const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
         if (shouldIncreaseUnread) {
           sessionStore.updateSession(msg.message.roomId, { unreadCount: 1 })
@@ -221,7 +227,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
       }
     }
 
-    if (msg.message.body.atUidList?.includes(userStore.userInfo!.uid) && cacheUser) {
+    if (msg.message.body.atUidList?.includes(userStore.userInfo?.uid ?? '') && cacheUser) {
       sendNotification({
         title: cacheUser.name as string,
         body: msg.message.body.content || msg.message.body.body || '',
@@ -374,12 +380,12 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
         }
 
         if (actType === 1) {
-          if (uid === userStore.userInfo!.uid) {
+          if (uid === userStore.userInfo?.uid) {
             currentMarkStat.userMarked = true
           }
           currentMarkStat.count = markCount
         } else if (actType === 2) {
-          if (uid === userStore.userInfo!.uid) {
+          if (uid === userStore.userInfo?.uid) {
             currentMarkStat.userMarked = false
           }
           currentMarkStat.count = markCount
@@ -400,7 +406,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
       messageId: data.msg.message.id,
       content: data.originalContent ?? data.msg.message.body.content ?? data.msg.message.body.body ?? '',
       originalType: data.originalType ?? data.msg.message.type,
-      isSelf: data.recallUid === userStore.userInfo!.uid
+      isSelf: data.recallUid === userStore.userInfo?.uid
     })
   }
 
@@ -414,15 +420,15 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     let recallMessageBody = ''
 
     if (message && typeof data.recallUid === 'string') {
-      const currentUid = userStore.userInfo!.uid
-      const senderUid = message.fromUser.uid
+      const currentUid = userStore.userInfo?.uid ?? ''
+      const senderUid = message.fromUser?.uid ?? ''
 
       const isRecallerCurrentUser = data.recallUid === currentUid
       const isSenderCurrentUser = senderUid === currentUid
       const recallerUser = groupStore.getUserInfo(data.recallUid, resolvedRoomId)
       const recallerName = recallerUser?.myName || recallerUser?.name || data.recallUid || ''
       const senderUser = groupStore.getUserInfo(senderUid, resolvedRoomId)
-      const senderName = senderUser?.myName || senderUser?.name || message.fromUser.username || senderUid
+      const senderName = senderUser?.myName || senderUser?.name || message.fromUser?.username || senderUid
       const isGroupChat = sessionType === RoomTypeEnum.GROUP
 
       if (isRecallerCurrentUser) {

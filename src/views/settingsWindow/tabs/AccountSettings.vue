@@ -29,7 +29,48 @@
           <n-form-item :label="t('setting.account.user_id')">
             <n-input :value="userId" disabled />
           </n-form-item>
+
+          <n-form-item :label="t('setting.account.about')" path="about">
+            <n-input
+              v-model:value="formData.about"
+              type="textarea"
+              :placeholder="t('setting.account.about_placeholder')"
+              :maxlength="300"
+              :disabled="!supportsExtendedProfile"
+              @blur="handleAboutChange" />
+          </n-form-item>
+
+          <n-form-item :label="t('setting.account.gender')" path="sex">
+            <n-select
+              v-model:value="formData.sex"
+              :options="genderOptions"
+              clearable
+              :disabled="!supportsExtendedProfile"
+              :placeholder="t('setting.account.gender_placeholder')"
+              @update:value="handleSexChange" />
+          </n-form-item>
+
+          <n-form-item :label="t('setting.account.region')" path="region">
+            <n-input
+              v-model:value="formData.region"
+              :placeholder="t('setting.account.region_placeholder')"
+              :maxlength="120"
+              :disabled="!supportsExtendedProfile"
+              @blur="handleRegionChange" />
+          </n-form-item>
+
+          <n-form-item :label="t('setting.account.birthday')" path="birthday">
+            <n-input
+              v-model:value="formData.birthday"
+              :placeholder="t('setting.account.birthday_placeholder')"
+              :maxlength="20"
+              :disabled="!supportsExtendedProfile"
+              @blur="handleBirthdayChange" />
+          </n-form-item>
         </n-form>
+        <p v-if="!supportsExtendedProfile" class="extended-profile-hint">
+          {{ t('setting.account.extended_profile_unsupported') }}
+        </p>
       </div>
     </div>
 
@@ -91,8 +132,8 @@
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
-import { NAvatar, NButton, NCheckbox, NDivider, NForm, NFormItem, NInput, useDialog } from 'naive-ui'
-import { computed, reactive, ref } from 'vue'
+import { NAvatar, NButton, NCheckbox, NDivider, NForm, NFormItem, NInput, NSelect, useDialog } from 'naive-ui'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import defaultAvatarImg from '@/assets/img/win.png'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
@@ -101,8 +142,11 @@ import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingsTabDirty } from '@/composables/settings/useSettingsDirtyRegistry'
 import { useAccount } from '@/composables/user/useAccount'
+import { SexEnum } from '@/enums'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
+import { profileService } from '@/services/matrix/user/MatrixProfileService'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -120,6 +164,7 @@ const { t } = useI18n()
 const { changePassword, deactivateAccount } = useAccount()
 const userStore = useUserStore()
 const matrixStore = useMatrixStore()
+const { hasUnstable } = useServerCapability()
 
 const passwordLoading = ref(false)
 const avatarUploading = ref(false)
@@ -132,6 +177,7 @@ const logoutDevices = ref(false)
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
 const defaultAvatar = computed(() => defaultAvatarImg)
 const userId = computed(() => matrixStore.userId || '')
+const supportsExtendedProfile = computed(() => hasUnstable('uk.tcpip.msc4133'))
 
 const displayAvatarUrl = computed(() => {
   if (userAvatar.value?.startsWith('mxc://')) {
@@ -141,8 +187,24 @@ const displayAvatarUrl = computed(() => {
 })
 
 const formData = reactive({
-  displayName: userStore.currentUserDisplayName || ''
+  displayName: userStore.currentUserDisplayName || '',
+  about: '',
+  sex: null as number | null,
+  region: '',
+  birthday: ''
 })
+
+const initialExtendedProfile = reactive({
+  about: '',
+  sex: null as number | null,
+  region: '',
+  birthday: ''
+})
+
+const genderOptions = computed(() => [
+  { label: t('setting.account.gender_male'), value: SexEnum.MAN },
+  { label: t('setting.account.gender_female'), value: SexEnum.REMALE }
+])
 
 const passwordForm = reactive({
   oldPassword: '',
@@ -259,6 +321,69 @@ async function handleDisplayNameChange() {
   }
 }
 
+function syncExtendedProfileSnapshot() {
+  initialExtendedProfile.about = formData.about
+  initialExtendedProfile.sex = formData.sex
+  initialExtendedProfile.region = formData.region
+  initialExtendedProfile.birthday = formData.birthday
+}
+
+function patchCurrentUserExtendedProfile() {
+  if (userStore.userInfo) {
+    userStore.userInfo.resume = formData.about
+    if (typeof formData.sex === 'number') {
+      userStore.userInfo.sex = formData.sex as typeof userStore.userInfo.sex
+    }
+  }
+  if (userStore.matrixProfile) {
+    userStore.matrixProfile.resume = formData.about || undefined
+    userStore.matrixProfile.sex = typeof formData.sex === 'number' ? formData.sex : undefined
+  }
+}
+
+async function updateExtendedProfileField(
+  field: 'resume' | 'sex' | 'region' | 'birthday',
+  value: string | number | null,
+  previousValue: string | number | null
+) {
+  if (!supportsExtendedProfile.value) {
+    showFeedback(t('setting.account.extended_profile_unsupported'), 'warning')
+    return
+  }
+  if (value === previousValue) return
+  try {
+    await profileService.updateOwnExtendedProfile({
+      [field]: value
+    })
+    patchCurrentUserExtendedProfile()
+    syncExtendedProfileSnapshot()
+    showFeedback(t('setting.account.extended_profile_updated'), 'success')
+  } catch (error) {
+    showFeedback(t('setting.account.extended_profile_update_failed'), 'error')
+    if (field === 'resume') formData.about = initialExtendedProfile.about
+    if (field === 'sex') formData.sex = initialExtendedProfile.sex
+    if (field === 'region') formData.region = initialExtendedProfile.region
+    if (field === 'birthday') formData.birthday = initialExtendedProfile.birthday
+  }
+}
+
+async function handleAboutChange() {
+  await updateExtendedProfileField('resume', formData.about.trim(), initialExtendedProfile.about)
+}
+
+async function handleSexChange(value: number | null) {
+  formData.sex = value
+  await updateExtendedProfileField('sex', value, initialExtendedProfile.sex)
+}
+
+async function handleRegionChange() {
+  await updateExtendedProfileField('region', formData.region.trim(), initialExtendedProfile.region)
+}
+
+async function handleBirthdayChange() {
+  await updateExtendedProfileField('birthday', formData.birthday.trim(), initialExtendedProfile.birthday)
+}
+
 /** 校验密码强度（与后端 synapse-rust 策略一致） */
 function validatePasswordStrength(password: string): string | null {
   if (password.length < 8) return t('setting.account.password_too_short')
@@ -327,6 +452,21 @@ function handleDeactivateAccount() {
     }
   })
 }
+
+onMounted(async () => {
+  if (!userId.value || !supportsExtendedProfile.value) return
+  try {
+    const extendedProfile = await profileService.getExtendedProfile(userId.value)
+    formData.about = typeof extendedProfile.resume === 'string' ? extendedProfile.resume : ''
+    formData.sex = typeof extendedProfile.sex === 'number' ? extendedProfile.sex : null
+    formData.region = typeof extendedProfile.region === 'string' ? extendedProfile.region : ''
+    formData.birthday = typeof extendedProfile.birthday === 'string' ? extendedProfile.birthday : ''
+    syncExtendedProfileSnapshot()
+    patchCurrentUserExtendedProfile()
+  } catch (error) {
+    logger.warn('Failed to load extended profile for account settings', error)
+  }
+})
 </script>
 
 <style scoped>
@@ -362,5 +502,11 @@ function handleDeactivateAccount() {
   border: 1px solid var(--hula-color-danger-500);
   border-radius: var(--hula-radius-sm);
   background-color: var(--hula-color-danger-100);
+}
+
+.extended-profile-hint {
+  margin-top: var(--hula-space-2);
+  color: var(--hula-text-secondary);
+  font-size: var(--hula-font-size-sm);
 }
 </style>

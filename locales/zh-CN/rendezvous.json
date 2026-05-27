@@ -1,0 +1,56 @@
+{
+  "title": "Rendezvous 会话管理",
+  "create_hint": "创建一个 Rendezvous 会话以启动 MSC3886 安全跨设备登录流程",
+  "create_session": "创建会话",
+  "creating": "正在创建会话...",
+  "create_success": "会话创建成功",
+  "create_failed": "会话创建失败",
+  "session_id": "会话 ID",
+  "session_status": "会话状态",
+  "qr_hint": "使用其他设备扫描此二维码以连接会话",
+  "messages": "消息",
+  "no_messages": "暂无消息",
+  "message_placeholder": "输入消息...",
+  "send_success": "消息发送成功",
+  "send_failed": "消息发送失败",
+  "get_messages_failed": "获取消息失败",
+  "complete_session": "完成会话",
+  "complete_success": "会话已完成",
+  "complete_failed": "完成会话失败",
+  "delete_session": "删除会话",
+  "delete_success": "会话已删除",
+  "delete_failed": "删除会话失败",
+  "completed_title": "会话已完成",
+  "completed_desc": "Rendezvous 会话已成功完成，设备已安全连接",
+  "failed_title": "会话失败",
+  "failed_desc": "Rendezvous 会话发生错误，请重试",
+  "retry": "重试",
+  "steps": {
+    "create": "创建会话",
+    "connect": "设备连接",
+    "exchange": "消息交换",
+    "complete": "完成登录"
+  },
+  "status": {
+    "idle": {
+      "title": "等待创建",
+      "desc": "点击创建会话以开始 Rendezvous 登录"
+    },
+    "creating": {
+      "title": "创建中",
+      "desc": "正在创建 Rendezvous 会话..."
+    },
+    "active": {
+      "title": "会话活跃",
+      "desc": "会话已建立，等待设备连接和消息交换"
+    },
+    "completed": {
+      "title": "已完成",
+      "desc": "会话已成功完成"
+    },
+    "failed": {
+      "title": "失败",
+      "desc": "会话发生错误"
+    }
+  }
+}

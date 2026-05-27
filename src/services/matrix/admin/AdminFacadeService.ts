@@ -50,7 +50,7 @@ import { AdminRegistrationTokensService } from './RegistrationTokensService'
 import { AdminReportService } from './ReportService'
 import { AdminRetentionService } from './RetentionService'
 import { AdminRoomService } from './RoomService'
-import { AdminSecurityService } from './SecurityService'
+import { type AdminFeatureFlag, type AdminFeatureFlagInput, AdminSecurityService } from './SecurityService'
 import { AdminServerService } from './ServerService'
 import { AdminUserService } from './UserService'
 
@@ -891,8 +891,24 @@ class AdminFacadeService extends BaseMatrixService {
     return this.security.getExperimentalFeatures()
   }
 
+  async listFeatureFlagsDetailed(): Promise<AdminFeatureFlag[]> {
+    return this.security.listFeatureFlagsDetailed()
+  }
+
+  async getFeatureFlagDetail(flagKey: string): Promise<AdminFeatureFlag | null> {
+    return this.security.getFeatureFlagDetail(flagKey)
+  }
+
+  async saveFeatureFlag(input: AdminFeatureFlagInput): Promise<AdminFeatureFlag> {
+    return this.security.saveFeatureFlag(input)
+  }
+
   async setExperimentalFeature(feature: string, enabled: boolean): Promise<void> {
     return this.security.setExperimentalFeature(feature, enabled)
+  }
+
+  async deleteFeatureFlag(flagKey: string): Promise<void> {
+    return this.security.deleteFeatureFlag(flagKey)
   }
 
   async getBackups(): Promise<Array<Record<string, unknown>>> {

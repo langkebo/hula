@@ -132,6 +132,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import router from '@/router'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
+import { ExtendedProfileUnsupportedError, profileService } from '@/services/matrix/user/MatrixProfileService'
 import type { ModifyUserInfoType, UserInfoType } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
@@ -192,7 +193,7 @@ const {
     if (userStore.matrixProfile) {
       userStore.matrixProfile.avatarUrl = mxcUrl
     }
-    const historyItem = loginHistoriesStore.loginHistories.find((item) => item.uid === userStore.userInfo!.uid)
+    const historyItem = loginHistoriesStore.loginHistories.find((item) => item.uid === (userStore.userInfo?.uid ?? ''))
     if (historyItem) {
       historyItem.avatar = mxcUrl
     }
@@ -216,6 +217,14 @@ const localUserInfo = ref<Partial<ModifyUserInfoType>>({
   modifyNameChance: 0
 } as ModifyUserInfoType)
 
+const syncLocalUserInfoFromStore = () => {
+  if (!userStore.userInfo) return
+  localUserInfo.value = {
+    ...localUserInfo.value,
+    ...userStore.userInfo
+  }
+}
+
 const toEditBirthday = () => {
   router.push('/mobile/mobileMy/editBirthday')
 }
@@ -225,9 +234,37 @@ const toEditBio = () => {
 }
 
 const updateCurrentUserCache = (key: 'name' | 'avatar', value: string) => {
-  const currentUser = userStore.userInfo!.uid && groupStore.getUserInfo(userStore.userInfo!.uid)
+  const currentUser = (userStore.userInfo?.uid ?? '') && groupStore.getUserInfo(userStore.userInfo?.uid ?? '')
   if (currentUser) {
     ;(currentUser as unknown as Record<string, unknown>)[key] = value
+  }
+}
+
+const loadExtendedProfile = async () => {
+  const userId = userStore.userInfo?.uid
+  if (!userId) return
+  try {
+    const extendedProfile = await profileService.getExtendedProfile(userId)
+    if (typeof extendedProfile.sex === 'number') {
+      localUserInfo.value.sex = extendedProfile.sex
+      if (userStore.userInfo) {
+        userStore.userInfo.sex = extendedProfile.sex as UserInfoType['sex']
+      }
+    }
+    if (typeof extendedProfile.resume === 'string') {
+      localUserInfo.value.resume = extendedProfile.resume
+      if (userStore.userInfo) {
+        userStore.userInfo.resume = extendedProfile.resume
+      }
+    }
+    if (typeof extendedProfile.region === 'string') {
+      region.value = extendedProfile.region
+    }
+    if (typeof extendedProfile.birthday === 'string') {
+      birthday.value = extendedProfile.birthday
+    }
+  } catch (error) {
+    logger.warn('Failed to load extended profile', error)
   }
 }
 
@@ -246,10 +283,34 @@ const saveEditInfo = async () => {
       await matrixAccountService.updateAvatar(localUserInfo.value.avatar!)
     }
 
-    userStore.userInfo!.name = localUserInfo.value.name!
-    userStore.userInfo!.sex = localUserInfo.value.sex!
-    userStore.userInfo!.phone = localUserInfo.value.phone!
-    loginHistoriesStore.updateLoginHistory(userStore.userInfo as UserInfoType)
+    try {
+      await profileService.updateOwnExtendedProfile({
+        sex: localUserInfo.value.sex,
+        resume: userStore.userInfo?.resume ?? localUserInfo.value.resume ?? '',
+        region: region.value,
+        birthday: birthday.value
+      })
+    } catch (error) {
+      if (error instanceof ExtendedProfileUnsupportedError) {
+        showFeedback(t('mobile_edit_profile.extended_profile_unsupported'), 'warning')
+      } else {
+        throw error
+      }
+    }
+
+    localUserInfo.value.resume = userStore.userInfo?.resume ?? localUserInfo.value.resume ?? ''
+
+    const currentUserInfo = userStore.userInfo
+    if (!currentUserInfo) {
+      showFeedback(t('mobile_edit_profile.save_failed'), 'error')
+      return
+    }
+
+    currentUserInfo.name = localUserInfo.value.name!
+    currentUserInfo.sex = localUserInfo.value.sex!
+    currentUserInfo.phone = localUserInfo.value.phone!
+    currentUserInfo.resume = userStore.userInfo?.resume ?? localUserInfo.value.resume ?? ''
+    loginHistoriesStore.updateLoginHistory(currentUserInfo as UserInfoType)
     updateCurrentUserCache('name', localUserInfo.value.name)
     if (!localUserInfo.value.modifyNameChance) return
     localUserInfo.value.modifyNameChance -= 1
@@ -261,7 +322,13 @@ const saveEditInfo = async () => {
 }
 
 onMounted(async () => {
-  localUserInfo.value = { ...userStore.userInfo! }
+  syncLocalUserInfoFromStore()
+  await loadExtendedProfile()
+})
+
+onActivated(async () => {
+  syncLocalUserInfoFromStore()
+  await loadExtendedProfile()
 })
 </script>
 

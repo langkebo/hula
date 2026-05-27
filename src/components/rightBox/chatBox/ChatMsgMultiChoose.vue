@@ -184,7 +184,8 @@ const selectedMsgs = computed(() =>
 )
 
 const getMessagePreview = (msg: MessageType) => {
-  const userInfo = groupStore.getUserInfo(msg.fromUser.uid)
+  const senderUid = msg.fromUser?.uid ?? ''
+  const userInfo = senderUid ? groupStore.getUserInfo(senderUid) : undefined
   const nickname = userInfo?.myName || msg.fromUser?.username || ''
   const body = (msg.message.body || {}) as MessageBody
   const preview =
@@ -203,7 +204,7 @@ const msgIds = computed((): MsgId[] => {
   return selectedMsgs.value.map((msg) => {
     return {
       msgId: msg.message.id,
-      fromUid: msg.fromUser.uid
+      fromUid: msg.fromUser?.uid ?? ''
     }
   })
 })

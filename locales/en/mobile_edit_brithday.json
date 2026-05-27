@@ -6,5 +6,8 @@
     "displsy_age": "Display Age",
     "display_constellation": "Display Constellations"
   },
-  "save_btn": "SAVE"
+  "save_btn": "SAVE",
+  "save_success": "Birthday preferences updated",
+  "save_failed": "Failed to save birthday preferences",
+  "unsupported": "This server does not support saving birthday preferences"
 }

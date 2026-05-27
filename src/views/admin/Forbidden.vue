@@ -2,9 +2,23 @@
   <div class="forbidden-page">
     <div class="forbidden-content">
       <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r="55" stroke="#e74c3c" stroke-width="4" fill="none" />
-        <line x1="30" y1="30" x2="90" y2="90" stroke="#e74c3c" stroke-width="4" stroke-linecap="round" />
-        <line x1="90" y1="30" x2="30" y2="90" stroke="#e74c3c" stroke-width="4" stroke-linecap="round" />
+        <circle cx="60" cy="60" r="55" stroke="var(--hula-color-danger-500)" stroke-width="4" fill="none" />
+        <line
+          x1="30"
+          y1="30"
+          x2="90"
+          y2="90"
+          stroke="var(--hula-color-danger-500)"
+          stroke-width="4"
+          stroke-linecap="round" />
+        <line
+          x1="90"
+          y1="30"
+          x2="30"
+          y2="90"
+          stroke="var(--hula-color-danger-500)"
+          stroke-width="4"
+          stroke-linecap="round" />
       </svg>
       <h1 class="forbidden-title">{{ t('admin.forbidden.title') }}</h1>
       <p class="forbidden-desc">{{ t('admin.forbidden.desc') }}</p>
@@ -29,7 +43,7 @@ const goHome = () => router.push('/message')
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, var(--hula-surface-panel-muted) 0%, var(--hula-surface-subtle) 100%);
 }
 
 .forbidden-content {

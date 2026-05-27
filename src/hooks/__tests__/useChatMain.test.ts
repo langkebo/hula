@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, reactive, ref } from 'vue'
+import { defineComponent, reactive, ref } from 'vue'
 import { MittEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import { useChatMain } from '../useChatMain'
 
@@ -25,7 +25,9 @@ const {
   reportEventMock,
   deleteMsgMock,
   mittEmitMock,
-  loggerErrorMock
+  loggerErrorMock,
+  recallMessageMock,
+  userStoreMock
 } = vi.hoisted(() => ({
   showFeedbackMock: vi.fn(),
   invokeWithErrorHandlerMock: vi.fn(),
@@ -35,7 +37,14 @@ const {
   reportEventMock: vi.fn(),
   deleteMsgMock: vi.fn(),
   mittEmitMock: vi.fn(),
-  loggerErrorMock: vi.fn()
+  loggerErrorMock: vi.fn(),
+  recallMessageMock: vi.fn(),
+  userStoreMock: {
+    userInfo: {
+      uid: '@me:example.com',
+      power: 0
+    } as { uid: string; power: number } | undefined
+  }
 }))
 
 const globalStore = reactive({
@@ -140,7 +149,7 @@ vi.mock('../chatMain/useGroupNicknameModal', () => ({
 
 vi.mock('@/composables/chat/useChatMessageActions', () => ({
   useChatMessageActions: () => ({
-    recallMessage: vi.fn()
+    recallMessage: recallMessageMock
   })
 }))
 
@@ -189,12 +198,7 @@ vi.mock('@/stores/domains/settings/setting', () => ({
 }))
 
 vi.mock('@/stores/domains/user/user', () => ({
-  useUserStore: () => ({
-    userInfo: computed(() => ({
-      uid: '@me:example.com',
-      power: 0
-    }))
-  })
+  useUserStore: () => userStoreMock
 }))
 
 vi.mock('@/stores/domains/widget/global', () => ({
@@ -271,6 +275,10 @@ const createMessageItem = (overrides: Partial<MessageItem> = {}): MessageItem =>
 describe('useChatMain', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    userStoreMock.userInfo = {
+      uid: '@me:example.com',
+      power: 0
+    }
     globalStore.currentSessionRoomId = '!room:example.com'
     globalStore.currentSession = { type: RoomTypeEnum.GROUP }
     groupStore.userList = [
@@ -362,5 +370,35 @@ describe('useChatMain', () => {
       explanation: 'User reported via chat menu'
     })
     expect(showFeedbackMock).toHaveBeenCalledWith('menu.report_success', 'success')
+  })
+
+  it('当前用户信息缺失时仍可执行撤回并写入空 recallUid', async () => {
+    userStoreMock.userInfo = undefined
+    recallMessageMock.mockResolvedValueOnce(undefined)
+
+    const wrapper = mountComposable()
+    const vm = wrapper.vm as unknown as ReturnType<typeof useChatMain>
+    const recallMenu = (
+      vm.commonMenuList as unknown as Array<{
+        label?: string | ((content?: unknown) => string)
+        click?: (item: unknown) => Promise<void> | void
+      }>
+    ).find((item) => resolveMenuLabel(item) === 'menu.recall')
+
+    await recallMenu?.click?.(createMessageItem({ fromUser: { uid: '' } }) as any)
+
+    expect(recallMessageMock).toHaveBeenCalledWith('!room:example.com', '$event')
+    expect(chatStore.recordRecallMsg).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recallUid: ''
+      })
+    )
+    expect(chatStore.updateRecallMsg).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recallUid: '',
+        roomId: '!room:example.com',
+        msgId: '$event'
+      })
+    )
   })
 })

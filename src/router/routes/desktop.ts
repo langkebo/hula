@@ -300,6 +300,30 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         name: 'adminServerConfig',
         component: () => import('@/views/admin/AdminServerConfig.vue'),
         meta: { requiresAdmin: true }
+      },
+      {
+        path: 'guests',
+        name: 'adminGuests',
+        component: () => import('@/views/admin/AdminGuests.vue'),
+        meta: { requiresAdmin: true }
+      },
+      {
+        path: 'spaces',
+        name: 'adminSpaces',
+        component: () => import('@/views/admin/AdminSpaces.vue'),
+        meta: { requiresAdmin: true }
+      },
+      {
+        path: 'notifications',
+        name: 'adminNotifications',
+        component: () => import('@/views/admin/AdminNotifications.vue'),
+        meta: { requiresAdmin: true }
+      },
+      {
+        path: 'app-services',
+        name: 'adminAppServices',
+        component: () => import('@/views/admin/AdminAppServices.vue'),
+        meta: { requiresAdmin: true }
       }
     ]
   }

@@ -1,27 +1,32 @@
 <template>
   <div class="admin-rooms">
     <div class="admin-rooms-header">
-      <n-input v-model:value="searchQuery" :placeholder="t('admin.rooms.search')" clearable style="width: 300px">
+      <n-input
+        v-model:value="searchQuery"
+        :placeholder="t('admin.rooms.search')"
+        clearable
+        style="width: 300px"
+        @keyup.enter="handleSearch">
         <template #prefix>
-          <svg class="size-16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21l-4.35-4.35" />
-          </svg>
+          <Icon icon="mdi:magnify" class="size-16px" />
         </template>
       </n-input>
+      <n-button type="primary" size="small" :loading="searchLoading" @click="handleSearch">
+        {{ t('admin.rooms.searchBtn') }}
+      </n-button>
     </div>
 
-    <n-spin :show="loading">
+    <n-spin :show="loading || searchLoading">
       <n-data-table
         :columns="columns"
-        :data="filteredRooms"
+        :data="isSearchMode ? searchResults : filteredRooms"
         :pagination="{ pageSize: 20 }"
         :bordered="false"
         striped
         :row-key="(row: RoomInfo) => row.roomId" />
     </n-spin>
 
-    <n-modal v-model:show="showRoomDetail" :title="t('admin.rooms.roomDetail')" preset="dialog" style="width: 700px">
+    <n-modal v-model:show="showRoomDetail" :title="t('admin.rooms.roomDetail')" preset="dialog" style="width: 800px">
       <template v-if="selectedRoom">
         <n-descriptions bordered :column="2" label-placement="left" style="margin-bottom: 16px">
           <n-descriptions-item :label="t('admin.rooms.roomId')" :span="2">
@@ -44,6 +49,7 @@
         </n-descriptions>
 
         <n-tabs type="line" animated>
+          <!-- Members Tab -->
           <n-tab-pane name="members" :tab="t('admin.rooms.members')">
             <n-spin :show="membersLoading">
               <n-data-table
@@ -57,6 +63,26 @@
             </n-spin>
           </n-tab-pane>
 
+          <!-- Messages Tab -->
+          <n-tab-pane name="messages" :tab="t('admin.rooms.messages')">
+            <n-spin :show="messagesLoading">
+              <n-data-table
+                v-if="roomMessages.length > 0"
+                :columns="messageColumns"
+                :data="roomMessages"
+                :bordered="false"
+                size="small"
+                :pagination="{ pageSize: 10 }" />
+              <n-empty v-else :description="t('admin.rooms.noMessages')" style="padding: 24px 0" />
+              <div v-if="messagesPaginationToken" style="text-align: center; margin-top: 12px">
+                <n-button size="small" :loading="messagesLoading" @click="loadMoreMessages">
+                  {{ t('admin.rooms.loadMore') }}
+                </n-button>
+              </div>
+            </n-spin>
+          </n-tab-pane>
+
+          <!-- State Tab -->
           <n-tab-pane name="state" :tab="t('admin.rooms.state')">
             <n-spin :show="stateLoading">
               <n-data-table
@@ -70,23 +96,133 @@
             </n-spin>
           </n-tab-pane>
 
+          <!-- Aliases Tab -->
+          <n-tab-pane name="aliases" :tab="t('admin.rooms.aliases')">
+            <n-spin :show="aliasesLoading">
+              <div v-if="roomAliases.length > 0">
+                <n-tag
+                  v-for="alias in roomAliases"
+                  :key="alias"
+                  closable
+                  style="margin: 4px"
+                  @close="handleRemoveAlias(alias)">
+                  {{ alias }}
+                </n-tag>
+              </div>
+              <n-empty v-else :description="t('admin.rooms.noAliases')" style="padding: 24px 0" />
+            </n-spin>
+          </n-tab-pane>
+
+          <!-- Statistics Tab -->
+          <n-tab-pane name="statistics" :tab="t('admin.rooms.statistics')">
+            <n-spin :show="statsLoading">
+              <template v-if="roomStats">
+                <n-grid :cols="3" :x-gap="12" :y-gap="12">
+                  <n-gi>
+                    <n-card size="small">
+                      <n-statistic :label="t('admin.rooms.statsJoinedMembers')">
+                        {{ roomStats.joined_members ?? roomStats.joinedMembers ?? '-' }}
+                      </n-statistic>
+                    </n-card>
+                  </n-gi>
+                  <n-gi>
+                    <n-card size="small">
+                      <n-statistic :label="t('admin.rooms.statsJoinedLocalMembers')">
+                        {{ roomStats.joined_local_members ?? roomStats.joinedLocalMembers ?? '-' }}
+                      </n-statistic>
+                    </n-card>
+                  </n-gi>
+                  <n-gi>
+                    <n-card size="small">
+                      <n-statistic :label="t('admin.rooms.statsInvitedMembers')">
+                        {{ roomStats.invited_members ?? roomStats.invitedMembers ?? '-' }}
+                      </n-statistic>
+                    </n-card>
+                  </n-gi>
+                </n-grid>
+                <n-grid :cols="3" :x-gap="12" :y-gap="12" style="margin-top: 12px">
+                  <n-gi>
+                    <n-card size="small">
+                      <n-statistic :label="t('admin.rooms.statsStateEvents')">
+                        {{ roomStats.state_events ?? roomStats.stateEvents ?? '-' }}
+                      </n-statistic>
+                    </n-card>
+                  </n-gi>
+                  <n-gi>
+                    <n-card size="small">
+                      <n-statistic :label="t('admin.rooms.statsVersion')">
+                        {{ roomStats.room_version ?? roomStats.roomVersion ?? '-' }}
+                      </n-statistic>
+                    </n-card>
+                  </n-gi>
+                  <n-gi>
+                    <n-card size="small">
+                      <n-statistic :label="t('admin.rooms.statsDepth')">
+                        {{ roomStats.depth ?? '-' }}
+                      </n-statistic>
+                    </n-card>
+                  </n-gi>
+                </n-grid>
+              </template>
+              <n-empty v-else :description="t('admin.rooms.noStats')" style="padding: 24px 0" />
+            </n-spin>
+          </n-tab-pane>
+
+          <!-- Actions Tab -->
           <n-tab-pane name="actions" :tab="t('admin.rooms.actions')">
             <n-space vertical>
-              <n-button size="small" type="primary" @click="showForceJoinDialog = true">
-                {{ t('admin.rooms.forceJoin') }}
-              </n-button>
-              <n-button size="small" type="warning" @click="showForceLeaveDialog = true">
-                {{ t('admin.rooms.forceLeave') }}
-              </n-button>
-              <n-button size="small" :type="roomBlocked ? 'success' : 'error'" @click="handleToggleBlock">
-                {{ roomBlocked ? t('admin.rooms.unblock') : t('admin.rooms.block') }}
-              </n-button>
-              <n-button size="small" type="error" @click="handleShutdownRoom">
-                {{ t('admin.rooms.shutdown') }}
-              </n-button>
-              <n-button size="small" type="error" ghost @click="handleDeleteRoom">
-                {{ t('admin.rooms.delete') }}
-              </n-button>
+              <!-- Make Room Admin -->
+              <n-card size="small" :title="t('admin.rooms.makeAdmin')">
+                <n-space align="center">
+                  <n-input
+                    v-model:value="makeAdminUserId"
+                    :placeholder="t('admin.rooms.makeAdminPlaceholder')"
+                    style="width: 300px" />
+                  <n-button size="small" type="primary" :loading="makeAdminLoading" @click="handleMakeAdmin">
+                    {{ t('admin.rooms.makeAdminBtn') }}
+                  </n-button>
+                </n-space>
+              </n-card>
+
+              <!-- Force Join / Leave -->
+              <n-card size="small" :title="t('admin.rooms.forceActions')">
+                <n-space>
+                  <n-button size="small" type="primary" @click="showForceJoinDialog = true">
+                    {{ t('admin.rooms.forceJoin') }}
+                  </n-button>
+                  <n-button size="small" type="warning" @click="showForceLeaveDialog = true">
+                    {{ t('admin.rooms.forceLeave') }}
+                  </n-button>
+                </n-space>
+              </n-card>
+
+              <!-- Block / Unblock -->
+              <n-card size="small" :title="t('admin.rooms.blockActions')">
+                <n-button size="small" :type="roomBlocked ? 'success' : 'error'" @click="handleToggleBlock">
+                  {{ roomBlocked ? t('admin.rooms.unblock') : t('admin.rooms.block') }}
+                </n-button>
+              </n-card>
+
+              <!-- Danger Zone -->
+              <n-card size="small" :title="t('admin.rooms.dangerZone')" style="border-color: var(--n-error-color)">
+                <n-space vertical>
+                  <n-popconfirm @positive-click="handlePurgeHistory">
+                    <template #trigger>
+                      <n-button size="small" type="error">
+                        {{ t('admin.rooms.purgeHistory') }}
+                      </n-button>
+                    </template>
+                    {{ t('admin.rooms.purgeHistoryConfirm') }}
+                  </n-popconfirm>
+
+                  <n-button size="small" type="error" @click="handleShutdownRoom">
+                    {{ t('admin.rooms.shutdown') }}
+                  </n-button>
+                  <n-button size="small" type="error" ghost @click="handleDeleteRoom">
+                    {{ t('admin.rooms.delete') }}
+                  </n-button>
+                </n-space>
+              </n-card>
             </n-space>
           </n-tab-pane>
         </n-tabs>
@@ -135,8 +271,9 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NSpace, NTag, useDialog } from 'naive-ui'
-import { computed, h, onMounted, ref } from 'vue'
+import { Icon } from '@iconify/vue'
+import { NButton, NPopconfirm, NSpace, NStatistic, NTag, useDialog } from 'naive-ui'
+import { computed, h, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type RoomInfo, useAdminRooms } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -159,6 +296,15 @@ const filteredRooms = admin.filteredRooms
 const selectedRoom = admin.selectedRoom
 const membersLoading = admin.membersLoading
 const stateLoading = admin.stateLoading
+const roomMessages = admin.roomMessages
+const messagesLoading = admin.messagesLoading
+const messagesPaginationToken = admin.messagesPaginationToken
+const roomAliases = admin.roomAliases
+const aliasesLoading = admin.aliasesLoading
+const roomStats = admin.roomStats
+const statsLoading = admin.statsLoading
+const searchResults = admin.searchResults
+const searchLoading = admin.searchLoading
 
 // View-only local state
 const showRoomDetail = ref(false)
@@ -169,6 +315,9 @@ const forceJoinForm = ref({ userId: '' })
 const showForceLeaveDialog = ref(false)
 const forceLeaveLoading = ref(false)
 const forceLeaveForm = ref({ userId: '' })
+const makeAdminUserId = ref('')
+const makeAdminLoading = ref(false)
+const isSearchMode = ref(false)
 
 // Derive table-friendly members / state from composable source of truth
 const roomMembers = computed(() => admin.roomMembers.value.map((memberId) => ({ memberId })))
@@ -247,6 +396,34 @@ const memberColumns = computed(() => [
   }
 ])
 
+const messageColumns = computed(() => [
+  {
+    title: t('admin.rooms.msgSender'),
+    key: 'sender',
+    width: 180,
+    ellipsis: { tooltip: true }
+  },
+  {
+    title: t('admin.rooms.msgContent'),
+    key: 'content',
+    ellipsis: { tooltip: true }
+  },
+  {
+    title: t('admin.rooms.msgType'),
+    key: 'eventType',
+    width: 160,
+    ellipsis: { tooltip: true }
+  },
+  {
+    title: t('admin.rooms.msgTime'),
+    key: 'timestamp',
+    width: 180,
+    render(row: { timestamp: number }) {
+      return row.timestamp ? new Date(row.timestamp).toLocaleString() : '-'
+    }
+  }
+])
+
 const stateColumns = computed(() => [
   { title: t('admin.rooms.stateType'), key: 'type', width: 200, ellipsis: { tooltip: true } },
   { title: t('admin.rooms.stateKey'), key: 'stateKey', width: 200, ellipsis: { tooltip: true } },
@@ -261,7 +438,44 @@ async function loadRooms() {
 async function openRoomDetail(room: RoomInfo) {
   showRoomDetail.value = true
   roomBlocked.value = false
+  makeAdminUserId.value = ''
   await admin.selectRoom(room)
+}
+
+async function handleSearch() {
+  const query = searchQuery.value.trim()
+  if (!query) {
+    isSearchMode.value = false
+    return
+  }
+  isSearchMode.value = true
+  try {
+    await admin.searchRooms(query)
+  } catch (err) {
+    if (handleAdminError(err)) {
+      showFeedback(t('admin.rooms.searchFailed'), 'error')
+    }
+  }
+}
+
+function loadMoreMessages() {
+  admin.loadMessages(50, messagesPaginationToken.value)
+}
+
+async function handleMakeAdmin() {
+  if (!selectedRoom.value) return
+  makeAdminLoading.value = true
+  try {
+    await admin.makeRoomAdmin(selectedRoom.value.roomId, makeAdminUserId.value || undefined)
+    showFeedback(t('admin.rooms.makeAdminSuccess'), 'success')
+    makeAdminUserId.value = ''
+  } catch (err) {
+    if (handleAdminError(err)) {
+      showFeedback(t('admin.rooms.makeAdminFailed'), 'error')
+    }
+  } finally {
+    makeAdminLoading.value = false
+  }
 }
 
 async function handleForceJoin() {
@@ -313,6 +527,18 @@ async function handleToggleBlock() {
   }
 }
 
+async function handlePurgeHistory() {
+  if (!selectedRoom.value) return
+  try {
+    const result = await admin.purgeHistory(selectedRoom.value.roomId)
+    showFeedback(t('admin.rooms.purgeHistorySuccess', { purgeId: result.purgeId }), 'success')
+  } catch (err) {
+    if (handleAdminError(err)) {
+      showFeedback(t('admin.rooms.purgeHistoryFailed'), 'error')
+    }
+  }
+}
+
 async function handleShutdownRoom() {
   if (!selectedRoom.value) return
   const target = selectedRoom.value
@@ -351,6 +577,12 @@ async function handleDeleteRoom() {
       }
     }
   })
+}
+
+function handleRemoveAlias(_alias: string) {
+  // Alias removal requires server-side API not currently exposed;
+  // show informational feedback
+  showFeedback(t('admin.rooms.aliasRemoveNotSupported'), 'warning')
 }
 
 // Kick / ban still go through the raw admin service because the SDK exposes
@@ -396,6 +628,13 @@ async function handleBanUser(userId: string) {
 }
 
 onMounted(loadRooms)
+
+// Reset search mode when the search query is cleared
+watch(searchQuery, (val) => {
+  if (!val.trim()) {
+    isSearchMode.value = false
+  }
+})
 </script>
 
 <style scoped lang="scss">

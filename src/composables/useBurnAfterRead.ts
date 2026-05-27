@@ -41,12 +41,21 @@ export function useBurnAfterRead() {
     if (!targetRoomId) return
 
     const isEnabled = isRoomBurnEnabled(targetRoomId)
-    if (isEnabled) {
-      await matrixBurnAfterReadService.disableBurn(targetRoomId)
-      burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: false }
-    } else {
-      await matrixBurnAfterReadService.enableBurn(targetRoomId)
-      burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: true }
+    try {
+      if (isEnabled) {
+        const result = await matrixBurnAfterReadService.disableBurn(targetRoomId)
+        // 仅在服务端确认成功时更新缓存，避免乐观更新导致状态不一致
+        if (result !== null && result !== undefined) {
+          burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: false }
+        }
+      } else {
+        const result = await matrixBurnAfterReadService.enableBurn(targetRoomId)
+        if (result !== null && result !== undefined) {
+          burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: true }
+        }
+      }
+    } catch {
+      // 服务端返回错误时不更新缓存，保持原有状态
     }
   }
 
@@ -75,15 +84,27 @@ export function useBurnAfterRead() {
   const enableBurn = async (roomId?: string, burnAfterMs?: number) => {
     const targetRoomId = roomId || currentRoomId.value
     if (!targetRoomId) return
-    await matrixBurnAfterReadService.enableBurn(targetRoomId, burnAfterMs)
-    burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: true }
+    try {
+      const result = await matrixBurnAfterReadService.enableBurn(targetRoomId, burnAfterMs)
+      if (result !== null && result !== undefined) {
+        burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: true }
+      }
+    } catch {
+      // 服务端返回错误时不更新缓存
+    }
   }
 
   const disableBurn = async (roomId?: string) => {
     const targetRoomId = roomId || currentRoomId.value
     if (!targetRoomId) return
-    await matrixBurnAfterReadService.disableBurn(targetRoomId)
-    burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: false }
+    try {
+      const result = await matrixBurnAfterReadService.disableBurn(targetRoomId)
+      if (result !== null && result !== undefined) {
+        burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: false }
+      }
+    } catch {
+      // 服务端返回错误时不更新缓存
+    }
   }
 
   return {

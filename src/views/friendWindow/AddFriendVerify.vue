@@ -63,7 +63,9 @@ const { showFeedback } = useActionFeedback()
 const userStore = useUserStore()
 const requestMsgAutosize = { minRows: 3, maxRows: 3 }
 const { userInfo, avatarSrc, requestMsg, syncDefaultMessage, submitRequest } = useFriends({
-  defaultRequestMessage: computed(() => t('message.friend_verify.default_msg', { name: userStore.userInfo!.name }))
+  defaultRequestMessage: computed(() =>
+    t('message.friend_verify.default_msg', { name: userStore.userInfo?.name ?? '' })
+  )
 })
 
 const addFriend = async () => {

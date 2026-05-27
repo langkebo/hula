@@ -66,22 +66,38 @@ export class MatrixRoomRealtimeService {
     const client = matrixClientService.getClient()
     if (!client) return
 
-    client.on(ROOM_EVENTS.Timeline, (event: MatrixEvent, room: Room | undefined) => {
-      if (!room) return
-
+    const emitTimelineEvent = (event: MatrixEvent, room: Room): void => {
+      const eventType = event.getType()
       const roomInfo = matrixRoomCreationService.convertRoomToRoomInfo(room)
       let message: import('@/stores/domains/chat/chat/types').MessageType | null = null
 
-      if (event.getType() === 'm.room.message' || event.getType() === 'm.room.encrypted') {
+      if (eventType === 'm.room.message') {
+        message = matrixEventServiceLocal.convertEventToMessage(event, room)
+      } else if (eventType === 'm.room.encrypted') {
         message = matrixEventServiceLocal.convertEventToMessageType(event)
       }
 
       callback({
         roomId: room.roomId,
-        eventType: event.getType(),
+        eventType,
         roomInfo,
         message
       })
+    }
+
+    client.on(ROOM_EVENTS.Timeline, (event: MatrixEvent, room: Room | undefined) => {
+      if (!room) return
+      emitTimelineEvent(event, room)
+
+      if (event.getType() === 'm.room.encrypted') {
+        for (const delay of [250, 1000, 3000]) {
+          setTimeout(() => {
+            if (event.getType() === 'm.room.message') {
+              emitTimelineEvent(event, room)
+            }
+          }, delay)
+        }
+      }
     })
   }
 

@@ -139,8 +139,11 @@ describe('adminService facade', () => {
       listLoginFailures: vi.fn().mockResolvedValue({ failures: [], next_token: undefined }),
       getSamlConfig: vi.fn().mockResolvedValue({}),
       updateSamlConfig: vi.fn().mockResolvedValue(undefined),
-      getExperimentalFeatures: vi.fn().mockResolvedValue({ features: {} }),
+      listFeatureFlags: vi.fn().mockResolvedValue({ flags: [] }),
+      getFeatureFlag: vi.fn().mockResolvedValue(null),
+      setFeatureFlag: vi.fn().mockResolvedValue({}),
       updateFeatureFlag: vi.fn().mockResolvedValue({}),
+      deleteFeatureFlag: vi.fn().mockResolvedValue(undefined),
       listBackups: vi.fn().mockResolvedValue({ backups: [] }),
       registerNonce: vi.fn().mockResolvedValue(''),
       adminRegister: vi.fn().mockResolvedValue({}),
@@ -210,14 +213,68 @@ describe('adminService facade', () => {
     })
 
     it('should get experimental features via SDK', async () => {
-      mockAdminManager.getExperimentalFeatures.mockResolvedValue({ features: { msc1234: true } })
+      mockAdminManager.listFeatureFlags.mockResolvedValue({
+        flags: [{ flag_key: 'msc1234', status: 'enabled' }]
+      })
       const result = await adminService.getExperimentalFeatures()
-      expect(result).toEqual({ msc1234: true })
+      expect(result).toEqual({
+        msc1234: expect.objectContaining({
+          enabled: true,
+          status: 'enabled'
+        })
+      })
     })
 
     it('should set experimental feature via SDK feature-flag', async () => {
       await adminService.setExperimentalFeature('msc1234', true)
       expect(mockAdminManager.updateFeatureFlag).toHaveBeenCalledWith('msc1234', { status: 'enabled' })
+    })
+
+    it('should get/save/delete feature flag detail via SDK', async () => {
+      mockAdminManager.getFeatureFlag.mockResolvedValue({
+        flag_key: 'flagA',
+        status: 'disabled',
+        target_scope: 'global',
+        rollout_percent: 0,
+        expires_at: null,
+        reason: 'hold',
+        created_by: '@admin:server',
+        created_ts: 1,
+        updated_ts: 2,
+        targets: []
+      })
+      mockAdminManager.setFeatureFlag.mockResolvedValue({
+        flag_key: 'flagA',
+        status: 'enabled',
+        target_scope: 'global',
+        rollout_percent: 50,
+        expires_at: 123,
+        reason: 'gradual',
+        created_by: '@admin:server',
+        created_ts: 1,
+        updated_ts: 3,
+        targets: [{ subject_type: 'user', subject_id: '@alice:server' }]
+      })
+
+      await expect(adminService.getFeatureFlagDetail('flagA')).resolves.toEqual(
+        expect.objectContaining({ flagKey: 'flagA', status: 'disabled' })
+      )
+      await expect(
+        adminService.saveFeatureFlag({
+          flagKey: 'flagA',
+          targetScope: 'global',
+          rolloutPercent: 50,
+          expiresAt: 123,
+          reason: 'gradual',
+          targets: [{ subjectType: 'user', subjectId: '@alice:server' }]
+        })
+      ).resolves.toEqual(expect.objectContaining({ flagKey: 'flagA', enabled: true }))
+      expect(mockAdminManager.setFeatureFlag).toHaveBeenCalledWith('flagA', 'global', 50, 123, 'gradual', [
+        { subject_type: 'user', subject_id: '@alice:server' }
+      ])
+
+      await adminService.deleteFeatureFlag('flagA')
+      expect(mockAdminManager.deleteFeatureFlag).toHaveBeenCalledWith('flagA')
     })
 
     it('should get backups via SDK', async () => {

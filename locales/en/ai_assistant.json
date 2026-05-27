@@ -13,7 +13,33 @@
       "explain": "Explain a concept",
       "news": "What's the news today",
       "movie": "Recommend some movies"
-    }
+    },
+    "install": {
+      "checking": "Checking OpenClaw installation status...",
+      "title": "Install OpenClaw to use AI Assistant",
+      "description": "OpenClaw is a local AI gateway service that connects to various AI models. Install it to start using AI chat in HuLa.",
+      "step1_title": "Download & Install",
+      "step1_desc": "Click the button below to download the OpenClaw installer for your system",
+      "step2_title": "Start Service",
+      "step2_desc": "After installation, launch OpenClaw. It will run on local port 8080 by default",
+      "step3_title": "Configure Connection",
+      "step3_desc": "Enter the API endpoint and key in HuLa settings to complete the connection",
+      "recheck": "Recheck",
+      "installing_title": "Complete OpenClaw Installation",
+      "installing_desc": "After installation, click \"Recheck\" to verify. If already installed, click Recheck directly.",
+      "config_title": "Configure OpenClaw Connection",
+      "config_desc": "OpenClaw is installed. Please complete the following steps to start using the AI assistant.",
+      "config_step1": "Ensure OpenClaw service is running (default port 8080)",
+      "config_step2": "Click \"Open Settings\" to go to the API configuration page",
+      "config_step3": "Enter http://127.0.0.1:8080/v1 as the API endpoint",
+      "config_step4": "Enter API Key (leave empty if not set), select a model, and start chatting",
+      "open_settings": "Open Settings"
+    },
+    "settings": {
+      "title": "Settings"
+    },
+    "error_no_endpoint": "Please configure the API endpoint first",
+    "error_no_key": "Please configure the API Key first"
   },
   "title": "AI Assistant",
   "welcome": "Hello, I'm your AI Assistant",

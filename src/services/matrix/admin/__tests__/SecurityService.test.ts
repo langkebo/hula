@@ -14,8 +14,11 @@ const makeAdmin = () => ({
   listAuditEvents: vi.fn(),
   getSamlConfig: vi.fn(),
   updateSamlConfig: vi.fn(),
-  getExperimentalFeatures: vi.fn(),
+  listFeatureFlags: vi.fn(),
+  getFeatureFlag: vi.fn(),
+  setFeatureFlag: vi.fn(),
   updateFeatureFlag: vi.fn(),
+  deleteFeatureFlag: vi.fn(),
   listBackups: vi.fn(),
   getAuditEvent: vi.fn(),
   listSamlMappings: vi.fn(),
@@ -81,16 +84,123 @@ describe('AdminSecurityService', () => {
     })
   })
 
-  it('normalizes experimental features from enabled and disabled arrays', async () => {
-    admin.getExperimentalFeatures.mockResolvedValueOnce({
-      enabled: [{ flag_key: 'mscA' }],
-      disabled: [{ key: 'mscB' }]
+  it('normalizes experimental features from feature flag list response', async () => {
+    admin.listFeatureFlags.mockResolvedValueOnce({
+      flags: [
+        { flag_key: 'mscA', status: 'enabled', reason: 'for testing', rollout_percent: 100, target_scope: 'global' },
+        { flag_key: 'mscB', status: 'disabled', rollout_percent: 0, target_scope: 'user' }
+      ]
     })
 
     await expect(service.getExperimentalFeatures()).resolves.toEqual({
-      mscA: true,
-      mscB: false
+      mscA: expect.objectContaining({
+        enabled: true,
+        status: 'enabled',
+        reason: 'for testing',
+        rolloutPercent: 100,
+        targetScope: 'global'
+      }),
+      mscB: expect.objectContaining({
+        enabled: false,
+        status: 'disabled',
+        rolloutPercent: 0,
+        targetScope: 'user'
+      })
     })
+  })
+
+  it('lists feature flags with detailed fields', async () => {
+    admin.listFeatureFlags.mockResolvedValueOnce({
+      flags: [
+        {
+          flag_key: 'flag-x',
+          status: 'enabled',
+          target_scope: 'global',
+          rollout_percent: 80,
+          expires_at: null,
+          reason: 'rollout',
+          created_by: '@admin:server',
+          created_ts: 1,
+          updated_ts: 2,
+          targets: [{ subject_type: 'user', subject_id: '@alice:server' }]
+        }
+      ]
+    })
+
+    await expect(service.listFeatureFlagsDetailed()).resolves.toEqual([
+      {
+        flagKey: 'flag-x',
+        enabled: true,
+        status: 'enabled',
+        description: 'rollout',
+        targetScope: 'global',
+        rolloutPercent: 80,
+        expiresAt: null,
+        reason: 'rollout',
+        createdBy: '@admin:server',
+        createdTs: 1,
+        updatedTs: 2,
+        targets: [{ subjectType: 'user', subjectId: '@alice:server' }]
+      }
+    ])
+  })
+
+  it('gets, saves and deletes feature flag detail', async () => {
+    admin.getFeatureFlag.mockResolvedValueOnce({
+      flag_key: 'flag-y',
+      status: 'disabled',
+      target_scope: 'global',
+      rollout_percent: 0,
+      expires_at: null,
+      reason: 'hold',
+      created_by: '@admin:server',
+      created_ts: 3,
+      updated_ts: 4,
+      targets: []
+    })
+    admin.setFeatureFlag.mockResolvedValueOnce({
+      flag_key: 'flag-y',
+      status: 'enabled',
+      target_scope: 'global',
+      rollout_percent: 50,
+      expires_at: 123,
+      reason: 'gradual',
+      created_by: '@admin:server',
+      created_ts: 3,
+      updated_ts: 5,
+      targets: [{ subject_type: 'user', subject_id: '@bob:server' }]
+    })
+    admin.deleteFeatureFlag.mockResolvedValueOnce(undefined)
+
+    await expect(service.getFeatureFlagDetail('flag-y')).resolves.toEqual(
+      expect.objectContaining({
+        flagKey: 'flag-y',
+        status: 'disabled'
+      })
+    )
+
+    await expect(
+      service.saveFeatureFlag({
+        flagKey: 'flag-y',
+        targetScope: 'global',
+        rolloutPercent: 50,
+        expiresAt: 123,
+        reason: 'gradual',
+        targets: [{ subjectType: 'user', subjectId: '@bob:server' }]
+      })
+    ).resolves.toEqual(
+      expect.objectContaining({
+        flagKey: 'flag-y',
+        enabled: true,
+        rolloutPercent: 50
+      })
+    )
+    expect(admin.setFeatureFlag).toHaveBeenCalledWith('flag-y', 'global', 50, 123, 'gradual', [
+      { subject_type: 'user', subject_id: '@bob:server' }
+    ])
+
+    await service.deleteFeatureFlag('flag-y')
+    expect(admin.deleteFeatureFlag).toHaveBeenCalledWith('flag-y')
   })
 
   it('sets experimental feature via updateFeatureFlag', async () => {

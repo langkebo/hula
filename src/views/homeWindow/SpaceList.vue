@@ -1,78 +1,87 @@
 <template>
-  <RoomSpaceWorkbench
-    ref="workbenchRef"
-    :session-list="filteredSessionList"
-    :total-count="sessionList.length"
-    :spaces="spaces"
-    :space-loading="spaceLoading"
-    :selected-space-id="selectedSpaceId"
-    :highlighted-space-id="activeTopLevelSpaceId"
-    :search-keyword="searchKeyword"
-    :session-type-filter="sessionTypeFilter"
-    :session-engagement-filter="sessionEngagementFilter"
-    :session-sort="sessionSort"
-    :has-saved-preset="hasSavedPreset"
-    :can-save-preset="canSavePreset"
-    :saved-preset-applied="savedPresetApplied"
-    :active-space="activeSpace"
-    :space-breadcrumb-items="spaceBreadcrumbItems"
-    :can-manage-active-space="canManageSelectedSpace"
-    :selected-session="selectedSession"
-    :sync-loading="syncLoading"
-    :session-loading="chatStore.sessionOptions.isLoading"
-    :network-banner="networkBanner"
-    :manage-mode="manageMode"
-    :manage-submitting="manageSubmitting"
-    :invite-user-id="inviteForm.userId"
-    :add-room-id="addRoomForm.roomId"
-    :add-room-suggested="addRoomForm.suggested"
-    :settings-name="settingsForm.name"
-    :settings-topic="settingsForm.topic"
-    :overlay-mode="overlayState.mode"
-    :forward-event-id="overlayState.forwardEventId"
-    :forward-room-id="overlayState.forwardRoomId"
-    :history-room-id="overlayState.historyRoomId"
-    :merged-msg-ids="overlayState.mergedMsgIds"
-    :on-retry-network="retrySessions"
-    :get-item-classes="getItemClasses"
-    :visible-menu="visibleMenu"
-    :visible-special-menu="visibleSpecialMenu"
-    :on-msg-click="handleMsgClick"
-    :on-msg-dblclick="handleMsgDblclick"
-    :on-menu-show="handleMenuShow"
-    @update:selected-space-id="setSelectedSpaceId"
-    @update:search-keyword="setSearchKeyword"
-    @update:session-type-filter="setSessionTypeFilter"
-    @update:session-engagement-filter="setSessionEngagementFilter"
-    @update:session-sort="setSessionSort"
-    @save-preset="saveCurrentPreset"
-    @apply-saved-preset="applySavedPreset"
-    @update:invite-user-id="inviteForm.userId = $event"
-    @update:add-room-id="addRoomForm.roomId = $event"
-    @update:add-room-suggested="addRoomForm.suggested = $event"
-    @update:settings-name="settingsForm.name = $event"
-    @update:settings-topic="settingsForm.topic = $event"
-    @create-space="openCreateSpace"
-    @invite-space-member="openInviteSpaceMember"
-    @add-space-room="openAddSpaceRoom"
-    @open-space-settings="openSpaceSettings"
-    @select-space-breadcrumb="setSelectedSpaceId"
-    @close-manage-pane="closeManagePane"
-    @submit-manage-pane="submitManagePane"
-    @close-overlay="closeOverlay"
-    @overlay-created="handleOverlayCreated"
-    @overlay-forwarded="handleOverlayForwarded"
-    @overlay-message-selected="handleOverlayMessageSelected"
-    @overlay-room-selected="handleOverlayRoomSelected"
-    @overlay-user-selected="handleOverlayUserSelected"
-    @batch-mark-read="handleBatchMarkRead"
-    @batch-pin="handleBatchPin"
-    @batch-mute="handleBatchMute"
-    @batch-leave="handleBatchLeave" />
+  <div class="space-list-page h-full flex flex-col">
+    <RoomSpaceWorkbench
+      ref="workbenchRef"
+      :session-list="filteredSessionList"
+      :total-count="sessionList.length"
+      :spaces="spaces"
+      :space-loading="spaceLoading"
+      :selected-space-id="selectedSpaceId"
+      :highlighted-space-id="activeTopLevelSpaceId"
+      :search-keyword="searchKeyword"
+      :session-type-filter="sessionTypeFilter"
+      :session-engagement-filter="sessionEngagementFilter"
+      :session-sort="sessionSort"
+      :has-saved-preset="hasSavedPreset"
+      :can-save-preset="canSavePreset"
+      :saved-preset-applied="savedPresetApplied"
+      :active-space="activeSpace"
+      :space-breadcrumb-items="spaceBreadcrumbItems"
+      :can-manage-active-space="canManageSelectedSpace"
+      :selected-session="selectedSession"
+      :sync-loading="syncLoading"
+      :session-loading="chatStore.sessionOptions.isLoading"
+      :network-banner="networkBanner"
+      :manage-mode="manageMode"
+      :manage-submitting="manageSubmitting"
+      :invite-user-id="inviteForm.userId"
+      :add-room-id="addRoomForm.roomId"
+      :add-room-suggested="addRoomForm.suggested"
+      :settings-name="settingsForm.name"
+      :settings-topic="settingsForm.topic"
+      :overlay-mode="overlayState.mode"
+      :forward-event-id="overlayState.forwardEventId"
+      :forward-room-id="overlayState.forwardRoomId"
+      :history-room-id="overlayState.historyRoomId"
+      :merged-msg-ids="overlayState.mergedMsgIds"
+      :on-retry-network="retrySessions"
+      :get-item-classes="getItemClasses"
+      :visible-menu="visibleMenu"
+      :visible-special-menu="visibleSpecialMenu"
+      :on-msg-click="handleMsgClick"
+      :on-msg-dblclick="handleMsgDblclick"
+      :on-menu-show="handleMenuShow"
+      @update:selected-space-id="setSelectedSpaceId"
+      @update:search-keyword="setSearchKeyword"
+      @update:session-type-filter="setSessionTypeFilter"
+      @update:session-engagement-filter="setSessionEngagementFilter"
+      @update:session-sort="setSessionSort"
+      @save-preset="saveCurrentPreset"
+      @apply-saved-preset="applySavedPreset"
+      @update:invite-user-id="inviteForm.userId = $event"
+      @update:add-room-id="addRoomForm.roomId = $event"
+      @update:add-room-suggested="addRoomForm.suggested = $event"
+      @update:settings-name="settingsForm.name = $event"
+      @update:settings-topic="settingsForm.topic = $event"
+      @create-space="openCreateSpace"
+      @discover-spaces="discoveryVisible = true"
+      @invite-space-member="openInviteSpaceMember"
+      @add-space-room="openAddSpaceRoom"
+      @open-space-settings="openSpaceSettings"
+      @select-space-breadcrumb="setSelectedSpaceId"
+      @close-manage-pane="closeManagePane"
+      @submit-manage-pane="submitManagePane"
+      @close-overlay="closeOverlay"
+      @overlay-created="handleOverlayCreated"
+      @overlay-forwarded="handleOverlayForwarded"
+      @overlay-message-selected="handleOverlayMessageSelected"
+      @overlay-room-selected="handleOverlayRoomSelected"
+      @overlay-user-selected="handleOverlayUserSelected"
+      @batch-mark-read="handleBatchMarkRead"
+      @batch-pin="handleBatchPin"
+      @batch-mute="handleBatchMute"
+      @batch-leave="handleBatchLeave" />
+
+    <SpaceDiscovery
+      :visible="discoveryVisible"
+      @update:visible="discoveryVisible = $event"
+      @joined="handleDiscoveryJoined" />
+  </div>
 </template>
 <script lang="ts" setup name="spaceList">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
+import SpaceDiscovery from '@/components/space/SpaceDiscovery.vue'
 import type RoomSpaceWorkbench from '@/components/workbench/RoomSpaceWorkbench.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
@@ -183,6 +192,7 @@ const writeSavedPreset = (preset: SavedWorkbenchPreset) => {
 
 const workbenchRef = ref<InstanceType<typeof RoomSpaceWorkbench> | null>(null)
 const manageMode = ref<SpaceManageMode | null>(null)
+const discoveryVisible = ref(false)
 const savedPreset = ref<SavedWorkbenchPreset | null>(readSavedPreset())
 const inviteForm = reactive({ userId: '' })
 const addRoomForm = reactive({ roomId: '', suggested: false })
@@ -298,6 +308,10 @@ const loadSpaceBreadcrumbItems = async () => {
 
 const openCreateSpace = () => {
   void router.push(buildCreateSpaceRoute())
+}
+
+const handleDiscoveryJoined = async (_spaceId: string) => {
+  await reloadSpaces()
 }
 
 const saveCurrentPreset = () => {

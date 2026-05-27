@@ -131,7 +131,7 @@
                   <RenderMessage
                     :message="item"
                     :is-group="isGroup"
-                    :from-user="{ uid: item.fromUser.uid }"
+                    :from-user="{ uid: getMessageSenderUid(item) }"
                     :upload-progress="item.uploadProgress"
                     @jump2-reply="jumpToReplyMsg" />
                 </div>
@@ -250,13 +250,31 @@
     v-model:show="threadPanelVisible"
     :original-message="threadOriginalMessage ?? undefined"
     :thread-id="activeThreadId" />
+
+  <!-- 事件举报对话框 -->
+  <EventReportDialog
+    v-model:show="eventReportVisible"
+    :event-id="eventReportData.eventId"
+    :room-id="eventReportData.roomId"
+    :event-content="eventReportData.eventContent" />
 </template>
 
 <script setup lang="ts">
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useEventListener, useTimeoutFn } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted, provide, type Ref, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  provide,
+  type Ref,
+  reactive,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import { useChatScrollManager } from '@/composables/chat/useChatScrollManager'
@@ -267,6 +285,7 @@ import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain.ts'
 // 异步加载非首屏或重型组件
 const FileUploadProgress = defineAsyncComponent(() => import('@/components/rightBox/FileUploadProgress.vue'))
 const ThreadPanel = defineAsyncComponent(() => import('@/components/thread/ThreadPanel.vue'))
+const EventReportDialog = defineAsyncComponent(() => import('@/components/moderation/EventReportDialog.vue'))
 
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
@@ -325,6 +344,10 @@ const {
 } = chatMainContext
 const { enableScroll } = usePopover(selectKey, 'image-chat-main')
 
+const getMessageSenderUid = (message: MessageType): string => {
+  return message.fromUser?.uid ?? ''
+}
+
 const threadPanelVisible = ref(false)
 const activeThreadId = ref('')
 const threadOriginalMessage = ref<{
@@ -348,7 +371,7 @@ const handleOpenThread = ({ eventId }: { eventId: string; roomId?: string }) => 
         : msg.message.body
     threadOriginalMessage.value = {
       id: msg.message.id,
-      senderId: msg.fromUser.uid,
+      senderId: getMessageSenderUid(msg),
       senderName: msg.fromUser.username ?? '',
       senderAvatar: msg.fromUser.avatar ?? '',
       content: typeof bodyContent === 'string' ? bodyContent : '',
@@ -360,12 +383,30 @@ const handleOpenThread = ({ eventId }: { eventId: string; roomId?: string }) => 
 
 useMitt.on(MittEnum.OPEN_THREAD, handleOpenThread)
 
+// ===== 事件举报对话框 =====
+const eventReportVisible = ref(false)
+const eventReportData = reactive({
+  eventId: '',
+  roomId: '',
+  eventContent: ''
+})
+
+useMitt.on(MittEnum.OPEN_EVENT_REPORT, (payload: unknown) => {
+  const data = payload as { roomId: string; eventId: string; eventContent?: string }
+  if (data.roomId && data.eventId) {
+    eventReportData.eventId = data.eventId
+    eventReportData.roomId = data.roomId
+    eventReportData.eventContent = data.eventContent || ''
+    eventReportVisible.value = true
+  }
+})
+
 const isMobileRef = ref(isMobile())
 
 provide('popoverControls', { enableScroll })
 
 const isGroup = computed<boolean>(() => chatStore.isGroup)
-const userUid = computed(() => userStore.userInfo!.uid || '')
+const userUid = computed(() => userStore.userInfo?.uid ?? '')
 const currentNewMsgCount = computed(() => chatStore.currentNewMsgCount || null)
 const newMsgCountLabel = computed(() => {
   if (!currentNewMsgCount.value?.count || currentNewMsgCount.value.count <= 0) return '0'

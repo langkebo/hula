@@ -17,7 +17,7 @@ const logger = createLogger('useMessageUser')
 export function useMessageUser(
   props: {
     message: MessageType
-    fromUser: { uid: string }
+    fromUser?: { uid?: string }
     isGroup: boolean
   },
   options: {
@@ -30,33 +30,36 @@ export function useMessageUser(
   const groupStore = useGroupStore()
   const _settingStore = useSettingStore()
   const resolvingUserSet = new Set<string>()
+  const currentUserUid = computed(() => userStore.userInfo?.uid ?? '')
+  const senderUid = computed(() => props.fromUser?.uid || props.message?.fromUser?.uid || '')
 
   const isMe = computed(() => {
-    return props.fromUser?.uid === userStore.userInfo!.uid
+    return Boolean(senderUid.value) && senderUid.value === currentUserUid.value
   })
 
   const getAvatarSrc = computed(() => (uid: string) => {
-    const isCurrentUser = uid === userStore.userInfo?.uid
+    const isCurrentUser = Boolean(uid) && uid === currentUserUid.value
     const storeUser = groupStore.getUserInfo(uid)
     if (isMe.value && isCurrentUser) {
-      return AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar as string)
+      return AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar as string)
     }
-    const resolvedAvatar = storeUser?.avatar || (uid === props.fromUser.uid ? props.message.fromUser.avatar : '')
+    const resolvedAvatar = storeUser?.avatar || (uid === senderUid.value ? props.message?.fromUser?.avatar : '')
     return AvatarUtils.getAvatarUrl(resolvedAvatar as string)
   })
 
   const senderDisplayName = computed(() => {
-    const displayName = groupStore.getUserDisplayName(props.fromUser.uid)
+    const uid = senderUid.value
+    const displayName = uid ? groupStore.getUserDisplayName(uid) : ''
     if (displayName) {
       return displayName
     }
 
-    const storeUser = groupStore.getUserInfo(props.fromUser.uid)
+    const storeUser = uid ? groupStore.getUserInfo(uid) : null
     if (storeUser?.myName || storeUser?.name) {
       return storeUser.myName || storeUser.name || ''
     }
 
-    return props.message.fromUser.username || t('message_container.unknown_user')
+    return props.message?.fromUser?.username || t('message_container.unknown_user')
   })
 
   const ensureSenderInfo = async (uid: string) => {
@@ -80,19 +83,22 @@ export function useMessageUser(
   }
 
   watchEffect(() => {
+    const uid = senderUid.value
+    if (!uid) return
     if (!senderDisplayName.value || senderDisplayName.value === t('message_container.unknown_user')) {
-      ensureSenderInfo(props.fromUser.uid)
+      ensureSenderInfo(uid)
     }
   })
 
   const handleMentionUser = () => {
     if (!props.isGroup || isMe.value) return
-    const targetUid = props.fromUser?.uid
+    const targetUid = senderUid.value
     if (!targetUid) return
     useMitt.emit(MittEnum.AT, targetUid)
   }
 
   const handleAvatarClick = (uid: string, msgId: string) => {
+    if (!uid) return
     if (isMobile()) {
       toFriendInfoPage(uid)
     } else {

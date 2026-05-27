@@ -55,7 +55,7 @@ export function useWsEventHandler(deps: {
   const router = useRouter()
   const { createRtcCallWindow, sendWindowPayload } = useWindow()
 
-  const userUid = computed(() => userStore.userInfo!.uid)
+  const userUid = computed(() => userStore.userInfo?.uid ?? '')
 
   const handleVideoCall = async (remotedUid: string, callType: CallTypeEnum) => {
     info(`监听到视频通话调用，remotedUid: ${remotedUid}, callType: ${callType}`)
@@ -81,7 +81,7 @@ export function useWsEventHandler(deps: {
   }
 
   const isSelfUser = (uid: string): boolean => {
-    return uid === userStore.userInfo!.uid
+    return uid === (userStore.userInfo?.uid ?? '')
   }
 
   const handleSelfRemove = async (roomId: string) => {
@@ -276,7 +276,10 @@ export function useWsEventHandler(deps: {
     )
 
     useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExpire) => {
-      if (Number(userUid.value) === Number(wsTokenExpire.uid) && userStore.userInfo!.client === wsTokenExpire.client) {
+      if (
+        Number(userUid.value) === Number(wsTokenExpire.uid) &&
+        (userStore.userInfo?.client ?? '') === wsTokenExpire.client
+      ) {
         const { useLoginFlow } = await import('@/hooks/useLoginFlow')
         const { logout } = useLoginFlow()
         if (isMobile()) {

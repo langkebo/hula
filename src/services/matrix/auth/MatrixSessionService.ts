@@ -51,7 +51,7 @@ class MatrixSessionService extends BaseMatrixService {
   async getSessionList(): Promise<SessionInfo[]> {
     try {
       const client = this.getClient()
-      const dmRooms = await matrixDirectMessageService.getDMRooms()
+      const dmRooms = await matrixDirectMessageService.getDMRooms(false)
       const dmRoomMap = new Map(dmRooms.map((roomInfo) => [roomInfo.roomId, roomInfo]))
 
       return client.getRooms().map((room) => {

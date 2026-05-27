@@ -98,7 +98,7 @@
                   </n-flex>
                   <div
                     v-if="announcement?.top"
-                    class="p-[3px_4px] bg-[#237265] c-#fff rounded-3px text-[10px] flex-center">
+                    class="p-[3px_4px] bg-[--hula-color-primary-600] text-[--hula-text-inverse] rounded-3px text-[10px] flex-center">
                     <span>{{ t('announcement.form.pinned') }}</span>
                   </div>
                 </n-flex>

@@ -204,6 +204,54 @@ describe('MatrixCryptoService', () => {
     })
   })
 
+  describe('secure backup restore', () => {
+    it('should return secure backup restore result with recovered_keys and total_keys', async () => {
+      const restoreFromSecureBackup = vi.fn().mockResolvedValue({
+        recovered_keys: 2,
+        total_keys: 3
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          getSecureBackupManager: vi.fn(() => ({
+            restoreFromSecureBackup
+          }))
+        })
+      )
+
+      const result = await matrixCryptoService.restoreFromSecureBackup('backup-1', 'passphrase')
+
+      expect(result).toEqual({
+        recovered_keys: 2,
+        total_keys: 3
+      })
+      expect(restoreFromSecureBackup).toHaveBeenCalledWith('backup-1', 'passphrase')
+    })
+
+    it('should restore secure backup keys without relying on legacy success fields', async () => {
+      const restoreFromSecureBackup = vi.fn().mockResolvedValue({
+        recovered_keys: 1,
+        total_keys: 1
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        createClient({
+          http: {
+            authedRequest: vi.fn().mockResolvedValue({
+              version: '1',
+              algorithm: 'm.megolm_backup.v1',
+              auth_data: {}
+            })
+          },
+          getSecureBackupManager: vi.fn(() => ({
+            restoreFromSecureBackup
+          }))
+        })
+      )
+
+      await expect(matrixCryptoService.restoreKeys('recovery-key')).resolves.toBeUndefined()
+      expect(restoreFromSecureBackup).toHaveBeenCalledWith('1', 'recovery-key')
+    })
+  })
+
   describe('uploadKeys', () => {
     it('should return empty counts when method not available', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(

@@ -1,5 +1,5 @@
 <template>
-  <mobile-layout :title="t('admin.maintenance')" show-back>
+  <mobile-layout :title="t('admin.maintenance.title')" show-back>
     <div class="mobile-admin-maintenance">
       <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
         <van-cell-group :title="t('admin.media_stats')">

@@ -61,7 +61,7 @@ const { showFeedback } = useActionFeedback()
 
 const userStore = useUserStore()
 const { userInfo, requestMsg, syncDefaultMessage, submitRequest } = useGroupRequestConfirm(
-  computed(() => `我是${userStore.userInfo!.name}`)
+  computed(() => `我是${userStore.userInfo?.name ?? ''}`)
 )
 
 const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')

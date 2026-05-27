@@ -317,15 +317,15 @@ onUnmounted(() => {
 }
 
 .colorful {
-  background-image: linear-gradient(45deg, #a8edea 0%, #fed6e3 100%);
+  background-image: linear-gradient(45deg, var(--hula-surface-panel-muted) 0%, var(--hula-surface-subtle) 100%);
 }
 
 .built {
-  background-image: linear-gradient(-20deg, #e9defa 0%, #fbfcdb 100%);
+  background-image: linear-gradient(-20deg, var(--hula-surface-panel-muted) 0%, var(--hula-surface-subtle) 100%);
 }
 
 .unload {
-  background-image: linear-gradient(to top, #feada6 0%, #f5efef 100%);
+  background-image: linear-gradient(to top, var(--hula-color-danger-100) 0%, var(--hula-surface-subtle) 100%);
 }
 
 .filter-shadow {

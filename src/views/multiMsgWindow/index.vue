@@ -101,7 +101,7 @@ const getUserDisplayName = computed(() => (uid: string) => {
 
 // 获取用户头像
 const getAvatarSrc = (uid: string) => {
-  const avatar = uid === userUid.value ? userStore.userInfo!.avatar : groupStore.getUserInfo(uid)?.avatar
+  const avatar = uid === userUid.value ? (userStore.userInfo?.avatar ?? '') : groupStore.getUserInfo(uid)?.avatar
   return AvatarUtils.getAvatarUrl(avatar as string)
 }
 

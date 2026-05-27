@@ -1,4 +1,5 @@
 import { createLogger } from '@/utils/Logger'
+import { USER } from '../paths/user'
 
 const logger = createLogger('MatrixProfile')
 
@@ -13,11 +14,53 @@ export interface MatrixProfile {
   avatarUrl?: string
 }
 
+export interface MatrixExtendedProfile {
+  sex?: number
+  resume?: string
+  region?: string
+  birthday?: string
+  displayBirthdayTag?: boolean
+  displayAge?: boolean
+  displayConstellation?: boolean
+  [key: string]: string | number | boolean | null | undefined | Record<string, unknown> | Array<unknown>
+}
+
+export class ExtendedProfileUnsupportedError extends Error {
+  code = 'EXTENDED_PROFILE_UNSUPPORTED'
+
+  constructor(message = 'Extended profile is not supported by the server') {
+    super(message)
+    this.name = 'ExtendedProfileUnsupportedError'
+  }
+}
+
 interface UploadContentResponse {
   content_uri: string
 }
 
+function toMatrixJsonBody(value: unknown): object {
+  return value as object
+}
+
 class MatrixProfileService extends BaseMatrixService {
+  private isUnsupportedExtendedProfileError(err: unknown): boolean {
+    const httpStatus = (err as { httpStatus?: number })?.httpStatus
+    const errcode = (err as { errcode?: string })?.errcode
+    const message = String(err)
+    return (
+      errcode === 'M_UNRECOGNIZED' ||
+      message.includes('M_UNRECOGNIZED') ||
+      message.includes('Unrecognized request') ||
+      httpStatus === 501
+    )
+  }
+
+  private isMissingExtendedProfileError(err: unknown): boolean {
+    const httpStatus = (err as { httpStatus?: number })?.httpStatus
+    const errcode = (err as { errcode?: string })?.errcode
+    return httpStatus === 404 || errcode === 'M_NOT_FOUND' || String(err).includes('404')
+  }
+
   initialize(client: MatrixClient): void {
     this.setFallbackClient(client)
     logger.info('服务已初始化')
@@ -87,6 +130,86 @@ class MatrixProfileService extends BaseMatrixService {
       logger.error(`设置头像失败: ${err}`)
       throw err
     }
+  }
+
+  async getExtendedProfile(userId: string): Promise<MatrixExtendedProfile> {
+    try {
+      const client = this.getClient()
+      const response = await client.http.authedRequest('GET', USER.EXTENDED_PROFILE(userId))
+      if (!response || typeof response !== 'object' || Array.isArray(response)) {
+        return {}
+      }
+      return response as MatrixExtendedProfile
+    } catch (err) {
+      if (this.isUnsupportedExtendedProfileError(err)) {
+        logger.info(`服务器不支持扩展资料接口，返回空对象: ${userId}`)
+        return {}
+      }
+      if (this.isMissingExtendedProfileError(err)) {
+        logger.info(`扩展资料不存在，返回空对象: ${userId}`)
+        return {}
+      }
+      logger.error(`获取扩展资料失败: ${userId}, ${err}`)
+      throw err
+    }
+  }
+
+  async setExtendedProfileField(userId: string, keyName: string, value: unknown): Promise<void> {
+    try {
+      const client = this.getClient()
+      await client.http.authedRequest(
+        'PUT',
+        USER.EXTENDED_PROFILE_FIELD(userId, keyName),
+        undefined,
+        toMatrixJsonBody(value)
+      )
+      logger.info(`设置扩展资料字段成功: ${userId}/${keyName}`)
+    } catch (err) {
+      if (this.isUnsupportedExtendedProfileError(err)) {
+        throw new ExtendedProfileUnsupportedError()
+      }
+      logger.error(`设置扩展资料字段失败: ${userId}/${keyName}, ${err}`)
+      throw err
+    }
+  }
+
+  async deleteExtendedProfileField(userId: string, keyName: string): Promise<void> {
+    try {
+      const client = this.getClient()
+      await client.http.authedRequest('DELETE', USER.EXTENDED_PROFILE_FIELD(userId, keyName))
+      logger.info(`删除扩展资料字段成功: ${userId}/${keyName}`)
+    } catch (err) {
+      if (this.isUnsupportedExtendedProfileError(err)) {
+        throw new ExtendedProfileUnsupportedError()
+      }
+      if (this.isMissingExtendedProfileError(err)) {
+        logger.info(`扩展资料字段不存在，跳过删除: ${userId}/${keyName}`)
+        return
+      }
+      logger.error(`删除扩展资料字段失败: ${userId}/${keyName}, ${err}`)
+      throw err
+    }
+  }
+
+  async updateOwnExtendedProfile(fields: Partial<MatrixExtendedProfile>): Promise<MatrixExtendedProfile> {
+    const client = this.getClient()
+    const userId = client.getUserId()
+    if (!userId) {
+      throw new Error(this.t('matrix_error.account.cannot_get_user_id'))
+    }
+
+    const entries = Object.entries(fields)
+    await Promise.all(
+      entries.map(async ([key, value]) => {
+        if (value === undefined || value === null || value === '') {
+          await this.deleteExtendedProfileField(userId, key)
+          return
+        }
+        await this.setExtendedProfileField(userId, key, value)
+      })
+    )
+
+    return await this.getExtendedProfile(userId)
   }
 
   async uploadAndSetAvatar(file: Blob | File): Promise<string> {

@@ -1,5 +1,8 @@
 {
   "title": "Edit BIO",
   "placeholder": "Introduce yourself ~",
-  "save_btn": "SAVE"
+  "save_btn": "SAVE",
+  "save_success": "Bio updated",
+  "save_failed": "Failed to save bio",
+  "unsupported": "This server does not support saving bio"
 }

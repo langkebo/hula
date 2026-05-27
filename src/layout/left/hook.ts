@@ -96,8 +96,14 @@ export const leftHook = () => {
       return
     }
     matrixAccountService.updateDisplayName(localUserInfo.name!).then(() => {
-      userStore.userInfo!.name = localUserInfo.name!
-      loginHistoriesStore.updateLoginHistory(<UserInfoType>userStore.userInfo)
+      const currentUserInfo = userStore.userInfo
+      if (!currentUserInfo) {
+        showFeedback(t('home.profile_edit.toast.save_failed'), 'error')
+        return
+      }
+
+      currentUserInfo.name = localUserInfo.name!
+      loginHistoriesStore.updateLoginHistory(<UserInfoType>currentUserInfo)
       updateCurrentUserCache('name', localUserInfo.name)
       if (!editInfo.value.content.modifyNameChance) return
       editInfo.value.content.modifyNameChance -= 1

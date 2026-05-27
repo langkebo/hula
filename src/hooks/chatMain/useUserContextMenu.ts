@@ -30,7 +30,7 @@ export const useUserContextMenu = (deps: UseUserContextMenuDeps) => {
   const checkFriendRelation = (uid: string, type: 'friend' | 'all' = 'all') => {
     const contactStore = useContactStore()
     const userStore = useUserStore()
-    const myUid = userStore.userInfo!.uid
+    const myUid = userStore.userInfo?.uid ?? ''
     const isFriend = contactStore.contactsList.some((item) => item.uid === uid)
     return type === 'friend' ? isFriend && uid !== myUid : isFriend || uid === myUid
   }

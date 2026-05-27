@@ -46,7 +46,7 @@ const props = defineProps<{
 const chatStore = useChatStore()
 const userStore = useUserStore()
 
-const userUid = computed(() => userStore.userInfo!.uid)
+const userUid = computed(() => userStore.userInfo?.uid ?? '')
 const recallContent = computed(() => {
   const body = props.message.body
   if (body && typeof body === 'object' && 'content' in body && typeof body.content === 'string') {
@@ -77,7 +77,7 @@ const canReEdit = computed(() => {
   if (recalledMsg.originalType !== MsgEnum.TEXT) return false
 
   // 只需要判断是否是当前用户的消息
-  return message.fromUser.uid === userUid.value
+  return (message.fromUser?.uid ?? '') === userUid.value
 })
 
 const handleReEdit = (msgId: string) => {

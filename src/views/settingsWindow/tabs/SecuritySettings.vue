@@ -65,6 +65,15 @@
           {{ t('setting.security.export') }}
         </n-button>
       </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.security.secure_backup_label') }}</span>
+          <span class="setting-desc">{{ t('setting.security.secure_backup_desc') }}</span>
+        </div>
+        <n-button size="small" @click="showSecureBackupDialog = true">
+          {{ t('setting.security.manage') }}
+        </n-button>
+      </div>
     </div>
 
     <n-divider />
@@ -155,6 +164,8 @@
     </div>
 
     <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupSuccess" />
+
+    <SecureBackupDialog v-model:show="showSecureBackupDialog" />
 
     <SecurityKeySetupDialog v-model:show="showSecurityKeyDialog" @success="handleSecurityKeyCreated" />
 
@@ -334,6 +345,7 @@ import {
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
+import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAccount } from '@/composables/user/useAccount'
@@ -371,6 +383,7 @@ const newAllowlistUser = ref('')
 
 const showBackupDialog = ref(false)
 const showSecurityKeyDialog = ref(false)
+const showSecureBackupDialog = ref(false)
 const backupLoading = ref(false)
 const exportLoading = ref(false)
 const hasBackup = ref(false)

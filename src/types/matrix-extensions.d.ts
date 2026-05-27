@@ -26,6 +26,14 @@ export interface GeneratedSecretStorageKey {
   privateKey: Uint8Array
 }
 
+export interface MatrixAuthData {
+  type: string
+  session?: string
+  user?: string
+  password?: string
+  [key: string]: unknown
+}
+
 export interface VerificationRequest {
   transactionId: string
   userId: string
@@ -83,7 +91,12 @@ export interface CryptoApi {
   verificationRequests?: Map<string, VerificationRequest>
   getOwnDeviceKeys(): Promise<{ ed25519: string; curve25519: string }>
   isSecretStorageReady(): Promise<boolean>
-  bootstrapSecretStorage(opts?: { setupNewSecretStorage?: boolean; setupNewKeyBackup?: boolean }): Promise<void>
+  bootstrapSecretStorage(opts?: {
+    createSecretStorageKey?: () => Promise<GeneratedSecretStorageKey>
+    setupNewSecretStorage?: boolean
+    setupNewKeyBackup?: boolean
+    setupNewKeyBackupAuth?: MatrixAuthData
+  }): Promise<void>
   bootstrapCrossSigning(opts: {
     authUploadDeviceSigningKeys: (makeRequest: (authData: unknown) => Promise<unknown>) => Promise<unknown>
   }): Promise<void>
@@ -98,7 +111,7 @@ export interface CryptoApi {
     targetRoomId?: string,
     targetSessionId?: string
   ): Promise<{ imported: number; total: number }>
-  resetKeyBackup(): Promise<{ version: string }>
+  resetKeyBackup(auth?: MatrixAuthData): Promise<{ version: string } | string>
   prepareKeyBackupVersion(
     key?: string,
     opts?: Record<string, unknown>
@@ -270,9 +283,8 @@ export interface SecureBackupKeysResponse {
 }
 
 export interface SecureBackupRestoreResponse {
-  success: boolean
-  key_count: number
-  message?: string
+  recovered_keys: number
+  total_keys: number
 }
 
 export interface SecureBackupVerifyResponse {

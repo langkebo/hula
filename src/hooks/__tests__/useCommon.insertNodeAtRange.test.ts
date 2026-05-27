@@ -107,6 +107,19 @@ describe('insertNodeAtRange — MsgEnum.AIT', () => {
   })
 })
 
+describe('useCommon userUid fallback', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    userStoreMock.userInfo = { uid: 'user-self' }
+  })
+
+  it('returns empty string when current user info is temporarily missing', () => {
+    userStoreMock.userInfo = undefined as unknown as { uid: string }
+    const { userUid } = useCommon()
+    expect(userUid.value).toBe('')
+  })
+})
+
 describe('insertNodeAtRange — MsgEnum.TEXT', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

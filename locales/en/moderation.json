@@ -8,6 +8,22 @@
   "filterPattern": "Filter Pattern",
   "filterPatternPlaceholder": "Enter keyword, regex or image hash",
   "filterAction": "Action",
+  "report": {
+    "title": "Report Message",
+    "event_preview": "Message Preview",
+    "reason": "Reason",
+    "reason_placeholder": "Select a reason",
+    "reason_required": "Please select a reason",
+    "reason_spam": "Spam",
+    "reason_abuse": "Abuse / Harassment",
+    "reason_inappropriate": "Inappropriate Content",
+    "reason_other": "Other",
+    "comment": "Additional Details",
+    "comment_placeholder": "Optional: provide additional details...",
+    "submit": "Submit Report",
+    "success": "Report submitted successfully",
+    "failed": "Failed to submit report, please try again later"
+  },
   "status": {
     "open": "Open",
     "resolved": "Resolved",

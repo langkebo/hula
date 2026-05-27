@@ -163,13 +163,13 @@ export const useChatContextMenu = (deps: UseChatContextMenuDeps) => {
           return
         }
         chatStore.recordRecallMsg({
-          recallUid: userStore.userInfo!.uid,
+          recallUid: userStore.userInfo?.uid ?? '',
           msg,
           originalType,
           originalContent
         })
         await chatStore.updateRecallMsg({
-          recallUid: userStore.userInfo!.uid,
+          recallUid: userStore.userInfo?.uid ?? '',
           roomId: msg.message.roomId,
           msgId: msg.message.id
         })

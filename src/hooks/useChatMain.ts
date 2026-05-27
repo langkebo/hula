@@ -35,7 +35,6 @@ type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<stri
 
 import { useI18n } from 'vue-i18n'
 import { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
-import { adminService } from '@/services/matrix/admin'
 import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
 import { roomStateService } from '@/services/matrix/room/RoomStateService'
 import type { MessageType } from '@/stores/domains/chat/chat'
@@ -70,7 +69,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   const chatStore = useChatStore()
   const emojiStore = useEmojiStore()
   const userStore = useUserStore()
-  const userUid = computed(() => userStore.userInfo!.uid)
+  const userUid = computed(() => userStore.userInfo?.uid ?? '')
   const { downloadFile } = useDownload()
   const enableGroupNicknameModal = options.enableGroupNicknameModal ?? false
   const disableHistoryActions = options.disableHistoryActions ?? false
@@ -194,13 +193,13 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
           return
         }
         chatStore.recordRecallMsg({
-          recallUid: userStore.userInfo!.uid,
+          recallUid: userStore.userInfo?.uid ?? '',
           msg,
           originalType,
           originalContent
         })
         await chatStore.updateRecallMsg({
-          recallUid: userStore.userInfo!.uid,
+          recallUid: userStore.userInfo?.uid ?? '',
           roomId: msg.message.roomId,
           msgId: msg.message.id
         })
@@ -770,25 +769,18 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     {
       label: () => t('menu.report'),
       icon: 'caution',
-      click: async (item: ContextMenuItem & { message?: { id: string } }) => {
+      click: async (item: ContextMenuItem & { message?: { id: string; body?: { content?: string } } }) => {
         const roomId = globalStore.currentSessionRoomId
         const eventId = item.message?.id
         if (!roomId || !eventId) {
           showFeedback('无法获取消息信息', 'warning')
           return
         }
-        try {
-          await adminService.reportEvent({
-            roomId,
-            eventId,
-            reason: 'violation',
-            explanation: 'User reported via chat menu'
-          })
-          showFeedback(t('menu.report_success'), 'success')
-        } catch (err) {
-          logger.error('举报失败:', err)
-          showFeedback('举报失败，请稍后重试', 'error')
-        }
+        useMitt.emit(MittEnum.OPEN_EVENT_REPORT, {
+          roomId,
+          eventId,
+          eventContent: item.message?.body?.content || ''
+        })
       }
     }
   ])
@@ -802,7 +794,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   const checkFriendRelation = (uid: string, type: 'friend' | 'all' = 'all') => {
     const contactStore = useContactStore()
     const userStore = useUserStore()
-    const myUid = userStore.userInfo!.uid
+    const myUid = userStore.userInfo?.uid ?? ''
     const isFriend = contactStore.contactsList.some((item) => item.uid === uid)
     return type === 'friend' ? isFriend && uid !== myUid : isFriend || uid === myUid
   }

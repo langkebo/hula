@@ -49,7 +49,7 @@ describe('createMockRoom', () => {
   it('seeds roomId on getRoomId() and direct property', () => {
     const room = createMockRoom('!my-room:server')
     expect(room.roomId).toBe('!my-room:server')
-    expect(room.getRoomId?.()).toBe('!my-room:server')
+    expect((room.getRoomId as () => string)()).toBe('!my-room:server')
   })
 
   it('default membership is join with 2 joined members', () => {

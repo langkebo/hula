@@ -1,6 +1,11 @@
 import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { MatrixClientExtended, MatrixHttpApi } from '@/types/matrix-extensions'
+import type {
+  GeneratedSecretStorageKey,
+  MatrixAuthData,
+  MatrixClientExtended,
+  MatrixHttpApi
+} from '@/types/matrix-extensions'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
 
@@ -100,8 +105,72 @@ interface RevokeKeysResponse {
   revoked?: number
 }
 
+export interface SetupKeyBackupOptions {
+  recoveryKey?: string
+  password?: string
+  authData?: MatrixAuthData
+  generatedKey?: GeneratedSecretStorageKey | null
+}
+
+interface UiaErrorDataLike {
+  session?: string
+  flows?: unknown[]
+  params?: Record<string, unknown>
+  error?: string
+}
+
 class MatrixEncryptionService extends BaseMatrixService {
   private crypto: MatrixClient['crypto'] | null = null
+
+  private getCurrentUserId(): string | null {
+    try {
+      return this.getClient().getUserId() || null
+    } catch {
+      return null
+    }
+  }
+
+  private buildPasswordAuthData(password?: string, session?: string): MatrixAuthData | undefined {
+    const trimmedPassword = password?.trim()
+    const userId = this.getCurrentUserId()
+    if (!trimmedPassword || !userId) {
+      return undefined
+    }
+
+    return {
+      type: 'm.login.password',
+      user: userId,
+      password: trimmedPassword,
+      ...(session ? { session } : {})
+    }
+  }
+
+  private extractUiaErrorData(err: unknown): UiaErrorDataLike | null {
+    const candidates: unknown[] = [err]
+    if (err && typeof err === 'object' && 'cause' in err) {
+      candidates.push((err as { cause?: unknown }).cause)
+    }
+
+    for (const candidate of candidates) {
+      if (!candidate || typeof candidate !== 'object') {
+        continue
+      }
+
+      const record = candidate as Record<string, unknown>
+      if (record.data && typeof record.data === 'object') {
+        const data = record.data as Record<string, unknown>
+        if ('session' in data || 'flows' in data || 'params' in data) {
+          return data as UiaErrorDataLike
+        }
+      }
+
+      if ('session' in record || 'flows' in record || 'params' in record) {
+        return record as UiaErrorDataLike
+      }
+    }
+
+    return null
+  }
 
   private getCrossSigningInfoAccessor(crypto: MatrixClient['crypto']): CrossSigningInfoLike | undefined {
     const candidate = (crypto as unknown as { crossSigningInfo?: CrossSigningInfoLike }).crossSigningInfo
@@ -220,8 +289,18 @@ class MatrixEncryptionService extends BaseMatrixService {
     try {
       await crypto.bootstrapCrossSigning?.({
         authUploadDeviceSigningKeys: async (makeRequest: (authData: unknown) => Promise<unknown>) => {
-          if (authParams?.authData) {
-            return makeRequest(authParams.authData)
+          const baseAuthData =
+            (authParams?.authData as MatrixAuthData | undefined) ?? this.buildPasswordAuthData(authParams?.password)
+          if (baseAuthData) {
+            try {
+              return await makeRequest(baseAuthData)
+            } catch (err) {
+              const uiaData = this.extractUiaErrorData(err)
+              if (uiaData?.session && !baseAuthData.session) {
+                return makeRequest({ ...baseAuthData, session: uiaData.session })
+              }
+              throw err
+            }
           }
           throw new Error(this.t('matrix_error.crypto.auth_params_required'))
         }
@@ -271,24 +350,49 @@ class MatrixEncryptionService extends BaseMatrixService {
     }
   }
 
-  async setupKeyBackup(recoveryKey?: string): Promise<string> {
+  async setupKeyBackup(input?: string | SetupKeyBackupOptions): Promise<string> {
     const crypto = this.getCrypto()
     if (!crypto) {
       throw new Error(this.t('matrix_error.crypto.encryption_module_unavailable'))
     }
 
     try {
-      let key: string
+      const recoveryKey = typeof input === 'string' ? input : input?.recoveryKey
+      let generatedKey = typeof input === 'string' ? null : (input?.generatedKey ?? null)
+      const authData =
+        typeof input === 'string' ? undefined : (input?.authData ?? this.buildPasswordAuthData(input?.password))
 
       if (recoveryKey) {
         await crypto.restoreKeyBackup?.(recoveryKey)
-        key = recoveryKey
-      } else {
-        key = await crypto.resetKeyBackup?.()
+        info('[Encryption] 密钥备份设置成功')
+        return recoveryKey
       }
 
-      info('[Encryption] 密钥备份设置成功')
-      return key
+      if (!generatedKey && typeof crypto.createRecoveryKeyFromPassphrase === 'function') {
+        generatedKey = await crypto.createRecoveryKeyFromPassphrase()
+      }
+
+      if (generatedKey && typeof crypto.bootstrapSecretStorage === 'function') {
+        await crypto.bootstrapSecretStorage({
+          createSecretStorageKey: async () => generatedKey as GeneratedSecretStorageKey,
+          setupNewSecretStorage: true,
+          setupNewKeyBackup: true,
+          setupNewKeyBackupAuth: authData
+        })
+        info('[Encryption] 密钥备份设置成功')
+        return generatedKey.encodedPrivateKey
+      } else {
+        const created = await crypto.resetKeyBackup?.(authData)
+        const key =
+          generatedKey?.encodedPrivateKey ||
+          (typeof created === 'string'
+            ? created
+            : created && typeof created === 'object' && 'version' in created
+              ? String(created.version ?? '')
+              : '')
+        info('[Encryption] 密钥备份设置成功')
+        return key
+      }
     } catch (err) {
       error(`[Encryption] 设置密钥备份失败: ${err}`)
       throw err
@@ -352,6 +456,52 @@ class MatrixEncryptionService extends BaseMatrixService {
       }
     } catch (err) {
       error(`[Encryption] 从备份恢复密钥失败: ${err}`)
+      throw err
+    }
+  }
+
+  async restoreFromBackupWithPassphrase(passphrase: string): Promise<{ imported: number; total: number }> {
+    const crypto = this.getCrypto()
+    if (!crypto) {
+      throw new Error(this.t('matrix_error.crypto.encryption_module_unavailable'))
+    }
+
+    try {
+      const backupInfo = await crypto.getKeyBackupVersion?.()
+      if (!backupInfo) {
+        throw new Error(this.t('matrix_error.crypto.no_key_backup_available'))
+      }
+
+      const passphraseRestore = (
+        crypto as MatrixClient['crypto'] & {
+          restoreKeyBackupWithPassphrase?: (
+            key: string,
+            targetRoomId?: string,
+            targetSessionId?: string,
+            backupInfo?: {
+              version: string
+              algorithm: string
+              auth_data: Record<string, unknown>
+              count: number
+              etag: string
+            }
+          ) => Promise<{ imported?: number; total?: number }>
+        }
+      ).restoreKeyBackupWithPassphrase
+
+      if (typeof passphraseRestore !== 'function') {
+        throw new Error('当前客户端不支持通过安全短语恢复密钥备份')
+      }
+
+      const result = await passphraseRestore(passphrase, undefined, undefined, backupInfo)
+
+      info(`[Encryption] 使用安全短语从备份恢复密钥成功: ${result?.imported || 0} 个`)
+      return {
+        imported: result?.imported || 0,
+        total: result?.total || 0
+      }
+    } catch (err) {
+      error(`[Encryption] 使用安全短语从备份恢复密钥失败: ${err}`)
       throw err
     }
   }

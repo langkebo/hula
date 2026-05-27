@@ -850,7 +850,8 @@ export type I18nKeys = {
         "send_code": "发送验证码",
         "retry_in": "{seconds}秒后重试",
         "sending": "发送中...",
-        "submit": "注册"
+        "submit": "注册",
+        "back_to_login": "返回登录"
       },
       "email_modal": {
         "title": "请输入邮箱验证码",
@@ -5823,7 +5824,26 @@ export type I18nKeys = {
         "rejected_hint": "建议您检查设备或联系支持。",
         "fingerprint_unavailable": "无法获取指纹",
         "load_fingerprint_failed": "获取设备密钥失败",
-        "verify_failed": "验证失败"
+        "verify_failed": "验证失败",
+        "decline_request": "拒绝",
+        "declined_success": "已拒绝验证请求",
+        "declined_failed": "拒绝验证请求失败",
+        "accepted_success": "已接受验证请求",
+        "accepted_failed": "接受验证请求失败",
+        "cancel_verification": "取消验证",
+        "cancel_reason_label": "取消原因",
+        "cancel_reason_placeholder": "请输入取消原因（可选）",
+        "cancel_success": "验证已取消",
+        "cancel_failed": "取消验证失败",
+        "pending_list_title": "待处理的验证请求",
+        "pending_list_empty": "暂无待处理的验证请求",
+        "pending_request_from": "来自",
+        "pending_request_device": "设备",
+        "pending_request_methods": "验证方式",
+        "view_pending": "查看待处理请求",
+        "step_intro": "确认设备",
+        "step_verify": "指纹核对",
+        "step_result": "完成"
       },
       "backup_setup_dialog": {
         "intro_primary": "安全备份可以保护您的加密消息。即使您丢失设备或清除数据，也可以通过恢复密钥找回历史消息。",

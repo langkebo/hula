@@ -64,6 +64,8 @@ describe('AdminUserService', () => {
           avatar_url: 'mxc://avatar',
           admin: true,
           deactivated: false,
+          is_guest: true,
+          creation_ts: 456,
           displayname: 'User',
           last_seen_ts: 123
         }
@@ -81,12 +83,33 @@ describe('AdminUserService', () => {
           avatarUrl: 'mxc://avatar',
           admin: true,
           deactivated: false,
+          isGuest: true,
+          createdTs: 456,
           displayname: 'User',
           lastSeenTs: 123
         }
       ],
       nextToken: 'next'
     })
+  })
+
+  it('getUsers respects guest filtering when SDK response mixes guest and normal users', async () => {
+    admin.getUsersPaginated.mockResolvedValueOnce({
+      items: [
+        { name: '@guest:server.com', is_guest: true },
+        { name: '@user:server.com', is_guest: false }
+      ],
+      nextToken: undefined
+    })
+
+    const result = await service.getUsers(100, undefined, undefined, true)
+
+    expect(result.users).toEqual([
+      expect.objectContaining({
+        userId: '@guest:server.com',
+        isGuest: true
+      })
+    ])
   })
 
   it('createUser composes full matrix user id from client domain', async () => {

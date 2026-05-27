@@ -3,12 +3,12 @@
     <div class="mobile-admin">
       <!-- 管理功能列表 -->
       <van-cell-group :title="t('admin.management')">
-        <van-cell :title="t('admin.users')" icon="friends-o" is-link @click="handleNavigate('users')">
+        <van-cell :title="t('admin.users.title')" icon="friends-o" is-link @click="handleNavigate('users')">
           <template #value>
             <van-tag type="primary">{{ userCount }}</van-tag>
           </template>
         </van-cell>
-        <van-cell :title="t('admin.rooms')" icon="chat-o" is-link @click="handleNavigate('rooms')">
+        <van-cell :title="t('admin.rooms.title')" icon="chat-o" is-link @click="handleNavigate('rooms')">
           <template #value>
             <van-tag type="success">{{ roomCount }}</van-tag>
           </template>
@@ -26,6 +26,13 @@
         <van-cell :title="t('admin.saml.title')" icon="lock" is-link @click="handleNavigate('saml')" />
         <van-cell :title="t('admin.security.title')" icon="shield-o" is-link @click="handleNavigate('security')" />
         <van-cell :title="t('admin.logs.title')" icon="records" is-link @click="handleNavigate('server-logs')" />
+        <van-cell :title="t('admin.spaces.title')" icon="cluster-o" is-link @click="handleNavigate('spaces')" />
+        <van-cell
+          :title="t('admin.notifications.title')"
+          icon="bell"
+          is-link
+          @click="handleNavigate('notifications')" />
+        <van-cell :title="t('admin.appServices.title')" icon="apps-o" is-link @click="handleNavigate('app-services')" />
         <van-cell :title="t('admin.moderation')" icon="shield-o" is-link @click="handleNavigate('moderation')">
           <template #value>
             <van-tag v-if="reportCount > 0" type="danger">{{ reportCount }}</van-tag>

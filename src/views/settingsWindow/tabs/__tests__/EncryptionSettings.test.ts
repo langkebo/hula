@@ -29,6 +29,11 @@ const translationMap: Record<string, string> = {
   'setting.encryption.this_device_verified': '此设备已验证',
   'setting.encryption.this_device_unverified': '此设备未验证',
   'setting.encryption.verify_device_action': '验证设备',
+  'setting.encryption.qr_verify_label': '二维码验证',
+  'setting.encryption.qr_verify_desc': '通过显示或扫描二维码完成跨设备验证',
+  'setting.encryption.pending_verifications_label': '待处理验证请求',
+  'setting.encryption.pending_verification_cancelled': '已取消待处理验证',
+  'setting.encryption.pending_verification_cancel_failed': '取消待处理验证失败',
   'setting.encryption.verified': '已验证',
   'setting.encryption.device_key_label': '设备密钥',
   'setting.encryption.device_key_desc': '查看此设备的加密密钥指纹',
@@ -50,7 +55,10 @@ const translationMap: Record<string, string> = {
   'setting.encryption.backup_created': '备份创建成功',
   'setting.encryption.restore_success': '密钥恢复成功',
   'setting.encryption.verify_success': '设备验证成功',
-  'setting.encryption.copied': '已复制到剪贴板'
+  'setting.encryption.copied': '已复制到剪贴板',
+  'setting.device_verify_dialog.show_qr': '显示二维码',
+  'setting.device_verify_dialog.scan_qr': '扫描二维码',
+  'setting.device_verify_dialog.accept_request': '接受请求'
 }
 
 const {
@@ -60,6 +68,9 @@ const {
   getCrossSigningInfoMock,
   getKeyRotationStatusMock,
   isDeviceVerifiedMock,
+  getPendingVerificationsMock,
+  cancelVerificationMock,
+  encryptionStoreState,
   messageSuccessMock,
   messageWarningMock,
   loggerErrorMock,
@@ -71,6 +82,33 @@ const {
   getCrossSigningInfoMock: vi.fn(),
   getKeyRotationStatusMock: vi.fn(),
   isDeviceVerifiedMock: vi.fn(),
+  getPendingVerificationsMock: vi.fn(),
+  cancelVerificationMock: vi.fn(),
+  encryptionStoreState: {
+    encryptionEnabled: true,
+    securityKeyConfigured: true,
+    crossSigningSetup: true,
+    backupEnabled: true,
+    backupVersion: '2',
+    needsRotation: true,
+    deviceVerified: true,
+    e2eeFullySetup: true,
+    async loadEncryptionStatus() {},
+    async loadDeviceVerification() {},
+    async loadRotationStatus() {
+      this.needsRotation = (await getKeyRotationStatusMock())?.needsRotation ?? false
+    },
+    markBackupEnabled(version?: string) {
+      this.backupEnabled = true
+      this.backupVersion = version ?? this.backupVersion
+    },
+    markDeviceVerified() {
+      this.deviceVerified = true
+    },
+    markSecurityKeyConfigured() {
+      this.securityKeyConfigured = true
+    }
+  },
   messageSuccessMock: vi.fn(),
   messageWarningMock: vi.fn(),
   loggerErrorMock: vi.fn(),
@@ -109,7 +147,16 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
 
 vi.mock('@/services/matrix/crypto/MatrixVerificationService', () => ({
   matrixVerificationService: {
-    isDeviceVerified: isDeviceVerifiedMock
+    isDeviceVerified: isDeviceVerifiedMock,
+    getPendingVerifications: getPendingVerificationsMock,
+    cancelVerification: cancelVerificationMock
+  }
+}))
+
+vi.mock('@/stores/domains/settings/encryption', () => ({
+  useEncryptionStore: () => {
+    const { reactive } = require('vue') as typeof import('vue')
+    return reactive(encryptionStoreState)
   }
 }))
 
@@ -124,6 +171,18 @@ vi.mock('vue-i18n', () => ({
         (message, [name, value]) => message.replace(new RegExp(`\\{${name}\\}`, 'g'), value),
         translationMap[key] ?? key
       )
+    }
+  })
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: (message: string, type: 'success' | 'warning' | 'error') => {
+      if (type === 'success') {
+        messageSuccessMock(message)
+        return
+      }
+      messageWarningMock(message)
     }
   })
 }))
@@ -273,6 +332,14 @@ describe('EncryptionSettings', () => {
       deviceId: 'DEVICE123',
       isCryptoEnabled: true
     })
+    encryptionStoreState.encryptionEnabled = true
+    encryptionStoreState.securityKeyConfigured = true
+    encryptionStoreState.crossSigningSetup = true
+    encryptionStoreState.backupEnabled = true
+    encryptionStoreState.backupVersion = '2'
+    encryptionStoreState.needsRotation = true
+    encryptionStoreState.deviceVerified = true
+    encryptionStoreState.e2eeFullySetup = true
     getCurrentDeviceFingerprintMock.mockResolvedValue('ABCD1234EFGH5678')
     getKeyBackupInfoMock.mockResolvedValue({
       version: '2',
@@ -284,6 +351,16 @@ describe('EncryptionSettings', () => {
     getCrossSigningInfoMock.mockResolvedValue({ isSetup: true })
     getKeyRotationStatusMock.mockResolvedValue({ enabled: true, intervalMs: 1, needsRotation: true })
     isDeviceVerifiedMock.mockResolvedValue(true)
+    getPendingVerificationsMock.mockResolvedValue([
+      {
+        transactionId: 'txn-inbound',
+        userId: '@alice:example.com',
+        deviceId: 'OTHER_DEVICE',
+        methods: ['m.sas.v1'],
+        timestamp: Date.now()
+      }
+    ])
+    cancelVerificationMock.mockResolvedValue(undefined)
   })
 
   const mountComponent = () => mount(EncryptionSettings)
@@ -293,16 +370,18 @@ describe('EncryptionSettings', () => {
 
     await flushPromises()
 
-    expect(getCurrentSessionContextMock).toHaveBeenCalled()
-    expect(isDeviceVerifiedMock).toHaveBeenCalledWith('@alice:example.com', 'DEVICE123')
+    expect(getCurrentDeviceFingerprintMock).toHaveBeenCalled()
+    expect(getPendingVerificationsMock).toHaveBeenCalled()
     expect(wrapper.text()).toContain('已设置并备份')
     expect(wrapper.text()).toContain('已设置')
     expect(wrapper.text()).toContain('需要轮换')
     expect(wrapper.text()).toContain('此设备已验证')
+    expect(wrapper.text()).toContain('待处理验证请求')
+    expect(wrapper.text()).toContain('OTHER_DEVICE')
     expect((wrapper.vm as any).deviceFingerprint).toBe('ABCD 1234 EFGH 5678')
   })
 
-  it('支持处理备份、恢复、验证和复制指纹操作', async () => {
+  it('支持处理备份、恢复、验证、二维码入口和复制指纹操作', async () => {
     const wrapper = mountComponent()
 
     await flushPromises()
@@ -310,6 +389,7 @@ describe('EncryptionSettings', () => {
     ;(wrapper.vm as any).handleCreateBackup()
     ;(wrapper.vm as any).handleRestoreBackup()
     ;(wrapper.vm as any).handleVerifyDevice()
+    ;(wrapper.vm as any).openVerifyDialog('qr_show')
     await wrapper.get('[data-test="backup-success"]').trigger('click')
     await wrapper.get('[data-test="restore-success"]').trigger('click')
     await wrapper.get('[data-test="verify-success"]').trigger('click')
@@ -324,10 +404,34 @@ describe('EncryptionSettings', () => {
     expect((wrapper.vm as any).backupEnabled).toBe(true)
     expect((wrapper.vm as any).deviceVerified).toBe(true)
     expect((wrapper.vm as any).deviceKeyVisible).toBe(true)
+    expect((wrapper.vm as any).verifyDialogMode).toBe('qr_show')
     expect(messageSuccessMock).toHaveBeenCalledWith('备份创建成功')
     expect(messageSuccessMock).toHaveBeenCalledWith('密钥恢复成功')
     expect(messageSuccessMock).toHaveBeenCalledWith('设备验证成功')
     expect(writeTextMock).toHaveBeenCalledWith('ABCD1234EFGH5678')
+  })
+
+  it('支持接受和取消待处理验证请求', async () => {
+    const wrapper = mountComponent()
+
+    await flushPromises()
+    expect(wrapper.text()).toContain('接受请求')
+
+    await (wrapper.vm as any).handleCancelPendingVerification((wrapper.vm as any).pendingVerifications[0])
+
+    expect(cancelVerificationMock).toHaveBeenCalledWith('txn-inbound', 'User cancelled verification')
+    expect(messageSuccessMock).toHaveBeenCalledWith('已取消待处理验证')
+
+    ;(wrapper.vm as any).handleAcceptPendingVerification({
+      transactionId: 'txn-other',
+      userId: '@alice:example.com',
+      deviceId: 'DEVICE_TWO',
+      methods: ['m.sas.v1'],
+      timestamp: Date.now()
+    })
+
+    expect((wrapper.vm as any).showVerifyDialog).toBe(true)
+    expect((wrapper.vm as any).selectedVerificationRequest.deviceId).toBe('DEVICE_TWO')
   })
 
   it('在加密未启用和指纹缺失时走降级逻辑', async () => {
@@ -336,6 +440,8 @@ describe('EncryptionSettings', () => {
       deviceId: null,
       isCryptoEnabled: false
     })
+    encryptionStoreState.encryptionEnabled = false
+    encryptionStoreState.backupEnabled = false
     getCurrentDeviceFingerprintMock.mockResolvedValue(null)
 
     const wrapper = mountComponent()
@@ -352,7 +458,7 @@ describe('EncryptionSettings', () => {
   })
 
   it('在加载失败时记录错误', async () => {
-    getCrossSigningInfoMock.mockRejectedValueOnce(new Error('load failed'))
+    getPendingVerificationsMock.mockRejectedValueOnce(new Error('load failed'))
 
     mountComponent()
     await flushPromises()
@@ -361,9 +467,7 @@ describe('EncryptionSettings', () => {
   })
 
   it('在轮换弹窗更新后刷新轮换状态', async () => {
-    getKeyRotationStatusMock
-      .mockResolvedValueOnce({ enabled: true, intervalMs: 1, needsRotation: true })
-      .mockResolvedValueOnce({ enabled: true, intervalMs: 1, needsRotation: false })
+    getKeyRotationStatusMock.mockResolvedValueOnce({ enabled: true, intervalMs: 1, needsRotation: false })
 
     const wrapper = mountComponent()
     await flushPromises()
@@ -373,7 +477,7 @@ describe('EncryptionSettings', () => {
     await wrapper.get('[data-test="rotation-updated"]').trigger('click')
     await flushPromises()
 
-    expect(getKeyRotationStatusMock).toHaveBeenCalledTimes(2)
+    expect(getKeyRotationStatusMock).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('已是最新')
   })
 })

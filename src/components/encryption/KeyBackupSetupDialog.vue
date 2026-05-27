@@ -43,12 +43,21 @@
           <Icon icon="mdi:alert-circle" :width="20" />
           <span>{{ t('encryption.backup_setup_dialog.key_warning') }}</span>
         </div>
+        <div class="password-field">
+          <div class="password-label">{{ t('setting.account.current_password') }}</div>
+          <n-input
+            v-model:value="currentPassword"
+            type="password"
+            show-password-on="click"
+            :placeholder="t('setting.account.current_password_placeholder')" />
+          <div class="password-hint">{{ t('encryption.onboarding.current_password_hint') }}</div>
+        </div>
         <n-checkbox v-model:checked="keySaved" class="key-checkbox">
           {{ t('encryption.backup_setup_dialog.key_saved_confirm') }}
         </n-checkbox>
         <div class="step-actions">
           <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
-          <n-button type="primary" :disabled="!keySaved" @click="confirmSetup">
+          <n-button type="primary" :disabled="!keySaved || !currentPassword.trim()" @click="confirmSetup">
             {{ t('encryption.backup_setup_dialog.confirm_complete') }}
           </n-button>
         </div>
@@ -95,6 +104,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useEncryption } from '@/composables/encryption'
+import matrixCryptoService from '@/services/matrix/crypto/MatrixCryptoService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import type { GeneratedSecretStorageKey } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('KeyBackupSetup')
@@ -124,6 +136,8 @@ type Step = 'intro' | 'create' | 'showKey' | 'verify' | 'success'
 const step = ref<Step>('intro')
 const loading = ref(false)
 const recoveryKey = ref('')
+const generatedRecoveryKey = ref<GeneratedSecretStorageKey | null>(null)
+const currentPassword = ref('')
 const keySaved = ref(false)
 const verifyKey = ref('')
 
@@ -158,6 +172,8 @@ function handleClose() {
 function resetState() {
   step.value = 'intro'
   recoveryKey.value = ''
+  generatedRecoveryKey.value = null
+  currentPassword.value = ''
   keySaved.value = false
   verifyKey.value = ''
   loading.value = false
@@ -168,8 +184,13 @@ async function startSetup() {
   step.value = 'create'
 
   try {
-    const key = await encryption.setupKeyBackup()
-    recoveryKey.value = key
+    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+    const key = await matrixCryptoService.createRecoveryKeyFromPassphrase()
+    if (!key?.encodedPrivateKey) {
+      throw new Error('Failed to generate recovery key')
+    }
+    generatedRecoveryKey.value = key
+    recoveryKey.value = key.encodedPrivateKey
     step.value = 'showKey'
   } catch (error) {
     logger.error('Failed to create secure backup:', error)
@@ -200,8 +221,30 @@ function downloadKey() {
   showFeedback(t('encryption.backup.download_success'), 'success')
 }
 
-function confirmSetup() {
-  step.value = 'verify'
+async function confirmSetup() {
+  if (!currentPassword.value.trim()) {
+    showFeedback(t('setting.account.current_password_required'), 'warning')
+    return
+  }
+
+  if (!generatedRecoveryKey.value) {
+    showFeedback(t('encryption.backup_setup_dialog.create_failed'), 'error')
+    return
+  }
+
+  loading.value = true
+  try {
+    await encryption.setupKeyBackup({
+      password: currentPassword.value.trim(),
+      generatedKey: generatedRecoveryKey.value
+    })
+    step.value = 'verify'
+  } catch (error) {
+    logger.error('Failed to initialize secure backup:', error)
+    showFeedback(t('encryption.backup_setup_dialog.create_failed'), 'error')
+  } finally {
+    loading.value = false
+  }
 }
 
 async function verifyKeyInput() {
@@ -320,6 +363,25 @@ async function verifyKeyInput() {
 
 .key-checkbox {
   margin-bottom: 16px;
+}
+
+.password-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.password-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--hula-text-primary);
+}
+
+.password-hint {
+  color: var(--hula-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .step-actions {

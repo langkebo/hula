@@ -6,7 +6,7 @@
           type="button"
           class="friend-item-actions__btn"
           :aria-label="t('home.friends_list.actions.message')"
-          @click.stop="emit('message')">
+          @click.stop="handleOpenDm">
           <svg class="size-14px"><use href="#message"></use></svg>
         </button>
       </template>
@@ -30,8 +30,11 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import { useContactStore } from '@/stores/domains/chat/contacts'
 
-defineProps<{
+const props = defineProps<{
   uid: string
 }>()
 
@@ -41,6 +44,28 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
+const contactStore = useContactStore()
+
+const handleOpenDm = async () => {
+  if (!props.uid) return
+  try {
+    const dmInfo = await matrixFriendService.getFriendDmRoom(props.uid)
+    if (dmInfo.room_id) {
+      const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+      await openMsgSessionByRoomId(dmInfo.room_id)
+    } else {
+      const roomId = await contactStore.startDirectRoom(props.uid, false)
+      if (roomId) {
+        const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+        await openMsgSessionByRoomId(roomId)
+      }
+    }
+  } catch {
+    showFeedback(t('friend.detail.chat_error'), 'error', 'assertive')
+  }
+  emit('message')
+}
 </script>
 
 <style scoped lang="scss">

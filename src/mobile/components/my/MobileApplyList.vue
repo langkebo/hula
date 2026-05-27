@@ -246,7 +246,7 @@ const popoverActions = [
 const avatarSrc = (url: string) => AvatarUtils.getAvatarUrl(url)
 
 const isCurrentUser = (uid: string | undefined) => {
-  return uid === userStore.userInfo!.uid
+  return uid === (userStore.userInfo?.uid ?? '')
 }
 
 const getUserInfo = (item: FriendRequestItem) => {

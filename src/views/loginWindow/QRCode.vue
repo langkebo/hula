@@ -7,53 +7,90 @@
       <img src="/hula.png" class="w-100px h-40px drop-shadow-xl" alt="HuLa" data-tauri-drag-region />
     </n-flex>
 
-    <!-- 二维码 -->
-    <n-flex justify="center" class="mt-15px" data-tauri-drag-region>
-      <n-skeleton v-if="loading" style="border-radius: 12px" :width="204" :height="204" :sharp="false" size="medium" />
-      <div v-else class="relative">
-        <n-qr-code
-          :size="180"
-          class="rounded-12px"
-          :class="{ blur: scanStatus.show || refreshing }"
-          :value="qrCodeValue"
-          :color="qrCodeColor"
-          :bg-color="qrCodeBgColor"
-          :type="qrCodeType"
-          :icon-src="qrCodeIcon"
-          :icon-size="36"
-          :icon-margin="2"
-          :error-correction-level="qrErrorCorrectionLevel"
-          @click="refreshQRCode" />
-        <!-- 二维码状态 -->
-        <n-flex
-          v-if="scanStatus.show"
-          vertical
-          :size="12"
-          align="center"
-          class="w-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-          style="pointer-events: none">
-          <svg class="size-42px animate-pulse">
-            <use :href="`#${scanStatus.icon}`"></use>
-          </svg>
-          <span class="text-(14px [--hula-text-quaternary])">{{ scanStatusText }}</span>
-        </n-flex>
-
-        <n-flex
-          v-if="refreshing"
-          vertical
-          :size="12"
-          align="center"
-          class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-          style="pointer-events: none">
-          <n-spin size="small" />
-          <span class="text-(16px [--hula-text-quaternary])">{{ t('login.qr.overlay.refreshing') }}</span>
-        </n-flex>
-      </div>
+    <!-- 登录模式切换 -->
+    <n-flex justify="center" class="mt-12px" data-tauri-drag-region>
+      <n-button-group size="small">
+        <n-button :type="loginMode === 'quick' ? 'primary' : 'default'" @click="loginMode = 'quick'">
+          {{ t('login.qr.mode.quick') }}
+        </n-button>
+        <n-button :type="loginMode === 'rendezvous' ? 'primary' : 'default'" @click="loginMode = 'rendezvous'">
+          {{ t('login.qr.mode.rendezvous') }}
+        </n-button>
+      </n-button-group>
     </n-flex>
 
-    <n-flex justify="center" class="mt-15px text-(14px [--hula-text-tertiary])">
-      {{ loadText }}
-    </n-flex>
+    <!-- 快速登录 - 原有二维码 -->
+    <template v-if="loginMode === 'quick'">
+      <!-- 二维码 -->
+      <n-flex justify="center" class="mt-15px" data-tauri-drag-region>
+        <n-skeleton
+          v-if="loading"
+          style="border-radius: 12px"
+          :width="204"
+          :height="204"
+          :sharp="false"
+          size="medium" />
+        <div v-else class="relative">
+          <n-qr-code
+            :size="180"
+            class="rounded-12px"
+            :class="{ blur: scanStatus.show || refreshing }"
+            :value="qrCodeValue"
+            :color="qrCodeColor"
+            :bg-color="qrCodeBgColor"
+            :type="qrCodeType"
+            :icon-src="qrCodeIcon"
+            :icon-size="36"
+            :icon-margin="2"
+            :error-correction-level="qrErrorCorrectionLevel"
+            @click="refreshQRCode" />
+          <!-- 二维码状态 -->
+          <n-flex
+            v-if="scanStatus.show"
+            vertical
+            :size="12"
+            align="center"
+            class="w-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+            style="pointer-events: none">
+            <svg class="size-42px animate-pulse">
+              <use :href="`#${scanStatus.icon}`"></use>
+            </svg>
+            <span class="text-(14px [--hula-text-quaternary])">{{ scanStatusText }}</span>
+          </n-flex>
+
+          <n-flex
+            v-if="refreshing"
+            vertical
+            :size="12"
+            align="center"
+            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+            style="pointer-events: none">
+            <n-spin size="small" />
+            <span class="text-(16px [--hula-text-quaternary])">{{ t('login.qr.overlay.refreshing') }}</span>
+          </n-flex>
+        </div>
+      </n-flex>
+
+      <n-flex justify="center" class="mt-15px text-(14px [--hula-text-tertiary])">
+        {{ loadText }}
+      </n-flex>
+    </template>
+
+    <!-- Rendezvous 登录 - MSC3886 -->
+    <template v-else>
+      <n-flex justify="center" class="mt-15px" data-tauri-drag-region>
+        <div class="text-center">
+          <div
+            class="mb-12px text-[var(--hula-color-primary-500)] bg-[var(--hula-surface-search)] p-16px rounded-full inline-flex">
+            <Icon icon="mdi:qrcode-plus" :width="48" />
+          </div>
+          <p class="text-(14px [--hula-text-tertiary])">{{ t('login.qr.rendezvous_hint') }}</p>
+          <n-button type="primary" class="mt-12px" @click="showRendezvousManager = true">
+            {{ t('login.qr.open_rendezvous') }}
+          </n-button>
+        </div>
+      </n-flex>
+    </template>
 
     <!-- 第三方登录 -->
     <div class="w-full pb-22px pt-14px">
@@ -72,12 +109,17 @@
         {{ t('login.qr.actions.register') }}
       </div>
     </n-flex>
+
+    <!-- Rendezvous 会话管理弹窗 -->
+    <RendezvousSessionManager v-model:show="showRendezvousManager" />
   </n-config-provider>
 </template>
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import RendezvousSessionManager from '@/components/rendezvous/RendezvousSessionManager.vue'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
@@ -109,6 +151,8 @@ const { isTrayMenuShow } = storeToRefs(globalStore)
 const { t } = useI18n()
 type LoadTextKey = 'loading' | 'refreshing' | 'scan_hint' | 'login' | 'retry' | 'auth_pending'
 type ScanStatusTextKey = 'success' | 'error' | 'auth' | 'expired' | 'fetch_failed' | 'generate_fail' | 'general_error'
+const loginMode = ref<'quick' | 'rendezvous'>('quick')
+const showRendezvousManager = ref(false)
 const loadTextKey = ref<LoadTextKey>('loading')
 const loadText = computed(() => t(`login.qr.load_text.${loadTextKey.value}`))
 const loading = ref(true)
@@ -117,8 +161,8 @@ const qrCodeValue = ref('')
 const qrCodeResp = ref()
 const bridgeQrData = ref<QrCodeResult | null>(null)
 const useBridge = ref(false)
-const qrCodeColor = ref('#000000')
-const qrCodeBgColor = ref('#FFFFFF')
+const qrCodeColor = ref('var(--hula-text-primary)')
+const qrCodeBgColor = ref('var(--hula-surface-panel)')
 const qrCodeType = ref('canvas' as const)
 const qrCodeIcon = ref('/logo.png')
 const qrErrorCorrectionLevel = ref('H' as const)

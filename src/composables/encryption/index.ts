@@ -1,3 +1,5 @@
+export type { CreateDehydratedDeviceParams, DehydratedDevice, UseDehydratedDeviceResult } from './useDehydratedDevice'
+export { useDehydratedDevice } from './useDehydratedDevice'
 export type {
   CrossSigningInfo,
   CryptoHealthStatus,

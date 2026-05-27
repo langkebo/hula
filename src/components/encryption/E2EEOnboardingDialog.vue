@@ -69,6 +69,15 @@
           <n-checkbox v-model:checked="keySaved" class="key-checkbox">
             {{ t('encryption.onboarding.key_saved_confirm') }}
           </n-checkbox>
+          <div class="password-field">
+            <div class="password-label">{{ t('setting.account.current_password') }}</div>
+            <n-input
+              v-model:value="currentPassword"
+              type="password"
+              show-password-on="click"
+              :placeholder="t('setting.account.current_password_placeholder')" />
+            <div class="password-hint">{{ t('encryption.onboarding.current_password_hint') }}</div>
+          </div>
         </template>
       </div>
 
@@ -130,13 +139,14 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NCheckbox, NModal, NSpin } from 'naive-ui'
+import { NButton, NCheckbox, NInput, NModal, NSpin } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import type { GeneratedSecretStorageKey } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('E2EEOnboarding')
@@ -162,7 +172,9 @@ type Step = 'welcome' | 'securityKey' | 'crossSigning' | 'backup'
 const currentStep = ref<Step>('welcome')
 const loading = ref(false)
 const recoveryKey = ref('')
+const generatedRecoveryKey = ref<GeneratedSecretStorageKey | null>(null)
 const keySaved = ref(false)
+const currentPassword = ref('')
 const crossSigningLoading = ref(false)
 const crossSigningDone = ref(false)
 const crossSigningError = ref('')
@@ -170,15 +182,12 @@ const backupLoading = ref(false)
 const backupDone = ref(false)
 const backupError = ref('')
 
-function generatePassphrase(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32))
-  return btoa(String.fromCharCode(...bytes))
-}
-
 function resetState() {
   currentStep.value = 'welcome'
   recoveryKey.value = ''
+  generatedRecoveryKey.value = null
   keySaved.value = false
+  currentPassword.value = ''
   crossSigningLoading.value = false
   crossSigningDone.value = false
   crossSigningError.value = ''
@@ -199,13 +208,14 @@ async function handleStart() {
   loading.value = true
   try {
     await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
-    const passphrase = generatePassphrase()
-    const result = await matrixCryptoService.createSecureBackup(passphrase)
-    if (result) {
-      recoveryKey.value = result.version ?? result.backup_id
+    const result = await matrixCryptoService.createRecoveryKeyFromPassphrase()
+    if (!result?.encodedPrivateKey) {
+      throw new Error('Failed to generate recovery key')
     }
+    generatedRecoveryKey.value = result
+    recoveryKey.value = result.encodedPrivateKey
   } catch (err) {
-    logger.error('Failed to create secure backup:', err)
+    logger.error('Failed to generate recovery key:', err)
     showFeedback(t('encryption.onboarding.generate_key_failed'), 'error')
     currentStep.value = 'welcome'
   } finally {
@@ -235,6 +245,10 @@ function downloadKey() {
 
 async function handleNext() {
   if (currentStep.value === 'securityKey') {
+    if (!currentPassword.value.trim()) {
+      showFeedback(t('setting.account.current_password_required'), 'warning')
+      return
+    }
     currentStep.value = 'crossSigning'
     await setupCrossSigning()
   } else if (currentStep.value === 'crossSigning') {
@@ -259,7 +273,7 @@ async function setupCrossSigning() {
   crossSigningDone.value = false
   crossSigningError.value = ''
   try {
-    await matrixEncryptionService.setupCrossSigning()
+    await matrixEncryptionService.setupCrossSigning({ password: currentPassword.value.trim() })
     crossSigningDone.value = true
   } catch (err: unknown) {
     logger.error('Failed to setup cross-signing:', err)
@@ -276,7 +290,10 @@ async function setupBackup() {
   backupDone.value = false
   backupError.value = ''
   try {
-    await matrixEncryptionService.setupKeyBackup()
+    await matrixEncryptionService.setupKeyBackup({
+      password: currentPassword.value.trim(),
+      generatedKey: generatedRecoveryKey.value
+    })
     backupDone.value = true
   } catch (err: unknown) {
     logger.error('Failed to setup key backup:', err)
@@ -432,6 +449,23 @@ watch(
 
 .key-checkbox {
   margin-bottom: 16px;
+}
+
+.password-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.password-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.password-hint {
+  color: var(--hula-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .progress-text {

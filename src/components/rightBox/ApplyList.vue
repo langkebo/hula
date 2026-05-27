@@ -275,7 +275,7 @@ const avatarSrc = (url: string) => AvatarUtils.getAvatarUrl(url)
 
 // 判断是否为当前登录用户
 const isCurrentUser = (uid: string) => {
-  return uid === userStore.userInfo!.uid
+  return uid === (userStore.userInfo?.uid ?? '')
 }
 
 /**

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { MessageStatusEnum, MsgEnum, StoresEnum } from '@/enums'
 import matrixClientService from '@/services/matrix/MatrixClientService'
+import matrixEventService from '@/services/matrix/MatrixEventService'
 import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
 import { matrixRoomTagsService } from '@/services/matrix/room/TagsService'
 import matrixSlidingSyncService, { type SlidingSyncUnreadUpdate } from '@/services/matrix/sync/MatrixSlidingSyncService'
@@ -301,13 +302,75 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     }
 
     const chatStore = useChatStore()
+    const normalizeMessageBody = (body: unknown): Record<string, unknown> => {
+      if (body && typeof body === 'object') {
+        return body as Record<string, unknown>
+      }
+
+      return {
+        body: String(body ?? ''),
+        content: String(body ?? '')
+      }
+    }
+    const hasRenderableMessageBody = (body: unknown): boolean => {
+      if (!body || typeof body !== 'object') {
+        return typeof body === 'string' && body.length > 0
+      }
+
+      const typedBody = body as { content?: unknown; body?: unknown }
+      return typeof typedBody.content === 'string' || typeof typedBody.body === 'string'
+    }
 
     matrixRoomService.onTimelineEvent(({ roomId, eventType, roomInfo, message }) => {
       if ((eventType === 'm.room.message' || eventType === 'm.room.encrypted') && message) {
-        chatStore.pushMsg(message)
+        if (chatStore.checkMsgExist(roomId, message.message.id)) {
+          if (eventType === 'm.room.message' && hasRenderableMessageBody(message.message.body)) {
+            chatStore.updateMsg({
+              msgId: message.message.id,
+              roomId,
+              status: MessageStatusEnum.SUCCESS,
+              body: normalizeMessageBody(message.message.body)
+            })
+          }
+        } else {
+          chatStore.pushMsg(message)
+        }
       }
 
       rooms.value.set(roomId, roomInfo)
+      triggerRef(rooms)
+    })
+
+    matrixClientService.on('eventDecrypted', (payload: unknown) => {
+      const { event, err, room } = payload as {
+        event?: Parameters<typeof matrixEventService.convertEventToMessage>[0]
+        err?: Error
+        room?: Parameters<typeof matrixEventService.convertEventToMessage>[1]
+      }
+      if (err || !event || !room) {
+        return
+      }
+
+      const message = matrixEventService.convertEventToMessage(event, room)
+      if (!message?.message?.id) {
+        return
+      }
+
+      const roomId = message.message.roomId
+      const body = normalizeMessageBody(message.message.body)
+
+      if (chatStore.checkMsgExist(roomId, message.message.id)) {
+        chatStore.updateMsg({
+          msgId: message.message.id,
+          roomId,
+          status: MessageStatusEnum.SUCCESS,
+          body
+        })
+      } else {
+        chatStore.pushMsg(message)
+      }
+
+      rooms.value.set(roomId, matrixRoomService.convertRoomToRoomInfo(room))
       triggerRef(rooms)
     })
 

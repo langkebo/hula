@@ -4,6 +4,14 @@ import type { RoomInfo, RoomState } from '@/services/matrix/admin/AdminTypes'
 
 export type { RoomInfo } from '@/services/matrix/admin/AdminTypes'
 
+export interface RoomMessage {
+  eventId: string
+  sender: string
+  content: string
+  eventType: string
+  timestamp: number
+}
+
 export interface UseAdminRoomsResult {
   rooms: Ref<RoomInfo[]>
   filteredRooms: Ref<RoomInfo[]>
@@ -15,6 +23,29 @@ export interface UseAdminRoomsResult {
   membersLoading: Ref<boolean>
   roomState: Ref<RoomState | null>
   stateLoading: Ref<boolean>
+
+  roomMessages: Ref<RoomMessage[]>
+  messagesLoading: Ref<boolean>
+  messagesPaginationToken: Ref<string | undefined>
+  loadMessages: (limit?: number, from?: string) => Promise<void>
+
+  roomAliases: Ref<string[]>
+  aliasesLoading: Ref<boolean>
+  loadAliases: () => Promise<void>
+
+  roomStats: Ref<Record<string, unknown> | null>
+  statsLoading: Ref<boolean>
+  loadRoomStats: () => Promise<void>
+
+  searchResults: Ref<RoomInfo[]>
+  searchLoading: Ref<boolean>
+  searchRooms: (query: string) => Promise<void>
+
+  makeRoomAdmin: (roomId: string, userId?: string) => Promise<void>
+  purgeHistory: (
+    roomId: string,
+    options?: { purgeUpToEventId?: string; purgeUpToTs?: number; deleteLocalEvents?: boolean }
+  ) => Promise<{ purgeId: string }>
 
   loadRooms: (limit?: number, searchTerm?: string) => Promise<void>
   selectRoom: (room: RoomInfo | null) => Promise<void>
@@ -49,6 +80,23 @@ export function useAdminRooms(): UseAdminRoomsResult {
   const roomState = ref<RoomState | null>(null)
   const stateLoading = ref(false)
 
+  // Messages
+  const roomMessages = ref<RoomMessage[]>([])
+  const messagesLoading = ref(false)
+  const messagesPaginationToken = ref<string | undefined>()
+
+  // Aliases
+  const roomAliases = ref<string[]>([])
+  const aliasesLoading = ref(false)
+
+  // Stats
+  const roomStats = ref<Record<string, unknown> | null>(null)
+  const statsLoading = ref(false)
+
+  // Search
+  const searchResults = ref<RoomInfo[]>([])
+  const searchLoading = ref(false)
+
   const filteredRooms = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
     if (!q) return rooms.value
@@ -75,8 +123,12 @@ export function useAdminRooms(): UseAdminRoomsResult {
     selectedRoom.value = room
     roomMembers.value = []
     roomState.value = null
+    roomMessages.value = []
+    messagesPaginationToken.value = undefined
+    roomAliases.value = []
+    roomStats.value = null
     if (!room) return
-    await Promise.allSettled([loadMembers(), loadState()])
+    await Promise.allSettled([loadMembers(), loadState(), loadMessages(), loadAliases(), loadRoomStats()])
   }
 
   async function loadMembers() {
@@ -97,6 +149,87 @@ export function useAdminRooms(): UseAdminRoomsResult {
     } finally {
       stateLoading.value = false
     }
+  }
+
+  async function loadMessages(limit = 50, from?: string) {
+    if (!selectedRoom.value) return
+    messagesLoading.value = true
+    try {
+      const result = await adminService.getRoomMessages(selectedRoom.value.roomId, limit, from, 'b')
+      const mapped = (result.chunk ?? []).map((event) => {
+        const content = event.content as Record<string, unknown> | undefined
+        const body = (content?.body as string) ?? JSON.stringify(content ?? {})
+        return {
+          eventId: (event.event_id as string) ?? '',
+          sender: (event.sender as string) ?? '',
+          content: body,
+          eventType: (event.type as string) ?? '',
+          timestamp: typeof event.origin_server_ts === 'number' ? event.origin_server_ts : 0
+        }
+      })
+      if (from) {
+        roomMessages.value = [...roomMessages.value, ...mapped]
+      } else {
+        roomMessages.value = mapped
+      }
+      messagesPaginationToken.value = result.end
+    } finally {
+      messagesLoading.value = false
+    }
+  }
+
+  async function loadAliases() {
+    if (!selectedRoom.value) return
+    aliasesLoading.value = true
+    try {
+      roomAliases.value = await adminService.getRoomAliases(selectedRoom.value.roomId)
+    } finally {
+      aliasesLoading.value = false
+    }
+  }
+
+  async function loadRoomStats() {
+    if (!selectedRoom.value) return
+    statsLoading.value = true
+    try {
+      roomStats.value = await adminService.getSingleRoomStats(selectedRoom.value.roomId)
+    } finally {
+      statsLoading.value = false
+    }
+  }
+
+  async function searchRooms(query: string) {
+    if (!query.trim()) {
+      searchResults.value = []
+      return
+    }
+    searchLoading.value = true
+    try {
+      const result = await adminService.searchRooms(query)
+      searchResults.value = (result.rooms ?? []).map((r) => ({
+        roomId: (r.room_id as string) ?? '',
+        name: r.name as string | undefined,
+        joinedMembers: (r.joined_members as number) ?? 0,
+        joinedLocalMembers: (r.joined_local_members as number) ?? 0,
+        invitedMembers: 0,
+        invitedLocalMembers: 0,
+        creator: r.creator as string | undefined,
+        public: r.public as boolean | undefined
+      }))
+    } finally {
+      searchLoading.value = false
+    }
+  }
+
+  async function makeRoomAdmin(roomId: string, userId?: string) {
+    await adminService.makeRoomAdmin(roomId, userId)
+  }
+
+  async function purgeHistory(
+    roomId: string,
+    options?: { purgeUpToEventId?: string; purgeUpToTs?: number; deleteLocalEvents?: boolean }
+  ) {
+    return adminService.purgeHistory(roomId, options)
   }
 
   async function deleteRoom(roomId: string, opts?: { purge?: boolean }) {
@@ -147,6 +280,21 @@ export function useAdminRooms(): UseAdminRoomsResult {
     membersLoading,
     roomState,
     stateLoading,
+    roomMessages,
+    messagesLoading,
+    messagesPaginationToken,
+    loadMessages,
+    roomAliases,
+    aliasesLoading,
+    loadAliases,
+    roomStats,
+    statsLoading,
+    loadRoomStats,
+    searchResults,
+    searchLoading,
+    searchRooms,
+    makeRoomAdmin,
+    purgeHistory,
     loadRooms,
     selectRoom,
     loadMembers,

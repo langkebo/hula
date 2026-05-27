@@ -67,6 +67,9 @@ export const baseConfig: UserConfig = {
         new URL('../../../matrix-js-sdk/src/telemetry/index.ts', import.meta.url)
       ),
       'matrix-js-sdk/qr-login': fileURLToPath(new URL('../../../matrix-js-sdk/src/qr-login/index.ts', import.meta.url)),
+      'matrix-js-sdk/rendezvous': fileURLToPath(
+        new URL('../../../matrix-js-sdk/src/rendezvous/index.ts', import.meta.url)
+      ),
       'matrix-js-sdk': fileURLToPath(new URL('../../../matrix-js-sdk/src/index.ts', import.meta.url))
     }
   },
@@ -138,19 +141,10 @@ export const baseConfig: UserConfig = {
     }
   },
   optimizeDeps: {
-    include: [
-      'vue',
-      'vue-router',
-      'pinia',
-      '@vueuse/core',
-      'naive-ui',
-      'dayjs',
-      'es-toolkit',
-      'dompurify',
-      'mitt',
-      'matrix-js-sdk'
-    ],
+    include: ['vue', 'vue-router', 'pinia', '@vueuse/core', 'naive-ui', 'dayjs', 'es-toolkit', 'dompurify', 'mitt'],
     exclude: [
+      'matrix-js-sdk',
+      '@matrix-org/matrix-sdk-crypto-wasm',
       'three',
       '@vue-office/docx',
       '@vue-office/excel',
@@ -166,6 +160,12 @@ export const baseConfig: UserConfig = {
   server: {
     host: '0.0.0.0',
     strictPort: true,
+    fs: {
+      allow: [
+        fileURLToPath(new URL('../../', import.meta.url)),
+        fileURLToPath(new URL('../../../matrix-js-sdk', import.meta.url))
+      ]
+    },
     proxy: {
       '/_matrix': {
         target: 'http://localhost:8008',

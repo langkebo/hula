@@ -3,32 +3,55 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import DeviceVerifyDialog from '../DeviceVerifyDialog.vue'
 
 type DeviceVerifyDialogVm = {
-  userId: string
-  step: 'intro' | 'showKey' | 'success' | 'rejected'
+  step: 'intro' | 'showKey' | 'showQr' | 'scanQr' | 'success' | 'rejected'
   fingerprint: string
   fingerprintChunks: string[]
+  qrCodeData: string
+  qrCodeToScan: string
   startVerification: () => Promise<void>
   handleConfirm: () => Promise<void>
-  handleReject: () => void
+  handleReject: () => Promise<void>
   handleClose: () => void
+  openQrShow: () => Promise<void>
+  openQrScan: () => void
+  submitQrScan: () => Promise<void>
+  handleCancel: () => Promise<void>
 }
 
 const {
   getCurrentSessionContextMock,
   getDeviceFingerprintMock,
-  trustDeviceMock,
-  messageSuccessMock,
-  messageErrorMock
+  startSasVerificationMock,
+  acceptVerificationMock,
+  confirmSasMock,
+  cancelVerificationMock,
+  getPendingVerificationsMock,
+  getQrCodeShowMock,
+  scanQrCodeMock,
+  showFeedbackMock
 } = vi.hoisted(() => ({
   getCurrentSessionContextMock: vi.fn(),
   getDeviceFingerprintMock: vi.fn(),
-  trustDeviceMock: vi.fn(),
-  messageSuccessMock: vi.fn(),
-  messageErrorMock: vi.fn()
+  startSasVerificationMock: vi.fn(),
+  acceptVerificationMock: vi.fn(),
+  confirmSasMock: vi.fn(),
+  cancelVerificationMock: vi.fn(),
+  getPendingVerificationsMock: vi.fn(),
+  getQrCodeShowMock: vi.fn(),
+  scanQrCodeMock: vi.fn(),
+  showFeedbackMock: vi.fn()
 }))
 
 vi.mock('naive-ui', async () => {
-  const { defineComponent } = await import('vue')
+  const { defineComponent, h } = await import('vue')
+
+  const buttonStub = defineComponent({
+    name: 'NButton',
+    emits: ['click'],
+    setup(_, { slots, emit }) {
+      return () => h('button', { type: 'button', onClick: () => emit('click') }, slots.default?.())
+    }
+  })
 
   return {
     NModal: defineComponent({
@@ -44,12 +67,11 @@ vi.mock('naive-ui', async () => {
         }
       },
       emits: ['update:show'],
-      template: '<div v-if="show" data-test="modal"><span>{{ title }}</span><slot /></div>'
+      setup(props, { slots }) {
+        return () => (props.show ? h('div', { 'data-test': 'modal' }, [props.title, slots.default?.()]) : null)
+      }
     }),
-    NButton: defineComponent({
-      name: 'NButton',
-      template: '<button type="button"><slot /></button>'
-    }),
+    NButton: buttonStub,
     NSpin: defineComponent({
       name: 'NSpin',
       props: {
@@ -58,11 +80,33 @@ vi.mock('naive-ui', async () => {
           default: false
         }
       },
-      template: '<div data-test="spin"><slot /></div>'
+      setup(_, { slots }) {
+        return () => h('div', { 'data-test': 'spin' }, slots.default?.())
+      }
     }),
-    useMessage: () => ({
-      success: messageSuccessMock,
-      error: messageErrorMock
+    NQrCode: defineComponent({
+      name: 'NQrCode',
+      props: {
+        value: {
+          type: String,
+          default: ''
+        }
+      },
+      setup(props) {
+        return () => h('div', { 'data-test': 'qr-code' }, props.value)
+      }
+    }),
+    NSteps: defineComponent({
+      name: 'NSteps',
+      setup(_, { slots }) {
+        return () => h('div', { 'data-test': 'steps' }, slots.default?.())
+      }
+    }),
+    NStep: defineComponent({
+      name: 'NStep',
+      setup() {
+        return () => h('div')
+      }
     })
   }
 })
@@ -74,17 +118,24 @@ vi.mock('@iconify/vue', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
-  matrixEncryptionContextService: {
-    getCurrentSessionContext: getCurrentSessionContextMock,
-    getDeviceFingerprint: getDeviceFingerprintMock
-  }
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
 }))
 
-vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
-  matrixEncryptionService: {
-    trustDevice: trustDeviceMock
-  }
+vi.mock('@/composables/encryption', () => ({
+  useEncryption: () => ({
+    getCurrentSessionContext: getCurrentSessionContextMock,
+    getDeviceFingerprint: getDeviceFingerprintMock,
+    startSasVerification: startSasVerificationMock,
+    acceptVerification: acceptVerificationMock,
+    confirmSas: confirmSasMock,
+    cancelVerification: cancelVerificationMock,
+    getPendingVerifications: getPendingVerificationsMock,
+    getQrCodeShow: getQrCodeShowMock,
+    scanQrCode: scanQrCodeMock
+  })
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -92,6 +143,24 @@ vi.mock('@/utils/Logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn()
+  })
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => {
+      const map: Record<string, string> = {
+        'setting.device_verify_dialog.fingerprint_unavailable': '无法获取指纹',
+        'setting.device_verify_dialog.load_fingerprint_failed': '获取设备密钥失败',
+        'setting.device_verify_dialog.verify_failed': '验证失败',
+        'setting.device_verify_dialog.scan_qr_required': '请输入二维码内容',
+        'setting.device_verify_dialog.qr_scan_success': '二维码验证成功',
+        'setting.device_verify_dialog.qr_scan_failed': '二维码验证失败',
+        'setting.device_verify_dialog.qr_load_failed': '二维码加载失败',
+        'setting.encryption.verify_success': '设备验证成功'
+      }
+      return map[key] ?? key
+    }
   })
 }))
 
@@ -105,7 +174,16 @@ describe('DeviceVerifyDialog', () => {
       isCryptoEnabled: true
     })
     getDeviceFingerprintMock.mockResolvedValue('ABCD1234EFGH5678')
-    trustDeviceMock.mockResolvedValue(undefined)
+    startSasVerificationMock.mockResolvedValue('txn-123')
+    acceptVerificationMock.mockResolvedValue(undefined)
+    confirmSasMock.mockResolvedValue(undefined)
+    cancelVerificationMock.mockResolvedValue(undefined)
+    getPendingVerificationsMock.mockResolvedValue([])
+    getQrCodeShowMock.mockResolvedValue({
+      qr_code: 'MATRIX-QR-CODE',
+      transaction_id: 'txn-qr'
+    })
+    scanQrCodeMock.mockResolvedValue(true)
   })
 
   const mountComponent = (props?: Record<string, unknown>) =>
@@ -116,69 +194,95 @@ describe('DeviceVerifyDialog', () => {
       }
     })
 
-  it('挂载后读取会话上下文并展示目标设备指纹', async () => {
+  it('发起 SAS 验证时加载目标设备指纹', async () => {
     const wrapper = mountComponent({
       deviceId: 'OTHER_DEVICE',
       deviceName: 'Alice iPhone'
     })
 
     await flushPromises()
-
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).userId).toBe('@alice:example.com')
     expect(wrapper.text()).toContain('Alice iPhone')
+
     await (wrapper.vm as unknown as DeviceVerifyDialogVm).startVerification()
 
+    expect(startSasVerificationMock).toHaveBeenCalledWith('@alice:example.com', 'OTHER_DEVICE')
     expect(getDeviceFingerprintMock).toHaveBeenCalledWith('@alice:example.com', 'OTHER_DEVICE')
     expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('showKey')
     expect((wrapper.vm as unknown as DeviceVerifyDialogVm).fingerprint).toBe('ABCD1234EFGH5678')
     expect((wrapper.vm as unknown as DeviceVerifyDialogVm).fingerprintChunks).toEqual(['ABCD', '1234', 'EFGH', '5678'])
   })
 
-  it('在未传 deviceId 时回退使用当前设备并处理空指纹', async () => {
-    getDeviceFingerprintMock.mockResolvedValue(null)
-
-    const wrapper = mountComponent()
+  it('接受入站验证请求后进入指纹确认', async () => {
+    const wrapper = mountComponent({
+      inboundRequest: {
+        transactionId: 'txn-inbound',
+        userId: '@alice:example.com',
+        deviceId: 'OTHER_DEVICE',
+        methods: ['m.sas.v1'],
+        timestamp: Date.now()
+      }
+    })
 
     await flushPromises()
     await (wrapper.vm as unknown as DeviceVerifyDialogVm).startVerification()
 
-    expect(getDeviceFingerprintMock).toHaveBeenCalledWith('@alice:example.com', 'CURRENT_DEVICE')
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).fingerprint).toBe('无法获取指纹')
+    expect(acceptVerificationMock).toHaveBeenCalledWith('txn-inbound')
+    expect(getDeviceFingerprintMock).toHaveBeenCalledWith('@alice:example.com', 'OTHER_DEVICE')
     expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('showKey')
   })
 
-  it('确认匹配后信任设备并进入成功态', async () => {
-    const wrapper = mountComponent({
-      deviceId: 'OTHER_DEVICE'
-    })
-
-    await flushPromises()
-    await (wrapper.vm as unknown as DeviceVerifyDialogVm).handleConfirm()
-
-    expect(trustDeviceMock).toHaveBeenCalledWith('@alice:example.com', 'OTHER_DEVICE')
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('success')
-    expect(messageSuccessMock).toHaveBeenCalledWith('设备验证成功')
-  })
-
-  it('拒绝匹配和关闭时重置状态并关闭弹窗', async () => {
+  it('确认匹配后调用 confirmSas 并发出成功事件', async () => {
     const wrapper = mountComponent({
       deviceId: 'OTHER_DEVICE'
     })
 
     await flushPromises()
     await (wrapper.vm as unknown as DeviceVerifyDialogVm).startVerification()
-    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).handleReject()
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).handleConfirm()
 
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('rejected')
-
-    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).handleClose()
-
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('intro')
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).fingerprint).toBe('')
-    expect(wrapper.emitted('update:show')).toEqual([[false]])
+    expect(confirmSasMock).toHaveBeenCalledWith('txn-123')
+    expect(showFeedbackMock).toHaveBeenCalledWith('设备验证成功', 'success')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('success')
+    expect(wrapper.emitted('success')).toBeTruthy()
   })
 
-  it('在设备上下文缺失或验证失败时提示错误', async () => {
+  it('拒绝或取消验证时会调用取消接口', async () => {
+    const wrapper = mountComponent({
+      deviceId: 'OTHER_DEVICE'
+    })
+
+    await flushPromises()
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).startVerification()
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).handleReject()
+    expect(cancelVerificationMock).toHaveBeenCalledWith('txn-123', 'User rejected verification')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('rejected')
+
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).handleCancel()
+    expect(cancelVerificationMock).toHaveBeenCalledWith('txn-123', 'User cancelled verification')
+    expect(wrapper.emitted('update:show')).toContainEqual([false])
+  })
+
+  it('支持二维码展示与扫码提交', async () => {
+    const wrapper = mountComponent({
+      initialMode: 'qr_show'
+    })
+
+    await flushPromises()
+    expect(getQrCodeShowMock).toHaveBeenCalled()
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('showQr')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).qrCodeData).toBe('MATRIX-QR-CODE')
+    expect(wrapper.find('[data-test="qr-code"]').text()).toBe('MATRIX-QR-CODE')
+
+    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).openQrScan()
+    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).qrCodeToScan = 'SCANNED-QR'
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).submitQrScan()
+
+    expect(scanQrCodeMock).toHaveBeenCalledWith('SCANNED-QR')
+    expect(showFeedbackMock).toHaveBeenCalledWith('二维码验证成功', 'success')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('success')
+  })
+
+  it('缺少会话上下文或二维码输入为空时给出错误反馈', async () => {
     getCurrentSessionContextMock.mockReturnValue({
       userId: null,
       deviceId: null,
@@ -186,22 +290,16 @@ describe('DeviceVerifyDialog', () => {
     })
 
     const wrapper = mountComponent()
-
     await flushPromises()
     await (wrapper.vm as unknown as DeviceVerifyDialogVm).startVerification()
 
-    expect(messageErrorMock).toHaveBeenCalledWith('获取设备密钥失败')
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('intro')
+    expect(showFeedbackMock).toHaveBeenCalledWith('获取设备密钥失败', 'error')
+    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('rejected')
 
-    getCurrentSessionContextMock.mockReturnValue({
-      userId: '@alice:example.com',
-      deviceId: 'OTHER_DEVICE',
-      isCryptoEnabled: true
-    })
-    trustDeviceMock.mockRejectedValueOnce(new Error('trust failed'))
+    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).openQrScan()
+    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).qrCodeToScan = '   '
+    await (wrapper.vm as unknown as DeviceVerifyDialogVm).submitQrScan()
 
-    await (wrapper.vm as unknown as DeviceVerifyDialogVm).handleConfirm()
-
-    expect(messageErrorMock).toHaveBeenCalledWith('验证失败')
+    expect(showFeedbackMock).toHaveBeenCalledWith('请输入二维码内容', 'warning')
   })
 })

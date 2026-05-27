@@ -208,6 +208,9 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
 
       // 使用现有的getUploadAndDownloadUrl方法
       const result = await this.uploadHook.getUploadAndDownloadUrl(tempPath, uploadOptions)
+      if (!result) {
+        throw new AppException('获取缩略图上传链接失败，上传服务不可用')
+      }
       return result
     } catch (error) {
       logger.error('获取缩略图上传链接失败:', error)
@@ -288,6 +291,9 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
         provider: options?.provider || UploadProviderEnum.DEFAULT,
         scene: UploadSceneEnum.CHAT
       })
+      if (!result) {
+        throw new AppException('获取视频上传链接失败，上传服务不可用')
+      }
       return result
     } catch {
       throw new AppException('获取视频上传链接失败')

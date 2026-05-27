@@ -77,6 +77,11 @@
             </dl>
           </div>
 
+          <!-- 所属空间 -->
+          <div class="detail-card">
+            <RoomParentSpaces :room-id="roomId!" />
+          </div>
+
           <!-- 模式切换：邀请/设置 -->
           <Transition name="fade-slide" mode="out-in">
             <div v-if="inviteMode" class="detail-card detail-card--action" key="invite">
@@ -178,6 +183,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import RoomParentSpaces from '@/components/space/RoomParentSpaces.vue'
 import HulaSpaceJoinCta from '@/components/workbench/HulaSpaceJoinCta.vue'
 import { ThemeEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'

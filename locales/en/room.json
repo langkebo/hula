@@ -74,7 +74,9 @@
     "id_copied": "Room ID copied",
     "no_data": "No data",
     "update_success": "Room settings updated",
-    "update_failed": "Failed to update room settings"
+    "update_failed": "Failed to update room settings",
+    "parent_spaces": "Parent Spaces",
+    "no_parent_spaces": "Not in any space"
   },
   "invitation": {
     "accept": "Accept",
@@ -96,6 +98,35 @@
     "pin": "Pin",
     "mute": "Mute",
     "leave": "Leave"
+  },
+  "members": {
+    "title": "Members",
+    "search_placeholder": "Search members",
+    "admins": "Admins",
+    "admin": "Admin",
+    "moderators": "Moderators",
+    "moderator": "Moderator",
+    "members": "Members",
+    "send_message": "Send Message",
+    "send_message_failed": "Failed to open message",
+    "kick": "Kick from Room",
+    "kick_title": "Kick Member",
+    "kick_confirm": "Confirm Kick",
+    "kick_success": "Kicked {name} from room",
+    "kick_failed": "Failed to kick member",
+    "ban": "Ban",
+    "ban_title": "Ban Member",
+    "ban_confirm": "Confirm Ban",
+    "ban_success": "Banned {name}",
+    "ban_failed": "Failed to ban member",
+    "unban": "Unban",
+    "unban_title": "Unban Member",
+    "unban_confirm": "Confirm Unban",
+    "unban_confirm_text": "Are you sure you want to unban {name}? They will be able to rejoin the room.",
+    "unban_success": "Unbanned {name}",
+    "unban_failed": "Failed to unban member",
+    "reason_label": "Reason",
+    "reason_placeholder": "Enter reason (optional)"
   },
   "state": {
     "encrypted": "Encrypted room",

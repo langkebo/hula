@@ -159,6 +159,7 @@ export const useMatrixStore = defineStore(
 
         if (result.success) {
           userId.value = result.userId ?? null
+          deviceId.value = result.deviceId ?? null
           accessToken.value = result.accessToken ?? null
           connectionState.value = 'CONNECTED'
 

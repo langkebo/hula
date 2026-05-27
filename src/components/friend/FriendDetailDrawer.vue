@@ -118,6 +118,7 @@
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum, ThemeEnum } from '@/enums'
+import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -268,10 +269,20 @@ const handleSaveDisplayName = async () => {
 
 const handleSendMessage = async () => {
   if (!props.userId) return
-  const roomId = await contactStore.startDirectRoom(props.userId, false)
-  if (roomId) {
-    const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
-    await openMsgSessionByRoomId(roomId)
+  try {
+    const dmInfo = await matrixFriendService.getFriendDmRoom(props.userId)
+    if (dmInfo.room_id) {
+      const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+      await openMsgSessionByRoomId(dmInfo.room_id)
+    } else {
+      const roomId = await contactStore.startDirectRoom(props.userId, false)
+      if (roomId) {
+        const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+        await openMsgSessionByRoomId(roomId)
+      }
+    }
+  } catch {
+    showFeedback(t('friend.detail.chat_error'), 'error', 'assertive')
   }
   visible.value = false
 }

@@ -111,7 +111,7 @@ const getUserDisplayName = (uid: string, fallbackName?: string) => {
 }
 
 const getAvatarSrc = (uid: string) => {
-  const avatar = uid === userUid.value ? userStore.userInfo!.avatar : groupStore.getUserInfo(uid)?.avatar
+  const avatar = uid === userUid.value ? (userStore.userInfo?.avatar ?? '') : groupStore.getUserInfo(uid)?.avatar
   return AvatarUtils.getAvatarUrl(avatar as string)
 }
 

@@ -34,6 +34,8 @@ export interface UserInfo {
   avatarUrl?: string
   admin?: boolean
   deactivated?: boolean
+  isGuest?: boolean
+  createdTs?: number
   displayname?: string
   lastSeenTs?: number
 }

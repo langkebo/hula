@@ -74,6 +74,9 @@ export class VoiceMessageStrategyImpl extends AbstractMessageStrategy {
       }
 
       const result = await uploadHook.getUploadAndDownloadUrl(path, uploadOptions)
+      if (!result) {
+        throw new AppException('获取语音上传链接失败，上传服务不可用')
+      }
       return result
     } catch {
       throw new AppException('获取语音上传链接失败，请重试')

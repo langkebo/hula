@@ -116,7 +116,7 @@
             <div class="action-item">
               <div class="menu-list">
                 <div v-if="!plugin.isAdd" @click="handleAdd(plugin)" class="menu-item">
-                  <svg class="color-[--color-info]"><use href="#add"></use></svg>
+                  <svg class="text-[--hula-color-info-500]"><use href="#add"></use></svg>
                   <p class="text-[--color-info]">{{ t('home.plugins.actions.pin') }}</p>
                 </div>
                 <div v-else @click="handleDelete(plugin)" class="menu-item">

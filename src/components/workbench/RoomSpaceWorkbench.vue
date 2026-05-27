@@ -25,7 +25,8 @@
       @toggle-batch-mode="toggleBatchMode"
       @save-preset="emit('savePreset')"
       @apply-saved-preset="emit('applySavedPreset')"
-      @create-space="emit('createSpace')" />
+      @create-space="emit('createSpace')"
+      @discover-spaces="emit('discoverSpaces')" />
 
     <div class="room-space-workbench__shell min-h-0 flex flex-1">
       <aside class="room-space-workbench__space-nav min-h-0 flex flex-col">
@@ -258,6 +259,7 @@ const emit = defineEmits<{
   'update:sessionSort': [value: WorkbenchSessionSort]
   'update:selectedSpaceId': [value: string]
   createSpace: []
+  discoverSpaces: []
   savePreset: []
   applySavedPreset: []
   inviteSpaceMember: []

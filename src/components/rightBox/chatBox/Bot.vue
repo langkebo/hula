@@ -44,7 +44,7 @@
               @click="openLocalModel">
               {{ t('ai_assistant.bot.import_model') }}
             </n-button>
-            <n-badge class="mr-14px" value="Beta" :color="'#a789d9'">
+            <n-badge class="mr-14px" value="Beta" :color="'var(--hula-color-beta-500)'">
               <div :class="['assistant-btn', { active: isAssistantView }]" @click="showAssistant()">
                 {{ t('ai_assistant.bot.preview_3d') }}
               </div>

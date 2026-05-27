@@ -435,6 +435,10 @@ const waitForMatrixLoggedIn = async (page: Page): Promise<void> => {
               isLoggedIn: boolean
               userId?: string | null
               accessToken?: string | null
+              getClient?: () => {
+                getUserId?: () => string | null
+                getAccessToken?: () => string | null
+              } | null
             }
           }
           const { getMatrixSessionSnapshot } = (await import(/* @vite-ignore */ sessionStateModulePath)) as {
@@ -446,11 +450,16 @@ const waitForMatrixLoggedIn = async (page: Page): Promise<void> => {
           const matrixStore = useMatrixStore(runtimeWindow.pinia)
           const sessionSnapshot = getMatrixSessionSnapshot()
           const currentUser = getCurrentUserInfo()
+          const client = matrixStore.getClient?.() ?? null
+          const accessToken =
+            matrixStore.accessToken ?? sessionSnapshot.accessToken ?? client?.getAccessToken?.() ?? null
+          const userId =
+            matrixStore.userId ?? sessionSnapshot.userId ?? client?.getUserId?.() ?? currentUser?.uid ?? null
           return Boolean(
-            (matrixStore.isLoggedIn && matrixStore.userId) ||
-              (matrixStore.userId && matrixStore.accessToken) ||
-              (sessionSnapshot.userId && sessionSnapshot.accessToken) ||
-              currentUser?.uid
+            client &&
+              accessToken &&
+              userId &&
+              (matrixStore.isLoggedIn || Boolean(sessionSnapshot.userId) || Boolean(currentUser?.uid))
           )
         }),
       {
@@ -694,168 +703,262 @@ export const openMessageWorkspace = async (page: Page): Promise<void> => {
   await expect(page.locator('.message-session-toolbar')).toBeVisible({ timeout: 15_000 })
 }
 
-const collectMatrixLiveSessionDebugSnapshot = async (page: Page): Promise<Record<string, unknown>> => {
-  return page.evaluate(async () => {
-    const runtimeWindow = window as Window & { pinia?: unknown; __MATRIX_LIVE_RESTORE_STAGE__?: string }
-    const importBrowserModule = <T>(modulePath: string): Promise<T> =>
-      import(/* @vite-ignore */ modulePath) as Promise<T>
-    const [
-      { useMatrixStore },
-      { useRoomStore },
-      { useSessionStore },
-      { getMatrixSessionSnapshot },
-      { getCurrentUserInfo },
-      { resolveMatrixRuntimeEndpointConfig, resolveMatrixSessionEndpointConfig },
-      { filterAndSortSessions, matchesKeyword, matchesSessionType, matchesSessionEngagement },
-      {
-        readSpaceWorkbenchSearch,
-        readSpaceWorkbenchSessionTypeFilter,
-        readSpaceWorkbenchSessionEngagementFilter,
-        readSpaceWorkbenchSessionSort
-      },
-      { errorTracker }
-    ] = await Promise.all([
-      importBrowserModule<{ useMatrixStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/matrix.ts'),
-      importBrowserModule<{ useRoomStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/room.ts'),
-      importBrowserModule<{ useSessionStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/chat/session.ts'),
-      importBrowserModule<{ getMatrixSessionSnapshot: () => unknown }>('/src/services/matrix/matrixSessionState.ts'),
-      importBrowserModule<{ getCurrentUserInfo: () => unknown }>('/src/common/currentUserState.ts'),
-      importBrowserModule<{
-        resolveMatrixRuntimeEndpointConfig: () => unknown
-        resolveMatrixSessionEndpointConfig: () => unknown
-      }>('/src/services/backend/config.ts'),
-      importBrowserModule<{
-        filterAndSortSessions: (sessions: any[], options: Record<string, unknown>) => any[]
-        matchesKeyword: (session: any, keyword: string) => boolean
-        matchesSessionType: (session: any, sessionTypeFilter: string) => boolean
-        matchesSessionEngagement: (session: any, sessionEngagementFilter: string) => boolean
-      }>('/src/composables/workbench/sessionListFilters.ts'),
-      importBrowserModule<{
-        readSpaceWorkbenchSearch: (query: Record<string, unknown>) => string
-        readSpaceWorkbenchSessionTypeFilter: (query: Record<string, unknown>) => string
-        readSpaceWorkbenchSessionEngagementFilter: (query: Record<string, unknown>) => string
-        readSpaceWorkbenchSessionSort: (query: Record<string, unknown>) => string
-      }>('/src/router/spaceNavigation.ts'),
-      importBrowserModule<{
-        errorTracker: {
-          getTopErrors: (limit: number) => Array<{
-            type: string
-            message: string
-            context?: Record<string, unknown>
-          }>
-        }
-      }>('/src/utils/ErrorTracker.ts')
-    ])
+export const collectMatrixLiveSessionDebugSnapshot = async (
+  page: Page,
+  requestedRoomId?: string
+): Promise<Record<string, unknown>> => {
+  return page.evaluate(
+    async ({ targetRoomId: requestedRoomId }) => {
+      const runtimeWindow = window as Window & { pinia?: unknown; __MATRIX_LIVE_RESTORE_STAGE__?: string }
+      const importBrowserModule = <T>(modulePath: string): Promise<T> =>
+        import(/* @vite-ignore */ modulePath) as Promise<T>
+      const [
+        { useMatrixStore },
+        { useRoomStore },
+        { useSessionStore },
+        { useGlobalStore },
+        { useChatStore },
+        { matrixClientService },
+        { getMatrixSessionSnapshot },
+        { getCurrentUserInfo },
+        { resolveMatrixRuntimeEndpointConfig, resolveMatrixSessionEndpointConfig },
+        { filterAndSortSessions, matchesKeyword, matchesSessionType, matchesSessionEngagement },
+        {
+          readSpaceWorkbenchSearch,
+          readSpaceWorkbenchSessionTypeFilter,
+          readSpaceWorkbenchSessionEngagementFilter,
+          readSpaceWorkbenchSessionSort
+        },
+        { errorTracker }
+      ] = await Promise.all([
+        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/matrix.ts'),
+        importBrowserModule<{ useRoomStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/room.ts'),
+        importBrowserModule<{ useSessionStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/chat/session.ts'),
+        importBrowserModule<{ useGlobalStore: (pinia?: unknown) => any }>('/src/stores/domains/widget/global.ts'),
+        importBrowserModule<{ useChatStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/chat/index.ts'),
+        importBrowserModule<{
+          matrixClientService: {
+            getRustCryptoDebugState: () => Record<string, unknown>
+            getEventDecryptedDebugState: () => Record<string, unknown>
+          }
+        }>('/src/services/matrix/MatrixClientService.ts'),
+        importBrowserModule<{ getMatrixSessionSnapshot: () => unknown }>('/src/services/matrix/matrixSessionState.ts'),
+        importBrowserModule<{ getCurrentUserInfo: () => unknown }>('/src/common/currentUserState.ts'),
+        importBrowserModule<{
+          resolveMatrixRuntimeEndpointConfig: () => unknown
+          resolveMatrixSessionEndpointConfig: () => unknown
+        }>('/src/services/backend/config.ts'),
+        importBrowserModule<{
+          filterAndSortSessions: (sessions: any[], options: Record<string, unknown>) => any[]
+          matchesKeyword: (session: any, keyword: string) => boolean
+          matchesSessionType: (session: any, sessionTypeFilter: string) => boolean
+          matchesSessionEngagement: (session: any, sessionEngagementFilter: string) => boolean
+        }>('/src/composables/workbench/sessionListFilters.ts'),
+        importBrowserModule<{
+          readSpaceWorkbenchSearch: (query: Record<string, unknown>) => string
+          readSpaceWorkbenchSessionTypeFilter: (query: Record<string, unknown>) => string
+          readSpaceWorkbenchSessionEngagementFilter: (query: Record<string, unknown>) => string
+          readSpaceWorkbenchSessionSort: (query: Record<string, unknown>) => string
+        }>('/src/router/spaceNavigation.ts'),
+        importBrowserModule<{
+          errorTracker: {
+            getTopErrors: (limit: number) => Array<{
+              type: string
+              message: string
+              context?: Record<string, unknown>
+            }>
+          }
+        }>('/src/utils/ErrorTracker.ts')
+      ])
 
-    const matrixStore = useMatrixStore(runtimeWindow.pinia)
-    const roomStore = useRoomStore(runtimeWindow.pinia)
-    const sessionStore = useSessionStore(runtimeWindow.pinia)
-    const routeQuery = Object.fromEntries(new URLSearchParams(window.location.search).entries())
-    const filters = {
-      search: readSpaceWorkbenchSearch(routeQuery),
-      type: readSpaceWorkbenchSessionTypeFilter(routeQuery),
-      engagement: readSpaceWorkbenchSessionEngagementFilter(routeQuery),
-      sort: readSpaceWorkbenchSessionSort(routeQuery)
-    }
-    const filteredSessions = filterAndSortSessions(sessionStore.sessionList, {
-      keyword: filters.search.toLocaleLowerCase(),
-      sessionTypeFilter: filters.type,
-      sessionEngagementFilter: filters.engagement,
-      sessionSort: filters.sort
-    })
-
-    return {
-      route: `${window.location.pathname}${window.location.search}`,
-      stage: runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ ?? null,
-      matrix: {
-        isLoggedIn: matrixStore.isLoggedIn,
-        userId: matrixStore.userId,
-        accessTokenPresent: !!matrixStore.accessToken,
-        connectionState: matrixStore.connectionState,
-        syncState: matrixStore.syncState,
-        lastError: matrixStore.lastError
-      },
-      sessionSnapshot: getMatrixSessionSnapshot(),
-      currentUser: getCurrentUserInfo(),
-      endpoints: {
-        runtime: resolveMatrixRuntimeEndpointConfig(),
-        session: resolveMatrixSessionEndpointConfig(),
-        storedHomeserverUrl: window.localStorage.getItem('hula-homeserver-url'),
-        storedSessionHomeserverUrl: window.localStorage.getItem('hula-session-homeserver-url')
-      },
-      rooms: {
-        count: roomStore.roomList.length,
-        sample: roomStore.roomList.slice(0, 5).map((room: { roomId: string; name?: string }) => ({
-          roomId: room.roomId,
-          name: room.name ?? ''
-        }))
-      },
-      sessions: {
-        count: sessionStore.sessionList.length,
-        sample: sessionStore.sessionList
-          .slice(0, 5)
-          .map(
-            (session: {
-              roomId: string
-              name?: string
-              type?: unknown
-              unreadCount?: number
-              highlightCount?: number
-              isInvite?: boolean
-            }) => ({
-              roomId: session.roomId,
-              name: session.name ?? '',
-              type: session.type ?? null,
-              unreadCount: session.unreadCount ?? 0,
-              highlightCount: session.highlightCount ?? 0,
-              isInvite: Boolean(session.isInvite)
-            })
-          )
-      },
-      filters,
-      filteredSessions: {
-        count: filteredSessions.length,
-        sample: filteredSessions.slice(0, 5).map((session: { roomId: string; name?: string }) => ({
-          roomId: session.roomId,
-          name: session.name ?? ''
-        })),
-        evaluation: sessionStore.sessionList
-          .slice(0, 5)
-          .map(
-            (session: {
-              roomId: string
-              name?: string
-              type?: unknown
-              unreadCount?: number
-              highlightCount?: number
-              isInvite?: boolean
-              lastMsg?: string
-              remark?: string
-              account?: string
-            }) => ({
-              roomId: session.roomId,
-              name: session.name ?? '',
-              type: session.type ?? null,
-              unreadCount: session.unreadCount ?? 0,
-              highlightCount: session.highlightCount ?? 0,
-              isInvite: Boolean(session.isInvite),
-              matchesType: matchesSessionType(session, filters.type),
-              matchesEngagement: matchesSessionEngagement(session, filters.engagement),
-              matchesKeyword: matchesKeyword(session, filters.search.toLocaleLowerCase())
-            })
-          )
-      },
-      runtimeErrors: errorTracker.getTopErrors(5).map((error) => ({
-        type: error.type,
-        message: error.message,
-        context: error.context ?? {}
-      })),
-      dom: {
-        sessionItems: document.querySelectorAll('[role="list"] [role="listitem"]').length,
-        bodyText: document.body.innerText.slice(0, 800)
+      const matrixStore = useMatrixStore(runtimeWindow.pinia)
+      const roomStore = useRoomStore(runtimeWindow.pinia)
+      const sessionStore = useSessionStore(runtimeWindow.pinia)
+      const globalStore = useGlobalStore(runtimeWindow.pinia)
+      const chatStore = useChatStore(runtimeWindow.pinia)
+      const routeQuery = Object.fromEntries(new URLSearchParams(window.location.search).entries())
+      const filters = {
+        search: readSpaceWorkbenchSearch(routeQuery),
+        type: readSpaceWorkbenchSessionTypeFilter(routeQuery),
+        engagement: readSpaceWorkbenchSessionEngagementFilter(routeQuery),
+        sort: readSpaceWorkbenchSessionSort(routeQuery)
       }
-    }
-  })
+      const filteredSessions = filterAndSortSessions(sessionStore.sessionList, {
+        keyword: filters.search.toLocaleLowerCase(),
+        sessionTypeFilter: filters.type,
+        sessionEngagementFilter: filters.engagement,
+        sessionSort: filters.sort
+      })
+      const client = matrixStore.getClient?.()
+      const crypto = client?.getCrypto?.() ?? null
+      const activeRoomId = requestedRoomId || globalStore.currentSessionRoomId || null
+      const activeRoom = activeRoomId ? (client?.getRoom?.(activeRoomId) ?? null) : null
+      const encryptionStateEvent = activeRoom?.currentState?.getStateEvents?.('m.room.encryption', '') ?? null
+      const chatMessages = activeRoomId ? chatStore.chatMessageListByRoomId(activeRoomId) : []
+      const roomTimelineEvents = activeRoom?.getLiveTimeline?.()?.getEvents?.() ?? []
+
+      return {
+        route: `${window.location.pathname}${window.location.search}`,
+        stage: runtimeWindow.__MATRIX_LIVE_RESTORE_STAGE__ ?? null,
+        browser: {
+          origin: window.location.origin,
+          indexedDBAvailable: typeof globalThis.indexedDB !== 'undefined',
+          cryptoSubtleAvailable: typeof globalThis.crypto?.subtle !== 'undefined'
+        },
+        matrix: {
+          isLoggedIn: matrixStore.isLoggedIn,
+          userId: matrixStore.userId,
+          deviceId: matrixStore.deviceId ?? null,
+          accessTokenPresent: !!matrixStore.accessToken,
+          connectionState: matrixStore.connectionState,
+          syncState: matrixStore.syncState,
+          lastError: matrixStore.lastError,
+          clientReady: Boolean(client),
+          clientUserId: client?.getUserId?.() ?? null,
+          clientDeviceId: client?.getDeviceId?.() ?? null,
+          hasInitRustCrypto: typeof client?.initRustCrypto === 'function',
+          isCryptoEnabled: typeof client?.isCryptoEnabled === 'function' ? client.isCryptoEnabled() : null,
+          cryptoAvailable: Boolean(crypto),
+          cryptoBackendType:
+            crypto && typeof crypto === 'object'
+              ? ((crypto as { constructor?: { name?: string } }).constructor?.name ?? 'object')
+              : crypto === null
+                ? null
+                : typeof crypto,
+          rustCryptoDebug: matrixClientService.getRustCryptoDebugState(),
+          eventDecryptedDebug: matrixClientService.getEventDecryptedDebugState()
+        },
+        sessionSnapshot: getMatrixSessionSnapshot(),
+        currentUser: getCurrentUserInfo(),
+        global: {
+          currentSessionRoomId: globalStore.currentSessionRoomId ?? null
+        },
+        endpoints: {
+          runtime: resolveMatrixRuntimeEndpointConfig(),
+          session: resolveMatrixSessionEndpointConfig(),
+          storedHomeserverUrl: window.localStorage.getItem('hula-homeserver-url'),
+          storedSessionHomeserverUrl: window.localStorage.getItem('hula-session-homeserver-url')
+        },
+        rooms: {
+          count: roomStore.roomList.length,
+          sample: roomStore.roomList.slice(0, 5).map((room: { roomId: string; name?: string }) => ({
+            roomId: room.roomId,
+            name: room.name ?? ''
+          }))
+        },
+        sessions: {
+          count: sessionStore.sessionList.length,
+          sample: sessionStore.sessionList
+            .slice(0, 5)
+            .map(
+              (session: {
+                roomId: string
+                name?: string
+                type?: unknown
+                unreadCount?: number
+                highlightCount?: number
+                isInvite?: boolean
+              }) => ({
+                roomId: session.roomId,
+                name: session.name ?? '',
+                type: session.type ?? null,
+                unreadCount: session.unreadCount ?? 0,
+                highlightCount: session.highlightCount ?? 0,
+                isInvite: Boolean(session.isInvite)
+              })
+            )
+        },
+        filters,
+        filteredSessions: {
+          count: filteredSessions.length,
+          sample: filteredSessions.slice(0, 5).map((session: { roomId: string; name?: string }) => ({
+            roomId: session.roomId,
+            name: session.name ?? ''
+          })),
+          evaluation: sessionStore.sessionList
+            .slice(0, 5)
+            .map(
+              (session: {
+                roomId: string
+                name?: string
+                type?: unknown
+                unreadCount?: number
+                highlightCount?: number
+                isInvite?: boolean
+                lastMsg?: string
+                remark?: string
+                account?: string
+              }) => ({
+                roomId: session.roomId,
+                name: session.name ?? '',
+                type: session.type ?? null,
+                unreadCount: session.unreadCount ?? 0,
+                highlightCount: session.highlightCount ?? 0,
+                isInvite: Boolean(session.isInvite),
+                matchesType: matchesSessionType(session, filters.type),
+                matchesEngagement: matchesSessionEngagement(session, filters.engagement),
+                matchesKeyword: matchesKeyword(session, filters.search.toLocaleLowerCase())
+              })
+            )
+        },
+        targetRoom: {
+          requestedRoomId: requestedRoomId ?? null,
+          activeRoomId,
+          found: Boolean(activeRoom),
+          name: activeRoom?.name ?? null,
+          hasEncryptionStateEvent: activeRoom?.hasEncryptionStateEvent?.() ?? false,
+          isEncrypted: activeRoom?.isEncrypted?.() ?? false,
+          encryptionEventContent: encryptionStateEvent?.getContent?.() ?? null,
+          pendingEventCount: activeRoom?.getPendingEvents?.().length ?? null,
+          timelineEventCount: roomTimelineEvents.length,
+          timelineSample: roomTimelineEvents
+            .slice(-5)
+            .map(
+              (event: {
+                getId?: () => string
+                getType?: () => string
+                getContent?: () => Record<string, unknown>
+                getTs?: () => number
+                getSender?: () => string
+              }) => ({
+                eventId: event.getId?.() ?? null,
+                type: event.getType?.() ?? null,
+                sender: event.getSender?.() ?? null,
+                timestamp: event.getTs?.() ?? null,
+                content: event.getContent?.() ?? null
+              })
+            )
+        },
+        chatMessages: {
+          count: chatMessages.length,
+          sample: chatMessages
+            .slice(-5)
+            .map(
+              (item: {
+                message: { id?: string; type?: unknown; body?: unknown; sendTime?: number }
+                fromUser?: { uid?: string }
+              }) => ({
+                eventId: item.message.id ?? null,
+                sender: item.fromUser?.uid ?? null,
+                type: item.message.type ?? null,
+                sendTime: item.message.sendTime ?? null,
+                body: item.message.body ?? null
+              })
+            )
+        },
+        runtimeErrors: errorTracker.getTopErrors(5).map((error) => ({
+          type: error.type,
+          message: error.message,
+          context: error.context ?? {}
+        })),
+        dom: {
+          sessionItems: document.querySelectorAll('[role="list"] [role="listitem"]').length,
+          bodyText: document.body.innerText.slice(0, 800)
+        }
+      }
+    },
+    { targetRoomId: requestedRoomId }
+  )
 }
 
 export const waitForLiveSessions = async (page: Page): Promise<void> => {
@@ -873,35 +976,192 @@ export const waitForLiveSessions = async (page: Page): Promise<void> => {
   }
 }
 
-export const openConfiguredRoom = async (page: Page, env: MatrixLiveEnv): Promise<void> => {
-  if (env.roomId) {
+const resolveMatrixLiveRoomCandidates = async (
+  page: Page,
+  roomId?: string,
+  roomName?: string
+): Promise<{
+  currentSessionRoomId: string | null
+  requestedRoom: {
+    clientHasRoom: boolean
+    sessionHasRoom: boolean
+    roomStoreHasRoom: boolean
+  } | null
+  roomNameMatches: string[]
+}> => {
+  return page.evaluate(
+    async ({ targetRoomId, targetRoomName }: { targetRoomId?: string; targetRoomName?: string }) => {
+      const runtimeWindow = window as Window & { pinia?: unknown }
+      const importBrowserModule = <T>(modulePath: string): Promise<T> =>
+        import(/* @vite-ignore */ modulePath) as Promise<T>
+      const [{ useMatrixStore }, { useRoomStore }, { useSessionStore }, { useGlobalStore }] = await Promise.all([
+        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/matrix.ts'),
+        importBrowserModule<{ useRoomStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/room.ts'),
+        importBrowserModule<{ useSessionStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/chat/session.ts'),
+        importBrowserModule<{ useGlobalStore: (pinia?: unknown) => any }>('/src/stores/domains/widget/global.ts')
+      ])
+
+      const matrixStore = useMatrixStore(runtimeWindow.pinia)
+      const roomStore = useRoomStore(runtimeWindow.pinia)
+      const sessionStore = useSessionStore(runtimeWindow.pinia)
+      const globalStore = useGlobalStore(runtimeWindow.pinia)
+      const client = matrixStore.getClient?.()
+      const currentSessionRoomId = globalStore.currentSessionRoomId || null
+
+      const requestedRoom = targetRoomId
+        ? {
+            clientHasRoom: Boolean(client?.getRoom?.(targetRoomId)),
+            sessionHasRoom: sessionStore.sessionList.some(
+              (session: { roomId: string }) => session.roomId === targetRoomId
+            ),
+            roomStoreHasRoom: roomStore.roomList.some((room: { roomId: string }) => room.roomId === targetRoomId)
+          }
+        : null
+
+      const roomNameMatches = targetRoomName
+        ? (Array.from(
+            new Set([
+              ...sessionStore.sessionList
+                .filter((session: { roomId: string; name?: string }) => session.name === targetRoomName)
+                .map((session: { roomId: string }) => session.roomId),
+              ...roomStore.roomList
+                .filter((room: { roomId: string; name?: string }) => room.name === targetRoomName)
+                .map((room: { roomId: string }) => room.roomId),
+              ...(client?.getRooms?.() ?? [])
+                .filter((room: { roomId: string; name?: string }) => room.name === targetRoomName)
+                .map((room: { roomId: string }) => room.roomId)
+            ])
+          ) as string[])
+        : []
+
+      return {
+        currentSessionRoomId,
+        requestedRoom,
+        roomNameMatches
+      }
+    },
+    { targetRoomId: roomId, targetRoomName: roomName }
+  )
+}
+
+export const getCurrentSessionRoomId = async (page: Page): Promise<string> => {
+  return page.evaluate(async () => {
+    const runtimeWindow = window as Window & { pinia?: unknown }
+    const modulePath = '/src/stores/domains/widget/global.ts'
+    const { useGlobalStore } = (await import(/* @vite-ignore */ modulePath)) as {
+      useGlobalStore: (pinia?: unknown) => { currentSessionRoomId: string }
+    }
+    return useGlobalStore(runtimeWindow.pinia).currentSessionRoomId
+  })
+}
+
+const selectRoomById = async (page: Page, targetRoomId: string): Promise<void> => {
+  await page.evaluate(async (roomId: string) => {
+    const runtimeWindow = window as Window & { pinia?: unknown }
+    const modulePath = '/src/stores/domains/widget/global.ts'
+    const { useGlobalStore } = (await import(/* @vite-ignore */ modulePath)) as {
+      useGlobalStore: (pinia?: unknown) => { updateCurrentSessionRoomId: (roomId: string) => void }
+    }
+    useGlobalStore(runtimeWindow.pinia).updateCurrentSessionRoomId(roomId)
+  }, targetRoomId)
+}
+
+export const openConfiguredRoom = async (page: Page, env: MatrixLiveEnv): Promise<string> => {
+  const candidates = await resolveMatrixLiveRoomCandidates(page, env.roomId, env.roomName)
+  const requestedRoomExists = Boolean(
+    candidates.requestedRoom &&
+      (candidates.requestedRoom.clientHasRoom ||
+        candidates.requestedRoom.sessionHasRoom ||
+        candidates.requestedRoom.roomStoreHasRoom)
+  )
+
+  if (env.roomId && requestedRoomExists) {
     const roomLocator = page.locator(`[data-test="session-item-${env.roomId}"]`).first()
-    await expect(roomLocator).toHaveCount(1, { timeout: 120_000 })
-    await roomLocator.dispatchEvent('click')
-    return
+    const visibleRoomCount = await roomLocator.count()
+    if (visibleRoomCount > 0) {
+      await roomLocator.dispatchEvent('click')
+    } else {
+      await selectRoomById(page, env.roomId)
+    }
+
+    await expect
+      .poll(() => getCurrentSessionRoomId(page), {
+        timeout: 120_000,
+        message: '等待前端按 roomId 完成会话切换'
+      })
+      .toBe(env.roomId)
+
+    return env.roomId
   }
 
   if (env.roomName) {
+    const fallbackRoomId = candidates.roomNameMatches[0]
+    if (fallbackRoomId) {
+      await selectRoomById(page, fallbackRoomId)
+
+      await expect
+        .poll(() => getCurrentSessionRoomId(page), {
+          timeout: 120_000,
+          message: '等待前端按 roomName 匹配到实际 roomId 并完成会话切换'
+        })
+        .toBe(fallbackRoomId)
+
+      return fallbackRoomId
+    }
+
     await page.getByText(env.roomName, { exact: false }).first().click()
-    return
+    await expect
+      .poll(() => getCurrentSessionRoomId(page), {
+        timeout: 120_000,
+        message: '等待前端按 roomName 完成会话切换'
+      })
+      .not.toBe('')
+    return await getCurrentSessionRoomId(page)
   }
 
   throw new Error('缺少 MATRIX_LIVE_ROOM_ID 或 MATRIX_LIVE_ROOM_NAME，无法定位目标房间')
 }
 
 export const sendTextMessageToRoom = async (page: Page, roomId: string, text: string): Promise<string> => {
-  return page.evaluate(
-    async ({ targetRoomId, body }: { targetRoomId: string; body: string }) => {
-      const modulePath = '/src/services/matrix/MatrixEventService.ts'
-      const { matrixEventService } = (await import(/* @vite-ignore */ modulePath)) as {
-        matrixEventService: {
-          sendTextMessage: (roomId: string, body: string) => Promise<string>
+  try {
+    const result = await page.evaluate(
+      async ({ targetRoomId, body }: { targetRoomId: string; body: string }) => {
+        try {
+          const modulePath = '/src/services/matrix/MatrixEventService.ts'
+          const { matrixEventService } = (await import(/* @vite-ignore */ modulePath)) as {
+            matrixEventService: {
+              sendTextMessage: (roomId: string, body: string) => Promise<string>
+            }
+          }
+          const eventId = await matrixEventService.sendTextMessage(targetRoomId, body)
+          return { ok: true as const, eventId }
+        } catch (error) {
+          const plainError =
+            error instanceof Error
+              ? {
+                  name: error.name,
+                  message: error.message,
+                  stack: error.stack ?? null
+                }
+              : {
+                  name: 'NonError',
+                  message: String(error),
+                  stack: null
+                }
+          return { ok: false as const, error: plainError }
         }
-      }
-      return matrixEventService.sendTextMessage(targetRoomId, body)
-    },
-    { targetRoomId: roomId, body: text }
-  )
+      },
+      { targetRoomId: roomId, body: text }
+    )
+    if (!result.ok) {
+      throw new Error(`${result.error.name}: ${result.error.message}`)
+    }
+    return result.eventId
+  } catch (error) {
+    const snapshot = await collectMatrixLiveSessionDebugSnapshot(page, roomId)
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`${message}\nmatrix-live snapshot: ${JSON.stringify(snapshot)}`)
+  }
 }
 
 export const roomContainsMessage = async (page: Page, roomId: string, text: string): Promise<boolean> => {
@@ -941,6 +1201,96 @@ export const roomContainsMessage = async (page: Page, roomId: string, text: stri
         })
     },
     { targetRoomId: roomId, expectedText: text }
+  )
+}
+
+export const resolveLiveTimelineTextCandidate = async (
+  page: Page,
+  roomId: string,
+  preferredText?: string
+): Promise<string | null> => {
+  return page.evaluate(
+    async ({ targetRoomId, configuredText }: { targetRoomId: string; configuredText?: string }) => {
+      const runtimeWindow = window as Window & { pinia?: unknown }
+      const importBrowserModule = <T>(modulePath: string): Promise<T> =>
+        import(/* @vite-ignore */ modulePath) as Promise<T>
+      const [{ useMatrixStore }, { useChatStore }] = await Promise.all([
+        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/matrix.ts'),
+        importBrowserModule<{ useChatStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/chat/index.ts')
+      ])
+
+      const matrixStore = useMatrixStore(runtimeWindow.pinia)
+      const chatStore = useChatStore(runtimeWindow.pinia)
+      const client = matrixStore.getClient?.()
+      const room = client?.getRoom?.(targetRoomId)
+      const chatMessages = chatStore.chatMessageListByRoomId(targetRoomId) ?? []
+      const timelineEvents = room?.getLiveTimeline?.()?.getEvents?.() ?? []
+
+      const normalizeText = (value: unknown): string => {
+        if (typeof value === 'string') {
+          return value.trim()
+        }
+        return ''
+      }
+      const isUsableText = (value: string): boolean => {
+        return Boolean(value) && !value.includes('Unable to decrypt')
+      }
+
+      if (configuredText) {
+        const normalizedConfiguredText = normalizeText(configuredText)
+        const configuredExistsInChat = chatMessages.some(
+          (item: { message: { body?: string | { content?: string; body?: string } } }) => {
+            const body = item.message.body
+            const candidate =
+              typeof body === 'string'
+                ? body
+                : typeof body?.content === 'string'
+                  ? body.content
+                  : typeof body?.body === 'string'
+                    ? body.body
+                    : ''
+            return candidate.includes(normalizedConfiguredText)
+          }
+        )
+        if (configuredExistsInChat) {
+          return normalizedConfiguredText
+        }
+      }
+
+      const timelineCandidate = [...timelineEvents]
+        .reverse()
+        .map((event: { getType?: () => string; getContent?: () => Record<string, unknown> }) => {
+          const content = event.getContent?.() ?? {}
+          if (event.getType?.() !== 'm.room.message') {
+            return ''
+          }
+          return normalizeText(content.body)
+        })
+        .find(isUsableText)
+
+      if (timelineCandidate) {
+        return timelineCandidate
+      }
+
+      const chatCandidate = [...chatMessages]
+        .reverse()
+        .map((item: { message: { body?: string | { content?: string; body?: string } } }) => {
+          const body = item.message.body
+          return normalizeText(
+            typeof body === 'string'
+              ? body
+              : typeof body?.content === 'string'
+                ? body.content
+                : typeof body?.body === 'string'
+                  ? body.body
+                  : ''
+          )
+        })
+        .find(isUsableText)
+
+      return chatCandidate ?? null
+    },
+    { targetRoomId: roomId, configuredText: preferredText }
   )
 }
 

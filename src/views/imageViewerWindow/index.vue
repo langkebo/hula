@@ -1,10 +1,10 @@
 <template>
   <div
-    class="size-full bg-#222 relative flex flex-col select-none"
+    class="size-full bg-[--hula-surface-media-preview] relative flex flex-col select-none"
     @mousemove="handleMouseMove"
     @mouseleave="handleMouseLeave">
     <!-- 顶部操作栏 -->
-    <ActionBar class="bg-#000 z-9999" :shrink="false" :current-label="currentLabel" />
+    <ActionBar class="bg-[--hula-surface-media-preview] z-9999" :shrink="false" :current-label="currentLabel" />
 
     <!-- 主体内容区域 -->
     <div ref="contentRef" class="flex-1 overflow-auto">
@@ -56,7 +56,9 @@
     </div>
 
     <!-- 底部工具栏 -->
-    <div data-tauri-drag-region class="z-9999 h-50px bg-#000 flex justify-center items-center gap-30px">
+    <div
+      data-tauri-drag-region
+      class="z-9999 h-50px bg-[--hula-surface-media-preview] flex justify-center items-center gap-30px">
       <n-tooltip placement="top">
         <template #trigger>
           <svg @click="zoomOut" class="size-24px cursor-pointer color-white"><use href="#zoom-out"></use></svg>
@@ -446,7 +448,7 @@ onUnmounted(() => {
 :deep(.action-close),
 :deep(.hover-box) {
   svg {
-    color: #fff !important;
+    color: var(--hula-text-inverse) !important;
   }
 }
 </style>

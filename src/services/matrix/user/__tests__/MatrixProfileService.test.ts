@@ -1,6 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { profileService, useProfile } from '../MatrixProfileService'
+import { ExtendedProfileUnsupportedError, profileService, useProfile } from '../MatrixProfileService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -23,7 +23,11 @@ const mockClient = {
   getProfileInfo: vi.fn(),
   setDisplayName: vi.fn(),
   setAvatarUrl: vi.fn(),
-  uploadContent: vi.fn()
+  uploadContent: vi.fn(),
+  getUserId: vi.fn(() => '@self:matrix.org'),
+  http: {
+    authedRequest: vi.fn()
+  }
 }
 
 describe('ProfileService', () => {
@@ -206,6 +210,80 @@ describe('ProfileService', () => {
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.setAvatarUrl('mxc://matrix.org/new')).rejects.toThrow('Invalid URL')
+    })
+  })
+
+  describe('extended profile', () => {
+    it('should return empty object when extended profile does not exist', async () => {
+      mockClient.http.authedRequest.mockRejectedValueOnce({ httpStatus: 404 })
+      profileService.initialize(mockClient as unknown as MatrixClient)
+
+      await expect(profileService.getExtendedProfile('@user:matrix.org')).resolves.toEqual({})
+    })
+
+    it('should return extended profile payload', async () => {
+      mockClient.http.authedRequest.mockResolvedValueOnce({
+        resume: 'Hello world',
+        sex: 2,
+        region: 'Shanghai'
+      })
+      profileService.initialize(mockClient as unknown as MatrixClient)
+
+      await expect(profileService.getExtendedProfile('@user:matrix.org')).resolves.toEqual({
+        resume: 'Hello world',
+        sex: 2,
+        region: 'Shanghai'
+      })
+      expect(mockClient.http.authedRequest).toHaveBeenCalledWith(
+        'GET',
+        '/_matrix/client/unstable/uk.tcpip.msc4133/profile/%40user%3Amatrix.org'
+      )
+    })
+
+    it('should update own extended profile fields', async () => {
+      mockClient.http.authedRequest
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({
+          resume: 'Updated bio',
+          sex: 1
+        })
+      profileService.initialize(mockClient as unknown as MatrixClient)
+
+      await expect(profileService.updateOwnExtendedProfile({ resume: 'Updated bio', sex: 1 })).resolves.toEqual({
+        resume: 'Updated bio',
+        sex: 1
+      })
+      expect(mockClient.http.authedRequest).toHaveBeenNthCalledWith(
+        1,
+        'PUT',
+        '/_matrix/client/unstable/uk.tcpip.msc4133/profile/%40self%3Amatrix.org/resume',
+        undefined,
+        'Updated bio'
+      )
+      expect(mockClient.http.authedRequest).toHaveBeenNthCalledWith(
+        2,
+        'PUT',
+        '/_matrix/client/unstable/uk.tcpip.msc4133/profile/%40self%3Amatrix.org/sex',
+        undefined,
+        1
+      )
+    })
+
+    it('should treat unrecognized extended profile reads as unsupported and return empty object', async () => {
+      mockClient.http.authedRequest.mockRejectedValueOnce({ errcode: 'M_UNRECOGNIZED' })
+      profileService.initialize(mockClient as unknown as MatrixClient)
+
+      await expect(profileService.getExtendedProfile('@user:matrix.org')).resolves.toEqual({})
+    })
+
+    it('should throw ExtendedProfileUnsupportedError on unsupported extended profile writes', async () => {
+      mockClient.http.authedRequest.mockRejectedValueOnce({ errcode: 'M_UNRECOGNIZED' })
+      profileService.initialize(mockClient as unknown as MatrixClient)
+
+      await expect(profileService.updateOwnExtendedProfile({ resume: 'unsupported' })).rejects.toBeInstanceOf(
+        ExtendedProfileUnsupportedError
+      )
     })
   })
 

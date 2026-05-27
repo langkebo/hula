@@ -65,7 +65,7 @@ const { showFeedback } = useActionFeedback()
 const userStore = useUserStore()
 const requestMsgAutosize = { minRows: 3, maxRows: 3 }
 const { userInfo, requestMsg, syncDefaultMessage, submitRequest } = useGroupRequestConfirm(
-  computed(() => t('message.group_verify.default_msg', { name: userStore.userInfo!.name }))
+  computed(() => t('message.group_verify.default_msg', { name: userStore.userInfo?.name ?? '' }))
 )
 
 const addFriend = async () => {
